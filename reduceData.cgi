@@ -2,11 +2,12 @@
 import os
 import sys
 import cgi, cgitb
-import reduce
+from platypus import reduce
 
 cgitb.enable()
 
 #specify where the files are to originate from
+#FILEPATH = '\\\\Filer\\experiments\\platypus\\commissioning\\'
 FILEPATH = './'
 
 initial_page = """<html>
@@ -60,6 +61,7 @@ def main():
                                                       basedir = FILEPATH)
         
         if reduce_file:
+            #serve the file 
             length = os.path.getsize(reduce_file)
             print datacontent % ('application/octet-stream', 'data.zip', 'data.zip', length)
             with open(reduce_file, 'rb') as filehandle:
