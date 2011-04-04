@@ -13,15 +13,22 @@ import hashlib
 import quickplot
 import sys
 
-def reduce_stitch_files(reflect_list, direct_list, scalefactor = 1., collect = False, basedir = None):
+def sanitize_string_input(file_list_string):
+    """
+    given a string like '1 2 3 4 1000 -1 sijsiojsoij' return an integer list where the numbers are greater than 0 and less than 9999999
+    it strips the string.ascii_letters and any string.punctuation, and converts all the numbers to ints.
+    """
+    return [int(x) for x in file_list_string.translate(None, string.punctuation).translate(None, string.ascii_letters).split() if 0 < int(x) < 9999999]
+    
+def reduce_stitch_files(reflect_list, direct_list, scalefactor = 1., collect = False, rebinpercent = 4., basedir = None, background = True):
     cwd = os.getcwd()
     filename = ''
     tempdir = ''
     try:
         #first process all the reflected beam spectra
-        reflected_runs = [pro_nex.processnexusfile(file_number, basedir = basedir) for file_number in reflect_list]
+        reflected_runs = [pro_nex.processnexusfile(file_number, basedir = basedir, rebinpercent = rebinpercent,                                                       background = background) for file_number in reflect_list if 0 < int(file_number) < 9999999]
         #now all the direct beam spectra
-        direct_runs = [pro_nex.processnexusfile(file_number, basedir = basedir) for file_number in direct_list]
+        direct_runs = [pro_nex.processnexusfile(file_number, basedir = basedir, rebinpercent = rebinpercent, background = background) for file_number in direct_list if 0 < int(file_number) < 9999999]
             
         if collect:
             tempdir = tempfile.mkdtemp()
@@ -82,7 +89,7 @@ def reduce_stitch_files(reflect_list, direct_list, scalefactor = 1., collect = F
             if collect:
                 os.chdir(stitchdir)
             
-            stitchedData.rebin()
+            stitchedData.rebin(rebinpercent = rebinpercent)
             stitchedData.write_xml()
             stitchedData.write_dat()
             #print out a picture
@@ -103,9 +110,9 @@ def reduce_stitch_files(reflect_list, direct_list, scalefactor = 1., collect = F
             shutil.copyfile(os.path.join(tempdir,'data.zip'), os.path.join(cwd, filename))
             
     except IOError as io:
-        sys.stderr.write('ERROR - reduce_stitch_files - one of the hdf5 files was missing')
+        sys.stderr.write(repr(io))
     except Exception as e:
-        print repr(e)
+        sys.stderr.write(repr(e))
   
     os.chdir(cwd)
     shutil.rmtree(tempdir, True)
