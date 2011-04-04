@@ -44,7 +44,7 @@ ROUGH_BEAM_WIDTH = 10
 CHOPPAIRING = 3
     
 def processnexusfile(datafilenumber, basedir = None,
-                    lolambda = 2.8, hilambda = 18., rebinning = True, background = True, normfilename = None,
+                    lolambda = 2.8, hilambda = 18., background = True, normfilename = None,
                     eventstreaming = None, isdirect = False, peak_pos = None,
                     typeofintegration = 0, expected_width = 10, omega = 0, two_theta = 0, rebinpercent = 4,
                     bmon1_normalise = True):
@@ -264,7 +264,7 @@ def processnexusfile(datafilenumber, basedir = None,
     #rebinning is the default option, but sometimes you don't want to.
     #detector shape input is (n, t, y)
     #we want to rebin t.
-    if rebinning:
+    if 0 < rebinpercent < 10:
         frac = 1. + (rebinpercent/100.)
         lowl = (2 * lolambda) / ( 1. + frac)
         hil =  frac * (2 * hilambda) / ( 1. + frac)
