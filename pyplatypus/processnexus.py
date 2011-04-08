@@ -135,7 +135,11 @@ def processnexusfile(datafilenumber, basedir = None,
     M_specTOFHIST[:] = TOF
     
     #chopper to detector distances
-    chod = np.zeros(numspectra)
+    #note that if eventstreaming is specified the numspectra is NOT
+    #equal to the number of entries in e.g. /longitudinal_translation
+    #this means you have to copy values in from the same scanpoint
+    chod = np.zeros(numspectra, dtype = 'float64')
+    detpositions = np.zeros(numspectra, dtype = 'float64')
     
     #domega, the angular divergence of the instrument
     domega = np.zeros(numspectra, dtype = 'float64')
@@ -164,7 +168,8 @@ def processnexusfile(datafilenumber, basedir = None,
         ss3vg = h5data['entry1/instrument/slits/third/vertical/gap']
         slit2_distance = h5data['/entry1/instrument/parameters/slit2_distance']
         slit3_distance = h5data['/entry1/instrument/parameters/slit3_distance']
-           
+        detectorpos = h5data['entry1/instrument/detector/longitudinal_translation']
+
         pairing = 0
         phaseangle = 0
         master = -1
@@ -239,27 +244,30 @@ def processnexusfile(datafilenumber, basedir = None,
         toffset = poffset + (1.e6 * MASTER_OPENING/2/(2 * np.pi)/freq) - (1.e6 * phaseangle /(360 * 2 * freq))
         M_specTOFHIST[index] -= toffset
         
+        detpositions[index] = detectorpos[scanpoint]
+        
         if eventstreaming:
             M_specTOFHIST[:] = TOF - toffset
             chod[:] = chod[0]
+            detpositions[:] = detpositions[0]
             break
         else:
             scanpoint += 1
     
     scanpoint = originalscanpoint
-    
-    #convert shape of chod from (n,) to (n, 1)
-    chod = np.reshape(chod, (numspectra, 1))
-    
+        
     #convert TOF to lambda
-    #M_specTOFHIST (n, t) and chod is (n, 1)
-    M_lambdaHIST = qtrans.tof_to_lambda(M_specTOFHIST, chod)
+    #M_specTOFHIST (n, t) and chod is (n,)
+    M_lambdaHIST = qtrans.tof_to_lambda(M_specTOFHIST, chod.reshape(numspectra, 1))
+    M_lambda = 0.5 * (M_lambdaHIST[:,1:] + M_lambdaHIST[:,:-1])
     TOF -= toffset
 
     #TODO gravity correction if direct beam
     if isdirect:
-        pass 
-
+        detector, detectorSD, M_gravcorrcoefs = correct_for_gravity(detector, detectorSD, M_lambda, 0, 2.8, 18)
+        beam_centre, beam_SD = findspecularridge(detector)
+        #print "BEAM_CENTRE", datafilenumber, beam_centre
+        
     #rebinning in lambda for all detector
     #rebinning is the default option, but sometimes you don't want to.
     #detector shape input is (n, t, y)
@@ -272,8 +280,8 @@ def processnexusfile(datafilenumber, basedir = None,
         numsteps = np.log10(hil / lowl ) // np.log10(frac)
         rebinning = np.logspace(np.log10(lowl), np.log10(hil), num = numsteps + 2)
 
-        rebinneddata = np.zeros((numspectra, np.size(rebinning, 0) - 1, np.size(detector, 2)))
-        rebinneddataSD = np.zeros((numspectra, np.size(rebinning, 0) - 1, np.size(detector, 2)))
+        rebinneddata = np.zeros((numspectra, np.size(rebinning, 0) - 1, np.size(detector, 2)), dtype = 'float64')
+        rebinneddataSD = np.zeros((numspectra, np.size(rebinning, 0) - 1, np.size(detector, 2)), dtype = 'float64')
         
         for index in xrange(np.size(detector, 0)):
         #rebin that plane.
@@ -287,16 +295,28 @@ def processnexusfile(datafilenumber, basedir = None,
     
         M_lambdaHIST = np.resize(rebinning, (numspectra, np.size(rebinning, 0)))
    
-    M_specTOFHIST = qtrans.lambda_to_tof(M_lambdaHIST, chod)
+    M_specTOFHIST = qtrans.lambda_to_tof(M_lambdaHIST, chod.reshape(numspectra, 1))
     M_lambda = 0.5 * (M_lambdaHIST[:,1:] + M_lambdaHIST[:,:-1])
-    M_spectof = qtrans.lambda_to_tof(M_lambda, chod)
+    M_spectof = qtrans.lambda_to_tof(M_lambda, chod.reshape(numspectra, 1))
     
+    #Now work out where the beam hits the detector    #this is used to work out the correct angle of incidence.	#it will be contained in a wave called M_beampos	#M_beampos varies as a fn of wavelength due to gravity
+		
     #TODO work out beam centres for all pixels
     #this has to be done agian because gravity correction is done above.
     if isdirect:
-        pass
+       #the spectral ridge for the direct beam has a gravity correction involved with it.       #the correction coefficients for the beamposition are contaned in M_gravcorrcoefs
+		M_beampos = np.zeros_like(M_lambda.shape)
+		        # the following correction assumes that the directbeam neutrons are falling from a point position 
+        # W_gravcorrcoefs[0] before the detector. At the sample stage (W_gravcorrcoefs[0] - detectorpos[0])
+        # they have a certain vertical velocity, assuming that the neutrons had
+        # an initial vertical velocity of 0. Although the motion past the sample stage will be parabolic,
+        # assume that the neutrons travel in a straight line after that (i.e. the tangent of the parabolic
+        # motion at the sample stage). This should give an idea of the direction of the true incident beam,
+        # as experienced by the sample.        #Factor of 2 is out the front to give an estimation of the increase in 2theta of the reflected beam.            
+        M_beampos[:] = M_gravcorrcoefs[:,1].reshape(numspectra, 1)        
+        M_beampos[:] -= 2. * (1000. / Y_PIXEL_SPACING * 9.81 * ((M_gravcorrcoefs[:, 0].reshape(numspectra, 1) - detpositions.reshape(numspectra, 1))/1000.) * (detpositions.reshape(numspectra, 1)/1000.) * M_lambda**2/((qtrans.kMP*1.e10)**2))        M_beampos *=  Y_PIXEL_SPACING
     else:
-        M_beampos = np.zeros(M_lambda.shape)
+        M_beampos = np.zeros_like(M_lambda.shape)
         M_beampos[:] = beam_centre * Y_PIXEL_SPACING
 
     #background subtraction
@@ -319,12 +339,12 @@ def processnexusfile(datafilenumber, basedir = None,
     if bmon1_normalise:
         bmon1_countsSD = np.sqrt(bmon1_counts)
         #have to make to the same shape as M_spec
-        bmon1_counts =  np.reshape(bmon1_counts, (numspectra, 1))
-        bmon1_countsSD =  np.reshape(bmon1_countsSD, (numspectra, 1))
+        bmon1_counts =  bmon1_counts.reshape(numspectra, 1)
+        bmon1_countsSD = bmon1_countsSD.reshape(numspectra, 1)
         M_spec, M_specSD = EP.EPdiv(M_spec, M_specSD, bmon1_counts, bmon1_countsSD)
         #have to make to the same shape as detector
         #bmon1_counts =  np.reshape(bmon1_counts, (numspectra, 1, 1))
-        bmon1_countsSD =  np.reshape(bmon1_countsSD, (numspectra, 1, 1))
+        bmon1_countsSD =  bmon1_countsSD.reshape(numspectra, 1, 1)
         detector, detectorSD = EP.EPdiv(detector, detectorSD, bmon1_counts, bmon1_countsSD)
         
     #now work out dlambda/lambda, the resolution contribution from wavelength.
@@ -575,6 +595,39 @@ def findspecularridge(nty_wave, tolerance = 0.01):
         lastSD = gausspeak[1]
     
     return lastcentre, lastSD
+    
+def correct_for_gravity(data, dataSD, lamda, trajectory, lolambda, hilambda):
+	#this function provides a gravity corrected yt plot, given the data, its associated errors, the wavelength corresponding to each of the time bins, and the trajectory of the neutrons.  Low lambda and high Lambda are wavelength cutoffs to igore.		#output:	#corrected data, dataSD	#M_gravCorrCoefs.  THis is a theoretical prediction where the spectral ridge is for each timebin.  This will be used to calculate the actual angle of incidence in the reduction process.
+	
+	#data has shape (n, t, y)
+	#M_lambda has shape (n, t)
+	
+	x_init = np.arange((np.size(data, axis = 1) + 1) * 1.) - 0.5
+	
+	f = lambda x, td, tru_centre: deflection(x, td, 0) / Y_PIXEL_SPACING + tru_centre
+	
+	M_gravcorrcoefs = np.zeros((len(data), 2), dtype = 'float64')
+	
+	correcteddata = np.empty_like(data)
+	correcteddataSD = np.empty_like(dataSD) 
+
+    for spec in xrange(len(data)):
+        #centres(t,)
+        centres = np.apply_along_axis(ut.centroid, 0, data[spec])
+        
+    	M_gravcorrcoefs[spec], pcov = curve_fit(f, lamda[spec], centres, np.array([3000., np.mean(centres)]))
+    	
+    	totaldeflection = deflection(lamda[spec], M_gravcorrcoefs[spec][0], 0) / Y_PIXEL_SPACING
+    	
+    	for wavelength in xrange(np.size(data, axis = 1)):
+    	    x_rebin = x_init + totaldeflection[wavelength]
+            correcteddata[spec,wavelength], correcteddataSD[spec,wavelength] = rebin.rebin(x_init, data[spec,wavelength], dataSD[spec, wavelength], x_rebin)
+    
+    return correcteddata, correcteddataSD, M_gravcorrcoefs
+
+def deflection(lamda, travel_distance, trajectory):	#returns the deflection in mm of a ballistic neutron	#lambda in Angstrom, travel_distance (length of correction, e.g. sample - detector) in mm, trajectory in degrees above the horizontal	#The deflection correction  is the distance from where you expect the neutron to hit the detector (detector_distance*tan(trajectory)) to where is actually hits the detector, i.e. the vertical deflection of the neutron due to gravity.	trajRad = trajectory*np.pi/180	pp = travel_distance/1000. * tan(trajRad)
+	
+	pp -= 9.81* (travel_distance/1000.)**2 * (lamda/1.e10)**2 / (2*cos(trajRad)*cos(trajRad)*(qtrans.kMP)**2)	pp *= 1000	return pp
     
 def createdetectornorm(normfilename, xmin, xmax):
     """

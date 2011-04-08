@@ -2,7 +2,8 @@ import numpy as np
 
 kMassNeutron = 1.6749286e-27
 kPlanck = 6.62606896e-34
-kMP = 3.95603
+#(mm/us)
+kMP = kMassNeutron/kPlanck
 
 def to_q(omega, lamda):
     """
@@ -17,10 +18,10 @@ def tof_to_lambda(TOF, distance):
     TOF = us
     return Angstom
     """
-    return kMP * TOF / distance
+    return kMP * TOF / distance * 1.e7
     
 def lambda_to_tof(lamda, distance):	
-	return  lamda * distance / kMP
+	return  1.e-7 * lamda * distance / kMP
     
 def to_qzqy(omega, twotheta, lamda):
     """
