@@ -43,11 +43,14 @@ ROUGH_BEAM_POSITION = 150        #Rough direct beam position
 ROUGH_BEAM_WIDTH = 10
 CHOPPAIRING = 3
     
-def processnexusfile(datafilenumber, basedir = None,
-                    lolambda = 2.8, hilambda = 18., background = True, normfilename = None,
-                    eventstreaming = None, isdirect = False, peak_pos = None,
-                    typeofintegration = 0, expected_width = 10, omega = 0, two_theta = 0, rebinpercent = 4,
-                    bmon1_normalise = True):
+def processnexusfile(datafilenumber, **kwds):
+    """ basedir = None,
+        lolambda = 2.8, hilambda = 18., background = True, normfilename = None,
+        eventstreaming = None, isdirect = False, peak_pos = None,
+        typeofintegration = 0, expected_width = 10, omega = 0, two_theta = 0, rebinpercent = 4,
+        bmon1_normalise = True):
+    """  
+  
     
     """
      processes a Nexus file
@@ -57,19 +60,32 @@ def processnexusfile(datafilenumber, basedir = None,
     
     datafilename = 'PLP{0:07d}.nx.hdf'.format(int(abs(datafilenumber)))
     
-    if basedir:
-        for root, dirs, files in os.walk(basedir):
+    if 'basedir' in kwds:
+        for root, dirs, files in os.walk(kwds['basedir']):
             if datafilename in files:
                 datafilename = os.path.join(root, datafilename)
                 break
+               
+    lolambda = kwds.get('lolambda', 2.8)
+    hilambda = kwds.get('hilambda', 18.)    
+    background = kwds.get('background', True)
+    normfilename = kwds.get('normfilename', None)
+    eventstreaming = kwds.get('eventstreaming', None)
+    isdirect = kwds.get('isdirect', False)
+    peak_pos = kwds.get('peak_pos', None)
+    typeofintegration = kwds.get('typeofintegration', 0)
+    expected_width = kwds.get('expected_width', 10.)
+    omega = kwds.get('omega', 0.)
+    two_theta = kwds.get('two_theta', 0.) 
+    rebinpercent = kwds.get('rebinpercent', 4.) 
+    bmon1_normalise = kwds.get('bmon1_normalise', True) 
 
-    h5data = h5.File(datafilename, 'r')
-    
-    scanpoint = 0
-    
-    #couldn't open the dataset
-    if not h5data:
+    try:
+        h5data = h5.File(datafilename, 'r')
+    except IOerror:
         return None
+        
+    scanpoint = 0
     
     #beam monitor counts for normalising data
     bmon1_counts = np.zeros(dtype = 'float64', shape = h5data['entry1/monitor/bm1_counts'].shape)
