@@ -261,18 +261,20 @@ def processnexusfile(datafilenumber, basedir = None,
     M_lambdaHIST = qtrans.tof_to_lambda(M_specTOFHIST, chod.reshape(numspectra, 1))
     M_lambda = 0.5 * (M_lambdaHIST[:,1:] + M_lambdaHIST[:,:-1])
     TOF -= toffset
-
+    
+    assert not np.isnan(detectorSD).any()
+    assert not np.less(detectorSD, 0).any()
+    
     #TODO gravity correction if direct beam
     if isdirect:
         detector, detectorSD, M_gravcorrcoefs = correct_for_gravity(detector, detectorSD, M_lambda, 0, 2.8, 18)
         beam_centre, beam_SD = findspecularridge(detector)
-        #print "BEAM_CENTRE", datafilenumber, beam_centre
         
     #rebinning in lambda for all detector
     #rebinning is the default option, but sometimes you don't want to.
     #detector shape input is (n, t, y)
     #we want to rebin t.
-    if 0 < rebinpercent < 10:
+    if 0 < rebinpercent < 10.:
         frac = 1. + (rebinpercent/100.)
         lowl = (2 * lolambda) / ( 1. + frac)
         hil =  frac * (2 * hilambda) / ( 1. + frac)
@@ -287,6 +289,8 @@ def processnexusfile(datafilenumber, basedir = None,
         #rebin that plane.
             plane, planeSD = rebin.rebin2D(M_lambdaHIST[index], np.arange(np.size(detector, 2) + 1.),
                 detector[index], detectorSD[index], rebinning, np.arange(np.size(detector, 2) + 1.))
+            assert not np.isnan(planeSD).any()
+                
             rebinneddata[index, ] = plane
             rebinneddataSD[index, ] = planeSD
         
@@ -305,18 +309,17 @@ def processnexusfile(datafilenumber, basedir = None,
     #this has to be done agian because gravity correction is done above.
     if isdirect:
        #the spectral ridge for the direct beam has a gravity correction involved with it.       #the correction coefficients for the beamposition are contaned in M_gravcorrcoefs
-		M_beampos = np.zeros_like(M_lambda.shape)
+        M_beampos = np.zeros_like(M_lambda)
 		        # the following correction assumes that the directbeam neutrons are falling from a point position 
         # W_gravcorrcoefs[0] before the detector. At the sample stage (W_gravcorrcoefs[0] - detectorpos[0])
         # they have a certain vertical velocity, assuming that the neutrons had
         # an initial vertical velocity of 0. Although the motion past the sample stage will be parabolic,
         # assume that the neutrons travel in a straight line after that (i.e. the tangent of the parabolic
         # motion at the sample stage). This should give an idea of the direction of the true incident beam,
-        # as experienced by the sample.        #Factor of 2 is out the front to give an estimation of the increase in 2theta of the reflected beam.            
-        M_beampos[:] = M_gravcorrcoefs[:,1].reshape(numspectra, 1)        
-        M_beampos[:] -= 2. * (1000. / Y_PIXEL_SPACING * 9.81 * ((M_gravcorrcoefs[:, 0].reshape(numspectra, 1) - detpositions.reshape(numspectra, 1))/1000.) * (detpositions.reshape(numspectra, 1)/1000.) * M_lambda**2/((qtrans.kMP*1.e10)**2))        M_beampos *=  Y_PIXEL_SPACING
+        # as experienced by the sample.        #Factor of 2 is out the front to give an estimation of the increase in 2theta of the reflected beam.        M_beampos[:] = M_gravcorrcoefs[:,1].reshape(numspectra, 1)
+        M_beampos[:] -= 2. * (1000. / Y_PIXEL_SPACING * 9.81 * ((M_gravcorrcoefs[:, 0].reshape(numspectra, 1) - detpositions.reshape(numspectra, 1))/1000.) * (detpositions.reshape(numspectra, 1)/1000.) * M_lambda**2/((qtrans.kPlanck_over_MN * 1.e10)**2))        M_beampos *=  Y_PIXEL_SPACING
     else:
-        M_beampos = np.zeros_like(M_lambda.shape)
+        M_beampos = np.zeros_like(M_lambda)
         M_beampos[:] = beam_centre * Y_PIXEL_SPACING
 
     #background subtraction
@@ -601,33 +604,35 @@ def correct_for_gravity(data, dataSD, lamda, trajectory, lolambda, hilambda):
 	
 	#data has shape (n, t, y)
 	#M_lambda has shape (n, t)
+    numlambda = np.size(lamda, axis = 1)
 	
-	x_init = np.arange((np.size(data, axis = 1) + 1) * 1.) - 0.5
-	
-	f = lambda x, td, tru_centre: deflection(x, td, 0) / Y_PIXEL_SPACING + tru_centre
-	
-	M_gravcorrcoefs = np.zeros((len(data), 2), dtype = 'float64')
-	
-	correcteddata = np.empty_like(data)
-	correcteddataSD = np.empty_like(dataSD) 
+    x_init = np.arange((np.size(data, axis = 2) + 1) * 1.) - 0.5
+    
+    f = lambda x, td, tru_centre: deflection(x, td, 0) / Y_PIXEL_SPACING + tru_centre
+    
+    M_gravcorrcoefs = np.zeros((len(data), 2), dtype = 'float64')
+    
+    correcteddata = np.empty_like(data)
+    correcteddataSD = np.empty_like(dataSD) 
 
     for spec in xrange(len(data)):
         #centres(t,)
-        centres = np.apply_along_axis(ut.centroid, 0, data[spec])
+        centroids = np.apply_along_axis(ut.centroid, 1, data[spec])
+        lopx = np.trunc(np.interp(lolambda, lamda[spec], np.arange(numlambda)))
+        hipx = np.ceil(np.interp(hilambda, lamda[spec], np.arange(numlambda)))
         
-    	M_gravcorrcoefs[spec], pcov = curve_fit(f, lamda[spec], centres, np.array([3000., np.mean(centres)]))
-    	
+    	M_gravcorrcoefs[spec], pcov = curve_fit(f, lamda[spec,lopx:hipx], centroids[:, 0][lopx:hipx], np.array([3000., np.mean(centroids)]))
     	totaldeflection = deflection(lamda[spec], M_gravcorrcoefs[spec][0], 0) / Y_PIXEL_SPACING
-    	
+
     	for wavelength in xrange(np.size(data, axis = 1)):
     	    x_rebin = x_init + totaldeflection[wavelength]
             correcteddata[spec,wavelength], correcteddataSD[spec,wavelength] = rebin.rebin(x_init, data[spec,wavelength], dataSD[spec, wavelength], x_rebin)
     
     return correcteddata, correcteddataSD, M_gravcorrcoefs
 
-def deflection(lamda, travel_distance, trajectory):	#returns the deflection in mm of a ballistic neutron	#lambda in Angstrom, travel_distance (length of correction, e.g. sample - detector) in mm, trajectory in degrees above the horizontal	#The deflection correction  is the distance from where you expect the neutron to hit the detector (detector_distance*tan(trajectory)) to where is actually hits the detector, i.e. the vertical deflection of the neutron due to gravity.	trajRad = trajectory*np.pi/180	pp = travel_distance/1000. * tan(trajRad)
+def deflection(lamda, travel_distance, trajectory):	#returns the deflection in mm of a ballistic neutron	#lambda in Angstrom, travel_distance (length of correction, e.g. sample - detector) in mm, trajectory in degrees above the horizontal	#The deflection correction  is the distance from where you expect the neutron to hit the detector (detector_distance*tan(trajectory)) to where is actually hits the detector, i.e. the vertical deflection of the neutron due to gravity.	trajRad = trajectory*np.pi/180	pp = travel_distance/1000. * np.tan(trajRad)
 	
-	pp -= 9.81* (travel_distance/1000.)**2 * (lamda/1.e10)**2 / (2*cos(trajRad)*cos(trajRad)*(qtrans.kMP)**2)	pp *= 1000	return pp
+	pp -= 9.81* (travel_distance/1000.)**2 * (lamda/1.e10)**2 / (2*np.cos(trajRad)*np.cos(trajRad)*(qtrans.kPlanck_over_MN)**2)	pp *= 1000	return pp
     
 def createdetectornorm(normfilename, xmin, xmax):
     """
@@ -666,9 +671,9 @@ def background_subtract(detector, detectorSD, beam_centre, beam_SD, extent_mult 
     for index in np.ndindex(detector.shape[0:2]):
         yslice = detector[index]
         ySDslice = detectorSD[index]
-        
         ret_array[index], retSD_array[index] = background_subtract_line(yslice, ySDslice, beam_centre, beam_SD, extent_mult, pixel_offset)
-        
+
+                
     return ret_array, retSD_array
     
 def background_subtract_line(detector, detectorSD, beam_centre, beam_SD, extent_mult = 2.2, pixel_offset = 2):
@@ -688,7 +693,8 @@ def background_subtract_line(detector, detectorSD, beam_centre, beam_SD, extent_
     
     #some SD values may have 0 SD, which will screw up curvefitting.
     ySDvals = np.where(ySDvals == 0, 1, ySDvals)
-    
+    assert not np.isnan(ySDvals).any()
+        
     #equation for a straight line
     f = lambda x, a, b: a + b * x
     
@@ -700,7 +706,7 @@ def background_subtract_line(detector, detectorSD, beam_centre, beam_SD, extent_
     
     #get the weighted fit values
     popt, pcov = curve_fit(f, xvals, yvals, sigma = ySDvals, p0 = np.array([ahat, bhat]))
-    
+        
     #SD of params = np.sqrt(chi2) * np.sqrt(pcov)
     #chi2 = lambda ycalc, yobs, sobs: np.sum(((ycalc - yobs)/sobs)**2)
     CI = lambda x, pcovmat: (np.matrix([1., x]) * np.asmatrix(pcovmat) * np.matrix([1., x]).T)[0,0]
@@ -709,10 +715,10 @@ def background_subtract_line(detector, detectorSD, beam_centre, beam_SD, extent_
     bkgdSD = np.empty_like(bkgd)
     
     #if you try to do a fit which has a singular matrix
-    if not np.isfinite(pcov).any():
-        bkgdSD = np.asarray([CI(x, pcov) for x in np.arange(len(detector))], dtype = 'float64')
-    else:
+    if np.isfinite(pcov).any():
         bkgdSD = np.zeros_like(bkgd)
+    else:
+        bkgdSD = np.asarray([CI(x, pcov) for x in np.arange(len(detector))], dtype = 'float64')
         
     bkgdSD = np.sqrt(bkgdSD)
     #get the t value for a two sided student t test at the 68.3 confidence level

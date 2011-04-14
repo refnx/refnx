@@ -22,7 +22,7 @@ def rebin(x_init, y_init, s_init, x_rebin, verbose = False):
     
     W_rebin = np.zeros(len(x_rebin) - 1)
     W_rebinSD = np.zeros(len(x_rebin) - 1)
-    
+
     positions = np.interp(x_rebin, x_init, np.arange(np.size(x_init), dtype = 'float64'), left = 0., right = len(x_init) - 1)
     if verbose:
         print positions, x_rebin, x_init
@@ -46,7 +46,8 @@ def rebin(x_init, y_init, s_init, x_rebin, verbose = False):
     
     W_rebinSD -=  (np.ceil(positions[1:]) - positions[1:]) * var_init[celloc[1:]] * (1 - np.ceil(positions[1:]) + positions[1:])
     W_rebinSD -=  (np.ceil(positions[:-1]) - positions[:-1]) * var_init[celloc[:-1]] * (1 - np.ceil(positions[:-1]) + positions[:-1])
-    
+
+    assert not np.less(W_rebinSD, 0).any()          
     return W_rebin, np.sqrt(W_rebinSD)
 	
 def rebin_test():
@@ -121,13 +122,19 @@ def rebin_Q(qq, rr, dr, dq, lowerQ = 0.005, upperQ = 0.4, rebinpercent = 4):
 def rebin2D(x_init, y_init, z_init, s_init, x_rebin, y_rebin):    
     intermed = np.zeros((np.size(x_init) - 1, np.size(y_rebin) - 1), dtype = 'float64')
     intermedSD = np.zeros((np.size(x_init) - 1, np.size(y_rebin) - 1), dtype = 'float64')
+    assert not np.isnan(s_init).any()
+    assert not np.less(s_init, 0).any()
+    
     for ii in np.arange(len(x_init) - 1):
         intermed[ii,:], intermedSD[ii,:] = rebin(y_init, z_init[ii,:], s_init[ii,:], y_rebin)
-    
+        assert not np.isnan(intermedSD).any()
+        assert not np.less(intermedSD, 0).any()
+
     z_rebin = np.zeros((np.size(x_rebin, 0) - 1, np.size(y_rebin, 0) - 1), dtype = 'float64')
     z_rebinSD = np.zeros(z_rebin.shape, dtype = 'float64')
     
     for ii in np.arange(len(y_rebin) - 1):
         z_rebin[:, ii], z_rebinSD[:, ii] = rebin(x_init, intermed[:, ii], intermedSD[:, ii], x_rebin, verbose=False)
-    
+        assert not np.isnan(z_rebinSD).any()
+
     return z_rebin, z_rebinSD
