@@ -20,15 +20,23 @@ def sanitize_string_input(file_list_string):
     """
     return [int(x) for x in file_list_string.translate(None, string.punctuation).translate(None, string.ascii_letters).split() if 0 < int(x) < 9999999]
     
-def reduce_stitch_files(reflect_list, direct_list, scalefactor = 1., collect = False, rebinpercent = 4., basedir = None, background = True):
+def reduce_stitch_files(reflect_list, direct_list, **kwds):
+    """
+    kwds passed onto processnexusfile
+    """
+    scalefactor = kwds.get('scalefactor', 1.)
+    collect = kwds.get('collect', False)
+    rebinpercent = kwds.get('rebinpercent', 4.)
+            
     cwd = os.getcwd()
     filename = ''
     tempdir = ''
+    
     try:
         #first process all the reflected beam spectra
-        reflected_runs = [pro_nex.processnexusfile(file_number, basedir = basedir, rebinpercent = rebinpercent,                                                       background = background) for file_number in reflect_list if 0 < int(file_number) < 9999999]
+        reflected_runs = [pro_nex.processnexusfile(file_number, kwds) for file_number in reflect_list if 0 < int(file_number) < 9999999]
         #now all the direct beam spectra
-        direct_runs = [pro_nex.processnexusfile(file_number, basedir = basedir, rebinpercent = rebinpercent, background = background, isdirect = True) for file_number in direct_list if 0 < int(file_number) < 9999999]
+        direct_runs = [pro_nex.processnexusfile(file_number, kwds) for file_number in direct_list if 0 < int(file_number) < 9999999]
             
         if collect:
             tempdir = tempfile.mkdtemp()
@@ -118,7 +126,6 @@ def reduce_stitch_files(reflect_list, direct_list, scalefactor = 1., collect = F
 
     return filename
     
-
 def reduce_single_file(reflect_beam, direct_beam, scalefactor = 1):
     #num files to output.
     M_topandtail = reflect_beam['M_topandtail']
