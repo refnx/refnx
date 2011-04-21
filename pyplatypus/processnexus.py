@@ -11,6 +11,7 @@ import rebin
 import string
 from time import gmtime, strftime
 import os
+import argparse
 
 
 #opening of the choppers, in radians
@@ -44,11 +45,12 @@ ROUGH_BEAM_WIDTH = 10
 CHOPPAIRING = 3
     
 def processnexusfile(datafilenumber, **kwds):
-    """ basedir = None,
+    """ 
+    basedir = None,
         lolambda = 2.8, hilambda = 18., background = True, normfilename = None,
         eventstreaming = None, isdirect = False, peak_pos = None,
         typeofintegration = 0, expected_width = 10, omega = 0, two_theta = 0, rebinpercent = 4,
-        bmon1_normalise = True):
+        bmon1_normalise = True
     """  
   
     
@@ -60,14 +62,14 @@ def processnexusfile(datafilenumber, **kwds):
     
     datafilename = 'PLP{0:07d}.nx.hdf'.format(int(abs(datafilenumber)))
     
-    if 'basedir' in kwds:
+    if kwds.get('basedir'):
         for root, dirs, files in os.walk(kwds['basedir']):
             if datafilename in files:
                 datafilename = os.path.join(root, datafilename)
                 break
                
     lolambda = kwds.get('lolambda', 2.8)
-    hilambda = kwds.get('hilambda', 18.)    
+    hilambda = kwds.get('hilambda', 18.)
     background = kwds.get('background', True)
     normfilename = kwds.get('normfilename', None)
     eventstreaming = kwds.get('eventstreaming', None)
@@ -80,10 +82,7 @@ def processnexusfile(datafilenumber, **kwds):
     rebinpercent = kwds.get('rebinpercent', 4.) 
     bmon1_normalise = kwds.get('bmon1_normalise', True) 
 
-    try:
-        h5data = h5.File(datafilename, 'r')
-    except IOerror:
-        return None
+    h5data = h5.File(datafilename, 'r')
         
     scanpoint = 0
     
@@ -742,3 +741,33 @@ def background_subtract_line(detector, detectorSD, beam_centre, beam_SD, extent_
     bkgdSD *= t.isf(0.1585, len(xvals) - 2)
     
     return EP.EPsub(detector, detectorSD, bkgd, bkgdSD)
+    
+    
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='Process some Platypus NeXUS files to produce their TOF spectra.')
+    parser.add_argument('file_list', metavar='N', type=int, nargs='+',
+                   help='integer file numbers')
+    parser.add_argument('--basedir', type=str, help='define the location to find the nexus files')
+    parser.add_argument('--rebin', type=float, help='rebin percentage for the wavelength 0<rebin<10')
+    parser.add_argument('--lolambda', type=float, help='lo wavelength cutoff for the rebinning', default=2.8)
+    parser.add_argument('--hilambda', type=float, help='lo wavelength cutoff for the rebinning', default=18.)
+    args = parser.parse_args()
+    print args
+    
+    for file in args.file_list:
+        print 'processing: %d' % file
+        try:
+            output = processnexusfile(file,
+                                       basedir = args.basedir,
+                                        lolambda = args.lolambda,
+                                         hilambda = args.hilambda,
+                                          rebinpercent = args.rebin)
+            
+            spectrum_XML(output['runnumber'],
+                    output['M_spec'],
+                    output['M_specSD'],
+                    output['M_lambda'],
+                    output['M_lambdaSD'])
+        except IOError:
+            print 'Couldn\'t find file: %d.  Use --basedir option' %file
+        
