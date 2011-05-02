@@ -36,7 +36,7 @@ def reduce_stitch_files(reflect_list, direct_list, **kwds):
         #first process all the reflected beam spectra
         reflected_runs = [pro_nex.processnexusfile(file_number, **kwds) for file_number in reflect_list if 0 < int(file_number) < 9999999]
         #now all the direct beam spectra
-        direct_runs = [pro_nex.processnexusfile(file_number, **kwds) for file_number in direct_list if 0 < int(file_number) < 9999999]
+        direct_runs = [pro_nex.processnexusfile(file_number, **kwds) for file_number in direct_list if 0 < int(file_number) < 9999999] 
             
         if collect:
             tempdir = tempfile.mkdtemp()
