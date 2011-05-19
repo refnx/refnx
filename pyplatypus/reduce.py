@@ -138,9 +138,9 @@ def reduce_single_file(reflect_beam, direct_beam, scalefactor = 1):
     M_twotheta = np.zeros(M_topandtail.shape, dtype = 'float64')
     
     if mode == 'FOC' or mode == 'POL' or mode == 'POLANAL' or mode == 'MT':
-        omega = reflect_beam['M_beampos'] + np.reshape(reflect_beam['detectorZ'], (numspectra, 1))
+        omega = reflect_beam['M_beampos'] + reflect_beam['detectorZ'][:, np.newaxis])
         omega -= direct_beam['M_beampos'] + direct_beam['detectorZ']
-        omega /= np.reshape(reflect_beam['detectorY'], (numspectra, 1))
+        omega /= reflect_beam['detectorY'][:, np.newaxis]
 
         omega = np.arctan(omega) / 2
         #print reflect_beam['M_beampos'], reflect_beam['detectorZ']
@@ -148,29 +148,29 @@ def reduce_single_file(reflect_beam, direct_beam, scalefactor = 1):
         #print direct_beam['M_beampos'], direct_beam['detectorZ']
         #print omega * 180/np.pi
         
-        M_twotheta += np.reshape(reflect_beam['detectorZ'], (numspectra, 1, 1))
-        M_twotheta += np.reshape(np.arange(numypixels * 1.), (1, 1, numypixels)) * pro_nex.Y_PIXEL_SPACING
-        M_twotheta -= np.reshape(direct_beam['M_beampos'], (1, numtpixels, 1)) + direct_beam['detectorZ']        
-        M_twotheta /= np.reshape(reflect_beam['detectorY'], (numspectra, 1, 1))
+        M_twotheta += reflect_beam['detectorZ'][:, np.newaxis, np.newaxis]
+        M_twotheta += np.arange(numypixels * 1.)[np.newaxis, np.newaxis, :] * pro_nex.Y_PIXEL_SPACING
+        M_twotheta -= direct_beam['M_beampos'][np.newaxis, :, np.newaxis] + direct_beam['detectorZ']        
+        M_twotheta /= reflect_beam['detectorY'][:, np.newaxis, np.newaxis]
         M_twotheta = np.arctan(M_twotheta)
 
         if omega[0,0] < 0:
             omega = 0 - omega
             M_twotheta = 0 - M_twotheta
     elif mode == 'SB' or mode == 'DB':
-        omega = reflect_beam['M_beampos'] + np.reshape(reflect_beam['detectorZ'], (numspectra, 1))
+        omega = reflect_beam['M_beampos'] + reflect_beam['detectorZ'][:, np.newaxis]
         omega -= direct_beam['M_beampos'] + direct_beam['detectorZ']
-        omega /= 2 * np.reshape(reflect_beam['detectorY'], (numspectra, 1))
+        omega /= 2 * reflect_beam['detectorY'][:, np.newaxis, np.newaxis]
         omega = np.arctan(omega)   
         
-        M_twotheta += np.reshape(np.arange(numypixels * 1.), (1, 1, numypixels)) * pro_nex.Y_PIXEL_SPACING
-        M_twotheta += np.reshape(reflect_beam['detectorZ'], (numspectra, 1, 1))
-        M_twotheta -= np.reshape(direct_beam['M_beampos'], (1, numtpixels, 1)) + direct_beam['detectorZ']
-        M_twotheta -= np.reshape(reflect_beam['detectorY'], (numspectra, 1, 1)) * np.tan(np.reshape(omega, (numspectra, numtpixels, 1)))
+        M_twotheta += np.arange(numypixels * 1.)[np.newaxis, np.newaxis, :] * pro_nex.Y_PIXEL_SPACING
+        M_twotheta += reflect_beam['detectorZ'][:, np.newaxis, np.newaxis]
+        M_twotheta -= direct_beam['M_beampos'][np.newaxis, :, np.newaxis] + direct_beam['detectorZ']
+        M_twotheta -= reflect_beam['detectorY'][:, np.newaxis, np.newaxis] * np.tan(omega[:, :, np.newaxis])
         
-        M_twotheta /= np.reshape(reflect_beam['detectorY'], (numspectra, 1, 1))
+        M_twotheta /= reflect_beam['detectorY'][:, np.newaxis, np.newaxis]
         M_twotheta = np.arctan(M_twotheta)
-        M_twotheta += np.reshape(omega, (numspectra, numtpixels, 1))
+        M_twotheta += omega[:, :, np.newaxis]
    
 #    workout corrected angle of incidence and input into offspecular calcn
     M_omega = M_twotheta / 2
@@ -185,8 +185,8 @@ def reduce_single_file(reflect_beam, direct_beam, scalefactor = 1):
       
     M_ref, M_refSD = EP.EPdiv(M_topandtail,
                                 reflect_beam['M_topandtailSD'],
-                                 np.reshape(direct_beam['M_spec'], (1, numtpixels, 1)),
-                                  np.reshape(direct_beam['M_specSD'], (1, numtpixels, 1)))
+                                 direct_beam['M_spec'][np.newaxis, :, np.newaxis],
+                                  direct_beam['M_specSD'][np.newaxis, :, np.newaxis])
 
     #you may have had divide by zero's.
     M_ref = np.where(np.isinf(M_ref), 0, M_ref)
@@ -196,10 +196,10 @@ def reduce_single_file(reflect_beam, direct_beam, scalefactor = 1):
     M_qz = np.empty_like(M_twotheta)
     M_qy = np.empty_like(M_twotheta)
     
-    M_qz[:] = 2 * np.pi / reflect_beam['M_lambda'].reshape(numspectra, numtpixels, 1)
-    M_qz *= np.sin(M_twotheta - omega.reshape(numspectra, numtpixels, 1)) + np.sin(M_omega)
-    M_qy[:] = 2 * np.pi / reflect_beam['M_lambda'].reshape(numspectra, numtpixels, 1)
-    M_qy *= np.cos(M_twotheta - omega.reshape(numspectra, numtpixels, 1)) - np.cos(M_omega)
+    M_qz[:] = 2 * np.pi / reflect_beam['M_lambda'][:, :, np.newaxis]
+    M_qz *= np.sin(M_twotheta - omega[:, :, np.newaxis]) + np.sin(M_omega)
+    M_qy[:] = 2 * np.pi / reflect_beam['M_lambda'][:, :, np.newaxis]
+    M_qy *= np.cos(M_twotheta - omega[:, :, np.newaxis]) - np.cos(M_omega)
 
 #    M_qz, M_qy = qtrans.to_qzqy(np.reshape(omega, (numspectra, numtpixels, 1)),
 #                                 M_twotheta,
@@ -208,7 +208,7 @@ def reduce_single_file(reflect_beam, direct_beam, scalefactor = 1):
     #now calculate the full uncertainty in Q for each Q pixel
     M_qzSD = np.zeros_like(M_qz)
     M_qzSD += np.reshape((reflect_beam['M_lambdaSD'] / reflect_beam['M_lambda'])**2, (numspectra, numtpixels, 1))
-    M_qzSD += (np.reshape(reflect_beam['domega'], (numspectra, 1, 1)) / M_omega)**2
+    M_qzSD += (reflect_beam['domega'][:, np.newaxis, np.newaxis]) / M_omega)**2
     M_qzSD = np.sqrt(M_qzSD)
     M_qzSD *= M_qz
     
@@ -218,7 +218,7 @@ def reduce_single_file(reflect_beam, direct_beam, scalefactor = 1):
     #now calculate the 1D output
     W_q = qtrans.to_q(omega, reflect_beam['M_lambda'])
     W_qSD = (reflect_beam['M_lambdaSD'] / reflect_beam['M_lambda'])**2
-    W_qSD += (np.reshape(reflect_beam['domega'], (numspectra, 1)) / omega) ** 2
+    W_qSD += (reflect_beam['domega'][:, np.newaxis]) / omega) ** 2
     W_qSD = np.sqrt(W_qSD) * W_q
     
     lopx, hipx = reflect_beam['lopx'], reflect_beam['hipx']
