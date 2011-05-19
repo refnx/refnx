@@ -274,7 +274,7 @@ def processnexusfile(datafilenumber, **kwds):
         
     #convert TOF to lambda
     #M_specTOFHIST (n, t) and chod is (n,)
-    M_lambdaHIST = qtrans.tof_to_lambda(M_specTOFHIST, chod.reshape(numspectra, 1))
+    M_lambdaHIST = qtrans.tof_to_lambda(M_specTOFHIST, chod[:, np.newaxis])
     M_lambda = 0.5 * (M_lambdaHIST[:,1:] + M_lambdaHIST[:,:-1])
     TOF -= toffset
     
@@ -302,7 +302,7 @@ def processnexusfile(datafilenumber, **kwds):
         rebinneddataSD = np.zeros((numspectra, np.size(rebinning, 0) - 1, np.size(detector, 2)), dtype = 'float64')
         
         for index in xrange(np.size(detector, 0)):
-            #print "rebinning plane", index
+            print "rebinning plane", index
         #rebin that plane.
             plane, planeSD = rebin.rebin2D(M_lambdaHIST[index], np.arange(np.size(detector, 2) + 1.),
                 detector[index], detectorSD[index], rebinning, np.arange(np.size(detector, 2) + 1.))
@@ -316,9 +316,9 @@ def processnexusfile(datafilenumber, **kwds):
     
         M_lambdaHIST = np.resize(rebinning, (numspectra, np.size(rebinning, 0)))
    
-    M_specTOFHIST = qtrans.lambda_to_tof(M_lambdaHIST, chod.reshape(numspectra, 1))
+    M_specTOFHIST = qtrans.lambda_to_tof(M_lambdaHIST, chod[:, np.newaxis])
     M_lambda = 0.5 * (M_lambdaHIST[:,1:] + M_lambdaHIST[:,:-1])
-    M_spectof = qtrans.lambda_to_tof(M_lambda, chod.reshape(numspectra, 1))
+    M_spectof = qtrans.lambda_to_tof(M_lambda, chod[:, np.newaxis])
     
     #Now work out where the beam hits the detector    #this is used to work out the correct angle of incidence.	#it will be contained in a wave called M_beampos	#M_beampos varies as a fn of wavelength due to gravity
 	
@@ -333,8 +333,8 @@ def processnexusfile(datafilenumber, **kwds):
         # an initial vertical velocity of 0. Although the motion past the sample stage will be parabolic,
         # assume that the neutrons travel in a straight line after that (i.e. the tangent of the parabolic
         # motion at the sample stage). This should give an idea of the direction of the true incident beam,
-        # as experienced by the sample.        #Factor of 2 is out the front to give an estimation of the increase in 2theta of the reflected beam.        M_beampos[:] = M_gravcorrcoefs[:,1].reshape(numspectra, 1)
-        M_beampos[:] -= 2. * (1000. / Y_PIXEL_SPACING * 9.81 * ((M_gravcorrcoefs[:, 0].reshape(numspectra, 1) - detpositions.reshape(numspectra, 1))/1000.) * (detpositions.reshape(numspectra, 1)/1000.) * M_lambda**2/((qtrans.kPlanck_over_MN * 1.e10)**2))        M_beampos *=  Y_PIXEL_SPACING
+        # as experienced by the sample.        #Factor of 2 is out the front to give an estimation of the increase in 2theta of the reflected beam.        M_beampos[:] = M_gravcorrcoefs[:,1][:, np.newaxis]
+        M_beampos[:] -= 2. * (1000. / Y_PIXEL_SPACING * 9.81 * ((M_gravcorrcoefs[:, 0][:, np.newaxis] - detpositions[:, np.newaxis])/1000.) * (detpositions[:, np.newaxis]/1000.) * M_lambda**2/((qtrans.kPlanck_over_MN * 1.e10)**2))        M_beampos *=  Y_PIXEL_SPACING
     else:
         M_beampos = np.zeros_like(M_lambda)
         M_beampos[:] = beam_centre * Y_PIXEL_SPACING
@@ -359,13 +359,13 @@ def processnexusfile(datafilenumber, **kwds):
     if bmon1_normalise:
         bmon1_countsSD = np.sqrt(bmon1_counts)
         #have to make to the same shape as M_spec
-        bmon1_counts =  bmon1_counts.reshape(numspectra, 1)
-        bmon1_countsSD = bmon1_countsSD.reshape(numspectra, 1)
-        M_spec, M_specSD = EP.EPdiv(M_spec, M_specSD, bmon1_counts, bmon1_countsSD)
+        M_spec, M_specSD = EP.EPdiv(M_spec, M_specSD, bmon1_counts[:,np.newaxis], bmon1_countsSD[:,np.newaxis])
         #have to make to the same shape as detector
-        #bmon1_counts =  np.reshape(bmon1_counts, (numspectra, 1, 1))
-        bmon1_countsSD =  bmon1_countsSD.reshape(numspectra, 1, 1)
-        detector, detectorSD = EP.EPdiv(detector, detectorSD, bmon1_counts, bmon1_countsSD)
+        print detector.shape, detectorSD.shape, bmon1_counts[:,np.newaxis, np.newaxis].shape
+        detector, detectorSD = EP.EPdiv(detector,
+                                         detectorSD,
+                                          bmon1_counts[:,np.newaxis, np.newaxis],
+                                           bmon1_countsSD[:,np.newaxis, np.newaxis])
         
     #now work out dlambda/lambda, the resolution contribution from wavelength.
     #vanWell, Physica B,  357(2005) pp204-207), eqn 4.
