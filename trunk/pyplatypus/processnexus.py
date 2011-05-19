@@ -162,8 +162,9 @@ def processnexusfile(datafilenumber, **kwds):
     #process each of the spectra taken in the detector image
     originalscanpoint = scanpoint
     for index in xrange(numspectra):
-        omega = h5data['entry1/instrument/parameters/omega'][scanpoint]
-        two_theta = h5data['entry1/instrument/parameters/twotheta'][scanpoint]
+        #print index
+        omega = h5data['entry1/instrument/parameters/omega'][0]#[scanpoint]
+        two_theta = h5data['entry1/instrument/parameters/twotheta'][0]#[scanpoint]
         frequency = h5data['entry1/instrument/disk_chopper/ch1speed']
         ch2speed = h5data['entry1/instrument/disk_chopper/ch2speed']
         ch3speed = h5data['entry1/instrument/disk_chopper/ch3speed']
@@ -301,6 +302,7 @@ def processnexusfile(datafilenumber, **kwds):
         rebinneddataSD = np.zeros((numspectra, np.size(rebinning, 0) - 1, np.size(detector, 2)), dtype = 'float64')
         
         for index in xrange(np.size(detector, 0)):
+            #print "rebinning plane", index
         #rebin that plane.
             plane, planeSD = rebin.rebin2D(M_lambdaHIST[index], np.arange(np.size(detector, 2) + 1.),
                 detector[index], detectorSD[index], rebinning, np.arange(np.size(detector, 2) + 1.))
@@ -319,7 +321,7 @@ def processnexusfile(datafilenumber, **kwds):
     M_spectof = qtrans.lambda_to_tof(M_lambda, chod.reshape(numspectra, 1))
     
     #Now work out where the beam hits the detector    #this is used to work out the correct angle of incidence.	#it will be contained in a wave called M_beampos	#M_beampos varies as a fn of wavelength due to gravity
-		
+	
     #TODO work out beam centres for all pixels
     #this has to be done agian because gravity correction is done above.
     if isdirect:
@@ -520,7 +522,7 @@ def chodcalculator(h5data, omega, two_theta, pairing = 10, scanpoint = 0):
     guide2_distance = h5data['entry1/instrument/parameters/guide2_distance']
     sample_distance = h5data['entry1/instrument/parameters/sample_distance']
     detectorpos = h5data['entry1/instrument/detector/longitudinal_translation']
-    mode = h5data['entry1/instrument/parameters/mode'][scanpoint]
+    mode = h5data['entry1/instrument/parameters/mode'][0]#[scanpoint]
 	
 	#assumes that disk closest to the reactor (out of a given pair) is always master
     for ii in xrange(1,5):
@@ -536,17 +538,17 @@ def chodcalculator(h5data, omega, two_theta, pairing = 10, scanpoint = 0):
     if master == 1:
         chod = 0
     elif master == 2:
-        chod -= chopper2_distance[scanpoint]
+        chod -= chopper2_distance[0]
     elif master == 3:
-        chod -= chopper3_distance[scanpoint]
+        chod -= chopper3_distance[0]
 	
 		
     if slave == 2:
-        chod -= chopper2_distance[scanpoint]
+        chod -= chopper2_distance[0]
     elif slave == 3:
-        chod -= chopper3_distance[scanpoint]
+        chod -= chopper3_distance[0]
     elif slave == 4:
-        chod -= chopper4_distance[scanpoint]
+        chod -= chopper4_distance[0]
 	
 			
     #T0 is midway between master and slave, but master may not necessarily be disk 1.
@@ -554,13 +556,13 @@ def chodcalculator(h5data, omega, two_theta, pairing = 10, scanpoint = 0):
     chod /= 2
     
     if mode == "FOC" or mode == "POL" or mode == "MT" or mode == "POLANAL":
-        chod += sample_distance[scanpoint]
+        chod += sample_distance[0]
         chod += detectorpos[scanpoint] / np.cos(np.pi * two_theta / 180)
     
     elif mode == "SB":   		
         #assumes guide1_distance is in the MIDDLE OF THE MIRROR
-        chod += guide1_distance[scanpoint]
-        chod += (sample_distance[scanpoint] - guide1_distance[scanpoint]) / np.cos(np.pi * omega / 180)
+        chod += guide1_distance[0]
+        chod += (sample_distance[0] - guide1_distance[0]) / np.cos(np.pi * omega / 180)
         if two_theta > omega:
             chod += detectorpos[scanpoint]/np.cos( np.pi* (two_theta - omega) / 180)
         else:
@@ -569,10 +571,10 @@ def chodcalculator(h5data, omega, two_theta, pairing = 10, scanpoint = 0):
     elif mode == "DB":
         #guide2_distance in in the middle of the 2nd compound mirror
         # guide2_distance - longitudinal length from midpoint1->midpoint2 + direct length from midpoint1->midpoint2
-        chod += guide2_distance[scanpoint] + 600. * np.cos (1.2 * np.pi/180) * (1 - np.cos(2.4 * np.pi/180)) 
+        chod += guide2_distance[0] + 600. * np.cos (1.2 * np.pi/180) * (1 - np.cos(2.4 * np.pi/180)) 
     
         #add on distance from midpoint2 to sample
-        chod +=  (sample_distance[scanpoint] - guide2_distance[scanpoint]) / np.cos(4.8 * np.pi/180)
+        chod +=  (sample_distance[0] - guide2_distance[0]) / np.cos(4.8 * np.pi/180)
         
         #add on sample -> detector			
         if two_theta > omega:			
