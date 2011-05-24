@@ -138,7 +138,7 @@ def reduce_single_file(reflect_beam, direct_beam, scalefactor = 1):
     M_twotheta = np.zeros(M_topandtail.shape, dtype = 'float64')
     
     if mode == 'FOC' or mode == 'POL' or mode == 'POLANAL' or mode == 'MT':
-        omega = reflect_beam['M_beampos'] + reflect_beam['detectorZ'][:, np.newaxis])
+        omega = reflect_beam['M_beampos'] + reflect_beam['detectorZ'][:, np.newaxis]
         omega -= direct_beam['M_beampos'] + direct_beam['detectorZ']
         omega /= reflect_beam['detectorY'][:, np.newaxis]
 
@@ -208,7 +208,7 @@ def reduce_single_file(reflect_beam, direct_beam, scalefactor = 1):
     #now calculate the full uncertainty in Q for each Q pixel
     M_qzSD = np.zeros_like(M_qz)
     M_qzSD += np.reshape((reflect_beam['M_lambdaSD'] / reflect_beam['M_lambda'])**2, (numspectra, numtpixels, 1))
-    M_qzSD += (reflect_beam['domega'][:, np.newaxis, np.newaxis]) / M_omega)**2
+    M_qzSD += (reflect_beam['domega'][:, np.newaxis, np.newaxis] / M_omega)**2
     M_qzSD = np.sqrt(M_qzSD)
     M_qzSD *= M_qz
     
@@ -218,7 +218,7 @@ def reduce_single_file(reflect_beam, direct_beam, scalefactor = 1):
     #now calculate the 1D output
     W_q = qtrans.to_q(omega, reflect_beam['M_lambda'])
     W_qSD = (reflect_beam['M_lambdaSD'] / reflect_beam['M_lambda'])**2
-    W_qSD += (reflect_beam['domega'][:, np.newaxis]) / omega) ** 2
+    W_qSD += (reflect_beam['domega'][:, np.newaxis] / omega) ** 2
     W_qSD = np.sqrt(W_qSD) * W_q
     
     lopx, hipx = reflect_beam['lopx'], reflect_beam['hipx']
