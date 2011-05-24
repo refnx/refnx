@@ -144,7 +144,7 @@ def processnexusfile(datafilenumber, **kwds):
     else:
         beam_centre, beam_SD = findspecularridge(detector)
         if verbose:
-            print "BEAM_CENTRE", datafilenumber, beam_centre
+            print datafilenumber, ": BEAM_CENTRE", datafilenumber, beam_centre
     
     #shape of these is (numspectra, TOFbins)
     M_specTOFHIST = np.zeros((numspectra, len(TOF)), dtype = 'float64')
@@ -165,7 +165,7 @@ def processnexusfile(datafilenumber, **kwds):
     originalscanpoint = scanpoint
     for index in xrange(numspectra):
         if verbose:
-            print 'processing image for tof params: ', index
+            print datafilenumber, ': processing image for tof params: ', index
         omega = h5data['entry1/instrument/parameters/omega'][0]#[scanpoint]
         two_theta = h5data['entry1/instrument/parameters/twotheta'][0]#[scanpoint]
         frequency = h5data['entry1/instrument/disk_chopper/ch1speed']
@@ -306,7 +306,7 @@ def processnexusfile(datafilenumber, **kwds):
         
         for index in xrange(np.size(detector, 0)):
             if verbose:
-                print "rebinning plane: ", index
+                print datafilenumber, ": rebinning plane: ", index
         #rebin that plane.
             plane, planeSD = rebin.rebin2D(M_lambdaHIST[index], np.arange(np.size(detector, 2) + 1.),
                 detector[index], detectorSD[index], rebinning, np.arange(np.size(detector, 2) + 1.))
@@ -346,6 +346,8 @@ def processnexusfile(datafilenumber, **kwds):
     #background subtraction
     extent_mult = 2.4
     if background:
+        if verbose:
+            print datafilenumber, ': doing background subtraction'
         detector, detectorSD = background_subtract(detector, detectorSD, beam_centre, beam_SD, extent_mult, 2)
     
     #top and tail the specular beam with the known beam centres.
