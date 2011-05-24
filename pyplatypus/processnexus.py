@@ -50,7 +50,7 @@ def processnexusfile(datafilenumber, **kwds):
         lolambda = 2.8, hilambda = 18., background = True, normfilename = None,
         eventstreaming = None, isdirect = False, peak_pos = None,
         typeofintegration = 0, expected_width = 10, omega = 0, two_theta = 0, rebinpercent = 4,
-        bmon1_normalise = True
+        bmon1_normalise = True, verbose = False
     """  
   
     
@@ -81,6 +81,7 @@ def processnexusfile(datafilenumber, **kwds):
     two_theta = kwds.get('two_theta', 0.) 
     rebinpercent = kwds.get('rebinpercent', 4.) 
     bmon1_normalise = kwds.get('bmon1_normalise', True) 
+    verbose = kwds.get('verbose', False) 
 
     h5data = h5.File(datafilename, 'r')
         
@@ -142,7 +143,8 @@ def processnexusfile(datafilenumber, **kwds):
         beam_centre, beam_SD = peak_pos
     else:
         beam_centre, beam_SD = findspecularridge(detector)
-        #print "BEAM_CENTRE", datafilenumber, beam_centre
+        if verbose:
+            print "BEAM_CENTRE", datafilenumber, beam_centre
     
     #shape of these is (numspectra, TOFbins)
     M_specTOFHIST = np.zeros((numspectra, len(TOF)), dtype = 'float64')
@@ -162,7 +164,8 @@ def processnexusfile(datafilenumber, **kwds):
     #process each of the spectra taken in the detector image
     originalscanpoint = scanpoint
     for index in xrange(numspectra):
-        #print index
+        if verbose:
+            print 'processing image for tof params: ', index
         omega = h5data['entry1/instrument/parameters/omega'][0]#[scanpoint]
         two_theta = h5data['entry1/instrument/parameters/twotheta'][0]#[scanpoint]
         frequency = h5data['entry1/instrument/disk_chopper/ch1speed']
@@ -302,7 +305,8 @@ def processnexusfile(datafilenumber, **kwds):
         rebinneddataSD = np.zeros((numspectra, np.size(rebinning, 0) - 1, np.size(detector, 2)), dtype = 'float64')
         
         for index in xrange(np.size(detector, 0)):
-            print "rebinning plane", index
+            if verbose:
+                print "rebinning plane: ", index
         #rebin that plane.
             plane, planeSD = rebin.rebin2D(M_lambdaHIST[index], np.arange(np.size(detector, 2) + 1.),
                 detector[index], detectorSD[index], rebinning, np.arange(np.size(detector, 2) + 1.))
@@ -361,7 +365,7 @@ def processnexusfile(datafilenumber, **kwds):
         #have to make to the same shape as M_spec
         M_spec, M_specSD = EP.EPdiv(M_spec, M_specSD, bmon1_counts[:,np.newaxis], bmon1_countsSD[:,np.newaxis])
         #have to make to the same shape as detector
-        print detector.shape, detectorSD.shape, bmon1_counts[:,np.newaxis, np.newaxis].shape
+        #print detector.shape, detectorSD.shape, bmon1_counts[:,np.newaxis, np.newaxis].shape
         detector, detectorSD = EP.EPdiv(detector,
                                          detectorSD,
                                           bmon1_counts[:,np.newaxis, np.newaxis],
@@ -750,9 +754,10 @@ if __name__ == "__main__":
     parser.add_argument('file_list', metavar='N', type=int, nargs='+',
                    help='integer file numbers')
     parser.add_argument('--basedir', type=str, help='define the location to find the nexus files')
-    parser.add_argument('--rebin', type=float, help='rebin percentage for the wavelength 0<rebin<10')
+    parser.add_argument('--rebin', type=float, help='rebin percentage for the wavelength -1<rebin<10')
     parser.add_argument('--lolambda', type=float, help='lo wavelength cutoff for the rebinning', default=2.8)
     parser.add_argument('--hilambda', type=float, help='lo wavelength cutoff for the rebinning', default=18.)
+    parser.add_argument('--typeofintegration', type=float, help='0 to integrate all spectra, 1 to output individual spectra', default=0)
     args = parser.parse_args()
     print args
     
@@ -763,7 +768,8 @@ if __name__ == "__main__":
                                        basedir = args.basedir,
                                         lolambda = args.lolambda,
                                          hilambda = args.hilambda,
-                                          rebinpercent = args.rebin)
+                                          rebinpercent = args.rebin,
+                                            typeofintegration = args.typeofintegration)
             
             spectrum_XML(output['runnumber'],
                     output['M_spec'],
