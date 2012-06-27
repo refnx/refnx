@@ -31,6 +31,9 @@ def getScalingInOverlap(qq1,rr1, dr1, qq2, rr2, dr2):
     
     W_scalefactor = newi / rr2[:num2]
     W_dscalefactor = W_scalefactor * np.sqrt((newdi / newi)**2 + (dr2[:num2] / rr2[:num2])**2)
+    W_dscalefactor =  np.sqrt((newdi / rr2[:num2])**2 + ((newi * dr2[:num2])**2) / rr2[:num2]**4)
+
+
     W_dscalefactor = 1 / (W_dscalefactor**2)
     
     num = np.sum(W_scalefactor * W_dscalefactor)
