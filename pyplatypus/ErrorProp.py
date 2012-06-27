@@ -13,13 +13,13 @@ def EPsub(a, da, b, db, covar = 0):
 	"""
 	C = A - B
 	"""
-	return a - b, np.sqrt(da**2 + db**2 + 2 * covar)
+	return a - b, np.sqrt(da**2 + db**2 - 2 * covar)
 	
 def EPmul(a, da, b, db, covar = 0):
 	"""
 	C = A * B
 	"""
-	return a * b, np.fabs((a * b) * np.sqrt((da / a)**2 + (db / b)**2 + 2 * da * db / (a * b) * covar))
+	return a * b, np.sqrt((b * da)**2 + (a * db)**2 + 2 * a * b * covar)
 	
 def EPmulk(a, da, k):
 	"""
@@ -31,13 +31,13 @@ def EPdiv(a, da, b, db, covar = 0):
 	"""
 	C = A / B
 	"""
-	return a / b, np.fabs((a / b) * np.sqrt((da / a)**2 + (db / b)**2 - 2 * da * db / (a * b) * covar))
+	return a / b, np.sqrt(((da / b)**2 + (a**2 / (b**4)) * db**2) - (2 * covar * a / (b**3)))
 
 def EPpow(a, da, k, n = 1):
 	"""
 	C = n * (A**k)
 	"""
-	return n * np.power(a, k), np.fabs(n * np.power(a, k) * j * da / a)
+	return n * np.power(a, k), np.fabs(n * k * da * np.power(a, k - 1))
 	
 def EPpowk(a, da, k, n = 1):
 	"""
@@ -49,7 +49,7 @@ def EPlog(a, da, k = 1, n = 1):
 	"""
 	C = n * log(k * A )
 	"""
-	return n * np.log(k * a), np.fabs(n * da /a)
+	return n * np.log(k * a), np.fabs(n * da / a)
 
 def EPlog10(a, da, k = 1, n = 1):
 	"""
