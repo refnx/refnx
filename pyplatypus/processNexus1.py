@@ -50,6 +50,7 @@ class processNexus1(object):
 		self.isprocessed = 0
 		self.h5norm = None
 		self.basedir = os.getcwd()
+		self.detector = None
 		
 		normfilenumber = kwds.get('normfilenumber', None)
 
@@ -100,12 +101,14 @@ class processNexus1(object):
 		self.verbose = kwds.get('verbose', False) 
 	
 		self.__nexusOpen()
+
+		self.frequency = self.h5data['entry1/instrument/disk_chopper/ch1speed'][0]
 		
 		scanpoint = 0
 		
 		#beam monitor counts for normalising data
-		bmon1_counts = np.zeros(dtype = 'float64', shape = self.h5data['entry1/monitor/bm1_counts'].shape)
-		bmon1_counts = self.h5data['entry1/monitor/bm1_counts'][:]
+		self.bmon1_counts = np.zeros(dtype = 'float64', shape = self.h5data['entry1/monitor/bm1_counts'].shape)
+		self.bmon1_counts = self.h5data['entry1/monitor/bm1_counts'][:]
 		
 		#set up the RAW TOF bins (n, t + 1)
 		TOF = np.zeros(dtype = 'float64', shape = self.h5data['entry1/data/time_of_flight'].shape)
@@ -114,32 +117,29 @@ class processNexus1(object):
 		#event streaming.
 		if self.eventstreaming:
 			scanpoint = eventstreaming['scanpoint']
-			detector = self.processEventStream(framebins = eventstreaming['framebins'])
+			self.detector = self.processEventStream(scanpoint = scanpoint, frame_bins = eventstreaming['frame_bins'])
 			   
-			self.numspectra = len(detector)
-			bmon1 = bmon1_counts[scanpoint]
-			bmon1_counts = np.resize(bmon1_counts, numspectra)
-			bmon1_counts[:] = bmon1 / numspectra
+			self.numspectra = len(self.detector)
 		else:
 			#detector(n, t, y, x)    
-			detector = np.zeros(dtype='int32', shape = self.h5data['entry1/data/hmm'].shape)
-			detector = self.h5data['entry1/data/hmm'][:]
+			self.detector = np.zeros(dtype='int32', shape = self.h5data['entry1/data/hmm'].shape)
+			self.detector = self.h5data['entry1/data/hmm'][:]
 			
 			#you average over the individual measurements in the file
 			if self.typeofintegration == 0:
 				self.numspectra = 1
-				detector = np.sum(detector, axis = 0)
-				detector = np.resize(detector, (1, np.size(detector, 0), np.size(detector, 1), np.size(detector, 2)))
+				self.detector = np.sum(self.detector, axis = 0)
+				self.detector = np.resize(self.detector, (1, np.size(self.detector, 0), np.size(self.detector, 1), np.size(self.detector, 2)))
 				bmon1_counts = np.array([np.sum(bmon1_counts)], dtype = 'float64')
 			else:
-				self.numspectra = len(detector)
+				self.numspectra = len(self.detector)
 
 		#pre-average over x, leaving (n, t, y)
-		detector = np.sum(detector, axis = 3, dtype = 'float64')
+		self.detector = np.sum(self.detector, axis = 3, dtype = 'float64')
 
 		#detector shape should now be (n, t, y)
 		#create the SD of the array
-		detectorSD = np.sqrt(detector + 1)
+		detectorSD = np.sqrt(self.detector + 1)
 		
 		#detector normalisation with a water file
 		if self.h5norm:
@@ -147,13 +147,13 @@ class processNexus1(object):
 			#shape (y,)
 			M_detectornorm, M_detectornormSD = self.__createdetectornorm(xbins[0], xbins[1])
 			#detector has shape (n,t,y), shape of M_waternorm should broadcast to (1,1,y)
-			detector, detectorSD = EP.EPdiv(detector, detectorSD, M_detectornorm, M_detectornormSD)
+			self.detector, detectorSD = EP.EPdiv(self.detector, detectorSD, M_detectornorm, M_detectornormSD)
 			
 		#get the specular ridge on the averaged detector image
 		if self.peak_pos:
 			beam_centre, beam_SD = peak_pos
 		else:
-			beam_centre, beam_SD = self.__findspecularridge(detector)
+			beam_centre, beam_SD = self.__findspecularridge()
 			if self.verbose:
 				print datafilenumber, ": BEAM_CENTRE", datafilenumber, beam_centre
 		
@@ -297,8 +297,8 @@ class processNexus1(object):
 		
 		#TODO gravity correction if direct beam
 		if self.isdirect:
-			detector, detectorSD, M_gravcorrcoefs = __correct_for_gravity(detector, detectorSD, M_lambda, 0, 2.8, 18)
-			beam_centre, beam_SD = self.__findspecularridge(detector)
+			self.detector, detectorSD, M_gravcorrcoefs = __correct_for_gravity(self.detector, detectorSD, M_lambda, 0, 2.8, 18)
+			beam_centre, beam_SD = self.__findspecularridge()
 			
 		#rebinning in lambda for all detector
 		#rebinning is the default option, but sometimes you don't want to.
@@ -322,22 +322,22 @@ class processNexus1(object):
 			todel = int(np.interp(self.hilambda, rebinning, np.arange(len(rebinning))))
 			rebinning = rebinning[0: todel + 2]
 			
-		rebinneddata = np.zeros((self.numspectra, np.size(rebinning, 0) - 1, np.size(detector, 2)), dtype = 'float64')
-		rebinneddataSD = np.zeros((self.numspectra, np.size(rebinning, 0) - 1, np.size(detector, 2)), dtype = 'float64')			
+		rebinneddata = np.zeros((self.numspectra, np.size(rebinning, 0) - 1, np.size(self.detector, 2)), dtype = 'float64')
+		rebinneddataSD = np.zeros((self.numspectra, np.size(rebinning, 0) - 1, np.size(self.detector, 2)), dtype = 'float64')			
 
 		#now do the rebinning
-		for index in xrange(np.size(detector, 0)):
+		for index in xrange(np.size(self.detector, 0)):
 			if self.verbose:
 				print datafilenumber, ": rebinning plane: ", index
 			#rebin that plane.
-			plane, planeSD = rebin.rebin2D(M_lambdaHIST[index], np.arange(np.size(detector, 2) + 1.),
-			detector[index], detectorSD[index], rebinning, np.arange(np.size(detector, 2) + 1.))
+			plane, planeSD = rebin.rebin2D(M_lambdaHIST[index], np.arange(np.size(self.detector, 2) + 1.),
+			self.detector[index], detectorSD[index], rebinning, np.arange(np.size(self.detector, 2) + 1.))
 			assert not np.isnan(planeSD).any()
 
 			rebinneddata[index, ] = plane
 			rebinneddataSD[index, ] = planeSD
 
-			detector = rebinneddata
+			self.detector = rebinneddata
 			detectorSD = rebinneddataSD
 
 			M_lambdaHIST = np.resize(rebinning, (self.numspectra, np.size(rebinning, 0)))
@@ -345,7 +345,7 @@ class processNexus1(object):
 
 		#divide the detector intensities by the width of the wavelength bin.
 		binwidths = M_lambdaHIST[0, 1:] - M_lambdaHIST[0,:-1]
-		detector /= binwidths[:,np.newaxis]
+		self.detector /= binwidths[:,np.newaxis]
 		detectorSD /= binwidths[:,np.newaxis]
 		
 		M_specTOFHIST = qtrans.lambda_to_tof(M_lambdaHIST, chod[:, np.newaxis])
@@ -384,7 +384,7 @@ class processNexus1(object):
 		if self.background:
 			if self.verbose:
 				print datafilenumber, ': doing background subtraction'
-			detector, detectorSD = self.__background_subtract(detector, detectorSD, beam_centre, beam_SD, extent_mult, 1)
+			self.detector, detectorSD = self.__background_subtract(detectorSD, beam_centre, beam_SD, extent_mult, 1)
 		
 		#top and tail the specular beam with the known beam centres.
 		#all this does is produce a specular intensity with shape (n, t), i.e. integrate over specular beam
@@ -392,7 +392,7 @@ class processNexus1(object):
 		print beam_centre, beam_SD
 		hipx = np.ceil(beam_centre + beam_SD  * extent_mult)
 
-		M_spec = np.sum(detector[:, :, lopx:hipx + 1], axis = 2)
+		M_spec = np.sum(self.detector[:, :, lopx:hipx + 1], axis = 2)
 		M_specSD = np.sum(np.power(detectorSD[:, :, lopx:hipx + 1], 2), axis = 2)
 		M_specSD = np.sqrt(M_specSD)
 		
@@ -400,14 +400,14 @@ class processNexus1(object):
 		#normalise by beam monitor 1.
 		#
 		if self.bmon1_normalise:
-			bmon1_countsSD = np.sqrt(bmon1_counts)
+			bmon1_countsSD = np.sqrt(self.bmon1_counts)
 			#have to make to the same shape as M_spec			
-			M_spec, M_specSD = EP.EPdiv(M_spec, M_specSD, bmon1_counts[:,np.newaxis], bmon1_countsSD[:,np.newaxis])
+			M_spec, M_specSD = EP.EPdiv(M_spec, M_specSD, self.bmon1_counts[:,np.newaxis], bmon1_countsSD[:,np.newaxis])
 			#have to make to the same shape as detector
 			#print detector.shape, detectorSD.shape, bmon1_counts[:,np.newaxis, np.newaxis].shape
-			detector, detectorSD = EP.EPdiv(detector,
+			self.detector, detectorSD = EP.EPdiv(self.detector,
 											 detectorSD,
-											  bmon1_counts[:,np.newaxis, np.newaxis],
+											  self.bmon1_counts[:,np.newaxis, np.newaxis],
 											   bmon1_countsSD[:,np.newaxis, np.newaxis])
 			
 		#now work out dlambda/lambda, the resolution contribution from wavelength.
@@ -441,7 +441,7 @@ class processNexus1(object):
 		mode = np.resize(mode, self.numspectra)
 				
 		#create a massive dictionary with the list of stuff that you've produced.
-		self.M_topandtail = detector
+		self.M_topandtail = self.detector
 		self.M_topandtailSD = detectorSD
 		self.M_spec = M_spec
 		self.M_specSD = M_specSD
@@ -509,7 +509,7 @@ class processNexus1(object):
 		return True
 		
 
-	def processEventStream(self, tbins = None, xbins = None, ybins = None, framebins = None, scanpoint = None):
+	def processEventStream(self, tbins = None, xbins = None, ybins = None, frame_bins = None, scanpoint = 0):
 		self.__nexusOpen()
 		if not tbins:
 			tbins = self.h5data['entry1/data/time_of_flight']
@@ -517,9 +517,10 @@ class processNexus1(object):
 			xbins = self.h5data['entry1/data/x_bin']
 		if not ybins:
 			ybins = self.h5data['entry1/data/y_bin']
-		if not scanpoint:
-			scanpoint = 0
+		if not frame_bins:
+			frame_bins = [0, self.h5data['entry1/instrument/detector/time'][scanpoint]]
 			
+		bm1counts_for_scanpoint = self.bmon1_counts
 		try:
 			eventDirectoryName = self.h5data['entry1/instrument/detector/daq_dirname'][0]
 		except KeyError:	#daq_dirname doesn't exist in this file
@@ -539,10 +540,11 @@ class processNexus1(object):
 		streamfilename = os.path.join(c[0][0], 'DATASET_'+str(scanpoint), 'EOS.bin')
 		print streamfilename
 		f = open(streamfilename, 'r')
-		frame_bins = [0, 1e6]
 		self.__nunpack_intodet(f, tbins, ybins, xbins, frame_bins)
 		
 		f.close()
+		
+		self.__nexusClose()
 		return streamfilename
 		
 				
@@ -739,14 +741,14 @@ class processNexus1(object):
 		return chod
 
 
-	def __findspecularridge(self, nty_wave, tolerance = 0.01):
+	def __findspecularridge(self, tolerance = 0.01):
 		"""
 		find the specular ridge in a detector(n, t, y) plot.
 		"""
 		
 		searchincrement = 50
 		#sum over all n planes, left with ty
-		det_ty = np.sum(nty_wave, axis = 0)
+		det_ty = np.sum(self.detector, axis = 0)
 		
 		#find a good place to start the peak search from
 		totaly = np.sum(det_ty, axis = 0)
@@ -844,16 +846,16 @@ class processNexus1(object):
 		return norm, normSD
 
 
-	def __background_subtract(self, detector, detectorSD, beam_centre, beam_SD, extent_mult = 2., pixel_offset = 1.):
+	def __background_subtract(self, detectorSD, beam_centre, beam_SD, extent_mult = 2., pixel_offset = 1.):
 		"""
 		shape of detector is (n, t, y)
 		does a linear background subn for each (n, t) slice
 		"""
-		ret_array = np.zeros(detector.shape, dtype = 'float64')
-		retSD_array = np.zeros(detector.shape, dtype = 'float64')
+		ret_array = np.zeros(self.detector.shape, dtype = 'float64')
+		retSD_array = np.zeros(self.detector.shape, dtype = 'float64')
 		
-		for index in np.ndindex(detector.shape[0:2]):
-			yslice = detector[index]
+		for index in np.ndindex(self.detector.shape[0:2]):
+			yslice = self.detector[index]
 			ySDslice = detectorSD[index]
 			ret_array[index], retSD_array[index] = self.__background_subtract_line(yslice, ySDslice, beam_centre, beam_SD, extent_mult, pixel_offset)
 					
