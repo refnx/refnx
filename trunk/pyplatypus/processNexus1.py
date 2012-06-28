@@ -153,7 +153,7 @@ class processNexus1(object):
 		if self.peak_pos:
 			beam_centre, beam_SD = peak_pos
 		else:
-			beam_centre, beam_SD = self.__findspecularridge()
+			beam_centre, beam_SD = self.__findspecularridge(self.detector)
 			if self.verbose:
 				print datafilenumber, ": BEAM_CENTRE", datafilenumber, beam_centre
 		
@@ -298,7 +298,7 @@ class processNexus1(object):
 		#TODO gravity correction if direct beam
 		if self.isdirect:
 			self.detector, detectorSD, M_gravcorrcoefs = __correct_for_gravity(self.detector, detectorSD, M_lambda, 0, 2.8, 18)
-			beam_centre, beam_SD = self.__findspecularridge()
+			beam_centre, beam_SD = self.__findspecularridge(self.detector)
 			
 		#rebinning in lambda for all detector
 		#rebinning is the default option, but sometimes you don't want to.
@@ -384,7 +384,7 @@ class processNexus1(object):
 		if self.background:
 			if self.verbose:
 				print datafilenumber, ': doing background subtraction'
-			self.detector, detectorSD = self.__background_subtract(detectorSD, beam_centre, beam_SD, extent_mult, 1)
+			self.detector, detectorSD = self.__background_subtract(self.detector, detectorSD, beam_centre, beam_SD, extent_mult, 1)
 		
 		#top and tail the specular beam with the known beam centres.
 		#all this does is produce a specular intensity with shape (n, t), i.e. integrate over specular beam
@@ -740,14 +740,14 @@ class processNexus1(object):
 		return chod
 
 
-	def __findspecularridge(self, tolerance = 0.01):
+	def __findspecularridge(self, detector, tolerance = 0.01):
 		"""
 		find the specular ridge in a detector(n, t, y) plot.
 		"""
 		
 		searchincrement = 50
 		#sum over all n planes, left with ty
-		det_ty = np.sum(self.detector, axis = 0)
+		det_ty = np.sum(detector, axis = 0)
 		
 		#find a good place to start the peak search from
 		totaly = np.sum(det_ty, axis = 0)
@@ -845,16 +845,16 @@ class processNexus1(object):
 		return norm, normSD
 
 
-	def __background_subtract(self, detectorSD, beam_centre, beam_SD, extent_mult = 2., pixel_offset = 1.):
+	def __background_subtract(self, detector, detectorSD, beam_centre, beam_SD, extent_mult = 2., pixel_offset = 1.):
 		"""
 		shape of detector is (n, t, y)
 		does a linear background subn for each (n, t) slice
 		"""
-		ret_array = np.zeros(self.detector.shape, dtype = 'float64')
-		retSD_array = np.zeros(self.detector.shape, dtype = 'float64')
+		ret_array = np.zeros(detector.shape, dtype = 'float64')
+		retSD_array = np.zeros(detector.shape, dtype = 'float64')
 		
-		for index in np.ndindex(self.detector.shape[0:2]):
-			yslice = self.detector[index]
+		for index in np.ndindex(detector.shape[0:2]):
+			yslice = detector[index]
 			ySDslice = detectorSD[index]
 			ret_array[index], retSD_array[index] = self.__background_subtract_line(yslice, ySDslice, beam_centre, beam_SD, extent_mult, pixel_offset)
 					
