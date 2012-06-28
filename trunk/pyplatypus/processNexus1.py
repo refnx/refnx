@@ -9,6 +9,7 @@ from scipy.stats import t
 import rebin
 import string
 import struct
+from array import array
 from time import gmtime, strftime
 import os
 import argparse
@@ -538,14 +539,14 @@ class processNexus1(object):
 		streamfilename = os.path.join(c[0][0], 'DATASET_'+str(scanpoint), 'EOS.bin')
 		print streamfilename
 		f = open(streamfilename, 'r')
-		
-		self.__nunpack_intodet(f, tbins, ybins, xbins)
+		frame_bins = [0, 1e6]
+		self.__nunpack_intodet(f, tbins, ybins, xbins, frame_bins)
 		
 		f.close()
 		return streamfilename
 		
 				
-	def __nunpack_intodet(self, f, tbins, ybins, xbins):	
+	def __nunpack_intodet(self, f, tbins, ybins, xbins, frame_bins):	
 		if not f:
 			return None
 					
@@ -557,20 +558,34 @@ class processNexus1(object):
 		t = 0L
 		x = -0L
 		y = -0L
-		neutrons = 0
-		
-		f.seek(128)
+		localxbins = np.sort(np.array(xbins))
+		localybins = np.sort(np.array(ybins))
+		localtbins = np.sort(np.array(tbins))
+		localframe_bins = np.array(frame_bins)
+			
+		endoflastevent = 127
 		
 		BUFSIZE=16384
-	
-		while True:			
+		
+		neutrons = []
+		detector = np.zeros((localframe_bins.shape[0] - 1, localtbins.shape[0] - 1, localybins.shape[0] - 1, localxbins.shape[0] - 1))
+		indivevents = 0
+		
+		while True:	
+			print indivevents
+			f.seek(endoflastevent + 1)
 			buffer = f.read(BUFSIZE)
-
+			
+			filepos = endoflastevent + 1
+			
 			if not len(buffer):
 				break
 			
-			buffer = [(struct.unpack_from('B', a))[0] for a in buffer]
-			for c in buffer:
+			buffer = map(ord, buffer)
+#			buffer = [(struct.unpack_from('B', a))[0] for a in buffer]
+			state = 0
+			
+			for ii, c in enumerate(buffer):
 				if state == 0:
 					x = c
 					state += 1
@@ -578,7 +593,7 @@ class processNexus1(object):
 					x |= (c & 0x3) * 256;
 					
 					if x & 0x200:
-						x = - (2**32 - (x | 0xFFFFFC00))
+						x = - (0x100000000 - (x | 0xFFFFFC00))
 					y = int(c / 4)
 					state += 1
 				else:
@@ -586,7 +601,7 @@ class processNexus1(object):
 						y = y | ((c & 0xF) * 64)
 
 						if y & 0x200:
-							y = -(2**32 - (y | 0xFFFFFC00))
+							y = -(0x100000000 - (y | 0xFFFFFC00))
 #					print state, c, y, x, t, dt, frame_number					
 					event_ended = ((c & 0xC0)!= 0xC0 or state>=7)
 
@@ -602,16 +617,23 @@ class processNexus1(object):
 					else:
 						#print "got to state", state, event_ended, x, y, frame_number, t, dt
 						state = 0;
+						endoflastevent = filepos + ii
 						if x == 0 and y == 0 and dt == 0xFFFFFFFF:
 							t = 0
 							frame_number += 1
 						else:
 							t += dt;
 							if frame_number == -1:
-								return 1
-							
-							neutrons += 1
-							print frame_number, x, y, t//1000
+								return None
+							indivevents += 1
+							neutrons.append((frame_number, t//1000, y, x))
+		
+		if len(neutrons):
+			events = np.array(neutrons)
+			histo, edge = np.histogramdd(events, bins=(localframe_bins, localtbins, localybins, localxbins))
+					
+		return None
+		#return detector
 	
  
 	def __nexusOpen(self):
