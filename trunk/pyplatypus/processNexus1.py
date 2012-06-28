@@ -519,7 +519,9 @@ class processNexus1(object):
 			ybins = self.h5data['entry1/data/y_bin']
 		if not frame_bins:
 			frame_bins = [0, self.h5data['entry1/instrument/detector/time'][scanpoint]]
-			
+		
+		self.frequency = self.h5data['entry1/instrument/disk_chopper/ch1speed'][0]
+						
 		bm1counts_for_scanpoint = self.bmon1_counts[scanpoint]
 
 		try:
@@ -542,11 +544,10 @@ class processNexus1(object):
 
 		f = open(streamfilename, 'r')
 		detector = self.__nunpack_intodet(f, tbins, ybins, xbins, frame_bins)
-		
 		f.close()
 		
 		self.__nexusClose()
-		return detector, bm1counts_for_scanpoint
+		return frame_bins, detector, bm1counts_for_scanpoint
 		
 				
 	def __nunpack_intodet(self, f, tbins, ybins, xbins, frame_bins):	
