@@ -558,10 +558,19 @@ class processNexus1(object):
 		t = 0L
 		x = -0L
 		y = -0L
-		localxbins = np.sort(np.array(xbins))
-		localybins = np.sort(np.array(ybins))
+		
+		localxbins = np.array(xbins)
+		localybins = np.array(ybins)
 		localtbins = np.sort(np.array(tbins))
 		localframe_bins = np.array(frame_bins)
+			
+		if localxbins[0] > localxbins[-1]:
+			localxbins = localxbins[::-1]
+			reversedX = True
+
+		if localybins[0] > localybins[-1]:
+			localybins = localybins[::-1]
+			reversedY = True
 			
 		endoflastevent = 127
 		
@@ -631,7 +640,13 @@ class processNexus1(object):
 		if len(neutrons):
 			events = np.array(neutrons)
 			histo, edge = np.histogramdd(events, bins=(localframe_bins, localtbins, localybins, localxbins))
-					
+		
+		if reversedX:
+			histo = histo[:,:,:, ::-1]
+			
+		if reversedY:
+			histo = histo[:,:,::-1, :]
+		
 		return None
 		#return detector
 	
