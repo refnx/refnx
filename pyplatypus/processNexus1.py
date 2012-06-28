@@ -594,7 +594,6 @@ class processNexus1(object):
 				break
 			
 			buffer = map(ord, buffer)
-#			buffer = [(struct.unpack_from('B', a))[0] for a in buffer]
 			state = 0
 			
 			for ii, c in enumerate(buffer):
@@ -650,8 +649,7 @@ class processNexus1(object):
 		if reversedY:
 			histo = histo[:,:,::-1, :]
 		
-		return None
-		#return detector
+		return detector
 	
  
 	def __nexusOpen(self):
@@ -834,7 +832,7 @@ class processNexus1(object):
 		#n
 		norm = np.sum(np.array(h5norm['entry1/data/hmm']), axis = 0, dtype = 'float64')
 		#t
-		norm = np.sum(detector, axis = 0, dtype = 'float64')
+		norm = np.sum(norm, axis = 0, dtype = 'float64')
 		# by this point you have norm[y][x]
 		norm = norm[:, xmin:xmax + 1]
 		norm = np.sum(norm, axis = 1, dtype = 'float64')    
