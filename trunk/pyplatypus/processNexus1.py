@@ -8,6 +8,7 @@ from scipy.optimize import curve_fit
 from scipy.stats import t
 import rebin
 import string
+import struct
 from time import gmtime, strftime
 import os
 import argparse
@@ -47,6 +48,7 @@ class processNexus1(object):
 		self.datafilenumber = datafilenumber
 		self.isprocessed = 0
 		self.h5norm = None
+		self.basedir = os.getcwd()
 		
 		normfilenumber = kwds.get('normfilenumber', None)
 
@@ -67,21 +69,19 @@ class processNexus1(object):
 					if self.normfilename in files:
 						self.normfilename = os.path.join(root, self.normfilename)
 						break
-			self.h5norm = h5.File(self.normfilename, 'r')
-			
-		self.h5data = h5.File(self.datafilename, 'r')
+			if self.normfilename:
+				self.h5norm = h5.File(self.normfilename, 'r')
+				self.h5norm.close()
 		
+		self.h5data = h5.File(self.datafilename, 'r')
+		self.h5data.close()
+				
 	def __del__(self):
-		print "shit"
 		self.h5data.close()
 		if self.h5norm:
 			self.h5norm.close()
 
-	def close(self):
-		self.h5data.close()
-		if self.h5norm:
-			self.h5norm.close()
-		
+
 	def process(self, **kwds):
 		self.lolambda = kwds.get('lolambda', 2.8)
 		self.hilambda = kwds.get('hilambda', 18.)
@@ -93,10 +93,13 @@ class processNexus1(object):
 		self.expected_width = kwds.get('expected_width', 10.)
 		self.omega = kwds.get('omega', 0.)
 		self.two_theta = kwds.get('two_theta', 0.) 
-		self.rebinpercent = kwds.get('rebinpercent', 4.) 
+		self.rebinpercent = kwds.get('rebinpercent', 4.)
+		self.wavelengthbins = kwds.get('wavelengthbins', None)
 		self.bmon1_normalise = kwds.get('bmon1_normalise', True) 
 		self.verbose = kwds.get('verbose', False) 
 	
+		self.__nexusOpen()
+		
 		scanpoint = 0
 		
 		#beam monitor counts for normalising data
@@ -300,33 +303,50 @@ class processNexus1(object):
 		#rebinning is the default option, but sometimes you don't want to.
 		#detector shape input is (n, t, y)
 		#we want to rebin t.
-		if 0 < self.rebinpercent < 10.:
+		if self.wavelengthbins:
+			pass
+		elif 0 < self.rebinpercent < 10.:
 			frac = 1. + (self.rebinpercent/100.)
 			lowl = (2 * self.lolambda) / ( 1. + frac)
 			hil =  frac * (2 * self.hilambda) / ( 1. + frac)
 				   
 			numsteps = np.floor(np.log10(hil / lowl ) / np.log10(frac)) + 1
 			rebinning = np.logspace(np.log10(lowl), np.log10(hil), num = numsteps)
+			
+		else:
+			rebinning = M_lambdaHIST[0,:]
+			todel = int(np.interp(self.lolambda, rebinning, np.arange(len(rebinning))))
+			rebinning = rebinning[todel:]
 
-			rebinneddata = np.zeros((self.numspectra, np.size(rebinning, 0) - 1, np.size(detector, 2)), dtype = 'float64')
-			rebinneddataSD = np.zeros((self.numspectra, np.size(rebinning, 0) - 1, np.size(detector, 2)), dtype = 'float64')
+			todel = int(np.interp(self.hilambda, rebinning, np.arange(len(rebinning))))
+			rebinning = rebinning[0: todel + 2]
 			
-			for index in xrange(np.size(detector, 0)):
-				if self.verbose:
-					print datafilenumber, ": rebinning plane: ", index
+		rebinneddata = np.zeros((self.numspectra, np.size(rebinning, 0) - 1, np.size(detector, 2)), dtype = 'float64')
+		rebinneddataSD = np.zeros((self.numspectra, np.size(rebinning, 0) - 1, np.size(detector, 2)), dtype = 'float64')			
+
+		#now do the rebinning
+		for index in xrange(np.size(detector, 0)):
+			if self.verbose:
+				print datafilenumber, ": rebinning plane: ", index
 			#rebin that plane.
-				plane, planeSD = rebin.rebin2D(M_lambdaHIST[index], np.arange(np.size(detector, 2) + 1.),
-					detector[index], detectorSD[index], rebinning, np.arange(np.size(detector, 2) + 1.))
-				assert not np.isnan(planeSD).any()
-					
-				rebinneddata[index, ] = plane
-				rebinneddataSD[index, ] = planeSD
-			
+			plane, planeSD = rebin.rebin2D(M_lambdaHIST[index], np.arange(np.size(detector, 2) + 1.),
+			detector[index], detectorSD[index], rebinning, np.arange(np.size(detector, 2) + 1.))
+			assert not np.isnan(planeSD).any()
+
+			rebinneddata[index, ] = plane
+			rebinneddataSD[index, ] = planeSD
+
 			detector = rebinneddata
 			detectorSD = rebinneddataSD
-		
+
 			M_lambdaHIST = np.resize(rebinning, (self.numspectra, np.size(rebinning, 0)))
-	   
+
+
+		#divide the detector intensities by the width of the wavelength bin.
+		binwidths = M_lambdaHIST[0, 1:] - M_lambdaHIST[0,:-1]
+		detector /= binwidths[:,np.newaxis]
+		detectorSD /= binwidths[:,np.newaxis]
+		
 		M_specTOFHIST = qtrans.lambda_to_tof(M_lambdaHIST, chod[:, np.newaxis])
 		M_lambda = 0.5 * (M_lambdaHIST[:,1:] + M_lambdaHIST[:,:-1])
 		M_spectof = qtrans.lambda_to_tof(M_lambda, chod[:, np.newaxis])
@@ -439,28 +459,10 @@ class processNexus1(object):
 		self.sample = self.h5data['entry1/sample/name'][0]
 		self.user = self.h5data['entry1/user/name'][0]
 		
-		output = {'M_topandtail': detector,
-				  'M_topandtailSD': detectorSD,
-				  'M_spec': M_spec,
-				  'M_specSD': M_specSD,
-				  'M_beampos': M_beampos,
-				  'M_lambda': M_lambda,
-				  'M_lambdaSD': M_lambdaSD,
-				  'M_lambdaHIST': M_lambdaHIST,
-				  'M_spectof': M_spectof,
-				  'mode' : mode,
-				  'detectorZ' : detectorZ,
-				  'detectorY' : detectorY,
-				  'domega' : domega,
-				  'lopx' : lopx,
-				  'hipx' : hipx,
-				  'title' : self.h5data['entry1/experiment/title'][0],
-				  'sample' : self.h5data['entry1/sample/name'][0],
-				  'user' : self.h5data['entry1/user/name'][0],
-				  'runnumber' : self.datafilenumber
-				  }
 		self.isprocessed = 1
-		return output
+		
+		self.__nexusClose()
+		return True
 	
 	def writeSpectrum(self):
 		spectrum_template = """<?xml version="1.0"?>
@@ -507,16 +509,119 @@ class processNexus1(object):
 		
 
 	def processEventStream(self, tbins = None, xbins = None, ybins = None, framebins = None, scanpoint = None):
+		self.__nexusOpen()
 		if not tbins:
-			tbins = self.h5data['entry1/data/x_bin'] * 1000
+			tbins = self.h5data['entry1/data/time_of_flight']
 		if not xbins:
 			xbins = self.h5data['entry1/data/x_bin']
 		if not ybins:
-			ybins = h5data['entry1/data/y_bin']
+			ybins = self.h5data['entry1/data/y_bin']
 		if not scanpoint:
 			scanpoint = 0
-		pass
+			
+		try:
+			eventDirectoryName = self.h5data['entry1/instrument/detector/daq_dirname'][0]
+		except KeyError:	#daq_dirname doesn't exist in this file
+			self.__nexusClose()
+			return None
+		
+		def streamedfileexists(x):
+			if os.path.basename(x[0])==eventDirectoryName and 'DATASET_'+str(scanpoint) in x[1]:
+				return True
+			else:
+				return False
+
+		c = filter(streamedfileexists, os.walk(self.basedir))
+		if not len(c):
+			return None
+		
+		streamfilename = os.path.join(c[0][0], 'DATASET_'+str(scanpoint), 'EOS.bin')
+		print streamfilename
+		f = open(streamfilename, 'r')
+		
+		self.__nunpack_intodet(f, tbins, ybins, xbins)
+		
+		f.close()
+		return streamfilename
+		
+				
+	def __nunpack_intodet(self, f, tbins, ybins, xbins):	
+		if not f:
+			return None
+					
+		run = 1L
+		state = 0L
+		event_ended = 0L
+		frame_number = -1L
+		dt = 0L
+		t = 0L
+		x = -0L
+		y = -0L
+		neutrons = 0
+		
+		f.seek(128)
+		
+		BUFSIZE=16384
 	
+		while True:			
+			buffer = f.read(BUFSIZE)
+
+			if not len(buffer):
+				break
+			
+			buffer = [(struct.unpack_from('B', a))[0] for a in buffer]
+			for c in buffer:
+				if state == 0:
+					x = c
+					state += 1
+				elif state == 1:
+					x |= (c & 0x3) * 256;
+					
+					if x & 0x200:
+						x = - (2**32 - (x | 0xFFFFFC00))
+					y = int(c / 4)
+					state += 1
+				else:
+					if state == 2:
+						y = y | ((c & 0xF) * 64)
+
+						if y & 0x200:
+							y = -(2**32 - (y | 0xFFFFFC00))
+#					print state, c, y, x, t, dt, frame_number					
+					event_ended = ((c & 0xC0)!= 0xC0 or state>=7)
+
+					if not event_ended:
+						c &= 0x3F
+					if state == 2:
+						dt = c >> 4
+					else:
+						dt |= (c) << (2 + 6 * (state - 3));
+			
+					if not event_ended:
+						state += 1;
+					else:
+						#print "got to state", state, event_ended, x, y, frame_number, t, dt
+						state = 0;
+						if x == 0 and y == 0 and dt == 0xFFFFFFFF:
+							t = 0
+							frame_number += 1
+						else:
+							t += dt;
+							if frame_number == -1:
+								return 1
+							
+							neutrons += 1
+							print frame_number, x, y, t//1000
+	
+ 
+	def __nexusOpen(self):
+		self.h5data = h5.File(self.datafilename, 'r')		
+
+	def __nexusClose(self):
+		self.h5data.close()
+		if self.h5norm:
+			self.h5norm.close()
+			
 	def __chodcalculator(self, omega, two_theta, pairing = 10, scanpoint = 0):
 		chod = 0
 		chopper1_distance = self.h5data['entry1/instrument/parameters/chopper1_distance']
