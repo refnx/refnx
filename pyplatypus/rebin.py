@@ -99,7 +99,7 @@ def rebin_Q(qq, rr, dr, dq, lowerQ = 0.005, upperQ = 0.4, rebinpercent = 4):
     for index, val in np.ndenumerate(binnum):
     	if np.isnan(val):
     		continue
-    	if(np.isinf(weight[(index)]) or np.isnan(weight[(index)])
+    	if (np.isinf(weight[(index)]) or np.isnan(weight[(index)])):
     	    continue
         W_R_rebin[val] += rr[(index)] * weight[(index)]		
         W_q_rebin[val] += qq[(index)] * weight[(index)]

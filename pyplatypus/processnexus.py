@@ -58,6 +58,8 @@ def processnexusfile(datafilenumber, **kwds):
      processes a Nexus file
      type of integration = 0 means sum all spectra
     type of integration != 0 means output spectra individually
+	
+	it returns a dictionary with the processed spectrum
     """
     
     datafilename = 'PLP{0:07d}.nx.hdf'.format(int(abs(datafilenumber)))
@@ -324,21 +326,29 @@ def processnexusfile(datafilenumber, **kwds):
     M_lambda = 0.5 * (M_lambdaHIST[:,1:] + M_lambdaHIST[:,:-1])
     M_spectof = qtrans.lambda_to_tof(M_lambda, chod[:, np.newaxis])
     
-    #Now work out where the beam hits the detector    #this is used to work out the correct angle of incidence.	#it will be contained in a wave called M_beampos	#M_beampos varies as a fn of wavelength due to gravity
+    #Now work out where the beam hits the detector
+    #this is used to work out the correct angle of incidence.
+	#it will be contained in a wave called M_beampos
+	#M_beampos varies as a fn of wavelength due to gravity
 	
     #TODO work out beam centres for all pixels
     #this has to be done agian because gravity correction is done above.
     if isdirect:
-       #the spectral ridge for the direct beam has a gravity correction involved with it.       #the correction coefficients for the beamposition are contaned in M_gravcorrcoefs
+       #the spectral ridge for the direct beam has a gravity correction involved with it.
+       #the correction coefficients for the beamposition are contaned in M_gravcorrcoefs
         M_beampos = np.zeros_like(M_lambda)
-		        # the following correction assumes that the directbeam neutrons are falling from a point position 
+		
+        # the following correction assumes that the directbeam neutrons are falling from a point position 
         # W_gravcorrcoefs[0] before the detector. At the sample stage (W_gravcorrcoefs[0] - detectorpos[0])
         # they have a certain vertical velocity, assuming that the neutrons had
         # an initial vertical velocity of 0. Although the motion past the sample stage will be parabolic,
         # assume that the neutrons travel in a straight line after that (i.e. the tangent of the parabolic
         # motion at the sample stage). This should give an idea of the direction of the true incident beam,
-        # as experienced by the sample.        #Factor of 2 is out the front to give an estimation of the increase in 2theta of the reflected beam.        M_beampos[:] = M_gravcorrcoefs[:,1][:, np.newaxis]
-        M_beampos[:] -= 2. * (1000. / Y_PIXEL_SPACING * 9.81 * ((M_gravcorrcoefs[:, 0][:, np.newaxis] - detpositions[:, np.newaxis])/1000.) * (detpositions[:, np.newaxis]/1000.) * M_lambda**2/((qtrans.kPlanck_over_MN * 1.e10)**2))        M_beampos *=  Y_PIXEL_SPACING
+        # as experienced by the sample.
+        #Factor of 2 is out the front to give an estimation of the increase in 2theta of the reflected beam.
+        M_beampos[:] = M_gravcorrcoefs[:,1][:, np.newaxis]
+        M_beampos[:] -= 2. * (1000. / Y_PIXEL_SPACING * 9.81 * ((M_gravcorrcoefs[:, 0][:, np.newaxis] - detpositions[:, np.newaxis])/1000.) * (detpositions[:, np.newaxis]/1000.) * M_lambda**2/((qtrans.kPlanck_over_MN * 1.e10)**2))
+        M_beampos *=  Y_PIXEL_SPACING
     else:
         M_beampos = np.zeros_like(M_lambda)
         M_beampos[:] = beam_centre * Y_PIXEL_SPACING
@@ -623,7 +633,11 @@ def findspecularridge(nty_wave, tolerance = 0.01):
     return lastcentre, lastSD
     
 def correct_for_gravity(data, dataSD, lamda, trajectory, lolambda, hilambda):
-	#this function provides a gravity corrected yt plot, given the data, its associated errors, the wavelength corresponding to each of the time bins, and the trajectory of the neutrons.  Low lambda and high Lambda are wavelength cutoffs to igore.		#output:	#corrected data, dataSD	#M_gravCorrCoefs.  THis is a theoretical prediction where the spectral ridge is for each timebin.  This will be used to calculate the actual angle of incidence in the reduction process.
+	#this function provides a gravity corrected yt plot, given the data, its associated errors, the wavelength corresponding to each of the time bins, and the trajectory of the neutrons.  Low lambda and high Lambda are wavelength cutoffs to igore.
+	
+	#output:
+	#corrected data, dataSD
+	#M_gravCorrCoefs.  THis is a theoretical prediction where the spectral ridge is for each timebin.  This will be used to calculate the actual angle of incidence in the reduction process.
 	
 	#data has shape (n, t, y)
 	#M_lambda has shape (n, t)
@@ -653,9 +667,18 @@ def correct_for_gravity(data, dataSD, lamda, trajectory, lolambda, hilambda):
     
     return correcteddata, correcteddataSD, M_gravcorrcoefs
 
-def deflection(lamda, travel_distance, trajectory):	#returns the deflection in mm of a ballistic neutron	#lambda in Angstrom, travel_distance (length of correction, e.g. sample - detector) in mm, trajectory in degrees above the horizontal	#The deflection correction  is the distance from where you expect the neutron to hit the detector (detector_distance*tan(trajectory)) to where is actually hits the detector, i.e. the vertical deflection of the neutron due to gravity.	trajRad = trajectory*np.pi/180	pp = travel_distance/1000. * np.tan(trajRad)
+def deflection(lamda, travel_distance, trajectory):
+	#returns the deflection in mm of a ballistic neutron
+	#lambda in Angstrom, travel_distance (length of correction, e.g. sample - detector) in mm, trajectory in degrees above the horizontal
+	#The deflection correction  is the distance from where you expect the neutron to hit the detector (detector_distance*tan(trajectory)) to where is actually hits the detector, i.e. the vertical deflection of the neutron due to gravity.
+
+	trajRad = trajectory*np.pi/180
+	pp = travel_distance/1000. * np.tan(trajRad)
 	
-	pp -= 9.81* (travel_distance/1000.)**2 * (lamda/1.e10)**2 / (2*np.cos(trajRad)*np.cos(trajRad)*(qtrans.kPlanck_over_MN)**2)	pp *= 1000	return pp
+	pp -= 9.81* (travel_distance/1000.)**2 * (lamda/1.e10)**2 / (2*np.cos(trajRad)*np.cos(trajRad)*(qtrans.kPlanck_over_MN)**2)
+	pp *= 1000
+
+	return pp
     
 def createdetectornorm(normfilename, xmin, xmax):
     """
