@@ -75,11 +75,11 @@ class processNexus1(object):
 				self.h5norm = h5.File(self.normfilename, 'r')
 				self.h5norm.close()
 		
-		self.h5data = h5.File(self.datafilename, 'r')
-		self.h5data.close()
+		self.__nexusOpen()
+		self.__nexusClose()
 				
 	def __del__(self):
-		self.h5data.close()
+		self.__nexusClose()
 		if self.h5norm:
 			self.h5norm.close()
 
@@ -88,7 +88,7 @@ class processNexus1(object):
 		self.lolambda = kwds.get('lolambda', 2.8)
 		self.hilambda = kwds.get('hilambda', 18.)
 		self.background = kwds.get('background', True)
-		self.eventstreaming = kwds.get('eventstreaming', None)
+		self.eventstreaming = kwds.get('eventstreaming', {'scanpoint':0, 'frame_bins':None})
 		self.isdirect = kwds.get('isdirect', False)
 		self.peak_pos = kwds.get('peak_pos', None)
 		self.typeofintegration = kwds.get('typeofintegration', 0)
@@ -115,10 +115,11 @@ class processNexus1(object):
 		TOF = self.h5data['entry1/data/time_of_flight'][:]
 
 		#event streaming.
-		if self.eventstreaming:
-			scanpoint = eventstreaming['scanpoint']
-			self.detector = self.processEventStream(scanpoint = scanpoint, frame_bins = eventstreaming['frame_bins'])
-			   
+		if 'eventstreaming' in kwds:
+			scanpoint = self.eventstreaming['scanpoint']
+			frame_bins, self.detector, self.bmon1_counts = self.processEventStream(scanpoint = self.eventstreaming['scanpoint'], frame_bins = self.eventstreaming['frame_bins'])
+			self.bmon1_counts = np.array((self.bmon1_counts), dtype = 'float64')
+
 			self.numspectra = len(self.detector)
 		else:
 			#detector(n, t, y, x)    
@@ -134,7 +135,7 @@ class processNexus1(object):
 			else:
 				self.numspectra = len(self.detector)
 
-		#pre-average over x, leaving (n, t, y)
+		#pre-average over x, leaving (n, t, y) also convert to dp
 		self.detector = np.sum(self.detector, axis = 3, dtype = 'float64')
 
 		#detector shape should now be (n, t, y)
@@ -161,7 +162,7 @@ class processNexus1(object):
 		M_specTOFHIST = np.zeros((self.numspectra, len(TOF)), dtype = 'float64')
 		M_lambdaHIST = np.zeros((self.numspectra, len(TOF)), dtype = 'float64')
 		M_specTOFHIST[:] = TOF
-		
+
 		#chopper to detector distances
 		#note that if eventstreaming is specified the numspectra is NOT
 		#equal to the number of entries in e.g. /longitudinal_translation
@@ -177,8 +178,8 @@ class processNexus1(object):
 		for index in xrange(self.numspectra):
 			if self.verbose:
 				print datafilenumber, ': processing image for tof params: ', index
-			omega = self.h5data['entry1/instrument/parameters/omega'][0]#[scanpoint]
-			two_theta = self.h5data['entry1/instrument/parameters/twotheta'][0]#[scanpoint]
+			omega = self.h5data['entry1/instrument/parameters/omega'][scanpoint]
+			two_theta = self.h5data['entry1/instrument/parameters/twotheta'][scanpoint]
 			frequency = self.h5data['entry1/instrument/disk_chopper/ch1speed']
 			ch2speed = self.h5data['entry1/instrument/disk_chopper/ch2speed']
 			ch3speed = self.h5data['entry1/instrument/disk_chopper/ch3speed']
@@ -291,7 +292,7 @@ class processNexus1(object):
 		M_lambdaHIST = qtrans.tof_to_lambda(M_specTOFHIST, chod[:, np.newaxis])
 		M_lambda = 0.5 * (M_lambdaHIST[:,1:] + M_lambdaHIST[:,:-1])
 		TOF -= toffset
-		
+
 		assert not np.isnan(detectorSD).any()
 		assert not np.less(detectorSD, 0).any()
 		
@@ -341,7 +342,6 @@ class processNexus1(object):
 			detectorSD = rebinneddataSD
 
 			M_lambdaHIST = np.resize(rebinning, (self.numspectra, np.size(rebinning, 0)))
-
 
 		#divide the detector intensities by the width of the wavelength bin.
 		binwidths = M_lambdaHIST[0, 1:] - M_lambdaHIST[0,:-1]
@@ -395,6 +395,11 @@ class processNexus1(object):
 		M_specSD = np.sum(np.power(detectorSD[:, :, lopx:hipx + 1], 2), axis = 2)
 		M_specSD = np.sqrt(M_specSD)
 		
+		assert np.isfinite(M_spec).all()
+		assert np.isfinite(M_specSD).all()
+		assert np.isfinite(self.detector).all()
+		assert np.isfinite(detectorSD).all()
+
 		#
 		#normalise by beam monitor 1.
 		#
@@ -403,12 +408,12 @@ class processNexus1(object):
 			#have to make to the same shape as M_spec			
 			M_spec, M_specSD = EP.EPdiv(M_spec, M_specSD, self.bmon1_counts[:,np.newaxis], bmon1_countsSD[:,np.newaxis])
 			#have to make to the same shape as detector
-			#print detector.shape, detectorSD.shape, bmon1_counts[:,np.newaxis, np.newaxis].shape
+			#print detector.shape, detectorSD.shape, bmon1_counts[:,np.newaxis, np.newaxis].shape			
 			self.detector, detectorSD = EP.EPdiv(self.detector,
 											 detectorSD,
 											  self.bmon1_counts[:,np.newaxis, np.newaxis],
 											   bmon1_countsSD[:,np.newaxis, np.newaxis])
-			
+
 		#now work out dlambda/lambda, the resolution contribution from wavelength.
 		#vanWell, Physica B,  357(2005) pp204-207), eqn 4.
 		#this is only an approximation for our instrument, as the 2nd and 3rd discs have smaller
@@ -460,7 +465,6 @@ class processNexus1(object):
 		self.user = self.h5data['entry1/user/name'][0]
 		
 		self.isprocessed = 1
-		
 		self.__nexusClose()
 		return True
 	
@@ -509,7 +513,12 @@ class processNexus1(object):
 		
 
 	def processEventStream(self, tbins = None, xbins = None, ybins = None, frame_bins = None, scanpoint = 0):
-		self.__nexusOpen()
+
+		had_to_open = False
+		if self.h5data.closed:
+			self.__nexusOpen()
+			had_to_open = True
+			
 		if not tbins:
 			tbins = self.h5data['entry1/data/time_of_flight']
 		if not xbins:
@@ -543,7 +552,9 @@ class processNexus1(object):
 		try:
 			eventDirectoryName = self.h5data['entry1/instrument/detector/daq_dirname'][0]
 		except KeyError:	#daq_dirname doesn't exist in this file
-			self.__nexusClose()
+			if had_to_open:
+				self.__nexusClose()
+				
 			return None
 		
 		def streamedfileexists(x):
@@ -562,7 +573,10 @@ class processNexus1(object):
 		detector, endoflastevent = self.__nunpack_intodet(f, tbins, ybins, xbins, frame_bins * self.frequency)
 		f.close()
 		
-		self.__nexusClose()
+		if had_to_open:
+			self.__nexusClose()
+
+		
 		return frame_bins, detector, bm1_counts
 		
 				
@@ -665,10 +679,12 @@ class processNexus1(object):
 	
  
 	def __nexusOpen(self):
-		self.h5data = h5.File(self.datafilename, 'r')		
+		self.h5data = h5.File(self.datafilename, 'r')
+		self.h5data.closed = False		
 
 	def __nexusClose(self):
 		self.h5data.close()
+		self.h5data.closed = True
 		if self.h5norm:
 			self.h5norm.close()
 			
