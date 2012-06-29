@@ -41,12 +41,6 @@ def rebin(x_init, y_init, s_init, x_rebin, verbose = False):
     values = np.interp(positions, np.arange(len(cumsumvar), dtype = 'float64'), cumsumvar)
     W_rebinSD = values[1:] - values[:-1]
     
-    celloc = np.where(np.ceil(positions) - 1 < 0, 0, np.ceil(positions) - 1)
-    celloc = celloc.astype('int')
-    
-    W_rebinSD -=  (np.ceil(positions[1:]) - positions[1:]) * var_init[celloc[1:]] * (1 - np.ceil(positions[1:]) + positions[1:])
-    W_rebinSD -=  (np.ceil(positions[:-1]) - positions[:-1]) * var_init[celloc[:-1]] * (1 - np.ceil(positions[:-1]) + positions[:-1])
-
     assert not np.less(W_rebinSD, 0).any()          
     return W_rebin, np.sqrt(W_rebinSD)
 	
@@ -55,14 +49,14 @@ def rebin_test():
     b = np.array([2,3,4,5,5,4])
     c = np.sqrt(b)
     d = np.array([-0.2,0.8,1.5,2.5,3.5,8])
-    e,f = rebin(a,b,c,d, verbose=True)
-#    print e, f, '\n'
+    e,f = rebin(a,b,c,d, verbose=False)
+    print e, f, '\n'
     
     a = np.arange(10.)
     b = np.arange(11.)
     c = np.array([0,1,2,3,4,8,11])
 
-    e,f = rebin(b,a,np.sqrt(a),c)
+#    e,f = rebin(b,a,np.sqrt(a),c)
 #    print e, f
 
 	
