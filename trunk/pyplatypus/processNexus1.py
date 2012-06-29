@@ -520,10 +520,26 @@ class processNexus1(object):
 		if not frame_bins:
 			frame_bins = [0, self.h5data['entry1/instrument/detector/time'][scanpoint]]
 		
+		total_acquisition_time = self.h5data['entry1/instrument/detector/time'][scanpoint]
 		self.frequency = self.h5data['entry1/instrument/disk_chopper/ch1speed'][0]
-						
-		bm1counts_for_scanpoint = self.bmon1_counts[scanpoint]
+		bm1counts_for_scanpoint = self.h5data['entry1/monitor/bm1_counts'][scanpoint]
 
+		frame_bins = np.sort(frame_bins)
+		
+		#truncate the frame bins to be 0 and the max acquisition time, if they exceed it.
+		if frame_bins[0] < 0:
+			loc = np.searchsorted(frame_bins, 0)
+			frame_bins = frame_bins[loc - 1:]
+			frame_bins[0] = 0
+		
+		if frame_bins[-1] > total_acquisition_time:
+			loc = np.searchsorted(frame_bins, total_acquisition_time)
+			frame_bins = frame_bins[:loc + 1]
+
+		bm1_counts = frame_bins[1:] - frame_bins[:-1]
+		bm1_counts *= (bm1counts_for_scanpoint / total_acquisition_time)
+
+	
 		try:
 			eventDirectoryName = self.h5data['entry1/instrument/detector/daq_dirname'][0]
 		except KeyError:	#daq_dirname doesn't exist in this file
@@ -538,16 +554,16 @@ class processNexus1(object):
 
 		c = filter(streamedfileexists, os.walk(self.basedir))
 		if not len(c):
-			return None
+			return None, None, None
 		
 		streamfilename = os.path.join(c[0][0], 'DATASET_'+str(scanpoint), 'EOS.bin')
 
 		f = open(streamfilename, 'r')
-		detector = self.__nunpack_intodet(f, tbins, ybins, xbins, frame_bins)
+		detector = self.__nunpack_intodet(f, tbins, ybins, xbins, frame_bins * frequency)
 		f.close()
 		
 		self.__nexusClose()
-		return frame_bins, detector, bm1counts_for_scanpoint
+		return frame_bins, detector, bm1_counts
 		
 				
 	def __nunpack_intodet(self, f, tbins, ybins, xbins, frame_bins):	
