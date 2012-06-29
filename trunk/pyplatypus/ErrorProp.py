@@ -31,7 +31,7 @@ def EPdiv(a, da, b, db, covar = 0):
 	"""
 	C = A / B
 	"""
-	return a / b, np.sqrt(((da / b)**2 + (a**2 / (b**4)) * db**2) - (2 * covar * a / (b**3)))
+	return a / b, np.sqrt(((da / b)**2 + ((a**2)*(db**2)/ (b**4))) - (2 * covar * a / (b**3)))
 
 def EPpow(a, da, k, n = 1):
 	"""
