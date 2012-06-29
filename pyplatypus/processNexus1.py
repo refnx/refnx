@@ -130,7 +130,7 @@ class processNexus1(object):
 				self.numspectra = 1
 				self.detector = np.sum(self.detector, axis = 0)
 				self.detector = np.resize(self.detector, (1, np.size(self.detector, 0), np.size(self.detector, 1), np.size(self.detector, 2)))
-				bmon1_counts = np.array([np.sum(bmon1_counts)], dtype = 'float64')
+				self.bmon1_counts = np.array([np.sum(self.bmon1_counts)], dtype = 'float64')
 			else:
 				self.numspectra = len(self.detector)
 
@@ -222,28 +222,28 @@ class processNexus1(object):
 				pairing = pairing | 2**master
 				if master == 1:
 					D_CX = - chopper1_distance[0]
-					phaseangle += 0.5 * O_C1d
-					MASTER_OPENING = O_C1
+					phaseangle += 0.5 * self.__O_C1d
+					MASTER_OPENING = self.__O_C1
 				elif master == 2:
 					D_CX = - chopper2_distance[0]
-					phaseangle += 0.5 * O_C2d
-					MASTER_OPENING = O_C2
+					phaseangle += 0.5 * self.__O_C2d
+					MASTER_OPENING = self.__O_C2
 				elif master == 3:
 					D_CX = - chopper3_distance[0]
-					phaseangle += 0.5 * O_C3d
-					MASTER_OPENING = O_C3
+					phaseangle += 0.5 * self.__O_C3d
+					MASTER_OPENING = self.__O_C3
 				
 				if slave == 2:
 					D_CX += chopper2_distance[0]
-					phaseangle += 0.5 * O_C2d
+					phaseangle += 0.5 * self.__O_C2d
 					phaseangle += -ch2phase[0] - ch2phaseoffset[0]
 				elif slave == 3:
 					D_CX += chopper3_distance[0]
-					phaseangle += 0.5 * O_C3d
+					phaseangle += 0.5 * self.__O_C3d
 					phaseangle += -ch3phase[0] - ch3phaseoffset[0]
 				elif slave == 4:
 					D_CX += chopper4_distance[0]
-					phaseangle += 0.5 * O_C4d
+					phaseangle += 0.5 * self.__O_C4d
 					phaseangle += ch4phase[0] - ch4phaseoffset[0]
 			else:
 				#the slave and master parameters don't exist, work out the pairing assuming 1 is the master disk.
@@ -389,7 +389,6 @@ class processNexus1(object):
 		#top and tail the specular beam with the known beam centres.
 		#all this does is produce a specular intensity with shape (n, t), i.e. integrate over specular beam
 		lopx = np.floor(beam_centre - beam_SD * extent_mult)
-		print beam_centre, beam_SD
 		hipx = np.ceil(beam_centre + beam_SD  * extent_mult)
 
 		M_spec = np.sum(self.detector[:, :, lopx:hipx + 1], axis = 2)
@@ -500,8 +499,8 @@ class processNexus1(object):
 			d['dr'] = string.translate(repr(dr[index].tolist()), None, ',[]')
 			d['l'] = string.translate(repr(l[index].tolist()), None, ',[]')
 			d['dl'] = string.translate(repr(dl[index].tolist()), None, ',[]')
-			f = open(filename, 'w')
 			thefile = s.safe_substitute(d)
+			f = open(filename, 'w')
 			f.write(thefile)
 			f.truncate()
 			f.close()
@@ -521,7 +520,7 @@ class processNexus1(object):
 			frame_bins = [0, self.h5data['entry1/instrument/detector/time'][scanpoint]]
 		
 		total_acquisition_time = self.h5data['entry1/instrument/detector/time'][scanpoint]
-		self.frequency = self.h5data['entry1/instrument/disk_chopper/ch1speed'][0]
+		self.frequency = self.h5data['entry1/instrument/disk_chopper/ch1speed'][0] / 60
 		bm1counts_for_scanpoint = self.h5data['entry1/monitor/bm1_counts'][scanpoint]
 
 		frame_bins = np.sort(frame_bins)
@@ -535,6 +534,7 @@ class processNexus1(object):
 		if frame_bins[-1] > total_acquisition_time:
 			loc = np.searchsorted(frame_bins, total_acquisition_time)
 			frame_bins = frame_bins[:loc + 1]
+			frame_bins[-1] = total_acquisition_time
 
 		bm1_counts = frame_bins[1:] - frame_bins[:-1]
 		bm1_counts *= (bm1counts_for_scanpoint / total_acquisition_time)
@@ -559,14 +559,14 @@ class processNexus1(object):
 		streamfilename = os.path.join(c[0][0], 'DATASET_'+str(scanpoint), 'EOS.bin')
 
 		f = open(streamfilename, 'r')
-		detector = self.__nunpack_intodet(f, tbins, ybins, xbins, frame_bins * frequency)
+		detector, endoflastevent = self.__nunpack_intodet(f, tbins, ybins, xbins, frame_bins * self.frequency)
 		f.close()
 		
 		self.__nexusClose()
 		return frame_bins, detector, bm1_counts
 		
 				
-	def __nunpack_intodet(self, f, tbins, ybins, xbins, frame_bins):	
+	def __nunpack_intodet(self, f, tbins, ybins, xbins, frame_bins, endoflastevent = 127):	
 		if not f:
 			return None
 					
@@ -591,17 +591,14 @@ class processNexus1(object):
 		if localybins[0] > localybins[-1]:
 			localybins = localybins[::-1]
 			reversedY = True
-			
-		endoflastevent = 127
-		
+					
 		BUFSIZE=16384
 		
 		neutrons = []
-		detector = np.zeros((localframe_bins.shape[0] - 1, localtbins.shape[0] - 1, localybins.shape[0] - 1, localxbins.shape[0] - 1))
-		indivevents = 0
-		
+
 		while True:	
-			print indivevents
+			if frame_number > localframe_bins[-1]:
+				break
 			f.seek(endoflastevent + 1)
 			buffer = f.read(BUFSIZE)
 			
@@ -630,7 +627,6 @@ class processNexus1(object):
 
 						if y & 0x200:
 							y = -(0x100000000 - (y | 0xFFFFFC00))
-#					print state, c, y, x, t, dt, frame_number					
 					event_ended = ((c & 0xC0)!= 0xC0 or state>=7)
 
 					if not event_ended:
@@ -653,9 +649,8 @@ class processNexus1(object):
 							t += dt;
 							if frame_number == -1:
 								return None
-							indivevents += 1
 							neutrons.append((frame_number, t//1000, y, x))
-		
+							
 		if len(neutrons):
 			events = np.array(neutrons)
 			histo, edge = np.histogramdd(events, bins=(localframe_bins, localtbins, localybins, localxbins))
@@ -666,7 +661,7 @@ class processNexus1(object):
 		if reversedY:
 			histo = histo[:,:,::-1, :]
 		
-		return detector
+		return histo, endoflastevent
 	
  
 	def __nexusOpen(self):
