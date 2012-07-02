@@ -59,7 +59,6 @@ def peakfinder(y, x = None):
 	
 	p0 = np.array([2., maxval, expected_centre, expected_SD])
 	popt = gaussfit(p0, x, y)
-	
 	return np.array([expected_centre, expected_SD]), popt[2:4]
 
 def peakfinder_test():
