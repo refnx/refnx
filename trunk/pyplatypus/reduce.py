@@ -9,6 +9,7 @@ import reflectDataset as rd
     
 class reduce(object):
 	def __init__(self, reflect_beam_number, direct_beam_number, **kwds):
+		print kwds.keys()
 		kwds['isdirect'] = False
 		self.reflect_beam = pn.processnexus(reflect_beam_number, **kwds)
 		self.reflect_beam.process(**kwds)
@@ -130,13 +131,11 @@ class reduce(object):
 		#this step probably produces negative reflectivities, or NaN if M_specD is 0.
 		#ALSO, 
 		#M_refSD has the potential to be NaN is M_topandtail or M_spec is 0.
-
-		
 		M_ref, M_refSD = EP.EPdiv(self.reflect_beam.M_topandtail,
 									self.reflect_beam.M_topandtailSD,
 									 self.direct_beam.M_spec[:, :, np.newaxis],
 									  self.direct_beam.M_specSD[:, :, np.newaxis])
-
+		
 		#you may have had divide by zero's.
 		M_ref = np.where(np.isinf(M_ref), 0, M_ref)
 		M_refSD = np.where(np.isinf(M_refSD), 0, M_refSD)
