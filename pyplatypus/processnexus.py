@@ -284,8 +284,8 @@ class processnexus(object):
 		M_lambda = 0.5 * (M_lambdaHIST[:,1:] + M_lambdaHIST[:,:-1])
 		TOF -= toffset
 
-		assert not np.isnan(detectorSD).any()
-		assert not np.less(detectorSD, 0).any()
+#		assert not np.isnan(detectorSD).any()
+#		assert not np.less(detectorSD, 0).any()
 	
 		#get the specular ridge on the averaged detector image
 		if self.peak_pos:
@@ -332,8 +332,8 @@ class processnexus(object):
 				print datafilenumber, ": rebinning plane: ", index
 			#rebin that plane.
 			plane, planeSD = rebin.rebin2D(M_lambdaHIST[index], np.arange(np.size(self.detector, 2) + 1.),
-			self.detector[index], detectorSD[index], rebinning, np.arange(np.size(self.detector, 2) + 1.))
-			assert not np.isnan(planeSD).any()
+			self.detector[index], detectorSD[index], rebinning, np.arange(0))
+#			assert not np.isnan(planeSD).any()
 
 			rebinneddata[index, ] = plane
 			rebinneddataSD[index, ] = planeSD
@@ -820,7 +820,7 @@ def background_subtract_line(detector, detectorSD, beam_centre, beam_SD, extent_
 	
 	#some SD values may have 0 SD, which will screw up curvefitting.
 	ySDvals = np.where(ySDvals == 0, 1, ySDvals)
-	assert not np.isnan(ySDvals).any()
+#	assert not np.isnan(ySDvals).any()
 		
 	#equation for a straight line
 	f = lambda x, a, b: a + b * x
@@ -833,10 +833,11 @@ def background_subtract_line(detector, detectorSD, beam_centre, beam_SD, extent_
 	
 	#get the weighted fit values
 	popt, pcov = curve_fit(f, xvals, yvals, sigma = ySDvals, p0 = np.array([ahat, bhat]))
-		
+	
 	#SD of params = np.sqrt(chi2) * np.sqrt(pcov)
 	#chi2 = lambda ycalc, yobs, sobs: np.sum(((ycalc - yobs)/sobs)**2)
-	CI = lambda x, pcovmat: (np.matrix([1., x]) * np.asmatrix(pcovmat) * np.matrix([1., x]).T)[0,0]
+#	CI = lambda x, pcovmat: (np.matrix([1., x]) * np.asmatrix(pcovmat) * np.matrix([1., x]).T)[0,0]
+	CI = lambda x, pcovmat: pcovmat[0, 0] + pcovmat[1,0] * x + pcovmat[0, 1] * x + pcovmat[1, 1] * (x**2)
 	
 	bkgd = f(np.arange(len(detector), dtype = 'float64'), popt[0], popt[1])
 	bkgdSD = np.empty_like(bkgd)
