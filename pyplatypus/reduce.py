@@ -5,7 +5,7 @@ import ErrorProp as EP
 import Qtransforms as qtrans
 import string
 from time import gmtime, strftime
-import reflectDataset as rd
+import reflectdataset as rd
     
 class reduce(object):
 	def __init__(self, reflect_beam_number, direct_beam_number, **kwds):
@@ -33,12 +33,12 @@ class reduce(object):
 		self.W_ref /=scale
 		self.W_refSD /= scale
 		
-	def getReflectedDataset(self, scanpoint = 0):
-		reflectedDatasetObj = rd.reflectDataset()
-		reflectedDatasetObj.add_dataset(self, scanpoint = scanpoint)
+	def getreflecteddataset(self, scanpoint = 0):
+		reflectedDatasetObj = rd.reflectdataset()
+		reflectedDatasetObj.adddataset(self, scanpoint = scanpoint)
 		return reflectedDatasetObj
 	
-	def writeOffspecular(self, f, scanpoint = 0):
+	def writeoffspecular(self, f, scanpoint = 0):
 		__template_ref_xml = """<?xml version="1.0"?>
 		<REFroot xmlns="">
 		<REFentry time="$time">

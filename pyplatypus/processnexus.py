@@ -116,7 +116,7 @@ class processnexus(object):
 		#event streaming.
 		if 'eventstreaming' in kwds:
 			scanpoint = self.eventstreaming['scanpoint']
-			frame_bins, self.detector, self.bmon1_counts = self.processEventStream(scanpoint = self.eventstreaming['scanpoint'], frame_bins = self.eventstreaming['frame_bins'])
+			frame_bins, self.detector, self.bmon1_counts = self.processeventstream(scanpoint = self.eventstreaming['scanpoint'], frame_bins = self.eventstreaming['frame_bins'])
 			self.bmon1_counts = np.array((self.bmon1_counts), dtype = 'float64')
 
 			self.numspectra = len(self.detector)
@@ -332,7 +332,7 @@ class processnexus(object):
 				print datafilenumber, ": rebinning plane: ", index
 			#rebin that plane.
 			plane, planeSD = rebin.rebin2D(M_lambdaHIST[index], np.arange(np.size(self.detector, 2) + 1.),
-			self.detector[index], detectorSD[index], x_rebin = rebinning)
+			self.detector[index], detectorSD[index], rebinning, np.arange(0))
 #			assert not np.isnan(planeSD).any()
 
 			rebinneddata[index, ] = plane
@@ -384,7 +384,7 @@ class processnexus(object):
 		if self.background:
 			if self.verbose:
 				print datafilenumber, ': doing background subtraction'
-			self.detector, detectorSD = background_subtract(self.detector, detectorSD, beam_centre, beam_SD, extent_mult, 1)
+			self.detector, detectorSD = backgroundsubtract(self.detector, detectorSD, beam_centre, beam_SD, extent_mult, 1)
 		
 		#top and tail the specular beam with the known beam centres.
 		#all this does is produce a specular intensity with shape (n, t), i.e. integrate over specular beam
@@ -468,7 +468,7 @@ class processnexus(object):
 		self.__nexusClose()
 		return self.M_lambda, self.M_lambdaSD, self.M_spec, self.M_specSD
 	
-	def writeSpectrum(self, f, scanpoint = 0):
+	def writespectrum(self, f, scanpoint = 0):
 		spectrum_template = """<?xml version="1.0"?>
 		<REFroot xmlns="">
 		<REFentry time="$time">
@@ -509,7 +509,7 @@ class processnexus(object):
 		return True
 		
 
-	def processEventStream(self, tbins = None, xbins = None, ybins = None, frame_bins = None, scanpoint = 0):
+	def processeventstream(self, tbins = None, xbins = None, ybins = None, frame_bins = None, scanpoint = 0):
 
 		had_to_open = False
 		if self.h5data.closed:
@@ -788,7 +788,7 @@ class processnexus(object):
 		return norm, normSD
 
 
-def background_subtract(detector, detectorSD, beam_centre, beam_SD, extent_mult = 2., pixel_offset = 1.):
+def backgroundsubtract(detector, detectorSD, beam_centre, beam_SD, extent_mult = 2., pixel_offset = 1.):
 	"""
 	shape of detector is (n, t, y)
 	does a linear background subn for each (n, t) slice
@@ -799,11 +799,11 @@ def background_subtract(detector, detectorSD, beam_centre, beam_SD, extent_mult 
 	for index in np.ndindex(detector.shape[0:2]):
 		yslice = detector[index]
 		ySDslice = detectorSD[index]
-		ret_array[index], retSD_array[index] = background_subtract_line(yslice, ySDslice, beam_centre, beam_SD, extent_mult, pixel_offset)
+		ret_array[index], retSD_array[index] = backgroundsubtractline(yslice, ySDslice, beam_centre, beam_SD, extent_mult, pixel_offset)
 				
 	return ret_array, retSD_array
 	
-def background_subtract_line(detector, detectorSD, beam_centre, beam_SD, extent_mult = 2., pixel_offset = 1.):
+def backgroundsubtractline(detector, detectorSD, beam_centre, beam_SD, extent_mult = 2., pixel_offset = 1.):
 
 	lopx = np.floor(beam_centre - beam_SD * extent_mult)
 	hipx = np.ceil(beam_centre + beam_SD  * extent_mult)
@@ -965,7 +965,7 @@ if __name__ == "__main__":
 			for index in xrange(a.numspectra):
 				filename = 'PLP{:07d}_{:d}.spectrum'.format(a.datafilenumber, index)
 				f = open(filename, 'w')
-				a.writeSpectrum(f, scanpoint = index)
+				a.writespectrum(f, scanpoint = index)
 				f.close()
 							
         except IOError:

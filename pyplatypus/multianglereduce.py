@@ -21,11 +21,11 @@ def reduce_stitch_files(reflect_list, direct_list, **kwds):
 	#now reduce all the files.
 	zipped = zip(reflect_list, direct_list)
 
-	combinedDataset = reflectDataset.reflectDataset()
+	combinedDataset = reflectdataset.reflectdataset()
 
 	for index, val in enumerate(zipped):
 		reduced = reduce.reduce(val[0], val[1], **kwds)
-		combinedDataset.add_dataset(reduced)
+		combinedDataset.adddataset(reduced)
 
 	return combinedDataset
 
@@ -34,8 +34,8 @@ if __name__ == "__main__":
 	print strftime("%a, %d %b %Y %H:%M:%S +0000", gmtime())
 	f=open('test.xml', 'w')
 	a = reduce_stitch_files([708, 709, 710], [711,711,711])
-	a.rebin()
-	a.writeReflectivityXML(f)
+	a.rebin(rebinpercent = 8)
+	a.writereflectivityxml(f)
 	f.close()
 	print strftime("%a, %d %b %Y %H:%M:%S +0000", gmtime())        
 	
