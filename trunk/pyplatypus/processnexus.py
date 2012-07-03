@@ -116,7 +116,7 @@ class ProcessNexus(object):
 		#event streaming.
 		if 'eventstreaming' in kwds:
 			scanpoint = self.eventstreaming['scanpoint']
-			frame_bins, self.detector, self.bmon1_counts = self.processeventstream(scanpoint = self.eventstreaming['scanpoint'], frame_bins = self.eventstreaming['frame_bins'])
+			frame_bins, self.detector, self.bmon1_counts = self.process_event_stream(scanpoint = self.eventstreaming['scanpoint'], frame_bins = self.eventstreaming['frame_bins'])
 			self.bmon1_counts = np.array((self.bmon1_counts), dtype = 'float64')
 
 			self.numspectra = len(self.detector)
@@ -292,14 +292,14 @@ class ProcessNexus(object):
 			beam_centre, beam_SD = peak_pos
 		else:
 			startingoffset = np.searchsorted(M_lambdaHIST[0], self.hilambda)
-			beam_centre, beam_SD = findspecularridge(self.detector, 500)
+			beam_centre, beam_SD = find_specular_ridge(self.detector, 500)
 			if self.verbose:
 				print datafilenumber, ": BEAM_CENTRE", datafilenumber, beam_centre
 
 		#TODO gravity correction if direct beam
 		if self.isdirect:
 			self.detector, detectorSD, M_gravcorrcoefs = correct_for_gravity(self.detector, detectorSD, M_lambda, 0, 2.8, 18)
-			beam_centre, beam_SD = findspecularridge(self.detector)
+			beam_centre, beam_SD = find_specular_ridge(self.detector)
 			
 		#rebinning in lambda for all detector
 		#rebinning is the default option, but sometimes you don't want to.
@@ -384,7 +384,7 @@ class ProcessNexus(object):
 		if self.background:
 			if self.verbose:
 				print datafilenumber, ': doing background subtraction'
-			self.detector, detectorSD = backgroundsubtract(self.detector, detectorSD, beam_centre, beam_SD, extent_mult, 1)
+			self.detector, detectorSD = background_subtract(self.detector, detectorSD, beam_centre, beam_SD, extent_mult, 1)
 		
 		#top and tail the specular beam with the known beam centres.
 		#all this does is produce a specular intensity with shape (n, t), i.e. integrate over specular beam
@@ -468,7 +468,7 @@ class ProcessNexus(object):
 		self.__nexusClose()
 		return self.M_lambda, self.M_lambdaSD, self.M_spec, self.M_specSD
 	
-	def writespectrum(self, f, scanpoint = 0):
+	def write_spectrum(self, f, scanpoint = 0):
 		spectrum_template = """<?xml version="1.0"?>
 		<REFroot xmlns="">
 		<REFentry time="$time">
@@ -509,7 +509,7 @@ class ProcessNexus(object):
 		return True
 		
 
-	def processeventstream(self, tbins = None, xbins = None, ybins = None, frame_bins = None, scanpoint = 0):
+	def process_event_stream(self, tbins = None, xbins = None, ybins = None, frame_bins = None, scanpoint = 0):
 
 		had_to_open = False
 		if self.h5data.closed:
@@ -788,7 +788,7 @@ class ProcessNexus(object):
 		return norm, normSD
 
 
-def backgroundsubtract(detector, detectorSD, beam_centre, beam_SD, extent_mult = 2., pixel_offset = 1.):
+def background_subtract(detector, detectorSD, beam_centre, beam_SD, extent_mult = 2., pixel_offset = 1.):
 	"""
 	shape of detector is (n, t, y)
 	does a linear background subn for each (n, t) slice
@@ -799,11 +799,11 @@ def backgroundsubtract(detector, detectorSD, beam_centre, beam_SD, extent_mult =
 	for index in np.ndindex(detector.shape[0:2]):
 		yslice = detector[index]
 		ySDslice = detectorSD[index]
-		ret_array[index], retSD_array[index] = backgroundsubtractline(yslice, ySDslice, beam_centre, beam_SD, extent_mult, pixel_offset)
+		ret_array[index], retSD_array[index] = background_subtract_line(yslice, ySDslice, beam_centre, beam_SD, extent_mult, pixel_offset)
 				
 	return ret_array, retSD_array
 	
-def backgroundsubtractline(detector, detectorSD, beam_centre, beam_SD, extent_mult = 2., pixel_offset = 1.):
+def background_subtract_line(detector, detectorSD, beam_centre, beam_SD, extent_mult = 2., pixel_offset = 1.):
 
 	lopx = np.floor(beam_centre - beam_SD * extent_mult)
 	hipx = np.ceil(beam_centre + beam_SD  * extent_mult)
@@ -856,7 +856,7 @@ def backgroundsubtractline(detector, detectorSD, beam_centre, beam_SD, extent_mu
 	
 	return EP.EPsub(detector, detectorSD, bkgd, bkgdSD)
 
-def findspecularridge(detector, startingoffset = None, tolerance = 0.01):
+def find_specular_ridge(detector, startingoffset = None, tolerance = 0.01):
 	"""
 	find the specular ridge in a detector(n, t, y) plot.
 	"""
