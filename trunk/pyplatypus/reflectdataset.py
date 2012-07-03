@@ -16,10 +16,10 @@ class Data_1D(object):
             
         self.numpoints = 0
     
-    def getdata(self):
+    def get_data(self):
         return (self.W_q, self.W_ref, self.W_refSD, self.W_qSD)
         
-    def setdata(self, W_q, W_ref, W_refSD, W_qSD):
+    def set_data(self, W_q, W_ref, W_refSD, W_qSD):
         self.W_q = np.copy(W_q)
         self.W_ref = np.copy(W_ref)
         self.W_refSD = np.copy(W_refSD)
@@ -31,8 +31,8 @@ class Data_1D(object):
         self.W_ref /= scalefactor
         self.W_refSD /= scalefactor
             
-    def adddata(self, dataTuple, requires_splice = True):
-        W_q, W_ref, W_refSD, W_qSD = self.getdata()
+    def add_data(self, dataTuple, requires_splice = True):
+        W_q, W_ref, W_refSD, W_qSD = self.get_data()
 
         aW_q, aW_ref, aW_refSD, aW_qSD = dataTuple
 		
@@ -44,7 +44,7 @@ class Data_1D(object):
 	
         #go through and stitch them together.
         if requires_splice and self.numpoints > 1:
-            scale, dscale = nsplice.getScalingInOverlap(qq,
+            scale, dscale = nsplice.get_scaling_in_overlap(qq,
                                                         rr,
                                                         dr,
                                                         aW_q,
@@ -64,7 +64,7 @@ class Data_1D(object):
         rr = np.r_[rr, appendR]
         dr = np.r_[dr, appendDR]
         
-        self.setdata(qq, rr, dr, dq)
+        self.set_data(qq, rr, dr, dq)
         self.sort()
                             
     def sort(self):
@@ -101,13 +101,13 @@ class ReflectDataset(Data_1D):
 		self.datafilenumber = list()
 		
 			
-	def adddataset(self, reduceObj, scanpoint = 0):
+	def add_dataset(self, reduceObj, scanpoint = 0):
 		#when you add a dataset to splice only the first numspectra dimension is used.
 		#the others are discarded
-		self.adddata(reduceObj.get1Ddata())
+		self.add_data(reduceObj.get_1D_data())
 		self.datafilenumber.append(reduceObj.datafilenumber)                                                    
         
-	def writereflectivityXML(self, f):
+	def write_reflectivity_XML(self, f):
 		s = string.Template(self.__template_ref_xml)
 		self.time = strftime("%a, %d %b %Y %H:%M:%S +0000", gmtime())
 
@@ -122,13 +122,13 @@ class ReflectDataset(Data_1D):
 		f.write(thefile)
 		f.truncate()
         
-	def writereflectivitydat(self, f):		
+	def write_reflectivity_dat(self, f):		
 		for q, r, dr, dq in zip(self.W_q, self.W_ref, self.W_refSD, self.W_qSD):
 			thedata = '{:g}\t{:g}\t{:g}\t{:g}\n'.format(q, r, dr, dq)
 			f.write(thedata)
  
 	def rebin(self, rebinpercent = 4):
-		W_q, W_ref, W_refSD, W_qSD = self.getdata()
+		W_q, W_ref, W_refSD, W_qSD = self.get_data()
 		frac = 1. + (rebinpercent/100.)
 
 		lowQ = (2 * W_q[0]) / ( 1. + frac)
@@ -147,7 +147,7 @@ class ReflectDataset(Data_1D):
 		drdat = dr
 		qsddat = dq
 
-		self.setdata(qdat, rdat, drdat, qsddat)
+		self.set_data(qdat, rdat, drdat, qsddat)
 
 
   

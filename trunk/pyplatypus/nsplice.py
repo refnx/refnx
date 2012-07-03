@@ -1,7 +1,7 @@
 from __future__ import division
 import numpy as np
 
-def getScalingInOverlap(qq1,rr1, dr1, qq2, rr2, dr2):
+def get_scaling_in_overlap(qq1,rr1, dr1, qq2, rr2, dr2):
     """
     Get the vertical scaling factor that would splice the second dataset onto the first.
     returns the scaling factor and the uncertainty in scaling factor
