@@ -1,3 +1,4 @@
+from __future__ import division
 import numpy as np
 
 kMassNeutron = 1.6749286e-27

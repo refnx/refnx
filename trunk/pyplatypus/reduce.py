@@ -9,7 +9,7 @@ import reflectDataset as rd
     
 class reduce(object):
 	def __init__(self, reflect_beam_number, direct_beam_number, **kwds):
-		print kwds.keys()
+#		print kwds.keys()
 		kwds['isdirect'] = False
 		self.reflect_beam = pn.processnexus(reflect_beam_number, **kwds)
 		self.reflect_beam.process(**kwds)

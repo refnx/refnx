@@ -1,3 +1,4 @@
+from __future__ import division
 import numpy as np
 
 def getScalingInOverlap(qq1,rr1, dr1, qq2, rr2, dr2):
