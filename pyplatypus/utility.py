@@ -44,14 +44,14 @@ def centroid(y, x = None):
 	sdlhsval = np.interp(sdlhsloc, np.arange(len(xvals) * 1.), xvals)
 	return meanval, 0.5 * (sdrhsval - sdlhsval)
 	
-def gaussfit(p0, x, y, sigma = None):
+def gauss_fit(p0, x, y, sigma = None):
 	popt, pcov = curve_fit(gauss, x, y, p0 = p0, sigma = sigma)
 	return popt
 	
 def gauss(x, bkg, peak, mean, sd):
 	return bkg + peak * np.exp(-0.5 * ((mean - x) / sd)**2) 
 	
-def peakfinder(y, x = None):
+def peak_finder(y, x = None):
 	maxval = np.amax(y)
 	if not x:
 		x = np.arange(1. * len(y))
@@ -59,12 +59,12 @@ def peakfinder(y, x = None):
 	expected_centre, expected_SD = centroid(y, x = x)
 	
 	p0 = np.array([2., maxval, expected_centre, expected_SD])
-	popt = gaussfit(p0, x, y)
+	popt = gauss_fit(p0, x, y)
 	return np.array([expected_centre, expected_SD]), popt[2:4]
 
 def peakfinder_test():
 	random.seed()
 	x = np.random.uniform(-10, 10, 300)
 	y = gauss(x, 0.2, 10, 2, 1.25) + random.gauss(0, 0.5)
-	peakfinder(y, x = x)
+	peak_finder(y, x = x)
 	

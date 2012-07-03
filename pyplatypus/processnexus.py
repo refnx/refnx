@@ -875,7 +875,7 @@ def find_specular_ridge(detector, startingoffset = None, tolerance = 0.01):
 	for ii in xrange(numincrements):
 		totaly = np.sum(det_ty[-1: -startingoffset - searchincrement * ii: -1], axis = 0)
 		#find the centroid and gauss peak in the last sections of the TOF plot
-		centroid, gausspeak = ut.peakfinder(totaly)
+		centroid, gausspeak = ut.peak_finder(totaly)
 			
 		if ii and abs((gausspeak[0] - lastcentre) / lastcentre) < tolerance and abs((gausspeak[1] - lastSD) / lastSD) < tolerance:
 			lastcentre = gausspeak[0]

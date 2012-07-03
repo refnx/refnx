@@ -21,10 +21,10 @@ class Reduce(object):
 		self.direct_beam.process(**kwds)
 		self.__reduce_single_angle()
 		
-	def get1Ddata(self, scanpoint = 0):
+	def get_1D_data(self, scanpoint = 0):
 		return (self.W_q[scanpoint], self.W_ref[scanpoint], self.W_refSD[scanpoint], self.W_qSD[scanpoint])
 
-	def get2Ddata(self, scanpoint = 0):
+	def get_2D_data(self, scanpoint = 0):
 		return (self.M_qz[scanpoint], self.M_qy[scanpoint], self.M_ref[scanpoint], self.M_refSD[scanpoint])
 		
 	def scale(self, scale):
@@ -33,12 +33,12 @@ class Reduce(object):
 		self.W_ref /=scale
 		self.W_refSD /= scale
 		
-	def getreflecteddataset(self, scanpoint = 0):
-		reflectedDatasetObj = rd.reflectdataset()
-		reflectedDatasetObj.adddataset(self, scanpoint = scanpoint)
+	def get_reflected_dataset(self, scanpoint = 0):
+		reflectedDatasetObj = rd.ReflectDataset()
+		reflectedDatasetObj.add_dataset(self, scanpoint = scanpoint)
 		return reflectedDatasetObj
 	
-	def writeoffspecular(self, f, scanpoint = 0):
+	def write_offspecular(self, f, scanpoint = 0):
 		__template_ref_xml = """<?xml version="1.0"?>
 		<REFroot xmlns="">
 		<REFentry time="$time">
@@ -71,7 +71,6 @@ class Reduce(object):
 		d['_dr'] = string.translate(repr(self.M_refSD[scanpoint].tolist()), None, ',[]')
 		d['_qy'] = string.translate(repr(self.M_qy[scanpoint].tolist()), None, ',[]')
 		
-		f = open(filename, 'w')
 		thefile = s.safe_substitute(d)
 		f.write(thefile)
 		f.truncate()
