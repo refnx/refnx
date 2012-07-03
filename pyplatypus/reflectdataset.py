@@ -6,6 +6,7 @@ import nsplice
 import rebin
 import ErrorProp as EP
 
+
 class Data_1D(object):
     def __init__(self):
         self.W_q = np.zeros(0)
