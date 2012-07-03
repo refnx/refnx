@@ -42,7 +42,7 @@ ROUGH_BEAM_POSITION = 150        #Rough direct beam position
 ROUGH_BEAM_WIDTH = 10
 CHOPPAIRING = 3	
 
-class processnexus(object):
+class ProcessNexus(object):
 
 	def __init__(self, datafilenumber, **kwds):
 		self.datafilenumber = datafilenumber
@@ -332,7 +332,7 @@ class processnexus(object):
 				print datafilenumber, ": rebinning plane: ", index
 			#rebin that plane.
 			plane, planeSD = rebin.rebin2D(M_lambdaHIST[index], np.arange(np.size(self.detector, 2) + 1.),
-			self.detector[index], detectorSD[index], rebinning, np.arange(0))
+			self.detector[index], detectorSD[index], x_rebin = rebinning)
 #			assert not np.isnan(planeSD).any()
 
 			rebinneddata[index, ] = plane

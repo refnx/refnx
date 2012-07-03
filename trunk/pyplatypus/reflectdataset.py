@@ -75,7 +75,7 @@ class Data_1D(object):
         self.W_qSD = self.W_qSD[:,sorted]
 
  
-class reflectdataset(Data_1D):
+class ReflectDataset(Data_1D):
 	__template_ref_xml = """<?xml version="1.0"?>
 	<REFroot xmlns="">
 	<REFentry time="$time">
@@ -97,7 +97,7 @@ class reflectdataset(Data_1D):
 
 	def __init__(self, *args, **kwds):
 		#*args should be a list of reduce objects
-		super(reflectdataset, self).__init__()
+		super(ReflectDataset, self).__init__()
 		self.datafilenumber = list()
 		
 			

@@ -21,13 +21,13 @@ def reduce_stitch_files(reflect_list, direct_list, **kwds):
 	#now reduce all the files.
 	zipped = zip(reflect_list, direct_list)
 
-	combinedDataset = reflectdataset.reflectdataset()
+	combineddataset = reflectdataset.ReflectDataset()
 
 	for index, val in enumerate(zipped):
-		reduced = reduce.reduce(val[0], val[1], **kwds)
-		combinedDataset.adddataset(reduced)
+		reduced = reduce.Reduce(val[0], val[1], **kwds)
+		combineddataset.adddataset(reduced)
 
-	return combinedDataset
+	return combineddataset
 
 
 if __name__ == "__main__":
