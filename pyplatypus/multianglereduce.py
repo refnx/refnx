@@ -1,5 +1,5 @@
 import reduce
-import reflectDataset
+import reflectdataset
 import string
 import argparse
 from time import gmtime, strftime
@@ -35,7 +35,7 @@ if __name__ == "__main__":
 	f=open('test.xml', 'w')
 	a = reduce_stitch_files([708, 709, 710], [711,711,711])
 	a.rebin(rebinpercent = 8)
-	a.writereflectivityxml(f)
+	a.writereflectivityXML(f)
 	f.close()
 	print strftime("%a, %d %b %Y %H:%M:%S +0000", gmtime())        
 	
