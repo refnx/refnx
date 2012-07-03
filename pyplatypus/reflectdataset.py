@@ -16,10 +16,10 @@ class Data_1D(object):
             
         self.numpoints = 0
     
-    def getData(self):
+    def getdata(self):
         return (self.W_q, self.W_ref, self.W_refSD, self.W_qSD)
         
-    def setData(self, W_q, W_ref, W_refSD, W_qSD):
+    def setdata(self, W_q, W_ref, W_refSD, W_qSD):
         self.W_q = np.copy(W_q)
         self.W_ref = np.copy(W_ref)
         self.W_refSD = np.copy(W_refSD)
@@ -32,7 +32,7 @@ class Data_1D(object):
         self.W_refSD /= scalefactor
             
     def adddata(self, dataTuple, requires_splice = True):
-        W_q, W_ref, W_refSD, W_qSD = self.getData()
+        W_q, W_ref, W_refSD, W_qSD = self.getdata()
 
         aW_q, aW_ref, aW_refSD, aW_qSD = dataTuple
 		
@@ -64,7 +64,7 @@ class Data_1D(object):
         rr = np.r_[rr, appendR]
         dr = np.r_[dr, appendDR]
         
-        self.setData(qq, rr, dr, dq)
+        self.setdata(qq, rr, dr, dq)
         self.sort()
                             
     def sort(self):
@@ -107,7 +107,7 @@ class reflectdataset(Data_1D):
 		self.adddata(reduceObj.get1Ddata())
 		self.datafilenumber.append(reduceObj.datafilenumber)                                                    
         
-	def writereflectivityxml(self, f):
+	def writereflectivityXML(self, f):
 		s = string.Template(self.__template_ref_xml)
 		self.time = strftime("%a, %d %b %Y %H:%M:%S +0000", gmtime())
 
@@ -128,7 +128,7 @@ class reflectdataset(Data_1D):
 			f.write(thedata)
  
 	def rebin(self, rebinpercent = 4):
-		W_q, W_ref, W_refSD, W_qSD = self.getData()
+		W_q, W_ref, W_refSD, W_qSD = self.getdata()
 		frac = 1. + (rebinpercent/100.)
 
 		lowQ = (2 * W_q[0]) / ( 1. + frac)
