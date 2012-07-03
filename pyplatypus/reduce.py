@@ -7,17 +7,17 @@ import string
 from time import gmtime, strftime
 import reflectdataset as rd
     
-class reduce(object):
+class Reduce(object):
 	def __init__(self, reflect_beam_number, direct_beam_number, **kwds):
 #		print kwds.keys()
 		kwds['isdirect'] = False
-		self.reflect_beam = pn.processnexus(reflect_beam_number, **kwds)
+		self.reflect_beam = pn.ProcessNexus(reflect_beam_number, **kwds)
 		self.reflect_beam.process(**kwds)
 		self.datafilenumber = self.reflect_beam.datafilenumber
 		
 		kwds['wavelengthbins']=	self.reflect_beam.M_lambdaHIST
 		kwds['isdirect'] = True
-		self.direct_beam = pn.processnexus(direct_beam_number, **kwds)
+		self.direct_beam = pn.ProcessNexus(direct_beam_number, **kwds)
 		self.direct_beam.process(**kwds)
 		self.__reduce_single_angle()
 		
