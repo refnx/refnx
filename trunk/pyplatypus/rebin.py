@@ -115,8 +115,8 @@ def rebin_Q(qq, rr, dr, dq, lowerQ = 0.005, upperQ = 0.4, rebinpercent = 4):
     return W_q_rebin, W_R_rebin, W_E_rebin, W_dq_rebin
 
 	
-def rebin2D(x_init, y_init, z_init, s_init, x_rebin, y_rebin):    
-	if len(y_rebin):
+def rebin2D(x_init, y_init, z_init, s_init, x_rebin = None, y_rebin = None):    
+	if np.asarray(y_rebin):
 		intermed = np.zeros((np.size(z_init, 0), np.size(y_rebin) - 1), dtype = 'float64')
 		intermedSD = np.zeros((np.size(z_init, 0), np.size(y_rebin) - 1), dtype = 'float64')
 
@@ -126,7 +126,7 @@ def rebin2D(x_init, y_init, z_init, s_init, x_rebin, y_rebin):
 		intermed = z_init.astype('float64')
 		intermedSD = z_init.astype('float64')
 	
-	if len(x_rebin):
+	if np.asarray(x_rebin):
 		z_rebin = np.zeros((np.size(x_rebin, 0) - 1, np.size(intermed, 1)), dtype = 'float64')
 		z_rebinSD = np.zeros(z_rebin.shape, dtype = 'float64')
 
