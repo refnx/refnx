@@ -814,6 +814,7 @@ def background_subtract_line(detector, detectorSD, beam_centre, beam_SD, extent_
 	y3 = round(hipx + (extent_mult * extent_mult * beam_SD) + pixel_offset + 1)
 	
 	xvals = np.array([x for x in xrange(len(detector)) if (y0 <= x < y1 or y2 < x <= y3)], dtype = 'int')
+
 	yvals = detector[xvals]
 	ySDvals = detectorSD[xvals] 
 	xvals = np.asfarray(xvals)
