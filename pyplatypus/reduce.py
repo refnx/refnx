@@ -1,6 +1,7 @@
 from __future__ import division
 import numpy as np
-import processnexus as pn
+import processplatypusnexus as ppn
+import platypusspectrum as ps
 import ErrorProp as EP
 import Qtransforms as qtrans
 import string
@@ -11,15 +12,38 @@ class Reduce(object):
 	def __init__(self, reflect_beam_number, direct_beam_number, **kwds):
 #		print kwds.keys()
 		kwds['isdirect'] = False
-		self.reflect_beam = pn.ProcessNexus(reflect_beam_number, **kwds)
-		self.reflect_beam.process(**kwds)
-		self.datafilenumber = self.reflect_beam.datafilenumber
 		
-		kwds['wavelengthbins']=	self.reflect_beam.M_lambdaHIST
+		#create a processing object
+		processingObj = ppn.processplatypusnexus(**kwds)
+		
+		datafilename = 'PLP{0:07d}.nx.hdf'.format(int(abs(reflect_beam_number)))
+		if kwds.get('basedir'):
+			self.basedir = kwds.get('basedir')
+			for root, dirs, files in os.walk(kwds['basedir']):
+				if datafilename in files:
+					datafilename = os.path.join(root, datafilename)
+					break
+		
+		with h5py.File(datafilename, 'r') as h5data:
+			self.reflect_beam = processingObj.process(h5data, **kwds)
+
+		
 		kwds['isdirect'] = True
-		self.direct_beam = pn.ProcessNexus(direct_beam_number, **kwds)
-		self.direct_beam.process(**kwds)
+		kwds['wavelengthbins'] = reflect_spectrum.M_lambdaHIST
+		
+		datafilename = 'PLP{0:07d}.nx.hdf'.format(int(abs(direct_beam_number)))
+		if kwds.get('basedir'):
+			self.basedir = kwds.get('basedir')
+			for root, dirs, files in os.walk(kwds['basedir']):
+				if datafilename in files:
+					datafilename = os.path.join(root, datafilename)
+					break
+
+		with h5py.File(datafilename, 'r') as h5data:
+			self.direct_beam = processingObj.process(h5data, **kwds)
+		
 		self.__reduce_single_angle()
+		
 		
 	def get_1D_data(self, scanpoint = 0):
 		return (self.W_q[scanpoint], self.W_ref[scanpoint], self.W_refSD[scanpoint], self.W_qSD[scanpoint])
