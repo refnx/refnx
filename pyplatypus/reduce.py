@@ -11,35 +11,37 @@ import reflectdataset as rd
 class Reduce(object):
 	def __init__(self, reflect_beam_number, direct_beam_number, **kwds):
 #		print kwds.keys()
-		kwds['isdirect'] = False
+
+		keywords = kwds.copy()
+		keywords['isdirect'] = False
 		
 		#create a processing object
-		processingObj = ppn.processplatypusnexus(**kwds)
+		processingObj = ppn.processplatypusnexus(**keywords)
 		
-		datafilename = 'PLP{0:07d}.nx.hdf'.format(int(abs(reflect_beam_number)))
+		#get the spectrum for the reflected beam
+		rdfn = 'PLP{0:07d}.nx.hdf'.format(int(abs(reflect_beam_number)))
+		ddfn = 'PLP{0:07d}.nx.hdf'.format(int(abs(direct_beam_number)))
+		reflectdatafilename = ''
+		directdatafilename = ''
+
 		if kwds.get('basedir'):
 			self.basedir = kwds.get('basedir')
-			for root, dirs, files in os.walk(kwds['basedir']):
-				if datafilename in files:
-					datafilename = os.path.join(root, datafilename)
-					break
+			for root, dirs, files in os.walk(kwds['basedir']) while not (len(reflectdatafilename) and len(directdatafilename)):
+				if rdfn in files:
+					reflectdatafilename = os.path.join(root, rdfn)
+				if ddfn in files:
+					directdatafilename = os.path.join(root, ddfn)	
+		
 		
 		with h5py.File(datafilename, 'r') as h5data:
-			self.reflect_beam = processingObj.process(h5data, **kwds)
-
+			self.reflect_beam = processingObj.process(h5data, **keywords)
 		
-		kwds['isdirect'] = True
-		kwds['wavelengthbins'] = reflect_spectrum.M_lambdaHIST
-		
-		datafilename = 'PLP{0:07d}.nx.hdf'.format(int(abs(direct_beam_number)))
-		if kwds.get('basedir'):
-			self.basedir = kwds.get('basedir')
-			for root, dirs, files in os.walk(kwds['basedir']):
-				if datafilename in files:
-					datafilename = os.path.join(root, datafilename)
-					break
-
-		with h5py.File(datafilename, 'r') as h5data:
+		#now get the spectrum for the direct beam
+		keywords['isdirect'] = True
+		keywords['wavelengthbins'] = reflect_spectrum.M_lambdaHIST
+		del(keywords['eventstreaming'])
+	
+		with h5py.File(directdatafilename, 'r') as h5data:
 			self.direct_beam = processingObj.process(h5data, **kwds)
 		
 		self.__reduce_single_angle()

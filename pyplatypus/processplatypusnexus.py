@@ -46,18 +46,14 @@ class ProcessPlatypusNexus(processnexus.ProcessNexus):
 
 	"""
 	
-		This class processes a Platypus nexus file to produce an intensity vs wavelength spectrum. You instantiate an object of the class
-		with an integer number representing the incrementally named file to be processed, viz:
-		You can specify a parent directory of the file using the optional basedir keyword.
+		This class is a processor for a Platypus nexus file to produce an intensity vs wavelength spectrum. 
+		
+		Usage:
+		>>>h5data = h5py.File('PLP0000708.nx.hdf','r')
+		>>>processorObject = ProcessPlatypusNexus()
+		>>>spectrum = processorObject.process(h5data)
+		>>>spectrum.write_spectrum()
 
-		The following line creates an object for processing run PLP0000708.nx.hdf, file located beneath /Volumes/foobar/abc
-		>>>obj = pn.ProcessNexus(708, basedir = '/Volumes/foobar/abc')
-		
-		To process the file one then uses the process method:
-		>>> M_lambda, M_lambdaSD, M_spec, M_specSD = obj.process()
-		
-		The process method takes several keywords as optional parameters. Please see the process method for further details.
-		
 		
 	"""
 		
