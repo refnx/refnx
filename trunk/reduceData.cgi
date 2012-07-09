@@ -2,7 +2,8 @@
 import os
 import sys
 import cgi, cgitb
-from platypus import reduce
+import StringIO
+from pyplatypus import reduce
 
 cgitb.enable()
 
@@ -17,7 +18,7 @@ initial_page = """<html>
             <body>
                 <h1>Platypus Data Reduction</h1>
                 <p>To reduce your files please enter the required file numbers, separated by a space</p>
-                <form action='reduceData.cgi' method = "get">
+                <form action='reduceData.cgi' method = "POST">
                     reflected angles <input type='text' name='reflected_angles' /><br/>
                     direct angles <input type='text' name='direct_angles' /><br/>
                     background subn<input type="checkbox" name="background_subn" value="on" /> <br/>
@@ -43,33 +44,31 @@ def main():
         direct_list = reduce.sanitize_string_input(form['direct_angles'].value)
         
         if not 'background_subn' in keys:
-            background = 0
+            background = False
         else:
-            background = 1
+            background = True
         if 'rebinpercent' in keys:
             if 0. < float(form['rebinpercent'].value) < 10.:
                 rebinpercent = float(form['rebinpercent'].value)
         else:
             rebinpercent = 4.
         
-        os.chdir('./temp')
-        reduce_file = reduce.reduce_stitch_files(reflect_list,
-                                                  direct_list,
-                                                   collect=True,
-                                                    rebinpercent = rebinpercent,
-                                                     background = background,
-                                                      basedir = FILEPATH)
+        reduce_dataset = reduce.reduce_stitch_files(reflect_list,
+                                                      direct_list,
+                                                        rebinpercent = rebinpercent,
+                                                         background = background,
+                                                          basedir = FILEPATH)
+        reduce_dataset.rebin(rebinpercent=rebinpercent)
         
+        reduce_file = StringIO.StringIO()
+        reduce_dataset.write_reflectivity_XML(reduce_file)
+                    
         if reduce_file:
             #serve the file 
-            length = os.path.getsize(reduce_file)
-            print datacontent % ('application/octet-stream', 'data.zip', 'data.zip', length)
-            with open(reduce_file, 'rb') as filehandle:
-                filehandle.seek(0)
-                for chunk in filehandle.read():
-                    sys.stdout.write(chunk) # *not* print, doh !
-                    sys.stdout.flush()
-            os.remove(reduce_file)
+            length = len(reduce_file.getvalue())
+            print datacontent % ('application/octet-stream', 'data.xml', 'data.xml', length)
+            sys.stdout.write(reduce_file.getvalue()) # *not* print, doh !
+            sys.stdout.flush()
         else:
             print formcontent
             print "SOMETHING WENT WRONG, CHECK INPUT AND TRY AGAIN"
