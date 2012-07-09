@@ -11,7 +11,45 @@ import reflectdataset
 import os
     
 class Reduce(object):
+	""" 
+		
+		class for reducing Platypus reflectometer data - dividing the reflected beam spectrum by the direct beam spectrum to
+		give the specular reflectivity.
+		Offspecular data maps are also produced.
+		
+	"""
+		
 	def __init__(self, h5ref, h5direct, h5norm = None, **kwds):
+		"""
+
+			h5ref - the hdf5 file corresponding to the reflected beam run
+			h5direct - the hdf5 file corresponding to the direct beam run
+			h5norm - the hdf5 file corresponding to the flood field correction run
+			
+			kwds is passed directly to processplatypusnexus.ProcessPlatypusNexus.process, look at that docstring for specification of options.
+			
+			Following successful construction of the object the following attributes are available:
+			self.W_q[N, T]					-Q values
+			self.W_qSD[N, T]				-uncertainty in Q values (FWHM)
+			self.W_ref[N, T]				-specular reflectivity
+			self.W_refSD[N, T]				-uncertainty in specular reflectivity (SD)
+			self.M_ref[N, T, Y]				-offspecular reflectivity map
+			self.M_refSD[N, T, Y]			-uncertainty in offspecular reflectivity
+			self.M_qz[N, T, Y]				-Qz for offspecular map
+			self.M_qy[N, T, Y]				-Qy for offspecular map
+			self.numspectra					-N
+			self.datafilenumber				-run number for the reflected beam
+			self.reflect_beam				-a platypus.PlatypusSpectrum object for the reflected beam spectrum
+			self.direct_beam				-a platypus.PlatypusSpectrum object for the direct beam spectrum
+			
+			N corresponds to the number of spectra
+			T corresponds to the number of Q (wavelength) bins
+			Y corresponds to the number of y pixels on the detector.
+			
+			This class reduces all the spectra present in the reflected beam file (see processplatypus nexus for eventmode specification and
+			other related options), but	aggregates all data in the direct beam spectrum.
+		
+		"""
 		keywords = kwds.copy()
 		keywords['isdirect'] = False
 		
@@ -22,6 +60,8 @@ class Reduce(object):
 		self.reflect_beam = processingObj.process(h5ref, h5norm = h5norm, **keywords)
 		
 		#now get the spectrum for the direct beam
+		#need to use exactly the same wavelength base
+		#also need to specify that it's a direct beam to do the gravity correction.
 		keywords['isdirect'] = True
 		keywords['wavelengthbins'] = self.reflect_beam.M_lambdaHIST[0]
 		if 'eventstreaming' in keywords.keys():
@@ -33,20 +73,44 @@ class Reduce(object):
 		
 		
 	def get_1D_data(self, scanpoint = 0):
+		"""
+			returns a tuple of Q, R, dR, dQ for the Reduce object. By default a scanpoint of 0 is used. scanpoints upto
+			self.numspectra - 1 can be specified.
+		
+		"""
 		return (self.W_q[scanpoint], self.W_ref[scanpoint], self.W_refSD[scanpoint], self.W_qSD[scanpoint])
 
 	def get_2D_data(self, scanpoint = 0):
+		"""
+		
+			returns a tuple of Qz, Qy, R, dR for the Reduce object (the offspecular data). By default a scanpoint of 0 is
+			used. scanpoints upto self.numspectra - 1 can be specified.
+		
+		"""
+
 		return (self.M_qz[scanpoint], self.M_qy[scanpoint], self.M_ref[scanpoint], self.M_refSD[scanpoint])
 		
 	def scale(self, scale):
+		"""
+		
+			divides all the reflectivity values by this scale factor
+			
+		"""
+		
 		self.M_ref /= scale
 		self.M_refSD /=scale
 		self.W_ref /=scale
 		self.W_refSD /= scale
 		
 	def get_reflected_dataset(self, scanpoint = 0):
-		reflectedDatasetObj = reflectdataset.ReflectDataset()
-		reflectedDatasetObj.add_dataset(self, scanpoint = scanpoint)
+		"""
+		
+			returns a reflectdataset.ReflectDataset() created from this Reduce object. By default a scanpoint of 0 is
+			used. scanpoints upto self.numspectra - 1 can be specified.
+		
+		"""
+		reflectedDatasetObj = reflectdataset.ReflectDataset([self], scanpoint = scanpoint)
+#		reflectedDatasetObj.add_dataset(self, scanpoint = scanpoint)
 		return reflectedDatasetObj
 	
 	def write_offspecular(self, f, scanpoint = 0):
@@ -198,15 +262,29 @@ class Reduce(object):
  
 def sanitize_string_input(file_list_string):
 	"""
-	given a string like '1 2 3 4 1000 -1 sijsiojsoij' return an integer list where the numbers are greater than 0 and less than 9999999
+	
+		given a string like '1 2 3 4 1000 -1 sijsiojsoij' return an integer list where the numbers are greater than 0 and less than 9999999
 	it strips the string.ascii_letters and any string.punctuation, and converts all the numbers to ints.
+	
 	"""
 	return [int(x) for x in file_list_string.translate(None, string.punctuation).translate(None, string.ascii_letters).split() if 0 < int(x) < 9999999]
 
 def reduce_stitch_files(reflect_list, direct_list, normfilenumber = None, **kwds):
 	"""
-	kwds passed onto processnexusfile
+	
+		reduces a list of reflected beam run numbers and a list of corresponding direct beam run numbers from the Platypus reflectometer.
+		e.g. 
+			reflect_list = [708, 709, 710]
+			direct_list = [711, 711, 711]
+		
+		708 is corresponds to the file PLP0000708.nx.hdf.
+		
+		normfilenumber is the run number for the water flood field correction.
+		
+		kwds is passed onto processplatypusnexus.ProcessPlatypusNexus.process, look at that docstring for specification of options.
+
 	"""
+	
 	scalefactor = kwds.get('scalefactor', 1.)
 		   
 	#now reduce all the files.
