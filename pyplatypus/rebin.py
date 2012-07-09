@@ -124,7 +124,7 @@ def rebin2D(x_init, y_init, z_init, s_init, x_rebin = None, y_rebin = None):
 			intermed[ii,:], intermedSD[ii,:] = rebin(y_init, z_init[ii,:], s_init[ii,:], y_rebin)
 	else:
 		intermed = z_init.astype('float64')
-		intermedSD = z_init.astype('float64')
+		intermedSD = s_init.astype('float64')
 	
 	if x_rebin is not None:
 		z_rebin = np.zeros((np.size(x_rebin, 0) - 1, np.size(intermed, 1)), dtype = 'float64')

@@ -77,7 +77,7 @@ class PlatypusSpectrum(spectrum.Spectrum):
 				object.__setattr__(self, key, value)
 		
 		
-	def write_spectrum(self, f):
+	def write_spectrum(self, f, scanpoint = 0):
 		"""
 			
 			This method writes an XML representation of the corrected spectrum to the file f (supplied by callee).
