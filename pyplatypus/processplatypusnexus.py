@@ -173,7 +173,7 @@ class ProcessPlatypusNexus(processnexus.ProcessNexus):
 
 		#detector shape should now be (n, t, y)
 		#create the SD of the array
-		detectorSD = np.sqrt(detector)
+		detectorSD = np.sqrt(detector + 1)
 		
 		#detector normalisation with a water file
 		if h5norm:
@@ -340,7 +340,7 @@ class ProcessPlatypusNexus(processnexus.ProcessNexus):
 		#detector shape input is (n, t, y)
 		#we want to rebin t.
 		if 'wavelengthbins' in kwds:
-			rebinning = kwds['wavelengthbins'][0]
+			rebinning = kwds['wavelengthbins']
 		elif 0 < self.rebinpercent < 10.:
 			frac = 1. + (self.rebinpercent/100.)
 			lowl = (2 * self.lolambda) / ( 1. + frac)
@@ -480,6 +480,7 @@ class ProcessPlatypusNexus(processnexus.ProcessNexus):
 		#create instance variables for information it's useful to have.
 		d = dict()
 		d['datafilename'] = h5data.filename
+		d['datafilenumber'] = h5data.filename
 		if h5norm:
 			d['normfilename'] = h5norm.filename
 		d['M_topandtail'] = detector

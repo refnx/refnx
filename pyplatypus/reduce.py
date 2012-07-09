@@ -7,7 +7,7 @@ import ErrorProp as EP
 import Qtransforms as qtrans
 import string
 from time import gmtime, strftime
-import reflectdataset as rd
+import reflectdataset
 import os
     
 class Reduce(object):
@@ -16,17 +16,18 @@ class Reduce(object):
 		keywords['isdirect'] = False
 		
 		#create a processing object
-		processingObj = ppn.processplatypusnexus(**keywords)
+		processingObj = ppn.ProcessPlatypusNexus()
 		
 		#get the spectrum for the reflected beam
 		self.reflect_beam = processingObj.process(h5ref, h5norm = h5norm, **keywords)
 		
 		#now get the spectrum for the direct beam
 		keywords['isdirect'] = True
-		keywords['wavelengthbins'] = self.reflect_beam.M_lambdaHIST
-		del(keywords['eventstreaming'])
-	
-		self.direct_beam = processingObj.process(h5direct, h5norm = h5norm, **kwds)
+		keywords['wavelengthbins'] = self.reflect_beam.M_lambdaHIST[0]
+		if 'eventstreaming' in keywords.keys():
+			del(keywords['eventstreaming'])
+		
+		self.direct_beam = processingObj.process(h5direct, h5norm = h5norm, **keywords)
 		
 		self.__reduce_single_angle()
 		
@@ -44,7 +45,7 @@ class Reduce(object):
 		self.W_refSD /= scale
 		
 	def get_reflected_dataset(self, scanpoint = 0):
-		reflectedDatasetObj = rd.ReflectDataset()
+		reflectedDatasetObj = reflectdataset.ReflectDataset()
 		reflectedDatasetObj.add_dataset(self, scanpoint = scanpoint)
 		return reflectedDatasetObj
 	
@@ -93,7 +94,7 @@ class Reduce(object):
 		#calculate omega and two_theta depending on the mode.
 		mode = self.reflect_beam.mode
 		M_twotheta = np.zeros(self.reflect_beam.M_topandtail.shape, dtype = 'float64')
-		
+				
 		if mode == 'FOC' or mode == 'POL' or mode == 'POLANAL' or mode == 'MT':
 			omega = self.reflect_beam.M_beampos + self.reflect_beam.detectorZ[:, np.newaxis]
 			omega -= self.direct_beam.M_beampos + self.direct_beam.detectorZ
@@ -106,7 +107,7 @@ class Reduce(object):
 			#print omega * 180/np.pi
 			
 			M_twotheta += self.reflect_beam.detectorZ[:, np.newaxis, np.newaxis]
-			M_twotheta += np.arange(numypixels * 1.)[np.newaxis, np.newaxis, :] * pn.Y_PIXEL_SPACING
+			M_twotheta += np.arange(numypixels * 1.)[np.newaxis, np.newaxis, :] * ppn.Y_PIXEL_SPACING
 			
 			M_twotheta -= self.direct_beam.M_beampos[:, :, np.newaxis] + self.direct_beam.detectorZ
 			M_twotheta /= self.reflect_beam.detectorY[:, np.newaxis, np.newaxis]
@@ -193,15 +194,16 @@ class Reduce(object):
 		self.M_qz = M_qz
 		self.M_qy = M_qy
 		self.numspectra = numspectra
+		self.datafilenumber = self.reflect_beam.datafilenumber
  
- def sanitize_string_input(file_list_string):
-    """
-    given a string like '1 2 3 4 1000 -1 sijsiojsoij' return an integer list where the numbers are greater than 0 and less than 9999999
-    it strips the string.ascii_letters and any string.punctuation, and converts all the numbers to ints.
-    """
-    return [int(x) for x in file_list_string.translate(None, string.punctuation).translate(None, string.ascii_letters).split() if 0 < int(x) < 9999999]
- 
- def reduce_stitch_files(reflect_list, direct_list, normfilenumber = None, **kwds):
+def sanitize_string_input(file_list_string):
+	"""
+	given a string like '1 2 3 4 1000 -1 sijsiojsoij' return an integer list where the numbers are greater than 0 and less than 9999999
+	it strips the string.ascii_letters and any string.punctuation, and converts all the numbers to ints.
+	"""
+	return [int(x) for x in file_list_string.translate(None, string.punctuation).translate(None, string.ascii_letters).split() if 0 < int(x) < 9999999]
+
+def reduce_stitch_files(reflect_list, direct_list, normfilenumber = None, **kwds):
 	"""
 	kwds passed onto processnexusfile
 	"""
@@ -213,9 +215,10 @@ class Reduce(object):
 	combineddataset = reflectdataset.ReflectDataset()
 	
 	if kwds.get('basedir'):
-		self.basedir = kwds.get('basedir')
+		basedir = kwds.get('basedir')
 	else:
-		self.basedir = os.getcwd()
+		kwds['basedir'] = os.getcwd()
+		basedir = os.getcwd()
 	
 	normfiledatafilename = ''
 	if normfilenumber:
@@ -228,16 +231,18 @@ class Reduce(object):
 	for index, val in enumerate(zipped):
 		rdfn = 'PLP{0:07d}.nx.hdf'.format(int(abs(val[0])))
 		ddfn = 'PLP{0:07d}.nx.hdf'.format(int(abs(val[1])))
-		reflectdatafilename =rdfn
-		directdatafilename = ddfn
+		reflectdatafilename = ''
+		directdatafilename = ''
 				
-		for root, dirs, files in os.walk(kwds['basedir']) while not (len(reflectdatafilename) and len(directdatafilename)):
+		for root, dirs, files in os.walk(basedir):
 			if rdfn in files:
 				reflectdatafilename = os.path.join(root, rdfn)
 			if ddfn in files:
-				directdatafilename = os.path.join(root, ddfn)	
+				directdatafilename = os.path.join(root, ddfn)
+			if len(reflectdatafilename) and len(directdatafilename):
+				break
 
-		with h5py.File(reflectdatafilename, 'r') as h5ref and h5py.File(directdatafilename, 'r') as h5direct:
+		with h5py.File(reflectdatafilename, 'r') as h5ref, h5py.File(directdatafilename, 'r') as h5direct:
 			if len(normfiledatafilename):
 				with h5py.File(normfiledatafilename, 'r') as h5norm:
 					reduced = Reduce(h5ref, h5direct, h5norm = h5norm, **kwds)
