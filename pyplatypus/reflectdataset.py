@@ -95,16 +95,17 @@ class ReflectDataset(Data_1D):
 	</REFentry>
 	</REFroot>"""
 
-	def __init__(self, *args, **kwds):
-		#*args should be a list of reduce objects
+	def __init__(self, datasets = None, **kwds):
+		#args should be a list of reduce objects
 		super(ReflectDataset, self).__init__()
 		self.datafilenumber = list()
-		
+		if datasets is not None:
+			[self.add_dataset(data) for data in datasets]
 			
 	def add_dataset(self, reduceObj, scanpoint = 0):
 		#when you add a dataset to splice only the first numspectra dimension is used.
 		#the others are discarded
-		self.add_data(reduceObj.get_1D_data())
+		self.add_data(reduceObj.get_1D_data(scanpoint = scanpoint))
 		self.datafilenumber.append(reduceObj.datafilenumber)                                                    
         
 	def write_reflectivity_XML(self, f):
