@@ -1,5 +1,5 @@
 
-class ProcessNexus(object)
+class ProcessNexus(object):
 
 	def __init__(self):
 		pass

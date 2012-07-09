@@ -62,11 +62,15 @@ class ProcessPlatypusNexus(processnexus.ProcessNexus):
 		
 		pass
 		
-	def process(self, h5data, **kwds):
+	def process(self, h5data, h5norm = None, **kwds):
 		"""
 		
 			Processes the ProcessNexus object to produce a time of flight spectrum.
-			This method returns an instance of PlatypusSpectrum:
+			This method returns an instance of PlatypusSpectrum.
+			
+			h5data - the nexus file for the data.
+			
+			normfile - the file containing the floodfield data.
 				
 			THe following keywords can be set to influence the processing:
 				basedir						- base directory where files are found.
@@ -107,9 +111,7 @@ class ProcessPlatypusNexus(processnexus.ProcessNexus):
 				bmon1_normalise				-normalise by beam monitor 1. Default = True
 				
 				verbose						-print out information during processing. Default = False
-				
-				normfilenumber				-file number that contains the flood field measurement (usually water), default = None.
-				
+								
 				typeofintegration			-if type of integration = 0, then the output spectrum is summed over all scanpoints (N=1)
 											 if type of integration = 1, then the spectra from each scanpoint are not summed (N >= 1)
 											 eventstreaming trumps this option. Default = 0.
@@ -132,7 +134,6 @@ class ProcessPlatypusNexus(processnexus.ProcessNexus):
 		self.wavelengthbins = kwds.get('wavelengthbins', None)
 		self.bmon1_normalise = kwds.get('bmon1_normalise', True) 
 		self.verbose = kwds.get('verbose', False) 
-		self.normfilenumber = kwds.get('normfilenumber', None)
 
 		frequency = h5data['entry1/instrument/disk_chopper/ch1speed'][0]
 		
@@ -172,23 +173,15 @@ class ProcessPlatypusNexus(processnexus.ProcessNexus):
 
 		#detector shape should now be (n, t, y)
 		#create the SD of the array
-		detectorSD = np.sqrt(detector + 1)
+		detectorSD = np.sqrt(detector)
 		
 		#detector normalisation with a water file
-		if 'normfilenumber' in kwds.keys():
-			self.normfilename = 'PLP{0:07d}.nx.hdf'.format(int(abs(self.normfilenumber)))
-
-			for root, dirs, files in os.walk(self.basedir):
-				if self.normfilename in files:
-					self.normfilename = os.path.join(root, self.normfilename)
-					break
-
+		if h5norm:
 			xbins = h5data['entry1/data/x_bin']
 			#shape (y,)
-			with h5py.File(self.normfilename, 'r') as h5norm:
-				M_detectornorm, M_detectornormSD = createdetectornorm(h5norm, xbins[0], xbins[1])
-				#detector has shape (n,t,y), shape of M_waternorm should broadcast to (1,1,y)
-				detector, detectorSD = EP.EPdiv(detector, detectorSD, M_detectornorm, M_detectornormSD)
+			M_detectornorm, M_detectornormSD = createdetectornorm(h5norm, xbins[0], xbins[1])
+			#detector has shape (n,t,y), shape of M_waternorm should broadcast to (1,1,y)
+			detector, detectorSD = EP.EPdiv(detector, detectorSD, M_detectornorm, M_detectornormSD)
 					
 		#shape of these is (numspectra, TOFbins)
 		M_specTOFHIST = np.zeros((numspectra, len(TOF)), dtype = 'float64')
@@ -336,7 +329,7 @@ class ProcessPlatypusNexus(processnexus.ProcessNexus):
 			beam_centre, beam_SD = find_specular_ridge(detector, 500)
 			if self.verbose:
 				print datafilenumber, ": BEAM_CENTRE", datafilenumber, beam_centre
-
+		
 		#TODO gravity correction if direct beam
 		if self.isdirect:
 			detector, detectorSD, M_gravcorrcoefs = correct_for_gravity(detector, detectorSD, M_lambda, 0, 2.8, 18)
@@ -354,8 +347,7 @@ class ProcessPlatypusNexus(processnexus.ProcessNexus):
 			hil =  frac * (2 * self.hilambda) / ( 1. + frac)
 				   
 			numsteps = np.floor(np.log10(hil / lowl ) / np.log10(frac)) + 1
-			rebinning = np.logspace(np.log10(lowl), np.log10(hil), num = numsteps)
-			
+			rebinning = np.logspace(np.log10(lowl), np.log10(hil), num = numsteps)			
 		else:
 			rebinning = M_lambdaHIST[0,:]
 			todel = int(np.interp(self.lolambda, rebinning, np.arange(len(rebinning))))
@@ -379,10 +371,10 @@ class ProcessPlatypusNexus(processnexus.ProcessNexus):
 			rebinneddata[index, ] = plane
 			rebinneddataSD[index, ] = planeSD
 
-			detector = rebinneddata
-			detectorSD = rebinneddataSD
+		detector = rebinneddata
+		detectorSD = rebinneddataSD
 
-			M_lambdaHIST = np.resize(rebinning, (numspectra, np.size(rebinning, 0)))
+		M_lambdaHIST = np.resize(rebinning, (numspectra, np.size(rebinning, 0)))
 
 		#divide the detector intensities by the width of the wavelength bin.
 		binwidths = M_lambdaHIST[0, 1:] - M_lambdaHIST[0,:-1]
@@ -436,10 +428,10 @@ class ProcessPlatypusNexus(processnexus.ProcessNexus):
 		M_specSD = np.sum(np.power(detectorSD[:, :, lopx:hipx + 1], 2), axis = 2)
 		M_specSD = np.sqrt(M_specSD)
 		
-		assert np.isfinite(M_spec).all()
-		assert np.isfinite(M_specSD).all()
-		assert np.isfinite(detector).all()
-		assert np.isfinite(detectorSD).all()
+#		assert np.isfinite(M_spec).all()
+#		assert np.isfinite(M_specSD).all()
+#		assert np.isfinite(detector).all()
+#		assert np.isfinite(detectorSD).all()
 
 		#
 		#normalise by beam monitor 1.
@@ -488,7 +480,8 @@ class ProcessPlatypusNexus(processnexus.ProcessNexus):
 		#create instance variables for information it's useful to have.
 		d = dict()
 		d['datafilename'] = h5data.filename
-		d['normfilename'] = self.normfilename
+		if h5norm:
+			d['normfilename'] = h5norm.filename
 		d['M_topandtail'] = detector
 		d['M_topandtailSD'] = detectorSD
 		d['numspectra'] = numspectra

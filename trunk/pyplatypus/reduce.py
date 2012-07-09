@@ -1,5 +1,6 @@
 from __future__ import division
 import numpy as np
+import h5py
 import processplatypusnexus as ppn
 import platypusspectrum as ps
 import ErrorProp as EP
@@ -7,11 +8,10 @@ import Qtransforms as qtrans
 import string
 from time import gmtime, strftime
 import reflectdataset as rd
+import os
     
 class Reduce(object):
-	def __init__(self, reflect_beam_number, direct_beam_number, **kwds):
-#		print kwds.keys()
-
+	def __init__(self, h5ref, h5direct, h5norm = None, **kwds):
 		keywords = kwds.copy()
 		keywords['isdirect'] = False
 		
@@ -19,30 +19,14 @@ class Reduce(object):
 		processingObj = ppn.processplatypusnexus(**keywords)
 		
 		#get the spectrum for the reflected beam
-		rdfn = 'PLP{0:07d}.nx.hdf'.format(int(abs(reflect_beam_number)))
-		ddfn = 'PLP{0:07d}.nx.hdf'.format(int(abs(direct_beam_number)))
-		reflectdatafilename = ''
-		directdatafilename = ''
-
-		if kwds.get('basedir'):
-			self.basedir = kwds.get('basedir')
-			for root, dirs, files in os.walk(kwds['basedir']) while not (len(reflectdatafilename) and len(directdatafilename)):
-				if rdfn in files:
-					reflectdatafilename = os.path.join(root, rdfn)
-				if ddfn in files:
-					directdatafilename = os.path.join(root, ddfn)	
-		
-		
-		with h5py.File(datafilename, 'r') as h5data:
-			self.reflect_beam = processingObj.process(h5data, **keywords)
+		self.reflect_beam = processingObj.process(h5ref, h5norm = h5norm, **keywords)
 		
 		#now get the spectrum for the direct beam
 		keywords['isdirect'] = True
-		keywords['wavelengthbins'] = reflect_spectrum.M_lambdaHIST
+		keywords['wavelengthbins'] = self.reflect_beam.M_lambdaHIST
 		del(keywords['eventstreaming'])
 	
-		with h5py.File(directdatafilename, 'r') as h5data:
-			self.direct_beam = processingObj.process(h5data, **kwds)
+		self.direct_beam = processingObj.process(h5direct, h5norm = h5norm, **kwds)
 		
 		self.__reduce_single_angle()
 		
@@ -208,4 +192,72 @@ class Reduce(object):
 		self.M_refSD = M_refSD
 		self.M_qz = M_qz
 		self.M_qy = M_qy
+		self.numspectra = numspectra
  
+ def sanitize_string_input(file_list_string):
+    """
+    given a string like '1 2 3 4 1000 -1 sijsiojsoij' return an integer list where the numbers are greater than 0 and less than 9999999
+    it strips the string.ascii_letters and any string.punctuation, and converts all the numbers to ints.
+    """
+    return [int(x) for x in file_list_string.translate(None, string.punctuation).translate(None, string.ascii_letters).split() if 0 < int(x) < 9999999]
+ 
+ def reduce_stitch_files(reflect_list, direct_list, normfilenumber = None, **kwds):
+	"""
+	kwds passed onto processnexusfile
+	"""
+	scalefactor = kwds.get('scalefactor', 1.)
+		   
+	#now reduce all the files.
+	zipped = zip(reflect_list, direct_list)
+
+	combineddataset = reflectdataset.ReflectDataset()
+	
+	if kwds.get('basedir'):
+		self.basedir = kwds.get('basedir')
+	else:
+		self.basedir = os.getcwd()
+	
+	normfiledatafilename = ''
+	if normfilenumber:
+		nfdfn = 'PLP{0:07d}.nx.hdf'.format(int(abs(normfilenumber)))
+		for root, dirs, files in os.walk(self.basedir):
+			if nfdfn in files:
+				normfiledatafilename = os.path.join(root, nfdfn)
+				break
+				
+	for index, val in enumerate(zipped):
+		rdfn = 'PLP{0:07d}.nx.hdf'.format(int(abs(val[0])))
+		ddfn = 'PLP{0:07d}.nx.hdf'.format(int(abs(val[1])))
+		reflectdatafilename =rdfn
+		directdatafilename = ddfn
+				
+		for root, dirs, files in os.walk(kwds['basedir']) while not (len(reflectdatafilename) and len(directdatafilename)):
+			if rdfn in files:
+				reflectdatafilename = os.path.join(root, rdfn)
+			if ddfn in files:
+				directdatafilename = os.path.join(root, ddfn)	
+
+		with h5py.File(reflectdatafilename, 'r') as h5ref and h5py.File(directdatafilename, 'r') as h5direct:
+			if len(normfiledatafilename):
+				with h5py.File(normfiledatafilename, 'r') as h5norm:
+					reduced = Reduce(h5ref, h5direct, h5norm = h5norm, **kwds)
+			else:
+				reduced = Reduce(h5ref, h5direct, **kwds)
+			
+		combineddataset.add_dataset(reduced)
+
+	return combineddataset
+
+
+if __name__ == "__main__":
+	print strftime("%a, %d %b %Y %H:%M:%S +0000", gmtime())
+	
+	a = reduce_stitch_files([708, 709, 710], [711,711,711])
+	
+	a.rebin(rebinpercent = 4)
+	with open('test.xml', 'w') as f:
+		a.write_reflectivity_XML(f)
+
+	print strftime("%a, %d %b %Y %H:%M:%S +0000", gmtime())        
+	
+	
