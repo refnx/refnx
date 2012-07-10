@@ -1,0 +1,54 @@
+<style type="text/css">
+.graph {
+    width:600px;
+     height:400px
+}
+</style>
+
+<html>
+  <head>
+    <!--Load the AJAX API-->
+    <script type="text/javascript" src="https://www.google.com/jsapi"></script>
+    <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1/jquery.min.js"></script>
+     <script type="text/javascript">
+       //Load the Visualization API and the piechart package.
+        google.load('visualization', '1', {'packages':['corechart']});
+    </script>
+
+    <script type="text/javascript">
+      function drawChart(form) {
+  
+        urltocall = "cgi-bin/viewspectrum.cgi"
+  
+        var jsonData = $.ajax({
+            url: urltocall,
+            dataType:"json",
+            async: false,
+            type:"POST",
+            data:"spectrum"+"="+form.inputbox.value,
+            }).responseText;
+  
+        // Create our data table out of JSON data loaded from server.
+        var data = new google.visualization.DataTable(jsonData);
+  
+        // Instantiate and draw our chart, passing in some options.
+        var chart = new google.visualization.ScatterChart(document.getElementById('chart_div'));
+        chart.draw(data, {title: "Platypus spectra", width: 600, height: 400,
+                            vAxis: {title: "Intensity"},
+                            hAxis: {title: "lambda"}});
+      }
+    </script>
+
+  </head>
+<body>
+
+        <!--Div that will hold the pie chart-->
+    <div id="chart_div" class="graph"></div>
+    
+    <FORM NAME="myform" ACTION="" METHOD="GET">Enter your run numbers in the box, separated by spaces: <BR>
+        <INPUT TYPE="text" NAME="inputbox" VALUE=""><P>
+        <INPUT TYPE="button" NAME="button" Value="View" onClick="drawChart(this.form)">
+    </FORM>
+
+</body>
+</html>
