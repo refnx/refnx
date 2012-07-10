@@ -77,7 +77,7 @@ class PlatypusSpectrum(spectrum.Spectrum):
 				object.__setattr__(self, key, value)
 		
 		
-	def write_spectrum(self, f, scanpoint = 0):
+	def write_spectrum_XML(self, f, scanpoint = 0):
 		"""
 			
 			This method writes an XML representation of the corrected spectrum to the file f (supplied by callee).
@@ -123,3 +123,21 @@ class PlatypusSpectrum(spectrum.Spectrum):
 		f.truncate()
 		
 		return True
+		
+	def write_spectrum_dat(self, f, scanpoint = 0):
+		"""
+			
+			This method writes an dat representation of the corrected spectrum to the file f (supplied by callee).
+			The default scanpoint is 0.  See ProcessPlatypusNexus.process() for further
+			details on what scanpoint means.
+		
+		"""
+		
+		for L, I, dI, dL in zip(self.M_lambda[scanpoint], self.M_spec[scanpoint], self.M_specSD[scanpoint], self.M_lambdaSD[scanpoint]):
+			thedata = '{:g}\t{:g}\t{:g}\t{:g}\n'.format(L, I, dI, dL)
+			f.write(thedata)
+		
+		f.truncate()
+		
+		return True
+
