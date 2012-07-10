@@ -4,6 +4,7 @@ import sys
 import cgi, cgitb
 import StringIO
 import h5py
+import numpy as np
 from pyplatypus import reduce
 from pyplatypus import processplatypusnexus
 from pyplatypus import platypusspectrum
@@ -28,11 +29,14 @@ def main():
                 rebinpercent = float(form['rebinpercent'].value)
             else:
                 rebinpercent = 4.
-
-
 		
         red = processplatypusnexus.ProcessPlatypusNexus()
         specname = ''
+        
+        spectra = []
+        description = [('lamda', 'number')]
+        points = []
+        
         for specnumber in spectrum_list:
             sn = 'PLP{0:07d}.nx.hdf'.format(int(abs(specnumber)))
             for root, dirs, files in os.walk(FILEPATH):
@@ -46,14 +50,21 @@ def main():
                 
             with h5py.File(specname, 'r') as h5data:
                 spectrum = red.process(h5data)
-        	
-        description = [('lamda', 'number'), ('I', 'number')]
-        data = zip(spectrum.M_lambda[0], spectrum.M_spec[0])
+        
+            description.append((sn, 'number'))	
+            spectra.append(spectrum)
+            points.append(np.size(spectrum.M_spec[0], axis=1))
+
+#        description = [('lamda', 'number'), ('I', 'number')]
+#        ydata = np.log10(spectrum.M_spec[0])     
+#        data = zip(spectrum.M_lambda[0], ydata)
+
+        
 			
         data_table = gviz_api.DataTable(description)
         data_table.LoadData(data)
         
-        json = data_table.ToJSonResponse()
+        json = data_table.ToJSon()
         print json
     
 if __name__ == '__main__':
