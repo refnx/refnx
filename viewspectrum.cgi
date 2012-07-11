@@ -20,23 +20,24 @@ def main():
     keys = form.keys()
     print "Content-type: text/plain\n"
     
+    kwds = {}
+    kwds['lolambda'] = 2.8
+    kwds['hilambda'] = 18.0
+    kwds['rebinpercent'] = 4.0
+    
     if 'spectrum' in keys:
         spectrum_list = reduce.sanitize_string_input(form['spectrum'].value)
         
         background = True
-        if 'rebinpercent' in keys:
-            if 0. < float(form['rebinpercent'].value) < 10.:
-                rebinpercent = float(form['rebinpercent'].value)
-            else:
-                rebinpercent = 4.
+        for key in keys:
+            if key in kwds:
+                kwds[key] = float(form[key].value)
 		
         red = processplatypusnexus.ProcessPlatypusNexus()
         specname = ''
-        
-        spectra = []
+                
         description = [('lamda', 'number')]
-        points = []
-        
+        spectra = []
         for specnumber in spectrum_list:
             sn = 'PLP{0:07d}.nx.hdf'.format(int(abs(specnumber)))
             for root, dirs, files in os.walk(FILEPATH):
@@ -45,22 +46,37 @@ def main():
                     break
 			
             if not len(specname):
-                print ''
-                return None
-                
+                continue
+                                
             with h5py.File(specname, 'r') as h5data:
-                spectrum = red.process(h5data)
+                spectrum = red.process(h5data, **kwds)
         
-            description.append((sn, 'number'))	
+            description.append((sn, 'number'))
             spectra.append(spectrum)
-            points.append(np.size(spectrum.M_spec[0], axis=1))
+         
+        if not len(spectra):
+            print ''
+            return
 
+        numspectra = len(spectra)
+        data = []
+
+        for index, val in enumerate(spectra):            
+            wavelength = val.M_lambda[0]
+            intensity = val.M_spec[0]
+            numpoints = np.size(wavelength, axis = 0)
+            
+            for index2 in xrange(numpoints):
+                record = [None] * (numspectra + 1)
+                record[0] = wavelength[index2]
+                record[index + 1] = intensity[index2]
+                data.append(record)
+ 
 #        description = [('lamda', 'number'), ('I', 'number')]
 #        ydata = np.log10(spectrum.M_spec[0])     
 #        data = zip(spectrum.M_lambda[0], ydata)
-
         
-			
+ 			
         data_table = gviz_api.DataTable(description)
         data_table.LoadData(data)
         

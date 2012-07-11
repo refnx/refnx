@@ -19,36 +19,48 @@
       function drawChart(form) {
   
         urltocall = "cgi-bin/viewspectrum.cgi"
-  
+        
         var jsonData = $.ajax({
             url: urltocall,
             dataType:"json",
             async: false,
             type:"POST",
-            data:"spectrum"+"="+form.inputbox.value,
+            data:{spectrum: form.inputbox.value,
+                     rebinpercent: form.rebinpercent.value,
+                         lolambda: form.minlambda.value,
+                            hilambda: form.maxlambda.value},
             }).responseText;
   
         // Create our data table out of JSON data loaded from server.
         var data = new google.visualization.DataTable(jsonData);
   
         // Instantiate and draw our chart, passing in some options.
-        var chart = new google.visualization.ScatterChart(document.getElementById('chart_div'));
+        var chart = new google.visualization.LineChart(document.getElementById('chart_div'));
         chart.draw(data, {title: "Platypus spectra", width: 600, height: 400,
-                            vAxis: {title: "Intensity"},
-                            hAxis: {title: "lambda"}});
-      }
-    </script>
+                            vAxis: {title: "Intensity", logScale: form.logY.checked},
+                            hAxis: {title: "lambda", logScale: form.logX.checked}});
 
-  </head>
+      }
+      
+ 
+    </script>
+    </head>
 <body>
 
         <!--Div that will hold the pie chart-->
     <div id="chart_div" class="graph"></div>
+    <div id="toolbar_div"></div>
     
     <FORM NAME="myform" ACTION="" METHOD="GET">Enter your run numbers in the box, separated by spaces: <BR>
         <INPUT TYPE="text" NAME="inputbox" VALUE=""><P>
-        <INPUT TYPE="button" NAME="button" Value="View" onClick="drawChart(this.form)">
+        rebinning percentage: <INPUT TYPE="text" NAME="rebinpercent", VALUE="4">  <P>
+        minimum wavelength: <INPUT TYPE="text" NAME="minlambda", VALUE="2.8"> <P>
+        maximum wavelength: <INPUT TYPE="text" NAME="maxlambda", VALUE="18.0"> <P>
+        
+        <INPUT type="checkbox" name="logY" value="1" /> logY scale <P>
+        <INPUT type="checkbox" name="logX" value="1" /> logX scale <P>
+        <INPUT TYPE="button" NAME="ViewButton" Value="View" onClick="drawChart(this.form)">
     </FORM>
-
+    
 </body>
 </html>
