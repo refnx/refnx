@@ -40,24 +40,24 @@ def main():
         red = processplatypusnexus.ProcessPlatypusNexus()
         specname = ''
                 
-#        try:
-        for specnumber in spectrum_list:
-            sn = 'PLP{0:07d}.nx.hdf'.format(int(abs(specnumber)))
-            for root, dirs, files in os.walk(FILEPATH):
-                if sn in files:
-                    specname = os.path.join(root, sn)
-                    break
-            
-            if not len(specname):
-                continue
-            	
-            with h5py.File(specname, 'r') as h5data:
-                spectrum = red.process(h5data, **kwds)
-                spectra.append(spectrum)
-#       except:
-#			print "Content-type: text/plain\n"
-#			print 'a'
-#			return
+        try:
+            for specnumber in spectrum_list:
+                sn = 'PLP{0:07d}.nx.hdf'.format(int(abs(specnumber)))
+                for root, dirs, files in os.walk(FILEPATH):
+                    if sn in files:
+                        specname = os.path.join(root, sn)
+                        break
+                
+                if not len(specname):
+                    continue
+                
+                with h5py.File(specname, 'r') as h5data:
+                    spectrum = red.process(h5data, **kwds)
+                    spectra.append(spectrum)
+        except:
+            print "Content-type: text/plain\n"
+            print 'a'
+            return
 			
     if not len(spectra):
         print "Content-type: text/plain\n"
