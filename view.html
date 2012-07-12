@@ -16,8 +16,16 @@
     </script>
 
     <script type="text/javascript">
-      function drawChart(form) {
-  
+      var data;
+      var chart;
+      
+      function redraw(form){
+          chart.draw(data, {title: "Platypus spectra", width: 600, height: 400,
+                            vAxis: {title: "Intensity", logScale: form.logY.checked},
+                            hAxis: {title: "lambda", logScale: form.logX.checked}});
+      }
+      
+      function drawchart(form) {
         urltocall = "cgi-bin/viewspectrum.cgi"
         
         var jsonData = $.ajax({
@@ -28,14 +36,15 @@
             data:{spectrum: form.inputbox.value,
                      rebinpercent: form.rebinpercent.value,
                          lolambda: form.minlambda.value,
-                            hilambda: form.maxlambda.value},
+                            hilambda: form.maxlambda.value,
+                             JSON: 1},
             }).responseText;
   
         // Create our data table out of JSON data loaded from server.
-        var data = new google.visualization.DataTable(jsonData);
+        data = new google.visualization.DataTable(jsonData);
   
         // Instantiate and draw our chart, passing in some options.
-        var chart = new google.visualization.LineChart(document.getElementById('chart_div'));
+        chart = new google.visualization.LineChart(document.getElementById('chart_div'));
         chart.draw(data, {title: "Platypus spectra", width: 600, height: 400,
                             vAxis: {title: "Intensity", logScale: form.logY.checked},
                             hAxis: {title: "lambda", logScale: form.logX.checked}});
@@ -57,9 +66,9 @@
         minimum wavelength: <INPUT TYPE="text" NAME="minlambda", VALUE="2.8"> <P>
         maximum wavelength: <INPUT TYPE="text" NAME="maxlambda", VALUE="18.0"> <P>
         
-        <INPUT type="checkbox" name="logY" value="1" onclick="drawChart(this.form)"/> logY scale <P>
-        <INPUT type="checkbox" name="logX" value="1" onclick="drawChart(this.form)"/> logX scale <P>
-        <INPUT TYPE="button" NAME="ViewButton" Value="View" onClick="drawChart(this.form)">
+        <INPUT type="checkbox" name="logY" value="1" onclick="redraw(this.form)"/> logY scale <P>
+        <INPUT type="checkbox" name="logX" value="1" onclick="redraw(this.form)"/> logX scale <P>
+        <INPUT TYPE="button" NAME="ViewButton" Value="View" onClick="drawchart(this.form)">
     </FORM>
     
 </body>
