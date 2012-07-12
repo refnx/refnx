@@ -38,6 +38,7 @@
                      rebinpercent: form.rebinpercent.value,
                          lolambda: form.lolambda.value,
                             hilambda: form.hilambda.value,
+							   normfilenumber: form.normfilenumber.value,
                              JSON: 1}
             }).responseText;
   
@@ -64,6 +65,7 @@
     <FORM NAME="myform" ACTION="cgi-bin/reduceData.cgi" METHOD="POST">Enter your run numbers in the boxes, separated by spaces: <BR>
         reflected spectra <INPUT TYPE="text" NAME="reflect_spectrum" VALUE=""><P>
         direct spectra <INPUT TYPE="text" NAME="direct_spectrum" VALUE=""><P>
+		floodfield (single run) <INPUT TYPE="text" NAME="normfilenumber" VALUE=""><P>
 
         rebinning percentage: <INPUT TYPE="text" NAME="rebinpercent", VALUE="4">  <P>
         minimum wavelength: <INPUT TYPE="text" NAME="lolambda", VALUE="2.8"> <P>
