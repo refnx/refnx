@@ -28,6 +28,9 @@
       function drawchart(form) {
         urltocall = "cgi-bin/reduceData.cgi"
         
+		data = null;
+		chart = null;
+		
         var jsonData = $.ajax({
             url: urltocall,
             dataType:"json",
@@ -58,9 +61,7 @@
     </head>
 <body>
 
-        <!--Div that will hold the pie chart-->
     <div id="chart_div" class="graph"></div>
-    <div id="toolbar_div"></div>
     
     <FORM NAME="myform" ACTION="cgi-bin/reduceData.cgi" METHOD="POST">Enter your run numbers in the boxes, separated by spaces: <BR>
         reflected spectra <INPUT TYPE="text" NAME="reflect_spectrum" VALUE=""><P>

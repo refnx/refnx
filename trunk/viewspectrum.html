@@ -26,7 +26,8 @@
       }
       
       function drawchart(form) {
-        urltocall = "cgi-bin/viewspectrum.cgi"
+        urltocall = "cgi-bin/viewspectrum.cgi";
+		chart = null;
         
         var jsonData = $.ajax({
             url: urltocall,
@@ -40,6 +41,8 @@
                              JSON: 1}
             }).responseText;
   
+		data = null;
+		
         // Create our data table out of JSON data loaded from server.
         data = new google.visualization.DataTable(jsonData);
   
@@ -58,7 +61,6 @@
 
         <!--Div that will hold the pie chart-->
     <div id="chart_div" class="graph"></div>
-    <div id="toolbar_div"></div>
     
     <FORM NAME="myform" ACTION="cgi-bin/viewspectrum.cgi" METHOD="POST">Enter your run numbers in the box, separated by spaces: <BR>
         <INPUT TYPE="text" NAME="spectrum" VALUE=""><P>
