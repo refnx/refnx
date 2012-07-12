@@ -261,12 +261,12 @@ class Reduce(object):
 		self.datafilenumber = self.reflect_beam.datafilenumber
  
 def sanitize_string_input(file_list_string):
-	"""
-	
-		given a string like '1 2 3 4 1000 -1 sijsiojsoij' return an integer list where the numbers are greater than 0 and less than 9999999
-	it strips the string.ascii_letters and any string.punctuation, and converts all the numbers to ints.
-	
-	"""
+    """
+    
+    	given a string like '1 2 3 4 1000 -1 sijsiojsoij' return an integer list where the numbers are greater than 0 and less than 9999999
+    it strips the string.ascii_letters and any string.punctuation, and converts all the numbers to ints.
+    
+    """
     temp = [x.translate(None, string.punctuation).translate(None, string.ascii_letters).split() for x in file_list_string]
     return [int(item) for sublist in temp for item in sublist if 0 < int(item) < 9999999]
 	

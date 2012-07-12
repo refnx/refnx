@@ -1,0 +1,76 @@
+<style type="text/css">
+.graph {
+    width:600px;
+     height:400px
+}
+</style>
+
+<html>
+  <head>
+    <!--Load the AJAX API-->
+    <script type="text/javascript" src="https://www.google.com/jsapi"></script>
+    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1/jquery.min.js"></script>
+     <script type="text/javascript">
+       //Load the Visualization API and the piechart package.
+        google.load('visualization', '1', {'packages':['corechart']});
+    </script>
+
+    <script type="text/javascript">
+      var data;
+      var chart;
+      
+      function redraw(form){
+          chart.draw(data, {title: "Platypus spectra", width: 600, height: 400,
+                            vAxis: {title: "Intensity", logScale: form.logY.checked},
+                            hAxis: {title: "lambda", logScale: form.logX.checked}});
+      }
+      
+      function drawchart(form) {
+        urltocall = "cgi-bin/viewspectrum.cgi"
+        
+        var jsonData = $.ajax({
+            url: urltocall,
+            dataType:"json",
+            async: false,
+            type:"POST",
+            data:{spectrum: form.spectrum.value,
+                     rebinpercent: form.rebinpercent.value,
+                         lolambda: form.lolambda.value,
+                            hilambda: form.hilambda.value,
+                             JSON: 1}
+            }).responseText;
+  
+        // Create our data table out of JSON data loaded from server.
+        data = new google.visualization.DataTable(jsonData);
+  
+        // Instantiate and draw our chart, passing in some options.
+        chart = new google.visualization.LineChart(document.getElementById('chart_div'));
+        chart.draw(data, {title: "Platypus spectra", width: 600, height: 400,
+                            vAxis: {title: "Intensity", logScale: form.logY.checked},
+                            hAxis: {title: "lambda", logScale: form.logX.checked}});
+
+      }
+      
+ 
+    </script>
+    </head>
+<body>
+
+        <!--Div that will hold the pie chart-->
+    <div id="chart_div" class="graph"></div>
+    <div id="toolbar_div"></div>
+    
+    <FORM NAME="myform" ACTION="cgi-bin/viewspectrum.cgi" METHOD="POST">Enter your run numbers in the box, separated by spaces: <BR>
+        <INPUT TYPE="text" NAME="spectrum" VALUE=""><P>
+        rebinning percentage: <INPUT TYPE="text" NAME="rebinpercent", VALUE="4">  <P>
+        minimum wavelength: <INPUT TYPE="text" NAME="lolambda", VALUE="2.8"> <P>
+        maximum wavelength: <INPUT TYPE="text" NAME="hilambda", VALUE="18.0"> <P>
+        
+        <INPUT type="checkbox" name="logY" value="1" onclick="redraw(this.form)"/> logY scale <P>
+        <INPUT type="checkbox" name="logX" value="1" onclick="redraw(this.form)"/> logX scale <P>
+        <INPUT TYPE="button" NAME="ViewButton" Value="View" onClick="drawchart(this.form)"/>
+        <INPUT TYPE='submit' value="Save spectra"/>
+    </FORM>
+  
+</body>
+</html>
