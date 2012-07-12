@@ -38,10 +38,10 @@ def main():
                 kwds[key] = float(form[key].value)
 		
         red = processplatypusnexus.ProcessPlatypusNexus()
-        specname = ''
                 
         try:
             for specnumber in spectrum_list:
+                specname = ''
                 sn = 'PLP{0:07d}.nx.hdf'.format(int(abs(specnumber)))
                 for root, dirs, files in os.walk(FILEPATH):
                     if sn in files:
