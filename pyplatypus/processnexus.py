@@ -9,3 +9,6 @@ class ProcessNexus(object):
 		
 	def process_event_stream(self):
 		pass
+		
+	def catalogue(self):
+		pass

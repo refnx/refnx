@@ -63,7 +63,10 @@ class ProcessPlatypusNexus(processnexus.ProcessNexus):
 		super(ProcessPlatypusNexus, self).__init__
 		
 		pass
-		
+	
+	def catalogue(self, h5data):
+		pass
+	
 	def process(self, h5data, h5norm = None, **kwds):
 		"""
 		
