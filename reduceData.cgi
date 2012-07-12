@@ -1,81 +1,99 @@
 #!/usr/local/bin/python
 import os
+import os.path
 import sys
 import cgi, cgitb
 import StringIO
+import h5py
+import numpy as np
 from pyplatypus import reduce
+from pyplatypus import reflectdataset
+import gviz_api
+import zipfile
+import string
 
 cgitb.enable()
 
 #specify where the files are to originate from
-#FILEPATH = '\\\\Filer\\experiments\\platypus\\commissioning\\'
 FILEPATH = './'
 
-initial_page = """<html>
-            <head>
-                <title>platypus data reduction</title>
-            </head>
-            <body>
-                <h1>Platypus Data Reduction</h1>
-                <p>To reduce your files please enter the required file numbers, separated by a space</p>
-                <form action='reduceData.cgi' method = "POST">
-                    reflected angles <input type='text' name='reflected_angles' /><br/>
-                    direct angles <input type='text' name='direct_angles' /><br/>
-                    background subn<input type="checkbox" name="background_subn" value="on" /> <br/>
-                    rebin percentage (0 < x < 10)<input type='text' name='rebinpercent' value = "4.0"/><br/>
-                    <input type='submit', value = "Submit" />
-                </form>
-            </body>
-        </html>
-"""
+def main():
+    form = cgi.FieldStorage()
+    keys = form.keys()
+    
+    kwds = {}
+    kwds['lolambda'] = 2.8
+    kwds['hilambda'] = 18.0
+    kwds['rebinpercent'] = 4.0
+    kwds['background'] = True
+	
+    for key in keys:
+        if key in kwds:
+            kwds[key] = float(form[key].value)
 
-formcontent = "Content-type: text/html\n"
-datacontent = '\r\n'.join(["Content-type: %s;",
+    if 'reflect_spectrum' in keys:
+        reflect_spectrum_list = reduce.sanitize_string_input(form.getlist('reflect_spectrum'))	
+	
+    if 'direct_spectrum' in keys:
+        direct_spectrum_list = reduce.sanitize_string_input(form.getlist('direct_spectrum'))	
+
+    spectra_pairs = zip(reflect_spectrum_list, direct_spectrum_list)
+	
+    if 'normfilenumber' in keys and len(form.getlist('normfilenumber')):
+        normfilenumber = reduce.sanitize_string_input(form.getlist('normfilenumber'))[0]
+    else:
+        normfilenumber = None
+
+	kwds['basedir'] = FILEPATH
+	
+	try:
+		combineddataset = reduce.reduce_stitch_files(reflect_spectrum_list, direct_spectrum_list, normfilenumber = normfilenumber)
+		combineddataset.rebin(rebinpercent = kwds['rebinpercent'])
+	except:
+		print "Content-type: text/plain\n"
+		print 'a'
+		return
+           
+    if 'JSON' in keys:
+        print "Content-type: text/plain\n"
+        print reflectivity_to_json(reflect_spectrum_list[0], combineddataset)
+        return		
+    else:
+        theSpectrum = StringIO.StringIO()
+        combineddataset.write_reflectivity_XML(theSpectrum)
+        length = len(theSpectrum.getvalue())
+        
+        filename = 'c_PLP{:07d}.xml'.format(reflect_spectrum_list[0], 0)
+
+        datacontent = '\r\n'.join(["Content-type: %s;",
                             "Content-Disposition: attachment; filename=\"%s\"",
                             "Content-Title: %s",
                             "Content-Length: %i",
                             "",])
 
-def main():
-    form = cgi.FieldStorage()
-    keys = form.keys()
-    if 'reflected_angles' in keys and 'direct_angles' in keys:
-        reflect_list = reduce.sanitize_string_input(form['reflected_angles'].value)
-        direct_list = reduce.sanitize_string_input(form['direct_angles'].value)
-        
-        if not 'background_subn' in keys:
-            background = False
-        else:
-            background = True
-        if 'rebinpercent' in keys:
-            if 0. < float(form['rebinpercent'].value) < 10.:
-                rebinpercent = float(form['rebinpercent'].value)
-        else:
-            rebinpercent = 4.
-        
-        reduce_dataset = reduce.reduce_stitch_files(reflect_list,
-                                                      direct_list,
-                                                        rebinpercent = rebinpercent,
-                                                         background = background,
-                                                          basedir = FILEPATH)
-        reduce_dataset.rebin(rebinpercent=rebinpercent)
-        
-        reduce_file = StringIO.StringIO()
-        reduce_dataset.write_reflectivity_XML(reduce_file)
-                    
-        if reduce_file:
-            #serve the file 
-            length = len(reduce_file.getvalue())
-            print datacontent % ('application/octet-stream', 'data.xml', 'data.xml', length)
-            sys.stdout.write(reduce_file.getvalue()) # *not* print, doh !
-            sys.stdout.flush()
-        else:
-            print formcontent
-            print "SOMETHING WENT WRONG, CHECK INPUT AND TRY AGAIN"
-            print initial_page
-    else:
-        print formcontent
-        print initial_page
-    
-main()
+        print datacontent % ('text/xml', filename, filename, length)
 
+        sys.stdout.write(theSpectrum.getvalue()) # *not* print, doh !
+        sys.stdout.flush()
+		
+def reflectivity_to_json(filenumber, combineddataset):
+	'''
+		
+		Returns a json representation of the combined dataset, suitable for google visualisation
+		
+	'''
+	
+	description = [('Q', 'number'), (str(filenumber), 'number')]	
+	data_table = gviz_api.DataTable(description)
+
+	qq, RR, dR, dq = combineddataset.get_data()
+	data = zip(qq, RR)
+ 
+	data_table.LoadData(data)
+	
+	return data_table.ToJSon()
+	
+		
+
+if __name__ == '__main__':
+    main()

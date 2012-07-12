@@ -19,36 +19,22 @@
       var data;
       var chart;
       
-      function download_data(form){
-            urltocall = "cgi-bin/viewspectrum.cgi"
-        
-            $.ajax({
-            url: urltocall,
-            async: false,
-            type:"POST",
-            data:{spectrum: form.inputbox.value,
-                     rebinpercent: form.rebinpercent.value,
-                         lolambda: form.minlambda.value,
-                            hilambda: form.maxlambda.value}
-            });
-        
-      }
-      
       function redraw(form){
-          chart.draw(data, {title: "Platypus spectra", width: 600, height: 400,
-                            vAxis: {title: "Intensity", logScale: form.logY.checked},
-                            hAxis: {title: "lambda", logScale: form.logX.checked}});
+          chart.draw(data, {title: "Platypus reflectivity", width: 600, height: 400,
+                            vAxis: {title: "R", logScale: form.logY.checked},
+                            hAxis: {title: "Q", logScale: form.logX.checked}});
       }
       
       function drawchart(form) {
-        urltocall = "cgi-bin/viewspectrum.cgi"
+        urltocall = "cgi-bin/reduceData.cgi"
         
         var jsonData = $.ajax({
             url: urltocall,
             dataType:"json",
             async: false,
             type:"POST",
-            data:{spectrum: form.spectrum.value,
+            data:{reflect_spectrum: form.reflect_spectrum.value,
+                    direct_spectrum: form.direct_spectrum.value,
                      rebinpercent: form.rebinpercent.value,
                          lolambda: form.lolambda.value,
                             hilambda: form.hilambda.value,
@@ -60,9 +46,9 @@
   
         // Instantiate and draw our chart, passing in some options.
         chart = new google.visualization.LineChart(document.getElementById('chart_div'));
-        chart.draw(data, {title: "Platypus spectra", width: 600, height: 400,
-                            vAxis: {title: "Intensity", logScale: form.logY.checked},
-                            hAxis: {title: "lambda", logScale: form.logX.checked}});
+        chart.draw(data, {title: "Platypus reflectivity", width: 600, height: 400,
+                            vAxis: {title: "R", logScale: form.logY.checked},
+                            hAxis: {title: "Q", logScale: form.logX.checked}});
 
       }
       
@@ -75,13 +61,15 @@
     <div id="chart_div" class="graph"></div>
     <div id="toolbar_div"></div>
     
-    <FORM NAME="myform" ACTION="cgi-bin/viewspectrum.cgi" METHOD="POST">Enter your run numbers in the box, separated by spaces: <BR>
-        <INPUT TYPE="text" NAME="spectrum" VALUE=""><P>
+    <FORM NAME="myform" ACTION="cgi-bin/reduceData.cgi" METHOD="POST">Enter your run numbers in the boxes, separated by spaces: <BR>
+        reflected spectra <INPUT TYPE="text" NAME="reflect_spectrum" VALUE=""><P>
+        direct spectra <INPUT TYPE="text" NAME="direct_spectrum" VALUE=""><P>
+
         rebinning percentage: <INPUT TYPE="text" NAME="rebinpercent", VALUE="4">  <P>
         minimum wavelength: <INPUT TYPE="text" NAME="lolambda", VALUE="2.8"> <P>
         maximum wavelength: <INPUT TYPE="text" NAME="hilambda", VALUE="18.0"> <P>
         
-        <INPUT type="checkbox" name="logY" value="1" onclick="redraw(this.form)"/> logY scale <P>
+        <INPUT type="checkbox" name="logY" value="1" onclick="redraw(this.form)" checked /> logY scale <P>
         <INPUT type="checkbox" name="logX" value="1" onclick="redraw(this.form)"/> logX scale <P>
         <INPUT TYPE="button" NAME="ViewButton" Value="View" onClick="drawchart(this.form)"/>
         <INPUT TYPE='submit' value="Save spectra"/>

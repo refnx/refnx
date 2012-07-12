@@ -1,0 +1,106 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 42;
+	objects = {
+
+/* Begin PBXFileReference section */
+		C554DCF515AEA5A300BB5E55 /* viewspectrum.html */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.html; name = viewspectrum.html; path = ../viewspectrum.html; sourceTree = SOURCE_ROOT; };
+		C554DD0915AEABA100BB5E55 /* viewreduced.html */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.html; name = viewreduced.html; path = ../viewreduced.html; sourceTree = SOURCE_ROOT; };
+		C5C0A82D15AA554C009DA364 /* utility.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; name = utility.py; path = ../pyplatypus/utility.py; sourceTree = SOURCE_ROOT; };
+		C5C0A82E15AA554C009DA364 /* spectrum.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; name = spectrum.py; path = ../pyplatypus/spectrum.py; sourceTree = SOURCE_ROOT; };
+		C5C0A82F15AA554C009DA364 /* reflectdataset.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; name = reflectdataset.py; path = ../pyplatypus/reflectdataset.py; sourceTree = SOURCE_ROOT; };
+		C5C0A83015AA554C009DA364 /* reduce.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; name = reduce.py; path = ../pyplatypus/reduce.py; sourceTree = SOURCE_ROOT; };
+		C5C0A83115AA554C009DA364 /* rebin.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; name = rebin.py; path = ../pyplatypus/rebin.py; sourceTree = SOURCE_ROOT; };
+		C5C0A83215AA554C009DA364 /* Qtransforms.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; name = Qtransforms.py; path = ../pyplatypus/Qtransforms.py; sourceTree = SOURCE_ROOT; };
+		C5C0A83315AA554C009DA364 /* processplatypusnexus.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; name = processplatypusnexus.py; path = ../pyplatypus/processplatypusnexus.py; sourceTree = SOURCE_ROOT; };
+		C5C0A83415AA554C009DA364 /* processnexus.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; name = processnexus.py; path = ../pyplatypus/processnexus.py; sourceTree = SOURCE_ROOT; };
+		C5C0A83515AA554C009DA364 /* platypusspectrum.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; name = platypusspectrum.py; path = ../pyplatypus/platypusspectrum.py; sourceTree = SOURCE_ROOT; };
+		C5C0A83615AA554C009DA364 /* nsplice.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; name = nsplice.py; path = ../pyplatypus/nsplice.py; sourceTree = SOURCE_ROOT; };
+		C5C0A83815AA554C009DA364 /* quickplot.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; name = quickplot.py; path = ../pyplatypus/quickplot.py; sourceTree = SOURCE_ROOT; };
+		C5C0A83915AA554C009DA364 /* ErrorProp.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; name = ErrorProp.py; path = ../pyplatypus/ErrorProp.py; sourceTree = SOURCE_ROOT; };
+		C5C0A83A15AA554C009DA364 /* __init__.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; name = __init__.py; path = ../pyplatypus/__init__.py; sourceTree = SOURCE_ROOT; };
+		C5C0AA2615ABE14E009DA364 /* viewspectrum.cgi */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; name = viewspectrum.cgi; path = ../viewspectrum.cgi; sourceTree = SOURCE_ROOT; };
+		C5C0AA6F15AE673B009DA364 /* reduceData.cgi */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; name = reduceData.cgi; path = ../reduceData.cgi; sourceTree = SOURCE_ROOT; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		C5C261DA159AC9D0000FCE69 = {
+			isa = PBXGroup;
+			children = (
+				C554DCF515AEA5A300BB5E55 /* viewspectrum.html */,
+				C554DD0915AEABA100BB5E55 /* viewreduced.html */,
+				C5C0AA6F15AE673B009DA364 /* reduceData.cgi */,
+				C5C0AA2615ABE14E009DA364 /* viewspectrum.cgi */,
+				C5C0A82D15AA554C009DA364 /* utility.py */,
+				C5C0A82E15AA554C009DA364 /* spectrum.py */,
+				C5C0A82F15AA554C009DA364 /* reflectdataset.py */,
+				C5C0A83015AA554C009DA364 /* reduce.py */,
+				C5C0A83115AA554C009DA364 /* rebin.py */,
+				C5C0A83215AA554C009DA364 /* Qtransforms.py */,
+				C5C0A83315AA554C009DA364 /* processplatypusnexus.py */,
+				C5C0A83415AA554C009DA364 /* processnexus.py */,
+				C5C0A83515AA554C009DA364 /* platypusspectrum.py */,
+				C5C0A83615AA554C009DA364 /* nsplice.py */,
+				C5C0A83815AA554C009DA364 /* quickplot.py */,
+				C5C0A83915AA554C009DA364 /* ErrorProp.py */,
+				C5C0A83A15AA554C009DA364 /* __init__.py */,
+			);
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXProject section */
+		C5C261DC159AC9D0000FCE69 /* Project object */ = {
+			isa = PBXProject;
+			buildConfigurationList = C5C261DF159AC9D0000FCE69 /* Build configuration list for PBXProject "pyplatypussy" */;
+			compatibilityVersion = "Xcode 2.4";
+			developmentRegion = English;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				English,
+				Japanese,
+				French,
+				German,
+			);
+			mainGroup = C5C261DA159AC9D0000FCE69;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+			);
+		};
+/* End PBXProject section */
+
+/* Begin XCBuildConfiguration section */
+		C5C261DD159AC9D0000FCE69 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = NO;
+			};
+			name = Debug;
+		};
+		C5C261DE159AC9D0000FCE69 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = YES;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		C5C261DF159AC9D0000FCE69 /* Build configuration list for PBXProject "pyplatypussy" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C5C261DD159AC9D0000FCE69 /* Debug */,
+				C5C261DE159AC9D0000FCE69 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = C5C261DC159AC9D0000FCE69 /* Project object */;
+}
