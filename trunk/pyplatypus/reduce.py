@@ -267,8 +267,9 @@ def sanitize_string_input(file_list_string):
 	it strips the string.ascii_letters and any string.punctuation, and converts all the numbers to ints.
 	
 	"""
-	return [int(x) for x in file_list_string.translate(None, string.punctuation).translate(None, string.ascii_letters).split() if 0 < int(x) < 9999999]
-
+    temp = [x.translate(None, string.punctuation).translate(None, string.ascii_letters).split() for x in file_list_string]
+    return [int(item) for sublist in temp for item in sublist if 0 < int(item) < 9999999]
+	
 def reduce_stitch_files(reflect_list, direct_list, normfilenumber = None, **kwds):
 	"""
 	

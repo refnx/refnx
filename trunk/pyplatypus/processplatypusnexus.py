@@ -12,7 +12,9 @@ import rebin
 import string
 from time import gmtime, strftime
 import os
+import os.path
 import argparse
+import re
 
 Y_PIXEL_SPACING = 1.177    #in mm
 O_C1 = 1.04719755
@@ -478,9 +480,15 @@ class ProcessPlatypusNexus(processnexus.ProcessNexus):
 		mode = np.resize(mode, numspectra)
 				
 		#create instance variables for information it's useful to have.
+		filename = h5data['/entry1/experiment/file_name'][0]
+		path, datafilenumber = os.path.split(filename)
+		reg = re.compile('PLP(\d+).nx.hdf')
+		datafilenumber = int(re.split(reg, datafilenumber)[1])
+		
 		d = dict()
 		d['datafilename'] = h5data.filename
-		d['datafilenumber'] = h5data.filename
+		d['datafilenumber'] = datafilenumber
+		
 		if h5norm:
 			d['normfilename'] = h5norm.filename
 		d['M_topandtail'] = detector

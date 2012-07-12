@@ -112,7 +112,8 @@ class PlatypusSpectrum(spectrum.Spectrum):
 		dl = self.M_lambdaSD[:, sorted]
 		dr = self.M_specSD[:, sorted]
 		d['numpoints'] = np.size(r, axis = 1)
-#		filename = 'PLP{:07d}_{:d}.spectrum'.format(self.datafilenumber, index)
+		#filename = 'PLP{:07d}_{:d}.spectrum'.format(self.datafilenumber, index)
+		d['runnumber'] = 'PLP{:07d}'.format(self.datafilenumber)
 			
 		d['r'] = string.translate(repr(r[scanpoint].tolist()), None, ',[]')
 		d['dr'] = string.translate(repr(dr[scanpoint].tolist()), None, ',[]')
