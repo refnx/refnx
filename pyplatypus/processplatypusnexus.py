@@ -66,7 +66,7 @@ class ProcessPlatypusNexus(processnexus.ProcessNexus):
 		d = {}
 
 		try:
-			d['filename'] = h5data['/entry1/experiment/file_name'][0]
+			d['filename'] = h5data.filename
 
 			path, datafilenumber = os.path.split(d['filename'])
 			reg = re.compile('PLP(\d+).nx.hdf')
