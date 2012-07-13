@@ -1000,6 +1000,7 @@ def catalogue_all(basedir = None, fname = None):
 		try:
 			with h5.File(filename, 'r') as h5data:
 				listdata.append((is_platypus_file(filename), Tppn.catalogue(h5data)))
+				h5data.close()
 		except:
 			pass
 			
