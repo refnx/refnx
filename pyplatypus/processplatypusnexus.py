@@ -61,11 +61,36 @@ class ProcessPlatypusNexus(processnexus.ProcessNexus):
 		
 	def __init__(self):
 		super(ProcessPlatypusNexus, self).__init__
-		
-		pass
 	
-	def catalogue(self, h5data):
-		pass
+	def catalogue(self, h5data, scanpoint = 0):
+		d = {}
+
+		try:
+			d['filename'] = h5data['/entry1/experiment/file_name'][0]
+
+			path, datafilenumber = os.path.split(d['filename'])
+			reg = re.compile('PLP(\d+).nx.hdf')
+			d['datafilenumber'] = int(re.split(reg, datafilenumber)[1])
+			d['end_time'] = h5data['entry1/end_time'][0]
+			d['ss1vg'] = h5data['entry1/instrument/slits/first/vertical/gap'][scanpoint]
+			d['ss2vg'] = h5data['entry1/instrument/slits/second/vertical/gap'][scanpoint]
+			d['ss3vg'] = h5data['entry1/instrument/slits/third/vertical/gap'][scanpoint]
+			d['ss4vg'] = h5data['entry1/instrument/slits/fourth/vertical/gap'][scanpoint]		
+			d['ss1hg'] = h5data['entry1/instrument/slits/first/horizontal/gap'][scanpoint]
+			d['ss2hg'] = h5data['entry1/instrument/slits/second/horizontal/gap'][scanpoint]
+			d['ss3hg'] = h5data['entry1/instrument/slits/third/horizontal/gap'][scanpoint]
+			d['ss4hg'] = h5data['entry1/instrument/slits/fourth/horizontal/gap'][scanpoint]		
+
+			d['sth'] = h5data['entry1/sample/sth'][scanpoint]
+			d['bm1_counts'] = h5data['entry1/monitor/bm1_counts'][scanpoint]
+			d['total_counts'] = h5data['entry1/instrument/detector/total_counts'][scanpoint]
+			d['time'] = h5data['entry1/instrument/detector/time'][scanpoint]
+			d['mode'] = h5data['entry1/instrument/parameters/mode'][0]
+			d['daq_dirname'] = h5data['entry1/instrument/detector/daq_dirname'][0]
+		except:
+			pass
+			
+		return d
 	
 	def process(self, h5data, h5norm = None, **kwds):
 		"""
@@ -945,12 +970,67 @@ def deflection(lamda, travel_distance, trajectory):
 	return pp
 	
 
+def is_platypus_file(filename):
+	path, file = os.path.split(filename)
+	reg = re.compile('(\d+)')
+	components = re.split(reg, file)
+	if len(components) == 3 and components[0] == 'PLP' and components[2] == '.nx.hdf' and int(components[1]) > 1 and int(components[1]) < 9999999:
+		return int(components[1])
+	else:
+		return False
+
+	
+def catalogue_all(basedir = None, fname = None):
+	
+	if not basedir:
+		files_to_catalogue = [filename for filename in os.listdir(os.getcwd()) if is_platypus_file(filename)]
+	else:
+		files_to_catalogue = []
+		for root, dirs, files in os.walk(basedir):
+			files_to_catalogue.append([os.path.join(root, filename) for filename in files if is_platypus_file(filename)])
+		
+	files_to_catalogue = [item for sublist in files_to_catalogue for item in sublist]
+	filenumbers = [is_platypus_file(filename) for filename in files_to_catalogue]
+	
+	Tppn = ProcessPlatypusNexus()
+	
+	listdata = []
+	
+	for filename in files_to_catalogue:
+		try:
+			with h5.File(filename, 'r') as h5data:
+				listdata.append((is_platypus_file(filename), Tppn.catalogue(h5data)))
+		except:
+			pass
+			
+	uniquelist = []
+	uniquefnums = []
+	for item in listdata:
+		if not item[0] in uniquefnums:
+			uniquelist.append(item)
+			uniquefnums.append(item[0])
+	
+	uniquelist.sort()
+	if fname:
+		template = """$datafilenumber\t$end_time\t$ss1vg\t$ss2vg\t$ss3vg\t$ss4vg\t$total_counts\t$bm1_counts\t$time\t$mode\t$daq_dirname\n"""
+		with open(fname, 'w') as f:
+			f.write(template)
+			s = string.Template(template)
+
+			for item in uniquelist:
+				f.write(s.safe_substitute(item[1]))
+			
+			f.truncate()
+
+	return uniquelist
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Process some Platypus NeXUS files to produce their TOF spectra.')
     parser.add_argument('file_list', metavar='N', type=int, nargs='+',
                    help='integer file numbers')
     parser.add_argument('--basedir', type=str, help='define the location to find the nexus files')
-    parser.add_argument('--rebin', type=float, help='rebin percentage for the wavelength -1<rebin<10', default = 4)
+    parser.add_argument('--rebinpercent', type=float, help='rebin percentage for the wavelength -1<rebin<10', default = 4)
     parser.add_argument('--lolambda', type=float, help='lo wavelength cutoff for the rebinning', default=2.8)
     parser.add_argument('--hilambda', type=float, help='lo wavelength cutoff for the rebinning', default=18.)
     parser.add_argument('--typeofintegration', type=float, help='0 to integrate all spectra, 1 to output individual spectra', default=0)
