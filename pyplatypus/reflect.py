@@ -1,5 +1,6 @@
 from __future__ import division
 import numpy as np
+import numpy.matlib as npmat
 import math
 
 def reflectivity(coefs, qvals):
@@ -8,8 +9,9 @@ def reflectivity(coefs, qvals):
 		raise Exception('coefs the wrong size')
 		
 	nlayers = int(coefs[0])
+	npnts = len(qvals)
 	
-	pj = np.zeros((len(qvals), nlayers + 2), dtype = 'complex')
+	pj = np.zeros((npnts, nlayers + 2), dtype = 'complex')
 	roughnesses = np.zeros(nlayers + 1, 'float')
 #	rj = np.array((len(qvals), nlayers + 1), 'complex')
 	
@@ -33,5 +35,6 @@ def reflectivity(coefs, qvals):
 
 	rj *= np.exp(pj[:, :-1] * pj[:, 1:] * -2 * roughnesses)
 	
-	
+	MRtotal = np.zeros((npnts, 2, 2), dtype = 'complex')
+	MRtotal[:] = npmat.eye(2)
 	
