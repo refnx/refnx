@@ -28,7 +28,7 @@ extern "C" {
 		return (compexp(-2*rough*rough*a*b))*(a-b)/(a+b);
 	}
 	
-	void abelescalcall(double *coefP, int numcoefs, double *yP, double *xP, int npoints){
+	void abelescalc_imagall(double *coefP, int numcoefs, double *yP, double *xP, int npoints){
 			int err = 0;
 			int j;
 			int Vmullayers = 0;
