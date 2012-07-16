@@ -20,9 +20,9 @@ _reflect = Extension("_reflect",
                    )
 
 # ezrange setup
-setup(  name        = "range function",
-        description = "range takes an integer and returns an n element int array where each element is equal to its index",
-        author      = "Egor Zindy",
+setup(  name        = "Calculates reflectivity",
+        description = "",
+        author      = "Andrew Nelson",
         version     = "1.0",
         ext_modules = [_reflect]
         )
