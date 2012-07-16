@@ -3,7 +3,7 @@ import numpy as np
 import math
 import timeit
 
-def reflectivity(coefs, qvals):
+def abeles(coefs, qvals):
 	
 	if np.size(coefs, 0) != 4 * coefs[0] + 8:
 		raise Exception('coefs the wrong size')
