@@ -1,7 +1,7 @@
 from __future__ import division
 import numpy as np
-import numpy.matlib as npmat
 import math
+import timeit
 
 def reflectivity(coefs, qvals):
 	
@@ -16,27 +16,27 @@ def reflectivity(coefs, qvals):
 	
 	SLDfronting = np.complex(coefs[2] * 1.e-6, coefs[3])
 	SLDbacking = np.complex(coefs[4] * 1.e-6, coefs[5])
+
+	qq2 = np.power(qvals, 2.) / 4.
 	
 	for layer in xrange(nlayers):
-		pj[:, layer + 1] = -4. * math.pi * (np.complex(coefs[4 * layer + 9] * 1.e-6, coefs[4 * layer + 10]) - SLDfronting)
+		pj[:, layer + 1] = - 4. * math.pi * (np.complex(coefs[4 * layer + 9] * 1.e-6, coefs[4 * layer + 10]) - SLDfronting)
 		roughnesses[layer] = np.fabs(coefs[4 * layer + 11])
 		
 	roughnesses[-1] = coefs[7]
 	pj[:, nlayers + 1] = -4 * math.pi * (SLDbacking - SLDfronting);
-	
-	qq2 = np.power(qvals, 2.) / 4.
-	
+		
 	pj[:,:] += qq2[:, np.newaxis]	
 	pj = np.sqrt(pj)
 	
 	#work out the fresnel reflection for each layer
-	rj = (pj[:, :-1] - pj[:, 1:]) / (pj[:, :-1] + pj[:, 1:])
-	rj *= np.exp(pj[:, :-1] * pj[:, 1:] * -2. * roughnesses * roughnesses)	
+	rj = np.exp(pj[:, :-1] * pj[:, 1:] * -2. * roughnesses * roughnesses) * (pj[:, :-1] - pj[:, 1:]) / (pj[:, :-1] + pj[:, 1:])
 		
 	MRtotal = np.zeros((npnts, 2, 2), dtype = 'complex')
-	MRtotal[:] = npmat.eye(2)
+	MI = np.zeros_like(MRtotal)
 
-	MI = np.zeros((npnts, 2, 2), dtype = 'complex')
+	MRtotal[:, 0, 0] = 1.
+	MRtotal[:, 1, 1] = 1.
 	
 	for layer in xrange(nlayers + 1):
 		if not layer:
@@ -47,16 +47,35 @@ def reflectivity(coefs, qvals):
 		MI[:, 0, 0] = beta
 		MI[:, 0, 1] = rj[:, layer] * beta;
 		MI[:, 1, 1] = 1. / beta;
-		MI[:, 1, 0] = rj[:, layer] / beta;
+		MI[:, 1, 0] = rj[:, layer] * MI[:, 1, 1];
 				
 #		totally weird way of matrix multiplication
 #		http://jameshensman.wordpress.com/2010/06/14/multiple-matrix-multiplication-in-numpy/
 		MRtotal = np.sum(np.transpose(MRtotal, (0, 2, 1)).reshape(npnts, 2, 2, 1) * MI.reshape(npnts, 2, 1, 2), -3)
-		
+
+			
 	#now work out the reflectivity
 	reflectivity = (MRtotal[:, 1, 0] * np.conj(MRtotal[:, 1, 0])) /  (MRtotal[:, 0, 0] * np.conj(MRtotal[:, 0, 0]))
 
-	return np.asarray(reflectivity, dtype='float')
+	return reflectivity.real
 	
 
+if __name__ == '__main__':
+	a = np.zeros((12))
+	a[0] = 1.
+	a[1] = 1.
+	a[4] = 2.07
+	a[7] = 3
+	a[8] = 100
+	a[9] = 3.47
+	a[11] = 2
 
+	b = np.arange(1000.)
+	b /= 2000.
+	b += 0.001
+	
+	def loop():
+		reflectivity(a, b)
+	
+	t = timeit.Timer(stmt = loop)
+	print t.timeit(number = 1000)
