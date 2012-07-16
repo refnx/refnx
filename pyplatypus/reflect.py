@@ -61,21 +61,23 @@ def reflectivity(coefs, qvals):
 	
 
 if __name__ == '__main__':
-	a = np.zeros((12))
-	a[0] = 1.
-	a[1] = 1.
-	a[4] = 2.07
-	a[7] = 3
-	a[8] = 100
-	a[9] = 3.47
-	a[11] = 2
-
-	b = np.arange(1000.)
-	b /= 2000.
-	b += 0.001
-	
-	def loop():
-		reflectivity(a, b)
-	
-	t = timeit.Timer(stmt = loop)
-	print t.timeit(number = 1000)
+    import numpy as np
+    import reflect
+    a = np.zeros((12))
+    a[0] = 1.
+    a[1] = 1.
+    a[4] = 2.07
+    a[7] = 3
+    a[8] = 100
+    a[9] = 3.47
+    a[11] = 2
+    
+    b = np.arange(1000.)
+    b /= 2000.
+    b += 0.001
+    	
+    def loop():
+        reflect.my_abeles(1000, a, b)
+    	
+    t = timeit.Timer(stmt = loop)
+    print t.timeit(number = 1000)
