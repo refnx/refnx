@@ -14,7 +14,7 @@ extern "C" {
 #endif
 	
 //fitfunctions
-void abelescalcall(double *coefP, int numcoefs, double *yP, double *xP,  int len3);
+void abelescalc_imagall(double *coefP, int numcoefs, double *yP, double *xP,  int len3);
 	
 #ifdef __cplusplus
 }
