@@ -6,8 +6,8 @@ import cgi, cgitb
 import StringIO
 import h5py
 import numpy as np
-from pyplatypus import reduce
-from pyplatypus import reflectdataset
+from pyplatypus.reduce import reduce
+from pyplatypus.reduce import reflectdataset
 import gviz_api
 import zipfile
 import string
