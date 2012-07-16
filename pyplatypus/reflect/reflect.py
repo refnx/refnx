@@ -4,7 +4,35 @@ import math
 import timeit
 
 
-def abeles(coefs, qvals):
+def abeles(lenqvals, coefs, qvals):
+	"""
+	
+	   Abeles matrix formalism for calculating reflectivity from a stratified medium.
+	   
+	   lenqvals - the length of reflectivity values expected, should be len(qvals).  This 
+	           is only required because the cReflect version is SWIGged and needs to supply as it's
+	           first argument the size of the array to be returned. This value does nothing in the
+	           pure python implementation. However, if you get it wrong in the cReflect version then
+	           you will have memory leaks. 
+	   
+	   coefs - :
+    	   coefs[0] = number of layers, N
+    	   coefs[1] = scale factor
+    	   coefs[2] = SLD of fronting (/1e-6 Angstrom**-2)
+    	   coefs[3] = iSLD of fronting (/Angstrom**-2)
+    	   coefs[4] = SLD of backing
+    	   coefs[5] = iSLD of backing
+    	   coefs[6] = background
+    	   coefs[7] = roughness between backing and layer N
+    	   
+    	   coefs[4 * (N - 1) + 8] = thickness of layer N in Angstrom (layer 1 is closest to fronting)
+    	   coefs[4 * (N - 1) + 9] = SLD of layer N
+    	   coefs[4 * (N - 1) + 10] = iSLD of layer N
+    	   coefs[4 * (N - 1) + 11] = roughness between layer N and N-1.
+
+        qvals - the qvalues required for the calculation. Q=4*Pi/lambda * sin(omega). Units = Angstrom**-1
+	
+	"""
 	
 	if np.size(coefs, 0) != 4 * coefs[0] + 8:
 		raise Exception('coefs the wrong size')
