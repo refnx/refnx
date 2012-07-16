@@ -15,7 +15,7 @@ except AttributeError:
 
 # ezrange extension module
 _reflect = Extension("_reflect",
-                   ["reflect.i","reflect.c", "myfitfunctions.cpp"],
+                   ["reflect.i","reflect.c", "refcalc.cpp"],
                    include_dirs = [numpy_include],
                    )
 

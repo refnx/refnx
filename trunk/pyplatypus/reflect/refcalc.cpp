@@ -7,7 +7,7 @@
  *
  */
 
-#include "myfitfunctions.h"
+#include "refcalc.h"
 #include <math.h>
 #include "MyComplex.h"
 #include <stdio.h>
