@@ -1,7 +1,7 @@
 <style type="text/css">
 .graph {
-    width:600px;
-     height:400px
+    width:800px;
+     height:600px;
 }
 </style>
 
@@ -20,7 +20,7 @@
       var chart;
       
       function redraw(form){
-          chart.draw(data, {title: "Platypus spectra", width: 600, height: 400,
+          chart.draw(data, {title: "Platypus spectra", width: 800, height: 600,
                             vAxis: {title: "Intensity", logScale: form.logY.checked},
                             hAxis: {title: "lambda", logScale: form.logX.checked}});
       }
@@ -48,7 +48,7 @@
   
         // Instantiate and draw our chart, passing in some options.
         chart = new google.visualization.LineChart(document.getElementById('chart_div'));
-        chart.draw(data, {title: "Platypus spectra", width: 600, height: 400,
+        chart.draw(data, {title: "Platypus spectra", width: 800, height: 600,
                             vAxis: {title: "Intensity", logScale: form.logY.checked},
                             hAxis: {title: "lambda", logScale: form.logX.checked}});
 
