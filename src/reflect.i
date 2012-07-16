@@ -1,4 +1,4 @@
-%module cReflect
+%module creflect
 
 %{
 #define SWIG_FILE_WITH_INIT
