@@ -13,9 +13,9 @@ try:
 except AttributeError:
     numpy_include = numpy.get_numpy_include()
 
-# ezrange extension module
-_creflect = Extension("_creflect",
-                   ["reflect.i","reflect.c", "refcalc.cpp"],
+# creflect extension module
+_creflect = Extension("pyplatypus._creflect",
+                   ["src/reflect.i","src/reflect.c", "src/refcalc.cpp"],
                    include_dirs = [numpy_include],
                    )
 
@@ -24,5 +24,7 @@ setup(  name        = "Calculates reflectivity",
         description = "",
         author      = "Andrew Nelson",
         version     = "1.0",
+        packages = ['pyplatypus', 'pyplatypus.reduce', 'pyplatypus.reflect', 'pyplatypus.creflect'],
         ext_modules = [_creflect]
+        requires ['numpy', 'scipy']
         )
