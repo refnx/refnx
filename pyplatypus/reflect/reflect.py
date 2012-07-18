@@ -1,7 +1,6 @@
 from __future__ import division
 import numpy as np
 import math
-import timeit
 
 
 def abeles(lenqvals, coefs, qvals):
@@ -90,8 +89,7 @@ def abeles(lenqvals, coefs, qvals):
 	
 
 if __name__ == '__main__':
-    import numpy as np
-    import reflect
+    import timeit
     a = np.zeros((12))
     a[0] = 1.
     a[1] = 1.
@@ -106,7 +104,7 @@ if __name__ == '__main__':
     b += 0.001
     	
     def loop():
-        reflect.my_abeles(1000, a, b)
+        reflect.abeles(len(b), a, b)
     	
     t = timeit.Timer(stmt = loop)
     print t.timeit(number = 1000)
