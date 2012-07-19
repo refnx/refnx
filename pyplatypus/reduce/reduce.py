@@ -3,7 +3,7 @@ import numpy as np
 import h5py
 import processplatypusnexus as ppn
 import platypusspectrum as ps
-import ErrorProp as EP
+import pyplatypus.util.ErrorProp as EP
 import Qtransforms as qtrans
 import string
 from time import gmtime, strftime
