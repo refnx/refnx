@@ -1,1 +1,1 @@
-void abeles(double *yP, int oo, double *coefP, int n, double *xP, int pp);
+void abeles(double *yP, int oo, double *xP, int pp, double *coefP, int n);
