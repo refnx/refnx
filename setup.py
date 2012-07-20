@@ -14,7 +14,7 @@ except AttributeError:
     numpy_include = numpy.get_numpy_include()
 
 # creflect extension module
-_creflect = Extension("pyplatypus.reflect._creflect",
+_creflect = Extension("pyplatypus.analysis.__creflect",
                    ["src/reflect.i","src/reflect.c", "src/refcalc.cpp"],
                    include_dirs = [numpy_include]
                    )
@@ -25,6 +25,7 @@ setup(  name        = "pyplatypus",
         author      = "Andrew Nelson",
         version     = "1.0",
         ext_modules = [_creflect],
-        packages = ['pyplatypus', 'pyplatypus.reduce', 'pyplatypus.reflect'],
+        packages = ['pyplatypus', 'pyplatypus.reduce', 'pyplatypus.analysis',
+                    'pyplatypus.dataset', 'pyplatypus.util'],
         requires = ['numpy', 'scipy']
         )

@@ -1,4 +1,4 @@
-%module creflect
+%module _creflect
 
 %{
 #define SWIG_FILE_WITH_INIT
