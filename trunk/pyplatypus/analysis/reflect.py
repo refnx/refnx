@@ -7,7 +7,7 @@ except ImportError:
     import _reflect as refcalc
 
 
-def abeles(coefs, qvals, dqvals = None):
+def abeles(qvals, coefs, dqvals = None):
     """
     
     Abeles matrix formalism for calculating reflectivity from a stratified medium.
@@ -85,14 +85,14 @@ def abeles(coefs, qvals, dqvals = None):
               
         qvals_for_res = (np.atleast_2d(abscissa) * (vb - va) + vb + va) / 2.        
         
-        smeared_rvals = refcalc.abeles(np.size(qvals_for_res.flatten(), 0), coefs, qvals_for_res.flatten())
+        smeared_rvals = refcalc.abeles(np.size(qvals_for_res.flatten(), 0), qvals_for_res.flatten(), coefs)
         smeared_rvals = np.reshape(smeared_rvals, (qvals.size, abscissa.size))
         
         smeared_rvals *= np.atleast_2d(gaussvals * weights)
         
         return np.sum(smeared_rvals, 1) * INTLIMIT
     else:
-        return refcalc.abeles(np.size(qvals, 0), coefs, qvals)
+        return refcalc.abeles(np.size(qvals, 0), qvals, coefs)
 	
 
 if __name__ == '__main__':
@@ -111,7 +111,7 @@ if __name__ == '__main__':
     b += 0.001
     	
     def loop():
-        abeles(a, b)
+        abeles(b, a)
     	
     t = timeit.Timer(stmt = loop)
     print t.timeit(number = 1000)

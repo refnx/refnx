@@ -12,7 +12,7 @@
 	%}
 
 %apply (double* ARGOUT_ARRAY1, int DIM1) {(double *yP, int oo)}
-%apply (double* IN_ARRAY1, int DIM1) {(double *coefP, int n)}
 %apply (double* IN_ARRAY1, int DIM1) {(double *xP, int pp)}
+%apply (double* IN_ARRAY1, int DIM1) {(double *coefP, int n)}
 
 %include "reflect.h"

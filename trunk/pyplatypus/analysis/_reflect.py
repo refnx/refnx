@@ -3,7 +3,7 @@ import numpy as np
 import math
 
 
-def abeles(lenqvals, coefs, qvals):
+def abeles(lenqvals, qvals, coefs):
 	"""
 	
 	   Abeles matrix formalism for calculating reflectivity from a stratified medium.
@@ -104,7 +104,7 @@ if __name__ == '__main__':
     b += 0.001
     	
     def loop():
-        reflect.abeles(len(b), a, b)
+        abeles(len(b), b, a)
     	
     t = timeit.Timer(stmt = loop)
     print t.timeit(number = 1000)
