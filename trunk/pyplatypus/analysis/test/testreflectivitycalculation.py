@@ -14,15 +14,25 @@ class TestReflectivityCalculation(unittest.TestCase):
         self.coefs[8] = 100
         self.coefs[9] = 3.47
         self.coefs[11] = 2
+             
+    def test_abeles(self):
+        '''
+            test reflectivity calculation
+            with values generated from Motofit
         
+        '''
         theoretical = np.loadtxt('theoretical.txt')
         qvals, rvals = np.hsplit(theoretical, 2)
-        self.qvals = qvals.flatten()
-        self.rvals = rvals.flatten()
-     
-    def test_abeles(self):
-        calc = reflect.abeles(self.coefs, self.qvals)
-        npt.assert_almost_equal(calc, self.rvals)
+        calc = reflect.abeles(self.coefs, qvals.flatten())
+        
+        npt.assert_almost_equal(calc, rvals.flatten())
+        
+        #now do smeared calculation test
+        theoretical = np.loadtxt('smeared_theoretical.txt')
+        qvals, rvals, dqvals = np.hsplit(theoretical, 3)
+        calc = reflect.abeles(self.coefs, qvals.flatten(), dqvals = dqvals.flatten())
+
+        npt.assert_almost_equal(calc, rvals.flatten())
 
 if __name__ == '__main__':
     unittest.main()
