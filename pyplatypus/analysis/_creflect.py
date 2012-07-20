@@ -4,7 +4,7 @@
 # Don't modify this file, modify the SWIG interface instead.
 # This file is compatible with both classic and new-style classes.
 
-import _creflect
+import __creflect
 import new
 new_instancemethod = new.instancemethod
 try:
@@ -48,6 +48,6 @@ except AttributeError:
 del types
 
 
-abeles = _creflect.abeles
+abeles = __creflect.abeles
 
 
