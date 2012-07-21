@@ -85,7 +85,7 @@ def abeles(lenqvals, qvals, coefs):
 	#now work out the reflectivity
 	reflectivity = (MRtotal[:, 1, 0] * np.conj(MRtotal[:, 1, 0])) /  (MRtotal[:, 0, 0] * np.conj(MRtotal[:, 0, 0]))
 
-	return reflectivity.real
+	return coefs[1] * reflectivity.real + coefs[6]
 	
 
 if __name__ == '__main__':
