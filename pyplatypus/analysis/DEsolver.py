@@ -46,6 +46,7 @@ class DEsolver(object):
 		self.population_energies[minval], self.population_energies[0] = self.population_energies[0], self.population_energies[minval]
 		self.population[minval], self.population[0] = self.population[0], self.population[minval]
 		
+		#do the optimisation.
 		for iteration in xrange(self.maxIterations):
 			for candidate in xrange(self.populationSize):
 				trial = self.DEstrategy(candidate)
