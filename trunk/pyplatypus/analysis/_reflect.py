@@ -32,12 +32,11 @@ def abeles(lenqvals, qvals, coefs):
         qvals - the qvalues required for the calculation. Q=4*Pi/lambda * sin(omega). Units = Angstrom**-1
 	
 	"""
-	
-	if np.size(coefs, 0) != 4 * coefs[0] + 8:
+	if np.size(coefs, 0) != 4 * int(coefs[0]) + 8:
 		raise Exception('coefs the wrong size')
 		
 	nlayers = int(coefs[0])
-	npnts = len(qvals)
+	npnts = np.size(qvals, 0)
 	
 	pj = np.zeros((npnts, nlayers + 2), dtype = 'complex128')
 	roughnesses = np.zeros(nlayers + 1)
@@ -45,7 +44,7 @@ def abeles(lenqvals, qvals, coefs):
 	SLDfronting = np.complex(coefs[2] * 1.e-6, coefs[3])
 	SLDbacking = np.complex(coefs[4] * 1.e-6, coefs[5])
 
-	qq2 = np.power(qvals, 2.) / 4.
+	qq2 = np.power(qvals.flatten(), 2.) / 4.
 	
 	for layer in xrange(nlayers):
 		pj[:, layer + 1] = - 4. * math.pi * (np.complex(coefs[4 * layer + 9] * 1.e-6, coefs[4 * layer + 10]) - SLDfronting)
