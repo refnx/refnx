@@ -21,14 +21,14 @@ class TestReflect(unittest.TestCase):
             with values generated from Motofit
         
         '''
-        theoretical = np.loadtxt('theoretical.txt')
+        theoretical = np.loadtxt('pyplatypus/analysis/test/theoretical.txt')
         qvals, rvals = np.hsplit(theoretical, 2)
         calc = reflect.abeles(qvals.flatten(), self.coefs)
         
         npt.assert_almost_equal(calc, rvals.flatten())
         
         #now do smeared calculation test
-        theoretical = np.loadtxt('smeared_theoretical.txt')
+        theoretical = np.loadtxt('pyplatypus/analysis/test/smeared_theoretical.txt')
         qvals, rvals, dqvals = np.hsplit(theoretical, 3)
         calc = reflect.abeles(qvals.flatten(), self.coefs, **{'dqvals':dqvals.flatten()})
 

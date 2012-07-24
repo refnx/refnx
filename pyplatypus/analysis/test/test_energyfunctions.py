@@ -14,7 +14,7 @@ class TestAnalysis(unittest.TestCase):
         '''
             test differential evolution fitting process
         '''
-        theoretical = np.loadtxt('c_PLP0011859_q.txt')
+        theoretical = np.loadtxt('pyplatypus/analysis/test/c_PLP0011859_q.txt')
 
         qvals, rvals, evals = np.hsplit(theoretical, 3)
         
