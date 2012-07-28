@@ -14,6 +14,7 @@ class TestAnalysis(unittest.TestCase):
         '''
             test differential evolution fitting process
         '''
+        np.seterr(invalid='raise')
         theoretical = np.loadtxt('pyplatypus/analysis/test/c_PLP0011859_q.txt')
 
         qvals, rvals, evals = np.hsplit(theoretical, 3)
@@ -23,6 +24,7 @@ class TestAnalysis(unittest.TestCase):
         coefs[1] = 1.
         coefs[2] = 2.07
         coefs[4] = 6.36
+        coefs[6] = 2e-6
         coefs[7] = 3
         coefs[8] = 300
         coefs[9] = 3.47
@@ -33,6 +35,7 @@ class TestAnalysis(unittest.TestCase):
         
         holdvector = np.zeros((16))
         holdvector[0] = 1
+        holdvector[1] = 1
         holdvector[2] = 1
         holdvector[4] = 1
         holdvector[9] = 1
