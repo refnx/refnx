@@ -19,4 +19,7 @@ void abeles(double *yP, int oo, double *xP, int pp, double *coefP, int n) {
 	}
 	if(!err)
 		AbelesCalc_ImagAll(coefP, n, yP, xP, pp, 0, 0, 0);
+//	if(!err)
+//		AbelesCalc_Imag(coefP, n, yP, xP, pp, 0, 0, 0);
+
 }

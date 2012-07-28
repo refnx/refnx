@@ -2,7 +2,7 @@ from __future__ import division
 import numpy as np
 import math
 try:
-    import _creflect as refcalc
+	import _creflect as refcalc
 except ImportError:
 	import _reflect as refcalc
 
@@ -98,22 +98,22 @@ def abeles(qvals, coefs, *args, **kwds):
 	
 
 if __name__ == '__main__':
-    import timeit
-    a = np.zeros((12))
-    a[0] = 1.
-    a[1] = 1.
-    a[4] = 2.07
-    a[7] = 3
-    a[8] = 100
-    a[9] = 3.47
-    a[11] = 2
-    
-    b = np.arange(1000.)
-    b /= 2000.
-    b += 0.001
-    	
-    def loop():
-        abeles(b, a)
-    	
-    t = timeit.Timer(stmt = loop)
-    print t.timeit(number = 1000)
+	import timeit
+	a = np.zeros((12))
+	a[0] = 1.
+	a[1] = 1.
+	a[4] = 2.07
+	a[7] = 3
+	a[8] = 100
+	a[9] = 3.47
+	a[11] = 2
+
+	b = np.arange(10000.)
+	b /= 20000.
+	b += 0.0005
+ 
+	def loop():
+		abeles(b, a)
+
+	t = timeit.Timer(stmt = loop)
+	print t.timeit(number = 10000)

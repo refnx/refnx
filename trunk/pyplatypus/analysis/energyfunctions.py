@@ -149,7 +149,7 @@ class ReflectivityFitObject(FitObject):
 			test_parameters[self.fitted_parameters] = params
 
 		model = self.calc_model(test_parameters)
-		
+			
 		return  np.sum(np.power(np.log10(self.ydata) - np.log10(model), 2))
 
 
