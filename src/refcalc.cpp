@@ -496,7 +496,7 @@ extern "C" {
 		double *yP;
 		//the Q values to do the calculation for.
 		const double *xP;
-		MyComplex **pj;
+		MyComplex *pj;
 		MyComplex *SLDmatrix;
 		MyComplex *SLDmatrixREP;
 	}  pointCalcParm;
@@ -518,7 +518,7 @@ extern "C" {
 		MyComplex qq2;
 		MyComplex *SLDmatrix = p->SLDmatrix;
 		MyComplex *SLDmatrixREP = p->SLDmatrixREP;
-		MyComplex **pj = p->pj;
+		MyComplex *pj = p->pj;
 		MyComplex *pj_mul = NULL;
 		MyComplex oneC = MyComplex(1,0);
 		const double *xP = p->xP;
@@ -546,7 +546,7 @@ extern "C" {
 
 
 			for(ii=0; ii<nlayers+2 ; ii++){			//work out the wavevector in each of the layers
-				pj[j][ii] = compsqrt(qq2 - SLDmatrix[ii]);
+				pj[ii] = compsqrt(qq2 - SLDmatrix[ii]);
 			}
 			
 			//workout the wavevector in the toplayer of the multilayer, if it exists.
@@ -558,11 +558,11 @@ extern "C" {
 			//now calculate reflectivities
 			for(ii = 0 ; ii < nlayers+1 ; ii++){
 				if(Vmullayers > 0 && ii == Vmulappend && Vmulrep > 0 )
-					rj = fres(pj[j][ii], pj_mul[0], coefP[offset+3]);
+					rj = fres(pj[ii], pj_mul[0], coefP[offset+3]);
 				else {
-					if((pj[j][ii]).im == 0 && (pj[j][ii + 1]).im == 0){
-						anum = (pj[j][ii]).re;
-						anum2 = (pj[j][ii + 1]).re;
+					if((pj[ii]).im == 0 && (pj[ii + 1]).im == 0){
+						anum = (pj[ii]).re;
+						anum2 = (pj[ii + 1]).re;
 						rj.re = (ii == nlayers) ? 
 						((anum - anum2) / (anum + anum2)) * exp(anum * anum2 * -2 * subrough * subrough)
 						:
@@ -570,15 +570,15 @@ extern "C" {
 						rj.im = 0.;
 					} else {
 						rj = (ii == nlayers) ?
-						((pj[j][ii] - pj[j][ii + 1])/(pj[j][ii] + pj[j][ii + 1])) * compexp(pj[j][ii] * pj[j][ii + 1] * -2 * subrough * subrough)
+						((pj[ii] - pj[ii + 1])/(pj[ii] + pj[ii + 1])) * compexp(pj[ii] * pj[ii + 1] * -2 * subrough * subrough)
 						:
-						((pj[j][ii] - pj[j][ii + 1])/(pj[j][ii] + pj[j][ii + 1])) * compexp(pj[j][ii] * pj[j][ii + 1] * -2 * coefP[4 * (ii + 1) + 7] * coefP[4 * (ii + 1) + 7]);	
+						((pj[ii] - pj[ii + 1])/(pj[ii] + pj[ii + 1])) * compexp(pj[ii] * pj[ii + 1] * -2 * coefP[4 * (ii + 1) + 7] * coefP[4 * (ii + 1) + 7]);	
 					};
 				}
 				
 				
 				//work out the beta for the (non-multi)layer
-				beta = (ii==0)? oneC : compexp(pj[j][ii] * MyComplex(0,fabs(coefP[4*ii+4])));
+				beta = (ii==0)? oneC : compexp(pj[ii] * MyComplex(0,fabs(coefP[4*ii+4])));
 				
 				//this is the characteristic matrix of a layer
 				MI[0][0]=beta;
@@ -627,9 +627,9 @@ extern "C" {
 								
 								if(jj==Vmullayers-1){
 									if(Vmulappend==nlayers){
-										rj = ((pj_mul[Vmullayers-1]-pj[j][nlayers+1])/(pj_mul[Vmullayers-1]+pj[j][nlayers+1]))*compexp((pj_mul[Vmullayers-1]*pj[j][nlayers+1])*(-2*subrough*subrough));
+										rj = ((pj_mul[Vmullayers-1]-pj[nlayers+1])/(pj_mul[Vmullayers-1]+pj[nlayers+1]))*compexp((pj_mul[Vmullayers-1]*pj[nlayers+1])*(-2*subrough*subrough));
 									} else {
-										rj = ((pj_mul[Vmullayers-1]-pj[j][Vmulappend+1])/(pj_mul[Vmullayers-1]+pj[j][Vmulappend+1]))* compexp((pj_mul[Vmullayers-1]*pj[j][Vmulappend+1])*(-2*coefP[4*(Vmulappend+1)+7]*coefP[4*(Vmulappend+1)+7]));
+										rj = ((pj_mul[Vmullayers-1]-pj[Vmulappend+1])/(pj_mul[Vmullayers-1]+pj[Vmulappend+1]))* compexp((pj_mul[Vmullayers-1]*pj[Vmulappend+1])*(-2*coefP[4*(Vmulappend+1)+7]*coefP[4*(Vmulappend+1)+7]));
 									};
 								} else {
 									rj = ((pj_mul[jj]-pj_mul[jj+1])/(pj_mul[jj]+pj_mul[jj+1]))*compexp((pj_mul[jj]*pj_mul[jj+1])*-2*coefP[4*(jj+1)+offset+3]*coefP[4*(jj+1)+offset+3]);
@@ -691,8 +691,8 @@ extern "C" {
 		int nlayers = (int)coefP[0];
 		
 		try{
-			pj = new MyComplex*[npoints];
-			for(j = 0 ; j < npoints ; j++)
+			pj = new MyComplex*[threadsToCreate];
+			for(j = 0 ; j < threadsToCreate ; j++)
 				pj[j] = new MyComplex[nlayers + 2];
 			
 			SLDmatrix = new MyComplex[nlayers + 2];
@@ -762,7 +762,7 @@ extern "C" {
 			arg[ii].Vmullayers = Vmullayers;
 			arg[ii].Vappendlayer = Vmulappend;
 			arg[ii].Vmulrep = Vmulrep;
-			arg[ii].pj = pj + pointsConsumed;
+			arg[ii].pj = pj[ii];
 			arg[ii].SLDmatrix = SLDmatrix;
 			arg[ii].SLDmatrixREP = SLDmatrixREP;
 			//the following two lines specify where the Q values and R values will be sourced/written.
@@ -780,7 +780,7 @@ extern "C" {
 		
 	done:
 		if(pj != NULL){
-			for(j = 0 ; j < npoints ; j++)
+			for(j = 0 ; j < threadsToCreate ; j++)
 				delete [] pj[j];
 			delete [] pj;
 		}
