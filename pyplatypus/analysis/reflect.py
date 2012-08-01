@@ -1,6 +1,9 @@
 from __future__ import division
 import numpy as np
 import math
+import pyplatypus.analysis.energyfunctions as energyfunctions
+from scipy.stats import norm
+
 try:
 	import _creflect as refcalc
 except ImportError:
@@ -95,8 +98,77 @@ def abeles(qvals, coefs, *args, **kwds):
 		return np.sum(smeared_rvals, 1) * INTLIMIT
 	else:
 		return refcalc.abeles(np.size(qvals.flatten(), 0), qvals.flatten(), coefs)
-	
 
+def sld_profile(coefs, z):
+		
+	nlayers = int(coefs[0])
+	dist = 0
+	summ = coefs[2]
+	
+	for ii in xrange(nlayers + 1):
+		if ii == 0:
+			if nlayers:
+				deltarho = -coefs[2] + coefs[9]
+				thick = 0
+				sigma = math.fabs(coefs[11])
+			else: 
+				sigma = math.fabs(coefs[7])
+				deltarho = -coefs[2] + coefs[4]
+		elif ii == nlayers:
+			SLD1 = coefs[4 * ii + 5]
+			deltarho = -SLD1 + coefs[4]
+			thick = math.fabs(coefs[4 * ii + 4])
+			sigma = math.fabs(coefs[7])
+		else:
+			SLD1 = coefs[4 * ii + 5]
+			SLD2 = coefs[4 * (ii + 1) + 5]
+			deltarho = -SLD1 + SLD2
+			thick = math.fabs(coefs[4 * ii + 4])
+			sigma = math.fabs(coefs[4 * (ii + 1) + 7])
+
+		dist += thick
+	
+		#if sigma=0 then the computer goes haywire (division by zero), so say it's vanishingly small
+		if sigma == 0:
+			sigma += 1e-3
+	
+		summ += deltarho * (norm.cdf((z - dist)/sigma))		
+		
+	return summ
+
+
+class ReflectivityFitObject(energyfunctions.FitObject):
+	
+	'''
+		A sub class of pyplatypus.analysis.energyfunctions.FitObject suited for fitting reflectometry data.
+		The main difference is that the energy of the cost function is log10 scaled: (log10(calc) - log10(model))**2
+		This fit object does _not_ use the error bars on each of the data points.
+		
+		
+	'''
+	
+	def __init__(self, xdata, ydata, edata, parameters, *args, **kwds):
+		super(ReflectivityFitObject, self).__init__(xdata, ydata, edata, None, parameters, *args, **kwds)
+
+	def energy(self, params = None):
+		"""
+			The default cost function for the reflectivity object is chi2.
+			params - np.ndarray containing the parameters that are being fitted, i.e. this array is np.size(self.fitted_parameters) long.
+			Returns chi2.
+		
+		"""
+		
+		test_parameters = np.copy(self.parameters)
+	
+		if params is not None:
+			test_parameters[self.fitted_parameters] = params
+		
+		model = abeles(self.xdata, test_parameters, *self.args, **self.kwds)			
+			
+		return  np.sum(np.power(np.log10(self.ydata) - np.log10(model), 2))
+
+	
+	
 if __name__ == '__main__':
 	import timeit
 	a = np.zeros((12))
