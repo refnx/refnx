@@ -13,7 +13,7 @@ def energy_for_fitting(params, *args):
 		We have to pass in data, etc, through args. This args is passed through the optimize modules directly to 
 		this energy function.
 		
-		The first argument in args should be a fit object, T_FitObject. This will have a method energy.
+		The first argument in args should be a FitObject instance. This will have a method energy.
 
 	'''
 	
@@ -43,7 +43,8 @@ class FitObject(object):
 		
 		fitfunction - callable function  of the form f(xdata, parameters, *args, **kwds). The args and kwds supplied
 						in the construction of this object are passed directly to the fitfunction and should be used to pass
-						auxillary information to it.
+						auxillary information to it. You do can use None for fitfunction _IF_ you subclass this 
+						FitObject and provide your own energy method.
 						
 		parameters - np.ndarray that contains _all_ the parameters to be supplied to the fitfunction, not just those being fitted
 		
@@ -65,8 +66,8 @@ class FitObject(object):
 		self.fitfunction = fitfunction
 		self.parameters = np.copy(parameters)
 		self.numparams = np.size(parameters, 0)
-		self.args_tuple = args
-		self.keywords = kwds
+		self.args = args
+		self.kwds = kwds
 		
 		if 'holdvector' in kwds and kwds['holdvector'] is not None:
 			self.holdvector = np.copy(kwds['holdvector'])
@@ -100,9 +101,12 @@ class FitObject(object):
 	
 		if params is not None:
 			test_parameters[self.fitted_parameters] = params
-
-		model = self.calc_model(test_parameters)
 		
+		if self.fitfunction is not None:
+			model = self.calc_model(test_parameters)
+		else:
+			raise Exception("You used the default FitObject.energy method, but did not specify a fitfunction")
+			
 		return  np.sum(np.power((self.ydata - model) / self.edata, 2))
 
 
@@ -122,7 +126,7 @@ class FitObject(object):
 		else:
 			test_parameters = self.parameters
 			
-		return self.fitfunction(self.xdata, test_parameters, *self.args_tuple, **self.keywords)
+		return self.fitfunction(self.xdata, test_parameters, *self.args, **self.kwds)
 
 	def fit(self):
 		de = DEsolver.DEsolver(self.fitted_limits, energy_for_fitting, self)
@@ -130,54 +134,3 @@ class FitObject(object):
 		self.parameters[self.fitted_parameters] = thefit
 		return self.parameters, chi2
 		
-
-class ReflectivityFitObject(FitObject):
-	
-	'''
-		A sub class of Fit Object suited for fitting reflectometry data.
-		The main difference is that the energy of the cost function is log10 scaled: (log10(calc) - log10(model))**2
-		This fit object does _not_ use the error bars on each of the data points.
-	'''
-	
-	def __init__(self, xdata, ydata, edata, fitfunction, parameters, *args, **kwds):
-		super(ReflectivityFitObject, self).__init__(xdata, ydata, edata, fitfunction, parameters, *args, **kwds)
-
-	def energy(self, params = None):
-		test_parameters = np.copy(self.parameters)
-	
-		if params is not None:
-			test_parameters[self.fitted_parameters] = params
-
-		model = self.calc_model(test_parameters)
-			
-		return  np.sum(np.power(np.log10(self.ydata) - np.log10(model), 2))
-
-
-
-if __name__ == '__main__':
-	import numpy as np
-	import reflect
-	import energyfunctions
-	import DEsolver
-
-	theoretical = np.loadtxt('test/theoretical.txt')
-	qvals, rvals = np.hsplit(theoretical, 2)
-	evals = np.ones_like(rvals)
-
-	coefs = np.zeros((12))
-	coefs[0] = 1.
-	coefs[1] = 1.
-	coefs[4] = 2.07
-	coefs[7] = 3
-	coefs[8] = 100
-	coefs[9] = 3.47
-	coefs[11] = 2
-
-	a = energyfunctions.ReflectivityFitObject(qvals, rvals, evals, reflect.abeles, coefs)
-	a.calc_model()
-	print a.energy()
-	limits = np.zeros((2,12))
-	limits[1:, ] = 2*coefs
-	limits[:,0] = 1
-	de = DEsolver.DEsolver(limits, energyfunctions.energy_for_fitting, a)
-	de.solve()
