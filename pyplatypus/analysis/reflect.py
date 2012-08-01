@@ -141,33 +141,24 @@ class ReflectivityFitObject(energyfunctions.FitObject):
 	
 	'''
 		A sub class of pyplatypus.analysis.energyfunctions.FitObject suited for fitting reflectometry data.
-		The main difference is that the energy of the cost function is log10 scaled: (log10(calc) - log10(model))**2
-		This fit object does _not_ use the error bars on each of the data points.
+		The main difference is that the energy of the cost function is by default log10 scaled: (log10(calc) - log10(model))**2
+		The default fit object does _not_ use the error bars on each of the data points.
 		
 		
 	'''
 	
 	def __init__(self, xdata, ydata, edata, parameters, *args, **kwds):
-		super(ReflectivityFitObject, self).__init__(xdata, ydata, edata, None, parameters, *args, **kwds)
-
-	def energy(self, params = None):
-		"""
-			The default cost function for the reflectivity object is chi2.
-			params - np.ndarray containing the parameters that are being fitted, i.e. this array is np.size(self.fitted_parameters) long.
-			Returns chi2.
-		
-		"""
-		
-		test_parameters = np.copy(self.parameters)
+		'''
+			Initialises the ReflectivityFitObject.
+			See the constructor of the FitObject for more details. And possible values for the keyword args for the superclass.
+		'''
+		super(ReflectivityFitObject, self).__init__(xdata, ydata, edata, abeles, parameters, *args, **kwds)
 	
-		if params is not None:
-			test_parameters[self.fitted_parameters] = params
-		
-		model = abeles(self.xdata, test_parameters, *self.args, **self.kwds)			
-			
-		return  np.sum(np.power(np.log10(self.ydata) - np.log10(model), 2))
+		if 'costfunction' in kwds:
+			self.costfunction = kwds['costfunction']
+		else:
+			self.costfunction = lambda ydata, edata, model, parameters: np.sum(np.power((ydata - model)/edata, 2))
 
-	
 	
 if __name__ == '__main__':
 	import timeit

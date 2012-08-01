@@ -55,6 +55,11 @@ class FitObject(object):
 
 		limits - an np.ndarray that contains the lower and upper limits for all the parameters.
 				should have shape (2, numparams).
+				
+		costfunction - a callable costfunction with the signature costfunction(model, ydata, edata, parameters). The parameters are
+						all the parameters, not just the ones being held. Supply this function, or override the energy method, to use something
+						other than the default of chi2.
+						
 
 		
 		'''
@@ -66,6 +71,7 @@ class FitObject(object):
 		self.fitfunction = fitfunction
 		self.parameters = np.copy(parameters)
 		self.numparams = np.size(parameters, 0)
+		self.costfunction = None
 		self.args = args
 		self.kwds = kwds
 		
@@ -75,6 +81,9 @@ class FitObject(object):
 		else:
 			self.holdvector = np.zeros(self.numparams, 'int')
 			self.fitted_parameters = np.arange(self.numparams)
+			
+		if 'costfunction' in kwds:
+			self.costfunction = kwds['costfunction']
 			
 		if 'limits' in kwds and kwds['limits'] is not None:
 			self.limits = kwds['limits']
@@ -93,8 +102,9 @@ class FitObject(object):
 			params - np.ndarray containing the parameters that are being fitted, i.e. this array is np.size(self.fitted_parameters) long.
 					If this is omitted the energy function uses the defaults that we supplied when the object was constructed.
 			
-			If you require a different cost function provide a subclass that overloads the method.
-			Returns chi2.
+			If you require a different cost function provide a subclass that overloads this method. An alternative is to provide the costfunction
+			keyword to the constructor.
+			Returns chi2 by default
 		
 		'''
 		test_parameters = np.copy(self.parameters)
@@ -107,7 +117,10 @@ class FitObject(object):
 		else:
 			raise Exception("You used the default FitObject.energy method, but did not specify a fitfunction")
 			
-		return  np.sum(np.power((self.ydata - model) / self.edata, 2))
+		if self.costfunction:
+			return self.costfunction(model, self.ydata, self.edata, test_parameters)
+		else:
+			return  np.sum(np.power((self.ydata - model) / self.edata, 2))
 
 
 	def calc_model(self, parameters = None):
