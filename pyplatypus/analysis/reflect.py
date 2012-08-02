@@ -1,7 +1,7 @@
 from __future__ import division
 import numpy as np
 import math
-import pyplatypus.analysis.energyfunctions as energyfunctions
+import pyplatypus.analysis.fitting as fitting
 from scipy.stats import norm
 
 try:
@@ -137,14 +137,13 @@ def sld_profile(coefs, z):
 	return summ
 
 
-class ReflectivityFitObject(energyfunctions.FitObject):
+class ReflectivityFitObject(fitting.FitObject):
 	
 	'''
-		A sub class of pyplatypus.analysis.energyfunctions.FitObject suited for fitting reflectometry data.
-		The main difference is that the energy of the cost function is by default log10 scaled: (log10(calc) - log10(model))**2
-		The default fit object does _not_ use the error bars on each of the data points.
-		
-		
+		A sub class of pyplatypus.analysis.energyfunctions.FitObject suited for fitting reflectometry data.	
+
+		If you wish to fit analytic profiles you should subclass this fitobject, overriding the model() method
+		of the FitObject super class.  If you do this you should also override the sld_profile method of ReflectivityFitObject.
 	'''
 	
 	def __init__(self, xdata, ydata, edata, parameters, *args, **kwds):
@@ -153,12 +152,41 @@ class ReflectivityFitObject(energyfunctions.FitObject):
 			See the constructor of the FitObject for more details. And possible values for the keyword args for the superclass.
 		'''
 		super(ReflectivityFitObject, self).__init__(xdata, ydata, edata, abeles, parameters, *args, **kwds)
-	
-		if 'costfunction' in kwds:
-			self.costfunction = kwds['costfunction']
+		
+	def sld_profile(self, *args, **kwds):
+		"""
+			returns the SLD profile corresponding to the model parameters.
+			The model parameters are either taken from arg[0], if it exists, or from self.parameters.
+			
+			returns z, rho(z) - the distance from the top interface and the SLD at that point
+			
+		"""
+		if args:
+			test_parameters = args[0]
 		else:
-			self.costfunction = lambda ydata, edata, model, parameters: np.sum(np.power((ydata - model)/edata, 2))
-
+			test_parameters = self.parameters
+			
+		if 'points' in kwds and kwds['points'] is not None:
+			return points, sld_profile(test_parameters, points)
+		
+		if not int(test_parameters[0]):
+			zstart= -5 - 4 * math.fabs(test_parameters[7])
+		else:
+			zstart= -5 - 4 * math.fabs(test_parameters[11])
+		
+		temp = 0
+		if not int(test_parameters[0]):
+			zend = 5 + 4 * math.fabs(test_parameters[7])
+		else:
+			for ii in xrange(int(test_parameters[0] + 2)):
+				temp += math.fabs(test_parameters[4 * (ii + 1) + 4])
+			zend = 5 + temp + 4 * math.fabs(test_parameters[7])
+			
+		points = np.linspace(zstart, zend, num = 500)
+		
+		return points, sld_profile(test_parameters, points)
+		
+	
 	
 if __name__ == '__main__':
 	import timeit

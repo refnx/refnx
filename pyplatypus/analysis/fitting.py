@@ -24,12 +24,23 @@ class FitObject(object):
 	'''
 		
 		An object used to perform a curvefitting analysis.
-				
+		There are several ways of using this class.
 		
-	'''
+		1) Instantiate the class 'as' is. Here you have to supply a fitfunction to calculate the theoretical model. Chi2 is minimised by default.
+		   However, you have the option of supplying a costfunction if you wish to minimise a different costmetric.
+		
+		2) Alternatively you can subclass the FitObject.
+			option 1) Override the FitObject.model() method.
+					If you override the FitObject.model() method, then you no longer have to supply a fitfunction.
+			-OR-
+			option 2) Override the FitObject.energy() method.
+					If you override the FitObject.energy() method you no longer have to supply a fitfunction, or a costfunction. This method 
+					should specify how the cost metric varies as the fitted parameters vary.
+			'''
+			
 	
 	def __init__(self, xdata, ydata, edata, fitfunction, parameters, *args, **kwds):
-		'''
+		"""
 		
 		Construction of the object initialises the data for the curve fit, but doesn't actually start it.
 		
@@ -50,7 +61,7 @@ class FitObject(object):
 		
 		You may set the following optional parameters in kwds:
 		
-		holdvector - an np.ndarray that is the same length as the number of fitting parameters. If an element in the array
+		holdvector - an np.ndarray that is the same length as the number of parameters to be fitted. If an element in the array
 					evaluates to True that parameter should be held.
 
 		limits - an np.ndarray that contains the lower and upper limits for all the parameters.
@@ -60,9 +71,34 @@ class FitObject(object):
 						all the parameters, not just the ones being held. Supply this function, or override the energy method, to use something
 						other than the default of chi2.
 						
+						
+			Object attributes:
+				self.xdata - see above for definition
+				self.ydata - see above for definition
+				self.edata - see above for definition
+				self.fitfunction - see above for definition
+				self.holdvector - see above for definition
+				
+				self.numpoints - the number of datapoints
+				self.parameters - the entire set of parameters used for the fit (including those that vary). The fitting procedure overwrites this.
+				self.numparams - total number of parameters
+				self.costfunction - the costfunction to be used (optional)
+				self.args - the args tuple supplied to the constructor
+				self.kwds - the kwds dictionary supplied to the constructor
+				self.fitted_parameters - the index of the parameters that are being allowed to vary (as specified by the holdvector).
+					:::NOTE:::
+						The energy method is supplied by parameters that are being varied by the fit. i.e. something along the lines of
+					self.parameters[self.fitted_parameters]. This is a subset of the total number of parameters required to calculate the model.
+					Therefore you need to do something like the following in the energy function (if you override it):
+						
+						#params are the values that are changing.
+						test_parameters = np.copy(self.parameters)
+						test_parameters[self.fitted_parameters] = params
+
+						The model method is supplied by the entire set of parameters (those being held and those being varied).
 
 		
-		'''
+		"""
 		self.xdata = np.copy(xdata)
 		self.ydata = np.copy(ydata.flatten())
 		self.edata = np.copy(edata.flatten())
@@ -104,6 +140,7 @@ class FitObject(object):
 			
 			If you require a different cost function provide a subclass that overloads this method. An alternative is to provide the costfunction
 			keyword to the constructor.
+			
 			Returns chi2 by default
 		
 		'''
@@ -112,18 +149,15 @@ class FitObject(object):
 		if params is not None:
 			test_parameters[self.fitted_parameters] = params
 		
-		if self.fitfunction is not None:
-			model = self.calc_model(test_parameters)
-		else:
-			raise Exception("You used the default FitObject.energy method, but did not specify a fitfunction")
+		modeldata = self.model(test_parameters)
 			
 		if self.costfunction:
-			return self.costfunction(model, self.ydata, self.edata, test_parameters)
+			return self.costfunction(modeldata, self.ydata, self.edata, test_parameters)
 		else:
-			return  np.sum(np.power((self.ydata - model) / self.edata, 2))
+			return  np.sum(np.power((self.ydata - modeldata) / self.edata, 2))
 
 
-	def calc_model(self, parameters = None):
+	def model(self, parameters = None):
 		'''
 			
 			calculate the theoretical model using the fitfunction.
@@ -139,7 +173,11 @@ class FitObject(object):
 		else:
 			test_parameters = self.parameters
 			
-		return self.fitfunction(self.xdata, test_parameters, *self.args, **self.kwds)
+		try:
+			return self.fitfunction(self.xdata, test_parameters, *self.args, **self.kwds)
+		except Exception:
+			raise Exception("You used the default FitObject.model() method, but did not specify a fitfunction")
+			
 
 	def fit(self):
 		de = DEsolver.DEsolver(self.fitted_limits, energy_for_fitting, self)
