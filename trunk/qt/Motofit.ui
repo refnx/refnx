@@ -180,14 +180,14 @@
         </attribute>
         <layout class="QGridLayout" name="gridLayout_2">
          <item row="0" column="0">
-          <widget class="QComboBox" name="comboBox">
+          <widget class="QComboBox" name="dataset_comboBox">
            <property name="currentIndex">
             <number>-1</number>
            </property>
           </widget>
          </item>
          <item row="0" column="1" rowspan="2">
-          <widget class="QPushButton" name="PushButton">
+          <widget class="QPushButton" name="do_fit_button">
            <property name="minimumSize">
             <size>
              <width>0</width>
@@ -203,17 +203,20 @@
           </widget>
          </item>
          <item row="1" column="0">
-          <widget class="QComboBox" name="comboBox_2"/>
+          <widget class="QComboBox" name="model_comboBox"/>
          </item>
          <item row="2" column="0">
           <widget class="QLineEdit" name="lineEdit">
+           <property name="text">
+            <string>0</string>
+           </property>
            <property name="readOnly">
             <bool>true</bool>
            </property>
           </widget>
          </item>
          <item row="2" column="1">
-          <widget class="QCheckBox" name="checkBox">
+          <widget class="QCheckBox" name="use_errors_checkbox">
            <property name="text">
             <string>Use errors?</string>
            </property>
@@ -228,7 +231,7 @@
             <bool>true</bool>
            </property>
            <property name="readOnly">
-            <bool>false</bool>
+            <bool>true</bool>
            </property>
            <property name="prefix">
             <string>dq/q(%) : </string>
@@ -248,14 +251,14 @@
           </widget>
          </item>
          <item row="3" column="1">
-          <widget class="QCheckBox" name="checkBox_2">
+          <widget class="QCheckBox" name="use_dqwave_checkbox">
            <property name="text">
             <string>Use dq wave?</string>
            </property>
           </widget>
          </item>
          <item row="4" column="0" colspan="2">
-          <widget class="QTableWidget" name="tableWidget_2">
+          <widget class="QTableWidget" name="baseparams_tableWidget">
            <property name="minimumSize">
             <size>
              <width>0</width>
@@ -307,7 +310,7 @@
           </widget>
          </item>
          <item row="5" column="0" colspan="2">
-          <widget class="QTableWidget" name="tableWidget">
+          <widget class="QTableWidget" name="layerparams_tableWidget">
            <property name="font">
             <font>
              <family>Lucida Grande</family>
