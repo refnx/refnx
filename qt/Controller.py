@@ -89,6 +89,12 @@ class MyMainWindow(QtGui.QMainWindow):
         
         self.ui.layerparams_tableWidget.setHorizontalHeaderLabels(['thickness', 'sld', 'iSLD', 'roughness'])
         self.ui.layerparams_tableWidget.setVerticalHeaderLabels(['fronting', '1', 'backing'])
+        
+        for ridx in xrange(self.ui.layerparams_tableWidget.rowCount()):
+            for cidx in xrange(self.ui.layerparams_tableWidget.columnCount()):
+                wi = QtGui.QTableWidgetItem.setCheckState(0)
+                self.ui.layerparams_tableWidget.setItem(ridx, cidx, wi)
+                
         header = self.ui.layerparams_tableWidget.horizontalHeader()
         header.setResizeMode(QtGui.QHeaderView.Stretch)
         header = self.ui.layerparams_tableWidget.verticalHeader()
