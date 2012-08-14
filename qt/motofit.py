@@ -1,7 +1,7 @@
 import sys
 from PySide import QtCore, QtGui
 
-from Controller import MyMainWindow
+from View import MyMainWindow
 
 if __name__ == "__main__":
     app = QtGui.QApplication(sys.argv)
