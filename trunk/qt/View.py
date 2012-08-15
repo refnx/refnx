@@ -24,8 +24,8 @@ class MyMainWindow(QtGui.QMainWindow):
         """
             you should do a fit
         """
-        self.plot.update_figure()
-        self.plot.draw()
+        self.reflectivityplot.update_figure()
+        self.reflectvityplot.draw()
 #        print "crap"
         
     @QtCore.Slot(unicode)
@@ -101,8 +101,11 @@ class MyMainWindow(QtGui.QMainWindow):
 
     def modifyGui(self):
         #add the plots
-        self.plot = MyMplCanvas(self.ui.centralwidget)
-        self.ui.gridLayout_3.addWidget(self.plot)
+        self.reflectivityplot = MyMplCanvas(self.ui.centralwidget)
+        self.sldplot=MyMplCanvas(self.ui.centralwidget)
+        self.ui.gridLayout_3.addWidget(self.reflectivityplot)
+        self.ui.gridLayout_3.addWidget(self.sldplot)
+        
 #        self.setCentralWidget(sc)
 #        self.ui.centralwidget = sc
 #        self.ui.centralwidget.setObjectName("mainplot")
