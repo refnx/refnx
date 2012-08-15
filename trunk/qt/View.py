@@ -1,6 +1,16 @@
 from PySide import QtCore, QtGui
 from MotofitUI import Ui_MainWindow
 
+from numpy import arange, sin, pi
+import random
+import matplotlib
+matplotlib.use('Qt4Agg')
+matplotlib.rcParams['backend.qt4']='PySide'
+
+from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.figure import Figure
+
+
 class MyMainWindow(QtGui.QMainWindow):
     def __init__(self, parent=None):
         super(MyMainWindow, self).__init__(parent)
@@ -14,7 +24,9 @@ class MyMainWindow(QtGui.QMainWindow):
         """
             you should do a fit
         """
-        print "crap"
+        self.plot.update_figure()
+        self.plot.draw()
+#        print "crap"
         
     @QtCore.Slot(unicode)
     def on_dataset_comboBox_currentIndexChanged(self, arg_1):
@@ -88,6 +100,14 @@ class MyMainWindow(QtGui.QMainWindow):
             self.errorHandler.showMessage("values entered must be numeric")
 
     def modifyGui(self):
+        #add the plots
+        self.plot = MyMplCanvas(self.ui.centralwidget)
+        self.ui.gridLayout_3.addWidget(self.plot)
+#        self.setCentralWidget(sc)
+#        self.ui.centralwidget = sc
+#        self.ui.centralwidget.setObjectName("mainplot")
+        
+        #add baseparams table widget info
         self.ui.baseparams_tableWidget.setHorizontalHeaderLabels(['number of layers', 'scale', 'background'])
         header = self.ui.baseparams_tableWidget.horizontalHeader()
         header.setResizeMode(QtGui.QHeaderView.Stretch)
@@ -99,6 +119,7 @@ class MyMainWindow(QtGui.QMainWindow):
                 wi.setCheckState(QtCore.Qt.Unchecked)
             self.ui.baseparams_tableWidget.setItem(0, cidx, wi)
 
+        #add layerparams table widget info
         numrows = self.ui.layerparams_tableWidget.rowCount()
         numcols = self.ui.layerparams_tableWidget.columnCount()
         self.ui.layerparams_tableWidget.setHorizontalHeaderLabels(['thickness', 'sld', 'iSLD', 'roughness'])
@@ -119,4 +140,25 @@ class MyMainWindow(QtGui.QMainWindow):
         header = self.ui.layerparams_tableWidget.verticalHeader()
         header.setResizeMode(QtGui.QHeaderView.Stretch)
         self.ui.dataset_comboBox.addItem("theoretical")
+        
+class MyMplCanvas(FigureCanvas):
+    """Ultimately, this is a QWidget (as well as a FigureCanvasAgg, etc.)."""
+    def __init__(self, parent=None):
+        self.figure = Figure(facecolor=(1,1,1), edgecolor=(0,0,0))
+        self.axes = self.figure.add_subplot(111)
+        
+        # We want the axes cleared every time plot() is called
+        self.axes.hold(False)
+
+        self.update_figure()
+
+        #
+        FigureCanvas.__init__(self, self.figure)
+        self.setParent(parent)
+        
+    def update_figure(self):
+        # Build a list of 4 random integers between 0 and 10 (both inclusive)
+        l = [ random.randint(0, 10) for i in xrange(4) ]
+        
+        self.axes.plot([0, 1, 2, 3], l, 'r')
         

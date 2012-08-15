@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'Motofit.ui'
 #
-# Created: Tue Aug 14 12:28:11 2012
+# Created: Wed Aug 15 20:15:27 2012
 #      by: pyside-uic 0.2.13 running on PySide 1.1.1
 #
 # WARNING! All changes made in this file will be lost!
@@ -12,30 +12,20 @@ from PySide import QtCore, QtGui
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(860, 600)
+        MainWindow.resize(860, 400)
         sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(MainWindow.sizePolicy().hasHeightForWidth())
         MainWindow.setSizePolicy(sizePolicy)
-        MainWindow.setMinimumSize(QtCore.QSize(860, 600))
+        MainWindow.setMinimumSize(QtCore.QSize(860, 400))
         MainWindow.setDocumentMode(False)
         MainWindow.setTabShape(QtGui.QTabWidget.Rounded)
         self.centralwidget = QtGui.QWidget(MainWindow)
+        self.centralwidget.setMinimumSize(QtCore.QSize(400, 0))
         self.centralwidget.setObjectName("centralwidget")
         self.gridLayout_3 = QtGui.QGridLayout(self.centralwidget)
         self.gridLayout_3.setObjectName("gridLayout_3")
-        self.frame = QtGui.QFrame(self.centralwidget)
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.MinimumExpanding)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.frame.sizePolicy().hasHeightForWidth())
-        self.frame.setSizePolicy(sizePolicy)
-        self.frame.setMinimumSize(QtCore.QSize(410, 500))
-        self.frame.setFrameShape(QtGui.QFrame.StyledPanel)
-        self.frame.setFrameShadow(QtGui.QFrame.Raised)
-        self.frame.setObjectName("frame")
-        self.gridLayout_3.addWidget(self.frame, 0, 0, 2, 1)
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtGui.QMenuBar()
         self.menubar.setGeometry(QtCore.QRect(0, 0, 860, 22))
@@ -69,7 +59,7 @@ class Ui_MainWindow(object):
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.dockWidget.sizePolicy().hasHeightForWidth())
         self.dockWidget.setSizePolicy(sizePolicy)
-        self.dockWidget.setMinimumSize(QtCore.QSize(450, 244))
+        self.dockWidget.setMinimumSize(QtCore.QSize(450, 405))
         self.dockWidget.setFeatures(QtGui.QDockWidget.DockWidgetFloatable|QtGui.QDockWidget.DockWidgetMovable)
         self.dockWidget.setAllowedAreas(QtCore.Qt.LeftDockWidgetArea|QtCore.Qt.RightDockWidgetArea)
         self.dockWidget.setObjectName("dockWidget")
@@ -83,7 +73,7 @@ class Ui_MainWindow(object):
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.tabWidget.sizePolicy().hasHeightForWidth())
         self.tabWidget.setSizePolicy(sizePolicy)
-        self.tabWidget.setMinimumSize(QtCore.QSize(400, 200))
+        self.tabWidget.setMinimumSize(QtCore.QSize(300, 200))
         self.tabWidget.setObjectName("tabWidget")
         self.tab = QtGui.QWidget()
         self.tab.setObjectName("tab")
@@ -120,7 +110,7 @@ class Ui_MainWindow(object):
         self.use_dqwave_checkbox.setObjectName("use_dqwave_checkbox")
         self.gridLayout_2.addWidget(self.use_dqwave_checkbox, 3, 1, 1, 1)
         self.baseparams_tableWidget = QtGui.QTableWidget(self.tab)
-        self.baseparams_tableWidget.setMinimumSize(QtCore.QSize(0, 0))
+        self.baseparams_tableWidget.setMinimumSize(QtCore.QSize(0, 45))
         self.baseparams_tableWidget.setMaximumSize(QtCore.QSize(16777215, 40))
         font = QtGui.QFont()
         font.setPointSize(12)
@@ -141,7 +131,7 @@ class Ui_MainWindow(object):
         self.layerparams_tableWidget = QtGui.QTableWidget(self.tab)
         font = QtGui.QFont()
         font.setFamily("Lucida Grande")
-        font.setPointSize(11)
+        font.setPointSize(12)
         font.setWeight(50)
         font.setBold(False)
         self.layerparams_tableWidget.setFont(font)
