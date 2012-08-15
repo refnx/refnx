@@ -8,6 +8,7 @@
 from __future__ import division
 import string
 import numpy as np
+import os.path
 import pyplatypus.util.ErrorProp as EP
 
 class Data_1D(object):
@@ -22,11 +23,19 @@ class Data_1D(object):
     def get_data(self):
         return (self.W_q, self.W_ref, self.W_refSD, self.W_qSD)
         
-    def set_data(self, W_q, W_ref, W_refSD, W_qSD):
+    def set_data(self, W_q, W_ref, *args, res = 5.0):
         self.W_q = np.copy(W_q).flatten()
         self.W_ref = np.copy(W_ref).flatten()
-        self.W_refSD = np.copy(W_refSD).flatten()
-        self.W_qSD = np.copy(W_qSD).flatten()
+        
+        if len(args):
+            self.W_refSD = np.copy(args[0]).flatten()
+        else:
+            self.W_refSD = np.zeros(np.size(self.W_q))
+        
+        if len(args) > 1:
+            self.W_qSD = np.copy(args[1]).flatten()
+        else:
+            self.W_qSD = self.W_q * (res / 100.)
             
         self.numpoints = len(self.W_q)
         
@@ -77,9 +86,10 @@ class Data_1D(object):
         self.W_refSD = self.W_refSD[:,sorted]
         self.W_qSD = self.W_qSD[:,sorted]
         
-	def write_dat(self, f):
+    def write_dat(self, f):
 	    np.savetxt(f, np.column_stack((self.W_q, self.W_ref, self.W_refSD, self.W_qSD))	
 
-	def read_dat(self, f):		
+    def read_dat(self, f):		
 		array = np.loadtxt(f)
-		self.set_data(np.hsplit(array, 4))
+		self.name = os.path.basename(f)
+		self.set_data(np.hsplit(array, np.size(array, 1))
