@@ -23,7 +23,7 @@ class Data_1D(object):
     def get_data(self):
         return (self.W_q, self.W_ref, self.W_refSD, self.W_qSD)
         
-    def set_data(self, W_q, W_ref, *args, res = 5.0):
+    def set_data(self, W_q, W_ref, *args, res = 0.0):
         self.W_q = np.copy(W_q).flatten()
         self.W_ref = np.copy(W_ref).flatten()
         
