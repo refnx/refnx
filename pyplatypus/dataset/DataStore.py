@@ -1,5 +1,5 @@
 from __future__ import divide
-from data_1D import Data_1D
+from pyplatypus.reduce import reflectdataset
 import numpy as np
 
 class DataStore(object):
@@ -20,7 +20,7 @@ class DataStore(object):
     def removeDataObject(self, name):
         del(self.dataObjects[name])
     
-class dataObject(Data_1D):
+class dataObject(reflectdataset):
     def __init__(self, fname):
         super(dataObject, self).__init__()
         self.read_dat(fname)
