@@ -55,21 +55,6 @@ class ReflectDataset(Data_1D):
 		f.write(thefile)
 		f.truncate()
 		
-		def write_reflectivity_XML(self, f):
-		s = string.Template(self.__template_ref_xml)
-		self.time = strftime("%a, %d %b %Y %H:%M:%S +0000", gmtime())
-
-		#filename = 'c_PLP{:07d}_{:d}.xml'.format(self._rnumber[0], 0)
-
-		self._W_ref = string.translate(repr(self.W_ref.tolist()), None, ',[]')
-		self._W_q = string.translate(repr(self.W_q.tolist()), None, ',[]')
-		self._W_refSD = string.translate(repr(self.W_refSD.tolist()), None, ',[]')
-		self._W_qSD = string.translate(repr(self.W_qSD.tolist()), None, ',[]')
-
-		thefile = s.safe_substitute(self.__dict__)
-		f.write(thefile)
-		f.truncate()
- 
     def read_reflectivity_XML(self, f):
         pass
 
