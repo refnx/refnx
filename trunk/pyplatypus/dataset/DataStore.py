@@ -1,5 +1,5 @@
 from __future__ import divide
-from import pyplatypus.dataset.data_1D import Data_1D
+from data_1D import Data_1D
 import numpy as np
 
 class DataStore(object):
