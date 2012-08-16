@@ -8,6 +8,7 @@ matplotlib.use('Qt4Agg')
 matplotlib.rcParams['backend.qt4']='PySide'
 
 from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.backends.backend_qt4agg import NavigationToolbar2QTAgg as NavigationToolbar
 from matplotlib.figure import Figure
 
 
@@ -24,9 +25,11 @@ class MyMainWindow(QtGui.QMainWindow):
         """
             you should do a fit
         """
-        self.reflectivityplot.update_figure()
-        self.reflectivityplot.draw()
-#        print "crap"
+        self.reflectivitygraphs.update_figure()
+        self.reflectivitygraphs.axes[0].plot([10,11,13,14],[9,8,7,6])
+        self.reflectivitygraphs.visibility_of_plots((True, True, True))
+        self.reflectivitygraphs.draw()
+        print "crap"
         
     @QtCore.Slot(unicode)
     def on_dataset_comboBox_currentIndexChanged(self, arg_1):
@@ -101,16 +104,15 @@ class MyMainWindow(QtGui.QMainWindow):
 
     def modifyGui(self):
         #add the plots
-        self.reflectivityplot = MyMplCanvas(self.ui.centralwidget)
-#        self.reflectivityplot.axes.set_xlabel("Q /A**-1")
-#        self.reflectivityplot.axes.set_xlabel("Reflectivity")
-        
-        self.sldplot=MyMplCanvas(self.ui.centralwidget)
-#        self.sldplot.axes.set_xlabel("z /A")
-#        self.sldplot.axes.set_xlabel("SLD /10**-6 A**-2")
-
-        self.ui.gridLayout_3.addWidget(self.reflectivityplot)
-        self.ui.gridLayout_3.addWidget(self.sldplot)
+        self.reflectivitygraphs = MyReflectivityGraphs(self.ui.centralwidget)
+        self.ui.gridLayout_3.addWidget(self.reflectivitygraphs)
+        self.reflectivitygraphs.axes[0].set_xlabel('Q')
+        self.reflectivitygraphs.axes[0].set_ylabel('R')        
+        self.reflectivitygraphs.axes[1].set_xlabel('Q')
+        self.reflectivitygraphs.axes[1].set_ylabel('residual')
+        self.reflectivitygraphs.axes[2].set_xlabel('z')
+        self.reflectivitygraphs.axes[2].set_ylabel('SLD')
+        self.ui.gridLayout_3.addWidget(self.reflectivitygraphs.mpl_toolbar)
         
         #add baseparams table widget info
         self.ui.baseparams_tableWidget.setHorizontalHeaderLabels(['number of layers', 'scale', 'background'])
@@ -146,21 +148,67 @@ class MyMainWindow(QtGui.QMainWindow):
         header.setResizeMode(QtGui.QHeaderView.Stretch)
         self.ui.dataset_comboBox.addItem("theoretical")
         
-class MyMplCanvas(FigureCanvas):
+class MyReflectivityGraphs(FigureCanvas):
     """Ultimately, this is a QWidget (as well as a FigureCanvasAgg, etc.)."""
     def __init__(self, parent=None):
         self.figure = Figure(facecolor=(1,1,1), edgecolor=(0,0,0))
-        self.axes = self.figure.add_subplot(111)
-        # We want the axes cleared every time plot() is called
-        self.axes.hold(False)
+        #reflectivity graph
+        self.axes = []
+        self.axes.append(self.figure.add_subplot(211))
+        self.axes[0].set_xlabel('Q')
+        self.axes[0].set_ylabel('R')
+        
+        #residual plot
+        self.axes.append(self.figure.add_subplot(312, sharex=self.axes[0]))
+        self.axes[1].set_visible(False)
+        self.axes[1].set_xlabel('Q')
+        self.axes[1].set_ylabel('residual')
 
+        #SLD plot
+        self.axes.append(self.figure.add_subplot(212))
+        self.axes[2].set_xlabel('z')
+        self.axes[2].set_ylabel('SLD')
+                       
+        # We want the axes cleared every time plot() is called
+        for ax in self.axes:
+            ax.hold(False)
+        
         self.update_figure()
 
         #
         FigureCanvas.__init__(self, self.figure)
         self.setParent(parent)
-        
+        self.figure.subplots_adjust(left=0.1, right=0.95, top = 0.98, bottom = 0.16)
+        self.mpl_toolbar = NavigationToolbar(self, parent)
+
     def update_figure(self):
         # Build a list of 4 random integers between 0 and 10 (both inclusive)
         l = [ random.randint(0, 10) for i in xrange(4) ]
-        self.axes.plot([0, 1, 2, 3], l, 'r')
+        self.axes[0].plot([0, 1, 2, 3], l)
+        self.axes[1].plot([1, 2, 3, 4], l)
+        self.axes[2].plot([2, 3, 4, 5], l)
+
+    def visibility_of_plots(self, true_false_triplet):
+        """
+            if you want to show an individual plot in the window you can use this method to select which
+            ones are shown
+            true_false_triplet should be a tuple (True or False, True or False, True or False)
+            True = display, False = Hide
+            true_false_triplet[0] = reflectivity plot
+            true_false_triplet[1] = residuals plot
+            true_false_triplet[2] = sld plot
+        """
+        numrows = 0
+        for truth in true_false_triplet:
+            if truth is True:
+                numrows += 1
+
+        upto = 1    
+        for idx, val in enumerate(self.axes):
+            val.set_visible(true_false_triplet[idx])
+            if true_false_triplet[idx] is True:
+                val.change_geometry(numrows, 1, upto)            
+                upto += 1
+            
+                            
+            
