@@ -102,7 +102,13 @@ class MyMainWindow(QtGui.QMainWindow):
     def modifyGui(self):
         #add the plots
         self.reflectivityplot = MyMplCanvas(self.ui.centralwidget)
+#        self.reflectivityplot.axes.set_xlabel("Q /A**-1")
+#        self.reflectivityplot.axes.set_xlabel("Reflectivity")
+        
         self.sldplot=MyMplCanvas(self.ui.centralwidget)
+#        self.sldplot.axes.set_xlabel("z /A")
+#        self.sldplot.axes.set_xlabel("SLD /10**-6 A**-2")
+
         self.ui.gridLayout_3.addWidget(self.reflectivityplot)
         self.ui.gridLayout_3.addWidget(self.sldplot)
         
@@ -145,7 +151,6 @@ class MyMplCanvas(FigureCanvas):
     def __init__(self, parent=None):
         self.figure = Figure(facecolor=(1,1,1), edgecolor=(0,0,0))
         self.axes = self.figure.add_subplot(111)
-        
         # We want the axes cleared every time plot() is called
         self.axes.hold(False)
 
@@ -158,6 +163,4 @@ class MyMplCanvas(FigureCanvas):
     def update_figure(self):
         # Build a list of 4 random integers between 0 and 10 (both inclusive)
         l = [ random.randint(0, 10) for i in xrange(4) ]
-        
         self.axes.plot([0, 1, 2, 3], l, 'r')
-        
