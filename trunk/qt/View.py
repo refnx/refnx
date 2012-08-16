@@ -25,7 +25,7 @@ class MyMainWindow(QtGui.QMainWindow):
             you should do a fit
         """
         self.reflectivityplot.update_figure()
-        self.reflectvityplot.draw()
+        self.reflectivityplot.draw()
 #        print "crap"
         
     @QtCore.Slot(unicode)
@@ -105,10 +105,6 @@ class MyMainWindow(QtGui.QMainWindow):
         self.sldplot=MyMplCanvas(self.ui.centralwidget)
         self.ui.gridLayout_3.addWidget(self.reflectivityplot)
         self.ui.gridLayout_3.addWidget(self.sldplot)
-        
-#        self.setCentralWidget(sc)
-#        self.ui.centralwidget = sc
-#        self.ui.centralwidget.setObjectName("mainplot")
         
         #add baseparams table widget info
         self.ui.baseparams_tableWidget.setHorizontalHeaderLabels(['number of layers', 'scale', 'background'])
