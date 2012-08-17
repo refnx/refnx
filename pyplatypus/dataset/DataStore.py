@@ -33,5 +33,5 @@ class dataObject(reflectdataset):
         self.chi2 = -1
         self.sld_profile = None
         
-        self.isDisplayed = True
+        self.is_visible = False
         self.symbol = None

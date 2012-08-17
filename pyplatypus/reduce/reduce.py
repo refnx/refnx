@@ -340,7 +340,7 @@ if __name__ == "__main__":
 	
 	a.rebin(rebinpercent = 4)
 	with open('test.xml', 'w') as f:
-		a.write_reflectivity_XML(f)
+		a.save_reflectivity_XML(f)
 
 	print strftime("%a, %d %b %Y %H:%M:%S +0000", gmtime())        
 	
