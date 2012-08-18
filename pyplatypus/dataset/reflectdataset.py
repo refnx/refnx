@@ -2,12 +2,11 @@ from __future__ import division
 import string
 import numpy as np
 from time import gmtime, strftime
-import nsplice
-import rebin
+import pyplatypus.reduce.rebin
 import xml.etree.cElementTree as ET
 import os.path
 import pyplatypus.util.ErrorProp as EP
-from pyplatypus.dataset.data_1D import Data_1D
+from data_1D import Data_1D
  
 class ReflectDataset(Data_1D):
     __template_ref_xml = """<?xml version="1.0"?>

@@ -1,5 +1,5 @@
 import unittest
-import pyplatypus.reduce.reflectdataset as reflectdataset
+import pyplatypus.dataset.reflectdataset as reflectdataset
 import numpy as np
 import numpy.testing as npt
 
@@ -15,7 +15,7 @@ class TestReflectDataset(unittest.TestCase):
         
         '''
         dataset = reflectdataset.ReflectDataset()
-        with open('pyplatypus/reduce/test/c_PLP0000708.xml') as f:
+        with open('pyplatypus/dataset/test/c_PLP0000708.xml') as f:
             dataset.load_reflectivity_XML(f)
         
         self.assertEqual(dataset.numpoints, 90)
