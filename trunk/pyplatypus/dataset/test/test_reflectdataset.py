@@ -8,7 +8,7 @@ class TestReflectDataset(unittest.TestCase):
     def setUp(self):
         pass
              
-    def test_load_reflectivity_XML(self):
+    def test_load(self):
         '''
             test reflectivity calculation
             with values generated from Motofit
@@ -16,7 +16,7 @@ class TestReflectDataset(unittest.TestCase):
         '''
         dataset = reflectdataset.ReflectDataset()
         with open('pyplatypus/dataset/test/c_PLP0000708.xml') as f:
-            dataset.load_reflectivity_XML(f)
+            dataset.load(f)
         
         self.assertEqual(dataset.numpoints, 90)
         self.assertEqual(90, np.size(dataset.W_q))

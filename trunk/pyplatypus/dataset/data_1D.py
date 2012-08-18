@@ -87,10 +87,10 @@ class Data_1D(object):
         self.W_refSD = self.W_refSD[:,sorted]
         self.W_qSD = self.W_qSD[:,sorted]
 
-    def save_dat(self, f):
+    def save(self, f):
         np.savetxt(f, np.column_stack((self.W_q, self.W_ref, self.W_refSD, self.W_qSD)))
         
-    def load_dat(self, f):
+    def load(self, f):
         array = np.loadtxt(f)
         self.name = os.path.basename(f)
         self.set_data(np.hsplit(array, np.size(array, 1)))
