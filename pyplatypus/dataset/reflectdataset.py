@@ -41,7 +41,7 @@ class ReflectDataset(Data_1D):
         self.add_data(reduceObj.get_1D_data(scanpoint = scanpoint), requires_splice = True)
         self.datafilenumber.append(reduceObj.datafilenumber)                                                    
         
-    def save_reflectivity_XML(self, f):
+    def save(self, f):
         s = string.Template(self.__template_ref_xml)
         self.time = strftime("%a, %d %b %Y %H:%M:%S +0000", gmtime())
 
@@ -56,22 +56,25 @@ class ReflectDataset(Data_1D):
         f.write(thefile)
         f.truncate()
         
-    def load_reflectivity_XML(self, f):
-        tree = ET.ElementTree()
-        tree.parse(f)
-        qtext = tree.find('.//Qz')
-        rtext = tree.find('.//R')
-        drtext = tree.find('.//dR')
-        dqtext = tree.find('.//dQz')
-
-        qvals = [float(val) for val in qtext.text.split()]
-        rvals = [float(val) for val in rtext.text.split()]
-        drvals = [float(val) for val in drtext.text.split()]
-        dqvals = [float(val) for val in dqtext.text.split()]
+    def load(self, f):
+        try:
+            tree = ET.ElementTree()
+            tree.parse(f)
+            qtext = tree.find('.//Qz')
+            rtext = tree.find('.//R')
+            drtext = tree.find('.//dR')
+            dqtext = tree.find('.//dQz')
+    
+            qvals = [float(val) for val in qtext.text.split()]
+            rvals = [float(val) for val in rtext.text.split()]
+            drvals = [float(val) for val in drtext.text.split()]
+            dqvals = [float(val) for val in dqtext.text.split()]
+            
+            self.name = os.path.basename(f.name)
+            self.set_data(qvals, rvals, drvals, dqvals) 
+        except ET.ParseError:
+            super(ReflectDataset, self).load(f)
         
-        self.name = os.path.basename(f.name)
-        self.set_data(qvals, rvals, drvals, dqvals) 
-
     def rebin(self, rebinpercent = 4):
         W_q, W_ref, W_refSD, W_qSD = self.get_data()
         frac = 1. + (rebinpercent/100.)
