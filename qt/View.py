@@ -170,8 +170,8 @@ class MyReflectivityGraphs(FigureCanvas):
         self.axes[2].set_ylabel('SLD')
                        
         # We want the axes cleared every time plot() is called
-        for ax in self.axes:
-            ax.hold(False)
+#        for ax in self.axes:
+#            ax.hold(False)
         
         self.update_figure()
 
