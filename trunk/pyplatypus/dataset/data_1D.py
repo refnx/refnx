@@ -9,6 +9,7 @@ from __future__ import division
 import string
 import numpy as np
 import os.path
+import pyplatypus.reduce.nsplice as nsplice
 import pyplatypus.util.ErrorProp as EP
 
 class Data_1D(object):

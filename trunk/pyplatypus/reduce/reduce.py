@@ -7,7 +7,7 @@ import pyplatypus.util.ErrorProp as EP
 import Qtransforms as qtrans
 import string
 from time import gmtime, strftime
-import reflectdataset
+import platypus.dataset.reflectdataset
 import os
     
 class Reduce(object):
