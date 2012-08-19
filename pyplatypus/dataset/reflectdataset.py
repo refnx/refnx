@@ -73,6 +73,7 @@ class ReflectDataset(Data_1D):
             drvals = [float(val) for val in drtext.text.split()]
             dqvals = [float(val) for val in dqtext.text.split()]
             
+            self.filename = f.name
             self.name = os.path.basename(f.name)
             self.set_data((qvals, rvals, drvals, dqvals)) 
         except ET.ParseError:

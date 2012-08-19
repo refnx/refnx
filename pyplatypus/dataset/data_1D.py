@@ -91,5 +91,11 @@ class Data_1D(object):
         
     def load(self, f):
         array = np.loadtxt(f)
+        self.filename = f.name
         self.name = os.path.basename(f.name)
         self.set_data(tuple(np.hsplit(array, np.size(array, 1))))
+        
+    def refresh(self):
+		with open(self.filename) as f:
+			self.load(f)
+
