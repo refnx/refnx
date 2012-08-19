@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'Motofit.ui'
 #
-# Created: Thu Aug 16 20:55:41 2012
+# Created: Sun Aug 19 21:56:51 2012
 #      by: pyside-uic 0.2.13 running on PySide 1.1.1
 #
 # WARNING! All changes made in this file will be lost!
@@ -161,6 +161,9 @@ class Ui_MainWindow(object):
         self.dockWidget.setWidget(self.dockWidgetContents)
         MainWindow.addDockWidget(QtCore.Qt.DockWidgetArea(2), self.dockWidget)
         self.actionLoad_Data = QtGui.QAction(MainWindow)
+        self.actionLoad_Data.setCheckable(False)
+        self.actionLoad_Data.setChecked(False)
+        self.actionLoad_Data.setShortcutContext(QtCore.Qt.ApplicationShortcut)
         self.actionLoad_Data.setObjectName("actionLoad_Data")
         self.actionSave_Data = QtGui.QAction(MainWindow)
         self.actionSave_Data.setObjectName("actionSave_Data")
@@ -169,12 +172,18 @@ class Ui_MainWindow(object):
         self.actionLoad_Model = QtGui.QAction(MainWindow)
         self.actionLoad_Model.setObjectName("actionLoad_Model")
         self.actionLogR_vs_Q = QtGui.QAction(MainWindow)
+        self.actionLogR_vs_Q.setCheckable(True)
+        self.actionLogR_vs_Q.setChecked(True)
         self.actionLogR_vs_Q.setObjectName("actionLogR_vs_Q")
         self.actionRQ4_vs_Q = QtGui.QAction(MainWindow)
         self.actionRQ4_vs_Q.setObjectName("actionRQ4_vs_Q")
         self.actionRQ4_vs_Q_2 = QtGui.QAction(MainWindow)
         self.actionRQ4_vs_Q_2.setObjectName("actionRQ4_vs_Q_2")
+        self.actionRefresh_Datasets = QtGui.QAction(MainWindow)
+        self.actionRefresh_Datasets.setObjectName("actionRefresh_Datasets")
         self.menuData.addAction(self.actionLoad_Data)
+        self.menuData.addAction(self.actionRefresh_Datasets)
+        self.menuData.addSeparator()
         self.menuData.addAction(self.actionSave_Data)
         self.menuModel.addAction(self.actionSave_Model)
         self.menuModel.addAction(self.actionLoad_Model)
@@ -216,4 +225,6 @@ class Ui_MainWindow(object):
         self.actionLogR_vs_Q.setText(QtGui.QApplication.translate("MainWindow", "logR vs Q", None, QtGui.QApplication.UnicodeUTF8))
         self.actionRQ4_vs_Q.setText(QtGui.QApplication.translate("MainWindow", "R vs Q", None, QtGui.QApplication.UnicodeUTF8))
         self.actionRQ4_vs_Q_2.setText(QtGui.QApplication.translate("MainWindow", "RQ4 vs Q", None, QtGui.QApplication.UnicodeUTF8))
+        self.actionRefresh_Datasets.setText(QtGui.QApplication.translate("MainWindow", "Refresh Datasets", None, QtGui.QApplication.UnicodeUTF8))
+        self.actionRefresh_Datasets.setShortcut(QtGui.QApplication.translate("MainWindow", "Meta+R", None, QtGui.QApplication.UnicodeUTF8))
 
