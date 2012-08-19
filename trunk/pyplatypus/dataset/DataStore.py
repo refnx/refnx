@@ -23,10 +23,13 @@ class DataStore(object):
     def removeDataObject(self, name):
         del(self.dataObjects[name])
         
-    
-class dataObject(reflectdataset.ReflectDataset):
-
+    def refresh():
+        for key in self.dataObjects:
+            self.dataObjects[key].refresh()
+            
         
+    
+class dataObject(reflectdataset.ReflectDataset):        
     def __init__(self, fname):
         super(dataObject, self).__init__()
         with open(fname, 'r') as f:
@@ -42,3 +45,4 @@ class dataObject(reflectdataset.ReflectDataset):
         
         self.is_visible = False
         self.symbol = None
+
