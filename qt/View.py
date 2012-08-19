@@ -10,7 +10,7 @@ matplotlib.rcParams['backend.qt4']='PySide'
 from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt4agg import NavigationToolbar2QTAgg as NavigationToolbar
 from matplotlib.figure import Figure
-
+import pyplatypus.dataset.DataStore as DataStore
 
 class MyMainWindow(QtGui.QMainWindow):
     def __init__(self, parent=None):
@@ -18,18 +18,31 @@ class MyMainWindow(QtGui.QMainWindow):
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self.errorHandler = QtGui.QErrorMessage()
+        self.dataStore = DataStore.DataStore()
         self.modifyGui()
 
+    @QtCore.Slot()
+    def on_actionLoad_Data_triggered(self):
+        """
+            you should do a fit
+        """
+        theFiles = QtGui.QFileDialog.getOpenFileNames(self,  caption = 'Select Reflectivity Files')[0]
+        for file in theFiles:
+            print file
+            self.dataStore.loadDataObject(file)
+        
+        print self.dataStore.numDataObjects
+        
+                       
     @QtCore.Slot()
     def on_do_fit_button_clicked(self):
         """
             you should do a fit
         """
-        self.reflectivitygraphs.update_figure()
-        self.reflectivitygraphs.axes[0].plot([10,11,13,14],[9,8,7,6])
+#        self.reflectivitygraphs.update_figure()
+        print self.reflectivitygraphs.axes[0].lines[0].get_marker()
         self.reflectivitygraphs.visibility_of_plots((True, True, True))
         self.reflectivitygraphs.draw()
-        print "crap"
         
     @QtCore.Slot(unicode)
     def on_dataset_comboBox_currentIndexChanged(self, arg_1):
