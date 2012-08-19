@@ -36,7 +36,6 @@ class MyMainWindow(QtGui.QMainWindow):
                                                                      linestyle='',
                                                                       label = dataObject.name)
             dataObject.line2D = lineInstance[0]
-            
             self.reflectivitygraphs.draw()
  
  
@@ -57,7 +56,7 @@ class MyMainWindow(QtGui.QMainWindow):
         """
             you should do a fit
         """
-        print self.reflectivitygraphs.axes[0].lines[0].get_marker()
+#        print self.reflectivitygraphs.axes[0].lines[0].get_marker()
         self.reflectivitygraphs.visibility_of_plots((True, True, True))
         self.reflectivitygraphs.draw()
         
@@ -185,12 +184,14 @@ class MyReflectivityGraphs(FigureCanvas):
         #reflectivity graph
         self.axes = []
         self.axes.append(self.figure.add_subplot(211))
+        self.axes[0].autoscale(axis='both', tight = True)
         self.axes[0].set_xlabel('Q')
         self.axes[0].set_ylabel('R')
         self.axes[0].set_yscale('log')
         
         #residual plot
-        self.axes.append(self.figure.add_subplot(312, sharex=self.axes[0]))
+        #, sharex=self.axes[0]
+        self.axes.append(self.figure.add_subplot(312))
         self.axes[1].set_visible(False)
         self.axes[1].set_xlabel('Q')
         self.axes[1].set_ylabel('residual')
@@ -200,25 +201,10 @@ class MyReflectivityGraphs(FigureCanvas):
         self.axes[2].set_xlabel('z')
         self.axes[2].set_ylabel('SLD')
                        
-        # We want the axes cleared every time plot() is called
-#        for ax in self.axes:
-#            ax.hold(False)
-        
-        self.update_figure()
-
-        #
         FigureCanvas.__init__(self, self.figure)
         self.setParent(parent)
         self.figure.subplots_adjust(left=0.1, right=0.95, top = 0.98)
         self.mpl_toolbar = NavigationToolbar(self, parent)
-
-    def update_figure(self):
-        # Build a list of 4 random integers between 0 and 10 (both inclusive)
-        pass
-#         l = [ random.randint(0, 10) for i in xrange(4) ]
-#         self.axes[0].plot([0, 1, 2, 3], l)
-#         self.axes[1].plot([1, 2, 3, 4], l)
-#         self.axes[2].plot([2, 3, 4, 5], l)
 
     def visibility_of_plots(self, true_false_triplet):
         """
