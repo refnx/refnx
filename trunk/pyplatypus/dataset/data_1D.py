@@ -24,17 +24,17 @@ class Data_1D(object):
     def get_data(self):
         return (self.W_q, self.W_ref, self.W_refSD, self.W_qSD)
         
-    def set_data(self, W_q, W_ref, *args):
-        self.W_q = np.copy(W_q).flatten()
-        self.W_ref = np.copy(W_ref).flatten()
+    def set_data(self, dataTuple):
+        self.W_q = np.copy(dataTuple[0]).flatten()
+        self.W_ref = np.copy(dataTuple[1]).flatten()
         
-        if len(args):
-            self.W_refSD = np.copy(args[0]).flatten()
+        if len(dataTuple) > 2:
+            self.W_refSD = np.copy(dataTuple[2]).flatten()
         else:
             self.W_refSD = np.zeros(np.size(self.W_q))
         
-        if len(args) > 1:
-            self.W_qSD = np.copy(args[1]).flatten()
+        if len(dataTuple) > 3:
+            self.W_qSD = np.copy(dataTuple[3]).flatten()
         else:
             self.W_qSD = np.zeros(np.size(self.W_q))
             
@@ -53,7 +53,6 @@ class Data_1D(object):
         rr = np.r_[W_ref]
         dr = np.r_[W_refSD]
         dq = np.r_[W_qSD]
-
     
         #go through and stitch them together.
         if requires_splice and self.numpoints > 1:
@@ -77,7 +76,7 @@ class Data_1D(object):
         rr = np.r_[rr, appendR]
         dr = np.r_[dr, appendDR]
         
-        self.set_data(qq, rr, dr, dq)
+        self.set_data((qq, rr, dr, dq))
         self.sort()
 
     def sort(self):
@@ -92,5 +91,5 @@ class Data_1D(object):
         
     def load(self, f):
         array = np.loadtxt(f)
-        self.name = os.path.basename(f)
-        self.set_data(np.hsplit(array, np.size(array, 1)))
+        self.name = os.path.basename(f.name)
+        self.set_data(tuple(np.hsplit(array, np.size(array, 1))))

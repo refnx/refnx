@@ -3,7 +3,10 @@ import string
 import numpy as np
 from time import gmtime, strftime
 import pyplatypus.reduce.rebin
-import xml.etree.cElementTree as ET
+try:
+    import xml.etree.cElementTree as ET
+except ImportError:
+    import xml.etree.ElementTree as ET
 import os.path
 import pyplatypus.util.ErrorProp as EP
 from data_1D import Data_1D
@@ -71,9 +74,10 @@ class ReflectDataset(Data_1D):
             dqvals = [float(val) for val in dqtext.text.split()]
             
             self.name = os.path.basename(f.name)
-            self.set_data(qvals, rvals, drvals, dqvals) 
+            self.set_data((qvals, rvals, drvals, dqvals)) 
         except ET.ParseError:
-            super(ReflectDataset, self).load(f)
+            with open(f.name, 'r') as g:
+                super(ReflectDataset, self).load(g)
         
     def rebin(self, rebinpercent = 4):
         W_q, W_ref, W_refSD, W_qSD = self.get_data()
@@ -95,7 +99,7 @@ class ReflectDataset(Data_1D):
         drdat = dr
         qsddat = dq
 
-        self.set_data(qdat, rdat, drdat, qsddat)
+        self.set_data((qdat, rdat, drdat, qsddat))
 
 
   
