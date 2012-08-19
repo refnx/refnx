@@ -37,7 +37,7 @@ class MyMainWindow(QtGui.QMainWindow):
                                                                       label = dataObject.name)
             dataObject.line2D = lineInstance[0]
             self.reflectivitygraphs.draw()
- 
+            self.ui.dataset_comboBox.addItem(dataObject.name)
  
     @QtCore.Slot()
     def on_actionRefresh_Datasets_triggered(self):
