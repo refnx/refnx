@@ -24,22 +24,39 @@ class MyMainWindow(QtGui.QMainWindow):
     @QtCore.Slot()
     def on_actionLoad_Data_triggered(self):
         """
-            you should do a fit
-        """
+            you load data
+        """ 
         theFiles = QtGui.QFileDialog.getOpenFileNames(self,  caption = 'Select Reflectivity Files')[0]
         for file in theFiles:
-            print file
-            self.dataStore.loadDataObject(file)
-        
-        print self.dataStore.numDataObjects
-        
+            dataObject = self.dataStore.loadDataObject(file)
+            lineInstance = self.reflectivitygraphs.axes[0].plot(dataObject.W_q,
+                                                                 dataObject.W_ref,
+                                                                   markersize=5,
+                                                                    marker='o',
+                                                                     linestyle='',
+                                                                      label = dataObject.name)
+            dataObject.line2D = lineInstance[0]
+            
+            self.reflectivitygraphs.draw()
+ 
+ 
+    @QtCore.Slot()
+    def on_actionRefresh_Datasets_triggered(self):
+        """
+            you are refreshing existing datasets
+        """
+        self.dataStore.refresh()
+        for key in self.dataStore.dataObjects:
+            dataObject = self.dataStore.dataObjects[key]
+            dataObject.line2D.set_data(dataObject.W_q, dataObject.W_ref)
+        self.reflectivitygraphs.draw()
+ 
                        
     @QtCore.Slot()
     def on_do_fit_button_clicked(self):
         """
             you should do a fit
         """
-#        self.reflectivitygraphs.update_figure()
         print self.reflectivitygraphs.axes[0].lines[0].get_marker()
         self.reflectivitygraphs.visibility_of_plots((True, True, True))
         self.reflectivitygraphs.draw()
@@ -170,6 +187,7 @@ class MyReflectivityGraphs(FigureCanvas):
         self.axes.append(self.figure.add_subplot(211))
         self.axes[0].set_xlabel('Q')
         self.axes[0].set_ylabel('R')
+        self.axes[0].set_yscale('log')
         
         #residual plot
         self.axes.append(self.figure.add_subplot(312, sharex=self.axes[0]))
@@ -191,15 +209,16 @@ class MyReflectivityGraphs(FigureCanvas):
         #
         FigureCanvas.__init__(self, self.figure)
         self.setParent(parent)
-        self.figure.subplots_adjust(left=0.1, right=0.95, top = 0.98, bottom = 0.16)
+        self.figure.subplots_adjust(left=0.1, right=0.95, top = 0.98)
         self.mpl_toolbar = NavigationToolbar(self, parent)
 
     def update_figure(self):
         # Build a list of 4 random integers between 0 and 10 (both inclusive)
-        l = [ random.randint(0, 10) for i in xrange(4) ]
-        self.axes[0].plot([0, 1, 2, 3], l)
-        self.axes[1].plot([1, 2, 3, 4], l)
-        self.axes[2].plot([2, 3, 4, 5], l)
+        pass
+#         l = [ random.randint(0, 10) for i in xrange(4) ]
+#         self.axes[0].plot([0, 1, 2, 3], l)
+#         self.axes[1].plot([1, 2, 3, 4], l)
+#         self.axes[2].plot([2, 3, 4, 5], l)
 
     def visibility_of_plots(self, true_false_triplet):
         """

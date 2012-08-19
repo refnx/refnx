@@ -54,6 +54,8 @@
      <string>Data</string>
     </property>
     <addaction name="actionLoad_Data"/>
+    <addaction name="actionRefresh_Datasets"/>
+    <addaction name="separator"/>
     <addaction name="actionSave_Data"/>
    </widget>
    <widget class="QMenu" name="menuModel">
@@ -395,6 +397,12 @@
    </property>
   </action>
   <action name="actionLogR_vs_Q">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>logR vs Q</string>
    </property>
@@ -407,6 +415,14 @@
   <action name="actionRQ4_vs_Q_2">
    <property name="text">
     <string>RQ4 vs Q</string>
+   </property>
+  </action>
+  <action name="actionRefresh_Datasets">
+   <property name="text">
+    <string>Refresh Datasets</string>
+   </property>
+   <property name="shortcut">
+    <string>Meta+R</string>
    </property>
   </action>
  </widget>
