@@ -11,6 +11,7 @@ from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt4agg import NavigationToolbar2QTAgg as NavigationToolbar
 from matplotlib.figure import Figure
 import pyplatypus.dataset.DataStore as DataStore
+import Model
 
 class MyMainWindow(QtGui.QMainWindow):
     def __init__(self, parent=None):
@@ -20,6 +21,8 @@ class MyMainWindow(QtGui.QMainWindow):
         self.errorHandler = QtGui.QErrorMessage()
         self.dataStore = DataStore.DataStore()
         self.modifyGui()
+        self.theoretical_model = Model.theoreticalModel_dataObject()
+        self.add_dataObject_to_gui(self.theoretical_model)
 
     @QtCore.Slot()
     def on_actionLoad_Data_triggered(self):
@@ -29,16 +32,19 @@ class MyMainWindow(QtGui.QMainWindow):
         theFiles = QtGui.QFileDialog.getOpenFileNames(self,  caption = 'Select Reflectivity Files')[0]
         for file in theFiles:
             dataObject = self.dataStore.loadDataObject(file)
-            lineInstance = self.reflectivitygraphs.axes[0].plot(dataObject.W_q,
+            self.add_dataObject_to_gui(dataObject)
+            
+    def add_dataObject_to_gui(self, dataObject):
+        lineInstance = self.reflectivitygraphs.axes[0].plot(dataObject.W_q,
                                                                  dataObject.W_ref,
                                                                    markersize=5,
                                                                     marker='o',
                                                                      linestyle='',
                                                                       label = dataObject.name)
-            dataObject.line2D = lineInstance[0]
-            self.reflectivitygraphs.draw()
-            self.ui.dataset_comboBox.addItem(dataObject.name)
- 
+        dataObject.line2D = lineInstance[0]
+        self.reflectivitygraphs.draw()
+        self.ui.dataset_comboBox.addItem(dataObject.name)
+    
     @QtCore.Slot()
     def on_actionRefresh_Datasets_triggered(self):
         """
@@ -175,7 +181,6 @@ class MyMainWindow(QtGui.QMainWindow):
         header.setResizeMode(QtGui.QHeaderView.Stretch)
         header = self.ui.layerparams_tableWidget.verticalHeader()
         header.setResizeMode(QtGui.QHeaderView.Stretch)
-        self.ui.dataset_comboBox.addItem("theoretical")
         
 class MyReflectivityGraphs(FigureCanvas):
     """Ultimately, this is a QWidget (as well as a FigureCanvasAgg, etc.)."""

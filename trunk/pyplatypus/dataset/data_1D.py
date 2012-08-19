@@ -98,4 +98,4 @@ class Data_1D(object):
     def refresh(self):
 		with open(self.filename) as f:
 			self.load(f)
-
+		

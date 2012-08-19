@@ -2,6 +2,7 @@ from __future__ import division
 import reflectdataset
 import numpy as np
 
+
 class DataStore(object):
 
     def __init__(self):
@@ -14,8 +15,12 @@ class DataStore(object):
         self.numDataObjects += 1
         
     def loadDataObject(self, filename):
-        TdataObject = dataObject(filename)
+        TdataObject = dataObject()
+        with open(filename, 'r') as f:
+            TdataObject.load(f)
+            
         self.addDataObject(TdataObject)
+        return TdataObject
                       
     def getDataObject(self, name):
         return self.dataObjects[name]
@@ -23,17 +28,15 @@ class DataStore(object):
     def removeDataObject(self, name):
         del(self.dataObjects[name])
         
-    def refresh():
+    def refresh(self):
         for key in self.dataObjects:
             self.dataObjects[key].refresh()
             
         
     
 class dataObject(reflectdataset.ReflectDataset):        
-    def __init__(self, fname):
+    def __init__(self, fname = None):
         super(dataObject, self).__init__()
-        with open(fname, 'r') as f:
-            self.load(f)
 
         self.fit = None
         self.residuals = None
@@ -43,6 +46,6 @@ class dataObject(reflectdataset.ReflectDataset):
         self.chi2 = -1
         self.sld_profile = None
         
-        self.is_visible = False
-        self.symbol = None
+        self.line2D = None
+
 
