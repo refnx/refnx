@@ -360,11 +360,20 @@
    </widget>
   </widget>
   <action name="actionLoad_Data">
+   <property name="checkable">
+    <bool>false</bool>
+   </property>
+   <property name="checked">
+    <bool>false</bool>
+   </property>
    <property name="text">
     <string>Load Data</string>
    </property>
    <property name="shortcut">
     <string>Meta+O</string>
+   </property>
+   <property name="shortcutContext">
+    <enum>Qt::ApplicationShortcut</enum>
    </property>
   </action>
   <action name="actionSave_Data">
