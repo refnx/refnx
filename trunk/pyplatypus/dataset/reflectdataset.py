@@ -31,9 +31,9 @@ class ReflectDataset(Data_1D):
     </REFentry>
     </REFroot>"""
 
-    def __init__(self, datasets = None, **kwds):
+    def __init__(self, dataTuple = None, datasets = None, **kwds):
         #args should be a list of reduce objects
-        super(ReflectDataset, self).__init__()
+        super(ReflectDataset, self).__init__(dataTuple = dataTuple)
         self.datafilenumber = list()
         if datasets is not None:
             [self.add_dataset(data) for data in datasets]
