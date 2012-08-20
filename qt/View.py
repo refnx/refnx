@@ -19,7 +19,7 @@ class MyMainWindow(QtGui.QMainWindow):
         self.errorHandler = QtGui.QErrorMessage()
         self.dataStore = DataStore.DataStore()
         self.modifyGui()
-
+        
         parameters = np.array([1, 1.0, 0, 0, 2.07, 0, 1e-7, 3, 205, 3.47, 0, 3])
         fitted_parameters = np.array([1,2,3,4,5,6,7,8,9, 10, 11])
 
@@ -31,7 +31,6 @@ class MyMainWindow(QtGui.QMainWindow):
         
         self.theoretical_model = DataStore.dataObject(dataTuple = dataTuple, fitted_parameters = fitted_parameters, parameters = parameters)
         self.theoretical_model.evaluate()
-        self.theoretical_model.W_ref = self.theoretical_model.fit
         self.dataStore.addDataObject(self.theoretical_model)
         self.theoretical_model.line2Dfit = self.reflectivitygraphs.axes[0].plot(self.theoretical_model.W_q,
                                                    self.theoretical_model.fit,
@@ -115,29 +114,32 @@ class MyMainWindow(QtGui.QMainWindow):
         row = self.ui.baseparams_tableWidget.currentRow()
         col = self.ui.baseparams_tableWidget.currentColumn()
         
+        if row < 0 or col < 0:
+        	return
+        
         if row == 0 and col == 0:
             #increase/decrease number of layers
             validator = QtGui.QIntValidator()
             voutput = validator.validate(arg_1.text(), 1)
                         
             if voutput[0] is QtGui.QValidator.State.Acceptable and voutput[1] >= 0:
-                #update model
                 pass
             else:
                 self.errorHandler.showMessage("Number of layers must be integer > 0")
+                return
         else:
             validator = QtGui.QDoubleValidator()
             voutput = validator.validate(arg_1.text(), 1)
             if voutput[0] is QtGui.QValidator.State.Acceptable:
-                #update model
                 pass
             else:
                 self.errorHandler.showMessage("values entered must be numeric")
+                return
         if row == 0 and col == 0:
             #perhaps you have to insert rows.
             pass
         
-    	self.theoretical_model.parameters = self.gui_to_parameters()
+        self.theoretical_model.parameters = self.gui_to_parameters()
         self.theoretical_model.update(self.theoretical_model.parameters, self.theoretical_model.fitted_parameters)     
         self.redraw_dataObject_graphs(self.theoretical_model)
 
@@ -160,14 +162,14 @@ class MyMainWindow(QtGui.QMainWindow):
             
         validator = QtGui.QDoubleValidator()
         if validator.validate(arg_1.text(), 1)[0] == QtGui.QValidator.State.Acceptable:
-            #update model
-            pass
+            self.theoretical_model.parameters = self.gui_to_parameters()
+            self.theoretical_model.update(self.theoretical_model.parameters, self.theoretical_model.fitted_parameters)     
+            self.redraw_dataObject_graphs(self.theoretical_model)
         else:
             self.errorHandler.showMessage("values entered must be numeric")
-            
-        self.theoretical_model.parameters = self.gui_to_parameters()
-        self.theoretical_model.update(self.theoretical_model.parameters, self.theoretical_model.fitted_parameters)     
-        self.redraw_dataObject_graphs(self.theoretical_model)
+            return
+        
+      
 
     def modifyGui(self):
         #add the plots
@@ -205,7 +207,6 @@ class MyMainWindow(QtGui.QMainWindow):
         
         parameters[1] = float(self.ui.baseparams_tableWidget.item(0, 1).text())
         parameters[6] = float(self.ui.baseparams_tableWidget.item(0, 2).text())
-        
         parameters[2] = float(self.ui.layerparams_tableWidget.item(0, 1).text())
         parameters[3] = float(self.ui.layerparams_tableWidget.item(0, 2).text())
         parameters[4] = float(self.ui.layerparams_tableWidget.item(numlayers + 1, 1).text())
@@ -228,11 +229,7 @@ class MyMainWindow(QtGui.QMainWindow):
         for val in fitted_parameters:
             checked[val] = QtCore.Qt.Unchecked
 
-        for cidx in xrange(3):
-            wi = QtGui.QTableWidgetItem(parameters[baseparams[cidx]])
-            wi.setText(str(parameters[baseparams[cidx]]))
-            wi.setCheckState(checked[baseparams[cidx]])
-            self.ui.baseparams_tableWidget.setItem(0, cidx, wi)
+
 
         self.ui.layerparams_tableWidget.setRowCount(numlayers + 2) 
         #set fronting and backing first
@@ -268,7 +265,12 @@ class MyMainWindow(QtGui.QMainWindow):
             row = ((pidx - 8) // 4) + 1
             col = (pidx - 8) % 4
             self.ui.layerparams_tableWidget.setItem(row, col, wi)
-        
+         
+        for cidx in xrange(3):
+            wi = QtGui.QTableWidgetItem(str(parameters[baseparams[cidx]]))
+            wi.setCheckState(checked[baseparams[cidx]])
+            self.ui.baseparams_tableWidget.setItem(0, cidx, wi)		
+
     def redraw_dataObject_graphs(self, dataObject):
         if dataObject.line2D:
            dataObject.line2D.set_data(dataObject.W_q, dataObject.W_ref)

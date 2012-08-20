@@ -31,8 +31,8 @@ class DataStore(object):
         
     def refresh(self):
         for key in self.dataObjects:
-        	if key != '_theoretical_':
-	            self.dataObjects[key].refresh()
+            if key != '_theoretical_':
+                self.dataObjects[key].refresh()
             
         
 class dataObject(reflectdataset.ReflectDataset):        
@@ -65,7 +65,7 @@ class dataObject(reflectdataset.ReflectDataset):
         self.residuals = self.fit - self.W_ref
         self.sld_profile = RFO.sld_profile()
         
-   def update(self, parameters, fitted_parameters):
-		dataObject.parameters = np.copy(parameters)
-		dataObject.fitted_parameters = np.copy(fitted_parameters)
-		dataObject.evaluate()
+    def update(self, parameters, fitted_parameters):
+        self.parameters = np.copy(parameters)
+        self.fitted_parameters = np.copy(fitted_parameters)
+        self.evaluate()
