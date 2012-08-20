@@ -134,6 +134,7 @@ class MyMainWindow(QtGui.QMainWindow):
                 self.errorHandler.showMessage("values entered must be numeric")
         if row == 0 and col == 0:
             #perhaps you have to insert rows.
+            pass
         
     	self.theoretical_model.parameters = self.gui_to_parameters()
         self.update_theoretical_model(self.theoretical_model.parameters, self.theoretical_model.fitted_parameters)     
