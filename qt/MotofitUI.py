@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'Motofit.ui'
 #
-# Created: Sun Aug 19 21:56:51 2012
+# Created: Mon Aug 20 19:28:41 2012
 #      by: pyside-uic 0.2.13 running on PySide 1.1.1
 #
 # WARNING! All changes made in this file will be lost!
@@ -99,7 +99,7 @@ class Ui_MainWindow(object):
         self.doubleSpinBox = QtGui.QDoubleSpinBox(self.tab)
         self.doubleSpinBox.setWrapping(False)
         self.doubleSpinBox.setFrame(True)
-        self.doubleSpinBox.setReadOnly(True)
+        self.doubleSpinBox.setReadOnly(False)
         self.doubleSpinBox.setDecimals(1)
         self.doubleSpinBox.setMaximum(10.0)
         self.doubleSpinBox.setSingleStep(0.1)

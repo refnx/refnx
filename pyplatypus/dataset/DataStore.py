@@ -58,14 +58,19 @@ class dataObject(reflectdataset.ReflectDataset):
         self.line2Dfit = None
         self.line2Dsld_profile = None
         
-    def evaluate(self):
+    def evaluate(self, fit_and_energy = 'chi2'):
         RFO = reflect.ReflectivityFitObject(self.W_q, self.W_ref, self.W_refSD, self.parameters, dqvals = self.W_qSD)
-        self.fit = RFO.model()
-        self.chi2 = RFO.energy()
-        self.residuals = self.fit - self.W_ref
+        
+        if fit_and_energy == 'chi2' or fit_and_energy == 'both':
+            self.chi2 = RFO.energy()
+        
+        if fit_and_energy == 'fit' or fit_and_energy == 'both':
+            self.fit = RFO.model()
+            self.residuals = self.fit - self.W_ref
+    
         self.sld_profile = RFO.sld_profile()
         
-    def update(self, parameters, fitted_parameters):
+    def update(self, parameters, fitted_parameters, fit_and_energy = 'chi2'):
         self.parameters = np.copy(parameters)
         self.fitted_parameters = np.copy(fitted_parameters)
-        self.evaluate()
+        self.evaluate(fit_and_energy = fit_and_energy)
