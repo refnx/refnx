@@ -21,9 +21,14 @@ class MyMainWindow(QtGui.QMainWindow):
         self.errorHandler = QtGui.QErrorMessage()
         self.dataStore = DataStore.DataStore()
         self.modifyGui()
-        self.theoretical_model = Model.theoreticalModel_dataObject()
-        self.add_dataObject_to_gui(self.theoretical_model)
 
+		parameters = np.array([1, 1.0, 0, 0, 2.07, 0, 1e-7, 3, 25, 3.47, 0, 3])
+		fitted_parameters = np.array([1,2,3,4,5,6,7,8,9, 10, 11])
+        self.theoretical_model = Model.theoreticalModel_dataObject(fitted_parameters = fitted_parameters, parameters = parameters)
+        self.dataStore.addDataObject(self.theoretical_model)
+        self.add_dataObject_to_gui(self.theoretical_model)    
+        self.configure_gui_from_dataObject(self, self.theoretical_model)
+        
     @QtCore.Slot()
     def on_actionLoad_Data_triggered(self):
         """
@@ -44,6 +49,7 @@ class MyMainWindow(QtGui.QMainWindow):
         dataObject.line2D = lineInstance[0]
         self.reflectivitygraphs.draw()
         self.ui.dataset_comboBox.addItem(dataObject.name)
+
     
     @QtCore.Slot()
     def on_actionRefresh_Datasets_triggered(self):
@@ -154,20 +160,28 @@ class MyMainWindow(QtGui.QMainWindow):
         header = self.ui.baseparams_tableWidget.horizontalHeader()
         header.setResizeMode(QtGui.QHeaderView.Stretch)
 
-        initvals = ["1", "1.0", "1e-7"]
-        for cidx in xrange(3):
-            wi = QtGui.QTableWidgetItem(initvals[cidx])
-            if cidx:
-                wi.setCheckState(QtCore.Qt.Unchecked)
-            self.ui.baseparams_tableWidget.setItem(0, cidx, wi)
-
         #add layerparams table widget info
         numrows = self.ui.layerparams_tableWidget.rowCount()
         numcols = self.ui.layerparams_tableWidget.columnCount()
         self.ui.layerparams_tableWidget.setHorizontalHeaderLabels(['thickness', 'sld', 'iSLD', 'roughness'])
         self.ui.layerparams_tableWidget.setVerticalHeaderLabels(['fronting', '1', 'backing'])
         
-        initvals = [" ", "0", "0", " ", "25", "3.47", "0", "3", " ", "2.07", "0", "3"]
+        header = self.ui.layerparams_tableWidget.horizontalHeader()
+        header.setResizeMode(QtGui.QHeaderView.Stretch)
+        header = self.ui.layerparams_tableWidget.verticalHeader()
+        header.setResizeMode(QtGui.QHeaderView.Stretch)
+        
+	def reconfigure_gui_from_dataObject(self, dataObject):
+		baseparams = [0, 1, 6]
+		
+		for cidx in xrange(3):
+            wi = QtGui.QTableWidgetItem(dataObject.parameters[baseparams[cidx]])
+            if baseparams[cidx] in dataObject.fitted_parameters and cidx:
+                wi.setCheckState(QtCore.Qt.Unchecked)
+            else:
+				wi.setCheckState(QtCore.Qt.Checked)
+            self.ui.baseparams_tableWidget.setItem(0, cidx, wi)
+
         idx = 0
         for ridx in xrange(self.ui.layerparams_tableWidget.rowCount()):
             for cidx in xrange(self.ui.layerparams_tableWidget.columnCount()):
@@ -176,12 +190,8 @@ class MyMainWindow(QtGui.QMainWindow):
                     wi.setCheckState(QtCore.Qt.Unchecked)
                 self.ui.layerparams_tableWidget.setItem(ridx, cidx, wi)
                 idx += 1
-                
-        header = self.ui.layerparams_tableWidget.horizontalHeader()
-        header.setResizeMode(QtGui.QHeaderView.Stretch)
-        header = self.ui.layerparams_tableWidget.verticalHeader()
-        header.setResizeMode(QtGui.QHeaderView.Stretch)
-        
+		
+   
 class MyReflectivityGraphs(FigureCanvas):
     """Ultimately, this is a QWidget (as well as a FigureCanvasAgg, etc.)."""
     def __init__(self, parent=None):
