@@ -72,14 +72,9 @@ class TestReflect(unittest.TestCase):
         coefs[13] = 2
         coefs[15] = 4
         
-        holdvector = np.zeros((16))
-        holdvector[0] = 1
-        holdvector[1] = 1
-        holdvector[2] = 1
-        holdvector[4] = 1
-        holdvector[9] = 1
+        fitted_parameters = np.array([3,5,6,7,8,9,10,11,12,13,14,15])
         
-        a = reflect.ReflectivityFitObject(qvals, rvals, evals, coefs, holdvector=holdvector)
+        a = reflect.ReflectivityFitObject(qvals, rvals, evals, coefs, fitted_parameters = fitted_parameters)
         a.fit()
 
 

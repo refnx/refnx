@@ -35,13 +35,17 @@ class DataStore(object):
         
     
 class dataObject(reflectdataset.ReflectDataset):        
-    def __init__(self, fname = None):
+    def __init__(self, fname = None, parameters = None, fitted_parameters = None):
         super(dataObject, self).__init__()
 
-        self.fit = None
+		if fname is not None:
+			with open(fname, 'r') as f:
+				self.load(f)
+		
+		self.fit = None
         self.residuals = None
-        self.model = None
-        self.holdvector = None
+        self.parameters = parameters
+        self.fitted_parameters = fitted_parameters
         self.limits = None
         self.chi2 = -1
         self.sld_profile = None

@@ -61,11 +61,10 @@ class FitObject(object):
 		
 		You may set the following optional parameters in kwds:
 		
-		holdvector - an np.ndarray that is the same length as the number of parameters to be fitted. If an element in the array
-					evaluates to True that parameter should be held.
+		fitted_parameters - an np.ndarray that contains the parameter numbers that are being fitted (the others are held)
 
 		limits - an np.ndarray that contains the lower and upper limits for all the parameters.
-				should have shape (2, numparams).
+				should have shape (2, np.size(parameters)).
 				
 		costfunction - a callable costfunction with the signature costfunction(model, ydata, edata, parameters). The parameters are
 						all the parameters, not just the ones being held. Supply this function, or override the energy method, to use something
@@ -77,7 +76,6 @@ class FitObject(object):
 				self.ydata - see above for definition
 				self.edata - see above for definition
 				self.fitfunction - see above for definition
-				self.holdvector - see above for definition
 				
 				self.numpoints - the number of datapoints
 				self.parameters - the entire set of parameters used for the fit (including those that vary). The fitting procedure overwrites this.
@@ -85,7 +83,7 @@ class FitObject(object):
 				self.costfunction - the costfunction to be used (optional)
 				self.args - the args tuple supplied to the constructor
 				self.kwds - the kwds dictionary supplied to the constructor
-				self.fitted_parameters - the index of the parameters that are being allowed to vary (as specified by the holdvector).
+				self.fitted_parameters - the index of the parameters that are being allowed to vary 
 					:::NOTE:::
 						The energy method is supplied by parameters that are being varied by the fit. i.e. something along the lines of
 					self.parameters[self.fitted_parameters]. This is a subset of the total number of parameters required to calculate the model.
@@ -111,11 +109,9 @@ class FitObject(object):
 		self.args = args
 		self.kwds = kwds
 		
-		if 'holdvector' in kwds and kwds['holdvector'] is not None:
-			self.holdvector = np.copy(kwds['holdvector'])
-			self.fitted_parameters = np.where(np.where(self.holdvector, False, True))[0]
+		if 'fitted_parameters' in kwds and kwds['fitted_parameters'] is not None:
+			self.fitted_parameters = np.copy(kwds['fitted_parameters'])
 		else:
-			self.holdvector = np.zeros(self.numparams, 'int')
 			self.fitted_parameters = np.arange(self.numparams)
 			
 		if 'costfunction' in kwds:
