@@ -30,7 +30,7 @@ class MyMainWindow(QtGui.QMainWindow):
         dataTuple = (tempq, tempr, tempe, tempdq)
         
         self.theoretical_model = DataStore.dataObject(dataTuple = dataTuple, fitted_parameters = fitted_parameters, parameters = parameters)
-        self.theoretical_model.evaluate()
+        self.theoretical_model.evaluate(fit_and_energy = 'both')
         self.dataStore.addDataObject(self.theoretical_model)
         self.theoretical_model.line2Dfit = self.reflectivitygraphs.axes[0].plot(self.theoretical_model.W_q,
                                                    self.theoretical_model.fit,
@@ -39,7 +39,7 @@ class MyMainWindow(QtGui.QMainWindow):
                                                    self.theoretical_model.sld_profile[1],
                                                     linestyle='-')[0]
         self.gui_from_parameters(self.theoretical_model.parameters, self.theoretical_model.fitted_parameters)
-        self.theoretical_model.update(parameters, fitted_parameters)
+        self.theoretical_model.update(parameters, fitted_parameters, fit_and_energy = 'fit')
         self.redraw_dataObject_graphs(self.theoretical_model)
         
     @QtCore.Slot()
@@ -98,6 +98,14 @@ class MyMainWindow(QtGui.QMainWindow):
         model selection changed, update view with parameters from model.
         """
         print arg_1
+        
+    @QtCore.Slot(float)
+    def on_doubleSpinBox_valueChanged(self, arg_1):
+        if arg_1 < 0.5:
+            arg_1 = 0
+        self.theoretical_model.W_qSD = arg_1 * self.theoretical_model.W_q / 100.
+        self.theoretical_model.update(self.theoretical_model.parameters, self.theoretical_model.fitted_parameters, fit_and_energy = 'fit')
+        self.redraw_dataObject_graphs(self.theoretical_model)
          
     @QtCore.Slot(int)
     def on_use_errors_checkbox_stateChanged(self, arg_1):
@@ -115,7 +123,7 @@ class MyMainWindow(QtGui.QMainWindow):
         col = self.ui.baseparams_tableWidget.currentColumn()
         
         if row < 0 or col < 0:
-        	return
+            return
         
         if row == 0 and col == 0:
             #increase/decrease number of layers
@@ -140,7 +148,7 @@ class MyMainWindow(QtGui.QMainWindow):
             pass
         
         self.theoretical_model.parameters, self.theoretical_model.fitted_parameters = self.gui_to_parameters()
-        self.theoretical_model.update(self.theoretical_model.parameters, self.theoretical_model.fitted_parameters)     
+        self.theoretical_model.update(self.theoretical_model.parameters, self.theoretical_model.fitted_parameters, fit_and_energy = 'fit')     
         self.redraw_dataObject_graphs(self.theoretical_model)
 
         
@@ -163,13 +171,11 @@ class MyMainWindow(QtGui.QMainWindow):
         validator = QtGui.QDoubleValidator()
         if validator.validate(arg_1.text(), 1)[0] == QtGui.QValidator.State.Acceptable:
             self.theoretical_model.parameters, self.theoretical_model.fitted_parameters = self.gui_to_parameters()
-            self.theoretical_model.update(self.theoretical_model.parameters, self.theoretical_model.fitted_parameters)     
+            self.theoretical_model.update(self.theoretical_model.parameters, self.theoretical_model.fitted_parameters, fit_and_energy = 'fit')     
             self.redraw_dataObject_graphs(self.theoretical_model)
         else:
             self.errorHandler.showMessage("values entered must be numeric")
             return
-        
-      
 
     def modifyGui(self):
         #add the plots
@@ -270,7 +276,7 @@ class MyMainWindow(QtGui.QMainWindow):
         for cidx in xrange(3):
             wi = QtGui.QTableWidgetItem(str(parameters[baseparams[cidx]]))
             wi.setCheckState(checked[baseparams[cidx]])
-            self.ui.baseparams_tableWidget.setItem(0, cidx, wi)		
+            self.ui.baseparams_tableWidget.setItem(0, cidx, wi)     
 
     def redraw_dataObject_graphs(self, dataObject):
         if dataObject.line2D:
