@@ -40,7 +40,8 @@ class MyMainWindow(QtGui.QMainWindow):
                                                    self.theoretical_model.sld_profile[1],
                                                     linestyle='-')[0]
         self.gui_from_parameters(self.theoretical_model.parameters, self.theoretical_model.fitted_parameters)
-        self.update_theoretical_model(parameters, fitted_parameters)
+        self.theoretical_model.update(parameters, fitted_parameters)
+        self.redraw_dataObject_graphs(self.theoretical_model)
         
     @QtCore.Slot()
     def on_actionLoad_Data_triggered(self):
@@ -137,7 +138,9 @@ class MyMainWindow(QtGui.QMainWindow):
             pass
         
     	self.theoretical_model.parameters = self.gui_to_parameters()
-        self.update_theoretical_model(self.theoretical_model.parameters, self.theoretical_model.fitted_parameters)     
+        self.theoretical_model.update(self.theoretical_model.parameters, self.theoretical_model.fitted_parameters)     
+        self.redraw_dataObject_graphs(self.theoretical_model)
+
         
     @QtCore.Slot(QtGui.QTableWidgetItem)
     def on_layerparams_tableWidget_itemChanged(self, arg_1):
@@ -163,8 +166,9 @@ class MyMainWindow(QtGui.QMainWindow):
             self.errorHandler.showMessage("values entered must be numeric")
             
         self.theoretical_model.parameters = self.gui_to_parameters()
-        self.update_theoretical_model(self.theoretical_model.parameters, self.theoretical_model.fitted_parameters)     
-        
+        self.theoretical_model.update(self.theoretical_model.parameters, self.theoretical_model.fitted_parameters)     
+        self.redraw_dataObject_graphs(self.theoretical_model)
+
     def modifyGui(self):
         #add the plots
         self.reflectivitygraphs = MyReflectivityGraphs(self.ui.centralwidget)
@@ -265,17 +269,16 @@ class MyMainWindow(QtGui.QMainWindow):
             col = (pidx - 8) % 4
             self.ui.layerparams_tableWidget.setItem(row, col, wi)
         
-    def update_theoretical_model(self, parameters, fitted_parameters, redraw = True):
-        self.theoretical_model.parameters = np.copy(parameters)
-        self.theoretical_model.fitted_parameters = np.copy(fitted_parameters)
-        self.theoretical_model.evaluate()
-        if redraw:
-            self.theoretical_model.line2Dfit.set_data(self.theoretical_model.W_q, self.theoretical_model.fit)
-            self.theoretical_model.line2Dsld_profile.set_data(self.theoretical_model.sld_profile[0], self.theoretical_model.sld_profile[1])
+    def redraw_dataObject_graphs(self, dataObject):
+        if dataObject.line2Dfit:
+           dataObject.line2Dfit.set_data(dataObject.W_q, dataObject.fit)
+        if dataObject.line2Dsld_profile:
+            dataObject.line2Dsld_profile.set_data(dataObject.sld_profile[0], dataObject.sld_profile[1])
             
-            self.reflectivitygraphs.draw()
+        self.reflectivitygraphs.draw()
                 
-   
+
+            
 class MyReflectivityGraphs(FigureCanvas):
     """Ultimately, this is a QWidget (as well as a FigureCanvasAgg, etc.)."""
     def __init__(self, parent=None):

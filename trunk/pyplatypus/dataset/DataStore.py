@@ -64,3 +64,8 @@ class dataObject(reflectdataset.ReflectDataset):
         self.chi2 = RFO.energy()
         self.residuals = self.fit - self.W_ref
         self.sld_profile = RFO.sld_profile()
+        
+   def update(self, parameters, fitted_parameters):
+		dataObject.parameters = np.copy(parameters)
+		dataObject.fitted_parameters = np.copy(fitted_parameters)
+		dataObject.evaluate()
