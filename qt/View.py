@@ -139,7 +139,7 @@ class MyMainWindow(QtGui.QMainWindow):
             #perhaps you have to insert rows.
             pass
         
-        self.theoretical_model.parameters = self.gui_to_parameters()
+        self.theoretical_model.parameters, self.theoretical_model.fitted_parameters = self.gui_to_parameters()
         self.theoretical_model.update(self.theoretical_model.parameters, self.theoretical_model.fitted_parameters)     
         self.redraw_dataObject_graphs(self.theoretical_model)
 
@@ -162,7 +162,7 @@ class MyMainWindow(QtGui.QMainWindow):
             
         validator = QtGui.QDoubleValidator()
         if validator.validate(arg_1.text(), 1)[0] == QtGui.QValidator.State.Acceptable:
-            self.theoretical_model.parameters = self.gui_to_parameters()
+            self.theoretical_model.parameters, self.theoretical_model.fitted_parameters = self.gui_to_parameters()
             self.theoretical_model.update(self.theoretical_model.parameters, self.theoretical_model.fitted_parameters)     
             self.redraw_dataObject_graphs(self.theoretical_model)
         else:
@@ -204,6 +204,7 @@ class MyMainWindow(QtGui.QMainWindow):
         numlayers = int(float(self.ui.baseparams_tableWidget.item(0,0).text()))
         parameters = np.zeros(4 * numlayers + 8)
         parameters[0] = numlayers
+        fitted_parameters = []
         
         parameters[1] = float(self.ui.baseparams_tableWidget.item(0, 1).text())
         parameters[6] = float(self.ui.baseparams_tableWidget.item(0, 2).text())
@@ -218,7 +219,7 @@ class MyMainWindow(QtGui.QMainWindow):
             col = (pidx - 8) % 4
             parameters[pidx] = float(self.ui.layerparams_tableWidget.item(row, col).text())
 
-        return parameters
+        return parameters, np.array(fitted_parameters)
                         
     def gui_from_parameters(self, parameters, fitted_parameters):
         baseparams = [0, 1, 6]
