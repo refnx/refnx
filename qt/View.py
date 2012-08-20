@@ -270,6 +270,8 @@ class MyMainWindow(QtGui.QMainWindow):
             self.ui.layerparams_tableWidget.setItem(row, col, wi)
         
     def redraw_dataObject_graphs(self, dataObject):
+        if dataObject.line2D:
+           dataObject.line2D.set_data(dataObject.W_q, dataObject.W_ref)
         if dataObject.line2Dfit:
            dataObject.line2Dfit.set_data(dataObject.W_q, dataObject.fit)
         if dataObject.line2Dsld_profile:
