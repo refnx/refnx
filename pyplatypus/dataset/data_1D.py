@@ -13,13 +13,25 @@ import pyplatypus.reduce.nsplice as nsplice
 import pyplatypus.util.ErrorProp as EP
 
 class Data_1D(object):
-    def __init__(self):
-        self.W_q = np.zeros(0)
-        self.W_ref = np.zeros(0)
-        self.W_refSD = np.zeros(0)
-        self.W_qSD = np.zeros(0)
-            
-        self.numpoints = 0
+    def __init__(self, dataTuple = None):
+        
+        if dataTuple is not None:
+            self.W_q = np.copy(dataTuple[0]).flatten()
+            self.W_ref = np.copy(dataTuple[1]).flatten()
+            if len(dataTuple) > 2:
+                self.W_refSD = np.copy(dataTuple[2]).flatten()
+            if len(dataTuple) > 3:
+                self.W_qSD = np.copy(dataTuple[3]).flatten()
+    
+            self.numpoints = np.size(self.W_q, 0)
+        
+        else:
+            self.W_q = np.zeros(0)
+            self.W_ref = np.zeros(0)
+            self.W_refSD = np.zeros(0)
+            self.W_qSD = np.zeros(0)
+                
+            self.numpoints = 0
     
     def get_data(self):
         return (self.W_q, self.W_ref, self.W_refSD, self.W_qSD)
@@ -96,6 +108,6 @@ class Data_1D(object):
         self.set_data(tuple(np.hsplit(array, np.size(array, 1))))
         
     def refresh(self):
-		with open(self.filename) as f:
-			self.load(f)
-		
+        with open(self.filename) as f:
+            self.load(f)
+        

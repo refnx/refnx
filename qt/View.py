@@ -1,8 +1,7 @@
 from PySide import QtCore, QtGui
 from MotofitUI import Ui_MainWindow
 
-from numpy import arange, sin, pi
-import random
+import numpy as np
 import matplotlib
 matplotlib.use('Qt4Agg')
 matplotlib.rcParams['backend.qt4']='PySide'
@@ -11,7 +10,6 @@ from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt4agg import NavigationToolbar2QTAgg as NavigationToolbar
 from matplotlib.figure import Figure
 import pyplatypus.dataset.DataStore as DataStore
-import Model
 
 class MyMainWindow(QtGui.QMainWindow):
     def __init__(self, parent=None):
@@ -22,12 +20,27 @@ class MyMainWindow(QtGui.QMainWindow):
         self.dataStore = DataStore.DataStore()
         self.modifyGui()
 
-		parameters = np.array([1, 1.0, 0, 0, 2.07, 0, 1e-7, 3, 25, 3.47, 0, 3])
-		fitted_parameters = np.array([1,2,3,4,5,6,7,8,9, 10, 11])
-        self.theoretical_model = Model.theoreticalModel_dataObject(fitted_parameters = fitted_parameters, parameters = parameters)
+        parameters = np.array([1, 1.0, 0, 0, 2.07, 0, 1e-7, 3, 205, 3.47, 0, 3])
+        fitted_parameters = np.array([1,2,3,4,5,6,7,8,9, 10, 11])
+
+        tempq = np.linspace(0.005, 0.5, num = 500)
+        tempr = np.ones_like(tempq)
+        tempe = np.zeros_like(tempq)
+        tempdq  = np.copy(tempq) * 5 / 100.
+        dataTuple = (tempq, tempr, tempe, tempdq)
+        
+        self.theoretical_model = DataStore.dataObject(dataTuple = dataTuple, fitted_parameters = fitted_parameters, parameters = parameters)
+        self.theoretical_model.evaluate()
+        self.theoretical_model.W_ref = self.theoretical_model.fit
         self.dataStore.addDataObject(self.theoretical_model)
-        self.add_dataObject_to_gui(self.theoretical_model)    
-        self.configure_gui_from_dataObject(self, self.theoretical_model)
+        self.theoretical_model.line2Dfit = self.reflectivitygraphs.axes[0].plot(self.theoretical_model.W_q,
+                                                   self.theoretical_model.fit,
+                                                    linestyle='-', label = 'theoretical')[0]
+        self.theoretical_model.line2Dsld_profile = self.reflectivitygraphs.axes[2].plot(self.theoretical_model.sld_profile[0],
+                                                   self.theoretical_model.sld_profile[1],
+                                                    linestyle='-')[0]
+        self.gui_from_parameters(self.theoretical_model.parameters, self.theoretical_model.fitted_parameters)
+        self.update_theoretical_model(parameters, fitted_parameters)
         
     @QtCore.Slot()
     def on_actionLoad_Data_triggered(self):
@@ -119,6 +132,11 @@ class MyMainWindow(QtGui.QMainWindow):
                 pass
             else:
                 self.errorHandler.showMessage("values entered must be numeric")
+        if row == 0 and col == 0:
+            #perhaps you have to insert rows.
+        
+    	self.theoretical_model.parameters = self.gui_to_parameters()
+        self.update_theoretical_model(self.theoretical_model.parameters, self.theoretical_model.fitted_parameters)     
         
     @QtCore.Slot(QtGui.QTableWidgetItem)
     def on_layerparams_tableWidget_itemChanged(self, arg_1):
@@ -142,7 +160,10 @@ class MyMainWindow(QtGui.QMainWindow):
             pass
         else:
             self.errorHandler.showMessage("values entered must be numeric")
-
+            
+        self.theoretical_model.parameters = self.gui_to_parameters()
+        self.update_theoretical_model(self.theoretical_model.parameters, self.theoretical_model.fitted_parameters)     
+        
     def modifyGui(self):
         #add the plots
         self.reflectivitygraphs = MyReflectivityGraphs(self.ui.centralwidget)
@@ -170,27 +191,89 @@ class MyMainWindow(QtGui.QMainWindow):
         header.setResizeMode(QtGui.QHeaderView.Stretch)
         header = self.ui.layerparams_tableWidget.verticalHeader()
         header.setResizeMode(QtGui.QHeaderView.Stretch)
+
+    def gui_to_parameters(self):
+        baseparams = [0, 1, 6]
+        numlayers = int(float(self.ui.baseparams_tableWidget.item(0,0).text()))
+        parameters = np.zeros(4 * numlayers + 8)
+        parameters[0] = numlayers
         
-	def reconfigure_gui_from_dataObject(self, dataObject):
-		baseparams = [0, 1, 6]
-		
-		for cidx in xrange(3):
-            wi = QtGui.QTableWidgetItem(dataObject.parameters[baseparams[cidx]])
-            if baseparams[cidx] in dataObject.fitted_parameters and cidx:
-                wi.setCheckState(QtCore.Qt.Unchecked)
-            else:
-				wi.setCheckState(QtCore.Qt.Checked)
+        parameters[1] = float(self.ui.baseparams_tableWidget.item(0, 1).text())
+        parameters[6] = float(self.ui.baseparams_tableWidget.item(0, 2).text())
+        
+        parameters[2] = float(self.ui.layerparams_tableWidget.item(0, 1).text())
+        parameters[3] = float(self.ui.layerparams_tableWidget.item(0, 2).text())
+        parameters[4] = float(self.ui.layerparams_tableWidget.item(numlayers + 1, 1).text())
+        parameters[5] = float(self.ui.layerparams_tableWidget.item(numlayers + 1, 2).text())
+        parameters[7] = float(self.ui.layerparams_tableWidget.item(numlayers + 1, 3).text())
+        
+        for pidx in xrange(8, 4 * numlayers + 8):
+            row = ((pidx - 8) // 4) + 1
+            col = (pidx - 8) % 4
+            parameters[pidx] = float(self.ui.layerparams_tableWidget.item(row, col).text())
+
+        return parameters
+                        
+    def gui_from_parameters(self, parameters, fitted_parameters):
+        baseparams = [0, 1, 6]
+        numlayers = int(parameters[0])
+        parameters[0] = numlayers
+
+        checked = [QtCore.Qt.Checked] * np.size(parameters, 0)
+        for val in fitted_parameters:
+            checked[val] = QtCore.Qt.Unchecked
+
+        for cidx in xrange(3):
+            wi = QtGui.QTableWidgetItem(parameters[baseparams[cidx]])
+            wi.setText(str(parameters[baseparams[cidx]]))
+            wi.setCheckState(checked[baseparams[cidx]])
             self.ui.baseparams_tableWidget.setItem(0, cidx, wi)
 
+        self.ui.layerparams_tableWidget.setRowCount(numlayers + 2) 
+        #set fronting and backing first
         idx = 0
-        for ridx in xrange(self.ui.layerparams_tableWidget.rowCount()):
-            for cidx in xrange(self.ui.layerparams_tableWidget.columnCount()):
-                wi = QtGui.QTableWidgetItem(initvals[idx])
-                if not ((ridx, cidx) == (0,0) or (ridx, cidx) == (0, 3) or (ridx, cidx) == (numrows - 1, 0)):
-                    wi.setCheckState(QtCore.Qt.Unchecked)
-                self.ui.layerparams_tableWidget.setItem(ridx, cidx, wi)
-                idx += 1
-		
+        wi = QtGui.QTableWidgetItem('')
+        self.ui.layerparams_tableWidget.setItem(0, 0, wi)
+        wi = QtGui.QTableWidgetItem('')
+        self.ui.layerparams_tableWidget.setItem(0, 3, wi)
+        wi = QtGui.QTableWidgetItem('')
+        self.ui.layerparams_tableWidget.setItem(numlayers + 1, 0, wi)
+
+        wi = QtGui.QTableWidgetItem(str(parameters[2]))
+        wi.setCheckState(checked[2])
+        self.ui.layerparams_tableWidget.setItem(0, 1, wi)
+        wi = QtGui.QTableWidgetItem(str(parameters[3]))
+        wi.setCheckState(checked[3])
+        self.ui.layerparams_tableWidget.setItem(0, 2, wi)
+        
+        wi = QtGui.QTableWidgetItem(str(parameters[4]))
+        wi.setCheckState(checked[4])
+        self.ui.layerparams_tableWidget.setItem(numlayers + 1, 1, wi)
+        wi = QtGui.QTableWidgetItem(str(parameters[5]))
+        wi.setCheckState(checked[5])
+        self.ui.layerparams_tableWidget.setItem(numlayers + 1, 2, wi)
+
+        wi = QtGui.QTableWidgetItem(str(parameters[7]))
+        wi.setCheckState(checked[7])
+        self.ui.layerparams_tableWidget.setItem(numlayers + 1, 3, wi)
+        
+        for pidx in xrange(8, 4 * numlayers + 8):
+            wi = QtGui.QTableWidgetItem(str(parameters[pidx]))
+            wi.setCheckState(checked[pidx])
+            row = ((pidx - 8) // 4) + 1
+            col = (pidx - 8) % 4
+            self.ui.layerparams_tableWidget.setItem(row, col, wi)
+        
+    def update_theoretical_model(self, parameters, fitted_parameters, redraw = True):
+        self.theoretical_model.parameters = np.copy(parameters)
+        self.theoretical_model.fitted_parameters = np.copy(fitted_parameters)
+        self.theoretical_model.evaluate()
+        if redraw:
+            self.theoretical_model.line2Dfit.set_data(self.theoretical_model.W_q, self.theoretical_model.fit)
+            self.theoretical_model.line2Dsld_profile.set_data(self.theoretical_model.sld_profile[0], self.theoretical_model.sld_profile[1])
+            
+            self.reflectivitygraphs.draw()
+                
    
 class MyReflectivityGraphs(FigureCanvas):
     """Ultimately, this is a QWidget (as well as a FigureCanvasAgg, etc.)."""
@@ -199,7 +282,7 @@ class MyReflectivityGraphs(FigureCanvas):
         #reflectivity graph
         self.axes = []
         self.axes.append(self.figure.add_subplot(211))
-        self.axes[0].autoscale(axis='both', tight = True)
+        self.axes[0].autoscale(axis='both', tight = False)
         self.axes[0].set_xlabel('Q')
         self.axes[0].set_ylabel('R')
         self.axes[0].set_yscale('log')
@@ -213,8 +296,10 @@ class MyReflectivityGraphs(FigureCanvas):
 
         #SLD plot
         self.axes.append(self.figure.add_subplot(212))
+        self.axes[2].autoscale(axis='both', tight = False)
         self.axes[2].set_xlabel('z')
         self.axes[2].set_ylabel('SLD')
+
                        
         FigureCanvas.__init__(self, self.figure)
         self.setParent(parent)
