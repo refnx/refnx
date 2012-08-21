@@ -310,8 +310,8 @@ class MyMainWindow(QtGui.QMainWindow):
         checked = [QtCore.Qt.Checked] * np.size(parameters, 0)
         for val in fitted_parameters:
             checked[val] = QtCore.Qt.Unchecked
-		
-		self.ui.layerparams_tableWidget.setRowCount(numlayers + 2) 
+        
+        self.ui.layerparams_tableWidget.setRowCount(numlayers + 2) 
         #set fronting and backing first
         idx = 0
         wi = QtGui.QTableWidgetItem('')
