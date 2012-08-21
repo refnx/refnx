@@ -104,6 +104,7 @@ def sld_profile(coefs, z):
     nlayers = int(coefs[0])
     dist = 0
     summ = coefs[2]
+    thick = 0
     
     for ii in xrange(nlayers + 1):
         if ii == 0:

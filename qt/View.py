@@ -38,7 +38,7 @@ class MyMainWindow(QtGui.QMainWindow):
         self.theoretical_model.line2Dsld_profile = self.reflectivitygraphs.axes[2].plot(self.theoretical_model.sld_profile[0],
                                                    self.theoretical_model.sld_profile[1],
                                                     linestyle='-')[0]
-        self.gui_from_parameters(self.theoretical_model.parameters, self.theoretical_model.fitted_parameters)
+        self.gui_from_parameters(self.theoretical_model.parameters, self.theoretical_model.fitted_parameters, resize=False)
         self.theoretical_model.update(parameters, fitted_parameters, fit_and_energy = 'fit')
         self.redraw_dataObject_graphs(self.theoretical_model)
         
@@ -112,12 +112,13 @@ class MyMainWindow(QtGui.QMainWindow):
         """
         want to weight by error bars, recalculate chi2
         """
+        
         print arg_1
     
     @QtCore.Slot(QtGui.QTableWidgetItem)
     def on_baseparams_tableWidget_itemChanged(self, arg_1):
         """
-       
+
         """
         row = self.ui.baseparams_tableWidget.currentRow()
         col = self.ui.baseparams_tableWidget.currentColumn()
@@ -126,12 +127,72 @@ class MyMainWindow(QtGui.QMainWindow):
             return
         
         if row == 0 and col == 0:
-            #increase/decrease number of layers
             validator = QtGui.QIntValidator()
             voutput = validator.validate(arg_1.text(), 1)
+               
+            if voutput[0] is QtGui.QValidator.State.Acceptable and int(voutput[1]) >= 0:
+                oldlayers = self.ui.layerparams_tableWidget.rowCount() - 2
+                newlayers = int(voutput[1])
+                if oldlayers == newlayers:
+                    return
+                    
+                parameters = self.theoretical_model.parameters
+                fitted_parameters = self.theoretical_model.fitted_parameters
+                #you have to defocus from layerparams because when you rejig the layering
+                #it triggers on_layerparams_tableWidget_itemChanged
+                
+                self.ui.layerparams_tableWidget.setCurrentCell(-1,-1)
+                
+                if newlayers == 0:
+                    parameters = np.resize(parameters, 8)
+                    fitted_parameters = np.extract(fitted_parameters < 8, fitted_parameters)
+                    parameters[0] = newlayers
+                else:
+                    if newlayers > oldlayers:
+                        title = 'Where would you like to insert the new layers'
+                        maxValue = oldlayers
+                        minValue = 0
+                        value = 0
+                    elif newlayers < oldlayers:
+                        title = 'Where would you like to remove the layers from?'
+                        maxValue = newlayers + 1
+                        minValue = 1
+                        value = 1
+
+                    label = 'layer'                
+                    insertpoint, ok = QtGui.QInputDialog.getInt(self,
+                                               title,
+                                                label,
+                                                 value = value,
+                                                  minValue = minValue,  
+                                                   maxValue = maxValue)
+                    if not ok:
+                        self.ui.baseparams_tableWidget.item(0, 0).setText(str(oldlayers))
+                        return         
+
+                    parameters[0] = newlayers
+                    if newlayers > oldlayers:
+                        parameters = np.insert(parameters,
+                                                [4 * insertpoint + 8] * 4 *(newlayers - oldlayers),
+                                                 [0, 0, 0, 0] * (newlayers - oldlayers))
+                        fitted_parameters = np.where(fitted_parameters >= 4 * insertpoint + 8,
+                                  fitted_parameters + (newlayers - oldlayers) * 4,
+                                     fitted_parameters)
+                        fitted_parameters = np.append(fitted_parameters,
+                                                 np.arange(4 * insertpoint + 8, 4 * insertpoint + 8 + (newlayers -oldlayers) * 4))
+                    elif newlayers < oldlayers:
+                        insertpoint -= 1
                         
-            if voutput[0] is QtGui.QValidator.State.Acceptable and voutput[1] >= 0:
-                pass
+                        paramslost = np.arange(4 * insertpoint + 8, 4 * insertpoint + 8 + (oldlayers - newlayers) * 4)
+                        parameters = np.delete(parameters, paramslost)
+                        fitted_parameters = np.array([val for val in fitted_parameters.tolist() if (val < paramslost[0] or val > paramslost[-1])])
+                        fitted_parameters = np.where(fitted_parameters > paramslost[-1],
+                                  fitted_parameters + (newlayers - oldlayers) * 4,
+                                     fitted_parameters)
+                        
+                self.gui_from_parameters(parameters, fitted_parameters, resize = True)                                    
+                self.theoretical_model.parameters = parameters
+                self.theoretical_model.fitted_parameters = fitted_parameters
             else:
                 self.errorHandler.showMessage("Number of layers must be integer > 0")
                 return
@@ -143,15 +204,10 @@ class MyMainWindow(QtGui.QMainWindow):
             else:
                 self.errorHandler.showMessage("values entered must be numeric")
                 return
-        if row == 0 and col == 0:
-            #perhaps you have to insert rows.
-            pass
-        
         self.theoretical_model.parameters, self.theoretical_model.fitted_parameters = self.gui_to_parameters()
         self.theoretical_model.update(self.theoretical_model.parameters, self.theoretical_model.fitted_parameters, fit_and_energy = 'fit')     
         self.redraw_dataObject_graphs(self.theoretical_model)
 
-        
     @QtCore.Slot(QtGui.QTableWidgetItem)
     def on_layerparams_tableWidget_itemChanged(self, arg_1):
         """
@@ -167,7 +223,6 @@ class MyMainWindow(QtGui.QMainWindow):
         if (row == 0 and col == 0) or (row == numrows - 1 and col == 0) or (row == 0 and col == numcols - 1):
             arg_1.setText("")
             return
-            
         validator = QtGui.QDoubleValidator()
         if validator.validate(arg_1.text(), 1)[0] == QtGui.QValidator.State.Acceptable:
             self.theoretical_model.parameters, self.theoretical_model.fitted_parameters = self.gui_to_parameters()
@@ -207,38 +262,56 @@ class MyMainWindow(QtGui.QMainWindow):
 
     def gui_to_parameters(self):
         baseparams = [0, 1, 6]
+
         numlayers = int(float(self.ui.baseparams_tableWidget.item(0,0).text()))
         parameters = np.zeros(4 * numlayers + 8)
         parameters[0] = numlayers
         fitted_parameters = []
-        
         parameters[1] = float(self.ui.baseparams_tableWidget.item(0, 1).text())
+        if not self.ui.baseparams_tableWidget.item(0, 1).checkState():
+            fitted_parameters.append(1)         
         parameters[6] = float(self.ui.baseparams_tableWidget.item(0, 2).text())
+        if not self.ui.baseparams_tableWidget.item(0, 2).checkState():
+            fitted_parameters.append(6)
+
         parameters[2] = float(self.ui.layerparams_tableWidget.item(0, 1).text())
+        if not self.ui.layerparams_tableWidget.item(0, 1).checkState():
+            fitted_parameters.append(2)
+
         parameters[3] = float(self.ui.layerparams_tableWidget.item(0, 2).text())
-        parameters[4] = float(self.ui.layerparams_tableWidget.item(numlayers + 1, 1).text())
-        parameters[5] = float(self.ui.layerparams_tableWidget.item(numlayers + 1, 2).text())
-        parameters[7] = float(self.ui.layerparams_tableWidget.item(numlayers + 1, 3).text())
+        if not self.ui.layerparams_tableWidget.item(0, 2).checkState():
+            fitted_parameters.append(3)
         
+        parameters[4] = float(self.ui.layerparams_tableWidget.item(numlayers + 1, 1).text())
+        if not self.ui.layerparams_tableWidget.item(numlayers + 1, 1).checkState():
+            fitted_parameters.append(4)
+
+        parameters[5] = float(self.ui.layerparams_tableWidget.item(numlayers + 1, 2).text())
+        if not self.ui.layerparams_tableWidget.item(numlayers + 1, 2).checkState():
+            fitted_parameters.append(5)
+
+        parameters[7] = float(self.ui.layerparams_tableWidget.item(numlayers + 1, 3).text())
+        if not self.ui.layerparams_tableWidget.item(numlayers + 1, 3).checkState():
+            fitted_parameters.append(7)
+
         for pidx in xrange(8, 4 * numlayers + 8):
             row = ((pidx - 8) // 4) + 1
             col = (pidx - 8) % 4
             parameters[pidx] = float(self.ui.layerparams_tableWidget.item(row, col).text())
-
+            if not self.ui.layerparams_tableWidget.item(row, col).checkState():
+                fitted_parameters.append(pidx)
         return parameters, np.array(fitted_parameters)
                         
-    def gui_from_parameters(self, parameters, fitted_parameters):
+    def gui_from_parameters(self, parameters, fitted_parameters, resize = False):
         baseparams = [0, 1, 6]
         numlayers = int(parameters[0])
         parameters[0] = numlayers
-
+        
         checked = [QtCore.Qt.Checked] * np.size(parameters, 0)
         for val in fitted_parameters:
             checked[val] = QtCore.Qt.Unchecked
-
-
-
-        self.ui.layerparams_tableWidget.setRowCount(numlayers + 2) 
+		
+		self.ui.layerparams_tableWidget.setRowCount(numlayers + 2) 
         #set fronting and backing first
         idx = 0
         wi = QtGui.QTableWidgetItem('')
@@ -272,11 +345,17 @@ class MyMainWindow(QtGui.QMainWindow):
             row = ((pidx - 8) // 4) + 1
             col = (pidx - 8) % 4
             self.ui.layerparams_tableWidget.setItem(row, col, wi)
-         
-        for cidx in xrange(3):
-            wi = QtGui.QTableWidgetItem(str(parameters[baseparams[cidx]]))
-            wi.setCheckState(checked[baseparams[cidx]])
-            self.ui.baseparams_tableWidget.setItem(0, cidx, wi)     
+        labels = [str(val) for val in xrange(1, numlayers + 1)]
+        labels.append('backing')
+        labels.insert(0, 'fronting')
+                    
+        self.ui.layerparams_tableWidget.setVerticalHeaderLabels(labels)
+        
+        if not resize:
+            for cidx in xrange(3):
+                wi = QtGui.QTableWidgetItem(str(parameters[baseparams[cidx]]))
+                wi.setCheckState(checked[baseparams[cidx]])
+                self.ui.baseparams_tableWidget.setItem(0, cidx, wi)                 
 
     def redraw_dataObject_graphs(self, dataObject):
         if dataObject.line2D:
