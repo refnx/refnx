@@ -19,7 +19,13 @@ class DataStore(object):
         TdataObject = dataObject()
         with open(filename, 'Ur') as f:
             TdataObject.load(f)
-            
+        
+        #purge -ve values
+        TdataObject.W_q = np.delete(TdataObject.W_q, np.where(TdataObject.W_ref < 0))
+        TdataObject.W_refSD = np.delete(TdataObject.W_refSD, np.where(TdataObject.W_ref < 0))
+        TdataObject.W_qSD = np.delete(TdataObject.W_qSD, np.where(TdataObject.W_ref < 0))
+        TdataObject.W_ref = np.delete(TdataObject.W_ref, np.where(TdataObject.W_ref < 0))
+        
         self.addDataObject(TdataObject)
         return TdataObject
                       
