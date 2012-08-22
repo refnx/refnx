@@ -77,7 +77,7 @@ class ReflectDataset(Data_1D):
             self.name = os.path.basename(f.name)
             self.set_data((qvals, rvals, drvals, dqvals)) 
         except ET.ParseError:
-            with open(f.name, 'r') as g:
+            with open(f.name, 'Ur') as g:
                 super(ReflectDataset, self).load(g)
         
     def rebin(self, rebinpercent = 4):
