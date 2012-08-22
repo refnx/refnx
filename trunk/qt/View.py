@@ -386,7 +386,6 @@ class MyMainWindow(QtGui.QMainWindow):
         labels = [str(val) for val in xrange(1, numlayers + 1)]
         labels.append('backing')
         labels.insert(0, 'fronting')
-                    
         self.ui.layerparams_tableWidget.setVerticalHeaderLabels(labels)
         
         if not resize:
