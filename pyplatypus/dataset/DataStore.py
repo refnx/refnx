@@ -57,20 +57,90 @@ class dataObject(reflectdataset.ReflectDataset):
         self.line2D = None
         self.line2Dfit = None
         self.line2Dsld_profile = None
-        
-    def evaluate(self, fit_and_energy = 'chi2'):
-        RFO = reflect.ReflectivityFitObject(self.W_q, self.W_ref, self.W_refSD, self.parameters, dqvals = self.W_qSD)
-        
-        if fit_and_energy == 'chi2' or fit_and_energy == 'both':
-            self.chi2 = RFO.energy()
-        
-        if fit_and_energy == 'fit' or fit_and_energy == 'both':
-            self.fit = RFO.model()
-            self.residuals = self.fit - self.W_ref
     
+    def do_a_fit(self, **kwds):
+        theseparameters = self.parameters
+        store = True
+
+        keywords = {}
+        keywords['costfunction'] = reflect.costfunction_logR_weight
+        keywords['dqvals'] = self.W_qSD
+        keywords['limits'] = None
+        keywords['fitted_parameters'] = self.fitted_parameters
+        
+        if 'store' in kwds:
+            store = kwds['store']
+        if 'parameters' in kwds and kwds['parameters'] is not None:
+            theseparameters = kwds['parameters']
+        if 'fitted_parameters' in kwds:
+            keywords['fitted_parameters'] = self.fitted_parameters = kwds['fitted_parameters']
+        if 'limits' in kwds:
+            keywords['limits'] = self.limits = kwds['limits']
+        if 'dqvals' in kwds:
+            keywords['dqvals'] = kwds['dqvals']
+            
+        RFO = reflect.ReflectivityFitObject(self.W_q, self.W_ref, self.W_refSD, theseparameters, **keywords)
+        self.parameters, self.chi2 = RFO.fit()
+        self.fit = RFO.model()
+        self.residuals = self.fit - self.W_ref
         self.sld_profile = RFO.sld_profile()
         
-    def update(self, parameters, fitted_parameters, fit_and_energy = 'chi2'):
-        self.parameters = np.copy(parameters)
-        self.fitted_parameters = np.copy(fitted_parameters)
-        self.evaluate(fit_and_energy = fit_and_energy)
+                  
+    def evaluate_chi2(self, **kwds):
+        theseparameters = self.parameters
+        store = False
+
+        keywords = {}
+        keywords['costfunction'] = reflect.costfunction_logR_weight
+        keywords['dqvals'] = self.W_qSD
+        
+        if 'store' in kwds:
+            store = kwds['store']
+        if 'parameters' in kwds and kwds['parameters'] is not None:
+            theseparameters = kwds['parameters']
+
+        for key in kwds:
+            if key in keywords:
+                keywords[key] = kwds[key]
+                
+        RFO = reflect.ReflectivityFitObject(self.W_q, self.W_ref, self.W_refSD, theseparameters, **keywords)
+        
+        energy = RFO.energy() / self.numpoints
+        if store:
+            self.chi2 = energy
+                
+        return energy
+
+    def evaluate_model(self, **kwds):   
+        theseparameters = self.parameters
+        costfunction = reflect.costfunction_logR_weight
+        store = False     
+
+        keywords = {}
+        keywords['costfunction'] = reflect.costfunction_logR_weight
+        keywords['dqvals'] = self.W_qSD
+        
+        if 'store' in kwds:
+            store = kwds['store']
+        if 'parameters' in kwds and kwds['parameters'] is not None:
+            theseparameters = kwds['parameters']
+
+        for key in kwds:
+            if key in keywords:
+                keywords[key] = kwds[key]
+
+        RFO = reflect.ReflectivityFitObject(self.W_q,
+                                             self.W_ref,
+                                              self.W_refSD,
+                                               theseparameters,
+                                                **kwds)
+                    
+        model = RFO.model()
+        sld_profile = RFO.sld_profile()
+        if store:
+            self.fit = model
+            self.residuals = model - self.W_ref
+            self.sld_profile = sld_profile
+
+        return model, model - self.W_ref, sld_profile
+            
