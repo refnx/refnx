@@ -21,7 +21,7 @@
 #endif
 
 
-#define NUM_CPUS 2
+#define NUM_CPUS 10
 
 
 using namespace std;
@@ -706,8 +706,8 @@ extern "C" {
 		scale = coefP[1];
 		bkg = coefP[6];
 		subrough = coefP[7];
-		sub= MyComplex(coefP[4]*1e-6, coefP[5]);
-		super = MyComplex(coefP[2]*1e-6, coefP[3]);
+		sub= MyComplex(coefP[4]*1.e-6, coefP[5]);
+		super = MyComplex(coefP[2]*1.e-6, coefP[3]);
 		
 		//offset tells us where the multilayers start.
 		offset = 4 * nlayers + 8;
@@ -775,8 +775,9 @@ extern "C" {
 			pointsConsumed += pointsEachThread;
 		}
 		
-		for (ii = 0; ii < threadsToCreate ; ii++)
+		for (ii = 0; ii < threadsToCreate ; ii++){
 			pthread_join(threads[ii], NULL);
+		}
 		
 	done:
 		if(pj != NULL){

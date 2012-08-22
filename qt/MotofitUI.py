@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'Motofit.ui'
 #
-# Created: Mon Aug 20 19:28:41 2012
+# Created: Wed Aug 22 20:19:06 2012
 #      by: pyside-uic 0.2.13 running on PySide 1.1.1
 #
 # WARNING! All changes made in this file will be lost!
@@ -59,7 +59,7 @@ class Ui_MainWindow(object):
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.dockWidget.sizePolicy().hasHeightForWidth())
         self.dockWidget.setSizePolicy(sizePolicy)
-        self.dockWidget.setMinimumSize(QtCore.QSize(450, 405))
+        self.dockWidget.setMinimumSize(QtCore.QSize(450, 440))
         self.dockWidget.setFeatures(QtGui.QDockWidget.DockWidgetFloatable|QtGui.QDockWidget.DockWidgetMovable)
         self.dockWidget.setAllowedAreas(QtCore.Qt.LeftDockWidgetArea|QtCore.Qt.RightDockWidgetArea)
         self.dockWidget.setObjectName("dockWidget")
@@ -113,7 +113,9 @@ class Ui_MainWindow(object):
         self.baseparams_tableWidget.setMinimumSize(QtCore.QSize(0, 45))
         self.baseparams_tableWidget.setMaximumSize(QtCore.QSize(16777215, 40))
         font = QtGui.QFont()
-        font.setPointSize(12)
+        font.setPointSize(11)
+        font.setWeight(50)
+        font.setBold(False)
         self.baseparams_tableWidget.setFont(font)
         self.baseparams_tableWidget.setInputMethodHints(QtCore.Qt.ImhNone)
         self.baseparams_tableWidget.setRowCount(1)
@@ -130,8 +132,7 @@ class Ui_MainWindow(object):
         self.gridLayout_2.addWidget(self.baseparams_tableWidget, 4, 0, 1, 2)
         self.layerparams_tableWidget = QtGui.QTableWidget(self.tab)
         font = QtGui.QFont()
-        font.setFamily("Lucida Grande")
-        font.setPointSize(12)
+        font.setPointSize(11)
         font.setWeight(50)
         font.setBold(False)
         self.layerparams_tableWidget.setFont(font)

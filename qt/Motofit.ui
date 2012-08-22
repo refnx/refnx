@@ -125,7 +125,7 @@
    <property name="minimumSize">
     <size>
      <width>450</width>
-     <height>405</height>
+     <height>440</height>
     </size>
    </property>
    <property name="features">
@@ -258,7 +258,9 @@
            </property>
            <property name="font">
             <font>
-             <pointsize>12</pointsize>
+             <pointsize>11</pointsize>
+             <weight>50</weight>
+             <bold>false</bold>
             </font>
            </property>
            <property name="inputMethodHints">
@@ -298,8 +300,7 @@
           <widget class="QTableWidget" name="layerparams_tableWidget">
            <property name="font">
             <font>
-             <family>Lucida Grande</family>
-             <pointsize>12</pointsize>
+             <pointsize>11</pointsize>
              <weight>50</weight>
              <bold>false</bold>
             </font>

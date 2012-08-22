@@ -17,7 +17,7 @@ class DataStore(object):
         
     def loadDataObject(self, filename):
         TdataObject = dataObject()
-        with open(filename, 'r') as f:
+        with open(filename, 'Ur') as f:
             TdataObject.load(f)
             
         self.addDataObject(TdataObject)
@@ -42,7 +42,7 @@ class dataObject(reflectdataset.ReflectDataset):
         self.name = '_theoretical_'
         
         if fname is not None:
-            with open(fname, 'r') as f:
+            with open(fname, 'Ur') as f:
                 self.load(f)
         
         self.fit = None
@@ -133,7 +133,7 @@ class dataObject(reflectdataset.ReflectDataset):
                                              self.W_ref,
                                               self.W_refSD,
                                                theseparameters,
-                                                **kwds)
+                                                **keywords)
                     
         model = RFO.model()
         sld_profile = RFO.sld_profile()

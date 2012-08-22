@@ -25,12 +25,13 @@ class MyMainWindow(QtGui.QMainWindow):
         parameters = np.array([1, 1.0, 0, 0, 2.07, 0, 1e-7, 3, 25, 3.47, 0, 3])
         fitted_parameters = np.array([1,2,3,4,5,6,7,8,9, 10, 11])
 
-        tempq = np.linspace(0.005, 0.5, num = 500)
+        tempq = np.linspace(0.005, 0.5, num = 1000)
         tempr = np.ones_like(tempq)
         tempe = np.zeros_like(tempq)
         tempdq  = np.copy(tempq) * 5 / 100.
         dataTuple = (tempq, tempr, tempe, tempdq)
         
+        self.current_dataset = None
         self.theoretical_model = DataStore.dataObject(dataTuple = dataTuple, fitted_parameters = fitted_parameters, parameters = parameters)
         self.theoretical_model.evaluate_model(store = True)
         self.dataStore.addDataObject(self.theoretical_model)
@@ -56,7 +57,7 @@ class MyMainWindow(QtGui.QMainWindow):
     def add_dataObject_to_gui(self, dataObject):
         lineInstance = self.reflectivitygraphs.axes[0].plot(dataObject.W_q,
                                                                  dataObject.W_ref,
-                                                                   markersize=5,
+                                                                   markersize=8,
                                                                     marker='o',
                                                                      linestyle='',
                                                                       label = dataObject.name)
@@ -90,7 +91,6 @@ class MyMainWindow(QtGui.QMainWindow):
         self.current_dataset.do_a_fit(parameters = self.theoretical_model.parameters,
                                       fitted_parameters = self.theoretical_model.fitted_parameters)
         self.theoretical_model.parameters = self.current_dataset.parameters
-        print "params", self.theoretical_model.parameters, "fitted_params", self.theoretical_model.fitted_parameters
 
         self.gui_from_parameters(self.theoretical_model.parameters, self.theoretical_model.fitted_parameters)
               
@@ -131,7 +131,9 @@ class MyMainWindow(QtGui.QMainWindow):
     def on_doubleSpinBox_valueChanged(self, arg_1):
         if arg_1 < 0.5:
             arg_1 = 0
+            
         self.theoretical_model.W_qSD = arg_1 * self.theoretical_model.W_q / 100.
+
         self.update_gui_modelChanged()
                  
     @QtCore.Slot(int)
