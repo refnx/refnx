@@ -10,6 +10,7 @@ from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt4agg import NavigationToolbar2QTAgg as NavigationToolbar
 from matplotlib.figure import Figure
 import pyplatypus.dataset.DataStore as DataStore
+import pyplatypus.analysis.reflect as reflect
 
 class MyMainWindow(QtGui.QMainWindow):
     def __init__(self, parent=None):
@@ -18,9 +19,10 @@ class MyMainWindow(QtGui.QMainWindow):
         self.ui.setupUi(self)
         self.errorHandler = QtGui.QErrorMessage()
         self.dataStore = DataStore.DataStore()
+        self.current_dataset = None
         self.modifyGui()
         
-        parameters = np.array([1, 1.0, 0, 0, 2.07, 0, 1e-7, 3, 205, 3.47, 0, 3])
+        parameters = np.array([1, 1.0, 0, 0, 2.07, 0, 1e-7, 3, 25, 3.47, 0, 3])
         fitted_parameters = np.array([1,2,3,4,5,6,7,8,9, 10, 11])
 
         tempq = np.linspace(0.005, 0.5, num = 500)
@@ -30,17 +32,16 @@ class MyMainWindow(QtGui.QMainWindow):
         dataTuple = (tempq, tempr, tempe, tempdq)
         
         self.theoretical_model = DataStore.dataObject(dataTuple = dataTuple, fitted_parameters = fitted_parameters, parameters = parameters)
-        self.theoretical_model.evaluate(fit_and_energy = 'both')
+        self.theoretical_model.evaluate_model(store = True)
         self.dataStore.addDataObject(self.theoretical_model)
         self.theoretical_model.line2Dfit = self.reflectivitygraphs.axes[0].plot(self.theoretical_model.W_q,
                                                    self.theoretical_model.fit,
-                                                    linestyle='-', label = 'theoretical')[0]
+                                                    linestyle='-', lw=2, label = 'theoretical')[0]
         self.theoretical_model.line2Dsld_profile = self.reflectivitygraphs.axes[2].plot(self.theoretical_model.sld_profile[0],
                                                    self.theoretical_model.sld_profile[1],
                                                     linestyle='-')[0]
         self.gui_from_parameters(self.theoretical_model.parameters, self.theoretical_model.fitted_parameters, resize=False)
-        self.theoretical_model.update(parameters, fitted_parameters, fit_and_energy = 'fit')
-        self.redraw_dataObject_graphs(self.theoretical_model)
+        self.redraw_dataObject_graphs([self.theoretical_model])
         
     @QtCore.Slot()
     def on_actionLoad_Data_triggered(self):
@@ -72,7 +73,8 @@ class MyMainWindow(QtGui.QMainWindow):
         self.dataStore.refresh()
         for key in self.dataStore.dataObjects:
             dataObject = self.dataStore.dataObjects[key]
-            dataObject.line2D.set_data(dataObject.W_q, dataObject.W_ref)
+            if dataObject.line2D:
+                dataObject.line2D.set_data(dataObject.W_q, dataObject.W_ref)
         self.reflectivitygraphs.draw()
  
                        
@@ -81,22 +83,48 @@ class MyMainWindow(QtGui.QMainWindow):
         """
             you should do a fit
         """
-#        print self.reflectivitygraphs.axes[0].lines[0].get_marker()
-        self.reflectivitygraphs.visibility_of_plots((True, True, True))
-        self.reflectivitygraphs.draw()
+        if self.current_dataset is None:
+            return
+            
+        self.theoretical_model.parameters, self.theoretical_model.fitted_parameters = self.gui_to_parameters()
+        self.current_dataset.do_a_fit(parameters = self.theoretical_model.parameters,
+                                      fitted_parameters = self.theoretical_model.fitted_parameters)
+        self.theoretical_model.parameters = self.current_dataset.parameters
+        print "params", self.theoretical_model.parameters, "fitted_params", self.theoretical_model.fitted_parameters
+
+        self.gui_from_parameters(self.theoretical_model.parameters, self.theoretical_model.fitted_parameters)
+              
+        if self.current_dataset.line2Dfit is None:
+            self.current_dataset.line2Dfit = self.reflectivitygraphs.axes[0].plot(self.current_dataset.W_q,
+                                                  self.current_dataset.fit,
+                                                   linestyle='-',
+                                                    lw = 2,
+                                                     label = 'fit_' + self.current_dataset.name)[0]
+
+        if self.current_dataset.line2Dsld_profile is None:
+            self.current_dataset.line2Dsld_profile = self.reflectivitygraphs.axes[2].plot(self.current_dataset.sld_profile[0],
+                                                  self.current_dataset.sld_profile[1],
+                                                   linestyle='-',
+                                                    lw = 2,
+                                                     label = 'sld_' + self.current_dataset.name)[0]
+        self.update_gui_modelChanged()
+        
         
     @QtCore.Slot(unicode)
     def on_dataset_comboBox_currentIndexChanged(self, arg_1):
         """
         dataset to be fitted changed, must update chi2
         """
-        print arg_1
-       
+        self.current_dataset = self.dataStore.dataObjects[arg_1]
+        self.update_gui_modelChanged()
+
+               
     @QtCore.Slot(unicode)
     def on_model_comboBox_currentIndexChanged(self, arg_1):
         """
         model selection changed, update view with parameters from model.
         """
+        
         print arg_1
         
     @QtCore.Slot(float)
@@ -104,9 +132,8 @@ class MyMainWindow(QtGui.QMainWindow):
         if arg_1 < 0.5:
             arg_1 = 0
         self.theoretical_model.W_qSD = arg_1 * self.theoretical_model.W_q / 100.
-        self.theoretical_model.update(self.theoretical_model.parameters, self.theoretical_model.fitted_parameters, fit_and_energy = 'fit')
-        self.redraw_dataObject_graphs(self.theoretical_model)
-         
+        self.update_gui_modelChanged()
+                 
     @QtCore.Slot(int)
     def on_use_errors_checkbox_stateChanged(self, arg_1):
         """
@@ -202,12 +229,13 @@ class MyMainWindow(QtGui.QMainWindow):
             if voutput[0] is QtGui.QValidator.State.Acceptable:
                 pass
             else:
+                print arg_1.text()
                 self.errorHandler.showMessage("values entered must be numeric")
                 return
         self.theoretical_model.parameters, self.theoretical_model.fitted_parameters = self.gui_to_parameters()
-        self.theoretical_model.update(self.theoretical_model.parameters, self.theoretical_model.fitted_parameters, fit_and_energy = 'fit')     
-        self.redraw_dataObject_graphs(self.theoretical_model)
+        self.update_gui_modelChanged()
 
+ 
     @QtCore.Slot(QtGui.QTableWidgetItem)
     def on_layerparams_tableWidget_itemChanged(self, arg_1):
         """
@@ -226,9 +254,9 @@ class MyMainWindow(QtGui.QMainWindow):
         validator = QtGui.QDoubleValidator()
         if validator.validate(arg_1.text(), 1)[0] == QtGui.QValidator.State.Acceptable:
             self.theoretical_model.parameters, self.theoretical_model.fitted_parameters = self.gui_to_parameters()
-            self.theoretical_model.update(self.theoretical_model.parameters, self.theoretical_model.fitted_parameters, fit_and_energy = 'fit')     
-            self.redraw_dataObject_graphs(self.theoretical_model)
+            self.update_gui_modelChanged()
         else:
+            print arg_1.text(), row, col
             self.errorHandler.showMessage("values entered must be numeric")
             return
 
@@ -303,6 +331,15 @@ class MyMainWindow(QtGui.QMainWindow):
         return parameters, np.array(fitted_parameters)
                         
     def gui_from_parameters(self, parameters, fitted_parameters, resize = False):
+        baseparamsrow = self.ui.baseparams_tableWidget.currentRow()
+        baseparamscol = self.ui.baseparams_tableWidget.currentColumn()
+
+        layerparamsrow = self.ui.layerparams_tableWidget.currentRow()
+        layerparamscol = self.ui.layerparams_tableWidget.currentColumn()
+        
+        self.ui.layerparams_tableWidget.setCurrentCell(-1, -1)
+        self.ui.baseparams_tableWidget.setCurrentCell(-1, -1)
+        
         baseparams = [0, 1, 6]
         numlayers = int(parameters[0])
         parameters[0] = numlayers
@@ -345,6 +382,7 @@ class MyMainWindow(QtGui.QMainWindow):
             row = ((pidx - 8) // 4) + 1
             col = (pidx - 8) % 4
             self.ui.layerparams_tableWidget.setItem(row, col, wi)
+
         labels = [str(val) for val in xrange(1, numlayers + 1)]
         labels.append('backing')
         labels.insert(0, 'fronting')
@@ -355,19 +393,32 @@ class MyMainWindow(QtGui.QMainWindow):
             for cidx in xrange(3):
                 wi = QtGui.QTableWidgetItem(str(parameters[baseparams[cidx]]))
                 wi.setCheckState(checked[baseparams[cidx]])
-                self.ui.baseparams_tableWidget.setItem(0, cidx, wi)                 
+                self.ui.baseparams_tableWidget.setItem(0, cidx, wi)
+                
+        self.ui.layerparams_tableWidget.setCurrentCell(layerparamsrow, layerparamscol)
+        self.ui.baseparams_tableWidget.setCurrentCell(baseparamsrow, baseparamscol)
 
-    def redraw_dataObject_graphs(self, dataObject):
-        if dataObject.line2D:
-           dataObject.line2D.set_data(dataObject.W_q, dataObject.W_ref)
-        if dataObject.line2Dfit:
-           dataObject.line2Dfit.set_data(dataObject.W_q, dataObject.fit)
-        if dataObject.line2Dsld_profile:
-            dataObject.line2Dsld_profile.set_data(dataObject.sld_profile[0], dataObject.sld_profile[1])
+    def redraw_dataObject_graphs(self, dataObjects):
+        for dataObject in dataObjects:
+            if not dataObject:
+                continue
+            if dataObject.line2D:
+               dataObject.line2D.set_data(dataObject.W_q, dataObject.W_ref)
+            if dataObject.line2Dfit:
+               dataObject.line2Dfit.set_data(dataObject.W_q, dataObject.fit)
+            if dataObject.line2Dsld_profile:
+                dataObject.line2Dsld_profile.set_data(dataObject.sld_profile[0], dataObject.sld_profile[1])
             
         self.reflectivitygraphs.draw()
                 
-
+    def update_gui_modelChanged(self, store = False):
+        self.theoretical_model.evaluate_model(store = True)
+        if self.current_dataset is not None:
+            energy = self.current_dataset.evaluate_chi2(parameters = self.theoretical_model.parameters)
+            self.ui.lineEdit.setText(str(energy))     
+        
+        self.redraw_dataObject_graphs([self.theoretical_model, self.current_dataset])
+        
             
 class MyReflectivityGraphs(FigureCanvas):
     """Ultimately, this is a QWidget (as well as a FigureCanvasAgg, etc.)."""

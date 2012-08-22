@@ -2,6 +2,8 @@ from __future__ import division
 import numpy as np
 import math
 import pyplatypus.analysis.fitting as fitting
+import pyplatypus.util.ErrorProp as EP
+
 from scipy.stats import norm
 
 try:
@@ -187,7 +189,14 @@ class ReflectivityFitObject(fitting.FitObject):
         
         return points, sld_profile(test_parameters, points)
         
+
+def costfunction_logR_noweight(modeldata, ydata, edata, test_parameters):
+    return np.sum(np.power(np.log10(modeldata) - np.log10(ydata), 2))
     
+def costfunction_logR_weight(modeldata, ydata, edata, test_parameters):
+    intensity, sd = EP.EPlog10(ydata, edata)
+    return  np.sum(np.power((intensity - np.log10(modeldata)) / sd, 2))
+
     
 if __name__ == '__main__':
     import timeit
