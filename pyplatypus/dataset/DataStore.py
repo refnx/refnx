@@ -53,9 +53,8 @@ class dataObject(reflectdataset.ReflectDataset):
         
         self.fit = None
         self.residuals = None
-        self.parameters = parameters
-        self.fitted_parameters = fitted_parameters
-        self.limits = None
+        self.model = Model(parameters = parameters, 
+                            fitted_parameters = fitted_parameters)
         
         self.chi2 = -1
         self.sld_profile = None
@@ -64,52 +63,43 @@ class dataObject(reflectdataset.ReflectDataset):
         self.line2Dfit = None
         self.line2Dsld_profile = None
     
-    def do_a_fit(self, **kwds):
-        theseparameters = self.parameters
-        store = True
+    def do_a_fit(self, model = None):
+        if model is None:
+            thismodel = self.model
+        else:
+            thismodel = model
 
-        keywords = {}
-        keywords['costfunction'] = reflect.costfunction_logR_weight
-        keywords['dqvals'] = self.W_qSD
-        keywords['limits'] = None
-        keywords['fitted_parameters'] = self.fitted_parameters
+        callerInfo = thismodel.__dict__.copy()
+        callerInfo['xdata'] = self.W_q
+        callerInfo['ydata'] = self.W_ref
+        callerInfo['edata'] = self.W_refSD
+        if thismodel.usedq:
+            callerInfo['dqvals'] = self.W_qSD
+
+        self.model.fitted_parameters = np.copy(thismodel.fitted_parameters)        
         
-        if 'store' in kwds:
-            store = kwds['store']
-        if 'parameters' in kwds and kwds['parameters'] is not None:
-            theseparameters = kwds['parameters']
-        if 'fitted_parameters' in kwds:
-            keywords['fitted_parameters'] = self.fitted_parameters = kwds['fitted_parameters']
-        if 'limits' in kwds:
-            keywords['limits'] = self.limits = kwds['limits']
-        if 'dqvals' in kwds:
-            keywords['dqvals'] = kwds['dqvals']
-            
-        RFO = reflect.ReflectivityFitObject(self.W_q, self.W_ref, self.W_refSD, theseparameters, **keywords)
-        self.parameters, self.chi2 = RFO.fit()
+        RFO = reflect.ReflectivityFitObject(**callerInfo)
+        self.model.parameters, self.chi2 = RFO.fit()
         self.fit = RFO.model()
         self.residuals = self.fit - self.W_ref
         self.sld_profile = RFO.sld_profile()
         
                   
-    def evaluate_chi2(self, **kwds):
-        theseparameters = self.parameters
-        store = False
-
-        keywords = {}
-        keywords['costfunction'] = reflect.costfunction_logR_weight
-        keywords['dqvals'] = self.W_qSD
+    def evaluate_chi2(self, model = None, store = False):
+        if model is None:
+            thismodel = self.model
+        else:
+            thismodel = model
         
-        if 'store' in kwds:
-            store = kwds['store']
-        if 'parameters' in kwds and kwds['parameters'] is not None:
-            theseparameters = kwds['parameters']
+        callerInfo = thismodel.__dict__.copy()
+        callerInfo['xdata'] = self.W_q
+        callerInfo['ydata'] = self.W_ref
+        callerInfo['edata'] = self.W_refSD
+        if thismodel.usedq:
+            callerInfo['dqvals'] = self.W_qSD
 
-        for key in kwds:
-            if key in keywords:
-                keywords[key] = kwds[key]
-                
-        RFO = reflect.ReflectivityFitObject(self.W_q, self.W_ref, self.W_refSD, theseparameters, **keywords)
+        RFO = reflect.ReflectivityFitObject(**callerInfo)
+        
         
         energy = RFO.energy() / self.numpoints
         if store:
@@ -117,36 +107,60 @@ class dataObject(reflectdataset.ReflectDataset):
                 
         return energy
 
-    def evaluate_model(self, **kwds):   
-        theseparameters = self.parameters
-        costfunction = reflect.costfunction_logR_weight
-        store = False     
-
-        keywords = {}
-        keywords['costfunction'] = reflect.costfunction_logR_weight
-        keywords['dqvals'] = self.W_qSD
+    def evaluate_model(self, model = None, store = False):   
         
-        if 'store' in kwds:
-            store = kwds['store']
-        if 'parameters' in kwds and kwds['parameters'] is not None:
-            theseparameters = kwds['parameters']
-
-        for key in kwds:
-            if key in keywords:
-                keywords[key] = kwds[key]
-
-        RFO = reflect.ReflectivityFitObject(self.W_q,
-                                             self.W_ref,
-                                              self.W_refSD,
-                                               theseparameters,
-                                                **keywords)
-                    
-        model = RFO.model()
+        if model is None:
+            thismodel = self.model
+        else:
+            thismodel = model
+            
+        callerInfo = thismodel.__dict__.copy()
+        callerInfo['xdata'] = self.W_q
+        callerInfo['ydata'] = self.W_ref
+        callerInfo['edata'] = self.W_refSD
+        if thismodel.usedq:
+            callerInfo['dqvals'] = self.W_qSD  
+        
+        RFO = reflect.ReflectivityFitObject(**callerInfo)
+                               
+        fit = RFO.model()
         sld_profile = RFO.sld_profile()
         if store:
-            self.fit = model
-            self.residuals = model - self.W_ref
+            self.fit = fit
+            self.residuals = fit - self.W_ref
             self.sld_profile = sld_profile
 
-        return model, model - self.W_ref, sld_profile
+        return fit, fit - self.W_ref, sld_profile
             
+class Model(object):
+    def __init__(self, parameters = None,
+                    fitted_parameters = None,
+                     limits = None,
+                      useerrors = True,
+                       usedq = True,
+                        costfunction = reflect.costfunction_logR_weight):
+        self.parameters = parameters
+        self.fitted_parameters = fitted_parameters
+        self.useerrors = useerrors
+        self.usedq = usedq
+        self.limits = limits
+        self.costfunction = costfunction
+        
+    def save(self, f):
+        f.write(f.name + '\n\n')
+        holdvector = np.ones_like(self.parameters)
+        holdvector[self.fitted_parameters] = 0
+        
+        np.savetxt(f, np.column_stack((self.parameters, holdvector)))
+    
+    def load(self, f):
+        h1 = f.readline()
+        h2 = f.readline()
+        array = np.loadtxt(f)
+        self.parameters, a2 = np.hsplit(array, 2)
+        self.parameters = self.parameters.flatten()
+        a2 = a2.flatten()
+        
+        self.fitted_parameters = np.where(a2==0)[0]
+        
+    
