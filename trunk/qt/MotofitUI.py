@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'qt/Motofit.ui'
 #
-# Created: Thu Aug 23 20:55:08 2012
+# Created: Thu Aug 23 21:00:47 2012
 #      by: pyside-uic 0.2.13 running on PySide 1.1.1
 #
 # WARNING! All changes made in this file will be lost!
@@ -21,6 +21,7 @@ class Ui_MainWindow(object):
         MainWindow.setMinimumSize(QtCore.QSize(1063, 462))
         MainWindow.setDocumentMode(False)
         MainWindow.setTabShape(QtGui.QTabWidget.Rounded)
+        MainWindow.setUnifiedTitleAndToolBarOnMac(False)
         self.centralwidget = QtGui.QWidget(MainWindow)
         self.centralwidget.setMinimumSize(QtCore.QSize(400, 0))
         self.centralwidget.setObjectName("centralwidget")
@@ -239,7 +240,7 @@ class Ui_MainWindow(object):
         self.actionSave_Model.setText(QtGui.QApplication.translate("MainWindow", "Save Model", None, QtGui.QApplication.UnicodeUTF8))
         self.actionSave_Model.setShortcut(QtGui.QApplication.translate("MainWindow", "Meta+S", None, QtGui.QApplication.UnicodeUTF8))
         self.actionLoad_Model.setText(QtGui.QApplication.translate("MainWindow", "Load Model", None, QtGui.QApplication.UnicodeUTF8))
-        self.actionLoad_Model.setShortcut(QtGui.QApplication.translate("MainWindow", "Meta+L, Ctrl+S", None, QtGui.QApplication.UnicodeUTF8))
+        self.actionLoad_Model.setShortcut(QtGui.QApplication.translate("MainWindow", "Meta+L", None, QtGui.QApplication.UnicodeUTF8))
         self.actionLogR_vs_Q.setText(QtGui.QApplication.translate("MainWindow", "logR vs Q", None, QtGui.QApplication.UnicodeUTF8))
         self.actionRQ4_vs_Q.setText(QtGui.QApplication.translate("MainWindow", "R vs Q", None, QtGui.QApplication.UnicodeUTF8))
         self.actionRQ4_vs_Q_2.setText(QtGui.QApplication.translate("MainWindow", "RQ4 vs Q", None, QtGui.QApplication.UnicodeUTF8))
