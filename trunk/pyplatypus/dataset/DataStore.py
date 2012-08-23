@@ -2,7 +2,7 @@ from __future__ import division
 import reflectdataset
 import numpy as np
 import pyplatypus.analysis.reflect as reflect
-
+import copy
 
 class DataStore(object):
 
@@ -138,7 +138,7 @@ class Model(object):
                      limits = None,
                       useerrors = True,
                        usedq = True,
-                        costfunction = reflect.costfunction_logR_weight):
+                        costfunction = reflect.costfunction_logR_noweight):
         self.parameters = parameters
         self.fitted_parameters = fitted_parameters
         self.useerrors = useerrors
