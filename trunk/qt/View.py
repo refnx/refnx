@@ -11,6 +11,7 @@ from matplotlib.backends.backend_qt4agg import NavigationToolbar2QTAgg as Naviga
 from matplotlib.figure import Figure
 import pyplatypus.dataset.DataStore as DataStore
 import pyplatypus.analysis.reflect as reflect
+import os.path
 
 class MyMainWindow(QtGui.QMainWindow):
     def __init__(self, parent=None):
@@ -20,6 +21,7 @@ class MyMainWindow(QtGui.QMainWindow):
         self.errorHandler = QtGui.QErrorMessage()
         self.dataStore = DataStore.DataStore()
         self.current_dataset = None
+        self.models = {}
         self.modifyGui()
         
         parameters = np.array([1, 1.0, 0, 0, 2.07, 0, 1e-7, 3, 25, 3.47, 0, 3])
@@ -32,24 +34,28 @@ class MyMainWindow(QtGui.QMainWindow):
         dataTuple = (tempq, tempr, tempe, tempdq)
         
         self.current_dataset = None
-        self.theoretical_model = DataStore.dataObject(dataTuple = dataTuple, fitted_parameters = fitted_parameters, parameters = parameters)
-        self.theoretical_model.evaluate_model(store = True)
-        self.dataStore.addDataObject(self.theoretical_model)
-        self.theoretical_model.line2Dfit = self.reflectivitygraphs.axes[0].plot(self.theoretical_model.W_q,
-                                                   self.theoretical_model.fit,
+        self.theoretical = DataStore.dataObject(dataTuple = dataTuple, fitted_parameters = fitted_parameters, parameters = parameters)
+        self.models['theoretical'] = self.theoretical.model
+        self.theoretical.evaluate_model(store = True)
+        self.dataStore.addDataObject(self.theoretical)
+        self.theoretical.line2Dfit = self.reflectivitygraphs.axes[0].plot(self.theoretical.W_q,
+                                                   self.theoretical.fit,
                                                     linestyle='-', lw=2, label = 'theoretical')[0]
-        self.theoretical_model.line2Dsld_profile = self.reflectivitygraphs.axes[2].plot(self.theoretical_model.sld_profile[0],
-                                                   self.theoretical_model.sld_profile[1],
+        self.theoretical.line2Dsld_profile = self.reflectivitygraphs.axes[2].plot(self.theoretical.sld_profile[0],
+                                                   self.theoretical.sld_profile[1],
                                                     linestyle='-')[0]
-        self.gui_from_parameters(self.theoretical_model.parameters, self.theoretical_model.fitted_parameters, resize=False)
-        self.redraw_dataObject_graphs([self.theoretical_model])
+        self.gui_from_parameters(self.theoretical.model.parameters, self.theoretical.model.fitted_parameters, resize=False)
+        self.redraw_dataObject_graphs([self.theoretical])
         
     @QtCore.Slot()
     def on_actionLoad_Data_triggered(self):
         """
             you load data
         """ 
-        theFiles = QtGui.QFileDialog.getOpenFileNames(self,  caption = 'Select Reflectivity Files')[0]
+        theFiles, ok = QtGui.QFileDialog.getOpenFileNames(self,  caption = 'Select Reflectivity Files')
+        if not ok:
+            return
+            
         for file in theFiles:
             dataObject = self.dataStore.loadDataObject(file)
             self.add_dataObject_to_gui(dataObject)
@@ -57,7 +63,7 @@ class MyMainWindow(QtGui.QMainWindow):
     def add_dataObject_to_gui(self, dataObject):
         lineInstance = self.reflectivitygraphs.axes[0].plot(dataObject.W_q,
                                                                  dataObject.W_ref,
-                                                                   markersize=8,
+                                                                   markersize=5,
                                                                     marker='o',
                                                                      linestyle='',
                                                                       label = dataObject.name)
@@ -65,6 +71,44 @@ class MyMainWindow(QtGui.QMainWindow):
         self.reflectivitygraphs.draw()
         self.ui.dataset_comboBox.addItem(dataObject.name)
 
+    @QtCore.Slot()
+    def on_actionSave_Model_triggered(self):
+        #save a model
+        #which model are you saving?
+        listofmodels = []
+        for key in self.models:
+            listofmodels.append(key)
+        
+        which_model, ok = QtGui.QInputDialog.getItem(self, "Which model did you want to save?", "model", listofmodels, editable=False)
+        if not ok:
+            return
+            
+        themodel = self.models[which_model]
+        modelFileName, ok = QtGui.QFileDialog.getSaveFileName(self, caption = 'Save model as:', dir=which_model)
+        if not ok:
+            return
+             
+        with open(modelFileName, 'w+') as f:
+            themodel.save(f)
+                    
+    @QtCore.Slot()
+    def on_actionLoad_Model_triggered(self):
+        #load a model
+        modelFileName, ok = QtGui.QFileDialog.getOpenFileName(self,  caption = 'Select Model File')
+        if not ok:
+            return
+        
+        themodel = DataStore.Model()
+        
+        with open(modelFileName, 'Ur') as f:
+            themodel.load(f)
+
+        modelName = os.path.basename(modelFileName)        
+        self.models[os.path.basename(modelName)] = themodel
+        self.ui.model_comboBox.addItem(modelName)
+        self.gui_from_parameters(themodel.parameters, themodel.fitted_parameters)
+        
+        
     
     @QtCore.Slot()
     def on_actionRefresh_Datasets_triggered(self):
@@ -87,13 +131,17 @@ class MyMainWindow(QtGui.QMainWindow):
         if self.current_dataset is None:
             return
             
-        self.theoretical_model.parameters, self.theoretical_model.fitted_parameters = self.gui_to_parameters()
-        self.current_dataset.do_a_fit(parameters = self.theoretical_model.parameters,
-                                      fitted_parameters = self.theoretical_model.fitted_parameters)
-        self.theoretical_model.parameters = self.current_dataset.parameters
-
-        self.gui_from_parameters(self.theoretical_model.parameters, self.theoretical_model.fitted_parameters)
-              
+        self.theoretical.model.parameters, self.theoretical.model.fitted_parameters = self.gui_to_parameters()
+        self.ui.statusbar.showMessage('fitting')
+        self.current_dataset.do_a_fit(model = self.theoretical.model)
+        self.ui.statusbar.clearMessage()
+            
+        self.theoretical.model.parameters = np.copy(self.current_dataset.model.parameters)
+        self.models[self.current_dataset.name] = self.current_dataset.model
+        
+        self.gui_from_parameters(self.theoretical.model.parameters, self.theoretical.model.fitted_parameters)
+        
+        
         if self.current_dataset.line2Dfit is None:
             self.current_dataset.line2Dfit = self.reflectivitygraphs.axes[0].plot(self.current_dataset.W_q,
                                                   self.current_dataset.fit,
@@ -107,6 +155,11 @@ class MyMainWindow(QtGui.QMainWindow):
                                                    linestyle='-',
                                                     lw = 2,
                                                      label = 'sld_' + self.current_dataset.name)[0]
+        
+        
+        if self.ui.model_comboBox.findText(self.current_dataset.name) < 0:
+            self.ui.model_comboBox.addItem(self.current_dataset.name)
+            self.ui.model_comboBox.setCurrentIndex(self.ui.model_comboBox.findText(self.current_dataset.name))
         self.update_gui_modelChanged()
         
         
@@ -125,14 +178,22 @@ class MyMainWindow(QtGui.QMainWindow):
         model selection changed, update view with parameters from model.
         """
         
-        print arg_1
-        
+        try:
+            dataObject = self.dataStore.dataObjects[arg_1]
+            if dataObject.model.parameters is not None and dataObject.model.fitted_parameters is not None:
+                self.gui_from_parameters(dataObject.model.parameters, dataObject.model.fitted_parameters, resize = True)
+                #self.update_gui_modelChanged()
+        except KeyError:
+            return
+        except IndexError, AttributeError:
+            print dataObject.model.parameters, dataObject.model.fitted_parameters
+               
     @QtCore.Slot(float)
     def on_doubleSpinBox_valueChanged(self, arg_1):
         if arg_1 < 0.5:
             arg_1 = 0
             
-        self.theoretical_model.W_qSD = arg_1 * self.theoretical_model.W_q / 100.
+        self.theoretical.W_qSD = arg_1 * self.theoretical.W_q / 100.
 
         self.update_gui_modelChanged()
                  
@@ -165,8 +226,8 @@ class MyMainWindow(QtGui.QMainWindow):
                 if oldlayers == newlayers:
                     return
                     
-                parameters = self.theoretical_model.parameters
-                fitted_parameters = self.theoretical_model.fitted_parameters
+                parameters = self.theoretical.model.parameters
+                fitted_parameters = self.theoretical.model.fitted_parameters
                 #you have to defocus from layerparams because when you rejig the layering
                 #it triggers on_layerparams_tableWidget_itemChanged
                 
@@ -220,8 +281,8 @@ class MyMainWindow(QtGui.QMainWindow):
                                      fitted_parameters)
                         
                 self.gui_from_parameters(parameters, fitted_parameters, resize = True)                                    
-                self.theoretical_model.parameters = parameters
-                self.theoretical_model.fitted_parameters = fitted_parameters
+                self.theoretical.model.parameters = parameters
+                self.theoretical.model.fitted_parameters = fitted_parameters
             else:
                 self.errorHandler.showMessage("Number of layers must be integer > 0")
                 return
@@ -234,7 +295,7 @@ class MyMainWindow(QtGui.QMainWindow):
                 print arg_1.text()
                 self.errorHandler.showMessage("values entered must be numeric")
                 return
-        self.theoretical_model.parameters, self.theoretical_model.fitted_parameters = self.gui_to_parameters()
+        self.theoretical.model.parameters, self.theoretical.model.fitted_parameters = self.gui_to_parameters()
         self.update_gui_modelChanged()
 
  
@@ -255,7 +316,7 @@ class MyMainWindow(QtGui.QMainWindow):
             return
         validator = QtGui.QDoubleValidator()
         if validator.validate(arg_1.text(), 1)[0] == QtGui.QValidator.State.Acceptable:
-            self.theoretical_model.parameters, self.theoretical_model.fitted_parameters = self.gui_to_parameters()
+            self.theoretical.model.parameters, self.theoretical.model.fitted_parameters = self.gui_to_parameters()
             self.update_gui_modelChanged()
         else:
             print arg_1.text(), row, col
@@ -390,11 +451,10 @@ class MyMainWindow(QtGui.QMainWindow):
         labels.insert(0, 'fronting')
         self.ui.layerparams_tableWidget.setVerticalHeaderLabels(labels)
         
-        if not resize:
-            for cidx in xrange(3):
-                wi = QtGui.QTableWidgetItem(str(parameters[baseparams[cidx]]))
-                wi.setCheckState(checked[baseparams[cidx]])
-                self.ui.baseparams_tableWidget.setItem(0, cidx, wi)
+        for cidx in xrange(3):
+            wi = QtGui.QTableWidgetItem(str(parameters[baseparams[cidx]]))
+            wi.setCheckState(checked[baseparams[cidx]])
+            self.ui.baseparams_tableWidget.setItem(0, cidx, wi)
                 
         self.ui.layerparams_tableWidget.setCurrentCell(layerparamsrow, layerparamscol)
         self.ui.baseparams_tableWidget.setCurrentCell(baseparamsrow, baseparamscol)
@@ -413,12 +473,12 @@ class MyMainWindow(QtGui.QMainWindow):
         self.reflectivitygraphs.draw()
                 
     def update_gui_modelChanged(self, store = False):
-        self.theoretical_model.evaluate_model(store = True)
+        self.theoretical.evaluate_model(store = True)
         if self.current_dataset is not None:
-            energy = self.current_dataset.evaluate_chi2(parameters = self.theoretical_model.parameters)
+            energy = self.current_dataset.evaluate_chi2(model = self.theoretical.model)
             self.ui.lineEdit.setText(str(energy))     
         
-        self.redraw_dataObject_graphs([self.theoretical_model, self.current_dataset])
+        self.redraw_dataObject_graphs([self.theoretical, self.current_dataset])
         
             
 class MyReflectivityGraphs(FigureCanvas):
