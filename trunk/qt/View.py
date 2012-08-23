@@ -38,12 +38,13 @@ class MyMainWindow(QtGui.QMainWindow):
         self.models['theoretical'] = self.theoretical.model
         self.theoretical.evaluate_model(store = True)
         self.dataStore.addDataObject(self.theoretical)
+        self.theoretical.line2Dsld_profile = self.sldgraphs.axes[0].plot(self.theoretical.sld_profile[0],
+                                                   self.theoretical.sld_profile[1],
+                                                    linestyle='-')[0]
         self.theoretical.line2Dfit = self.reflectivitygraphs.axes[0].plot(self.theoretical.W_q,
                                                    self.theoretical.fit,
                                                     linestyle='-', lw=2, label = 'theoretical')[0]
-        self.theoretical.line2Dsld_profile = self.reflectivitygraphs.axes[2].plot(self.theoretical.sld_profile[0],
-                                                   self.theoretical.sld_profile[1],
-                                                    linestyle='-')[0]
+
         self.gui_from_parameters(self.theoretical.model.parameters, self.theoretical.model.fitted_parameters, resize=False)
         self.redraw_dataObject_graphs([self.theoretical])
         
@@ -150,7 +151,7 @@ class MyMainWindow(QtGui.QMainWindow):
                                                      label = 'fit_' + self.current_dataset.name)[0]
 
         if self.current_dataset.line2Dsld_profile is None:
-            self.current_dataset.line2Dsld_profile = self.reflectivitygraphs.axes[2].plot(self.current_dataset.sld_profile[0],
+            self.current_dataset.line2Dsld_profile = self.sldgraphs.axes[0].plot(self.current_dataset.sld_profile[0],
                                                   self.current_dataset.sld_profile[1],
                                                    linestyle='-',
                                                     lw = 2,
@@ -189,7 +190,7 @@ class MyMainWindow(QtGui.QMainWindow):
             print dataObject.model.parameters, dataObject.model.fitted_parameters
                
     @QtCore.Slot(float)
-    def on_doubleSpinBox_valueChanged(self, arg_1):
+    def on_res_SpinBox_valueChanged(self, arg_1):
         if arg_1 < 0.5:
             arg_1 = 0
             
@@ -325,15 +326,20 @@ class MyMainWindow(QtGui.QMainWindow):
 
     def modifyGui(self):
         #add the plots
-        self.reflectivitygraphs = MyReflectivityGraphs(self.ui.centralwidget)
-        self.ui.gridLayout_3.addWidget(self.reflectivitygraphs)
+        self.sldgraphs = MySLDGraphs(self.ui.sld)
+        self.ui.gridLayout_4.addWidget(self.sldgraphs)
+
+        self.reflectivitygraphs = MyReflectivityGraphs(self.ui.reflectivity)        
+        self.ui.gridLayout_5.addWidget(self.reflectivitygraphs)
+        
         self.reflectivitygraphs.axes[0].set_xlabel('Q')
         self.reflectivitygraphs.axes[0].set_ylabel('R')        
         self.reflectivitygraphs.axes[1].set_xlabel('Q')
         self.reflectivitygraphs.axes[1].set_ylabel('residual')
-        self.reflectivitygraphs.axes[2].set_xlabel('z')
-        self.reflectivitygraphs.axes[2].set_ylabel('SLD')
-        self.ui.gridLayout_3.addWidget(self.reflectivitygraphs.mpl_toolbar)
+        self.sldgraphs.axes[0].set_xlabel('z')
+        self.sldgraphs.axes[0].set_ylabel('SLD')
+        self.ui.gridLayout_5.addWidget(self.reflectivitygraphs.mpl_toolbar)
+        self.ui.gridLayout_4.addWidget(self.sldgraphs.mpl_toolbar)
         
         #add baseparams table widget info
         self.ui.baseparams_tableWidget.setHorizontalHeaderLabels(['number of layers', 'scale', 'background'])
@@ -469,8 +475,10 @@ class MyMainWindow(QtGui.QMainWindow):
                dataObject.line2Dfit.set_data(dataObject.W_q, dataObject.fit)
             if dataObject.line2Dsld_profile:
                 dataObject.line2Dsld_profile.set_data(dataObject.sld_profile[0], dataObject.sld_profile[1])
-            
+        
+        self.sldgraphs.draw()    
         self.reflectivitygraphs.draw()
+        
                 
     def update_gui_modelChanged(self, store = False):
         self.theoretical.evaluate_model(store = True)
@@ -487,7 +495,7 @@ class MyReflectivityGraphs(FigureCanvas):
         self.figure = Figure(facecolor=(1,1,1), edgecolor=(0,0,0))
         #reflectivity graph
         self.axes = []
-        self.axes.append(self.figure.add_subplot(211))
+        self.axes.append(self.figure.add_subplot(111))
         self.axes[0].autoscale(axis='both', tight = False)
         self.axes[0].set_xlabel('Q')
         self.axes[0].set_ylabel('R')
@@ -495,44 +503,29 @@ class MyReflectivityGraphs(FigureCanvas):
         
         #residual plot
         #, sharex=self.axes[0]
-        self.axes.append(self.figure.add_subplot(312))
+        self.axes.append(self.figure.add_subplot(411))
         self.axes[1].set_visible(False)
         self.axes[1].set_xlabel('Q')
         self.axes[1].set_ylabel('residual')
-
-        #SLD plot
-        self.axes.append(self.figure.add_subplot(212))
-        self.axes[2].autoscale(axis='both', tight = False)
-        self.axes[2].set_xlabel('z')
-        self.axes[2].set_ylabel('SLD')
-
                        
         FigureCanvas.__init__(self, self.figure)
         self.setParent(parent)
         self.figure.subplots_adjust(left=0.1, right=0.95, top = 0.98)
         self.mpl_toolbar = NavigationToolbar(self, parent)
-
-    def visibility_of_plots(self, true_false_triplet):
-        """
-            if you want to show an individual plot in the window you can use this method to select which
-            ones are shown
-            true_false_triplet should be a tuple (True or False, True or False, True or False)
-            True = display, False = Hide
-            true_false_triplet[0] = reflectivity plot
-            true_false_triplet[1] = residuals plot
-            true_false_triplet[2] = sld plot
-        """
-        numrows = 0
-        for truth in true_false_triplet:
-            if truth is True:
-                numrows += 1
-
-        upto = 1    
-        for idx, val in enumerate(self.axes):
-            val.set_visible(true_false_triplet[idx])
-            if true_false_triplet[idx] is True:
-                val.change_geometry(numrows, 1, upto)            
-                upto += 1
             
                             
-            
+class MySLDGraphs(FigureCanvas):
+    """Ultimately, this is a QWidget (as well as a FigureCanvasAgg, etc.)."""
+    def __init__(self, parent=None):
+        self.figure = Figure(facecolor=(1,1,1), edgecolor=(0,0,0))
+        self.axes = []
+        #SLD plot
+        self.axes.append(self.figure.add_subplot(111))
+        self.axes[0].autoscale(axis='both', tight = False)
+        self.axes[0].set_xlabel('z')
+        self.axes[0].set_ylabel('SLD')
+                       
+        FigureCanvas.__init__(self, self.figure)
+        self.setParent(parent)
+        self.figure.subplots_adjust(left=0.1, right=0.95, top = 0.98)
+        self.mpl_toolbar = NavigationToolbar(self, parent)         

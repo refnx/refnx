@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'Motofit.ui'
+# Form implementation generated from reading ui file 'qt/Motofit.ui'
 #
-# Created: Thu Aug 23 18:57:16 2012
+# Created: Thu Aug 23 20:55:08 2012
 #      by: pyside-uic 0.2.13 running on PySide 1.1.1
 #
 # WARNING! All changes made in this file will be lost!
@@ -26,6 +26,19 @@ class Ui_MainWindow(object):
         self.centralwidget.setObjectName("centralwidget")
         self.gridLayout_3 = QtGui.QGridLayout(self.centralwidget)
         self.gridLayout_3.setObjectName("gridLayout_3")
+        self.graphs = QtGui.QTabWidget(self.centralwidget)
+        self.graphs.setObjectName("graphs")
+        self.reflectivity = QtGui.QWidget()
+        self.reflectivity.setObjectName("reflectivity")
+        self.gridLayout_5 = QtGui.QGridLayout(self.reflectivity)
+        self.gridLayout_5.setObjectName("gridLayout_5")
+        self.graphs.addTab(self.reflectivity, "")
+        self.sld = QtGui.QWidget()
+        self.sld.setObjectName("sld")
+        self.gridLayout_4 = QtGui.QGridLayout(self.sld)
+        self.gridLayout_4.setObjectName("gridLayout_4")
+        self.graphs.addTab(self.sld, "")
+        self.gridLayout_3.addWidget(self.graphs, 0, 0, 1, 1)
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtGui.QMenuBar()
         self.menubar.setGeometry(QtCore.QRect(0, 0, 1063, 22))
@@ -96,16 +109,16 @@ class Ui_MainWindow(object):
         self.use_errors_checkbox = QtGui.QCheckBox(self.tab)
         self.use_errors_checkbox.setObjectName("use_errors_checkbox")
         self.gridLayout_2.addWidget(self.use_errors_checkbox, 2, 1, 1, 1)
-        self.doubleSpinBox = QtGui.QDoubleSpinBox(self.tab)
-        self.doubleSpinBox.setWrapping(False)
-        self.doubleSpinBox.setFrame(True)
-        self.doubleSpinBox.setReadOnly(False)
-        self.doubleSpinBox.setDecimals(1)
-        self.doubleSpinBox.setMaximum(10.0)
-        self.doubleSpinBox.setSingleStep(0.1)
-        self.doubleSpinBox.setProperty("value", 5.0)
-        self.doubleSpinBox.setObjectName("doubleSpinBox")
-        self.gridLayout_2.addWidget(self.doubleSpinBox, 3, 0, 1, 1)
+        self.res_SpinBox = QtGui.QDoubleSpinBox(self.tab)
+        self.res_SpinBox.setWrapping(False)
+        self.res_SpinBox.setFrame(True)
+        self.res_SpinBox.setReadOnly(False)
+        self.res_SpinBox.setDecimals(1)
+        self.res_SpinBox.setMaximum(10.0)
+        self.res_SpinBox.setSingleStep(0.1)
+        self.res_SpinBox.setProperty("value", 5.0)
+        self.res_SpinBox.setObjectName("res_SpinBox")
+        self.gridLayout_2.addWidget(self.res_SpinBox, 3, 0, 1, 1)
         self.use_dqwave_checkbox = QtGui.QCheckBox(self.tab)
         self.use_dqwave_checkbox.setObjectName("use_dqwave_checkbox")
         self.gridLayout_2.addWidget(self.use_dqwave_checkbox, 3, 1, 1, 1)
@@ -197,12 +210,15 @@ class Ui_MainWindow(object):
         self.menubar.addAction(self.menuHelp.menuAction())
 
         self.retranslateUi(MainWindow)
+        self.graphs.setCurrentIndex(0)
         self.tabWidget.setCurrentIndex(0)
         self.dataset_comboBox.setCurrentIndex(-1)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def retranslateUi(self, MainWindow):
         MainWindow.setWindowTitle(QtGui.QApplication.translate("MainWindow", "Motofit", None, QtGui.QApplication.UnicodeUTF8))
+        self.graphs.setTabText(self.graphs.indexOf(self.reflectivity), QtGui.QApplication.translate("MainWindow", "reflectivity", None, QtGui.QApplication.UnicodeUTF8))
+        self.graphs.setTabText(self.graphs.indexOf(self.sld), QtGui.QApplication.translate("MainWindow", "sld", None, QtGui.QApplication.UnicodeUTF8))
         self.menuData.setTitle(QtGui.QApplication.translate("MainWindow", "Data", None, QtGui.QApplication.UnicodeUTF8))
         self.menuModel.setTitle(QtGui.QApplication.translate("MainWindow", "Model", None, QtGui.QApplication.UnicodeUTF8))
         self.menuHelp.setTitle(QtGui.QApplication.translate("MainWindow", "Help", None, QtGui.QApplication.UnicodeUTF8))
@@ -212,7 +228,7 @@ class Ui_MainWindow(object):
         self.do_fit_button.setShortcut(QtGui.QApplication.translate("MainWindow", "Meta+F", None, QtGui.QApplication.UnicodeUTF8))
         self.lineEdit.setText(QtGui.QApplication.translate("MainWindow", "0", None, QtGui.QApplication.UnicodeUTF8))
         self.use_errors_checkbox.setText(QtGui.QApplication.translate("MainWindow", "Use errors?", None, QtGui.QApplication.UnicodeUTF8))
-        self.doubleSpinBox.setPrefix(QtGui.QApplication.translate("MainWindow", "dq/q(%) : ", None, QtGui.QApplication.UnicodeUTF8))
+        self.res_SpinBox.setPrefix(QtGui.QApplication.translate("MainWindow", "dq/q(%) : ", None, QtGui.QApplication.UnicodeUTF8))
         self.use_dqwave_checkbox.setText(QtGui.QApplication.translate("MainWindow", "Use dq wave?", None, QtGui.QApplication.UnicodeUTF8))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab), QtGui.QApplication.translate("MainWindow", "Model", None, QtGui.QApplication.UnicodeUTF8))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_2), QtGui.QApplication.translate("MainWindow", "Data", None, QtGui.QApplication.UnicodeUTF8))

@@ -38,7 +38,27 @@
      <height>0</height>
     </size>
    </property>
-   <layout class="QGridLayout" name="gridLayout_3"/>
+   <layout class="QGridLayout" name="gridLayout_3">
+    <item row="0" column="0">
+     <widget class="QTabWidget" name="graphs">
+      <property name="currentIndex">
+       <number>0</number>
+      </property>
+      <widget class="QWidget" name="reflectivity">
+       <attribute name="title">
+        <string>reflectivity</string>
+       </attribute>
+       <layout class="QGridLayout" name="gridLayout_5"/>
+      </widget>
+      <widget class="QWidget" name="sld">
+       <attribute name="title">
+        <string>sld</string>
+       </attribute>
+       <layout class="QGridLayout" name="gridLayout_4"/>
+      </widget>
+     </widget>
+    </item>
+   </layout>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
@@ -208,7 +228,7 @@
           </widget>
          </item>
          <item row="3" column="0">
-          <widget class="QDoubleSpinBox" name="doubleSpinBox">
+          <widget class="QDoubleSpinBox" name="res_SpinBox">
            <property name="wrapping">
             <bool>false</bool>
            </property>
@@ -397,7 +417,7 @@
     <string>Load Model</string>
    </property>
    <property name="shortcut">
-    <string>Meta+L, Ctrl+S</string>
+    <string>Meta+L</string>
    </property>
   </action>
   <action name="actionLogR_vs_Q">
