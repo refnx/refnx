@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'Motofit.ui'
 #
-# Created: Wed Aug 22 20:19:06 2012
+# Created: Thu Aug 23 18:57:16 2012
 #      by: pyside-uic 0.2.13 running on PySide 1.1.1
 #
 # WARNING! All changes made in this file will be lost!
@@ -12,13 +12,13 @@ from PySide import QtCore, QtGui
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(1063, 400)
+        MainWindow.resize(1063, 462)
         sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(MainWindow.sizePolicy().hasHeightForWidth())
         MainWindow.setSizePolicy(sizePolicy)
-        MainWindow.setMinimumSize(QtCore.QSize(1063, 400))
+        MainWindow.setMinimumSize(QtCore.QSize(1063, 462))
         MainWindow.setDocumentMode(False)
         MainWindow.setTabShape(QtGui.QTabWidget.Rounded)
         self.centralwidget = QtGui.QWidget(MainWindow)
@@ -223,6 +223,7 @@ class Ui_MainWindow(object):
         self.actionSave_Model.setText(QtGui.QApplication.translate("MainWindow", "Save Model", None, QtGui.QApplication.UnicodeUTF8))
         self.actionSave_Model.setShortcut(QtGui.QApplication.translate("MainWindow", "Meta+S", None, QtGui.QApplication.UnicodeUTF8))
         self.actionLoad_Model.setText(QtGui.QApplication.translate("MainWindow", "Load Model", None, QtGui.QApplication.UnicodeUTF8))
+        self.actionLoad_Model.setShortcut(QtGui.QApplication.translate("MainWindow", "Meta+L, Ctrl+S", None, QtGui.QApplication.UnicodeUTF8))
         self.actionLogR_vs_Q.setText(QtGui.QApplication.translate("MainWindow", "logR vs Q", None, QtGui.QApplication.UnicodeUTF8))
         self.actionRQ4_vs_Q.setText(QtGui.QApplication.translate("MainWindow", "R vs Q", None, QtGui.QApplication.UnicodeUTF8))
         self.actionRQ4_vs_Q_2.setText(QtGui.QApplication.translate("MainWindow", "RQ4 vs Q", None, QtGui.QApplication.UnicodeUTF8))
