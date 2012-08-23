@@ -31,6 +31,9 @@
   <property name="tabShape">
    <enum>QTabWidget::Rounded</enum>
   </property>
+  <property name="unifiedTitleAndToolBarOnMac">
+   <bool>false</bool>
+  </property>
   <widget class="QWidget" name="centralwidget">
    <property name="minimumSize">
     <size>
