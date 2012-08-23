@@ -47,7 +47,18 @@ class MyMainWindow(QtGui.QMainWindow):
 
         self.gui_from_parameters(self.theoretical.model.parameters, self.theoretical.model.fitted_parameters, resize=False)
         self.redraw_dataObject_graphs([self.theoretical])
-        
+    
+    @QtCore.Slot(QtGui.QDropEvent)
+    def dropEvent(self, event):
+        m = event.mimeData()
+        print m.urls()[0].toLocalFile()
+                
+    @QtCore.Slot(QtGui.QDragEnterEvent)
+    def dragEnterEvent(self, event):
+        m = event.mimeData()
+        if m.hasUrls():
+            event.acceptProposedAction()
+              
     @QtCore.Slot()
     def on_actionLoad_Data_triggered(self):
         """

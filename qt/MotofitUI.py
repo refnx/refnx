@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'qt/Motofit.ui'
 #
-# Created: Thu Aug 23 21:00:47 2012
+# Created: Thu Aug 23 21:20:09 2012
 #      by: pyside-uic 0.2.13 running on PySide 1.1.1
 #
 # WARNING! All changes made in this file will be lost!
@@ -19,6 +19,7 @@ class Ui_MainWindow(object):
         sizePolicy.setHeightForWidth(MainWindow.sizePolicy().hasHeightForWidth())
         MainWindow.setSizePolicy(sizePolicy)
         MainWindow.setMinimumSize(QtCore.QSize(1063, 462))
+        MainWindow.setAcceptDrops(True)
         MainWindow.setDocumentMode(False)
         MainWindow.setTabShape(QtGui.QTabWidget.Rounded)
         MainWindow.setUnifiedTitleAndToolBarOnMac(False)
