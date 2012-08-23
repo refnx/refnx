@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1063</width>
-    <height>400</height>
+    <height>462</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -19,7 +19,7 @@
   <property name="minimumSize">
    <size>
     <width>1063</width>
-    <height>400</height>
+    <height>462</height>
    </size>
   </property>
   <property name="windowTitle">
@@ -395,6 +395,9 @@
   <action name="actionLoad_Model">
    <property name="text">
     <string>Load Model</string>
+   </property>
+   <property name="shortcut">
+    <string>Meta+L, Ctrl+S</string>
    </property>
   </action>
   <action name="actionLogR_vs_Q">
