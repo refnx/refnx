@@ -9,10 +9,12 @@ matplotlib.rcParams['backend.qt4']='PySide'
 from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt4agg import NavigationToolbar2QTAgg as NavigationToolbar
 from matplotlib.figure import Figure
+import matplotlib.artist
 import pyplatypus.dataset.DataStore as DataStore
 import pyplatypus.analysis.reflect as reflect
 import os.path
 from copy import deepcopy
+import cPickle
 
 class MyMainWindow(QtGui.QMainWindow):
     def __init__(self, parent=None):
@@ -112,7 +114,29 @@ class MyMainWindow(QtGui.QMainWindow):
              
         with open(modelFileName, 'w+') as f:
             themodel.save(f)
-                    
+    
+    @QtCore.Slot()
+    def on_actionSave_Data_triggered(self):
+        listoffits = []
+        for key in self.dataStore.dataObjects:
+            if self.dataStore.dataObjects[key].fit is not None:
+                listoffits.append(key)
+                
+        which_fit, ok = QtGui.QInputDialog.getItem(self, "Which fit did you want to save?", "fit", listoffits, editable=False)
+        
+        if not ok:
+            return
+        
+        fitFileName, ok = QtGui.QFileDialog.getSaveFileName(self, caption = 'Save fit as:', dir='fit_' + which_fit)
+        
+        if not ok:
+            return
+        
+        dataObject = self.dataStore.dataObjects[which_fit]
+        
+        with open(fitFileName, 'wb') as f:
+            np.savetxt(f, np.column_stack((dataObject.W_q, dataObject.fit)))
+                   
     @QtCore.Slot()
     def on_actionLoad_Model_triggered(self):
         #load a model
@@ -134,9 +158,9 @@ class MyMainWindow(QtGui.QMainWindow):
 
         self.models[os.path.basename(modelName)] = themodel
         if self.ui.model_comboBox.count() == 1:
-            self.ui.model_comboBox.setCurrentIndex(0)
-            self.gui_from_parameters(themodel.parameters, themodel.fitted_parameters)
-            self.update_gui_modelChanged()
+            self.ui.model_comboBox.setCurrentIndex(-1)
+#             self.gui_from_parameters(themodel.parameters, themodel.fitted_parameters)
+#             self.update_gui_modelChanged()
     
     @QtCore.Slot()
     def on_actionRefresh_Datasets_triggered(self):
@@ -199,15 +223,7 @@ class MyMainWindow(QtGui.QMainWindow):
         """
         self.current_dataset = self.dataStore.dataObjects[arg_1]
         self.update_gui_modelChanged()
-
-    
-    @QtCore.Slot(unicode)
-#     def on_model_comboBox_highlighted(self, arg_1):
-#         """
-#         model selection changed, update view with parameters from model.
-#         """
-#         self.select_a_model(arg_1)
-                             
+                           
     @QtCore.Slot(unicode)
     def on_model_comboBox_currentIndexChanged(self, arg_1):
         """
@@ -520,6 +536,7 @@ class MyMainWindow(QtGui.QMainWindow):
                 
     def update_gui_modelChanged(self, store = False):
         self.theoretical.evaluate_model(store = True)
+
         if self.current_dataset is not None:
             energy = self.current_dataset.evaluate_chi2(model = self.theoretical.model)
             self.ui.lineEdit.setText(str(energy))     
