@@ -258,7 +258,22 @@ class MyMainWindow(QtGui.QMainWindow):
         want to weight by error bars, recalculate chi2
         """
         
-        print arg_1
+        if arg_1:
+            self.theoretical.model.useerrors = True
+            self.theoretical.model.costfunction = reflect.costfunction_logR_weight
+        else:
+            self.theoretical.model.costfunction = reflect.costfunction_logR_noweight
+            
+        self.update_gui_modelChanged()
+            
+    @QtCore.Slot(int)
+    def on_use_dqwave_checkbox_stateChanged(self, arg_1):
+        """
+        """
+        if arg_1:
+            self.theoretical.model.usedq = True
+        
+
     
     @QtCore.Slot(QtGui.QTableWidgetItem)
     def on_baseparams_tableWidget_itemChanged(self, arg_1):
