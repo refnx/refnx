@@ -67,14 +67,17 @@ class dataObject(reflectdataset.ReflectDataset):
         if model is None:
             thismodel = self.model
         else:
-            thismodel = deepcopy(model)
+            thismodel = model
 
-        callerInfo = thismodel.__dict__.copy()
+        callerInfo = deepcopy(thismodel.__dict__)
         callerInfo['xdata'] = self.W_q
         callerInfo['ydata'] = self.W_ref
         callerInfo['edata'] = self.W_refSD
         if thismodel.usedq:
             callerInfo['dqvals'] = self.W_qSD
+        else:
+            del(callerInfo['dqvals'])
+
 
         self.model.fitted_parameters = np.copy(thismodel.fitted_parameters)        
         
@@ -89,14 +92,16 @@ class dataObject(reflectdataset.ReflectDataset):
         if model is None:
             thismodel = self.model
         else:
-            thismodel = deepcopy(model)
+            thismodel = model
         
-        callerInfo = thismodel.__dict__.copy()
+        callerInfo = deepcopy(thismodel.__dict__)
         callerInfo['xdata'] = self.W_q
         callerInfo['ydata'] = self.W_ref
         callerInfo['edata'] = self.W_refSD
         if thismodel.usedq:
             callerInfo['dqvals'] = self.W_qSD
+        else:
+            del(callerInfo['dqvals'])
 
         RFO = reflect.ReflectivityFitObject(**callerInfo)
         
@@ -112,15 +117,17 @@ class dataObject(reflectdataset.ReflectDataset):
         if model is None:
             thismodel = self.model
         else:
-            thismodel = deepcopy(model)
+            thismodel = model
             
-        callerInfo = thismodel.__dict__.copy()
+        callerInfo = deepcopy(thismodel.__dict__)
         callerInfo['xdata'] = self.W_q
         callerInfo['ydata'] = self.W_ref
         callerInfo['edata'] = self.W_refSD
         if thismodel.usedq:
             callerInfo['dqvals'] = self.W_qSD  
-        
+        else:
+            del(callerInfo['dqvals'])
+
         RFO = reflect.ReflectivityFitObject(**callerInfo)
                                
         fit = RFO.model()
