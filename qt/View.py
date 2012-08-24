@@ -12,6 +12,7 @@ from matplotlib.figure import Figure
 import pyplatypus.dataset.DataStore as DataStore
 import pyplatypus.analysis.reflect as reflect
 import os.path
+from copy import deepcopy
 
 class MyMainWindow(QtGui.QMainWindow):
     def __init__(self, parent=None):
@@ -51,7 +52,16 @@ class MyMainWindow(QtGui.QMainWindow):
     @QtCore.Slot(QtGui.QDropEvent)
     def dropEvent(self, event):
         m = event.mimeData()
-        print m.urls()[0].toLocalFile()
+        urls = m.urls()
+        for url in urls:
+            try:
+                dataObject = self.dataStore.loadDataObject(url.toLocalFile())
+                self.add_dataObject_to_gui(dataObject)
+            except Exception:
+                #try loading a model file.
+                self.loadModel(url.toLocalFile())
+                
+
                 
     @QtCore.Slot(QtGui.QDragEnterEvent)
     def dragEnterEvent(self, event):
@@ -110,17 +120,23 @@ class MyMainWindow(QtGui.QMainWindow):
         if not ok:
             return
         
+        self.loadModel(modelFileName)
+            
+    def loadModel(self, fileName):
         themodel = DataStore.Model()
         
-        with open(modelFileName, 'Ur') as f:
+        with open(fileName, 'Ur') as f:
             themodel.load(f)
 
-        modelName = os.path.basename(modelFileName)        
+        modelName = os.path.basename(fileName)
+        if os.path.basename(modelName) not in self.models:   
+            self.ui.model_comboBox.addItem(modelName)
+
         self.models[os.path.basename(modelName)] = themodel
-        self.ui.model_comboBox.addItem(modelName)
-        self.gui_from_parameters(themodel.parameters, themodel.fitted_parameters)
-        
-        
+        if self.ui.model_comboBox.count() == 1:
+            self.ui.model_comboBox.setCurrentIndex(0)
+            self.gui_from_parameters(themodel.parameters, themodel.fitted_parameters)
+            self.update_gui_modelChanged()
     
     @QtCore.Slot()
     def on_actionRefresh_Datasets_triggered(self):
@@ -147,9 +163,10 @@ class MyMainWindow(QtGui.QMainWindow):
         self.ui.statusbar.showMessage('fitting')
         self.current_dataset.do_a_fit(model = self.theoretical.model)
         self.ui.statusbar.clearMessage()
-            
+        
+        
         self.theoretical.model.parameters = np.copy(self.current_dataset.model.parameters)
-        self.models[self.current_dataset.name] = self.current_dataset.model
+        self.models['coef_' + self.current_dataset.name] = self.current_dataset.model
         
         self.gui_from_parameters(self.theoretical.model.parameters, self.theoretical.model.fitted_parameters)
         
@@ -169,9 +186,9 @@ class MyMainWindow(QtGui.QMainWindow):
                                                      label = 'sld_' + self.current_dataset.name)[0]
         
         
-        if self.ui.model_comboBox.findText(self.current_dataset.name) < 0:
-            self.ui.model_comboBox.addItem(self.current_dataset.name)
-            self.ui.model_comboBox.setCurrentIndex(self.ui.model_comboBox.findText(self.current_dataset.name))
+        if self.ui.model_comboBox.findText('coef_' + self.current_dataset.name) < 0:
+            self.ui.model_comboBox.addItem('coef_' + self.current_dataset.name)
+            self.ui.model_comboBox.setCurrentIndex(self.ui.model_comboBox.findText('coef_' + self.current_dataset.name))
         self.update_gui_modelChanged()
         
         
@@ -183,23 +200,33 @@ class MyMainWindow(QtGui.QMainWindow):
         self.current_dataset = self.dataStore.dataObjects[arg_1]
         self.update_gui_modelChanged()
 
-               
+    
+    @QtCore.Slot(unicode)
+#     def on_model_comboBox_highlighted(self, arg_1):
+#         """
+#         model selection changed, update view with parameters from model.
+#         """
+#         self.select_a_model(arg_1)
+                             
     @QtCore.Slot(unicode)
     def on_model_comboBox_currentIndexChanged(self, arg_1):
         """
         model selection changed, update view with parameters from model.
         """
-        
+        self.select_a_model(arg_1)        
+    
+    def select_a_model(self, arg_1):
         try:
-            dataObject = self.dataStore.dataObjects[arg_1]
-            if dataObject.model.parameters is not None and dataObject.model.fitted_parameters is not None:
-                self.gui_from_parameters(dataObject.model.parameters, dataObject.model.fitted_parameters, resize = True)
-                #self.update_gui_modelChanged()
+            model = self.models[arg_1]
+            if model.parameters is not None and model.fitted_parameters is not None:
+                self.gui_from_parameters(model.parameters, model.fitted_parameters, resize = True)
+                self.theoretical.model = deepcopy(model)
+                self.update_gui_modelChanged()
         except KeyError:
             return
         except IndexError, AttributeError:
-            print dataObject.model.parameters, dataObject.model.fitted_parameters
-               
+            print model.parameters, model.fitted_parameters
+
     @QtCore.Slot(float)
     def on_res_SpinBox_valueChanged(self, arg_1):
         if arg_1 < 0.5:
