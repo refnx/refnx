@@ -179,5 +179,5 @@ class FitObject(object):
         de = DEsolver.DEsolver(self.fitted_limits, energy_for_fitting, self)
         thefit, chi2 = de.solve()
         self.parameters[self.fitted_parameters] = thefit
-        return self.parameters, chi2
+        return np.copy(self.parameters), chi2
         

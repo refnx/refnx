@@ -2,7 +2,7 @@ from __future__ import division
 import reflectdataset
 import numpy as np
 import pyplatypus.analysis.reflect as reflect
-import copy
+from copy import deepcopy
 
 class DataStore(object):
 
@@ -67,7 +67,7 @@ class dataObject(reflectdataset.ReflectDataset):
         if model is None:
             thismodel = self.model
         else:
-            thismodel = model
+            thismodel = deepcopy(model)
 
         callerInfo = thismodel.__dict__.copy()
         callerInfo['xdata'] = self.W_q
@@ -89,7 +89,7 @@ class dataObject(reflectdataset.ReflectDataset):
         if model is None:
             thismodel = self.model
         else:
-            thismodel = model
+            thismodel = deepcopy(model)
         
         callerInfo = thismodel.__dict__.copy()
         callerInfo['xdata'] = self.W_q
@@ -112,7 +112,7 @@ class dataObject(reflectdataset.ReflectDataset):
         if model is None:
             thismodel = self.model
         else:
-            thismodel = model
+            thismodel = deepcopy(model)
             
         callerInfo = thismodel.__dict__.copy()
         callerInfo['xdata'] = self.W_q
