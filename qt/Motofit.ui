@@ -407,7 +407,10 @@
   </action>
   <action name="actionSave_Data">
    <property name="text">
-    <string>Save Data</string>
+    <string>Save Fit</string>
+   </property>
+   <property name="shortcut">
+    <string>Meta+E</string>
    </property>
   </action>
   <action name="actionSave_Model">
