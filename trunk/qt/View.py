@@ -14,7 +14,7 @@ import pyplatypus.dataset.DataStore as DataStore
 import pyplatypus.analysis.reflect as reflect
 import os.path
 from copy import deepcopy
-import cPickle
+import pickle
 
 class MyMainWindow(QtGui.QMainWindow):
     def __init__(self, parent=None):
@@ -50,6 +50,11 @@ class MyMainWindow(QtGui.QMainWindow):
 
         self.gui_from_parameters(self.theoretical.model.parameters, self.theoretical.model.fitted_parameters, resize=False)
         self.redraw_dataObject_graphs([self.theoretical])
+
+    def __saveState(self, f):
+        state = [self.dataStore, self.models, self.current_dataset.name]
+        pickle.dump(self.state, f, -1)
+
     
     @QtCore.Slot(QtGui.QDropEvent)
     def dropEvent(self, event):

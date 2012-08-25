@@ -2,7 +2,8 @@ from __future__ import division
 import reflectdataset
 import numpy as np
 import pyplatypus.analysis.reflect as reflect
-from copy import deepcopy
+from copy import deepcopy, copy
+import matplotlib.artist as artist
 
 class DataStore(object):
 
@@ -42,9 +43,11 @@ class DataStore(object):
             
         
 class dataObject(reflectdataset.ReflectDataset):        
+    __requiredgraphproperties = ['lw', 'label', 'linestyle', 'fillstyle', 'marker', 'markersize', 'markeredgecolor', 'markerfacecolor', 'zorder']
+                                    
     def __init__(self, dataTuple = None, name = '_theoretical_', fname = None, parameters = None, fitted_parameters = None):
         super(dataObject, self).__init__(dataTuple = dataTuple)
-
+        
         self.name = '_theoretical_'
         
         if fname is not None:
@@ -60,9 +63,38 @@ class dataObject(reflectdataset.ReflectDataset):
         self.sld_profile = None
         
         self.line2D = None
+        self.line2D_properties = {}
+        
         self.line2Dfit = None
+        self.line2Dfit_properties = {}
+
         self.line2Dsld_profile = None
-    
+        self.line2Dsld_profile_properties = {}
+        
+    def __getstate__(self):
+        self.__save_graph_properties()
+        d = copy(self.__dict__)
+        d['line2Dfit'] = None
+        d['line2D'] = None
+        d['line2Dsld_profile'] = None
+        del(d['fit'])
+        return d
+        
+        
+    def __save_graph_properties(self):
+        if self.line2D:
+            for key in self.__requiredgraphproperties:
+                self.line2D_properties[key] = artist.getp(self.line2D, key)
+
+        if self.line2Dfit:
+            for key in self.__requiredgraphproperties:
+                self.line2Dfit_properties[key] = artist.getp(self.line2Dfit, key)
+            
+        if self.line2Dsld_profile:
+            for key in self.__requiredgraphproperties:
+                self.line2Dsld_profile_properties[key] = artist.getp(self.line2Dsld_profile, key)
+
+        
     def do_a_fit(self, model = None):
         if model is None:
             thismodel = self.model
