@@ -4,18 +4,31 @@ import numpy as np
 import pyplatypus.analysis.reflect as reflect
 from copy import deepcopy, copy
 import matplotlib.artist as artist
+from PySide import QtGui, QtCore
 
-class DataStore(object):
+class DataStore(QtCore.QAbstractListModel):
 
-    def __init__(self):
+    def __init__(self, parent = None):
+        super(DataStore, self).__init__(parent)
         self.dataObjects = {}
         self.numDataObjects = 0
-        return
+        self.names = []
+    
+    def rowCount(self, parent = QtCore.QModelIndex()):
+        #don't want to return '_theoretical_'
+        return self.numDataObjects - 1
+        
+    def data(self, index, role=QtCore.Qt.DisplayRole):
+        if role == QtCore.Qt.DisplayRole:
+            return self.names[index.row()]
         
     def addDataObject(self, dataObject):
         self.dataObjects[dataObject.name] = dataObject
+        if dataObject.name != '_theoretical_':
+            self.names.append(dataObject.name)
         self.numDataObjects += 1
-        
+        self.dataChanged.emit(QtCore.QModelIndex(),QtCore.QModelIndex())
+                
     def loadDataObject(self, filename):
         TdataObject = dataObject()
         with open(filename, 'Ur') as f:
@@ -28,6 +41,7 @@ class DataStore(object):
         TdataObject.W_ref = np.delete(TdataObject.W_ref, np.where(TdataObject.W_ref < 0))
         
         self.addDataObject(TdataObject)
+
         return TdataObject
                       
     def getDataObject(self, name):
@@ -145,7 +159,6 @@ class dataObject(reflectdataset.ReflectDataset):
         return energy
 
     def evaluate_model(self, model = None, store = False):   
-        
         if model is None:
             thismodel = self.model
         else:
@@ -170,7 +183,27 @@ class dataObject(reflectdataset.ReflectDataset):
             self.sld_profile = sld_profile
 
         return fit, fit - self.W_ref, sld_profile
-            
+
+class ModelStore(QtCore.QAbstractListModel):
+    def __init__(self, parent = None):
+        super(ModelStore, self).__init__(parent)
+        self.models = {}
+        self.names = []
+    
+    def rowCount(self, parent = QtCore.QModelIndex()):
+        #don't want to return '_theoretical_'
+        return len(self.models.keys())
+        
+    def data(self, index, role=QtCore.Qt.DisplayRole):
+        if role == QtCore.Qt.DisplayRole:
+            return self.names[index.row()]
+        
+    def addModel(self, model, modelName):
+        self.models[modelName] = model
+        if modelName not in self.names:
+            self.names.append(modelName)
+        self.dataChanged.emit(QtCore.QModelIndex(),QtCore.QModelIndex())
+                           
 class Model(object):
     def __init__(self, parameters = None,
                     fitted_parameters = None,

@@ -24,7 +24,7 @@ class MyMainWindow(QtGui.QMainWindow):
         self.errorHandler = QtGui.QErrorMessage()
         self.dataStore = DataStore.DataStore()
         self.current_dataset = None
-        self.models = {}
+        self.modelStore = DataStore.ModelStore()
         self.modifyGui()
         
         parameters = np.array([1, 1.0, 0, 0, 2.07, 0, 1e-7, 3, 25, 3.47, 0, 3])
@@ -38,7 +38,8 @@ class MyMainWindow(QtGui.QMainWindow):
         
         self.current_dataset = None
         self.theoretical = DataStore.dataObject(dataTuple = dataTuple, fitted_parameters = fitted_parameters, parameters = parameters)
-        self.models['theoretical'] = self.theoretical.model
+        self.modelStore.addModel(self.theoretical.model, 'theoretical')
+        
         self.theoretical.evaluate_model(store = True)
         self.dataStore.addDataObject(self.theoretical)
         self.theoretical.line2Dsld_profile = self.sldgraphs.axes[0].plot(self.theoretical.sld_profile[0],
@@ -50,9 +51,11 @@ class MyMainWindow(QtGui.QMainWindow):
 
         self.gui_from_parameters(self.theoretical.model.parameters, self.theoretical.model.fitted_parameters, resize=False)
         self.redraw_dataObject_graphs([self.theoretical])
-
+        self.ui.dataset_comboBox.setModel(self.dataStore)
+        self.ui.model_comboBox.setModel(self.modelStore)
+        
     def __saveState(self, f):
-        state = [self.dataStore, self.models, self.current_dataset.name]
+        state = [self.dataStore, self.modelStore, self.current_dataset.name]
         pickle.dump(self.state, f, -1)
 
     
@@ -98,21 +101,20 @@ class MyMainWindow(QtGui.QMainWindow):
                                                                       label = dataObject.name)
         dataObject.line2D = lineInstance[0]
         self.reflectivitygraphs.draw()
-        self.ui.dataset_comboBox.addItem(dataObject.name)
+        if self.dataStore.rowCount() == 1:
+            self.ui.dataset_comboBox.setCurrentIndex(0)
 
     @QtCore.Slot()
     def on_actionSave_Model_triggered(self):
         #save a model
         #which model are you saving?
-        listofmodels = []
-        for key in self.models:
-            listofmodels.append(key)
+        listofmodels = self.modelStore.names
         
         which_model, ok = QtGui.QInputDialog.getItem(self, "Which model did you want to save?", "model", listofmodels, editable=False)
         if not ok:
             return
             
-        themodel = self.models[which_model]
+        themodel = self.modelStore.models[which_model]
         modelFileName, ok = QtGui.QFileDialog.getSaveFileName(self, caption = 'Save model as:', dir=which_model)
         if not ok:
             return
@@ -158,14 +160,10 @@ class MyMainWindow(QtGui.QMainWindow):
             themodel.load(f)
 
         modelName = os.path.basename(fileName)
-        if os.path.basename(modelName) not in self.models:   
-            self.ui.model_comboBox.addItem(modelName)
 
-        self.models[os.path.basename(modelName)] = themodel
+        self.modelStore.addModel(themodel, os.path.basename(modelName))
         if self.ui.model_comboBox.count() == 1:
             self.ui.model_comboBox.setCurrentIndex(-1)
-#             self.gui_from_parameters(themodel.parameters, themodel.fitted_parameters)
-#             self.update_gui_modelChanged()
     
     @QtCore.Slot()
     def on_actionRefresh_Datasets_triggered(self):
@@ -195,7 +193,7 @@ class MyMainWindow(QtGui.QMainWindow):
         
         
         self.theoretical.model.parameters = np.copy(self.current_dataset.model.parameters)
-        self.models['coef_' + self.current_dataset.name] = self.current_dataset.model
+        self.modelStore.addModel(self.current_dataset.model, 'coef_' + self.current_dataset.name)
         
         self.gui_from_parameters(self.theoretical.model.parameters, self.theoretical.model.fitted_parameters)
         
@@ -216,11 +214,10 @@ class MyMainWindow(QtGui.QMainWindow):
         
         
         if self.ui.model_comboBox.findText('coef_' + self.current_dataset.name) < 0:
-            self.ui.model_comboBox.addItem('coef_' + self.current_dataset.name)
             self.ui.model_comboBox.setCurrentIndex(self.ui.model_comboBox.findText('coef_' + self.current_dataset.name))
         self.update_gui_modelChanged()
         
-        
+                      
     @QtCore.Slot(unicode)
     def on_dataset_comboBox_currentIndexChanged(self, arg_1):
         """
@@ -238,7 +235,7 @@ class MyMainWindow(QtGui.QMainWindow):
     
     def select_a_model(self, arg_1):
         try:
-            model = self.models[arg_1]
+            model = self.modelStore.models[arg_1]
             if model.parameters is not None and model.fitted_parameters is not None:
                 self.gui_from_parameters(model.parameters, model.fitted_parameters, resize = True)
                 self.theoretical.model = deepcopy(model)

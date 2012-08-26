@@ -192,6 +192,9 @@
         <layout class="QGridLayout" name="gridLayout_2">
          <item row="0" column="0">
           <widget class="QComboBox" name="dataset_comboBox">
+           <property name="focusPolicy">
+            <enum>Qt::StrongFocus</enum>
+           </property>
            <property name="currentIndex">
             <number>-1</number>
            </property>
@@ -289,6 +292,9 @@
              <bold>false</bold>
             </font>
            </property>
+           <property name="focusPolicy">
+            <enum>Qt::StrongFocus</enum>
+           </property>
            <property name="inputMethodHints">
             <set>Qt::ImhNone</set>
            </property>
@@ -330,6 +336,9 @@
              <weight>50</weight>
              <bold>false</bold>
             </font>
+           </property>
+           <property name="focusPolicy">
+            <enum>Qt::StrongFocus</enum>
            </property>
            <property name="rowCount">
             <number>3</number>
