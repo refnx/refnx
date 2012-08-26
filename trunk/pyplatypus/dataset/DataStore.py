@@ -59,7 +59,7 @@ class DataStore(QtCore.QAbstractListModel):
 class dataObject(reflectdataset.ReflectDataset):        
     __requiredgraphproperties = ['lw', 'label', 'linestyle', 'fillstyle', 'marker', 'markersize', 'markeredgecolor', 'markerfacecolor', 'zorder']
                                     
-    def __init__(self, dataTuple = None, name = '_theoretical_', fname = None, parameters = None, fitted_parameters = None):
+    def __init__(self, dataTuple = None, name = '_theoretical_', fname = None):
         super(dataObject, self).__init__(dataTuple = dataTuple)
         
         self.name = '_theoretical_'
@@ -70,8 +70,6 @@ class dataObject(reflectdataset.ReflectDataset):
         
         self.fit = None
         self.residuals = None
-        self.model = Model(parameters = parameters, 
-                            fitted_parameters = fitted_parameters)
         
         self.chi2 = -1
         self.sld_profile = None
@@ -109,13 +107,9 @@ class dataObject(reflectdataset.ReflectDataset):
                 self.line2Dsld_profile_properties[key] = artist.getp(self.line2Dsld_profile, key)
 
         
-    def do_a_fit(self, model = None):
-        if model is None:
-            thismodel = self.model
-        else:
-            thismodel = model
+    def do_a_fit(self, model):
 
-        callerInfo = deepcopy(thismodel.__dict__)
+        callerInfo = deepcopy(model.__dict__)
         callerInfo['xdata'] = self.W_q
         callerInfo['ydata'] = self.W_ref
         callerInfo['edata'] = self.W_refSD
@@ -125,7 +119,7 @@ class dataObject(reflectdataset.ReflectDataset):
             del(callerInfo['dqvals'])
 
 
-        self.model.fitted_parameters = np.copy(thismodel.fitted_parameters)        
+        model.fitted_parameters = np.copy(model.fitted_parameters)        
         
         RFO = reflect.ReflectivityFitObject(**callerInfo)
         self.model.parameters, self.chi2 = RFO.fit()
@@ -134,13 +128,9 @@ class dataObject(reflectdataset.ReflectDataset):
         self.sld_profile = RFO.sld_profile()
         
                   
-    def evaluate_chi2(self, model = None, store = False):
-        if model is None:
-            thismodel = self.model
-        else:
-            thismodel = model
+    def evaluate_chi2(self, model, store = False):
         
-        callerInfo = deepcopy(thismodel.__dict__)
+        callerInfo = deepcopy(model.__dict__)
         callerInfo['xdata'] = self.W_q
         callerInfo['ydata'] = self.W_ref
         callerInfo['edata'] = self.W_refSD
@@ -158,13 +148,9 @@ class dataObject(reflectdataset.ReflectDataset):
                 
         return energy
 
-    def evaluate_model(self, model = None, store = False):   
-        if model is None:
-            thismodel = self.model
-        else:
-            thismodel = model
+    def evaluate_model(self, model, store = False):   
             
-        callerInfo = deepcopy(thismodel.__dict__)
+        callerInfo = deepcopy(model.__dict__)
         callerInfo['xdata'] = self.W_q
         callerInfo['ydata'] = self.W_ref
         callerInfo['edata'] = self.W_refSD
