@@ -37,7 +37,7 @@ class MyMainWindow(QtGui.QMainWindow):
         dataTuple = (tempq, tempr, tempe, tempdq)
         
         self.current_dataset = None
-        self.theoretical = DataStore.dataObject(dataTuple = dataTuple, fitted_parameters = fitted_parameters, parameters = parameters)
+        self.theoretical = DataStore.dataObject(dataTuple = dataTuple)
         self.modelStore.addModel(self.theoretical.model, 'theoretical')
         
         self.theoretical.evaluate_model(store = True)
@@ -193,6 +193,15 @@ class MyMainWindow(QtGui.QMainWindow):
         
         
         self.theoretical.model.parameters = np.copy(self.current_dataset.model.parameters)
+#        self.modelStore.models['theoretical'].parameters = self.theoretical.model.parameters
+#        print self.theoretical.model.parameters
+        print 'theoretical', self.theoretical.model
+        print 'theoretical in datastore', self.modelStore.models['theoretical']
+        print 'current dataset', self.current_dataset.model
+        print self.modelStore.models
+        
+#        print self.modelStore.models['theoretical'].parameters
+        
         self.modelStore.addModel(self.current_dataset.model, 'coef_' + self.current_dataset.name)
         
         self.gui_from_parameters(self.theoretical.model.parameters, self.theoretical.model.fitted_parameters)
