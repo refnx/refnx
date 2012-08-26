@@ -113,16 +113,13 @@ class dataObject(reflectdataset.ReflectDataset):
         callerInfo['xdata'] = self.W_q
         callerInfo['ydata'] = self.W_ref
         callerInfo['edata'] = self.W_refSD
-        if thismodel.usedq:
+        if model.usedq:
             callerInfo['dqvals'] = self.W_qSD
         else:
             del(callerInfo['dqvals'])
-
-
-        model.fitted_parameters = np.copy(model.fitted_parameters)        
         
         RFO = reflect.ReflectivityFitObject(**callerInfo)
-        self.model.parameters, self.chi2 = RFO.fit()
+        model.parameters, self.chi2 = RFO.fit()
         self.fit = RFO.model()
         self.residuals = self.fit - self.W_ref
         self.sld_profile = RFO.sld_profile()
@@ -134,13 +131,12 @@ class dataObject(reflectdataset.ReflectDataset):
         callerInfo['xdata'] = self.W_q
         callerInfo['ydata'] = self.W_ref
         callerInfo['edata'] = self.W_refSD
-        if thismodel.usedq:
+        if model.usedq:
             callerInfo['dqvals'] = self.W_qSD
         else:
             del(callerInfo['dqvals'])
 
         RFO = reflect.ReflectivityFitObject(**callerInfo)
-        
         
         energy = RFO.energy() / self.numpoints
         if store:
@@ -154,7 +150,7 @@ class dataObject(reflectdataset.ReflectDataset):
         callerInfo['xdata'] = self.W_q
         callerInfo['ydata'] = self.W_ref
         callerInfo['edata'] = self.W_refSD
-        if thismodel.usedq:
+        if model.usedq:
             callerInfo['dqvals'] = self.W_qSD  
         else:
             del(callerInfo['dqvals'])
@@ -197,8 +193,8 @@ class Model(object):
                       useerrors = True,
                        usedq = True,
                         costfunction = reflect.costfunction_logR_noweight):
-        self.parameters = parameters
-        self.fitted_parameters = fitted_parameters
+        self.parameters = np.copy(parameters)
+        self.fitted_parameters = np.copy(fitted_parameters)
         self.useerrors = useerrors
         self.usedq = usedq
         self.limits = limits

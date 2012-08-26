@@ -38,9 +38,12 @@ class MyMainWindow(QtGui.QMainWindow):
         
         self.current_dataset = None
         self.theoretical = DataStore.dataObject(dataTuple = dataTuple)
-        self.modelStore.addModel(self.theoretical.model, 'theoretical')
+
+        theoreticalmodel = DataStore.Model(parameters=parameters, fitted_parameters = fitted_parameters)
+        self.modelStore.addModel(theoreticalmodel, 'theoretical')
         
-        self.theoretical.evaluate_model(store = True)
+        self.theoretical.evaluate_model(theoreticalmodel, store = True)
+        
         self.dataStore.addDataObject(self.theoretical)
         self.theoretical.line2Dsld_profile = self.sldgraphs.axes[0].plot(self.theoretical.sld_profile[0],
                                                    self.theoretical.sld_profile[1],
@@ -49,7 +52,7 @@ class MyMainWindow(QtGui.QMainWindow):
                                                    self.theoretical.fit,
                                                     linestyle='-', lw=2, label = 'theoretical')[0]
 
-        self.gui_from_parameters(self.theoretical.model.parameters, self.theoretical.model.fitted_parameters, resize=False)
+        self.gui_from_parameters(theoreticalmodel.parameters, theoreticalmodel.fitted_parameters, resize=False)
         self.redraw_dataObject_graphs([self.theoretical])
         self.ui.dataset_comboBox.setModel(self.dataStore)
         self.ui.model_comboBox.setModel(self.modelStore)
@@ -185,26 +188,19 @@ class MyMainWindow(QtGui.QMainWindow):
         """
         if self.current_dataset is None:
             return
-            
-        self.theoretical.model.parameters, self.theoretical.model.fitted_parameters = self.gui_to_parameters()
+        
+        theoreticalmodel = self.modelStore.models['theoretical']
+        
+        theoreticalmodel.parameters, theoreticalmodel.fitted_parameters = self.gui_to_parameters()
         self.ui.statusbar.showMessage('fitting')
-        self.current_dataset.do_a_fit(model = self.theoretical.model)
+        self.current_dataset.do_a_fit(theoreticalmodel)
         self.ui.statusbar.clearMessage()
         
+        newmodel = DataStore.Model(parameters = theoreticalmodel.parameters, fitted_parameters = theoreticalmodel.fitted_parameters)
+                
+        self.modelStore.addModel(newmodel, 'coef_' + self.current_dataset.name)
         
-        self.theoretical.model.parameters = np.copy(self.current_dataset.model.parameters)
-#        self.modelStore.models['theoretical'].parameters = self.theoretical.model.parameters
-#        print self.theoretical.model.parameters
-        print 'theoretical', self.theoretical.model
-        print 'theoretical in datastore', self.modelStore.models['theoretical']
-        print 'current dataset', self.current_dataset.model
-        print self.modelStore.models
-        
-#        print self.modelStore.models['theoretical'].parameters
-        
-        self.modelStore.addModel(self.current_dataset.model, 'coef_' + self.current_dataset.name)
-        
-        self.gui_from_parameters(self.theoretical.model.parameters, self.theoretical.model.fitted_parameters)
+        self.gui_from_parameters(theoreticalmodel.parameters, theoreticalmodel.fitted_parameters)
         
         
         if self.current_dataset.line2Dfit is None:
@@ -247,7 +243,6 @@ class MyMainWindow(QtGui.QMainWindow):
             model = self.modelStore.models[arg_1]
             if model.parameters is not None and model.fitted_parameters is not None:
                 self.gui_from_parameters(model.parameters, model.fitted_parameters, resize = True)
-                self.theoretical.model = deepcopy(model)
                 self.update_gui_modelChanged()
         except KeyError:
             return
@@ -269,11 +264,12 @@ class MyMainWindow(QtGui.QMainWindow):
         want to weight by error bars, recalculate chi2
         """
         
+        theoreticalmodel = self.modelStore.models['theoretical']
         if arg_1:
-            self.theoretical.model.useerrors = True
-            self.theoretical.model.costfunction = reflect.costfunction_logR_weight
+            theoreticalmodel.useerrors = True
+            theoreticalmodel.costfunction = reflect.costfunction_logR_weight
         else:
-            self.theoretical.model.costfunction = reflect.costfunction_logR_noweight
+            theoreticalmodel.costfunction = reflect.costfunction_logR_noweight
             
         self.update_gui_modelChanged()
             
@@ -281,8 +277,10 @@ class MyMainWindow(QtGui.QMainWindow):
     def on_use_dqwave_checkbox_stateChanged(self, arg_1):
         """
         """
+        theoreticalmodel = self.modelStore.models['theoretical']
+        
         if arg_1:
-            self.theoretical.model.usedq = True
+            theoreticalmodel.usedq = True
         
 
     
@@ -297,6 +295,8 @@ class MyMainWindow(QtGui.QMainWindow):
         if row < 0 or col < 0:
             return
         
+        theoreticalmodel = self.modelStore.models['theoretical']
+        
         if row == 0 and col == 0:
             validator = QtGui.QIntValidator()
             voutput = validator.validate(arg_1.text(), 1)
@@ -307,8 +307,8 @@ class MyMainWindow(QtGui.QMainWindow):
                 if oldlayers == newlayers:
                     return
                     
-                parameters = self.theoretical.model.parameters
-                fitted_parameters = self.theoretical.model.fitted_parameters
+                parameters = theoreticalmodel.parameters
+                fitted_parameters = theoreticalmodel.fitted_parameters
                 #you have to defocus from layerparams because when you rejig the layering
                 #it triggers on_layerparams_tableWidget_itemChanged
                 
@@ -362,8 +362,8 @@ class MyMainWindow(QtGui.QMainWindow):
                                      fitted_parameters)
                         
                 self.gui_from_parameters(parameters, fitted_parameters, resize = True)                                    
-                self.theoretical.model.parameters = parameters
-                self.theoretical.model.fitted_parameters = fitted_parameters
+                theoreticalmodel.parameters = parameters
+                theoreticalmodel.fitted_parameters = fitted_parameters
             else:
                 self.errorHandler.showMessage("Number of layers must be integer > 0")
                 return
@@ -376,7 +376,7 @@ class MyMainWindow(QtGui.QMainWindow):
                 print arg_1.text()
                 self.errorHandler.showMessage("values entered must be numeric")
                 return
-        self.theoretical.model.parameters, self.theoretical.model.fitted_parameters = self.gui_to_parameters()
+        theoreticalmodel.parameters, theoreticalmodel.fitted_parameters = self.gui_to_parameters()
         self.update_gui_modelChanged()
 
  
@@ -389,6 +389,9 @@ class MyMainWindow(QtGui.QMainWindow):
         col = self.ui.layerparams_tableWidget.currentColumn()
         numrows = self.ui.layerparams_tableWidget.rowCount()
         numcols = self.ui.layerparams_tableWidget.columnCount()
+        
+        theoreticalmodel = self.modelStore.models['theoretical']
+        
         if row < 0 or col < 0:
             return
             
@@ -397,7 +400,7 @@ class MyMainWindow(QtGui.QMainWindow):
             return
         validator = QtGui.QDoubleValidator()
         if validator.validate(arg_1.text(), 1)[0] == QtGui.QValidator.State.Acceptable:
-            self.theoretical.model.parameters, self.theoretical.model.fitted_parameters = self.gui_to_parameters()
+            theoreticalmodel.parameters, theoreticalmodel.fitted_parameters = self.gui_to_parameters()
             self.update_gui_modelChanged()
         else:
             print arg_1.text(), row, col
@@ -561,10 +564,11 @@ class MyMainWindow(QtGui.QMainWindow):
         
                 
     def update_gui_modelChanged(self, store = False):
-        self.theoretical.evaluate_model(store = True)
+        theoreticalmodel = self.modelStore.models['theoretical']
+        self.theoretical.evaluate_model(theoreticalmodel, store = True)
 
         if self.current_dataset is not None:
-            energy = self.current_dataset.evaluate_chi2(model = self.theoretical.model)
+            energy = self.current_dataset.evaluate_chi2(theoreticalmodel)
             self.ui.lineEdit.setText(str(energy))     
         
         self.redraw_dataObject_graphs([self.theoretical, self.current_dataset])
