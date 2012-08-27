@@ -27,16 +27,37 @@ class DataStore(QtCore.QAbstractTableModel):
         self.endInsertRows()
         return True
         
+    def flags(self, index):
+        if index.column() == 1:
+            return (QtCore.Qt.ItemIsUserCheckable |  QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable)
+        else:
+            return  QtCore.Qt.NoItemFlags
+            
+    def setData(self, index, value, role = QtCore.Qt.EditRole):
+        if index.column() == 1:
+            if value == QtCore.Qt.Checked:
+                self.dataObjects[self.names[index.row()]].visible = True
+            else:
+                self.dataObjects[self.names[index.row()]].visible = False
+                            
+        self.dataChanged.emit(QtCore.QModelIndex(),QtCore.QModelIndex())
         
+        return True
+                
     def data(self, index, role=QtCore.Qt.DisplayRole):
         if not index.isValid():
             return None
-
+                
         if role == QtCore.Qt.DisplayRole:
             if index.column() == 0:
                 return self.names[index.row()]
-            if index.column == 1:
-                return 1
+        
+        if role == QtCore.Qt.CheckStateRole:
+             if index.column() == 1:
+                if self.dataObjects[self.names[index.row()]].visible:
+                    return QtCore.Qt.Checked
+                else:
+                    return QtCore.Qt.Unchecked
                 
     def headerData(self, section, orientation, role=QtCore.Qt.DisplayRole):
         """ Set the headers to be displayed. """
@@ -98,6 +119,8 @@ class dataObject(reflectdataset.ReflectDataset):
         if fname is not None:
             with open(fname, 'Ur') as f:
                 self.load(f)
+        
+        self.visible = True
         
         self.fit = None
         self.residuals = None
