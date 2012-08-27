@@ -20,16 +20,40 @@ class DataStore(QtCore.QAbstractTableModel):
         
     def columnCount(self, parent = QtCore.QModelIndex()):
         return 1
+    
+    def insertRows(self, position, rows=1, index=QtCore.QModelIndex()):
+        """ Insert a row into the model. """
+        self.beginInsertRows(QtCore.QModelIndex(), position, position + rows - 1)
+        self.endInsertRows()
+        return True
+        
         
     def data(self, index, role=QtCore.Qt.DisplayRole):
+        if not index.isValid():
+            return None
+
+        print index.row(), index.column()
         if role == QtCore.Qt.DisplayRole:
             return self.names[index.row()]
+    
+    def headerData(self, section, orientation, role=QtCore.Qt.DisplayRole):
+        """ Set the headers to be displayed. """
+        if role != QtCore.Qt.DisplayRole:
+            return None
+
+        if orientation == QtCore.Qt.Horizontal:
+            if section == 0:
+                return 'name'
         
+        return None
+            
     def addDataObject(self, dataObject):
         self.dataObjects[dataObject.name] = dataObject
         if dataObject.name != '_theoretical_':
             self.names.append(dataObject.name)
         self.numDataObjects += 1
+        self.insertRows(self.numDataObjects - 1)
+        
         self.dataChanged.emit(QtCore.QModelIndex(),QtCore.QModelIndex())
                 
     def loadDataObject(self, filename):

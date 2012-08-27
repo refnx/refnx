@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'qt/Motofit.ui'
 #
-# Created: Fri Aug 24 15:13:41 2012
+# Created: Mon Aug 27 19:07:28 2012
 #      by: pyside-uic 0.2.13 running on PySide 1.1.1
 #
 # WARNING! All changes made in this file will be lost!
@@ -95,6 +95,7 @@ class Ui_MainWindow(object):
         self.gridLayout_2 = QtGui.QGridLayout(self.tab)
         self.gridLayout_2.setObjectName("gridLayout_2")
         self.dataset_comboBox = QtGui.QComboBox(self.tab)
+        self.dataset_comboBox.setFocusPolicy(QtCore.Qt.StrongFocus)
         self.dataset_comboBox.setObjectName("dataset_comboBox")
         self.gridLayout_2.addWidget(self.dataset_comboBox, 0, 0, 1, 1)
         self.do_fit_button = QtGui.QPushButton(self.tab)
@@ -132,13 +133,14 @@ class Ui_MainWindow(object):
         font.setWeight(50)
         font.setBold(False)
         self.baseparams_tableWidget.setFont(font)
+        self.baseparams_tableWidget.setFocusPolicy(QtCore.Qt.StrongFocus)
         self.baseparams_tableWidget.setInputMethodHints(QtCore.Qt.ImhNone)
         self.baseparams_tableWidget.setRowCount(1)
         self.baseparams_tableWidget.setColumnCount(3)
         self.baseparams_tableWidget.setObjectName("baseparams_tableWidget")
         self.baseparams_tableWidget.setColumnCount(3)
         self.baseparams_tableWidget.setRowCount(1)
-        self.baseparams_tableWidget.horizontalHeader().setVisible(True)
+        self.baseparams_tableWidget.horizontalHeader().setVisible(False)
         self.baseparams_tableWidget.horizontalHeader().setHighlightSections(True)
         self.baseparams_tableWidget.horizontalHeader().setStretchLastSection(True)
         self.baseparams_tableWidget.verticalHeader().setVisible(False)
@@ -151,6 +153,8 @@ class Ui_MainWindow(object):
         font.setWeight(50)
         font.setBold(False)
         self.layerparams_tableWidget.setFont(font)
+        self.layerparams_tableWidget.setFocusPolicy(QtCore.Qt.StrongFocus)
+        self.layerparams_tableWidget.setEditTriggers(QtGui.QAbstractItemView.AnyKeyPressed|QtGui.QAbstractItemView.DoubleClicked|QtGui.QAbstractItemView.EditKeyPressed|QtGui.QAbstractItemView.SelectedClicked)
         self.layerparams_tableWidget.setRowCount(3)
         self.layerparams_tableWidget.setColumnCount(4)
         self.layerparams_tableWidget.setObjectName("layerparams_tableWidget")
@@ -169,6 +173,11 @@ class Ui_MainWindow(object):
         self.tabWidget.addTab(self.tab, "")
         self.tab_2 = QtGui.QWidget()
         self.tab_2.setObjectName("tab_2")
+        self.gridLayout_6 = QtGui.QGridLayout(self.tab_2)
+        self.gridLayout_6.setObjectName("gridLayout_6")
+        self.dataOptions_tableView = QtGui.QTableView(self.tab_2)
+        self.dataOptions_tableView.setObjectName("dataOptions_tableView")
+        self.gridLayout_6.addWidget(self.dataOptions_tableView, 0, 0, 1, 1)
         self.tabWidget.addTab(self.tab_2, "")
         self.tab_3 = QtGui.QWidget()
         self.tab_3.setObjectName("tab_3")
@@ -213,7 +222,7 @@ class Ui_MainWindow(object):
 
         self.retranslateUi(MainWindow)
         self.graphs.setCurrentIndex(0)
-        self.tabWidget.setCurrentIndex(0)
+        self.tabWidget.setCurrentIndex(1)
         self.dataset_comboBox.setCurrentIndex(-1)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
@@ -237,8 +246,8 @@ class Ui_MainWindow(object):
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_3), QtGui.QApplication.translate("MainWindow", "Global Fitting", None, QtGui.QApplication.UnicodeUTF8))
         self.actionLoad_Data.setText(QtGui.QApplication.translate("MainWindow", "Load Data", None, QtGui.QApplication.UnicodeUTF8))
         self.actionLoad_Data.setShortcut(QtGui.QApplication.translate("MainWindow", "Meta+O", None, QtGui.QApplication.UnicodeUTF8))
-        self.actionSave_Data.setText(QtGui.QApplication.translate("MainWindow", "Save Data", None, QtGui.QApplication.UnicodeUTF8))
-        self.actionSave_Data.setShortcut(QtGui.QApplication.translate("MainWindow", "Meta+P", None, QtGui.QApplication.UnicodeUTF8))
+        self.actionSave_Data.setText(QtGui.QApplication.translate("MainWindow", "Save Fit", None, QtGui.QApplication.UnicodeUTF8))
+        self.actionSave_Data.setShortcut(QtGui.QApplication.translate("MainWindow", "Meta+E", None, QtGui.QApplication.UnicodeUTF8))
         self.actionSave_Model.setText(QtGui.QApplication.translate("MainWindow", "Save Model", None, QtGui.QApplication.UnicodeUTF8))
         self.actionSave_Model.setShortcut(QtGui.QApplication.translate("MainWindow", "Meta+S", None, QtGui.QApplication.UnicodeUTF8))
         self.actionLoad_Model.setText(QtGui.QApplication.translate("MainWindow", "Load Model", None, QtGui.QApplication.UnicodeUTF8))
