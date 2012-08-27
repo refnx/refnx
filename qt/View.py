@@ -242,6 +242,7 @@ class MyMainWindow(QtGui.QMainWindow):
         if self.ui.model_comboBox.findText('coef_' + self.current_dataset.name) < 0:
             self.ui.model_comboBox.setCurrentIndex(self.ui.model_comboBox.findText('coef_' + self.current_dataset.name))
         self.update_gui_modelChanged()
+        self.redraw_dataObject_graphs([self.current_dataset], visible = self.current_dataset.visible)
         
                       
     @QtCore.Slot(unicode)
@@ -669,7 +670,7 @@ class MyMainWindow(QtGui.QMainWindow):
             energy = self.current_dataset.evaluate_chi2(theoreticalmodel)
             self.ui.lineEdit.setText(str(energy))     
         
-        self.redraw_dataObject_graphs([self.theoretical, self.current_dataset])
+        self.redraw_dataObject_graphs([self.theoretical])
         
             
 class MyReflectivityGraphs(FigureCanvas):
