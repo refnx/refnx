@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'qt/Motofit.ui'
 #
-# Created: Mon Aug 27 19:07:28 2012
+# Created: Mon Aug 27 19:53:14 2012
 #      by: pyside-uic 0.2.13 running on PySide 1.1.1
 #
 # WARNING! All changes made in this file will be lost!
@@ -177,6 +177,8 @@ class Ui_MainWindow(object):
         self.gridLayout_6.setObjectName("gridLayout_6")
         self.dataOptions_tableView = QtGui.QTableView(self.tab_2)
         self.dataOptions_tableView.setObjectName("dataOptions_tableView")
+        self.dataOptions_tableView.horizontalHeader().setCascadingSectionResizes(True)
+        self.dataOptions_tableView.horizontalHeader().setStretchLastSection(True)
         self.gridLayout_6.addWidget(self.dataOptions_tableView, 0, 0, 1, 1)
         self.tabWidget.addTab(self.tab_2, "")
         self.tab_3 = QtGui.QWidget()

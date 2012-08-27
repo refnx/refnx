@@ -24,6 +24,7 @@ class MyMainWindow(QtGui.QMainWindow):
         self.ui.setupUi(self)
         self.errorHandler = QtGui.QErrorMessage()
         self.dataStore = DataStore.DataStore()
+        self.dataStore.dataChanged.connect(self.dataObjects_dataChanged)
         self.current_dataset = None
         self.modelStore = DataStore.ModelStore()
         self.modifyGui()
@@ -66,7 +67,11 @@ class MyMainWindow(QtGui.QMainWindow):
         state = [self.dataStore, self.modelStore, self.current_dataset.name]
         pickle.dump(self.state, f, -1)
 
-    
+    def dataObjects_dataChanged(self, arg_1, arg_2):
+        print arg_1, arg_2
+        print 'wagga'
+
+
     @QtCore.Slot(QtGui.QDropEvent)
     def dropEvent(self, event):
         m = event.mimeData()
@@ -460,8 +465,8 @@ class MyMainWindow(QtGui.QMainWindow):
             print arg_1.text(), row, col
             self.errorHandler.showMessage("values entered must be numeric")
             return
-
-        
+    
+    
     @QtCore.Slot(int)
     def on_horizontalSlider_valueChanged(self, arg_1):
         c = self.currentCell
