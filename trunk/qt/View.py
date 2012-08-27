@@ -15,6 +15,7 @@ import pyplatypus.analysis.reflect as reflect
 import os.path
 from copy import deepcopy
 import pickle
+import math
 
 class MyMainWindow(QtGui.QMainWindow):
     def __init__(self, parent=None):
@@ -30,7 +31,7 @@ class MyMainWindow(QtGui.QMainWindow):
         parameters = np.array([1, 1.0, 0, 0, 2.07, 0, 1e-7, 3, 25, 3.47, 0, 3])
         fitted_parameters = np.array([1,2,3,4,5,6,7,8,9, 10, 11])
 
-        tempq = np.linspace(0.005, 0.5, num = 1000)
+        tempq = np.linspace(0.008, 0.5, num = 1000)
         tempr = np.ones_like(tempq)
         tempe = np.zeros_like(tempq)
         tempdq  = np.copy(tempq) * 5 / 100.
@@ -379,7 +380,49 @@ class MyMainWindow(QtGui.QMainWindow):
         theoreticalmodel.parameters, theoreticalmodel.fitted_parameters = self.gui_to_parameters()
         self.update_gui_modelChanged()
 
- 
+    def currentCellChanged(self, widget, row, col):
+        self.currentCell= {}
+        self.currentCell['widget'] = widget
+        self.currentCell['row'] = row
+        self.currentCell['col'] = col
+
+        try:
+            val = float(widget.item(row, col).text())
+        except ValueError:
+            return
+        except AttributeError: 
+            return
+            
+        if val < 0:
+            lowlim = 2 * val
+            hilim = 0
+        else:
+            lowlim = 0
+            hilim = 2 * val
+        self.currentCell['val'] = val
+        self.currentCell['lowlim'] = lowlim
+        self.currentCell['hilim'] = hilim
+        self.currentCell['readyToChange'] = True
+
+        
+
+    @QtCore.Slot(int, int, int, int)
+    def on_baseparams_tableWidget_currentCellChanged(self, row, col, prow, pcol):
+        self.currentCellChanged(self.ui.baseparams_tableWidget, row, col)
+
+            
+    @QtCore.Slot(int, int)
+    def on_baseparams_tableWidget_cellClicked(self, row, col):
+        self.currentCellChanged(self.ui.baseparams_tableWidget, row, col)
+
+    @QtCore.Slot(int, int)
+    def on_layerparams_tableWidget_cellClicked(self, row, col):
+        self.currentCellChanged(self.ui.layerparams_tableWidget, row, col)
+        
+    @QtCore.Slot(int, int, int, int)
+    def on_layerparams_tableWidget_currentCellChanged(self, row, col, prow, pcol):
+        self.currentCellChanged(self.ui.layerparams_tableWidget, row, col)
+        
     @QtCore.Slot(QtGui.QTableWidgetItem)
     def on_layerparams_tableWidget_itemChanged(self, arg_1):
         """
@@ -407,6 +450,40 @@ class MyMainWindow(QtGui.QMainWindow):
             self.errorHandler.showMessage("values entered must be numeric")
             return
 
+        
+    @QtCore.Slot(int)
+    def on_horizontalSlider_valueChanged(self, arg_1):
+        c = self.currentCell
+        try:
+            if not c['readyToChange']:
+                return
+                
+            if c['row'] == 0 and c['col'] == 0:
+                return
+            if c['widget'] is self.ui.layerparams_tableWidget:
+                if c['row'] == 0 and (c['col'] == 0 or c['col'] == 3):
+                    return
+                if c['row'] == self.ui.layerparams_tableWidget.rowCount() - 1 and c['col'] == 0 or c['col'] == 3:
+                    return
+            
+            val = c['lowlim'] + (arg_1 / 1000.) * math.fabs(c['lowlim'] - c['hilim'])
+                        
+            item = c['widget'].item(c['row'], c['col']).setText(str(val))
+        except AttributeError:
+            return
+        except KeyError:
+            return
+                
+    @QtCore.Slot()
+    def on_horizontalSlider_sliderReleased(self):
+        try:
+            self.currentCell['readyToChange'] = False
+            self.ui.horizontalSlider.setValue(499)
+            c = self.currentCell
+            self.currentCellChanged(c['widget'], c['row'], c['col'])
+        except ValueError:
+            return
+               
     def modifyGui(self):
         #add the plots
         self.sldgraphs = MySLDGraphs(self.ui.sld)
