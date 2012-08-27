@@ -249,6 +249,7 @@ class MyMainWindow(QtGui.QMainWindow):
         try:
             model = self.modelStore.models[arg_1]
             if model.parameters is not None and model.fitted_parameters is not None:
+                self.modelStore.models['theoretical'].parameters =  np.copy(model.parameters)
                 self.gui_from_parameters(model.parameters, model.fitted_parameters, resize = True)
                 self.update_gui_modelChanged()
         except KeyError:
@@ -633,8 +634,10 @@ class MyMainWindow(QtGui.QMainWindow):
                dataObject.line2D.set_data(dataObject.W_q, dataObject.W_ref)
             if dataObject.line2Dfit:
                dataObject.line2Dfit.set_data(dataObject.W_q, dataObject.fit)
+            if dataObject.line2Dresiduals:
+               dataObject.line2Dresiduals.set_data(dataObject.W_q, dataObject.residuals)
             if dataObject.line2Dsld_profile:
-                dataObject.line2Dsld_profile.set_data(dataObject.sld_profile[0], dataObject.sld_profile[1])
+               dataObject.line2Dsld_profile.set_data(dataObject.sld_profile[0], dataObject.sld_profile[1])
         
         self.sldgraphs.draw()    
         self.reflectivitygraphs.draw()
@@ -666,7 +669,7 @@ class MyReflectivityGraphs(FigureCanvas):
         
         #residual plot
         #, sharex=self.axes[0]
-        ax2 = self.figure.add_axes([0.1,0.02,0.85,0.12], sharex=ax, frame_on = False)
+        ax2 = self.figure.add_axes([0.1,0.04,0.85,0.14], sharex=ax, frame_on = False)
         self.axes.append(ax2)
         self.axes[1].set_visible(True)
         self.axes[1].set_ylabel('residual')
