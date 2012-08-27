@@ -19,7 +19,7 @@ class DataStore(QtCore.QAbstractTableModel):
         return self.numDataObjects - 1
         
     def columnCount(self, parent = QtCore.QModelIndex()):
-        return 1
+        return 2
     
     def insertRows(self, position, rows=1, index=QtCore.QModelIndex()):
         """ Insert a row into the model. """
@@ -32,10 +32,12 @@ class DataStore(QtCore.QAbstractTableModel):
         if not index.isValid():
             return None
 
-        print index.row(), index.column()
         if role == QtCore.Qt.DisplayRole:
-            return self.names[index.row()]
-    
+            if index.column() == 0:
+                return self.names[index.row()]
+            if index.column == 1:
+                return 1
+                
     def headerData(self, section, orientation, role=QtCore.Qt.DisplayRole):
         """ Set the headers to be displayed. """
         if role != QtCore.Qt.DisplayRole:
@@ -44,6 +46,8 @@ class DataStore(QtCore.QAbstractTableModel):
         if orientation == QtCore.Qt.Horizontal:
             if section == 0:
                 return 'name'
+            if section == 1:
+                return 'displayed'
         
         return None
             
