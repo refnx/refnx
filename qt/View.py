@@ -55,6 +55,9 @@ class MyMainWindow(QtGui.QMainWindow):
 
         self.gui_from_parameters(theoreticalmodel.parameters, theoreticalmodel.fitted_parameters, resize=False)
         self.redraw_dataObject_graphs([self.theoretical])
+        
+        self.ui.dataOptions_tableView.setModel(self.dataStore)
+        
         self.ui.dataset_comboBox.setModel(self.dataStore)
         self.ui.dataset_comboBox.setModelColumn(0)
         self.ui.model_comboBox.setModel(self.modelStore)
