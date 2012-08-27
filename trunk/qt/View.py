@@ -218,7 +218,13 @@ class MyMainWindow(QtGui.QMainWindow):
                                                     lw = 2,
                                                      label = 'sld_' + self.current_dataset.name)[0]
         
-        
+        if self.current_dataset.line2Dresiduals is None:
+            self.current_dataset.line2Dresiduals = self.reflectivitygraphs.axes[1].plot(self.current_dataset.W_q,
+                                                  self.current_dataset.residuals,
+                                                   linestyle='-',
+                                                    lw = 2,
+                                                     label = 'residuals_' + self.current_dataset.name)[0]
+                                                     
         if self.ui.model_comboBox.findText('coef_' + self.current_dataset.name) < 0:
             self.ui.model_comboBox.setCurrentIndex(self.ui.model_comboBox.findText('coef_' + self.current_dataset.name))
         self.update_gui_modelChanged()
@@ -492,12 +498,6 @@ class MyMainWindow(QtGui.QMainWindow):
         self.reflectivitygraphs = MyReflectivityGraphs(self.ui.reflectivity)        
         self.ui.gridLayout_5.addWidget(self.reflectivitygraphs)
         
-        self.reflectivitygraphs.axes[0].set_xlabel('Q')
-        self.reflectivitygraphs.axes[0].set_ylabel('R')        
-        self.reflectivitygraphs.axes[1].set_xlabel('Q')
-        self.reflectivitygraphs.axes[1].set_ylabel('residual')
-        self.sldgraphs.axes[0].set_xlabel('z')
-        self.sldgraphs.axes[0].set_ylabel('SLD')
         self.ui.gridLayout_5.addWidget(self.reflectivitygraphs.mpl_toolbar)
         self.ui.gridLayout_4.addWidget(self.sldgraphs.mpl_toolbar)
         
@@ -657,7 +657,8 @@ class MyReflectivityGraphs(FigureCanvas):
         self.figure = Figure(facecolor=(1,1,1), edgecolor=(0,0,0))
         #reflectivity graph
         self.axes = []
-        self.axes.append(self.figure.add_subplot(111))
+        ax = self.figure.add_axes([0.1,0.22,0.85,0.75])
+        self.axes.append(ax)
         self.axes[0].autoscale(axis='both', tight = False)
         self.axes[0].set_xlabel('Q')
         self.axes[0].set_ylabel('R')
@@ -665,14 +666,14 @@ class MyReflectivityGraphs(FigureCanvas):
         
         #residual plot
         #, sharex=self.axes[0]
-        self.axes.append(self.figure.add_subplot(411))
-        self.axes[1].set_visible(False)
-        self.axes[1].set_xlabel('Q')
+        ax2 = self.figure.add_axes([0.1,0.02,0.85,0.12], sharex=ax, frame_on = False)
+        self.axes.append(ax2)
+        self.axes[1].set_visible(True)
         self.axes[1].set_ylabel('residual')
                        
         FigureCanvas.__init__(self, self.figure)
         self.setParent(parent)
-        self.figure.subplots_adjust(left=0.1, right=0.95, top = 0.98)
+#        self.figure.subplots_adjust(left=0.1, right=0.95, top = 0.98)
         self.mpl_toolbar = NavigationToolbar(self, parent)
             
                             

@@ -80,6 +80,9 @@ class dataObject(reflectdataset.ReflectDataset):
         self.line2Dfit = None
         self.line2Dfit_properties = {}
 
+        self.line2Dresiduals = None
+        self.line2Dresiduals_properties = {}
+        
         self.line2Dsld_profile = None
         self.line2Dsld_profile_properties = {}
         
@@ -89,7 +92,8 @@ class dataObject(reflectdataset.ReflectDataset):
         d['line2Dfit'] = None
         d['line2D'] = None
         d['line2Dsld_profile'] = None
-        del(d['fit'])
+        d['line2Dresiduals'] = None
+#        del(d['fit'])
         return d
         
         
@@ -101,7 +105,11 @@ class dataObject(reflectdataset.ReflectDataset):
         if self.line2Dfit:
             for key in self.__requiredgraphproperties:
                 self.line2Dfit_properties[key] = artist.getp(self.line2Dfit, key)
-            
+
+        if self.line2Dresiduals:
+            for key in self.__requiredgraphproperties:
+                self.line2Dresiduals_properties[key] = artist.getp(self.line2Dresiduals, key)
+                            
         if self.line2Dsld_profile:
             for key in self.__requiredgraphproperties:
                 self.line2Dsld_profile_properties[key] = artist.getp(self.line2Dsld_profile, key)
