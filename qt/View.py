@@ -68,7 +68,7 @@ class MyMainWindow(QtGui.QMainWindow):
         pickle.dump(self.state, f, -1)
 
     def dataObjects_visibilityChanged(self, arg_1, arg_2):
-        if arg_1.row() < 0:
+        if arg_1.row() or arg_1.column() < 0:
             return
 
         name = self.dataStore.names[arg_1.row()]
