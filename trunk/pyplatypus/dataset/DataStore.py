@@ -39,8 +39,8 @@ class DataStore(QtCore.QAbstractTableModel):
                 self.dataObjects[self.names[index.row()]].visible = True
             else:
                 self.dataObjects[self.names[index.row()]].visible = False
-                            
-        self.dataChanged.emit(QtCore.QModelIndex(),QtCore.QModelIndex())
+                                
+            self.dataChanged.emit(index, index)
         
         return True
                 

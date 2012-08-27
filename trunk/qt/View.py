@@ -24,7 +24,7 @@ class MyMainWindow(QtGui.QMainWindow):
         self.ui.setupUi(self)
         self.errorHandler = QtGui.QErrorMessage()
         self.dataStore = DataStore.DataStore()
-        self.dataStore.dataChanged.connect(self.dataObjects_dataChanged)
+        self.dataStore.dataChanged.connect(self.dataObjects_visibilityChanged)
         self.current_dataset = None
         self.modelStore = DataStore.ModelStore()
         self.modifyGui()
@@ -67,10 +67,15 @@ class MyMainWindow(QtGui.QMainWindow):
         state = [self.dataStore, self.modelStore, self.current_dataset.name]
         pickle.dump(self.state, f, -1)
 
-    def dataObjects_dataChanged(self, arg_1, arg_2):
-        print arg_1, arg_2
-        print 'wagga'
+    def dataObjects_visibilityChanged(self, arg_1, arg_2):
+        if arg_1.row() < 0:
+            return
 
+        name = self.dataStore.names[arg_1.row()]
+        dataObject = self.dataStore.dataObjects[name]
+        if dataObject.line2D is not None:
+            dataObject.line2D.set_visible(dataObject.visible)
+        self.redraw_dataObject_graphs([dataObject], visible = dataObject.visible)
 
     @QtCore.Slot(QtGui.QDropEvent)
     def dropEvent(self, event):
@@ -635,18 +640,22 @@ class MyMainWindow(QtGui.QMainWindow):
         self.ui.layerparams_tableWidget.setCurrentCell(layerparamsrow, layerparamscol)
         self.ui.baseparams_tableWidget.setCurrentCell(baseparamsrow, baseparamscol)
 
-    def redraw_dataObject_graphs(self, dataObjects):
+    def redraw_dataObject_graphs(self, dataObjects, visible = True):
         for dataObject in dataObjects:
             if not dataObject:
                 continue
             if dataObject.line2D:
                dataObject.line2D.set_data(dataObject.W_q, dataObject.W_ref)
+               dataObject.line2D.set_visible(visible)               
             if dataObject.line2Dfit:
                dataObject.line2Dfit.set_data(dataObject.W_q, dataObject.fit)
+               dataObject.line2Dfit.set_visible(visible)
             if dataObject.line2Dresiduals:
                dataObject.line2Dresiduals.set_data(dataObject.W_q, dataObject.residuals)
+               dataObject.line2Dresiduals.set_visible(visible)
             if dataObject.line2Dsld_profile:
                dataObject.line2Dsld_profile.set_data(dataObject.sld_profile[0], dataObject.sld_profile[1])
+               dataObject.line2Dsld_profile.set_visible(visible)
         
         self.sldgraphs.draw()    
         self.reflectivitygraphs.draw()
