@@ -129,7 +129,7 @@ class dataObject(reflectdataset.ReflectDataset):
         RFO = reflect.ReflectivityFitObject(**callerInfo)
         model.parameters, self.chi2 = RFO.fit()
         self.fit = RFO.model()
-        self.residuals = self.fit - self.W_ref
+        self.residuals = np.log10(self.fit/self.W_ref)
         self.sld_profile = RFO.sld_profile()
         
                   
