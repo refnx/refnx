@@ -6,7 +6,7 @@ from copy import deepcopy, copy
 import matplotlib.artist as artist
 from PySide import QtGui, QtCore
 
-class DataStore(QtCore.QAbstractListModel):
+class DataStore(QtCore.QAbstractTableModel):
 
     def __init__(self, parent = None):
         super(DataStore, self).__init__(parent)
@@ -17,6 +17,9 @@ class DataStore(QtCore.QAbstractListModel):
     def rowCount(self, parent = QtCore.QModelIndex()):
         #don't want to return '_theoretical_'
         return self.numDataObjects - 1
+        
+    def columnCount(self, parent = QtCore.QModelIndex()):
+        return 1
         
     def data(self, index, role=QtCore.Qt.DisplayRole):
         if role == QtCore.Qt.DisplayRole:
