@@ -175,11 +175,15 @@ class dataObject(reflectdataset.ReflectDataset):
         callerInfo['xdata'] = self.W_q
         callerInfo['ydata'] = self.W_ref
         callerInfo['edata'] = self.W_refSD
-        if model.usedq:
-            callerInfo['dqvals'] = self.W_qSD
-        else:
-            del(callerInfo['dqvals'])
         
+        try:
+            if model.usedq:
+                callerInfo['dqvals'] = self.W_qSD
+            else:
+                del(callerInfo['dqvals'])
+        except KeyError:
+            pass
+                    
         RFO = reflect.ReflectivityFitObject(**callerInfo)
         model.parameters, self.chi2 = RFO.fit()
         self.fit = RFO.model()
@@ -189,15 +193,20 @@ class dataObject(reflectdataset.ReflectDataset):
                   
     def evaluate_chi2(self, model, store = False):
         
+        
         callerInfo = deepcopy(model.__dict__)
         callerInfo['xdata'] = self.W_q
         callerInfo['ydata'] = self.W_ref
         callerInfo['edata'] = self.W_refSD
-        if model.usedq:
-            callerInfo['dqvals'] = self.W_qSD
-        else:
-            del(callerInfo['dqvals'])
-
+        
+        try:
+            if model.usedq:
+                callerInfo['dqvals'] = self.W_qSD
+            else:
+                del(callerInfo['dqvals'])
+        except KeyError:
+            pass
+                    
         RFO = reflect.ReflectivityFitObject(**callerInfo)
         
         energy = RFO.energy() / self.numpoints
@@ -212,11 +221,15 @@ class dataObject(reflectdataset.ReflectDataset):
         callerInfo['xdata'] = self.W_q
         callerInfo['ydata'] = self.W_ref
         callerInfo['edata'] = self.W_refSD
-        if model.usedq:
-            callerInfo['dqvals'] = self.W_qSD  
-        else:
-            del(callerInfo['dqvals'])
-
+        
+        try:
+            if model.usedq:
+                callerInfo['dqvals'] = self.W_qSD  
+            else:
+                del(callerInfo['dqvals'])
+        except KeyError:
+            pass
+            
         RFO = reflect.ReflectivityFitObject(**callerInfo)
                                
         fit = RFO.model()
