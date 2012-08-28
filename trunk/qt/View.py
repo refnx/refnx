@@ -304,7 +304,10 @@ class MyMainWindow(QtGui.QMainWindow):
         
         if arg_1:
             theoreticalmodel.usedq = True
-        
+        else:
+            theoreticalmodel.usedq = False
+            
+        print theoreticalmodel.usedq
 
     
     @QtCore.Slot(QtGui.QTableWidgetItem)
@@ -475,8 +478,9 @@ class MyMainWindow(QtGui.QMainWindow):
     
     @QtCore.Slot(int)
     def on_horizontalSlider_valueChanged(self, arg_1):
-        c = self.currentCell
         try:
+            c = self.currentCell
+
             if not c['readyToChange']:
                 return
                 
@@ -503,7 +507,7 @@ class MyMainWindow(QtGui.QMainWindow):
             self.ui.horizontalSlider.setValue(499)
             c = self.currentCell
             self.currentCellChanged(c['widget'], c['row'], c['col'])
-        except ValueError:
+        except (ValueError, AttributeError):
             return
                
     def modifyGui(self):
