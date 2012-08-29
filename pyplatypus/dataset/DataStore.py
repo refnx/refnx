@@ -312,8 +312,10 @@ class Model(object):
 
 class BaseModel(QtCore.QAbstractTableModel):
 
-    layersInserted = QtCore.Signal(int, int)
-    layersRemoved = QtCore.Signal(int, int)
+    layersAboutToBeInserted = QtCore.Signal(int, int)
+    layersAboutToBeRemoved = QtCore.Signal(int, int)
+    layersFinishedBeingInserted = QtCore.Signal()
+    layersFinishedBeingRemoved = QtCore.Signal()
     
     def __init__(self, model, parent = None):
         super(BaseModel, self).__init__(parent)
@@ -365,12 +367,15 @@ class BaseModel(QtCore.QAbstractTableModel):
                         return True
                         
                     if newlayers == 0:
-                        parameters.resize(8, refcheck = False)
                         start = 1
                         end = oldlayers
-                        thesignal = self.layersRemoved
+                        self.layersAboutToBeRemoved.emit(start, end)
+                        
+                        parameters.resize(8, refcheck = False)
+                        thesignal = self.layersFinishedBeingRemoved
                         fitted_parameters = np.extract(fitted_parameters < 8, fitted_parameters)
                         parameters[0] = newlayers
+                        
                     else:
                         if newlayers > oldlayers:
                             title = 'Where would you like to insert the new layers'
@@ -395,6 +400,10 @@ class BaseModel(QtCore.QAbstractTableModel):
     
                         parameters[0] = newlayers
                         if newlayers > oldlayers:
+                            start = insertpoint + 1
+                            end = insertpoint + newlayers - oldlayers
+                            self.layersAboutToBeInserted.emit(start, end)
+
                             parameters = np.insert(parameters,
                                                     [4 * insertpoint + 8] * 4 *(newlayers - oldlayers),
                                                      [0, 0, 0, 0] * (newlayers - oldlayers))
@@ -403,27 +412,28 @@ class BaseModel(QtCore.QAbstractTableModel):
                                                              fitted_parameters)
                             fitted_parameters = np.append(fitted_parameters,
                                                      np.arange(4 * insertpoint + 8, 4 * insertpoint + 8 + (newlayers -oldlayers) * 4))
-                            thesignal = self.layersInserted
-                            start = insertpoint
-                            end = insertpoint + newlayers - oldlayers
 
+                            thesignal = self.layersFinishedBeingInserted
                         elif newlayers < oldlayers:
                             insertpoint -= 1
-                            
+                            start = insertpoint + 1
+                            end = insertpoint + 1 + (oldlayers - newlayers) - 1
+                            self.layersAboutToBeRemoved.emit(start, end)
+                                                       
                             paramslost = np.arange(4 * insertpoint + 8, 4 * insertpoint + 8 + (oldlayers - newlayers) * 4)
                             parameters = np.delete(parameters, paramslost)
                             fitted_parameters = np.array([val for val in fitted_parameters.tolist() if (val < paramslost[0] or val > paramslost[-1])])
                             fitted_parameters = np.where(fitted_parameters > paramslost[-1],
                                       fitted_parameters + (newlayers - oldlayers) * 4,
                                          fitted_parameters)
-                            thesignal = self.layersRemoved
-                            start = insertpoint + 1
-                            end = insertpoint + 1 + (oldlayers - newlayers)
+                            
+                            thesignal = self.layersFinishedBeingRemoved
                             
                     #YOU HAVE TO RESIZE LAYER PARAMS
-                    thesignal.emit(start, end)
                     self.model.parameters = parameters[:]
                     self.model.fitted_parameters = fitted_parameters[:]
+                    thesignal.emit()
+
                 else:
                     self.errorHandler.showMessage("Number of layers must be integer > 0")
                     return False
@@ -431,7 +441,7 @@ class BaseModel(QtCore.QAbstractTableModel):
                 validator = QtGui.QDoubleValidator()
                 voutput = validator.validate(value, 1)
                 if voutput[0] is QtGui.QValidator.State.Acceptable:
-                    self.model.parameters[coltopar(index.column())] = voutput[1]
+                    self.model.parameters[coltopar[index.column()]] = voutput[1]
                 else:
                     print value
                     self.errorHandler.showMessage("values entered must be numeric")
@@ -516,12 +526,16 @@ class LayerModel(QtCore.QAbstractTableModel):
             
         return param
         
-    def layersInserted(self, start, end):
+    def layersAboutToBeInserted(self, start, end):
         self.beginInsertRows(QtCore.QModelIndex(), start, end)    
+    
+    def layersFinishedBeingInserted(self):
         self.endInsertRows()
         
-    def layersRemoved(self, start, end):
+    def layersAboutToBeRemoved(self, start, end):
         self.beginRemoveRows(QtCore.QModelIndex(), start, end)
+
+    def layersFinishedBeingRemoved(self):
         self.endRemoveRows()
             
     def setData(self, index, value, role = QtCore.Qt.EditRole):

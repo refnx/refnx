@@ -43,7 +43,10 @@ class MyMainWindow(QtGui.QMainWindow):
 
         theoreticalmodel = DataStore.Model(parameters=parameters, fitted_parameters = fitted_parameters)
         self.modelStore.addModel(theoreticalmodel, 'theoretical')
-        
+        self.baseModel = DataStore.BaseModel(self.modelStore.models['theoretical'])
+        self.layerModel = DataStore.LayerModel(self.modelStore.models['theoretical'])
+
+
         self.theoretical.evaluate_model(theoreticalmodel, store = True)
         
         self.dataStore.addDataObject(self.theoretical)
@@ -62,12 +65,14 @@ class MyMainWindow(QtGui.QMainWindow):
         self.ui.dataset_comboBox.setModelColumn(0)
         self.ui.model_comboBox.setModel(self.modelStore)
         
-        self.baseModel = DataStore.BaseModel(self.modelStore.models['theoretical'])
         self.ui.baseModelView.setModel(self.baseModel)
-        self.layerModel = DataStore.LayerModel(self.modelStore.models['theoretical'])
         self.ui.layerModelView.setModel(self.layerModel)
-        self.baseModel.layersInserted.connect(self.layerModel.layersInserted)
-        self.baseModel.layersRemoved.connect(self.layerModel.layersRemoved)
+        self.baseModel.layersAboutToBeInserted.connect(self.layerModel.layersAboutToBeInserted)
+        self.baseModel.layersAboutToBeRemoved.connect(self.layerModel.layersAboutToBeRemoved)
+        self.baseModel.layersFinishedBeingInserted.connect(self.layerModel.layersFinishedBeingInserted)
+        self.baseModel.layersFinishedBeingRemoved.connect(self.layerModel.layersFinishedBeingRemoved)
+        self.layerModel.dataChanged.connect(self.update_gui_modelChanged)
+        self.baseModel.dataChanged.connect(self.update_gui_modelChanged)
         
     def __saveState(self, f):
         state = [self.dataStore, self.modelStore, self.current_dataset.name]
@@ -271,8 +276,17 @@ class MyMainWindow(QtGui.QMainWindow):
             model = self.modelStore.models[arg_1]
             if model.parameters is not None and model.fitted_parameters is not None:
                 self.modelStore.models['theoretical'].parameters =  model.parameters[:]
-#TODO
-#                self.gui_from_parameters(model.parameters, model.fitted_parameters, resize = True)
+                self.modelStore.models['theoretical'].fitted_parameters =  model.fitted_parameters[:]
+                self.baseModel.dataChanged.emit(QtCore.QModelIndex(), QtCore.QModelIndex())
+
+                self.modelStore.models['theoretical'].parameters =  model.parameters[:]
+                self.modelStore.models['theoretical'].fitted_parameters =  model.fitted_parameters[:]
+                start = QtCore.QAbstractItemModel
+                finish = QtCore.QAbstractItemModel()
+                a = start.createIndex(0,0)
+                b = finish.createIndex(2 + int(model.parameters[0]),3)
+                self.layerModel.dataChanged.emit(start, finish)
+
                 self.update_gui_modelChanged()
         except KeyError:
             return
