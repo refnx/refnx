@@ -190,6 +190,13 @@
          <string>Model</string>
         </attribute>
         <layout class="QGridLayout" name="gridLayout_2">
+         <item row="2" column="1">
+          <widget class="QCheckBox" name="use_errors_checkbox">
+           <property name="text">
+            <string>Use errors?</string>
+           </property>
+          </widget>
+         </item>
          <item row="0" column="0">
           <widget class="QComboBox" name="dataset_comboBox">
            <property name="focusPolicy">
@@ -213,26 +220,6 @@
            </property>
            <property name="shortcut">
             <string>Meta+F</string>
-           </property>
-          </widget>
-         </item>
-         <item row="1" column="0">
-          <widget class="QComboBox" name="model_comboBox"/>
-         </item>
-         <item row="2" column="0">
-          <widget class="QLineEdit" name="lineEdit">
-           <property name="text">
-            <string>0</string>
-           </property>
-           <property name="readOnly">
-            <bool>true</bool>
-           </property>
-          </widget>
-         </item>
-         <item row="2" column="1">
-          <widget class="QCheckBox" name="use_errors_checkbox">
-           <property name="text">
-            <string>Use errors?</string>
            </property>
           </widget>
          </item>
@@ -271,97 +258,17 @@
            </property>
           </widget>
          </item>
-         <item row="4" column="0" colspan="2">
-          <widget class="QTableWidget" name="baseparams_tableWidget">
-           <property name="minimumSize">
-            <size>
-             <width>0</width>
-             <height>45</height>
-            </size>
-           </property>
-           <property name="maximumSize">
-            <size>
-             <width>16777215</width>
-             <height>40</height>
-            </size>
-           </property>
-           <property name="font">
-            <font>
-             <pointsize>11</pointsize>
-             <weight>50</weight>
-             <bold>false</bold>
-            </font>
-           </property>
-           <property name="focusPolicy">
-            <enum>Qt::StrongFocus</enum>
-           </property>
-           <property name="inputMethodHints">
-            <set>Qt::ImhNone</set>
-           </property>
-           <property name="rowCount">
-            <number>1</number>
-           </property>
-           <property name="columnCount">
-            <number>3</number>
-           </property>
-           <attribute name="horizontalHeaderVisible">
-            <bool>true</bool>
-           </attribute>
-           <attribute name="horizontalHeaderHighlightSections">
-            <bool>true</bool>
-           </attribute>
-           <attribute name="horizontalHeaderStretchLastSection">
-            <bool>true</bool>
-           </attribute>
-           <attribute name="verticalHeaderVisible">
-            <bool>false</bool>
-           </attribute>
-           <attribute name="verticalHeaderHighlightSections">
-            <bool>true</bool>
-           </attribute>
-           <attribute name="verticalHeaderStretchLastSection">
-            <bool>true</bool>
-           </attribute>
-           <row/>
-           <column/>
-           <column/>
-           <column/>
-          </widget>
+         <item row="1" column="0">
+          <widget class="QComboBox" name="model_comboBox"/>
          </item>
-         <item row="5" column="0" colspan="2">
-          <widget class="QTableWidget" name="layerparams_tableWidget">
-           <property name="font">
-            <font>
-             <pointsize>11</pointsize>
-             <weight>50</weight>
-             <bold>false</bold>
-            </font>
+         <item row="2" column="0">
+          <widget class="QLineEdit" name="lineEdit">
+           <property name="text">
+            <string>0</string>
            </property>
-           <property name="focusPolicy">
-            <enum>Qt::StrongFocus</enum>
-           </property>
-           <property name="editTriggers">
-            <set>QAbstractItemView::AnyKeyPressed|QAbstractItemView::DoubleClicked|QAbstractItemView::EditKeyPressed|QAbstractItemView::SelectedClicked</set>
-           </property>
-           <property name="rowCount">
-            <number>3</number>
-           </property>
-           <property name="columnCount">
-            <number>4</number>
-           </property>
-           <attribute name="horizontalHeaderStretchLastSection">
+           <property name="readOnly">
             <bool>true</bool>
-           </attribute>
-           <attribute name="verticalHeaderStretchLastSection">
-            <bool>true</bool>
-           </attribute>
-           <row/>
-           <row/>
-           <row/>
-           <column/>
-           <column/>
-           <column/>
-           <column/>
+           </property>
           </widget>
          </item>
          <item row="6" column="0" colspan="2">
@@ -380,6 +287,19 @@
            </property>
            <property name="orientation">
             <enum>Qt::Horizontal</enum>
+           </property>
+          </widget>
+         </item>
+         <item row="5" column="0" colspan="2">
+          <widget class="QTableView" name="layerModelView"/>
+         </item>
+         <item row="4" column="0" colspan="2">
+          <widget class="QTableView" name="baseModelView">
+           <property name="maximumSize">
+            <size>
+             <width>16777215</width>
+             <height>50</height>
+            </size>
            </property>
           </widget>
          </item>
