@@ -337,6 +337,9 @@ class MyMainWindow(QtGui.QMainWindow):
     def layerCurrentCellChanged(self, index):
         row = index.row()
         col = index.column()
+
+        self.currentCell= {}
+
         if row == 0 and (col == 0 or col == 3):
             return
 
@@ -344,12 +347,7 @@ class MyMainWindow(QtGui.QMainWindow):
 
         if row == int(theoreticalmodel.parameters[0]) + 1 and col == 0:
             return
-            
-        self.currentCell= {}
-        self.currentCell['model'] = self.layerModel 
-        self.currentCell['row'] = row
-        self.currentCell['col'] = col
-        
+                    
         try:
             param = self.layerModel.rowcoltoparam(row, col, int(theoreticalmodel.parameters[0]))
             val = theoreticalmodel.parameters[param]
@@ -364,6 +362,8 @@ class MyMainWindow(QtGui.QMainWindow):
         else:
             lowlim = 0
             hilim = 2 * val
+            
+        self.currentCell['param'] = param
         self.currentCell['val'] = val
         self.currentCell['lowlim'] = lowlim
         self.currentCell['hilim'] = hilim
@@ -375,14 +375,11 @@ class MyMainWindow(QtGui.QMainWindow):
 
         theoreticalmodel = self.modelStore.models['theoretical']
 
+        self.currentCell= {}
+
         if col == 0:
             return
-        
-        self.currentCell= {}
-        self.currentCell['model'] = self.baseModel 
-        self.currentCell['row'] = row
-        self.currentCell['col'] = col
-        
+                
         col2par = [0, 1, 6]
         try:
             val = theoreticalmodel.parameters[col2par[col]]
@@ -397,6 +394,8 @@ class MyMainWindow(QtGui.QMainWindow):
         else:
             lowlim = 0
             hilim = 2 * val
+        
+        self.currentCell['param'] = col2par[col]            
         self.currentCell['val'] = val
         self.currentCell['lowlim'] = lowlim
         self.currentCell['hilim'] = hilim
@@ -412,17 +411,15 @@ class MyMainWindow(QtGui.QMainWindow):
 
             theoreticalmodel = self.modelStore.models['theoretical']
                 
-            if c['row'] == 0 and c['col'] == 0:
-                return
-            if c['model'] is self.layerModel:
-                if c['row'] == 0 and (c['col'] == 0 or c['col'] == 3):
-                    return
-                if c['row'] == int(theoretical.parameters[0]) + 1 and c['col'] == 0 or c['col'] == 3:
-                    return
-            
             val = c['lowlim'] + (arg_1 / 1000.) * math.fabs(c['lowlim'] - c['hilim'])
-                        
-            item = c['widget'].item(c['row'], c['col']).setText(str(val))
+              
+            param = c['param']         
+            theoreticalmodel.parameters[c['param']] = val
+
+            if param == 1 or param == 6:
+                self.baseModel.dataChanged.emit(QtCore.QModelIndex(), QtCore.QModelIndex())
+            else:
+                self.layerModel.dataChanged.emit(QtCore.QModelIndex(), QtCore.QModelIndex())
         except AttributeError:
             return
         except KeyError:
@@ -434,7 +431,22 @@ class MyMainWindow(QtGui.QMainWindow):
             self.currentCell['readyToChange'] = False
             self.ui.horizontalSlider.setValue(499)
             c = self.currentCell
-            self.currentCellChanged(c['widget'], c['row'], c['col'])
+            parameters = self.modelStore.models['theoretical'].parameters
+            
+            val = parameters[c['param']]
+            
+            if val < 0:
+                lowlim = 2 * val
+                hilim = 0
+            else:
+                lowlim = 0
+                hilim = 2 * val
+    
+            self.currentCell['val'] = parameters[c['param']]
+            self.currentCell['lowlim'] = lowlim
+            self.currentCell['hilim'] = hilim
+            self.currentCell['readyToChange'] = True
+
         except (ValueError, AttributeError):
             return
                
