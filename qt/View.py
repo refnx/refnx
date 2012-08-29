@@ -73,6 +73,11 @@ class MyMainWindow(QtGui.QMainWindow):
         self.baseModel.layersFinishedBeingRemoved.connect(self.layerModel.layersFinishedBeingRemoved)
         self.layerModel.dataChanged.connect(self.update_gui_modelChanged)
         self.baseModel.dataChanged.connect(self.update_gui_modelChanged)
+        self.ui.baseModelView.clicked.connect(self.baseCurrentCellChanged)
+        self.ui.layerModelView.clicked.connect(self.layerCurrentCellChanged)
+    
+    def pants(self):
+        print "Viewport entered"
         
     def __saveState(self, f):
         state = [self.dataStore, self.modelStore, self.current_dataset.name]
@@ -279,11 +284,12 @@ class MyMainWindow(QtGui.QMainWindow):
                 self.modelStore.models['theoretical'].fitted_parameters =  model.fitted_parameters[:]
                 self.baseModel.dataChanged.emit(QtCore.QModelIndex(), QtCore.QModelIndex())
 
-                self.layerModel.beginInsertRows(QtCore.QModelIndex(), -1, -1)
+#                 self.layerModel.beginInsertRows(QtCore.QModelIndex(), -1, -1)
                 self.modelStore.models['theoretical'].parameters =  model.parameters[:]
                 self.modelStore.models['theoretical'].fitted_parameters =  model.fitted_parameters[:]
                 self.layerModel.dataChanged.emit(self.layerModel.createIndex(0,0), self.layerModel.createIndex(2 + int(model.parameters[0]),3))
-                self.layerModel.endInsertRows()
+#                 self.layerModel.endInsertRows()
+                self.layerModel.modelReset.emit()
 
                 self.update_gui_modelChanged()
         except KeyError:
@@ -328,14 +334,25 @@ class MyMainWindow(QtGui.QMainWindow):
             
         print theoreticalmodel.usedq
 
-    def currentCellChanged(self, widget, row, col):
+    def layerCurrentCellChanged(self, index):
+        row = index.row()
+        col = index.column()
+        if row == 0 and (col == 0 or col == 3):
+            return
+
+        theoreticalmodel = self.modelStore.models['theoretical']
+
+        if row == int(theoreticalmodel.parameters[0]) + 1 and col == 0:
+            return
+            
         self.currentCell= {}
-        self.currentCell['widget'] = widget
+        self.currentCell['model'] = self.layerModel 
         self.currentCell['row'] = row
         self.currentCell['col'] = col
-
+        
         try:
-            val = float(widget.item(row, col).text())
+            param = self.layerModel.rowcoltoparam(row, col, int(theoreticalmodel.parameters[0]))
+            val = theoreticalmodel.parameters[param]
         except ValueError:
             return
         except AttributeError: 
@@ -351,7 +368,39 @@ class MyMainWindow(QtGui.QMainWindow):
         self.currentCell['lowlim'] = lowlim
         self.currentCell['hilim'] = hilim
         self.currentCell['readyToChange'] = True
+    
+    def baseCurrentCellChanged(self, index):
+        row = index.row()
+        col = index.column()
 
+        theoreticalmodel = self.modelStore.models['theoretical']
+
+        if col == 0:
+            return
+        
+        self.currentCell= {}
+        self.currentCell['model'] = self.baseModel 
+        self.currentCell['row'] = row
+        self.currentCell['col'] = col
+        
+        col2par = [0, 1, 6]
+        try:
+            val = theoreticalmodel.parameters[col2par[col]]
+        except ValueError:
+            return
+        except AttributeError: 
+            return
+            
+        if val < 0:
+            lowlim = 2 * val
+            hilim = 0
+        else:
+            lowlim = 0
+            hilim = 2 * val
+        self.currentCell['val'] = val
+        self.currentCell['lowlim'] = lowlim
+        self.currentCell['hilim'] = hilim
+        self.currentCell['readyToChange'] = True
         
     @QtCore.Slot(int)
     def on_horizontalSlider_valueChanged(self, arg_1):
@@ -360,13 +409,15 @@ class MyMainWindow(QtGui.QMainWindow):
 
             if not c['readyToChange']:
                 return
+
+            theoreticalmodel = self.modelStore.models['theoretical']
                 
             if c['row'] == 0 and c['col'] == 0:
                 return
-            if c['widget'] is self.ui.layerparams_tableWidget:
+            if c['model'] is self.layerModel:
                 if c['row'] == 0 and (c['col'] == 0 or c['col'] == 3):
                     return
-                if c['row'] == self.ui.layerparams_tableWidget.rowCount() - 1 and c['col'] == 0 or c['col'] == 3:
+                if c['row'] == int(theoretical.parameters[0]) + 1 and c['col'] == 0 or c['col'] == 3:
                     return
             
             val = c['lowlim'] + (arg_1 / 1000.) * math.fabs(c['lowlim'] - c['hilim'])
