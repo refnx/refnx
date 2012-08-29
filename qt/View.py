@@ -281,11 +281,7 @@ class MyMainWindow(QtGui.QMainWindow):
 
                 self.modelStore.models['theoretical'].parameters =  model.parameters[:]
                 self.modelStore.models['theoretical'].fitted_parameters =  model.fitted_parameters[:]
-                start = QtCore.QAbstractItemModel
-                finish = QtCore.QAbstractItemModel()
-                a = start.createIndex(0,0)
-                b = finish.createIndex(2 + int(model.parameters[0]),3)
-                self.layerModel.dataChanged.emit(start, finish)
+                self.layerModel.dataChanged.emit(self.layerModel.createIndex(0,0), self.layerModel.createIndex(2 + int(model.parameters[0]),3))
 
                 self.update_gui_modelChanged()
         except KeyError:
