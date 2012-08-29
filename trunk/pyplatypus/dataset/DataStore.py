@@ -47,7 +47,7 @@ class DataStore(QtCore.QAbstractTableModel):
     def data(self, index, role=QtCore.Qt.DisplayRole):
         if not index.isValid():
             return None
-                
+        
         if role == QtCore.Qt.DisplayRole:
             if index.column() == 0:
                 return self.names[index.row()]

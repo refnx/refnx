@@ -81,7 +81,7 @@ class MyMainWindow(QtGui.QMainWindow):
     def dataObjects_visibilityChanged(self, arg_1, arg_2):
         if arg_1.row() or arg_1.column() < 0:
             return
-
+        
         name = self.dataStore.names[arg_1.row()]
         dataObject = self.dataStore.dataObjects[name]
         if dataObject.line2D is not None:
@@ -279,9 +279,11 @@ class MyMainWindow(QtGui.QMainWindow):
                 self.modelStore.models['theoretical'].fitted_parameters =  model.fitted_parameters[:]
                 self.baseModel.dataChanged.emit(QtCore.QModelIndex(), QtCore.QModelIndex())
 
+                self.layerModel.beginInsertRows(QtCore.QModelIndex(), -1, -1)
                 self.modelStore.models['theoretical'].parameters =  model.parameters[:]
                 self.modelStore.models['theoretical'].fitted_parameters =  model.fitted_parameters[:]
                 self.layerModel.dataChanged.emit(self.layerModel.createIndex(0,0), self.layerModel.createIndex(2 + int(model.parameters[0]),3))
+                self.layerModel.endInsertRows()
 
                 self.update_gui_modelChanged()
         except KeyError:
