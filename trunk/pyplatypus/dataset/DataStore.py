@@ -541,6 +541,7 @@ class LayerModel(QtCore.QAbstractTableModel):
     def setData(self, index, value, role = QtCore.Qt.EditRole):
         row = index.row()
         col = index.column()
+        print row, col
         numlayers = int(self.model.parameters[0])
 
         if not index.isValid():
