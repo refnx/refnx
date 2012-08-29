@@ -405,7 +405,7 @@ class BaseModel(QtCore.QAbstractTableModel):
                                                      np.arange(4 * insertpoint + 8, 4 * insertpoint + 8 + (newlayers -oldlayers) * 4))
                             thesignal = self.layersInserted
                             start = insertpoint
-                            end = insertpoint + newlayers - oldlayers - 1
+                            end = insertpoint + newlayers - oldlayers
 
                         elif newlayers < oldlayers:
                             insertpoint -= 1
@@ -417,8 +417,8 @@ class BaseModel(QtCore.QAbstractTableModel):
                                       fitted_parameters + (newlayers - oldlayers) * 4,
                                          fitted_parameters)
                             thesignal = self.layersRemoved
-                            start = insertpoint
-                            end = insertpoint + (oldlayers - newlayers)
+                            start = insertpoint + 1
+                            end = insertpoint + 1 + (oldlayers - newlayers)
                             
                     #YOU HAVE TO RESIZE LAYER PARAMS
                     thesignal.emit(start, end)
