@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'qt/Motofit.ui'
 #
-# Created: Wed Aug 29 17:05:18 2012
+# Created: Thu Aug 30 12:12:48 2012
 #      by: pyside-uic 0.2.13 running on PySide 1.1.1
 #
 # WARNING! All changes made in this file will be lost!
@@ -116,6 +116,7 @@ class Ui_MainWindow(object):
         self.res_SpinBox.setObjectName("res_SpinBox")
         self.gridLayout_2.addWidget(self.res_SpinBox, 3, 0, 1, 1)
         self.use_dqwave_checkbox = QtGui.QCheckBox(self.tab)
+        self.use_dqwave_checkbox.setChecked(True)
         self.use_dqwave_checkbox.setObjectName("use_dqwave_checkbox")
         self.gridLayout_2.addWidget(self.use_dqwave_checkbox, 3, 1, 1, 1)
         self.model_comboBox = QtGui.QComboBox(self.tab)
@@ -125,20 +126,33 @@ class Ui_MainWindow(object):
         self.lineEdit.setReadOnly(True)
         self.lineEdit.setObjectName("lineEdit")
         self.gridLayout_2.addWidget(self.lineEdit, 2, 0, 1, 1)
+        self.layerModelView = QtGui.QTableView(self.tab)
+        font = QtGui.QFont()
+        font.setPointSize(10)
+        self.layerModelView.setFont(font)
+        self.layerModelView.setObjectName("layerModelView")
+        self.layerModelView.horizontalHeader().setStretchLastSection(True)
+        self.gridLayout_2.addWidget(self.layerModelView, 5, 0, 1, 2)
+        self.baseModelView = QtGui.QTableView(self.tab)
+        self.baseModelView.setMaximumSize(QtCore.QSize(16777215, 45))
+        font = QtGui.QFont()
+        font.setPointSize(10)
+        font.setWeight(50)
+        font.setBold(False)
+        self.baseModelView.setFont(font)
+        self.baseModelView.setObjectName("baseModelView")
+        self.baseModelView.horizontalHeader().setStretchLastSection(True)
+        self.gridLayout_2.addWidget(self.baseModelView, 4, 0, 1, 2)
         self.horizontalSlider = QtGui.QSlider(self.tab)
-        self.horizontalSlider.setMaximumSize(QtCore.QSize(16777215, 25))
+        self.horizontalSlider.setMaximumSize(QtCore.QSize(16777215, 18))
+        self.horizontalSlider.setFocusPolicy(QtCore.Qt.StrongFocus)
         self.horizontalSlider.setMaximum(999)
         self.horizontalSlider.setProperty("value", 499)
         self.horizontalSlider.setOrientation(QtCore.Qt.Horizontal)
+        self.horizontalSlider.setInvertedAppearance(False)
+        self.horizontalSlider.setInvertedControls(False)
         self.horizontalSlider.setObjectName("horizontalSlider")
         self.gridLayout_2.addWidget(self.horizontalSlider, 6, 0, 1, 2)
-        self.layerModelView = QtGui.QTableView(self.tab)
-        self.layerModelView.setObjectName("layerModelView")
-        self.gridLayout_2.addWidget(self.layerModelView, 5, 0, 1, 2)
-        self.baseModelView = QtGui.QTableView(self.tab)
-        self.baseModelView.setMaximumSize(QtCore.QSize(16777215, 50))
-        self.baseModelView.setObjectName("baseModelView")
-        self.gridLayout_2.addWidget(self.baseModelView, 4, 0, 1, 2)
         self.tabWidget.addTab(self.tab, "")
         self.tab_2 = QtGui.QWidget()
         self.tab_2.setObjectName("tab_2")

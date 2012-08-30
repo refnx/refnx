@@ -75,10 +75,7 @@ class MyMainWindow(QtGui.QMainWindow):
         self.baseModel.dataChanged.connect(self.update_gui_modelChanged)
         self.ui.baseModelView.clicked.connect(self.baseCurrentCellChanged)
         self.ui.layerModelView.clicked.connect(self.layerCurrentCellChanged)
-    
-    def pants(self):
-        print "Viewport entered"
-        
+            
     def __saveState(self, f):
         state = [self.dataStore, self.modelStore, self.current_dataset.name]
         pickle.dump(self.state, f, -1)
@@ -284,11 +281,9 @@ class MyMainWindow(QtGui.QMainWindow):
                 self.modelStore.models['theoretical'].fitted_parameters =  model.fitted_parameters[:]
                 self.baseModel.dataChanged.emit(QtCore.QModelIndex(), QtCore.QModelIndex())
 
-#                 self.layerModel.beginInsertRows(QtCore.QModelIndex(), -1, -1)
                 self.modelStore.models['theoretical'].parameters =  model.parameters[:]
                 self.modelStore.models['theoretical'].fitted_parameters =  model.fitted_parameters[:]
                 self.layerModel.dataChanged.emit(self.layerModel.createIndex(0,0), self.layerModel.createIndex(2 + int(model.parameters[0]),3))
-#                 self.layerModel.endInsertRows()
                 self.layerModel.modelReset.emit()
 
                 self.update_gui_modelChanged()
@@ -332,7 +327,6 @@ class MyMainWindow(QtGui.QMainWindow):
         else:
             theoreticalmodel.usedq = False
             
-        print theoreticalmodel.usedq
 
     def layerCurrentCellChanged(self, index):
         row = index.row()
@@ -461,18 +455,8 @@ class MyMainWindow(QtGui.QMainWindow):
         self.ui.gridLayout_5.addWidget(self.reflectivitygraphs.mpl_toolbar)
         self.ui.gridLayout_4.addWidget(self.sldgraphs.mpl_toolbar)
         
-#         #add baseparams table widget info
-#         header = self.ui.baseparams_tableWidget.horizontalHeader()
-#         header.setResizeMode(QtGui.QHeaderView.Stretch)
-# 
-#         #add layerparams table widget info
-#         self.ui.layerparams_tableWidget.setHorizontalHeaderLabels(['thickness', 'sld', 'iSLD', 'roughness'])
-#         self.ui.layerparams_tableWidget.setVerticalHeaderLabels(['fronting', '1', 'backing'])
-#         
-#         header = self.ui.layerparams_tableWidget.horizontalHeader()
-#         header.setResizeMode(QtGui.QHeaderView.Stretch)
-#         header = self.ui.layerparams_tableWidget.verticalHeader()
-#         header.setResizeMode(QtGui.QHeaderView.Stretch)
+        header = self.ui.layerModelView.horizontalHeader()
+        header.setResizeMode(QtGui.QHeaderView.Stretch)
                      
     def redraw_dataObject_graphs(self, dataObjects, visible = True):
         for dataObject in dataObjects:

@@ -541,7 +541,6 @@ class LayerModel(QtCore.QAbstractTableModel):
     def setData(self, index, value, role = QtCore.Qt.EditRole):
         row = index.row()
         col = index.column()
-        print row, col
         numlayers = int(self.model.parameters[0])
 
         if not index.isValid():
@@ -604,6 +603,15 @@ class LayerModel(QtCore.QAbstractTableModel):
         if role != QtCore.Qt.DisplayRole:
             return None
 
+        if orientation == QtCore.Qt.Vertical:
+            numlayers = (self.model.parameters[0])
+            if section == 0:
+                return 'fronting'
+            elif section == numlayers + 1:
+                return 'backing'
+            else:
+                return str(section)
+            
         if orientation == QtCore.Qt.Horizontal:
             if section == 0:
                 return 'thickness'
