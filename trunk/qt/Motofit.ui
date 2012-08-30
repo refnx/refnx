@@ -199,6 +199,11 @@
          </item>
          <item row="0" column="0">
           <widget class="QComboBox" name="dataset_comboBox">
+           <property name="font">
+            <font>
+             <pointsize>14</pointsize>
+            </font>
+           </property>
            <property name="focusPolicy">
             <enum>Qt::StrongFocus</enum>
            </property>
@@ -225,6 +230,13 @@
          </item>
          <item row="3" column="0">
           <widget class="QDoubleSpinBox" name="res_SpinBox">
+           <property name="font">
+            <font>
+             <pointsize>14</pointsize>
+             <weight>50</weight>
+             <bold>false</bold>
+            </font>
+           </property>
            <property name="wrapping">
             <bool>false</bool>
            </property>
@@ -262,10 +274,21 @@
           </widget>
          </item>
          <item row="1" column="0">
-          <widget class="QComboBox" name="model_comboBox"/>
+          <widget class="QComboBox" name="model_comboBox">
+           <property name="font">
+            <font>
+             <pointsize>14</pointsize>
+            </font>
+           </property>
+          </widget>
          </item>
          <item row="2" column="0">
           <widget class="QLineEdit" name="lineEdit">
+           <property name="font">
+            <font>
+             <pointsize>14</pointsize>
+            </font>
+           </property>
            <property name="text">
             <string>0</string>
            </property>

@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'qt/Motofit.ui'
 #
-# Created: Thu Aug 30 12:12:48 2012
+# Created: Thu Aug 30 13:12:58 2012
 #      by: pyside-uic 0.2.13 running on PySide 1.1.1
 #
 # WARNING! All changes made in this file will be lost!
@@ -98,6 +98,9 @@ class Ui_MainWindow(object):
         self.use_errors_checkbox.setObjectName("use_errors_checkbox")
         self.gridLayout_2.addWidget(self.use_errors_checkbox, 2, 1, 1, 1)
         self.dataset_comboBox = QtGui.QComboBox(self.tab)
+        font = QtGui.QFont()
+        font.setPointSize(11)
+        self.dataset_comboBox.setFont(font)
         self.dataset_comboBox.setFocusPolicy(QtCore.Qt.StrongFocus)
         self.dataset_comboBox.setObjectName("dataset_comboBox")
         self.gridLayout_2.addWidget(self.dataset_comboBox, 0, 0, 1, 1)
@@ -106,6 +109,9 @@ class Ui_MainWindow(object):
         self.do_fit_button.setObjectName("do_fit_button")
         self.gridLayout_2.addWidget(self.do_fit_button, 0, 1, 2, 1)
         self.res_SpinBox = QtGui.QDoubleSpinBox(self.tab)
+        font = QtGui.QFont()
+        font.setPointSize(11)
+        self.res_SpinBox.setFont(font)
         self.res_SpinBox.setWrapping(False)
         self.res_SpinBox.setFrame(True)
         self.res_SpinBox.setReadOnly(False)
@@ -120,9 +126,15 @@ class Ui_MainWindow(object):
         self.use_dqwave_checkbox.setObjectName("use_dqwave_checkbox")
         self.gridLayout_2.addWidget(self.use_dqwave_checkbox, 3, 1, 1, 1)
         self.model_comboBox = QtGui.QComboBox(self.tab)
+        font = QtGui.QFont()
+        font.setPointSize(11)
+        self.model_comboBox.setFont(font)
         self.model_comboBox.setObjectName("model_comboBox")
         self.gridLayout_2.addWidget(self.model_comboBox, 1, 0, 1, 1)
         self.lineEdit = QtGui.QLineEdit(self.tab)
+        font = QtGui.QFont()
+        font.setPointSize(11)
+        self.lineEdit.setFont(font)
         self.lineEdit.setReadOnly(True)
         self.lineEdit.setObjectName("lineEdit")
         self.gridLayout_2.addWidget(self.lineEdit, 2, 0, 1, 1)
