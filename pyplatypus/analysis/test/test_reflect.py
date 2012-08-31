@@ -47,6 +47,7 @@ class TestReflect(unittest.TestCase):
         profile = np.loadtxt('pyplatypus/analysis/test/sld_theoretical_R.txt')
         z, rho = np.split(profile, 2)
         myrho = reflect.sld_profile(self.coefs, z.flatten())
+        print myrho
         npt.assert_almost_equal(myrho, rho.flatten())
          
     def test_differential_evolutionfit(self):

@@ -4,7 +4,7 @@ import math
 import pyplatypus.analysis.fitting as fitting
 import pyplatypus.util.ErrorProp as EP
 
-from scipy.stats import norm
+#from scipy.stats import norm
 
 try:
     import _creflect as refcalc
@@ -104,38 +104,47 @@ def abeles(qvals, coefs, *args, **kwds):
 def sld_profile(coefs, z):
         
     nlayers = int(coefs[0])
-    dist = 0
-    summ = coefs[2]
+    summ = np.zeros_like(z)
+    summ += coefs[2]
     thick = 0
     
-    for ii in xrange(nlayers + 1):
-        if ii == 0:
-            if nlayers:
-                deltarho = -coefs[2] + coefs[9]
-                thick = 0
-                sigma = math.fabs(coefs[11])
-            else: 
+    #note that you can do this in a single loop, which would save a lot of time,
+    #using the scipy.norm.cdf function. However, if you use py2app it included 
+    #the entirety of that package, bloating the file by 70Mb.
+    #Using a nested loop reduces file size, and does not cause a significant performance
+    #penalty
+    
+    for idx, zed in enumerate(z):
+        dist = 0
+        for ii in xrange(nlayers + 1):
+            if ii == 0:
+                if nlayers:
+                    deltarho = -coefs[2] + coefs[9]
+                    thick = 0
+                    sigma = math.fabs(coefs[11])
+                else: 
+                    sigma = math.fabs(coefs[7])
+                    deltarho = -coefs[2] + coefs[4]
+            elif ii == nlayers:
+                SLD1 = coefs[4 * ii + 5]
+                deltarho = -SLD1 + coefs[4]
+                thick = math.fabs(coefs[4 * ii + 4])
                 sigma = math.fabs(coefs[7])
-                deltarho = -coefs[2] + coefs[4]
-        elif ii == nlayers:
-            SLD1 = coefs[4 * ii + 5]
-            deltarho = -SLD1 + coefs[4]
-            thick = math.fabs(coefs[4 * ii + 4])
-            sigma = math.fabs(coefs[7])
-        else:
-            SLD1 = coefs[4 * ii + 5]
-            SLD2 = coefs[4 * (ii + 1) + 5]
-            deltarho = -SLD1 + SLD2
-            thick = math.fabs(coefs[4 * ii + 4])
-            sigma = math.fabs(coefs[4 * (ii + 1) + 7])
-
-        dist += thick
+            else:
+                SLD1 = coefs[4 * ii + 5]
+                SLD2 = coefs[4 * (ii + 1) + 5]
+                deltarho = -SLD1 + SLD2
+                thick = math.fabs(coefs[4 * ii + 4])
+                sigma = math.fabs(coefs[4 * (ii + 1) + 7])
     
-        #if sigma=0 then the computer goes haywire (division by zero), so say it's vanishingly small
-        if sigma == 0:
-            sigma += 1e-3
-    
-        summ += deltarho * (norm.cdf((z - dist)/sigma))     
+            dist += thick
+        
+            #if sigma=0 then the computer goes haywire (division by zero), so say it's vanishingly small
+            if sigma == 0:
+                sigma += 1e-3
+        
+            #summ += deltarho * (norm.cdf((zed - dist)/sigma))  
+            summ[idx] += deltarho * (0.5 + 0.5 * math.erf((zed - dist)/(sigma * math.sqrt(2.))))     
         
     return summ
 
