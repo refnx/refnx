@@ -218,45 +218,56 @@ class MyMainWindow(QtGui.QMainWindow):
             return
         
         theoreticalmodel = self.modelStore.models['theoretical']
+        model = self.modelStore.models[self.current_dataset.name]
         
-        self.ui.statusbar.showMessage('fitting')
-        self.current_dataset.do_a_fit(theoreticalmodel)
-        self.ui.statusbar.clearMessage()
+        if self.current_dataset.name in self.modelStore.names:            
+            if model.limits is not None and np.size(theoreticalmodel.parameters) == np.size(model.limits, 1):
+                theoreticalmodel.limits = np.copy(model.limits)
+        else:
+            theoreticalmodel.limits = np.zeros((2, np.size(theoreticalmodel.parameters)))
+            
+            for idx, val enumerate(theoreticalmodel.parameters):
+                if val < 0:
+                    theoreticalmodel.limits[0, idx] = 2 * val
+                else:
+                    theoreticalmodel.limits[1, idx] = 2 * val                    
+            
+            
+        self.do_a_fit_and_add_to_gui(self.current_dataset, theoreticalmodel)
         
-        newmodel = DataStore.Model(parameters = theoreticalmodel.parameters, fitted_parameters = theoreticalmodel.fitted_parameters)
+        
+    def do_a_fit_and_add_to_gui(self, dataset, model):
+        dataset.do_a_fit(model)
+        
+        newmodel = DataStore.Model(parameters = model.parameters, fitted_parameters = model.fitted_parameters)
                 
-        self.modelStore.addModel(newmodel, 'coef_' + self.current_dataset.name)
+        self.modelStore.addModel(newmodel, 'coef_' + dataset.name)        
+        
+        if dataset.line2Dfit is None:
+            dataset.line2Dfit = self.reflectivitygraphs.axes[0].plot(dataset.W_q,
+                                                                        dataset.fit,
+                                                                           linestyle='-',
+                                                                            lw = 2,
+                                                                             label = 'fit_' + dataset.name)[0]
 
-#TODO Update gui when fit has finished        
-#        self.gui_from_parameters(theoreticalmodel.parameters, theoreticalmodel.fitted_parameters)
+        if dataset.line2Dsld_profile is None:
+            dataset.line2Dsld_profile = self.sldgraphs.axes[0].plot(dataset.sld_profile[0],
+                                            dataset.sld_profile[1],
+                                               linestyle='-',
+                                                lw = 2,
+                                                 label = 'sld_' + dataset.name)[0]
         
-        
-        if self.current_dataset.line2Dfit is None:
-            self.current_dataset.line2Dfit = self.reflectivitygraphs.axes[0].plot(self.current_dataset.W_q,
-                                                  self.current_dataset.fit,
+        if dataset.line2Dresiduals is None:
+            dataset.line2Dresiduals = self.reflectivitygraphs.axes[1].plot(dataset.W_q,
+                                                  dataset.residuals,
                                                    linestyle='-',
                                                     lw = 2,
-                                                     label = 'fit_' + self.current_dataset.name)[0]
-
-        if self.current_dataset.line2Dsld_profile is None:
-            self.current_dataset.line2Dsld_profile = self.sldgraphs.axes[0].plot(self.current_dataset.sld_profile[0],
-                                                  self.current_dataset.sld_profile[1],
-                                                   linestyle='-',
-                                                    lw = 2,
-                                                     label = 'sld_' + self.current_dataset.name)[0]
-        
-        if self.current_dataset.line2Dresiduals is None:
-            self.current_dataset.line2Dresiduals = self.reflectivitygraphs.axes[1].plot(self.current_dataset.W_q,
-                                                  self.current_dataset.residuals,
-                                                   linestyle='-',
-                                                    lw = 2,
-                                                     label = 'residuals_' + self.current_dataset.name)[0]
+                                                     label = 'residuals_' + dataset.name)[0]
                                                      
-        if self.ui.model_comboBox.findText('coef_' + self.current_dataset.name) < 0:
-            self.ui.model_comboBox.setCurrentIndex(self.ui.model_comboBox.findText('coef_' + self.current_dataset.name))
+        if self.ui.model_comboBox.findText('coef_' + dataset.name) < 0:
+            self.ui.model_comboBox.setCurrentIndex(self.ui.model_comboBox.findText('coef_' + dataset.name))
         self.update_gui_modelChanged()
-        self.redraw_dataObject_graphs([self.current_dataset], visible = self.current_dataset.visible)
-        
+        self.redraw_dataObject_graphs([dataset], visible = dataset.visible)
                       
     @QtCore.Slot(unicode)
     def on_dataset_comboBox_currentIndexChanged(self, arg_1):
