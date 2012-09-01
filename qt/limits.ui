@@ -11,7 +11,13 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Dialog</string>
+   <string>Choose the lower and upper limits</string>
+  </property>
+  <property name="sizeGripEnabled">
+   <bool>true</bool>
+  </property>
+  <property name="modal">
+   <bool>true</bool>
   </property>
   <layout class="QGridLayout" name="gridLayout">
    <item row="0" column="0">
