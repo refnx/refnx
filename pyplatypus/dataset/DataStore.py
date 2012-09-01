@@ -622,3 +622,28 @@ class LayerModel(QtCore.QAbstractTableModel):
             if section == 3:
                 return 'roughness'
         return None
+        
+class LimitsModel(QtCore.QAbstractTableModel):
+    def __init__(self, parameters, fitted_parameters, limits, parent = None)
+        super(LimitsModel, self).__init__(parent)
+        self.parameters = np.copy(parameters)
+        self.fitted_parameters = np.copy(fitted_parameters)
+        self.limits = np.copy(limits)
+        
+    def columnCount(self, parent = QtCore.QModelIndex()):
+        return 4
+        
+    def rowCount(self, parent = QtCore.QModelIndex()):
+        return np.size(self.fitted_parameters)
+        
+    def data(self, index, role=QtCore.Qt.DisplayRole):
+        if not index.isValid():
+            return False
+            
+        row = index.row()
+        col = index.column()
+                    
+        if role == QtCore.Qt.DisplayRole:
+            if col == 0:
+                return ''
+            
