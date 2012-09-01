@@ -212,10 +212,17 @@ class MyMainWindow(QtGui.QMainWindow):
     def get_limits(self, parameters, fitted_parameters, limits):
 
         limitsdialog = QtGui.QDialog()
-        limits = limitsUI.Ui_Dialog()
-        limits.setupUi(limitsdialog)
-        limitsdialog.show()
-                
+        limitsGUI = limitsUI.Ui_Dialog()
+        limitsGUI.setupUi(limitsdialog)
+
+        limitsModel = DataStore.LimitsModel(parameters, fitted_parameters, limits)       
+        limitsGUI.limits.setModel(limitsModel)
+        header = limitsGUI.limits.horizontalHeader()
+        header.setResizeMode(QtGui.QHeaderView.Stretch)
+        
+        limitsdialog.exec_()
+        limits = limitsModel.limits[:]      
+        
         return limits
                        
     @QtCore.Slot()
@@ -227,12 +234,15 @@ class MyMainWindow(QtGui.QMainWindow):
             return
         
         theoreticalmodel = self.modelStore.models['theoretical']
-            
-        if self.current_dataset.name in self.modelStore.names:            
-            model = self.modelStore.models[self.current_dataset.name]
-            if model.limits is not None and np.size(theoreticalmodel.parameters) == np.size(model.limits, 1):
+        alreadygotlimits = False
+          
+        if ('coef_' + self.current_dataset.name) in self.modelStore.names: 
+            model = self.modelStore.models['coef_' + self.current_dataset.name]            
+            if model.limits is not None and model.limits.ndim == 2 and np.size(theoreticalmodel.parameters) == np.size(model.limits, 1):
                 theoreticalmodel.limits = np.copy(model.limits)
-        else:
+                alreadygotlimits = True
+        
+        if not alreadygotlimits:
             theoreticalmodel.limits = np.zeros((2, np.size(theoreticalmodel.parameters)))
             
             for idx, val in enumerate(theoreticalmodel.parameters):
@@ -251,10 +261,17 @@ class MyMainWindow(QtGui.QMainWindow):
     def do_a_fit_and_add_to_gui(self, dataset, model):
         dataset.do_a_fit(model)
         
-        newmodel = DataStore.Model(parameters = model.parameters, fitted_parameters = model.fitted_parameters)
+        newmodel = DataStore.Model(parameters = model.parameters,
+                                     fitted_parameters = model.fitted_parameters,
+                                        limits = model.limits)
                 
         self.modelStore.addModel(newmodel, 'coef_' + dataset.name)        
         
+        #update GUI
+        self.layerModel.dataChanged.emit(QtCore.QModelIndex(), QtCore.QModelIndex())
+        self.baseModel.dataChanged.emit(QtCore.QModelIndex(), QtCore.QModelIndex())
+
+
         if dataset.line2Dfit is None:
             dataset.line2Dfit = self.reflectivitygraphs.axes[0].plot(dataset.W_q,
                                                                         dataset.fit,
@@ -504,6 +521,7 @@ class MyMainWindow(QtGui.QMainWindow):
                 
     def update_gui_modelChanged(self, store = False):
         theoreticalmodel = self.modelStore.models['theoretical']
+        
         self.theoretical.evaluate_model(theoreticalmodel, store = True)
 
         if self.current_dataset is not None:

@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'qt/limits.ui'
 #
-# Created: Sat Sep  1 18:51:01 2012
+# Created: Sat Sep  1 19:29:25 2012
 #      by: pyside-uic 0.2.13 running on PySide 1.1.1
 #
 # WARNING! All changes made in this file will be lost!
@@ -12,7 +12,9 @@ from PySide import QtCore, QtGui
 class Ui_Dialog(object):
     def setupUi(self, Dialog):
         Dialog.setObjectName("Dialog")
+        Dialog.setWindowModality(QtCore.Qt.WindowModal)
         Dialog.resize(400, 300)
+        Dialog.setInputMethodHints(QtCore.Qt.ImhDigitsOnly)
         Dialog.setSizeGripEnabled(True)
         Dialog.setModal(True)
         self.gridLayout = QtGui.QGridLayout(Dialog)
