@@ -297,7 +297,7 @@ class Model(object):
         holdvector = np.ones_like(self.parameters)
         holdvector[self.fitted_parameters] = 0
         
-        np.savetxt(f, np.column_stack((self.parameters, holdvector, self.limits)))
+        np.savetxt(f, np.column_stack((self.parameters, holdvector, self.limits.T)))
     
     def load(self, f):
         h1 = f.readline()
