@@ -297,14 +297,16 @@ class Model(object):
         holdvector = np.ones_like(self.parameters)
         holdvector[self.fitted_parameters] = 0
         
-        np.savetxt(f, np.column_stack((self.parameters, holdvector)))
+        np.savetxt(f, np.column_stack((self.parameters, holdvector, self.limits)))
     
     def load(self, f):
         h1 = f.readline()
         h2 = f.readline()
         array = np.loadtxt(f)
-        self.parameters, a2 = np.hsplit(array, 2)
+        self.parameters, a2, lowlim, hilim = np.hsplit(array, 4)
         self.parameters = self.parameters.flatten()
+        self.limits = np.column_stack((lowlim, hilim)).T
+        
         a2 = a2.flatten()
         
         self.fitted_parameters = np.where(a2==0)[0]
