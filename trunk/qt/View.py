@@ -12,6 +12,7 @@ from matplotlib.figure import Figure
 import matplotlib.artist
 import pyplatypus.dataset.DataStore as DataStore
 import pyplatypus.analysis.reflect as reflect
+import limitsUI
 import os.path
 from copy import deepcopy
 import pickle
@@ -208,6 +209,14 @@ class MyMainWindow(QtGui.QMainWindow):
                 dataObject.line2D.set_data(dataObject.W_q, dataObject.W_ref)
         self.reflectivitygraphs.draw()
  
+    def get_limits(self, parameters, fitted_parameters, limits):
+
+        limitsdialog = QtGui.QDialog()
+        limits = limitsUI.Ui_Dialog()
+        limits.setupUi(limitsdialog)
+        limitsdialog.show()
+                
+        return limits
                        
     @QtCore.Slot()
     def on_do_fit_button_clicked(self):
@@ -218,21 +227,24 @@ class MyMainWindow(QtGui.QMainWindow):
             return
         
         theoreticalmodel = self.modelStore.models['theoretical']
-        model = self.modelStore.models[self.current_dataset.name]
-        
+            
         if self.current_dataset.name in self.modelStore.names:            
+            model = self.modelStore.models[self.current_dataset.name]
             if model.limits is not None and np.size(theoreticalmodel.parameters) == np.size(model.limits, 1):
                 theoreticalmodel.limits = np.copy(model.limits)
         else:
             theoreticalmodel.limits = np.zeros((2, np.size(theoreticalmodel.parameters)))
             
-            for idx, val enumerate(theoreticalmodel.parameters):
+            for idx, val in enumerate(theoreticalmodel.parameters):
                 if val < 0:
                     theoreticalmodel.limits[0, idx] = 2 * val
                 else:
                     theoreticalmodel.limits[1, idx] = 2 * val                    
             
-            
+        theoreticalmodel.limits = self.get_limits(theoreticalmodel.parameters,
+                                                     theoreticalmodel.fitted_parameters,
+                                                      theoreticalmodel.limits)
+                                                      
         self.do_a_fit_and_add_to_gui(self.current_dataset, theoreticalmodel)
         
         
