@@ -196,7 +196,9 @@ class dataObject(reflectdataset.ReflectDataset):
         self.fit = RFO.model()
         self.residuals = np.log10(self.fit/self.W_ref)
         self.sld_profile = RFO.sld_profile()
-        
+    
+    def pants(self, iterations, chi2, *args):
+        print "waass"
                   
     def evaluate_chi2(self, model, store = False):
         
