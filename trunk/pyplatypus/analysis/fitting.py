@@ -181,9 +181,9 @@ class FitObject(object):
         self.parameters[self.fitted_parameters] = thefit
         return np.copy(self.parameters), chi2
         
-    def progress(self, iterations, chi2, *args):
+    def progress(self, iterations, convergence, chi2, *args):
         '''
             a default progress function for the fit object
         '''
-        pass
+        return True
         

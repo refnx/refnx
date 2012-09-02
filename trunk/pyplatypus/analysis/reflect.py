@@ -198,8 +198,8 @@ class ReflectivityFitObject(fitting.FitObject):
         
         return points, sld_profile(test_parameters, points)
     
-    def progress(self, iterations, chi2, *args):
-        pass
+    def progress(self, iterations, convergence, chi2, *args):
+        return True
         
 
 def costfunction_logR_noweight(modeldata, ydata, edata, test_parameters):

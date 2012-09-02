@@ -190,15 +190,26 @@ class dataObject(reflectdataset.ReflectDataset):
                 del(callerInfo['dqvals'])
         except KeyError:
             pass
-                    
+        
+        self.progressdialog = QtGui.QProgressDialog("Fit progress", "Abort", 0, 100)   
+        self.progressdialog.setWindowModality(QtCore.Qt.WindowModal)
+
         RFO = reflect.ReflectivityFitObject(**callerInfo)
+        RFO.progress = self.progress
         model.parameters, self.chi2 = RFO.fit()
+        
+        self.progressdialog.setValue(100)
+        
         self.fit = RFO.model()
         self.residuals = np.log10(self.fit/self.W_ref)
         self.sld_profile = RFO.sld_profile()
     
-    def pants(self, iterations, chi2, *args):
-        print "waass"
+    def progress(self, iterations, convergence, chi2, *args):
+        self.progressdialog.setValue(int(convergence * 100))
+        if self.progressdialog.wasCanceled():
+            return False
+        else:  
+            return True
                   
     def evaluate_chi2(self, model, store = False):
         
