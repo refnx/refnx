@@ -197,6 +197,9 @@ class ReflectivityFitObject(fitting.FitObject):
         points = np.linspace(zstart, zend, num = 500)
         
         return points, sld_profile(test_parameters, points)
+    
+    def progress(self, iterations, chi2, *args):
+        print chi2, iterations
         
 
 def costfunction_logR_noweight(modeldata, ydata, edata, test_parameters):
