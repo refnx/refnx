@@ -51,8 +51,6 @@ class DEsolver(object):
         
         #do the optimisation.
         for iteration in xrange(self.maxIterations):
-            if self.progress:
-                self.progress(iteration, self.population_energies[0], self.args_tuple)
                 
             for candidate in xrange(self.populationSize):
                 trial = self.DEstrategy(self, candidate)
@@ -71,6 +69,12 @@ class DEsolver(object):
             
             #stop when the fractional s.d. of the population is less than tol of the mean energy
             convergence = np.mean(self.population_energies) * self.tol / np.std(self.population_energies)
+
+            if self.progress:
+                should_continue = self.progress(iteration, convergence, self.population_energies[0], self.args_tuple)
+                if should_continue is False:
+                    convergence = 2
+                    
             if convergence > 1:
                 break
         
