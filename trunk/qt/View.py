@@ -10,7 +10,7 @@ from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt4agg import NavigationToolbar2QTAgg as NavigationToolbar
 from matplotlib.figure import Figure
 import matplotlib.artist
-import pyplatypus.dataset.DataStore as DataStore
+import DataStore
 import pyplatypus.analysis.reflect as reflect
 import limitsUI
 import os.path
