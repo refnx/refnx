@@ -301,6 +301,25 @@ class ModelStore(QtCore.QAbstractListModel):
         if modelName not in self.names:
             self.names.append(modelName)
         self.dataChanged.emit(QtCore.QModelIndex(),QtCore.QModelIndex())
+        
+    def saveModelStore(self, folderName):
+        for modelname in self.names:
+            model = self.models[modelname]
+            filename = os.path.join(folderName, modelname)
+            with open(filename, 'w') as f:
+                model.save(f)
+                
+    def loadModelStore(self, folderName):
+        filelist = os.listdir(folderName)
+        for filename in filelist:
+            try:
+                with open(os.path.join(folderName, filename), 'Ur') as f:
+                    model = Model()
+                    model.load(f)
+                    self.addModel(filename)
+            except IOError:
+                #may be a directory
+                continue
                            
     def snapshot(self, name, snapshotname):
         model = self.models[name]
