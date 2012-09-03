@@ -1,10 +1,12 @@
 from __future__ import division
-import reflectdataset
+import pyplatypus.dataset.reflectdataset as reflectdataset
 import numpy as np
 import pyplatypus.analysis.reflect as reflect
 from copy import deepcopy, copy
 import matplotlib.artist as artist
 from PySide import QtGui, QtCore
+import os.path, os
+
 
 class DataStore(QtCore.QAbstractTableModel):
 
@@ -95,7 +97,26 @@ class DataStore(QtCore.QAbstractTableModel):
         self.addDataObject(TdataObject)
 
         return TdataObject
-    
+        
+    def saveDataStore(self, folderName):
+        
+        for dataObject in self.dataObjects:
+            if dataObject.name is '_theoretical_':
+                continue
+            
+            filename = os.path.join(folderName, dataObject.name)
+            with open(filename, 'w') as f:
+                dataObject.save(f)
+                
+    def loadDataStore(self, folderName):
+        filelist = os.listdir(folderName)
+        for filename in filelist:
+            try:
+                self.loadDataObject(filename)
+            except IOError:
+                #may be a directory
+                continue
+                   
     def snapshot(self, name, snapshotname):
         #this function copies the data from one dataobject into another.
         origin = self.getDataObject(name)
