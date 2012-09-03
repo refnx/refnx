@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'qt/limits.ui'
 #
-# Created: Sat Sep  1 19:29:25 2012
+# Created: Mon Sep  3 19:04:49 2012
 #      by: pyside-uic 0.2.13 running on PySide 1.1.1
 #
 # WARNING! All changes made in this file will be lost!
@@ -12,9 +12,8 @@ from PySide import QtCore, QtGui
 class Ui_Dialog(object):
     def setupUi(self, Dialog):
         Dialog.setObjectName("Dialog")
-        Dialog.setWindowModality(QtCore.Qt.WindowModal)
+        Dialog.setWindowModality(QtCore.Qt.ApplicationModal)
         Dialog.resize(400, 300)
-        Dialog.setInputMethodHints(QtCore.Qt.ImhDigitsOnly)
         Dialog.setSizeGripEnabled(True)
         Dialog.setModal(True)
         self.gridLayout = QtGui.QGridLayout(Dialog)
@@ -34,5 +33,5 @@ class Ui_Dialog(object):
         QtCore.QMetaObject.connectSlotsByName(Dialog)
 
     def retranslateUi(self, Dialog):
-        Dialog.setWindowTitle(QtGui.QApplication.translate("Dialog", "Choose the lower and upper limits", None, QtGui.QApplication.UnicodeUTF8))
+        Dialog.setWindowTitle(QtGui.QApplication.translate("Dialog", "Enter limits for fit", None, QtGui.QApplication.UnicodeUTF8))
 
