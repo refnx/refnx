@@ -450,7 +450,6 @@ class BaseModel(QtCore.QAbstractTableModel):
                     thesignal.emit()
 
                 else:
-                    self.errorHandler.showMessage("Number of layers must be integer > 0")
                     return False
             else:
                 validator = QtGui.QDoubleValidator()
@@ -458,8 +457,6 @@ class BaseModel(QtCore.QAbstractTableModel):
                 if voutput[0] is QtGui.QValidator.State.Acceptable:
                     self.model.parameters[coltopar[index.column()]] = voutput[1]
                 else:
-                    print value
-                    self.errorHandler.showMessage("values entered must be numeric")
                     return False
         
         self.dataChanged.emit(index, index)
@@ -581,8 +578,6 @@ class LayerModel(QtCore.QAbstractTableModel):
             if voutput[0] == QtGui.QValidator.State.Acceptable:
                 self.model.parameters[param] = voutput[1]
             else:
-                print value, row, col
-                self.errorHandler.showMessage("values entered must be numeric")
                 return False
         
         self.dataChanged.emit(index, index)
@@ -717,8 +712,6 @@ class LimitsModel(QtCore.QAbstractTableModel):
                 if col == 3:
                     self.limits[1, self.fitted_parameters[row]] = voutput[1]                    
             else:
-                print value, row, col
-                self.errorHandler.showMessage("values entered must be numeric")
                 return False
             
         self.dataChanged.emit(index, index)
