@@ -17,6 +17,10 @@ import os.path
 from copy import deepcopy
 import pickle
 import math
+import tempfile
+import shutil
+import zipfile
+import os
 
 class MyMainWindow(QtGui.QMainWindow):
     def __init__(self, parent=None):
@@ -98,19 +102,79 @@ class MyMainWindow(QtGui.QMainWindow):
         for url in urls:
             try:
                 dataObject = self.dataStore.loadDataObject(url.toLocalFile())
-                self.add_dataObject_to_gui(dataObject)
+                self.reflectivitygraphs.add_dataObject(dataObject)
             except Exception:
                 #try loading a model file.
                 self.loadModel(url.toLocalFile())
-                
-
                 
     @QtCore.Slot(QtGui.QDragEnterEvent)
     def dragEnterEvent(self, event):
         m = event.mimeData()
         if m.hasUrls():
             event.acceptProposedAction()
-              
+    
+    @QtCore.Slot()
+    def on_actionSave_experiment_triggered(self):
+        experimentFileName, ok = QtGui.QFileDialog.getSaveFileName(self, caption = 'Save experiment as:', dir='experiment.fdob')
+        
+        if not ok:
+            return
+        
+        try:
+            tempdirectory = tempfile.mkdtemp()
+            datasetd = os.path.join(tempdirectory,'datasets')
+            os.mkdir(datasetd)
+            self.dataStore.saveDataStore(datasetd)
+            modeld = os.path.join(tempdirectory,'models')
+            os.mkdir(modeld)
+            self.modelStore.saveModelStore(modeld)
+            with zipfile.ZipFile(experimentFileName, 'w') as zip:
+                DataStore.zipper(tempdirectory, zip)
+        except Exception:
+            pass
+        finally: 
+            shutil.rmtree(tempdirectory)
+    
+    @QtCore.Slot()
+    def on_actionLoad_experiment_triggered(self):
+        experimentFileName, ok = QtGui.QFileDialog.getOpenFileName(self,
+                                                                  caption = 'Select Experiment File',
+                                                                  filter = 'Experiment Files (*.fdob)')
+        if not ok:
+            return
+        
+        tempdirectory = tempfile.mkdtemp()
+         
+        with zipfile.ZipFile(experimentFileName, 'r') as zip:
+            zip.extractall(tempdirectory)
+        
+        datasetd = os.path.join(tempdirectory,'datasets')
+        self.dataStore.loadDataStore(datasetd, clear = True)
+        modeld = os.path.join(tempdirectory,'models')
+        self.modelStore.loadModelStore(modeld, clear = True)
+        
+        #remove and add dataObjectsToGraphs
+        self.reflectivitygraphs.removeTraces()
+        for key in self.dataStore.dataObjects:
+            self.reflectivitygraphs.add_dataObject(self.dataStore.dataObjects[key])
+            
+        self.theoretical = self.dataStore.getDataObject('_theoretical_')
+        self.reflectivitygraphs.axes[0].lines.remove(self.theoretical.line2D)
+        
+        #when you load in the theoretical model you destroy the link to the gui, reinstate it.
+        self.theoreticalmodel = self.modelStore.models['theoretical']
+        self.baseModel.model = self.theoreticalmodel
+        self.layerModel.model = self.theoreticalmodel
+        self.theoretical.evaluate_model(self.theoreticalmodel, store = True)
+        
+        self.theoretical.line2Dfit = self.reflectivitygraphs.axes[0].plot(self.theoretical.W_q,
+                                                   self.theoretical.fit,
+                                                    linestyle='-', lw=2, label = 'theoretical')[0]
+        self.reflectivitygraphs.draw()
+        
+        shutil.rmtree(tempdirectory)
+
+                       
     @QtCore.Slot()
     def on_actionLoad_Data_triggered(self):
         """
@@ -122,38 +186,8 @@ class MyMainWindow(QtGui.QMainWindow):
             
         for file in theFiles:
             dataObject = self.dataStore.loadDataObject(file)
-            self.add_dataObject_to_gui(dataObject)
-            
-    def add_dataObject_to_gui(self, dataObject):
-        lineInstance = self.reflectivitygraphs.axes[0].plot(dataObject.W_q,
-                                                                 dataObject.W_ref,
-                                                                   markersize=5,
-                                                                    marker='o',
-                                                                     linestyle='',
-                                                                      label = dataObject.name)
-        dataObject.line2D = lineInstance[0]
-        self.reflectivitygraphs.draw()
-        if self.dataStore.rowCount() == 1:
-            self.ui.dataset_comboBox.setCurrentIndex(0)
+            self.reflectivitygraphs.add_dataObject(dataObject)
 
-    @QtCore.Slot()
-    def on_actionSave_Model_triggered(self):
-        #save a model
-        #which model are you saving?
-        listofmodels = self.modelStore.names
-        
-        which_model, ok = QtGui.QInputDialog.getItem(self, "Which model did you want to save?", "model", listofmodels, editable=False)
-        if not ok:
-            return
-            
-        themodel = self.modelStore.models[which_model]
-        modelFileName, ok = QtGui.QFileDialog.getSaveFileName(self, caption = 'Save model as:', dir=which_model)
-        if not ok:
-            return
-             
-        with open(modelFileName, 'w+') as f:
-            themodel.save(f)
-    
     @QtCore.Slot()
     def on_actionSave_Data_triggered(self):
         listoffits = []
@@ -175,6 +209,25 @@ class MyMainWindow(QtGui.QMainWindow):
         
         with open(fitFileName, 'wb') as f:
             np.savetxt(f, np.column_stack((dataObject.W_q, dataObject.fit)))
+            
+    @QtCore.Slot()
+    def on_actionSave_Model_triggered(self):
+        #save a model
+        #which model are you saving?
+        listofmodels = self.modelStore.names
+        
+        which_model, ok = QtGui.QInputDialog.getItem(self, "Which model did you want to save?", "model", listofmodels, editable=False)
+        if not ok:
+            return
+            
+        themodel = self.modelStore.models[which_model]
+        modelFileName, ok = QtGui.QFileDialog.getSaveFileName(self, caption = 'Save model as:', dir=which_model)
+        if not ok:
+            return
+             
+        with open(modelFileName, 'w+') as f:
+            themodel.save(f)
+    
                    
     @QtCore.Slot()
     def on_actionLoad_Model_triggered(self):
@@ -243,13 +296,7 @@ class MyMainWindow(QtGui.QMainWindow):
                 alreadygotlimits = True
         
         if not alreadygotlimits:
-            theoreticalmodel.limits = np.zeros((2, np.size(theoreticalmodel.parameters)))
-            
-            for idx, val in enumerate(theoreticalmodel.parameters):
-                if val < 0:
-                    theoreticalmodel.limits[0, idx] = 2 * val
-                else:
-                    theoreticalmodel.limits[1, idx] = 2 * val                    
+            theoreticalmodel.defaultlimits()              
             
         theoreticalmodel.limits = self.get_limits(theoreticalmodel.parameters,
                                                      theoreticalmodel.fitted_parameters,
@@ -499,25 +546,8 @@ class MyMainWindow(QtGui.QMainWindow):
         header.setResizeMode(QtGui.QHeaderView.Stretch)
                      
     def redraw_dataObject_graphs(self, dataObjects, visible = True):
-        for dataObject in dataObjects:
-            if not dataObject:
-                continue
-            if dataObject.line2D:
-               dataObject.line2D.set_data(dataObject.W_q, dataObject.W_ref)
-               dataObject.line2D.set_visible(visible)               
-            if dataObject.line2Dfit:
-               dataObject.line2Dfit.set_data(dataObject.W_q, dataObject.fit)
-               dataObject.line2Dfit.set_visible(visible)
-            if dataObject.line2Dresiduals:
-               dataObject.line2Dresiduals.set_data(dataObject.W_q, dataObject.residuals)
-               dataObject.line2Dresiduals.set_visible(visible)
-            if dataObject.line2Dsld_profile:
-               dataObject.line2Dsld_profile.set_data(dataObject.sld_profile[0], dataObject.sld_profile[1])
-               dataObject.line2Dsld_profile.set_visible(visible)
-        
-        self.sldgraphs.draw()    
-        self.reflectivitygraphs.draw()
-        
+        self.reflectivitygraphs.redraw_dataObjects(dataObjects, visible = visible)        
+        self.sldgraphs.redraw_dataObjects(dataObjects, visible = visible)
                 
     def update_gui_modelChanged(self, store = False):
         theoreticalmodel = self.modelStore.models['theoretical']
@@ -555,8 +585,65 @@ class MyReflectivityGraphs(FigureCanvas):
         self.setParent(parent)
 #        self.figure.subplots_adjust(left=0.1, right=0.95, top = 0.98)
         self.mpl_toolbar = NavigationToolbar(self, parent)
+        
+    def add_dataObject(self, dataObject):
+        lineInstance = self.axes[0].plot(dataObject.W_q,
+                                          dataObject.W_ref,
+                                           markersize=5,
+                                            marker='o',
+                                             linestyle='',
+                                              label = dataObject.name)
+        dataObject.line2D = lineInstance[0]    
+        
+        if dataObject.line2Dfit is None and dataObject.fit is not None:
+            dataObject.line2Dfit = self.reflectivitygraphs.axes[0].plot(dataObject.W_q,
+                                                                        dataObject.fit,
+                                                                           linestyle='-',
+                                                                            lw = 2,
+                                                                             label = 'fit_' + dataObject.name)[0]
+
+        if dataObject.line2Dsld_profile is None and dataObject.sld_profile is not None:
+            dataObject.line2Dsld_profile = self.sldgraphs.axes[0].plot(dataObject.sld_profile[0],
+                                            dataObject.sld_profile[1],
+                                               linestyle='-',
+                                                lw = 2,
+                                                 label = 'sld_' + dataObject.name)[0]
+        
+        if dataObject.line2Dresiduals is None and dataObject.residuals is not None:
+            dataObject.line2Dresiduals = self.reflectivitygraphs.axes[1].plot(dataObject.W_q,
+                                                  dataObject.residuals,
+                                                   linestyle='-',
+                                                    lw = 2,
+                                                     label = 'residuals_' + dataObject.name)[0]
+                                                      
+        self.draw()
+    
+    def redraw_dataObjects(self, dataObjects, visible = True):
+        for dataObject in dataObjects:
+            if not dataObject:
+                continue
+            if dataObject.line2D:
+               dataObject.line2D.set_data(dataObject.W_q, dataObject.W_ref)
+               dataObject.line2D.set_visible(visible)               
+            if dataObject.line2Dfit:
+               dataObject.line2Dfit.set_data(dataObject.W_q, dataObject.fit)
+               dataObject.line2Dfit.set_visible(visible)
+            if dataObject.line2Dresiduals:
+               dataObject.line2Dresiduals.set_data(dataObject.W_q, dataObject.residuals)
+               dataObject.line2Dresiduals.set_visible(visible)
+        self.draw()
+                       
+    def removeTraces(self):
+        for line in self.axes[0].lines:
+            self.axes[0].lines.remove(line)
+        
+        for line in self.axes[1].lines:
+            self.axes[1].lines.remove(line)
             
-                            
+        self.draw()
+        
+        
+                                            
 class MySLDGraphs(FigureCanvas):
     """Ultimately, this is a QWidget (as well as a FigureCanvasAgg, etc.)."""
     def __init__(self, parent=None):
@@ -571,4 +658,19 @@ class MySLDGraphs(FigureCanvas):
         FigureCanvas.__init__(self, self.figure)
         self.setParent(parent)
         self.figure.subplots_adjust(left=0.1, right=0.95, top = 0.98)
-        self.mpl_toolbar = NavigationToolbar(self, parent)         
+        self.mpl_toolbar = NavigationToolbar(self, parent)
+        
+    def redraw_dataObjects(self, dataObjects, visible = True):
+        for dataObject in dataObjects:
+            if not dataObject:
+                continue
+            if dataObject.line2Dsld_profile and dataObject.sld_profile is not None:
+               dataObject.line2Dsld_profile.set_data(dataObject.sld_profile[0], dataObject.sld_profile[1])
+               dataObject.line2Dsld_profile.set_visible(visible)
+        self.draw()
+        
+    def removeTraces(self):
+        for line in self.axes[0].lines:
+            self.axes[0].lines.remove(line)
+        
+        self.draw()
