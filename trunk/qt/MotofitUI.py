@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'qt/Motofit.ui'
+# Form implementation generated from reading ui file 'Motofit.ui'
 #
-# Created: Thu Aug 30 17:29:15 2012
+# Created: Tue Sep  4 13:53:46 2012
 #      by: pyside-uic 0.2.13 running on PySide 1.1.1
 #
 # WARNING! All changes made in this file will be lost!
@@ -190,6 +190,8 @@ class Ui_MainWindow(object):
         self.menuHelp.setObjectName("menuHelp")
         self.menuPlot_type = QtGui.QMenu(self.menubar)
         self.menuPlot_type.setObjectName("menuPlot_type")
+        self.menuExperiment = QtGui.QMenu(self.menubar)
+        self.menuExperiment.setObjectName("menuExperiment")
         MainWindow.setMenuBar(self.menubar)
         self.statusbar = QtGui.QStatusBar(MainWindow)
         sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
@@ -342,6 +344,10 @@ class Ui_MainWindow(object):
         self.actionRQ4_vs_Q_2.setObjectName("actionRQ4_vs_Q_2")
         self.actionRefresh_Datasets = QtGui.QAction(MainWindow)
         self.actionRefresh_Datasets.setObjectName("actionRefresh_Datasets")
+        self.actionLoad_experiment = QtGui.QAction(MainWindow)
+        self.actionLoad_experiment.setObjectName("actionLoad_experiment")
+        self.actionSave_experiment = QtGui.QAction(MainWindow)
+        self.actionSave_experiment.setObjectName("actionSave_experiment")
         self.menuData.addAction(self.actionLoad_Data)
         self.menuData.addAction(self.actionRefresh_Datasets)
         self.menuData.addSeparator()
@@ -351,10 +357,13 @@ class Ui_MainWindow(object):
         self.menuPlot_type.addAction(self.actionLogR_vs_Q)
         self.menuPlot_type.addAction(self.actionRQ4_vs_Q)
         self.menuPlot_type.addAction(self.actionRQ4_vs_Q_2)
+        self.menuExperiment.addAction(self.actionLoad_experiment)
+        self.menuExperiment.addAction(self.actionSave_experiment)
         self.menubar.addAction(self.menuData.menuAction())
         self.menubar.addAction(self.menuModel.menuAction())
         self.menubar.addAction(self.menuPlot_type.menuAction())
         self.menubar.addAction(self.menuHelp.menuAction())
+        self.menubar.addAction(self.menuExperiment.menuAction())
 
         self.retranslateUi(MainWindow)
         self.graphs.setCurrentIndex(0)
@@ -370,6 +379,7 @@ class Ui_MainWindow(object):
         self.menuModel.setTitle(QtGui.QApplication.translate("MainWindow", "Model", None, QtGui.QApplication.UnicodeUTF8))
         self.menuHelp.setTitle(QtGui.QApplication.translate("MainWindow", "Help", None, QtGui.QApplication.UnicodeUTF8))
         self.menuPlot_type.setTitle(QtGui.QApplication.translate("MainWindow", "Plot type", None, QtGui.QApplication.UnicodeUTF8))
+        self.menuExperiment.setTitle(QtGui.QApplication.translate("MainWindow", "Experiment", None, QtGui.QApplication.UnicodeUTF8))
         self.dockWidget.setWindowTitle(QtGui.QApplication.translate("MainWindow", "Motofit", None, QtGui.QApplication.UnicodeUTF8))
         self.use_errors_checkbox.setText(QtGui.QApplication.translate("MainWindow", "Use errors?", None, QtGui.QApplication.UnicodeUTF8))
         self.do_fit_button.setText(QtGui.QApplication.translate("MainWindow", "Do Fit", None, QtGui.QApplication.UnicodeUTF8))
@@ -393,4 +403,6 @@ class Ui_MainWindow(object):
         self.actionRQ4_vs_Q_2.setText(QtGui.QApplication.translate("MainWindow", "RQ4 vs Q", None, QtGui.QApplication.UnicodeUTF8))
         self.actionRefresh_Datasets.setText(QtGui.QApplication.translate("MainWindow", "Refresh Datasets", None, QtGui.QApplication.UnicodeUTF8))
         self.actionRefresh_Datasets.setShortcut(QtGui.QApplication.translate("MainWindow", "Meta+R", None, QtGui.QApplication.UnicodeUTF8))
+        self.actionLoad_experiment.setText(QtGui.QApplication.translate("MainWindow", "Load", None, QtGui.QApplication.UnicodeUTF8))
+        self.actionSave_experiment.setText(QtGui.QApplication.translate("MainWindow", "Save", None, QtGui.QApplication.UnicodeUTF8))
 

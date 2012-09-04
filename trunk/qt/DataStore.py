@@ -7,7 +7,15 @@ import matplotlib.artist as artist
 from PySide import QtGui, QtCore
 import os.path, os
 
-
+def zipper(dir, zip):
+    root_len = len(os.path.abspath(dir))
+    for root, dirs, files in os.walk(dir):
+        archive_root = os.path.abspath(root)[root_len:]
+        for f in files:
+            fullpath = os.path.join(root, f)
+            archive_name = os.path.join(archive_root, f)
+            zip.write(fullpath, archive_name)
+    
 class DataStore(QtCore.QAbstractTableModel):
 
     def __init__(self, parent = None):
@@ -33,7 +41,7 @@ class DataStore(QtCore.QAbstractTableModel):
         if index.column() == 1:
             return (QtCore.Qt.ItemIsUserCheckable |  QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable)
         else:
-            return  QtCore.Qt.NoItemFlags
+            return  (QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled)
             
     def setData(self, index, value, role = QtCore.Qt.EditRole):
         if index.column() == 1:
@@ -100,23 +108,31 @@ class DataStore(QtCore.QAbstractTableModel):
         
     def saveDataStore(self, folderName):
         
-        for dataObject in self.dataObjects:
-            if dataObject.name is '_theoretical_':
-                continue
-            
-            filename = os.path.join(folderName, dataObject.name)
+        for key in self.dataObjects.keys():            
+            dataObject = self.dataObjects[key]
+            try:
+                filename = os.path.join(folderName, dataObject.name)
+            except AttributeError:
+                print folderName, key
+                
             with open(filename, 'w') as f:
                 dataObject.save(f)
                 
-    def loadDataStore(self, folderName):
+    def loadDataStore(self, folderName, clear = False):
+        if clear:
+            self.dataObjects.clear()
+            self.names = []
+            self.numDataObjects = 0
+            
         filelist = os.listdir(folderName)
         for filename in filelist:
             try:
-                self.loadDataObject(filename)
+                self.loadDataObject(os.path.join(folderName, filename))
             except IOError:
-                #may be a directory
                 continue
-                   
+        
+        self.modelReset.emit()       
+                       
     def snapshot(self, name, snapshotname):
         #this function copies the data from one dataobject into another.
         origin = self.getDataObject(name)
@@ -309,18 +325,24 @@ class ModelStore(QtCore.QAbstractListModel):
             with open(filename, 'w') as f:
                 model.save(f)
                 
-    def loadModelStore(self, folderName):
+    def loadModelStore(self, folderName, clear = False):
+        if clear:
+            self.models.clear()
+            self.names = []
+            
         filelist = os.listdir(folderName)
         for filename in filelist:
             try:
                 with open(os.path.join(folderName, filename), 'Ur') as f:
                     model = Model()
                     model.load(f)
-                    self.addModel(filename)
+                    self.addModel(model, filename)
             except IOError:
                 #may be a directory
                 continue
-                           
+        
+        self.modelReset.emit()       
+ 
     def snapshot(self, name, snapshotname):
         model = self.models[name]
         snapshot = Model(parameters = model.parameters,
@@ -350,6 +372,9 @@ class Model(object):
         holdvector = np.ones_like(self.parameters)
         holdvector[self.fitted_parameters] = 0
         
+        if self.limits is None or self.limits.ndim != 2 or np.size(self.limits, 1) != np.size(self.parameters):
+            self.defaultlimits()
+            
         np.savetxt(f, np.column_stack((self.parameters, holdvector, self.limits.T)))
     
     def load(self, f):
@@ -364,7 +389,15 @@ class Model(object):
         
         self.fitted_parameters = np.where(a2==0)[0]
         
-
+    def defaultlimits(self):
+        self.limits = np.zeros((2, np.size(self.parameters)))
+            
+        for idx, val in enumerate(self.parameters):
+            if val < 0:
+                self.limits[0, idx] = 2 * val
+            else:
+                self.limits[1, idx] = 2 * val 
+                    
 class BaseModel(QtCore.QAbstractTableModel):
 
     layersAboutToBeInserted = QtCore.Signal(int, int)
