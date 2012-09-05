@@ -185,7 +185,7 @@ class dataObject(reflectdataset.ReflectDataset):
         self.line2Dsld_profile_properties = {}
         
     def __getstate__(self):
-        self.__save_graph_properties()
+        self._save_graph_properties()
         d = copy(self.__dict__)
         d['line2Dfit'] = None
         d['line2D'] = None
@@ -195,7 +195,7 @@ class dataObject(reflectdataset.ReflectDataset):
         return d
         
         
-    def __save_graph_properties(self):
+    def _save_graph_properties(self):
         if self.line2D:
             for key in self.__requiredgraphproperties:
                 self.line2D_properties[key] = artist.getp(self.line2D, key)
