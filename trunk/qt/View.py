@@ -55,6 +55,7 @@ class MyMainWindow(QtGui.QMainWindow):
         self.theoretical.evaluate_model(theoreticalmodel, store = True)
         
         self.dataStore.addDataObject(self.theoretical)
+        
         self.theoretical.line2Dsld_profile = self.sldgraphs.axes[0].plot(self.theoretical.sld_profile[0],
                                                    self.theoretical.sld_profile[1],
                                                     linestyle='-')[0]
@@ -103,6 +104,7 @@ class MyMainWindow(QtGui.QMainWindow):
             try:
                 dataObject = self.dataStore.loadDataObject(url.toLocalFile())
                 self.reflectivitygraphs.add_dataObject(dataObject)
+                self.sldgraphs.add_dataObject(dataObject)
             except Exception:
                 #try loading a model file.
                 self.loadModel(url.toLocalFile())
@@ -273,10 +275,10 @@ class MyMainWindow(QtGui.QMainWindow):
         header = limitsGUI.limits.horizontalHeader()
         header.setResizeMode(QtGui.QHeaderView.Stretch)
         
-        limitsdialog.exec_()
+        ok = limitsdialog.exec_()
         limits = limitsModel.limits[:]      
         
-        return limits
+        return ok, limits
                        
     @QtCore.Slot()
     def on_do_fit_button_clicked(self):
@@ -298,10 +300,14 @@ class MyMainWindow(QtGui.QMainWindow):
         if not alreadygotlimits:
             theoreticalmodel.defaultlimits()              
             
-        theoreticalmodel.limits = self.get_limits(theoreticalmodel.parameters,
+        ok, limits = self.get_limits(theoreticalmodel.parameters,
                                                      theoreticalmodel.fitted_parameters,
                                                       theoreticalmodel.limits)
-                                                      
+        
+        if not ok:
+            return
+        
+        theoreticalmodel.limits = np.copy(limits)                                
         self.do_a_fit_and_add_to_gui(self.current_dataset, theoreticalmodel)
         
         
@@ -318,28 +324,9 @@ class MyMainWindow(QtGui.QMainWindow):
         self.layerModel.dataChanged.emit(QtCore.QModelIndex(), QtCore.QModelIndex())
         self.baseModel.dataChanged.emit(QtCore.QModelIndex(), QtCore.QModelIndex())
 
-
-        if dataset.line2Dfit is None:
-            dataset.line2Dfit = self.reflectivitygraphs.axes[0].plot(dataset.W_q,
-                                                                        dataset.fit,
-                                                                           linestyle='-',
-                                                                            lw = 2,
-                                                                             label = 'fit_' + dataset.name)[0]
-
-        if dataset.line2Dsld_profile is None:
-            dataset.line2Dsld_profile = self.sldgraphs.axes[0].plot(dataset.sld_profile[0],
-                                            dataset.sld_profile[1],
-                                               linestyle='-',
-                                                lw = 2,
-                                                 label = 'sld_' + dataset.name)[0]
-        
-        if dataset.line2Dresiduals is None:
-            dataset.line2Dresiduals = self.reflectivitygraphs.axes[1].plot(dataset.W_q,
-                                                  dataset.residuals,
-                                                   linestyle='-',
-                                                    lw = 2,
-                                                     label = 'residuals_' + dataset.name)[0]
-                                                     
+        self.reflectivitygraphs.add_dataObject(dataset)
+        self.sldgraphs.add_dataObject(dataset)
+                                                             
         if self.ui.model_comboBox.findText('coef_' + dataset.name) < 0:
             self.ui.model_comboBox.setCurrentIndex(self.ui.model_comboBox.findText('coef_' + dataset.name))
         self.update_gui_modelChanged()
@@ -587,38 +574,28 @@ class MyReflectivityGraphs(FigureCanvas):
         self.mpl_toolbar = NavigationToolbar(self, parent)
         
     def add_dataObject(self, dataObject):
-        lineInstance = self.axes[0].plot(dataObject.W_q,
+        if dataObject.line2D is None:
+            lineInstance = self.axes[0].plot(dataObject.W_q,
                                           dataObject.W_ref,
                                            markersize=5,
                                             marker='o',
                                              linestyle='',
                                               label = dataObject.name)
-        dataObject.line2D = lineInstance[0]
-        if dataObject.line2D_properties:
-            artist.setp(dataObject.line2D, dataObject.line2D_properties)
-                
+            dataObject.line2D = lineInstance[0]
+            if dataObject.line2D_properties:
+                artist.setp(dataObject.line2D, dataObject.line2D_properties)
         
         if dataObject.line2Dfit is None and dataObject.fit is not None:
-            dataObject.line2Dfit = self.reflectivitygraphs.axes[0].plot(dataObject.W_q,
+            dataObject.line2Dfit = self.axes[0].plot(dataObject.W_q,
                                                                         dataObject.fit,
                                                                            linestyle='-',
                                                                             lw = 2,
                                                                              label = 'fit_' + dataObject.name)[0]
             if dataObject.line2Dfit_properties:
                 artist.setp(dataObject.line2Dfit, dataObject.line2Dfit_properties)
-
-        if dataObject.line2Dsld_profile is None and dataObject.sld_profile is not None:
-            dataObject.line2Dsld_profile = self.sldgraphs.axes[0].plot(dataObject.sld_profile[0],
-                                            dataObject.sld_profile[1],
-                                               linestyle='-',
-                                                lw = 2,
-                                                 label = 'sld_' + dataObject.name)[0]
-            
-            if dataObject.line2Dsld_profile_properties:
-                artist.setp(dataObject.line2Dsld_profle, dataObject.line2Dsld_profile_properties)
         
         if dataObject.line2Dresiduals is None and dataObject.residuals is not None:
-            dataObject.line2Dresiduals = self.reflectivitygraphs.axes[1].plot(dataObject.W_q,
+            dataObject.line2Dresiduals = self.axes[1].plot(dataObject.W_q,
                                                   dataObject.residuals,
                                                    linestyle='-',
                                                     lw = 2,
@@ -645,12 +622,12 @@ class MyReflectivityGraphs(FigureCanvas):
         self.draw()
                        
     def removeTraces(self):
-        for line in self.axes[0].lines:
-            self.axes[0].lines.remove(line)
-        
-        for line in self.axes[1].lines:
-            self.axes[1].lines.remove(line)
-            
+        while len(self.axes[0].lines):
+            del self.axes[0].lines[0]
+ 
+         while len(self.axes[1].lines):
+            del self.axes[1].lines[0]
+                        
         self.draw()
         
         
@@ -680,8 +657,22 @@ class MySLDGraphs(FigureCanvas):
                dataObject.line2Dsld_profile.set_visible(visible)
         self.draw()
         
+    def add_dataObject(self, dataObject):
+        if dataObject.line2Dsld_profile is None and dataObject.sld_profile is not None:
+            dataObject.line2Dsld_profile = self.axes[0].plot(dataObject.sld_profile[0],
+                                            dataObject.sld_profile[1],
+                                               linestyle='-',
+                                                lw = 2,
+                                                 label = 'sld_' + dataObject.name)[0]
+            
+            if dataObject.line2Dsld_profile_properties:
+                artist.setp(dataObject.line2Dsld_profle, dataObject.line2Dsld_profile_properties)
+                
+        self.draw()
+        
     def removeTraces(self):
         for line in self.axes[0].lines:
+            print line
             self.axes[0].lines.remove(line)
         
         self.draw()
