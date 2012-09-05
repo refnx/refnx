@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'Motofit.ui'
+# Form implementation generated from reading ui file 'qt/Motofit.ui'
 #
-# Created: Tue Sep  4 13:53:46 2012
+# Created: Wed Sep  5 11:06:40 2012
 #      by: pyside-uic 0.2.13 running on PySide 1.1.1
 #
 # WARNING! All changes made in this file will be lost!
@@ -362,8 +362,8 @@ class Ui_MainWindow(object):
         self.menubar.addAction(self.menuData.menuAction())
         self.menubar.addAction(self.menuModel.menuAction())
         self.menubar.addAction(self.menuPlot_type.menuAction())
-        self.menubar.addAction(self.menuHelp.menuAction())
         self.menubar.addAction(self.menuExperiment.menuAction())
+        self.menubar.addAction(self.menuHelp.menuAction())
 
         self.retranslateUi(MainWindow)
         self.graphs.setCurrentIndex(0)
@@ -404,5 +404,7 @@ class Ui_MainWindow(object):
         self.actionRefresh_Datasets.setText(QtGui.QApplication.translate("MainWindow", "Refresh Datasets", None, QtGui.QApplication.UnicodeUTF8))
         self.actionRefresh_Datasets.setShortcut(QtGui.QApplication.translate("MainWindow", "Meta+R", None, QtGui.QApplication.UnicodeUTF8))
         self.actionLoad_experiment.setText(QtGui.QApplication.translate("MainWindow", "Load", None, QtGui.QApplication.UnicodeUTF8))
+        self.actionLoad_experiment.setShortcut(QtGui.QApplication.translate("MainWindow", "Meta+N", None, QtGui.QApplication.UnicodeUTF8))
         self.actionSave_experiment.setText(QtGui.QApplication.translate("MainWindow", "Save", None, QtGui.QApplication.UnicodeUTF8))
+        self.actionSave_experiment.setShortcut(QtGui.QApplication.translate("MainWindow", "Meta+M", None, QtGui.QApplication.UnicodeUTF8))
 
