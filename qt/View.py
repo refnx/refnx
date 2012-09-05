@@ -9,7 +9,7 @@ matplotlib.rcParams['backend.qt4']='PySide'
 from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt4agg import NavigationToolbar2QTAgg as NavigationToolbar
 from matplotlib.figure import Figure
-import matplotlib.artist
+import matplotlib.artist as artist
 import DataStore
 import pyplatypus.analysis.reflect as reflect
 import limitsUI
@@ -593,7 +593,10 @@ class MyReflectivityGraphs(FigureCanvas):
                                             marker='o',
                                              linestyle='',
                                               label = dataObject.name)
-        dataObject.line2D = lineInstance[0]    
+        dataObject.line2D = lineInstance[0]
+        if dataObject.line2D_properties:
+            artist.setp(dataObject.line2D, dataObject.line2D_properties)
+                
         
         if dataObject.line2Dfit is None and dataObject.fit is not None:
             dataObject.line2Dfit = self.reflectivitygraphs.axes[0].plot(dataObject.W_q,
@@ -601,6 +604,8 @@ class MyReflectivityGraphs(FigureCanvas):
                                                                            linestyle='-',
                                                                             lw = 2,
                                                                              label = 'fit_' + dataObject.name)[0]
+            if dataObject.line2Dfit_properties:
+                artist.setp(dataObject.line2Dfit, dataObject.line2Dfit_properties)
 
         if dataObject.line2Dsld_profile is None and dataObject.sld_profile is not None:
             dataObject.line2Dsld_profile = self.sldgraphs.axes[0].plot(dataObject.sld_profile[0],
@@ -608,6 +613,9 @@ class MyReflectivityGraphs(FigureCanvas):
                                                linestyle='-',
                                                 lw = 2,
                                                  label = 'sld_' + dataObject.name)[0]
+            
+            if dataObject.line2Dsld_profile_properties:
+                artist.setp(dataObject.line2Dsld_profle, dataObject.line2Dsld_profile_properties)
         
         if dataObject.line2Dresiduals is None and dataObject.residuals is not None:
             dataObject.line2Dresiduals = self.reflectivitygraphs.axes[1].plot(dataObject.W_q,
@@ -615,6 +623,9 @@ class MyReflectivityGraphs(FigureCanvas):
                                                    linestyle='-',
                                                     lw = 2,
                                                      label = 'residuals_' + dataObject.name)[0]
+
+            if dataObject.line2Dresiduals_properties:
+                artist.setp(dataObject.line2Dresiduals, dataObject.line2Dresiduals_properties)
                                                       
         self.draw()
     
