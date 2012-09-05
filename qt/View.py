@@ -87,7 +87,7 @@ class MyMainWindow(QtGui.QMainWindow):
         pickle.dump(self.state, f, -1)
 
     def dataObjects_visibilityChanged(self, arg_1, arg_2):
-        if arg_1.row() or arg_1.column() < 0:
+        if arg_1.column() < 0:
             return
         
         name = self.dataStore.names[arg_1.row()]
@@ -350,17 +350,28 @@ class MyMainWindow(QtGui.QMainWindow):
     def select_a_model(self, arg_1):
         try:
             model = self.modelStore.models[arg_1]
-            if model.parameters is not None and model.fitted_parameters is not None:
+            if model.parameters is not None:
                 self.modelStore.models['theoretical'].parameters =  model.parameters[:]
+            if model.fitted_parameters is not None:
                 self.modelStore.models['theoretical'].fitted_parameters =  model.fitted_parameters[:]
-                self.baseModel.dataChanged.emit(QtCore.QModelIndex(), QtCore.QModelIndex())
 
+            if model.limits is not None and model.limits.ndim == 2 and np.size(model.limits, 1) == np.size(model.parameters):
+                self.modelStore.models['theoretical'].limits = np.copy(model.limits)
+            else:
+                self.modelStore.models['theoretical'].defaultlimits()
+            
+            self.baseModel.dataChanged.emit(QtCore.QModelIndex(), QtCore.QModelIndex())
+
+            if model.parameters is not None:
                 self.modelStore.models['theoretical'].parameters =  model.parameters[:]
+            if model.fitted_parameters is not None:            
                 self.modelStore.models['theoretical'].fitted_parameters =  model.fitted_parameters[:]
-                self.layerModel.dataChanged.emit(self.layerModel.createIndex(0,0), self.layerModel.createIndex(2 + int(model.parameters[0]),3))
-                self.layerModel.modelReset.emit()
 
-                self.update_gui_modelChanged()
+            self.layerModel.dataChanged.emit(self.layerModel.createIndex(0,0), self.layerModel.createIndex(2 + int(model.parameters[0]),3))
+                        
+            self.layerModel.modelReset.emit()
+
+#            self.update_gui_modelChanged()
         except KeyError:
             return
         except IndexError, AttributeError:
@@ -538,7 +549,7 @@ class MyMainWindow(QtGui.QMainWindow):
                 
     def update_gui_modelChanged(self, store = False):
         theoreticalmodel = self.modelStore.models['theoretical']
-        
+
         self.theoretical.evaluate_model(theoreticalmodel, store = True)
 
         if self.current_dataset is not None:
@@ -625,7 +636,7 @@ class MyReflectivityGraphs(FigureCanvas):
         while len(self.axes[0].lines):
             del self.axes[0].lines[0]
  
-         while len(self.axes[1].lines):
+        while len(self.axes[1].lines):
             del self.axes[1].lines[0]
                         
         self.draw()
@@ -671,8 +682,7 @@ class MySLDGraphs(FigureCanvas):
         self.draw()
         
     def removeTraces(self):
-        for line in self.axes[0].lines:
-            print line
-            self.axes[0].lines.remove(line)
+        while len(self.axes[0].lines):
+            del self.axes[0].lines[0]
         
         self.draw()
