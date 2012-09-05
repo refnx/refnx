@@ -12,7 +12,7 @@ import pyplatypus.util.ErrorProp as EP
 from data_1D import Data_1D
  
 class ReflectDataset(Data_1D):
-    __template_ref_xml = """<?xml version="1.0"?>
+    _template_ref_xml = """<?xml version="1.0"?>
     <REFroot xmlns="">
     <REFentry time="$time">
     <Title>$title</Title>
@@ -45,7 +45,7 @@ class ReflectDataset(Data_1D):
         self.datafilenumber.append(reduceObj.datafilenumber)                                                    
         
     def save(self, f):
-        s = string.Template(self.__template_ref_xml)
+        s = string.Template(self._template_ref_xml)
         self.time = strftime("%a, %d %b %Y %H:%M:%S +0000", gmtime())
 
         #filename = 'c_PLP{:07d}_{:d}.xml'.format(self._rnumber[0], 0)
