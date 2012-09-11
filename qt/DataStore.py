@@ -202,12 +202,10 @@ class dataObject(reflectdataset.ReflectDataset):
         
     def save(self, f):
         #this will save it as XML
-        print "trying to save top level file"
         super(dataObject, self).save(f)
         if self.fit is None:
             return
             
-        print "saved top level file"
         #have to add in extra bits about the fit.
         try:
             tree = ET.ElementTree()    
