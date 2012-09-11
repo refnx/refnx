@@ -126,9 +126,7 @@ class MyMainWindow(QtGui.QMainWindow):
             tempdirectory = tempfile.mkdtemp()
             datasetd = os.path.join(tempdirectory,'datasets')
             os.mkdir(datasetd)
-            print 'doing datasets'
             self.dataStore.saveDataStore(datasetd)
-            print "done datasets"
             modeld = os.path.join(tempdirectory,'models')
             os.mkdir(modeld)
             self.modelStore.saveModelStore(modeld)
