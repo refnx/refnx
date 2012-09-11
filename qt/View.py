@@ -126,14 +126,16 @@ class MyMainWindow(QtGui.QMainWindow):
             tempdirectory = tempfile.mkdtemp()
             datasetd = os.path.join(tempdirectory,'datasets')
             os.mkdir(datasetd)
+            print 'doing datasets'
             self.dataStore.saveDataStore(datasetd)
+            print "done datasets"
             modeld = os.path.join(tempdirectory,'models')
             os.mkdir(modeld)
             self.modelStore.saveModelStore(modeld)
             with zipfile.ZipFile(experimentFileName, 'w') as zip:
                 DataStore.zipper(tempdirectory, zip)
-        except Exception:
-            pass
+        except Exception as inst:
+            print type(inst)
         finally: 
             shutil.rmtree(tempdirectory)
     
