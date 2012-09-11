@@ -6,6 +6,12 @@ from copy import deepcopy, copy
 import matplotlib.artist as artist
 from PySide import QtGui, QtCore
 import os.path, os
+import string
+try:
+    import xml.etree.cElementTree as ET
+except ImportError:
+    import xml.etree.ElementTree as ET
+
 
 def zipper(dir, zip):
     root_len = len(os.path.abspath(dir))
@@ -108,7 +114,7 @@ class DataStore(QtCore.QAbstractTableModel):
         
     def saveDataStore(self, folderName):
         
-        for key in self.dataObjects.keys():            
+        for key in self.dataObjects.keys():   
             dataObject = self.dataObjects[key]
             try:
                 filename = os.path.join(folderName, dataObject.name)
@@ -194,7 +200,29 @@ class dataObject(reflectdataset.ReflectDataset):
 #        del(d['fit'])
         return d
         
+    def save(self, f):
+        #this will save it as XML
+        print "trying to save top level file"
+        super(dataObject, self).save(f)
+        if self.fit is None:
+            return
+            
+        print "saved top level file"
+        #have to add in extra bits about the fit.
+        try:
+            tree = ET.ElementTree()    
+            tree.parse(f)
+        except Exception as inst:
+            print type(inst)
         
+        try:  
+            refdata = tree.find('.//REFdata')
+            fit = ET.SubElement(refdata, 'fit')
+            fit.text = string.translate(repr(self.fit.tolist()), None, ',[]')
+            tree.write(f)
+        except Exception as inst:
+            print type(inst)
+                                   
     def _save_graph_properties(self):
         if self.line2D:
             for key in self.__requiredgraphproperties:
@@ -322,7 +350,7 @@ class ModelStore(QtCore.QAbstractListModel):
         for modelname in self.names:
             model = self.models[modelname]
             filename = os.path.join(folderName, modelname)
-            with open(filename, 'w') as f:
+            with open(filename, 'w+') as f:
                 model.save(f)
                 
     def loadModelStore(self, folderName, clear = False):
