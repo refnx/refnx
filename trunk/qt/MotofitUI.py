@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'qt/Motofit.ui'
 #
-# Created: Wed Sep  5 11:06:40 2012
+# Created: Tue Sep 11 13:27:26 2012
 #      by: pyside-uic 0.2.13 running on PySide 1.1.1
 #
 # WARNING! All changes made in this file will be lost!
@@ -193,20 +193,6 @@ class Ui_MainWindow(object):
         self.menuExperiment = QtGui.QMenu(self.menubar)
         self.menuExperiment.setObjectName("menuExperiment")
         MainWindow.setMenuBar(self.menubar)
-        self.statusbar = QtGui.QStatusBar(MainWindow)
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.statusbar.sizePolicy().hasHeightForWidth())
-        self.statusbar.setSizePolicy(sizePolicy)
-        self.statusbar.setMinimumSize(QtCore.QSize(0, 15))
-        self.statusbar.setMaximumSize(QtCore.QSize(16777215, 30))
-        self.statusbar.setAcceptDrops(False)
-        self.statusbar.setAccessibleName("")
-        self.statusbar.setAutoFillBackground(False)
-        self.statusbar.setStyleSheet("")
-        self.statusbar.setObjectName("statusbar")
-        MainWindow.setStatusBar(self.statusbar)
         self.dockWidget = QtGui.QDockWidget(MainWindow)
         sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
         sizePolicy.setHorizontalStretch(0)
