@@ -120,8 +120,11 @@ class DataStore(QtCore.QAbstractTableModel):
                 filename = os.path.join(folderName, dataObject.name)
             except AttributeError:
                 print folderName, key
-                
+            
             with open(filename, 'w') as f:
+                pass
+                
+            with open(filename, 'r+') as f:
                 dataObject.save(f)
                 
     def loadDataStore(self, folderName, clear = False):
@@ -208,6 +211,7 @@ class dataObject(reflectdataset.ReflectDataset):
             
         #have to add in extra bits about the fit.
         try:
+            f.seek(0)
             tree = ET.ElementTree()    
             tree.parse(f)
         except Exception as inst:
@@ -217,6 +221,7 @@ class dataObject(reflectdataset.ReflectDataset):
             refdata = tree.find('.//REFdata')
             fit = ET.SubElement(refdata, 'fit')
             fit.text = string.translate(repr(self.fit.tolist()), None, ',[]')
+            f.seek(0)
             tree.write(f)
         except Exception as inst:
             print type(inst)

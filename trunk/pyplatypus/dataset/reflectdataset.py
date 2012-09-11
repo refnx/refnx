@@ -57,7 +57,7 @@ class ReflectDataset(Data_1D):
 
         thefile = s.safe_substitute(self.__dict__)
         f.write(thefile)
-        f.truncate()
+#        f.truncate()
         
     def load(self, f):
         try:
