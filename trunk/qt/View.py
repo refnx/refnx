@@ -104,13 +104,13 @@ class MyMainWindow(QtGui.QMainWindow):
             try:
                 dataObject = self.dataStore.loadDataObject(url.toLocalFile())
                 if dataObject is None:
+                    #try loading a model file.
+                    self.loadModel(url.toLocalFile())
                     continue
                 self.reflectivitygraphs.add_dataObject(dataObject)
                 self.sldgraphs.add_dataObject(dataObject)
             except Exception:
-                #try loading a model file.
-                self.loadModel(url.toLocalFile())
-                
+                pass
     @QtCore.Slot(QtGui.QDragEnterEvent)
     def dragEnterEvent(self, event):
         m = event.mimeData()
