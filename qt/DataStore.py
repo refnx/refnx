@@ -127,16 +127,15 @@ class DataStore(QtCore.QAbstractTableModel):
             with open(filename, 'r+') as f:
                 dataObject.save(f)
                 
-    def loadDataStore(self, folderName, clear = False):
+    def loadDataStore(self, files, clear = False):
         if clear:
             self.dataObjects.clear()
             self.names = []
             self.numDataObjects = 0
             
-        filelist = os.listdir(folderName)
-        for filename in filelist:
+        for file in files:
             try:
-                self.loadDataObject(os.path.join(folderName, filename))
+                self.loadDataObject(file)
             except IOError:
                 continue
         
@@ -162,7 +161,9 @@ class DataStore(QtCore.QAbstractTableModel):
             
         
 class dataObject(reflectdataset.ReflectDataset):        
-    __requiredgraphproperties = ['lw', 'label', 'linestyle', 'fillstyle', 'marker', 'markersize', 'markeredgecolor', 'markerfacecolor', 'zorder']
+    __requiredgraphproperties = {'lw':int, 'label':str, 'linestyle':str,
+       'fillstyle':str, 'marker':str, 'markersize':int, 'markeredgecolor':str,
+      'markerfacecolor':str, 'zorder':int}
                                     
     def __init__(self, dataTuple = None, name = '_theoretical_', fname = None):
         super(dataObject, self).__init__(dataTuple = dataTuple)
@@ -206,43 +207,108 @@ class dataObject(reflectdataset.ReflectDataset):
     def save(self, f):
         #this will save it as XML
         super(dataObject, self).save(f)
-        if self.fit is None:
-            return
             
         #have to add in extra bits about the fit.
         try:
             f.seek(0)
             tree = ET.ElementTree()    
             tree.parse(f)
-        except Exception as inst:
-            print type(inst)
-        
+        except Exception:
+            #couldn't parse, may not be xml file.
+            return
+                    
         try:  
-            refdata = tree.find('.//REFdata')
-            fit = ET.SubElement(refdata, 'fit')
-            fit.text = string.translate(repr(self.fit.tolist()), None, ',[]')
+            self._save_graph_properties()
+            rdata = tree.find('.//R')
+            rdata.attrib = dict(list(rdata.attrib.items()) + list(self.line2D_properties.items()))
+         
+            refdata = tree.find('.//REFdata')            
+            if self.fit is not None:
+                fit = ET.SubElement(refdata, 'fit')
+                fit.attrib = self.line2Dfit_properties
+                fit.text = string.translate(repr(self.fit.tolist()), None, ',[]')
+                
+            if self.residuals is not None:
+                residuals = ET.SubElement(refdata, 'residuals')
+                residuals.attrib = self.line2Dresiduals_properties
+                residuals.text = string.translate(repr(self.residuals.tolist()), None, ',[]')
+            
+            if self.sld_profile is not None:
+                sld_profile = ET.SubElement(refdata, 'sld')
+                sld_profile.attrib = self.line2Dsld_profile_properties
+                sld_profilez = ET.SubElement(sld_profile, 'z')
+                sld_profilerho = ET.SubElement(sld_profile, 'rho')
+                sld_profilez.text = string.translate(repr(self.sld_profile[0].tolist()), None, ',[]')
+                sld_profilerho.text = string.translate(repr(self.sld_profile[1].tolist()), None, ',[]')                
             f.seek(0)
             tree.write(f)
         except Exception as inst:
             print type(inst)
-                                   
+
+    def load(self, f):
+        #this will load as XML
+        super(dataObject, self).load(f)
+            
+        #have to add in extra bits, if it was saved as XML, through this program
+        try:
+            f.seek(0)
+            tree = ET.ElementTree()    
+            tree.parse(f)
+        except Exception:
+            #couldn't parse, is not an xml file.
+            return
+                    
+        try:  
+            rdata = tree.find('.//R')
+            print rdata
+            for key in rdata.attrib:
+                if key in self.__requiredgraphproperties:
+                    print key
+                    self.line2D_properties[key] = __requiredgraphproperties[key](rdata.attrib[key])
+
+            fit = tree.find('.//fit')            
+            if fit:
+                for key in fit.attrib:
+                    if key in self.__requiredgraphproperties:
+                        self.line2Dfit_properties[key] = __requiredgraphproperties[key](fit.attrib[key])
+                self.fit = np.array([float(val) for val in fit.text.split()])
+            residuals = tree.find('.//residuals')            
+            if residuals:
+                for key in residuals.attrib:
+                    if key in self.__requiredgraphproperties:
+                        self.line2Dresiduals_properties[key] = __requiredgraphproperties[key](residuals.attrib[key])
+                self.residuals = np.array([float(val) for val in residuals.text.split()])
+
+            sld_profile = tree.find('.//sld')            
+            if sld_profile:
+                for key in residuals.attrib:
+                    if key in self.__requiredgraphproperties:
+                        self.line2Dsld_profile_properties[key] = __requiredgraphproperties[key](residuals.attrib[key])
+                zed = tree.find('.//z') 
+                rho = tree.find('.//rho')
+                self.sld_profile = []
+                self.sld_profile.append(np.array([float(val) for val in zed.text.split()]))
+                self.sld_profile.append(np.array([float(val) for val in rho.text.split()]))
+                
+        except Exception as inst:
+            print type(inst)
+                                               
     def _save_graph_properties(self):
         if self.line2D:
             for key in self.__requiredgraphproperties:
-                self.line2D_properties[key] = artist.getp(self.line2D, key)
+                self.line2D_properties[key] = str(artist.getp(self.line2D, key))
 
         if self.line2Dfit:
             for key in self.__requiredgraphproperties:
-                self.line2Dfit_properties[key] = artist.getp(self.line2Dfit, key)
+                self.line2Dfit_properties[key] = str(artist.getp(self.line2Dfit, key))
 
         if self.line2Dresiduals:
             for key in self.__requiredgraphproperties:
-                self.line2Dresiduals_properties[key] = artist.getp(self.line2Dresiduals, key)
+                self.line2Dresiduals_properties[key] = str(artist.getp(self.line2Dresiduals, key))
                             
         if self.line2Dsld_profile:
             for key in self.__requiredgraphproperties:
-                self.line2Dsld_profile_properties[key] = artist.getp(self.line2Dsld_profile, key)
-
+                self.line2Dsld_profile_properties[key] = str(artist.getp(self.line2Dsld_profile, key))
         
     def do_a_fit(self, model):
 
@@ -356,18 +422,17 @@ class ModelStore(QtCore.QAbstractListModel):
             with open(filename, 'w+') as f:
                 model.save(f)
                 
-    def loadModelStore(self, folderName, clear = False):
+    def loadModelStore(self, files, clear = False):
         if clear:
             self.models.clear()
             self.names = []
             
-        filelist = os.listdir(folderName)
-        for filename in filelist:
+        for file in files:
             try:
-                with open(os.path.join(folderName, filename), 'Ur') as f:
+                with open(file), 'Ur') as f:
                     model = Model()
                     model.load(f)
-                    self.addModel(model, filename)
+                    self.addModel(model, os.path.basename(file))
             except IOError:
                 #may be a directory
                 continue
