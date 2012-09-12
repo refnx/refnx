@@ -116,8 +116,8 @@ class FitObject(object):
             
         if 'costfunction' in kwds:
             self.costfunction = kwds['costfunction']
-            
-        if 'limits' in kwds and kwds['limits'] is not None:
+        
+        if 'limits' in kwds and kwds['limits'] is not None and np.size(kwds['limits'], 1) == self.numparams:
             self.limits = kwds['limits']
         else:
             self.limits = np.zeros((2, self.numparams))
