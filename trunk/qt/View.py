@@ -532,7 +532,7 @@ class MyMainWindow(QtGui.QMainWindow):
             self.currentCell['hilim'] = hilim
             self.currentCell['readyToChange'] = True
 
-        except (ValueError, AttributeError):
+        except (ValueError, AttributeError, KeyError):
             return
                
     def modifyGui(self):

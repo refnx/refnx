@@ -383,7 +383,7 @@ class dataObject(reflectdataset.ReflectDataset):
                 del(callerInfo['dqvals'])
         except KeyError:
             pass
-            
+                
         RFO = reflect.ReflectivityFitObject(**callerInfo)
                                
         fit = RFO.model()
