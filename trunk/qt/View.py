@@ -145,35 +145,42 @@ class MyMainWindow(QtGui.QMainWindow):
         if not ok:
             return
         
-        tempdirectory = tempfile.mkdtemp()
-         
-        with zipfile.ZipFile(experimentFileName, 'r') as zip:
-            zip.extractall(tempdirectory)
-        
-        datasetd = os.path.join(tempdirectory,'datasets')
-        self.dataStore.loadDataStore(datasetd, clear = True)
-        modeld = os.path.join(tempdirectory,'models')
-        self.modelStore.loadModelStore(modeld, clear = True)
-        
-        #remove and add dataObjectsToGraphs
-        self.reflectivitygraphs.removeTraces()
-        for key in self.dataStore.dataObjects:
-            self.reflectivitygraphs.add_dataObject(self.dataStore.dataObjects[key])
+        try:
+            tempdirectory = tempfile.mkdtemp()
+             
+            with zipfile.ZipFile(experimentFileName, 'r') as zip:
+                zip.extractall(tempdirectory)
             
-        self.theoretical = self.dataStore.getDataObject('_theoretical_')
-        self.reflectivitygraphs.axes[0].lines.remove(self.theoretical.line2D)
-        
-        #when you load in the theoretical model you destroy the link to the gui, reinstate it.
-        self.theoreticalmodel = self.modelStore.models['theoretical']
-        self.baseModel.model = self.theoreticalmodel
-        self.layerModel.model = self.theoreticalmodel
-        self.theoretical.evaluate_model(self.theoreticalmodel, store = True)
-        
-        self.theoretical.line2Dfit = self.reflectivitygraphs.axes[0].plot(self.theoretical.W_q,
-                                                   self.theoretical.fit,
-                                                    linestyle='-', lw=2, label = 'theoretical')[0]
-        self.reflectivitygraphs.draw()
-        
+            datasetd = os.path.join(tempdirectory,'datasets')
+            files = [os.path.join(datasetd, file) for file in os.listdir(datasetd) is not os.path.isdir(file)]
+            self.dataStore.loadDataStore(files, clear = True)
+    
+            modeld = os.path.join(tempdirectory,'models')
+            files = [os.path.join(modeld, file) for file in os.listdir(modeld) is not os.path.isdir(file)]
+            self.modelStore.loadModelStore(files, clear = True)
+            
+            #remove and add dataObjectsToGraphs
+            self.reflectivitygraphs.removeTraces()
+            for key in self.dataStore.dataObjects:
+                self.reflectivitygraphs.add_dataObject(self.dataStore.dataObjects[key])
+                
+            self.theoretical = self.dataStore.getDataObject('_theoretical_')
+            self.reflectivitygraphs.axes[0].lines.remove(self.theoretical.line2D)
+            
+            #when you load in the theoretical model you destroy the link to the gui, reinstate it.
+            self.theoreticalmodel = self.modelStore.models['theoretical']
+            self.baseModel.model = self.theoreticalmodel
+            self.layerModel.model = self.theoreticalmodel
+            self.theoretical.evaluate_model(self.theoreticalmodel, store = True)
+            
+#             self.theoretical.line2Dfit = self.reflectivitygraphs.axes[0].plot(self.theoretical.W_q,
+#                                                        self.theoretical.fit,
+#                                                         linestyle='-', lw=2, label = 'theoretical')[0]
+            self.reflectivitygraphs.draw()
+
+        except Exception:
+            pass
+                    
         shutil.rmtree(tempdirectory)
 
                        
