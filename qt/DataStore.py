@@ -98,6 +98,10 @@ class DataStore(QtCore.QAbstractTableModel):
         self.dataChanged.emit(QtCore.QModelIndex(),QtCore.QModelIndex())
                 
     def loadDataObject(self, filename):
+        if os.path.basename(filename) in self.names:
+            self.dataObjects[os.path.basename(filename)].refresh()
+            return None
+            
         TdataObject = dataObject()
         with open(filename, 'Ur') as f:
             TdataObject.load(f)
