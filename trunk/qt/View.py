@@ -103,6 +103,8 @@ class MyMainWindow(QtGui.QMainWindow):
         for url in urls:
             try:
                 dataObject = self.dataStore.loadDataObject(url.toLocalFile())
+                if dataObject is None:
+                    continue
                 self.reflectivitygraphs.add_dataObject(dataObject)
                 self.sldgraphs.add_dataObject(dataObject)
             except Exception:
