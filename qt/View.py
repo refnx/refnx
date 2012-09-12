@@ -94,7 +94,7 @@ class MyMainWindow(QtGui.QMainWindow):
         dataObject = self.dataStore.dataObjects[name]
         if dataObject.line2D is not None:
             dataObject.line2D.set_visible(dataObject.visible)
-        self.redraw_dataObject_graphs([dataObject], visible = dataObject.visible)
+        self.redraw_dataObject_graphs([dataObject], visible = dataObject.graph_properties['visible'])
 
     @QtCore.Slot(QtGui.QDropEvent)
     def dropEvent(self, event):
@@ -145,41 +145,38 @@ class MyMainWindow(QtGui.QMainWindow):
         if not ok:
             return
         
-        try:
-            tempdirectory = tempfile.mkdtemp()
-             
-            with zipfile.ZipFile(experimentFileName, 'r') as zip:
-                zip.extractall(tempdirectory)
+        tempdirectory = tempfile.mkdtemp()
+         
+        with zipfile.ZipFile(experimentFileName, 'r') as zip:
+            zip.extractall(tempdirectory)
+        
+        datasetd = os.path.join(tempdirectory,'datasets')
+        files = [os.path.join(datasetd, file) for file in os.listdir(datasetd) if not os.path.isdir(file)]
+        self.dataStore.loadDataStore(files, clear = True)
+
+        modeld = os.path.join(tempdirectory,'models')
+        files = [os.path.join(modeld, file) for file in os.listdir(modeld) if not os.path.isdir(file)]
+        self.modelStore.loadModelStore(files, clear = True)
+        
+        #remove and add dataObjectsToGraphs
+        self.reflectivitygraphs.removeTraces()
+        for key in self.dataStore.dataObjects:
+            self.reflectivitygraphs.add_dataObject(self.dataStore.dataObjects[key])
             
-            datasetd = os.path.join(tempdirectory,'datasets')
-            files = [os.path.join(datasetd, file) for file in os.listdir(datasetd) is not os.path.isdir(file)]
-            self.dataStore.loadDataStore(files, clear = True)
-    
-            modeld = os.path.join(tempdirectory,'models')
-            files = [os.path.join(modeld, file) for file in os.listdir(modeld) is not os.path.isdir(file)]
-            self.modelStore.loadModelStore(files, clear = True)
-            
-            #remove and add dataObjectsToGraphs
-            self.reflectivitygraphs.removeTraces()
-            for key in self.dataStore.dataObjects:
-                self.reflectivitygraphs.add_dataObject(self.dataStore.dataObjects[key])
-                
-            self.theoretical = self.dataStore.getDataObject('_theoretical_')
-            self.reflectivitygraphs.axes[0].lines.remove(self.theoretical.line2D)
-            
-            #when you load in the theoretical model you destroy the link to the gui, reinstate it.
-            self.theoreticalmodel = self.modelStore.models['theoretical']
-            self.baseModel.model = self.theoreticalmodel
-            self.layerModel.model = self.theoreticalmodel
-            self.theoretical.evaluate_model(self.theoreticalmodel, store = True)
+        self.theoretical = self.dataStore.getDataObject('_theoretical_')
+        self.reflectivitygraphs.axes[0].lines.remove(self.theoretical.line2D)
+        self.reflectivitygraphs.axes[1].lines.remove(self.theoretical.line2Dresiduals)
+        
+        #when you load in the theoretical model you destroy the link to the gui, reinstate it.
+        self.theoreticalmodel = self.modelStore.models['theoretical']
+        self.baseModel.model = self.theoreticalmodel
+        self.layerModel.model = self.theoreticalmodel
+        self.theoretical.evaluate_model(self.theoreticalmodel, store = True)
             
 #             self.theoretical.line2Dfit = self.reflectivitygraphs.axes[0].plot(self.theoretical.W_q,
 #                                                        self.theoretical.fit,
 #                                                         linestyle='-', lw=2, label = 'theoretical')[0]
-            self.reflectivitygraphs.draw()
-
-        except Exception:
-            pass
+        self.reflectivitygraphs.draw()
                     
         shutil.rmtree(tempdirectory)
 
@@ -337,7 +334,7 @@ class MyMainWindow(QtGui.QMainWindow):
         if self.ui.model_comboBox.findText('coef_' + dataset.name) < 0:
             self.ui.model_comboBox.setCurrentIndex(self.ui.model_comboBox.findText('coef_' + dataset.name))
         self.update_gui_modelChanged()
-        self.redraw_dataObject_graphs([dataset], visible = dataset.visible)
+        self.redraw_dataObject_graphs([dataset], visible = dataset.graph_properties['visible'])
                       
     @QtCore.Slot(unicode)
     def on_dataset_comboBox_currentIndexChanged(self, arg_1):
@@ -600,8 +597,8 @@ class MyReflectivityGraphs(FigureCanvas):
                                              linestyle='',
                                               label = dataObject.name)
             dataObject.line2D = lineInstance[0]
-            if dataObject.line2D_properties:
-                artist.setp(dataObject.line2D, dataObject.line2D_properties)
+            if dataObject.graph_properties['line2D_properties']:
+                artist.setp(dataObject.line2D, **dataObject.graph_properties['line2D_properties'])
         
         if dataObject.line2Dfit is None and dataObject.fit is not None:
             dataObject.line2Dfit = self.axes[0].plot(dataObject.W_q,
@@ -609,8 +606,8 @@ class MyReflectivityGraphs(FigureCanvas):
                                                                            linestyle='-',
                                                                             lw = 2,
                                                                              label = 'fit_' + dataObject.name)[0]
-            if dataObject.line2Dfit_properties:
-                artist.setp(dataObject.line2Dfit, dataObject.line2Dfit_properties)
+            if dataObject.graph_properties['line2Dfit_properties']:
+                artist.setp(dataObject.line2Dfit, **dataObject.graph_properties['line2Dfit_properties'])
         
         if dataObject.line2Dresiduals is None and dataObject.residuals is not None:
             dataObject.line2Dresiduals = self.axes[1].plot(dataObject.W_q,
@@ -619,8 +616,8 @@ class MyReflectivityGraphs(FigureCanvas):
                                                     lw = 2,
                                                      label = 'residuals_' + dataObject.name)[0]
 
-            if dataObject.line2Dresiduals_properties:
-                artist.setp(dataObject.line2Dresiduals, dataObject.line2Dresiduals_properties)
+            if dataObject.graph_properties['line2Dresiduals_properties']:
+                artist.setp(dataObject.line2Dresiduals, **dataObject.graph_properties['line2Dresiduals_properties'])
                                                       
         self.draw()
     
@@ -683,8 +680,8 @@ class MySLDGraphs(FigureCanvas):
                                                 lw = 2,
                                                  label = 'sld_' + dataObject.name)[0]
             
-            if dataObject.line2Dsld_profile_properties:
-                artist.setp(dataObject.line2Dsld_profle, dataObject.line2Dsld_profile_properties)
+            if dataObject.graph_properties['line2Dsld_profile_properties']:
+                artist.setp(dataObject.line2Dsld_profle, **dataObject.graph_properties['line2Dsld_profile_properties'])
                 
         self.draw()
         
