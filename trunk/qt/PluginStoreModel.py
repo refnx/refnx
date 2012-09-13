@@ -29,7 +29,7 @@ class PluginStoreModel(QtCore.QAbstractTableModel):
         self.plugins = []
                 
     def rowCount(self, parent = QtCore.QModelIndex()):
-        pass
+        return len(self.plugins)
         
     def columnCount(self, parent = QtCore.QModelIndex()):
         return 1
@@ -63,23 +63,78 @@ class PluginStoreModel(QtCore.QAbstractTableModel):
         if role == QtCore.Qt.DisplayRole:
             if index.column() == 0:
                 pass
+
+class UDF_parametersModel(QtCore.QAbstractTableModel):
+
+    def __init__(self, model, parent = None):
+        super(UDF_parametersModel, self).__init__(parent)
+        self.model = model
+    
+    def rowCount(self, parent = QtCore.QModelIndex()):
+        return len(self.model.parameters)
+        
+    def columnCount(self, parent = QtCore.QModelIndex()):
+        return 1
+    
+    def flags(self, index):
+        numlayers = int(self.model.parameters[0])
+        row = index.row()
+        col = index.column()
+                    
+    	return (QtCore.Qt.ItemIsEditable |
+    	         QtCore.Qt.ItemIsUserCheckable |
+    	           QtCore.Qt.ItemIsEnabled |
+    	            QtCore.Qt.ItemIsSelectable)
+    	            
+    def layersAboutToBeInserted(self, start, end):
+        self.beginInsertRows(QtCore.QModelIndex(), start, end)    
+    
+    def layersFinishedBeingInserted(self):
+        self.endInsertRows()
+        
+    def layersAboutToBeRemoved(self, start, end):
+        self.beginRemoveRows(QtCore.QModelIndex(), start, end)
+
+    def layersFinishedBeingRemoved(self):
+        self.endRemoveRows()
+            
+    def setData(self, index, value, role = QtCore.Qt.EditRole):
+        row = index.row()
+        col = index.column()
         
         if role == QtCore.Qt.CheckStateRole:
-             if index.column() == 1:
-                if self.dataObjects[self.names[index.row()]].graph_properties['visible']:
-                    return QtCore.Qt.Checked
-                else:
-                    return QtCore.Qt.Unchecked
+            fitted_parameters = self.model.fitted_parameters
+            if value == QtCore.Qt.Checked:
+                fitted_parameters = np.delete(fitted_parameters,np.where(fitted_parameters == row))
+            else:
+                fitted_parameters = np.append(fitted_parameters, param)
                 
-    def headerData(self, section, orientation, role=QtCore.Qt.DisplayRole):
-        """ Set the headers to be displayed. """
-        if role != QtCore.Qt.DisplayRole:
-            return None
-
-        if orientation == QtCore.Qt.Horizontal:
-            if section == 0:
-                return 'name'
-            if section == 1:
-                return 'displayed'
+            self.model.fitted_parameters = fitted_parameters[:]
+                
+        if role == QtCore.Qt.EditRole:
+            validator = QtGui.QDoubleValidator()
+            voutput = validator.validate(value, 1)
+            if voutput[0] == QtGui.QValidator.State.Acceptable:
+                self.model.parameters[param] = voutput[1]
+            else:
+                return False
         
-        return None
+        self.dataChanged.emit(index, index)
+        return True
+                
+    def data(self, index, role=QtCore.Qt.DisplayRole):
+        if not index.isValid():
+            return False
+            
+        row = index.row()
+        col = index.column()
+            
+        if role == QtCore.Qt.DisplayRole:
+            return str(self.model.parameters[row])
+        
+        if role == QtCore.Qt.CheckStateRole:
+            if param in self.model.fitted_parameters:
+                return QtCore.Qt.Unchecked
+            else:
+               return QtCore.Qt.Checked
+                
