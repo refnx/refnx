@@ -1,3 +1,4 @@
+from PySide import QtCore, QtGui
 import imp
 import sys
 import inspect

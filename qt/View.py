@@ -295,9 +295,10 @@ class MyMainWindow(QtGui.QMainWindow):
         """
             you should do a fit
         """
+
         if self.current_dataset is None:
             return
-        
+            
         theoreticalmodel = self.modelStore.models['theoretical']
         alreadygotlimits = False
           
