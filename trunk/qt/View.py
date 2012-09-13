@@ -295,7 +295,9 @@ class MyMainWindow(QtGui.QMainWindow):
         """
             you should do a fit
         """
-
+        
+        print self.ui.baseLayerView.parent()
+        
         if self.current_dataset is None:
             return
             
