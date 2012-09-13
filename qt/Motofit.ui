@@ -574,7 +574,7 @@
         </size>
        </property>
        <property name="currentIndex">
-        <number>2</number>
+        <number>0</number>
        </property>
        <widget class="QWidget" name="tab">
         <attribute name="title">
@@ -674,7 +674,7 @@
           </widget>
          </item>
          <item row="2" column="0">
-          <widget class="QLineEdit" name="lineEdit">
+          <widget class="QLineEdit" name="chi2lineEdit">
            <property name="font">
             <font>
              <pointsize>14</pointsize>
@@ -771,6 +771,29 @@
         <attribute name="title">
          <string>User defined models</string>
         </attribute>
+        <layout class="QGridLayout" name="gridLayout_7">
+         <item row="0" column="0">
+          <widget class="QComboBox" name="UDF_model"/>
+         </item>
+         <item row="0" column="1" rowspan="2">
+          <widget class="QPushButton" name="ModelLoader">
+           <property name="layoutDirection">
+            <enum>Qt::LeftToRight</enum>
+           </property>
+           <property name="text">
+            <string>User
+Defined
+Function</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="0">
+          <widget class="QLineEdit" name="chi2"/>
+         </item>
+         <item row="2" column="0" colspan="2">
+          <widget class="QTableView" name="UDFmodelView"/>
+         </item>
+        </layout>
        </widget>
       </widget>
      </item>

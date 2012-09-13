@@ -11,6 +11,7 @@ from matplotlib.backends.backend_qt4agg import NavigationToolbar2QTAgg as Naviga
 from matplotlib.figure import Figure
 import matplotlib.artist as artist
 import DataStoreModel
+import PluginStoreModel
 import pyplatypus.analysis.reflect as reflect
 import limitsUI
 import os.path
@@ -563,7 +564,7 @@ class MyMainWindow(QtGui.QMainWindow):
 
         if self.current_dataset is not None:
             energy = self.current_dataset.evaluate_chi2(theoreticalmodel)
-            self.ui.lineEdit.setText(str(energy))     
+            self.ui.chi2lineEdit.setText(str(energy))     
         
         self.redraw_dataObject_graphs([self.theoretical])
         
