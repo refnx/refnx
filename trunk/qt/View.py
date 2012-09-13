@@ -28,10 +28,10 @@ class MyMainWindow(QtGui.QMainWindow):
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self.errorHandler = QtGui.QErrorMessage()
-        self.dataStore = DataStore.DataStore()
+        self.dataStore = DataStoreModel.DataStore()
         self.dataStore.dataChanged.connect(self.dataObjects_visibilityChanged)
         self.current_dataset = None
-        self.modelStore = DataStore.ModelStore()
+        self.modelStore = DataStoreModel.ModelStore()
         self.modifyGui()
         
         parameters = np.array([1, 1.0, 0, 0, 2.07, 0, 1e-7, 3, 25, 3.47, 0, 3])
@@ -44,12 +44,12 @@ class MyMainWindow(QtGui.QMainWindow):
         dataTuple = (tempq, tempr, tempe, tempdq)
         
         self.current_dataset = None
-        self.theoretical = DataStore.dataObject(dataTuple = dataTuple)
+        self.theoretical = DataStoreModel.dataObject(dataTuple = dataTuple)
 
-        theoreticalmodel = DataStore.Model(parameters=parameters, fitted_parameters = fitted_parameters)
+        theoreticalmodel = DataStoreModel.Model(parameters=parameters, fitted_parameters = fitted_parameters)
         self.modelStore.addModel(theoreticalmodel, 'theoretical')
-        self.baseModel = DataStore.BaseModel(self.modelStore.models['theoretical'])
-        self.layerModel = DataStore.LayerModel(self.modelStore.models['theoretical'])
+        self.baseModel = DataStoreModel.BaseModel(self.modelStore.models['theoretical'])
+        self.layerModel = DataStoreModel.LayerModel(self.modelStore.models['theoretical'])
 
 
         self.theoretical.evaluate_model(theoreticalmodel, store = True)
@@ -136,7 +136,7 @@ class MyMainWindow(QtGui.QMainWindow):
             os.mkdir(modeld)
             self.modelStore.saveModelStore(modeld)
             with zipfile.ZipFile(experimentFileName, 'w') as zip:
-                DataStore.zipper(tempdirectory, zip)
+                DataStoreModel.zipper(tempdirectory, zip)
         except Exception as inst:
             print type(inst)
         finally: 
@@ -250,7 +250,7 @@ class MyMainWindow(QtGui.QMainWindow):
         self.loadModel(modelFileName)
             
     def loadModel(self, fileName):
-        themodel = DataStore.Model()
+        themodel = DataStoreModel.Model()
         
         with open(fileName, 'Ur') as f:
             themodel.load(f)
@@ -279,7 +279,7 @@ class MyMainWindow(QtGui.QMainWindow):
         limitsGUI = limitsUI.Ui_Dialog()
         limitsGUI.setupUi(limitsdialog)
 
-        limitsModel = DataStore.LimitsModel(parameters, fitted_parameters, limits)       
+        limitsModel = DataStoreModel.LimitsModel(parameters, fitted_parameters, limits)       
         limitsGUI.limits.setModel(limitsModel)
         header = limitsGUI.limits.horizontalHeader()
         header.setResizeMode(QtGui.QHeaderView.Stretch)
@@ -323,7 +323,7 @@ class MyMainWindow(QtGui.QMainWindow):
     def do_a_fit_and_add_to_gui(self, dataset, model):
         dataset.do_a_fit(model)
         
-        newmodel = DataStore.Model(parameters = model.parameters,
+        newmodel = DataStoreModel.Model(parameters = model.parameters,
                                      fitted_parameters = model.fitted_parameters,
                                         limits = model.limits)
                 

@@ -22,3 +22,7 @@ def loadReflectivityModule(filepath):
         return None
         
     return (module, rfos)
+    
+class UserDefinedModel(QtCore.QAbstractTableModel):
+    def __init__(self):
+        pass

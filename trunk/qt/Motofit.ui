@@ -574,7 +574,7 @@
         </size>
        </property>
        <property name="currentIndex">
-        <number>0</number>
+        <number>2</number>
        </property>
        <widget class="QWidget" name="tab">
         <attribute name="title">
@@ -769,7 +769,7 @@
        </widget>
        <widget class="QWidget" name="tab_3">
         <attribute name="title">
-         <string>Global Fitting</string>
+         <string>User defined models</string>
         </attribute>
        </widget>
       </widget>
