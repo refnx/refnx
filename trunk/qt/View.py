@@ -103,14 +103,17 @@ class MyMainWindow(QtGui.QMainWindow):
         for url in urls:
             try:
                 dataObject = self.dataStore.loadDataObject(url.toLocalFile())
-                if dataObject is None:
-                    #try loading a model file.
-                    self.loadModel(url.toLocalFile())
-                    continue
-                self.reflectivitygraphs.add_dataObject(dataObject)
-                self.sldgraphs.add_dataObject(dataObject)
+                if dataObject is not None:
+                    self.reflectivitygraphs.add_dataObject(dataObject)
+                    self.sldgraphs.add_dataObject(dataObject)
+            except Exception as inst:
+                pass
+            
+            try:
+                self.loadModel(url.toLocalFile())
             except Exception:
                 pass
+                
     @QtCore.Slot(QtGui.QDragEnterEvent)
     def dragEnterEvent(self, event):
         m = event.mimeData()
