@@ -7,9 +7,9 @@ import pyplatypus.util.ErrorProp as EP
 #from scipy.stats import norm
 
 try:
-    import _creflect as refcalc
+    import pyplatypus.analysis._creflect as refcalc
 except ImportError:
-    import _reflect as refcalc
+    import pyplatypus.analysis._reflect as refcalc
 
 
 def abeles(qvals, coefs, *args, **kwds):

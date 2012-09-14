@@ -505,6 +505,8 @@
     </property>
     <addaction name="actionSave_Model"/>
     <addaction name="actionLoad_Model"/>
+    <addaction name="separator"/>
+    <addaction name="actionLoad_Plugin"/>
    </widget>
    <widget class="QMenu" name="menuHelp">
     <property name="title">
@@ -559,10 +561,10 @@
    </attribute>
    <widget class="QWidget" name="dockWidgetContents">
     <layout class="QGridLayout" name="gridLayout">
-     <item row="0" column="0" rowspan="2" colspan="2">
+     <item row="0" column="1">
       <widget class="QTabWidget" name="tabWidget">
        <property name="enabled">
-        <bool>false</bool>
+        <bool>true</bool>
        </property>
        <property name="sizePolicy">
         <sizepolicy hsizetype="MinimumExpanding" vsizetype="Expanding">
@@ -577,36 +579,14 @@
         </size>
        </property>
        <property name="currentIndex">
-        <number>2</number>
+        <number>0</number>
        </property>
        <widget class="QWidget" name="tab">
         <attribute name="title">
          <string>Model</string>
         </attribute>
         <layout class="QGridLayout" name="gridLayout_2">
-         <item row="2" column="1">
-          <widget class="QCheckBox" name="use_errors_checkbox">
-           <property name="text">
-            <string>Use errors?</string>
-           </property>
-          </widget>
-         </item>
-         <item row="0" column="0">
-          <widget class="QComboBox" name="dataset_comboBox">
-           <property name="font">
-            <font>
-             <pointsize>14</pointsize>
-            </font>
-           </property>
-           <property name="focusPolicy">
-            <enum>Qt::StrongFocus</enum>
-           </property>
-           <property name="currentIndex">
-            <number>-1</number>
-           </property>
-          </widget>
-         </item>
-         <item row="0" column="1" rowspan="2">
+         <item row="0" column="2" rowspan="2">
           <widget class="QPushButton" name="do_fit_button">
            <property name="minimumSize">
             <size>
@@ -622,11 +602,45 @@
            </property>
           </widget>
          </item>
+         <item row="2" column="2">
+          <widget class="QCheckBox" name="use_errors_checkbox">
+           <property name="text">
+            <string>Use errors?</string>
+           </property>
+          </widget>
+         </item>
          <item row="3" column="0">
-          <widget class="QDoubleSpinBox" name="res_SpinBox">
+          <widget class="QLineEdit" name="chi2lineEdit">
            <property name="font">
             <font>
-             <pointsize>14</pointsize>
+             <pointsize>11</pointsize>
+            </font>
+           </property>
+           <property name="text">
+            <string>0</string>
+           </property>
+           <property name="readOnly">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+         <item row="3" column="1">
+          <widget class="QDoubleSpinBox" name="res_SpinBox">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="minimumSize">
+            <size>
+             <width>150</width>
+             <height>0</height>
+            </size>
+           </property>
+           <property name="font">
+            <font>
+             <pointsize>11</pointsize>
              <weight>50</weight>
              <bold>false</bold>
             </font>
@@ -657,7 +671,7 @@
            </property>
           </widget>
          </item>
-         <item row="3" column="1">
+         <item row="3" column="2">
           <widget class="QCheckBox" name="use_dqwave_checkbox">
            <property name="text">
             <string>Use dq wave?</string>
@@ -667,43 +681,7 @@
            </property>
           </widget>
          </item>
-         <item row="1" column="0">
-          <widget class="QComboBox" name="model_comboBox">
-           <property name="font">
-            <font>
-             <pointsize>14</pointsize>
-            </font>
-           </property>
-          </widget>
-         </item>
-         <item row="2" column="0">
-          <widget class="QLineEdit" name="chi2lineEdit">
-           <property name="font">
-            <font>
-             <pointsize>14</pointsize>
-            </font>
-           </property>
-           <property name="text">
-            <string>0</string>
-           </property>
-           <property name="readOnly">
-            <bool>true</bool>
-           </property>
-          </widget>
-         </item>
-         <item row="5" column="0" colspan="2">
-          <widget class="QTableView" name="layerModelView">
-           <property name="font">
-            <font>
-             <pointsize>10</pointsize>
-            </font>
-           </property>
-           <attribute name="horizontalHeaderStretchLastSection">
-            <bool>true</bool>
-           </attribute>
-          </widget>
-         </item>
-         <item row="4" column="0" colspan="2">
+         <item row="4" column="0" colspan="3">
           <widget class="QTableView" name="baseModelView">
            <property name="maximumSize">
             <size>
@@ -723,7 +701,19 @@
            </attribute>
           </widget>
          </item>
-         <item row="6" column="0" colspan="2">
+         <item row="5" column="0" colspan="3">
+          <widget class="QTableView" name="layerModelView">
+           <property name="font">
+            <font>
+             <pointsize>10</pointsize>
+            </font>
+           </property>
+           <attribute name="horizontalHeaderStretchLastSection">
+            <bool>true</bool>
+           </attribute>
+          </widget>
+         </item>
+         <item row="6" column="0" colspan="3">
           <widget class="QSlider" name="horizontalSlider">
            <property name="maximumSize">
             <size>
@@ -751,7 +741,52 @@
            </property>
           </widget>
          </item>
+         <item row="0" column="0" colspan="2">
+          <widget class="QComboBox" name="UDF_comboBox">
+           <property name="font">
+            <font>
+             <pointsize>11</pointsize>
+            </font>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="0" colspan="2">
+          <widget class="QComboBox" name="dataset_comboBox">
+           <property name="font">
+            <font>
+             <pointsize>11</pointsize>
+             <weight>50</weight>
+             <bold>false</bold>
+            </font>
+           </property>
+           <property name="focusPolicy">
+            <enum>Qt::StrongFocus</enum>
+           </property>
+           <property name="currentIndex">
+            <number>-1</number>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="0" colspan="2">
+          <widget class="QComboBox" name="model_comboBox">
+           <property name="font">
+            <font>
+             <pointsize>11</pointsize>
+            </font>
+           </property>
+          </widget>
+         </item>
         </layout>
+        <widget class="QTableView" name="UDF_tableView">
+         <property name="geometry">
+          <rect>
+           <x>12</x>
+           <y>223</y>
+           <width>396</width>
+           <height>16</height>
+          </rect>
+         </property>
+        </widget>
        </widget>
        <widget class="QWidget" name="tab_2">
         <attribute name="title">
@@ -781,7 +816,7 @@
          <item row="4" column="0" colspan="2">
           <widget class="QTableView" name="UDFmodelView">
            <property name="enabled">
-            <bool>false</bool>
+            <bool>true</bool>
            </property>
           </widget>
          </item>
@@ -896,6 +931,11 @@
    </property>
    <property name="shortcut">
     <string>Meta+M</string>
+   </property>
+  </action>
+  <action name="actionLoad_Plugin">
+   <property name="text">
+    <string>Load Plugin</string>
    </property>
   </action>
  </widget>
