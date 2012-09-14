@@ -20,7 +20,7 @@ def loadReflectivityModule(filepath):
     
     if not len(rfos):
         del sys.modules[filepath]
-        return None
+        return None, None
         
     return (module, rfos)
     
@@ -28,6 +28,7 @@ class PluginStoreModel(QtCore.QAbstractTableModel):
     def __init__(self, parent = None):
         super(PluginStoreModel, self).__init__(parent)
         self.plugins = []
+        self.plugins.append({'name':'default', 'rfo':reflect.ReflectivityFitObject})
                 
     def rowCount(self, parent = QtCore.QModelIndex()):
         return len(self.plugins)
@@ -42,19 +43,10 @@ class PluginStoreModel(QtCore.QAbstractTableModel):
         return True
         
     def flags(self, index):
-        if index.column() == 1:
-            return (QtCore.Qt.ItemIsUserCheckable |  QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable)
-        else:
-            return  (QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled)
+        return  (QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled)
             
     def setData(self, index, value, role = QtCore.Qt.EditRole):
-        if index.column() == 1:
-            if value == QtCore.Qt.Checked:
-                pass
-            else:
-                pass
-                                
-            self.dataChanged.emit(index, index)
+        self.dataChanged.emit(index, index)
         return True
                 
     def data(self, index, role=QtCore.Qt.DisplayRole):
@@ -63,9 +55,22 @@ class PluginStoreModel(QtCore.QAbstractTableModel):
         
         if role == QtCore.Qt.DisplayRole:
             if index.column() == 0:
-                pass
+                return self.plugins[index.row()]['name']
+                
+    def addPlugin(self, filepath):
+        module, rfos = loadReflectivityModule(filepath)
+        
+        if rfos is None:
+            return
+            
+        for obj in rfos:
+            self.plugins.append({'name':obj[0], 'rfo':obj[1]})
 
-class UDF_parametersModel(QtCore.QAbstractTableModel):
+        self.insertRows(len(self.plugins), rows = len(rfos))        
+        self.dataChanged.emit(QtCore.QModelIndex(),QtCore.QModelIndex())
+
+        
+class PluginParametersModel(QtCore.QAbstractTableModel):
 
     def __init__(self, model, parent = None):
         super(UDF_parametersModel, self).__init__(parent)

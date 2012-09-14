@@ -10,8 +10,8 @@ from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt4agg import NavigationToolbar2QTAgg as NavigationToolbar
 from matplotlib.figure import Figure
 import matplotlib.artist as artist
-import DataStoreModel
-import PluginStoreModel
+import DataStoreModel as DSM
+import PluginStoreModel as PSM
 import pyplatypus.analysis.reflect as reflect
 import limitsUI
 import os.path
@@ -29,10 +29,16 @@ class MyMainWindow(QtGui.QMainWindow):
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self.errorHandler = QtGui.QErrorMessage()
-        self.dataStore = DataStoreModel.DataStore()
+
+        self.dataStore = DSM.DataStore()
         self.dataStore.dataChanged.connect(self.dataObjects_visibilityChanged)
         self.current_dataset = None
-        self.modelStore = DataStoreModel.ModelStore()
+
+        self.modelStore = DSM.ModelStore()
+        
+        self.pluginStoreModel = PSM.PluginStoreModel()
+#         self.pluginParametersModel = PSM.PluginParametersModel()
+        
         self.modifyGui()
         
         parameters = np.array([1, 1.0, 0, 0, 2.07, 0, 1e-7, 3, 25, 3.47, 0, 3])
@@ -45,12 +51,12 @@ class MyMainWindow(QtGui.QMainWindow):
         dataTuple = (tempq, tempr, tempe, tempdq)
         
         self.current_dataset = None
-        self.theoretical = DataStoreModel.dataObject(dataTuple = dataTuple)
+        self.theoretical = DSM.dataObject(dataTuple = dataTuple)
 
-        theoreticalmodel = DataStoreModel.Model(parameters=parameters, fitted_parameters = fitted_parameters)
+        theoreticalmodel = DSM.Model(parameters=parameters, fitted_parameters = fitted_parameters)
         self.modelStore.addModel(theoreticalmodel, 'theoretical')
-        self.baseModel = DataStoreModel.BaseModel(self.modelStore.models['theoretical'])
-        self.layerModel = DataStoreModel.LayerModel(self.modelStore.models['theoretical'])
+        self.baseModel = DSM.BaseModel(self.modelStore.models['theoretical'])
+        self.layerModel = DSM.LayerModel(self.modelStore.models['theoretical'])
 
 
         self.theoretical.evaluate_model(theoreticalmodel, store = True)
@@ -82,6 +88,9 @@ class MyMainWindow(QtGui.QMainWindow):
         self.baseModel.dataChanged.connect(self.update_gui_modelChanged)
         self.ui.baseModelView.clicked.connect(self.baseCurrentCellChanged)
         self.ui.layerModelView.clicked.connect(self.layerCurrentCellChanged)
+        
+#         self.ui.UDF_tableView.setModel(self.pluginParametersModel)
+        self.ui.UDF_comboBox.setModel(self.pluginStoreModel)
             
     def __saveState(self, f):
         state = [self.dataStore, self.modelStore, self.current_dataset.name]
@@ -137,7 +146,7 @@ class MyMainWindow(QtGui.QMainWindow):
             os.mkdir(modeld)
             self.modelStore.saveModelStore(modeld)
             with zipfile.ZipFile(experimentFileName, 'w') as zip:
-                DataStoreModel.zipper(tempdirectory, zip)
+                DSM.zipper(tempdirectory, zip)
         except Exception as inst:
             print type(inst)
         finally: 
@@ -249,9 +258,9 @@ class MyMainWindow(QtGui.QMainWindow):
             return
         
         self.loadModel(modelFileName)
-            
+
     def loadModel(self, fileName):
-        themodel = DataStoreModel.Model()
+        themodel = DSM.Model()
         
         with open(fileName, 'Ur') as f:
             themodel.load(f)
@@ -261,7 +270,19 @@ class MyMainWindow(QtGui.QMainWindow):
         self.modelStore.addModel(themodel, os.path.basename(modelName))
         if self.ui.model_comboBox.count() == 1:
             self.ui.model_comboBox.setCurrentIndex(-1)
-    
+
+    @QtCore.Slot()
+    def on_actionLoad_Plugin_triggered(self):
+        #load a model
+        print 'shite'
+        pluginFileName, ok = QtGui.QFileDialog.getOpenFileName(self,
+                                                              caption = 'Select plugin File',
+                                                             filter = 'Python Plugin File (*.py)')
+        if not ok:
+            return
+        
+        self.pluginStoreModel.addPlugin(pluginFileName)
+            
     @QtCore.Slot()
     def on_actionRefresh_Datasets_triggered(self):
         """
@@ -280,7 +301,7 @@ class MyMainWindow(QtGui.QMainWindow):
         limitsGUI = limitsUI.Ui_Dialog()
         limitsGUI.setupUi(limitsdialog)
 
-        limitsModel = DataStoreModel.LimitsModel(parameters, fitted_parameters, limits)       
+        limitsModel = DSM.LimitsModel(parameters, fitted_parameters, limits)       
         limitsGUI.limits.setModel(limitsModel)
         header = limitsGUI.limits.horizontalHeader()
         header.setResizeMode(QtGui.QHeaderView.Stretch)
@@ -295,8 +316,6 @@ class MyMainWindow(QtGui.QMainWindow):
         """
             you should do a fit
         """
-        
-        print self.ui.baseLayerView.parent()
         
         if self.current_dataset is None:
             return
@@ -327,7 +346,7 @@ class MyMainWindow(QtGui.QMainWindow):
     def do_a_fit_and_add_to_gui(self, dataset, model):
         dataset.do_a_fit(model)
         
-        newmodel = DataStoreModel.Model(parameters = model.parameters,
+        newmodel = DSM.Model(parameters = model.parameters,
                                      fitted_parameters = model.fitted_parameters,
                                         limits = model.limits)
                 
@@ -555,6 +574,7 @@ class MyMainWindow(QtGui.QMainWindow):
         
         header = self.ui.layerModelView.horizontalHeader()
         header.setResizeMode(QtGui.QHeaderView.Stretch)
+        self.ui.UDF_tableView.hide()
                      
     def redraw_dataObject_graphs(self, dataObjects, visible = True):
         self.reflectivitygraphs.redraw_dataObjects(dataObjects, visible = visible)        
