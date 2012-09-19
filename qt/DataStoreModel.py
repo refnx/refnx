@@ -408,6 +408,18 @@ class ModelStore(QtCore.QAbstractListModel):
     def data(self, index, role=QtCore.Qt.DisplayRole):
         if role == QtCore.Qt.DisplayRole:
             return self.names[index.row()]
+            
+    def flags(self, index, filterNormalRef = True):
+        parameters = self.models[self.names[index.row()]].parameters
+        if filterNormalRef:
+            if int(parameters[0]) * 4 + 8 == np.size(parameters):
+            	return (QtCore.Qt.ItemIsEnabled |
+        	            QtCore.Qt.ItemIsSelectable)
+            else:
+            	return (QtCore.Qt.NoItemFlags)
+        else:
+        	return (QtCore.Qt.ItemIsEnabled |
+    	            QtCore.Qt.ItemIsSelectable)
         
     def addModel(self, model, modelName):
         self.models[modelName] = model

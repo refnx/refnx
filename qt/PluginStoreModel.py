@@ -73,11 +73,11 @@ class PluginStoreModel(QtCore.QAbstractTableModel):
 class PluginParametersModel(QtCore.QAbstractTableModel):
 
     def __init__(self, model, parent = None):
-        super(UDF_parametersModel, self).__init__(parent)
+        super(PluginParametersModel, self).__init__(parent)
         self.model = model
     
     def rowCount(self, parent = QtCore.QModelIndex()):
-        return len(self.model.parameters)
+        return len(self.model.parameters) + 1
         
     def columnCount(self, parent = QtCore.QModelIndex()):
         return 1
@@ -136,7 +136,10 @@ class PluginParametersModel(QtCore.QAbstractTableModel):
         col = index.column()
             
         if role == QtCore.Qt.DisplayRole:
-            return str(self.model.parameters[row])
+            if row == 0:
+                return str(np.size(self.model.parameters))
+            else:
+                return str(self.model.parameters[row - 1])
         
         if role == QtCore.Qt.CheckStateRole:
             if param in self.model.fitted_parameters:
