@@ -35,9 +35,7 @@ class MyMainWindow(QtGui.QMainWindow):
         self.current_dataset = None
 
         self.modelStore = DSM.ModelStore()
-        
         self.pluginStoreModel = PSM.PluginStoreModel()
-#         self.pluginParametersModel = PSM.PluginParametersModel()
         
         self.modifyGui()
         
@@ -57,7 +55,7 @@ class MyMainWindow(QtGui.QMainWindow):
         self.modelStore.addModel(theoreticalmodel, 'theoretical')
         self.baseModel = DSM.BaseModel(self.modelStore.models['theoretical'])
         self.layerModel = DSM.LayerModel(self.modelStore.models['theoretical'])
-
+        self.genericModel = PSM.PluginParametersModel(self.modelStore.models['theoretical'])
 
         self.theoretical.evaluate_model(theoreticalmodel, store = True)
         
@@ -88,8 +86,7 @@ class MyMainWindow(QtGui.QMainWindow):
         self.baseModel.dataChanged.connect(self.update_gui_modelChanged)
         self.ui.baseModelView.clicked.connect(self.baseCurrentCellChanged)
         self.ui.layerModelView.clicked.connect(self.layerCurrentCellChanged)
-        
-#         self.ui.UDF_tableView.setModel(self.pluginParametersModel)
+        self.ui.UDF_tableView.setModel(self.genericModel)
         self.ui.UDF_comboBox.setModel(self.pluginStoreModel)
             
     def __saveState(self, f):
@@ -274,7 +271,6 @@ class MyMainWindow(QtGui.QMainWindow):
     @QtCore.Slot()
     def on_actionLoad_Plugin_triggered(self):
         #load a model
-        print 'shite'
         pluginFileName, ok = QtGui.QFileDialog.getOpenFileName(self,
                                                               caption = 'Select plugin File',
                                                              filter = 'Python Plugin File (*.py)')
