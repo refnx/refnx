@@ -131,7 +131,7 @@ class PluginParametersModel(QtCore.QAbstractTableModel):
     def data(self, index, role=QtCore.Qt.DisplayRole):
         if not index.isValid():
             return False
-            
+        
         row = index.row()
         col = index.column()
             

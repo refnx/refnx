@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'qt/Motofit.ui'
 #
-# Created: Fri Sep 14 14:02:49 2012
+# Created: Wed Sep 26 14:49:48 2012
 #      by: pyside-uic 0.2.13 running on PySide 1.1.1
 #
 # WARNING! All changes made in this file will be lost!

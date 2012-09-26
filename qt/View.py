@@ -86,6 +86,7 @@ class MyMainWindow(QtGui.QMainWindow):
         self.baseModel.dataChanged.connect(self.update_gui_modelChanged)
         self.ui.baseModelView.clicked.connect(self.baseCurrentCellChanged)
         self.ui.layerModelView.clicked.connect(self.layerCurrentCellChanged)
+
         self.ui.UDF_tableView.setModel(self.genericModel)
         self.ui.UDF_comboBox.setModel(self.pluginStoreModel)
             
@@ -359,7 +360,20 @@ class MyMainWindow(QtGui.QMainWindow):
             self.ui.model_comboBox.setCurrentIndex(self.ui.model_comboBox.findText('coef_' + dataset.name))
         self.update_gui_modelChanged()
         self.redraw_dataObject_graphs([dataset], visible = dataset.graph_properties['visible'])
-                      
+    
+    @QtCore.Slot(unicode)
+    def on_UDF_comboBox_currentIndexChanged(self, arg_1):
+        if arg_1 == 'default':
+            self.ui.UDF_tableView.hide()
+            self.ui.baseModelView.show()
+            self.ui.layerModelView.show()
+        else:
+            self.ui.baseModelView.hide()
+            self.ui.layerModelView.hide()
+            self.ui.UDF_tableView.show()
+            self.genericModel.modelReset.emit()
+
+                 
     @QtCore.Slot(unicode)
     def on_dataset_comboBox_currentIndexChanged(self, arg_1):
         """
