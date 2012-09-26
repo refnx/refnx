@@ -142,7 +142,7 @@ class PluginParametersModel(QtCore.QAbstractTableModel):
                 return str(self.model.parameters[row - 1])
         
         if role == QtCore.Qt.CheckStateRole:
-            if param in self.model.fitted_parameters:
+            if row - 1 in self.model.fitted_parameters:
                 return QtCore.Qt.Unchecked
             else:
                return QtCore.Qt.Checked
