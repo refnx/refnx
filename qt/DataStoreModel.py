@@ -310,7 +310,7 @@ class dataObject(reflectdataset.ReflectDataset):
             for key in self.__requiredgraphproperties:
                 self.graph_properties['line2Dsld_profile_properties'][key] = str(artist.getp(self.line2Dsld_profile, key))
         
-    def do_a_fit(self, model):
+    def do_a_fit(self, model, reflectPlugin = None):
 
         callerInfo = deepcopy(model.__dict__)
         callerInfo['xdata'] = self.W_q
@@ -327,8 +327,12 @@ class dataObject(reflectdataset.ReflectDataset):
         
         self.progressdialog = QtGui.QProgressDialog("Fit progress", "Abort", 0, 100)   
         self.progressdialog.setWindowModality(QtCore.Qt.WindowModal)
-
-        RFO = reflect.ReflectivityFitObject(**callerInfo)
+        
+        if reflectPlugin is not None:
+            RFO = reflectPlugin(**callerInfo)
+        else:
+            RFO = reflect.ReflectivityFitObject(**callerInfo)
+            
         RFO.progress = self.progress
         model.parameters, self.chi2 = RFO.fit()
         
@@ -345,8 +349,7 @@ class dataObject(reflectdataset.ReflectDataset):
         else:  
             return True
                   
-    def evaluate_chi2(self, model, store = False):
-        
+    def evaluate_chi2(self, model, store = False, reflectPlugin = None):
         
         callerInfo = deepcopy(model.__dict__)
         callerInfo['xdata'] = self.W_q
@@ -360,8 +363,11 @@ class dataObject(reflectdataset.ReflectDataset):
                 del(callerInfo['dqvals'])
         except KeyError:
             pass
-                    
-        RFO = reflect.ReflectivityFitObject(**callerInfo)
+          
+        if reflectPlugin is not None:
+            RFO = reflectPlugin(**callerInfo)
+        else:
+            RFO = reflect.ReflectivityFitObject(**callerInfo)
         
         energy = RFO.energy() / self.numpoints
         if store:
@@ -369,7 +375,7 @@ class dataObject(reflectdataset.ReflectDataset):
                 
         return energy
 
-    def evaluate_model(self, model, store = False):   
+    def evaluate_model(self, model, store = False, reflectPlugin = None):   
             
         callerInfo = deepcopy(model.__dict__)
         callerInfo['xdata'] = self.W_q
@@ -384,8 +390,11 @@ class dataObject(reflectdataset.ReflectDataset):
         except KeyError:
             pass
                 
-        RFO = reflect.ReflectivityFitObject(**callerInfo)
-                               
+        if reflectPlugin is not None:
+            RFO = reflectPlugin(**callerInfo)
+        else:
+            RFO = reflect.ReflectivityFitObject(**callerInfo)
+                
         fit = RFO.model()
         sld_profile = RFO.sld_profile()
         if store:

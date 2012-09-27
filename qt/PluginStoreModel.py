@@ -86,6 +86,11 @@ class PluginParametersModel(QtCore.QAbstractTableModel):
         numlayers = int(self.model.parameters[0])
         row = index.row()
         col = index.column()
+        
+        if row == 0:
+            return (QtCore.Qt.ItemIsEditable |
+                       QtCore.Qt.ItemIsEnabled)
+            
                     
     	return (QtCore.Qt.ItemIsEditable |
     	         QtCore.Qt.ItemIsUserCheckable |
@@ -108,12 +113,12 @@ class PluginParametersModel(QtCore.QAbstractTableModel):
         row = index.row()
         col = index.column()
         
-        if role == QtCore.Qt.CheckStateRole:
+        if role == QtCore.Qt.CheckStateRole and row:
             fitted_parameters = self.model.fitted_parameters
             if value == QtCore.Qt.Checked:
-                fitted_parameters = np.delete(fitted_parameters,np.where(fitted_parameters == row))
+                fitted_parameters = np.delete(fitted_parameters,np.where(fitted_parameters == row - 1))
             else:
-                fitted_parameters = np.append(fitted_parameters, param)
+                fitted_parameters = np.append(fitted_parameters, row - 1)
                 
             self.model.fitted_parameters = fitted_parameters[:]
                 
@@ -121,7 +126,7 @@ class PluginParametersModel(QtCore.QAbstractTableModel):
             validator = QtGui.QDoubleValidator()
             voutput = validator.validate(value, 1)
             if voutput[0] == QtGui.QValidator.State.Acceptable:
-                self.model.parameters[param] = voutput[1]
+                self.model.parameters[row - 1] = voutput[1]
             else:
                 return False
         
@@ -142,7 +147,10 @@ class PluginParametersModel(QtCore.QAbstractTableModel):
                 return str(self.model.parameters[row - 1])
         
         if role == QtCore.Qt.CheckStateRole:
-            if row - 1 in self.model.fitted_parameters:
+            if row == 0:
+                return QtCore.Qt.NoItemFlags
+                
+            if (row - 1) in self.model.fitted_parameters:
                 return QtCore.Qt.Unchecked
             else:
                return QtCore.Qt.Checked

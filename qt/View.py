@@ -87,7 +87,7 @@ class MyMainWindow(QtGui.QMainWindow):
         self.ui.baseModelView.clicked.connect(self.baseCurrentCellChanged)
         self.ui.layerModelView.clicked.connect(self.layerCurrentCellChanged)
 
-        self.ui.UDF_tableView.setModel(self.genericModel)
+        self.ui.genericModelView.setModel(self.genericModel)
         self.ui.UDF_comboBox.setModel(self.pluginStoreModel)
             
     def __saveState(self, f):
@@ -364,13 +364,13 @@ class MyMainWindow(QtGui.QMainWindow):
     @QtCore.Slot(unicode)
     def on_UDF_comboBox_currentIndexChanged(self, arg_1):
         if arg_1 == 'default':
-            self.ui.UDF_tableView.hide()
+            self.ui.genericModelView.hide()
             self.ui.baseModelView.show()
             self.ui.layerModelView.show()
         else:
             self.ui.baseModelView.hide()
             self.ui.layerModelView.hide()
-            self.ui.UDF_tableView.show()
+            self.ui.genericModelView.show()
             self.genericModel.modelReset.emit()
 
                  
@@ -584,7 +584,11 @@ class MyMainWindow(QtGui.QMainWindow):
         
         header = self.ui.layerModelView.horizontalHeader()
         header.setResizeMode(QtGui.QHeaderView.Stretch)
-        self.ui.UDF_tableView.hide()
+        
+        header2 = self.ui.genericModelView.horizontalHeader()
+        header2.setResizeMode(QtGui.QHeaderView.Stretch)
+        
+        self.ui.genericModelView.hide()
                      
     def redraw_dataObject_graphs(self, dataObjects, visible = True):
         self.reflectivitygraphs.redraw_dataObjects(dataObjects, visible = visible)        
