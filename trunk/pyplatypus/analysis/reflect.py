@@ -35,6 +35,8 @@ def abeles(qvals, coefs, *args, **kwds):
     qvals - the qvalues required for the calculation. Q=4*Pi/lambda * sin(omega). Units = Angstrom**-1
 
     """
+    if np.size(coefs, 0) != 4 * int(coefs[0]) + 8:
+        raise InputError("The size of the parameter array passed to abeles should be 4 * coefs[0] + 8")
     
     if 'dqvals' in kwds and kwds['dqvals'] is not None:
         dqvals = kwds['dqvals']
@@ -147,6 +149,20 @@ def sld_profile(coefs, z):
             summ[idx] += deltarho * (0.5 + 0.5 * math.erf((zed - dist)/(sigma * math.sqrt(2.))))     
         
     return summ
+
+class Error(Exception):
+    pass
+    
+class InputError(Error):
+    """
+        Exception raised for errors in the input.
+    """
+
+    def __init__(self, value):
+        self.value = value
+
+    def __str__(self):
+        return repr(self.value)
 
 
 class ReflectivityFitObject(fitting.FitObject):
