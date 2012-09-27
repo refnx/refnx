@@ -777,7 +777,7 @@
           </widget>
          </item>
          <item row="6" column="0" colspan="3">
-          <widget class="QTableView" name="UDF_tableView"/>
+          <widget class="QTableView" name="genericModelView"/>
          </item>
         </layout>
        </widget>
