@@ -113,7 +113,7 @@ class PluginParametersModel(QtCore.QAbstractTableModel):
         row = index.row()
         col = index.column()
         
-        if role == QtCore.Qt.CheckStateRole and row:
+        if role == QtCore.Qt.CheckStateRole and row > 0:
             fitted_parameters = self.model.fitted_parameters
             if value == QtCore.Qt.Checked:
                 fitted_parameters = np.delete(fitted_parameters,np.where(fitted_parameters == row - 1))
@@ -122,7 +122,7 @@ class PluginParametersModel(QtCore.QAbstractTableModel):
                 
             self.model.fitted_parameters = fitted_parameters[:]
                 
-        if role == QtCore.Qt.EditRole:
+        if role == QtCore.Qt.EditRole and row > 0:
             validator = QtGui.QDoubleValidator()
             voutput = validator.validate(value, 1)
             if voutput[0] == QtGui.QValidator.State.Acceptable:

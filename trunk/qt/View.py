@@ -36,7 +36,8 @@ class MyMainWindow(QtGui.QMainWindow):
 
         self.modelStore = DSM.ModelStore()
         self.pluginStoreModel = PSM.PluginStoreModel()
-        
+        self.reflectPlugin = self.pluginStoreModel.plugins[0]
+                
         self.modifyGui()
         
         parameters = np.array([1, 1.0, 0, 0, 2.07, 0, 1e-7, 3, 25, 3.47, 0, 3])
@@ -88,6 +89,7 @@ class MyMainWindow(QtGui.QMainWindow):
         self.ui.layerModelView.clicked.connect(self.layerCurrentCellChanged)
 
         self.ui.genericModelView.setModel(self.genericModel)
+        self.genericModel.dataChanged.connect(self.update_gui_modelChanged)
         self.ui.UDF_comboBox.setModel(self.pluginStoreModel)
             
     def __saveState(self, f):
@@ -361,9 +363,9 @@ class MyMainWindow(QtGui.QMainWindow):
         self.update_gui_modelChanged()
         self.redraw_dataObject_graphs([dataset], visible = dataset.graph_properties['visible'])
     
-    @QtCore.Slot(unicode)
+    @QtCore.Slot(int)
     def on_UDF_comboBox_currentIndexChanged(self, arg_1):
-        if arg_1 == 'default':
+        if arg_1 == 0:
             self.ui.genericModelView.hide()
             self.ui.baseModelView.show()
             self.ui.layerModelView.show()
@@ -371,7 +373,8 @@ class MyMainWindow(QtGui.QMainWindow):
             self.ui.baseModelView.hide()
             self.ui.layerModelView.hide()
             self.ui.genericModelView.show()
-            self.genericModel.modelReset.emit()
+
+        self.reflectPlugin = self.pluginStoreModel.plugins[arg_1]
 
                  
     @QtCore.Slot(unicode)
@@ -597,10 +600,10 @@ class MyMainWindow(QtGui.QMainWindow):
     def update_gui_modelChanged(self, store = False):
         theoreticalmodel = self.modelStore.models['theoretical']
 
-        self.theoretical.evaluate_model(theoreticalmodel, store = True)
+        self.theoretical.evaluate_model(theoreticalmodel, store = True, reflectPlugin = self.reflectPlugin['rfo'])
 
         if self.current_dataset is not None:
-            energy = self.current_dataset.evaluate_chi2(theoreticalmodel)
+            energy = self.current_dataset.evaluate_chi2(theoreticalmodel, reflectPlugin = self.reflectPlugin['rfo'])
             self.ui.chi2lineEdit.setText(str(energy))     
         
         self.redraw_dataObject_graphs([self.theoretical])
