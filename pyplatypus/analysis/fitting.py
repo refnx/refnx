@@ -55,7 +55,7 @@ class FitObject(object):
         fitfunction - callable function  of the form f(xdata, parameters, *args, **kwds). The args and kwds supplied
                         in the construction of this object are passed directly to the fitfunction and should be used to pass
                         auxillary information to it. You do can use None for fitfunction _IF_ you subclass this 
-                        FitObject and provide your own energy method.
+                        FitObject and provide your own energy method. Alternatively subclass the model method.
                         
         parameters - np.ndarray that contains _all_ the parameters to be supplied to the fitfunction, not just those being fitted
         
@@ -168,11 +168,8 @@ class FitObject(object):
             test_parameters = parameters
         else:
             test_parameters = self.parameters
-            
-        try:
-            return self.fitfunction(self.xdata, test_parameters, *self.args, **self.kwds)
-        except Exception:
-            raise Exception("You used the default FitObject.model() method, but did not specify a fitfunction")
+        
+        return self.fitfunction(self.xdata, test_parameters, *self.args, **self.kwds)
             
 
     def fit(self):
