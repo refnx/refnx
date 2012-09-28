@@ -87,6 +87,7 @@ class MyMainWindow(QtGui.QMainWindow):
         self.baseModel.dataChanged.connect(self.update_gui_modelChanged)
         self.ui.baseModelView.clicked.connect(self.baseCurrentCellChanged)
         self.ui.layerModelView.clicked.connect(self.layerCurrentCellChanged)
+        self.ui.genericModelView.clicked.connect(self.genericCurrentCellChanged)
 
         self.ui.genericModelView.setModel(self.genericModel)
         self.genericModel.dataChanged.connect(self.update_gui_modelChanged)
@@ -476,7 +477,6 @@ class MyMainWindow(QtGui.QMainWindow):
         else:
             theoreticalmodel.usedq = False
             
-
     def layerCurrentCellChanged(self, index):
         row = index.row()
         col = index.column()
@@ -511,6 +511,7 @@ class MyMainWindow(QtGui.QMainWindow):
         self.currentCell['lowlim'] = lowlim
         self.currentCell['hilim'] = hilim
         self.currentCell['readyToChange'] = True
+        self.currentCell['model'] = self.layerModel
     
     def baseCurrentCellChanged(self, index):
         row = index.row()
@@ -543,6 +544,41 @@ class MyMainWindow(QtGui.QMainWindow):
         self.currentCell['lowlim'] = lowlim
         self.currentCell['hilim'] = hilim
         self.currentCell['readyToChange'] = True
+        self.currentCell['model'] = self.baseModel
+
+    
+    def genericCurrentCellChanged(self, index):
+        row = index.row()
+        col = index.column()
+
+        self.currentCell= {}
+
+        if row == 0:
+            return
+
+        theoreticalmodel = self.modelStore.models['theoretical']
+
+        try:
+            param = row - 1
+            val = theoreticalmodel.parameters[row - 1]
+        except ValueError:
+            return
+        except AttributeError: 
+            return
+            
+        if val < 0:
+            lowlim = 2 * val
+            hilim = 0
+        else:
+            lowlim = 0
+            hilim = 2 * val
+            
+        self.currentCell['param'] = param
+        self.currentCell['val'] = val
+        self.currentCell['lowlim'] = lowlim
+        self.currentCell['hilim'] = hilim
+        self.currentCell['readyToChange'] = True
+        self.currentCell['model'] = self.genericModel
         
     @QtCore.Slot(int)
     def on_horizontalSlider_valueChanged(self, arg_1):
@@ -559,10 +595,7 @@ class MyMainWindow(QtGui.QMainWindow):
             param = c['param']         
             theoreticalmodel.parameters[c['param']] = val
 
-            if param == 1 or param == 6:
-                self.baseModel.dataChanged.emit(QtCore.QModelIndex(), QtCore.QModelIndex())
-            else:
-                self.layerModel.dataChanged.emit(QtCore.QModelIndex(), QtCore.QModelIndex())
+            c['model'].dataChanged.emit(QtCore.QModelIndex(), QtCore.QModelIndex())
         except AttributeError:
             return
         except KeyError:
