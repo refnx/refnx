@@ -64,7 +64,7 @@ class PluginStoreModel(QtCore.QAbstractTableModel):
             return
             
         for obj in rfos:
-            self.plugins.append({'name':obj[0], 'rfo':obj[1]})
+            self.plugins.append({'name':obj[0], 'rfo':obj[1], 'filename' : filepath})
 
         self.insertRows(len(self.plugins), rows = len(rfos))        
         self.dataChanged.emit(QtCore.QModelIndex(),QtCore.QModelIndex())

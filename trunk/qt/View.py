@@ -175,8 +175,8 @@ class MyMainWindow(QtGui.QMainWindow):
         
         #remove and add dataObjectsToGraphs
         self.reflectivitygraphs.removeTraces()
-        for key in self.dataStore.dataObjects:
-            self.reflectivitygraphs.add_dataObject(self.dataStore.dataObjects[key])
+        for dataObject in self.dataStore:
+            self.reflectivitygraphs.add_dataObject(dataObject)
             
         self.theoretical = self.dataStore.getDataObject('_theoretical_')
         self.reflectivitygraphs.axes[0].lines.remove(self.theoretical.line2D)
@@ -288,8 +288,7 @@ class MyMainWindow(QtGui.QMainWindow):
             you are refreshing existing datasets
         """
         self.dataStore.refresh()
-        for key in self.dataStore.dataObjects:
-            dataObject = self.dataStore.dataObjects[key]
+        for dataObject in self.dataStore:
             if dataObject.line2D:
                 dataObject.line2D.set_data(dataObject.W_q, dataObject.W_ref)
         self.reflectivitygraphs.draw()
@@ -365,11 +364,31 @@ class MyMainWindow(QtGui.QMainWindow):
     
     @QtCore.Slot(int)
     def on_UDF_comboBox_currentIndexChanged(self, arg_1):
+    
         if arg_1 == 0:
+            #the default reflectometry calculation is being used
+            self.modelStore.displayOtherThanReflect = False
             self.ui.genericModelView.hide()
+            
+            '''
+                you need to display a model suitable for reflectometry
+            '''
+            areAnyModelsValid = [reflect.isProperAbelesInput(model.parameters) for model in self.modelStore]
+            try:
+                idx = areAnyModelsValid.index(True)
+                self.select_a_model(self.modelStore.names[idx])
+            except ValueError:
+                #none are valid, reset the theoretical model
+                parameters = np.array([1, 1.0, 0, 0, 2.07, 0, 1e-7, 3, 25, 3.47, 0, 3])
+                fitted_parameters = np.array([1,2,3,4,5,6,7,8,9, 10, 11])
+                self.modelStore.models['theoretical'].parameters = parameters[:]
+                self.modelStore.models['theoretical'].fitted_parameters = fitted_parameters[:]
+                    
             self.ui.baseModelView.show()
             self.ui.layerModelView.show()
         else:
+            #a user reflectometry plugin is being used.
+            self.modelStore.displayOtherThanReflect = True
             self.ui.baseModelView.hide()
             self.ui.layerModelView.hide()
             self.ui.genericModelView.show()

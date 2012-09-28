@@ -103,6 +103,15 @@ def abeles(qvals, coefs, *args, **kwds):
     else:
         return refcalc.abeles(np.size(qvals.flatten(), 0), qvals.flatten(), coefs)
 
+def isProperAbelesInput(coefs):
+	'''
+		a test to see if the coefs array is suitable input for the abeles function
+	'''
+	if np.size(coefs, 0) != 4 * int(coefs[0]) + 8:
+		return False
+	return True
+	
+
 def sld_profile(coefs, z):
         
     nlayers = int(coefs[0])

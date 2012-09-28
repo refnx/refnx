@@ -29,6 +29,11 @@ class DataStore(QtCore.QAbstractTableModel):
         self.dataObjects = {}
         self.numDataObjects = 0
         self.names = []
+        
+    def __iter__(self):
+        dataObjects = [self.dataObjects[name] for name in self.names]
+        for dataObject in dataObjects:
+            yield dataObject
     
     def rowCount(self, parent = QtCore.QModelIndex()):
         #don't want to return '_theoretical_'
@@ -409,7 +414,13 @@ class ModelStore(QtCore.QAbstractListModel):
         super(ModelStore, self).__init__(parent)
         self.models = {}
         self.names = []
+        self.displayOtherThanReflect = False
     
+    def __iter__(self):
+        models = [self.models[name] for name in self.names]
+        for model in models:
+            yield model
+                    
     def rowCount(self, parent = QtCore.QModelIndex()):
         #don't want to return '_theoretical_'
         return len(self.models.keys())
@@ -420,15 +431,16 @@ class ModelStore(QtCore.QAbstractListModel):
             
     def flags(self, index, filterNormalRef = True):
         parameters = self.models[self.names[index.row()]].parameters
-        if filterNormalRef:
-            if int(parameters[0]) * 4 + 8 == np.size(parameters):
+        if self.displayOtherThanReflect:
+        	return (QtCore.Qt.ItemIsEnabled |
+    	            QtCore.Qt.ItemIsSelectable)
+        else:
+            if reflect.isProperAbelesInput(parameters):
             	return (QtCore.Qt.ItemIsEnabled |
         	            QtCore.Qt.ItemIsSelectable)
             else:
             	return (QtCore.Qt.NoItemFlags)
-        else:
-        	return (QtCore.Qt.ItemIsEnabled |
-    	            QtCore.Qt.ItemIsSelectable)
+
         
     def addModel(self, model, modelName):
         self.models[modelName] = model
@@ -563,6 +575,10 @@ class BaseModel(QtCore.QAbstractTableModel):
                 voutput = validator.validate(value, 1)
                 
                 parameters = np.copy(self.model.parameters)
+                
+                if not reflect.isProperAbelesInput(parameters):
+                    raise InputError("The size of the parameter array passed to abeles should be 4 * coefs[0] + 8")
+                
                 fitted_parameters = np.copy(self.model.fitted_parameters)
                 
                 if voutput[0] is QtGui.QValidator.State.Acceptable and int(voutput[1]) >= 0:
