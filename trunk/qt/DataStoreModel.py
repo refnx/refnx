@@ -368,7 +368,7 @@ class dataObject(reflectdataset.ReflectDataset):
                 del(callerInfo['dqvals'])
         except KeyError:
             pass
-          
+                          
         if reflectPlugin is not None:
             RFO = reflectPlugin(**callerInfo)
         else:
