@@ -1,6 +1,11 @@
 #pragma rtGlobals=3		// Use modern global access method.
 
-
+//A Differential Optimisation implentation for IGOR.
+//Copyright Andrew Nelson and ANSTO 2012.
+//The original differential evolution ideas were developed by Storn and Price.
+//http://www1.icsi.berkeley.edu/~storn/code.html
+//
+//set the DEoptim function for useage details.
 
 	Structure DEoptimiser
 	Funcref energyProtoType ef
@@ -11,6 +16,7 @@
 	variable maxIterations
 	variable populationSize
 	variable tol
+	variable iterations
 	
 	//population has dimensions [parameterCount][populationSize]
 	Wave population
@@ -24,8 +30,8 @@
 	Wave bestSolution
 	EndStructure
 
-Function energyPrototype(w, xw)
-	Wave w, xw
+Function energyPrototype(pwave, xw)
+	Wave pwave, xw
 	print "For some reason the prototype energy function got called"
 
 End
@@ -40,7 +46,24 @@ Function DEoptim(energyfunctionStr, limits, pwave, [scale, crossOverProbability,
 	Wave limits, pwave
 	variable scale, crossoverProbability, popsize, maxIterations, tol
 	String DEstrategy
-
+	//Function that tries to find the global minimum of a user supplied energy function. If you wish to find a maximum of a user supplied function
+	//then multiply the return value of your energy function by -1.
+	
+	//energyfunctionstr = string giving the name of the energy function.  It has the signature of the energyPrototype function. 
+	//						The first wave passed to this function is 'pwave'.	pwave is unaltered during the optimisation process.
+	//						 Use it to pass in extra information to the energy function.  You supply pwave to the DEoptim function.
+	//						The second wave passed to this function are the independent variables which are being optimised.  This is supplied by the DEoptim
+	//						function itself. This wave will have length dimsize(limits, 0).
+	//						If you return NaN or INF the optimisation will terminate.
+	//
+	//limits = wave containing the lower and upper limits for the independent variables. This wave has dimensions [N][2], where N is the number of independent
+	//			variables. The first column contains the lower limit, the second column contains the upper limit. The second wave supplied to energy function should
+	//			 expect to receive a wave that is N parameters long.
+	//
+	//pwave = wave containing extra information to pass to the energyfunction. It is the first wave supplied to the energy function and is unaltered during the optimisation
+	//			process.
+	//
+	
 	if(paramisdefault(scale))
 		scale = 0.7
 	endif
@@ -73,8 +96,11 @@ Function DEoptim(energyfunctionStr, limits, pwave, [scale, crossOverProbability,
 	s.parameterCount = dimsize(limits, 0)
 	s.populationSize = dimsize(limits, 0) * popsize
 	
+	//initialise population
 	make/n=(s.parameterCount, s.populationSize)/free/d population
 	Wave s.population = population
+	population = abs(enoise(1, 2))
+	
 	make/n=(s.parameterCount)/d/free bestSolution, trial, scaledTrial
 	Wave s.bestSolution = bestSolution
 	Wave s.trial = trial
@@ -88,12 +114,14 @@ Function DEoptim(energyfunctionStr, limits, pwave, [scale, crossOverProbability,
 	
 	solve(s)
 	//return best parameters and best energy
-	make/n=(s.parameterCount)/d/o W_min = 0
+	make/n=(s.parameterCount)/d/o W_Extremum = 0
 	variable/g V_min = s.populationenergies[0]
-	scale_parameters(s, s.bestSolution, W_min)
+	scale_parameters(s, s.bestSolution, W_Extremum)
+	variable/g V_OptNumIters = s.iterations
 End
 
 Function solve(s)
+	//minimize the energy function.
 	Struct DEoptimiser &s
 	
 	Wave population = s.population
@@ -109,6 +137,7 @@ Function solve(s)
 
 	//calculate energies to start with
 	for(candidate = 0 ; candidate < s.populationSize ; candidate += 1)
+		trial[] = s.population[p][candidate]
 		scale_parameters(s, trial, scaledTrial)
 		populationEnergies[candidate] = ef(pwave, scaledTrial)
 	endfor
@@ -129,7 +158,13 @@ Function solve(s)
 			scale_parameters(s, trial, scaledTrial)
 
 			energy = ef(pwave, scaledTrial)
-                
+                	
+                	//abort if INF or NaN is return from energy function
+                	if(numtype(energy))
+                		abort "Energy function returned NaN or INF"
+                	endif
+                	
+                	
 			if(energy < populationenergies[candidate])
 				population[][candidate] = trial[p]
 				populationenergies[candidate] = energy
@@ -143,8 +178,9 @@ Function solve(s)
 		endfor
 		//stop when the fractional s.d. of the population is less than tol of the mean energy
 		wavestats/q/z populationenergies
-		convergence = V_avg * s.tol / V_sdev 
+		convergence = abs(V_avg) * s.tol / V_sdev 
 	endfor
+	s.iterations = iteration
 End
 
 Function Best1Bin(s, candidate)
@@ -208,6 +244,9 @@ Threadsafe  Function randInt(val)
 End
 
 Function scale_parameters(s, trial, scaledTrial)
+	//the values in the population are scaled between 0 and 1, representing what fraction they lie
+	//on the interval between the lower and upper limit. This function scales the fraction to the actual 
+	//value.
 	Struct DEoptimiser &s
 	Wave trial, scaledTrial
 	
@@ -216,6 +255,7 @@ Function scale_parameters(s, trial, scaledTrial)
 End
 
 Function ensure_constraint(trial)
+	//all values in the population should lie between 0 and 1
 	Wave trial
 	variable ii
 	for(ii = 0 ; ii < numpnts(trial) ; ii += 1)
