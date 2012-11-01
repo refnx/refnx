@@ -11,11 +11,14 @@
 Function test()
 	//
 	//a simple test to find the minimum of the quadratic y = (50 - x)^2 + sqrt(2)
+	//limits supplies the lower and upper limits for the only independent variable.
 	make/free/d limits = {{0}, {100}}
-	DEoptim("testfunction", limits, {0})
+	DEoptim("testfunction", limits, {0}, tol = 0.01)
 	NVAR V_min
 	Wave W_extremum
-	print "reached a minimum val of", V_min, "at x=", W_Extremum[0]
+	print/d "reached a minimum val of", V_min, "at x=", W_Extremum[0]
+	print/d "optimal values are", sqrt(2), "and 50"
+	print/d "off by", sqrt(2) - V_min, "and", 50 - W_extremum[0]
 End
 
 Function testfunction(pwave, xwave)
