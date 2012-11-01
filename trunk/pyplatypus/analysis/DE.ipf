@@ -205,6 +205,187 @@ Function Best1Bin(s, candidate)
 		i += 1
 	while (i < s.parameterCount)
 End
+
+Function Best1Exp(s, candidate)
+	Struct DEoptimiser &s
+	variable candidate
+	variable r1 = 1, r2 = 1, r3, r4, r5
+	variable n, i
+	
+	Wave  population = s.population
+	Wave  trial = s.trial
+	Wave bestSolution = s.bestSolution
+	
+	selectSamples(s.populationSize, candidate, r1, r2, r3, r4, r5)
+	n = randint(s.parameterCount)	 	
+	trial[] = population[p][candidate]
+	i = 0
+	
+	for(i = 0 ; i < s.parameterCount && abs(enoise(1,2)) < s.crossOverProbability ; i += 1)
+		trial[n] = bestSolution[n] + s.scale * (population[n][r1] - population[n][r2])	
+		n = mod(n + 1, s.parameterCount)
+	endfor
+End
+
+Function Rand1Exp(s, candidate)
+	Struct DEoptimiser &s
+	variable candidate
+	variable r1 = 1, r2 = 1, r3 = 1, r4, r5
+	variable n, i
+	
+	Wave  population = s.population
+	Wave  trial = s.trial
+	Wave bestSolution = s.bestSolution
+	
+	selectSamples(s.populationSize, candidate, r1, r2, r3, r4, r5)
+	n = randint(s.parameterCount)	 	
+	trial[] = population[p][candidate]
+	i = 0
+	
+	for(i = 0 ; i < s.parameterCount && abs(enoise(1,2)) < s.crossOverProbability ; i += 1)
+		trial[n] = population[n][r1] + s.scale * (population[n][r2] - population[n][r3])	
+		n = mod(n + 1, s.parameterCount)
+	endfor
+End
+
+//    def RandToBest1Exp(self, candidate):
+//        r1,r2,r3,r4,r5 = self.SelectSamples(candidate, 1, 1, 0, 0, 0)
+//
+//        n = self.RNG.randint(0, self.parameterCount)
+//
+//        trial = np.copy(self.population[candidate])
+//        i = 0
+//        
+//        while i < self.parameterCount and self.RNG.rand() < self.crossOverProbability:
+//            trial[n] += self.scale * (self.bestSolution[n] - trial[n]) + self.scale * (self.population[r1, n] - self.population[r2, n])
+//            
+//            n = (n + 1) % self.parameterCount
+//            i += 1
+//        
+//        return trial
+//
+//    def Best2Exp(self, candidate):
+//        r1,r2,r3,r4,r5 = self.SelectSamples(candidate, 1, 1, 1, 1, 0)
+//
+//        n = self.RNG.randint(0, self.parameterCount)
+//
+//        trial = np.copy(self.population[candidate])
+//        i = 0
+//
+//        while i < self.parameterCount and self.RNG.rand() < self.crossOverProbability:
+//            trial[n] = self.bestSolution[n]
+//            + self.scale * (self.population[r1, n]
+//            + self.population[r2, n]
+//            - self.population[r3, n]
+//            - self.population[r4, n])
+//
+//            n = (n + 1) % self.parameterCount
+//            i += 1
+//
+//        return trial
+//
+//    def Rand2Exp(self, candidate):
+//        r1,r2,r3,r4,r5 = self.SelectSamples(candidate, 1, 1, 1, 1, 1)
+//
+//        n = self.RNG.randint(0, self.parameterCount)
+//
+//        trial = np.copy(self.population[candidate])
+//        i = 0
+//
+//        while i < self.parameterCount and self.RNG.rand() < self.crossOverProbability:
+//            trial[n] = self.population[r1, n]
+//            + self.scale * (self.population[r2, n] 
+//            + self.population[r3, n] 
+//            - self.population[r4, n] 
+//            - self.population[r5, n]) 
+//
+//            n = (n + 1) % self.parameterCount
+//            i += 1
+//
+//        return trial
+//
+//    def RandToBest1Bin(self, candidate):
+//        r1,r2,r3,r4,r5 = self.SelectSamples(candidate, 1, 1, 0, 0, 0)
+//
+//        n = self.RNG.randint(0, self.parameterCount)
+//
+//        trial = np.copy(self.population[candidate])
+//        i = 0
+//
+//        while i < self.parameterCount:
+//            if self.RNG.rand() < self.crossOverProbability or i == self.parameterCount - 1:
+//                trial[n] += self.scale * (self.bestSolution[n] - trial[n])
+//                + self.scale * (self.population[r1, n] - self.population[r2, n])
+//
+//            n = (n + 1) % self.parameterCount
+//            i += 1
+//
+//        return trial
+//        
+//    def Best2Bin(self, candidate):
+//        r1,r2,r3,r4,r5 = self.SelectSamples(candidate, 1, 1, 1, 1, 0)
+//
+//        n = self.RNG.randint(0, self.parameterCount)
+//
+//        trial = np.copy(self.population[candidate])
+//        i = 0
+//
+//        while i < self.parameterCount:
+//            if self.RNG.rand() < self.crossOverProbability or i == self.parameterCount - 1:
+//                trial[n] = self.bestSolution[n]
+//                + self.scale * (self.population[r1, n]
+//                + self.population[r2, n]
+//                -  self.population[r3, n]
+//                -  self.population[r4, n])
+//
+//            n = (n + 1) % self.parameterCount
+//            i += 1
+//
+//        return trial
+//        
+//    def Rand2Bin(self, candidate):
+//        r1,r2,r3,r4,r5 = self.SelectSamples(candidate, 1, 1, 1, 1, 1)
+//
+//        n = self.RNG.randint(0, self.parameterCount)
+//
+//        trial = np.copy(self.population[candidate])
+//        i = 0
+//
+//        while i < self.parameterCount:
+//            if self.RNG.rand() < self.crossOverProbability or i == self.parameterCount - 1:
+//                trial[n] = self.population[r1, n]
+//                + self.scale * (self.population[r2, n]
+//                + self.population[r3, n]
+//                -  self.population[r4, n]
+//                -  self.population[r5, n])
+//
+//            n = (n + 1) % self.parameterCount
+//            i += 1
+//
+//        return trial
+
+Function Rand1Bin(s, candidate)
+	Struct DEoptimiser &s
+	variable candidate
+	variable r1 = 1, r2 = 1, r3 = 1, r4, r5
+	variable n, i
+	
+	Wave  population = s.population
+	Wave  trial = s.trial
+	Wave bestSolution = s.bestSolution
+	
+	selectSamples(s.populationSize, candidate, r1, r2, r3, r4, r5)
+	n = randint(s.parameterCount)	 	
+	trial[] = population[p][candidate]
+	i = 0
+	
+	for(i = 0 ; i < s.parameterCount ; i += 1)
+		if (abs(enoise(1,2)) < s.crossOverProbability || i == s.parameterCount - 1)
+			trial[n] = population[n][r1] + s.scale * (population[n][r2] - population[n][r3])
+		endif
+		n = mod(n + 1, s.parameterCount)
+	endfor
+End
         
 Function SelectSamples(popsize, candidate, r1, r2, r3, r4, r5)
 	variable popsize, candidate, &r1, &r2, &r3, &r4, &r5
