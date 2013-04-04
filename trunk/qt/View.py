@@ -16,12 +16,15 @@ import pyplatypus.analysis.reflect as reflect
 import limitsUI
 import os.path
 from copy import deepcopy
+import numpy as np
 import pickle
 import math
 import tempfile
 import shutil
 import zipfile
 import os
+import sys
+import time
 
 class MyMainWindow(QtGui.QMainWindow):
     def __init__(self, parent=None):
@@ -29,7 +32,12 @@ class MyMainWindow(QtGui.QMainWindow):
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self.errorHandler = QtGui.QErrorMessage()
-
+        
+        #redirect stdout to a console window
+        console = EmittingStream()
+        sys.stdout = console
+        console.textWritten.connect(self.writeTextToConsole)
+        
         self.dataStore = DSM.DataStore()
         self.dataStore.dataChanged.connect(self.dataObjects_visibilityChanged)
         self.current_dataset = None
@@ -92,7 +100,17 @@ class MyMainWindow(QtGui.QMainWindow):
         self.ui.genericModelView.setModel(self.genericModel)
         self.genericModel.dataChanged.connect(self.update_gui_modelChanged)
         self.ui.UDF_comboBox.setModel(self.pluginStoreModel)
-            
+        
+        print 'Session started at:', time.asctime( time.localtime(time.time()) )
+
+    
+    def __del__(self):
+        # Restore sys.stdout
+        sys.stdout = sys.__stdout__
+    
+    def writeTextToConsole(self, text):
+        self.ui.plainTextEdit.insertPlainText(text)
+         
     def __saveState(self, f):
         state = [self.dataStore, self.modelStore, self.current_dataset.name]
         pickle.dump(self.state, f, -1)
@@ -124,6 +142,8 @@ class MyMainWindow(QtGui.QMainWindow):
                 self.loadModel(url.toLocalFile())
             except Exception:
                 pass
+            
+
                 
     @QtCore.Slot(QtGui.QDragEnterEvent)
     def dragEnterEvent(self, event):
@@ -267,7 +287,6 @@ class MyMainWindow(QtGui.QMainWindow):
             themodel.load(f)
 
         modelName = os.path.basename(fileName)
-
         self.modelStore.addModel(themodel, os.path.basename(modelName))
         if self.ui.model_comboBox.count() == 1:
             self.ui.model_comboBox.setCurrentIndex(-1)
@@ -293,6 +312,7 @@ class MyMainWindow(QtGui.QMainWindow):
             if dataObject.line2D:
                 dataObject.line2D.set_data(dataObject.W_q, dataObject.W_ref)
         self.reflectivitygraphs.draw()
+        
  
     def get_limits(self, parameters, fitted_parameters, limits):
 
@@ -315,7 +335,6 @@ class MyMainWindow(QtGui.QMainWindow):
         """
             you should do a fit
         """
-        
         if self.current_dataset is None:
             return
             
@@ -343,8 +362,15 @@ class MyMainWindow(QtGui.QMainWindow):
         
         
     def do_a_fit_and_add_to_gui(self, dataset, model):
+        print "___________________________________________________"        
+        print "fitting to:", dataset.name
         dataset.do_a_fit(model)
+        print "Chi2 :", dataset.chi2 
+        np.set_printoptions(suppress=True, precision = 4)
         
+        print model.parameters
+        print "___________________________________________________"        
+    
         newmodel = DSM.Model(parameters = model.parameters,
                                      fitted_parameters = model.fitted_parameters,
                                         limits = model.limits)
@@ -788,3 +814,10 @@ class MySLDGraphs(FigureCanvas):
             del self.axes[0].lines[0]
         
         self.draw()
+        
+class EmittingStream(QtCore.QObject):
+    #a class for rewriting stdout to a console window
+    textWritten = QtCore.Signal(str)
+    
+    def write(self, text):
+        self.textWritten.emit(str(text))

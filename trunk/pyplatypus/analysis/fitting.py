@@ -176,7 +176,9 @@ class FitObject(object):
         de = DEsolver.DEsolver(self.fitted_limits, energy_for_fitting, (self), progress = self.progress)
         thefit, chi2 = de.solve()
         self.parameters[self.fitted_parameters] = thefit
-        return np.copy(self.parameters), chi2
+        self.uncertainties = self.parameters + 0
+        self.chi2 = chi2
+        return np.copy(self.parameters), np.copy(self.uncertainties), chi2
         
     def progress(self, iterations, convergence, chi2, *args):
         '''
