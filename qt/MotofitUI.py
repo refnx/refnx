@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'Motofit.ui'
 #
-# Created: Thu Apr  4 15:43:23 2013
+# Created: Thu Apr  4 18:02:48 2013
 #      by: pyside-uic 0.2.13 running on PySide 1.1.1
 #
 # WARNING! All changes made in this file will be lost!
@@ -343,6 +343,17 @@ class Ui_MainWindow(object):
         self.chi2.setObjectName("chi2")
         self.gridLayout_7.addWidget(self.chi2, 1, 0, 1, 1)
         self.tabWidget.addTab(self.tab_3, "")
+        self.tab_4 = QtGui.QWidget()
+        self.tab_4.setObjectName("tab_4")
+        self.gridLayout_8 = QtGui.QGridLayout(self.tab_4)
+        self.gridLayout_8.setObjectName("gridLayout_8")
+        self.plainTextEdit = QtGui.QPlainTextEdit(self.tab_4)
+        font = QtGui.QFont()
+        font.setPointSize(11)
+        self.plainTextEdit.setFont(font)
+        self.plainTextEdit.setObjectName("plainTextEdit")
+        self.gridLayout_8.addWidget(self.plainTextEdit, 0, 0, 1, 1)
+        self.tabWidget.addTab(self.tab_4, "")
         self.gridLayout.addWidget(self.tabWidget, 0, 1, 1, 1)
         self.dockWidget.setWidget(self.dockWidgetContents)
         MainWindow.addDockWidget(QtCore.Qt.DockWidgetArea(2), self.dockWidget)
@@ -419,6 +430,7 @@ class Ui_MainWindow(object):
         self.Do_UDFfit_button.setText(QtGui.QApplication.translate("MainWindow", "Do Fit", None, QtGui.QApplication.UnicodeUTF8))
         self.ModelLoader.setText(QtGui.QApplication.translate("MainWindow", "Load Function", None, QtGui.QApplication.UnicodeUTF8))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_3), QtGui.QApplication.translate("MainWindow", "User defined models", None, QtGui.QApplication.UnicodeUTF8))
+        self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_4), QtGui.QApplication.translate("MainWindow", "Console", None, QtGui.QApplication.UnicodeUTF8))
         self.actionLoad_Data.setText(QtGui.QApplication.translate("MainWindow", "Load Data", None, QtGui.QApplication.UnicodeUTF8))
         self.actionLoad_Data.setShortcut(QtGui.QApplication.translate("MainWindow", "Meta+O", None, QtGui.QApplication.UnicodeUTF8))
         self.actionSave_Data.setText(QtGui.QApplication.translate("MainWindow", "Save Fit", None, QtGui.QApplication.UnicodeUTF8))

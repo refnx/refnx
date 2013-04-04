@@ -339,7 +339,7 @@ class dataObject(reflectdataset.ReflectDataset):
             RFO = reflect.ReflectivityFitObject(**callerInfo)
             
         RFO.progress = self.progress
-        model.parameters, self.chi2 = RFO.fit()
+        model.parameters, model.uncertainties, self.chi2 = RFO.fit()
         
         self.progressdialog.setValue(100)
         
