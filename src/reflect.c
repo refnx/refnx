@@ -1,6 +1,9 @@
 #include "refcalc.h"
 #include "Python.h"
-
+#ifdef _POSIX_THREADS
+#include <unistd.h>
+#include <pthread.h>
+#endif
 void abeles(double *yP, int oo, double *xP, int pp, double *coefP, int n) {
 	
 	int err = 0;
@@ -17,8 +20,11 @@ void abeles(double *yP, int oo, double *xP, int pp, double *coefP, int n) {
 			err = 2;
 		}
 	}
-//	if(!err)
-//		AbelesCalc_ImagAll(coefP, n, yP, xP, pp, 0, 0, 0);
-	if(!err)
+#ifdef _POSIX_THREADS
+		if(!err)
 		AbelesCalc_Imag(coefP, n, yP, xP, pp, 0, 0, 0);
+#else
+		if(!err)
+		AbelesCalc_ImagAll(coefP, n, yP, xP, pp, 0, 0, 0);
+#endif
 }

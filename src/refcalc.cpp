@@ -15,8 +15,9 @@
 #include <string.h>
 #include <vector>
 #include <assert.h>
-#include <unistd.h>
+
 #ifdef _POSIX_THREADS
+#include <unistd.h>
 #include <pthread.h>
 #endif
 
