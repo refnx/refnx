@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'qt/Motofit.ui'
+# Form implementation generated from reading ui file 'Motofit.ui'
 #
-# Created: Thu Sep 27 09:54:11 2012
+# Created: Thu Apr  4 15:43:23 2013
 #      by: pyside-uic 0.2.13 running on PySide 1.1.1
 #
 # WARNING! All changes made in this file will be lost!
@@ -291,7 +291,7 @@ class Ui_MainWindow(object):
         self.model_comboBox.setObjectName("model_comboBox")
         self.gridLayout_2.addWidget(self.model_comboBox, 2, 0, 1, 2)
         self.baseModelView = QtGui.QTableView(self.tab)
-        self.baseModelView.setMaximumSize(QtCore.QSize(16777215, 45))
+        self.baseModelView.setMaximumSize(QtCore.QSize(16777215, 55))
         font = QtGui.QFont()
         font.setPointSize(10)
         font.setWeight(50)
