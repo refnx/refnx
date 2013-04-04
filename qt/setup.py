@@ -6,6 +6,7 @@ Usage:
 """
 
 from setuptools import setup
+import py2app
 
 APP = ['motofit.py']
 DATA_FILES = []

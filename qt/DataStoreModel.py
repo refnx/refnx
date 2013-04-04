@@ -562,9 +562,9 @@ class BaseModel(QtCore.QAbstractTableModel):
         if role == QtCore.Qt.CheckStateRole and index.column() > 0:
             fitted_parameters = np.copy(self.model.fitted_parameters)
             if value == QtCore.Qt.Checked:
-                fitted_parameters = np.delete(fitted_parameters,np.where(fitted_parameters == col2par[index.column()]))
+                fitted_parameters = np.delete(fitted_parameters,np.where(fitted_parameters == coltopar[index.column()]))
             else:
-                fitted_parameters = np.append(fitted_parameters, col2par[index.column()])
+                fitted_parameters = np.append(fitted_parameters, coltopar[index.column()])
                 
             self.model.fitted_parameters = fitted_parameters[:]
             return True

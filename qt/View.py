@@ -104,7 +104,7 @@ class MyMainWindow(QtGui.QMainWindow):
         name = self.dataStore.names[arg_1.row()]
         dataObject = self.dataStore.dataObjects[name]
         if dataObject.line2D is not None:
-            dataObject.line2D.set_visible(dataObject.visible)
+            dataObject.line2D.set_visible(dataObject.graph_properties['visible'])
         self.redraw_dataObject_graphs([dataObject], visible = dataObject.graph_properties['visible'])
 
     @QtCore.Slot(QtGui.QDropEvent)
@@ -180,8 +180,8 @@ class MyMainWindow(QtGui.QMainWindow):
             self.reflectivitygraphs.add_dataObject(dataObject)
             
         self.theoretical = self.dataStore.getDataObject('_theoretical_')
-        self.reflectivitygraphs.axes[0].lines.remove(self.theoretical.line2D)
-        self.reflectivitygraphs.axes[1].lines.remove(self.theoretical.line2Dresiduals)
+#        self.reflectivitygraphs.axes[0].lines.remove(self.theoretical.line2D)
+#        self.reflectivitygraphs.axes[1].lines.remove(self.theoretical.line2Dresiduals)
         
         #when you load in the theoretical model you destroy the link to the gui, reinstate it.
         self.theoreticalmodel = self.modelStore.models['theoretical']
@@ -189,9 +189,9 @@ class MyMainWindow(QtGui.QMainWindow):
         self.layerModel.model = self.theoreticalmodel
         self.theoretical.evaluate_model(self.theoreticalmodel, store = True)
             
-#             self.theoretical.line2Dfit = self.reflectivitygraphs.axes[0].plot(self.theoretical.W_q,
-#                                                        self.theoretical.fit,
-#                                                         linestyle='-', lw=2, label = 'theoretical')[0]
+        self.theoretical.line2Dfit = self.reflectivitygraphs.axes[0].plot(self.theoretical.W_q,
+                                                self.theoretical.fit,
+                                                 linestyle='-', lw=2, label = 'theoretical')[0]
         self.reflectivitygraphs.draw()
                     
         shutil.rmtree(tempdirectory)
