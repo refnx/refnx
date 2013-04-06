@@ -81,8 +81,18 @@ class MyMainWindow(QtGui.QMainWindow):
         
         self.ui.dataOptions_tableView.setModel(self.dataStore)
         
+        #combo boxes for the dataset selection
         self.ui.dataset_comboBox.setModel(self.dataStore)
         self.ui.dataset_comboBox.setModelColumn(0)
+        self.ui.UDFdataset_comboBox.setModel(self.dataStore)
+        self.ui.UDFdataset_comboBox.setModelColumn(0) 
+        self.changer = DataSelectionChanges()
+        self.ui.dataset_comboBox.currentIndexChanged.connect(self.changer.selectionChanged)
+        self.ui.UDFdataset_comboBox.currentIndexChanged.connect(self.changer.selectionChanged)
+        self.changer.change.connect(self.ui.dataset_comboBox.setCurrentIndex)
+        self.changer.change.connect(self.ui.UDFdataset_comboBox.setCurrentIndex)
+
+                        
         self.ui.model_comboBox.setModel(self.modelStore)
         
         self.ui.baseModelView.setModel(self.baseModel)
@@ -95,11 +105,11 @@ class MyMainWindow(QtGui.QMainWindow):
         self.baseModel.dataChanged.connect(self.update_gui_modelChanged)
         self.ui.baseModelView.clicked.connect(self.baseCurrentCellChanged)
         self.ui.layerModelView.clicked.connect(self.layerCurrentCellChanged)
-        self.ui.genericModelView.clicked.connect(self.genericCurrentCellChanged)
-
-        self.ui.genericModelView.setModel(self.genericModel)
-        self.genericModel.dataChanged.connect(self.update_gui_modelChanged)
-        self.ui.UDF_comboBox.setModel(self.pluginStoreModel)
+        
+#         self.ui.UDFmodelView.clicked.connect(self.UDFCurrentCellChanged)
+#         self.ui.UDFmodelView.setModel(self.UDFmodel)
+#         self.UDFmodel.dataChanged.connect(self.update_gui_modelChanged)
+#         self.ui.UDF_comboBox.setModel(self.pluginStoreModel)
         
         print 'Session started at:', time.asctime( time.localtime(time.time()) )
 
@@ -135,6 +145,7 @@ class MyMainWindow(QtGui.QMainWindow):
                 if dataObject is not None:
                     self.reflectivitygraphs.add_dataObject(dataObject)
                     self.sldgraphs.add_dataObject(dataObject)
+                    continue
             except Exception as inst:
                 pass
             
@@ -389,40 +400,43 @@ class MyMainWindow(QtGui.QMainWindow):
         self.update_gui_modelChanged()
         self.redraw_dataObject_graphs([dataset], visible = dataset.graph_properties['visible'])
     
-    @QtCore.Slot(int)
-    def on_UDF_comboBox_currentIndexChanged(self, arg_1):
-    
-        if arg_1 == 0:
-            #the default reflectometry calculation is being used
-            self.modelStore.displayOtherThanReflect = False
-            self.ui.genericModelView.hide()
-            
-            '''
-                you need to display a model suitable for reflectometry
-            '''
-            areAnyModelsValid = [reflect.isProperAbelesInput(model.parameters) for model in self.modelStore]
-            try:
-                idx = areAnyModelsValid.index(True)
-                self.select_a_model(self.modelStore.names[idx])
-            except ValueError:
-                #none are valid, reset the theoretical model
-                parameters = np.array([1, 1.0, 0, 0, 2.07, 0, 1e-7, 3, 25, 3.47, 0, 3])
-                fitted_parameters = np.array([1,2,3,4,5,6,7,8,9, 10, 11])
-                self.modelStore.models['theoretical'].parameters = parameters[:]
-                self.modelStore.models['theoretical'].fitted_parameters = fitted_parameters[:]
-                    
-            self.ui.baseModelView.show()
-            self.ui.layerModelView.show()
-        else:
-            #a user reflectometry plugin is being used.
-            self.modelStore.displayOtherThanReflect = True
-            self.ui.baseModelView.hide()
-            self.ui.layerModelView.hide()
-            self.ui.genericModelView.show()
+#     @QtCore.Slot(int)
+#     def on_UDF_comboBox_currentIndexChanged(self, arg_1):
+#     
+#         if arg_1 == 0:
+#             #the default reflectometry calculation is being used
+#             self.modelStore.displayOtherThanReflect = False
+#             
+#             '''
+#                 you need to display a model suitable for reflectometry
+#             '''
+#             areAnyModelsValid = [reflect.isProperAbelesInput(model.parameters) for model in self.modelStore]
+#             try:
+#                 idx = areAnyModelsValid.index(True)
+#                 self.select_a_model(self.modelStore.names[idx])
+#             except ValueError:
+#                 #none are valid, reset the theoretical model
+#                 parameters = np.array([1, 1.0, 0, 0, 2.07, 0, 1e-7, 3, 25, 3.47, 0, 3])
+#                 fitted_parameters = np.array([1,2,3,4,5,6,7,8,9, 10, 11])
+#                 self.modelStore.models['theoretical'].parameters = parameters[:]
+#                 self.modelStore.models['theoretical'].fitted_parameters = fitted_parameters[:]
+#                     
+#             self.ui.baseModelView.show()
+#             self.ui.layerModelView.show()
+#         else:
+#             #a user reflectometry plugin is being used.
+#             self.modelStore.displayOtherThanReflect = True
+# 
+#         self.reflectPlugin = self.pluginStoreModel.plugins[arg_1]
 
-        self.reflectPlugin = self.pluginStoreModel.plugins[arg_1]
-
-                 
+    @QtCore.Slot(unicode)
+    def on_UDFdataset_comboBox_currentIndexChanged(self, arg_1):
+        """
+        dataset to be fitted changed, must update chi2
+        """
+        print arg_1
+        self.current_dataset = self.dataStore.dataObjects[arg_1]
+                  
     @QtCore.Slot(unicode)
     def on_dataset_comboBox_currentIndexChanged(self, arg_1):
         """
@@ -430,7 +444,7 @@ class MyMainWindow(QtGui.QMainWindow):
         """
         self.current_dataset = self.dataStore.dataObjects[arg_1]
         self.update_gui_modelChanged()
-                           
+                                
     @QtCore.Slot(unicode)
     def on_model_comboBox_currentIndexChanged(self, arg_1):
         """
@@ -573,7 +587,7 @@ class MyMainWindow(QtGui.QMainWindow):
         self.currentCell['model'] = self.baseModel
 
     
-    def genericCurrentCellChanged(self, index):
+    def UDFCurrentCellChanged(self, index):
         row = index.row()
         col = index.column()
 
@@ -665,12 +679,7 @@ class MyMainWindow(QtGui.QMainWindow):
         
         header = self.ui.layerModelView.horizontalHeader()
         header.setResizeMode(QtGui.QHeaderView.Stretch)
-        
-        header2 = self.ui.genericModelView.horizontalHeader()
-        header2.setResizeMode(QtGui.QHeaderView.Stretch)
-        
-        self.ui.genericModelView.hide()
-                     
+                             
     def redraw_dataObject_graphs(self, dataObjects, visible = True):
         self.reflectivitygraphs.redraw_dataObjects(dataObjects, visible = visible)        
         self.sldgraphs.redraw_dataObjects(dataObjects, visible = visible)
@@ -682,7 +691,7 @@ class MyMainWindow(QtGui.QMainWindow):
 
         if self.current_dataset is not None:
             energy = self.current_dataset.evaluate_chi2(theoreticalmodel, reflectPlugin = self.reflectPlugin['rfo'])
-            self.ui.chi2lineEdit.setText(str(energy))     
+            self.ui.chi2lineEdit.setText(str(round(energy, 3)))     
         
         self.redraw_dataObject_graphs([self.theoretical])
         
@@ -814,7 +823,18 @@ class MySLDGraphs(FigureCanvas):
             del self.axes[0].lines[0]
         
         self.draw()
-        
+
+class DataSelectionChanges(QtCore.QObject):
+    change = QtCore.Signal(int)
+    
+    def __init__(self):
+        super(DataSelectionChanges, self).__init__()
+    
+    @QtCore.Slot(int)
+    def selectionChanged(self, arg_1):
+        self.change.emit(arg_1)
+    
+
 class EmittingStream(QtCore.QObject):
     #a class for rewriting stdout to a console window
     textWritten = QtCore.Signal(str)
