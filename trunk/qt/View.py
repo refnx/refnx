@@ -11,8 +11,10 @@ from matplotlib.backends.backend_qt4agg import NavigationToolbar2QTAgg as Naviga
 from matplotlib.figure import Figure
 import matplotlib.artist as artist
 import DataStoreModel as DSM
+import pyplatypus.analysis.Model as Model
 import PluginStoreModel as PSM
 import pyplatypus.analysis.reflect as reflect
+import pyplatypus.dataset.DataObject as DataObject
 import limitsUI
 import os.path
 from copy import deepcopy
@@ -58,9 +60,9 @@ class MyMainWindow(QtGui.QMainWindow):
         dataTuple = (tempq, tempr, tempe, tempdq)
         
         self.current_dataset = None
-        self.theoretical = DSM.dataObject(dataTuple = dataTuple)
+        self.theoretical = DataObject.DataObject(dataTuple = dataTuple)
 
-        theoreticalmodel = DSM.Model(parameters=parameters, fitted_parameters = fitted_parameters)
+        theoreticalmodel = Model.Model(parameters=parameters, fitted_parameters = fitted_parameters)
         self.modelStore.addModel(theoreticalmodel, 'theoretical')
         self.baseModel = DSM.BaseModel(self.modelStore.models['theoretical'])
         self.layerModel = DSM.LayerModel(self.modelStore.models['theoretical'])
@@ -153,8 +155,6 @@ class MyMainWindow(QtGui.QMainWindow):
                 self.loadModel(url.toLocalFile())
             except Exception:
                 pass
-            
-
                 
     @QtCore.Slot(QtGui.QDragEnterEvent)
     def dragEnterEvent(self, event):
@@ -292,7 +292,7 @@ class MyMainWindow(QtGui.QMainWindow):
         self.loadModel(modelFileName)
 
     def loadModel(self, fileName):
-        themodel = DSM.Model()
+        themodel = Model.Model()
         
         with open(fileName, 'Ur') as f:
             themodel.load(f)
@@ -382,7 +382,7 @@ class MyMainWindow(QtGui.QMainWindow):
         print model.parameters
         print "___________________________________________________"        
     
-        newmodel = DSM.Model(parameters = model.parameters,
+        newmodel = Model.Model(parameters = model.parameters,
                                      fitted_parameters = model.fitted_parameters,
                                         limits = model.limits)
                 

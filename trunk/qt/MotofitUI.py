@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'Motofit.ui'
 #
-# Created: Fri Apr  5 21:16:28 2013
+# Created: Mon Apr  8 16:25:30 2013
 #      by: pyside-uic 0.2.13 running on PySide 1.1.1
 #
 # WARNING! All changes made in this file will be lost!
@@ -198,8 +198,6 @@ class Ui_MainWindow(object):
         self.menuPlot_type.setObjectName("menuPlot_type")
         self.menuExperiment = QtGui.QMenu(self.menubar)
         self.menuExperiment.setObjectName("menuExperiment")
-        self.menuGlobal_Fit = QtGui.QMenu(self.menubar)
-        self.menuGlobal_Fit.setObjectName("menuGlobal_Fit")
         MainWindow.setMenuBar(self.menubar)
         self.dockWidget = QtGui.QDockWidget(MainWindow)
         sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
@@ -516,8 +514,6 @@ class Ui_MainWindow(object):
         self.actionSave_experiment.setObjectName("actionSave_experiment")
         self.actionLoad_Plugin = QtGui.QAction(MainWindow)
         self.actionLoad_Plugin.setObjectName("actionLoad_Plugin")
-        self.actionStart_global_fitting = QtGui.QAction(MainWindow)
-        self.actionStart_global_fitting.setObjectName("actionStart_global_fitting")
         self.menuData.addAction(self.actionLoad_Data)
         self.menuData.addAction(self.actionRefresh_Datasets)
         self.menuData.addSeparator()
@@ -531,17 +527,15 @@ class Ui_MainWindow(object):
         self.menuPlot_type.addAction(self.actionRQ4_vs_Q_2)
         self.menuExperiment.addAction(self.actionLoad_experiment)
         self.menuExperiment.addAction(self.actionSave_experiment)
-        self.menuGlobal_Fit.addAction(self.actionStart_global_fitting)
         self.menubar.addAction(self.menuData.menuAction())
         self.menubar.addAction(self.menuModel.menuAction())
         self.menubar.addAction(self.menuPlot_type.menuAction())
         self.menubar.addAction(self.menuExperiment.menuAction())
         self.menubar.addAction(self.menuHelp.menuAction())
-        self.menubar.addAction(self.menuGlobal_Fit.menuAction())
 
         self.retranslateUi(MainWindow)
         self.graphs.setCurrentIndex(0)
-        self.tabWidget.setCurrentIndex(4)
+        self.tabWidget.setCurrentIndex(0)
         self.dataset_comboBox.setCurrentIndex(-1)
         self.tabWidget_2.setCurrentIndex(0)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
@@ -555,7 +549,6 @@ class Ui_MainWindow(object):
         self.menuHelp.setTitle(QtGui.QApplication.translate("MainWindow", "Help", None, QtGui.QApplication.UnicodeUTF8))
         self.menuPlot_type.setTitle(QtGui.QApplication.translate("MainWindow", "Plot type", None, QtGui.QApplication.UnicodeUTF8))
         self.menuExperiment.setTitle(QtGui.QApplication.translate("MainWindow", "Experiment", None, QtGui.QApplication.UnicodeUTF8))
-        self.menuGlobal_Fit.setTitle(QtGui.QApplication.translate("MainWindow", "Global Fit", None, QtGui.QApplication.UnicodeUTF8))
         self.chi2lineEdit.setText(QtGui.QApplication.translate("MainWindow", "0", None, QtGui.QApplication.UnicodeUTF8))
         self.res_SpinBox.setPrefix(QtGui.QApplication.translate("MainWindow", "dq/q(%) : ", None, QtGui.QApplication.UnicodeUTF8))
         self.do_fit_button.setShortcut(QtGui.QApplication.translate("MainWindow", "Meta+F", None, QtGui.QApplication.UnicodeUTF8))
@@ -593,5 +586,4 @@ class Ui_MainWindow(object):
         self.actionSave_experiment.setText(QtGui.QApplication.translate("MainWindow", "Save", None, QtGui.QApplication.UnicodeUTF8))
         self.actionSave_experiment.setShortcut(QtGui.QApplication.translate("MainWindow", "Meta+M", None, QtGui.QApplication.UnicodeUTF8))
         self.actionLoad_Plugin.setText(QtGui.QApplication.translate("MainWindow", "Load Plugin", None, QtGui.QApplication.UnicodeUTF8))
-        self.actionStart_global_fitting.setText(QtGui.QApplication.translate("MainWindow", "Start global fitting", None, QtGui.QApplication.UnicodeUTF8))
 
