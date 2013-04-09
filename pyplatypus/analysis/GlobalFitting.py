@@ -12,38 +12,34 @@ class GlobalFitObject(FitObject):
             '''
             
     
-    def __init__(self, fitObjectTuples, linkageMatrix, *args, **kwds):
+    def __init__(self, fitObjectTuple, linkageArray, *args, **kwds):
         """
-            FitObjectTuples is a tuple of fit objects.
+            FitObjectTuple is a tuple of fit objects.
             '''
                 all we should have to do is override model for the FitObject class.
                 
         """
         #def __init__(self, xdata, ydata, edata, fitfunction, parameters, *args, **kwds):
         
+        totalydata = np.concatenate([fitObject.ydata for fitObject in fitObjectTuple])
+        totaledata = np.concatenate([fitObject.edata for fitObject in fitObjectTuple])
+        totalparams = np.concatenate([fitObject.parameters for fitObject in fitObjectTuple])
+        self.FitObjectTuple = fitObjectTuple
         
-        super(FitObject, self).__init__(None, None, None, None, None)
-        self.FitObjectTuples = fitObjectTuples
-        self.xdata = np.copy(xdata)
-        self.ydata = np.copy(ydata.flatten())
-        self.edata = np.copy(edata.flatten())
-        self.numpoints = np.size(ydata, 0)
-        
-        self.fitfunction = fitfunction
-        self.parameters = np.copy(parameters)
-        self.numparams = np.size(parameters, 0)
-        self.costfunction = None
-        self.args = args
-        self.kwds = kwds
+        self.unique_pars, self.unique_pars_idx, self.unique_pars_inv
+                                 = np.unique(linkageArray.astype('int32'),
+                                    return_index = True,
+                                        return_inverse = True)
+                                 
+        self.unique_pars_vector = totalparams[self.unique_pars_idx[self.unique_pars>=0]]
+                
+        super(FitObject, self).__init__(None, totalydata, totaledata, None, unique_pars_vector, *args, **kwds)
         
         if 'fitted_parameters' in kwds and kwds['fitted_parameters'] is not None:
             self.fitted_parameters = np.copy(kwds['fitted_parameters'])
         else:
             self.fitted_parameters = np.arange(self.numparams)
-            
-        if 'costfunction' in kwds:
-            self.costfunction = kwds['costfunction']
-        
+                    
         if 'limits' in kwds and kwds['limits'] is not None and np.size(kwds['limits'], 1) == self.numparams:
             self.limits = kwds['limits']
         else:
@@ -55,5 +51,22 @@ class GlobalFitObject(FitObject):
         self.fitted_limits = self.limits[:, self.fitted_parameters]
         
         
-    def model(self):
-        pass
+    def model(self, parameters = None):
+        '''
+            calculate the model function for the global fit function
+            params is a np.array that has the same size as self.parameters
+        '''
+        
+        if parameters is not None:
+            test_parameters = parameters
+        else:
+            test_parameters = self.parameters
+        
+        substituted_pars = test_parameters[self.unique_pars[self.unique_pars_inv]]
+        
+        off = lambda idx: idx * np.size(self.linkageArray, 1)
+        
+        evaluateddata = [fitObject.model(params = substituted_pars[off(i) : off(i) + x.numparams)]
+                             for i, x in enumerate(fitObjectTuple)]
+        
+        return np.r_[evaluateddata].flatten()

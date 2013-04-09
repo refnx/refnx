@@ -127,7 +127,7 @@ class FitObject(object):
         #limits for those that are varying.
         self.fitted_limits = self.limits[:, self.fitted_parameters]
             
-    def energy(self, params = None):
+    def energy(self, parameters = None):
         '''
             
             The default cost function for the fit object is chi2 - the sum of the squared residuals divided by the error bars for each point.
@@ -142,8 +142,8 @@ class FitObject(object):
         '''
         test_parameters = np.copy(self.parameters)
     
-        if params is not None:
-            test_parameters[self.fitted_parameters] = params
+        if parameters is not None:
+            test_parameters[self.fitted_parameters] = parameters
         
         modeldata = self.model(test_parameters)
         
