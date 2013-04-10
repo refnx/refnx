@@ -5,7 +5,7 @@ import DEsolver
 import fitting
 import reflect
 
-class GlobalFitObject(FitObject):
+class GlobalFitObject(fitting.FitObject):
     '''
         
         An object used to perform a global curvefitting analysis.
@@ -21,12 +21,14 @@ class GlobalFitObject(FitObject):
         """
         #def __init__(self, xdata, ydata, edata, fitfunction, parameters, *args, **kwds):
         
+        self.linkageArray = np.atleast_2d(linkageArray)
+        
         totalydata = np.concatenate([fitObject.ydata for fitObject in fitObjectTuple])
         totaledata = np.concatenate([fitObject.edata for fitObject in fitObjectTuple])
         totalparams = np.concatenate([fitObject.parameters for fitObject in fitObjectTuple])
         self.FitObjectTuple = fitObjectTuple
         
-        self.unique_pars, self.unique_pars_idx, self.unique_pars_inv = np.unique(linkageArray.astype('int32'),
+        self.unique_pars, self.unique_pars_idx, self.unique_pars_inv = np.unique(self.linkageArray.astype('int32'),
                                     return_index = True,
                                         return_inverse = True)
                                  
@@ -51,8 +53,8 @@ class GlobalFitObject(FitObject):
             fitted_parameters = np.array([],dtype = 'int32')
             
             for idx, pos in enumerate(uniquelocs):
-                row = int(pos // np.size(linkageMatrix, 1))
-                col = pos%(np.size(linkageMatrix, 1))
+                row = int(pos // np.size(self.linkageArray, 1))
+                col = pos%(np.size(self.linkageArray, 1))
                 if col in fitObjectTuple[row].fitted_parameters:
                     fitted_parameters = np.append(fitted_parameters, idx)
             
@@ -77,16 +79,16 @@ class GlobalFitObject(FitObject):
             limits = np.zeros((2, self.unique_pars_vector.size))
             
             for idx, pos in enumerate(uniquelocs):
-                row = int(pos // np.size(linkageMatrix, 1))
-                col = pos%(np.size(linkageMatrix, 1))
+                row = int(pos // np.size(self.linkageArray, 1))
+                col = pos%(np.size(self.linkageArray, 1))
                 limits[0, idx] = fitObjectTuple[row].limits[0, col]
                 limits[1, idx] = fitObjectTuple[row].limits[1, col]
             
             kwds['limits'] = limits
                      
         #initialise the FitObject superclass
-        super(FitObject, self).__init__(None, totalydata, totaledata, None, unique_pars_vector, *args, **kwds)
-       
+        super(GlobalFitObject, self).__init__(None, totalydata, totaledata, None, self.unique_pars_vector, *args, **kwds)
+        self.fitObjectTuple = fitObjectTuple
                                     
     def model(self, parameters = None):
         '''
@@ -102,8 +104,6 @@ class GlobalFitObject(FitObject):
         substituted_pars = test_parameters[self.unique_pars[self.unique_pars_inv]]
         
         off = lambda idx: idx * np.size(self.linkageArray, 1)
-        
-        evaluateddata = [x.model(params = substituted_pars[off(i) : off(i) + x.numparams)]
-                             for i, x in enumerate(fitObjectTuple)]
+        evaluateddata = [x.model(parameters = substituted_pars[off(i) : off(i) + x.numparams]) for i, x in enumerate(self.fitObjectTuple)]
         
         return np.r_[evaluateddata].flatten()
