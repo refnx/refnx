@@ -32,13 +32,27 @@ class GlobalFitObject(FitObject):
                                         return_inverse = True)
                                  
         self.unique_pars_vector = totalparams[self.unique_pars_idx[self.unique_pars>=0]]
-                
-        super(FitObject, self).__init__(None, totalydata, totaledata, None, unique_pars_vector, *args, **kwds)
-        
+       
         if 'fitted_parameters' in kwds and kwds['fitted_parameters'] is not None:
-            self.fitted_parameters = np.copy(kwds['fitted_parameters'])
+            #if it's in kwds, then it'll get passed to the superclass constructor
+            pass
         else:
-            self.fitted_parameters = np.arange(self.numparams)
+            #initiate fitted_parameters from the individual fitObjects
+            fitted_parameters = np.array([],dtype = 'int32')
+            
+            uniquelocs = self.unique_pars_idx[self.unique_pars>=0]
+            
+            for idx, fitObject in enumerate(fitObjectTuple):
+                t1 = [(np.size(linkageArray, 1) * idx + x) in uniquelocs for x in fitObject.fitted_parameters]
+                f = np.where(t1, linkageArray[idx, fitObject.fitted_parameters], -1)
+                f = f[f>=0]
+                fitted_parameters = np.r_[fitted_parameters, f]
+            
+            kwds['fitted_parameters'] = fitted_parameters                                            
+         
+        #initialise the FitObject superclass
+        super(FitObject, self).__init__(None, totalydata, totaledata, None, unique_pars_vector, *args, **kwds)
+       
                     
         if 'limits' in kwds and kwds['limits'] is not None and np.size(kwds['limits'], 1) == self.numparams:
             self.limits = kwds['limits']
@@ -66,7 +80,7 @@ class GlobalFitObject(FitObject):
         
         off = lambda idx: idx * np.size(self.linkageArray, 1)
         
-        evaluateddata = [fitObject.model(params = substituted_pars[off(i) : off(i) + x.numparams)]
+        evaluateddata = [x.model(params = substituted_pars[off(i) : off(i) + x.numparams)]
                              for i, x in enumerate(fitObjectTuple)]
         
         return np.r_[evaluateddata].flatten()
