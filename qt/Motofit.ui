@@ -782,6 +782,9 @@
              <pointsize>11</pointsize>
             </font>
            </property>
+           <property name="whatsThis">
+            <string/>
+           </property>
           </widget>
          </item>
          <item row="1" column="3">
