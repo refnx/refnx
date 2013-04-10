@@ -32,7 +32,18 @@ class GlobalFitObject(FitObject):
                                         return_inverse = True)
                                  
         self.unique_pars_vector = totalparams[self.unique_pars_idx[self.unique_pars>=0]]
+        uniquelocs = self.unique_pars_idx[self.unique_pars>=0]
        
+        '''
+            sort out which parameters are to be fitted.
+            If you supply an np.array, fitted_parameters in kwds, then the code will use 
+            that. But, it will have to make sense compared to unique_pars_vector (i.e. no
+            fitted parameter number > unique_pars_vector.size -1.
+            Alternatively it will fit the parameters listed in the individual fitObject.fitted_parameters
+            arrays IFF they are unique parameters.  Note that when you set up the individual fitObject
+            if you don't supply the fitted_parameters keyword, then the default is to fit them all.
+        '''
+        
         if 'fitted_parameters' in kwds and kwds['fitted_parameters'] is not None:
             #if it's in kwds, then it'll get passed to the superclass constructor
             pass
@@ -40,31 +51,44 @@ class GlobalFitObject(FitObject):
             #initiate fitted_parameters from the individual fitObjects
             fitted_parameters = np.array([],dtype = 'int32')
             
-            uniquelocs = self.unique_pars_idx[self.unique_pars>=0]
-            
-            for idx, fitObject in enumerate(fitObjectTuple):
-                t1 = [(np.size(linkageArray, 1) * idx + x) in uniquelocs for x in fitObject.fitted_parameters]
-                f = np.where(t1, linkageArray[idx, fitObject.fitted_parameters], -1)
-                f = f[f>=0]
-                fitted_parameters = np.r_[fitted_parameters, f]
+            for idx, pos in enumerate(uniquelocs):
+                row = int(pos // np.size(linkageMatrix, 1))
+                col = pos%(np.size(linkageMatrix, 1))
+                if col in fitObjectTuple[row].fitted_parameters:
+                    fitted_parameters = np.append(fitted_parameters, idx)
             
             kwds['fitted_parameters'] = fitted_parameters                                            
-         
+        
+        '''
+        If you supply the limits array in kwds, then the code will use that. But it has to
+         make sense with respect to the size of self.unique_pars_vector:
+         The shape of limits should be limits.shape = (2, N)
+         The shape of unique_pars_vector should be unique_pars_vector.shape = N
+         In other words, each parameter has an upper and lower value.
+         If the limits array is not supplied, then each parameter in unique_pars_vector will 
+         use the limits from the individual fitObject that it came from. When you setup the
+         individual fitObject if you don't supply the limits keyword, then the default is
+         0 and 2 times the initial parametervalue.
+        '''
+        if 'limits' in kwds and kwds['limits'] is not None and np.size(kwds['limits'], 1) == self.unique_pars_vector.size:
+            #self.limits gets setup in the superclass constructor
+            pass
+        else:
+            #setup limits from individual fitObject
+            limits = np.zeros((2, self.unique_pars_vector.size))
+            
+            for idx, pos in enumerate(uniquelocs):
+                row = int(pos // np.size(linkageMatrix, 1))
+                col = pos%(np.size(linkageMatrix, 1))
+                limits[0, idx] = fitObjectTuple[row].limits[0, col]
+                limits[1, idx] = fitObjectTuple[row].limits[1, col]
+            
+            kwds['limits'] = limits
+                     
         #initialise the FitObject superclass
         super(FitObject, self).__init__(None, totalydata, totaledata, None, unique_pars_vector, *args, **kwds)
        
-                    
-        if 'limits' in kwds and kwds['limits'] is not None and np.size(kwds['limits'], 1) == self.numparams:
-            self.limits = kwds['limits']
-        else:
-            self.limits = np.zeros((2, self.numparams))
-            self.limits[0, :] = 0
-            self.limits[1, :] = 2 * self.parameters
-        
-        #limits for those that are varying.
-        self.fitted_limits = self.limits[:, self.fitted_parameters]
-        
-        
+                                    
     def model(self, parameters = None):
         '''
             calculate the model function for the global fit function
