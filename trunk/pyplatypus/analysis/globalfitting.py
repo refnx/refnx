@@ -26,8 +26,7 @@ class GlobalFitObject(FitObject):
         totalparams = np.concatenate([fitObject.parameters for fitObject in fitObjectTuple])
         self.FitObjectTuple = fitObjectTuple
         
-        self.unique_pars, self.unique_pars_idx, self.unique_pars_inv
-                                 = np.unique(linkageArray.astype('int32'),
+        self.unique_pars, self.unique_pars_idx, self.unique_pars_inv = np.unique(linkageArray.astype('int32'),
                                     return_index = True,
                                         return_inverse = True)
                                  
