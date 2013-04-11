@@ -5,6 +5,13 @@ import DEsolver
 import fitting
 import reflect
 
+class LinkageException(Exception):
+    '''
+        an exception that gets raised if the LinkageArray is not correct
+    '''
+    def __init__(self):
+        pass
+
 class GlobalFitObject(fitting.FitObject):
     '''
         
@@ -55,9 +62,8 @@ class GlobalFitObject(fitting.FitObject):
             The linkageArray specifies which parameters are common between datasets.                
         """
                 
-        self.linkageArray = np.atleast_2d(linkageArray)
-        if self.linkageArrayIsCorrupted():
-            raise Exception('linkageArray is not correct')
+        self.linkageArray = np.atleast_2d(linkageArray)        
+        self.isLinkageArrayIsCorrupted():
         
         totalydata = np.concatenate([fitObject.ydata for fitObject in fitObjectTuple])
         totaledata = np.concatenate([fitObject.edata for fitObject in fitObjectTuple])
@@ -162,13 +168,12 @@ class GlobalFitObject(fitting.FitObject):
         for ii in xrange(np.size(self.linkageArray, 0)):
             for jj in xrange(np.size(self.linkageArray, 1)):
                 if self.linkageArray[ii, jj] == -1 and jj < self.fitObjectTuple[ii].numparams:
-                    return True
+                    raise LinkageException
                 if self.linkageArray[ii, jj] > uniqueparam + 1:
-                    return True		
+                    raise LinkageException
                 if self.linkageArray[ii, jj] < -1:
-                    return True
+                    raise LinkageException
                 if self.linkageArray[ii, jj] == uniqueparam + 1:
                     uniqueparam += 1
-        return False
 
         
