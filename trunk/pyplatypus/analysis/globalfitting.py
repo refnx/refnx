@@ -8,16 +8,51 @@ import reflect
 class GlobalFitObject(fitting.FitObject):
     '''
         
-        An object used to perform a global curvefitting analysis.
-            '''
+        Performs a global curvefitting analysis, subclassing the main fitting fitting.FitObject class.
+        Global curvefitting analyses several datasets at the same time. It is not necessary to analyse each dataset with the same theoretical model, they can be different.  Usage of a linkageArray allows one to have common parameters between datasets.  This reduces the dimensionality of the problem.
+        
+        Here is an example linkageArray for a two dataset analysis (you can analyse a single dataset if you want to). The model for the first dataset has 8 parameters, the model for the second dataset has 10 parameters.
+        
+        >>>linkageArray.shape
+        (2,10)
+        >>>linkageArray
+        array([[ 0,  1,  2,  3,  4,  5,  2,  6, -1, -1], 
+               [ 0,  7,  8,  9,  2, 10, 11, 12, 13, 14]])
+       
+       The linkages in this array are:
+           dataset0:parameter0 = dataset1:parameter0
+           dataset0:parameter2 = dataset1:parameter4
+           dataset0:parameter2 = dataset0:parameter6
+           
+        The -1 entries at the end of the first row are used as padding values.  This is because the maximum number of model parameters is 10, so there are a total of 10 columns in the array.  Since the model for the first dataset only has 8 parameters the last two columns are padded with -1.
+        It is important to note that the unique parameters are consecutively numbered. In this situation there are 15 unique parameters
+        
+        The class is used as follows:
+        1) setup fitting.FitObjects for each of the individual datasets, as if you were fitting them separately.  The individual FitObject is responsible for calculating the theoretical model data for that dataset. 
+        2) create the linkageArray.
+        3) Initialise the GlobalFitObject
+        4) Call GlobalFitObject.fit() (a super class method)
+
+        The overall costmetric (default is Chi2) that is minimised is calculated by the fitter.FitObject.energy() method.  This in turn calls the GlobalFitObject.model() method to request evaluation of the theoretical model.  The GlobalFitObject class does the work of combining the theoretical model from each of the individual datasets to calculate an overall Chi2.        
+        The individual FitObjects are responsible for calculating the theoretical model for their own dataset. Individual de-interlaced parameter arrays are supplied to each FitObject.model() method by the GlobalFitObject.model() method, with the de-interlacing controlled by the linkageArray.  The individual FitObject can either be a subclass of FitObject that overrides the model() method, or it can be the FitObject class itself, with a fitfunction specified.
+
+        If you wish to use a costmetric other that Chi2 you have a few options.  You can supply a callable costfunction with the signature costfunction(model, ydata, edata, parameters) in the kwds.
+        e.g.
+        cost = lambda model, ydata, edata, parameters: np.sum(((model - ydata)/edata)**2)
+        kwds['costfunction'] = cost
+        -OR-
+        subclass this GlobalFitObject and override the energy method.
+                
+    The initial parameters are drawn from the original FitObjects.
+    The lower and upper limits for each parameter can be specified by a 'limits' array in the kwds supplied to __init__. This limits array must have the shape (2, N), where the first row contains the lower limits, the second row the upper limits and N is the number of unique parameters.  If 'limits' is not in kwds, then individual limits are drawn from the original FitObjects.
+    If there is a 'fitted_parameters' array in kwds supplied to __init__, then the fitting will vary the corresponding unique parameter during the fit. The maximum value in the fitted_parameter array must be N - 1, where N is the number of unique parameters. If the fitted_parameters array is not specified in kwds, then each individual FitObject is consulted to see if the parameter should be allowed to vary. Only unique parameters in the combined dataset are allowed to vary.   
+    '''
             
     
     def __init__(self, fitObjectTuple, linkageArray, *args, **kwds):
         """
-            FitObjectTuple is a tuple of fit objects.
-            '''
-                all we should have to do is override model for the FitObject class.
-                
+            FitObjectTuple is a tuple of fitting.FitObject objects.
+            The linkageArray specifies which parameters are common between datasets.                
         """
                 
         self.linkageArray = np.atleast_2d(linkageArray)
@@ -94,7 +129,7 @@ class GlobalFitObject(fitting.FitObject):
                                     
     def model(self, parameters = None):
         '''
-            calculate the model function for the global fit function
+            calculate the model function for the global fit function.
             params is a np.array that has the same size as self.parameters
         '''
         
@@ -119,7 +154,7 @@ class GlobalFitObject(fitting.FitObject):
     
     def linkageArrayIsCorrupted(self):
         '''
-            some testing to see if the linkageArray is corrupted
+            Is the linkageArray is corrupted.
             Although this is against the spirit of python, some testing here seems
             like a very good idea because the fitting process may accept garbage linkages. 
         '''
