@@ -19,8 +19,7 @@ class GlobalFitObject(fitting.FitObject):
                 all we should have to do is override model for the FitObject class.
                 
         """
-        #def __init__(self, xdata, ydata, edata, fitfunction, parameters, *args, **kwds):
-        
+                
         self.linkageArray = np.atleast_2d(linkageArray)
         if self.linkageArrayIsCorrupted():
             raise Exception('linkageArray is not correct')
@@ -119,6 +118,11 @@ class GlobalFitObject(fitting.FitObject):
         return substituted_pars, substituted_uncertainty, chi2
     
     def linkageArrayIsCorrupted(self):
+        '''
+            some testing to see if the linkageArray is corrupted
+            Although this is against the spirit of python, some testing here seems
+            like a very good idea because the fitting process may accept garbage linkages. 
+        '''
         uniqueparam = -1
         for ii in xrange(np.size(self.linkageArray, 0)):
             for jj in xrange(np.size(self.linkageArray, 1)):
