@@ -22,6 +22,8 @@ class GlobalFitObject(fitting.FitObject):
         #def __init__(self, xdata, ydata, edata, fitfunction, parameters, *args, **kwds):
         
         self.linkageArray = np.atleast_2d(linkageArray)
+        if self.linkageArrayIsCorrupted():
+            raise Exception('linkageArray is not correct')
         
         totalydata = np.concatenate([fitObject.ydata for fitObject in fitObjectTuple])
         totaledata = np.concatenate([fitObject.edata for fitObject in fitObjectTuple])
@@ -89,6 +91,7 @@ class GlobalFitObject(fitting.FitObject):
         #initialise the FitObject superclass
         super(GlobalFitObject, self).__init__(None, totalydata, totaledata, None, self.unique_pars_vector, *args, **kwds)
         self.fitObjectTuple = fitObjectTuple
+
                                     
     def model(self, parameters = None):
         '''
@@ -109,45 +112,24 @@ class GlobalFitObject(fitting.FitObject):
         
         return np.r_[evaluateddata].flatten()
         
-def test_globfit_modelvals_degenerate_layers():
-    '''
-        try fitting dataset with two degenerate layers
-    '''
-    np.seterr(invalid='raise')
-    theoretical = np.loadtxt('pyplatypus/analysis/test/c_PLP0011859_q.txt')
-
-    qvals, rvals, evals, dummy = np.hsplit(theoretical, 4)
-
-    coefs = np.zeros((20))
-    coefs[0] = 3
-    coefs[1] = 1.
-    coefs[2] = 2.07
-    coefs[4] = 6.36
-    coefs[6] = 2e-6
-    coefs[7] = 3
-    coefs[8] = 30
-    coefs[9] = 3.47
-    coefs[11] = 4
-    coefs[12] = 125
-    coefs[13] = 2
-    coefs[15] = 4
-    coefs[16] = 125
-    coefs[17] = 2
-    coefs[19] = 4
-
+    def fit(self):
+        pars, uncertainty, chi2 = super(GlobalFitObject, self).fit()
+        substituted_pars = pars[self.unique_pars[self.unique_pars_inv]]
+        substituted_uncertainty = uncertainty[self.unique_pars[self.unique_pars_inv]]
+        return substituted_pars, substituted_uncertainty, chi2
     
-    fitted_parameters = np.array([3,5,6,7,8,9,10,11,12,13,14,15,16,17,19])
-    
-    a = reflect.ReflectivityFitObject(qvals, rvals, evals, coefs, fitted_parameters = fitted_parameters)
-    linkageArray = np.arange(20)
-    linkageArray[16] = 12
-    linkageArray[17] = 16
-    linkageArray[18] = 17
-    linkageArray[19] = 18
-    
-    gfo = GlobalFitObject(tuple([a]), linkageArray)
-    pars, dummy, chi2 = gfo.fit() 
+    def linkageArrayIsCorrupted(self):
+        uniqueparam = -1
+        for ii in xrange(np.size(self.linkageArray, 0)):
+            for jj in xrange(np.size(self.linkageArray, 1)):
+                if self.linkageArray[ii, jj] == -1 and jj < self.fitObjectTuple[ii].numparams:
+                    return True
+                if self.linkageArray[ii, jj] > uniqueparam + 1:
+                    return True		
+                if self.linkageArray[ii, jj] < -1:
+                    return True
+                if self.linkageArray[ii, jj] == uniqueparam + 1:
+                    uniqueparam += 1
+        return False
 
-
-if __name__ == '__main__':
-    test_globfit_modelvals_degenerate_layers()
+        
