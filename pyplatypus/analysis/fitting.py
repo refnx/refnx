@@ -173,7 +173,7 @@ class FitObject(object):
             
 
     def fit(self):
-        de = DEsolver.DEsolver(self.fitted_limits, energy_for_fitting, (self), progress = self.progress)
+        de = DEsolver.DEsolver(energy_for_fitting, self.fitted_limits, (self), progress = self.progress)
         thefit, chi2 = de.solve()
         self.parameters[self.fitted_parameters] = thefit
         self.uncertainties = self.parameters + 0
