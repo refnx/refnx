@@ -62,8 +62,11 @@ class GlobalFitObject(fitting.FitObject):
             The linkageArray specifies which parameters are common between datasets.                
         """
                 
-        self.linkageArray = np.atleast_2d(linkageArray)        
-        self.isLinkageArrayIsCorrupted():
+        self.linkageArray = np.atleast_2d(linkageArray) 
+        self.linkageArray = self.linkageArray.astype('int32')
+        self.fitObjectTuple = fitObjectTuple
+       
+        self.isLinkageArrayCorrupted()
         
         totalydata = np.concatenate([fitObject.ydata for fitObject in fitObjectTuple])
         totaledata = np.concatenate([fitObject.edata for fitObject in fitObjectTuple])
@@ -130,7 +133,6 @@ class GlobalFitObject(fitting.FitObject):
                      
         #initialise the FitObject superclass
         super(GlobalFitObject, self).__init__(None, totalydata, totaledata, None, self.unique_pars_vector, *args, **kwds)
-        self.fitObjectTuple = fitObjectTuple
 
                                     
     def model(self, parameters = None):
@@ -158,7 +160,7 @@ class GlobalFitObject(fitting.FitObject):
         substituted_uncertainty = uncertainty[self.unique_pars[self.unique_pars_inv]]
         return substituted_pars, substituted_uncertainty, chi2
     
-    def linkageArrayIsCorrupted(self):
+    def isLinkageArrayCorrupted(self):
         '''
             Is the linkageArray is corrupted.
             Although this is against the spirit of python, some testing here seems
@@ -167,13 +169,14 @@ class GlobalFitObject(fitting.FitObject):
         uniqueparam = -1
         for ii in xrange(np.size(self.linkageArray, 0)):
             for jj in xrange(np.size(self.linkageArray, 1)):
-                if self.linkageArray[ii, jj] == -1 and jj < self.fitObjectTuple[ii].numparams:
+                val = self.linkageArray[ii, jj]
+                if val < 0 and jj <= self.fitObjectTuple[ii].numparams - 1:
                     raise LinkageException
-                if self.linkageArray[ii, jj] > uniqueparam + 1:
+                if val > uniqueparam + 1:
                     raise LinkageException
                 if self.linkageArray[ii, jj] < -1:
                     raise LinkageException
-                if self.linkageArray[ii, jj] == uniqueparam + 1:
+                if val == uniqueparam + 1:
                     uniqueparam += 1
 
         
