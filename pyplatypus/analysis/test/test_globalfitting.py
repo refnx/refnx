@@ -149,12 +149,10 @@ class TestGlobalFitting(unittest.TestCase):
         linkageArray[18] = 17
         linkageArray[19] = 18
 
-        npt.assert_raises(LinkageException, gfit.GlobalFitObject, tuple([a]), linkageArray)
+        npt.assert_raises(gfit.LinkageException, gfit.GlobalFitObject, tuple([a]), linkageArray)
         linkageArray[17] = 16
         linkageArray[19] = -1
-        npt.assert_raises(LinkageException, gfit.GlobalFitObject, tuple([a]), linkageArray)
-        linkageArray[5] = -1
-        npt.assert_raises(LinkageException, gfit.GlobalFitObject, tuple([a]), linkageArray)
+        npt.assert_raises(gfit.LinkageException, gfit.GlobalFitObject, tuple([a]), linkageArray)
         
 
 if __name__ == '__main__':
