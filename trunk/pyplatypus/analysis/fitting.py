@@ -108,6 +108,11 @@ class FitObject(object):
         self.costfunction = None
         self.args = args
         self.kwds = kwds
+        self.seed = None
+        
+        if 'seed' in kwds:
+            self.seed = kwds['seed']
+        
         
         if 'fitted_parameters' in kwds and kwds['fitted_parameters'] is not None:
             self.fitted_parameters = np.copy(kwds['fitted_parameters'])
@@ -173,7 +178,7 @@ class FitObject(object):
             
 
     def fit(self):
-        de = DEsolver.DEsolver(energy_for_fitting, self.fitted_limits, (self), progress = self.progress)
+        de = DEsolver.DEsolver(energy_for_fitting, self.fitted_limits, (self), progress = self.progress, seed = self.seed)
         thefit, chi2 = de.solve()
         self.parameters[self.fitted_parameters] = thefit
         self.uncertainties = self.parameters + 0

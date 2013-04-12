@@ -3,6 +3,8 @@ import pyplatypus.analysis.reflect as reflect
 import numpy as np
 import numpy.testing as npt
 
+SEED = 1
+
 class TestDifferentialEvolution(unittest.TestCase):
 
     def setUp(self):
@@ -32,11 +34,10 @@ class TestDifferentialEvolution(unittest.TestCase):
         coefs[15] = 4
         fitted_parameters = np.array([3,5,6,7,8,9,10,11,12,13,14,15])
 
-        a = reflect.ReflectivityFitObject(qvals, rvals, evals, coefs, fitted_parameters = fitted_parameters)
-        a.fit()
-
-
-
+        a = reflect.ReflectivityFitObject(qvals, rvals, evals, coefs, fitted_parameters = fitted_parameters, seed = SEED)
+        pars, dummy, chi2 = a.fit()
+        saved_pars = np.load('pyplatypus/analysis/test/fittedcoefs_11859.npy')
+        npt.assert_almost_equal(pars, saved_pars)
 
 if __name__ == '__main__':
     unittest.main()
