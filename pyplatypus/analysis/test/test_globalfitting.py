@@ -142,7 +142,53 @@ class TestGlobalFitting(unittest.TestCase):
         linkageArray[17] = 16
         linkageArray[19] = -1
         npt.assert_raises(gfit.LinkageException, gfit.GlobalFitObject, tuple([a]), linkageArray)
+    
+    def test_multipledataset_corefinement(self):
+        '''
+            test corefinement of three datasets
+        '''
+        np.seterr(invalid='raise')
+        e361 = np.loadtxt('pyplatypus/analysis/test/e361r.txt')
+        e365 = np.loadtxt('pyplatypus/analysis/test/e365r.txt')
+        e366 = np.loadtxt('pyplatypus/analysis/test/e366r.txt')
+
+        coefs361 = np.zeros((16))
+        coefs361[0] = 2
+        coefs361[1] = 1.
+        coefs361[2] = 2.07
+        coefs361[4] = 6.36
+        coefs361[6] = 2e-5
+        coefs361[7] = 3
+        coefs361[8] = 10
+        coefs361[9] = 3.47
+        coefs361[11] = 4
+        coefs361[12] = 200
+        coefs361[13] = 1
+        coefs361[15] = 3
         
+        coefs365 = np.copy(coefs361)
+        coefs366 = np.copy(coefs361)
+        coefs365[4] = 3.47
+        coefs366[4] = -0.56
+        
+        qvals361, rvals361, evals361 = np.hsplit(e361, 3)
+        qvals365, rvals365, evals365 = np.hsplit(e365, 3)
+        qvals366, rvals366, evals366 = np.hsplit(e366, 3)
+        
+        fitted_parameters = np.array([1,6,8,12,13])
+      
+        a = reflect.ReflectivityFitObject(qvals361, rvals361, evals361, coefs361, fitted_parameters = fitted_parameters)
+        b = reflect.ReflectivityFitObject(qvals365, rvals365, evals365, coefs365, fitted_parameters = fitted_parameters)
+        c = reflect.ReflectivityFitObject(qvals366, rvals366, evals366, coefs366, fitted_parameters = fitted_parameters)
+
+        linkageArray = np.array([[  0,  1,  2,  3,  4,  5,  6,  7,  8,  9,  10,  11,  12,  13,  14,  15],
+                                 [ 16, 17, 18, 19, 20, 21, 22, 23,  8, 24,  25,  26,  12,  27,  28,  29],
+                                 [ 30, 31, 32, 33, 34, 35, 36, 37,  8, 38,  39,  40,  12,  41,  42,  43]])
+                                 
+        gfo = gfit.GlobalFitObject(tuple([a, b, c]), linkageArray, seed = SEED)
+        pars, dummy, chi2 = gfo.fit()
+        saved_pars = np.load('pyplatypus/analysis/test/corefinee361.npy')
+        npt.assert_almost_equal(pars, saved_pars)
 
 if __name__ == '__main__':
     unittest.main()
