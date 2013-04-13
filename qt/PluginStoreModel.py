@@ -4,12 +4,17 @@ import sys
 import inspect
 import hashlib
 import numpy as np
+import os.path
 import pyplatypus.analysis.reflect as reflect
 
 def loadReflectivityModule(filepath):
     #this loads all modules
     hash = hashlib.md5(filepath)
-    module = imp.load_source(filepath, filepath)
+    
+    name = os.path.basename(filepath)
+    name,ext=os.path.splitext(name)
+    
+    module = imp.load_source(name, filepath)
     
     rfos = []
     
@@ -19,7 +24,7 @@ def loadReflectivityModule(filepath):
             rfos.append(member)
     
     if not len(rfos):
-        del sys.modules[filepath]
+        del sys.modules[name]
         return None, None
         
     return (module, rfos)
