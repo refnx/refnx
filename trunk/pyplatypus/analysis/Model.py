@@ -18,7 +18,10 @@ class Model(object):
         self.fitted_parameters = np.copy(fitted_parameters)
         self.useerrors = useerrors
         self.usedq = usedq
-        self.limits = np.copy(limits)
+        if limits is not None:
+            self.limits = np.copy(limits)
+        else:
+            self.defaultlimits()
         self.costfunction = costfunction
         
     def save(self, f):

@@ -159,7 +159,7 @@ class DataObject(reflectdataset.ReflectDataset):
             for key in self.__requiredgraphproperties:
                 self.graph_properties['line2Dsld_profile_properties'][key] = str(artist.getp(self.line2Dsld_profile, key))
         
-    def do_a_fit(self, model, reflectPlugin = None):
+    def do_a_fit(self, model, fitPlugin = None):
         '''
             TODO this should be somewhat refactored into GUI code
         '''
@@ -180,8 +180,8 @@ class DataObject(reflectdataset.ReflectDataset):
         self.progressdialog = QtGui.QProgressDialog("Fit progress", "Abort", 0, 100)   
         self.progressdialog.setWindowModality(QtCore.Qt.WindowModal)
         
-        if reflectPlugin is not None:
-            RFO = reflectPlugin(**callerInfo)
+        if fitPlugin is not None:
+            RFO = fitPlugin(**callerInfo)
         else:
             RFO = reflect.ReflectivityFitObject(**callerInfo)
             
@@ -201,7 +201,7 @@ class DataObject(reflectdataset.ReflectDataset):
         else:  
             return True
                   
-    def evaluate_chi2(self, model, store = False, reflectPlugin = None):
+    def evaluate_chi2(self, model, store = False, fitPlugin = None):
         
         callerInfo = deepcopy(model.__dict__)
         callerInfo['xdata'] = self.W_q
@@ -216,8 +216,8 @@ class DataObject(reflectdataset.ReflectDataset):
         except KeyError:
             pass
                           
-        if reflectPlugin is not None:
-            RFO = reflectPlugin(**callerInfo)
+        if fitPlugin is not None:
+            RFO = fitPlugin(**callerInfo)
         else:
             RFO = reflect.ReflectivityFitObject(**callerInfo)
         
@@ -227,7 +227,7 @@ class DataObject(reflectdataset.ReflectDataset):
                 
         return energy
 
-    def evaluate_model(self, model, store = False, reflectPlugin = None):   
+    def evaluate_model(self, model, store = False, fitPlugin = None):   
             
         callerInfo = deepcopy(model.__dict__)
         callerInfo['xdata'] = self.W_q
@@ -242,8 +242,8 @@ class DataObject(reflectdataset.ReflectDataset):
         except KeyError:
             pass
                 
-        if reflectPlugin is not None:
-            RFO = reflectPlugin(**callerInfo)
+        if fitPlugin is not None:
+            RFO = fitPlugin(**callerInfo)
         else:
             RFO = reflect.ReflectivityFitObject(**callerInfo)
                 

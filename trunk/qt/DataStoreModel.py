@@ -638,3 +638,4 @@ class LimitsModel(QtCore.QAbstractTableModel):
             
         self.dataChanged.emit(index, index)
         return True
+        
