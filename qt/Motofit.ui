@@ -892,7 +892,36 @@
          <string>User defined models</string>
         </attribute>
         <layout class="QGridLayout" name="gridLayout_7">
-         <item row="0" column="0" rowspan="5">
+         <item row="0" column="1">
+          <widget class="QPushButton" name="Do_UDFfit_button">
+           <property name="text">
+            <string>Do Fit</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="1">
+          <widget class="QPushButton" name="UDFloadPlugin">
+           <property name="layoutDirection">
+            <enum>Qt::LeftToRight</enum>
+           </property>
+           <property name="text">
+            <string>Load Function</string>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="1">
+          <widget class="QComboBox" name="UDFplugin_comboBox"/>
+         </item>
+         <item row="3" column="1">
+          <widget class="QComboBox" name="UDFdataset_comboBox"/>
+         </item>
+         <item row="4" column="1">
+          <widget class="QComboBox" name="UDFmodel_comboBox"/>
+         </item>
+         <item row="5" column="1">
+          <widget class="QLineEdit" name="chi2"/>
+         </item>
+         <item row="0" column="0" rowspan="6">
           <widget class="QTableView" name="UDFmodelView">
            <property name="enabled">
             <bool>true</bool>
@@ -904,32 +933,6 @@
             </size>
            </property>
           </widget>
-         </item>
-         <item row="0" column="1">
-          <widget class="QPushButton" name="Do_UDFfit_button">
-           <property name="text">
-            <string>Do Fit</string>
-           </property>
-          </widget>
-         </item>
-         <item row="1" column="1">
-          <widget class="QPushButton" name="ModelLoader">
-           <property name="layoutDirection">
-            <enum>Qt::LeftToRight</enum>
-           </property>
-           <property name="text">
-            <string>Load Function</string>
-           </property>
-          </widget>
-         </item>
-         <item row="3" column="1">
-          <widget class="QComboBox" name="UDFmodel"/>
-         </item>
-         <item row="4" column="1">
-          <widget class="QLineEdit" name="chi2"/>
-         </item>
-         <item row="2" column="1">
-          <widget class="QComboBox" name="UDFdataset_comboBox"/>
          </item>
         </layout>
        </widget>

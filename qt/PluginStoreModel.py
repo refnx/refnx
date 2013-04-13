@@ -22,6 +22,7 @@ def loadReflectivityModule(filepath):
     for member in members:
         if issubclass(member[1], reflect.ReflectivityFitObject):
             rfos.append(member)
+            print 'Loaded', name, 'plugin fitting module'
     
     if not len(rfos):
         del sys.modules[name]
@@ -75,32 +76,37 @@ class PluginStoreModel(QtCore.QAbstractTableModel):
         self.dataChanged.emit(QtCore.QModelIndex(),QtCore.QModelIndex())
 
         
-class PluginParametersModel(QtCore.QAbstractTableModel):
+class UDFParametersModel(QtCore.QAbstractTableModel):
 
     def __init__(self, model, parent = None):
-        super(PluginParametersModel, self).__init__(parent)
+        super(UDFParametersModel, self).__init__(parent)
         self.model = model
     
     def rowCount(self, parent = QtCore.QModelIndex()):
         return len(self.model.parameters) + 1
         
     def columnCount(self, parent = QtCore.QModelIndex()):
-        return 1
+        return 3
     
     def flags(self, index):
         numlayers = int(self.model.parameters[0])
         row = index.row()
         col = index.column()
-        
+                        
         if row == 0:
-            return (QtCore.Qt.ItemIsEditable |
-                       QtCore.Qt.ItemIsEnabled)
-            
-                    
-    	return (QtCore.Qt.ItemIsEditable |
-    	         QtCore.Qt.ItemIsUserCheckable |
-    	           QtCore.Qt.ItemIsEnabled |
-    	            QtCore.Qt.ItemIsSelectable)
+            retval = QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsEnabled
+
+        if col == 0 and row > 0:      
+            retval = (QtCore.Qt.ItemIsEditable |
+                        QtCore.Qt.ItemIsUserCheckable |
+            	           QtCore.Qt.ItemIsEnabled |
+    	                        QtCore.Qt.ItemIsSelectable)
+    	    
+    	if col > 0 and row > 0:
+             retval = (QtCore.Qt.ItemIsEditable |
+             	           QtCore.Qt.ItemIsEnabled |
+     	                        QtCore.Qt.ItemIsSelectable)
+        return retval    	 
     	            
     def layersAboutToBeInserted(self, start, end):
         self.beginInsertRows(QtCore.QModelIndex(), start, end)    
@@ -118,22 +124,24 @@ class PluginParametersModel(QtCore.QAbstractTableModel):
         row = index.row()
         col = index.column()
         
-        if role == QtCore.Qt.CheckStateRole and row > 0:
-            fitted_parameters = self.model.fitted_parameters
-            if value == QtCore.Qt.Checked:
-                fitted_parameters = np.delete(fitted_parameters,np.where(fitted_parameters == row - 1))
-            else:
-                fitted_parameters = np.append(fitted_parameters, row - 1)
+        if role == QtCore.Qt.CheckStateRole:
+            if row > 0 and col == 0:
+                fitted_parameters = self.model.fitted_parameters
+                if value == QtCore.Qt.Checked:
+                    fitted_parameters = np.delete(fitted_parameters,np.where(fitted_parameters == row - 1))
+                else:
+                    fitted_parameters = np.append(fitted_parameters, row - 1)
                 
-            self.model.fitted_parameters = fitted_parameters[:]
+                self.model.fitted_parameters = fitted_parameters[:]
                 
-        if role == QtCore.Qt.EditRole and row > 0:
-            validator = QtGui.QDoubleValidator()
-            voutput = validator.validate(value, 1)
-            if voutput[0] == QtGui.QValidator.State.Acceptable:
-                self.model.parameters[row - 1] = voutput[1]
-            else:
-                return False
+        if role == QtCore.Qt.EditRole:
+            if row > 0:
+                validator = QtGui.QDoubleValidator()
+                voutput = validator.validate(value, 1)
+                if voutput[0] == QtGui.QValidator.State.Acceptable:
+                    self.model.parameters[row - 1] = voutput[1]
+                else:
+                    return False
         
         self.dataChanged.emit(index, index)
         return True
@@ -146,17 +154,40 @@ class PluginParametersModel(QtCore.QAbstractTableModel):
         col = index.column()
             
         if role == QtCore.Qt.DisplayRole:
-            if row == 0:
-                return str(np.size(self.model.parameters))
-            else:
-                return str(self.model.parameters[row - 1])
-        
-        if role == QtCore.Qt.CheckStateRole:
-            if row == 0:
-                return QtCore.Qt.NoItemFlags
+            if col == 0:
+                if row == 0:
+                    return str(np.size(self.model.parameters))
+                else:
+                    return str(self.model.parameters[row - 1])
+            elif col == 1 and row > 0:
+                return str(self.model.limits[0, row - 1])
+            elif col == 2 and row > 0:
+                return str(self.model.limits[1, row - 1])
                 
-            if (row - 1) in self.model.fitted_parameters:
-                return QtCore.Qt.Unchecked
+        if role == QtCore.Qt.CheckStateRole:
+            if row > 0 and col == 0:
+                if (row - 1) in self.model.fitted_parameters:
+                    return QtCore.Qt.Unchecked
+                else:
+                    return QtCore.Qt.Checked
+                    
+    def headerData(self, section, orientation, role=QtCore.Qt.DisplayRole):
+        """ Set the headers to be displayed. """
+        if role != QtCore.Qt.DisplayRole:
+            return None
+
+        if orientation == QtCore.Qt.Vertical:
+            if section == 0:
+                return 'number of parameters'
             else:
-               return QtCore.Qt.Checked
+                return str(section)
+            
+        if orientation == QtCore.Qt.Horizontal:
+            if section == 0:
+                return 'value'
+            if section == 1:
+                return 'lower limit'
+            if section == 2:
+                return 'upper limit'
+        return None
                 

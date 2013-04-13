@@ -46,7 +46,7 @@ class MyMainWindow(QtGui.QMainWindow):
 
         self.modelStore = DSM.ModelStore()
         self.pluginStoreModel = PSM.PluginStoreModel()
-        self.reflectPlugin = self.pluginStoreModel.plugins[0]
+        self.fitPlugin = self.pluginStoreModel.plugins[0]
                 
         self.modifyGui()
         
@@ -66,7 +66,7 @@ class MyMainWindow(QtGui.QMainWindow):
         self.modelStore.addModel(theoreticalmodel, 'theoretical')
         self.baseModel = DSM.BaseModel(self.modelStore.models['theoretical'])
         self.layerModel = DSM.LayerModel(self.modelStore.models['theoretical'])
-        self.genericModel = PSM.PluginParametersModel(self.modelStore.models['theoretical'])
+        self.UDFmodel = PSM.UDFParametersModel(self.modelStore.models['theoretical'])
 
         self.theoretical.evaluate_model(theoreticalmodel, store = True)
         
@@ -109,9 +109,10 @@ class MyMainWindow(QtGui.QMainWindow):
         self.ui.layerModelView.clicked.connect(self.layerCurrentCellChanged)
         
 #         self.ui.UDFmodelView.clicked.connect(self.UDFCurrentCellChanged)
-#         self.ui.UDFmodelView.setModel(self.UDFmodel)
-        self.UDFmodel.dataChanged.connect(self.update_gui_modelChanged)
-#         self.ui.UDF_comboBox.setModel(self.pluginStoreModel)
+        self.ui.UDFmodelView.setModel(self.UDFmodel)
+#        self.UDFmodel.dataChanged.connect(self.update_gui_modelChanged)
+        self.ui.UDFplugin_comboBox.setModel(self.pluginStoreModel)
+        self.ui.UDFmodel_comboBox.setModel(self.modelStore)
         
         print 'Session started at:', time.asctime( time.localtime(time.time()) )
 
@@ -304,14 +305,9 @@ class MyMainWindow(QtGui.QMainWindow):
 
     @QtCore.Slot()
     def on_actionLoad_Plugin_triggered(self):
-        #load a model
-        pluginFileName, ok = QtGui.QFileDialog.getOpenFileName(self,
-                                                              caption = 'Select plugin File',
-                                                             filter = 'Python Plugin File (*.py)')
-        if not ok:
-            return
-        
-        self.pluginStoreModel.addPlugin(pluginFileName)
+        #load a model plugin
+        self.loadPlugin()
+
             
     @QtCore.Slot()
     def on_actionRefresh_Datasets_triggered(self):
@@ -400,35 +396,35 @@ class MyMainWindow(QtGui.QMainWindow):
         self.update_gui_modelChanged()
         self.redraw_dataObject_graphs([dataset], visible = dataset.graph_properties['visible'])
     
-     @QtCore.Slot(int)
-     def on_UDFmodel_currentIndexChanged(self, arg_1):
-        pass
-#     
-#         if arg_1 == 0:
-#             #the default reflectometry calculation is being used
-#             self.modelStore.displayOtherThanReflect = False
-#             
-#             '''
-#                 you need to display a model suitable for reflectometry
-#             '''
-#             areAnyModelsValid = [reflect.isProperAbelesInput(model.parameters) for model in self.modelStore]
-#             try:
-#                 idx = areAnyModelsValid.index(True)
-#                 self.select_a_model(self.modelStore.names[idx])
-#             except ValueError:
-#                 #none are valid, reset the theoretical model
-#                 parameters = np.array([1, 1.0, 0, 0, 2.07, 0, 1e-7, 3, 25, 3.47, 0, 3])
-#                 fitted_parameters = np.array([1,2,3,4,5,6,7,8,9, 10, 11])
-#                 self.modelStore.models['theoretical'].parameters = parameters[:]
-#                 self.modelStore.models['theoretical'].fitted_parameters = fitted_parameters[:]
-#                     
-#             self.ui.baseModelView.show()
-#             self.ui.layerModelView.show()
-#         else:
-#             #a user reflectometry plugin is being used.
-#             self.modelStore.displayOtherThanReflect = True
+    @QtCore.Slot(int)
+    def on_UDFplugin_comboBox_currentIndexChanged(self, arg_1):        
+    
+        if arg_1 == 0:
+            #the default reflectometry calculation is being used
+            self.modelStore.displayOtherThanReflect = False
+            
+            '''
+                you need to display a model suitable for reflectometry
+            '''
+            areAnyModelsValid = [reflect.isProperAbelesInput(model.parameters) for model in self.modelStore]
+            try:
+                idx = areAnyModelsValid.index(True)
+                self.select_a_model(self.modelStore.names[idx])
+            except ValueError:
+                #none are valid, reset the theoretical model
+                parameters = np.array([1, 1.0, 0, 0, 2.07, 0, 1e-7, 3, 25, 3.47, 0, 3])
+                fitted_parameters = np.array([1,2,3,4,5,6,7,8,9, 10, 11])
+                self.modelStore.models['theoretical'].parameters = parameters[:]
+                self.modelStore.models['theoretical'].fitted_parameters = fitted_parameters[:]
+        else:
+            #a user reflectometry plugin is being used.
+            self.modelStore.displayOtherThanReflect = True
 # 
-#         self.reflectPlugin = self.pluginStoreModel.plugins[arg_1]
+        self.fitPlugin = self.pluginStoreModel.plugins[arg_1]
+
+    @QtCore.Slot(int)
+    def on_UDFmodel_comboBox_currentIndexChanged(self, arg_1):        
+        pass
 
     @QtCore.Slot(unicode)
     def on_UDFdataset_comboBox_currentIndexChanged(self, arg_1):
@@ -436,6 +432,21 @@ class MyMainWindow(QtGui.QMainWindow):
         dataset to be fitted changed, must update chi2
         """
         self.current_dataset = self.dataStore.dataObjects[arg_1]
+        
+    @QtCore.Slot()
+    def on_UDFloadPlugin_clicked(self):
+        self.loadPlugin()
+
+    
+    def loadPlugin(self):
+        pluginFileName, ok = QtGui.QFileDialog.getOpenFileName(self,
+                                                              caption = 'Select plugin File',
+                                                             filter = 'Python Plugin File (*.py)')
+        if not ok:
+            return    
+        self.pluginStoreModel.addPlugin(pluginFileName)
+        
+    
                   
     @QtCore.Slot(unicode)
     def on_dataset_comboBox_currentIndexChanged(self, arg_1):
@@ -618,7 +629,7 @@ class MyMainWindow(QtGui.QMainWindow):
         self.currentCell['lowlim'] = lowlim
         self.currentCell['hilim'] = hilim
         self.currentCell['readyToChange'] = True
-        self.currentCell['model'] = self.genericModel
+        self.currentCell['model'] = self.UDFModel
         
     @QtCore.Slot(int)
     def on_horizontalSlider_valueChanged(self, arg_1):
@@ -687,10 +698,10 @@ class MyMainWindow(QtGui.QMainWindow):
     def update_gui_modelChanged(self, store = False):
         theoreticalmodel = self.modelStore.models['theoretical']
 
-        self.theoretical.evaluate_model(theoreticalmodel, store = True, reflectPlugin = self.reflectPlugin['rfo'])
+        self.theoretical.evaluate_model(theoreticalmodel, store = True, fitPlugin = self.fitPlugin['rfo'])
 
         if self.current_dataset is not None:
-            energy = self.current_dataset.evaluate_chi2(theoreticalmodel, reflectPlugin = self.reflectPlugin['rfo'])
+            energy = self.current_dataset.evaluate_chi2(theoreticalmodel, fitPlugin = self.fitPlugin['rfo'])
             self.ui.chi2lineEdit.setText(str(round(energy, 3)))     
         
         self.redraw_dataObject_graphs([self.theoretical])
