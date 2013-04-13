@@ -990,23 +990,10 @@
                </property>
               </widget>
              </item>
-             <item row="0" column="0" rowspan="6">
+             <item row="0" column="0" rowspan="5">
               <widget class="QTableView" name="tableView"/>
              </item>
              <item row="2" column="2">
-              <widget class="QPushButton" name="pushButton_6">
-               <property name="sizePolicy">
-                <sizepolicy hsizetype="Minimum" vsizetype="Expanding">
-                 <horstretch>0</horstretch>
-                 <verstretch>0</verstretch>
-                </sizepolicy>
-               </property>
-               <property name="text">
-                <string>Change layers</string>
-               </property>
-              </widget>
-             </item>
-             <item row="3" column="2">
               <widget class="QPushButton" name="pushButton_4">
                <property name="sizePolicy">
                 <sizepolicy hsizetype="Minimum" vsizetype="Expanding">
@@ -1019,7 +1006,7 @@
                </property>
               </widget>
              </item>
-             <item row="4" column="2">
+             <item row="3" column="2">
               <widget class="QPushButton" name="pushButton_5">
                <property name="sizePolicy">
                 <sizepolicy hsizetype="Minimum" vsizetype="Expanding">
