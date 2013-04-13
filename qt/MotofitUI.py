@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'Motofit.ui'
+# Form implementation generated from reading ui file 'qt/Motofit.ui'
 #
-# Created: Mon Apr  8 16:25:30 2013
+# Created: Fri Apr 12 22:01:35 2013
 #      by: pyside-uic 0.2.13 running on PySide 1.1.1
 #
 # WARNING! All changes made in this file will be lost!
@@ -316,6 +316,7 @@ class Ui_MainWindow(object):
         font = QtGui.QFont()
         font.setPointSize(11)
         self.model_comboBox.setFont(font)
+        self.model_comboBox.setWhatsThis("")
         self.model_comboBox.setObjectName("model_comboBox")
         self.gridLayout_2.addWidget(self.model_comboBox, 1, 2, 1, 1)
         self.use_dqwave_checkbox = QtGui.QCheckBox(self.tab)
@@ -434,15 +435,7 @@ class Ui_MainWindow(object):
         self.gridLayout_11.addWidget(self.pushButton_2, 0, 2, 1, 1)
         self.tableView = QtGui.QTableView(self.tab_6)
         self.tableView.setObjectName("tableView")
-        self.gridLayout_11.addWidget(self.tableView, 0, 0, 6, 1)
-        self.pushButton_6 = QtGui.QPushButton(self.tab_6)
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Expanding)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.pushButton_6.sizePolicy().hasHeightForWidth())
-        self.pushButton_6.setSizePolicy(sizePolicy)
-        self.pushButton_6.setObjectName("pushButton_6")
-        self.gridLayout_11.addWidget(self.pushButton_6, 2, 2, 1, 1)
+        self.gridLayout_11.addWidget(self.tableView, 0, 0, 5, 1)
         self.pushButton_4 = QtGui.QPushButton(self.tab_6)
         sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Expanding)
         sizePolicy.setHorizontalStretch(0)
@@ -450,7 +443,7 @@ class Ui_MainWindow(object):
         sizePolicy.setHeightForWidth(self.pushButton_4.sizePolicy().hasHeightForWidth())
         self.pushButton_4.setSizePolicy(sizePolicy)
         self.pushButton_4.setObjectName("pushButton_4")
-        self.gridLayout_11.addWidget(self.pushButton_4, 3, 2, 1, 1)
+        self.gridLayout_11.addWidget(self.pushButton_4, 2, 2, 1, 1)
         self.pushButton_5 = QtGui.QPushButton(self.tab_6)
         sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Expanding)
         sizePolicy.setHorizontalStretch(0)
@@ -458,7 +451,7 @@ class Ui_MainWindow(object):
         sizePolicy.setHeightForWidth(self.pushButton_5.sizePolicy().hasHeightForWidth())
         self.pushButton_5.setSizePolicy(sizePolicy)
         self.pushButton_5.setObjectName("pushButton_5")
-        self.gridLayout_11.addWidget(self.pushButton_5, 4, 2, 1, 1)
+        self.gridLayout_11.addWidget(self.pushButton_5, 3, 2, 1, 1)
         self.tabWidget_2.addTab(self.tab_6, "")
         self.tab_7 = QtGui.QWidget()
         self.tab_7.setObjectName("tab_7")
@@ -562,7 +555,6 @@ class Ui_MainWindow(object):
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_4), QtGui.QApplication.translate("MainWindow", "Console", None, QtGui.QApplication.UnicodeUTF8))
         self.pushButton_3.setText(QtGui.QApplication.translate("MainWindow", "Remove dataset", None, QtGui.QApplication.UnicodeUTF8))
         self.pushButton_2.setText(QtGui.QApplication.translate("MainWindow", "Add dataset", None, QtGui.QApplication.UnicodeUTF8))
-        self.pushButton_6.setText(QtGui.QApplication.translate("MainWindow", "Change layers", None, QtGui.QApplication.UnicodeUTF8))
         self.pushButton_4.setText(QtGui.QApplication.translate("MainWindow", "Link selection", None, QtGui.QApplication.UnicodeUTF8))
         self.pushButton_5.setText(QtGui.QApplication.translate("MainWindow", "Unlink selection", None, QtGui.QApplication.UnicodeUTF8))
         self.tabWidget_2.setTabText(self.tabWidget_2.indexOf(self.tab_6), QtGui.QApplication.translate("MainWindow", "datasets", None, QtGui.QApplication.UnicodeUTF8))
