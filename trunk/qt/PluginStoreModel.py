@@ -6,8 +6,9 @@ import hashlib
 import numpy as np
 import os.path
 import pyplatypus.analysis.reflect as reflect
+import pyplatypus.analysis.fitting
 
-def loadReflectivityModule(filepath):
+def loadPluginModule(filepath):
     #this loads all modules
     hash = hashlib.md5(filepath)
     
@@ -20,7 +21,7 @@ def loadReflectivityModule(filepath):
     
     members = inspect.getmembers(module, inspect.isclass)
     for member in members:
-        if issubclass(member[1], reflect.ReflectivityFitObject):
+        if issubclass(member[1], fitting.FitObject):
             rfos.append(member)
             print 'Loaded', name, 'plugin fitting module'
     
@@ -64,7 +65,7 @@ class PluginStoreModel(QtCore.QAbstractTableModel):
                 return self.plugins[index.row()]['name']
                 
     def addPlugin(self, filepath):
-        module, rfos = loadReflectivityModule(filepath)
+        module, rfos = loadPluginModule(filepath)
         
         if rfos is None:
             return

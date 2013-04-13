@@ -690,6 +690,11 @@ class MyMainWindow(QtGui.QMainWindow):
         
         header = self.ui.layerModelView.horizontalHeader()
         header.setResizeMode(QtGui.QHeaderView.Stretch)
+        
+        header = self.ui.UDFmodelView.horizontalHeader()
+        header.setResizeMode(QtGui.QHeaderView.Stretch)
+
+
                              
     def redraw_dataObject_graphs(self, dataObjects, visible = True):
         self.reflectivitygraphs.redraw_dataObjects(dataObjects, visible = visible)        
