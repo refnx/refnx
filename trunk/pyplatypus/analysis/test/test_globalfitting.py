@@ -189,6 +189,7 @@ class TestGlobalFitting(unittest.TestCase):
         pars, dummy, chi2 = gfo.fit()
         saved_pars = np.load('pyplatypus/analysis/test/corefinee361.npy')
         npt.assert_almost_equal(pars, saved_pars)
+        npt.assert_almost_equal(chi2, 1704.81174159)
 
 if __name__ == '__main__':
     unittest.main()
