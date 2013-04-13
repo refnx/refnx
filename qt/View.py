@@ -110,7 +110,7 @@ class MyMainWindow(QtGui.QMainWindow):
         
 #         self.ui.UDFmodelView.clicked.connect(self.UDFCurrentCellChanged)
 #         self.ui.UDFmodelView.setModel(self.UDFmodel)
-#         self.UDFmodel.dataChanged.connect(self.update_gui_modelChanged)
+        self.UDFmodel.dataChanged.connect(self.update_gui_modelChanged)
 #         self.ui.UDF_comboBox.setModel(self.pluginStoreModel)
         
         print 'Session started at:', time.asctime( time.localtime(time.time()) )
@@ -400,8 +400,9 @@ class MyMainWindow(QtGui.QMainWindow):
         self.update_gui_modelChanged()
         self.redraw_dataObject_graphs([dataset], visible = dataset.graph_properties['visible'])
     
-#     @QtCore.Slot(int)
-#     def on_UDF_comboBox_currentIndexChanged(self, arg_1):
+     @QtCore.Slot(int)
+     def on_UDFmodel_currentIndexChanged(self, arg_1):
+        pass
 #     
 #         if arg_1 == 0:
 #             #the default reflectometry calculation is being used
@@ -434,7 +435,6 @@ class MyMainWindow(QtGui.QMainWindow):
         """
         dataset to be fitted changed, must update chi2
         """
-        print arg_1
         self.current_dataset = self.dataStore.dataObjects[arg_1]
                   
     @QtCore.Slot(unicode)
