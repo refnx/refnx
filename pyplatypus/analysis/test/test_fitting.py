@@ -1,5 +1,6 @@
 import unittest
 import pyplatypus.analysis.reflect as reflect
+import pyplatypus.analysis.Model as model
 import numpy as np
 import numpy.testing as npt
 
@@ -36,8 +37,16 @@ class TestDifferentialEvolution(unittest.TestCase):
 
         a = reflect.ReflectivityFitObject(qvals, rvals, evals, coefs, fitted_parameters = fitted_parameters, seed = SEED)
         pars, dummy, chi2 = a.fit()
-        saved_pars = np.load('pyplatypus/analysis/test/fittedcoefs_11859.npy')
-        npt.assert_almost_equal(pars, saved_pars)
+        
+#         modeltosave = model.Model(pars, limits = a.limits, fitted_parameters = fitted_parameters)
+#         with open('pyplatypus/analysis/test/fittedcoefs_11859.txt', 'w') as f:
+#             modeltosave.save(f)
+            
+        with open('pyplatypus/analysis/test/fittedcoefs_11859.txt', 'Ur') as f:
+            savedmodel = model.Model(None, file = f)
+
+    #    saved_pars = np.load('pyplatypus/analysis/test/fittedcoefs_11859.npy')
+        npt.assert_almost_equal(pars, savedmodel.parameters)
 
 if __name__ == '__main__':
     unittest.main()
