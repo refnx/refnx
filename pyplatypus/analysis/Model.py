@@ -48,15 +48,9 @@ class Model(object):
         if self.limits is None or self.limits.ndim != 2 or np.size(self.limits, 1) != np.size(self.parameters):
             self.defaultlimits()
                 
-        #go through and write parameters to file
-        for idx in xrange(self.parameters.size):
-            line = '{:.15f}\t{: d}\t{:.15f}\t{:.15f}\t{:.15f}\n'.format(self.parameters[idx],
-                                                                    holdvector[idx],
-                                                                        self.limits[0, idx],
-                                                                            self.limits[1, idx],
-                                                                                self.uncertainties[idx])
-                                                                            
-            f.write(line)
+        #go through and write parameters to file        
+        np.savetxt(f, np.column_stack((self.parameters, holdvector, self.limits.T, self.uncertainties)))
+
         
         f.write('covariance matrix\n')
         np.savetxt(f, self.covariancematrix)
