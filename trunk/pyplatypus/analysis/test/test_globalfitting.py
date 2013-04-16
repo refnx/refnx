@@ -1,5 +1,6 @@
 import unittest
 import pyplatypus.analysis.reflect as reflect
+import pyplatypus.analysis.Model as model
 import pyplatypus.analysis.globalfitting as gfit
 import numpy as np
 import numpy.testing as npt
@@ -187,8 +188,15 @@ class TestGlobalFitting(unittest.TestCase):
                                  
         gfo = gfit.GlobalFitObject(tuple([a, b, c]), linkageArray, seed = SEED)
         pars, dummy, chi2 = gfo.fit()
-        saved_pars = np.load('pyplatypus/analysis/test/corefinee361.npy')
-        npt.assert_almost_equal(pars, saved_pars)
+
+#         modeltosave = model.Model(pars, limits = gfo.limits, fitted_parameters = gfo.fitted_parameters)
+#         with open('pyplatypus/analysis/test/corefinee361.txt', 'w') as f:
+#             modeltosave.save(f)
+
+        with open('pyplatypus/analysis/test/corefinee361.txt', 'Ur') as f:
+            savedmodel=model.Model(None, file=f)
+        
+        npt.assert_almost_equal(pars, savedmodel.parameters)
         npt.assert_almost_equal(chi2, 1704.81174159)
 
 if __name__ == '__main__':
