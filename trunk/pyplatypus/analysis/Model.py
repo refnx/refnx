@@ -7,44 +7,83 @@ import os.path, os
 import string
     
 class Model(object):
-    def __init__(self, parameters = None,
-                    fitted_parameters = None,
-                     limits = None,
-                      useerrors = True,
-                       usedq = True,
-                        costfunction = reflect.costfunction_logR_noweight):
-        self.parameters = np.copy(parameters)
-        self.uncertainties = np.copy(parameters)
-        self.fitted_parameters = np.copy(fitted_parameters)
-        self.useerrors = useerrors
-        self.usedq = usedq
-        if limits is not None:
-            self.limits = np.copy(limits)
+    def __init__(self, parameters, **kwds):
+        __members = {'file':None, 'parameters': None, 'fitted_parameters':None, 'uncertainties':None, 'covariancematrix':None,
+        'limits':None, 'usedq':True, 'useerrors': True, 'costfunction':reflect.costfunction_logR_noweight}
+        
+        if 'file' in kwds:
+            self.load(kwds['file'])        
         else:
-            self.defaultlimits()
-        self.costfunction = costfunction
+            for key in __members:
+                if key in kwds:
+                   setattr(self, key, kwds[key])
+                else:
+                    setattr(self, key, __members[key])
+            
+            self.parameters = parameters
+            if self.fitted_parameters is None:
+                self.fitted_parameters = np.array([], dtype = 'int')
+            
+            if self.uncertainties is None:
+                self.uncertainties = np.array([np.nan] * parameters.size, dtype = 'float64')
+                
+            if self.covariancematrix is None:
+                self.covariancematrix = np.zeros((parameters.size, parameters.size))
+            
+            if self.limits is None:
+                self.defaultlimits()
+                       
+        self.useerrors = True
+        self.usedq = True
+        self.costfunction = reflect.costfunction_logR_noweight
+       
         
     def save(self, f):
-        f.write(f.name + '\n\n')
-        holdvector = np.ones_like(self.parameters)
+        f.write(f.name + '\n')
+        f.write(str(self.parameters.size) + '\n')
+        f.write('parameter\thold\tlowlin\thilim\tuncertainty\n')
+        holdvector = np.ones_like(self.parameters, dtype = 'int')
         holdvector[self.fitted_parameters] = 0
         
         if self.limits is None or self.limits.ndim != 2 or np.size(self.limits, 1) != np.size(self.parameters):
             self.defaultlimits()
-            
-        np.savetxt(f, np.column_stack((self.parameters, holdvector, self.limits.T)))
+                
+        #go through and write parameters to file
+        for idx in xrange(self.parameters.size):
+            line = '{:.15f}\t{: d}\t{:.15f}\t{:.15f}\t{:.15f}\n'.format(self.parameters[idx],
+                                                                    holdvector[idx],
+                                                                        self.limits[0, idx],
+                                                                            self.limits[1, idx],
+                                                                                self.uncertainties[idx])
+                                                                            
+            f.write(line)
+        
+        f.write('covariance matrix\n')
+        np.savetxt(f, self.covariancematrix)
+        
     
     def load(self, f):
         h1 = f.readline()
         h2 = f.readline()
-        array = np.loadtxt(f)
-        self.parameters, a2, lowlim, hilim = np.hsplit(array, 4)
+        h3 = f.readline()
+        numparams = int(h2)
+            
+        array = np.fromfile(f, dtype = 'float64', sep = '\t', count = numparams * 5)
+        array =  array.reshape(numparams, 5)
+                 
+        self.parameters, a2, lowlim, hilim , self.uncertainties = np.hsplit(array, 5)
+        
         self.parameters = self.parameters.flatten()
+        self.uncertainties = self.uncertainties.flatten()
         self.limits = np.column_stack((lowlim, hilim)).T
         
         a2 = a2.flatten()
-        
         self.fitted_parameters = np.where(a2==0)[0]
+        
+        #now read covariance matrix
+        h4 = f.readline()
+        self.covariancematrix = np.fromfile(f, dtype = 'float64', sep = ' \t', count = numparams * numparams)
+        self.covariancematrix = self.covariancematrix.reshape((numparams, numparams))
         
     def defaultlimits(self):
         self.limits = np.zeros((2, np.size(self.parameters)))
