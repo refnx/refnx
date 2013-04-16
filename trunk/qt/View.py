@@ -293,10 +293,8 @@ class MyMainWindow(QtGui.QMainWindow):
         self.loadModel(modelFileName)
 
     def loadModel(self, fileName):
-        themodel = Model.Model()
-        
         with open(fileName, 'Ur') as f:
-            themodel.load(f)
+            themodel = Model.Model(None, file = f)
 
         modelName = os.path.basename(fileName)
         self.modelStore.addModel(themodel, os.path.basename(modelName))
