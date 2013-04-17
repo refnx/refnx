@@ -81,6 +81,7 @@ class UDFParametersModel(QtCore.QAbstractTableModel):
 
     def __init__(self, model, parent = None):
         super(UDFParametersModel, self).__init__(parent)
+        
         self.model = model
     
     def rowCount(self, parent = QtCore.QModelIndex()):
@@ -109,17 +110,17 @@ class UDFParametersModel(QtCore.QAbstractTableModel):
      	                        QtCore.Qt.ItemIsSelectable)
         return retval    	 
     	            
-    def layersAboutToBeInserted(self, start, end):
-        self.beginInsertRows(QtCore.QModelIndex(), start, end)    
-    
-    def layersFinishedBeingInserted(self):
-        self.endInsertRows()
-        
-    def layersAboutToBeRemoved(self, start, end):
-        self.beginRemoveRows(QtCore.QModelIndex(), start, end)
-
-    def layersFinishedBeingRemoved(self):
-        self.endRemoveRows()
+ #    def layersAboutToBeInserted(self, start, end):
+#         self.beginInsertRows(QtCore.QModelIndex(), start, end)    
+#     
+#     def layersFinishedBeingInserted(self):
+#         self.endInsertRows()
+#         
+#     def layersAboutToBeRemoved(self, start, end):
+#         self.beginRemoveRows(QtCore.QModelIndex(), start, end)
+# 
+#     def layersFinishedBeingRemoved(self):
+#         self.endRemoveRows()
             
     def setData(self, index, value, role = QtCore.Qt.EditRole):
         row = index.row()
@@ -136,13 +137,50 @@ class UDFParametersModel(QtCore.QAbstractTableModel):
                 self.model.fitted_parameters = fitted_parameters[:]
                 
         if role == QtCore.Qt.EditRole:
+            if row == 0 and col == 0:
+                currentparams = self.rowCount() - 1
+                
+                validator = QtGui.QIntValidator()
+                voutput = validator.validate(value, 1)
+                if voutput[0] is QtGui.QValidator.State.Acceptable and int(voutput[1]) >= 0:
+                    newparams = int(voutput[1])
+                
+                if newparams == currentparams:
+                    return True
+                                    
+                if newparams > currentparams:
+                    self.beginInsertRows(QtCore.QModelIndex(), currentparams + 1, newparams)
+                if newparams < currentparams:
+                     self.beginRemoveRows(QtCore.QModelIndex(), newparams + 1, currentparams)
+
+                self.model.parameters = np.resize(self.model.parameters, newparams)
+                self.model.parameters[currentparams:-1] = 0.
+
+                if newparams > currentparams:
+                    self.model.limits = np.append(self.model.limits, np.zeros((2, newparams - currentparams)),axis = 1)
+                    self.model.limits[:, currentparams:-1] = 0.
+                    self.model.fitted_parameters = np.append(self.model.fitted_parameters, range(currentparams, newparams + 1))
+                    self.endInsertRows()
+                if newparams < currentparams:                
+                    self.model.limits = self.model.limits[:, 0: newparams]
+                    self.endRemoveRows()
+                        
             if row > 0:
                 validator = QtGui.QDoubleValidator()
                 voutput = validator.validate(value, 1)
                 if voutput[0] == QtGui.QValidator.State.Acceptable:
-                    self.model.parameters[row - 1] = voutput[1]
+                    number = voutput[1]
                 else:
                     return False
+                
+                if col == 0:
+                    self.model.parameters[row - 1] = number
+                if col == 1:
+                    self.model.limits[0, row - 1] = number
+                if col == 2:
+                    self.model.limits[1, row - 1] = number
+                    
+                
         
         self.dataChanged.emit(index, index)
         return True
