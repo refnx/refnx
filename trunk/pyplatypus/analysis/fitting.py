@@ -133,7 +133,7 @@ class FitObject(object):
             params - np.ndarray containing the parameters that are being fitted, i.e. this array is np.size(self.fitted_parameters) long.
                     If this is omitted the energy function uses the defaults that we supplied when the object was constructed.
             
-            If you require a different cost function provide a subclass that overloads this method. An alternative is to provide the costfunction
+            If you require a diffe                  rent cost function provide a subclass that overloads this method. An alternative is to provide the costfunctioncfqaz
             keyword to the constructor.
             
             Returns chi2 by default
@@ -176,31 +176,30 @@ class FitObject(object):
         return self.fitfunction(self.xdata, test_parameters, *self.args, **self.kwds)
             
 
-    def fit(self):
+    def fit(self, method = None):
         '''
             start the fit.  This method returns 
             parameters, uncertainties, chi2 = FitObject.fit()            
+            If method == 'LM', then a Levenberg Marquardt fit is used.
         '''
         self.square = True
-            
-        de = DEsolver.DEsolver(energy_for_fitting,
-                                 self.fitted_limits, (self),
-                                     progress = self.progress,
-                                      seed = self.seed)
-        thefit, chi2 = de.solve()
-        self.parameters[self.fitted_parameters] = thefit
-        self.uncertainties = self.parameters + 0
-        self.chi2 = chi2
-        return np.copy(self.parameters), np.copy(self.uncertainties), chi2
         
-    def LMfit(self):
-        '''
-            do a levenburg marquardt fit instead.           
-        '''
-        initialparams = self.parameters[self.fitted_parameters]
-        self.square = False
-        leastsq(energy_for_fitting, initialparams, args = (self))            
-
+        if method is None:
+            de = DEsolver.DEsolver(energy_for_fitting,
+                                     self.fitted_limits, (self),
+                                         progress = self.progress,
+                                          seed = self.seed)
+            thefit, chi2 = de.solve()
+            self.parameters[self.fitted_parameters] = thefit
+            self.uncertainties = self.parameters + 0
+            self.chi2 = chi2
+        elif method == 'LM':
+            #do a Levenberg Marquardt fit instead
+            self.square = False
+            leastsq(energy_for_fitting, initialparams, args = (self))            
+    
+        return np.copy(self.parameters), np.copy(self.uncertainties), chi2
+ 
         
     def progress(self, iterations, convergence, chi2, *args):
         '''
