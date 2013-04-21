@@ -2,6 +2,7 @@ from __future__ import division
 import numpy as np
 import math
 import DEsolver
+from scipy.optimize import leastsq 
 
 def energy_for_fitting(params, *args):
     ''' 
@@ -44,32 +45,25 @@ class FitObject(object):
         
         Construction of the object initialises the data for the curve fit, but doesn't actually start it.
         
-        xdata[numpoints] - np.ndarray that contains the independent variables for the fit. Should have [numpoints] rows.
-                            Add extra columns for multi dimensional fitting (the fit function you want to use
-                            should be designed to cope with this).
+        xdata           - np.ndarray that contains the independent variables for the fit. This is not used by this class, other than pass it directly to the fitfunction.
                             
         ydata[numpoints] - np.ndarray that contains the observations corresponding to each measurement point.
         
         edata[numpoints] - np.ndarray that contains the uncertainty (s.d.) for each of the observed y data points.
         
-        fitfunction - callable function  of the form f(xdata, parameters, *args, **kwds). The args and kwds supplied
-                        in the construction of this object are passed directly to the fitfunction and should be used to pass
-                        auxillary information to it. You do can use None for fitfunction _IF_ you subclass this 
-                        FitObject and provide your own energy method. Alternatively subclass the model method.
+        fitfunction - callable function  of the form f(xdata, parameters, *args, **kwds). The args and kwds supplied in the construction of this FitObject are also passed directly to the fitfunction and can be used to pass auxillary information to it. You can use None for fitfunction _IF_ you subclass this FitObject and provide your own energy method. Alternatively subclass the model method.
                         
-        parameters - np.ndarray that contains _all_ the parameters to be supplied to the fitfunction, not just those being fitted
+        parameters - np.ndarray that contains _all_ the parameters to be supplied to the fitfunction, not just those being fitted.
         
         You may set the following optional parameters in kwds:
         
         fitted_parameters - an np.ndarray that contains the parameter numbers that are being fitted (the others are held)
 
-        limits - an np.ndarray that contains the lower and upper limits for all the parameters.
-                should have shape (2, np.size(parameters)).
+        limits - an np.ndarray that contains the lower and upper limits for all the parameters. It should have shape (2, np.size(parameters)).
                 
-        costfunction - a callable costfunction with the signature costfunction(model, ydata, edata, parameters). The parameters are
-                        all the parameters, not just the ones being held. Supply this function, or override the energy method, to use something
-                        other than the default of chi2.
-                        
+        costfunction - a callable costfunction with the signature costfunction(model, ydata, edata, parameters). The fullset of parameters is passed, not just the ones being varied. Supply this function, or override the energy method of this class, to use something other than the default of chi2.
+        
+        You can also choose to do a Levenberg Marquardt fit instead, by using the LMfit method.                 
                         
             Object attributes:
                 self.xdata - see above for definition
@@ -110,9 +104,9 @@ class FitObject(object):
         self.kwds = kwds
         self.seed = None
         
+        #need to set the seed for DEsolver.
         if 'seed' in kwds:
-            self.seed = kwds['seed']
-        
+            self.seed = kwds['seed']       
         
         if 'fitted_parameters' in kwds and kwds['fitted_parameters'] is not None:
             self.fitted_parameters = np.copy(kwds['fitted_parameters'])
@@ -155,7 +149,12 @@ class FitObject(object):
         if self.costfunction:
             return self.costfunction(modeldata, self.ydata, self.edata, test_parameters)
         else:
-            return  np.sum(np.power((self.ydata - modeldata) / self.edata, 2))
+            #the following is required because the LMfit method requires only the residuals to be returned. Whereas the fit method utilising DE will require square energy.
+            resid = (self.ydata - modeldata) / self.edata
+            if self.square:
+                return np.sum(np.power(resid, 2))
+            else:
+                return resid
 
 
     def model(self, parameters = None):
@@ -178,12 +177,30 @@ class FitObject(object):
             
 
     def fit(self):
-        de = DEsolver.DEsolver(energy_for_fitting, self.fitted_limits, (self), progress = self.progress, seed = self.seed)
+        '''
+            start the fit.  This method returns 
+            parameters, uncertainties, chi2 = FitObject.fit()            
+        '''
+        self.square = True
+            
+        de = DEsolver.DEsolver(energy_for_fitting,
+                                 self.fitted_limits, (self),
+                                     progress = self.progress,
+                                      seed = self.seed)
         thefit, chi2 = de.solve()
         self.parameters[self.fitted_parameters] = thefit
         self.uncertainties = self.parameters + 0
         self.chi2 = chi2
         return np.copy(self.parameters), np.copy(self.uncertainties), chi2
+        
+    def LMfit(self):
+        '''
+            do a levenburg marquardt fit instead.           
+        '''
+        initialparams = self.parameters[self.fitted_parameters]
+        self.square = False
+        leastsq(energy_for_fitting, initialparams, args = (self))            
+
         
     def progress(self, iterations, convergence, chi2, *args):
         '''
