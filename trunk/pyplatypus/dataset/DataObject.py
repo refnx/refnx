@@ -2,6 +2,7 @@ from __future__ import division
 import pyplatypus.dataset.reflectdataset as reflectdataset
 import numpy as np
 import pyplatypus.analysis.reflect as reflect
+import pyplatypus.analysis.fitting as fitting
 from copy import deepcopy, copy
 import matplotlib.artist as artist
 import os.path, os
