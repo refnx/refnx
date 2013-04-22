@@ -195,7 +195,7 @@ class TestGlobalFitting(unittest.TestCase):
 
         with open('pyplatypus/analysis/test/corefinee361.txt', 'Ur') as f:
             savedmodel=model.Model(None, file=f)
-        
+                    
         npt.assert_almost_equal(pars, savedmodel.parameters)
         npt.assert_almost_equal(chi2, 1704.81174159)
 
