@@ -192,15 +192,24 @@ class FitObject(object):
             thefit, chi2 = de.solve()
             self.parameters[self.fitted_parameters] = thefit
             self.chi2 = chi2
+            self.uncertainties = self.parameters + 0    
+
         elif method == 'LM':
             #do a Levenberg Marquardt fit instead
             self.square = False
             initialparams = self.parameters[self.fitted_parameters]
-            popt, pcov = leastsq(energy_for_fitting, initialparams, args = (self))            
+            stuff = leastsq(energy_for_fitting,
+                                  initialparams,
+                                   args = (self),
+                                    full_output = True) 
+            popt = stuff[0]
+            pcov = stuff[1]
+            self.covariance = pcov
             self.parameters[self.fitted_parameters] = popt
             self.chi2 = np.sum(np.power(self.energy(), 2))
-        
-        self.uncertainties = self.parameters + 0    
+            self.uncertainties = np.zeros(self.parameters.size)
+            self.uncertainties[self.fitted_parameters] = np.diag(pcov)
+            
         return np.copy(self.parameters), np.copy(self.uncertainties), self.chi2
  
         
