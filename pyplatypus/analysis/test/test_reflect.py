@@ -40,7 +40,7 @@ class TestReflect(unittest.TestCase):
         Do the same here
         '''
         
-        calc = reflect.abeles(qvals.flatten(), self.coefs, **{'dqvals':dqvals.flatten(), 'quad_order':'ultimate'})
+        calc = reflect.abeles(qvals.flatten(), self.coefs, **{'dqvals':dqvals.flatten(), 'quad_order':'13'})
         
         npt.assert_almost_equal(calc, rvals.flatten())
         
