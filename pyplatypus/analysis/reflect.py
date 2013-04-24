@@ -1,5 +1,7 @@
 from __future__ import division
 import numpy as np
+import scipy as sp
+import scipy.linalg
 import math
 import pyplatypus.analysis.fitting as fitting
 import pyplatypus.util.ErrorProp as EP
@@ -12,6 +14,17 @@ except ImportError:
     import pyplatypus.analysis._reflect as refcalc
 
 
+def gauss_legendre(n):
+    '''
+        a function return gaussian quadrature weights
+    '''
+    k = sp.arange(1.0, n)       
+    a_band = sp.zeros((2, n)) 
+    a_band[1,0:n-1] = k / sp.sqrt(4 * k * k - 1) 
+    x, V = sp.linalg.eig_banded(a_band, lower = True) 
+    w = 2 * sp.real(sp.power(V[0, :], 2)) 
+    return x, w
+    
 def abeles(qvals, coefs, *args, **kwds):
     """
 
@@ -33,57 +46,31 @@ def abeles(qvals, coefs, *args, **kwds):
     coefs[4 * (N - 1) + 11] = roughness between layer N and N-1.
 
     qvals - the qvalues required for the calculation. Q=4*Pi/lambda * sin(omega). Units = Angstrom**-1
+    
+    kwds['dqvals'] - an array containing the FWHM of the Gaussian approximated resolution kernel. Has the same size as qvals.
+    kwds['quad_order'] - the order of the Gaussian quadrature polynomial for doing the resolution smearing. default = 17. Don't choose less than 13.
 
     """
+    quad_order = 17
+    
     if np.size(coefs, 0) != 4 * int(coefs[0]) + 8:
         raise InputError("The size of the parameter array passed to abeles should be 4 * coefs[0] + 8")
     
+    if 'quad_order' in kwds:
+        quad_order = kwds['quad_order']
+    
     if 'dqvals' in kwds and kwds['dqvals'] is not None:
         dqvals = kwds['dqvals']
-        weights = np.array([0.0404840047653159,
-            0.0921214998377285,
-            0.1388735102197872,
-            0.1781459807619457,
-            0.2078160475368885,
-            0.2262831802628972,
-            0.2325515532308739,
-            0.2262831802628972,
-            0.2078160475368885,
-            0.1781459807619457,
-            0.1388735102197872,
-            0.0921214998377285,
-            0.0404840047653159])
-
-        abscissa = np.array([-0.9841830547185881,
-            -0.9175983992229779,
-            -0.8015780907333099,
-            -0.6423493394403402,
-            -0.4484927510364469,
-            -0.2304583159551348,
-            0.,
-            0.2304583159551348,
-            0.4484927510364469,
-            0.6423493394403402,
-            0.8015780907333099,
-            0.9175983992229779,
-            0.9841830547185881])
-
-        gaussvals  = np.array([0.001057642102668805,
-            0.002297100003792314,
-            0.007793859679303332,
-            0.0318667809686739,
-            0.1163728244269813,
-            0.288158781825899,
-            0.3989422804014327,
-            0.288158781825899,
-            0.1163728244269813,
-            0.0318667809686739,
-            0.007793859679303332,
-            0.002297100003792314,
-            0.001057642102668805])
+        INTLIMIT = 3.5
+        
+        #get the gauss-legendre weights and abscissa
+        abscissa, weights = gauss_legendre(quad_order)
+        #get the normal distribution at that point
+        prefactor = 1 / math.sqrt(2 * math.pi)
+        gauss = lambda x : np.exp(-0.5 * x * x)
+        gaussvals = prefactor * gauss(abscissa * INTLIMIT)
 
         #integration between -3.5 and 3 sigma
-        INTLIMIT = 3.5
         FWHM = 2 * math.sqrt(2 * math.log(2.0))
                 
         va = qvals.flatten() - INTLIMIT * dqvals /FWHM
