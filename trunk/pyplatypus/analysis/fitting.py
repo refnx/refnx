@@ -157,7 +157,7 @@ class FitObject(object):
                 return resid
 
 
-    def model(self, parameters = None):
+    def model(self, parameters):
         '''
             
             calculate the theoretical model using the fitfunction.
