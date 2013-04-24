@@ -6,6 +6,7 @@ import scipy.integrate as spi
 import math
 import pyplatypus.analysis.fitting as fitting
 import pyplatypus.util.ErrorProp as EP
+import warnings
 
 #from scipy.stats import norm
 
@@ -57,7 +58,7 @@ def abeles(q, coefs, *args, **kwds):
     qvals - the qvalues required for the calculation. Q=4*Pi/lambda * sin(omega). Units = Angstrom**-1
     
     kwds['dqvals'] - an array containing the FWHM of the Gaussian approximated resolution kernel. Has the same size as qvals.
-    kwds['quad_order'] - the order of the Gaussian quadrature polynomial for doing the resolution smearing. default = 17. Don't choose less than 13. If quad_order == 'ultimate' then adaptive quadrature is used.
+    kwds['quad_order'] - the order of the Gaussian quadrature polynomial for doing the resolution smearing. default = 17. Don't choose less than 13. If quad_order == 'ultimate' then adaptive quadrature is used. Adaptive quadrature will always work, but takes a _long_ time (2 or 3 orders of magnitude longer). Fixed quadrature will always take a lot less time. BUT it won't necessarily work across all samples. For example, 13 points may be fine for a thin layer, but will be atrocious at describing a multilayer with bragg peaks.
 
     """
     qvals = q.flatten()
@@ -75,9 +76,12 @@ def abeles(q, coefs, *args, **kwds):
         if quad_order == 'ultimate':
             #adaptive gaussian quadrature.
             smeared_rvals = np.zeros(qvals.size)
+            warnings.simplefilter('ignore', Warning)
             for idx, val in enumerate(qvals):
-                smeared_rvals[idx], err = scipy.integrate.quadrature(_smearkernel, -INTLIMIT, INTLIMIT, tol=1.e-15 args=(coefs, qvals[idx], dqvals[idx]))
+                
+                smeared_rvals[idx], err = scipy.integrate.quadrature(_smearkernel, -INTLIMIT, INTLIMIT, tol=1.e-16, rtol = 1.e-16, args=(coefs, qvals[idx], dqvals[idx]))
             
+            warnings.resetwarnings()
             return smeared_rvals
         else:
             #just do gaussian quadrature of fixed order
