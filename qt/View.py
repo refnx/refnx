@@ -55,7 +55,7 @@ class MyMainWindow(QtGui.QMainWindow):
 
         tempq = np.linspace(0.008, 0.5, num = 1000)
         tempr = np.ones_like(tempq)
-        tempe = np.zeros_like(tempq)
+        tempe = np.ones_like(tempq)
         tempdq  = np.copy(tempq) * 5 / 100.
         dataTuple = (tempq, tempr, tempe, tempdq)
         
@@ -754,7 +754,7 @@ class MyReflectivityGraphs(FigureCanvas):
         self.axes = []
         ax = self.figure.add_axes([0.1,0.22,0.85,0.75])
         self.axes.append(ax)
-        self.axes[0].autoscale(axis='both', tight = False)
+        self.axes[0].autoscale(axis='both', tight = False, enable = True)
         self.axes[0].set_xlabel('Q')
         self.axes[0].set_ylabel('R')
         self.axes[0].set_yscale('log')
@@ -837,7 +837,7 @@ class MySLDGraphs(FigureCanvas):
         self.axes = []
         #SLD plot
         self.axes.append(self.figure.add_subplot(111))
-        self.axes[0].autoscale(axis='both', tight = False)
+        self.axes[0].autoscale(axis='both', tight = False, enable = True)
         self.axes[0].set_xlabel('z')
         self.axes[0].set_ylabel('SLD')
                        
