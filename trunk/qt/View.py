@@ -802,6 +802,10 @@ class MyReflectivityGraphs(FigureCanvas):
             if dataObject.graph_properties['line2Dresiduals_properties']:
                 artist.setp(dataObject.line2Dresiduals, **dataObject.graph_properties['line2Dresiduals_properties'])
                                                       
+        self.axes[0].relim()
+        self.axes[0].autoscale_view(None, True, True)
+        self.draw()
+        
         self.draw()
     
     def redraw_dataObjects(self, dataObjects, visible = True):
@@ -819,8 +823,7 @@ class MyReflectivityGraphs(FigureCanvas):
                dataObject.line2Dresiduals.set_visible(visible)
         
         self.axes[0].relim()
-        self.axes[0].autoscale_view(True, True, True)
-        print 'fuckoff'
+        self.axes[0].autoscale_view(None, True, True)
         self.draw()
                        
     def removeTraces(self):
