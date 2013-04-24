@@ -2,6 +2,7 @@ from __future__ import division
 import numpy as np
 import scipy as sp
 import scipy.linalg
+import scipy.integrate as spi
 import math
 import pyplatypus.analysis.fitting as fitting
 import pyplatypus.util.ErrorProp as EP
@@ -13,19 +14,27 @@ try:
 except ImportError:
     import pyplatypus.analysis._reflect as refcalc
 
+FWHM = 2 * math.sqrt(2 * math.log(2.0))
+INTLIMIT = 3.5
 
 def gauss_legendre(n):
     '''
         a function return gaussian quadrature weights
     '''
-    k = sp.arange(1.0, n)       
-    a_band = sp.zeros((2, n)) 
-    a_band[1,0:n-1] = k / sp.sqrt(4 * k * k - 1) 
+    k = np.arange(1.0, n)       
+    a_band = np.zeros((2, n)) 
+    a_band[1, 0 : n-1] = k / np.sqrt(4 * k * k - 1) 
     x, V = sp.linalg.eig_banded(a_band, lower = True) 
-    w = 2 * sp.real(sp.power(V[0, :], 2)) 
+    w = 2 * np.real(np.power(V[0, :], 2)) 
     return x, w
+
+def _smearkernel(x, coefs, q, dq):
+    prefactor = 1 / math.sqrt(2 * math.pi)
+    gauss = prefactor * np.exp(-0.5 * x * x)
+    localq = q + x * dq/FWHM
+    return refcalc.abeles(np.size(localq), localq, coefs) * gauss
     
-def abeles(qvals, coefs, *args, **kwds):
+def abeles(q, coefs, *args, **kwds):
     """
 
     Abeles matrix formalism for calculating reflectivity from a stratified medium.
@@ -48,9 +57,10 @@ def abeles(qvals, coefs, *args, **kwds):
     qvals - the qvalues required for the calculation. Q=4*Pi/lambda * sin(omega). Units = Angstrom**-1
     
     kwds['dqvals'] - an array containing the FWHM of the Gaussian approximated resolution kernel. Has the same size as qvals.
-    kwds['quad_order'] - the order of the Gaussian quadrature polynomial for doing the resolution smearing. default = 17. Don't choose less than 13.
+    kwds['quad_order'] - the order of the Gaussian quadrature polynomial for doing the resolution smearing. default = 17. Don't choose less than 13. If quad_order == 'ultimate' then adaptive quadrature is used.
 
     """
+    qvals = q.flatten()
     quad_order = 17
     
     if np.size(coefs, 0) != 4 * int(coefs[0]) + 8:
@@ -61,34 +71,40 @@ def abeles(qvals, coefs, *args, **kwds):
     
     if 'dqvals' in kwds and kwds['dqvals'] is not None:
         dqvals = kwds['dqvals']
-        INTLIMIT = 3.5
         
-        #get the gauss-legendre weights and abscissa
-        abscissa, weights = gauss_legendre(quad_order)
-        #get the normal distribution at that point
-        prefactor = 1 / math.sqrt(2 * math.pi)
-        gauss = lambda x : np.exp(-0.5 * x * x)
-        gaussvals = prefactor * gauss(abscissa * INTLIMIT)
+        if quad_order == 'ultimate':
+            #adaptive gaussian quadrature.
+            smeared_rvals = np.zeros(qvals.size)
+            for idx, val in enumerate(qvals):
+                smeared_rvals[idx], err = scipy.integrate.quadrature(_smearkernel, -INTLIMIT, INTLIMIT, args=(coefs, qvals[idx], dqvals[idx]))
+            
+            return smeared_rvals
+        else:
+            #just do gaussian quadrature of fixed order
+            #get the gauss-legendre weights and abscissa
+            abscissa, weights = gauss_legendre(quad_order)
+            #get the normal distribution at that point
+            prefactor = 1 / math.sqrt(2 * math.pi)
+            gauss = lambda x : np.exp(-0.5 * x * x)
+            gaussvals = prefactor * gauss(abscissa * INTLIMIT)
 
-        #integration between -3.5 and 3 sigma
-        FWHM = 2 * math.sqrt(2 * math.log(2.0))
-                
-        va = qvals.flatten() - INTLIMIT * dqvals /FWHM
-        vb = qvals.flatten() + INTLIMIT * dqvals /FWHM
+            #integration between -3.5 and 3 sigma
+            va = qvals - INTLIMIT * dqvals /FWHM
+            vb = qvals + INTLIMIT * dqvals /FWHM
 
-        va = va[:, np.newaxis]
-        vb = vb[:, np.newaxis]
+            va = va[:, np.newaxis]
+            vb = vb[:, np.newaxis]
               
-        qvals_for_res = (np.atleast_2d(abscissa) * (vb - va) + vb + va) / 2.        
+            qvals_for_res = (np.atleast_2d(abscissa) * (vb - va) + vb + va) / 2.        
 
-        smeared_rvals = refcalc.abeles(np.size(qvals_for_res.flatten(), 0), qvals_for_res.flatten(), coefs)
-        smeared_rvals = np.reshape(smeared_rvals, (qvals.size, abscissa.size))
+            smeared_rvals = refcalc.abeles(np.size(qvals_for_res.flatten(), 0), qvals_for_res.flatten(), coefs)
+            smeared_rvals = np.reshape(smeared_rvals, (qvals.size, abscissa.size))
 
-        smeared_rvals *= np.atleast_2d(gaussvals * weights)
+            smeared_rvals *= np.atleast_2d(gaussvals * weights)
 
-        return np.sum(smeared_rvals, 1) * INTLIMIT
+            return np.sum(smeared_rvals, 1) * INTLIMIT
     else:
-        return refcalc.abeles(np.size(qvals.flatten(), 0), qvals.flatten(), coefs)
+        return refcalc.abeles(np.size(qvals, 0), qvals, coefs)
 
 def isProperAbelesInput(coefs):
 	'''

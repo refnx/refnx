@@ -93,7 +93,11 @@ class FitObject(object):
         """
         self.xdata = np.copy(xdata)
         self.ydata = np.copy(ydata.flatten())
-        self.edata = np.copy(edata.flatten())
+        if edata is not None:
+            self.edata = np.copy(edata.flatten())
+        else:
+            self.edata = None
+
         self.numpoints = np.size(ydata, 0)
         
         self.fitfunction = fitfunction
@@ -146,12 +150,17 @@ class FitObject(object):
         
         modeldata = self.model(test_parameters)
         
+        if self.edata is None:
+            sigma = 1.
+        else:
+            sigma = self.edata
+        
         if self.costfunction:
-            return self.costfunction(modeldata, self.ydata, self.edata, test_parameters)
+            return self.costfunction(modeldata, self.ydata, sigma, test_parameters)
         else:
             #the following is required because the LMfit method requires only the residuals to be returned. Whereas the fit method utilising DE will require square energy.
-            resid = (self.ydata - modeldata) / self.edata
-            if self.square:
+            resid = (self.ydata - modeldata) / sigma
+            if self.__square:
                 return np.sum(np.power(resid, 2))
             else:
                 return resid
@@ -182,7 +191,7 @@ class FitObject(object):
             parameters, uncertainties, chi2 = FitObject.fit()            
             If method == 'LM', then a Levenberg Marquardt fit is used.
         '''
-        self.square = True
+        self.__square = True
         
         if method is None:
             de = DEsolver.DEsolver(energy_for_fitting,
@@ -196,7 +205,7 @@ class FitObject(object):
 
         elif method == 'LM':
             #do a Levenberg Marquardt fit instead
-            self.square = False
+            self.__square = False
             initialparams = self.parameters[self.fitted_parameters]
             stuff = leastsq(energy_for_fitting,
                                   initialparams,
