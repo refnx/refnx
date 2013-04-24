@@ -49,7 +49,7 @@ class FitObject(object):
                             
         ydata[numpoints] - np.ndarray that contains the observations corresponding to each measurement point.
         
-        edata[numpoints] - np.ndarray that contains the uncertainty (s.d.) for each of the observed y data points.
+        edata[numpoints] - None or np.ndarray that contains the uncertainty (s.d.) for each of the observed y data points. (Use None if you do not have measured uncertainty on each point)
         
         fitfunction - callable function  of the form f(xdata, parameters, *args, **kwds). The args and kwds supplied in the construction of this FitObject are also passed directly to the fitfunction and can be used to pass auxillary information to it. You can use None for fitfunction _IF_ you subclass this FitObject and provide your own energy method. Alternatively subclass the model method.
                         
@@ -151,7 +151,7 @@ class FitObject(object):
         modeldata = self.model(test_parameters)
         
         if self.edata is None:
-            sigma = 1.
+            sigma = np.atleast_1d(1.)
         else:
             sigma = self.edata
         
@@ -163,8 +163,7 @@ class FitObject(object):
             if self.__square:
                 return np.sum(np.power(resid, 2))
             else:
-                return resid
-
+                return resid                
 
     def model(self, parameters):
         '''
@@ -210,15 +209,20 @@ class FitObject(object):
             stuff = leastsq(energy_for_fitting,
                                   initialparams,
                                    args = (self),
+                                   maxfev=100000,
                                     full_output = True) 
             popt = stuff[0]
             pcov = stuff[1]
+            
             self.covariance = pcov
             self.parameters[self.fitted_parameters] = popt
             self.chi2 = np.sum(np.power(self.energy(), 2))
+            if self.edata is None:
+                pcov *= self.chi2 / (self.ydata.size - self.fitted_parameters.size)
+
             self.uncertainties = np.zeros(self.parameters.size)
-            self.uncertainties[self.fitted_parameters] = np.diag(pcov)
-            
+            self.uncertainties[self.fitted_parameters] = np.sqrt(np.diag(pcov))
+                
         return np.copy(self.parameters), np.copy(self.uncertainties), self.chi2
  
         
