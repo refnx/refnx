@@ -822,6 +822,7 @@ class MyReflectivityGraphs(FigureCanvas):
                dataObject.line2Dresiduals.set_data(dataObject.W_q, dataObject.residuals)
                dataObject.line2Dresiduals.set_visible(visible)
         
+        self.axes[0].autoscale(axis='both', tight = False, enable = True)
         self.axes[0].relim()
         self.axes[0].autoscale_view(None, True, True)
         self.draw()
@@ -835,8 +836,7 @@ class MyReflectivityGraphs(FigureCanvas):
                         
         self.draw()
         
-        
-                                            
+                                        
 class MySLDGraphs(FigureCanvas):
     """Ultimately, this is a QWidget (as well as a FigureCanvasAgg, etc.)."""
     def __init__(self, parent=None):
