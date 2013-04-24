@@ -817,6 +817,10 @@ class MyReflectivityGraphs(FigureCanvas):
             if dataObject.line2Dresiduals:
                dataObject.line2Dresiduals.set_data(dataObject.W_q, dataObject.residuals)
                dataObject.line2Dresiduals.set_visible(visible)
+        
+        self.axes[0].relim()
+        self.axes[0].autoscale_view(True, True, True)
+        print 'fuckoff'
         self.draw()
                        
     def removeTraces(self):
