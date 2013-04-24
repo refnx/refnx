@@ -110,7 +110,7 @@ class MyMainWindow(QtGui.QMainWindow):
         
 #         self.ui.UDFmodelView.clicked.connect(self.UDFCurrentCellChanged)
         self.ui.UDFmodelView.setModel(self.UDFmodel)
-#        self.UDFmodel.dataChanged.connect(self.update_gui_modelChanged)
+        self.UDFmodel.dataChanged.connect(self.update_gui_modelChanged)
         self.ui.UDFplugin_comboBox.setModel(self.pluginStoreModel)
         self.ui.UDFmodel_comboBox.setModel(self.modelStore)
         
@@ -364,31 +364,63 @@ class MyMainWindow(QtGui.QMainWindow):
         
         theoreticalmodel.limits = np.copy(limits)                                
         self.do_a_fit_and_add_to_gui(self.current_dataset, theoreticalmodel)
+      
+    @QtCore.Slot()
+    def on_do_UDFfit_button_clicked(self):
+        """
+            you should do a fit using the fit plugin
+        """
+        if self.current_dataset is None:
+            return
+            
+        theoreticalmodel = self.modelStore.models['theoretical']
+        alreadygotlimits = False
+          
+        if ('coef_' + self.current_dataset.name) in self.modelStore.names: 
+            model = self.modelStore.models['coef_' + self.current_dataset.name]            
+            if model.limits is not None and model.limits.ndim == 2 and np.size(theoreticalmodel.parameters) == np.size(model.limits, 1):
+                theoreticalmodel.limits = np.copy(model.limits)
+                alreadygotlimits = True
+        
+        if not alreadygotlimits:
+            theoreticalmodel.defaultlimits()              
+            
+        ok, limits = self.get_limits(theoreticalmodel.parameters,
+                                                     theoreticalmodel.fitted_parameters,
+                                                      theoreticalmodel.limits)
+        
+        if not ok:
+            return
+        
+        theoreticalmodel.limits = np.copy(limits)                                
+        self.do_a_fit_and_add_to_gui(self.current_dataset, theoreticalmodel)  
         
         
-    def do_a_fit_and_add_to_gui(self, dataset, model):
+        
+    def do_a_fit_and_add_to_gui(self, dataset, model, fitPlugin = None):
         print "___________________________________________________"        
         print "fitting to:", dataset.name
-        dataset.do_a_fit(model)
+        dataset.do_a_fit(model, fitPlugin = fitPlugin)
         print "Chi2 :", dataset.chi2 
         np.set_printoptions(suppress=True, precision = 4)
-        
         print model.parameters
         print "___________________________________________________"        
-    
+
         newmodel = Model.Model(parameters = model.parameters,
                                      fitted_parameters = model.fitted_parameters,
+                                      fitPlugin = fitPlugin,
                                         limits = model.limits)
-                
+                    
         self.modelStore.addModel(newmodel, 'coef_' + dataset.name)        
-        
+    
         #update GUI
         self.layerModel.dataChanged.emit(QtCore.QModelIndex(), QtCore.QModelIndex())
         self.baseModel.dataChanged.emit(QtCore.QModelIndex(), QtCore.QModelIndex())
+        self.UDFModel.dataChanged.emit(QtCore.QModelIndex(), QtCore.QModelIndex())
 
         self.reflectivitygraphs.add_dataObject(dataset)
         self.sldgraphs.add_dataObject(dataset)
-                                                             
+                                                         
         if self.ui.model_comboBox.findText('coef_' + dataset.name) < 0:
             self.ui.model_comboBox.setCurrentIndex(self.ui.model_comboBox.findText('coef_' + dataset.name))
         self.update_gui_modelChanged()
@@ -692,22 +724,26 @@ class MyMainWindow(QtGui.QMainWindow):
         header = self.ui.UDFmodelView.horizontalHeader()
         header.setResizeMode(QtGui.QHeaderView.Stretch)
 
-
-                             
+                       
     def redraw_dataObject_graphs(self, dataObjects, visible = True):
         self.reflectivitygraphs.redraw_dataObjects(dataObjects, visible = visible)        
         self.sldgraphs.redraw_dataObjects(dataObjects, visible = visible)
-                
-    def update_gui_modelChanged(self, store = False):
+                        
+    def update_gui_modelChanged(self):
         theoreticalmodel = self.modelStore.models['theoretical']
-
-        self.theoretical.evaluate_model(theoreticalmodel, store = True, fitPlugin = self.fitPlugin['rfo'])
-
-        if self.current_dataset is not None:
-            energy = self.current_dataset.evaluate_chi2(theoreticalmodel, fitPlugin = self.fitPlugin['rfo'])
-            self.ui.chi2lineEdit.setText(str(round(energy, 3)))     
+        fitPlugin = self.fitPlugin['rfo']
         
-        self.redraw_dataObject_graphs([self.theoretical])
+        #evaluate the model against the dataset
+        try:
+            self.theoretical.evaluate_model(theoreticalmodel, store = True, fitPlugin = fitPlugin)
+            if self.current_dataset is not None:
+                energy = self.current_dataset.evaluate_chi2(theoreticalmodel, fitPlugin = fitPlugin)
+                self.ui.chi2lineEdit.setText(str(round(energy, 3)))     
+        
+            self.redraw_dataObject_graphs([self.theoretical])
+
+        except ValueError:
+            print "The model parameters were not correct for the type of fitting plugin you requested"
         
             
 class MyReflectivityGraphs(FigureCanvas):

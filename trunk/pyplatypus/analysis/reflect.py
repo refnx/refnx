@@ -65,7 +65,7 @@ def abeles(q, coefs, *args, **kwds):
     quad_order = 17
     
     if np.size(coefs, 0) != 4 * int(coefs[0]) + 8:
-        raise InputError("The size of the parameter array passed to abeles should be 4 * coefs[0] + 8")
+        raise ValueError("The size of the parameter array passed to abeles should be 4 * coefs[0] + 8")
     
     if 'quad_order' in kwds:
         quad_order = kwds['quad_order']
@@ -89,9 +89,7 @@ def abeles(q, coefs, *args, **kwds):
             #get the normal distribution at that point
             prefactor = 1 / math.sqrt(2 * math.pi)
             gauss = lambda x : np.exp(-0.5 * x * x)
-            print abscissa.shape
             gaussvals = prefactor * gauss(abscissa * INTLIMIT)
-            print gaussvals.shape
             
             #integration between -3.5 and 3 sigma
             va = qvals - INTLIMIT * dqvals /FWHM

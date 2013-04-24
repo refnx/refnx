@@ -293,7 +293,7 @@ class BaseModel(QtCore.QAbstractTableModel):
                 parameters = np.copy(self.model.parameters)
                 
                 if not reflect.isProperAbelesInput(parameters):
-                    raise InputError("The size of the parameter array passed to abeles should be 4 * coefs[0] + 8")
+                    raise ValueError("The size of the parameter array passed to abeles should be 4 * coefs[0] + 8")
                 
                 fitted_parameters = np.copy(self.model.fitted_parameters)
                 

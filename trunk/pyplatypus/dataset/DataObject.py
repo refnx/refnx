@@ -192,8 +192,10 @@ class DataObject(reflectdataset.ReflectDataset):
         self.progressdialog.setValue(100)
         
         self.fit = RFO.model()
-        self.residuals = np.log10(self.fit/self.W_ref)
-        self.sld_profile = RFO.sld_profile()
+        self.residuals = (self.fit - RFO.ydata) / RFO.edata
+        self.sld_profile = None
+        if 'sld_profile' in dir(RFO):
+            self.sld_profile = RFO.sld_profile()
     
     def progress(self, iterations, convergence, chi2, *args):
         self.progressdialog.setValue(int(convergence * 100))
@@ -248,11 +250,15 @@ class DataObject(reflectdataset.ReflectDataset):
         else:
             RFO = reflect.ReflectivityFitObject(**callerInfo)
                 
-        fit = RFO.model()
-        sld_profile = RFO.sld_profile()
+        fit = RFO.model(None)
+        
+        sld_profile = None
+        if 'sld_profile' in dir(RFO):
+            sld_profile = RFO.sld_profile()
+            
         if store:
             self.fit = fit
-            self.residuals = fit - self.W_ref
+            self.residuals = (self.fit - RFO.ydata) / RFO.edata
             self.sld_profile = sld_profile
 
         return fit, fit - self.W_ref, sld_profile
