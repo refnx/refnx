@@ -77,9 +77,8 @@ def abeles(q, coefs, *args, **kwds):
             #adaptive gaussian quadrature.
             smeared_rvals = np.zeros(qvals.size)
             warnings.simplefilter('ignore', Warning)
-            for idx, val in enumerate(qvals):
-                
-                smeared_rvals[idx], err = scipy.integrate.quadrature(_smearkernel, -INTLIMIT, INTLIMIT, tol=1.e-16, rtol = 1.e-16, args=(coefs, qvals[idx], dqvals[idx]))
+            for idx, val in enumerate(qvals):                
+                smeared_rvals[idx], err = scipy.integrate.quadrature(_smearkernel, -INTLIMIT, INTLIMIT, tol=2 * np.finfo(np.float64).eps, rtol = 2 * np.finfo(np.float64).eps, args=(coefs, qvals[idx], dqvals[idx]))
             
             warnings.resetwarnings()
             return smeared_rvals
@@ -90,8 +89,10 @@ def abeles(q, coefs, *args, **kwds):
             #get the normal distribution at that point
             prefactor = 1 / math.sqrt(2 * math.pi)
             gauss = lambda x : np.exp(-0.5 * x * x)
+            print abscissa.shape
             gaussvals = prefactor * gauss(abscissa * INTLIMIT)
-
+            print gaussvals.shape
+            
             #integration between -3.5 and 3 sigma
             va = qvals - INTLIMIT * dqvals /FWHM
             vb = qvals + INTLIMIT * dqvals /FWHM
@@ -100,7 +101,6 @@ def abeles(q, coefs, *args, **kwds):
             vb = vb[:, np.newaxis]
               
             qvals_for_res = (np.atleast_2d(abscissa) * (vb - va) + vb + va) / 2.        
-
             smeared_rvals = refcalc.abeles(np.size(qvals_for_res.flatten(), 0), qvals_for_res.flatten(), coefs)
             smeared_rvals = np.reshape(smeared_rvals, (qvals.size, abscissa.size))
 
