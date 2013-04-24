@@ -76,7 +76,7 @@ def abeles(q, coefs, *args, **kwds):
             #adaptive gaussian quadrature.
             smeared_rvals = np.zeros(qvals.size)
             for idx, val in enumerate(qvals):
-                smeared_rvals[idx], err = scipy.integrate.quadrature(_smearkernel, -INTLIMIT, INTLIMIT, args=(coefs, qvals[idx], dqvals[idx]))
+                smeared_rvals[idx], err = scipy.integrate.quadrature(_smearkernel, -INTLIMIT, INTLIMIT, tol=1.e-15 args=(coefs, qvals[idx], dqvals[idx]))
             
             return smeared_rvals
         else:
@@ -248,7 +248,7 @@ if __name__ == '__main__':
     a[8] = 100
     a[9] = 3.47
     a[11] = 2
-
+        
     b = np.arange(10000.)
     b /= 20000.
     b += 0.0005
