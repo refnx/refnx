@@ -6,7 +6,7 @@ import hashlib
 import numpy as np
 import os.path
 import pyplatypus.analysis.reflect as reflect
-import pyplatypus.analysis.fitting
+import pyplatypus.analysis.fitting as fitting
 
 def loadPluginModule(filepath):
     #this loads all modules

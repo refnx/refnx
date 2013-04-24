@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'qt/Motofit.ui'
 #
-# Created: Sat Apr 13 00:00:41 2013
+# Created: Wed Apr 24 17:27:34 2013
 #      by: pyside-uic 0.2.13 running on PySide 1.1.1
 #
 # WARNING! All changes made in this file will be lost!
@@ -374,9 +374,9 @@ class Ui_MainWindow(object):
         self.tab_3.setObjectName("tab_3")
         self.gridLayout_7 = QtGui.QGridLayout(self.tab_3)
         self.gridLayout_7.setObjectName("gridLayout_7")
-        self.Do_UDFfit_button = QtGui.QPushButton(self.tab_3)
-        self.Do_UDFfit_button.setObjectName("Do_UDFfit_button")
-        self.gridLayout_7.addWidget(self.Do_UDFfit_button, 0, 1, 1, 1)
+        self.do_UDFfit_button = QtGui.QPushButton(self.tab_3)
+        self.do_UDFfit_button.setObjectName("do_UDFfit_button")
+        self.gridLayout_7.addWidget(self.do_UDFfit_button, 0, 1, 1, 1)
         self.UDFloadPlugin = QtGui.QPushButton(self.tab_3)
         self.UDFloadPlugin.setLayoutDirection(QtCore.Qt.LeftToRight)
         self.UDFloadPlugin.setObjectName("UDFloadPlugin")
@@ -531,7 +531,7 @@ class Ui_MainWindow(object):
 
         self.retranslateUi(MainWindow)
         self.graphs.setCurrentIndex(0)
-        self.tabWidget.setCurrentIndex(0)
+        self.tabWidget.setCurrentIndex(2)
         self.dataset_comboBox.setCurrentIndex(-1)
         self.tabWidget_2.setCurrentIndex(0)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
@@ -552,7 +552,7 @@ class Ui_MainWindow(object):
         self.use_errors_checkbox.setText(QtGui.QApplication.translate("MainWindow", "Use errors?", None, QtGui.QApplication.UnicodeUTF8))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab), QtGui.QApplication.translate("MainWindow", "Model", None, QtGui.QApplication.UnicodeUTF8))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_2), QtGui.QApplication.translate("MainWindow", "Data", None, QtGui.QApplication.UnicodeUTF8))
-        self.Do_UDFfit_button.setText(QtGui.QApplication.translate("MainWindow", "Do Fit", None, QtGui.QApplication.UnicodeUTF8))
+        self.do_UDFfit_button.setText(QtGui.QApplication.translate("MainWindow", "Do Fit", None, QtGui.QApplication.UnicodeUTF8))
         self.UDFloadPlugin.setText(QtGui.QApplication.translate("MainWindow", "Load Function", None, QtGui.QApplication.UnicodeUTF8))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_3), QtGui.QApplication.translate("MainWindow", "User defined models", None, QtGui.QApplication.UnicodeUTF8))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_4), QtGui.QApplication.translate("MainWindow", "Console", None, QtGui.QApplication.UnicodeUTF8))

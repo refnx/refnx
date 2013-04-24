@@ -137,10 +137,12 @@ class FitObject(object):
             params - np.ndarray containing the parameters that are being fitted, i.e. this array is np.size(self.fitted_parameters) long.
                     If this is omitted the energy function uses the defaults that we supplied when the object was constructed.
             
-            If you require a diffe                  rent cost function provide a subclass that overloads this method. An alternative is to provide the costfunctioncfqaz
-            keyword to the constructor.
+            If you require a different cost function provide a subclass that overloads this method. An alternative is to provide the costfunction keyword to the constructor.
+            
+            Note that fitting with Levenberg Marquardt assumes that this function returns a vector containing residuals. The fit method sets an object attribute self._LMleastsquare=True if Levenberg Marquardt fitting is selected.
             
             Returns chi2 by default
+            
         
         '''
         test_parameters = np.copy(self.parameters)
@@ -160,7 +162,7 @@ class FitObject(object):
         else:
             #the following is required because the LMfit method requires only the residuals to be returned. Whereas the fit method utilising DE will require square energy.
             resid = (self.ydata - modeldata) / sigma
-            if self.__square:
+            if not self._LMleastsquare:
                 return np.sum(np.power(resid, 2))
             else:
                 return resid                
@@ -190,7 +192,7 @@ class FitObject(object):
             parameters, uncertainties, chi2 = FitObject.fit()            
             If method == 'LM', then a Levenberg Marquardt fit is used.
         '''
-        self.__square = True
+        self._LMleastsquare = False
         
         if method is None:
             de = DEsolver.DEsolver(energy_for_fitting,
@@ -204,7 +206,7 @@ class FitObject(object):
 
         elif method == 'LM':
             #do a Levenberg Marquardt fit instead
-            self.__square = False
+            self._LMleastsquare = True
             initialparams = self.parameters[self.fitted_parameters]
             stuff = leastsq(energy_for_fitting,
                                   initialparams,
