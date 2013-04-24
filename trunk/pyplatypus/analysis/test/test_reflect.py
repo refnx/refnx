@@ -31,11 +31,16 @@ class TestReflect(unittest.TestCase):
     def test_smearedabeles(self):
         '''
             test smeared reflectivity calculation
-            with values generated from Motofit
+            with values generated from Motofit (quadrature precsion order = 13)
         '''
         theoretical = np.loadtxt('pyplatypus/analysis/test/smeared_theoretical.txt')
         qvals, rvals, dqvals = np.hsplit(theoretical, 3)
-        calc = reflect.abeles(qvals.flatten(), self.coefs, **{'dqvals':dqvals.flatten()})
+        '''
+        the order of the quadrature precision used to create these smeared values in Motofit was 13.
+        Do the same here
+        '''
+        
+        calc = reflect.abeles(qvals.flatten(), self.coefs, **{'dqvals':dqvals.flatten(), 'quad_order':13})
         
         npt.assert_almost_equal(calc, rvals.flatten())
         
