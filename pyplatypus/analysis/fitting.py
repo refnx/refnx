@@ -129,6 +129,22 @@ class FitObject(object):
         
         #limits for those that are varying.
         self.fitted_limits = self.limits[:, self.fitted_parameters]
+        
+    def residuals(self, parameters = None):
+        test_parameters = np.copy(self.parameters)
+
+        if parameters is not None:
+            test_parameters[self.fitted_parameters] = parameters
+
+        modeldata = self.model(test_parameters)
+
+        if self.edata is None:
+            sigma = np.atleast_1d(1.)
+        else:
+            sigma = self.edata
+
+        return (self.ydata - modeldata) / sigma
+
             
     def energy(self, parameters = None):
         '''
