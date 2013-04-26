@@ -207,10 +207,10 @@ class FitObject(object):
                                          progress = self.progress,
                                           seed = self.seed)
             popt, chi2 = de.solve()
-            self.parameters[self.fitted_parameters] = thefit
+            self.parameters[self.fitted_parameters] = popt
             self.chi2 = chi2
             Hfun = ndt.Hessian(self.energy)
-            hess = Hfun(thefit)
+            hess = Hfun(popt)
             self.covariance = scipy.linalg.pinv(hess)
 
         elif method == 'LM':

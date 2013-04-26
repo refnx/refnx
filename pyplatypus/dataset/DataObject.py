@@ -22,7 +22,7 @@ class DataObject(reflectdataset.ReflectDataset):
     def __init__(self, dataTuple = None, name = '_theoretical_', fname = None):
         super(DataObject, self).__init__(dataTuple = dataTuple)
         
-        self.name = '_theoretical_'
+        self.name = name
         
         if fname is not None:
             with open(fname, 'Ur') as f:
