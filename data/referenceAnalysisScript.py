@@ -53,5 +53,9 @@ fitobject = reflect.ReflectivityFitObject(dataset.W_q,
         
 fittedvals, uncertainties, chi2 = fitobject.fit()
 
-print fittedvals, uncertainties, chi2
+print 'fitted dataset:', dataset.name
+print 'path:', dataset.filename
+print 'chi2:', chi2
+for idx in xrange(fittedvals.size):
+    print fittedvals[idx], '+/-', uncertainties[idx]
 
