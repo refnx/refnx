@@ -2,24 +2,9 @@ from __future__ import division
 import numpy as np
 import math
 import DEsolver
+import scipy.linalg
 from scipy.optimize import leastsq 
-
-def energy_for_fitting(params, *args):
-    ''' 
-        energy function for curve fitting.
-        This energy function should work with DEsolver as well as the scipy.optimize modules.
-        
-        params are the parameters you are fitting.
-        
-        We have to pass in data, etc, through args. This args is passed through the optimize modules directly to 
-        this energy function.
-        
-        The first argument in args should be a FitObject instance. This will have a method energy.
-
-    '''
-    
-    return args[0].energy(params)
-    
+import numdifftools as ndt
 
 class FitObject(object):
     '''
@@ -35,12 +20,11 @@ class FitObject(object):
                     If you override the FitObject.model() method, then you no longer have to supply a fitfunction.
             -OR-
             option 2) Override the FitObject.energy() method.
-                    If you override the FitObject.energy() method you no longer have to supply a fitfunction, or a costfunction. This method 
-                    should specify how the cost metric varies as the fitted parameters vary.
+                    If you override the FitObject.energy() method you no longer have to supply a fitfunction, or a costfunction. This method should specify how the cost metric varies as the fitted parameters vary.
             '''
             
     
-    def __init__(self, xdata, ydata, edata, fitfunction, parameters, *args, **kwds):
+    def __init__(self, xdata, ydata, edata, fitfunction, parameters, args = (), **kwds):
         """
         
         Construction of the object initialises the data for the curve fit, but doesn't actually start it.
@@ -51,9 +35,11 @@ class FitObject(object):
         
         edata[numpoints] - None or np.ndarray that contains the uncertainty (s.d.) for each of the observed y data points. (Use None if you do not have measured uncertainty on each point)
         
-        fitfunction - callable function  of the form f(xdata, parameters, *args, **kwds). The args and kwds supplied in the construction of this FitObject are also passed directly to the fitfunction and can be used to pass auxillary information to it. You can use None for fitfunction _IF_ you subclass this FitObject and provide your own energy method. Alternatively subclass the model method.
+        fitfunction - callable function  of the form f(xdata, parameters, args = (), **kwds). The args tuple and kwds supplied in the construction of this FitObject are also passed in as extra arguments to the fitfunction. You can use None for fitfunction _IF_ you subclass this FitObject and provide your own energy method, or if you subclass the model method.
                         
         parameters - np.ndarray that contains _all_ the parameters to be supplied to the fitfunction, not just those being fitted.
+        
+        args - this tuple can be used to pass extra arguments to FitObject.energy(), FitObject.model(), and the fitfunction and costfunction if they are not None.
         
         You may set the following optional parameters in kwds:
         
@@ -136,7 +122,7 @@ class FitObject(object):
         if parameters is not None:
             test_parameters[self.fitted_parameters] = parameters
 
-        modeldata = self.model(test_parameters)
+        modeldata = self.model(test_parameters, args = self.args)
 
         if self.edata is None:
             sigma = np.atleast_1d(1.)
@@ -146,7 +132,7 @@ class FitObject(object):
         return (self.ydata - modeldata) / sigma
 
             
-    def energy(self, parameters = None):
+    def energy(self, parameters = None, args = ()):
         '''
             
             The default cost function for the fit object is chi2 - the sum of the squared residuals divided by the error bars for each point.
@@ -161,12 +147,15 @@ class FitObject(object):
             
         
         '''
+        if not len(args):
+            args = self.args
+            
         test_parameters = np.copy(self.parameters)
     
         if parameters is not None:
             test_parameters[self.fitted_parameters] = parameters
         
-        modeldata = self.model(test_parameters)
+        modeldata = self.model(test_parameters, *args)
         
         if self.edata is None:
             sigma = np.atleast_1d(1.)
@@ -174,7 +163,7 @@ class FitObject(object):
             sigma = self.edata
         
         if self.costfunction:
-            return self.costfunction(modeldata, self.ydata, sigma, test_parameters)
+            return self.costfunction(modeldata, self.ydata, sigma, test_parameters, *args)
         else:
             #the following is required because the LMfit method requires only the residuals to be returned. Whereas the fit method utilising DE will require square energy.
             resid = (self.ydata - modeldata) / sigma
@@ -183,7 +172,7 @@ class FitObject(object):
             else:
                 return resid                
 
-    def model(self, parameters):
+    def model(self, parameters, args = ()):
         '''
             
             calculate the theoretical model using the fitfunction.
@@ -193,13 +182,15 @@ class FitObject(object):
             returns the theoretical model for the xdata, i.e. self.fitfunction(self.xdata, test_parameters, *args, **kwds)
             
         ''' 
-                
+        if not len(args):
+            args = self.args
+        
         if parameters is not None:
             test_parameters = parameters
         else:
             test_parameters = self.parameters
         
-        return self.fitfunction(self.xdata, test_parameters, *self.args, **self.kwds)
+        return self.fitfunction(self.xdata, test_parameters, *args, **self.kwds)
             
 
     def fit(self, method = None):
@@ -211,22 +202,24 @@ class FitObject(object):
         self._LMleastsquare = False
         
         if method is None:
-            de = DEsolver.DEsolver(energy_for_fitting,
-                                     self.fitted_limits, (self),
+            de = DEsolver.DEsolver(self.energy,
+                                     self.fitted_limits, args = self.args,
                                          progress = self.progress,
                                           seed = self.seed)
-            thefit, chi2 = de.solve()
+            popt, chi2 = de.solve()
             self.parameters[self.fitted_parameters] = thefit
             self.chi2 = chi2
-            self.uncertainties = self.parameters + 0    
+            Hfun = ndt.Hessian(self.energy)
+            hess = Hfun(thefit)
+            self.covariance = scipy.linalg.pinv(hess)
 
         elif method == 'LM':
             #do a Levenberg Marquardt fit instead
             self._LMleastsquare = True
             initialparams = self.parameters[self.fitted_parameters]
-            stuff = leastsq(energy_for_fitting,
+            stuff = leastsq(self.energy,
                                   initialparams,
-                                   args = (self),
+                                   args = self.args,
                                    maxfev=100000,
                                     full_output = True) 
             popt = stuff[0]
@@ -235,16 +228,17 @@ class FitObject(object):
             self.covariance = pcov
             self.parameters[self.fitted_parameters] = popt
             self.chi2 = np.sum(np.power(self.energy(), 2))
-            if self.edata is None:
-                pcov *= self.chi2 / (self.ydata.size - self.fitted_parameters.size)
 
-            self.uncertainties = np.zeros(self.parameters.size)
-            self.uncertainties[self.fitted_parameters] = np.sqrt(np.diag(pcov))
+        if self.edata is None:
+            self.covariance *= self.chi2 / (self.ydata.size - self.fitted_parameters.size)
+
+        self.uncertainties = np.zeros(self.parameters.size)
+        self.uncertainties[self.fitted_parameters] = np.sqrt(np.diag(self.covariance))
                 
         return np.copy(self.parameters), np.copy(self.uncertainties), self.chi2
  
         
-    def progress(self, iterations, convergence, chi2, *args):
+    def progress(self, iterations, convergence, chi2, args = ()):
         '''
             a default progress function for the fit object
         '''
