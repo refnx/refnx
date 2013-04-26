@@ -5,7 +5,7 @@ import math
 
 class DEsolver(object):
     
-    def __init__(self, energy_function, limits, args_tuple = (),
+    def __init__(self, energy_function, limits, args = (),
                     initial_params = None, DEstrategy = None, maxIterations = 1000,
                     popsize = 20, tol = 0.01, km = 0.7, recomb = 0.5, seed = None,
                     progress = None):
@@ -22,7 +22,7 @@ class DEsolver(object):
         self.crossOverProbability = recomb
 
         self.energy_function = energy_function
-        self.args_tuple = args_tuple
+        self.args = args
         self.limits = limits
         self.parameterCount = np.size(self.limits, 1)
         self.populationSize = popsize * self.parameterCount
@@ -41,7 +41,7 @@ class DEsolver(object):
         #calculate energies to start with
         for index, candidate in enumerate(self.population):
             params = self.__scale_parameters(candidate)
-            self.population_energies[index] = self.energy_function(params, self.args_tuple)
+            self.population_energies[index] = self.energy_function(params, *self.args)
         
         minval = np.argmin(self.population_energies)
 
@@ -57,7 +57,7 @@ class DEsolver(object):
                 self.__ensure_constraint(trial)
                 params = self.__scale_parameters(trial)
 
-                energy = self.energy_function(params, self.args_tuple)
+                energy = self.energy_function(params, *self.args)
                 
                 if energy < self.population_energies[candidate]:
                     self.population[candidate] = trial
@@ -71,7 +71,7 @@ class DEsolver(object):
             convergence = np.mean(self.population_energies) * self.tol / np.std(self.population_energies)
 
             if self.progress:
-                should_continue = self.progress(iteration, convergence, self.population_energies[0], self.args_tuple)
+                should_continue = self.progress(iteration, convergence, self.population_energies[0], self.args)
                 if should_continue is False:
                     convergence = 2
                     

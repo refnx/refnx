@@ -56,7 +56,7 @@ class GlobalFitObject(fitting.FitObject):
     '''
             
     
-    def __init__(self, fitObjectTuple, linkageArray, *args, **kwds):
+    def __init__(self, fitObjectTuple, linkageArray, args = (), **kwds):
         """
             FitObjectTuple is a tuple of fitting.FitObject objects.
             The linkageArray specifies which parameters are common between datasets.                
@@ -132,10 +132,10 @@ class GlobalFitObject(fitting.FitObject):
             kwds['limits'] = limits
                      
         #initialise the FitObject superclass
-        super(GlobalFitObject, self).__init__(None, totalydata, totaledata, None, self.unique_pars_vector, *args, **kwds)
+        super(GlobalFitObject, self).__init__(None, totalydata, totaledata, None, self.unique_pars_vector, args = args, **kwds)
 
                                     
-    def model(self, parameters = None):
+    def model(self, parameters = None, args = ()):
         '''
             calculate the model function for the global fit function.
             params is a np.array that has the same size as self.parameters
@@ -150,12 +150,12 @@ class GlobalFitObject(fitting.FitObject):
         
         off = lambda idx: idx * np.size(self.linkageArray, 1)
         
-        evaluateddata = [x.model(parameters = substituted_pars[off(i) : off(i) + x.numparams]) for i, x in enumerate(self.fitObjectTuple)]
+        evaluateddata = [x.model(parameters = substituted_pars[off(i) : off(i) + x.numparams], *args) for i, x in enumerate(self.fitObjectTuple)]
         
         return np.r_[evaluateddata].flatten()
         
-    def fit(self):
-        pars, uncertainty, chi2 = super(GlobalFitObject, self).fit()
+    def fit(self, method = None):
+        pars, uncertainty, chi2 = super(GlobalFitObject, self).fit(method)
         substituted_pars = pars[self.unique_pars[self.unique_pars_inv]]
         substituted_uncertainty = uncertainty[self.unique_pars[self.unique_pars_inv]]
         return substituted_pars, substituted_uncertainty, chi2

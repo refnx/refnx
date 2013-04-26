@@ -164,20 +164,6 @@ def sld_profile(coefs, z):
         
     return summ
 
-class Error(Exception):
-    pass
-    
-class InputError(Error):
-    """
-        Exception raised for errors in the input.
-    """
-
-    def __init__(self, value):
-        self.value = value
-
-    def __str__(self):
-        return repr(self.value)
-
 
 class ReflectivityFitObject(fitting.FitObject):
     
@@ -188,14 +174,14 @@ class ReflectivityFitObject(fitting.FitObject):
         of the FitObject super class.  If you do this you should also override the sld_profile method of ReflectivityFitObject.
     '''
     
-    def __init__(self, xdata, ydata, edata, parameters, *args, **kwds):
+    def __init__(self, xdata, ydata, edata, parameters, args = (), **kwds):
         '''
             Initialises the ReflectivityFitObject.
             See the constructor of the FitObject for more details. And possible values for the keyword args for the superclass.
         '''
-        super(ReflectivityFitObject, self).__init__(xdata, ydata, edata, abeles, parameters, *args, **kwds)
+        super(ReflectivityFitObject, self).__init__(xdata, ydata, edata, abeles, parameters, args = args, **kwds)
         
-    def sld_profile(self, *args, **kwds):
+    def sld_profile(self, test_parameters, args = (), **kwds):
         """
             returns the SLD profile corresponding to the model parameters.
             The model parameters are either taken from arg[0], if it exists, or from self.parameters.
@@ -203,9 +189,7 @@ class ReflectivityFitObject(fitting.FitObject):
             returns z, rho(z) - the distance from the top interface and the SLD at that point
             
         """
-        if args:
-            test_parameters = args[0]
-        else:
+        if test_parameters is None:
             test_parameters = self.parameters
             
         if 'points' in kwds and kwds['points'] is not None:

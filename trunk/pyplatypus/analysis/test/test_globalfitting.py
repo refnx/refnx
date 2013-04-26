@@ -4,6 +4,7 @@ import pyplatypus.analysis.Model as model
 import pyplatypus.analysis.globalfitting as gfit
 import numpy as np
 import numpy.testing as npt
+import warnings
 
 SEED = 1
 
@@ -30,12 +31,11 @@ class TestGlobalFitting(unittest.TestCase):
         '''
             test differential evolution fitting process
         '''
-        np.seterr(invalid='raise')
         theoretical = np.loadtxt('pyplatypus/analysis/test/c_PLP0011859_q.txt')
 
         qvals, rvals, evals, dummy = np.hsplit(theoretical, 4)
 
-        fitted_parameters = np.array([3,5,6,7,8,9,10,11,12,13,14,15])
+        fitted_parameters = np.array([6,7,8,9,11,12,13,15])
         
         a = reflect.ReflectivityFitObject(qvals, rvals, evals, self.coefs, fitted_parameters = fitted_parameters, seed = SEED)
         linkageArray = np.arange(16)
@@ -47,7 +47,6 @@ class TestGlobalFitting(unittest.TestCase):
         '''
             make sure that the global fit would return the same model values as the individual fitobject
         '''
-        np.seterr(invalid='raise')
         theoretical = np.loadtxt('pyplatypus/analysis/test/c_PLP0011859_q.txt')
 
         qvals, rvals, evals, dummy = np.hsplit(theoretical, 4)
@@ -68,7 +67,6 @@ class TestGlobalFitting(unittest.TestCase):
         '''
             try fitting dataset with a deposited layer split into two degenerate layers
         '''
-        np.seterr(invalid='raise')
         theoretical = np.loadtxt('pyplatypus/analysis/test/c_PLP0011859_q.txt')
 
         qvals, rvals, evals, dummy = np.hsplit(theoretical, 4)
@@ -108,7 +106,6 @@ class TestGlobalFitting(unittest.TestCase):
         '''
             test incorrect linkageArrays
         '''
-        np.seterr(invalid='raise')
         theoretical = np.loadtxt('pyplatypus/analysis/test/c_PLP0011859_q.txt')
 
         qvals, rvals, evals, dummy = np.hsplit(theoretical, 4)
@@ -148,7 +145,6 @@ class TestGlobalFitting(unittest.TestCase):
         '''
             test corefinement of three datasets
         '''
-        np.seterr(invalid='raise')
         e361 = np.loadtxt('pyplatypus/analysis/test/e361r.txt')
         e365 = np.loadtxt('pyplatypus/analysis/test/e365r.txt')
         e366 = np.loadtxt('pyplatypus/analysis/test/e366r.txt')
@@ -185,8 +181,9 @@ class TestGlobalFitting(unittest.TestCase):
         linkageArray = np.array([[  0,  1,  2,  3,  4,  5,  6,  7,  8,  9,  10,  11,  12,  13,  14,  15],
                                  [ 16, 17, 18, 19, 20, 21, 22, 23,  8, 24,  25,  26,  12,  27,  28,  29],
                                  [ 30, 31, 32, 33, 34, 35, 36, 37,  8, 38,  39,  40,  12,  41,  42,  43]])
-                                 
+                              
         gfo = gfit.GlobalFitObject(tuple([a, b, c]), linkageArray, seed = SEED)
+        np.seterr(all='ignore')
         pars, dummy, chi2 = gfo.fit()
 
 #         modeltosave = model.Model(pars, limits = gfo.limits, fitted_parameters = gfo.fitted_parameters)
