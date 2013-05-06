@@ -209,7 +209,7 @@ class FitObject(object):
             popt, chi2 = de.solve()
             self.parameters[self.fitted_parameters] = popt
             self.chi2 = chi2
-            Hfun = ndt.Hessian(self.energy)
+            Hfun = ndt.Hessian(self.energy, n=2)
             hess = Hfun(popt)
             self.covariance = scipy.linalg.pinv(hess)
 
