@@ -9,11 +9,12 @@ from setuptools import setup
 import py2app
 
 APP = ['motofit.py']
-DATA_FILES = []
-OPTIONS = {'argv_emulation': True, 'includes':['matplotlib.tri','matplotlib.projections.geo',
+DATA_FILES = ['icons']
+OPTIONS = {'argv_emulation': True,
+ 'includes':['matplotlib.tri','matplotlib.projections.geo',
  'matplotlib.projections.polar', 'matplotlib.tri.triplot','matplotlib.tri.tripcolor','matplotlib.tri.tricontour',
   'matplotlib.tri.triangulation', 'matplotlib.delaunay.triangulate','sip', 'PySide', 'PySide.QtGui', 'PySide.QtCore',
-   'pyplatypus', 'pyplatypus.analysis', 'pyplatypus.dataset', 'pyplatypus.util'],
+   'pyplatypus', 'pyplatypus.analysis', 'pyplatypus.dataset', 'pyplatypus.util', 'numdifftools'],
    'excludes':[]}
 setup(
     app=APP,
