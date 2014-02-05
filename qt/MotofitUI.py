@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'qt/Motofit.ui'
+# Form implementation generated from reading ui file 'Motofit.ui'
 #
-# Created: Wed Apr 24 17:27:34 2013
-#      by: pyside-uic 0.2.13 running on PySide 1.1.1
+# Created: Tue Feb  4 09:57:34 2014
+#      by: pyside-uic 0.2.15 running on PySide 1.2.1
 #
 # WARNING! All changes made in this file will be lost!
 
@@ -302,7 +302,7 @@ class Ui_MainWindow(object):
         self.do_fit_button.setMaximumSize(QtCore.QSize(60, 75))
         self.do_fit_button.setText("")
         icon = QtGui.QIcon()
-        icon.addPixmap(QtGui.QPixmap("icons/go.jpeg"), QtGui.QIcon.Active, QtGui.QIcon.On)
+        icon.addPixmap(QtGui.QPixmap("icons/go.png"), QtGui.QIcon.Active, QtGui.QIcon.On)
         self.do_fit_button.setIcon(icon)
         self.do_fit_button.setIconSize(QtCore.QSize(60, 75))
         self.do_fit_button.setObjectName("do_fit_button")
@@ -531,7 +531,7 @@ class Ui_MainWindow(object):
 
         self.retranslateUi(MainWindow)
         self.graphs.setCurrentIndex(0)
-        self.tabWidget.setCurrentIndex(2)
+        self.tabWidget.setCurrentIndex(0)
         self.dataset_comboBox.setCurrentIndex(-1)
         self.tabWidget_2.setCurrentIndex(0)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)

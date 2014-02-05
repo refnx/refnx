@@ -115,7 +115,6 @@ class MyMainWindow(QtGui.QMainWindow):
         self.ui.UDFmodel_comboBox.setModel(self.modelStore)
         
         print 'Session started at:', time.asctime( time.localtime(time.time()) )
-
     
     def __del__(self):
         # Restore sys.stdout
@@ -178,7 +177,7 @@ class MyMainWindow(QtGui.QMainWindow):
             modeld = os.path.join(tempdirectory,'models')
             os.mkdir(modeld)
             self.modelStore.saveModelStore(modeld)
-            with zipfile.ZipFile(experimentFileName, 'w') as zip:
+            with zipfile.ZipFile(experimentFileName + '.fdob', 'w') as zip:
                 DSM.zipper(tempdirectory, zip)
         except Exception as inst:
             print type(inst)
@@ -401,9 +400,12 @@ class MyMainWindow(QtGui.QMainWindow):
         print "___________________________________________________"        
         print "fitting to:", dataset.name
         dataset.do_a_fit(model, fitPlugin = fitPlugin)
-        print "Chi2 :", dataset.chi2 
+        print "Chi2 :", dataset.chi2 / dataset.numpoints
         np.set_printoptions(suppress=True, precision = 4)
+        print 'parameters:'
         print model.parameters
+        print 'uncertainties:'
+        print model.uncertainties
         print "___________________________________________________"        
 
         newmodel = Model.Model(parameters = model.parameters,
@@ -416,7 +418,7 @@ class MyMainWindow(QtGui.QMainWindow):
         #update GUI
         self.layerModel.dataChanged.emit(QtCore.QModelIndex(), QtCore.QModelIndex())
         self.baseModel.dataChanged.emit(QtCore.QModelIndex(), QtCore.QModelIndex())
-        self.UDFModel.dataChanged.emit(QtCore.QModelIndex(), QtCore.QModelIndex())
+        self.UDFmodel.dataChanged.emit(QtCore.QModelIndex(), QtCore.QModelIndex())
 
         self.reflectivitygraphs.add_dataObject(dataset)
         self.sldgraphs.add_dataObject(dataset)
@@ -871,7 +873,7 @@ class MySLDGraphs(FigureCanvas):
                                                  label = 'sld_' + dataObject.name)[0]
             
             if dataObject.graph_properties['line2Dsld_profile_properties']:
-                artist.setp(dataObject.line2Dsld_profle, **dataObject.graph_properties['line2Dsld_profile_properties'])
+                artist.setp(dataObject.line2Dsld_profile, **dataObject.graph_properties['line2Dsld_profile_properties'])
                 
         self.draw()
         

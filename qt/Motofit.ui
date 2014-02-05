@@ -591,7 +591,7 @@
         </size>
        </property>
        <property name="currentIndex">
-        <number>2</number>
+        <number>0</number>
        </property>
        <widget class="QWidget" name="tab">
         <attribute name="title">
@@ -755,7 +755,7 @@
            </property>
            <property name="icon">
             <iconset>
-             <activeon>icons/go.jpeg</activeon>
+             <activeon>icons/go.png</activeon>
             </iconset>
            </property>
            <property name="iconSize">

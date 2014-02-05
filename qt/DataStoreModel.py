@@ -224,7 +224,7 @@ class ModelStore(QtCore.QAbstractListModel):
         for file in files:
             try:
                 with open(file, 'Ur') as f:
-                    model = Model()
+                    model = Model.Model(None)
                     model.load(f)
                     self.addModel(model, os.path.basename(file))
             except IOError:

@@ -19,16 +19,20 @@ class Model(object):
                    setattr(self, key, kwds[key])
                 else:
                     setattr(self, key, __members[key])
+
+            if parameters is None:
+                self.parameters = np.array([], dtype = 'float64')
+            else:
+                self.parameters = parameters
             
-            self.parameters = parameters
             if self.fitted_parameters is None:
                 self.fitted_parameters = np.array([], dtype = 'int')
             
             if self.uncertainties is None:
-                self.uncertainties = np.array([np.nan] * parameters.size, dtype = 'float64')
+                self.uncertainties = np.array([np.nan] * self.parameters.size, dtype = 'float64')
                 
             if self.covariancematrix is None:
-                self.covariancematrix = np.zeros((parameters.size, parameters.size))
+                self.covariancematrix = np.zeros((self.parameters.size, self.parameters.size))
             
             if self.limits is None:
                 self.defaultlimits()
