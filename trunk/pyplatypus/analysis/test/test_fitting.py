@@ -68,7 +68,7 @@ class TestDifferentialEvolution(unittest.TestCase):
             savedmodel = model.Model(None, file = f)
         
 #        npt.assert_almost_equal(pars, savedmodel.parameters)
-        npt.assert_almost_equal(chi2, 2974.5455894117849)
+        npt.assert_almost_equal(chi2, 2974.5455826344682)
 
 
 
