@@ -1,13 +1,15 @@
 from __future__ import division
+from PySide import QtGui, QtCore
 import pyplatypus.dataset.reflectdataset as reflectdataset
-import numpy as np
 import pyplatypus.analysis.reflect as reflect
 import pyplatypus.analysis.fitting as fitting
+import numpy as np
 from copy import deepcopy, copy
 import matplotlib.artist as artist
-import os.path, os
-from PySide import QtGui, QtCore
+import os.path
+import os
 import string
+
 try:
     import xml.etree.cElementTree as ET
 except ImportError:
@@ -56,7 +58,12 @@ class DataObject(reflectdataset.ReflectDataset):
         d['line2Dresiduals'] = None
 #        del(d['fit'])
         return d
-        
+    
+    def saveFit(self, filename):
+        if self.fit is not None:
+            with open(filename, 'wb+') as f:
+                np.savetxt(f, np.column_stack((self.W_q, self.fit)))
+                
     def save(self, f):
         #this will save it as XML
         super(DataObject, self).save(f)
