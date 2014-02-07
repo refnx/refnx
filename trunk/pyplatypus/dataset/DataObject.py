@@ -19,14 +19,16 @@ class DataObject(reflectdataset.ReflectDataset):
        'fillstyle':str, 'marker':str, 'markersize':float, 'markeredgecolor':str,
       'markerfacecolor':str, 'zorder':int, 'color':str}
                                     
-    def __init__(self, dataTuple = None, name = '_theoretical_', fname = None):
+    def __init__(self, dataTuple = None, name = 'theoretical', filename = None):
         super(DataObject, self).__init__(dataTuple = dataTuple)
         
         self.name = name
         
-        if fname is not None:
-            with open(fname, 'Ur') as f:
+        if filename is not None:
+            with open(filename, 'Ur') as f:
                 self.load(f)
+        else:
+            self.filename = None
         
         self.fit = None
         self.residuals = None
@@ -146,19 +148,19 @@ class DataObject(reflectdataset.ReflectDataset):
     def _save_graph_properties(self):
         if self.line2D:
             for key in self.__requiredgraphproperties:
-                self.graph_properties['line2D_properties'][key] = str(artist.getp(self.line2D, key))
+                self.graph_properties['line2D_properties'][key] = artist.getp(self.line2D, key)
 
         if self.line2Dfit:
             for key in self.__requiredgraphproperties:
-                self.graph_properties['line2Dfit_properties'][key] = str(artist.getp(self.line2Dfit, key))
+                self.graph_properties['line2Dfit_properties'][key] = artist.getp(self.line2Dfit, key)
 
         if self.line2Dresiduals:
             for key in self.__requiredgraphproperties:
-                self.graph_properties['line2Dresiduals_properties'][key] = str(artist.getp(self.line2Dresiduals, key))
+                self.graph_properties['line2Dresiduals_properties'][key] = artist.getp(self.line2Dresiduals, key)
                             
         if self.line2Dsld_profile:
             for key in self.__requiredgraphproperties:
-                self.graph_properties['line2Dsld_profile_properties'][key] = str(artist.getp(self.line2Dsld_profile, key))
+                self.graph_properties['line2Dsld_profile_properties'][key] = artist.getp(self.line2Dsld_profile, key)
         
     def do_a_fit(self, model, fitPlugin = None):
         '''

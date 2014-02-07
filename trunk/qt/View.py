@@ -40,11 +40,11 @@ class MyMainWindow(QtGui.QMainWindow):
         sys.stdout = console
         console.textWritten.connect(self.writeTextToConsole)
         
-        self.dataStore = DSM.DataStore()
-        self.dataStore.dataChanged.connect(self.dataObjects_visibilityChanged)
+        self.dataStoreModel = DSM.DataStoreModel()
+        self.dataStoreModel.dataChanged.connect(self.dataObjects_visibilityChanged)
         self.current_dataset = None
 
-        self.modelStore = DSM.ModelStore()
+        self.modelStoreModel = DSM.ModelStoreModel()
         self.pluginStoreModel = PSM.PluginStoreModel()
         self.fitPlugin = self.pluginStoreModel.plugins[0]
                 
@@ -63,14 +63,14 @@ class MyMainWindow(QtGui.QMainWindow):
         self.theoretical = DataObject.DataObject(dataTuple = dataTuple)
 
         theoreticalmodel = Model.Model(parameters=parameters, fitted_parameters = fitted_parameters)
-        self.modelStore.addModel(theoreticalmodel, 'theoretical')
-        self.baseModel = DSM.BaseModel(self.modelStore.models['theoretical'])
-        self.layerModel = DSM.LayerModel(self.modelStore.models['theoretical'])
-        self.UDFmodel = PSM.UDFParametersModel(self.modelStore.models['theoretical'])
+        self.modelStoreModel.add(theoreticalmodel, 'theoretical')
+        
+        self.baseModel = DSM.BaseModel(self.modelStoreModel.modelStore['theoretical'])                
+        self.layerModel = DSM.LayerModel(self.modelStoreModel.modelStore['theoretical'])
+        self.UDFmodel = PSM.UDFParametersModel(self.modelStoreModel.modelStore['theoretical'])
 
         self.theoretical.evaluate_model(theoreticalmodel, store = True)
-        
-        self.dataStore.addDataObject(self.theoretical)
+        self.dataStoreModel.add(self.theoretical)
         
         self.theoretical.line2Dsld_profile = self.sldgraphs.axes[0].plot(self.theoretical.sld_profile[0],
                                                    self.theoretical.sld_profile[1],
@@ -81,21 +81,20 @@ class MyMainWindow(QtGui.QMainWindow):
 
         self.redraw_dataObject_graphs([self.theoretical])
         
-        self.ui.dataOptions_tableView.setModel(self.dataStore)
+        self.ui.dataOptions_tableView.setModel(self.dataStoreModel)
         
         #combo boxes for the dataset selection
-        self.ui.dataset_comboBox.setModel(self.dataStore)
+        self.ui.dataset_comboBox.setModel(self.dataStoreModel)
         self.ui.dataset_comboBox.setModelColumn(0)
-        self.ui.UDFdataset_comboBox.setModel(self.dataStore)
+        self.ui.UDFdataset_comboBox.setModel(self.dataStoreModel)
         self.ui.UDFdataset_comboBox.setModelColumn(0) 
         self.changer = DataSelectionChanges()
         self.ui.dataset_comboBox.currentIndexChanged.connect(self.changer.selectionChanged)
         self.ui.UDFdataset_comboBox.currentIndexChanged.connect(self.changer.selectionChanged)
         self.changer.change.connect(self.ui.dataset_comboBox.setCurrentIndex)
         self.changer.change.connect(self.ui.UDFdataset_comboBox.setCurrentIndex)
-
                         
-        self.ui.model_comboBox.setModel(self.modelStore)
+        self.ui.model_comboBox.setModel(self.modelStoreModel)
         
         self.ui.baseModelView.setModel(self.baseModel)
         self.ui.layerModelView.setModel(self.layerModel)
@@ -112,27 +111,21 @@ class MyMainWindow(QtGui.QMainWindow):
         self.ui.UDFmodelView.setModel(self.UDFmodel)
         self.UDFmodel.dataChanged.connect(self.update_gui_modelChanged)
         self.ui.UDFplugin_comboBox.setModel(self.pluginStoreModel)
-        self.ui.UDFmodel_comboBox.setModel(self.modelStore)
+        self.ui.UDFmodel_comboBox.setModel(self.modelStoreModel)
         
         print 'Session started at:', time.asctime( time.localtime(time.time()) )
     
     def __del__(self):
         # Restore sys.stdout
         sys.stdout = sys.__stdout__
-    
-    def writeTextToConsole(self, text):
-        self.ui.plainTextEdit.insertPlainText(text)
-         
-    def __saveState(self, f):
-        state = [self.dataStore, self.modelStore, self.current_dataset.name]
-        pickle.dump(self.state, f, -1)
+
 
     def dataObjects_visibilityChanged(self, arg_1, arg_2):
         if arg_1.column() < 0:
             return
         
-        name = self.dataStore.names[arg_1.row()]
-        dataObject = self.dataStore.dataObjects[name]
+        name = self.dataStoreModel.dataStore.names[arg_1.row()]
+        dataObject = self.dataStoreModel.dataStore[name]
         if dataObject.line2D is not None:
             dataObject.line2D.set_visible(dataObject.graph_properties['visible'])
         self.redraw_dataObject_graphs([dataObject], visible = dataObject.graph_properties['visible'])
@@ -143,11 +136,7 @@ class MyMainWindow(QtGui.QMainWindow):
         urls = m.urls()
         for url in urls:
             try:
-                dataObject = self.dataStore.loadDataObject(url.toLocalFile())
-                if dataObject is not None:
-                    self.reflectivitygraphs.add_dataObject(dataObject)
-                    self.sldgraphs.add_dataObject(dataObject)
-                    continue
+                self.loadData([url.toLocalFile()])
             except Exception as inst:
                 pass
             
@@ -162,90 +151,126 @@ class MyMainWindow(QtGui.QMainWindow):
         if m.hasUrls():
             event.acceptProposedAction()
     
+    def writeTextToConsole(self, text):
+        self.ui.plainTextEdit.moveCursor(QtGui.QTextCursor.End)
+        self.ui.plainTextEdit.insertPlainText(text)
+                
+    def __saveState(self, experimentFileName):
+        state = {}
+        state['dataStoreModel.dataStore'] = self.dataStoreModel.dataStore
+        state['modelStoreModel.modelStore'] = self.modelStoreModel.modelStore
+        if self.current_dataset:
+            state['current_dataset_name'] = self.current_dataset.name
+        state['history'] = self.ui.plainTextEdit.toPlainText()
+        
+        try:        
+            tempdirectory = tempfile.mkdtemp()
+            
+            with open(os.path.join(tempdirectory, 'state'), 'wb') as f:
+                pickle.dump(state, f, -1)
+
+            with zipfile.ZipFile(experimentFileName, 'w') as zip:
+                DSM.zipper(tempdirectory, zip)
+
+        except Exception as e:
+            print type(e), e.message
+        finally: 
+            shutil.rmtree(tempdirectory)
+        
     @QtCore.Slot()
-    def on_actionSave_experiment_triggered(self):
+    def on_actionSave_File_triggered(self):
         experimentFileName, ok = QtGui.QFileDialog.getSaveFileName(self, caption = 'Save experiment as:', dir='experiment.fdob')
         
         if not ok:
             return
         
+        path, ext = os.path.splitext(experimentFileName)
+        if ext != '.fdob':
+            experimentFileName = path + '.fdob'
+            
+        self.__saveState(experimentFileName)
+    
+    def __restoreState(self, experimentFileName):
         try:
             tempdirectory = tempfile.mkdtemp()
-            datasetd = os.path.join(tempdirectory,'datasets')
-            os.mkdir(datasetd)
-            self.dataStore.saveDataStore(datasetd)
-            modeld = os.path.join(tempdirectory,'models')
-            os.mkdir(modeld)
-            self.modelStore.saveModelStore(modeld)
-            with zipfile.ZipFile(experimentFileName + '.fdob', 'w') as zip:
-                DSM.zipper(tempdirectory, zip)
-        except Exception as inst:
-            print type(inst)
-        finally: 
+            with zipfile.ZipFile(experimentFileName, 'r') as zip:
+                zip.extractall(tempdirectory)
+
+            with open(os.path.join(tempdirectory, 'state'), 'rb') as f:
+                state = pickle.load(f)
+
+        except Exception as e:
+            print type(e), e.message
+        finally:
             shutil.rmtree(tempdirectory)
+        
+        if not state:
+            print "Couldn't load experiment"
+            return
+        
+        try:
+            self.dataStoreModel.dataStore = state['dataStoreModel.dataStore']
+            self.modelStoreModel.modelStore = state['modelStoreModel.modelStore']
+            self.ui.plainTextEdit.setPlainText(state['history'])
+            self.current_dataset = self.dataStoreModel.dataStore[state['current_dataset_name']]
+        except KeyError as e:
+            print type(e), e.message
+            return
+        
+        self.dataStoreModel.modelReset.emit() 
+        self.modelStoreModel.modelReset.emit()
+        
+        #remove and add dataObjectsToGraphs
+        self.reflectivitygraphs.removeTraces()
+        self.sldgraphs.removeTraces()
+        self.add_dataObjectsToGraphs(self.dataStoreModel.dataStore)
+                    
+        self.theoretical = self.dataStoreModel.dataStore['theoretical']
+#        self.reflectivitygraphs.axes[0].lines.remove(self.theoretical.line2D)
+#        self.reflectivitygraphs.axes[1].lines.remove(self.theoretical.line2Dresiduals)
     
+        #when you load in the theoretical model you destroy the link to the gui, reinstate it.
+        self.theoreticalmodel = self.modelStoreModel.modelStore['theoretical']
+        self.baseModel.model = self.theoreticalmodel
+        self.layerModel.model = self.theoreticalmodel
+        self.theoretical.evaluate_model(self.theoreticalmodel, store = True)
+        
+        self.theoretical.line2Dfit = self.reflectivitygraphs.axes[0].plot(self.theoretical.W_q,
+                                                self.theoretical.fit,
+                                                 linestyle='-', lw=2, label = 'theoretical')[0]
+        self.reflectivitygraphs.draw()
+
     @QtCore.Slot()
-    def on_actionLoad_experiment_triggered(self):
+    def on_actionLoad_File_triggered(self):
         experimentFileName, ok = QtGui.QFileDialog.getOpenFileName(self,
                                                                   caption = 'Select Experiment File',
                                                                   filter = 'Experiment Files (*.fdob)')
         if not ok:
             return
         
-        tempdirectory = tempfile.mkdtemp()
-         
-        with zipfile.ZipFile(experimentFileName, 'r') as zip:
-            zip.extractall(tempdirectory)
-        
-        datasetd = os.path.join(tempdirectory,'datasets')
-        files = [os.path.join(datasetd, file) for file in os.listdir(datasetd) if not os.path.isdir(file)]
-        self.dataStore.loadDataStore(files, clear = True)
-
-        modeld = os.path.join(tempdirectory,'models')
-        files = [os.path.join(modeld, file) for file in os.listdir(modeld) if not os.path.isdir(file)]
-        self.modelStore.loadModelStore(files, clear = True)
-        
-        #remove and add dataObjectsToGraphs
-        self.reflectivitygraphs.removeTraces()
-        for dataObject in self.dataStore:
-            self.reflectivitygraphs.add_dataObject(dataObject)
-            
-        self.theoretical = self.dataStore.getDataObject('_theoretical_')
-#        self.reflectivitygraphs.axes[0].lines.remove(self.theoretical.line2D)
-#        self.reflectivitygraphs.axes[1].lines.remove(self.theoretical.line2Dresiduals)
-        
-        #when you load in the theoretical model you destroy the link to the gui, reinstate it.
-        self.theoreticalmodel = self.modelStore.models['theoretical']
-        self.baseModel.model = self.theoreticalmodel
-        self.layerModel.model = self.theoreticalmodel
-        self.theoretical.evaluate_model(self.theoreticalmodel, store = True)
-            
-        self.theoretical.line2Dfit = self.reflectivitygraphs.axes[0].plot(self.theoretical.W_q,
-                                                self.theoretical.fit,
-                                                 linestyle='-', lw=2, label = 'theoretical')[0]
-        self.reflectivitygraphs.draw()
-                    
-        shutil.rmtree(tempdirectory)
-
-                       
+        self.__restoreState(experimentFileName)
+    
+    def loadData(self, files):
+        for file in files:
+            dataObject = self.dataStoreModel.load(file)
+            self.add_dataObjectsToGraphs([dataObject])
+     
     @QtCore.Slot()
     def on_actionLoad_Data_triggered(self):
         """
             you load data
         """ 
-        theFiles, ok = QtGui.QFileDialog.getOpenFileNames(self,  caption = 'Select Reflectivity Files')
+        files, ok = QtGui.QFileDialog.getOpenFileNames(self,  caption = 'Select Reflectivity Files')
         if not ok:
             return
             
-        for file in theFiles:
-            dataObject = self.dataStore.loadDataObject(file)
-            self.reflectivitygraphs.add_dataObject(dataObject)
+        self.loadData(files)
 
     @QtCore.Slot()
     def on_actionSave_Data_triggered(self):
         listoffits = []
-        for key in self.dataStore.dataObjects:
-            if self.dataStore.dataObjects[key].fit is not None:
+        for dataObject in self.dataStoreModel.dataStore:
+            if dataObject[key].fit is not None:
                 listoffits.append(key)
                 
         which_fit, ok = QtGui.QInputDialog.getItem(self, "Which fit did you want to save?", "fit", listoffits, editable=False)
@@ -258,30 +283,20 @@ class MyMainWindow(QtGui.QMainWindow):
         if not ok:
             return
         
-        dataObject = self.dataStore.dataObjects[which_fit]
+        dataObject = self.dataStoreModel.dataStore[which_fit]
         
         with open(fitFileName, 'wb') as f:
             np.savetxt(f, np.column_stack((dataObject.W_q, dataObject.fit)))
-            
-    @QtCore.Slot()
-    def on_actionSave_Model_triggered(self):
-        #save a model
-        #which model are you saving?
-        listofmodels = self.modelStore.names
-        
-        which_model, ok = QtGui.QInputDialog.getItem(self, "Which model did you want to save?", "model", listofmodels, editable=False)
-        if not ok:
-            return
-            
-        themodel = self.modelStore.models[which_model]
-        modelFileName, ok = QtGui.QFileDialog.getSaveFileName(self, caption = 'Save model as:', dir=which_model)
-        if not ok:
-            return
-             
-        with open(modelFileName, 'w+') as f:
-            themodel.save(f)
-    
-                   
+
+    def loadModel(self, fileName):
+        with open(fileName, 'Ur') as f:
+            themodel = Model.Model(None, file = f)
+
+        modelName = os.path.basename(fileName)
+        self.modelStoreModel.modelStore.add(themodel, os.path.basename(modelName))
+        if self.ui.model_comboBox.count() == 1:
+            self.ui.model_comboBox.setCurrentIndex(-1)
+           
     @QtCore.Slot()
     def on_actionLoad_Model_triggered(self):
         #load a model
@@ -290,16 +305,25 @@ class MyMainWindow(QtGui.QMainWindow):
             return
         
         self.loadModel(modelFileName)
-
-    def loadModel(self, fileName):
-        with open(fileName, 'Ur') as f:
-            themodel = Model.Model(None, file = f)
-
-        modelName = os.path.basename(fileName)
-        self.modelStore.addModel(themodel, os.path.basename(modelName))
-        if self.ui.model_comboBox.count() == 1:
-            self.ui.model_comboBox.setCurrentIndex(-1)
-
+                            
+    @QtCore.Slot()
+    def on_actionSave_Model_triggered(self):
+        #save a model
+        #which model are you saving?
+        listofmodels = self.modelStoreModel.modelStore.names
+        
+        which_model, ok = QtGui.QInputDialog.getItem(self, "Which model did you want to save?", "model", listofmodels, editable=False)
+        if not ok:
+            return
+            
+        themodel = self.modelStoreModel.modelStore[which_model]
+        modelFileName, ok = QtGui.QFileDialog.getSaveFileName(self, caption = 'Save model as:', dir=which_model)
+        if not ok:
+            return
+             
+        with open(modelFileName, 'w+') as f:
+            themodel.save(f)
+    
     @QtCore.Slot()
     def on_actionLoad_Plugin_triggered(self):
         #load a model plugin
@@ -311,8 +335,8 @@ class MyMainWindow(QtGui.QMainWindow):
         """
             you are refreshing existing datasets
         """
-        self.dataStore.refresh()
-        for dataObject in self.dataStore:
+        self.dataStoreModel.dataStore.refresh()
+        for dataObject in self.dataStoreModel.dataStore:
             if dataObject.line2D:
                 dataObject.line2D.set_data(dataObject.W_q, dataObject.W_ref)
         self.reflectivitygraphs.draw()
@@ -342,11 +366,11 @@ class MyMainWindow(QtGui.QMainWindow):
         if self.current_dataset is None:
             return
             
-        theoreticalmodel = self.modelStore.models['theoretical']
+        theoreticalmodel = self.modelStoreModel.modelStore['theoretical']
         alreadygotlimits = False
           
-        if ('coef_' + self.current_dataset.name) in self.modelStore.names: 
-            model = self.modelStore.models['coef_' + self.current_dataset.name]            
+        if ('coef_' + self.current_dataset.name) in self.modelStoreModel.modelStore.names: 
+            model = self.modelStoreModel.modelStore['coef_' + self.current_dataset.name]            
             if model.limits is not None and model.limits.ndim == 2 and np.size(theoreticalmodel.parameters) == np.size(model.limits, 1):
                 theoreticalmodel.limits = np.copy(model.limits)
                 alreadygotlimits = True
@@ -372,11 +396,11 @@ class MyMainWindow(QtGui.QMainWindow):
         if self.current_dataset is None:
             return
             
-        theoreticalmodel = self.modelStore.models['theoretical']
+        theoreticalmodel = self.modelStoreModel.modelStore['theoretical']
         alreadygotlimits = False
           
-        if ('coef_' + self.current_dataset.name) in self.modelStore.names: 
-            model = self.modelStore.models['coef_' + self.current_dataset.name]            
+        if ('coef_' + self.current_dataset.name) in self.modelStoreModel.modelStore.names: 
+            model = self.modelStoreModel.modelStore['coef_' + self.current_dataset.name]            
             if model.limits is not None and model.limits.ndim == 2 and np.size(theoreticalmodel.parameters) == np.size(model.limits, 1):
                 theoreticalmodel.limits = np.copy(model.limits)
                 alreadygotlimits = True
@@ -392,8 +416,7 @@ class MyMainWindow(QtGui.QMainWindow):
             return
         
         theoreticalmodel.limits = np.copy(limits)                                
-        self.do_a_fit_and_add_to_gui(self.current_dataset, theoreticalmodel)  
-        
+        self.do_a_fit_and_add_to_gui(self.current_dataset, theoreticalmodel, fitPlugin = self.fitPlugin['rfo'])  
         
         
     def do_a_fit_and_add_to_gui(self, dataset, model, fitPlugin = None):
@@ -413,15 +436,14 @@ class MyMainWindow(QtGui.QMainWindow):
                                       fitPlugin = fitPlugin,
                                         limits = model.limits)
                     
-        self.modelStore.addModel(newmodel, 'coef_' + dataset.name)        
+        self.modelStoreModel.add(newmodel, 'coef_' + dataset.name)        
     
         #update GUI
         self.layerModel.dataChanged.emit(QtCore.QModelIndex(), QtCore.QModelIndex())
         self.baseModel.dataChanged.emit(QtCore.QModelIndex(), QtCore.QModelIndex())
         self.UDFmodel.dataChanged.emit(QtCore.QModelIndex(), QtCore.QModelIndex())
-
-        self.reflectivitygraphs.add_dataObject(dataset)
-        self.sldgraphs.add_dataObject(dataset)
+        
+        self.add_dataObjectsToGraphs(dataset)
                                                          
         if self.ui.model_comboBox.findText('coef_' + dataset.name) < 0:
             self.ui.model_comboBox.setCurrentIndex(self.ui.model_comboBox.findText('coef_' + dataset.name))
@@ -433,24 +455,24 @@ class MyMainWindow(QtGui.QMainWindow):
     
         if arg_1 == 0:
             #the default reflectometry calculation is being used
-            self.modelStore.displayOtherThanReflect = False
+            self.modelStoreModel.modelStore.displayOtherThanReflect = False
             
             '''
                 you need to display a model suitable for reflectometry
             '''
-            areAnyModelsValid = [reflect.isProperAbelesInput(model.parameters) for model in self.modelStore]
+            areAnyModelsValid = [reflect.isProperAbelesInput(model.parameters) for model in self.modelStoreModel.modelStore]
             try:
                 idx = areAnyModelsValid.index(True)
-                self.select_a_model(self.modelStore.names[idx])
+                self.select_a_model(self.modelStoreModel.modelStore.names[idx])
             except ValueError:
                 #none are valid, reset the theoretical model
                 parameters = np.array([1, 1.0, 0, 0, 2.07, 0, 1e-7, 3, 25, 3.47, 0, 3])
                 fitted_parameters = np.array([1,2,3,4,5,6,7,8,9, 10, 11])
-                self.modelStore.models['theoretical'].parameters = parameters[:]
-                self.modelStore.models['theoretical'].fitted_parameters = fitted_parameters[:]
+                self.modelStoreModel.modelStore['theoretical'].parameters = parameters[:]
+                self.modelStoreModel.modelStore['theoretical'].fitted_parameters = fitted_parameters[:]
         else:
             #a user reflectometry plugin is being used.
-            self.modelStore.displayOtherThanReflect = True
+            self.modelStoreModel.modelStore.displayOtherThanReflect = True
 # 
         self.fitPlugin = self.pluginStoreModel.plugins[arg_1]
 
@@ -463,12 +485,11 @@ class MyMainWindow(QtGui.QMainWindow):
         """
         dataset to be fitted changed, must update chi2
         """
-        self.current_dataset = self.dataStore.dataObjects[arg_1]
+        self.current_dataset = self.dataStoreModel.dataStore[arg_1]
         
     @QtCore.Slot()
     def on_UDFloadPlugin_clicked(self):
         self.loadPlugin()
-
     
     def loadPlugin(self):
         pluginFileName, ok = QtGui.QFileDialog.getOpenFileName(self,
@@ -476,7 +497,7 @@ class MyMainWindow(QtGui.QMainWindow):
                                                              filter = 'Python Plugin File (*.py)')
         if not ok:
             return    
-        self.pluginStoreModel.addPlugin(pluginFileName)
+        self.pluginStoreModel.add(pluginFileName)
         
     
                   
@@ -485,7 +506,7 @@ class MyMainWindow(QtGui.QMainWindow):
         """
         dataset to be fitted changed, must update chi2
         """
-        self.current_dataset = self.dataStore.dataObjects[arg_1]
+        self.current_dataset = self.dataStoreModel.dataStore[arg_1]
         self.update_gui_modelChanged()
                                 
     @QtCore.Slot(unicode)
@@ -497,23 +518,23 @@ class MyMainWindow(QtGui.QMainWindow):
     
     def select_a_model(self, arg_1):
         try:
-            model = self.modelStore.models[arg_1]
+            model = self.modelStoreModel.modelStore.models[arg_1]
             if model.parameters is not None:
-                self.modelStore.models['theoretical'].parameters =  model.parameters[:]
+                self.modelStoreModel.modelStore['theoretical'].parameters =  model.parameters[:]
             if model.fitted_parameters is not None:
-                self.modelStore.models['theoretical'].fitted_parameters =  model.fitted_parameters[:]
+                self.modelStoreModel.modelStore['theoretical'].fitted_parameters =  model.fitted_parameters[:]
 
             if model.limits is not None and model.limits.ndim == 2 and np.size(model.limits, 1) == np.size(model.parameters):
-                self.modelStore.models['theoretical'].limits = np.copy(model.limits)
+                self.modelStoreModel.modelStore['theoretical'].limits = np.copy(model.limits)
             else:
-                self.modelStore.models['theoretical'].defaultlimits()
+                self.modelStoreModel.modelStore['theoretical'].defaultlimits()
             
             self.baseModel.dataChanged.emit(QtCore.QModelIndex(), QtCore.QModelIndex())
 
             if model.parameters is not None:
-                self.modelStore.models['theoretical'].parameters =  model.parameters[:]
+                self.modelStoreModel.modelStore['theoretical'].parameters =  model.parameters[:]
             if model.fitted_parameters is not None:            
-                self.modelStore.models['theoretical'].fitted_parameters =  model.fitted_parameters[:]
+                self.modelStoreModel.modelStore['theoretical'].fitted_parameters =  model.fitted_parameters[:]
 
             self.layerModel.dataChanged.emit(self.layerModel.createIndex(0,0), self.layerModel.createIndex(2 + int(model.parameters[0]),3))
                         
@@ -540,7 +561,7 @@ class MyMainWindow(QtGui.QMainWindow):
         want to weight by error bars, recalculate chi2
         """
         
-        theoreticalmodel = self.modelStore.models['theoretical']
+        theoreticalmodel = self.modelStoreModel.modelStore['theoretical']
         if arg_1:
             theoreticalmodel.useerrors = True
             theoreticalmodel.costfunction = reflect.costfunction_logR_weight
@@ -553,7 +574,7 @@ class MyMainWindow(QtGui.QMainWindow):
     def on_use_dqwave_checkbox_stateChanged(self, arg_1):
         """
         """
-        theoreticalmodel = self.modelStore.models['theoretical']
+        theoreticalmodel = self.modelStoreModel.modelStore['theoretical']
         
         if arg_1:
             theoreticalmodel.usedq = True
@@ -569,7 +590,7 @@ class MyMainWindow(QtGui.QMainWindow):
         if row == 0 and (col == 0 or col == 3):
             return
 
-        theoreticalmodel = self.modelStore.models['theoretical']
+        theoreticalmodel = self.modelStoreModel.modelStore['theoretical']
 
         if row == int(theoreticalmodel.parameters[0]) + 1 and col == 0:
             return
@@ -600,7 +621,7 @@ class MyMainWindow(QtGui.QMainWindow):
         row = index.row()
         col = index.column()
 
-        theoreticalmodel = self.modelStore.models['theoretical']
+        theoreticalmodel = self.modelStoreModel.modelStore['theoretical']
 
         self.currentCell= {}
 
@@ -639,7 +660,7 @@ class MyMainWindow(QtGui.QMainWindow):
         if row == 0:
             return
 
-        theoreticalmodel = self.modelStore.models['theoretical']
+        theoreticalmodel = self.modelStoreModel.modelStore['theoretical']
 
         try:
             param = row - 1
@@ -671,7 +692,7 @@ class MyMainWindow(QtGui.QMainWindow):
             if not c['readyToChange']:
                 return
 
-            theoreticalmodel = self.modelStore.models['theoretical']
+            theoreticalmodel = self.modelStoreModel.modelStore['theoretical']
                 
             val = c['lowlim'] + (arg_1 / 1000.) * math.fabs(c['lowlim'] - c['hilim'])
               
@@ -690,7 +711,7 @@ class MyMainWindow(QtGui.QMainWindow):
             self.currentCell['readyToChange'] = False
             self.ui.horizontalSlider.setValue(499)
             c = self.currentCell
-            parameters = self.modelStore.models['theoretical'].parameters
+            parameters = self.modelStoreModel.modelStore['theoretical'].parameters
             
             val = parameters[c['param']]
             
@@ -725,14 +746,13 @@ class MyMainWindow(QtGui.QMainWindow):
         
         header = self.ui.UDFmodelView.horizontalHeader()
         header.setResizeMode(QtGui.QHeaderView.Stretch)
-
                        
     def redraw_dataObject_graphs(self, dataObjects, visible = True):
         self.reflectivitygraphs.redraw_dataObjects(dataObjects, visible = visible)        
         self.sldgraphs.redraw_dataObjects(dataObjects, visible = visible)
                         
     def update_gui_modelChanged(self):
-        theoreticalmodel = self.modelStore.models['theoretical']
+        theoreticalmodel = self.modelStoreModel.modelStore['theoretical']
         fitPlugin = self.fitPlugin['rfo']
         
         #evaluate the model against the dataset
@@ -747,6 +767,10 @@ class MyMainWindow(QtGui.QMainWindow):
         except ValueError:
             print "The model parameters were not correct for the type of fitting plugin you requested"
         
+    def add_dataObjectsToGraphs(self, dataObjects):
+        for dataObject in dataObjects:
+            self.reflectivitygraphs.add_dataObject(dataObject)
+            self.sldgraphs.add_dataObject(dataObject)
             
 class MyReflectivityGraphs(FigureCanvas):
     """Ultimately, this is a QWidget (as well as a FigureCanvasAgg, etc.)."""
@@ -774,6 +798,9 @@ class MyReflectivityGraphs(FigureCanvas):
         self.mpl_toolbar = NavigationToolbar(self, parent)
         
     def add_dataObject(self, dataObject):
+        if dataObject.name == 'theoretical':
+            return
+                    
         if dataObject.line2D is None:
             lineInstance = self.axes[0].plot(dataObject.W_q,
                                           dataObject.W_ref,
@@ -787,10 +814,10 @@ class MyReflectivityGraphs(FigureCanvas):
         
         if dataObject.line2Dfit is None and dataObject.fit is not None:
             dataObject.line2Dfit = self.axes[0].plot(dataObject.W_q,
-                                                                        dataObject.fit,
-                                                                           linestyle='-',
-                                                                            lw = 2,
-                                                                             label = 'fit_' + dataObject.name)[0]
+                                                        dataObject.fit,
+                                                           linestyle='-',
+                                                            lw = 2,
+                                                             label = 'fit_' + dataObject.name)[0]
             if dataObject.graph_properties['line2Dfit_properties']:
                 artist.setp(dataObject.line2Dfit, **dataObject.graph_properties['line2Dfit_properties'])
         
@@ -807,8 +834,7 @@ class MyReflectivityGraphs(FigureCanvas):
         self.axes[0].relim()
         self.axes[0].autoscale_view(None, True, True)
         self.draw()
-        
-        self.draw()
+
     
     def redraw_dataObjects(self, dataObjects, visible = True):
         for dataObject in dataObjects:

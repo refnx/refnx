@@ -533,17 +533,17 @@
     <addaction name="actionRQ4_vs_Q"/>
     <addaction name="actionRQ4_vs_Q_2"/>
    </widget>
-   <widget class="QMenu" name="menuExperiment">
+   <widget class="QMenu" name="menuFile">
     <property name="title">
-     <string>Experiment</string>
+     <string>File</string>
     </property>
-    <addaction name="actionLoad_experiment"/>
-    <addaction name="actionSave_experiment"/>
+    <addaction name="actionSave_File"/>
+    <addaction name="actionLoad_File"/>
    </widget>
+   <addaction name="menuFile"/>
    <addaction name="menuData"/>
    <addaction name="menuModel"/>
    <addaction name="menuPlot_type"/>
-   <addaction name="menuExperiment"/>
    <addaction name="menuHelp"/>
   </widget>
   <widget class="QDockWidget" name="dockWidget">
@@ -1091,7 +1091,7 @@
     <string>Load Data</string>
    </property>
    <property name="shortcut">
-    <string>Meta+O</string>
+    <string>Meta+L</string>
    </property>
    <property name="shortcutContext">
     <enum>Qt::ApplicationShortcut</enum>
@@ -1109,16 +1109,10 @@
    <property name="text">
     <string>Save Model</string>
    </property>
-   <property name="shortcut">
-    <string>Meta+S</string>
-   </property>
   </action>
   <action name="actionLoad_Model">
    <property name="text">
     <string>Load Model</string>
-   </property>
-   <property name="shortcut">
-    <string>Meta+L</string>
    </property>
   </action>
   <action name="actionLogR_vs_Q">
@@ -1169,6 +1163,25 @@
   <action name="actionLoad_Plugin">
    <property name="text">
     <string>Load Plugin</string>
+   </property>
+  </action>
+  <action name="actionSave_File">
+   <property name="text">
+    <string>Save</string>
+   </property>
+   <property name="whatsThis">
+    <string/>
+   </property>
+   <property name="shortcut">
+    <string>Meta+S</string>
+   </property>
+  </action>
+  <action name="actionLoad_File">
+   <property name="text">
+    <string>Load</string>
+   </property>
+   <property name="shortcut">
+    <string>Meta+O</string>
    </property>
   </action>
  </widget>

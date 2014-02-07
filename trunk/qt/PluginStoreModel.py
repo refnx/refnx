@@ -64,7 +64,7 @@ class PluginStoreModel(QtCore.QAbstractTableModel):
             if index.column() == 0:
                 return self.plugins[index.row()]['name']
                 
-    def addPlugin(self, filepath):
+    def add(self, filepath):
         module, rfos = loadPluginModule(filepath)
         
         if rfos is None:

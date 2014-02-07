@@ -3,6 +3,7 @@ import string
 import numpy as np
 from time import gmtime, strftime
 import pyplatypus.reduce.rebin
+
 try:
     import xml.etree.cElementTree as ET
 except ImportError:
@@ -76,6 +77,7 @@ class ReflectDataset(Data_1D):
             self.filename = f.name
             self.name = os.path.basename(f.name)
             self.set_data((qvals, rvals, drvals, dqvals)) 
+            self.filename = f.name
         except ET.ParseError:
             with open(f.name, 'Ur') as g:
                 super(ReflectDataset, self).load(g)

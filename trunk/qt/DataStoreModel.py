@@ -23,88 +23,27 @@ def zipper(dir, zip):
             fullpath = os.path.join(root, f)
             archive_name = os.path.join(archive_root, f)
             zip.write(fullpath, archive_name)
-    
-class DataStore(QtCore.QAbstractTableModel):
 
-    def __init__(self, parent = None):
-        super(DataStore, self).__init__(parent)
+class DataStore(object):
+    def __init__(self):
+        super(DataStore, self).__init__()
         self.dataObjects = {}
         self.numDataObjects = 0
         self.names = []
         
-    def __iter__(self):
-        dataObjects = [self.dataObjects[name] for name in self.names]
-        for dataObject in dataObjects:
-            yield dataObject
+    def __getitem__(self, key):
+        return self.dataObjects[key]
     
-    def rowCount(self, parent = QtCore.QModelIndex()):
-        #don't want to return '_theoretical_'
-        return self.numDataObjects - 1
+    def __iter__(self):    
+        for key in self.dataObjects:
+            yield self.dataObjects[key]
         
-    def columnCount(self, parent = QtCore.QModelIndex()):
-        return 2
-    
-    def insertRows(self, position, rows=1, index=QtCore.QModelIndex()):
-        """ Insert a row into the model. """
-        self.beginInsertRows(QtCore.QModelIndex(), position, position + rows - 1)
-        self.endInsertRows()
-        return True
-        
-    def flags(self, index):
-        if index.column() == 1:
-            return (QtCore.Qt.ItemIsUserCheckable |  QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable)
-        else:
-            return  (QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled)
-            
-    def setData(self, index, value, role = QtCore.Qt.EditRole):
-        if index.column() == 1:
-            if value == QtCore.Qt.Checked:
-                self.dataObjects[self.names[index.row()]].graph_properties['visible'] = True
-            else:
-                self.dataObjects[self.names[index.row()]].graph_properties['visible'] = False
-                                
-            self.dataChanged.emit(index, index)
-        
-        return True
-                
-    def data(self, index, role=QtCore.Qt.DisplayRole):
-        if not index.isValid():
-            return None
-        
-        if role == QtCore.Qt.DisplayRole:
-            if index.column() == 0:
-                return self.names[index.row()]
-        
-        if role == QtCore.Qt.CheckStateRole:
-             if index.column() == 1:
-                if self.dataObjects[self.names[index.row()]].graph_properties['visible']:
-                    return QtCore.Qt.Checked
-                else:
-                    return QtCore.Qt.Unchecked
-                
-    def headerData(self, section, orientation, role=QtCore.Qt.DisplayRole):
-        """ Set the headers to be displayed. """
-        if role != QtCore.Qt.DisplayRole:
-            return None
-
-        if orientation == QtCore.Qt.Horizontal:
-            if section == 0:
-                return 'name'
-            if section == 1:
-                return 'displayed'
-        
-        return None
-            
-    def addDataObject(self, dataObject):
+    def add(self, dataObject):
         self.dataObjects[dataObject.name] = dataObject
-        if dataObject.name != '_theoretical_':
-            self.names.append(dataObject.name)
+        self.names.append(dataObject.name)
         self.numDataObjects += 1
-        self.insertRows(self.numDataObjects - 1)
-        
-        self.dataChanged.emit(QtCore.QModelIndex(),QtCore.QModelIndex())
-                
-    def loadDataObject(self, filename):
+
+    def load(self, filename):
         if os.path.basename(filename) in self.names:
             self.dataObjects[os.path.basename(filename)].refresh()
             return None
@@ -119,12 +58,11 @@ class DataStore(QtCore.QAbstractTableModel):
         TdataObject.W_qSD = np.delete(TdataObject.W_qSD, np.where(TdataObject.W_ref < 0))
         TdataObject.W_ref = np.delete(TdataObject.W_ref, np.where(TdataObject.W_ref < 0))
         
-        self.addDataObject(TdataObject)
+        self.add(TdataObject)
 
         return TdataObject
         
     def saveDataStore(self, folderName):
-        
         for key in self.dataObjects.keys():   
             dataObject = self.dataObjects[key]
             try:
@@ -146,69 +84,126 @@ class DataStore(QtCore.QAbstractTableModel):
             
         for file in files:
             try:
-                self.loadDataObject(file)
+                self.loadData(file)
             except IOError:
                 continue
-        
-        self.modelReset.emit()       
-                       
+                         
     def snapshot(self, name, snapshotname):
         #this function copies the data from one dataobject into another.
         origin = self.getDataObject(name)
         dataTuple = (np.copy(origin.W_q), np.copy(origin.W_ref), np.copy(origin.W_refSD), np.copy(origin.W_qSD))
         snapshot = dataObject(name = snapshotname, dataTuple = dataTuple)
         self.addDataObject(snapshot)
-                         
-    def getDataObject(self, name):
-        return self.dataObjects[name]
         
     def removeDataObject(self, name):
         del(self.dataObjects[name])
         
     def refresh(self):
-        for key in self.dataObjects:
-            if key != '_theoretical_':
-                self.dataObjects[key].refresh()
-                 
-class ModelStore(QtCore.QAbstractListModel):
+        for dataObject in self:
+            dataObject.refresh()
+
+class DataStoreModel(QtCore.QAbstractTableModel):
+
     def __init__(self, parent = None):
-        super(ModelStore, self).__init__(parent)
+        super(DataStoreModel, self).__init__(parent)
+        self.dataStore = DataStore()
+        
+    def __iter__(self):
+        for dataObject in self.dataStore:
+            yield dataObject
+    
+    def rowCount(self, parent = QtCore.QModelIndex()):
+        #don't want to return 'theoretical'
+        return self.dataStore.numDataObjects
+        
+    def columnCount(self, parent = QtCore.QModelIndex()):
+        return 2
+    
+    def insertRows(self, position, rows=1, index=QtCore.QModelIndex()):
+        """ Insert a row into the model. """
+        self.beginInsertRows(QtCore.QModelIndex(), position, position + rows - 1)
+        self.endInsertRows()
+        return True
+        
+    def flags(self, index):
+        if index.column() == 1:
+            return (QtCore.Qt.ItemIsUserCheckable |  QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable)
+        else:
+            return  (QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled)
+            
+    def setData(self, index, value, role = QtCore.Qt.EditRole):
+        if index.column() == 1:
+            if value == QtCore.Qt.Checked:
+                self.dataStore.dataObjects[self.dataStore.names[index.row()]].graph_properties['visible'] = True
+            else:
+                self.dataStore.dataObjects[self.dataStore.names[index.row()]].graph_properties['visible'] = False
+                                
+            self.dataChanged.emit(index, index)
+        
+        return True
+                
+    def data(self, index, role=QtCore.Qt.DisplayRole):
+        if not index.isValid():
+            return None
+        
+        if role == QtCore.Qt.DisplayRole:
+            if index.column() == 0:
+                return self.dataStore.names[index.row()]
+        
+        if role == QtCore.Qt.CheckStateRole:
+             if index.column() == 1:
+                if self.dataStore.dataObjects[self.dataStore.names[index.row()]].graph_properties['visible']:
+                    return QtCore.Qt.Checked
+                else:
+                    return QtCore.Qt.Unchecked
+                
+    def headerData(self, section, orientation, role=QtCore.Qt.DisplayRole):
+        """ Set the headers to be displayed. """
+        if role != QtCore.Qt.DisplayRole:
+            return None
+
+        if orientation == QtCore.Qt.Horizontal:
+            if section == 0:
+                return 'name'
+            if section == 1:
+                return 'displayed'
+        
+        return None
+    
+    def loadDataStore(self, files, clear = False):
+        self.dataStore.loadDataStore(files, clear)
+        self.modelReset.emit() 
+
+    def add(self, dataObject):
+        self.dataStore.add(dataObject)
+        self.insertRows(self.dataStore.numDataObjects)
+        self.dataChanged.emit(QtCore.QModelIndex(),QtCore.QModelIndex())
+    
+    def loadData(self, file):
+        dataObject = self.dataStore.loadData(file)
+        self.insertRows(self.dataStore.numDataObjects)
+        self.dataChanged.emit(QtCore.QModelIndex(),QtCore.QModelIndex())
+        return dataObject
+
+class ModelStore(object):
+    def __init__(self):
+        super(ModelStore, self).__init__()
         self.models = {}
         self.names = []
         self.displayOtherThanReflect = False
+        
+    def __getitem__(self, key):
+        return self.models[key]
     
     def __iter__(self):
-        models = [self.models[name] for name in self.names]
-        for model in models:
-            yield model
-                    
-    def rowCount(self, parent = QtCore.QModelIndex()):
-        #don't want to return '_theoretical_'
-        return len(self.models.keys())
-        
-    def data(self, index, role=QtCore.Qt.DisplayRole):
-        if role == QtCore.Qt.DisplayRole:
-            return self.names[index.row()]
-            
-    def flags(self, index, filterNormalRef = True):
-        parameters = self.models[self.names[index.row()]].parameters
-        if self.displayOtherThanReflect:
-        	return (QtCore.Qt.ItemIsEnabled |
-    	            QtCore.Qt.ItemIsSelectable)
-        else:
-            if reflect.isProperAbelesInput(parameters):
-            	return (QtCore.Qt.ItemIsEnabled |
-        	            QtCore.Qt.ItemIsSelectable)
-            else:
-            	return (QtCore.Qt.NoItemFlags)
-
-        
-    def addModel(self, model, modelName):
+        for key in self.models:
+            yield self.models[key]
+    
+    def add(self, model, modelName):
         self.models[modelName] = model
         if modelName not in self.names:
             self.names.append(modelName)
-        self.dataChanged.emit(QtCore.QModelIndex(),QtCore.QModelIndex())
-        
+            
     def saveModelStore(self, folderName):
         for modelname in self.names:
             model = self.models[modelname]
@@ -226,13 +221,11 @@ class ModelStore(QtCore.QAbstractListModel):
                 with open(file, 'Ur') as f:
                     model = Model.Model(None)
                     model.load(f)
-                    self.addModel(model, os.path.basename(file))
+                    self.add(model, os.path.basename(file))
             except IOError:
                 #may be a directory
-                continue
-        
-        self.modelReset.emit()       
- 
+                continue  
+                
     def snapshot(self, name, snapshotname):
         model = self.models[name]
         snapshot = Model(parameters = model.parameters,
@@ -241,8 +234,47 @@ class ModelStore(QtCore.QAbstractListModel):
                               useerrors = model.useerrors,
                                costfunction = model.costfunction,
                                 usedq = model.usedq)
-        self.addModel(snapshot, snapshotname)
+        self.add(snapshot, snapshotname)
 
+                                                  
+class ModelStoreModel(QtCore.QAbstractListModel):
+    def __init__(self, parent = None):
+        super(ModelStoreModel, self).__init__(parent)
+        self.modelStore = ModelStore() 
+
+    def __iter__(self):
+        models = [self.modelStore[name] for name in self.names]
+        for model in models:
+            yield model
+                    
+    def rowCount(self, parent = QtCore.QModelIndex()):
+        #don't want to return 'theoretical'
+        return len(self.modelStore.models)
+        
+    def data(self, index, role=QtCore.Qt.DisplayRole):
+        if role == QtCore.Qt.DisplayRole:
+            return self.modelStore.names[index.row()]
+            
+    def flags(self, index, filterNormalRef = True):
+        parameters = self.modelStore.models[self.modelStore.names[index.row()]].parameters
+        if self.modelStore.displayOtherThanReflect:
+        	return (QtCore.Qt.ItemIsEnabled |
+    	            QtCore.Qt.ItemIsSelectable)
+        else:
+            if reflect.isProperAbelesInput(parameters):
+            	return (QtCore.Qt.ItemIsEnabled |
+        	            QtCore.Qt.ItemIsSelectable)
+            else:
+            	return (QtCore.Qt.NoItemFlags)
+        
+    def add(self, model, modelName):
+        self.modelStore.add(model, modelName)
+        self.dataChanged.emit(QtCore.QModelIndex(),QtCore.QModelIndex())
+        
+    def loadModelStore(self, files, clear = False):
+        self.modelStore.loadModelStore(files, clear)        
+        self.modelReset.emit()       
+ 
 class BaseModel(QtCore.QAbstractTableModel):
 
     layersAboutToBeInserted = QtCore.Signal(int, int)
