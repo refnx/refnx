@@ -1,6 +1,6 @@
 """"
 
-    A basic representation of a 1D datafile
+    A basic representation of a 1D dataset
         
 """
 
@@ -14,6 +14,8 @@ import pyplatypus.util.ErrorProp as EP
 
 class Data_1D(object):
     def __init__(self, dataTuple = None):
+    
+        self.filename = None
         
         if dataTuple is not None:
             self.W_q = np.copy(dataTuple[0]).flatten()
@@ -108,6 +110,7 @@ class Data_1D(object):
         self.set_data(tuple(np.hsplit(array, np.size(array, 1))))
         
     def refresh(self):
-        with open(self.filename) as f:
-            self.load(f)
+        if self.filename:
+            with open(self.filename) as f:
+                self.load(f)
         
