@@ -1,7 +1,6 @@
 from PySide import QtCore, QtGui
 from MotofitUI import Ui_MainWindow
 
-import numpy as np
 import matplotlib
 matplotlib.use('Qt4Agg')
 matplotlib.rcParams['backend.qt4']='PySide'
@@ -10,11 +9,10 @@ from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt4agg import NavigationToolbar2QTAgg as NavigationToolbar
 from matplotlib.figure import Figure
 import matplotlib.artist as artist
-import DataStoreModel as DSM
+import GuiModel
 import pyplatypus.analysis.Model as Model
-import PluginStoreModel as PSM
 import pyplatypus.analysis.reflect as reflect
-import pyplatypus.dataset.DataObject as DataObject
+import DataObject
 import limitsUI
 import os.path
 from copy import deepcopy
@@ -40,12 +38,12 @@ class MyMainWindow(QtGui.QMainWindow):
         sys.stdout = console
         console.textWritten.connect(self.writeTextToConsole)
         
-        self.dataStoreModel = DSM.DataStoreModel()
+        self.dataStoreModel = GuiModel.DataStoreModel()
         self.dataStoreModel.dataChanged.connect(self.dataObjects_visibilityChanged)
         self.current_dataset = None
 
-        self.modelStoreModel = DSM.ModelStoreModel()
-        self.pluginStoreModel = PSM.PluginStoreModel()
+        self.modelStoreModel = GuiModel.ModelStoreModel()
+        self.pluginStoreModel = GuiModel.PluginStoreModel()
         self.fitPlugin = self.pluginStoreModel.plugins[0]
                 
         self.modifyGui()
@@ -65,9 +63,9 @@ class MyMainWindow(QtGui.QMainWindow):
         theoreticalmodel = Model.Model(parameters=parameters, fitted_parameters = fitted_parameters)
         self.modelStoreModel.add(theoreticalmodel, 'theoretical')
         
-        self.baseModel = DSM.BaseModel(self.modelStoreModel.modelStore['theoretical'])                
-        self.layerModel = DSM.LayerModel(self.modelStoreModel.modelStore['theoretical'])
-        self.UDFmodel = PSM.UDFParametersModel(self.modelStoreModel.modelStore['theoretical'])
+        self.baseModel = GuiModel.BaseModel(self.modelStoreModel.modelStore['theoretical'])                
+        self.layerModel = GuiModel.LayerModel(self.modelStoreModel.modelStore['theoretical'])
+        self.UDFmodel = GuiModel.UDFParametersModel(self.modelStoreModel.modelStore['theoretical'])
 
         self.theoretical.evaluate_model(theoreticalmodel, store = True)
         self.dataStoreModel.add(self.theoretical)
@@ -170,7 +168,7 @@ class MyMainWindow(QtGui.QMainWindow):
                 pickle.dump(state, f, -1)
 
             with zipfile.ZipFile(experimentFileName, 'w') as zip:
-                DSM.zipper(tempdirectory, zip)
+                GuiModel.zipper(tempdirectory, zip)
 
         except Exception as e:
             print type(e), e.message
@@ -267,26 +265,31 @@ class MyMainWindow(QtGui.QMainWindow):
         self.loadData(files)
 
     @QtCore.Slot()
-    def on_actionSave_Data_triggered(self):
-        listoffits = []
-        for dataObject in self.dataStoreModel.dataStore:
-            if dataObject[key].fit is not None:
-                listoffits.append(key)
+    def on_actionSave_Fit_triggered(self):
+        fits = []
+        for dataObject in self.dataStoreModel:
+            if dataObject.fit is not None:
+                fits.append(dataObject.name)
                 
-        which_fit, ok = QtGui.QInputDialog.getItem(self, "Which fit did you want to save?", "fit", listoffits, editable=False)
-        
+        fits.append('-all-')
+                        
+        which_fit, ok = QtGui.QInputDialog.getItem(self, "Which fit did you want to save?", "fit", fits, editable=False)
         if not ok:
             return
         
-        fitFileName, ok = QtGui.QFileDialog.getSaveFileName(self, caption = 'Save fit as:', dir='fit_' + which_fit)
-        
-        if not ok:
-            return
-        
-        dataObject = self.dataStoreModel.dataStore[which_fit]
-        
-        with open(fitFileName, 'wb') as f:
-            np.savetxt(f, np.column_stack((dataObject.W_q, dataObject.fit)))
+        if which_fit == '-all-':
+            dialog = QtGui.QFileDialog(self)
+            dialog.setFileMode(QtGui.QFileDialog.Directory)
+            if dialog.exec_():
+                folder = dialog.selectedFiles()
+                fits.pop()
+                for fit in fits:
+                    self.dataStoreModel.dataStore[fit].saveFit(os.path.join(folder[0], 'fit_' + fit + '.dat'))                
+        else:
+            fitFileName, ok = QtGui.QFileDialog.getSaveFileName(self, caption = 'Save fit as:', dir='fit_' + which_fit)        
+            if not ok:
+                return
+            self.dataStoreModel.dataStore[which_fit].savefit(fitfilename)
 
     def loadModel(self, fileName):
         with open(fileName, 'Ur') as f:
@@ -310,28 +313,55 @@ class MyMainWindow(QtGui.QMainWindow):
     def on_actionSave_Model_triggered(self):
         #save a model
         #which model are you saving?
-        listofmodels = self.modelStoreModel.modelStore.names
+        listofmodels = list(self.modelStoreModel.modelStore.names)
+        listofmodels.append('-all-')
         
         which_model, ok = QtGui.QInputDialog.getItem(self, "Which model did you want to save?", "model", listofmodels, editable=False)
         if not ok:
             return
-            
-        themodel = self.modelStoreModel.modelStore[which_model]
-        modelFileName, ok = QtGui.QFileDialog.getSaveFileName(self, caption = 'Save model as:', dir=which_model)
-        if not ok:
-            return
+        
+        if which_model == '-all-':
+            dialog = QtGui.QFileDialog(self)
+            dialog.setFileMode(QtGui.QFileDialog.Directory)
+            if dialog.exec_():
+                folder = dialog.selectedFiles()
+                self.modelStoreModel.modelStore.saveModelStore(folder[0])
+        else:
+            themodel = self.modelStoreModel.modelStore[which_model]
+            modelFileName, ok = QtGui.QFileDialog.getSaveFileName(self, caption = 'Save model as:', dir=which_model)
+            if not ok:
+                return
              
-        with open(modelFileName, 'w+') as f:
-            themodel.save(f)
+            with open(modelFileName, 'w+') as f:
+                themodel.save(f)
     
     @QtCore.Slot()
     def on_actionLoad_Plugin_triggered(self):
         #load a model plugin
         self.loadPlugin()
 
-            
     @QtCore.Slot()
-    def on_actionRefresh_Datasets_triggered(self):
+    def on_actionBatch_Fit_triggered(self):
+        theoreticalmodel = self.modelStoreModel.modelStore['theoretical']
+        theoreticalmodel.defaultlimits()              
+            
+        ok, limits = self.get_limits(theoreticalmodel.parameters,
+                                                     theoreticalmodel.fitted_parameters,
+                                                      theoreticalmodel.limits)
+        
+        if not ok:
+            return
+        
+        theoreticalmodel.limits = np.copy(limits)
+
+#       Have to iterate over list because dataObjects are stored in dictionary
+        for name in self.dataStoreModel.dataStore.names:
+            if name == 'theoretical':
+                continue
+            self.do_a_fit_and_add_to_gui(self.dataStoreModel.dataStore[name], theoreticalmodel)
+                
+    @QtCore.Slot()
+    def on_actionRefresh_Data_triggered(self):
         """
             you are refreshing existing datasets
         """
@@ -348,7 +378,7 @@ class MyMainWindow(QtGui.QMainWindow):
         limitsGUI = limitsUI.Ui_Dialog()
         limitsGUI.setupUi(limitsdialog)
 
-        limitsModel = DSM.LimitsModel(parameters, fitted_parameters, limits)       
+        limitsModel = GuiModel.LimitsModel(parameters, fitted_parameters, limits)       
         limitsGUI.limits.setModel(limitsModel)
         header = limitsGUI.limits.horizontalHeader()
         header.setResizeMode(QtGui.QHeaderView.Stretch)
@@ -443,7 +473,7 @@ class MyMainWindow(QtGui.QMainWindow):
         self.baseModel.dataChanged.emit(QtCore.QModelIndex(), QtCore.QModelIndex())
         self.UDFmodel.dataChanged.emit(QtCore.QModelIndex(), QtCore.QModelIndex())
         
-        self.add_dataObjectsToGraphs(dataset)
+        self.add_dataObjectsToGraphs([dataset])
                                                          
         if self.ui.model_comboBox.findText('coef_' + dataset.name) < 0:
             self.ui.model_comboBox.setCurrentIndex(self.ui.model_comboBox.findText('coef_' + dataset.name))
@@ -758,7 +788,7 @@ class MyMainWindow(QtGui.QMainWindow):
         #evaluate the model against the dataset
         try:
             self.theoretical.evaluate_model(theoreticalmodel, store = True, fitPlugin = fitPlugin)
-            if self.current_dataset is not None:
+            if self.current_dataset is not None and self.current_dataset.name != 'theoretical':
                 energy = self.current_dataset.evaluate_chi2(theoreticalmodel, fitPlugin = fitPlugin)
                 self.ui.chi2lineEdit.setText(str(round(energy, 3)))     
         
@@ -780,22 +810,24 @@ class MyReflectivityGraphs(FigureCanvas):
         self.axes = []
         ax = self.figure.add_axes([0.1,0.22,0.85,0.75])
         self.axes.append(ax)
+        
         self.axes[0].autoscale(axis='both', tight = False, enable = True)
         self.axes[0].set_xlabel('Q')
         self.axes[0].set_ylabel('R')
         self.axes[0].set_yscale('log')
         
-        #residual plot
-        #, sharex=self.axes[0]
-        ax2 = self.figure.add_axes([0.1,0.04,0.85,0.14], sharex=ax, frame_on = False)
-        self.axes.append(ax2)
-        self.axes[1].set_visible(True)
-        self.axes[1].set_ylabel('residual')
+#         #residual plot
+#         #, sharex=self.axes[0]
+#         ax2 = self.figure.add_axes([0.1,0.04,0.85,0.14], sharex=ax, frame_on = False)
+#         self.axes.append(ax2)
+#         self.axes[1].set_visible(True)
+#         self.axes[1].set_ylabel('residual')
                        
         FigureCanvas.__init__(self, self.figure)
         self.setParent(parent)
 #        self.figure.subplots_adjust(left=0.1, right=0.95, top = 0.98)
         self.mpl_toolbar = NavigationToolbar(self, parent)
+        self.draw()
         
     def add_dataObject(self, dataObject):
         if dataObject.name == 'theoretical':
@@ -821,20 +853,19 @@ class MyReflectivityGraphs(FigureCanvas):
             if dataObject.graph_properties['line2Dfit_properties']:
                 artist.setp(dataObject.line2Dfit, **dataObject.graph_properties['line2Dfit_properties'])
         
-        if dataObject.line2Dresiduals is None and dataObject.residuals is not None:
-            dataObject.line2Dresiduals = self.axes[1].plot(dataObject.W_q,
-                                                  dataObject.residuals,
-                                                   linestyle='-',
-                                                    lw = 2,
-                                                     label = 'residuals_' + dataObject.name)[0]
-
-            if dataObject.graph_properties['line2Dresiduals_properties']:
-                artist.setp(dataObject.line2Dresiduals, **dataObject.graph_properties['line2Dresiduals_properties'])
+#         if dataObject.line2Dresiduals is None and dataObject.residuals is not None:
+#             dataObject.line2Dresiduals = self.axes[1].plot(dataObject.W_q,
+#                                                   dataObject.residuals,
+#                                                    linestyle='-',
+#                                                     lw = 2,
+#                                                      label = 'residuals_' + dataObject.name)[0]
+# 
+#             if dataObject.graph_properties['line2Dresiduals_properties']:
+#                 artist.setp(dataObject.line2Dresiduals, **dataObject.graph_properties['line2Dresiduals_properties'])
                                                       
         self.axes[0].relim()
-        self.axes[0].autoscale_view(None, True, True)
+        self.axes[0].autoscale(axis='both', tight = False, enable = True)
         self.draw()
-
     
     def redraw_dataObjects(self, dataObjects, visible = True):
         for dataObject in dataObjects:
@@ -846,9 +877,9 @@ class MyReflectivityGraphs(FigureCanvas):
             if dataObject.line2Dfit:
                dataObject.line2Dfit.set_data(dataObject.W_q, dataObject.fit)
                dataObject.line2Dfit.set_visible(visible)
-            if dataObject.line2Dresiduals:
-               dataObject.line2Dresiduals.set_data(dataObject.W_q, dataObject.residuals)
-               dataObject.line2Dresiduals.set_visible(visible)
+#             if dataObject.line2Dresiduals:
+#                dataObject.line2Dresiduals.set_data(dataObject.W_q, dataObject.residuals)
+#                dataObject.line2Dresiduals.set_visible(visible)
         
 #         self.axes[0].autoscale(axis='both', tight = False, enable = True)
         self.axes[0].relim()
@@ -859,8 +890,8 @@ class MyReflectivityGraphs(FigureCanvas):
         while len(self.axes[0].lines):
             del self.axes[0].lines[0]
  
-        while len(self.axes[1].lines):
-            del self.axes[1].lines[0]
+#         while len(self.axes[1].lines):
+#             del self.axes[1].lines[0]
                         
         self.draw()
         
@@ -872,6 +903,7 @@ class MySLDGraphs(FigureCanvas):
         self.axes = []
         #SLD plot
         self.axes.append(self.figure.add_subplot(111))
+
         self.axes[0].autoscale(axis='both', tight = False, enable = True)
         self.axes[0].set_xlabel('z')
         self.axes[0].set_ylabel('SLD')
@@ -888,6 +920,8 @@ class MySLDGraphs(FigureCanvas):
             if dataObject.line2Dsld_profile and dataObject.sld_profile is not None:
                dataObject.line2Dsld_profile.set_data(dataObject.sld_profile[0], dataObject.sld_profile[1])
                dataObject.line2Dsld_profile.set_visible(visible)
+        self.axes[0].relim()
+        self.axes[0].autoscale_view(None, True, True)        
         self.draw()
         
     def add_dataObject(self, dataObject):
@@ -900,7 +934,9 @@ class MySLDGraphs(FigureCanvas):
             
             if dataObject.graph_properties['line2Dsld_profile_properties']:
                 artist.setp(dataObject.line2Dsld_profile, **dataObject.graph_properties['line2Dsld_profile_properties'])
-                
+        
+        self.axes[0].relim()
+        self.axes[0].autoscale(axis='both', tight = False, enable = True)
         self.draw()
         
     def removeTraces(self):

@@ -507,9 +507,9 @@
      <string>Data</string>
     </property>
     <addaction name="actionLoad_Data"/>
-    <addaction name="actionRefresh_Datasets"/>
+    <addaction name="actionRefresh_Data"/>
     <addaction name="separator"/>
-    <addaction name="actionSave_Data"/>
+    <addaction name="actionSave_Fit"/>
    </widget>
    <widget class="QMenu" name="menuModel">
     <property name="title">
@@ -527,11 +527,13 @@
    </widget>
    <widget class="QMenu" name="menuPlot_type">
     <property name="title">
-     <string>Plot type</string>
+     <string>Fitting</string>
     </property>
     <addaction name="actionLogR_vs_Q"/>
     <addaction name="actionRQ4_vs_Q"/>
     <addaction name="actionRQ4_vs_Q_2"/>
+    <addaction name="separator"/>
+    <addaction name="actionBatch_Fit"/>
    </widget>
    <widget class="QMenu" name="menuFile">
     <property name="title">
@@ -1097,12 +1099,9 @@
     <enum>Qt::ApplicationShortcut</enum>
    </property>
   </action>
-  <action name="actionSave_Data">
+  <action name="actionSave_Fit">
    <property name="text">
     <string>Save Fit</string>
-   </property>
-   <property name="shortcut">
-    <string>Meta+E</string>
    </property>
   </action>
   <action name="actionSave_Model">
@@ -1136,9 +1135,9 @@
     <string>RQ4 vs Q</string>
    </property>
   </action>
-  <action name="actionRefresh_Datasets">
+  <action name="actionRefresh_Data">
    <property name="text">
-    <string>Refresh Datasets</string>
+    <string>Refresh Data</string>
    </property>
    <property name="shortcut">
     <string>Meta+R</string>
@@ -1182,6 +1181,11 @@
    </property>
    <property name="shortcut">
     <string>Meta+O</string>
+   </property>
+  </action>
+  <action name="actionBatch_Fit">
+   <property name="text">
+    <string>Batch Fit</string>
    </property>
   </action>
  </widget>

@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'Motofit.ui'
 #
-# Created: Fri Feb  7 13:56:01 2014
+# Created: Fri Feb  7 22:27:50 2014
 #      by: pyside-uic 0.2.15 running on PySide 1.2.1
 #
 # WARNING! All changes made in this file will be lost!
@@ -490,8 +490,8 @@ class Ui_MainWindow(object):
         self.actionLoad_Data.setChecked(False)
         self.actionLoad_Data.setShortcutContext(QtCore.Qt.ApplicationShortcut)
         self.actionLoad_Data.setObjectName("actionLoad_Data")
-        self.actionSave_Data = QtGui.QAction(MainWindow)
-        self.actionSave_Data.setObjectName("actionSave_Data")
+        self.actionSave_Fit = QtGui.QAction(MainWindow)
+        self.actionSave_Fit.setObjectName("actionSave_Fit")
         self.actionSave_Model = QtGui.QAction(MainWindow)
         self.actionSave_Model.setObjectName("actionSave_Model")
         self.actionLoad_Model = QtGui.QAction(MainWindow)
@@ -504,8 +504,8 @@ class Ui_MainWindow(object):
         self.actionRQ4_vs_Q.setObjectName("actionRQ4_vs_Q")
         self.actionRQ4_vs_Q_2 = QtGui.QAction(MainWindow)
         self.actionRQ4_vs_Q_2.setObjectName("actionRQ4_vs_Q_2")
-        self.actionRefresh_Datasets = QtGui.QAction(MainWindow)
-        self.actionRefresh_Datasets.setObjectName("actionRefresh_Datasets")
+        self.actionRefresh_Data = QtGui.QAction(MainWindow)
+        self.actionRefresh_Data.setObjectName("actionRefresh_Data")
         self.actionLoad_experiment = QtGui.QAction(MainWindow)
         self.actionLoad_experiment.setObjectName("actionLoad_experiment")
         self.actionSave_experiment = QtGui.QAction(MainWindow)
@@ -517,10 +517,12 @@ class Ui_MainWindow(object):
         self.actionSave_File.setObjectName("actionSave_File")
         self.actionLoad_File = QtGui.QAction(MainWindow)
         self.actionLoad_File.setObjectName("actionLoad_File")
+        self.actionBatch_Fit = QtGui.QAction(MainWindow)
+        self.actionBatch_Fit.setObjectName("actionBatch_Fit")
         self.menuData.addAction(self.actionLoad_Data)
-        self.menuData.addAction(self.actionRefresh_Datasets)
+        self.menuData.addAction(self.actionRefresh_Data)
         self.menuData.addSeparator()
-        self.menuData.addAction(self.actionSave_Data)
+        self.menuData.addAction(self.actionSave_Fit)
         self.menuModel.addAction(self.actionSave_Model)
         self.menuModel.addAction(self.actionLoad_Model)
         self.menuModel.addSeparator()
@@ -528,6 +530,8 @@ class Ui_MainWindow(object):
         self.menuPlot_type.addAction(self.actionLogR_vs_Q)
         self.menuPlot_type.addAction(self.actionRQ4_vs_Q)
         self.menuPlot_type.addAction(self.actionRQ4_vs_Q_2)
+        self.menuPlot_type.addSeparator()
+        self.menuPlot_type.addAction(self.actionBatch_Fit)
         self.menuFile.addAction(self.actionSave_File)
         self.menuFile.addAction(self.actionLoad_File)
         self.menubar.addAction(self.menuFile.menuAction())
@@ -550,7 +554,7 @@ class Ui_MainWindow(object):
         self.menuData.setTitle(QtGui.QApplication.translate("MainWindow", "Data", None, QtGui.QApplication.UnicodeUTF8))
         self.menuModel.setTitle(QtGui.QApplication.translate("MainWindow", "Model", None, QtGui.QApplication.UnicodeUTF8))
         self.menuHelp.setTitle(QtGui.QApplication.translate("MainWindow", "Help", None, QtGui.QApplication.UnicodeUTF8))
-        self.menuPlot_type.setTitle(QtGui.QApplication.translate("MainWindow", "Plot type", None, QtGui.QApplication.UnicodeUTF8))
+        self.menuPlot_type.setTitle(QtGui.QApplication.translate("MainWindow", "Fitting", None, QtGui.QApplication.UnicodeUTF8))
         self.menuFile.setTitle(QtGui.QApplication.translate("MainWindow", "File", None, QtGui.QApplication.UnicodeUTF8))
         self.chi2lineEdit.setText(QtGui.QApplication.translate("MainWindow", "0", None, QtGui.QApplication.UnicodeUTF8))
         self.res_SpinBox.setPrefix(QtGui.QApplication.translate("MainWindow", "dq/q(%) : ", None, QtGui.QApplication.UnicodeUTF8))
@@ -572,15 +576,14 @@ class Ui_MainWindow(object):
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_5), QtGui.QApplication.translate("MainWindow", "Global fit", None, QtGui.QApplication.UnicodeUTF8))
         self.actionLoad_Data.setText(QtGui.QApplication.translate("MainWindow", "Load Data", None, QtGui.QApplication.UnicodeUTF8))
         self.actionLoad_Data.setShortcut(QtGui.QApplication.translate("MainWindow", "Meta+L", None, QtGui.QApplication.UnicodeUTF8))
-        self.actionSave_Data.setText(QtGui.QApplication.translate("MainWindow", "Save Fit", None, QtGui.QApplication.UnicodeUTF8))
-        self.actionSave_Data.setShortcut(QtGui.QApplication.translate("MainWindow", "Meta+E", None, QtGui.QApplication.UnicodeUTF8))
+        self.actionSave_Fit.setText(QtGui.QApplication.translate("MainWindow", "Save Fit", None, QtGui.QApplication.UnicodeUTF8))
         self.actionSave_Model.setText(QtGui.QApplication.translate("MainWindow", "Save Model", None, QtGui.QApplication.UnicodeUTF8))
         self.actionLoad_Model.setText(QtGui.QApplication.translate("MainWindow", "Load Model", None, QtGui.QApplication.UnicodeUTF8))
         self.actionLogR_vs_Q.setText(QtGui.QApplication.translate("MainWindow", "logR vs Q", None, QtGui.QApplication.UnicodeUTF8))
         self.actionRQ4_vs_Q.setText(QtGui.QApplication.translate("MainWindow", "R vs Q", None, QtGui.QApplication.UnicodeUTF8))
         self.actionRQ4_vs_Q_2.setText(QtGui.QApplication.translate("MainWindow", "RQ4 vs Q", None, QtGui.QApplication.UnicodeUTF8))
-        self.actionRefresh_Datasets.setText(QtGui.QApplication.translate("MainWindow", "Refresh Datasets", None, QtGui.QApplication.UnicodeUTF8))
-        self.actionRefresh_Datasets.setShortcut(QtGui.QApplication.translate("MainWindow", "Meta+R", None, QtGui.QApplication.UnicodeUTF8))
+        self.actionRefresh_Data.setText(QtGui.QApplication.translate("MainWindow", "Refresh Data", None, QtGui.QApplication.UnicodeUTF8))
+        self.actionRefresh_Data.setShortcut(QtGui.QApplication.translate("MainWindow", "Meta+R", None, QtGui.QApplication.UnicodeUTF8))
         self.actionLoad_experiment.setText(QtGui.QApplication.translate("MainWindow", "Load", None, QtGui.QApplication.UnicodeUTF8))
         self.actionLoad_experiment.setShortcut(QtGui.QApplication.translate("MainWindow", "Meta+N", None, QtGui.QApplication.UnicodeUTF8))
         self.actionSave_experiment.setText(QtGui.QApplication.translate("MainWindow", "Save", None, QtGui.QApplication.UnicodeUTF8))
@@ -590,4 +593,5 @@ class Ui_MainWindow(object):
         self.actionSave_File.setShortcut(QtGui.QApplication.translate("MainWindow", "Meta+S", None, QtGui.QApplication.UnicodeUTF8))
         self.actionLoad_File.setText(QtGui.QApplication.translate("MainWindow", "Load", None, QtGui.QApplication.UnicodeUTF8))
         self.actionLoad_File.setShortcut(QtGui.QApplication.translate("MainWindow", "Meta+O", None, QtGui.QApplication.UnicodeUTF8))
+        self.actionBatch_Fit.setText(QtGui.QApplication.translate("MainWindow", "Batch Fit", None, QtGui.QApplication.UnicodeUTF8))
 
