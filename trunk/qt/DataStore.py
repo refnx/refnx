@@ -89,6 +89,8 @@ class DataStore(object):
         
     def removeDataObject(self, name):
         del(self.dataObjects[name])
+        del(self.names[self.names.index(name)])
+        self.numDataObjects -= 1
         
     def refresh(self):
         for dataObject in self:

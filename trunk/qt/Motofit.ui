@@ -508,6 +508,7 @@
     </property>
     <addaction name="actionLoad_Data"/>
     <addaction name="actionRefresh_Data"/>
+    <addaction name="actionRemove_Data"/>
     <addaction name="separator"/>
     <addaction name="actionSave_Fit"/>
    </widget>
@@ -1186,6 +1187,11 @@
   <action name="actionBatch_Fit">
    <property name="text">
     <string>Batch Fit</string>
+   </property>
+  </action>
+  <action name="actionRemove_Data">
+   <property name="text">
+    <string>Remove Data</string>
    </property>
   </action>
  </widget>
