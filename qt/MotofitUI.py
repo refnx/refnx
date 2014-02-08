@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'Motofit.ui'
 #
-# Created: Fri Feb  7 22:27:50 2014
+# Created: Sat Feb  8 12:07:59 2014
 #      by: pyside-uic 0.2.15 running on PySide 1.2.1
 #
 # WARNING! All changes made in this file will be lost!
@@ -519,8 +519,11 @@ class Ui_MainWindow(object):
         self.actionLoad_File.setObjectName("actionLoad_File")
         self.actionBatch_Fit = QtGui.QAction(MainWindow)
         self.actionBatch_Fit.setObjectName("actionBatch_Fit")
+        self.actionRemove_Data = QtGui.QAction(MainWindow)
+        self.actionRemove_Data.setObjectName("actionRemove_Data")
         self.menuData.addAction(self.actionLoad_Data)
         self.menuData.addAction(self.actionRefresh_Data)
+        self.menuData.addAction(self.actionRemove_Data)
         self.menuData.addSeparator()
         self.menuData.addAction(self.actionSave_Fit)
         self.menuModel.addAction(self.actionSave_Model)
@@ -594,4 +597,5 @@ class Ui_MainWindow(object):
         self.actionLoad_File.setText(QtGui.QApplication.translate("MainWindow", "Load", None, QtGui.QApplication.UnicodeUTF8))
         self.actionLoad_File.setShortcut(QtGui.QApplication.translate("MainWindow", "Meta+O", None, QtGui.QApplication.UnicodeUTF8))
         self.actionBatch_Fit.setText(QtGui.QApplication.translate("MainWindow", "Batch Fit", None, QtGui.QApplication.UnicodeUTF8))
+        self.actionRemove_Data.setText(QtGui.QApplication.translate("MainWindow", "Remove Data", None, QtGui.QApplication.UnicodeUTF8))
 

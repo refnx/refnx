@@ -33,7 +33,12 @@ class DataStoreModel(QtCore.QAbstractTableModel):
         self.beginInsertRows(QtCore.QModelIndex(), position, position + rows - 1)
         self.endInsertRows()
         return True
+
         
+    def removeRows(self, row, count):
+        self.beginRemoveRows(QtCore.QModelIndex(), row, row + count)
+        self.endRemoveRows()
+                
     def flags(self, index):
         if index.column() == 1:
             return (QtCore.Qt.ItemIsUserCheckable |  QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable)
@@ -86,6 +91,12 @@ class DataStoreModel(QtCore.QAbstractTableModel):
         self.insertRows(self.dataStore.numDataObjects)
         self.dataChanged.emit(QtCore.QModelIndex(),QtCore.QModelIndex())
     
+    def remove(self, name):
+        index = self.dataStore.names.index(name)
+        self.dataStore.removeDataObject(name)
+        self.removeRows(index, 0)
+        self.dataChanged.emit(QtCore.QModelIndex(),QtCore.QModelIndex())
+        
     def load(self, file):
         dataObject = self.dataStore.load(file)
         self.insertRows(self.dataStore.numDataObjects)

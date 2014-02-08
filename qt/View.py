@@ -265,6 +265,20 @@ class MyMainWindow(QtGui.QMainWindow):
         self.loadData(files)
 
     @QtCore.Slot()
+    def on_actionRemove_Data_triggered(self):
+        """
+            you remove data
+        """
+        datasets = list(self.dataStoreModel.dataStore.names)
+        del(datasets[datasets.index('theoretical')])
+        which_dataset, ok = QtGui.QInputDialog.getItem(self, "Which fit did you want to remove?", "dataset", datasets, editable=False)
+
+        if not ok:
+            return
+        self.reflectivitygraphs.removeTrace(self.dataStoreModel.dataStore[which_dataset])
+        self.dataStoreModel.remove(which_dataset)            
+        
+    @QtCore.Slot()
     def on_actionSave_Fit_triggered(self):
         fits = []
         for dataObject in self.dataStoreModel:
@@ -885,6 +899,15 @@ class MyReflectivityGraphs(FigureCanvas):
         self.axes[0].relim()
         self.axes[0].autoscale_view(None, True, True)
         self.draw()
+        
+    def removeTrace(self, dataObject):
+        if dataObject.line2D:
+            dataObject.line2D.remove()
+        if dataObject.line2Dfit:
+            dataObject.line2Dfit.remove()
+        if dataObject.line2Dresiduals:
+            dataObject.line2Dresiduals.remove()
+        self.draw()
                        
     def removeTraces(self):
         while len(self.axes[0].lines):
@@ -937,6 +960,11 @@ class MySLDGraphs(FigureCanvas):
         
         self.axes[0].relim()
         self.axes[0].autoscale(axis='both', tight = False, enable = True)
+        self.draw()
+        
+    def removeTrace(self, dataObject):
+        if dataObject.line2Dsld_profile:
+            dataObject.line2Dsld_profile.remove()
         self.draw()
         
     def removeTraces(self):
