@@ -350,13 +350,13 @@ class MyMainWindow(QtGui.QMainWindow):
             with open(modelFileName, 'w+') as f:
                 themodel.save(f)
 
-    def change_Q_range(self, qmin, qmax, numpnts):
+    def change_Q_range(self, qmin, qmax, numpnts, res):
         theoretical = self.dataStoreModel.dataStore['theoretical']
         
         theoretical.W_q = np.linspace(qmin, qmax, numpnts)
         theoretical.W_ref = np.resize(theoretical.W_ref, numpnts)
         theoretical.W_refSD = np.resize(theoretical.W_refSD, numpnts)
-        theoretical.W_qSD = np.resize(theoretical.W_qSD, numpnts) 
+        theoretical.W_qSD = theoretical.W_q * res / 100. 
         
         self.update_gui_modelChanged()
         
@@ -375,11 +375,13 @@ class MyMainWindow(QtGui.QMainWindow):
         qrangeGUI.qmin.setValue(qmin)
         qrangeGUI.qmax.setValue(qmax)
         
+        res = self.ui.res_SpinBox.value()
+        
         ok = qrangedialog.exec_()
         if ok:
             self.change_Q_range(qrangeGUI.qmin.value(),
                                 qrangeGUI.qmax.value(),
-                                qrangeGUI.numpnts.value())
+                                qrangeGUI.numpnts.value(), res)
             
     @QtCore.Slot()
     def on_actionLoad_Plugin_triggered(self):
@@ -439,7 +441,10 @@ class MyMainWindow(QtGui.QMainWindow):
         """
             you should do a fit
         """
-        if self.current_dataset is None:
+        if self.current_dataset is None or self.current_dataset.name == 'theoretical':
+            msgBox = QtGui.QMessageBox()
+            msgBox.setText("Please select a dataset to fit.")
+            msgBox.exec_()
             return
             
         theoreticalmodel = self.modelStoreModel.modelStore['theoretical']
