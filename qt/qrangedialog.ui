@@ -9,7 +9,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>348</width>
+    <width>295</width>
     <height>156</height>
    </rect>
   </property>
@@ -20,7 +20,17 @@
    <bool>true</bool>
   </property>
   <layout class="QGridLayout" name="gridLayout">
-   <item row="0" column="0">
+   <item row="1" column="1">
+    <widget class="QDoubleSpinBox" name="qmax">
+     <property name="decimals">
+      <number>4</number>
+     </property>
+     <property name="singleStep">
+      <double>0.000100000000000</double>
+     </property>
+    </widget>
+   </item>
+   <item row="0" column="1">
     <widget class="QDoubleSpinBox" name="qmin">
      <property name="suffix">
       <string/>
@@ -33,17 +43,17 @@
      </property>
     </widget>
    </item>
-   <item row="1" column="0">
-    <widget class="QDoubleSpinBox" name="qmax">
-     <property name="decimals">
-      <number>4</number>
+   <item row="3" column="1">
+    <widget class="QDialogButtonBox" name="buttonBox">
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
      </property>
-     <property name="singleStep">
-      <double>0.000100000000000</double>
+     <property name="standardButtons">
+      <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
      </property>
     </widget>
    </item>
-   <item row="2" column="0">
+   <item row="2" column="1">
     <widget class="QSpinBox" name="numpnts">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
@@ -71,13 +81,24 @@
      </property>
     </widget>
    </item>
-   <item row="3" column="0">
-    <widget class="QDialogButtonBox" name="buttonBox">
-     <property name="orientation">
-      <enum>Qt::Horizontal</enum>
+   <item row="0" column="0">
+    <widget class="QLabel" name="qminlabel">
+     <property name="text">
+      <string>Q min</string>
      </property>
-     <property name="standardButtons">
-      <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
+    </widget>
+   </item>
+   <item row="1" column="0">
+    <widget class="QLabel" name="qmaxlabel">
+     <property name="text">
+      <string>Q max</string>
+     </property>
+    </widget>
+   </item>
+   <item row="2" column="0">
+    <widget class="QLabel" name="numpntslabel">
+     <property name="text">
+      <string>Number of points</string>
      </property>
     </widget>
    </item>
