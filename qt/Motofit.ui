@@ -527,14 +527,15 @@
     <property name="title">
      <string>Help</string>
     </property>
+    <addaction name="actionAbout"/>
    </widget>
    <widget class="QMenu" name="menuPlot_type">
     <property name="title">
      <string>Fitting</string>
     </property>
     <addaction name="actionLogR_vs_Q"/>
+    <addaction name="actionR_vs_Q"/>
     <addaction name="actionRQ4_vs_Q"/>
-    <addaction name="actionRQ4_vs_Q_2"/>
     <addaction name="separator"/>
     <addaction name="actionBatch_Fit"/>
    </widget>
@@ -1128,12 +1129,18 @@
     <string>logR vs Q</string>
    </property>
   </action>
-  <action name="actionRQ4_vs_Q">
+  <action name="actionR_vs_Q">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>R vs Q</string>
    </property>
   </action>
-  <action name="actionRQ4_vs_Q_2">
+  <action name="actionRQ4_vs_Q">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>RQ4 vs Q</string>
    </property>
@@ -1199,6 +1206,11 @@
   <action name="actionChange_Q_range">
    <property name="text">
     <string>Change Q range</string>
+   </property>
+  </action>
+  <action name="actionAbout">
+   <property name="text">
+    <string>About</string>
    </property>
   </action>
  </widget>
