@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'Motofit.ui'
 #
-# Created: Sun Feb  9 13:13:44 2014
+# Created: Sun Feb  9 14:51:52 2014
 #      by: pyside-uic 0.2.15 running on PySide 1.2.1
 #
 # WARNING! All changes made in this file will be lost!
@@ -500,10 +500,12 @@ class Ui_MainWindow(object):
         self.actionLogR_vs_Q.setCheckable(True)
         self.actionLogR_vs_Q.setChecked(True)
         self.actionLogR_vs_Q.setObjectName("actionLogR_vs_Q")
+        self.actionR_vs_Q = QtGui.QAction(MainWindow)
+        self.actionR_vs_Q.setCheckable(True)
+        self.actionR_vs_Q.setObjectName("actionR_vs_Q")
         self.actionRQ4_vs_Q = QtGui.QAction(MainWindow)
+        self.actionRQ4_vs_Q.setCheckable(True)
         self.actionRQ4_vs_Q.setObjectName("actionRQ4_vs_Q")
-        self.actionRQ4_vs_Q_2 = QtGui.QAction(MainWindow)
-        self.actionRQ4_vs_Q_2.setObjectName("actionRQ4_vs_Q_2")
         self.actionRefresh_Data = QtGui.QAction(MainWindow)
         self.actionRefresh_Data.setObjectName("actionRefresh_Data")
         self.actionLoad_experiment = QtGui.QAction(MainWindow)
@@ -523,6 +525,8 @@ class Ui_MainWindow(object):
         self.actionRemove_Data.setObjectName("actionRemove_Data")
         self.actionChange_Q_range = QtGui.QAction(MainWindow)
         self.actionChange_Q_range.setObjectName("actionChange_Q_range")
+        self.actionAbout = QtGui.QAction(MainWindow)
+        self.actionAbout.setObjectName("actionAbout")
         self.menuData.addAction(self.actionLoad_Data)
         self.menuData.addAction(self.actionRefresh_Data)
         self.menuData.addAction(self.actionRemove_Data)
@@ -534,9 +538,10 @@ class Ui_MainWindow(object):
         self.menuModel.addAction(self.actionChange_Q_range)
         self.menuModel.addSeparator()
         self.menuModel.addAction(self.actionLoad_Plugin)
+        self.menuHelp.addAction(self.actionAbout)
         self.menuPlot_type.addAction(self.actionLogR_vs_Q)
+        self.menuPlot_type.addAction(self.actionR_vs_Q)
         self.menuPlot_type.addAction(self.actionRQ4_vs_Q)
-        self.menuPlot_type.addAction(self.actionRQ4_vs_Q_2)
         self.menuPlot_type.addSeparator()
         self.menuPlot_type.addAction(self.actionBatch_Fit)
         self.menuFile.addAction(self.actionSave_File)
@@ -587,8 +592,8 @@ class Ui_MainWindow(object):
         self.actionSave_Model.setText(QtGui.QApplication.translate("MainWindow", "Save Model", None, QtGui.QApplication.UnicodeUTF8))
         self.actionLoad_Model.setText(QtGui.QApplication.translate("MainWindow", "Load Model", None, QtGui.QApplication.UnicodeUTF8))
         self.actionLogR_vs_Q.setText(QtGui.QApplication.translate("MainWindow", "logR vs Q", None, QtGui.QApplication.UnicodeUTF8))
-        self.actionRQ4_vs_Q.setText(QtGui.QApplication.translate("MainWindow", "R vs Q", None, QtGui.QApplication.UnicodeUTF8))
-        self.actionRQ4_vs_Q_2.setText(QtGui.QApplication.translate("MainWindow", "RQ4 vs Q", None, QtGui.QApplication.UnicodeUTF8))
+        self.actionR_vs_Q.setText(QtGui.QApplication.translate("MainWindow", "R vs Q", None, QtGui.QApplication.UnicodeUTF8))
+        self.actionRQ4_vs_Q.setText(QtGui.QApplication.translate("MainWindow", "RQ4 vs Q", None, QtGui.QApplication.UnicodeUTF8))
         self.actionRefresh_Data.setText(QtGui.QApplication.translate("MainWindow", "Refresh Data", None, QtGui.QApplication.UnicodeUTF8))
         self.actionRefresh_Data.setShortcut(QtGui.QApplication.translate("MainWindow", "Meta+R", None, QtGui.QApplication.UnicodeUTF8))
         self.actionLoad_experiment.setText(QtGui.QApplication.translate("MainWindow", "Load", None, QtGui.QApplication.UnicodeUTF8))
@@ -603,4 +608,5 @@ class Ui_MainWindow(object):
         self.actionBatch_Fit.setText(QtGui.QApplication.translate("MainWindow", "Batch Fit", None, QtGui.QApplication.UnicodeUTF8))
         self.actionRemove_Data.setText(QtGui.QApplication.translate("MainWindow", "Remove Data", None, QtGui.QApplication.UnicodeUTF8))
         self.actionChange_Q_range.setText(QtGui.QApplication.translate("MainWindow", "Change Q range", None, QtGui.QApplication.UnicodeUTF8))
+        self.actionAbout.setText(QtGui.QApplication.translate("MainWindow", "About", None, QtGui.QApplication.UnicodeUTF8))
 

@@ -859,7 +859,7 @@ class MyReflectivityGraphs(FigureCanvas):
         self.figure = Figure(facecolor=(1,1,1), edgecolor=(0,0,0))
         #reflectivity graph
         self.axes = []
-        ax = self.figure.add_axes([0.1,0.22,0.85,0.75])
+        ax = self.figure.add_axes([0.1,0.15,0.85,0.8])
         self.axes.append(ax)
         
         self.axes[0].autoscale(axis='both', tight = False, enable = True)
