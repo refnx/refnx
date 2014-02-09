@@ -19,6 +19,7 @@ import os.path
 from copy import deepcopy
 import numpy as np
 import pickle
+import DataStore
 import math
 import tempfile
 import shutil
@@ -136,16 +137,19 @@ class MyMainWindow(QtGui.QMainWindow):
         for url in urls:
             try:
                 self.loadData([url.toLocalFile()])
+                return
             except Exception as inst:
                 pass
             
             try:
                 self.loadModel(url.toLocalFile())
+                return
             except Exception:
                 pass
                 
             try:
                 self.__restoreState(url.toLocalFile())
+                return
             except Exception:
                 pass
                                 
@@ -169,17 +173,16 @@ class MyMainWindow(QtGui.QMainWindow):
         
         try:        
             tempdirectory = tempfile.mkdtemp()
-            
+    
             with open(os.path.join(tempdirectory, 'state'), 'wb') as f:
-                pickle.dump(state, f, -1)
+                pickle.dump(state, f, -1)      
 
             with zipfile.ZipFile(experimentFileName, 'w') as zip:
-                GuiModel.zipper(tempdirectory, zip)
-
+                DataStore.zipper(tempdirectory, zip)
         except Exception as e:
             print type(e), e.message
         finally: 
-            shutil.rmtree(tempdirectory)
+          shutil.rmtree(tempdirectory)
         
     @QtCore.Slot()
     def on_actionSave_File_triggered(self):
@@ -195,8 +198,10 @@ class MyMainWindow(QtGui.QMainWindow):
         self.__saveState(experimentFileName)
     
     def __restoreState(self, experimentFileName):
+        state = None
         try:
             tempdirectory = tempfile.mkdtemp()
+            print tempdirectory
             with zipfile.ZipFile(experimentFileName, 'r') as zip:
                 zip.extractall(tempdirectory)
 
