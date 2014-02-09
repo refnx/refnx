@@ -144,6 +144,11 @@ class MyMainWindow(QtGui.QMainWindow):
             except Exception:
                 pass
                 
+            try:
+                self.__restoreState(url.toLocalFile())
+            except Exception:
+                pass
+                                
     @QtCore.Slot(QtGui.QDragEnterEvent)
     def dragEnterEvent(self, event):
         m = event.mimeData()
