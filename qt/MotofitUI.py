@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'Motofit.ui'
 #
-# Created: Sat Feb  8 12:07:59 2014
+# Created: Sun Feb  9 13:13:44 2014
 #      by: pyside-uic 0.2.15 running on PySide 1.2.1
 #
 # WARNING! All changes made in this file will be lost!
@@ -521,6 +521,8 @@ class Ui_MainWindow(object):
         self.actionBatch_Fit.setObjectName("actionBatch_Fit")
         self.actionRemove_Data = QtGui.QAction(MainWindow)
         self.actionRemove_Data.setObjectName("actionRemove_Data")
+        self.actionChange_Q_range = QtGui.QAction(MainWindow)
+        self.actionChange_Q_range.setObjectName("actionChange_Q_range")
         self.menuData.addAction(self.actionLoad_Data)
         self.menuData.addAction(self.actionRefresh_Data)
         self.menuData.addAction(self.actionRemove_Data)
@@ -528,6 +530,8 @@ class Ui_MainWindow(object):
         self.menuData.addAction(self.actionSave_Fit)
         self.menuModel.addAction(self.actionSave_Model)
         self.menuModel.addAction(self.actionLoad_Model)
+        self.menuModel.addSeparator()
+        self.menuModel.addAction(self.actionChange_Q_range)
         self.menuModel.addSeparator()
         self.menuModel.addAction(self.actionLoad_Plugin)
         self.menuPlot_type.addAction(self.actionLogR_vs_Q)
@@ -598,4 +602,5 @@ class Ui_MainWindow(object):
         self.actionLoad_File.setShortcut(QtGui.QApplication.translate("MainWindow", "Meta+O", None, QtGui.QApplication.UnicodeUTF8))
         self.actionBatch_Fit.setText(QtGui.QApplication.translate("MainWindow", "Batch Fit", None, QtGui.QApplication.UnicodeUTF8))
         self.actionRemove_Data.setText(QtGui.QApplication.translate("MainWindow", "Remove Data", None, QtGui.QApplication.UnicodeUTF8))
+        self.actionChange_Q_range.setText(QtGui.QApplication.translate("MainWindow", "Change Q range", None, QtGui.QApplication.UnicodeUTF8))
 

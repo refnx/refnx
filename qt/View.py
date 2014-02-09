@@ -14,6 +14,7 @@ import pyplatypus.analysis.Model as Model
 import pyplatypus.analysis.reflect as reflect
 import DataObject
 import limitsUI
+import qrangedialogUI
 import os.path
 from copy import deepcopy
 import numpy as np
@@ -348,7 +349,38 @@ class MyMainWindow(QtGui.QMainWindow):
              
             with open(modelFileName, 'w+') as f:
                 themodel.save(f)
+
+    def change_Q_range(self, qmin, qmax, numpnts):
+        theoretical = self.dataStoreModel.dataStore['theoretical']
+        
+        theoretical.W_q = np.linspace(qmin, qmax, numpnts)
+        theoretical.W_ref = np.resize(theoretical.W_ref, numpnts)
+        theoretical.W_refSD = np.resize(theoretical.W_refSD, numpnts)
+        theoretical.W_qSD = np.resize(theoretical.W_qSD, numpnts) 
+        
+        self.update_gui_modelChanged()
+        
     
+    @QtCore.Slot()
+    def on_actionChange_Q_range_triggered(self):
+        theoretical = self.dataStoreModel.dataStore['theoretical']
+        qmin = theoretical.W_q[0]
+        qmax = theoretical.W_q[-1]
+        numpnts = len(theoretical.W_q)        
+
+        qrangedialog = QtGui.QDialog()
+        qrangeGUI = qrangedialogUI.Ui_qrange()
+        qrangeGUI.setupUi(qrangedialog)
+        qrangeGUI.numpnts.setValue(numpnts)
+        qrangeGUI.qmin.setValue(qmin)
+        qrangeGUI.qmax.setValue(qmax)
+        
+        ok = qrangedialog.exec_()
+        if ok:
+            self.change_Q_range(qrangeGUI.qmin.value(),
+                                qrangeGUI.qmax.value(),
+                                qrangeGUI.numpnts.value())
+            
     @QtCore.Slot()
     def on_actionLoad_Plugin_triggered(self):
         #load a model plugin

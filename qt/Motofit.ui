@@ -519,6 +519,8 @@
     <addaction name="actionSave_Model"/>
     <addaction name="actionLoad_Model"/>
     <addaction name="separator"/>
+    <addaction name="actionChange_Q_range"/>
+    <addaction name="separator"/>
     <addaction name="actionLoad_Plugin"/>
    </widget>
    <widget class="QMenu" name="menuHelp">
@@ -1192,6 +1194,11 @@
   <action name="actionRemove_Data">
    <property name="text">
     <string>Remove Data</string>
+   </property>
+  </action>
+  <action name="actionChange_Q_range">
+   <property name="text">
+    <string>Change Q range</string>
    </property>
   </action>
  </widget>
