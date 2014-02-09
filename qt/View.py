@@ -400,6 +400,12 @@ class MyMainWindow(QtGui.QMainWindow):
 
     @QtCore.Slot()
     def on_actionBatch_Fit_triggered(self):
+        if self.dataStoreModel.dataStore.numDataObjects < 2:
+            msgBox = QtGui.QMessageBox()
+            msgBox.setText("You have no loaded datasets")
+            msgBox.exec_()
+            return
+            
         theoreticalmodel = self.modelStoreModel.modelStore['theoretical']
         theoreticalmodel.defaultlimits()              
             
