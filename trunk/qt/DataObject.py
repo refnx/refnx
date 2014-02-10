@@ -169,7 +169,7 @@ class DataObject(reflectdataset.ReflectDataset):
             for key in self.__requiredgraphproperties:
                 self.graph_properties['line2Dsld_profile_properties'][key] = artist.getp(self.line2Dsld_profile, key)
         
-    def do_a_fit(self, model, fitPlugin = None):
+    def do_a_fit(self, model, fitPlugin = None, method = None):
         '''
             TODO this should be somewhat refactored into GUI code
         '''
@@ -194,9 +194,9 @@ class DataObject(reflectdataset.ReflectDataset):
             RFO = fitPlugin(**callerInfo)
         else:
             RFO = reflect.ReflectivityFitObject(**callerInfo)
-            
+        
         RFO.progress = self.progress
-        model.parameters, model.uncertainties, self.chi2 = RFO.fit()
+        model.parameters, model.uncertainties, self.chi2 = RFO.fit(method = method)
         
         self.progressdialog.setValue(100)
         
@@ -209,6 +209,7 @@ class DataObject(reflectdataset.ReflectDataset):
     def progress(self, iterations, convergence, chi2, *args):
         self.progressdialog.setValue(int(convergence * 100))
         if self.progressdialog.wasCanceled():
+            raise fitting.FitAbortedException('Fit aborted')
             return False
         else:  
             return True

@@ -6,6 +6,18 @@ import scipy.linalg
 from scipy.optimize import leastsq 
 import numdifftools as ndt
 
+class FitAbortedException(Exception):
+    '''
+     An exception that the user can raise in their customised FitObjects
+     to indicate that a fit has been aborted
+    '''
+    
+    def __init__(self, message):
+        self.message = message
+        
+    def __str__(self):
+        return repr(self.message)
+
 class FitObject(object):
     '''
         
@@ -21,6 +33,8 @@ class FitObject(object):
             -OR-
             option 2) Override the FitObject.energy() method.
                     If you override the FitObject.energy() method you no longer have to supply a fitfunction, or a costfunction. This method should specify how the cost metric varies as the fitted parameters vary.
+                    
+        Note that if you use the LM option of this class's fit() method, then the energy() method is ignored. i.e. only options 1) and 2.1) are usable.
             '''
             
     
@@ -48,9 +62,7 @@ class FitObject(object):
         limits - an np.ndarray that contains the lower and upper limits for all the parameters. It should have shape (2, np.size(parameters)).
                 
         costfunction - a callable costfunction with the signature costfunction(model, ydata, edata, parameters). The fullset of parameters is passed, not just the ones being varied. Supply this function, or override the energy method of this class, to use something other than the default of chi2.
-        
-        You can also choose to do a Levenberg Marquardt fit instead, by using the LMfit method.                 
-                        
+                                
             Object attributes:
                 self.xdata - see above for definition
                 self.ydata - see above for definition
@@ -116,19 +128,26 @@ class FitObject(object):
         #limits for those that are varying.
         self.fitted_limits = self.limits[:, self.fitted_parameters]
         
-    def residuals(self, parameters = None):
+    def residuals(self, parameters = None, args = ()):
+        '''
+            return the residuals for the fit object
+        '''
+
         test_parameters = np.copy(self.parameters)
 
+        if not len(args):
+            args = self.args
+            
         if parameters is not None:
             test_parameters[self.fitted_parameters] = parameters
 
-        modeldata = self.model(test_parameters, args = self.args)
+        modeldata = self.model(test_parameters, *args)
 
         if self.edata is None:
             sigma = np.atleast_1d(1.)
         else:
             sigma = self.edata
-
+        
         return (self.ydata - modeldata) / sigma
 
             
@@ -136,12 +155,9 @@ class FitObject(object):
         '''
             
             The default cost function for the fit object is chi2 - the sum of the squared residuals divided by the error bars for each point.
-            params - np.ndarray containing the parameters that are being fitted, i.e. this array is np.size(self.fitted_parameters) long.
-                    If this is omitted the energy function uses the defaults that we supplied when the object was constructed.
+            params - np.ndarray containing the parameters that are being fitted, i.e. this array is np.size(self.fitted_parameters) long.  If this is omitted the energy function uses the defaults that we supplied when the object was constructed.
             
             If you require a different cost function provide a subclass that overloads this method. An alternative is to provide the costfunction keyword to the constructor.
-            
-            Note that fitting with Levenberg Marquardt assumes that this function returns a vector containing residuals. The fit method sets an object attribute self._LMleastsquare=True if Levenberg Marquardt fitting is selected.
             
             Returns chi2 by default
             
@@ -149,29 +165,31 @@ class FitObject(object):
         '''
         if not len(args):
             args = self.args
-            
-        test_parameters = np.copy(self.parameters)
-    
-        if parameters is not None:
-            test_parameters[self.fitted_parameters] = parameters
-        
-        modeldata = self.model(test_parameters, *args)
-        
-        if self.edata is None:
-            sigma = np.atleast_1d(1.)
-        else:
-            sigma = self.edata
         
         if self.costfunction:
-            return self.costfunction(modeldata, self.ydata, sigma, test_parameters, *args)
-        else:
-            #the following is required because the LMfit method requires only the residuals to be returned. Whereas the fit method utilising DE will require square energy.
-            resid = (self.ydata - modeldata) / sigma
-            if not self._LMleastsquare:
-                return np.sum(np.power(resid, 2))
+            test_parameters = np.copy(self.parameters)
+    
+            if parameters is not None:
+                test_parameters[self.fitted_parameters] = parameters
+        
+            modeldata = self.model(test_parameters, *args)
+            
+            if self.edata is None:
+                sigma = np.atleast_1d(1.)
             else:
-                return resid                
+                sigma = self.edata
 
+            return self.costfunction(modeldata,
+                                         self.ydata,
+                                          sigma,
+                                           test_parameters,
+                                            *args)
+        
+        else:
+            residuals = self.residuals(parameters, *args)
+            return np.sum(np.power(residuals, 2))
+
+        
     def model(self, parameters, args = ()):
         '''
             
@@ -196,10 +214,16 @@ class FitObject(object):
     def fit(self, method = None):
         '''
             start the fit.  This method returns 
-            parameters, uncertainties, chi2 = FitObject.fit()            
-            If method == 'LM', then a Levenberg Marquardt fit is used.
+            
+            parameters, uncertainties, chi2 = FitObject.fit()
+                    
+            method - select the fitting algorithm
+                    None = Differential Evolution
+                    'LM' = Levenberg Marquardt
+                    
+                    If you select 'LM', then normal least squares is performed and your cost function is ignored. In addition, the LM optimiser minimisers the sum of the square of the array returned by the residuals() method, it does not minimise the value returned by the energy() method. In practice this means you can't specify your own costfunction, or subclass energy().
+                       
         '''
-        self._LMleastsquare = False
         
         if method is None:
             de = DEsolver.DEsolver(self.energy,
@@ -215,19 +239,17 @@ class FitObject(object):
 
         elif method == 'LM':
             #do a Levenberg Marquardt fit instead
-            self._LMleastsquare = True
+            
             initialparams = self.parameters[self.fitted_parameters]
-            stuff = leastsq(self.energy,
+            popt, pcov, infodict, mesg, ier = leastsq(self.residuals,
                                   initialparams,
                                    args = self.args,
                                    maxfev=100000,
                                     full_output = True) 
-            popt = stuff[0]
-            pcov = stuff[1]
             
             self.covariance = pcov
             self.parameters[self.fitted_parameters] = popt
-            self.chi2 = np.sum(np.power(self.energy(), 2))
+            self.chi2 = np.sum(np.power(self.residuals(popt, args = self.args), 2))
 
         if self.edata is None:
             self.covariance *= self.chi2 / (self.ydata.size - self.fitted_parameters.size)

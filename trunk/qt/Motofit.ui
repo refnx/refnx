@@ -533,9 +533,24 @@
     <property name="title">
      <string>Fitting</string>
     </property>
-    <addaction name="actionLogR_vs_Q"/>
-    <addaction name="actionR_vs_Q"/>
-    <addaction name="actionRQ4_vs_Q"/>
+    <widget class="QMenu" name="menuAlgorithm">
+     <property name="title">
+      <string>Algorithm</string>
+     </property>
+     <addaction name="actionDifferential_Evolution"/>
+     <addaction name="actionLevenberg_Marquardt"/>
+    </widget>
+    <widget class="QMenu" name="menuFit_as">
+     <property name="title">
+      <string>Fit as</string>
+     </property>
+     <addaction name="actionLog_R_vs_Q"/>
+     <addaction name="actionR_vs_Q_2"/>
+     <addaction name="actionRQ4_vs_Q_2"/>
+    </widget>
+    <addaction name="menuFit_as"/>
+    <addaction name="separator"/>
+    <addaction name="menuAlgorithm"/>
     <addaction name="separator"/>
     <addaction name="actionBatch_Fit"/>
    </widget>
@@ -1211,6 +1226,49 @@
   <action name="actionAbout">
    <property name="text">
     <string>About</string>
+   </property>
+  </action>
+  <action name="actionDifferential_Evolution">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Differential Evolution</string>
+   </property>
+  </action>
+  <action name="actionLevenberg_Marquardt">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Levenberg Marquardt</string>
+   </property>
+  </action>
+  <action name="actionLog_R_vs_Q">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>log R vs Q</string>
+   </property>
+  </action>
+  <action name="actionR_vs_Q_2">
+   <property name="text">
+    <string>R vs Q</string>
+   </property>
+  </action>
+  <action name="actionRQ4_vs_Q_2">
+   <property name="text">
+    <string>RQ4 vs Q</string>
    </property>
   </action>
  </widget>
