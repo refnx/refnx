@@ -12,6 +12,7 @@ import matplotlib.artist as artist
 import GuiModel
 import pyplatypus.analysis.Model as Model
 import pyplatypus.analysis.reflect as reflect
+import pyplatypus.analysis.fitting as fitting
 import DataObject
 import limitsUI
 import qrangedialogUI
@@ -60,6 +61,7 @@ class MyMainWindow(QtGui.QMainWindow):
         dataTuple = (tempq, tempr, tempe, tempdq)
         
         self.current_dataset = None
+        self.fittingAlgorithm = None
         self.theoretical = DataObject.DataObject(dataTuple = dataTuple)
 
         theoreticalmodel = Model.Model(parameters=parameters, fitted_parameters = fitted_parameters)
@@ -221,20 +223,23 @@ class MyMainWindow(QtGui.QMainWindow):
             self.dataStoreModel.dataStore = state['dataStoreModel.dataStore']
             self.modelStoreModel.modelStore = state['modelStoreModel.modelStore']
             self.ui.plainTextEdit.setPlainText(state['history'])
-            self.current_dataset = self.dataStoreModel.dataStore[state['current_dataset_name']]
         except KeyError as e:
             print type(e), e.message
             return
-        
+    
         self.dataStoreModel.modelReset.emit() 
         self.modelStoreModel.modelReset.emit()
-        
+
+        dataStore = self.dataStoreModel.dataStore
+        self.current_dataset = dataStore[state['current_dataset_name']]
+        self.ui.dataset_comboBox.setCurrentIndex(dataStore.names.index(self.current_dataset.name))
+            
         #remove and add dataObjectsToGraphs
         self.reflectivitygraphs.removeTraces()
         self.sldgraphs.removeTraces()
-        self.add_dataObjectsToGraphs(self.dataStoreModel.dataStore)
+        self.add_dataObjectsToGraphs(dataStore)
                     
-        self.theoretical = self.dataStoreModel.dataStore['theoretical']
+        self.theoretical = dataStore['theoretical']
 #        self.reflectivitygraphs.axes[0].lines.remove(self.theoretical.line2D)
 #        self.reflectivitygraphs.axes[1].lines.remove(self.theoretical.line2Dresiduals)
     
@@ -359,6 +364,18 @@ class MyMainWindow(QtGui.QMainWindow):
              
             with open(modelFileName, 'w+') as f:
                 themodel.save(f)
+                
+    @QtCore.Slot()
+    def on_actionDifferential_Evolution_triggered(self):
+        if self.ui.actionDifferential_Evolution.isChecked():
+            self.fittingAlgorithm = None
+            self.ui.actionLevenberg_Marquardt.setChecked(False)
+        
+    @QtCore.Slot()
+    def on_actionLevenberg_Marquardt_triggered(self):
+        if self.ui.actionLevenberg_Marquardt.isChecked():
+            self.fittingAlgorithm = 'LM'
+            self.ui.actionDifferential_Evolution.setChecked(False)
 
     def change_Q_range(self, qmin, qmax, numpnts, res):
         theoretical = self.dataStoreModel.dataStore['theoretical']
@@ -474,15 +491,17 @@ class MyMainWindow(QtGui.QMainWindow):
         
         if not alreadygotlimits:
             theoreticalmodel.defaultlimits()              
-            
-        ok, limits = self.get_limits(theoreticalmodel.parameters,
+        
+        if self.fittingAlgorithm is None:
+            ok, limits = self.get_limits(theoreticalmodel.parameters,
                                                      theoreticalmodel.fitted_parameters,
                                                       theoreticalmodel.limits)
         
-        if not ok:
-            return
+            if not ok:
+                return
         
-        theoreticalmodel.limits = np.copy(limits)                                
+            theoreticalmodel.limits = np.copy(limits)                                
+            
         self.do_a_fit_and_add_to_gui(self.current_dataset, theoreticalmodel)
       
     @QtCore.Slot()
@@ -505,21 +524,29 @@ class MyMainWindow(QtGui.QMainWindow):
         if not alreadygotlimits:
             theoreticalmodel.defaultlimits()              
             
-        ok, limits = self.get_limits(theoreticalmodel.parameters,
-                                                     theoreticalmodel.fitted_parameters,
-                                                      theoreticalmodel.limits)
+        if self.fittingAlgorithm is None:
+            ok, limits = self.get_limits(theoreticalmodel.parameters,
+                                                         theoreticalmodel.fitted_parameters,
+                                                          theoreticalmodel.limits)
         
-        if not ok:
-            return
+            if not ok:
+                return
         
-        theoreticalmodel.limits = np.copy(limits)                                
+            theoreticalmodel.limits = np.copy(limits)
+            
         self.do_a_fit_and_add_to_gui(self.current_dataset, theoreticalmodel, fitPlugin = self.fitPlugin['rfo'])  
         
         
     def do_a_fit_and_add_to_gui(self, dataset, model, fitPlugin = None):
         print "___________________________________________________"        
         print "fitting to:", dataset.name
-        dataset.do_a_fit(model, fitPlugin = fitPlugin)
+        try:
+            print self.fittingAlgorithm
+            dataset.do_a_fit(model, fitPlugin = fitPlugin, method = self.fittingAlgorithm)
+        except fitting.FitAbortedException as e:
+            print 'you aborted the fit'
+            raise e
+            
         print "Chi2 :", dataset.chi2 / dataset.numpoints
         np.set_printoptions(suppress=True, precision = 4)
         print 'parameters:'
