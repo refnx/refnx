@@ -60,9 +60,13 @@ class MyMainWindow(QtGui.QMainWindow):
         tempdq  = np.copy(tempq) * 5 / 100.
         dataTuple = (tempq, tempr, tempe, tempdq)
         
+
         self.current_dataset = None
-        self.transform = 'logY'
-        self.fittingAlgorithm = 'DE'
+        
+        #holds miscellaneous information on program settings
+        self.settings = ProgramSettings()
+        self.restoreSettings()
+                
         self.theoretical = DataObject.DataObject(dataTuple = dataTuple)
 
         theoreticalmodel = Model.Model(parameters=parameters, fitted_parameters = fitted_parameters)
@@ -170,10 +174,8 @@ class MyMainWindow(QtGui.QMainWindow):
         state = {}
         state['dataStoreModel.dataStore'] = self.dataStoreModel.dataStore
         state['modelStoreModel.modelStore'] = self.modelStoreModel.modelStore
-        if self.current_dataset:
-            state['current_dataset_name'] = self.current_dataset.name
         state['history'] = self.ui.plainTextEdit.toPlainText()
-        state['transform'] = self.transform
+        state['settings'] = self.settings
         
         try:        
             tempdirectory = tempfile.mkdtemp()
@@ -220,11 +222,12 @@ class MyMainWindow(QtGui.QMainWindow):
         if not state:
             print "Couldn't load experiment"
             return
-        
+
         try:
             self.dataStoreModel.dataStore = state['dataStoreModel.dataStore']
             self.modelStoreModel.modelStore = state['modelStoreModel.modelStore']
             self.ui.plainTextEdit.setPlainText(state['history'])
+            self.settings = state['settings']
         except KeyError as e:
             print type(e), e.message
             return
@@ -233,11 +236,7 @@ class MyMainWindow(QtGui.QMainWindow):
         self.modelStoreModel.modelReset.emit()
 
         dataStore = self.dataStoreModel.dataStore
-        self.current_dataset = dataStore[state['current_dataset_name']]
-        self.ui.dataset_comboBox.setCurrentIndex(dataStore.names.index(self.current_dataset.name))
-            
-        self.transform = state['transform']
-        self.settransformoption(self.transform)
+        self.restoreSettings()
         
         #remove and add dataObjectsToGraphs
         self.reflectivitygraphs.removeTraces()
@@ -259,6 +258,31 @@ class MyMainWindow(QtGui.QMainWindow):
                                                  linestyle='-', lw=2, label = 'theoretical')[0]
         self.reflectivitygraphs.draw()
 
+
+    def restoreSettings(self):
+        '''
+            applies the program settings to the GUI
+        '''
+        
+        dataStore = self.dataStoreModel.dataStore
+        modelStore = self.modelStoreModel.modelStore
+        
+        try:
+            self.current_dataset = dataStore[self.settings.current_dataset_name]
+            self.ui.dataset_comboBox.setCurrentIndex(dataStore.names.index(self.current_dataset.name))
+            self.ui.model_comboBox.setCurrentIndex(modelStore.names.index(self.settings.current_model_name))
+        except AttributeError, KeyError:
+            pass
+        
+        self.ui.actionLevenberg_Marquardt.setChecked(False)
+        self.ui.actionDifferential_Evolution.setChecked(False)
+        if self.settings.fittingAlgorithm == 'LM':
+            self.ui.actionLevenberg_Marquardt.setChecked(True)
+        elif self.settings.fittingAlgorithm == 'DE':
+            self.ui.actionDifferential_Evolution.setChecked(True)
+
+        self.settransformoption(self.settings.transform)
+        
     @QtCore.Slot()
     def on_actionLoad_File_triggered(self):
         experimentFileName, ok = QtGui.QFileDialog.getOpenFileName(self,
@@ -373,13 +397,13 @@ class MyMainWindow(QtGui.QMainWindow):
     @QtCore.Slot()
     def on_actionDifferential_Evolution_triggered(self):
         if self.ui.actionDifferential_Evolution.isChecked():
-            self.fittingAlgorithm = 'DE'
+            self.settings.fittingAlgorithm = 'DE'
             self.ui.actionLevenberg_Marquardt.setChecked(False)
         
     @QtCore.Slot()
     def on_actionLevenberg_Marquardt_triggered(self):
         if self.ui.actionLevenberg_Marquardt.isChecked():
-            self.fittingAlgorithm = 'LM'
+            self.settings.fittingAlgorithm = 'LM'
             self.ui.actionDifferential_Evolution.setChecked(False)
 
     def change_Q_range(self, qmin, qmax, numpnts, res):
@@ -414,7 +438,29 @@ class MyMainWindow(QtGui.QMainWindow):
             self.change_Q_range(qrangeGUI.qmin.value(),
                                 qrangeGUI.qmax.value(),
                                 qrangeGUI.numpnts.value(), res)
-            
+    
+
+    @QtCore.Slot()
+    def on_actionTake_Snapshot_triggered(self):
+        print 'ok'
+
+                                
+    @QtCore.Slot()
+    def on_actionResolution_smearing_triggered(self):
+        currentVal = self.settings.quad_order
+        value, ok = QtGui.QInputDialog.getInt(self,
+                                             'Resolution Smearing',
+                                              'Number of points for Gaussian Quadrature',
+                                              currentVal,
+                                              17)
+        if not ok:
+            return
+        self.settings.quad_order = value
+        theoreticalmodel = self.modelStoreModel.modelStore['theoretical']
+        theoreticalmodel.quad_order = value
+        
+        self.update_gui_modelChanged()
+                
     @QtCore.Slot()
     def on_actionLoad_Plugin_triggered(self):
         #load a model plugin
@@ -430,7 +476,7 @@ class MyMainWindow(QtGui.QMainWindow):
             
         theoreticalmodel = self.modelStoreModel.modelStore['theoretical']
         theoreticalmodel.defaultlimits()              
-        if self.fittingAlgorithm != 'LM':
+        if self.settings.fittingAlgorithm != 'LM':
             ok, limits = self.get_limits(theoreticalmodel.parameters,
                                                          theoreticalmodel.fitted_parameters,
                                                           theoreticalmodel.limits)
@@ -456,7 +502,7 @@ class MyMainWindow(QtGui.QMainWindow):
             if dataObject.line2D:
                 dataObject.line2D.set_data(dataObject.W_q, dataObject.W_ref)
         self.reflectivitygraphs.draw()
-    
+        
     @QtCore.Slot()
     def on_actionlogY_vs_X_triggered(self):
         self.settransformoption('logY')        
@@ -489,7 +535,7 @@ class MyMainWindow(QtGui.QMainWindow):
             self.ui.actionYX4_vs_X.setChecked(True)
         elif transform == 'YX2':
             self.ui.actionYX2_vs_X.setChecked(True)
-        self.transform = transform
+        self.settings.transform = transform
      
     def get_limits(self, parameters, fitted_parameters, limits):
 
@@ -530,7 +576,7 @@ class MyMainWindow(QtGui.QMainWindow):
         if not alreadygotlimits:
             theoreticalmodel.defaultlimits()              
         
-        if self.fittingAlgorithm != 'LM':
+        if self.settings.fittingAlgorithm != 'LM':
             ok, limits = self.get_limits(theoreticalmodel.parameters,
                                                      theoreticalmodel.fitted_parameters,
                                                       theoreticalmodel.limits)
@@ -562,7 +608,7 @@ class MyMainWindow(QtGui.QMainWindow):
         if not alreadygotlimits:
             theoreticalmodel.defaultlimits()              
             
-        if self.fittingAlgorithm != 'LM':
+        if self.settings.fittingAlgorithm != 'LM':
             ok, limits = self.get_limits(theoreticalmodel.parameters,
                                                          theoreticalmodel.fitted_parameters,
                                                           theoreticalmodel.limits)
@@ -579,17 +625,18 @@ class MyMainWindow(QtGui.QMainWindow):
         print "___________________________________________________"        
         print "fitting to:", dataset.name
         try:
-            print self.fittingAlgorithm
-            print self.transform
+            print self.settings.fittingAlgorithm
+            print self.settings.transform
             
             #how did you want to fit the dataset - logY vs X, lin Y vs X, etc.
             #select a transform.  Note that we have to transform the data for the fit as well            
-            transform_fnctn = reflect.Transform(self.transform).transform
+            transform_fnctn = reflect.Transform(self.settings.transform).transform
             tempdataset = DataObject.DataObject(dataset.get_data())
             tempdataset.W_ref, tempdataset.W_refSD = transform_fnctn(tempdataset.W_q,
                                                                       tempdataset.W_ref,
                                                                         tempdataset.W_refSD)
 
+            model.quad_order = self.settings.quad_order
             model.fitPlugin = fitPlugin
             model.useerrors = self.ui.use_errors_checkbox.isChecked()
             model.transform = transform_fnctn                                                                    
@@ -598,7 +645,7 @@ class MyMainWindow(QtGui.QMainWindow):
                 
             tempdataset.do_a_fit(model,
                               fitPlugin = fitPlugin,
-                               method = self.fittingAlgorithm)
+                               method = self.settings.fittingAlgorithm)
                                
             model.transform = None
                                 
@@ -624,7 +671,8 @@ class MyMainWindow(QtGui.QMainWindow):
                                 limits = np.copy(model.limits),
                                 fitPlugin = model.fitPlugin,
                                 useerrors = model.useerrors,
-                                usedq = model.usedq)
+                                usedq = model.usedq,
+                                quad_order = model.quad_order)
                                 
         self.modelStoreModel.add(newmodel, 'coef_' + dataset.name)        
     
@@ -697,6 +745,7 @@ class MyMainWindow(QtGui.QMainWindow):
         dataset to be fitted changed, must update chi2
         """
         self.current_dataset = self.dataStoreModel.dataStore[arg_1]
+        self.settings.current_dataset_name = arg_1
         self.update_gui_modelChanged()
                                 
     @QtCore.Slot(unicode)
@@ -704,6 +753,7 @@ class MyMainWindow(QtGui.QMainWindow):
         """
         model selection changed, update view with parameters from model.
         """
+        self.settings.current_model_name = arg_1
         self.select_a_model(arg_1)        
     
     def select_a_model(self, arg_1):
@@ -946,17 +996,18 @@ class MyMainWindow(QtGui.QMainWindow):
         model = self.modelStoreModel.modelStore['theoretical']
         fitPlugin = self.fitPlugin['rfo']                                            
         
-        #evaluate the model against the dataset
+        #evaluate the model against the dataset    
         try:
             self.theoretical.evaluate_model(model, store = True, fitPlugin = fitPlugin)
             if self.current_dataset is not None and self.current_dataset.name != 'theoretical':
-                transform_fnctn = reflect.Transform(self.transform).transform
+                transform_fnctn = reflect.Transform(self.settings.transform).transform
                 tempdataset = DataObject.DataObject(self.current_dataset.get_data())
                 tempdataset.W_ref, tempdataset.W_refSD = transform_fnctn(tempdataset.W_q,
                                                                   tempdataset.W_ref,
                                                                     tempdataset.W_refSD)
 
                 model.useerrors = self.ui.use_errors_checkbox.isChecked()
+                model.quad_order = self.settings.quad_order
                 model.transform = transform_fnctn                                                                    
                 if not model.useerrors:
                     tempdataset.W_refSD = None
@@ -974,7 +1025,22 @@ class MyMainWindow(QtGui.QMainWindow):
         for dataObject in dataObjects:
             self.reflectivitygraphs.add_dataObject(dataObject)
             self.sldgraphs.add_dataObject(dataObject)
-            
+
+class ProgramSettings(object):
+    def __init__(self, **kwds):
+        __members = {'fittingAlgorithm': 'DE',
+                     'transform': 'logY',
+                     'quad_order' : 17,
+                     'current_dataset_name' : None,
+                     'current_model_name' : None}
+                     
+        for key in __members:
+            if key in kwds:
+               setattr(self, key, kwds[key])
+            else:
+                setattr(self, key, __members[key])
+        
+        
 class MyReflectivityGraphs(FigureCanvas):
     """Ultimately, this is a QWidget (as well as a FigureCanvasAgg, etc.)."""
     def __init__(self, parent=None):

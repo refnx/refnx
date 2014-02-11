@@ -30,8 +30,10 @@ class DataStore(object):
         self.names = []
         
     def __getitem__(self, key):
-        return self.dataObjects[key]
-    
+        if key in self.names:
+            return self.dataObjects[key]
+        return None
+        
     def __iter__(self):    
         for key in self.dataObjects:
             yield self.dataObjects[key]

@@ -519,6 +519,8 @@
     <addaction name="actionSave_Model"/>
     <addaction name="actionLoad_Model"/>
     <addaction name="separator"/>
+    <addaction name="actionTake_Snapshot"/>
+    <addaction name="separator"/>
     <addaction name="actionLoad_Plugin"/>
    </widget>
    <widget class="QMenu" name="menuHelp">
@@ -565,6 +567,7 @@
      <string>Settings</string>
     </property>
     <addaction name="actionChange_Q_range"/>
+    <addaction name="actionResolution_smearing"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuData"/>
@@ -1291,7 +1294,17 @@
   </action>
   <action name="actionChange_Q_range">
    <property name="text">
-    <string>change Q range</string>
+    <string>Change Q Range</string>
+   </property>
+  </action>
+  <action name="actionTake_Snapshot">
+   <property name="text">
+    <string>Take Snapshot</string>
+   </property>
+  </action>
+  <action name="actionResolution_smearing">
+   <property name="text">
+    <string>Resolution Smearing</string>
    </property>
   </action>
  </widget>

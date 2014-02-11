@@ -9,7 +9,7 @@ import string
 class Model(object):
     def __init__(self, parameters, **kwds):
         __members = {'file':None, 'parameters': None, 'fitted_parameters':None, 'uncertainties':None, 'covariance':None,
-        'limits':None, 'usedq':True, 'fitPlugin':None,  'useerrors': True}
+        'limits':None, 'usedq':True, 'fitPlugin':None,  'useerrors': True, 'quad_order' : 17}
         
         if 'file' in kwds:
             self.load(kwds['file'])        
