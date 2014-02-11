@@ -237,7 +237,7 @@ class MyMainWindow(QtGui.QMainWindow):
         self.ui.dataset_comboBox.setCurrentIndex(dataStore.names.index(self.current_dataset.name))
             
         self.transform = state['transform']
-        self.settransformoption(self.transform):
+        self.settransformoption(self.transform)
         
         #remove and add dataObjectsToGraphs
         self.reflectivitygraphs.removeTraces()

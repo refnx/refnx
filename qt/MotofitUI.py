@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'Motofit.ui'
 #
-# Created: Mon Feb 10 14:05:29 2014
+# Created: Tue Feb 11 13:15:38 2014
 #      by: pyside-uic 0.2.15 running on PySide 1.2.1
 #
 # WARNING! All changes made in this file will be lost!
@@ -202,6 +202,8 @@ class Ui_MainWindow(object):
         self.menuFit_as.setObjectName("menuFit_as")
         self.menuFile = QtGui.QMenu(self.menubar)
         self.menuFile.setObjectName("menuFile")
+        self.menuSettings = QtGui.QMenu(self.menubar)
+        self.menuSettings.setObjectName("menuSettings")
         MainWindow.setMenuBar(self.menubar)
         self.dockWidget = QtGui.QDockWidget(MainWindow)
         sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
@@ -527,8 +529,6 @@ class Ui_MainWindow(object):
         self.actionBatch_Fit.setObjectName("actionBatch_Fit")
         self.actionRemove_Data = QtGui.QAction(MainWindow)
         self.actionRemove_Data.setObjectName("actionRemove_Data")
-        self.actionChange_Q_range = QtGui.QAction(MainWindow)
-        self.actionChange_Q_range.setObjectName("actionChange_Q_range")
         self.actionAbout = QtGui.QAction(MainWindow)
         self.actionAbout.setObjectName("actionAbout")
         self.actionDifferential_Evolution = QtGui.QAction(MainWindow)
@@ -553,6 +553,8 @@ class Ui_MainWindow(object):
         self.actionYX2_vs_X = QtGui.QAction(MainWindow)
         self.actionYX2_vs_X.setCheckable(True)
         self.actionYX2_vs_X.setObjectName("actionYX2_vs_X")
+        self.actionChange_Q_range = QtGui.QAction(MainWindow)
+        self.actionChange_Q_range.setObjectName("actionChange_Q_range")
         self.menuData.addAction(self.actionLoad_Data)
         self.menuData.addAction(self.actionRefresh_Data)
         self.menuData.addAction(self.actionRemove_Data)
@@ -560,8 +562,6 @@ class Ui_MainWindow(object):
         self.menuData.addAction(self.actionSave_Fit)
         self.menuModel.addAction(self.actionSave_Model)
         self.menuModel.addAction(self.actionLoad_Model)
-        self.menuModel.addSeparator()
-        self.menuModel.addAction(self.actionChange_Q_range)
         self.menuModel.addSeparator()
         self.menuModel.addAction(self.actionLoad_Plugin)
         self.menuHelp.addAction(self.actionAbout)
@@ -578,10 +578,12 @@ class Ui_MainWindow(object):
         self.menuPlot_type.addAction(self.actionBatch_Fit)
         self.menuFile.addAction(self.actionSave_File)
         self.menuFile.addAction(self.actionLoad_File)
+        self.menuSettings.addAction(self.actionChange_Q_range)
         self.menubar.addAction(self.menuFile.menuAction())
         self.menubar.addAction(self.menuData.menuAction())
         self.menubar.addAction(self.menuModel.menuAction())
         self.menubar.addAction(self.menuPlot_type.menuAction())
+        self.menubar.addAction(self.menuSettings.menuAction())
         self.menubar.addAction(self.menuHelp.menuAction())
 
         self.retranslateUi(MainWindow)
@@ -602,6 +604,7 @@ class Ui_MainWindow(object):
         self.menuAlgorithm.setTitle(QtGui.QApplication.translate("MainWindow", "Algorithm", None, QtGui.QApplication.UnicodeUTF8))
         self.menuFit_as.setTitle(QtGui.QApplication.translate("MainWindow", "Fit as", None, QtGui.QApplication.UnicodeUTF8))
         self.menuFile.setTitle(QtGui.QApplication.translate("MainWindow", "File", None, QtGui.QApplication.UnicodeUTF8))
+        self.menuSettings.setTitle(QtGui.QApplication.translate("MainWindow", "Settings", None, QtGui.QApplication.UnicodeUTF8))
         self.chi2lineEdit.setText(QtGui.QApplication.translate("MainWindow", "0", None, QtGui.QApplication.UnicodeUTF8))
         self.res_SpinBox.setPrefix(QtGui.QApplication.translate("MainWindow", "dq/q(%) : ", None, QtGui.QApplication.UnicodeUTF8))
         self.do_fit_button.setShortcut(QtGui.QApplication.translate("MainWindow", "Meta+F", None, QtGui.QApplication.UnicodeUTF8))
@@ -641,7 +644,6 @@ class Ui_MainWindow(object):
         self.actionLoad_File.setShortcut(QtGui.QApplication.translate("MainWindow", "Meta+O", None, QtGui.QApplication.UnicodeUTF8))
         self.actionBatch_Fit.setText(QtGui.QApplication.translate("MainWindow", "Batch Fit", None, QtGui.QApplication.UnicodeUTF8))
         self.actionRemove_Data.setText(QtGui.QApplication.translate("MainWindow", "Remove Data", None, QtGui.QApplication.UnicodeUTF8))
-        self.actionChange_Q_range.setText(QtGui.QApplication.translate("MainWindow", "Change Q range", None, QtGui.QApplication.UnicodeUTF8))
         self.actionAbout.setText(QtGui.QApplication.translate("MainWindow", "About", None, QtGui.QApplication.UnicodeUTF8))
         self.actionDifferential_Evolution.setText(QtGui.QApplication.translate("MainWindow", "Differential Evolution", None, QtGui.QApplication.UnicodeUTF8))
         self.actionLevenberg_Marquardt.setText(QtGui.QApplication.translate("MainWindow", "Levenberg Marquardt", None, QtGui.QApplication.UnicodeUTF8))
@@ -649,4 +651,5 @@ class Ui_MainWindow(object):
         self.actionlogY_vs_X.setText(QtGui.QApplication.translate("MainWindow", "log(Y) vs X", None, QtGui.QApplication.UnicodeUTF8))
         self.actionYX4_vs_X.setText(QtGui.QApplication.translate("MainWindow", "YX**4 vs X", None, QtGui.QApplication.UnicodeUTF8))
         self.actionYX2_vs_X.setText(QtGui.QApplication.translate("MainWindow", "YX**2 vs X", None, QtGui.QApplication.UnicodeUTF8))
+        self.actionChange_Q_range.setText(QtGui.QApplication.translate("MainWindow", "change Q range", None, QtGui.QApplication.UnicodeUTF8))
 

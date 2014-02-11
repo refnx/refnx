@@ -519,8 +519,6 @@
     <addaction name="actionSave_Model"/>
     <addaction name="actionLoad_Model"/>
     <addaction name="separator"/>
-    <addaction name="actionChange_Q_range"/>
-    <addaction name="separator"/>
     <addaction name="actionLoad_Plugin"/>
    </widget>
    <widget class="QMenu" name="menuHelp">
@@ -562,10 +560,17 @@
     <addaction name="actionSave_File"/>
     <addaction name="actionLoad_File"/>
    </widget>
+   <widget class="QMenu" name="menuSettings">
+    <property name="title">
+     <string>Settings</string>
+    </property>
+    <addaction name="actionChange_Q_range"/>
+   </widget>
    <addaction name="menuFile"/>
    <addaction name="menuData"/>
    <addaction name="menuModel"/>
    <addaction name="menuPlot_type"/>
+   <addaction name="menuSettings"/>
    <addaction name="menuHelp"/>
   </widget>
   <widget class="QDockWidget" name="dockWidget">
@@ -1219,11 +1224,6 @@
     <string>Remove Data</string>
    </property>
   </action>
-  <action name="actionChange_Q_range">
-   <property name="text">
-    <string>Change Q range</string>
-   </property>
-  </action>
   <action name="actionAbout">
    <property name="text">
     <string>About</string>
@@ -1287,6 +1287,11 @@
    </property>
    <property name="text">
     <string>YX**2 vs X</string>
+   </property>
+  </action>
+  <action name="actionChange_Q_range">
+   <property name="text">
+    <string>change Q range</string>
    </property>
   </action>
  </widget>
