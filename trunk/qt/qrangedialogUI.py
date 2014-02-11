@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'qrangedialog.ui'
 #
-# Created: Sun Feb  9 21:08:36 2014
+# Created: Tue Feb 11 13:04:22 2014
 #      by: pyside-uic 0.2.15 running on PySide 1.2.1
 #
 # WARNING! All changes made in this file will be lost!
@@ -61,6 +61,9 @@ class Ui_qrange(object):
         QtCore.QObject.connect(self.buttonBox, QtCore.SIGNAL("accepted()"), qrange.accept)
         QtCore.QObject.connect(self.buttonBox, QtCore.SIGNAL("rejected()"), qrange.reject)
         QtCore.QMetaObject.connectSlotsByName(qrange)
+        qrange.setTabOrder(self.qmin, self.qmax)
+        qrange.setTabOrder(self.qmax, self.numpnts)
+        qrange.setTabOrder(self.numpnts, self.buttonBox)
 
     def retranslateUi(self, qrange):
         qrange.setWindowTitle(QtGui.QApplication.translate("qrange", "Set Q range", None, QtGui.QApplication.UnicodeUTF8))
