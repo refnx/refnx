@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'Motofit.ui'
 #
-# Created: Mon Feb 10 10:29:39 2014
+# Created: Mon Feb 10 14:05:29 2014
 #      by: pyside-uic 0.2.15 running on PySide 1.2.1
 #
 # WARNING! All changes made in this file will be lost!
@@ -539,14 +539,20 @@ class Ui_MainWindow(object):
         self.actionLevenberg_Marquardt.setCheckable(True)
         self.actionLevenberg_Marquardt.setChecked(False)
         self.actionLevenberg_Marquardt.setObjectName("actionLevenberg_Marquardt")
-        self.actionLog_R_vs_Q = QtGui.QAction(MainWindow)
-        self.actionLog_R_vs_Q.setCheckable(True)
-        self.actionLog_R_vs_Q.setChecked(True)
-        self.actionLog_R_vs_Q.setObjectName("actionLog_R_vs_Q")
-        self.actionR_vs_Q_2 = QtGui.QAction(MainWindow)
-        self.actionR_vs_Q_2.setObjectName("actionR_vs_Q_2")
-        self.actionRQ4_vs_Q_2 = QtGui.QAction(MainWindow)
-        self.actionRQ4_vs_Q_2.setObjectName("actionRQ4_vs_Q_2")
+        self.actionY_vs_X = QtGui.QAction(MainWindow)
+        self.actionY_vs_X.setCheckable(True)
+        self.actionY_vs_X.setChecked(False)
+        self.actionY_vs_X.setObjectName("actionY_vs_X")
+        self.actionlogY_vs_X = QtGui.QAction(MainWindow)
+        self.actionlogY_vs_X.setCheckable(True)
+        self.actionlogY_vs_X.setChecked(True)
+        self.actionlogY_vs_X.setObjectName("actionlogY_vs_X")
+        self.actionYX4_vs_X = QtGui.QAction(MainWindow)
+        self.actionYX4_vs_X.setCheckable(True)
+        self.actionYX4_vs_X.setObjectName("actionYX4_vs_X")
+        self.actionYX2_vs_X = QtGui.QAction(MainWindow)
+        self.actionYX2_vs_X.setCheckable(True)
+        self.actionYX2_vs_X.setObjectName("actionYX2_vs_X")
         self.menuData.addAction(self.actionLoad_Data)
         self.menuData.addAction(self.actionRefresh_Data)
         self.menuData.addAction(self.actionRemove_Data)
@@ -561,9 +567,10 @@ class Ui_MainWindow(object):
         self.menuHelp.addAction(self.actionAbout)
         self.menuAlgorithm.addAction(self.actionDifferential_Evolution)
         self.menuAlgorithm.addAction(self.actionLevenberg_Marquardt)
-        self.menuFit_as.addAction(self.actionLog_R_vs_Q)
-        self.menuFit_as.addAction(self.actionR_vs_Q_2)
-        self.menuFit_as.addAction(self.actionRQ4_vs_Q_2)
+        self.menuFit_as.addAction(self.actionY_vs_X)
+        self.menuFit_as.addAction(self.actionlogY_vs_X)
+        self.menuFit_as.addAction(self.actionYX4_vs_X)
+        self.menuFit_as.addAction(self.actionYX2_vs_X)
         self.menuPlot_type.addAction(self.menuFit_as.menuAction())
         self.menuPlot_type.addSeparator()
         self.menuPlot_type.addAction(self.menuAlgorithm.menuAction())
@@ -638,7 +645,8 @@ class Ui_MainWindow(object):
         self.actionAbout.setText(QtGui.QApplication.translate("MainWindow", "About", None, QtGui.QApplication.UnicodeUTF8))
         self.actionDifferential_Evolution.setText(QtGui.QApplication.translate("MainWindow", "Differential Evolution", None, QtGui.QApplication.UnicodeUTF8))
         self.actionLevenberg_Marquardt.setText(QtGui.QApplication.translate("MainWindow", "Levenberg Marquardt", None, QtGui.QApplication.UnicodeUTF8))
-        self.actionLog_R_vs_Q.setText(QtGui.QApplication.translate("MainWindow", "log R vs Q", None, QtGui.QApplication.UnicodeUTF8))
-        self.actionR_vs_Q_2.setText(QtGui.QApplication.translate("MainWindow", "R vs Q", None, QtGui.QApplication.UnicodeUTF8))
-        self.actionRQ4_vs_Q_2.setText(QtGui.QApplication.translate("MainWindow", "RQ4 vs Q", None, QtGui.QApplication.UnicodeUTF8))
+        self.actionY_vs_X.setText(QtGui.QApplication.translate("MainWindow", "lin(Y) vs X", None, QtGui.QApplication.UnicodeUTF8))
+        self.actionlogY_vs_X.setText(QtGui.QApplication.translate("MainWindow", "log(Y) vs X", None, QtGui.QApplication.UnicodeUTF8))
+        self.actionYX4_vs_X.setText(QtGui.QApplication.translate("MainWindow", "YX**4 vs X", None, QtGui.QApplication.UnicodeUTF8))
+        self.actionYX2_vs_X.setText(QtGui.QApplication.translate("MainWindow", "YX**2 vs X", None, QtGui.QApplication.UnicodeUTF8))
 

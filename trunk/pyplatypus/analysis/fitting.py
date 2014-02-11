@@ -63,32 +63,31 @@ class FitObject(object):
                 
         costfunction - a callable costfunction with the signature costfunction(model, ydata, edata, parameters). The fullset of parameters is passed, not just the ones being varied. Supply this function, or override the energy method of this class, to use something other than the default of chi2.
                                 
-            Object attributes:
-                self.xdata - see above for definition
-                self.ydata - see above for definition
-                self.edata - see above for definition
-                self.fitfunction - see above for definition
-                
-                self.numpoints - the number of datapoints
-                self.parameters - the entire set of parameters used for the fit (including those that vary). The fitting procedure overwrites this.
-                self.numparams - total number of parameters
-                self.costfunction - the costfunction to be used (optional)
-                self.args - the args tuple supplied to the constructor
-                self.kwds - the kwds dictionary supplied to the constructor
-                self.fitted_parameters - the index of the parameters that are being allowed to vary 
-                    :::NOTE:::
-                        The energy method is supplied by parameters that are being varied by the fit. i.e. something along the lines of
-                    self.parameters[self.fitted_parameters]. This is a subset of the total number of parameters required to calculate the model.
-                    Therefore you need to do something like the following in the energy function (if you override it):
+Object attributes:
+    self.xdata - see above for definition
+    self.ydata - see above for definition
+    self.edata - see above for definition
+    self.fitfunction - see above for definition
+    
+    self.numpoints - the number of datapoints
+    self.parameters - the entire set of parameters used for the fit (including those that vary). The fitting procedure overwrites this.
+    self.numparams - total number of parameters
+    self.costfunction - the costfunction to be used (optional)
+    self.args - the args tuple supplied to the constructor
+    self.kwds - the kwds dictionary supplied to the constructor
+    self.fitted_parameters - the index of the parameters that are being allowed to vary 
+
+        :::NOTE:::
+        The energy method is supplied by parameters that are being varied by the fit. i.e. something along the lines of self.parameters[self.fitted_parameters]. This is a subset of the total number of parameters required to calculate the model. Therefore you need to do something like the following in the energy function (if you override it):
                         
-                        #params are the values that are changing.
-                        test_parameters = np.copy(self.parameters)
-                        test_parameters[self.fitted_parameters] = params
+        #params are the values that are changing.
+        test_parameters = np.copy(self.parameters)
+        test_parameters[self.fitted_parameters] = params
 
-                        The model method is supplied by the entire set of parameters (those being held and those being varied).
-
-        
+    The model method is supplied by the entire set of parameters (those being held and those being varied).
+   
         """
+     
         self.xdata = np.copy(xdata)
         self.ydata = np.copy(ydata.flatten())
         if edata is not None:
@@ -128,9 +127,10 @@ class FitObject(object):
         #limits for those that are varying.
         self.fitted_limits = self.limits[:, self.fitted_parameters]
         
-    def residuals(self, parameters = None, args = ()):
+        
+    def residuals(self, parameterSubset = None, args = ()):
         '''
-            return the residuals for the fit object
+            return the fit residuals for the fit object.
         '''
 
         test_parameters = np.copy(self.parameters)
@@ -138,20 +138,19 @@ class FitObject(object):
         if not len(args):
             args = self.args
             
-        if parameters is not None:
-            test_parameters[self.fitted_parameters] = parameters
+        if parameterSubset is not None:
+            test_parameters[self.fitted_parameters] = parameterSubset
 
         modeldata = self.model(test_parameters, *args)
 
-        if self.edata is None:
-            sigma = np.atleast_1d(1.)
-        else:
+        sigma = np.atleast_1d(1.)
+        if self.edata is not None:
             sigma = self.edata
         
         return (self.ydata - modeldata) / sigma
 
             
-    def energy(self, parameters = None, args = ()):
+    def energy(self, parameterSubset = None, args = ()):
         '''
             
             The default cost function for the fit object is chi2 - the sum of the squared residuals divided by the error bars for each point.
@@ -159,24 +158,23 @@ class FitObject(object):
             
             If you require a different cost function provide a subclass that overloads this method. An alternative is to provide the costfunction keyword to the constructor.
             
-            Returns chi2 by default
-            
-        
+            Returns chi2 by default    
+
         '''
+        
         if not len(args):
             args = self.args
         
         if self.costfunction:
             test_parameters = np.copy(self.parameters)
     
-            if parameters is not None:
-                test_parameters[self.fitted_parameters] = parameters
+            if parameterSubset is not None:
+                test_parameters[self.fitted_parameters] = parameterSubset
         
             modeldata = self.model(test_parameters, *args)
-            
-            if self.edata is None:
-                sigma = np.atleast_1d(1.)
-            else:
+
+            sigma = np.atleast_1d(1.)            
+            if self.edata is not None:
                 sigma = self.edata
 
             return self.costfunction(modeldata,
@@ -184,9 +182,8 @@ class FitObject(object):
                                           sigma,
                                            test_parameters,
                                             *args)
-        
         else:
-            residuals = self.residuals(parameters, *args)
+            residuals = self.residuals(parameterSubset, *args)
             return np.sum(np.power(residuals, 2))
 
         
@@ -224,20 +221,8 @@ class FitObject(object):
                     If you select 'LM', then normal least squares is performed and your cost function is ignored. In addition, the LM optimiser minimisers the sum of the square of the array returned by the residuals() method, it does not minimise the value returned by the energy() method. In practice this means you can't specify your own costfunction, or subclass energy().
                        
         '''
-        
-        if method is None:
-            de = DEsolver.DEsolver(self.energy,
-                                     self.fitted_limits, args = self.args,
-                                         progress = self.progress,
-                                          seed = self.seed)
-            popt, chi2 = de.solve()
-            self.parameters[self.fitted_parameters] = popt
-            self.chi2 = chi2
-            Hfun = ndt.Hessian(self.energy, n=2)
-            hess = Hfun(popt)
-            self.covariance = scipy.linalg.pinv(hess)
 
-        elif method == 'LM':
+        if method == 'LM':
             #do a Levenberg Marquardt fit instead
             
             initialparams = self.parameters[self.fitted_parameters]
@@ -250,6 +235,17 @@ class FitObject(object):
             self.covariance = pcov
             self.parameters[self.fitted_parameters] = popt
             self.chi2 = np.sum(np.power(self.residuals(popt, args = self.args), 2))
+        else:
+            de = DEsolver.DEsolver(self.energy,
+                                     self.fitted_limits, args = self.args,
+                                         progress = self.progress,
+                                          seed = self.seed)
+            popt, chi2 = de.solve()
+            self.parameters[self.fitted_parameters] = popt
+            self.chi2 = chi2
+            Hfun = ndt.Hessian(self.energy, n=2)
+            hess = Hfun(popt)
+            self.covariance = scipy.linalg.pinv(hess)
 
         if self.edata is None:
             self.covariance *= self.chi2 / (self.ydata.size - self.fitted_parameters.size)
@@ -265,4 +261,3 @@ class FitObject(object):
             a default progress function for the fit object
         '''
         return True
-        

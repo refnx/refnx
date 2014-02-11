@@ -61,7 +61,8 @@ class MyMainWindow(QtGui.QMainWindow):
         dataTuple = (tempq, tempr, tempe, tempdq)
         
         self.current_dataset = None
-        self.fittingAlgorithm = None
+        self.transform = 'logY'
+        self.fittingAlgorithm = 'DE'
         self.theoretical = DataObject.DataObject(dataTuple = dataTuple)
 
         theoreticalmodel = Model.Model(parameters=parameters, fitted_parameters = fitted_parameters)
@@ -139,19 +140,19 @@ class MyMainWindow(QtGui.QMainWindow):
         for url in urls:
             try:
                 self.loadData([url.toLocalFile()])
-                return
+                continue
             except Exception as inst:
                 pass
             
             try:
                 self.loadModel(url.toLocalFile())
-                return
+                continue
             except Exception:
                 pass
                 
             try:
                 self.__restoreState(url.toLocalFile())
-                return
+                continue
             except Exception:
                 pass
                                 
@@ -172,6 +173,7 @@ class MyMainWindow(QtGui.QMainWindow):
         if self.current_dataset:
             state['current_dataset_name'] = self.current_dataset.name
         state['history'] = self.ui.plainTextEdit.toPlainText()
+        state['transform'] = self.transform
         
         try:        
             tempdirectory = tempfile.mkdtemp()
@@ -234,6 +236,8 @@ class MyMainWindow(QtGui.QMainWindow):
         self.current_dataset = dataStore[state['current_dataset_name']]
         self.ui.dataset_comboBox.setCurrentIndex(dataStore.names.index(self.current_dataset.name))
             
+        self.transform = state['transform']
+        
         #remove and add dataObjectsToGraphs
         self.reflectivitygraphs.removeTraces()
         self.sldgraphs.removeTraces()
@@ -368,7 +372,7 @@ class MyMainWindow(QtGui.QMainWindow):
     @QtCore.Slot()
     def on_actionDifferential_Evolution_triggered(self):
         if self.ui.actionDifferential_Evolution.isChecked():
-            self.fittingAlgorithm = None
+            self.fittingAlgorithm = 'DE'
             self.ui.actionLevenberg_Marquardt.setChecked(False)
         
     @QtCore.Slot()
@@ -383,8 +387,8 @@ class MyMainWindow(QtGui.QMainWindow):
         theoretical.W_q = np.linspace(qmin, qmax, numpnts)
         theoretical.W_ref = np.resize(theoretical.W_ref, numpnts)
         theoretical.W_refSD = np.resize(theoretical.W_refSD, numpnts)
-        theoretical.W_qSD = theoretical.W_q * res / 100. 
-        
+        theoretical.W_qSD = theoretical.W_q * res / 100.
+                
         self.update_gui_modelChanged()
         
     
@@ -425,15 +429,15 @@ class MyMainWindow(QtGui.QMainWindow):
             
         theoreticalmodel = self.modelStoreModel.modelStore['theoretical']
         theoreticalmodel.defaultlimits()              
-            
-        ok, limits = self.get_limits(theoreticalmodel.parameters,
-                                                     theoreticalmodel.fitted_parameters,
-                                                      theoreticalmodel.limits)
+        if self.fittingAlgorithm != 'LM':
+            ok, limits = self.get_limits(theoreticalmodel.parameters,
+                                                         theoreticalmodel.fitted_parameters,
+                                                          theoreticalmodel.limits)
         
-        if not ok:
-            return
+            if not ok:
+                return
         
-        theoreticalmodel.limits = np.copy(limits)
+            theoreticalmodel.limits = np.copy(limits)
 
 #       Have to iterate over list because dataObjects are stored in dictionary
         for name in self.dataStoreModel.dataStore.names:
@@ -451,8 +455,42 @@ class MyMainWindow(QtGui.QMainWindow):
             if dataObject.line2D:
                 dataObject.line2D.set_data(dataObject.W_q, dataObject.W_ref)
         self.reflectivitygraphs.draw()
+    
+    @QtCore.Slot()
+    def on_actionlogY_vs_X_triggered(self):
+        self.settransformoption(1)        
+
+    @QtCore.Slot()
+    def on_actionY_vs_X_triggered(self):
+        self.settransformoption(0)
         
- 
+    @QtCore.Slot()
+    def on_actionYX4_vs_X_triggered(self):
+        self.settransformoption(2)
+
+    @QtCore.Slot()
+    def on_actionYX2_vs_X_triggered(self):
+        self.settransformoption(3)
+        
+    def settransformoption(self, transformRequest):
+        self.ui.actionlogY_vs_X.setChecked(False)
+        self.ui.actionY_vs_X.setChecked(False)
+        self.ui.actionYX4_vs_X.setChecked(False)
+        self.ui.actionYX2_vs_X.setChecked(False)
+        if transformRequest == 0:
+            self.ui.actionY_vs_X.setChecked(True)
+            self.transform = 'lin'
+        elif transformRequest == 1:
+            self.ui.actionlogY_vs_X.setChecked(True)
+            self.transform = 'logY'
+        elif transformRequest == 2:
+            self.transform = 'YX4'
+            self.ui.actionYX4_vs_X.setChecked(True)
+        elif transformRequest == 3:
+            self.transform = 'YX2'
+            self.ui.actionYX2_vs_X.setChecked(True)
+
+     
     def get_limits(self, parameters, fitted_parameters, limits):
 
         limitsdialog = QtGui.QDialog()
@@ -492,7 +530,7 @@ class MyMainWindow(QtGui.QMainWindow):
         if not alreadygotlimits:
             theoreticalmodel.defaultlimits()              
         
-        if self.fittingAlgorithm is None:
+        if self.fittingAlgorithm != 'LM':
             ok, limits = self.get_limits(theoreticalmodel.parameters,
                                                      theoreticalmodel.fitted_parameters,
                                                       theoreticalmodel.limits)
@@ -524,7 +562,7 @@ class MyMainWindow(QtGui.QMainWindow):
         if not alreadygotlimits:
             theoreticalmodel.defaultlimits()              
             
-        if self.fittingAlgorithm is None:
+        if self.fittingAlgorithm != 'LM':
             ok, limits = self.get_limits(theoreticalmodel.parameters,
                                                          theoreticalmodel.fitted_parameters,
                                                           theoreticalmodel.limits)
@@ -535,19 +573,43 @@ class MyMainWindow(QtGui.QMainWindow):
             theoreticalmodel.limits = np.copy(limits)
             
         self.do_a_fit_and_add_to_gui(self.current_dataset, theoreticalmodel, fitPlugin = self.fitPlugin['rfo'])  
-        
+    
         
     def do_a_fit_and_add_to_gui(self, dataset, model, fitPlugin = None):
         print "___________________________________________________"        
         print "fitting to:", dataset.name
         try:
             print self.fittingAlgorithm
-            dataset.do_a_fit(model, fitPlugin = fitPlugin, method = self.fittingAlgorithm)
+            print self.transform
+            
+            #how did you want to fit the dataset - logY vs X, lin Y vs X, etc.
+            #select a transform.  Note that we have to transform the data for the fit as well            
+            transform_fnctn = reflect.Transform(self.transform).transform
+            tempdataset = DataObject.DataObject(dataset.get_data())
+            tempdataset.W_ref, tempdataset.W_refSD = transform_fnctn(tempdataset.W_q,
+                                                                      tempdataset.W_ref,
+                                                                        tempdataset.W_refSD)
+
+            model.fitPlugin = fitPlugin
+            model.useerrors = self.ui.use_errors_checkbox.isChecked()
+            model.transform = transform_fnctn                                                                    
+            if not model.useerrors:
+                tempdataset.W_refSD = None
+                
+            tempdataset.do_a_fit(model,
+                              fitPlugin = fitPlugin,
+                               method = self.fittingAlgorithm)
+                               
+            model.transform = None
+                                
+            #but then evaluate against the untransformed data
+            dataset.evaluate_model(model, store = True, fitPlugin = fitPlugin)   
+
         except fitting.FitAbortedException as e:
             print 'you aborted the fit'
             raise e
             
-        print "Chi2 :", dataset.chi2 / dataset.numpoints
+        print "Chi2 :", tempdataset.chi2 / tempdataset.numpoints
         np.set_printoptions(suppress=True, precision = 4)
         print 'parameters:'
         print model.parameters
@@ -555,11 +617,15 @@ class MyMainWindow(QtGui.QMainWindow):
         print model.uncertainties
         print "___________________________________________________"        
 
-        newmodel = Model.Model(parameters = model.parameters,
-                                     fitted_parameters = model.fitted_parameters,
-                                      fitPlugin = fitPlugin,
-                                        limits = model.limits)
-                    
+        newmodel = Model.Model(parameters = np.copy(model.parameters),
+                                fitted_parameters = np.copy(model.fitted_parameters),
+                                uncertainties = np.copy(model.uncertainties),
+                                covariance = np.copy(model.covariance),
+                                limits = np.copy(model.limits),
+                                fitPlugin = model.fitPlugin,
+                                useerrors = model.useerrors,
+                                usedq = model.usedq)
+                                
         self.modelStoreModel.add(newmodel, 'coef_' + dataset.name)        
     
         #update GUI
@@ -688,9 +754,8 @@ class MyMainWindow(QtGui.QMainWindow):
         theoreticalmodel = self.modelStoreModel.modelStore['theoretical']
         if arg_1:
             theoreticalmodel.useerrors = True
-            theoreticalmodel.costfunction = reflect.costfunction_logR_weight
         else:
-            theoreticalmodel.costfunction = reflect.costfunction_logR_noweight
+            theoreticalmodel.useerrors = False
             
         self.update_gui_modelChanged()
             
@@ -704,6 +769,8 @@ class MyMainWindow(QtGui.QMainWindow):
             theoreticalmodel.usedq = True
         else:
             theoreticalmodel.usedq = False
+        
+        self.update_gui_modelChanged()
             
     def layerCurrentCellChanged(self, index):
         row = index.row()
@@ -876,14 +943,26 @@ class MyMainWindow(QtGui.QMainWindow):
         self.sldgraphs.redraw_dataObjects(dataObjects, visible = visible)
                         
     def update_gui_modelChanged(self):
-        theoreticalmodel = self.modelStoreModel.modelStore['theoretical']
-        fitPlugin = self.fitPlugin['rfo']
+        model = self.modelStoreModel.modelStore['theoretical']
+        fitPlugin = self.fitPlugin['rfo']                                            
         
         #evaluate the model against the dataset
         try:
-            self.theoretical.evaluate_model(theoreticalmodel, store = True, fitPlugin = fitPlugin)
+            self.theoretical.evaluate_model(model, store = True, fitPlugin = fitPlugin)
             if self.current_dataset is not None and self.current_dataset.name != 'theoretical':
-                energy = self.current_dataset.evaluate_chi2(theoreticalmodel, fitPlugin = fitPlugin)
+                transform_fnctn = reflect.Transform(self.transform).transform
+                tempdataset = DataObject.DataObject(self.current_dataset.get_data())
+                tempdataset.W_ref, tempdataset.W_refSD = transform_fnctn(tempdataset.W_q,
+                                                                  tempdataset.W_ref,
+                                                                    tempdataset.W_refSD)
+
+                model.useerrors = self.ui.use_errors_checkbox.isChecked()
+                model.transform = transform_fnctn                                                                    
+                if not model.useerrors:
+                    tempdataset.W_refSD = None
+
+                energy = tempdataset.evaluate_chi2(model, fitPlugin = fitPlugin)
+                model.transform = None
                 self.ui.chi2lineEdit.setText(str(round(energy, 3)))     
         
             self.redraw_dataObject_graphs([self.theoretical])

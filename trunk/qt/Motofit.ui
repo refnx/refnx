@@ -544,9 +544,10 @@
      <property name="title">
       <string>Fit as</string>
      </property>
-     <addaction name="actionLog_R_vs_Q"/>
-     <addaction name="actionR_vs_Q_2"/>
-     <addaction name="actionRQ4_vs_Q_2"/>
+     <addaction name="actionY_vs_X"/>
+     <addaction name="actionlogY_vs_X"/>
+     <addaction name="actionYX4_vs_X"/>
+     <addaction name="actionYX2_vs_X"/>
     </widget>
     <addaction name="menuFit_as"/>
     <addaction name="separator"/>
@@ -1250,7 +1251,18 @@
     <string>Levenberg Marquardt</string>
    </property>
   </action>
-  <action name="actionLog_R_vs_Q">
+  <action name="actionY_vs_X">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>lin(Y) vs X</string>
+   </property>
+  </action>
+  <action name="actionlogY_vs_X">
    <property name="checkable">
     <bool>true</bool>
    </property>
@@ -1258,17 +1270,23 @@
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>log R vs Q</string>
+    <string>log(Y) vs X</string>
    </property>
   </action>
-  <action name="actionR_vs_Q_2">
+  <action name="actionYX4_vs_X">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
-    <string>R vs Q</string>
+    <string>YX**4 vs X</string>
    </property>
   </action>
-  <action name="actionRQ4_vs_Q_2">
+  <action name="actionYX2_vs_X">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
-    <string>RQ4 vs Q</string>
+    <string>YX**2 vs X</string>
    </property>
   </action>
  </widget>

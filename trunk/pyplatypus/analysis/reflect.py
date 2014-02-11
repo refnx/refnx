@@ -15,6 +15,7 @@ try:
 except ImportError:
     import pyplatypus.analysis._reflect as refcalc
 
+#some definitions for resolution smearing
 FWHM = 2 * math.sqrt(2 * math.log(2.0))
 INTLIMIT = 3.5
 
@@ -62,9 +63,9 @@ def abeles(q, coefs, *args, **kwds):
 
     """
     qvals = q.flatten()
-    quad_order = 17
+    quad_order = 33
     
-    if np.size(coefs, 0) != 4 * int(coefs[0]) + 8:
+    if not isProperAbelesInput(coefs):
         raise ValueError("The size of the parameter array passed to abeles should be 4 * coefs[0] + 8")
     
     if 'quad_order' in kwds:
@@ -87,11 +88,11 @@ def abeles(q, coefs, *args, **kwds):
             #get the gauss-legendre weights and abscissa
             abscissa, weights = gauss_legendre(quad_order)
             #get the normal distribution at that point
-            prefactor = 1 / math.sqrt(2 * math.pi)
+            prefactor = 1. / math.sqrt(2 * math.pi)
             gauss = lambda x : np.exp(-0.5 * x * x)
             gaussvals = prefactor * gauss(abscissa * INTLIMIT)
             
-            #integration between -3.5 and 3 sigma
+            #integration between -3.5 and 3.5 sigma
             va = qvals - INTLIMIT * dqvals /FWHM
             vb = qvals + INTLIMIT * dqvals /FWHM
 
@@ -116,19 +117,12 @@ def isProperAbelesInput(coefs):
 		return False
 	return True
 	
-
 def sld_profile(coefs, z):
         
     nlayers = int(coefs[0])
     summ = np.zeros_like(z)
     summ += coefs[2]
     thick = 0
-    
-    #note that you can do this in a single loop, which would save a lot of time,
-    #using the scipy.norm.cdf function. However, if you use py2app it included 
-    #the entirety of that package, bloating the file by 70Mb.
-    #Using a nested loop reduces file size, and does not cause a significant performance
-    #penalty
     
     for idx, zed in enumerate(z):
         dist = 0
@@ -168,27 +162,73 @@ def sld_profile(coefs, z):
 class ReflectivityFitObject(fitting.FitObject):
     
     '''
-        A sub class of pyplatypus.analysis.energyfunctions.FitObject suited for fitting reflectometry data. 
+        A sub class of pyplatypus.analysis.fitting.FitObject suited for fitting reflectometry data. 
 
-        If you wish to fit analytic profiles you should subclass this fitobject, overriding the model() method
-        of the FitObject super class.  If you do this you should also override the sld_profile method of ReflectivityFitObject.
+        If you wish to fit analytic profiles you should subclass this fitobject, overriding the model() method of the FitObject super class.  If you do this you should also override the sld_profile method of ReflectivityFitObject.
+
     '''
     
     def __init__(self, xdata, ydata, edata, parameters, args = (), **kwds):
+
         '''
-            Initialises the ReflectivityFitObject.
-            See the constructor of the FitObject for more details. And possible values for the keyword args for the superclass.
-        '''
-        super(ReflectivityFitObject, self).__init__(xdata, ydata, edata, abeles, parameters, args = args, **kwds)
+        Initialises the ReflectivityFitObject.
+        See the constructor of the FitObject for more details, especially the entries in kwds that are used.  
+
+        ReflectivityFitObject uses one extra kwds entry:
         
+            kwds['transform'] - a callable with the signature 
+                    transformed_y = f(x_evals, y_vals).
+                    
+                    If specified, then this function is used to transform the data returned by the model method.
+
+        '''
+        
+        super(ReflectivityFitObject, self).__init__(xdata,
+                                                     ydata,
+                                                      edata,
+                                                       None,
+                                                        parameters,
+                                                         args = args, **kwds)
+        
+        self.transform = None
+        if 'transform' in kwds:
+            self.transform = kwds['transform']
+
+    
+    def model(self, parameters, args = ()):
+
+        '''            
+            calculate the theoretical model, given a set of parameters.
+            parameters - the full np.ndarray containing the parameters that are required for the fitfunction
+            
+            returns the theoretical model for the xdata, i.e. self.fitfunction(self.xdata, test_parameters, *args, **kwds) 
+        ''' 
+
+        if not len(args):
+            args = self.args
+        
+        if parameters is not None:
+            test_parameters = parameters
+        else:
+            test_parameters = self.parameters
+        
+        yvals = abeles(self.xdata, test_parameters, *args, **self.kwds)
+ 
+        if self.transform:
+            yvals, temp = self.transform(self.xdata, yvals)
+        
+        return yvals
+        
+    
     def sld_profile(self, test_parameters, args = (), **kwds):
-        """
+
+        '''
             returns the SLD profile corresponding to the model parameters.
             The model parameters are either taken from arg[0], if it exists, or from self.parameters.
             
-            returns z, rho(z) - the distance from the top interface and the SLD at that point
-            
-        """
+            returns z, rho(z) - the distance from the top interface and the SLD at that point            
+        '''
+
         if test_parameters is None:
             test_parameters = self.parameters
             
@@ -216,12 +256,48 @@ class ReflectivityFitObject(fitting.FitObject):
         return True
         
 
-def costfunction_logR_noweight(modeldata, ydata, edata, test_parameters):
-    return np.sum(np.power(np.log10(modeldata) - np.log10(ydata), 2))
-    
-def costfunction_logR_weight(modeldata, ydata, edata, test_parameters):
-    intensity, sd = EP.EPlog10(ydata, edata)
-    return  np.sum(np.power((intensity - np.log10(modeldata)) / sd, 2))
+class Transform:
+    def __init__(self, form):
+        types = ['None', 'lin', 'logY', 'YX4', 'YX2']
+        self.form = None
+        
+        if form in types:
+            self.form = form
+
+    def transform(self, xdata, ydata, edata = None):
+        '''
+            An irreversible transform from lin R vs Q, to some other form
+            form - specifies the transform
+                form = None - no transform is made.
+                form = 'logY' - log transform
+                form = 'YX4' - YX**4 transform
+                form = 'YX2' - YX**2 transform        
+        '''
+
+        if edata is None:
+            etemp = np.ones_like(ydata)
+        else:
+            etemp = edata
+        
+        if self.form == 'None':
+            yt = np.copy(ydata)
+            et = np.copy(etemp)        
+        elif self.form == 'lin':
+            yt = np.copy(ydata)
+            et = np.copy(etemp)        
+        elif self.form == 'logY':
+            yt, et = EP.EPlog10(ydata, etemp)
+        elif self.form == 'YX4':
+            yt = ydata * np.power(xdata, 4)
+            et = etemp * np.power(xdata, 4)
+        elif self.form == 'YX2':
+            yt = ydata * np.power(xdata, 2)
+            et = etemp * np.power(xdata, 2)
+        
+        if edata is None:
+            return yt, None
+        else:
+            return yt, et
 
     
 if __name__ == '__main__':
