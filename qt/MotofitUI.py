@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'Motofit.ui'
 #
-# Created: Tue Feb 11 13:15:38 2014
+# Created: Tue Feb 11 17:48:11 2014
 #      by: pyside-uic 0.2.15 running on PySide 1.2.1
 #
 # WARNING! All changes made in this file will be lost!
@@ -555,6 +555,10 @@ class Ui_MainWindow(object):
         self.actionYX2_vs_X.setObjectName("actionYX2_vs_X")
         self.actionChange_Q_range = QtGui.QAction(MainWindow)
         self.actionChange_Q_range.setObjectName("actionChange_Q_range")
+        self.actionTake_Snapshot = QtGui.QAction(MainWindow)
+        self.actionTake_Snapshot.setObjectName("actionTake_Snapshot")
+        self.actionResolution_smearing = QtGui.QAction(MainWindow)
+        self.actionResolution_smearing.setObjectName("actionResolution_smearing")
         self.menuData.addAction(self.actionLoad_Data)
         self.menuData.addAction(self.actionRefresh_Data)
         self.menuData.addAction(self.actionRemove_Data)
@@ -562,6 +566,8 @@ class Ui_MainWindow(object):
         self.menuData.addAction(self.actionSave_Fit)
         self.menuModel.addAction(self.actionSave_Model)
         self.menuModel.addAction(self.actionLoad_Model)
+        self.menuModel.addSeparator()
+        self.menuModel.addAction(self.actionTake_Snapshot)
         self.menuModel.addSeparator()
         self.menuModel.addAction(self.actionLoad_Plugin)
         self.menuHelp.addAction(self.actionAbout)
@@ -579,6 +585,7 @@ class Ui_MainWindow(object):
         self.menuFile.addAction(self.actionSave_File)
         self.menuFile.addAction(self.actionLoad_File)
         self.menuSettings.addAction(self.actionChange_Q_range)
+        self.menuSettings.addAction(self.actionResolution_smearing)
         self.menubar.addAction(self.menuFile.menuAction())
         self.menubar.addAction(self.menuData.menuAction())
         self.menubar.addAction(self.menuModel.menuAction())
@@ -651,5 +658,7 @@ class Ui_MainWindow(object):
         self.actionlogY_vs_X.setText(QtGui.QApplication.translate("MainWindow", "log(Y) vs X", None, QtGui.QApplication.UnicodeUTF8))
         self.actionYX4_vs_X.setText(QtGui.QApplication.translate("MainWindow", "YX**4 vs X", None, QtGui.QApplication.UnicodeUTF8))
         self.actionYX2_vs_X.setText(QtGui.QApplication.translate("MainWindow", "YX**2 vs X", None, QtGui.QApplication.UnicodeUTF8))
-        self.actionChange_Q_range.setText(QtGui.QApplication.translate("MainWindow", "change Q range", None, QtGui.QApplication.UnicodeUTF8))
+        self.actionChange_Q_range.setText(QtGui.QApplication.translate("MainWindow", "Change Q Range", None, QtGui.QApplication.UnicodeUTF8))
+        self.actionTake_Snapshot.setText(QtGui.QApplication.translate("MainWindow", "Take Snapshot", None, QtGui.QApplication.UnicodeUTF8))
+        self.actionResolution_smearing.setText(QtGui.QApplication.translate("MainWindow", "Resolution Smearing", None, QtGui.QApplication.UnicodeUTF8))
 
