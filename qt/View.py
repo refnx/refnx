@@ -237,6 +237,7 @@ class MyMainWindow(QtGui.QMainWindow):
         self.ui.dataset_comboBox.setCurrentIndex(dataStore.names.index(self.current_dataset.name))
             
         self.transform = state['transform']
+        self.settransformoption(self.transform):
         
         #remove and add dataObjectsToGraphs
         self.reflectivitygraphs.removeTraces()
@@ -458,38 +459,37 @@ class MyMainWindow(QtGui.QMainWindow):
     
     @QtCore.Slot()
     def on_actionlogY_vs_X_triggered(self):
-        self.settransformoption(1)        
+        self.settransformoption('logY')        
 
     @QtCore.Slot()
     def on_actionY_vs_X_triggered(self):
-        self.settransformoption(0)
+        self.settransformoption('lin')
         
     @QtCore.Slot()
     def on_actionYX4_vs_X_triggered(self):
-        self.settransformoption(2)
+        self.settransformoption('YX4')
 
     @QtCore.Slot()
     def on_actionYX2_vs_X_triggered(self):
-        self.settransformoption(3)
+        self.settransformoption('YX2')
         
-    def settransformoption(self, transformRequest):
+    def settransformoption(self, transform):
         self.ui.actionlogY_vs_X.setChecked(False)
         self.ui.actionY_vs_X.setChecked(False)
         self.ui.actionYX4_vs_X.setChecked(False)
         self.ui.actionYX2_vs_X.setChecked(False)
-        if transformRequest == 0:
+        if transform is None:
             self.ui.actionY_vs_X.setChecked(True)
-            self.transform = 'lin'
-        elif transformRequest == 1:
+            transform = 'lin'
+        if transform == 'lin':
+            self.ui.actionY_vs_X.setChecked(True)
+        elif transform == 'logY':
             self.ui.actionlogY_vs_X.setChecked(True)
-            self.transform = 'logY'
-        elif transformRequest == 2:
-            self.transform = 'YX4'
+        elif transform == 'YX4':
             self.ui.actionYX4_vs_X.setChecked(True)
-        elif transformRequest == 3:
-            self.transform = 'YX2'
+        elif transform == 'YX2':
             self.ui.actionYX2_vs_X.setChecked(True)
-
+        self.transform = transform
      
     def get_limits(self, parameters, fitted_parameters, limits):
 
