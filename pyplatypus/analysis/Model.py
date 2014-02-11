@@ -8,8 +8,8 @@ import string
     
 class Model(object):
     def __init__(self, parameters, **kwds):
-        __members = {'file':None, 'parameters': None, 'fitted_parameters':None, 'uncertainties':None, 'covariancematrix':None,
-        'limits':None, 'usedq':True, 'fitPlugin':None,  'useerrors': True, 'costfunction':reflect.costfunction_logR_noweight}
+        __members = {'file':None, 'parameters': None, 'fitted_parameters':None, 'uncertainties':None, 'covariance':None,
+        'limits':None, 'usedq':True, 'fitPlugin':None,  'useerrors': True}
         
         if 'file' in kwds:
             self.load(kwds['file'])        
@@ -31,16 +31,11 @@ class Model(object):
             if self.uncertainties is None:
                 self.uncertainties = np.array([np.nan] * self.parameters.size, dtype = 'float64')
                 
-            if self.covariancematrix is None:
-                self.covariancematrix = np.zeros((self.parameters.size, self.parameters.size))
+            if self.covariance is None:
+                self.covariance = np.zeros((self.parameters.size, self.parameters.size))
             
             if self.limits is None:
                 self.defaultlimits()
-                       
-        self.useerrors = True
-        self.usedq = True
-        self.costfunction = reflect.costfunction_logR_noweight
-       
         
     def save(self, f):
         f.write(f.name + '\n')
@@ -57,7 +52,7 @@ class Model(object):
 
         
         f.write('covariance matrix\n')
-        np.savetxt(f, self.covariancematrix)
+        np.savetxt(f, self.covariance)
         
     
     def load(self, f):
@@ -80,8 +75,8 @@ class Model(object):
         
         #now read covariance matrix
         h4 = f.readline()
-        self.covariancematrix = np.fromfile(f, dtype = 'float64', sep = ' \t', count = numparams * numparams)
-        self.covariancematrix = self.covariancematrix.reshape((numparams, numparams))
+        self.covariance = np.fromfile(f, dtype = 'float64', sep = ' \t', count = numparams * numparams)
+        self.covariance = self.covariance.reshape((numparams, numparams))
         
     def defaultlimits(self):
         self.limits = np.zeros((2, np.size(self.parameters)))

@@ -3,6 +3,7 @@ from PySide import QtGui, QtCore
 import pyplatypus.dataset.reflectdataset as reflectdataset
 import pyplatypus.analysis.reflect as reflect
 import pyplatypus.analysis.fitting as fitting
+import pyplatypus.util.ErrorProp as EP
 import numpy as np
 from copy import deepcopy, copy
 import matplotlib.artist as artist
@@ -176,7 +177,7 @@ class DataObject(reflectdataset.ReflectDataset):
         
         callerInfo = deepcopy(model.__dict__)
         callerInfo['xdata'] = self.W_q
-        callerInfo['ydata'] = self.W_ref
+        callerInfo['ydata'] = self.W_ref            
         callerInfo['edata'] = self.W_refSD
         
         try:
@@ -197,11 +198,13 @@ class DataObject(reflectdataset.ReflectDataset):
         
         RFO.progress = self.progress
         model.parameters, model.uncertainties, self.chi2 = RFO.fit(method = method)
-        
+        model.covariance = RFO.covariance
+               
         self.progressdialog.setValue(100)
         
         self.fit = RFO.model(model.parameters)
-        self.residuals = (self.fit - RFO.ydata) / RFO.edata
+        self.residuals = RFO.residuals()
+
         self.sld_profile = None
         if 'sld_profile' in dir(RFO):
             self.sld_profile = RFO.sld_profile(model.parameters)
@@ -272,3 +275,4 @@ class DataObject(reflectdataset.ReflectDataset):
             self.sld_profile = sld_profile
 
         return fit, fit - self.W_ref, sld_profile
+
