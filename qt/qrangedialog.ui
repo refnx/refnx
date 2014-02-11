@@ -103,7 +103,20 @@
     </widget>
    </item>
   </layout>
+  <zorder>qmax</zorder>
+  <zorder>qmin</zorder>
+  <zorder>buttonBox</zorder>
+  <zorder>qminlabel</zorder>
+  <zorder>qmaxlabel</zorder>
+  <zorder>numpntslabel</zorder>
+  <zorder>numpnts</zorder>
  </widget>
+ <tabstops>
+  <tabstop>qmin</tabstop>
+  <tabstop>qmax</tabstop>
+  <tabstop>numpnts</tabstop>
+  <tabstop>buttonBox</tabstop>
+ </tabstops>
  <resources/>
  <connections>
   <connection>
