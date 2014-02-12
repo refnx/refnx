@@ -63,7 +63,7 @@ def abeles(q, coefs, *args, **kwds):
 
     """
     qvals = q.flatten()
-    quad_order = 33
+    quad_order = 17
     
     if not isProperAbelesInput(coefs):
         raise ValueError("The size of the parameter array passed to abeles should be 4 * coefs[0] + 8")

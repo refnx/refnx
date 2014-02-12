@@ -71,8 +71,8 @@ extern "C" {
 			goto done;
 		}
 		
-		memset(pj, 0, sizeof(pj));
-		memset(SLDmatrix, 0, sizeof(SLDmatrix));
+		memset(pj, 0, (nlayers + 2) * sizeof(*pj));
+		memset(SLDmatrix, 0, (nlayers + 2) * sizeof(*SLDmatrix));
 		
 		scale = coefP[1];
 		bkg = coefP[6];
@@ -99,8 +99,8 @@ extern "C" {
 				err = 1;
 				goto done;
 			}
-			memset(pj_mul, 0, sizeof(pj_mul));
-			memset(SLDmatrixREP,0,sizeof(SLDmatrixREP));
+			memset(pj_mul, 0, Vmullayers * sizeof(*pj_mul));
+			memset(SLDmatrixREP, 0, Vmullayers * sizeof(*SLDmatrixREP));
 			for(ii=0; ii<Vmullayers;ii+=1)
 				*(SLDmatrixREP + ii) = 4 * PI * (MyComplex(coefP[(4 * ii) + offset + 1] * 1e-6, coefP[(4 * ii) + offset + 2])  - super);
 		}
@@ -119,7 +119,7 @@ extern "C" {
 			
 			//workout the wavevector in the toplayer of the multilayer, if it exists.
 			if(Vmullayers > 0 && Vmulrep > 0 && Vmulappend >=0){
-				memset(subtotal,0,sizeof(subtotal));
+				memset(subtotal, 0, sizeof(subtotal));
 				subtotal[0][0]=MyComplex(1,0);subtotal[1][1]=MyComplex(1,0);
 				pj_mul[0] = compsqrt(qq2-*SLDmatrixREP);
 			}
@@ -528,7 +528,6 @@ extern "C" {
 		int Vmulrep = p->Vmulrep;
 		int Vmulappend = p->Vappendlayer;
 		int j = 0;
-		int npoints = p->npoints;
 		const double *coefP = p->coefP;
 		int nlayers = (int)coefP[0];
 		int offset = 4 * nlayers + 8;
@@ -702,7 +701,7 @@ extern "C" {
 			goto done;
 		}
 		
-		memset(SLDmatrix, 0, sizeof(SLDmatrix));
+		memset(SLDmatrix, 0, (nlayers + 2) * sizeof(*SLDmatrix));
 		
 		scale = coefP[1];
 		bkg = coefP[6];
@@ -729,8 +728,8 @@ extern "C" {
 				err = 1;
 				goto done;
 			}
-			memset(pj_mul, 0, sizeof(pj_mul));
-			memset(SLDmatrixREP,0,sizeof(SLDmatrixREP));
+			memset(pj_mul, 0, Vmullayers * sizeof(*pj_mul));
+			memset(SLDmatrixREP,0, Vmullayers * sizeof(*SLDmatrixREP));
 			for(kk=0; kk<Vmullayers;kk+=1)
 				*(SLDmatrixREP + kk) = 4 * PI * (MyComplex(coefP[(4 * kk) + offset + 1] * 1e-6, coefP[(4 * kk) + offset + 2])  - super);
 		}

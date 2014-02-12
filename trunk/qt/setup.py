@@ -7,18 +7,39 @@ Usage:
 
 from setuptools import setup
 import py2app
+from distutils.core import *
+from distutils      import sysconfig
 
-APP = ['motofit.py']
-DATA_FILES = ['icons']
+# Third-party modules - we depend on numpy for everything
+import numpy
+# Obtain the numpy include directory.  This logic works across numpy versions.
+try:
+    numpy_include = numpy.get_include()
+except AttributeError:
+    numpy_include = numpy.get_numpy_include()
+
+
+APP = ['qt/motofit.py']
+DATA_FILES = ['qt/icons']
+
+#  creflect extension module# 
+_creflect = Extension("pyplatypus.analysis.__creflect",
+                   ["src/reflect.i","src/reflect.c", "src/refcalc.cpp"],
+                   include_dirs = [numpy_include]
+                  # undef_macros=['NDEBUG']
+                                 )
+                                 
 OPTIONS = {'argv_emulation': True,
  'includes':['matplotlib.tri','matplotlib.projections.geo',
  'matplotlib.projections.polar', 'matplotlib.tri.triplot','matplotlib.tri.tripcolor','matplotlib.tri.tricontour',
   'matplotlib.tri.triangulation', 'matplotlib.delaunay.triangulate','sip', 'PySide', 'PySide.QtGui', 'PySide.QtCore',
    'pyplatypus', 'pyplatypus.analysis', 'pyplatypus.dataset', 'pyplatypus.util', 'numdifftools'],
    'excludes':[]}
+
 setup(
     app=APP,
     data_files=DATA_FILES,
+    ext_modules = [_creflect],
     options={'py2app': OPTIONS},
     setup_requires=['py2app'],
 )
