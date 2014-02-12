@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'Motofit.ui'
 #
-# Created: Tue Feb 11 17:48:11 2014
+# Created: Wed Feb 12 16:46:07 2014
 #      by: pyside-uic 0.2.15 running on PySide 1.2.1
 #
 # WARNING! All changes made in this file will be lost!
@@ -12,7 +12,7 @@ from PySide import QtCore, QtGui
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(841, 681)
+        MainWindow.resize(928, 725)
         sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -186,7 +186,7 @@ class Ui_MainWindow(object):
         self.gridLayout_3.addWidget(self.graphs, 0, 0, 1, 1)
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtGui.QMenuBar()
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 841, 22))
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 928, 22))
         self.menubar.setObjectName("menubar")
         self.menuData = QtGui.QMenu(self.menubar)
         self.menuData.setObjectName("menuData")
@@ -239,8 +239,8 @@ class Ui_MainWindow(object):
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.baseModelView.sizePolicy().hasHeightForWidth())
         self.baseModelView.setSizePolicy(sizePolicy)
-        self.baseModelView.setMinimumSize(QtCore.QSize(300, 60))
-        self.baseModelView.setMaximumSize(QtCore.QSize(400, 60))
+        self.baseModelView.setMinimumSize(QtCore.QSize(300, 70))
+        self.baseModelView.setMaximumSize(QtCore.QSize(16777215, 70))
         font = QtGui.QFont()
         font.setPointSize(10)
         font.setWeight(50)
