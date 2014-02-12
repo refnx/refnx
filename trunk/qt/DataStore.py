@@ -81,14 +81,7 @@ class DataStore(object):
                 self.loadData(file)
             except IOError:
                 continue
-                         
-    def snapshot(self, name, snapshotname):
-        #this function copies the data from one dataobject into another.
-        origin = self.getDataObject(name)
-        dataTuple = (np.copy(origin.W_q), np.copy(origin.W_ref), np.copy(origin.W_refSD), np.copy(origin.W_qSD))
-        snapshot = dataObject(name = snapshotname, dataTuple = dataTuple)
-        self.addDataObject(snapshot)
-        
+                                 
     def removeDataObject(self, name):
         del(self.dataObjects[name])
         del(self.names[self.names.index(name)])

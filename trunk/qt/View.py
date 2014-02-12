@@ -442,7 +442,14 @@ class MyMainWindow(QtGui.QMainWindow):
 
     @QtCore.Slot()
     def on_actionTake_Snapshot_triggered(self):
-        print 'ok'
+        snapshotname, ok = QtGui.QInputDialog.getText(self,
+                                             'Take a snapshot',
+                                              'snapshot name')     
+        if not ok:
+            return
+               
+        self.dataStoreModel.snapshot(snapshotname)
+        self.add_dataObjectsToGraphs([self.dataStoreModel.dataStore[snapshotname]]) 
 
                                 
     @QtCore.Slot()
@@ -622,8 +629,12 @@ class MyMainWindow(QtGui.QMainWindow):
     
         
     def do_a_fit_and_add_to_gui(self, dataset, model, fitPlugin = None):
-        print "___________________________________________________"        
-        print "fitting to:", dataset.name
+        if dataset.name == 'theoretical':
+            print 'You tried to fit the theoretical dataset'
+            return
+            
+        print '___________________________________________________'
+        print 'fitting to:', dataset.name
         try:
             print self.settings.fittingAlgorithm
             print self.settings.transform
@@ -656,13 +667,13 @@ class MyMainWindow(QtGui.QMainWindow):
             print 'you aborted the fit'
             raise e
             
-        print "Chi2 :", tempdataset.chi2 / tempdataset.numpoints
+        print 'Chi2 :', tempdataset.chi2 / tempdataset.numpoints
         np.set_printoptions(suppress=True, precision = 4)
         print 'parameters:'
         print model.parameters
         print 'uncertainties:'
         print model.uncertainties
-        print "___________________________________________________"        
+        print '___________________________________________________'
 
         newmodel = Model.Model(parameters = np.copy(model.parameters),
                                 fitted_parameters = np.copy(model.fitted_parameters),
@@ -1019,7 +1030,7 @@ class MyMainWindow(QtGui.QMainWindow):
             self.redraw_dataObject_graphs([self.theoretical])
 
         except ValueError:
-            print "The model parameters were not correct for the type of fitting plugin you requested"
+            print 'The model parameters were not correct for the type of fitting plugin you requested'
         
     def add_dataObjectsToGraphs(self, dataObjects):
         for dataObject in dataObjects:

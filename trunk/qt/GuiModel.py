@@ -1,6 +1,7 @@
 from __future__ import division
 from PySide import QtCore, QtGui
 import DataStore
+import DataObject
 import imp
 import sys
 import inspect
@@ -22,7 +23,6 @@ class DataStoreModel(QtCore.QAbstractTableModel):
             yield dataObject
     
     def rowCount(self, parent = QtCore.QModelIndex()):
-        #don't want to return 'theoretical'
         return self.dataStore.numDataObjects
         
     def columnCount(self, parent = QtCore.QModelIndex()):
@@ -91,6 +91,14 @@ class DataStoreModel(QtCore.QAbstractTableModel):
         self.insertRows(self.dataStore.numDataObjects)
         self.dataChanged.emit(QtCore.QModelIndex(),QtCore.QModelIndex())
     
+    def snapshot(self, snapshotname):        
+        original = self.dataStore['theoretical']
+        dataTuple = (np.copy(original.W_q), np.copy(original.fit))
+        snapshot = DataObject.DataObject(name = snapshotname, dataTuple = dataTuple)
+        self.add(snapshot)
+        self.insertRows(self.dataStore.numDataObjects)
+        self.dataChanged.emit(QtCore.QModelIndex(),QtCore.QModelIndex())
+        
     def remove(self, name):
         index = self.dataStore.names.index(name)
         self.dataStore.removeDataObject(name)
@@ -114,7 +122,6 @@ class ModelStoreModel(QtCore.QAbstractListModel):
             yield model
                     
     def rowCount(self, parent = QtCore.QModelIndex()):
-        #don't want to return 'theoretical'
         return len(self.modelStore.models)
         
     def data(self, index, role=QtCore.Qt.DisplayRole):
