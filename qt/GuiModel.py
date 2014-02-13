@@ -288,6 +288,9 @@ class BaseModel(QtCore.QAbstractTableModel):
     def data(self, index, role=QtCore.Qt.DisplayRole):
         if not index.isValid():
             return None
+            
+        if not reflect.isProperAbelesInput(self.model.parameters):
+            return None
         
         if index.row() != 0 or index.column() < 0 or index.column() > 2:
             return None
@@ -412,6 +415,10 @@ class LayerModel(QtCore.QAbstractTableModel):
             
         row = index.row()
         col = index.column()
+        
+        if not reflect.isProperAbelesInput(self.model.parameters):
+            return None
+
         numlayers = int(self.model.parameters[0])
                 
         if row == 0 and (col == 0 or col == 3):
@@ -677,8 +684,8 @@ class UDFParametersModel(QtCore.QAbstractTableModel):
                 if voutput[0] is QtGui.QValidator.State.Acceptable and int(voutput[1]) >= 0:
                     newparams = int(voutput[1])
                 
-                if newparams == currentparams:
-                    return True
+                    if newparams == currentparams:
+                        return True
                                     
                 if newparams > currentparams:
                     self.beginInsertRows(QtCore.QModelIndex(), currentparams + 1, newparams)
@@ -690,11 +697,16 @@ class UDFParametersModel(QtCore.QAbstractTableModel):
 
                 if newparams > currentparams:
                     self.model.limits = np.append(self.model.limits, np.zeros((2, newparams - currentparams)),axis = 1)
-                    self.model.limits[:, currentparams:-1] = 0.
-                    self.model.fitted_parameters = np.append(self.model.fitted_parameters, range(currentparams, newparams + 1))
+                    defaultlimits = self.model.defaultlimits()
+                    self.model.limits[:, currentparams:-1] = defaultlimits[:, currentparams:-1]
+                    self.model.fitted_parameters = np.append(self.model.fitted_parameters, range(currentparams, newparams))
                     self.endInsertRows()
                 if newparams < currentparams:                
                     self.model.limits = self.model.limits[:, 0: newparams]
+                    self.model.fitted_parameters.sort()
+                    #get rid of all parameters greater than newparams
+                    idx = np.searchsorted(self.model.fitted_parameters, newparams)
+                    self.model.fitted_parameters = self.model.fitted_parameters[: idx]
                     self.endRemoveRows()
                         
             if row > 0:
@@ -712,8 +724,6 @@ class UDFParametersModel(QtCore.QAbstractTableModel):
                 if col == 2:
                     self.model.limits[1, row - 1] = number
                     
-                
-        
         self.dataChanged.emit(index, index)
         return True
                 

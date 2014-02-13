@@ -126,7 +126,7 @@ Object attributes:
         
         #limits for those that are varying.
         self.fitted_limits = self.limits[:, self.fitted_parameters]
-        
+
         
     def residuals(self, parameterSubset = None, args = ()):
         '''
@@ -199,13 +199,8 @@ Object attributes:
         ''' 
         if not len(args):
             args = self.args
-        
-        if parameters is not None:
-            test_parameters = parameters
-        else:
-            test_parameters = self.parameters
-        
-        return self.fitfunction(self.xdata, test_parameters, *args, **self.kwds)
+                
+        return self.fitfunction(self.xdata, parameters, *args, **self.kwds)
             
 
     def fit(self, method = None):

@@ -79,12 +79,13 @@ class MyMainWindow(QtGui.QMainWindow):
         self.theoretical.evaluate_model(theoreticalmodel, store = True)
         self.dataStoreModel.add(self.theoretical)
         
+        self.theoretical.line2Dfit = self.reflectivitygraphs.axes[0].plot(self.theoretical.W_q,
+                                                   self.theoretical.fit, color = 'b',
+                                                    linestyle='-', lw=2, label = 'theoretical')[0]
+                                                    
         self.theoretical.line2Dsld_profile = self.sldgraphs.axes[0].plot(self.theoretical.sld_profile[0],
                                                    self.theoretical.sld_profile[1],
-                                                    linestyle='-')[0]
-        self.theoretical.line2Dfit = self.reflectivitygraphs.axes[0].plot(self.theoretical.W_q,
-                                                   self.theoretical.fit,
-                                                    linestyle='-', lw=2, label = 'theoretical')[0]
+                                                    linestyle='-', color = 'b')[0]
 
         self.redraw_dataObject_graphs([self.theoretical])
         
@@ -254,7 +255,7 @@ class MyMainWindow(QtGui.QMainWindow):
         self.theoretical.evaluate_model(self.theoreticalmodel, store = True)
         
         self.theoretical.line2Dfit = self.reflectivitygraphs.axes[0].plot(self.theoretical.W_q,
-                                                self.theoretical.fit,
+                                                self.theoretical.fit, color = 'b',
                                                  linestyle='-', lw=2, label = 'theoretical')[0]
         self.reflectivitygraphs.draw()
 
@@ -600,7 +601,10 @@ class MyMainWindow(QtGui.QMainWindow):
         """
             you should do a fit using the fit plugin
         """
-        if self.current_dataset is None:
+        if self.current_dataset is None or self.current_dataset.name == 'theoretical':
+            msgBox = QtGui.QMessageBox()
+            msgBox.setText("Please select a dataset to fit.")
+            msgBox.exec_()
             return
             
         theoreticalmodel = self.modelStoreModel.modelStore['theoretical']
@@ -719,6 +723,9 @@ class MyMainWindow(QtGui.QMainWindow):
                 fitted_parameters = np.array([1,2,3,4,5,6,7,8,9, 10, 11])
                 self.modelStoreModel.modelStore['theoretical'].parameters = parameters[:]
                 self.modelStoreModel.modelStore['theoretical'].fitted_parameters = fitted_parameters[:]
+                self.modelStoreModel.modelStore['theoretical'].defaultlimits(True)
+
+                self.UDFmodel.modelReset.emit()
         else:
             #a user reflectometry plugin is being used.
             self.modelStoreModel.modelStore.displayOtherThanReflect = True
@@ -778,7 +785,7 @@ class MyMainWindow(QtGui.QMainWindow):
             if model.limits is not None and model.limits.ndim == 2 and np.size(model.limits, 1) == np.size(model.parameters):
                 self.modelStoreModel.modelStore['theoretical'].limits = np.copy(model.limits)
             else:
-                self.modelStoreModel.modelStore['theoretical'].defaultlimits()
+                self.modelStoreModel.modelStore['theoretical'].defaultlimits(True)
             
             self.baseModel.dataChanged.emit(QtCore.QModelIndex(), QtCore.QModelIndex())
 
@@ -1189,9 +1196,14 @@ class MySLDGraphs(FigureCanvas):
         
     def add_dataObject(self, dataObject):
         if dataObject.line2Dsld_profile is None and dataObject.sld_profile is not None:
+            color = 'b'
+            if dataObject.line2D:
+                color = artist.getp(dataObject.line2D, 'color')
+            
             dataObject.line2Dsld_profile = self.axes[0].plot(dataObject.sld_profile[0],
                                             dataObject.sld_profile[1],
                                                linestyle='-',
+                                                color = color,
                                                 lw = 2,
                                                  label = 'sld_' + dataObject.name)[0]
             

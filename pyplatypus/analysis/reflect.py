@@ -207,12 +207,7 @@ class ReflectivityFitObject(fitting.FitObject):
         if not len(args):
             args = self.args
         
-        if parameters is not None:
-            test_parameters = parameters
-        else:
-            test_parameters = self.parameters
-        
-        yvals = abeles(self.xdata, test_parameters, *args, **self.kwds)
+        yvals = abeles(self.xdata, parameters, *args, **self.kwds)
  
         if self.transform:
             yvals, temp = self.transform(self.xdata, yvals)
@@ -220,37 +215,33 @@ class ReflectivityFitObject(fitting.FitObject):
         return yvals
         
     
-    def sld_profile(self, test_parameters, args = (), **kwds):
+    def sld_profile(self, parameters, args = (), **kwds):
 
         '''
             returns the SLD profile corresponding to the model parameters.
-            The model parameters are either taken from arg[0], if it exists, or from self.parameters.
-            
+                        
             returns z, rho(z) - the distance from the top interface and the SLD at that point            
         '''
-
-        if test_parameters is None:
-            test_parameters = self.parameters
             
         if 'points' in kwds and kwds['points'] is not None:
-            return points, sld_profile(test_parameters, points)
+            return points, sld_profile(parameters, points)
         
-        if not int(test_parameters[0]):
-            zstart= -5 - 4 * math.fabs(test_parameters[7])
+        if not int(parameters[0]):
+            zstart= -5 - 4 * math.fabs(parameters[7])
         else:
-            zstart= -5 - 4 * math.fabs(test_parameters[11])
+            zstart= -5 - 4 * math.fabs(parameters[11])
         
         temp = 0
-        if not int(test_parameters[0]):
-            zend = 5 + 4 * math.fabs(test_parameters[7])
+        if not int(parameters[0]):
+            zend = 5 + 4 * math.fabs(parameters[7])
         else:
-            for ii in xrange(int(test_parameters[0])):
-                temp += math.fabs(test_parameters[4 * ii + 8])
-            zend = 5 + temp + 4 * math.fabs(test_parameters[7])
+            for ii in xrange(int(parameters[0])):
+                temp += math.fabs(parameters[4 * ii + 8])
+            zend = 5 + temp + 4 * math.fabs(parameters[7])
             
         points = np.linspace(zstart, zend, num = 500)
         
-        return points, sld_profile(test_parameters, points)
+        return points, sld_profile(parameters, points)
     
     def progress(self, iterations, convergence, chi2, *args):
         return True
