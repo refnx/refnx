@@ -1095,11 +1095,14 @@ class MyReflectivityGraphs(FigureCanvas):
                 artist.setp(dataObject.line2D, **dataObject.graph_properties['line2D_properties'])
         
         if dataObject.line2Dfit is None and dataObject.fit is not None:
+            if dataObject.line2D:
+                color = artist.getp(dataObject.line2D, 'color')
             dataObject.line2Dfit = self.axes[0].plot(dataObject.W_q,
                                                         dataObject.fit,
                                                            linestyle='-',
-                                                            lw = 2,
-                                                             label = 'fit_' + dataObject.name)[0]
+                                                            color = color,
+                                                             lw = 2,
+                                                              label = 'fit_' + dataObject.name)[0]
             if dataObject.graph_properties['line2Dfit_properties']:
                 artist.setp(dataObject.line2Dfit, **dataObject.graph_properties['line2Dfit_properties'])
         
@@ -1116,7 +1119,8 @@ class MyReflectivityGraphs(FigureCanvas):
         self.axes[0].relim()
         self.axes[0].autoscale(axis='both', tight = False, enable = True)
         self.draw()
-    
+        dataObject._save_graph_properties()
+            
     def redraw_dataObjects(self, dataObjects, visible = True):
         for dataObject in dataObjects:
             if not dataObject:

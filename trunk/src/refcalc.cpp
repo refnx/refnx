@@ -22,7 +22,7 @@
 #endif
 
 
-#define NUM_CPUS 10
+#define NUM_CPUS 4
 
 
 using namespace std;
