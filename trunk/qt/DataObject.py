@@ -210,13 +210,16 @@ class DataObject(reflectdataset.ReflectDataset):
             self.sld_profile = RFO.sld_profile(model.parameters)
     
     def progress(self, iterations, convergence, chi2, *args):
-        self.progressdialog.setValue(int(convergence * 100))
-        if self.progressdialog.wasCanceled():
-            raise fitting.FitAbortedException('Fit aborted')
+        try:
+            self.progressdialog.setValue(int(convergence * 100))
+            if self.progressdialog.wasCanceled():
+                raise fitting.FitAbortedException('Fit aborted')
+                return False
+            else:  
+                return True
+        except ValueError:
             return False
-        else:  
-            return True
-                  
+                              
     def evaluate_chi2(self, model, store = False, fitPlugin = None):
         
         callerInfo = deepcopy(model.__dict__)
@@ -263,11 +266,11 @@ class DataObject(reflectdataset.ReflectDataset):
         else:
             RFO = reflect.ReflectivityFitObject(**callerInfo)
                 
-        fit = RFO.model(None)
+        fit = RFO.model(callerInfo['parameters'])
         
         sld_profile = None
         if 'sld_profile' in dir(RFO):
-            sld_profile = RFO.sld_profile(None)
+            sld_profile = RFO.sld_profile(callerInfo['parameters'])
             
         if store:
             self.fit = fit

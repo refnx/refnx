@@ -35,7 +35,7 @@ class Model(object):
                 self.covariance = np.zeros((self.parameters.size, self.parameters.size))
             
             if self.limits is None:
-                self.defaultlimits()
+                self.defaultlimits(True)
         
     def save(self, f):
         f.write(f.name + '\n')
@@ -78,12 +78,14 @@ class Model(object):
         self.covariance = np.fromfile(f, dtype = 'float64', sep = ' \t', count = numparams * numparams)
         self.covariance = self.covariance.reshape((numparams, numparams))
         
-    def defaultlimits(self):
-        self.limits = np.zeros((2, np.size(self.parameters)))
+    def defaultlimits(self, set = False):
+        defaultlimits = np.zeros((2, np.size(self.parameters)))
             
         for idx, val in enumerate(self.parameters):
             if val < 0:
-                self.limits[0, idx] = 2 * val
+                defaultlimits[0, idx] = 2 * val
             else:
-                self.limits[1, idx] = 2 * val 
-                    
+                defaultlimits[1, idx] = 2 * val 
+        
+        if set:
+            self.limits = defaultlimits                
