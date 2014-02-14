@@ -213,7 +213,6 @@ class BaseModel(QtCore.QAbstractTableModel):
                         thesignal = self.layersFinishedBeingRemoved
                         fitted_parameters = np.extract(fitted_parameters < 8, fitted_parameters)
                         parameters[0] = newlayers
-                        
                     else:
                         if newlayers > oldlayers:
                             title = 'Where would you like to insert the new layers'
@@ -266,6 +265,7 @@ class BaseModel(QtCore.QAbstractTableModel):
                                          fitted_parameters)
                             
                             thesignal = self.layersFinishedBeingRemoved
+
                             
                     #YOU HAVE TO RESIZE LAYER PARAMS
                     self.model.parameters = parameters[:]
@@ -687,34 +687,35 @@ class UDFParametersModel(QtCore.QAbstractTableModel):
                     if newparams == currentparams:
                         return True
                                     
-                if newparams > currentparams:
-                    self.beginInsertRows(QtCore.QModelIndex(), currentparams + 1, newparams)
-                if newparams < currentparams:
-                     self.beginRemoveRows(QtCore.QModelIndex(), newparams + 1, currentparams)
+                    if newparams > currentparams:
+                        self.beginInsertRows(QtCore.QModelIndex(), currentparams + 1, newparams)
+                    if newparams < currentparams:
+                         self.beginRemoveRows(QtCore.QModelIndex(), newparams + 1, currentparams)
 
-                self.model.parameters = np.resize(self.model.parameters, newparams)
-                self.model.parameters[currentparams:-1] = 0.
-
-                if newparams > currentparams:
-                    self.model.limits = np.append(self.model.limits, np.zeros((2, newparams - currentparams)),axis = 1)
-                    defaultlimits = self.model.defaultlimits()
-                    self.model.limits[:, currentparams:-1] = defaultlimits[:, currentparams:-1]
-                    self.model.fitted_parameters = np.append(self.model.fitted_parameters, range(currentparams, newparams))
-                    self.endInsertRows()
-                if newparams < currentparams:                
-                    self.model.limits = self.model.limits[:, 0: newparams]
-                    self.model.fitted_parameters.sort()
-                    #get rid of all parameters greater than newparams
-                    idx = np.searchsorted(self.model.fitted_parameters, newparams)
-                    self.model.fitted_parameters = self.model.fitted_parameters[: idx]
-                    self.endRemoveRows()
-                        
+                    self.model.parameters = np.resize(self.model.parameters, newparams)
+                    self.model.parameters[currentparams:] = 0.
+                
+                    if newparams > currentparams:
+                        self.model.limits = np.append(self.model.limits, np.zeros((2, newparams - currentparams)),axis = 1)
+                        defaultlimits = self.model.defaultlimits()
+                        self.model.limits[:, currentparams:-1] = defaultlimits[:, currentparams:-1]
+                        self.model.fitted_parameters = np.append(self.model.fitted_parameters, range(currentparams, newparams))
+                        self.endInsertRows()
+                    if newparams < currentparams:                
+                        self.model.limits = self.model.limits[:, 0: newparams]
+                        self.model.fitted_parameters.sort()
+                        #get rid of all parameters greater than newparams
+                        idx = np.searchsorted(self.model.fitted_parameters, newparams)
+                        self.model.fitted_parameters = self.model.fitted_parameters[: idx]
+                        self.endRemoveRows()   
+                    self.modelReset.emit()                        
             if row > 0:
                 validator = QtGui.QDoubleValidator()
                 voutput = validator.validate(value, 1)
                 if voutput[0] == QtGui.QValidator.State.Acceptable:
                     number = voutput[1]
                 else:
+                    print 'not true'
                     return False
                 
                 if col == 0:
@@ -735,6 +736,18 @@ class UDFParametersModel(QtCore.QAbstractTableModel):
         col = index.column()
             
         if role == QtCore.Qt.DisplayRole:
+            limitssize = np.size(self.model.limits, 1)
+            paramssize = np.size(self.model.parameters)
+            currentlims = np.copy(self.model.limits)
+            defaultlimits = self.model.defaultlimits()
+            if limitssize != paramssize:
+                if limitssize < paramssize:
+                    self.model.limits = np.zeros((2, paramssize))
+                    self.model.limits[:, 0: limitssize] = currentlims[:, 0:limitssize]
+                elif limitssize > paramssize:
+                    self.model.limits = np.zeros((2, paramssize))
+                    self.model.limits[:, 0:paramssize] = currentlims[:, 0:paramssize]
+                
             if col == 0:
                 if row == 0:
                     return str(np.size(self.model.parameters))
@@ -761,7 +774,7 @@ class UDFParametersModel(QtCore.QAbstractTableModel):
             if section == 0:
                 return 'number of parameters'
             else:
-                return str(section)
+                return str(section - 1)
             
         if orientation == QtCore.Qt.Horizontal:
             if section == 0:
