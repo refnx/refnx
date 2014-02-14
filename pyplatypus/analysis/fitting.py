@@ -239,7 +239,6 @@ Object attributes:
             self.parameters[self.fitted_parameters] = popt
             self.chi2 = chi2
             Hfun = ndt.Hessian(self.energy, n=2)
-            print popt.shape
             hess = Hfun(popt)
             self.covariance = scipy.linalg.pinv(hess)
 
