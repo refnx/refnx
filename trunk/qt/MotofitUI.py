@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'Motofit.ui'
 #
-# Created: Wed Feb 12 16:46:07 2014
+# Created: Fri Feb 14 15:24:23 2014
 #      by: pyside-uic 0.2.15 running on PySide 1.2.1
 #
 # WARNING! All changes made in this file will be lost!
@@ -249,20 +249,20 @@ class Ui_MainWindow(object):
         self.baseModelView.setObjectName("baseModelView")
         self.baseModelView.horizontalHeader().setStretchLastSection(True)
         self.gridLayout_2.addWidget(self.baseModelView, 0, 0, 2, 1)
-        self.chi2lineEdit = QtGui.QLineEdit(self.tab)
+        self.chi2 = QtGui.QLineEdit(self.tab)
         sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Maximum)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.chi2lineEdit.sizePolicy().hasHeightForWidth())
-        self.chi2lineEdit.setSizePolicy(sizePolicy)
-        self.chi2lineEdit.setMaximumSize(QtCore.QSize(100, 25))
+        sizePolicy.setHeightForWidth(self.chi2.sizePolicy().hasHeightForWidth())
+        self.chi2.setSizePolicy(sizePolicy)
+        self.chi2.setMaximumSize(QtCore.QSize(100, 25))
         font = QtGui.QFont()
         font.setPointSize(11)
-        self.chi2lineEdit.setFont(font)
-        self.chi2lineEdit.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignTrailing|QtCore.Qt.AlignVCenter)
-        self.chi2lineEdit.setReadOnly(True)
-        self.chi2lineEdit.setObjectName("chi2lineEdit")
-        self.gridLayout_2.addWidget(self.chi2lineEdit, 0, 1, 1, 1)
+        self.chi2.setFont(font)
+        self.chi2.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignTrailing|QtCore.Qt.AlignVCenter)
+        self.chi2.setReadOnly(True)
+        self.chi2.setObjectName("chi2")
+        self.gridLayout_2.addWidget(self.chi2, 0, 1, 1, 1)
         self.dataset_comboBox = QtGui.QComboBox(self.tab)
         sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
@@ -396,9 +396,9 @@ class Ui_MainWindow(object):
         self.UDFmodel_comboBox = QtGui.QComboBox(self.tab_3)
         self.UDFmodel_comboBox.setObjectName("UDFmodel_comboBox")
         self.gridLayout_7.addWidget(self.UDFmodel_comboBox, 4, 1, 1, 1)
-        self.chi2 = QtGui.QLineEdit(self.tab_3)
-        self.chi2.setObjectName("chi2")
-        self.gridLayout_7.addWidget(self.chi2, 5, 1, 1, 1)
+        self.chi2UDF = QtGui.QLineEdit(self.tab_3)
+        self.chi2UDF.setObjectName("chi2UDF")
+        self.gridLayout_7.addWidget(self.chi2UDF, 5, 1, 1, 1)
         self.UDFmodelView = QtGui.QTableView(self.tab_3)
         self.UDFmodelView.setEnabled(True)
         self.UDFmodelView.setMinimumSize(QtCore.QSize(600, 0))
@@ -612,7 +612,7 @@ class Ui_MainWindow(object):
         self.menuFit_as.setTitle(QtGui.QApplication.translate("MainWindow", "Fit as", None, QtGui.QApplication.UnicodeUTF8))
         self.menuFile.setTitle(QtGui.QApplication.translate("MainWindow", "File", None, QtGui.QApplication.UnicodeUTF8))
         self.menuSettings.setTitle(QtGui.QApplication.translate("MainWindow", "Settings", None, QtGui.QApplication.UnicodeUTF8))
-        self.chi2lineEdit.setText(QtGui.QApplication.translate("MainWindow", "0", None, QtGui.QApplication.UnicodeUTF8))
+        self.chi2.setText(QtGui.QApplication.translate("MainWindow", "0", None, QtGui.QApplication.UnicodeUTF8))
         self.res_SpinBox.setPrefix(QtGui.QApplication.translate("MainWindow", "dq/q(%) : ", None, QtGui.QApplication.UnicodeUTF8))
         self.do_fit_button.setShortcut(QtGui.QApplication.translate("MainWindow", "Meta+F", None, QtGui.QApplication.UnicodeUTF8))
         self.use_dqwave_checkbox.setText(QtGui.QApplication.translate("MainWindow", "Use dq wave?", None, QtGui.QApplication.UnicodeUTF8))

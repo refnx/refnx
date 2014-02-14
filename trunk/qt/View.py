@@ -582,7 +582,7 @@ class MyMainWindow(QtGui.QMainWindow):
                 alreadygotlimits = True
         
         if not alreadygotlimits:
-            theoreticalmodel.defaultlimits()              
+            theoreticalmodel.defaultlimits(True)            
         
         if self.settings.fittingAlgorithm != 'LM':
             ok, limits = self.get_limits(theoreticalmodel.parameters,
@@ -704,6 +704,14 @@ class MyMainWindow(QtGui.QMainWindow):
         self.redraw_dataObject_graphs([dataset], visible = dataset.graph_properties['visible'])
     
     @QtCore.Slot(int)
+    def on_tabWidget_currentChanged(self, arg_1):
+        if arg_1 == 0:
+            self.layerModel.modelReset.emit()
+            self.baseModel.modelReset.emit()
+        if arg_1 == 2:
+            self.UDFmodel.modelReset.emit()
+    
+    @QtCore.Slot(int)
     def on_UDFplugin_comboBox_currentIndexChanged(self, arg_1):        
     
         if arg_1 == 0:
@@ -732,9 +740,9 @@ class MyMainWindow(QtGui.QMainWindow):
 # 
         self.fitPlugin = self.pluginStoreModel.plugins[arg_1]
 
-    @QtCore.Slot(int)
+    @QtCore.Slot(unicode)
     def on_UDFmodel_comboBox_currentIndexChanged(self, arg_1):        
-        pass
+        self.select_a_model(arg_1)
 
     @QtCore.Slot(unicode)
     def on_UDFdataset_comboBox_currentIndexChanged(self, arg_1):
@@ -768,9 +776,9 @@ class MyMainWindow(QtGui.QMainWindow):
                                 
     @QtCore.Slot(unicode)
     def on_model_comboBox_currentIndexChanged(self, arg_1):
-        """
+        '''
         model selection changed, update view with parameters from model.
-        """
+        '''
         self.settings.current_model_name = arg_1
         self.select_a_model(arg_1)        
     
@@ -786,20 +794,14 @@ class MyMainWindow(QtGui.QMainWindow):
                 self.modelStoreModel.modelStore['theoretical'].limits = np.copy(model.limits)
             else:
                 self.modelStoreModel.modelStore['theoretical'].defaultlimits(True)
-            
+
             self.baseModel.dataChanged.emit(QtCore.QModelIndex(), QtCore.QModelIndex())
-
-            if model.parameters is not None:
-                self.modelStoreModel.modelStore['theoretical'].parameters =  model.parameters[:]
-            if model.fitted_parameters is not None:            
-                self.modelStoreModel.modelStore['theoretical'].fitted_parameters =  model.fitted_parameters[:]
-
             self.layerModel.dataChanged.emit(self.layerModel.createIndex(0,0), self.layerModel.createIndex(2 + int(model.parameters[0]),3))
-                        
             self.layerModel.modelReset.emit()
-
-#            self.update_gui_modelChanged()
-        except KeyError:
+            self.UDFmodel.modelReset.emit()
+            
+            self.update_gui_modelChanged()
+        except KeyError as e:
             return
         except IndexError, AttributeError:
             print model.parameters, model.fitted_parameters
@@ -1032,7 +1034,8 @@ class MyMainWindow(QtGui.QMainWindow):
 
                 energy = tempdataset.evaluate_chi2(model, fitPlugin = fitPlugin)
                 model.transform = None
-                self.ui.chi2lineEdit.setText(str(round(energy, 3)))     
+                self.ui.chi2.setText(str(round(energy, 3)))
+                self.ui.chi2UDF.setText(str(round(energy, 3)))
         
             self.redraw_dataObject_graphs([self.theoretical])
 

@@ -88,4 +88,6 @@ class Model(object):
                 defaultlimits[1, idx] = 2 * val 
         
         if set:
-            self.limits = defaultlimits                
+            self.limits = defaultlimits  
+
+        return defaultlimits              
