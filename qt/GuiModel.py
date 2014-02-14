@@ -677,6 +677,7 @@ class UDFParametersModel(QtCore.QAbstractTableModel):
                 
         if role == QtCore.Qt.EditRole:
             if row == 0 and col == 0:
+                print dir(self)
                 currentparams = self.rowCount() - 1
                 
                 validator = QtGui.QIntValidator()
