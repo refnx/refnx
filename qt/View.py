@@ -13,7 +13,7 @@ import GuiModel
 import pyplatypus.analysis.model as model
 import pyplatypus.analysis.reflect as reflect
 import pyplatypus.analysis.fitting as fitting
-import DataObject
+from data_object import DataObject
 import limitsUI
 import qrangedialogUI
 import os.path
@@ -67,7 +67,7 @@ class MyMainWindow(QtGui.QMainWindow):
         self.settings = ProgramSettings()
         self.restoreSettings()
                 
-        self.theoretical = DataObject.DataObject(dataTuple = dataTuple)
+        self.theoretical = DataObject(dataTuple = dataTuple)
 
         theoreticalmodel = model.Model(parameters=parameters, fitted_parameters = fitted_parameters)
         self.modelStoreModel.add(theoreticalmodel, 'theoretical')
@@ -646,7 +646,7 @@ class MyMainWindow(QtGui.QMainWindow):
             #how did you want to fit the dataset - logY vs X, lin Y vs X, etc.
             #select a transform.  Note that we have to transform the data for the fit as well            
             transform_fnctn = reflect.Transform(self.settings.transform).transform
-            tempdataset = DataObject.DataObject(dataset.get_data())
+            tempdataset = DataObject(dataset.get_data())
             tempdataset.W_ref, tempdataset.W_refSD = transform_fnctn(tempdataset.W_q,
                                                                       tempdataset.W_ref,
                                                                         tempdataset.W_refSD)
@@ -1021,7 +1021,7 @@ class MyMainWindow(QtGui.QMainWindow):
             self.theoretical.evaluate_model(model, store = True, fitPlugin = fitPlugin)
             if self.current_dataset is not None and self.current_dataset.name != 'theoretical':
                 transform_fnctn = reflect.Transform(self.settings.transform).transform
-                tempdataset = DataObject.DataObject(self.current_dataset.get_data())
+                tempdataset = DataObject(self.current_dataset.get_data())
                 tempdataset.W_ref, tempdataset.W_refSD = transform_fnctn(tempdataset.W_q,
                                                                   tempdataset.W_ref,
                                                                     tempdataset.W_refSD)

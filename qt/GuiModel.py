@@ -1,7 +1,7 @@
 from __future__ import division
 from PySide import QtCore, QtGui
 import DataStore
-import DataObject
+from data_object import DataObject
 import imp
 import sys
 import inspect
@@ -94,14 +94,14 @@ class DataStoreModel(QtCore.QAbstractTableModel):
     def snapshot(self, snapshotname):        
         original = self.dataStore['theoretical']
         dataTuple = (np.copy(original.W_q), np.copy(original.fit))
-        snapshot = DataObject.DataObject(name = snapshotname, dataTuple = dataTuple)
+        snapshot = DataObject(name = snapshotname, dataTuple = dataTuple)
         self.add(snapshot)
         self.insertRows(self.dataStore.numDataObjects)
         self.dataChanged.emit(QtCore.QModelIndex(),QtCore.QModelIndex())
         
     def remove(self, name):
         index = self.dataStore.names.index(name)
-        self.dataStore.removeDataObject(name)
+        self.dataStore.remove_DataObject(name)
         self.removeRows(index, 0)
         self.dataChanged.emit(QtCore.QModelIndex(),QtCore.QModelIndex())
         
