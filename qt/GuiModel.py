@@ -134,7 +134,7 @@ class ModelStoreModel(QtCore.QAbstractListModel):
         	return (QtCore.Qt.ItemIsEnabled |
     	            QtCore.Qt.ItemIsSelectable)
         else:
-            if reflect.isProperAbelesInput(parameters):
+            if reflect.is_proper_Abeles_input(parameters):
             	return (QtCore.Qt.ItemIsEnabled |
         	            QtCore.Qt.ItemIsSelectable)
             else:
@@ -193,7 +193,7 @@ class BaseModel(QtCore.QAbstractTableModel):
                 
                 parameters = np.copy(self.model.parameters)
                 
-                if not reflect.isProperAbelesInput(parameters):
+                if not reflect.is_proper_Abeles_input(parameters):
                     raise ValueError("The size of the parameter array passed to abeles should be 4 * coefs[0] + 8")
                 
                 fitted_parameters = np.copy(self.model.fitted_parameters)
@@ -289,7 +289,7 @@ class BaseModel(QtCore.QAbstractTableModel):
         if not index.isValid():
             return None
             
-        if not reflect.isProperAbelesInput(self.model.parameters):
+        if not reflect.is_proper_Abeles_input(self.model.parameters):
             return None
         
         if index.row() != 0 or index.column() < 0 or index.column() > 2:
@@ -416,7 +416,7 @@ class LayerModel(QtCore.QAbstractTableModel):
         row = index.row()
         col = index.column()
         
-        if not reflect.isProperAbelesInput(self.model.parameters):
+        if not reflect.is_proper_Abeles_input(self.model.parameters):
             return None
 
         numlayers = int(self.model.parameters[0])
@@ -697,7 +697,7 @@ class UDFParametersModel(QtCore.QAbstractTableModel):
                 
                     if newparams > currentparams:
                         self.model.limits = np.append(self.model.limits, np.zeros((2, newparams - currentparams)),axis = 1)
-                        defaultlimits = self.model.defaultlimits()
+                        defaultlimits = self.model.default_limits()
                         self.model.limits[:, currentparams:-1] = defaultlimits[:, currentparams:-1]
                         self.model.fitted_parameters = np.append(self.model.fitted_parameters, range(currentparams, newparams))
                         self.endInsertRows()
@@ -739,7 +739,7 @@ class UDFParametersModel(QtCore.QAbstractTableModel):
             limitssize = np.size(self.model.limits, 1)
             paramssize = np.size(self.model.parameters)
             currentlims = np.copy(self.model.limits)
-            defaultlimits = self.model.defaultlimits()
+            defaultlimits = self.model.default_limits()
             if limitssize != paramssize:
                 if limitssize < paramssize:
                     self.model.limits = np.zeros((2, paramssize))

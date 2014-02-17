@@ -10,7 +10,7 @@ from matplotlib.backends.backend_qt4agg import NavigationToolbar2QTAgg as Naviga
 from matplotlib.figure import Figure
 import matplotlib.artist as artist
 import GuiModel
-import pyplatypus.analysis.Model as Model
+import pyplatypus.analysis.model as model
 import pyplatypus.analysis.reflect as reflect
 import pyplatypus.analysis.fitting as fitting
 import DataObject
@@ -69,7 +69,7 @@ class MyMainWindow(QtGui.QMainWindow):
                 
         self.theoretical = DataObject.DataObject(dataTuple = dataTuple)
 
-        theoreticalmodel = Model.Model(parameters=parameters, fitted_parameters = fitted_parameters)
+        theoreticalmodel = model.Model(parameters=parameters, fitted_parameters = fitted_parameters)
         self.modelStoreModel.add(theoreticalmodel, 'theoretical')
         
         self.baseModel = GuiModel.BaseModel(self.modelStoreModel.modelStore['theoretical'])                
@@ -344,7 +344,7 @@ class MyMainWindow(QtGui.QMainWindow):
                 folder = dialog.selectedFiles()
                 fits.pop()
                 for fit in fits:
-                    self.dataStoreModel.dataStore[fit].saveFit(os.path.join(folder[0], 'fit_' + fit + '.dat'))                
+                    self.dataStoreModel.dataStore[fit].savefit(os.path.join(folder[0], 'fit_' + fit + '.dat'))                
         else:
             fitFileName, ok = QtGui.QFileDialog.getSaveFileName(self, caption = 'Save fit as:', dir='fit_' + which_fit)        
             if not ok:
@@ -353,7 +353,7 @@ class MyMainWindow(QtGui.QMainWindow):
 
     def loadModel(self, fileName):
         with open(fileName, 'Ur') as f:
-            themodel = Model.Model(None, file = f)
+            themodel = model.Model(None, file = f)
 
         modelName = os.path.basename(fileName)
         self.modelStoreModel.modelStore.add(themodel, os.path.basename(modelName))
@@ -483,7 +483,7 @@ class MyMainWindow(QtGui.QMainWindow):
             return
             
         theoreticalmodel = self.modelStoreModel.modelStore['theoretical']
-        theoreticalmodel.defaultlimits()              
+        theoreticalmodel.default_limits()              
         if self.settings.fittingAlgorithm != 'LM':
             ok, limits = self.get_limits(theoreticalmodel.parameters,
                                                          theoreticalmodel.fitted_parameters,
@@ -582,7 +582,7 @@ class MyMainWindow(QtGui.QMainWindow):
                 alreadygotlimits = True
         
         if not alreadygotlimits:
-            theoreticalmodel.defaultlimits(True)            
+            theoreticalmodel.default_limits(True)            
         
         if self.settings.fittingAlgorithm != 'LM':
             ok, limits = self.get_limits(theoreticalmodel.parameters,
@@ -617,7 +617,7 @@ class MyMainWindow(QtGui.QMainWindow):
                 alreadygotlimits = True
         
         if not alreadygotlimits:
-            theoreticalmodel.defaultlimits()              
+            theoreticalmodel.default_limits()              
             
         if self.settings.fittingAlgorithm != 'LM':
             ok, limits = self.get_limits(theoreticalmodel.parameters,
@@ -721,7 +721,7 @@ class MyMainWindow(QtGui.QMainWindow):
             '''
                 you need to display a model suitable for reflectometry
             '''
-            areAnyModelsValid = [reflect.isProperAbelesInput(model.parameters) for model in self.modelStoreModel.modelStore]
+            areAnyModelsValid = [reflect.is_proper_Abeles_input(model.parameters) for model in self.modelStoreModel.modelStore]
             try:
                 idx = areAnyModelsValid.index(True)
                 self.select_a_model(self.modelStoreModel.modelStore.names[idx])
@@ -731,7 +731,7 @@ class MyMainWindow(QtGui.QMainWindow):
                 fitted_parameters = np.array([1,2,3,4,5,6,7,8,9, 10, 11])
                 self.modelStoreModel.modelStore['theoretical'].parameters = parameters[:]
                 self.modelStoreModel.modelStore['theoretical'].fitted_parameters = fitted_parameters[:]
-                self.modelStoreModel.modelStore['theoretical'].defaultlimits(True)
+                self.modelStoreModel.modelStore['theoretical'].default_limits(True)
 
                 self.UDFmodel.modelReset.emit()
         else:
@@ -793,7 +793,7 @@ class MyMainWindow(QtGui.QMainWindow):
             if model.limits is not None and model.limits.ndim == 2 and np.size(model.limits, 1) == np.size(model.parameters):
                 self.modelStoreModel.modelStore['theoretical'].limits = np.copy(model.limits)
             else:
-                self.modelStoreModel.modelStore['theoretical'].defaultlimits(True)
+                self.modelStoreModel.modelStore['theoretical'].default_limits(True)
 
             self.baseModel.dataChanged.emit(QtCore.QModelIndex(), QtCore.QModelIndex())
             self.layerModel.dataChanged.emit(self.layerModel.createIndex(0,0), self.layerModel.createIndex(2 + int(model.parameters[0]),3))

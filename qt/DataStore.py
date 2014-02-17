@@ -1,7 +1,7 @@
 from __future__ import division
 import numpy as np
 import DataObject
-import pyplatypus.analysis.Model as Model
+import pyplatypus.analysis.model as model
 from copy import deepcopy, copy
 import matplotlib.artist as artist
 from PySide import QtGui, QtCore
@@ -126,7 +126,7 @@ class ModelStore(object):
         for file in files:
             try:
                 with open(file, 'Ur') as f:
-                    model = Model.Model(None)
+                    model = model.Model(None)
                     model.load(f)
                     self.add(model, os.path.basename(file))
             except IOError:
@@ -135,7 +135,7 @@ class ModelStore(object):
                 
     def snapshot(self, name, snapshotname):
         model = self.models[name]
-        snapshot = Model(parameters = model.parameters,
+        snapshot = model.Model(parameters = model.parameters,
                             fitted_parameters = model.fitted_parameters,
                              limits = model.limits,
                               useerrors = model.useerrors,
