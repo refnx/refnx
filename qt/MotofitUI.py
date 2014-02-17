@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'Motofit.ui'
 #
-# Created: Fri Feb 14 15:24:23 2014
+# Created: Mon Feb 17 14:49:26 2014
 #      by: pyside-uic 0.2.15 running on PySide 1.2.1
 #
 # WARNING! All changes made in this file will be lost!
@@ -204,6 +204,8 @@ class Ui_MainWindow(object):
         self.menuFile.setObjectName("menuFile")
         self.menuSettings = QtGui.QMenu(self.menubar)
         self.menuSettings.setObjectName("menuSettings")
+        self.menuMisc = QtGui.QMenu(self.menubar)
+        self.menuMisc.setObjectName("menuMisc")
         MainWindow.setMenuBar(self.menubar)
         self.dockWidget = QtGui.QDockWidget(MainWindow)
         sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
@@ -559,6 +561,8 @@ class Ui_MainWindow(object):
         self.actionTake_Snapshot.setObjectName("actionTake_Snapshot")
         self.actionResolution_smearing = QtGui.QAction(MainWindow)
         self.actionResolution_smearing.setObjectName("actionResolution_smearing")
+        self.actionSLD_calculator = QtGui.QAction(MainWindow)
+        self.actionSLD_calculator.setObjectName("actionSLD_calculator")
         self.menuData.addAction(self.actionLoad_Data)
         self.menuData.addAction(self.actionRefresh_Data)
         self.menuData.addAction(self.actionRemove_Data)
@@ -586,12 +590,14 @@ class Ui_MainWindow(object):
         self.menuFile.addAction(self.actionLoad_File)
         self.menuSettings.addAction(self.actionChange_Q_range)
         self.menuSettings.addAction(self.actionResolution_smearing)
+        self.menuMisc.addAction(self.actionSLD_calculator)
         self.menubar.addAction(self.menuFile.menuAction())
         self.menubar.addAction(self.menuData.menuAction())
         self.menubar.addAction(self.menuModel.menuAction())
         self.menubar.addAction(self.menuPlot_type.menuAction())
         self.menubar.addAction(self.menuSettings.menuAction())
         self.menubar.addAction(self.menuHelp.menuAction())
+        self.menubar.addAction(self.menuMisc.menuAction())
 
         self.retranslateUi(MainWindow)
         self.graphs.setCurrentIndex(0)
@@ -612,6 +618,7 @@ class Ui_MainWindow(object):
         self.menuFit_as.setTitle(QtGui.QApplication.translate("MainWindow", "Fit as", None, QtGui.QApplication.UnicodeUTF8))
         self.menuFile.setTitle(QtGui.QApplication.translate("MainWindow", "File", None, QtGui.QApplication.UnicodeUTF8))
         self.menuSettings.setTitle(QtGui.QApplication.translate("MainWindow", "Settings", None, QtGui.QApplication.UnicodeUTF8))
+        self.menuMisc.setTitle(QtGui.QApplication.translate("MainWindow", "Misc", None, QtGui.QApplication.UnicodeUTF8))
         self.chi2.setText(QtGui.QApplication.translate("MainWindow", "0", None, QtGui.QApplication.UnicodeUTF8))
         self.res_SpinBox.setPrefix(QtGui.QApplication.translate("MainWindow", "dq/q(%) : ", None, QtGui.QApplication.UnicodeUTF8))
         self.do_fit_button.setShortcut(QtGui.QApplication.translate("MainWindow", "Meta+F", None, QtGui.QApplication.UnicodeUTF8))
@@ -644,7 +651,7 @@ class Ui_MainWindow(object):
         self.actionLoad_experiment.setShortcut(QtGui.QApplication.translate("MainWindow", "Meta+N", None, QtGui.QApplication.UnicodeUTF8))
         self.actionSave_experiment.setText(QtGui.QApplication.translate("MainWindow", "Save", None, QtGui.QApplication.UnicodeUTF8))
         self.actionSave_experiment.setShortcut(QtGui.QApplication.translate("MainWindow", "Meta+M", None, QtGui.QApplication.UnicodeUTF8))
-        self.actionLoad_Plugin.setText(QtGui.QApplication.translate("MainWindow", "Load Plugin", None, QtGui.QApplication.UnicodeUTF8))
+        self.actionLoad_Plugin.setText(QtGui.QApplication.translate("MainWindow", "Load Fitting Plugin", None, QtGui.QApplication.UnicodeUTF8))
         self.actionSave_File.setText(QtGui.QApplication.translate("MainWindow", "Save", None, QtGui.QApplication.UnicodeUTF8))
         self.actionSave_File.setShortcut(QtGui.QApplication.translate("MainWindow", "Meta+S", None, QtGui.QApplication.UnicodeUTF8))
         self.actionLoad_File.setText(QtGui.QApplication.translate("MainWindow", "Load", None, QtGui.QApplication.UnicodeUTF8))
@@ -661,4 +668,5 @@ class Ui_MainWindow(object):
         self.actionChange_Q_range.setText(QtGui.QApplication.translate("MainWindow", "Change Q Range", None, QtGui.QApplication.UnicodeUTF8))
         self.actionTake_Snapshot.setText(QtGui.QApplication.translate("MainWindow", "Take Snapshot", None, QtGui.QApplication.UnicodeUTF8))
         self.actionResolution_smearing.setText(QtGui.QApplication.translate("MainWindow", "Resolution Smearing", None, QtGui.QApplication.UnicodeUTF8))
+        self.actionSLD_calculator.setText(QtGui.QApplication.translate("MainWindow", "SLD calculator", None, QtGui.QApplication.UnicodeUTF8))
 

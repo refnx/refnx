@@ -551,6 +551,10 @@ class MyMainWindow(QtGui.QMainWindow):
         elif transform == 'YX2':
             self.ui.actionYX2_vs_X.setChecked(True)
         self.settings.transform = transform
+    
+    @QtCore.Slot()
+    def on_actionSLD_calculator_triggered(self):
+        pass
      
     def get_limits(self, parameters, fitted_parameters, limits):
 
