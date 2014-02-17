@@ -154,12 +154,18 @@ class MyMainWindow(QtGui.QMainWindow):
                 continue
             except Exception:
                 pass
-                
+            
+            try:
+                self.pluginStoreModel.add(url.toLocalFile())
+                continue
+            except Exception:
+                pass
+                    
             try:
                 self.__restoreState(url.toLocalFile())
                 continue
             except Exception:
-                pass
+                pass            
                                 
     @QtCore.Slot(QtGui.QDragEnterEvent)
     def dragEnterEvent(self, event):
@@ -178,6 +184,7 @@ class MyMainWindow(QtGui.QMainWindow):
         state['history'] = self.ui.plainTextEdit.toPlainText()
         state['settings'] = self.settings
         state['plugins'] = self.pluginStoreModel.plugins
+        print state['plugins']
         
         try:        
             tempdirectory = tempfile.mkdtemp()
@@ -209,18 +216,16 @@ class MyMainWindow(QtGui.QMainWindow):
         state = None
         try:
             tempdirectory = tempfile.mkdtemp()
-            print tempdirectory
             with zipfile.ZipFile(experimentFileName, 'r') as zip:
                 zip.extractall(tempdirectory)
 
             with open(os.path.join(tempdirectory, 'state'), 'rb') as f:
                 state = pickle.load(f)
-
         except Exception as e:
             print type(e), e.message
         finally:
             shutil.rmtree(tempdirectory)
-        
+
         if not state:
             print "Couldn't load experiment"
             return
