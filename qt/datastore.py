@@ -31,7 +31,7 @@ class DataStore(object):
         self.names = []
         
     def __getitem__(self, key):
-        if key in self.names:
+        if key in self.dataObjects:
             return self.dataObjects[key]
         return None
         
