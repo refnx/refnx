@@ -13,14 +13,14 @@ import GuiModel
 import pyplatypus.analysis.model as model
 import pyplatypus.analysis.reflect as reflect
 import pyplatypus.analysis.fitting as fitting
-from data_object import DataObject
+from dataobject import DataObject
 import limitsUI
 import qrangedialogUI
 import os.path
 from copy import deepcopy
 import numpy as np
 import pickle
-import DataStore
+import datastore
 import math
 import tempfile
 import shutil
@@ -177,6 +177,7 @@ class MyMainWindow(QtGui.QMainWindow):
         state['modelStoreModel.modelStore'] = self.modelStoreModel.modelStore
         state['history'] = self.ui.plainTextEdit.toPlainText()
         state['settings'] = self.settings
+        state['plugins'] = self.pluginStoreModel.plugins
         
         try:        
             tempdirectory = tempfile.mkdtemp()
@@ -185,7 +186,7 @@ class MyMainWindow(QtGui.QMainWindow):
                 pickle.dump(state, f, -1)      
 
             with zipfile.ZipFile(experimentFileName, 'w') as zip:
-                DataStore.zipper(tempdirectory, zip)
+                datastore.zipper(tempdirectory, zip)
         except Exception as e:
             print type(e), e.message
         finally: 
@@ -229,6 +230,7 @@ class MyMainWindow(QtGui.QMainWindow):
             self.modelStoreModel.modelStore = state['modelStoreModel.modelStore']
             self.ui.plainTextEdit.setPlainText(state['history'])
             self.settings = state['settings']
+            self.pluginStoreModel.plugins = state['plugins']
         except KeyError as e:
             print type(e), e.message
             return
@@ -737,7 +739,7 @@ class MyMainWindow(QtGui.QMainWindow):
         else:
             #a user reflectometry plugin is being used.
             self.modelStoreModel.modelStore.displayOtherThanReflect = True
-# 
+
         self.fitPlugin = self.pluginStoreModel.plugins[arg_1]
 
     @QtCore.Slot(unicode)

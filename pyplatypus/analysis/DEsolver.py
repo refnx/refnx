@@ -49,7 +49,7 @@ class DEsolver(object):
             self.population_energies[
                 index] = self.energy_function(
                 params,
-                *self.args)
+                self.args)
 
         minval = np.argmin(self.population_energies)
 
@@ -67,7 +67,7 @@ class DEsolver(object):
                 self.__ensure_constraint(trial)
                 params = self.__scale_parameters(trial)
 
-                energy = self.energy_function(params, *self.args)
+                energy = self.energy_function(params, self.args)
 
                 if energy < self.population_energies[candidate]:
                     self.population[candidate] = trial

@@ -1,7 +1,7 @@
 from __future__ import division
 from PySide import QtCore, QtGui
-import DataStore
-from data_object import DataObject
+import datastore
+from dataobject import DataObject
 import imp
 import sys
 import inspect
@@ -16,7 +16,7 @@ class DataStoreModel(QtCore.QAbstractTableModel):
 
     def __init__(self, parent = None):
         super(DataStoreModel, self).__init__(parent)
-        self.dataStore = DataStore.DataStore()
+        self.dataStore = datastore.DataStore()
         
     def __iter__(self):
         for dataObject in self.dataStore:
@@ -114,7 +114,7 @@ class DataStoreModel(QtCore.QAbstractTableModel):
 class ModelStoreModel(QtCore.QAbstractListModel):
     def __init__(self, parent = None):
         super(ModelStoreModel, self).__init__(parent)
-        self.modelStore = DataStore.ModelStore() 
+        self.modelStore = datastore.ModelStore() 
 
     def __iter__(self):
         models = [self.modelStore[name] for name in self.names]
