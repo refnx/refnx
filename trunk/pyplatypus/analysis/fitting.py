@@ -53,7 +53,7 @@ class FitObject(object):
 
         edata[numpoints] - None or np.ndarray that contains the uncertainty (s.d.) for each of the observed y data points. (Use None if you do not have measured uncertainty on each point)
 
-        fitfunction - callable function  of the form f(xdata, parameters, args = (), **kwds). The args tuple and kwds supplied in the construction of this FitObject are also passed in as extra arguments to the fitfunction. You can use None for fitfunction _IF_ you subclass this FitObject and provide your own energy method, or if you subclass the model method.
+        fitfunction - callable function  of the form f(xdata, parameters, args=(), **kwds). The args tuple and kwds supplied in the construction of this FitObject are also passed in as extra arguments to the fitfunction. You can use None for fitfunction _IF_ you subclass this FitObject and provide your own energy method, or if you subclass the model method.
 
         parameters - np.ndarray that contains _all_ the parameters to be supplied to the fitfunction, not just those being fitted.
 
@@ -65,7 +65,7 @@ class FitObject(object):
 
         limits - an np.ndarray that contains the lower and upper limits for all the parameters. It should have shape (2, np.size(parameters)).
 
-        costfunction - a callable costfunction with the signature costfunction(model, ydata, edata, parameters). The fullset of parameters is passed, not just the ones being varied. Supply this function, or override the energy method of this class, to use something other than the default of chi2.
+        costfunction - a callable costfunction with the signature costfunction(model, ydata, edata, parameters, args=()). The fullset of parameters is passed, not just the ones being varied. Supply this function, or override the energy method of this class, to use something other than the default of chi2.
 
 Object attributes:
     self.xdata - see above for definition
@@ -144,7 +144,7 @@ Object attributes:
         if parameter_subset is not None:
             test_parameters[self.fitted_parameters] = parameter_subset
 
-        modeldata = self.model(test_parameters, *args)
+        modeldata = self.model(test_parameters, args=args)
 
         sigma = np.atleast_1d(1.)
         if self.edata is not None:
@@ -173,7 +173,7 @@ Object attributes:
             if parameter_subset is not None:
                 test_parameters[self.fitted_parameters] = parameter_subset
 
-            modeldata = self.model(test_parameters, *args)
+            modeldata = self.model(test_parameters, args=args)
 
             sigma = np.atleast_1d(1.)
             if self.edata is not None:
@@ -183,9 +183,9 @@ Object attributes:
                                      self.ydata,
                                      sigma,
                                      test_parameters,
-                                     *args)
+                                     args=args)
         else:
-            residuals = self.residuals(parameter_subset, *args)
+            residuals = self.residuals(parameter_subset, args=args)
             return np.nansum(np.power(residuals, 2))
 
     def model(self, parameters, args=()):
@@ -195,13 +195,13 @@ Object attributes:
 
             parameters - the full np.ndarray containing the parameters that are required for the fitfunction
 
-            returns the theoretical model for the xdata, i.e. self.fitfunction(self.xdata, test_parameters, *args, **kwds)
+            returns the theoretical model for the xdata, i.e. self.fitfunction(self.xdata, test_parameters, args=args, **kwds)
 
         '''
         if not len(args):
             args = self.args
 
-        return self.fitfunction(self.xdata, parameters, *args, **self.kwds)
+        return self.fitfunction(self.xdata, parameters, args=args, **self.kwds)
 
     def fit(self, method=None):
         '''

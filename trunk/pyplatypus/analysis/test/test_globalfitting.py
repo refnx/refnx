@@ -1,6 +1,6 @@
 import unittest
 import pyplatypus.analysis.reflect as reflect
-import pyplatypus.analysis.Model as model
+import pyplatypus.analysis.model as model
 import pyplatypus.analysis.globalfitting as gfit
 import numpy as np
 import numpy.testing as npt
