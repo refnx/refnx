@@ -3,18 +3,19 @@ import numpy as np
 import numpy.random as npr
 import math
 
+
 class DEsolver(object):
-    
-    def __init__(self, energy_function, limits, args = (),
-                    initial_params = None, DEstrategy = None, maxIterations = 1000,
-                    popsize = 20, tol = 0.01, km = 0.7, recomb = 0.5, seed = None,
-                    progress = None):
+
+    def __init__(self, energy_function, limits, args=(),
+                 initial_params = None, DEstrategy = None, maxIterations = 1000,
+                 popsize = 20, tol = 0.01, km = 0.7, recomb = 0.5, seed = None,
+                 progress = None):
 
         if DEstrategy is not None:
             self.DEstrategy = DEstrategy
         else:
             self.DEstrategy = DEsolver.Best1Bin
-        
+
         self.progress = progress
         self.maxIterations = maxIterations
         self.tol = tol
@@ -30,129 +31,156 @@ class DEsolver(object):
         self.RNG = npr.RandomState()
         self.RNG.seed(seed)
 
-        self.population = self.RNG.rand(popsize * self.parameterCount, self.parameterCount)
+        self.population = self.RNG.rand(
+            popsize *
+            self.parameterCount,
+            self.parameterCount)
         self.bestSolution = self.population[0]
         if initial_params is not None:
             self.population[0] = initial_params
 
-        self.population_energies = np.ones(popsize * self.parameterCount) * 1.e300
-        
+        self.population_energies = np.ones(
+            popsize * self.parameterCount) * 1.e300
+
     def solve(self):
-        #calculate energies to start with
+        # calculate energies to start with
         for index, candidate in enumerate(self.population):
             params = self.__scale_parameters(candidate)
-            self.population_energies[index] = self.energy_function(params, *self.args)
-        
+            self.population_energies[
+                index] = self.energy_function(
+                params,
+                *self.args)
+
         minval = np.argmin(self.population_energies)
 
-        #put the lowest energy into the best solution position.
-        self.population_energies[minval], self.population_energies[0] = self.population_energies[0], self.population_energies[minval]
-        self.population[minval], self.population[0] = self.population[0], self.population[minval]
-        
-        #do the optimisation.
+        # put the lowest energy into the best solution position.
+        self.population_energies[minval], self.population_energies[
+            0] = self.population_energies[0], self.population_energies[minval]
+        self.population[minval], self.population[
+            0] = self.population[0], self.population[minval]
+
+        # do the optimisation.
         for iteration in xrange(self.maxIterations):
-                
+
             for candidate in xrange(self.populationSize):
                 trial = self.DEstrategy(self, candidate)
                 self.__ensure_constraint(trial)
                 params = self.__scale_parameters(trial)
 
                 energy = self.energy_function(params, *self.args)
-                
+
                 if energy < self.population_energies[candidate]:
                     self.population[candidate] = trial
                     self.population_energies[candidate] = energy
-                    
+
                     if energy < self.population_energies[0]:
                         self.population_energies[0] = energy
                         self.population[0] = trial
-            
-            #stop when the fractional s.d. of the population is less than tol of the mean energy
-            convergence = np.mean(self.population_energies) * self.tol / np.std(self.population_energies)
+
+            # stop when the fractional s.d. of the population is less than tol
+            # of the mean energy
+            convergence = np.mean(self.population_energies) * \
+                self.tol / np.std(self.population_energies)
 
             if self.progress:
-                should_continue = self.progress(iteration, convergence, self.population_energies[0], self.args)
+                should_continue = self.progress(
+                    iteration,
+                    convergence,
+                    self.population_energies[0],
+                    self.args)
                 if should_continue is False:
                     convergence = 2
-                    
+
             if convergence > 1:
                 break
-        
-        return self.__scale_parameters(self.bestSolution), self.population_energies[0]
-        
+
+        return (
+            self.__scale_parameters(
+                self.bestSolution), self.population_energies[0]
+        )
+
     def __scale_parameters(self, trial):
-        return 0.5 * (self.limits[0] + self.limits[1]) + (trial - 0.5) * np.fabs(self.limits[0] - self.limits[1])
-    
+        return (
+            0.5 * (self.limits[0] + self.limits[1]) +
+            (trial - 0.5) * np.fabs(self.limits[0] - self.limits[1])
+        )
+
     def __ensure_constraint(self, trial):
         for index, param in enumerate(trial):
             if param > 1 or param < 0:
                 trial[index] = self.RNG.rand()
-    
+
     def Best1Bin(self, candidate):
-        r1,r2,r3,r4,r5 = self.SelectSamples(candidate, 1,1,0,0,0)
+        r1, r2, r3, r4, r5 = self.select_samples(candidate, 1, 1, 0, 0, 0)
 
         n = self.RNG.randint(0, self.parameterCount)
 
         trial = np.copy(self.population[candidate])
         i = 0
-        
-        while i < self.parameterCount: 
-            if self.RNG.rand() < self.crossOverProbability or  i == self.parameterCount - 1:
-                trial[n] = self.bestSolution[n] + self.scale * (self.population[r1, n] - self.population[r2, n])
-        
+
+        while i < self.parameterCount:
+            if self.RNG.rand() < self.crossOverProbability or i == self.parameterCount - 1:
+                trial[n] = self.bestSolution[n] + self.scale * \
+                    (self.population[r1, n] - self.population[r2, n])
+
             n = (n + 1) % self.parameterCount
             i += 1
-    
+
         return trial
 
     def Best1Exp(self, candidate):
-        r1,r2,r3,r4,r5 = self.SelectSamples(candidate, 1,1,0,0,0)
+        r1, r2, r3, r4, r5 = self.select_samples(candidate, 1, 1, 0, 0, 0)
 
         n = self.RNG.randint(0, self.parameterCount)
 
         trial = np.copy(self.population[candidate])
         i = 0
         while i < self.parameterCount and self.RNG.rand() < self.crossOverProbability:
-            trial[n] = self.bestSolution[n] + self.scale * (self.population[r1, n] - self.population[r2, n])
+            trial[n] = self.bestSolution[n] + self.scale * \
+                (self.population[r1, n] - self.population[r2, n])
             n = (n + 1) % self.parameterCount
             i += 1
 
         return trial
-    
+
     def Rand1Exp(self, candidate):
-        r1,r2,r3,r4,r5 = self.SelectSamples(candidate, 1, 1, 1, 0, 0)
+        r1, r2, r3, r4, r5 = self.select_samples(candidate, 1, 1, 1, 0, 0)
 
         n = self.RNG.randint(0, self.parameterCount)
 
         trial = np.copy(self.population[candidate])
         i = 0
-        
+
         while i < self.parameterCount and self.RNG.rand() < self.crossOverProbability:
-            trial[n] = self.population[r1, n] + self.scale * (self.population[r2, n] - self.population[r3, n])
-            
+            trial[n] = self.population[r1, n] + self.scale * \
+                (self.population[r2, n] - self.population[r3, n])
+
             n = (n + 1) % self.parameterCount
             i += 1
-        
+
         return trial
-    
+
     def RandToBest1Exp(self, candidate):
-        r1,r2,r3,r4,r5 = self.SelectSamples(candidate, 1, 1, 0, 0, 0)
+        r1, r2, r3, r4, r5 = self.select_samples(candidate, 1, 1, 0, 0, 0)
 
         n = self.RNG.randint(0, self.parameterCount)
 
         trial = np.copy(self.population[candidate])
         i = 0
-        
+
         while i < self.parameterCount and self.RNG.rand() < self.crossOverProbability:
-            trial[n] += self.scale * (self.bestSolution[n] - trial[n]) + self.scale * (self.population[r1, n] - self.population[r2, n])
-            
+            trial[n] += self.scale * (self.bestSolution[n] - trial[n]) + \
+                self.scale * \
+                (self.population[r1, n]
+                 - self.population[r2, n])
+
             n = (n + 1) % self.parameterCount
             i += 1
-        
+
         return trial
 
     def Best2Exp(self, candidate):
-        r1,r2,r3,r4,r5 = self.SelectSamples(candidate, 1, 1, 1, 1, 0)
+        r1, r2, r3, r4, r5 = self.select_samples(candidate, 1, 1, 1, 1, 0)
 
         n = self.RNG.randint(0, self.parameterCount)
 
@@ -162,9 +190,9 @@ class DEsolver(object):
         while i < self.parameterCount and self.RNG.rand() < self.crossOverProbability:
             trial[n] = self.bestSolution[n]
             + self.scale * (self.population[r1, n]
-            + self.population[r2, n]
-            - self.population[r3, n]
-            - self.population[r4, n])
+                            + self.population[r2, n]
+                            - self.population[r3, n]
+                            - self.population[r4, n])
 
             n = (n + 1) % self.parameterCount
             i += 1
@@ -172,7 +200,7 @@ class DEsolver(object):
         return trial
 
     def Rand2Exp(self, candidate):
-        r1,r2,r3,r4,r5 = self.SelectSamples(candidate, 1, 1, 1, 1, 1)
+        r1, r2, r3, r4, r5 = self.select_samples(candidate, 1, 1, 1, 1, 1)
 
         n = self.RNG.randint(0, self.parameterCount)
 
@@ -181,10 +209,10 @@ class DEsolver(object):
 
         while i < self.parameterCount and self.RNG.rand() < self.crossOverProbability:
             trial[n] = self.population[r1, n]
-            + self.scale * (self.population[r2, n] 
-            + self.population[r3, n] 
-            - self.population[r4, n] 
-            - self.population[r5, n]) 
+            + self.scale * (self.population[r2, n]
+                            + self.population[r3, n]
+                            - self.population[r4, n]
+                            - self.population[r5, n])
 
             n = (n + 1) % self.parameterCount
             i += 1
@@ -192,7 +220,7 @@ class DEsolver(object):
         return trial
 
     def RandToBest1Bin(self, candidate):
-        r1,r2,r3,r4,r5 = self.SelectSamples(candidate, 1, 1, 0, 0, 0)
+        r1, r2, r3, r4, r5 = self.select_samples(candidate, 1, 1, 0, 0, 0)
 
         n = self.RNG.randint(0, self.parameterCount)
 
@@ -202,15 +230,16 @@ class DEsolver(object):
         while i < self.parameterCount:
             if self.RNG.rand() < self.crossOverProbability or i == self.parameterCount - 1:
                 trial[n] += self.scale * (self.bestSolution[n] - trial[n])
-                + self.scale * (self.population[r1, n] - self.population[r2, n])
+                + self.scale * \
+                    (self.population[r1, n] - self.population[r2, n])
 
             n = (n + 1) % self.parameterCount
             i += 1
 
         return trial
-        
+
     def Best2Bin(self, candidate):
-        r1,r2,r3,r4,r5 = self.SelectSamples(candidate, 1, 1, 1, 1, 0)
+        r1, r2, r3, r4, r5 = self.select_samples(candidate, 1, 1, 1, 1, 0)
 
         n = self.RNG.randint(0, self.parameterCount)
 
@@ -221,17 +250,17 @@ class DEsolver(object):
             if self.RNG.rand() < self.crossOverProbability or i == self.parameterCount - 1:
                 trial[n] = self.bestSolution[n]
                 + self.scale * (self.population[r1, n]
-                + self.population[r2, n]
-                -  self.population[r3, n]
-                -  self.population[r4, n])
+                                + self.population[r2, n]
+                                - self.population[r3, n]
+                                - self.population[r4, n])
 
             n = (n + 1) % self.parameterCount
             i += 1
 
         return trial
-        
+
     def Rand2Bin(self, candidate):
-        r1,r2,r3,r4,r5 = self.SelectSamples(candidate, 1, 1, 1, 1, 1)
+        r1, r2, r3, r4, r5 = self.select_samples(candidate, 1, 1, 1, 1, 1)
 
         n = self.RNG.randint(0, self.parameterCount)
 
@@ -242,17 +271,17 @@ class DEsolver(object):
             if self.RNG.rand() < self.crossOverProbability or i == self.parameterCount - 1:
                 trial[n] = self.population[r1, n]
                 + self.scale * (self.population[r2, n]
-                + self.population[r3, n]
-                -  self.population[r4, n]
-                -  self.population[r5, n])
+                                + self.population[r3, n]
+                                - self.population[r4, n]
+                                - self.population[r5, n])
 
             n = (n + 1) % self.parameterCount
             i += 1
 
         return trial
-        
+
     def Rand1Bin(self, candidate):
-        r1,r2,r3,r4,r5 = self.SelectSamples(candidate, 1, 1, 1, 0, 0)
+        r1, r2, r3, r4, r5 = self.select_samples(candidate, 1, 1, 1, 0, 0)
 
         n = self.RNG.randint(0, self.parameterCount)
 
@@ -263,14 +292,14 @@ class DEsolver(object):
             if self.RNG.rand() < self.crossOverProbability or i == self.parameterCount - 1:
                 trial[n] = self.population[r1, n]
                 + self.scale * (self.population[r2, n]
-                - self.population[r3, n])
+                                - self.population[r3, n])
 
             n = (n + 1) % self.parameterCount
             i += 1
 
         return trial
-        
-    def SelectSamples(self, candidate, r1, r2, r3, r4, r5):
+
+    def select_samples(self, candidate, r1, r2, r3, r4, r5):
         if r1:
             while r1 == candidate:
                 r1 = self.RNG.randint(0, self.populationSize)
