@@ -9,10 +9,18 @@ from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt4agg import NavigationToolbar2QTAgg as NavigationToolbar
 from matplotlib.figure import Figure
 import matplotlib.artist as artist
-import GuiModel
+
+import UDF_GUImodel
+import datastore_GUImodel
+import modelstore_GUImodel
+import reflectivity_parameters_GUImodel
+import limits_GUImodel
+import globalfitting_GUImodel
+
 import pyplatypus.analysis.model as model
 import pyplatypus.analysis.reflect as reflect
 import pyplatypus.analysis.fitting as fitting
+import pyplatypus.analysis.globalfitting as globalfitting
 from dataobject import DataObject
 import limitsUI
 import qrangedialogUI
@@ -42,12 +50,13 @@ class MyMainWindow(QtGui.QMainWindow):
         sys.stdout = console
         console.textWritten.connect(self.writeTextToConsole)
         
-        self.dataStoreModel = GuiModel.DataStoreModel()
+        self.dataStoreModel = datastore_GUImodel.DataStoreModel(self)
         self.dataStoreModel.dataChanged.connect(self.dataObjects_visibilityChanged)
         self.current_dataset = None
 
-        self.modelStoreModel = GuiModel.ModelStoreModel()
-        self.pluginStoreModel = GuiModel.PluginStoreModel()
+        self.modelStoreModel = modelstore_GUImodel.ModelStoreModel(self)
+        self.pluginStoreModel = UDF_GUImodel.PluginStoreModel(self)
+        
         self.fitPlugin = self.pluginStoreModel.plugins[0]
                 
         self.modifyGui()
@@ -73,9 +82,9 @@ class MyMainWindow(QtGui.QMainWindow):
         theoreticalmodel = model.Model(parameters=parameters, fitted_parameters = fitted_parameters)
         self.modelStoreModel.add(theoreticalmodel, 'theoretical')
         
-        self.baseModel = GuiModel.BaseModel(self.modelStoreModel.modelStore['theoretical'])                
-        self.layerModel = GuiModel.LayerModel(self.modelStoreModel.modelStore['theoretical'])
-        self.UDFmodel = GuiModel.UDFParametersModel(self.modelStoreModel.modelStore['theoretical'])
+        self.baseModel = reflectivity_parameters_GUImodel.BaseModel(self.modelStoreModel.modelStore['theoretical'], self)                
+        self.layerModel = reflectivity_parameters_GUImodel.LayerModel(self.modelStoreModel.modelStore['theoretical'], self)
+        self.UDFmodel = UDF_GUImodel.UDFParametersModel(self.modelStoreModel.modelStore['theoretical'], self)
 
         self.theoretical.evaluate_model(theoreticalmodel, store = True)
         self.dataStoreModel.add(self.theoretical)
@@ -121,6 +130,13 @@ class MyMainWindow(QtGui.QMainWindow):
         self.UDFmodel.dataChanged.connect(self.update_gui_modelChanged)
         self.ui.UDFplugin_comboBox.setModel(self.pluginStoreModel)
         self.ui.UDFmodel_comboBox.setModel(self.modelStoreModel)
+        
+        #globalfitting tab
+        self.globalfitting_DataModel = globalfitting_GUImodel.GlobalFitting_DataModel(self)
+        self.globalfitting_ParamModel = globalfitting_GUImodel.GlobalFitting_ParamModel(self)
+        
+        self.ui.gfdatasets_tableView.setModel(self.globalfitting_DataModel)
+        self.ui.gfparams_tableView.setModel(self.globalfitting_ParamModel)
         
         print 'Session started at:', time.asctime( time.localtime(time.time()) )
     
@@ -564,7 +580,7 @@ class MyMainWindow(QtGui.QMainWindow):
         limitsGUI = limitsUI.Ui_Dialog()
         limitsGUI.setupUi(limitsdialog)
 
-        limitsModel = GuiModel.LimitsModel(parameters, fitted_parameters, limits)       
+        limitsModel = limits_GUImodel.LimitsModel(parameters, fitted_parameters, limits)       
         limitsGUI.limits.setModel(limitsModel)
         header = limitsGUI.limits.horizontalHeader()
         header.setResizeMode(QtGui.QHeaderView.Stretch)

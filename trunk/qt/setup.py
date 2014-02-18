@@ -33,8 +33,8 @@ _creflect = Extension("pyplatypus.analysis.__creflect",
                                  )     
 OPTIONS = {'argv_emulation': True,
            'includes':['numdifftools'],
-            'packages': PACKAGES,
-            'excludes':[]}
+           'packages': PACKAGES,
+           'excludes':[]}
 
 setup(
     app=APP,
