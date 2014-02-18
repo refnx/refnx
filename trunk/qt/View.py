@@ -16,6 +16,7 @@ import pyplatypus.analysis.fitting as fitting
 from dataobject import DataObject
 import limitsUI
 import qrangedialogUI
+import SLDcalculatorView
 import os.path
 from copy import deepcopy
 import numpy as np
@@ -554,8 +555,9 @@ class MyMainWindow(QtGui.QMainWindow):
     
     @QtCore.Slot()
     def on_actionSLD_calculator_triggered(self):
-        pass
-     
+        SLDcalculator = SLDcalculatorView.SLDcalculatorView(self)
+        SLDcalculator.exec_()
+
     def get_limits(self, parameters, fitted_parameters, limits):
 
         limitsdialog = QtGui.QDialog()
