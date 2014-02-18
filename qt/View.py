@@ -556,7 +556,7 @@ class MyMainWindow(QtGui.QMainWindow):
     @QtCore.Slot()
     def on_actionSLD_calculator_triggered(self):
         SLDcalculator = SLDcalculatorView.SLDcalculatorView(self)
-        SLDcalculator.exec_()
+        SLDcalculator.show()
 
     def get_limits(self, parameters, fitted_parameters, limits):
 
