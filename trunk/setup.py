@@ -15,10 +15,9 @@ except AttributeError:
 
 # creflect extension module
 _creflect = Extension("pyplatypus.analysis.__creflect",
-                   ["src/reflect.i","src/reflect.c", "src/refcalc.cpp"],
-                   include_dirs = [numpy_include],
-                  # undef_macros=['NDEBUG']
-                                 )
+                      ["src/reflect.i","src/reflect.c", "src/refcalc.cpp"],
+                      include_dirs = [numpy_include],
+                      undef_macros=['NDEBUG'])
 
 # pyplatypus setup
 setup(  name        = "pyplatypus",
@@ -29,4 +28,4 @@ setup(  name        = "pyplatypus",
         packages = ['pyplatypus', 'pyplatypus.reduce', 'pyplatypus.analysis',
                     'pyplatypus.dataset', 'pyplatypus.util'],
         requires = ['numpy', 'scipy', 'numdifftools']
-        )
+     )
