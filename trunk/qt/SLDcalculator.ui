@@ -3,14 +3,14 @@
  <class>Form</class>
  <widget class="QWidget" name="Form">
   <property name="windowModality">
-   <enum>Qt::ApplicationModal</enum>
+   <enum>Qt::NonModal</enum>
   </property>
   <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>371</width>
-    <height>305</height>
+    <width>355</width>
+    <height>266</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -18,7 +18,7 @@
   </property>
   <layout class="QGridLayout" name="gridLayout">
    <item row="0" column="0" colspan="4">
-    <widget class="QLineEdit" name="ChemicalFormula">
+    <widget class="QLineEdit" name="chemical_formula">
      <property name="text">
       <string/>
      </property>
@@ -27,18 +27,8 @@
      </property>
     </widget>
    </item>
-   <item row="1" column="1" colspan="2">
-    <widget class="QRadioButton" name="use_density">
-     <property name="text">
-      <string>density</string>
-     </property>
-     <property name="checked">
-      <bool>true</bool>
-     </property>
-    </widget>
-   </item>
-   <item row="1" column="3">
-    <widget class="QRadioButton" name="use_mass">
+   <item row="1" column="3" alignment="Qt::AlignHCenter">
+    <widget class="QRadioButton" name="use_volume">
      <property name="text">
       <string>molecular volume</string>
      </property>
@@ -70,10 +60,10 @@
       <number>3</number>
      </property>
      <property name="singleStep">
-      <double>0.000100000000000</double>
+      <double>0.001000000000000</double>
      </property>
      <property name="value">
-      <double>1.000000000000000</double>
+      <double>1.107000000000000</double>
      </property>
     </widget>
    </item>
@@ -88,8 +78,11 @@
      <property name="decimals">
       <number>3</number>
      </property>
+     <property name="maximum">
+      <double>1000000000.000000000000000</double>
+     </property>
      <property name="singleStep">
-      <double>0.000100000000000</double>
+      <double>0.010000000000000</double>
      </property>
      <property name="value">
       <double>1.000000000000000</double>
@@ -136,46 +129,55 @@
      </property>
     </widget>
    </item>
-   <item row="6" column="0">
-    <widget class="QLabel" name="label">
-     <property name="text">
-      <string>Neutron SLD</string>
-     </property>
-    </widget>
-   </item>
-   <item row="8" column="0" colspan="4">
-    <widget class="QPushButton" name="calculateButton">
-     <property name="text">
-      <string>Calculate</string>
-     </property>
-    </widget>
-   </item>
-   <item row="6" column="1" colspan="3">
-    <widget class="QLineEdit" name="neutron_SLD"/>
-   </item>
    <item row="7" column="0">
     <widget class="QLabel" name="label_2">
      <property name="text">
-      <string>Xray SLD</string>
+      <string>Xray SLD  ( / 1e-6 Å**-2)</string>
      </property>
     </widget>
    </item>
    <item row="7" column="1" colspan="3">
-    <widget class="QLineEdit" name="xray_SLD"/>
+    <widget class="QLineEdit" name="xray_SLD">
+     <property name="readOnly">
+      <bool>true</bool>
+     </property>
+    </widget>
+   </item>
+   <item row="6" column="0">
+    <widget class="QLabel" name="label">
+     <property name="text">
+      <string>Neutron SLD ( / 1e-6 Å**-2)</string>
+     </property>
+    </widget>
+   </item>
+   <item row="6" column="1" colspan="3">
+    <widget class="QLineEdit" name="neutron_SLD">
+     <property name="readOnly">
+      <bool>true</bool>
+     </property>
+    </widget>
+   </item>
+   <item row="1" column="0">
+    <widget class="QRadioButton" name="use_density">
+     <property name="text">
+      <string>density</string>
+     </property>
+     <property name="checked">
+      <bool>true</bool>
+     </property>
+    </widget>
    </item>
   </layout>
  </widget>
  <tabstops>
-  <tabstop>ChemicalFormula</tabstop>
-  <tabstop>use_density</tabstop>
-  <tabstop>use_mass</tabstop>
+  <tabstop>chemical_formula</tabstop>
+  <tabstop>use_volume</tabstop>
   <tabstop>mass_density</tabstop>
   <tabstop>molecular_volume</tabstop>
   <tabstop>neutron_wavelength</tabstop>
   <tabstop>xray_energy</tabstop>
   <tabstop>neutron_SLD</tabstop>
   <tabstop>xray_SLD</tabstop>
-  <tabstop>calculateButton</tabstop>
  </tabstops>
  <resources/>
  <connections/>
