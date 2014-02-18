@@ -4,7 +4,6 @@ import dataobject
 import pyplatypus.analysis.model as model
 from copy import deepcopy, copy
 import matplotlib.artist as artist
-from PySide import QtGui, QtCore
 import os.path
 import os
 import string
@@ -24,6 +23,10 @@ def zipper(dir, zip):
             zip.write(fullpath, archive_name)
 
 class DataStore(object):
+    '''
+        A container for storing dataobject.DataObjects
+    '''
+        
     def __init__(self):
         super(DataStore, self).__init__()
         self.dataObjects = {}
@@ -94,6 +97,10 @@ class DataStore(object):
 
 
 class ModelStore(object):
+    '''
+        a container for storing pyplatypus.analysis.model.Models
+    '''
+        
     def __init__(self):
         super(ModelStore, self).__init__()
         self.models = {}

@@ -18,10 +18,20 @@ except ImportError:
 
 
 class DataObject(reflectdataset.ReflectDataset):
-    __requiredgraphproperties = {'lw': float, 'label': str, 'linestyle': str,
-                                 'fillstyle': str, 'marker': str, 'markersize':
-                                 float, 'markeredgecolor': str,
-                                 'markerfacecolor': str, 'zorder': int, 'color': str}
+    '''
+        defines a dataset
+    '''
+    
+    __requiredgraphproperties = {'lw': float,
+                                 'label': str,
+                                 'linestyle': str,
+                                 'fillstyle': str,
+                                 'marker': str,
+                                 'markersize': float,
+                                 'markeredgecolor': str,                                 
+                                 'markerfacecolor': str,
+                                 'zorder': int,
+                                 'color': str}
 
     def __init__(self, dataTuple=None,
                  name='theoretical', filename=None):

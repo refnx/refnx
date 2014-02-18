@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'Motofit.ui'
 #
-# Created: Mon Feb 17 14:49:26 2014
+# Created: Wed Feb 19 10:33:19 2014
 #      by: pyside-uic 0.2.15 running on PySide 1.2.1
 #
 # WARNING! All changes made in this file will be lost!
@@ -444,9 +444,9 @@ class Ui_MainWindow(object):
         self.pushButton_2.setSizePolicy(sizePolicy)
         self.pushButton_2.setObjectName("pushButton_2")
         self.gridLayout_11.addWidget(self.pushButton_2, 0, 2, 1, 1)
-        self.tableView = QtGui.QTableView(self.tab_6)
-        self.tableView.setObjectName("tableView")
-        self.gridLayout_11.addWidget(self.tableView, 0, 0, 5, 1)
+        self.gfdatasets_tableView = QtGui.QTableView(self.tab_6)
+        self.gfdatasets_tableView.setObjectName("gfdatasets_tableView")
+        self.gridLayout_11.addWidget(self.gfdatasets_tableView, 0, 0, 5, 1)
         self.pushButton_4 = QtGui.QPushButton(self.tab_6)
         sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Expanding)
         sizePolicy.setHorizontalStretch(0)
@@ -468,11 +468,6 @@ class Ui_MainWindow(object):
         self.tab_7.setObjectName("tab_7")
         self.gridLayout_10 = QtGui.QGridLayout(self.tab_7)
         self.gridLayout_10.setObjectName("gridLayout_10")
-        self.globalParameters = QtGui.QTableWidget(self.tab_7)
-        self.globalParameters.setObjectName("globalParameters")
-        self.globalParameters.setColumnCount(0)
-        self.globalParameters.setRowCount(0)
-        self.gridLayout_10.addWidget(self.globalParameters, 0, 0, 1, 1)
         self.pushButton = QtGui.QPushButton(self.tab_7)
         self.pushButton.setMinimumSize(QtCore.QSize(50, 70))
         self.pushButton.setText("")
@@ -487,6 +482,9 @@ class Ui_MainWindow(object):
         self.globalParamsSlider.setOrientation(QtCore.Qt.Horizontal)
         self.globalParamsSlider.setObjectName("globalParamsSlider")
         self.gridLayout_10.addWidget(self.globalParamsSlider, 1, 0, 1, 1)
+        self.gfparams_tableView = QtGui.QTableView(self.tab_7)
+        self.gfparams_tableView.setObjectName("gfparams_tableView")
+        self.gridLayout_10.addWidget(self.gfparams_tableView, 0, 0, 1, 1)
         self.tabWidget_2.addTab(self.tab_7, "")
         self.gridLayout_9.addWidget(self.tabWidget_2, 0, 0, 1, 1)
         self.tabWidget.addTab(self.tab_5, "")
