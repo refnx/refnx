@@ -7,6 +7,7 @@ Usage:
 
 from setuptools import setup
 import py2app
+import periodictable
 from distutils.core import *
 from distutils      import sysconfig
 
@@ -21,20 +22,19 @@ except AttributeError:
 
 APP = ['qt/motofit.py']
 DATA_FILES = ['qt/icons']
-
+PACKAGES = ['pyplatypus',
+            'periodictable']
+            
 #  creflect extension module# 
 _creflect = Extension("pyplatypus.analysis.__creflect",
                    ["src/reflect.i","src/reflect.c", "src/refcalc.cpp"],
-                   include_dirs = [numpy_include]
-                  # undef_macros=['NDEBUG']
-                                 )
-                                 
+                   include_dirs = [numpy_include],
+                   undef_macros=['NDEBUG']
+                                 )     
 OPTIONS = {'argv_emulation': True,
- 'includes':['matplotlib.tri','matplotlib.projections.geo',
- 'matplotlib.projections.polar', 'matplotlib.tri.triplot','matplotlib.tri.tripcolor','matplotlib.tri.tricontour',
-  'matplotlib.tri.triangulation', 'matplotlib.delaunay.triangulate','sip', 'PySide', 'PySide.QtGui', 'PySide.QtCore',
-   'pyplatypus', 'pyplatypus.analysis', 'pyplatypus.dataset', 'pyplatypus.util', 'numdifftools'],
-   'excludes':[]}
+           'includes':['numdifftools'],
+            'packages': PACKAGES,
+            'excludes':[]}
 
 setup(
     app=APP,

@@ -38,12 +38,14 @@ class SLDcalculatorView(QtGui.QDialog):
                                         wavelength=neutron_wavelength)
 
         self.ui.neutron_SLD.setText('%.6g' % real + ' + ' + '%.6g' % imag + 'j')
-                  
+        
+
         real, imag = pt.xray_sld(formula, 
                                  density=density, 
                                  energy=xray_energy)
-
+                        
         self.ui.xray_SLD.setText('%.6g' % real + ' + ' + '%.6g' % imag + 'j')
+
         
     @QtCore.Slot(float)
     def on_mass_density_valueChanged(self, arg_1):
