@@ -81,18 +81,23 @@ class GlobalFitting_DataModel(QtCore.QAbstractTableModel):
     def link_selection(self, indices):
         
         #first convert indices to entries like 'd0:p1'
-        indices_list = list()
+        parameter_list = list()
         for index in indices:
             row = index.row() - 3
             col = index.column()
             if row > -1:
-                indices_list.append('d' + str(col) + ':p' + str(row))
-            
-        indices_list.sort()
-        
-        #if there is only one entry, then there is no linkage
-        if len(indices_list) < 2:
+                parameter_list.append('d' + str(col) + ':p' + str(row))
+                    
+        #if there is only one entry, then there is no linkage to add.
+        if len(parameter_list) < 2:
             return
+            
+        parameter_list.sort()
+        parameter_list.reverse()
+        
+        for parameter in parameter_list:
+            if self.is_already_linked(parameter):
+                self.unlink_parameter(parameter)        
     
     def is_already_linked(self, parameter):
         for linkage in self.linkages:
