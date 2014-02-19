@@ -136,12 +136,12 @@ class MyMainWindow(QtGui.QMainWindow):
         self.globalfitting_DataModel = globalfitting_GUImodel.GlobalFitting_DataModel(self)
         self.globalfitting_ParamModel = globalfitting_GUImodel.GlobalFitting_ParamModel(self)
         
-        self.ui.gfdatasets_tableView.setModel(self.globalfitting_DataModel)
+        self.ui.globalfitting_DataView.setModel(self.globalfitting_DataModel)
         self.ui.gfparams_tableView.setModel(self.globalfitting_ParamModel)
                 
         self.ui.FitPluginDelegate = globalfitting_GUImodel.FitPluginItemDelegate(self.pluginStoreModel.plugins, self.ui.gfparams_tableView)
-        self.ui.gfdatasets_tableView.setEditTriggers(QtGui.QAbstractItemView.AllEditTriggers)
-        self.ui.gfdatasets_tableView.setItemDelegateForRow(1, self.ui.FitPluginDelegate)
+        self.ui.globalfitting_DataView.setEditTriggers(QtGui.QAbstractItemView.AllEditTriggers)
+        self.ui.globalfitting_DataView.setItemDelegateForRow(1, self.ui.FitPluginDelegate)
         
         print 'Session started at:', time.asctime( time.localtime(time.time()) )
     
@@ -1091,6 +1091,12 @@ class MyMainWindow(QtGui.QMainWindow):
 
         self.globalfitting_DataModel.add_DataSet(which_dataset)
 
+    @QtCore.Slot()
+    def on_linkGFparam_clicked(self):
+        select = self.ui.globalfitting_DataView.selectionModel()
+        indices = select.selectedIndexes()
+        self.globalfitting_DataModel.link_selection(indices)
+    
 class ProgramSettings(object):
     def __init__(self, **kwds):
         __members = {'fittingAlgorithm': 'DE',
