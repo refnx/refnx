@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'Motofit.ui'
 #
-# Created: Wed Feb 19 12:21:28 2014
+# Created: Wed Feb 19 15:58:47 2014
 #      by: pyside-uic 0.2.15 running on PySide 1.2.1
 #
 # WARNING! All changes made in this file will be lost!
@@ -444,17 +444,17 @@ class Ui_MainWindow(object):
         self.addGFDataSet.setSizePolicy(sizePolicy)
         self.addGFDataSet.setObjectName("addGFDataSet")
         self.gridLayout_11.addWidget(self.addGFDataSet, 0, 2, 1, 1)
-        self.gfdatasets_tableView = QtGui.QTableView(self.tab_6)
-        self.gfdatasets_tableView.setObjectName("gfdatasets_tableView")
-        self.gridLayout_11.addWidget(self.gfdatasets_tableView, 0, 0, 5, 1)
-        self.pushButton_4 = QtGui.QPushButton(self.tab_6)
+        self.globalfitting_DataView = QtGui.QTableView(self.tab_6)
+        self.globalfitting_DataView.setObjectName("globalfitting_DataView")
+        self.gridLayout_11.addWidget(self.globalfitting_DataView, 0, 0, 5, 1)
+        self.linkGFparam = QtGui.QPushButton(self.tab_6)
         sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Expanding)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.pushButton_4.sizePolicy().hasHeightForWidth())
-        self.pushButton_4.setSizePolicy(sizePolicy)
-        self.pushButton_4.setObjectName("pushButton_4")
-        self.gridLayout_11.addWidget(self.pushButton_4, 2, 2, 1, 1)
+        sizePolicy.setHeightForWidth(self.linkGFparam.sizePolicy().hasHeightForWidth())
+        self.linkGFparam.setSizePolicy(sizePolicy)
+        self.linkGFparam.setObjectName("linkGFparam")
+        self.gridLayout_11.addWidget(self.linkGFparam, 2, 2, 1, 1)
         self.pushButton_5 = QtGui.QPushButton(self.tab_6)
         sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Expanding)
         sizePolicy.setHorizontalStretch(0)
@@ -630,7 +630,7 @@ class Ui_MainWindow(object):
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_4), QtGui.QApplication.translate("MainWindow", "Console", None, QtGui.QApplication.UnicodeUTF8))
         self.pushButton_3.setText(QtGui.QApplication.translate("MainWindow", "Remove dataset", None, QtGui.QApplication.UnicodeUTF8))
         self.addGFDataSet.setText(QtGui.QApplication.translate("MainWindow", "Add dataset", None, QtGui.QApplication.UnicodeUTF8))
-        self.pushButton_4.setText(QtGui.QApplication.translate("MainWindow", "Link selection", None, QtGui.QApplication.UnicodeUTF8))
+        self.linkGFparam.setText(QtGui.QApplication.translate("MainWindow", "Link selection", None, QtGui.QApplication.UnicodeUTF8))
         self.pushButton_5.setText(QtGui.QApplication.translate("MainWindow", "Unlink selection", None, QtGui.QApplication.UnicodeUTF8))
         self.tabWidget_2.setTabText(self.tabWidget_2.indexOf(self.tab_6), QtGui.QApplication.translate("MainWindow", "datasets", None, QtGui.QApplication.UnicodeUTF8))
         self.tabWidget_2.setTabText(self.tabWidget_2.indexOf(self.tab_7), QtGui.QApplication.translate("MainWindow", "parameters", None, QtGui.QApplication.UnicodeUTF8))
