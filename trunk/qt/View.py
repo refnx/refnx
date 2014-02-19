@@ -138,6 +138,10 @@ class MyMainWindow(QtGui.QMainWindow):
         
         self.ui.gfdatasets_tableView.setModel(self.globalfitting_DataModel)
         self.ui.gfparams_tableView.setModel(self.globalfitting_ParamModel)
+                
+        self.ui.FitPluginDelegate = globalfitting_GUImodel.FitPluginItemDelegate(self.pluginStoreModel.plugins, self.ui.gfparams_tableView)
+        self.ui.gfdatasets_tableView.setEditTriggers(QtGui.QAbstractItemView.AllEditTriggers)
+        self.ui.gfdatasets_tableView.setItemDelegateForRow(1, self.ui.FitPluginDelegate)
         
         print 'Session started at:', time.asctime( time.localtime(time.time()) )
     
@@ -1076,6 +1080,16 @@ class MyMainWindow(QtGui.QMainWindow):
         for dataObject in dataObjects:
             self.reflectivitygraphs.add_dataObject(dataObject)
             self.sldgraphs.add_dataObject(dataObject)
+    
+    @QtCore.Slot()
+    def on_addGFDataSet_clicked(self):
+        datasets = self.dataStoreModel.dataStore.names
+
+        which_dataset, ok = QtGui.QInputDialog.getItem(self, "Which dataset did you want to add?", "dataset", datasets, editable=False)
+        if not ok:
+            return
+
+        self.globalfitting_DataModel.add_DataSet(which_dataset)
 
 class ProgramSettings(object):
     def __init__(self, **kwds):
