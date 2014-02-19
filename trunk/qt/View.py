@@ -125,6 +125,7 @@ class MyMainWindow(QtGui.QMainWindow):
         self.ui.baseModelView.clicked.connect(self.baseCurrentCellChanged)
         self.ui.layerModelView.clicked.connect(self.layerCurrentCellChanged)
         
+        #User defined function tab
 #         self.ui.UDFmodelView.clicked.connect(self.UDFCurrentCellChanged)
         self.ui.UDFmodelView.setModel(self.UDFmodel)
         self.UDFmodel.dataChanged.connect(self.update_gui_modelChanged)
