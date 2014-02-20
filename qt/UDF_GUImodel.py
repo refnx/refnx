@@ -42,9 +42,9 @@ class PluginStoreModel(QtCore.QAbstractTableModel):
         self.plugins.append(
             {'name': 'default', 'rfo': reflect.ReflectivityFitObject})
 
-    def __getitem__(self, key):
+    def get_plugin_by_name(self, name):
         for plugin in self.plugins:
-            if plugin['name'] == key:
+            if plugin['name'] == name:
                 return plugin
 
     def rowCount(self, parent=QtCore.QModelIndex()):

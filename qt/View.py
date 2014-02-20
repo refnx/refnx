@@ -45,6 +45,7 @@ class MyMainWindow(QtGui.QMainWindow):
         super(MyMainWindow, self).__init__(parent)
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
+
         self.errorHandler = QtGui.QErrorMessage()
 
         # redirect stdout to a console window
@@ -89,12 +90,12 @@ class MyMainWindow(QtGui.QMainWindow):
         self.UDFmodel = UDF_GUImodel.UDFParametersModel(
             self.modelStoreModel.modelStore['theoretical'],
             self)
-
+        
         # holds miscellaneous information on program settings
         self.settings = ProgramSettings()
         self.settings.fitPlugin = self.pluginStoreModel.plugins[0]
         self.restoreSettings()
-        
+                
         self.theoretical.evaluate_model(theoreticalmodel, store=True)
         self.dataStoreModel.add(self.theoretical)
 
@@ -143,14 +144,14 @@ class MyMainWindow(QtGui.QMainWindow):
         self.baseModel.dataChanged.connect(self.update_gui_modelChanged)
         self.ui.baseModelView.clicked.connect(self.baseCurrentCellChanged)
         self.ui.layerModelView.clicked.connect(self.layerCurrentCellChanged)
-
+        
         # User defined function tab
 #         self.ui.UDFmodelView.clicked.connect(self.UDFCurrentCellChanged)
         self.ui.UDFmodelView.setModel(self.UDFmodel)
         self.UDFmodel.dataChanged.connect(self.update_gui_modelChanged)
-        self.ui.UDFplugin_comboBox.setModel(self.pluginStoreModel)
         self.ui.UDFmodel_comboBox.setModel(self.modelStoreModel)
-
+        self.ui.UDFplugin_comboBox.setModel(self.pluginStoreModel)
+        
         # globalfitting tab
         self.globalfitting_DataModel = globalfitting_GUImodel.GlobalFitting_DataModel(
             self)
@@ -1152,7 +1153,7 @@ class MyMainWindow(QtGui.QMainWindow):
             visible=visible)
         self.sldgraphs.redraw_dataObjects(dataObjects, visible=visible)
 
-    def update_gui_modelChanged(self):
+    def update_gui_modelChanged(self): 
         model = self.modelStoreModel.modelStore['theoretical']
         fitPlugin = self.settings.fitPlugin['rfo']
 
@@ -1254,8 +1255,9 @@ class MyMainWindow(QtGui.QMainWindow):
                           }
 
             # retrieve the required fitplugin from the pluginStoreModel
-            fitClass = self.pluginStoreModel[datamodel.fitplugins[idx]]['rfo']
-
+            fitClass = \
+                self.pluginStoreModel.get_plugin_by_name(datamodel.fitplugins[idx])['rfo']
+            
             fitObject = fitClass(**callerInfo)
             fitObjects.append(fitObject)
 
