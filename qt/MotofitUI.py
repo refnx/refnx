@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'Motofit.ui'
 #
-# Created: Thu Feb 20 15:26:34 2014
+# Created: Thu Feb 20 18:42:58 2014
 #      by: pyside-uic 0.2.15 running on PySide 1.2.1
 #
 # WARNING! All changes made in this file will be lost!
@@ -599,9 +599,9 @@ class Ui_MainWindow(object):
 
         self.retranslateUi(MainWindow)
         self.graphs.setCurrentIndex(0)
-        self.tabWidget.setCurrentIndex(4)
+        self.tabWidget.setCurrentIndex(0)
         self.dataset_comboBox.setCurrentIndex(-1)
-        self.tabWidget_2.setCurrentIndex(1)
+        self.tabWidget_2.setCurrentIndex(0)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def retranslateUi(self, MainWindow):
