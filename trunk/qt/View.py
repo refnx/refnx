@@ -1216,6 +1216,10 @@ class MyMainWindow(QtGui.QMainWindow):
         select = self.ui.globalfitting_DataView.selectionModel()
         indices = select.selectedIndexes()
         self.globalfitting_DataModel.unlink_selection(indices)
+    
+    @QtCore.Slot(int)    
+    def on_globalParamsSlider_valueChanged(self, arg_1):
+        pass
 
     @QtCore.Slot()
     def on_do_gf_fit_clicked(self):
