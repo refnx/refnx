@@ -18,17 +18,18 @@ except ImportError:
 
 
 class DataObject(reflectdataset.ReflectDataset):
+
     '''
         defines a dataset
     '''
-    
+
     __requiredgraphproperties = {'lw': float,
                                  'label': str,
                                  'linestyle': str,
                                  'fillstyle': str,
                                  'marker': str,
                                  'markersize': float,
-                                 'markeredgecolor': str,                                 
+                                 'markeredgecolor': str,
                                  'markerfacecolor': str,
                                  'zorder': int,
                                  'color': str}

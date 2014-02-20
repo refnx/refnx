@@ -9,7 +9,9 @@
 
 from PySide import QtCore, QtGui
 
+
 class Ui_qrange(object):
+
     def setupUi(self, qrange):
         qrange.setObjectName("qrange")
         qrange.setWindowModality(QtCore.Qt.ApplicationModal)
@@ -30,14 +32,18 @@ class Ui_qrange(object):
         self.gridLayout.addWidget(self.qmin, 0, 1, 1, 1)
         self.buttonBox = QtGui.QDialogButtonBox(qrange)
         self.buttonBox.setOrientation(QtCore.Qt.Horizontal)
-        self.buttonBox.setStandardButtons(QtGui.QDialogButtonBox.Cancel|QtGui.QDialogButtonBox.Ok)
+        self.buttonBox.setStandardButtons(
+            QtGui.QDialogButtonBox.Cancel | QtGui.QDialogButtonBox.Ok)
         self.buttonBox.setObjectName("buttonBox")
         self.gridLayout.addWidget(self.buttonBox, 3, 1, 1, 1)
         self.numpnts = QtGui.QSpinBox(qrange)
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Fixed)
+        sizePolicy = QtGui.QSizePolicy(
+            QtGui.QSizePolicy.Minimum,
+            QtGui.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.numpnts.sizePolicy().hasHeightForWidth())
+        sizePolicy.setHeightForWidth(
+            self.numpnts.sizePolicy().hasHeightForWidth())
         self.numpnts.setSizePolicy(sizePolicy)
         self.numpnts.setWrapping(False)
         self.numpnts.setFrame(True)
@@ -58,16 +64,41 @@ class Ui_qrange(object):
         self.gridLayout.addWidget(self.numpntslabel, 2, 0, 1, 1)
 
         self.retranslateUi(qrange)
-        QtCore.QObject.connect(self.buttonBox, QtCore.SIGNAL("accepted()"), qrange.accept)
-        QtCore.QObject.connect(self.buttonBox, QtCore.SIGNAL("rejected()"), qrange.reject)
+        QtCore.QObject.connect(
+            self.buttonBox,
+            QtCore.SIGNAL("accepted()"),
+            qrange.accept)
+        QtCore.QObject.connect(
+            self.buttonBox,
+            QtCore.SIGNAL("rejected()"),
+            qrange.reject)
         QtCore.QMetaObject.connectSlotsByName(qrange)
         qrange.setTabOrder(self.qmin, self.qmax)
         qrange.setTabOrder(self.qmax, self.numpnts)
         qrange.setTabOrder(self.numpnts, self.buttonBox)
 
     def retranslateUi(self, qrange):
-        qrange.setWindowTitle(QtGui.QApplication.translate("qrange", "Set Q range", None, QtGui.QApplication.UnicodeUTF8))
-        self.qminlabel.setText(QtGui.QApplication.translate("qrange", "Q min", None, QtGui.QApplication.UnicodeUTF8))
-        self.qmaxlabel.setText(QtGui.QApplication.translate("qrange", "Q max", None, QtGui.QApplication.UnicodeUTF8))
-        self.numpntslabel.setText(QtGui.QApplication.translate("qrange", "Number of points", None, QtGui.QApplication.UnicodeUTF8))
-
+        qrange.setWindowTitle(
+            QtGui.QApplication.translate(
+                "qrange",
+                "Set Q range",
+                None,
+                QtGui.QApplication.UnicodeUTF8))
+        self.qminlabel.setText(
+            QtGui.QApplication.translate(
+                "qrange",
+                "Q min",
+                None,
+                QtGui.QApplication.UnicodeUTF8))
+        self.qmaxlabel.setText(
+            QtGui.QApplication.translate(
+                "qrange",
+                "Q max",
+                None,
+                QtGui.QApplication.UnicodeUTF8))
+        self.numpntslabel.setText(
+            QtGui.QApplication.translate(
+                "qrange",
+                "Number of points",
+                None,
+                QtGui.QApplication.UnicodeUTF8))
