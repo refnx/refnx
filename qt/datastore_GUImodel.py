@@ -84,7 +84,7 @@ class DataStoreModel(QtCore.QAbstractTableModel):
     
     def snapshot(self, snapshotname):        
         original = self.dataStore['theoretical']
-        dataTuple = (np.copy(original.W_q), np.copy(original.fit))
+        dataTuple = (np.copy(original.xdata), np.copy(original.fit))
         snapshot = DataObject(name = snapshotname, dataTuple = dataTuple)
         self.add(snapshot)
         self.insertRows(self.dataStore.numDataObjects)
