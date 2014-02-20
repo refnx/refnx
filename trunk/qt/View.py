@@ -143,6 +143,15 @@ class MyMainWindow(QtGui.QMainWindow):
         self.ui.globalfitting_DataView.setEditTriggers(QtGui.QAbstractItemView.AllEditTriggers)
         self.ui.globalfitting_DataView.setItemDelegateForRow(1, self.ui.FitPluginDelegate)
         
+        self.globalfitting_DataModel.changed_linkages.connect(self.globalfitting_ParamModel.changed_linkages)
+        self.globalfitting_DataModel.added_DataSet.connect(self.globalfitting_ParamModel.added_DataSet)
+        self.globalfitting_DataModel.removed_DataSet.connect(self.globalfitting_ParamModel.removed_DataSet)
+        self.globalfitting_DataModel.added_params.connect(self.globalfitting_ParamModel.added_params)
+        self.globalfitting_DataModel.removed_params.connect(self.globalfitting_ParamModel.removed_params)
+        self.globalfitting_DataModel.resized_rows.connect(self.globalfitting_ParamModel.resized_rows)
+        self.globalfitting_DataModel.changed_fitplugin.connect(self.globalfitting_ParamModel.changed_fitplugin)
+        self.globalfitting_ParamModel.dataChanged.connect(self.calculate_gf_model)
+
         print 'Session started at:', time.asctime( time.localtime(time.time()) )
     
     def __del__(self):
@@ -597,9 +606,9 @@ class MyMainWindow(QtGui.QMainWindow):
                        
     @QtCore.Slot()
     def on_do_fit_button_clicked(self):
-        """
+        '''
             you should do a fit
-        """
+        '''
         if self.current_dataset is None or self.current_dataset.name == 'theoretical':
             msgBox = QtGui.QMessageBox()
             msgBox.setText("Please select a dataset to fit.")
@@ -796,8 +805,6 @@ class MyMainWindow(QtGui.QMainWindow):
         if not ok:
             return    
         self.pluginStoreModel.add(pluginFileName)
-        
-    
                   
     @QtCore.Slot(unicode)
     def on_dataset_comboBox_currentIndexChanged(self, arg_1):
@@ -1096,6 +1103,52 @@ class MyMainWindow(QtGui.QMainWindow):
         select = self.ui.globalfitting_DataView.selectionModel()
         indices = select.selectedIndexes()
         self.globalfitting_DataModel.link_selection(indices)
+
+    @QtCore.Slot()        
+    def on_unlinkGFparam_clicked(self):
+        select = self.ui.globalfitting_DataView.selectionModel()
+        indices = select.selectedIndexes()
+        self.globalfitting_DataModel.unlink_selection(indices)
+
+    @QtCore.Slot()                
+    def on_do_gf_fit_clicked(self):
+        print globalfitting_GUImodel.generate_linkage_matrix(self.globalfitting_DataModel.linkages,
+                                                             self.globalfitting_DataModel.numparams)
+                                                             
+    def calculate_gf_model(self):
+        self.create_gf_object()
+                
+    def create_gf_object(self):
+        datamodel = self.globalfitting_DataModel
+        parammodel = self.globalfitting_ParamModel
+        fitObjects = list()
+        
+        linkageArray = \
+            globalfitting_GUImodel.generate_linkage_matrix(datamodel.linkages,
+                                                           datamodel.numparams)
+                                                               
+        for idx, dataset in enumerate(datamodel.dataset_names):
+            #retrieve the dataobject
+            dataobject = self.dataStoreModel.dataStore[dataset]
+            #get the parameters
+            model = parammodel.models[idx]
+            
+            callerInfo = {'xdata': dataobject.W_q,
+                          'ydata': dataobject.W_ref,
+                          'edata': dataobject.W_refSD,
+                          'parameters': model.parameters,
+                          'fitted_parameters': model.fitted_parameters,
+                          'dqvals': dataobject.W_qSD
+                          }
+                                     
+            #retrieve the required fitplugin from the pluginStoreModel
+            fitClass = self.pluginStoreModel[datamodel.fitplugins[idx]]['rfo']
+                             
+            fitObject = fitClass(**callerInfo)
+            fitObjects.append(fitObject)
+        
+        globalFitting = globalfitting.GlobalFitObject(tuple(fitObjects),
+                                                      linkageArray)
     
 class ProgramSettings(object):
     def __init__(self, **kwds):

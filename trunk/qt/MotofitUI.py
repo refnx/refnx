@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'Motofit.ui'
 #
-# Created: Wed Feb 19 15:58:47 2014
+# Created: Thu Feb 20 15:26:34 2014
 #      by: pyside-uic 0.2.15 running on PySide 1.2.1
 #
 # WARNING! All changes made in this file will be lost!
@@ -455,28 +455,28 @@ class Ui_MainWindow(object):
         self.linkGFparam.setSizePolicy(sizePolicy)
         self.linkGFparam.setObjectName("linkGFparam")
         self.gridLayout_11.addWidget(self.linkGFparam, 2, 2, 1, 1)
-        self.pushButton_5 = QtGui.QPushButton(self.tab_6)
+        self.unlinkGFparam = QtGui.QPushButton(self.tab_6)
         sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Expanding)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.pushButton_5.sizePolicy().hasHeightForWidth())
-        self.pushButton_5.setSizePolicy(sizePolicy)
-        self.pushButton_5.setObjectName("pushButton_5")
-        self.gridLayout_11.addWidget(self.pushButton_5, 3, 2, 1, 1)
+        sizePolicy.setHeightForWidth(self.unlinkGFparam.sizePolicy().hasHeightForWidth())
+        self.unlinkGFparam.setSizePolicy(sizePolicy)
+        self.unlinkGFparam.setObjectName("unlinkGFparam")
+        self.gridLayout_11.addWidget(self.unlinkGFparam, 3, 2, 1, 1)
         self.tabWidget_2.addTab(self.tab_6, "")
         self.tab_7 = QtGui.QWidget()
         self.tab_7.setObjectName("tab_7")
         self.gridLayout_10 = QtGui.QGridLayout(self.tab_7)
         self.gridLayout_10.setObjectName("gridLayout_10")
-        self.pushButton = QtGui.QPushButton(self.tab_7)
-        self.pushButton.setMinimumSize(QtCore.QSize(50, 70))
-        self.pushButton.setText("")
+        self.do_gf_fit = QtGui.QPushButton(self.tab_7)
+        self.do_gf_fit.setMinimumSize(QtCore.QSize(50, 70))
+        self.do_gf_fit.setText("")
         icon1 = QtGui.QIcon()
         icon1.addPixmap(QtGui.QPixmap("icons/go.jpeg"), QtGui.QIcon.Active, QtGui.QIcon.On)
-        self.pushButton.setIcon(icon1)
-        self.pushButton.setIconSize(QtCore.QSize(70, 70))
-        self.pushButton.setObjectName("pushButton")
-        self.gridLayout_10.addWidget(self.pushButton, 0, 1, 1, 1)
+        self.do_gf_fit.setIcon(icon1)
+        self.do_gf_fit.setIconSize(QtCore.QSize(70, 70))
+        self.do_gf_fit.setObjectName("do_gf_fit")
+        self.gridLayout_10.addWidget(self.do_gf_fit, 0, 1, 1, 1)
         self.globalParamsSlider = QtGui.QSlider(self.tab_7)
         self.globalParamsSlider.setMaximumSize(QtCore.QSize(16777215, 40))
         self.globalParamsSlider.setOrientation(QtCore.Qt.Horizontal)
@@ -601,7 +601,7 @@ class Ui_MainWindow(object):
         self.graphs.setCurrentIndex(0)
         self.tabWidget.setCurrentIndex(4)
         self.dataset_comboBox.setCurrentIndex(-1)
-        self.tabWidget_2.setCurrentIndex(0)
+        self.tabWidget_2.setCurrentIndex(1)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def retranslateUi(self, MainWindow):
@@ -631,7 +631,7 @@ class Ui_MainWindow(object):
         self.pushButton_3.setText(QtGui.QApplication.translate("MainWindow", "Remove dataset", None, QtGui.QApplication.UnicodeUTF8))
         self.addGFDataSet.setText(QtGui.QApplication.translate("MainWindow", "Add dataset", None, QtGui.QApplication.UnicodeUTF8))
         self.linkGFparam.setText(QtGui.QApplication.translate("MainWindow", "Link selection", None, QtGui.QApplication.UnicodeUTF8))
-        self.pushButton_5.setText(QtGui.QApplication.translate("MainWindow", "Unlink selection", None, QtGui.QApplication.UnicodeUTF8))
+        self.unlinkGFparam.setText(QtGui.QApplication.translate("MainWindow", "Unlink selection", None, QtGui.QApplication.UnicodeUTF8))
         self.tabWidget_2.setTabText(self.tabWidget_2.indexOf(self.tab_6), QtGui.QApplication.translate("MainWindow", "datasets", None, QtGui.QApplication.UnicodeUTF8))
         self.tabWidget_2.setTabText(self.tabWidget_2.indexOf(self.tab_7), QtGui.QApplication.translate("MainWindow", "parameters", None, QtGui.QApplication.UnicodeUTF8))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_5), QtGui.QApplication.translate("MainWindow", "Global fit", None, QtGui.QApplication.UnicodeUTF8))
