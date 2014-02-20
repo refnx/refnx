@@ -43,12 +43,12 @@ limits[:, 12] = 200, 300
 limits[:, 13] = 1, 3
 limits[:, 15] = 1, 6
 
-fitobject = reflect.ReflectivityFitObject(dataset.W_q,
-                                    dataset.W_ref,
-                                     dataset.W_refSD,
+fitobject = reflect.ReflectivityFitObject(dataset.xdata,
+                                    dataset.ydata,
+                                     dataset.ydataSD,
                                         coefs,
                                          fitted_parameters = fitted_parameters,
-                                          dqvals = dataset.W_qSD,
+                                          dqvals = dataset.xdataSD,
                                            limits = limits)
         
 fittedvals, uncertainties, chi2 = fitobject.fit()

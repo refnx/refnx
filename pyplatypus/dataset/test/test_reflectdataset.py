@@ -19,14 +19,14 @@ class TestReflectDataset(unittest.TestCase):
             dataset.load(f)
         
         self.assertEqual(dataset.numpoints, 90)
-        self.assertEqual(90, np.size(dataset.W_q))
+        self.assertEqual(90, np.size(dataset.xdata))
         
         dataset1 = reflectdataset.ReflectDataset()
         with open('pyplatypus/dataset/test/c_PLP0000708.dat') as f:
             dataset1.load(f)
         
         self.assertEqual(dataset1.numpoints, 90)
-        self.assertEqual(90, np.size(dataset1.W_q))
+        self.assertEqual(90, np.size(dataset1.xdata))
         
         
 if __name__ == '__main__':

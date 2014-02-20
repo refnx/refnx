@@ -29,10 +29,10 @@ class Reduce(object):
 			kwds is passed directly to processplatypusnexus.ProcessPlatypusNexus.process, look at that docstring for specification of options.
 			
 			Following successful construction of the object the following attributes are available:
-			self.W_q[N, T]					-Q values
-			self.W_qSD[N, T]				-uncertainty in Q values (FWHM)
-			self.W_ref[N, T]				-specular reflectivity
-			self.W_refSD[N, T]				-uncertainty in specular reflectivity (SD)
+			self.xdata[N, T]					-Q values
+			self.xdataSD[N, T]				-uncertainty in Q values (FWHM)
+			self.ydata[N, T]				-specular reflectivity
+			self.ydataSD[N, T]				-uncertainty in specular reflectivity (SD)
 			self.M_ref[N, T, Y]				-offspecular reflectivity map
 			self.M_refSD[N, T, Y]			-uncertainty in offspecular reflectivity
 			self.M_qz[N, T, Y]				-Qz for offspecular map
@@ -78,7 +78,7 @@ class Reduce(object):
 			self.numspectra - 1 can be specified.
 		
 		"""
-		return (self.W_q[scanpoint], self.W_ref[scanpoint], self.W_refSD[scanpoint], self.W_qSD[scanpoint])
+		return (self.xdata[scanpoint], self.ydata[scanpoint], self.ydataSD[scanpoint], self.xdataSD[scanpoint])
 
 	def get_2D_data(self, scanpoint = 0):
 		"""
@@ -99,8 +99,8 @@ class Reduce(object):
 		
 		self.M_ref /= scale
 		self.M_refSD /=scale
-		self.W_ref /=scale
-		self.W_refSD /= scale
+		self.ydata /=scale
+		self.ydataSD /= scale
 		
 	def get_reflected_dataset(self, scanpoint = 0):
 		"""
@@ -238,21 +238,21 @@ class Reduce(object):
 		#M_ref, M_refSD = EP.EPdiv(M_ref, M_refSD, scalefactor, 0)
 		
 		#now calculate the 1D output
-		W_q = qtrans.to_q(omega, self.reflect_beam.M_lambda)
-		W_qSD = (self.reflect_beam.M_lambdaSD / self.reflect_beam.M_lambda)**2
-		W_qSD += (self.reflect_beam.domega[:, np.newaxis] / omega) ** 2
-		W_qSD = np.sqrt(W_qSD) * W_q
+		xdata = qtrans.to_q(omega, self.reflect_beam.M_lambda)
+		xdataSD = (self.reflect_beam.M_lambdaSD / self.reflect_beam.M_lambda)**2
+		xdataSD += (self.reflect_beam.domega[:, np.newaxis] / omega) ** 2
+		xdataSD = np.sqrt(xdataSD) * xdata
 		
 		lopx, hipx = self.reflect_beam.lopx, self.reflect_beam.hipx
 		
-		W_ref = np.sum(M_ref[:, :, lopx:hipx + 1], axis = 2)
-		W_refSD = np.sum(np.power(M_refSD[:, :, lopx:hipx + 1], 2), axis = 2)
-		W_refSD = np.sqrt(W_refSD)
+		ydata = np.sum(M_ref[:, :, lopx:hipx + 1], axis = 2)
+		ydataSD = np.sum(np.power(M_refSD[:, :, lopx:hipx + 1], 2), axis = 2)
+		ydataSD = np.sqrt(ydataSD)
 		
-		self.W_q = W_q
-		self.W_qSD = W_qSD
-		self.W_ref = W_ref
-		self.W_refSD = W_refSD
+		self.xdata = xdata
+		self.xdataSD = xdataSD
+		self.ydata = ydata
+		self.ydataSD = ydataSD
 		self.M_ref = M_ref
 		self.M_refSD = M_refSD
 		self.M_qz = M_qz

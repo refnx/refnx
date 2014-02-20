@@ -25,10 +25,10 @@ class ReflectDataset(Data_1D):
     <REFdata axes="Qz" rank="1" type="POINT" spin="UNPOLARISED" dim="$numpoints">
     <Run filename="$datafilenumber" preset="" size="">
     </Run>
-    <R uncertainty="dR">$_W_ref</R>
-    <Qz uncertainty="dQz" units="1/A">$_W_q</Qz>
-    <dR type="SD">$_W_refSD</dR>
-    <dQz type="FWHM" units="1/A">$_W_qSD</dQz>
+    <R uncertainty="dR">$_ydata</R>
+    <Qz uncertainty="dQz" units="1/A">$_xdata</Qz>
+    <dR type="SD">$_ydataSD</dR>
+    <dQz type="FWHM" units="1/A">$_xdataSD</dQz>
     </REFdata>
     </REFentry>
     </REFroot>"""
@@ -54,13 +54,13 @@ class ReflectDataset(Data_1D):
 
         #filename = 'c_PLP{:07d}_{:d}.xml'.format(self._rnumber[0], 0)
 
-        self._W_ref = string.translate(repr(self.W_ref.tolist()), None, ',[]')
-        self._W_q = string.translate(repr(self.W_q.tolist()), None, ',[]')
-        self._W_refSD = string.translate(
-            repr(self.W_refSD.tolist()),
+        self._ydata = string.translate(repr(self.ydata.tolist()), None, ',[]')
+        self._xdata = string.translate(repr(self.xdata.tolist()), None, ',[]')
+        self._ydataSD = string.translate(
+            repr(self.ydataSD.tolist()),
             None,
             ',[]')
-        self._W_qSD = string.translate(repr(self.W_qSD.tolist()), None, ',[]')
+        self._xdataSD = string.translate(repr(self.xdataSD.tolist()), None, ',[]')
 
         thefile = s.safe_substitute(self.__dict__)
         f.write(thefile)
@@ -89,16 +89,16 @@ class ReflectDataset(Data_1D):
                 super(ReflectDataset, self).load(g)
 
     def rebin(self, rebinpercent=4):
-        W_q, W_ref, W_refSD, W_qSD = self.get_data()
+        xdata, ydata, ydataSD, xdataSD = self.get_data()
         frac = 1. + (rebinpercent / 100.)
 
-        lowQ = (2 * W_q[0]) / (1. + frac)
-        hiQ = frac * (2 * W_q[-1]) / (1. + frac)
+        lowQ = (2 * xdata[0]) / (1. + frac)
+        hiQ = frac * (2 * xdata[-1]) / (1. + frac)
 
-        qq, rr, dr, dq = rebin.rebin_Q(W_q,
-                                       W_ref,
-                                       W_refSD,
-                                       W_qSD,
+        qq, rr, dr, dq = rebin.rebin_Q(xdata,
+                                       ydata,
+                                       ydataSD,
+                                       xdataSD,
                                        lowerQ=lowQ,
                                        upperQ=hiQ,
                                        rebinpercent=rebinpercent)

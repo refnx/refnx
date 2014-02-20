@@ -20,73 +20,73 @@ class Data_1D(object):
         self.filename = None
 
         if dataTuple is not None:
-            self.W_q = np.copy(dataTuple[0]).flatten()
-            self.W_ref = np.copy(dataTuple[1]).flatten()
+            self.xdata = np.copy(dataTuple[0]).flatten()
+            self.ydata = np.copy(dataTuple[1]).flatten()
             if len(dataTuple) > 2:
-                self.W_refSD = np.copy(dataTuple[2]).flatten()
+                self.ydataSD = np.copy(dataTuple[2]).flatten()
             if len(dataTuple) > 3:
-                self.W_qSD = np.copy(dataTuple[3]).flatten()
+                self.xdataSD = np.copy(dataTuple[3]).flatten()
 
-            self.numpoints = np.size(self.W_q, 0)
+            self.numpoints = np.size(self.xdata, 0)
 
         else:
-            self.W_q = np.zeros(0)
-            self.W_ref = np.zeros(0)
-            self.W_refSD = np.zeros(0)
-            self.W_qSD = np.zeros(0)
+            self.xdata = np.zeros(0)
+            self.ydata = np.zeros(0)
+            self.ydataSD = np.zeros(0)
+            self.xdataSD = np.zeros(0)
 
             self.numpoints = 0
 
     def get_data(self):
-        return (self.W_q, self.W_ref, self.W_refSD, self.W_qSD)
+        return (self.xdata, self.ydata, self.ydataSD, self.xdataSD)
 
     def set_data(self, dataTuple):
-        self.W_q = np.copy(dataTuple[0]).flatten()
-        self.W_ref = np.copy(dataTuple[1]).flatten()
+        self.xdata = np.copy(dataTuple[0]).flatten()
+        self.ydata = np.copy(dataTuple[1]).flatten()
 
         if len(dataTuple) > 2:
-            self.W_refSD = np.copy(dataTuple[2]).flatten()
+            self.ydataSD = np.copy(dataTuple[2]).flatten()
         else:
-            self.W_refSD = np.zeros(np.size(self.W_q))
+            self.ydataSD = np.zeros(np.size(self.xdata))
 
         if len(dataTuple) > 3:
-            self.W_qSD = np.copy(dataTuple[3]).flatten()
+            self.xdataSD = np.copy(dataTuple[3]).flatten()
         else:
-            self.W_qSD = np.zeros(np.size(self.W_q))
+            self.xdataSD = np.zeros(np.size(self.xdata))
 
-        self.numpoints = len(self.W_q)
+        self.numpoints = len(self.xdata)
 
     def scale(self, scalefactor=1.):
-        self.W_ref /= scalefactor
-        self.W_refSD /= scalefactor
+        self.ydata /= scalefactor
+        self.ydataSD /= scalefactor
 
     def add_data(self, dataTuple, requires_splice=False):
-        W_q, W_ref, W_refSD, W_qSD = self.get_data()
+        xdata, ydata, ydataSD, xdataSD = self.get_data()
 
-        aW_q, aW_ref, aW_refSD, aW_qSD = dataTuple
+        axdata, aydata, aydataSD, axdataSD = dataTuple
 
-        qq = np.r_[W_q]
-        rr = np.r_[W_ref]
-        dr = np.r_[W_refSD]
-        dq = np.r_[W_qSD]
+        qq = np.r_[xdata]
+        rr = np.r_[ydata]
+        dr = np.r_[ydataSD]
+        dq = np.r_[xdataSD]
 
         # go through and stitch them together.
         if requires_splice and self.numpoints > 1:
             scale, dscale = nsplice.get_scaling_in_overlap(qq,
                                                            rr,
                                                            dr,
-                                                           aW_q,
-                                                           aW_ref,
-                                                           aW_refSD)
+                                                           axdata,
+                                                           aydata,
+                                                           aydataSD)
         else:
             scale = 1.
             dscale = 0.
 
-        qq = np.r_[qq, aW_q]
-        dq = np.r_[dq, aW_qSD]
+        qq = np.r_[qq, axdata]
+        dq = np.r_[dq, axdataSD]
 
-        appendR, appendDR = EP.EPmul(aW_ref,
-                                     aW_refSD,
+        appendR, appendDR = EP.EPmul(aydata,
+                                     aydataSD,
                                      scale,
                                      dscale)
         rr = np.r_[rr, appendR]
@@ -96,15 +96,15 @@ class Data_1D(object):
         self.sort()
 
     def sort(self):
-        sorted = np.argsort(self.W_q)
-        self.W_q = self.W_q[:, sorted]
-        self.W_ref = self.W_ref[:, sorted]
-        self.W_refSD = self.W_refSD[:, sorted]
-        self.W_qSD = self.W_qSD[:, sorted]
+        sorted = np.argsort(self.xdata)
+        self.xdata = self.xdata[:, sorted]
+        self.ydata = self.ydata[:, sorted]
+        self.ydataSD = self.ydataSD[:, sorted]
+        self.xdataSD = self.xdataSD[:, sorted]
 
     def save(self, f):
         np.savetxt(
-            f, np.column_stack((self.W_q, self.W_ref, self.W_refSD, self.W_qSD)))
+            f, np.column_stack((self.xdata, self.ydata, self.ydataSD, self.xdataSD)))
 
     def load(self, f):
         array = np.loadtxt(f)
