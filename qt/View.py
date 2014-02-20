@@ -159,11 +159,11 @@ class MyMainWindow(QtGui.QMainWindow):
             self)
 
         self.ui.globalfitting_DataView.setModel(self.globalfitting_DataModel)
-        self.ui.gfparams_tableView.setModel(self.globalfitting_ParamModel)
+        self.ui.globalfitting_ParamsView.setModel(self.globalfitting_ParamModel)
 
         self.ui.FitPluginDelegate = globalfitting_GUImodel.FitPluginItemDelegate(
             self.pluginStoreModel.plugins,
-            self.ui.gfparams_tableView)
+            self.ui.globalfitting_DataView)
         self.ui.globalfitting_DataView.setEditTriggers(
             QtGui.QAbstractItemView.AllEditTriggers)
         self.ui.globalfitting_DataView.setItemDelegateForRow(
@@ -186,7 +186,9 @@ class MyMainWindow(QtGui.QMainWindow):
             self.globalfitting_ParamModel.changed_fitplugin)
         self.globalfitting_ParamModel.dataChanged.connect(
             self.calculate_gf_model)
-
+        self.ui.globalfitting_ParamsView.clicked.connect(
+            self.GFCurrentCellChanged)
+            
         print 'Session started at:', time.asctime(time.localtime(time.time()))
 
     def __del__(self):
@@ -1079,6 +1081,35 @@ class MyMainWindow(QtGui.QMainWindow):
         self.currentCell['hilim'] = hilim
         self.currentCell['readyToChange'] = True
         self.currentCell['model'] = self.UDFModel
+        
+    def GFCurrentCellChanged(self, index):
+        row = index.row()
+        col = index.column()
+
+        self.currentCell = {}
+
+        try:
+            val = self.globalfitting_ParamModel.models[col].parameters[row]
+            print val
+        except ValueError:
+            return
+        except AttributeError:
+            return
+
+        if val < 0:
+            lowlim = 2 * val
+            hilim = 0
+        else:
+            lowlim = 0
+            hilim = 2 * val
+
+        self.currentCell['col'] = col
+        self.currentCell['param'] = row
+        self.currentCell['val'] = val
+        self.currentCell['lowlim'] = lowlim
+        self.currentCell['hilim'] = hilim
+        self.currentCell['readyToChange'] = True
+        self.currentCell['model'] = self.globalfitting_ParamModel
 
     @QtCore.Slot(int)
     def on_horizontalSlider_valueChanged(self, arg_1):
@@ -1220,8 +1251,53 @@ class MyMainWindow(QtGui.QMainWindow):
     
     @QtCore.Slot(int)    
     def on_globalParamsSlider_valueChanged(self, arg_1):
-        pass
+        try:
+            c = self.currentCell
 
+            if not c['readyToChange']:
+                return
+
+            val = c['lowlim'] + \
+                (arg_1 / 1000.) * math.fabs(c['lowlim'] - c['hilim'])
+            
+            col = c['col']
+            row = c['param']
+            
+            c['model'].models[col].parameters[row] = val
+
+            c['model'].dataChanged.emit(
+                QtCore.QModelIndex(),
+                QtCore.QModelIndex())
+        except AttributeError:
+            return
+        except KeyError:
+            return
+        
+    @QtCore.Slot()
+    def on_globalParamsSlider_sliderReleased(self):
+        try:
+            c = self.currentCell
+            c['readyToChange'] = False
+            row = c['param']
+            col = c['col']
+            self.ui.horizontalSlider.setValue(499)
+            val = c['model'].models[col].parameters[row]
+
+            if val < 0:
+                lowlim = 2 * val
+                hilim = 0
+            else:
+                lowlim = 0
+                hilim = 2 * val
+
+            self.currentCell['val'] = val
+            self.currentCell['lowlim'] = lowlim
+            self.currentCell['hilim'] = hilim
+            self.currentCell['readyToChange'] = True
+
+        except (ValueError, AttributeError, KeyError):
+            return
+        
     @QtCore.Slot()
     def on_do_gf_fit_clicked(self):
         print globalfitting_GUImodel.generate_linkage_matrix(

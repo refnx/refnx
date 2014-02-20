@@ -145,7 +145,7 @@ class GlobalFitting_DataModel(QtCore.QAbstractTableModel):
                         self.numparams[col] = val
                         currentrows = max(self.numparams)
                         self.beginInsertRows(QtCore.QModelIndex(),
-                                             self.rowCount(),
+                                             oldparams + 3,
                                              3 + val - 1)
                         self.endInsertRows()
                         self.resized_rows.emit(currentrows, val)
