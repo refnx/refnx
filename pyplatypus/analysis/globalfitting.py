@@ -65,7 +65,7 @@ class GlobalFitObject(fitting.FitObject):
             FitObjectTuple is a tuple of fitting.FitObject objects.
             The linkageArray specifies which parameters are common between datasets.
         """
-
+        
         self.linkageArray = np.atleast_2d(linkageArray)
         self.linkageArray = self.linkageArray.astype('int32')
         self.fitObjectTuple = fitObjectTuple
@@ -96,8 +96,7 @@ class GlobalFitObject(fitting.FitObject):
             Alternatively it will fit the parameters listed in the individual fitObject.fitted_parameters
             arrays IFF they are unique parameters.  Note that when you set up the individual fitObject
             if you don't supply the fitted_parameters keyword, then the default is to fit them all.
-        '''
-
+        '''                
         if 'fitted_parameters' in kwds and kwds['fitted_parameters'] is not None:
             # if it's in kwds, then it'll get passed to the superclass
             # constructor
@@ -131,7 +130,7 @@ class GlobalFitObject(fitting.FitObject):
         else:
             # setup limits from individual fitObject
             limits = np.zeros((2, self.unique_pars_vector.size))
-
+            
             for idx, pos in enumerate(uniquelocs):
                 row = int(pos // np.size(self.linkageArray, 1))
                 col = pos % (np.size(self.linkageArray, 1))

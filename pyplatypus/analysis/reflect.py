@@ -202,7 +202,8 @@ class ReflectivityFitObject(fitting.FitObject):
                                                     edata,
                                                     None,
                                                     parameters,
-                                                    args=args, **kwds)
+                                                    args=args,
+                                                    **kwds)
 
         self.transform = None
         if 'transform' in kwds:
