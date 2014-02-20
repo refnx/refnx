@@ -41,15 +41,15 @@ def abeles(lenqvals, qvals, coefs):
     pj = np.zeros((npnts, nlayers + 2), dtype='complex128')
     roughnesses = np.zeros(nlayers + 1)
 
-    SLDfronting = np.complex(coefs[2] * 1.e-6, coefs[3])
-    SLDbacking = np.complex(coefs[4] * 1.e-6, coefs[5])
+    SLDfronting = np.complex(coefs[2] * 1.e-6, coefs[3] * 1.e-6)
+    SLDbacking = np.complex(coefs[4] * 1.e-6, coefs[5] * 1.e-6)
 
     qq2 = np.power(qvals.flatten(), 2.) / 4.
 
     for layer in xrange(nlayers):
         pj[:, layer + 1] = - 4. * math.pi * \
             (np.complex(coefs[4 * layer + 9] * 1.e-6,
-             coefs[4 * layer + 10]) - SLDfronting)
+             coefs[4 * layer + 10] * 1.e-6) - SLDfronting)
         roughnesses[layer] = np.fabs(coefs[4 * layer + 11])
 
     roughnesses[-1] = coefs[7]

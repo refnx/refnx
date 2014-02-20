@@ -61,10 +61,10 @@ class GlobalFitObject(fitting.FitObject):
     '''
 
     def __init__(self, fitObjectTuple, linkageArray, args=(), **kwds):
-        """
+        '''
             FitObjectTuple is a tuple of fitting.FitObject objects.
             The linkageArray specifies which parameters are common between datasets.
-        """
+        '''
         
         self.linkageArray = np.atleast_2d(linkageArray)
         self.linkageArray = self.linkageArray.astype('int32')

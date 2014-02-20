@@ -60,12 +60,6 @@ class MyMainWindow(QtGui.QMainWindow):
         self.modelStoreModel = modelstore_GUImodel.ModelStoreModel(self)
         self.pluginStoreModel = UDF_GUImodel.PluginStoreModel(self)
 
-        # holds miscellaneous information on program settings
-        self.settings = ProgramSettings()
-        self.restoreSettings()
-
-        self.settings.fitPlugin = self.pluginStoreModel.plugins[0]
-
         self.modifyGui()
 
         parameters = np.array([1, 1.0, 0, 0, 2.07, 0, 1e-7, 3, 25, 3.47, 0, 3])
@@ -96,6 +90,11 @@ class MyMainWindow(QtGui.QMainWindow):
             self.modelStoreModel.modelStore['theoretical'],
             self)
 
+        # holds miscellaneous information on program settings
+        self.settings = ProgramSettings()
+        self.settings.fitPlugin = self.pluginStoreModel.plugins[0]
+        self.restoreSettings()
+        
         self.theoretical.evaluate_model(theoreticalmodel, store=True)
         self.dataStoreModel.add(self.theoretical)
 

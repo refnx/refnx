@@ -77,15 +77,15 @@ extern "C" {
 		scale = coefP[1];
 		bkg = coefP[6];
 		subrough = coefP[7];
-		sub= MyComplex(coefP[4]*1e-6, coefP[5]);
-		super = MyComplex(coefP[2]*1e-6, coefP[3]);
+		sub= MyComplex(coefP[4]*1e-6, coefP[5] * 1e-6);
+		super = MyComplex(coefP[2]*1e-6, coefP[3] * 1e-6);
 		
 		//offset tells us where the multilayers start.
 		offset = 4 * nlayers + 8;
 		
 		//fillout all the SLD's for all the layers
 		for(ii=1; ii<nlayers+1;ii+=1)
-			*(SLDmatrix + ii) = 4 * PI * (MyComplex(coefP[4 * ii + 5] * 1e-6, coefP[4 * ii + 6]) - super);
+			*(SLDmatrix + ii) = 4 * PI * (MyComplex(coefP[4 * ii + 5] * 1e-6, coefP[4 * ii + 6] * 1e-6) - super);
 		
 		*(SLDmatrix) = MyComplex(0,0);
 		*(SLDmatrix + nlayers + 1) = 4 * PI * (sub - super);
@@ -102,7 +102,7 @@ extern "C" {
 			memset(pj_mul, 0, Vmullayers * sizeof(*pj_mul));
 			memset(SLDmatrixREP, 0, Vmullayers * sizeof(*SLDmatrixREP));
 			for(ii=0; ii<Vmullayers;ii+=1)
-				*(SLDmatrixREP + ii) = 4 * PI * (MyComplex(coefP[(4 * ii) + offset + 1] * 1e-6, coefP[(4 * ii) + offset + 2])  - super);
+				*(SLDmatrixREP + ii) = 4 * PI * (MyComplex(coefP[(4 * ii) + offset + 1] * 1e-6, coefP[(4 * ii) + offset + 2] * 1e-6)  - super);
 		}
 		
 		
@@ -706,15 +706,15 @@ extern "C" {
 		scale = coefP[1];
 		bkg = coefP[6];
 		subrough = coefP[7];
-		sub= MyComplex(coefP[4]*1.e-6, coefP[5]);
-		super = MyComplex(coefP[2]*1.e-6, coefP[3]);
+		sub= MyComplex(coefP[4]*1.e-6, coefP[5] * 1.e-6);
+		super = MyComplex(coefP[2]*1.e-6, coefP[3] * 1.e-6);
 		
 		//offset tells us where the multilayers start.
 		offset = 4 * nlayers + 8;
 		
 		//fillout all the SLD's for all the layers
 		for(kk=1; kk<nlayers+1;kk+=1)
-			*(SLDmatrix + kk) = 4 * PI * (MyComplex(coefP[4 * kk + 5] * 1e-6, coefP[4 * kk + 6]) - super);
+			*(SLDmatrix + kk) = 4 * PI * (MyComplex(coefP[4 * kk + 5] * 1e-6, coefP[4 * kk + 6] * 1.e-6) - super);
 		
 		*(SLDmatrix) = MyComplex(0,0);
 		*(SLDmatrix + nlayers + 1) = 4 * PI * (sub - super);
@@ -729,9 +729,9 @@ extern "C" {
 				goto done;
 			}
 			memset(pj_mul, 0, Vmullayers * sizeof(*pj_mul));
-			memset(SLDmatrixREP,0, Vmullayers * sizeof(*SLDmatrixREP));
+			memset(SLDmatrixREP, 0, Vmullayers * sizeof(*SLDmatrixREP));
 			for(kk=0; kk<Vmullayers;kk+=1)
-				*(SLDmatrixREP + kk) = 4 * PI * (MyComplex(coefP[(4 * kk) + offset + 1] * 1e-6, coefP[(4 * kk) + offset + 2])  - super);
+				*(SLDmatrixREP + kk) = 4 * PI * (MyComplex(coefP[(4 * kk) + offset + 1] * 1e-6, coefP[(4 * kk) + offset + 2] * 1.e-6) - super);
 		}
 		
 		//create threads for the calculation
