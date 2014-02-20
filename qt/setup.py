@@ -9,7 +9,7 @@ from setuptools import setup
 import py2app
 import periodictable
 from distutils.core import *
-from distutils      import sysconfig
+from distutils import sysconfig
 
 # Third-party modules - we depend on numpy for everything
 import numpy
@@ -24,22 +24,22 @@ APP = ['qt/motofit.py']
 DATA_FILES = ['qt/icons']
 PACKAGES = ['pyplatypus',
             'periodictable']
-            
-#  creflect extension module# 
+
+#  creflect extension module#
 _creflect = Extension("pyplatypus.analysis.__creflect",
-                   ["src/reflect.i","src/reflect.c", "src/refcalc.cpp"],
-                   include_dirs = [numpy_include],
-                   undef_macros=['NDEBUG']
-                                 )     
+                      ["src/reflect.i", "src/reflect.c", "src/refcalc.cpp"],
+                      include_dirs=[numpy_include],
+                      undef_macros=['NDEBUG']
+                      )
 OPTIONS = {'argv_emulation': True,
-           'includes':['numdifftools'],
+           'includes': ['numdifftools'],
            'packages': PACKAGES,
-           'excludes':[]}
+           'excludes': []}
 
 setup(
     app=APP,
     data_files=DATA_FILES,
-    ext_modules = [_creflect],
+    ext_modules=[_creflect],
     options={'py2app': OPTIONS},
     setup_requires=['py2app'],
 )

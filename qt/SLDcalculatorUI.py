@@ -9,7 +9,9 @@
 
 from PySide import QtCore, QtGui
 
+
 class Ui_Form(object):
+
     def setupUi(self, Form):
         Form.setObjectName("Form")
         Form.setWindowModality(QtCore.Qt.NonModal)
@@ -30,10 +32,13 @@ class Ui_Form(object):
         self.label_6.setObjectName("label_6")
         self.gridLayout.addWidget(self.label_6, 2, 3, 1, 1)
         self.mass_density = QtGui.QDoubleSpinBox(Form)
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Fixed)
+        sizePolicy = QtGui.QSizePolicy(
+            QtGui.QSizePolicy.Expanding,
+            QtGui.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.mass_density.sizePolicy().hasHeightForWidth())
+        sizePolicy.setHeightForWidth(
+            self.mass_density.sizePolicy().hasHeightForWidth())
         self.mass_density.setSizePolicy(sizePolicy)
         self.mass_density.setDecimals(3)
         self.mass_density.setSingleStep(0.001)
@@ -41,10 +46,13 @@ class Ui_Form(object):
         self.mass_density.setObjectName("mass_density")
         self.gridLayout.addWidget(self.mass_density, 3, 0, 1, 3)
         self.molecular_volume = QtGui.QDoubleSpinBox(Form)
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Fixed)
+        sizePolicy = QtGui.QSizePolicy(
+            QtGui.QSizePolicy.Expanding,
+            QtGui.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.molecular_volume.sizePolicy().hasHeightForWidth())
+        sizePolicy.setHeightForWidth(
+            self.molecular_volume.sizePolicy().hasHeightForWidth())
         self.molecular_volume.setSizePolicy(sizePolicy)
         self.molecular_volume.setDecimals(3)
         self.molecular_volume.setMaximum(1000000000.0)
@@ -100,14 +108,63 @@ class Ui_Form(object):
         Form.setTabOrder(self.neutron_SLD, self.xray_SLD)
 
     def retranslateUi(self, Form):
-        Form.setWindowTitle(QtGui.QApplication.translate("Form", "SLD calculator", None, QtGui.QApplication.UnicodeUTF8))
-        self.chemical_formula.setPlaceholderText(QtGui.QApplication.translate("Form", "H[2]2O", None, QtGui.QApplication.UnicodeUTF8))
-        self.use_volume.setText(QtGui.QApplication.translate("Form", "molecular volume", None, QtGui.QApplication.UnicodeUTF8))
-        self.label_5.setText(QtGui.QApplication.translate("Form", "Mass density (g/cc)", None, QtGui.QApplication.UnicodeUTF8))
-        self.label_6.setText(QtGui.QApplication.translate("Form", "Molecular volume (Å**3)", None, QtGui.QApplication.UnicodeUTF8))
-        self.label_4.setText(QtGui.QApplication.translate("Form", "Neutron Wavelength (Å)", None, QtGui.QApplication.UnicodeUTF8))
-        self.label_3.setText(QtGui.QApplication.translate("Form", "Xray Energy (keV)", None, QtGui.QApplication.UnicodeUTF8))
-        self.label_2.setText(QtGui.QApplication.translate("Form", "Xray SLD  ( / 1e-6 Å**-2)", None, QtGui.QApplication.UnicodeUTF8))
-        self.label.setText(QtGui.QApplication.translate("Form", "Neutron SLD ( / 1e-6 Å**-2)", None, QtGui.QApplication.UnicodeUTF8))
-        self.use_density.setText(QtGui.QApplication.translate("Form", "density", None, QtGui.QApplication.UnicodeUTF8))
-
+        Form.setWindowTitle(
+            QtGui.QApplication.translate(
+                "Form",
+                "SLD calculator",
+                None,
+                QtGui.QApplication.UnicodeUTF8))
+        self.chemical_formula.setPlaceholderText(
+            QtGui.QApplication.translate(
+                "Form",
+                "H[2]2O",
+                None,
+                QtGui.QApplication.UnicodeUTF8))
+        self.use_volume.setText(
+            QtGui.QApplication.translate(
+                "Form",
+                "molecular volume",
+                None,
+                QtGui.QApplication.UnicodeUTF8))
+        self.label_5.setText(
+            QtGui.QApplication.translate(
+                "Form",
+                "Mass density (g/cc)",
+                None,
+                QtGui.QApplication.UnicodeUTF8))
+        self.label_6.setText(
+            QtGui.QApplication.translate(
+                "Form",
+                "Molecular volume (Å**3)",
+                None,
+                QtGui.QApplication.UnicodeUTF8))
+        self.label_4.setText(
+            QtGui.QApplication.translate(
+                "Form",
+                "Neutron Wavelength (Å)",
+                None,
+                QtGui.QApplication.UnicodeUTF8))
+        self.label_3.setText(
+            QtGui.QApplication.translate(
+                "Form",
+                "Xray Energy (keV)",
+                None,
+                QtGui.QApplication.UnicodeUTF8))
+        self.label_2.setText(
+            QtGui.QApplication.translate(
+                "Form",
+                "Xray SLD  ( / 1e-6 Å**-2)",
+                None,
+                QtGui.QApplication.UnicodeUTF8))
+        self.label.setText(
+            QtGui.QApplication.translate(
+                "Form",
+                "Neutron SLD ( / 1e-6 Å**-2)",
+                None,
+                QtGui.QApplication.UnicodeUTF8))
+        self.use_density.setText(
+            QtGui.QApplication.translate(
+                "Form",
+                "density",
+                None,
+                QtGui.QApplication.UnicodeUTF8))
