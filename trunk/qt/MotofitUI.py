@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'Motofit.ui'
 #
-# Created: Thu Feb 20 19:47:16 2014
+# Created: Thu Feb 20 20:57:07 2014
 #      by: pyside-uic 0.2.15 running on PySide 1.2.1
 #
 # WARNING! All changes made in this file will be lost!
@@ -485,9 +485,9 @@ class Ui_MainWindow(object):
         self.globalParamsSlider.setOrientation(QtCore.Qt.Horizontal)
         self.globalParamsSlider.setObjectName("globalParamsSlider")
         self.gridLayout_10.addWidget(self.globalParamsSlider, 1, 0, 1, 1)
-        self.gfparams_tableView = QtGui.QTableView(self.tab_7)
-        self.gfparams_tableView.setObjectName("gfparams_tableView")
-        self.gridLayout_10.addWidget(self.gfparams_tableView, 0, 0, 1, 1)
+        self.globalfitting_ParamsView = QtGui.QTableView(self.tab_7)
+        self.globalfitting_ParamsView.setObjectName("globalfitting_ParamsView")
+        self.gridLayout_10.addWidget(self.globalfitting_ParamsView, 0, 0, 1, 1)
         self.tabWidget_2.addTab(self.tab_7, "")
         self.gridLayout_9.addWidget(self.tabWidget_2, 0, 0, 1, 1)
         self.tabWidget.addTab(self.tab_5, "")
