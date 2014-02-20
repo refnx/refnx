@@ -57,7 +57,11 @@ class MyMainWindow(QtGui.QMainWindow):
         self.modelStoreModel = modelstore_GUImodel.ModelStoreModel(self)
         self.pluginStoreModel = UDF_GUImodel.PluginStoreModel(self)
         
-        self.fitPlugin = self.pluginStoreModel.plugins[0]
+        #holds miscellaneous information on program settings
+        self.settings = ProgramSettings()
+        self.restoreSettings()
+        
+        self.settings.fitPlugin = self.pluginStoreModel.plugins[0]
                 
         self.modifyGui()
         
@@ -72,10 +76,6 @@ class MyMainWindow(QtGui.QMainWindow):
         
 
         self.current_dataset = None
-        
-        #holds miscellaneous information on program settings
-        self.settings = ProgramSettings()
-        self.restoreSettings()
                 
         self.theoretical = DataObject(dataTuple = dataTuple)
 
@@ -661,15 +661,17 @@ class MyMainWindow(QtGui.QMainWindow):
             
         if self.settings.fittingAlgorithm != 'LM':
             ok, limits = self.get_limits(theoreticalmodel.parameters,
-                                                         theoreticalmodel.fitted_parameters,
-                                                          theoreticalmodel.limits)
+                                         theoreticalmodel.fitted_parameters,
+                                         theoreticalmodel.limits)
         
             if not ok:
                 return
         
             theoreticalmodel.limits = np.copy(limits)
             
-        self.do_a_fit_and_add_to_gui(self.current_dataset, theoreticalmodel, fitPlugin = self.fitPlugin['rfo'])  
+        self.do_a_fit_and_add_to_gui(self.current_dataset,
+                                     theoreticalmodel,
+                                     fitPlugin = self.settings.fitPlugin['rfo'])  
     
         
     def do_a_fit_and_add_to_gui(self, dataset, model, fitPlugin = None):
@@ -695,12 +697,12 @@ class MyMainWindow(QtGui.QMainWindow):
             model.fitPlugin = fitPlugin
             model.useerrors = self.ui.use_errors_checkbox.isChecked()
             model.transform = transform_fnctn                                                                    
-            if not model.useerrors:
+            if not self.settings.useerrors:
                 tempdataset.ydataSD = None
                 
             tempdataset.do_a_fit(model,
-                              fitPlugin = fitPlugin,
-                               method = self.settings.fittingAlgorithm)
+                                 fitPlugin=fitPlugin,
+                                 method=self.settings.fittingAlgorithm)
                                
             model.transform = None
                                 
@@ -757,7 +759,7 @@ class MyMainWindow(QtGui.QMainWindow):
         if arg_1 == 0:
             #the default reflectometry calculation is being used
             self.modelStoreModel.modelStore.displayOtherThanReflect = False
-            
+
             '''
                 you need to display a model suitable for reflectometry
             '''
@@ -775,10 +777,9 @@ class MyMainWindow(QtGui.QMainWindow):
 
                 self.UDFmodel.modelReset.emit()
         else:
-            #a user reflectometry plugin is being used.
+            #a user plugin is being used.
             self.modelStoreModel.modelStore.displayOtherThanReflect = True
-
-        self.fitPlugin = self.pluginStoreModel.plugins[arg_1]
+        self.settings.fitPlugin = self.pluginStoreModel.plugins[arg_1]
 
     @QtCore.Slot(unicode)
     def on_UDFmodel_comboBox_currentIndexChanged(self, arg_1):        
@@ -1049,7 +1050,7 @@ class MyMainWindow(QtGui.QMainWindow):
                         
     def update_gui_modelChanged(self):
         model = self.modelStoreModel.modelStore['theoretical']
-        fitPlugin = self.fitPlugin['rfo']                                            
+        fitPlugin = self.settings.fitPlugin['rfo']                                            
         
         #evaluate the model against the dataset    
         try:
@@ -1061,7 +1062,7 @@ class MyMainWindow(QtGui.QMainWindow):
                                                                   tempdataset.ydata,
                                                                     tempdataset.ydataSD)
 
-                model.useerrors = self.ui.use_errors_checkbox.isChecked()
+                model.useerrors = self.settings.useerrors
                 model.quad_order = self.settings.quad_order
                 model.transform = transform_fnctn                                                                    
                 if not model.useerrors:
