@@ -89,7 +89,7 @@ class MyMainWindow(QtGui.QMainWindow):
         self.theoretical.evaluate_model(theoreticalmodel, store = True)
         self.dataStoreModel.add(self.theoretical)
         
-        self.theoretical.line2Dfit = self.reflectivitygraphs.axes[0].plot(self.theoretical.W_q,
+        self.theoretical.line2Dfit = self.reflectivitygraphs.axes[0].plot(self.theoretical.xdata,
                                                    self.theoretical.fit, color = 'b',
                                                     linestyle='-', lw=2, label = 'theoretical')[0]
                                                     
@@ -292,7 +292,7 @@ class MyMainWindow(QtGui.QMainWindow):
         self.layerModel.model = self.theoreticalmodel
         self.theoretical.evaluate_model(self.theoreticalmodel, store = True)
         
-        self.theoretical.line2Dfit = self.reflectivitygraphs.axes[0].plot(self.theoretical.W_q,
+        self.theoretical.line2Dfit = self.reflectivitygraphs.axes[0].plot(self.theoretical.xdata,
                                                 self.theoretical.fit, color = 'b',
                                                  linestyle='-', lw=2, label = 'theoretical')[0]
         self.reflectivitygraphs.draw()
@@ -448,10 +448,10 @@ class MyMainWindow(QtGui.QMainWindow):
     def change_Q_range(self, qmin, qmax, numpnts, res):
         theoretical = self.dataStoreModel.dataStore['theoretical']
         
-        theoretical.W_q = np.linspace(qmin, qmax, numpnts)
-        theoretical.W_ref = np.resize(theoretical.W_ref, numpnts)
-        theoretical.W_refSD = np.resize(theoretical.W_refSD, numpnts)
-        theoretical.W_qSD = theoretical.W_q * res / 100.
+        theoretical.xdata = np.linspace(qmin, qmax, numpnts)
+        theoretical.ydata = np.resize(theoretical.ydata, numpnts)
+        theoretical.ydataSD = np.resize(theoretical.ydataSD, numpnts)
+        theoretical.xdataSD = theoretical.xdata * res / 100.
                 
         self.update_gui_modelChanged()
         
@@ -459,9 +459,9 @@ class MyMainWindow(QtGui.QMainWindow):
     @QtCore.Slot()
     def on_actionChange_Q_range_triggered(self):
         theoretical = self.dataStoreModel.dataStore['theoretical']
-        qmin = theoretical.W_q[0]
-        qmax = theoretical.W_q[-1]
-        numpnts = len(theoretical.W_q)        
+        qmin = theoretical.xdata[0]
+        qmax = theoretical.xdata[-1]
+        numpnts = len(theoretical.xdata)        
 
         qrangedialog = QtGui.QDialog()
         qrangeGUI = qrangedialogUI.Ui_qrange()
@@ -501,10 +501,7 @@ class MyMainWindow(QtGui.QMainWindow):
                                               17)
         if not ok:
             return
-        self.settings.quad_order = value
-        theoreticalmodel = self.modelStoreModel.modelStore['theoretical']
-        theoreticalmodel.quad_order = value
-        
+        self.settings.quad_order = value        
         self.update_gui_modelChanged()
                 
     @QtCore.Slot()
@@ -546,7 +543,7 @@ class MyMainWindow(QtGui.QMainWindow):
         self.dataStoreModel.dataStore.refresh()
         for dataObject in self.dataStoreModel.dataStore:
             if dataObject.line2D:
-                dataObject.line2D.set_data(dataObject.W_q, dataObject.W_ref)
+                dataObject.line2D.set_data(dataObject.xdata, dataObject.ydata)
         self.reflectivitygraphs.draw()
         
     @QtCore.Slot()
@@ -629,8 +626,8 @@ class MyMainWindow(QtGui.QMainWindow):
         
         if self.settings.fittingAlgorithm != 'LM':
             ok, limits = self.get_limits(theoreticalmodel.parameters,
-                                                     theoreticalmodel.fitted_parameters,
-                                                      theoreticalmodel.limits)
+                                         theoreticalmodel.fitted_parameters,
+                                         theoreticalmodel.limits)
         
             if not ok:
                 return
@@ -690,16 +687,16 @@ class MyMainWindow(QtGui.QMainWindow):
             #select a transform.  Note that we have to transform the data for the fit as well            
             transform_fnctn = reflect.Transform(self.settings.transform).transform
             tempdataset = DataObject(dataset.get_data())
-            tempdataset.W_ref, tempdataset.W_refSD = transform_fnctn(tempdataset.W_q,
-                                                                      tempdataset.W_ref,
-                                                                        tempdataset.W_refSD)
+            tempdataset.ydata, tempdataset.ydataSD = transform_fnctn(tempdataset.xdata,
+                                                                     tempdataset.ydata,
+                                                                     tempdataset.ydataSD)
 
             model.quad_order = self.settings.quad_order
             model.fitPlugin = fitPlugin
             model.useerrors = self.ui.use_errors_checkbox.isChecked()
             model.transform = transform_fnctn                                                                    
             if not model.useerrors:
-                tempdataset.W_refSD = None
+                tempdataset.ydataSD = None
                 
             tempdataset.do_a_fit(model,
                               fitPlugin = fitPlugin,
@@ -848,11 +845,9 @@ class MyMainWindow(QtGui.QMainWindow):
             print model.parameters, model.fitted_parameters
 
     @QtCore.Slot(float)
-    def on_res_SpinBox_valueChanged(self, arg_1):
-        if arg_1 < 0.5:
-            arg_1 = 0
-            
-        self.theoretical.W_qSD = arg_1 * self.theoretical.W_q / 100.
+    def on_res_SpinBox_valueChanged(self, arg_1):        
+        self.settings.resolution = arg_1
+        self.theoretical.xdataSD = arg_1 * self.theoretical.xdata / 100.
 
         self.update_gui_modelChanged()
                  
@@ -861,26 +856,25 @@ class MyMainWindow(QtGui.QMainWindow):
         """
         want to weight by error bars, recalculate chi2
         """
-        
-        theoreticalmodel = self.modelStoreModel.modelStore['theoretical']
+
         if arg_1:
-            theoreticalmodel.useerrors = True
+            use = True
         else:
-            theoreticalmodel.useerrors = False
-            
+            use = False
+        
+        self.settings.useerrors = use                        
         self.update_gui_modelChanged()
             
     @QtCore.Slot(int)
     def on_use_dqwave_checkbox_stateChanged(self, arg_1):
         """
-        """
-        theoreticalmodel = self.modelStoreModel.modelStore['theoretical']
-        
+        """        
         if arg_1:
-            theoreticalmodel.usedq = True
+            use = True
         else:
-            theoreticalmodel.usedq = False
-        
+            use = False
+            
+        self.settings.usedq = use
         self.update_gui_modelChanged()
             
     def layerCurrentCellChanged(self, index):
@@ -1063,15 +1057,15 @@ class MyMainWindow(QtGui.QMainWindow):
             if self.current_dataset is not None and self.current_dataset.name != 'theoretical':
                 transform_fnctn = reflect.Transform(self.settings.transform).transform
                 tempdataset = DataObject(self.current_dataset.get_data())
-                tempdataset.W_ref, tempdataset.W_refSD = transform_fnctn(tempdataset.W_q,
-                                                                  tempdataset.W_ref,
-                                                                    tempdataset.W_refSD)
+                tempdataset.ydata, tempdataset.ydataSD = transform_fnctn(tempdataset.xdata,
+                                                                  tempdataset.ydata,
+                                                                    tempdataset.ydataSD)
 
                 model.useerrors = self.ui.use_errors_checkbox.isChecked()
                 model.quad_order = self.settings.quad_order
                 model.transform = transform_fnctn                                                                    
                 if not model.useerrors:
-                    tempdataset.W_refSD = None
+                    tempdataset.ydataSD = None
 
                 energy = tempdataset.evaluate_chi2(model, fitPlugin = fitPlugin)
                 model.transform = None
@@ -1133,12 +1127,12 @@ class MyMainWindow(QtGui.QMainWindow):
             #get the parameters
             model = parammodel.models[idx]
             
-            callerInfo = {'xdata': dataobject.W_q,
-                          'ydata': dataobject.W_ref,
-                          'edata': dataobject.W_refSD,
+            callerInfo = {'xdata': dataobject.xdata,
+                          'ydata': dataobject.ydata,
+                          'edata': dataobject.ydataSD,
                           'parameters': model.parameters,
                           'fitted_parameters': model.fitted_parameters,
-                          'dqvals': dataobject.W_qSD
+                          'dqvals': dataobject.xdataSD
                           }
                                      
             #retrieve the required fitplugin from the pluginStoreModel
@@ -1156,14 +1150,25 @@ class ProgramSettings(object):
                      'transform': 'logY',
                      'quad_order' : 17,
                      'current_dataset_name' : None,
-                     'current_model_name' : None}
-                     
+                     'current_model_name' : None,
+                     'usedq': True,
+                     'resolution': 5,
+                     'fitPlugin': None,
+                     'useerrors': True}
+
         for key in __members:
             if key in kwds:
                setattr(self, key, kwds[key])
             else:
                 setattr(self, key, __members[key])
         
+    def  __getitem__(self, key):
+        if key in self.__members:
+            return self.key
+            
+    def __setitem__(self, key, value):
+        if key in self.__members:
+            setattr(self, key, value)
         
 class MyReflectivityGraphs(FigureCanvas):
     """Ultimately, this is a QWidget (as well as a FigureCanvasAgg, etc.)."""
@@ -1197,8 +1202,8 @@ class MyReflectivityGraphs(FigureCanvas):
             return
                     
         if dataObject.line2D is None:
-            lineInstance = self.axes[0].plot(dataObject.W_q,
-                                          dataObject.W_ref,
+            lineInstance = self.axes[0].plot(dataObject.xdata,
+                                          dataObject.ydata,
                                            markersize=5,
                                             marker='o',
                                              linestyle='',
@@ -1210,7 +1215,7 @@ class MyReflectivityGraphs(FigureCanvas):
         if dataObject.line2Dfit is None and dataObject.fit is not None:
             if dataObject.line2D:
                 color = artist.getp(dataObject.line2D, 'color')
-            dataObject.line2Dfit = self.axes[0].plot(dataObject.W_q,
+            dataObject.line2Dfit = self.axes[0].plot(dataObject.xdata,
                                                         dataObject.fit,
                                                            linestyle='-',
                                                             color = color,
@@ -1220,7 +1225,7 @@ class MyReflectivityGraphs(FigureCanvas):
                 artist.setp(dataObject.line2Dfit, **dataObject.graph_properties['line2Dfit_properties'])
         
 #         if dataObject.line2Dresiduals is None and dataObject.residuals is not None:
-#             dataObject.line2Dresiduals = self.axes[1].plot(dataObject.W_q,
+#             dataObject.line2Dresiduals = self.axes[1].plot(dataObject.xdata,
 #                                                   dataObject.residuals,
 #                                                    linestyle='-',
 #                                                     lw = 2,
@@ -1239,13 +1244,13 @@ class MyReflectivityGraphs(FigureCanvas):
             if not dataObject:
                 continue
             if dataObject.line2D:
-               dataObject.line2D.set_data(dataObject.W_q, dataObject.W_ref)
+               dataObject.line2D.set_data(dataObject.xdata, dataObject.ydata)
                dataObject.line2D.set_visible(visible)               
             if dataObject.line2Dfit:
-               dataObject.line2Dfit.set_data(dataObject.W_q, dataObject.fit)
+               dataObject.line2Dfit.set_data(dataObject.xdata, dataObject.fit)
                dataObject.line2Dfit.set_visible(visible)
 #             if dataObject.line2Dresiduals:
-#                dataObject.line2Dresiduals.set_data(dataObject.W_q, dataObject.residuals)
+#                dataObject.line2Dresiduals.set_data(dataObject.xdata, dataObject.residuals)
 #                dataObject.line2Dresiduals.set_visible(visible)
         
 #         self.axes[0].autoscale(axis='both', tight = False, enable = True)
