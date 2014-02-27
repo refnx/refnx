@@ -19,7 +19,6 @@ except ImportError:
 FWHM = 2 * math.sqrt(2 * math.log(2.0))
 INTLIMIT = 3.5
 
-
 def gauss_legendre(n):
     '''
         a function return gaussian quadrature weights

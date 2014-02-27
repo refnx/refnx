@@ -114,9 +114,11 @@ Object attributes:
             self.seed = kwds['seed']
 
         if 'fitted_parameters' in kwds and kwds['fitted_parameters'] is not None:
-            self.fitted_parameters = np.copy(kwds['fitted_parameters'])
+            self.fitted_parameters = np.unique(np.copy(kwds['fitted_parameters']))
         else:
             self.fitted_parameters = np.arange(self.numparams)
+        #get rid of duplicate fitted parameters
+
 
         if 'costfunction' in kwds:
             self.costfunction = kwds['costfunction']
@@ -240,6 +242,7 @@ Object attributes:
             popt, chi2 = de.solve()
             self.parameters[self.fitted_parameters] = popt
             self.chi2 = chi2
+
             Hfun = ndt.Hessian(self.energy, n=2)
             hess = Hfun(popt)
             self.covariance = scipy.linalg.pinv(hess)

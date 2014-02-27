@@ -111,9 +111,12 @@ class UDFParametersModel(QtCore.QAbstractTableModel):
         row = index.row()
         col = index.column()
 
-        if row == 0:
+        if row == 0 and col == 0:
             retval = QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsEnabled
-
+        
+        if row == 0 and col > 0:
+            retval = False
+            
         if col == 0 and row > 0:
             retval = (QtCore.Qt.ItemIsEditable |
                       QtCore.Qt.ItemIsUserCheckable |

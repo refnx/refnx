@@ -17,7 +17,7 @@ import reflectivity_parameters_GUImodel
 import limits_GUImodel
 import globalfitting_GUImodel
 
-import pyplatypus.analysis.model as model
+import pyplatypus.analysis.model as pam_model
 import pyplatypus.analysis.reflect as reflect
 import pyplatypus.analysis.fitting as fitting
 import pyplatypus.analysis.globalfitting as globalfitting
@@ -76,7 +76,7 @@ class MyMainWindow(QtGui.QMainWindow):
 
         self.theoretical = DataObject(dataTuple=dataTuple)
 
-        theoreticalmodel = model.Model(
+        theoreticalmodel = pam_model.Model(
             parameters=parameters,
             fitted_parameters=fitted_parameters)
         self.modelStoreModel.add(theoreticalmodel, 'theoretical')
@@ -142,11 +142,8 @@ class MyMainWindow(QtGui.QMainWindow):
             self.layerModel.layersFinishedBeingRemoved)
         self.layerModel.dataChanged.connect(self.update_gui_modelChanged)
         self.baseModel.dataChanged.connect(self.update_gui_modelChanged)
-        self.ui.baseModelView.clicked.connect(self.baseCurrentCellChanged)
-        self.ui.layerModelView.clicked.connect(self.layerCurrentCellChanged)
-        
+                
         # User defined function tab
-#         self.ui.UDFmodelView.clicked.connect(self.UDFCurrentCellChanged)
         self.ui.UDFmodelView.setModel(self.UDFmodel)
         self.UDFmodel.dataChanged.connect(self.update_gui_modelChanged)
         self.ui.UDFmodel_comboBox.setModel(self.modelStoreModel)
@@ -186,8 +183,6 @@ class MyMainWindow(QtGui.QMainWindow):
             self.globalfitting_ParamModel.changed_fitplugin)
         self.globalfitting_ParamModel.dataChanged.connect(
             self.calculate_gf_model)
-        self.ui.globalfitting_ParamsView.clicked.connect(
-            self.GFCurrentCellChanged)
             
         print 'Session started at:', time.asctime(time.localtime(time.time()))
 
@@ -254,7 +249,7 @@ class MyMainWindow(QtGui.QMainWindow):
         state['history'] = self.ui.plainTextEdit.toPlainText()
         state['settings'] = self.settings
         state['plugins'] = self.pluginStoreModel.plugins
-        print state['plugins']
+        state['globalfitting_settings'] = self.globalfitting_ParamModel.gf_settings
 
         try:
             tempdirectory = tempfile.mkdtemp()
@@ -308,6 +303,9 @@ class MyMainWindow(QtGui.QMainWindow):
             self.ui.plainTextEdit.setPlainText(state['history'])
             self.settings = state['settings']
             self.pluginStoreModel.plugins = state['plugins']
+            self.globalfitting_ParamModel.gf_settings = state['globalfitting_settings']
+            self.globalfitting_DataModel.gf_settings = state['globalfitting_settings']
+            
         except KeyError as e:
             print type(e), e.message
             return
@@ -368,8 +366,12 @@ class MyMainWindow(QtGui.QMainWindow):
         elif self.settings.fittingAlgorithm == 'DE':
             self.ui.actionDifferential_Evolution.setChecked(True)
 
-        self.settransformoption(self.settings.transform)
-
+        self.settransformoption(self.settings.transformdata)
+    
+    def apply_settings_to_model(self, model):
+         for key in self.settings.__dict__:
+             model[key] = self.settings[key]
+                
     @QtCore.Slot()
     def on_actionLoad_File_triggered(self):
         experimentFileName, ok = QtGui.QFileDialog.getOpenFileName(self,
@@ -441,11 +443,11 @@ class MyMainWindow(QtGui.QMainWindow):
                 self, caption='Save fit as:', dir='fit_' + which_fit)
             if not ok:
                 return
-            self.dataStoreModel.dataStore[which_fit].savefit(fitfilename)
+            self.dataStoreModel.dataStore[which_fit].save_fit(fitFileName)
 
     def loadModel(self, fileName):
         with open(fileName, 'Ur') as f:
-            themodel = model.Model(None, file=f)
+            themodel = pam_model.Model(None, file=f)
 
         modelName = os.path.basename(fileName)
         self.modelStoreModel.modelStore.add(
@@ -521,19 +523,23 @@ class MyMainWindow(QtGui.QMainWindow):
         qmax = theoretical.xdata[-1]
         numpnts = len(theoretical.xdata)
 
+        dvalidator = QtGui.QDoubleValidator(-2.0e-308, 2.0e308, 6)
+        
         qrangedialog = QtGui.QDialog()
         qrangeGUI = qrangedialogUI.Ui_qrange()
         qrangeGUI.setupUi(qrangedialog)
         qrangeGUI.numpnts.setValue(numpnts)
-        qrangeGUI.qmin.setValue(qmin)
-        qrangeGUI.qmax.setValue(qmax)
+        qrangeGUI.qmin.setValidator(dvalidator)
+        qrangeGUI.qmax.setValidator(dvalidator)
+        qrangeGUI.qmin.setText(str(qmin))
+        qrangeGUI.qmax.setText(str(qmax))
 
         res = self.ui.res_SpinBox.value()
 
         ok = qrangedialog.exec_()
         if ok:
-            self.change_Q_range(qrangeGUI.qmin.value(),
-                                qrangeGUI.qmax.value(),
+            self.change_Q_range(float(qrangeGUI.qmin.text()),
+                                float(qrangeGUI.qmax.text()),
                                 qrangeGUI.numpnts.value(), res)
 
     @QtCore.Slot()
@@ -637,7 +643,7 @@ class MyMainWindow(QtGui.QMainWindow):
             self.ui.actionYX4_vs_X.setChecked(True)
         elif transform == 'YX2':
             self.ui.actionYX2_vs_X.setChecked(True)
-        self.settings.transform = transform
+        self.settings.transformdata = transform
 
     @QtCore.Slot()
     def on_actionSLD_calculator_triggered(self):
@@ -702,28 +708,16 @@ class MyMainWindow(QtGui.QMainWindow):
 
     @QtCore.Slot()
     def on_do_UDFfit_button_clicked(self):
-        """
+        '''
             you should do a fit using the fit plugin
-        """
+        '''
         if self.current_dataset is None or self.current_dataset.name == 'theoretical':
             msgBox = QtGui.QMessageBox()
-            msgBox.setText("Please select a dataset to fit.")
+            msgBox.setText('Please select a dataset to fit.')
             msgBox.exec_()
             return
 
         theoreticalmodel = self.modelStoreModel.modelStore['theoretical']
-        alreadygotlimits = False
-
-        if ('coef_' + self.current_dataset.name) in self.modelStoreModel.modelStore.names:
-            model = self.modelStoreModel.modelStore[
-                'coef_' +
-                self.current_dataset.name]
-            if model.limits is not None and model.limits.ndim == 2 and np.size(theoreticalmodel.parameters) == np.size(model.limits, 1):
-                theoreticalmodel.limits = np.copy(model.limits)
-                alreadygotlimits = True
-
-        if not alreadygotlimits:
-            theoreticalmodel.default_limits()
 
         if self.settings.fittingAlgorithm != 'LM':
             ok, limits = self.get_limits(theoreticalmodel.parameters,
@@ -739,7 +733,7 @@ class MyMainWindow(QtGui.QMainWindow):
                                      theoreticalmodel,
                                      fitPlugin=self.settings.fitPlugin['rfo'])
 
-    def do_a_fit_and_add_to_gui(self, dataset, model, fitPlugin=None):
+    def do_a_fit_and_add_to_gui(self, dataset, init_model, fitPlugin=None):
         if dataset.name == 'theoretical':
             print 'You tried to fit the theoretical dataset'
             return
@@ -748,34 +742,33 @@ class MyMainWindow(QtGui.QMainWindow):
         print 'fitting to:', dataset.name
         try:
             print self.settings.fittingAlgorithm
-            print self.settings.transform
+            print self.settings.transformdata
 
             # how did you want to fit the dataset - logY vs X, lin Y vs X, etc.
             # select a transform.  Note that we have to transform the data for
             # the fit as well
             transform_fnctn = reflect.Transform(
-                self.settings.transform).transform
+                self.settings.transformdata).transform
             tempdataset = DataObject(dataset.get_data())
             tempdataset.ydata, tempdataset.ydataSD = transform_fnctn(
                 tempdataset.xdata,
                 tempdataset.ydata,
                 tempdataset.ydataSD)
 
-            model.quad_order = self.settings.quad_order
-            model.fitPlugin = fitPlugin
-            model.useerrors = self.ui.use_errors_checkbox.isChecked()
-            model.transform = transform_fnctn
+            self.apply_settings_to_model(init_model)
+            init_model.fitPlugin = fitPlugin
+            init_model.transform = transform_fnctn
             if not self.settings.useerrors:
                 tempdataset.ydataSD = None
 
-            tempdataset.do_a_fit(model,
+            tempdataset.do_a_fit(init_model,
                                  fitPlugin=fitPlugin,
                                  method=self.settings.fittingAlgorithm)
 
-            model.transform = None
+            init_model.transform = None
 
             # but then evaluate against the untransformed data
-            dataset.evaluate_model(model, store=True, fitPlugin=fitPlugin)
+            dataset.evaluate_model(init_model, store=True, fitPlugin=fitPlugin)
 
         except fitting.FitAbortedException as e:
             print 'you aborted the fit'
@@ -784,21 +777,21 @@ class MyMainWindow(QtGui.QMainWindow):
         print 'Chi2 :', tempdataset.chi2 / tempdataset.numpoints
         np.set_printoptions(suppress=True, precision=4)
         print 'parameters:'
-        print model.parameters
+        print init_model.parameters
         print 'uncertainties:'
-        print model.uncertainties
+        print init_model.uncertainties
         print '___________________________________________________'
 
-        newmodel = Model.Model(parameters=np.copy(model.parameters),
+        newmodel = pam_model.Model(parameters=np.copy(init_model.parameters),
                                fitted_parameters=np.copy(
-                                   model.fitted_parameters),
-                               uncertainties=np.copy(model.uncertainties),
-                               covariance=np.copy(model.covariance),
-                               limits=np.copy(model.limits),
-                               fitPlugin=model.fitPlugin,
-                               useerrors=model.useerrors,
-                               usedq=model.usedq,
-                               quad_order=model.quad_order)
+                                   init_model.fitted_parameters),
+                               uncertainties=np.copy(init_model.uncertainties),
+                               covariance=np.copy(init_model.covariance),
+                               limits=np.copy(init_model.limits),
+                               fitPlugin=init_model.fitPlugin,
+                               useerrors=init_model.useerrors,
+                               usedq=init_model.usedq,
+                               quad_order=init_model.quad_order)
 
         self.modelStoreModel.add(newmodel, 'coef_' + dataset.name)
 
@@ -977,7 +970,8 @@ class MyMainWindow(QtGui.QMainWindow):
         self.settings.usedq = use
         self.update_gui_modelChanged()
 
-    def layerCurrentCellChanged(self, index):
+    @QtCore.Slot(QtCore.QModelIndex)
+    def on_layerModelView_clicked(self, index):
         row = index.row()
         col = index.column()
 
@@ -1016,7 +1010,8 @@ class MyMainWindow(QtGui.QMainWindow):
         self.currentCell['readyToChange'] = True
         self.currentCell['model'] = self.layerModel
 
-    def baseCurrentCellChanged(self, index):
+    @QtCore.Slot(QtCore.QModelIndex)
+    def on_baseModelView_clicked(self, index):
         row = index.row()
         col = index.column()
 
@@ -1082,7 +1077,8 @@ class MyMainWindow(QtGui.QMainWindow):
         self.currentCell['readyToChange'] = True
         self.currentCell['model'] = self.UDFModel
         
-    def GFCurrentCellChanged(self, index):
+    @QtCore.Slot(QtCore.QModelIndex)
+    def on_globalfitting_ParamsView_clicked(self, index):      
         row = index.row()
         col = index.column()
 
@@ -1090,7 +1086,6 @@ class MyMainWindow(QtGui.QMainWindow):
 
         try:
             val = self.globalfitting_ParamModel.models[col].parameters[row]
-            print val
         except ValueError:
             return
         except AttributeError:
@@ -1186,6 +1181,8 @@ class MyMainWindow(QtGui.QMainWindow):
 
     def update_gui_modelChanged(self): 
         model = self.modelStoreModel.modelStore['theoretical']
+        self.apply_settings_to_model(model)
+        
         fitPlugin = self.settings.fitPlugin['rfo']
 
         # evaluate the model against the dataset
@@ -1196,15 +1193,13 @@ class MyMainWindow(QtGui.QMainWindow):
                 fitPlugin=fitPlugin)
             if self.current_dataset is not None and self.current_dataset.name != 'theoretical':
                 transform_fnctn = reflect.Transform(
-                    self.settings.transform).transform
+                    self.settings.transformdata).transform
                 tempdataset = DataObject(self.current_dataset.get_data())
                 tempdataset.ydata, tempdataset.ydataSD = transform_fnctn(
                     tempdataset.xdata,
                     tempdataset.ydata,
                     tempdataset.ydataSD)
-
-                model.useerrors = self.settings.useerrors
-                model.quad_order = self.settings.quad_order
+                
                 model.transform = transform_fnctn
                 if not model.useerrors:
                     tempdataset.ydataSD = None
@@ -1272,7 +1267,7 @@ class MyMainWindow(QtGui.QMainWindow):
             return
         except KeyError:
             return
-        
+                    
     @QtCore.Slot()
     def on_globalParamsSlider_sliderReleased(self):
         try:
@@ -1280,8 +1275,8 @@ class MyMainWindow(QtGui.QMainWindow):
             c['readyToChange'] = False
             row = c['param']
             col = c['col']
-            self.ui.horizontalSlider.setValue(499)
-            val = c['model'].models[col].parameters[row]
+            self.ui.globalParamsSlider.setValue(499)
+            val = c['model'].gf_settings.models[col].parameters[row]
 
             if val < 0:
                 lowlim = 2 * val
@@ -1300,16 +1295,17 @@ class MyMainWindow(QtGui.QMainWindow):
         
     @QtCore.Slot()
     def on_do_gf_fit_clicked(self):
-        print globalfitting_GUImodel.generate_linkage_matrix(
-            self.globalfitting_DataModel.linkages,
-            self.globalfitting_DataModel.numparams)
-
+        evalf = self.calculate_gf_model()
+        print evalf
+        
     def calculate_gf_model(self):
-        self.create_gf_object()
+        globalFitting = self.create_gf_object()
+        eval = globalFitting.model()
+        return eval
 
     def create_gf_object(self):
-        datamodel = self.globalfitting_DataModel
-        parammodel = self.globalfitting_ParamModel
+        datamodel = self.globalfitting_DataModel.gf_settings
+        parammodel = self.globalfitting_ParamModel.gf_settings
         fitObjects = list()
 
         linkageArray = \
@@ -1339,13 +1335,15 @@ class MyMainWindow(QtGui.QMainWindow):
 
         globalFitting = globalfitting.GlobalFitObject(tuple(fitObjects),
                                                       linkageArray)
+        
+        return globalFitting
 
 
 class ProgramSettings(object):
 
     def __init__(self, **kwds):
         __members = {'fittingAlgorithm': 'DE',
-                     'transform': 'logY',
+                     'transformdata': 'logY',
                      'quad_order': 17,
                      'current_dataset_name': None,
                      'current_model_name': None,
@@ -1361,11 +1359,11 @@ class ProgramSettings(object):
                 setattr(self, key, __members[key])
 
     def __getitem__(self, key):
-        if key in self.__members:
-            return self.key
+#         if key in self.__dict__:
+        return self.__dict__[key]
 
     def __setitem__(self, key, value):
-        if key in self.__members:
+        if key in self.__dict__:
             setattr(self, key, value)
 
 

@@ -6,10 +6,19 @@ import math
 
 class DEsolver(object):
 
-    def __init__(self, energy_function, limits, args=(),
-                 initial_params = None, DEstrategy = None, maxIterations = 1000,
-                 popsize = 20, tol = 0.01, km = 0.7, recomb = 0.5, seed = None,
-                 progress = None):
+    def __init__(self,
+                 energy_function,
+                 limits,
+                 args=(),
+                 initial_params=None,
+                 DEstrategy=None,
+                 maxIterations=1000,
+                 popsize=20,
+                 tol=0.01,
+                 km=0.7,
+                 recomb=0.5,
+                 seed=None,
+                 progress=None):
 
         if DEstrategy is not None:
             self.DEstrategy = DEstrategy
