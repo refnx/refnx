@@ -18,7 +18,7 @@ class Data_1D(object):
     def __init__(self, dataTuple=None):
 
         self.filename = None
-
+        
         if dataTuple is not None:
             self.xdata = np.copy(dataTuple[0]).flatten()
             self.ydata = np.copy(dataTuple[1]).flatten()
@@ -47,7 +47,7 @@ class Data_1D(object):
         if len(dataTuple) > 2:
             self.ydataSD = np.copy(dataTuple[2]).flatten()
         else:
-            self.ydataSD = np.zeros(np.size(self.xdata))
+            self.ydataSD = np.ones_like(self.xdata)
 
         if len(dataTuple) > 3:
             self.xdataSD = np.copy(dataTuple[3]).flatten()

@@ -68,3 +68,6 @@ def peakfinder_test():
 	y = gauss(x, 0.2, 10, 2, 1.25) + random.gauss(0, 0.5)
 	peak_finder(y, x = x)
 	
+def divergence(d1, d2, L12):
+    return 2.35 / L12 * np.sqrt((np.pow(d1, 2) + np.pow(d2, 2))/L12)
+	

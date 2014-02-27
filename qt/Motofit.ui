@@ -1328,6 +1328,14 @@
     <string>SLD calculator</string>
    </property>
   </action>
+  <action name="actionFit">
+   <property name="text">
+    <string>Fit</string>
+   </property>
+   <property name="shortcut">
+    <string>Meta+F</string>
+   </property>
+  </action>
  </widget>
  <resources/>
  <connections/>

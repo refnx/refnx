@@ -22,6 +22,8 @@ class Model(object):
                      'useerrors': True,
                      'quad_order': 17}
 
+        self.__members = __members
+
         if 'file' in kwds:
             self.load(kwds['file'])
         else:
@@ -50,6 +52,15 @@ class Model(object):
 
             if self.limits is None:
                 self.default_limits(True)
+
+
+    def __getitem__(self, key):
+        if key in self.__members:
+            return self.key
+
+    def __setitem__(self, key, value):
+        if key in self.__members:
+            setattr(self, key, value)
 
     def save(self, f):
         f.write(f.name + '\n')

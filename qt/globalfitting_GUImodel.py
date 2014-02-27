@@ -64,7 +64,15 @@ def generate_linkage_matrix(linkages, numparams):
 
     return linkage_matrix
 
-
+class GlobalFitting_Settings(object):
+    def __init__(self):
+        self.numdatasets = 0
+        self.dataset_names = []
+        self.numparams = []
+        self.fitplugins = []
+        self.linkages = []
+        self.models = []
+        
 class GlobalFitting_DataModel(QtCore.QAbstractTableModel):
 
     added_DataSet = QtCore.Signal(unicode)
@@ -83,20 +91,16 @@ class GlobalFitting_DataModel(QtCore.QAbstractTableModel):
 
     def __init__(self, parent=None):
         super(GlobalFitting_DataModel, self).__init__(parent)
-        self.numdatasets = 0
-        self.dataset_names = []
-        self.numparams = []
-        self.fitplugins = []
-        self.linkages = []
+        self.gf_settings = GlobalFitting_Settings()
 
     def rowCount(self, parent=QtCore.QModelIndex()):
         val = 3
-        if len(self.numparams):
-            val += max(self.numparams)
+        if len(self.gf_settings.numparams):
+            val += max(self.gf_settings.numparams)
         return val
 
     def columnCount(self, parent=QtCore.QModelIndex()):
-        return len(self.dataset_names)
+        return len(self.gf_settings.dataset_names)
 
     def flags(self, index):
         row = index.row()
@@ -109,7 +113,7 @@ class GlobalFitting_DataModel(QtCore.QAbstractTableModel):
                     QtCore.Qt.ItemIsEnabled |
                     QtCore.Qt.ItemIsSelectable)
 
-        if row < self.numparams[col] + 3:
+        if row < self.gf_settings.numparams[col] + 3:
             return QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled
 
         return False
@@ -120,8 +124,8 @@ class GlobalFitting_DataModel(QtCore.QAbstractTableModel):
 
         if role == QtCore.Qt.EditRole:
             if row == 1:
-                self.fitplugins[col] = value
-                self.changed_fitplugin.emit(self.fitplugins)
+                self.gf_settings.fitplugins[col] = value
+                self.changed_fitplugin.emit(self.gf_settings.fitplugins)
             if row == 2:
                 validator = QtGui.QIntValidator()
                 voutput = validator.validate(value, 1)
@@ -130,7 +134,7 @@ class GlobalFitting_DataModel(QtCore.QAbstractTableModel):
                         int(voutput[1]) >= 0:
 
                     val = int(voutput[1])
-                    if self.fitplugins[col] == 'default':
+                    if self.gf_settings.fitplugins[col] == 'default':
                         if (val - 8) % 4:
                             msgBox = QtGui.QMessageBox()
                             msgBox.setText(
@@ -138,42 +142,43 @@ class GlobalFitting_DataModel(QtCore.QAbstractTableModel):
                             msgBox.exec_()
                             return False
 
-                    oldparams = self.numparams[col]
+                    oldparams = self.gf_settings.numparams[col]
 
-                    if val > max(self.numparams):
+                    if val > max(self.gf_settings.numparams):
                         # this change causes the table to grow
-                        self.numparams[col] = val
-                        currentrows = max(self.numparams)
+                        self.gf_settings.numparams[col] = val
+                        currentrows = max(self.gf_settings.numparams)
                         self.beginInsertRows(QtCore.QModelIndex(),
                                              oldparams + 3,
                                              3 + val - 1)
                         self.endInsertRows()
                         self.resized_rows.emit(currentrows, val)
-                    elif val < max(self.numparams):
+                    elif val < max(self.gf_settings.numparams):
                         # there is at least one other parameter vector bigger
-                        self.numparams[col] = val
+                        self.gf_settings.numparams[col] = val
                     else:
                         #val == max(self.numparams)
                         # this may be the largest, but another may be the same
                         # you might have to shrink the number of parameters
-                        numparams_copy = list(self.numparams)
+                        numparams_copy = list(self.gf_settings.numparams)
                         numparams_copy[col] = val
-                        if max(numparams_copy) < max(self.numparams):
+                        if max(numparams_copy) < \
+                            max(self.gf_settings.numparams):
                             # it was the biggest, now we have to shrink
                             self.beginRemoveRows(QtCore.QModelIndex(),
                                                  max(numparams_copy),
-                                                 max(self.numparams) - 1)
+                                                 max(self.gf_settings.numparams) - 1)
                             self.endRemoveRows()
-                            self.numparams[col] = val
-                            self.resized_rows.emit(max(self.numparams),
-                                                   max(numparams_copy))
+                            self.gf_settings.numparams[col] = val
+                            self.resized_rows.emit(max(self.gf_settings.numparams),
+                                                       max(numparams_copy))
                         else:
                             # there was one other that was just as big,
                             # don't shrink
-                            self.numparams[col] = val
+                            self.gf_settings.numparams[col] = val
 
                     if oldparams > val:
-                        for row in range(val, self.numparams[col]):
+                        for row in range(val, self.gf_settings.numparams[col]):
                             self.unlink_parameter(RC_to_parameter(row, col))
                         self.removed_params.emit(val, col)
                     elif oldparams < val:
@@ -204,16 +209,16 @@ class GlobalFitting_DataModel(QtCore.QAbstractTableModel):
         parameter_list.reverse()
 
         for parameter in parameter_list:
-            if is_linked(self.linkages, parameter)[0]:
+            if is_linked(self.gf_settings.linkages, parameter)[0]:
                 self.unlink_parameter(parameter)
 
         # now link the parameters
         parameter_list.sort()
-        self.linkages.append(parameter_list)
+        self.gf_settings.linkages.append(parameter_list)
 
         self.remove_single_linkages()
         self.modelReset.emit()
-        self.changed_linkages.emit(self.linkages)
+        self.changed_linkages.emit(self.gf_settings.linkages)
 
     def unlink_selection(self, indices):
         parameter_list = sorted(
@@ -222,54 +227,54 @@ class GlobalFitting_DataModel(QtCore.QAbstractTableModel):
         parameter_list.reverse()
 
         for parameter in parameter_list:
-            if is_linked(self.linkages, parameter)[0]:
+            if is_linked(self.gf_settings.linkages, parameter)[0]:
                 self.unlink_parameter(parameter)
 
         self.remove_single_linkages()
         self.modelReset.emit()
-        self.changed_linkages.emit(self.linkages)
+        self.changed_linkages.emit(self.gf_settings.linkages)
 
     def unlink_parameter(self, parameter):
         # find out which entry in the linkage list it is.
         # It should only be in there once.
-        idx = position_in_linkage(self.linkages, parameter)
-        isLinked, isMaster, master_link = is_linked(self.linkages, parameter)
+        idx = position_in_linkage(self.gf_settings.linkages, parameter)
+        isLinked, isMaster, master_link = is_linked(self.gf_settings.linkages, parameter)
 
         if isLinked:
-            linkage = self.linkages[idx]
+            linkage = self.gf_settings.linkages[idx]
             del(linkage[linkage.index(parameter)])
 
         # if the parameter was a 'master link', then delete all other linkages
         if isMaster:
-            del(self.linkages[idx])
+            del(self.gf_settings.linkages[idx])
 
-        self.changed_linkages.emit(self.linkages)
+        self.changed_linkages.emit(self.gf_settings.linkages)
 
     def remove_single_linkages(self):
-        for idx, linkage in enumerate(self.linkages):
+        for idx, linkage in enumerate(self.gf_settings.linkages):
             if len(linkage) == 1:
-                del[self.linkages[idx]]
+                del[self.gf_settings.linkages[idx]]
 
     def add_DataSet(self, dataset):
-        if dataset in self.dataset_names:
+        if dataset in self.gf_settings.dataset_names:
             return
 
         self.beginInsertColumns(QtCore.QModelIndex(),
-                                self.numdatasets,
-                                self.numdatasets)
-        self.insertColumns(self.numdatasets, 1)
+                                self.gf_settings.numdatasets,
+                                self.gf_settings.numdatasets)
+        self.insertColumns(self.gf_settings.numdatasets, 1)
         self.endInsertColumns()
-        self.numdatasets += 1
-        self.numparams.append(0)
-        self.fitplugins.append('default')
-        self.dataset_names.append(dataset)
+        self.gf_settings.numdatasets += 1
+        self.gf_settings.numparams.append(0)
+        self.gf_settings.fitplugins.append('default')
+        self.gf_settings.dataset_names.append(dataset)
         self.added_DataSet.emit(dataset)
 
     def data(self, index, role=QtCore.Qt.DisplayRole):
         if not index.isValid():
             return False
 
-        if not len(self.dataset_names):
+        if not len(self.gf_settings.dataset_names):
             return None
 
         row = index.row()
@@ -277,18 +282,19 @@ class GlobalFitting_DataModel(QtCore.QAbstractTableModel):
 
         if role == QtCore.Qt.DisplayRole:
             if row == 0:
-                return self.dataset_names[col]
+                return self.gf_settings.dataset_names[col]
             if row == 1:
-                return self.fitplugins[col]
+                return self.gf_settings.fitplugins[col]
             if row == 2:
-                return self.numparams[col]
+                return self.gf_settings.numparams[col]
 
-            if row < self.numparams[col] + 3:
+            if row < self.gf_settings.numparams[col] + 3:
                 parameter = RC_to_parameter(row - 3, col)
                 isLinked, isMaster, master_link = \
-                    is_linked(self.linkages, parameter)
+                    is_linked(self.gf_settings.linkages, parameter)
                 if isLinked and isMaster is False:
-                    idx = position_in_linkage(self.linkages, parameter)
+                    idx = position_in_linkage(self.gf_settings.linkages,
+                                              parameter)
                     return 'linked: ' + master_link
 
                 return parameter
@@ -328,49 +334,47 @@ class GlobalFitting_ParamModel(QtCore.QAbstractTableModel):
 
     def __init__(self, parent=None):
         super(GlobalFitting_ParamModel, self).__init__(parent)
-        self.numdatasets = 0
-        self.dataset_names = []
-        self.numparams = []
-        self.fitplugins = []
-        self.linkages = []
-        self.models = []
+        self.gf_settings = GlobalFitting_Settings()
 
     def changed_fitplugin(self, fitplugins):
-        self.fitplugins = fitplugins
+        self.gf_settings.fitplugins = fitplugins
 
     def changed_linkages(self, linkages):
-        self.linkages = linkages
+        self.gf_settings.linkages = linkages
         for linkage in linkages:
             masterParam, masterDataSet = parameter_to_RC(linkage[0])
             for link in linkage:
                 param, which_dataset = parameter_to_RC(link)
-                self.models[which_dataset].parameters[param] = \
-                    self.models[masterDataSet].parameters[masterParam]
+                self.gf_settings.models[which_dataset].parameters[param] = \
+                    self.gf_settings.models[masterDataSet].parameters[masterParam]
+    
+    def added_DataSet(self, dataset):
+        if dataset in self.gf_settings.dataset_names:
+            return
 
-    def added_DataSet(self, name):
-        self.numdatasets += 1
-        self.dataset_names.append(name)
-        self.numparams.append(0)
-        self.fitplugins.append('default')
-        self.models.append(model.Model(np.zeros_like([])))
+        self.gf_settings.numdatasets += 1
+        self.gf_settings.numparams.append(0)
+        self.gf_settings.fitplugins.append('default')
+        self.gf_settings.dataset_names.append(dataset)
+        self.gf_settings.models.append(model.Model(np.zeros_like([])))
         self.beginInsertColumns(QtCore.QModelIndex(),
-                                self.numdatasets - 1,
-                                self.numdatasets - 1)
+                                self.gf_settings.numdatasets - 1,
+                                self.gf_settings.numdatasets - 1)
         self.endInsertColumns()
 
     def removed_DataSet(self, which_dataset):
-        self.numdatasets -= 1
-        del(self.dataset_names[which_dataset])
+        self.gf_settings.numdatasets -= 1
+        del(self.gf_settings.dataset_names[which_dataset])
         self.beginRemoveColumns(QtCore.QModelIndex(),
                                 which_dataset,
                                 which_dataset)
-        del[self.models[which_dataset]]
+        del[self.gf_settings.models[which_dataset]]
         self.endRemoveColumns()
 
     def added_params(self, newparams, which_dataset):
-        oldparams = self.numparams[which_dataset]
-        self.numparams[which_dataset] = newparams
-        model = self.models[which_dataset]
+        oldparams = self.gf_settings.numparams[which_dataset]
+        self.gf_settings.numparams[which_dataset] = newparams
+        model = self.gf_settings.models[which_dataset]
         model.parameters = \
             np.resize(model.parameters,
                       newparams)
@@ -379,16 +383,16 @@ class GlobalFitting_ParamModel(QtCore.QAbstractTableModel):
         model.fitted_parameters = \
             np.append(model.fitted_parameters,
                       np.arange(oldparams, newparams))
-
+        
         start = self.createIndex(oldparams, which_dataset)
         finish = self.createIndex(newparams, which_dataset)
         self.dataChanged.emit(start, finish)
 
     def removed_params(self, newparams, which_dataset):
-        oldparams = self.numparams[which_dataset]
-        self.numparams[which_dataset] = newparams
-        self.models[which_dataset].parameters = \
-            np.resize(self.models[which_dataset].parameters,
+        oldparams = self.gf_settings.numparams[which_dataset]
+        self.gf_settings.numparams[which_dataset] = newparams
+        self.gf_settings.models[which_dataset].parameters = \
+            np.resize(self.gf_settings.models[which_dataset].parameters,
                       newparams)
         start = self.createIndex(newparams, which_dataset)
         self.dataChanged.emit(start, start)
@@ -397,12 +401,12 @@ class GlobalFitting_ParamModel(QtCore.QAbstractTableModel):
         self.modelReset.emit()
 
     def rowCount(self, parent=QtCore.QModelIndex()):
-        if len(self.numparams):
-            return max(self.numparams)
+        if len(self.gf_settings.numparams):
+            return max(self.gf_settings.numparams)
         return 0
 
     def columnCount(self, parent=QtCore.QModelIndex()):
-        return self.numdatasets
+        return self.gf_settings.numdatasets
 
     def insertRows(self, position, rows=1, index=QtCore.QModelIndex()):
         pass
@@ -411,11 +415,11 @@ class GlobalFitting_ParamModel(QtCore.QAbstractTableModel):
         row = index.row()
         col = index.column()
 
-        if row > self.numparams[col] - 1:
+        if row > self.gf_settings.numparams[col] - 1:
             return False
 
         parameter = RC_to_parameter(row, col)
-        isLinked, isMaster, master_link = is_linked(self.linkages, parameter)
+        isLinked, isMaster, master_link = is_linked(self.gf_settings.linkages, parameter)
 
         theflags = (QtCore.Qt.ItemIsUserCheckable |
                     QtCore.Qt.ItemIsEnabled)
@@ -434,15 +438,15 @@ class GlobalFitting_ParamModel(QtCore.QAbstractTableModel):
         col = index.column()
 
         parameter = RC_to_parameter(row, col)
-        isLinked, isMaster, master_link = is_linked(self.linkages, parameter)
+        isLinked, isMaster, master_link = is_linked(self.gf_settings.linkages, parameter)
 
-        model = self.models[col]
+        model = self.gf_settings.models[col]
 
         if role == QtCore.Qt.CheckStateRole:
             # if the default plugin is the reflectivity one,
             # don't allow the value to be changed.
             # this is the number of layers
-            if row == 0 and self.fitplugins[col] == 'default':
+            if row == 0 and self.gf_settings.fitplugins[col] == 'default':
                 model.fitted_parameters = np.append(model.fitted_parameters,
                                                     0)
 
@@ -461,7 +465,7 @@ class GlobalFitting_ParamModel(QtCore.QAbstractTableModel):
 
             val = voutput[1]
 
-            if row == 0 and self.fitplugins[col] == 'default':
+            if row == 0 and self.gf_settings.fitplugins[col] == 'default':
                 testparams = np.copy(model.parameters)
                 testparams[0] = float(int(val))
                 if not reflect.is_proper_Abeles_input(testparams):
@@ -473,11 +477,11 @@ class GlobalFitting_ParamModel(QtCore.QAbstractTableModel):
 
             model.parameters[row] = val
             if isMaster and isLinked:
-                linkage = self.linkages[position_in_linkage(self.linkages,
-                                                            parameter)]
+                linkage = self.gf_settings.linkages[position_in_linkage(self.gf_settings.linkages,
+                                                                        parameter)]
                 for link in linkage:
                     row, col = parameter_to_RC(link)
-                    self.models[col].parameters[row] = val
+                    self.gf_settings.models[col].parameters[row] = val
 
         self.dataChanged.emit(index, index)
         return True
@@ -486,19 +490,19 @@ class GlobalFitting_ParamModel(QtCore.QAbstractTableModel):
         row = index.row()
         col = index.column()
 
-        if row > self.numparams[col] - 1:
+        if row > self.gf_settings.numparams[col] - 1:
             return None
 
         parameter = RC_to_parameter(row, col)
-        isLinked, isMaster, master_link = is_linked(self.linkages, parameter)
-        model = self.models[col]
+        isLinked, isMaster, master_link = is_linked(self.gf_settings.linkages, parameter)
+        model = self.gf_settings.models[col]
 
         if role == QtCore.Qt.DisplayRole:
-            if row < self.numparams[col]:
+            if row < self.gf_settings.numparams[col]:
                 return str(model.parameters[row])
 
         if role == QtCore.Qt.CheckStateRole:
-            if row == 0 and self.fitplugins[col] == 'default':
+            if row == 0 and self.gf_settings.fitplugins[col] == 'default':
                 return QtCore.Qt.Checked
             if isLinked and isMaster is False:
                 return None
@@ -515,7 +519,7 @@ class GlobalFitting_ParamModel(QtCore.QAbstractTableModel):
             return None
 
         if orientation == QtCore.Qt.Horizontal:
-            return self.dataset_names[section]
+            return self.gf_settings.dataset_names[section]
 
         if orientation == QtCore.Qt.Vertical:
             return int(section)
