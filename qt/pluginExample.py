@@ -23,7 +23,7 @@ class line(fitting.FitObject):
                                    parameters,
                                    args=args, **kwds)
 
-    def model(self, parameters, args=()):
+    def model(self, parameters, *args):
         return parameters[0] + self.xdata * parameters[1]
 
 class gauss1D(fitting.FitObject):
@@ -41,6 +41,6 @@ class gauss1D(fitting.FitObject):
                                    parameters,
                                    args=args, **kwds)
 
-    def model(self, parameters, args=()):
+    def model(self, parameters, *args):
         return parameters[0] + parameters[1] * \
             np.exp(-0.5 * np.power((self.xdata - parameters[2])/parameters[3], 2))
