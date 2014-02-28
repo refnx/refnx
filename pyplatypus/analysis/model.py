@@ -13,10 +13,10 @@ class Model(object):
     def __init__(self, parameters, **kwds):
         __members = {'file': None,
                      'parameters': None,
-                     'fitted_parameters': None, 
+                     'fitted_parameters': None,
                      'uncertainties': None,
                      'covariance': None,
-                     'limits': None, 
+                     'limits': None,
                      'usedq': True,
                      'fitPlugin': None,
                      'useerrors': True,
@@ -53,7 +53,6 @@ class Model(object):
             if self.limits is None:
                 self.default_limits(True)
 
-
     def __getitem__(self, key):
         if key in self.__members:
             return self.key
@@ -70,7 +69,7 @@ class Model(object):
         holdvector[self.fitted_parameters] = 0
 
         if self.limits is None or self.limits.ndim != 2 or np.size(self.limits, 1) != np.size(self.parameters):
-            self.defaultlimits()
+            self.default_limits(True)
 
         # go through and write parameters to file
         np.savetxt(

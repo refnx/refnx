@@ -2,17 +2,19 @@ import pyplatypus.analysis.reflect as reflect
 import numpy as np
 from time import time
 
-def smearing_precision_comparison(maxorder = 50):
+
+def smearing_precision_comparison(maxorder=50):
     '''
     a quick script to see how the smeared reflectivity changes as a function of smearing precision
     '''
-    #import q values and dqvalues from the smearing test
-    theoretical = np.loadtxt('pyplatypus/analysis/test/smeared_theoretical.txt')
+    # import q values and dqvalues from the smearing test
+    theoretical = np.loadtxt(
+        'pyplatypus/analysis/test/smeared_theoretical.txt')
     qvals, rvals, dqvals = np.hsplit(theoretical, 3)
     qvals = qvals.flatten()
     dqvals = dqvals.flatten()
 
-    #coefficients for the model
+    # coefficients for the model
     a = np.zeros((12))
     a[0] = 1.
     a[1] = 1.
@@ -22,25 +24,25 @@ def smearing_precision_comparison(maxorder = 50):
     a[9] = 3.47
     a[11] = 2
 
-    #setup an array for the smeared rvals.
+    # setup an array for the smeared rvals.
     smeared_rvals = np.zeros((maxorder + 1, qvals.size))
-    
-    #now output all the smearing.
+
+    # now output all the smearing.
     t0 = time()
-    smeared_rvals[0, :] = reflect.abeles(qvals, a, **{'dqvals':dqvals, 'quad_order':'ultimate'})
-    t1=time()
-    print 'ultimate takes %f' %(t1-t0)
-    
+    smeared_rvals[0, :] = reflect.abeles(
+        qvals, a, **{'dqvals': dqvals, 'quad_order': 'ultimate'})
+    t1 = time()
+    print 'ultimate takes %f' % (t1 - t0)
+
     for idx in xrange(1, maxorder + 1):
         t0 = time()
         smeared_rvals[idx, :] = reflect.abeles(qvals,
-                                                    a,
-                                                 **{'dqvals':dqvals, 'quad_order':idx})
+                                               a,
+                                               **{'dqvals': dqvals, 'quad_order': idx})
         t1 = time()
-        print idx, ' takes %f' %(t1-t0)                      
+        print idx, ' takes %f' % (t1 - t0)
     np.savetxt('smearing_comp', smeared_rvals.T)
 
 
 if __name__ == '__main__':
     smearing_precision_comparison()
-        

@@ -59,7 +59,8 @@ def abeles(lenqvals, qvals, coefs):
     pj = np.sqrt(pj)
 
     # work out the fresnel reflection for each layer
-    rj = np.exp(pj[:, :-1] * pj[:, 1:] * -2. * roughnesses * roughnesses) * (pj[:, :-1] - pj[:, 1:]) / (pj[:, :-1] + pj[:, 1:])
+    rj = np.exp(pj[:, :-1] * pj[:, 1:] * -2. * roughnesses * roughnesses) * \
+        (pj[:, :-1] - pj[:, 1:]) / (pj[:, :-1] + pj[:, 1:])
 
     MRtotal = np.zeros((npnts, 2, 2), dtype='complex')
     MI = np.zeros_like(MRtotal)
