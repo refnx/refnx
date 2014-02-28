@@ -94,6 +94,8 @@ class DEsolver(object):
         A multiplier for setting the total population size.  The population has
         popsize * len(x) individuals.
     tol : float, optional:
+#         When abs((max(population_energies) - min(population_energies)) / min(population_energies)) < tol
+#         the fit will stop.        
         When the mean of the population energies, multiplied by tol,
         divided by the standard deviation of the population energies is greater than 1
         the solving process terminates.
@@ -112,12 +114,14 @@ class DEsolver(object):
     """
 
     def __init__(self, func, limits, args=(),
-                 DEstrategy='Best1Bin', max_iterations=1000, popsize=20,
+                 DEstrategy=None, max_iterations=1000, popsize=20,
                  tol=0.01, km=0.7, recomb=0.5, seed=None,
                  progress=None):
 
         if DEstrategy is not None:
             self.DEstrategy = getattr(DEsolver, DEstrategy)
+        else: 
+            self.DEstrategy = getattr(DEsolver, 'Best1Bin')
                 
         self.progress = progress
         self.max_iterations = max_iterations
@@ -176,7 +180,6 @@ class DEsolver(object):
                 trial = self.DEstrategy(self, candidate)
                 self.__ensure_constraint(trial)
                 params = self.__scale_parameters(trial)
-
                 energy = self.func(params, *self.args)
 
                 if energy < self.population_energies[candidate]:
@@ -191,7 +194,9 @@ class DEsolver(object):
             # of the mean energy
             convergence = np.std(self.population_energies) / \
                 np.mean(self.population_energies)
-
+#             convergence = np.abs((np.max(self.population_energies) - self.population_energies[0]) /
+#                                 self.population_energies[0])
+            
             if self.progress:
                 should_continue = self.progress(
                     iteration,
@@ -202,6 +207,7 @@ class DEsolver(object):
                     convergence = self.tol - 1
 
             if convergence < self.tol:
+                self.convergence = convergence
                 break
 
         return (
@@ -222,9 +228,7 @@ class DEsolver(object):
 
     def Best1Bin(self, candidate):
         r1, r2, r3, r4, r5 = self.select_samples(candidate, 1, 1, 0, 0, 0)
-
         n = self.RNG.randint(0, self.parameter_count)
-
         trial = np.copy(self.population[candidate])
         i = 0
 
@@ -392,12 +396,11 @@ class DEsolver(object):
 
     def Rand1Bin(self, candidate):
         r1, r2, r3, r4, r5 = self.select_samples(candidate, 1, 1, 1, 0, 0)
-
+        
         n = self.RNG.randint(0, self.parameter_count)
-
+        
         trial = np.copy(self.population[candidate])
         i = 0
-
         while i < self.parameter_count:
             if self.RNG.rand() < self.crossOverProbability or i == self.parameter_count - 1:
                 trial[n] = self.population[r1, n]
@@ -411,20 +414,30 @@ class DEsolver(object):
 
     def select_samples(self, candidate, r1, r2, r3, r4, r5):
         if r1:
-            while r1 == candidate:
+            while True:
                 r1 = self.RNG.randint(0, self.population_size)
+                if r1 != candidate:
+                    break
         if r2:
-            while (r2 == r1 or r2 == candidate):
+            while True:
                 r2 = self.RNG.randint(0, self.population_size)
+                if r2 != candidate and r1 != r2:
+                    break
         if r3:
-            while (r3 == r2 or r3 == r1 or r3 == candidate):
+            while True:
                 r3 = self.RNG.randint(0, self.population_size)
+                if r3 != candidate and r3 != r2 and r3 != r1:
+                    break
         if r4:
-            while (r4 == r3 or r4 == r2 or r4 == r1 or r4 == candidate):
+            while True:
                 r4 = self.RNG.randint(0, self.population_size)
+                if r4 != candidate and r4 != r3 and r4 != r2 and r4 != r1:
+                    break
         if r5:
-            while (r5 == r4 or r5 == r3 or r5 == r2 or r5 == r1 or r5 == candidate):
+            while True:
                 r5 = self.RNG.randint(0, self.population_size)
+                if r5 != candidate and r5 != r4 and r5 != r3 and r5 != r2 and r5 != r1:
+                    break
 
         return r1, r2, r3, r4, r5
 
@@ -432,7 +445,8 @@ if __name__ == "__main__":
     # minimum expected at ~-0.195
     func = lambda x: np.cos(14.5 * x - 0.3) + (x + 0.2) * x
     limits = np.array([[-3], [3]])
-    xmin, Jmin = diffevol(func, limits, tol=1e-5,
-                          popsize=40, km=0.9, recomb=0.9, DEstrategy='Best1Bin')
-    print xmin, Jmin
+    solver = DEsolver(func, limits, tol=1e-2,
+                          popsize=40, km=0.6, recomb=0.9, DEstrategy='Best1Bin')
+    xmin, Jmin = solver.solve()
+    print xmin, Jmin, solver.population_energies
     npt.assert_almost_equal(Jmin, func(xmin))

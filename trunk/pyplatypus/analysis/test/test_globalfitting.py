@@ -208,7 +208,7 @@ class TestGlobalFitting(unittest.TestCase):
             savedmodel = model.Model(None, file=f)
 
         npt.assert_almost_equal(pars, savedmodel.parameters)
-        npt.assert_almost_equal(chi2, 1718.8700218030224)
+        npt.assert_almost_equal(chi2, 1711.4701781844269)
 
 if __name__ == '__main__':
     unittest.main()
