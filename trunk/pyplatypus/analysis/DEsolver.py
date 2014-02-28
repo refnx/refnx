@@ -86,7 +86,7 @@ class DEsolver(object):
     args : tuple, optional
         Any additional fixed parameters needed to completely
         specify the objective function.
-    DEstrategy : optional
+    DEstrategy : str, optional
         The differential evolution strategy to use.
     max_iterations: int, optional
         The maximum number of times the entire population is evolved
@@ -112,15 +112,13 @@ class DEsolver(object):
     """
 
     def __init__(self, func, limits, args=(),
-                 DEstrategy=None, max_iterations=1000, popsize=20,
+                 DEstrategy='Best1Bin', max_iterations=1000, popsize=20,
                  tol=0.01, km=0.7, recomb=0.5, seed=None,
                  progress=None):
 
         if DEstrategy is not None:
-            self.DEstrategy = DEstrategy
-        else:
-            self.DEstrategy = self.Best1Bin
-
+            self.DEstrategy = getattr(DEsolver, DEstrategy)
+                
         self.progress = progress
         self.max_iterations = max_iterations
         self.tol = tol
@@ -175,7 +173,7 @@ class DEsolver(object):
         for iteration in xrange(self.max_iterations):
 
             for candidate in xrange(self.population_size):
-                trial = self.DEstrategy(candidate)
+                trial = self.DEstrategy(self, candidate)
                 self.__ensure_constraint(trial)
                 params = self.__scale_parameters(trial)
 
@@ -434,6 +432,7 @@ if __name__ == "__main__":
     # minimum expected at ~-0.195
     func = lambda x: np.cos(14.5 * x - 0.3) + (x + 0.2) * x
     limits = np.array([[-3], [3]])
-    xmin, Jmin = diffevol(func, limits, tol=1e-10)
+    xmin, Jmin = diffevol(func, limits, tol=1e-5,
+                          popsize=40, km=0.9, recomb=0.9, DEstrategy='Best1Bin')
     print xmin, Jmin
     npt.assert_almost_equal(Jmin, func(xmin))
