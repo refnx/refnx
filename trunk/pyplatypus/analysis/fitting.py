@@ -65,7 +65,7 @@ class FitObject(object):
 
         limits - an np.ndarray that contains the lower and upper limits for all the parameters. It should have shape (2, np.size(parameters)).
 
-        costfunction - a callable costfunction with the signature costfunction(model, ydata, edata, parameters, args=()). The fullset of parameters is passed, not just the ones being varied. Supply this function, or override the energy method of this class, to use something other than the default of chi2.
+        costfunction - a callable costfunction with the signature costfunction(model, ydata, edata, parameters, *args). The fullset of parameters is passed, not just the ones being varied. Supply this function, or override the energy method of this class, to use something other than the default of chi2.
 
 Object attributes:
     self.xdata - see above for definition
@@ -114,11 +114,11 @@ Object attributes:
             self.seed = kwds['seed']
 
         if 'fitted_parameters' in kwds and kwds['fitted_parameters'] is not None:
-            self.fitted_parameters = np.unique(np.copy(kwds['fitted_parameters']))
+            self.fitted_parameters = np.unique(
+                np.copy(kwds['fitted_parameters']))
         else:
             self.fitted_parameters = np.arange(self.numparams)
-        #get rid of duplicate fitted parameters
-
+        # get rid of duplicate fitted parameters
 
         if 'costfunction' in kwds:
             self.costfunction = kwds['costfunction']
@@ -133,7 +133,7 @@ Object attributes:
         # limits for those that are varying.
         self.fitted_limits = self.limits[:, self.fitted_parameters]
 
-    def residuals(self, parameter_subset=None, args=()):
+    def residuals(self, parameter_subset=None, *args):
         '''
             return the fit residuals for the fit object.
         '''
@@ -146,7 +146,7 @@ Object attributes:
         if parameter_subset is not None:
             test_parameters[self.fitted_parameters] = parameter_subset
 
-        modeldata = self.model(test_parameters, args=args)
+        modeldata = self.model(test_parameters, *args)
 
         sigma = np.atleast_1d(1.)
         if self.edata is not None:
@@ -154,7 +154,7 @@ Object attributes:
 
         return (self.ydata - modeldata) / sigma
 
-    def energy(self, parameter_subset=None, args=()):
+    def energy(self, parameter_subset=None, *args):
         '''
 
             The default cost function for the fit object is chi2 - the sum of the squared residuals divided by the error bars for each point.
@@ -175,7 +175,7 @@ Object attributes:
             if parameter_subset is not None:
                 test_parameters[self.fitted_parameters] = parameter_subset
 
-            modeldata = self.model(test_parameters, args=args)
+            modeldata = self.model(test_parameters, *args)
 
             sigma = np.atleast_1d(1.)
             if self.edata is not None:
@@ -185,25 +185,25 @@ Object attributes:
                                      self.ydata,
                                      sigma,
                                      test_parameters,
-                                     args=args)
+                                     *args)
         else:
-            residuals = self.residuals(parameter_subset, args=args)
+            residuals = self.residuals(parameter_subset, *args)
             return np.nansum(np.power(residuals, 2))
 
-    def model(self, parameters, args=()):
+    def model(self, parameters, *args):
         '''
 
             calculate the theoretical model using the fitfunction.
 
             parameters - the full np.ndarray containing the parameters that are required for the fitfunction
 
-            returns the theoretical model for the xdata, i.e. self.fitfunction(self.xdata, test_parameters, args=args, **kwds)
+            returns the theoretical model for the xdata, i.e. self.fitfunction(self.xdata, test_parameters, *args, **kwds)
 
         '''
         if not len(args):
             args = self.args
 
-        return self.fitfunction(self.xdata, parameters, args=args, **self.kwds)
+        return self.fitfunction(self.xdata, parameters, *args, **self.kwds)
 
     def fit(self, method=None):
         '''
@@ -232,7 +232,7 @@ Object attributes:
             self.covariance = pcov
             self.parameters[self.fitted_parameters] = popt
             self.chi2 = np.sum(
-                np.power(self.residuals(popt, args=self.args), 2))
+                np.power(self.residuals(popt, *self.args), 2))
         else:
             de = DEsolver.DEsolver(self.energy,
                                    self.fitted_limits,
@@ -257,7 +257,7 @@ Object attributes:
 
         return np.copy(self.parameters), np.copy(self.uncertainties), self.chi2
 
-    def progress(self, iterations, convergence, chi2, args=()):
+    def progress(self, iterations, convergence, chi2, *args):
         '''
             a default progress function for the fit object
         '''
