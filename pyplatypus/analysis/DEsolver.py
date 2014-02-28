@@ -434,6 +434,6 @@ if __name__ == "__main__":
     # minimum expected at ~-0.195
     func = lambda x: np.cos(14.5 * x - 0.3) + (x + 0.2) * x
     limits = np.array([[-3], [3]])
-    xmin, Jmin = diffevol(func, limits, tol=1e-10)
+    xmin, Jmin = diffevol(func, limits, tol=1e-10, DEstrategy=DEsolver.Rand1Exp)
     print xmin, Jmin
     npt.assert_almost_equal(Jmin, func(xmin))
