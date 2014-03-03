@@ -23,6 +23,16 @@ class TestDEsolver(unittest.TestCase):
         print xmin, Jmin
         npt.assert_almost_equal(Jmin, func(xmin))
 
+    def test_select_samples(self):
+        '''
+            select_samples should return 5 separate random numbers.
+        '''
+        
+        limits = np.arange(12.).reshape(2, 6)        
+        solver = DEsolver.DEsolver(None, limits, popsize=1)
+        candidate = 0
+        r1, r2, r3, r4, r5 = solver.select_samples(candidate, 1, 1, 1, 1, 1)
+        assert len(np.unique(np.array([candidate, r1, r2, r3, r4, r5]))) == 6
 
 if __name__ == '__main__':
     unittest.main()
