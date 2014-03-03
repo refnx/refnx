@@ -34,7 +34,8 @@ def diffevol(func, limits, args=(), DEstrategy=None,
     DEstrategy : optional
         The differential evolution strategy to use.
     max_iterations: int, optional
-        The maximum number of times the entire population is evolved
+        The maximum number of times the entire population is evolved. The maximum number
+        of function evaluations is: max_iterations * popsize * len(x)
     popsize : int, optional
         A multiplier for setting the total population size.  The population has
         popsize * len(x) individuals.
@@ -89,7 +90,8 @@ class DEsolver(object):
     DEstrategy : str, optional
         The differential evolution strategy to use.
     max_iterations: int, optional
-        The maximum number of times the entire population is evolved
+        The maximum number of times the entire population is evolved. The maximum number
+        of function evaluations is: max_iterations * popsize * len(x)
     popsize : int, optional
         A multiplier for setting the total population size.  The population has
         popsize * len(x) individuals.
