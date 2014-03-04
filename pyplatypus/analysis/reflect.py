@@ -254,7 +254,7 @@ class ReflectivityFitObject(fitting.FitObject):
 
         return points, sld_profile(parameters, points)
 
-    def progress(self, iterations, convergence, chi2, *args):
+    def callback(self, parameters, convergence=0.):
         return True
 
 

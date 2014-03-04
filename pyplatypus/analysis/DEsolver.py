@@ -1,22 +1,39 @@
 from __future__ import division
 import numpy as np
 import numpy.random as npr
-import numpy.testing as npt
+import scipy.optimize
 
 
-def diffevol(func, limits, args=(), DEstrategy=None,
-             max_iterations=1000, popsize=20,
-             tol=0.01, km=0.7, recomb=0.5, seed=None,
-             progress=None):
+# standard status messages of optimizers
+_status_message = {'success': 'Optimization terminated successfully.',
+                   'maxfev': 'Maximum number of function evaluations has '
+                              'been exceeded.',
+                   'maxiter': 'Maximum number of iterations has been '
+                              'exceeded.',
+                   'pr_loss': 'Desired error not necessarily achieved due '
+                              'to precision loss.',
+                   'aborted': 'Minimization aborted by callback function'}
+
+
+class BoundsException(Exception):
+
+    def __init__(self, message):
+        self.message = message
+
+    def __str__(self):
+        return repr(self.message)
+
+
+def differential_evolution(func, bounds, args=(), DEstrategy=None,
+                           maxiter=None, popsize=20, xtol=0.01,
+                           km=0.7, recomb=0.5, seed=None, callback=None):
     """
     A differential evolution minimizer - a stochastic way of minimizing functions.
     It does not use gradient methods to find the minimium, and can search large areas
-    of candidate space, but often requires large numbers of function evaluations.   
+    of candidate space, but often requires large numbers of function evaluations.
 
     The algorithm is originally due to Storn and Price:
     http://www1.icsi.berkeley.edu/~storn/code.html
-
-    http://en.wikipedia.org/wiki/Differential_evolution
 
     Parameters
     ----------
@@ -25,50 +42,95 @@ def diffevol(func, limits, args=(), DEstrategy=None,
         `f(x, *args)`, where `x` is the argument in the form of a 1-D array
         and `args` is a  tuple of any additional fixed parameters needed to
         completely specify the function.
-    limits: 2-D ndarray
-        lower and upper limits for the optimizing argument of func. Must have
-        shape (2, len(x))        
+    bounds: sequence
+        Bounds for variables.  ``(min, max)`` pairs for each element in ``x``, defining
+        the lower and upper bounds for the optimizing argument of func.  It is required
+        to have len(bounds) == len(x)
     args : tuple, optional
-        Any additional fixed parameters needed to completely
-        specify the objective function.
-    DEstrategy : optional
-        The differential evolution strategy to use.
-    max_iterations: int, optional
+        Any additional fixed parameters needed to
+        completely specify the objective function.
+    DEstrategy : str, optional
+        The differential evolution strategy to use. Should be one of:
+
+            - 'Best1Bin'
+            - 'Best1Exp'
+            - 'Rand1Exp'
+            - 'RandToBest1Exp'
+            - 'Best2Exp'
+            - 'Rand2Exp'
+            - 'Best2Bin'
+            - 'Rand2Bin'
+            - 'Rand1Bin'
+
+    maxiter: int, optional
         The maximum number of times the entire population is evolved. The maximum number
-        of function evaluations is: max_iterations * popsize * len(x)
+        of function evaluations is: maxiter * popsize * len(x)
     popsize : int, optional
         A multiplier for setting the total population size.  The population has
         popsize * len(x) individuals.
-    tol : float, optional:
-        When the mean of the population energies, multiplied by tol,
+    xtol : float, optional:
+        When the mean of the population energies, multiplied by xtol,
         divided by the standard deviation of the population energies is greater than 1
         the solving process terminates.
-        i.e. mean(pop) * tol / stdev(pop) > 1
+        i.e. mean(pop) * xtol / stdev(pop) > 1
     km : float, optional:
         The mutation constant, should be in the range [0, 1].
     recomb : float, optional:
         The recombination constant, should be in the range [0, 1].
     seed : float, optional:
         Seeds the random number generator for repeatable minimizations.
-    progress : callable, optional:
+    callback : callable, optional:
         A function to follow the progress of the minimization.
-        It has the signature: f(iteration, convergence, best_energy, *args)
+        Called as ``callback(xk, convergence=val)``, where ``xk`` is
+        the current value of ``x0``. ``val`` represents the fractional value of the
+        population convergence.  When ``val`` is greater than one the function halts.
+        If this function returns False, then the minimization is halted.
 
     Returns
     -------
-    xmin : ndarray
-        The point where the lowest function value was found.
-    Jmin : float
-        The objective function value at `xmin`.
+    res : Result
+        The optimization result represented as a ``Result`` object.
+        Important attributes are: ``x`` the solution array, ``success`` a
+        Boolean flag indicating if the optimizer exited successfully and
+        ``message`` which describes the cause of the termination. See
+        `Result` for a description of other attributes.
+
+    References
+    ----------
+    .. [1] http://www1.icsi.berkeley.edu/~storn/code.html
+    .. [2] http://en.wikipedia.org/wiki/Differential_evolution
+
+    Examples
+    --------
+    Let us consider the problem of minimizing the Rosenbrock function. This
+    function is implemented in `rosen` in `scipy.optimize`.
+
+    >>> from scipy.optimize import rosen,
+    >>> from DEsolver import differential_evolution
+    >>> func = lambda x: np.cos(14.5 * x - 0.3) + (x + 0.2) * x
+    >>> bounds = [(-3, 3)]
+    >>> result = differential_evolution(func, bounds, xtol=1e-2, popsize=40, km=0.6,
+    ...                                 recomb=0.9, DEstrategy='Best1Bin')
+    >>> print result
+
     """
 
-    solver = DEsolver(func, limits, args=args, DEstrategy=DEstrategy,
-                      max_iterations=max_iterations, popsize=popsize,
-                      tol=tol, km=km, recomb=recomb, seed=seed,
-                      progress=progress)
+    # assemble the bounds into the limits
+    try:
+        limits = np.array(bounds, float).T
+        assert np.size(limits, 0) == 2
+    except (ValueError, AssertionError) as e:
+        # it is required to have (min, max) pairs for each value in x
+        raise BoundsException('Bounds should be a sequence containing real valued '
+                              '(min, max) pairs for each value in x')
 
-    x0, Jmin = solver.solve()
-    return x0, Jmin
+    solver = DEsolver(func, limits, args=args, DEstrategy=DEstrategy,
+                      maxiter=maxiter, popsize=popsize,
+                      xtol=xtol, km=km, recomb=recomb, seed=seed,
+                      callback=callback)
+
+    result = solver.solve()
+    return result
 
 
 class DEsolver(object):
@@ -83,25 +145,23 @@ class DEsolver(object):
         completely specify the function.
     limits: 2-D ndarray
         lower and upper limits for the optimizing argument of func. Must have
-        shape (2, len(x))        
+        shape (2, len(x))
     args : tuple, optional
         Any additional fixed parameters needed to completely
         specify the objective function.
     DEstrategy : str, optional
         The differential evolution strategy to use.
-    max_iterations: int, optional
+    maxiter: int, optional
         The maximum number of times the entire population is evolved. The maximum number
-        of function evaluations is: max_iterations * popsize * len(x)
+        of function evaluations is: maxiter * popsize * len(x)
     popsize : int, optional
         A multiplier for setting the total population size.  The population has
         popsize * len(x) individuals.
-    tol : float, optional:
-#         When abs((max(population_energies) - min(population_energies)) / min(population_energies)) < tol
-#         the fit will stop.        
-        When the mean of the population energies, multiplied by tol,
+    xtol : float, optional:
+        When the mean of the population energies, multiplied by xtol,
         divided by the standard deviation of the population energies is greater than 1
         the solving process terminates.
-        i.e. mean(pop) * tol / stdev(pop) > 1
+        i.e. mean(pop) * xtol / stdev(pop) > 1
     km : float, optional:
         The mutation constant, should be in the range [0, 1].
     recomb : float, optional:
@@ -110,30 +170,45 @@ class DEsolver(object):
         Seed initializing the pseudo-random number generator. Can be an integer, an array
         (or other sequence) of integers of any length, or None (the default). If you use
         the seed you will get repeatable minimizations.
-    progress : callable, optional:
+    callback : callable, optional:
         A function to follow the progress of the minimization.
-        It has the signature: f(iteration, convergence, Jmin, *args)
+        Called as ``callback(xk)``, where ``xk`` is the current value of ``x0``.
     """
 
     def __init__(self, func, limits, args=(),
-                 DEstrategy=None, max_iterations=1000, popsize=20,
-                 tol=0.01, km=0.7, recomb=0.5, seed=None,
-                 progress=None):
+                 DEstrategy=None, maxiter=None, popsize=20,
+                 xtol=0.01, km=0.7, recomb=0.5, seed=None, maxfun=None,
+                 callback=None):
 
         if DEstrategy is not None:
             self.DEstrategy = getattr(DEsolver, DEstrategy)
-        else: 
+        else:
             self.DEstrategy = getattr(DEsolver, 'Best1Bin')
-                
-        self.progress = progress
-        self.max_iterations = max_iterations
-        self.tol = tol
+
+        self.callback = callback
+
+        self.maxiter = 1000
+        if maxiter is not None:
+            self.maxiter = maxiter
+
+        self.maxfun = (self.maxiter + 1) * popsize * np.size(limits, 1)
+        if maxfun is not None:
+            self.maxfun = maxfun
+
+        self.xtol = xtol
         self.scale = km
         self.crossOverProbability = recomb
 
         self.func = func
         self.args = args
         self.limits = limits
+        if np.any(np.isnan(limits)):
+            raise BoundsException('Bounds should be a sequence containing real valued '
+                                  '(min, max) pairs for each value in x')
+
+        self.nfev = 0
+        self.nit = 0
+
         self.parameter_count = np.size(self.limits, 1)
         self.population_size = popsize * self.parameter_count
 
@@ -152,11 +227,15 @@ class DEsolver(object):
         """
         Returns
         -------
-        xmin : ndarray
-            The point where the lowest function value was found.
-        Jmin : float
-            The objective function value at `xmin`.
+        res : Result
+            The optimization result represented as a ``Result`` object.
+            Important attributes are: ``x`` the solution array, ``success`` a
+            Boolean flag indicating if the optimizer exited successfully and
+            ``message`` which describes the cause of the termination. See
+            `Result` for a description of other attributes.
         """
+        status_message = _status_message['success']
+        warning_flag = False
 
         # calculate energies to start with
         for index, candidate in enumerate(self.population):
@@ -165,6 +244,11 @@ class DEsolver(object):
                 index] = self.func(
                 params,
                 *self.args)
+            self.nfev += 1
+
+            if self.nfev == self.maxfun:
+                warning_flag = True
+                status_message = status_message['maxfev']
 
         minval = np.argmin(self.population_energies)
 
@@ -176,13 +260,18 @@ class DEsolver(object):
         self.population[[0, minval], :] = self.population[[minval, 0], :]
 
         # do the optimisation.
-        for iteration in xrange(self.max_iterations):
-
+        for iteration in xrange(self.maxiter):
             for candidate in xrange(self.population_size):
                 trial = self.DEstrategy(self, candidate)
                 self.__ensure_constraint(trial)
                 params = self.__scale_parameters(trial)
+
                 energy = self.func(params, *self.args)
+                self.nfev += 1
+                if self.nfev == self.maxfun:
+                    warning_flag == True
+                    status_message = _status_message['maxfev']
+                    break
 
                 if energy < self.population_energies[candidate]:
                     self.population[candidate] = trial
@@ -192,30 +281,41 @@ class DEsolver(object):
                         self.population_energies[0] = energy
                         self.population[0] = trial
 
-            # stop when the fractional s.d. of the population is less than tol
+            # stop when the fractional s.d. of the population is less than xtol
             # of the mean energy
-            convergence = np.std(self.population_energies) / \
+            self.convergence = np.std(self.population_energies) / \
                 np.mean(self.population_energies)
-#             convergence = np.abs((np.max(self.population_energies) - self.population_energies[0]) /
-#                                 self.population_energies[0])
-            
-            if self.progress:
-                should_continue = self.progress(
-                    iteration,
-                    convergence,
-                    self.population_energies[0],
-                    *self.args)
-                if should_continue is False:
-                    convergence = self.tol - 1
 
-            if convergence < self.tol:
-                self.convergence = convergence
+            if self.callback:
+                should_continue = self.callback(
+                    self.__scale_parameters(self.population[0]),
+                    convergence=self.xtol / self.convergence)
+                if should_continue is False:
+                    warning_flag = True
+                    status_message = _status_message['aborted']
+                    break
+
+            if self.convergence < self.xtol:
                 break
 
-        return (
-            self.__scale_parameters(
-                self.population[0]), self.population_energies[0]
-        )
+            if warning_flag:
+                break
+
+            self.nit += 1
+
+        if self.nit == self.maxiter:
+            status_message = _status_message['maxiter']
+            warning_flag = True
+
+        result = scipy.optimize.Result(
+            x=self.__scale_parameters(self.population[0]),
+            fun=self.population_energies[0],
+            nfev=self.nfev,
+            nit=self.nit,
+            message=status_message,
+            success=(warning_flag != True))
+
+        return result
 
     def __scale_parameters(self, trial):
         return (
@@ -398,9 +498,9 @@ class DEsolver(object):
 
     def Rand1Bin(self, candidate):
         r1, r2, r3, r4, r5 = self.select_samples(candidate, 1, 1, 1, 0, 0)
-        
+
         n = self.RNG.randint(0, self.parameter_count)
-        
+
         trial = np.copy(self.population[candidate])
         i = 0
         while i < self.parameter_count:
@@ -446,9 +546,12 @@ class DEsolver(object):
 if __name__ == "__main__":
     # minimum expected at ~-0.195
     func = lambda x: np.cos(14.5 * x - 0.3) + (x + 0.2) * x
-    limits = np.array([[-3], [3]])
-    solver = DEsolver(func, limits, tol=1e-2,
-                          popsize=40, km=0.6, recomb=0.9, DEstrategy='Best1Bin')
-    xmin, Jmin = solver.solve()
-    print xmin, Jmin, solver.population_energies
-    npt.assert_almost_equal(Jmin, func(xmin))
+    bounds = [(-3, 3)]
+    result = differential_evolution(func,
+                                    bounds,
+                                    xtol=1e-2,
+                                    popsize=40,
+                                    km=0.6,
+                                    recomb=0.9,
+                                    DEstrategy='Best1Bin')
+    print result

@@ -260,7 +260,7 @@ class DataObject(reflectdataset.ReflectDataset):
         else:
             RFO = reflect.ReflectivityFitObject(**callerInfo)
 
-        RFO.progress = self.progress
+        RFO.callback = self.callback
         model.parameters, model.uncertainties, self.chi2 = RFO.fit(
             method=method)
         model.covariance = RFO.covariance
@@ -274,7 +274,7 @@ class DataObject(reflectdataset.ReflectDataset):
         if 'sld_profile' in dir(RFO):
             self.sld_profile = RFO.sld_profile(model.parameters)
 
-    def progress(self, iterations, convergence, chi2, *args):
+    def callback(self, xk, convergence=0.):
         try:
             self.progressdialog.setValue(int(convergence * 100))
             if self.progressdialog.wasCanceled():
