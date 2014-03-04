@@ -46,10 +46,10 @@ class TestFitting(unittest.TestCase):
 #         with open('pyplatypus/analysis/test/fittedcoefs_11859.txt', 'w') as f:
 #             modeltosave = model.Model(pars)
 #             modeltosave.save(f)
-            
+
         with open('pyplatypus/analysis/test/fittedcoefs_11859.txt', 'Ur') as f:
             savedmodel = model.Model(None, file=f)
-            
+
         npt.assert_almost_equal(pars, savedmodel.parameters)
 
     def test_LMfit(self):

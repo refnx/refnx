@@ -237,14 +237,14 @@ Object attributes:
             de = DEsolver.DEsolver(self.energy,
                                    self.fitted_limits,
                                    args=self.args,
-                                   progress=self.progress,
+                                   callback=self.callback,
                                    seed=self.seed)
-            popt, chi2 = de.solve()
-            self.parameters[self.fitted_parameters] = popt
-            self.chi2 = chi2
+            result = de.solve()
+            self.parameters[self.fitted_parameters] = result.x
+            self.chi2 = result.fun
 
             Hfun = ndt.Hessian(self.energy, n=2)
-            hess = Hfun(popt)
+            hess = Hfun(result.x)
             self.covariance = scipy.linalg.pinv(hess)
 
         if self.edata is None:
@@ -257,8 +257,8 @@ Object attributes:
 
         return np.copy(self.parameters), np.copy(self.uncertainties), self.chi2
 
-    def progress(self, iterations, convergence, chi2, *args):
+    def callback(self, xk, convergence = 0.):
         '''
-            a default progress function for the fit object
+            a default callback function for the fit object
         '''
         return True
