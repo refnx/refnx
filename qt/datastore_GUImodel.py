@@ -1,6 +1,7 @@
 from __future__ import division
 from PySide import QtCore, QtGui
 import datastore
+import numpy as np
 from dataobject import DataObject
 
 

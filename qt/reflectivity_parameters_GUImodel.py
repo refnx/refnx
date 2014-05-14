@@ -348,7 +348,7 @@ class LayerModel(QtCore.QAbstractTableModel):
             if section == 1:
                 return 'SLD / 1e-6'
             if section == 2:
-                return 'iSLD'
+                return 'iSLD / 1e-6'
             if section == 3:
                 return 'roughness'
         return None
