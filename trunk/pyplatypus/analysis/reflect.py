@@ -22,7 +22,7 @@ INTLIMIT = 3.5
 
 def gauss_legendre(n):
     '''
-        a function return gaussian quadrature weights
+    a function return gaussian quadrature weights
     '''
     k = np.arange(1.0, n)
     a_band = np.zeros((2, n))
@@ -42,35 +42,57 @@ def _smearkernel(x, coefs, q, dq):
 def abeles(q, coefs, *args, **kwds):
     """
 
-    Abeles matrix formalism for calculating reflectivity from a stratified medium.
+    Abeles matrix formalism for calculating reflectivity from a stratified
+    medium.
 
-    coefs - :
-    coefs[0] = number of layers, N
-    coefs[1] = scale factor
-    coefs[2] = SLD of fronting (/1e-6 Angstrom**-2)
-    coefs[3] = iSLD of fronting (/Angstrom**-2)
-    coefs[4] = SLD of backing
-    coefs[5] = iSLD of backing
-    coefs[6] = background
-    coefs[7] = roughness between backing and layer N
+    Parameters
+    ----------
 
-    coefs[4 * (N - 1) + 8] = thickness of layer N in Angstrom (layer 1 is closest to fronting)
-    coefs[4 * (N - 1) + 9] = SLD of layer N
-    coefs[4 * (N - 1) + 10] = iSLD of layer N
-    coefs[4 * (N - 1) + 11] = roughness between layer N and N-1.
+    qvals : np.ndarray
+        The qvalues required for the calculation. Q=4*Pi/lambda * sin(omega).
+        Units = Angstrom**-1
 
-    qvals - the qvalues required for the calculation. Q=4*Pi/lambda * sin(omega). Units = Angstrom**-1
+    coefs : np.ndarray
+        coefs[0] = number of layers, N
+        coefs[1] = scale factor
+        coefs[2] = SLD of fronting (/1e-6 Angstrom**-2)
+        coefs[3] = iSLD of fronting (/1e-6 Angstrom**-2)
+        coefs[4] = SLD of backing
+        coefs[5] = iSLD of backing
+        coefs[6] = background
+        coefs[7] = roughness between backing and layer N
 
-    kwds['dqvals'] - an array containing the FWHM of the Gaussian approximated resolution kernel. Has the same size as qvals.
-    kwds['quad_order'] - the order of the Gaussian quadrature polynomial for doing the resolution smearing. default = 17. Don't choose less than 13. If quad_order == 'ultimate' then adaptive quadrature is used. Adaptive quadrature will always work, but takes a _long_ time (2 or 3 orders of magnitude longer). Fixed quadrature will always take a lot less time. BUT it won't necessarily work across all samples. For example, 13 points may be fine for a thin layer, but will be atrocious at describing a multilayer with bragg peaks.
+        coefs[4 * (N - 1) + 8] = thickness of layer N in Angstrom (layer 1 is
+        closest to fronting)
+        coefs[4 * (N - 1) + 9] = SLD of layer N
+        coefs[4 * (N - 1) + 10] = iSLD of layer N
+        coefs[4 * (N - 1) + 11] = roughness between layer N and N-1.
 
+
+    kwds : dict, optional
+        The following keys are used:
+
+        'dqvals' - np.ndarray, optional
+            an array containing the FWHM of the Gaussian approximated resolution
+            kernel. Has the same size as qvals.
+
+        'quad_order' - int, optional
+            the order of the Gaussian quadrature polynomial for doing the
+            resolution smearing. default = 17. Don't choose less than 13. If
+            quad_order == 'ultimate' then adaptive quadrature is used. Adaptive
+            quadrature will always work, but takes a _long_ time (2 or 3 orders
+            of magnitude longer). Fixed quadrature will always take a lot less
+            time. BUT it won't necessarily work across all samples. For example,
+            13 points may be fine for a thin layer, but will be atrocious at
+            describing a multilayer with bragg peaks.
     """
+
     qvals = q.flatten()
     quad_order = 17
 
     if not is_proper_Abeles_input(coefs):
-        raise ValueError(
-            "The size of the parameter array passed to abeles should be 4 * coefs[0] + 8")
+        raise ValueError('The size of the parameter array passed to abeles'
+                         ' should be 4 * coefs[0] + 8')
 
     if 'quad_order' in kwds:
         quad_order = kwds['quad_order']
@@ -84,7 +106,12 @@ def abeles(q, coefs, *args, **kwds):
             warnings.simplefilter('ignore', Warning)
             for idx, val in enumerate(qvals):
                 smeared_rvals[idx], err = scipy.integrate.quadrature(
-                    _smearkernel, -INTLIMIT, INTLIMIT, tol=2 * np.finfo(np.float64).eps, rtol=2 * np.finfo(np.float64).eps, args=(coefs, qvals[idx], dqvals[idx]))
+                    _smearkernel,
+                    -INTLIMIT,
+                    INTLIMIT,
+                    tol=2 * np.finfo(np.float64).eps,
+                    rtol=2 * np.finfo(np.float64).eps,
+                    args=(coefs, qvals[idx], dqvals[idx]))
 
             warnings.resetwarnings()
             return smeared_rvals
@@ -104,15 +131,14 @@ def abeles(q, coefs, *args, **kwds):
             va = va[:, np.newaxis]
             vb = vb[:, np.newaxis]
 
-            qvals_for_res = (
-                np.atleast_2d(abscissa) * (vb - va) + vb + va) / 2.
-            smeared_rvals = refcalc.abeles(
-                np.size(qvals_for_res.flatten(),
-                        0),
-                qvals_for_res.flatten(),
-                coefs)
-            smeared_rvals = np.reshape(
-                smeared_rvals, (qvals.size, abscissa.size))
+            qvals_for_res = ((np.atleast_2d(abscissa) *
+                             (vb - va)
+                             + vb + va) / 2.)
+            smeared_rvals = refcalc.abeles(np.size(qvals_for_res.flatten(),0),
+                                           qvals_for_res.flatten(),
+                                           coefs)
+            smeared_rvals = np.reshape(smeared_rvals,
+                                       (qvals.size, abscissa.size))
 
             smeared_rvals *= np.atleast_2d(gaussvals * weights)
 
@@ -123,7 +149,7 @@ def abeles(q, coefs, *args, **kwds):
 
 def is_proper_Abeles_input(coefs):
     '''
-            a test to see if the coefs array is suitable input for the abeles function
+    a test to see if the coefs array is suitable input for the abeles function
     '''
     if np.size(coefs, 0) != 4 * int(coefs[0]) + 8:
         return False
@@ -177,24 +203,27 @@ def sld_profile(coefs, z):
 class ReflectivityFitObject(fitting.FitObject):
 
     '''
-        A sub class of pyplatypus.analysis.fitting.FitObject suited for fitting reflectometry data.
+        A sub class of pyplatypus.analysis.fitting.FitObject suited for fitting
+        reflectometry data.
 
-        If you wish to fit analytic profiles you should subclass this fitobject, overriding the model() method of the FitObject super class.  If you do this you should also override the sld_profile method of ReflectivityFitObject.
-
+        If you wish to fit analytic profiles you should subclass this fitobject,
+        overriding the model() method of the FitObject super class.  If you do
+        this you should also override the sld_profile method of
+        ReflectivityFitObject.
     '''
 
     def __init__(self, xdata, ydata, edata, parameters, args=(), **kwds):
         '''
         Initialises the ReflectivityFitObject.
-        See the constructor of the FitObject for more details, especially the entries in kwds that are used.
+        See the constructor of the FitObject for more details, especially the
+        entries in kwds that are used.
 
         ReflectivityFitObject uses one extra kwds entry:
 
-            kwds['transform'] - a callable with the signature
-                    transformed_y = f(x_evals, y_vals).
-
-                    If specified, then this function is used to transform the data returned by the model method.
-
+        kwds['transform'] - a callable with the signature
+         transformed_y = f(x_evals, y_vals).
+        If specified, then this function is used to transform the data returned
+        by the model method.
         '''
 
         super(ReflectivityFitObject, self).__init__(xdata,
@@ -211,10 +240,12 @@ class ReflectivityFitObject(fitting.FitObject):
 
     def model(self, parameters, *args):
         '''
-            calculate the theoretical model, given a set of parameters.
-            parameters - the full np.ndarray containing the parameters that are required for the fitfunction
+        calculate the theoretical model, given a set of parameters.
+        parameters - the full np.ndarray containing the parameters that are
+        required for the fitfunction
 
-            returns the theoretical model for the xdata, i.e. self.fitfunction(self.xdata, test_parameters, *args, **kwds)
+        returns the theoretical model for the xdata, i.e.
+        self.fitfunction(self.xdata, test_parameters, *args, **kwds)
         '''
 
         if not len(args):
@@ -231,7 +262,8 @@ class ReflectivityFitObject(fitting.FitObject):
         '''
             returns the SLD profile corresponding to the model parameters.
 
-            returns z, rho(z) - the distance from the top interface and the SLD at that point
+            returns z, rho(z) - the distance from the top interface and the SLD
+            at that point
         '''
 
         if 'points' in kwds and kwds['points'] is not None:
