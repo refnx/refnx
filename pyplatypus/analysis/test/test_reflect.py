@@ -1,5 +1,7 @@
 import unittest
 import pyplatypus.analysis.reflect as reflect
+import pyplatypus.analysis._creflect as _creflect
+
 import numpy as np
 import numpy.testing as npt
 
@@ -20,7 +22,7 @@ class TestReflect(unittest.TestCase):
         '''
             test reflectivity calculation
             with values generated from Motofit
-        
+
         '''
         theoretical = np.loadtxt('pyplatypus/analysis/test/theoretical.txt')
         qvals, rvals = np.hsplit(theoretical, 2)
@@ -37,10 +39,10 @@ class TestReflect(unittest.TestCase):
             'pyplatypus/analysis/test/smeared_theoretical.txt')
         qvals, rvals, dqvals = np.hsplit(theoretical, 3)
         '''
-        the order of the quadrature precision used to create these smeared values in Motofit was 13.
+        the order of the quadrature precision used to create these smeared
+        values in Motofit was 13.
         Do the same here
         '''
-
         calc = reflect.abeles(qvals.flatten(), self.coefs,
                               **{'dqvals': dqvals.flatten(), 'quad_order': 13})
 
@@ -54,7 +56,6 @@ class TestReflect(unittest.TestCase):
         profile = np.loadtxt('pyplatypus/analysis/test/sld_theoretical_R.txt')
         z, rho = np.split(profile, 2)
         myrho = reflect.sld_profile(self.coefs, z.flatten())
-        print myrho
         npt.assert_almost_equal(myrho, rho.flatten())
 
 

@@ -18,7 +18,7 @@ class Data_1D(object):
     def __init__(self, dataTuple=None):
 
         self.filename = None
-        
+
         if dataTuple is not None:
             self.xdata = np.copy(dataTuple[0]).flatten()
             self.ydata = np.copy(dataTuple[1]).flatten()
@@ -37,10 +37,12 @@ class Data_1D(object):
 
             self.numpoints = 0
 
-    def get_data(self):
+    @property
+    def data(self):
         return (self.xdata, self.ydata, self.ydataSD, self.xdataSD)
 
-    def set_data(self, dataTuple):
+    @data.setter
+    def data(self, dataTuple):
         self.xdata = np.copy(dataTuple[0]).flatten()
         self.ydata = np.copy(dataTuple[1]).flatten()
 
@@ -61,7 +63,7 @@ class Data_1D(object):
         self.ydataSD /= scalefactor
 
     def add_data(self, dataTuple, requires_splice=False):
-        xdata, ydata, ydataSD, xdataSD = self.get_data()
+        xdata, ydata, ydataSD, xdataSD = self.data()
 
         axdata, aydata, aydataSD, axdataSD = dataTuple
 
@@ -104,13 +106,16 @@ class Data_1D(object):
 
     def save(self, f):
         np.savetxt(
-            f, np.column_stack((self.xdata, self.ydata, self.ydataSD, self.xdataSD)))
+            f, np.column_stack((self.xdata,
+                                self.ydata,
+                                self.ydataSD,
+                                self.xdataSD)))
 
     def load(self, f):
         array = np.loadtxt(f)
         self.filename = f.name
         self.name = os.path.basename(f.name)
-        self.set_data(tuple(np.hsplit(array, np.size(array, 1))))
+        self.data = tuple(np.hsplit(array, np.size(array, 1)))
 
     def refresh(self):
         if self.filename:

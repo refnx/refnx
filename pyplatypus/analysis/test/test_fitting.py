@@ -38,7 +38,7 @@ class TestFitting(unittest.TestCase):
 
     def test_differential_evolutionfit(self):
         '''
-            test differential evolution fitting process
+        test differential evolution fitting process
         '''
         np.seterr(invalid='raise')
         pars, dummy, chi2 = self.a.fit()

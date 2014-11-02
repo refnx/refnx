@@ -41,7 +41,7 @@ def abeles(np.ndarray[DTYPE_t, ndim=1] x,
         coefs[4 * i + 10] = w[i + 1, 2]
         coefs[4 * i + 11] = w[i + 1, 3]
 
-    abeles(4 * nlayers + 8, <const double*>coefs.data, npoints,
+    reflect(4 * nlayers + 8, <const double*>coefs.data, npoints,
            <double*>y.data, <const double*>x.data)
     return y
 
