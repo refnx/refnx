@@ -1,9 +1,9 @@
 from __future__ import division
 import numpy as np
 import math
-from . import DEsolver
 import scipy.linalg
 from scipy.optimize import leastsq
+from scipy.optimize import differential_evolution
 import numdifftools as ndt
 
 
@@ -139,21 +139,25 @@ class FitObject(object):
         self.kwds = kwds
         self.seed = None
 
-        # need to set the seed for DEsolver.
+        # need to set the seed for differential_evolution
         if 'seed' in kwds:
             self.seed = kwds['seed']
 
-        if 'fitted_parameters' in kwds and kwds['fitted_parameters'] is not None:
+        if ('fitted_parameters' in kwds
+             and kwds['fitted_parameters'] is not None):
             self.fitted_parameters = np.unique(
                 np.copy(kwds['fitted_parameters']))
         else:
+           # get rid of duplicate fitted parameters
             self.fitted_parameters = np.arange(self.numparams)
-        # get rid of duplicate fitted parameters
 
         if 'costfunction' in kwds:
             self.costfunction = kwds['costfunction']
 
-        if 'limits' in kwds and kwds['limits'] is not None and np.size(kwds['limits'], 1) == self.numparams:
+        if ('limits' in kwds
+            and kwds['limits'] is not None
+            and np.size(kwds['limits'], 1) == self.numparams):
+
             self.limits = kwds['limits']
         else:
             self.limits = np.zeros((2, self.numparams))
@@ -165,9 +169,8 @@ class FitObject(object):
 
     def residuals(self, parameter_subset=None, *args):
         '''
-            return the fit residuals for the fit object.
+        return the fit residuals for the fit object.
         '''
-
         test_parameters = np.copy(self.parameters)
 
         if not len(args):
@@ -272,26 +275,28 @@ class FitObject(object):
             self.chi2 = np.sum(
                 np.power(self.residuals(popt, *self.args), 2))
         else:
-            de = DEsolver.DEsolver(self.energy,
-                                   self.fitted_limits,
-                                   args=self.args,
-                                   callback=self.callback,
-                                   seed=self.seed)
-            result = de.solve()
+            bounds = zip(self.fitted_limits[0, :], self.fitted_limits[1, :])
+
+            result = differential_evolution(self.energy,
+                                            bounds,
+                                            args=self.args,
+                                            callback=self.callback,
+                                            seed=self.seed)
+
             self.parameters[self.fitted_parameters] = result.x
             self.chi2 = result.fun
 
-            Hfun = ndt.Hessian(self.energy, n=2)
-            hess = Hfun(result.x)
-            self.covariance = scipy.linalg.pinv(hess)
+#             Hfun = ndt.Hessian(self.energy, n=2)
+#             hess = Hfun(result.x)
+#             self.covariance = scipy.linalg.pinv(hess)
 
-        if self.edata is None:
-            self.covariance *= self.chi2 / \
-                (self.ydata.size - self.fitted_parameters.size)
+#       if self.edata is None:
+#             self.covariance *= self.chi2 / \
+#                 (self.ydata.size - self.fitted_parameters.size)
 
         self.uncertainties = np.zeros(self.parameters.size)
-        self.uncertainties[self.fitted_parameters] = np.sqrt(
-            np.diag(self.covariance))
+#         self.uncertainties[self.fitted_parameters] = np.sqrt(
+#             np.diag(self.covariance))
 
         return np.copy(self.parameters), np.copy(self.uncertainties), self.chi2
 

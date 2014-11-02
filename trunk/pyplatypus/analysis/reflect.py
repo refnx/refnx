@@ -8,8 +8,6 @@ import pyplatypus.analysis.fitting as fitting
 import pyplatypus.util.ErrorProp as EP
 import warnings
 
-#from scipy.stats import norm
-
 try:
     import pyplatypus.analysis._creflect as refcalc
 except ImportError:
@@ -31,13 +29,28 @@ def gauss_legendre(n):
     w = 2 * np.real(np.power(V[0, :], 2))
     return x, w
 
-
 def _smearkernel(x, coefs, q, dq):
     prefactor = 1 / math.sqrt(2 * math.pi)
     gauss = prefactor * np.exp(-0.5 * x * x)
     localq = q + x * dq / FWHM
-    return refcalc.abeles(np.size(localq), localq, coefs) * gauss
+    w = convert_coefs_to_layer_format(coefs)
+    return refcalc.abeles(localq, w) * gauss
 
+def convert_coefs_to_layer_format(coefs):
+    nlayers = int(coefs[0])
+    w = np.zeros((nlayers + 2, 4), np.float64)
+    w[0, 1] = coefs[2]
+    w[0, 2] = coefs[3]
+    w[-1, 1] = coefs[4]
+    w[-1, 2] = coefs[5]
+    w[-1, 3] = coefs[7]
+    for i in range(nlayers):
+        w[i + 1, 0] = coefs[4 * i + 8]
+        w[i + 1, 1] = coefs[4 * i + 9]
+        w[i + 1, 2] = coefs[4 * i + 10]
+        w[i + 1, 3] = coefs[4 * i + 11]
+
+    return w
 
 def abeles(q, coefs, *args, **kwds):
     """
@@ -94,6 +107,9 @@ def abeles(q, coefs, *args, **kwds):
         raise ValueError('The size of the parameter array passed to abeles'
                          ' should be 4 * coefs[0] + 8')
 
+    #make into form suitable for reflection calculation
+    w = convert_coefs_to_layer_format(coefs)
+
     if 'quad_order' in kwds:
         quad_order = kwds['quad_order']
 
@@ -113,6 +129,8 @@ def abeles(q, coefs, *args, **kwds):
                     rtol=2 * np.finfo(np.float64).eps,
                     args=(coefs, qvals[idx], dqvals[idx]))
 
+            smeared_rvals *= coefs[1]
+            smeared_rvals += coefs[6]
             warnings.resetwarnings()
             return smeared_rvals
         else:
@@ -134,9 +152,11 @@ def abeles(q, coefs, *args, **kwds):
             qvals_for_res = ((np.atleast_2d(abscissa) *
                              (vb - va)
                              + vb + va) / 2.)
-            smeared_rvals = refcalc.abeles(np.size(qvals_for_res.flatten(),0),
-                                           qvals_for_res.flatten(),
-                                           coefs)
+            smeared_rvals = refcalc.abeles(qvals_for_res.flatten(),
+                                           w,
+                                           scale=coefs[1],
+                                           bkg=coefs[6])
+
             smeared_rvals = np.reshape(smeared_rvals,
                                        (qvals.size, abscissa.size))
 
@@ -144,7 +164,8 @@ def abeles(q, coefs, *args, **kwds):
 
             return np.sum(smeared_rvals, 1) * INTLIMIT
     else:
-        return refcalc.abeles(np.size(qvals, 0), qvals, coefs)
+        return refcalc.abeles(qvals.flatten(), w,
+                              scale=coefs[1], bkg=coefs[6])
 
 
 def is_proper_Abeles_input(coefs):
@@ -354,4 +375,4 @@ if __name__ == '__main__':
         abeles(b, a)
 
     t = timeit.Timer(stmt=loop)
-    print t.timeit(number=10000)
+    print(t.timeit(number=1000))

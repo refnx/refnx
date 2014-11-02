@@ -1,7 +1,6 @@
 from __future__ import division
 import numpy as np
 import math
-from . import DEsolver
 from . import fitting
 from . import reflect
 

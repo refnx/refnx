@@ -41,11 +41,10 @@ class ReflectDataset(Data_1D):
             [self.add_dataset(data) for data in datasets]
 
     def add_dataset(self, reduceObj, scanpoint=0):
-        # when you add a dataset to splice only the first numspectra dimension is used.
-        # the others are discarded
-        self.add_data(
-            reduceObj.get_1D_data(scanpoint=scanpoint),
-            requires_splice=True)
+        # when you add a dataset to splice only the first numspectra dimension
+        # is used. The others are discarded
+        self.add_data(reduceObj.get_1D_data(scanpoint=scanpoint),
+                      requires_splice=True)
         self.datafilenumber.append(reduceObj.datafilenumber)
 
     def save(self, f):
@@ -56,11 +55,12 @@ class ReflectDataset(Data_1D):
 
         self._ydata = string.translate(repr(self.ydata.tolist()), None, ',[]')
         self._xdata = string.translate(repr(self.xdata.tolist()), None, ',[]')
-        self._ydataSD = string.translate(
-            repr(self.ydataSD.tolist()),
-            None,
-            ',[]')
-        self._xdataSD = string.translate(repr(self.xdataSD.tolist()), None, ',[]')
+        self._ydataSD = string.translate(repr(self.ydataSD.tolist()),
+                                         None,
+                                         ',[]')
+        self._xdataSD = string.translate(repr(self.xdataSD.tolist()),
+                                         None,
+                                         ',[]')
 
         thefile = s.safe_substitute(self.__dict__)
         f.write(thefile)
@@ -82,14 +82,14 @@ class ReflectDataset(Data_1D):
 
             self.filename = f.name
             self.name = os.path.basename(f.name)
-            self.set_data((qvals, rvals, drvals, dqvals))
+            self.data = (qvals, rvals, drvals, dqvals)
             self.filename = f.name
         except ET.ParseError:
             with open(f.name, 'Ur') as g:
                 super(ReflectDataset, self).load(g)
 
     def rebin(self, rebinpercent=4):
-        xdata, ydata, ydataSD, xdataSD = self.get_data()
+        xdata, ydata, ydataSD, xdataSD = self.data
         frac = 1. + (rebinpercent / 100.)
 
         lowQ = (2 * xdata[0]) / (1. + frac)
@@ -107,4 +107,4 @@ class ReflectDataset(Data_1D):
         drdat = dr
         qsddat = dq
 
-        self.set_data((qdat, rdat, drdat, qsddat))
+        self.data = (qdat, rdat, drdat, qsddat)
