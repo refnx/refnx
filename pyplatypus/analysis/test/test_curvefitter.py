@@ -1,5 +1,5 @@
 import unittest
-import fitter
+import curvefitter
 import numpy as np
 from numpy.testing import assert_almost_equal, assert_equal
 
@@ -15,7 +15,7 @@ class TestFitter(unittest.TestCase):
         self.xdata = np.linspace(-4, 4, 100)
         self.p0 = np.array([0., 1., 0.0, 1.])
         self.ydata = gauss(self.xdata, self.p0)
-        self.f = fitter.Fitter(self.xdata, self.ydata, gauss, self.p0 + 0.2)
+        self.f = curvefitter.CurveFitter(self.xdata, self.ydata, gauss, self.p0 + 0.2)
         self.bounds = [(-1, 1), (0, 2), (-1, 1.), (0.001, 2)]
 
     def test_fitting(self):
@@ -48,7 +48,7 @@ class TestFitter(unittest.TestCase):
     def test_custom_scipy_minimize(self):
         '''test that a custom method can be used with scipy.optimize.minimize'''
         minimizer_kwds = {'bounds':self.bounds}
-        res = self.f.fit(method=fitter.de_wrapper,
+        res = self.f.fit(method=curvefitter.de_wrapper,
                          minimizer_kwds=minimizer_kwds)
         assert_almost_equal(res.p, self.p0)
 
