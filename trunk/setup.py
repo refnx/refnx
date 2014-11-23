@@ -31,5 +31,5 @@ setup(  name        = "pyplatypus",
         ext_modules = [_creflect],
         packages = ['pyplatypus', 'pyplatypus.reduce', 'pyplatypus.analysis',
                     'pyplatypus.dataset', 'pyplatypus.util'],
-        requires = ['numpy', 'scipy', 'numdifftools']
+        requires = ['numpy', 'scipy']
      )
