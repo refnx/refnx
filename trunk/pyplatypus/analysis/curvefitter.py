@@ -11,12 +11,12 @@ _MINIMIZE = ['Nelder-Mead', 'Powell', 'CG', 'BFGS', 'Newton-CG', 'Anneal',
 class FitResult(object):
     def __init__(self, p=None, cost=np.nan, cov_p=None, success=False,
                  status=-1, message='', nfev=-1, **kwds):
-        self.p = p
+        self.p = np.copy(p)
         self.cost = cost
         self.message = message
         self.nfev = nfev
         self.success = success
-        self.cov_p = cov_p
+        self.cov_p = np.copy(cov_p)
         self.pheld = None
 
 class CurveFitter(object):
