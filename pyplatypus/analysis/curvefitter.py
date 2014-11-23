@@ -19,10 +19,93 @@ class FitResult(object):
         self.cov_p = cov_p
         self.pheld = None
 
-class Fitter(object):
+class CurveFitter(object):
+    '''Non-linear regression.
+
+    A flexible class for curvefitting analyses, using either
+    scipy.optimize.leastsq or scipy.optimize.minimize.  In comparison to
+    leastsq/minimize you can specify a fitfunction instead of having to
+    return residuals or the costfunction itself.  Moreover, you can hold
+    parameters if they don't vary during the fit.
+    The default mode of operation is minimization of `chi2` using leastsq,
+    :math:`np.sum(np.power((ydata - self.model) / edata), 2)`
+
+    There are several ways of using this class.
+
+    1) Instantiate the class 'as' is. Here you have to supply a fitfunction
+    to calculate the theoretical model. Chi2 is minimised by default.
+    However, you have the option of supplying a costfunction if you wish to
+    minimise a different costmetric.
+
+    2) Alternatively you can subclass the Fitter class.
+        option 1) Override the Fitter.model() method.
+        If you override the Fitter.model() method, then you no longer
+        have to supply a fitfunction.
+        -OR-
+        option 2) Override the Fitter.cost() method.
+        If you override the Fitter.cost() method you no longer have to
+        supply a fitfunction, or a costfunction. This method should specify
+        how the cost metric varies as the fitted parameters vary.
+
+    All fits performed using an instance of this class are stored in the history
+    attribute.
+    '''
+
     def __init__(self, xdata, ydata, func, p0, edata=None, args=(), kwds={},
                  cost_func=None):
+        '''
+        Initialises the data for the curve fit.
 
+        Parameters
+        ----------
+        xdata : np.ndarray
+        Contains the independent variables for the fit. This is not used by this
+        class, other than pass it directly to the fitfunction.  Whilst xdata is
+        normally rank 1, if can be rank 2 if the are several independent
+        variables.
+
+        ydata : np.ndarray
+        Contains the observations corresponding to each measurement point.
+
+        func : callable
+        'fitfunction' of the form func(xdata, parameters, args=(), **kwds). The
+        args tuple and kwds supplied in the construction of the CurveFitter
+        object are also passed in as extra arguments to the function. You can
+        use None for fitfunction _IF_ you subclass CurveFitter and provide your
+        own cost method, or if you subclass the model method.
+
+        parameters : np.ndarray
+        Contains _all_ the parameters to be supplied to ``func``.
+
+        edata : np.ndarray, optional
+        Contains the measured uncertainty (s.d.) for each of the observed y data
+        points. (Use None if you do not have measured uncertainty on each point)
+
+        args : tuple, optional
+        Used to pass extra arguments to CurveFitter.model(), your
+        fitfunction, or costfunction.
+
+        kwds : dict, optional
+        Used to pass extra arguments to CurveFitter.model(), your
+        func, or cost_func.
+
+        cost_func : callable, optional
+        If you wish to minimize a cost metric other than chisqr then supply a
+        function of the form cost_func(model, data, p, *args, **kwds), where
+        `model` is the data returned by `func`, data is a tuple containing the
+        data (xdata, ydata, edata), p is the parameter vector and args and kwds
+        were used to construct the CurveFitter object.
+        This cost_func is only used if a scipy.optimize.minimize method is used
+        instead of leastsq.
+
+        Notes
+        -----
+        The cost method is supplied by the subset of parameters that are
+        being varied by the fit. If you are only varying parameters [0, 1, 3],
+        then self.p[[0, 1, 3]] is supplied.
+        In contrast the model method is supplied by the entire set of parameters
+        (those being held and those being varied).
+        '''
         self.xdata = np.copy(xdata)
         self.ydata = np.copy(ydata)
         self.npoints = np.size(ydata, 0)
@@ -49,12 +132,27 @@ class Fitter(object):
 
     @property
     def fit_result(self):
+        '''returns the last fit performed'''
         if len(self.history):
             return self.history[-1]
         else:
             return None
 
     def residuals(self, p_subset=None):
+        '''
+        return the fit residuals, :math:`(ydata - model()) / edata`
+
+        Parameters
+        ----------
+
+        p_subset : np.ndarray, optional
+        The subset of parameters that are being fitted.  This array will have
+        a size in the range [0, np.size(p0)].
+
+        Returns
+        -------
+        residuals : np.ndarray
+        '''
         p = self.p
         if p_subset is not None:
             self.ptemp[self.fitted_parameters] = p_subset
@@ -65,6 +163,25 @@ class Fitter(object):
         return (self.ydata - model_data) / self.edata
 
     def cost(self, p_subset=None):
+        '''
+        The default cost function for the fit object is chisq,
+        :math:`np.sum(np.power((ydata - self.model) / edata), 2)`
+        If you require a different cost function provide a subclass that
+        overloads this method. An alternative is to provide the costfunction
+        keyword to the constructor.
+
+        Parameters
+        ----------
+
+        p_subset : np.ndarray, optional
+        The subset of parameters that are being fitted.  This array will have
+        a size in the range [0, np.size(p0)].
+
+        Returns
+        -------
+        chisqr : :math:`np.sum(np.power((ydata - self.model) / edata), 2)`
+
+        '''
         if self.cost_func:
             p = self.p
 
@@ -81,9 +198,69 @@ class Fitter(object):
             return np.nansum(np.power(residuals, 2))
 
     def model(self, p, *args, **kwds):
+        '''
+        Returns the theoretical model.
+
+        Parameters
+        ----------
+
+        p : np.ndarray
+        The parameters required for the fitfunction
+
+        Returns
+        -------
+        model : np.ndarray
+        The theoretical model, i.e.
+        :math:`self.func(self.xdata, test_parameters, *self.args, **self.kwds)`
+        '''
+
         return self.func(self.xdata, p, *args, **kwds)
 
     def fit(self, method='leastsq', pheld=None, minimizer_kwds={}):
+        '''
+        Start the fit.
+
+        Parameters
+        ----------
+
+        method : str or callable, optional
+        Selects the fitting algorithm.
+            'leastsq' - scipy.optimize.leastsq is used for the minimization,
+                with chisqr.
+            callable - a function that uses the scipy.optimize.minimize
+                interface.
+            'Nelder-Mead’
+            ‘Powell’
+            ‘CG’
+            ‘BFGS’
+            ‘Newton-CG’
+            ‘L-BFGS-B’
+            ‘TNC’
+            ‘COBYLA’
+            ‘SLSQP’
+            ‘dogleg’
+            ‘trust-ncg’
+
+
+        pheld : sequence, optional
+        Specifies the parameter numbers to hold/fix during the fit.
+
+        minimizer_kwds : dict, optional
+        Extra parameters to pass to the selected minimizer.
+
+        Returns
+        -------
+        fit_result : curvefitter.FitResult object
+
+        Notes
+        -----
+        It will be necessary to pass in the extra minimizer keyword arguments
+        required by the minimizer method chosen.
+
+        If you select 'leastsq', then normal least squares is
+        performed and your cost_func is ignored.
+        '''
+
         self.fitted_parameters = np.arange(self.nparams)
         if pheld is not None:
             self.fitted_parameters = np.setdiff1d(self.fitted_parameters,
@@ -145,6 +322,10 @@ class Fitter(object):
 
 
 def de_wrapper(func, x0, args=(), **kwargs):
+    '''
+    A wrapper for scipy.optimize.differential_evolution that allows it to be
+    used as a custom method in scipy.optimize.minimize
+    '''
     de_kwds = {'strategy':'best1bin', 'maxiter':None, 'popsize':15,
                'tol':0.01, 'mutation':(0.5, 1), 'recombination':0.7,
                'seed':None, 'callback':None, 'disp':False, 'polish':True,
