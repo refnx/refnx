@@ -8,6 +8,8 @@ from scipy.optimize import differential_evolution
 _MINIMIZE = ['Nelder-Mead', 'Powell', 'CG', 'BFGS', 'Newton-CG', 'Anneal',
     'L-BFGS-B', 'TNC', 'COBYLA', 'SLSQP', 'dogleg', 'trust-ncg']
 
+MACHEPS = np.finfo(np.float64).eps
+
 class FitResult(object):
     def __init__(self, p=None, cost=np.nan, cov_p=None, success=False,
                  status=-1, message='', nfev=-1, **kwds):
@@ -216,7 +218,7 @@ class CurveFitter(object):
 
         return self.func(self.xdata, p, *args, **kwds)
 
-    def fit(self, method='leastsq', pheld=None, minimizer_kwds={}):
+    def fit(self, method='leastsq', pheld=None, minimizer_kwds=None):
         '''
         Start the fit.
 
@@ -229,17 +231,17 @@ class CurveFitter(object):
                 with chisqr.
             callable - a function that uses the scipy.optimize.minimize
                 interface.
-            'Nelder-Mead’
-            ‘Powell’
-            ‘CG’
-            ‘BFGS’
-            ‘Newton-CG’
-            ‘L-BFGS-B’
-            ‘TNC’
-            ‘COBYLA’
-            ‘SLSQP’
-            ‘dogleg’
-            ‘trust-ncg’
+            'Nelder-Mead'
+            'Powell'
+            'CG'
+            'BFGS'
+            'Newton-CG'
+            'L-BFGS-B'
+            'TNC'
+            'COBYLA'
+            'SLSQP'
+            'dogleg'
+            'trust-ncg'
 
 
         pheld : sequence, optional
@@ -260,8 +262,11 @@ class CurveFitter(object):
         If you select 'leastsq', then normal least squares is
         performed and your cost_func is ignored.
         '''
-
         self.fitted_parameters = np.arange(self.nparams)
+
+        if minimizer_kwds is None:
+            minimizer_kwds = {}
+
         if pheld is not None:
             self.fitted_parameters = np.setdiff1d(self.fitted_parameters,
                                                   pheld)
@@ -274,7 +279,11 @@ class CurveFitter(object):
                              'scipy.optimize.minimize')
 
         fit_result.pheld = pheld
-        if fit_result.cov_p:
+        if fit_result.cov_p is not None:
+            if not self.weighting:
+             fit_result.cov_p *= self.cost() / (self.npoints -
+                                 self.fitted_parameters.size)
+
             cov_p = np.zeros((self.nparams, self.nparams))
             for i in range(np.size(self.fitted_parameters)):
                 r = self.fitted_parameters[i]
@@ -296,9 +305,6 @@ class CurveFitter(object):
         cost = np.nan
         self.p[self.fitted_parameters] = p_subset
 
-        if not self.weighting:
-            cov_p *= self.cost() / (self.npoints - self.fitted_parameters.size)
-
         if ier in [1, 2, 3, 4]:
             success = True
             cost = self.cost()
@@ -307,7 +313,11 @@ class CurveFitter(object):
                          cost=cost, message=mesg, success=success)
 
     def _minimze(self, method, minimizer_kwds={}):
+        '''
+        minimize cost function using scipy.optimize.minimize
+        '''
         minimizer_kwds['method'] = method
+
         p_subset = self.p[self.fitted_parameters]
 
         opt_res = scipy.optimize.minimize(self.cost, p_subset, **minimizer_kwds)
@@ -315,10 +325,62 @@ class CurveFitter(object):
 
         self.p[self.fitted_parameters] = opt_res.x
         opt_res.p = self.p
-        opt_res.fitted_parameters = self.fitted_parameters
+
+        '''
+        depending on the method chosen minimize may not always provide hess or
+        hess_inv in opt_res.  To try and standardise the output we will use a
+        single way of estimating the covariance matrix.
+        '''
+        opt_res.cov_p = self.estimate_covariance_matrix()
 
         fit_result = FitResult(**opt_res)
         return fit_result
+
+    def estimate_covariance_matrix(self):
+        '''
+        Estimates the covariance matrix.
+        '''
+        alpha, beta = self.estimate_mrqcof(self.p[self.fitted_parameters])
+        return scipy.linalg.pinv(alpha)
+
+    def estimate_mrqcof(self, p_subset):
+        '''
+        Estimates the gradient and hessian matrix for the curvefit.
+        '''
+        nvary = self.fitted_parameters.size
+
+        derivmatrix = np.zeros((nvary, self.npoints), np.float64)
+        ei = np.zeros((nvary,), np.float64)
+        epsilon = (pow(MACHEPS, 1. / 3)
+                   * np.fmax(np.fabs(p_subset), 0.1))
+
+        alpha = np.zeros((nvary, nvary), np.float64)
+        beta = np.zeros(nvary, np.float64)
+
+        #this is wasteful of function evaluations. Requires 2 evaluations for
+        #LHS and RHS
+        for k in range(nvary):
+            self.ptemp[self.fitted_parameters] = p_subset
+            d = epsilon[k]
+
+            rcost = self.cost(p_subset[k] + d)
+            lcost = self.cost(p_subset[k] - d)
+            beta[k] = (rcost - lcost) / 2. / d
+
+            self.ptemp[self.fitted_parameters[k]] = p_subset[k] + d
+            f2 = self.model(self.ptemp, *self.args, **self.kwds)
+            self.ptemp[self.fitted_parameters[k]] = p_subset[k] - d
+            f1 = self.model(self.ptemp, *self.args, **self.kwds)
+
+            derivmatrix[k, :] = (f2 - f1) / 2. / d
+
+        for i in range(nvary):
+            for j in range(i + 1):
+                val = np.sum(derivmatrix[i] * derivmatrix[j] / self.edata**2)
+                alpha[i, j] = val;
+                alpha[j, i] = val;
+
+        return alpha, beta
 
 
 def de_wrapper(func, x0, args=(), **kwargs):
@@ -344,6 +406,11 @@ if __name__ == '__main__':
     p0 = np.array([0., 1., 0., 1.])
     ydata = gauss(xdata, p0)
 
-    f = Fitter(xdata, ydata, gauss, p0 + 0.2)
+    f = CurveFitter(xdata, ydata, gauss, p0 + 0.2)
     res = f.fit()
-    print(res.p)
+    print(res.p, np.diag(res.cov_p))
+
+    bounds = [(-1., 1.), (0., 2.), (-3., 3.), (0.001, 2.)]
+    res1 = f.fit(method=de_wrapper, minimizer_kwds={'bounds':bounds})
+    print(res.p, np.diag(res1.cov_p))
+
