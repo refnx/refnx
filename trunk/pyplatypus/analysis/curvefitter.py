@@ -108,22 +108,22 @@ class CurveFitter(object):
         In contrast the model method is supplied by the entire set of parameters
         (those being held and those being varied).
         '''
-        self.xdata = np.copy(xdata)
-        self.ydata = np.copy(ydata)
+        self.xdata = np.asfarray(xdata)
+        self.ydata = np.asfarray(ydata)
         self.npoints = np.size(ydata, 0)
         self.weighting = False
         self.edata = np.ones(self.npoints, np.float64)
 
         if edata is not None:
             self.weighting = True
-            self.edata = np.copy(edata)
+            self.edata = np.asfarray(edata)
 
         self.func = func
 
-        self.p0 = p0
-        self.p = np.copy(p0)
-        self.ptemp = np.copy(p0)
-        self.nparams = np.size(p0, 0)
+        self.p0 = np.asfarray(p0)
+        self.p = np.copy(self.p0)
+        self.ptemp = np.copy(self.p0)
+        self.nparams = np.size(self.p0, 0)
         self.cost_func = cost_func
 
         self.args = args
@@ -279,9 +279,10 @@ class CurveFitter(object):
                              'scipy.optimize.minimize')
 
         fit_result.pheld = pheld
+
         if fit_result.cov_p is not None:
             if not self.weighting:
-             fit_result.cov_p *= self.cost() / (self.npoints -
+                fit_result.cov_p *= self.cost() / (self.npoints -
                                  self.fitted_parameters.size)
 
             cov_p = np.zeros((self.nparams, self.nparams))
@@ -290,16 +291,21 @@ class CurveFitter(object):
                 for j in range(0, i + 1):
                     c = self.fitted_parameters[j]
                     cov_p[r, c] = fit_result.cov_p[i, j]
+                    cov_p[c, r] = fit_result.cov_p[i, j]
+
             fit_result.cov_p = cov_p
 
         self.history.append(fit_result)
         return fit_result
 
     def _leastsquares(self, minimizer_kwds={}):
+        '''scipy.optimize.leastsq fit of data'''
+
         minimizer_kwds['full_output'] = True
         p_subset = self.p[self.fitted_parameters]
         output = scipy.optimize.leastsq(self.residuals, p_subset,
                                         **minimizer_kwds)
+
         p_subset, cov_p, infodict, mesg, ier = output
         success = False
         cost = np.nan

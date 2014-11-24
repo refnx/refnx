@@ -1,5 +1,5 @@
 import unittest
-import curvefitter
+from curvefitter import CurveFitter, de_wrapper
 import numpy as np
 from numpy.testing import assert_almost_equal, assert_equal
 
@@ -15,17 +15,17 @@ class TestFitter(unittest.TestCase):
         self.xdata = np.linspace(-4, 4, 100)
         self.p0 = np.array([0., 1., 0.0, 1.])
         self.ydata = gauss(self.xdata, self.p0)
-        self.f = curvefitter.CurveFitter(self.xdata, self.ydata, gauss, self.p0 + 0.2)
+        self.f = CurveFitter(self.xdata, self.ydata, gauss, self.p0 + 0.2)
         self.bounds = [(-1, 1), (0, 2), (-1, 1.), (0.001, 2)]
 
     def test_fitting(self):
-        '''the simplest test - a really simple gauss curve with perfect data'''
+        #the simplest test - a really simple gauss curve with perfect data
         res = self.f.fit()
         assert_almost_equal(res.p, self.p0)
         assert_almost_equal(res.cost, 0)
 
     def test_covp_size(self):
-        '''cov_p should have p0.size rows and p0.size columns'''
+        #cov_p should have p0.size rows and p0.size columns'''
         res = self.f.fit()
         assert_equal(np.size(res.cov_p, 0), self.f.p0.size)
 
@@ -46,25 +46,37 @@ class TestFitter(unittest.TestCase):
         assert_almost_equal(cost, np.sum(self.ydata**2))
 
     def test_custom_scipy_minimize(self):
-        '''test that a custom method can be used with scipy.optimize.minimize'''
+        #test that a custom method can be used with scipy.optimize.minimize
         minimizer_kwds = {'bounds':self.bounds}
-        res = self.f.fit(method=curvefitter.de_wrapper,
+        res = self.f.fit(method=de_wrapper,
                          minimizer_kwds=minimizer_kwds)
         assert_almost_equal(res.p, self.p0)
 
     def test_minimize(self):
-        '''test that scipy.optimize.minimize methods can be used'''
+        #test that scipy.optimize.minimize methods can be used
         minimizer_kwds = {'bounds':self.bounds}
         res = self.f.fit(method='L-BFGS-B', minimizer_kwds=minimizer_kwds)
         assert_almost_equal(res.p, self.p0, 3)
 
     def test_holding_parameter(self):
-        '''
-        holding parameters means that those parameters shouldn't change
-        during a fit
-        '''
+        #holding parameters means that those parameters shouldn't change
+        #during a fit
         p = self.f.fit(pheld=[0]).p
         assert_almost_equal(p[0], self.f.p0[0])
+
+    def test_covariance_matrices_same(self):
+        #see if the covariance matrices produced by leastsq and minimize are
+        #almost the same.  Use a simple linear fit.
+        line = lambda x, p: p[0] + x * p[1]
+        xdata = np.linspace(0, 99, 100)
+        ydata = line(xdata, [1, 2]) + np.random.random(100)
+        f = CurveFitter(xdata, ydata, line, [10, 10])
+        l = f.fit()
+        m = f.fit(method=de_wrapper,
+                  minimizer_kwds={'bounds':[(-10, 10),(-10., 10.)]})
+
+        assert_almost_equal(m.cov_p, l.cov_p, 3)
+        assert_almost_equal(m.p, l.p, 4)
 
 if __name__ == '__main__':
     unittest.main()
