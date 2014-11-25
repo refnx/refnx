@@ -264,9 +264,6 @@ class CurveFitter(object):
         '''
         self.fitted_parameters = np.arange(self.nparams)
 
-        if minimizer_kwds is None:
-            minimizer_kwds = {}
-
         if pheld is not None:
             self.fitted_parameters = np.setdiff1d(self.fitted_parameters,
                                                   pheld)
@@ -298,13 +295,16 @@ class CurveFitter(object):
         self.history.append(fit_result)
         return fit_result
 
-    def _leastsquares(self, minimizer_kwds={}):
+    def _leastsquares(self, minimizer_kwds=None):
         '''scipy.optimize.leastsq fit of data'''
 
-        minimizer_kwds['full_output'] = True
+        min_kwds = {'full_output':True}
+        if minimizer_kwds is not None:
+            min_kwds.update(minimizer_kwds)
+
         p_subset = self.p[self.fitted_parameters]
         output = scipy.optimize.leastsq(self.residuals, p_subset,
-                                        **minimizer_kwds)
+                                        **min_kwds)
 
         p_subset, cov_p, infodict, mesg, ier = output
         success = False
@@ -318,15 +318,17 @@ class CurveFitter(object):
         return FitResult(p=self.p, cov_p=cov_p, nfev=infodict['nfev'],
                          cost=cost, message=mesg, success=success)
 
-    def _minimze(self, method, minimizer_kwds={}):
+    def _minimze(self, method, minimizer_kwds=None):
         '''
         minimize cost function using scipy.optimize.minimize
         '''
-        minimizer_kwds['method'] = method
+        min_kwds = {'method':method}
+        if minimizer_kwds is not None:
+            min_kwds.update(minimizer_kwds)
 
         p_subset = self.p[self.fitted_parameters]
 
-        opt_res = scipy.optimize.minimize(self.cost, p_subset, **minimizer_kwds)
+        opt_res = scipy.optimize.minimize(self.cost, p_subset, **min_kwds)
         opt_res.cost = opt_res.fun
 
         self.p[self.fitted_parameters] = opt_res.x
@@ -414,9 +416,7 @@ if __name__ == '__main__':
 
     f = CurveFitter(xdata, ydata, gauss, p0 + 0.2)
     res = f.fit()
-    print(res.p, np.diag(res.cov_p))
 
     bounds = [(-1., 1.), (0., 2.), (-3., 3.), (0.001, 2.)]
     res1 = f.fit(method=de_wrapper, minimizer_kwds={'bounds':bounds})
-    print(res.p, np.diag(res1.cov_p))
 
