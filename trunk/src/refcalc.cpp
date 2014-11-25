@@ -1,11 +1,11 @@
 /*
- *  myfitfunctions.cpp
- *  motoMC
- *
- *  Created by andrew on 29/05/09.
- *  Copyright 2009 __MyCompanyName__. All rights reserved.
- *
+    refcalc.h
+
+    *Calculates the specular (Neutron or X-ray) reflectivity from a stratified
+    series of layers.
+    @Copyright, Andrew Nelson 2014.
  */
+
 
 #include "refcalc.h"
 #include <math.h>
@@ -74,7 +74,8 @@ void AbelesCalc_ImagAll(int numcoefs,
 
 		//fillout all the SLD's for all the layers
 		for(int ii = 1; ii < nlayers + 1; ii += 1){
-			SLD[ii] = 4 * PI * (MyComplex(coefP[4 * ii + 5] * 1.e-6, coefP[4 * ii + 6] * 1.e-6) - super);
+			SLD[ii] = 4 * PI * (MyComplex(coefP[4 * ii + 5] * 1.e-6,
+			                              coefP[4 * ii + 6] * 1.e-6) - super);
 			thickness[ii - 1] = fabs(coefP[4 * ii + 4]);
 			roughness[ii - 1] = fabs(coefP[4 * ii + 7]);
         }
@@ -83,6 +84,7 @@ void AbelesCalc_ImagAll(int numcoefs,
 		SLD[nlayers + 1] = 4 * PI * (sub - super);
         roughness[nlayers] = fabs(coefP[7]);
 
+//if you have omp.h, then you may as well do the calculation in parallel.
 #ifdef _OPENMP
 #pragma omp parallel for shared(kn) private(j)
 #endif
@@ -99,10 +101,14 @@ void AbelesCalc_ImagAll(int numcoefs,
 			//now calculate reflectivities
 			for(int ii = 0 ; ii < nlayers + 1 ; ii++){
 			    rj = ((kn[ii] - kn[ii + 1])/(kn[ii] + kn[ii + 1]))
-			          * compexp(kn[ii] * kn[ii + 1] * -2. * roughness[ii] * roughness[ii]) ;
+			          * compexp(kn[ii] * kn[ii + 1] * -2.
+			          * roughness[ii] * roughness[ii]) ;
 
-				//work out the beta for the (non-multi)layer
-				beta = (ii == 0)? oneC : compexp(kn[ii] * MyComplex(0, thickness[ii - 1]));
+				//work out the beta for the layer
+				beta = (ii == 0)? oneC
+				                  :
+				                  compexp(kn[ii]
+				                          * MyComplex(0, thickness[ii - 1]));
 
 				//this is the characteristic matrix of a layer
 				MI[0][0] = beta;
@@ -147,7 +153,7 @@ void AbelesCalc_ImagAll(int numcoefs,
 #ifdef	_POSIX_THREADS
 
 	typedef struct{
-		//a double array containing the model coefficients (assumed to be correct)
+		//a double array containing the model coefficients
 		const double *coefP;
 		//number of coefficients
 		int numcoefs;
@@ -172,8 +178,11 @@ void AbelesCalc_ImagAll(int numcoefs,
 		return NULL;
 	}
 
-	void AbelesCalc_Imag(int numcoefs, const double *coefP, int npoints, double *yP,
-	                     const double *xP){
+	void AbelesCalc_Imag(int numcoefs,
+	                      const double *coefP,
+	                       int npoints,
+	                        double *yP,
+	                         const double *xP){
 		int err = 0;
 
 		pthread_t *threads = NULL;
@@ -190,7 +199,8 @@ void AbelesCalc_ImagAll(int numcoefs,
 		}
 
 		//create arguments to be supplied to each of the threads
-		arg = (pointCalcParm *) malloc (sizeof(pointCalcParm) * (threadsToCreate));
+		arg = (pointCalcParm *) malloc(sizeof(pointCalcParm)
+		                               * threadsToCreate);
 		if(!arg && NUM_CPUS > 1){
 			err = 1;
 			goto done;
@@ -201,7 +211,8 @@ void AbelesCalc_ImagAll(int numcoefs,
 		pointsRemaining = npoints;
 		pointsConsumed = 0;
 
-		//if you have two CPU's, only create one extra thread because the main thread does half the work
+		//if you have two CPU's, only create one extra thread because the main
+		//thread does half the work
 		for (int ii = 0; ii < threadsToCreate; ii++){
 			arg[ii].coefP = coefP;
 			arg[ii].numcoefs = numcoefs;
@@ -215,7 +226,8 @@ void AbelesCalc_ImagAll(int numcoefs,
 			arg[ii].xP = xP + pointsConsumed;
 			arg[ii].yP = yP + pointsConsumed;
 
-			pthread_create(&threads[ii], NULL, ThreadWorker, (void *)(arg + ii));
+			pthread_create(&threads[ii], NULL, ThreadWorker,
+			               (void *)(arg + ii));
 			pointsRemaining -= pointsEachThread;
 			pointsConsumed += pointsEachThread;
 		}
@@ -231,7 +243,15 @@ void AbelesCalc_ImagAll(int numcoefs,
 	}
 #endif
 
-void reflect(int numcoefs, const double *coefP, int npoints, double *yP, const double *xP){
+void reflect(int numcoefs,
+              const double *coefP,
+               int npoints,
+                double *yP,
+                 const double *xP){
+/*
+choose between the mode of calculation, depending on whether pthreads or omp.h
+is present for parallelisation.
+*/
 #ifdef _POSIX_THREADS
     AbelesCalc_Imag(numcoefs, coefP, npoints, yP, xP);
 #else
