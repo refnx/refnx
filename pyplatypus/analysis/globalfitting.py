@@ -1,39 +1,38 @@
 from __future__ import division
 import numpy as np
 import math
-from . import fitting
-from . import reflect
+from . import curvefitter
 
 
 class LinkageException(Exception):
 
     '''
-        an exception that gets raised if the LinkageArray is not correct
+        an exception that gets raised if the linkage_array is not correct
     '''
 
     def __init__(self):
         pass
 
 
-class GlobalFitObject(fitting.FitObject):
+class GlobalFitter(curvefitter.CurveFitter):
 
     '''
 
         Performs a global curvefitting analysis, subclassing the main fitting
         fitting.FitObject class. Global curvefitting analyses several datasets
         at the same time. It is not necessary to analyse each dataset with the
-        same theoretical model, they can be different.  Usage of a linkageArray
+        same theoretical model, they can be different.  Usage of a linkage_array
         allows one to have common parameters between datasets.  This reduces
         the dimensionality of the problem.
 
-        Here is an example linkageArray for a two dataset analysis (you can
+        Here is an example linkage_array for a two dataset analysis (you can
         analyse a single dataset if you want to). The model for the first
         dataset has 8 parameters, the model for the second dataset has 10
         parameters.
 
-        >>>linkageArray.shape
+        >>>linkage_array.shape
         (2,10)
-        >>>linkageArray
+        >>>linkage_array
         array([[ 0,  1,  2,  3,  4,  5,  2,  6, -1, -1],
                [ 0,  7,  8,  9,  2, 10, 11, 12, 13, 14]])
 
@@ -53,7 +52,7 @@ class GlobalFitObject(fitting.FitObject):
         1) setup fitting.FitObjects for each of the individual datasets, as if
         you were fitting them separately.  The individual FitObject is
         responsible for calculating the theoretical model data for that dataset.
-        2) create the linkageArray.
+        2) create the linkage_array.
         3) Initialise the GlobalFitObject
         4) Call GlobalFitObject.fit() (a super class method)
 
@@ -67,7 +66,7 @@ class GlobalFitObject(fitting.FitObject):
         theoretical model for their own dataset. Individual de-interlaced
         parameter arrays are supplied to each FitObject.model() method by the
         GlobalFitObject.model() method, with the de-interlacing controlled by
-        the linkageArray.  The individual FitObject can either be a subclass of
+        the linkage_array.  The individual FitObject can either be a subclass of
         FitObject that overrides the model() method, or it can be the FitObject
         class itself, with a fitfunction specified.
 
@@ -97,34 +96,35 @@ class GlobalFitObject(fitting.FitObject):
         parameters in the combined dataset are allowed to vary.
     '''
 
-    def __init__(self, fitObjectTuple, linkageArray, args=(), **kwds):
+    def __init__(self, fitter_objects, linkage_array, args=(), **kwds):
         '''
-        FitObjectTuple is a tuple of fitting.FitObject objects.
-        The linkageArray specifies which parameters are common between datasets.
+        fitter_objects is a tuple of CurveFitter objects.
+        The linkage_array specifies which parameters are common between datasets.
         '''
 
-        self.linkageArray = np.atleast_2d(linkageArray)
-        self.linkageArray = self.linkageArray.astype('int32')
-        self.fitObjectTuple = fitObjectTuple
+        self.linkage_array = np.atleast_2d(linkage_array)
+        self.linkage_array = self.linkage_array.astype('int32')
+        self.fitter_objects = fitter_objects
 
         self.is_linkage_array_corrupted()
 
-        totalydata = np.concatenate(
-            [fitObject.ydata for fitObject in fitObjectTuple])
-        totaledata = np.concatenate(
-            [fitObject.edata for fitObject in fitObjectTuple])
-        totalparams = np.concatenate(
-            [fitObject.parameters for fitObject in fitObjectTuple])
-        self.FitObjectTuple = fitObjectTuple
+        ydata_total = np.concatenate(
+            [fitter_object.ydata.flatten() for fitter_object in fitter_objects])
+        edata_total = np.concatenate(
+            [fitter_object.edata.flatten() for fitter_object in fitter_objects])
+        p_total = np.concatenate(
+            [fitter_object.p for fitter_object in fitter_objects])
 
-        self.unique_pars, self.unique_pars_idx, self.unique_pars_inv = np.unique(
-            self.linkageArray.astype('int32'),
-            return_index=True,
-            return_inverse=True)
+        self.fitter_objects = fitter_objects
 
-        self.unique_pars_vector = totalparams[
-            self.unique_pars_idx[self.unique_pars >= 0]]
-        uniquelocs = self.unique_pars_idx[self.unique_pars >= 0]
+        temp = np.unique(self.linkage_array.astype('int32'), return_index=True,
+                         return_inverse=True)
+
+        self.p_unique, self.p_unique_idx, self.p_unique_inv = temp
+
+        uniquelocs = self.p_unique_idx[self.p_unique >= 0]
+
+        self.p_unique_vals = p_total[uniquelocs]
 
         '''
             sort out which parameters are to be fitted.
@@ -138,106 +138,91 @@ class GlobalFitObject(fitting.FitObject):
             supply the fitted_parameters keyword, then the default is to fit
             them all.
         '''
-        if ('fitted_parameters' in kwds
-             and kwds['fitted_parameters'] is not None):
-            # if it's in kwds, then it'll get passed to the superclass
-            # constructor
-            pass
-        else:
-            # initiate fitted_parameters from the individual fitObjects
-            fitted_parameters = np.array([], dtype='int32')
+        #which parameters are going to be held, figure out from the individual
+        #fit_objects
+        fitted_parameters = np.array([], dtype='int32')
 
-            for idx, pos in enumerate(uniquelocs):
-                row = int(pos // np.size(self.linkageArray, 1))
-                col = pos % (np.size(self.linkageArray, 1))
-                if col in fitObjectTuple[row].fitted_parameters:
-                    fitted_parameters = np.append(fitted_parameters, idx)
+        for idx, pos in enumerate(uniquelocs):
+            row = int(pos // np.size(self.linkage_array, 1))
+            col = pos % (np.size(self.linkage_array, 1))
+            if col in fitter_objects[row].fitted_parameters:
+                fitted_parameters = np.append(fitted_parameters, idx)
 
-            kwds['fitted_parameters'] = fitted_parameters
+        p_held = np.setdiff1d(np.arange(uniquelocs.size), fitted_parameters)
 
-        '''
-        If you supply the limits array in kwds, then the code will use that. But
-        it has to make sense with respect to the size of
-        self.unique_pars_vector:
-        The shape of limits should be limits.shape = (2, N)
-        The shape of unique_pars_vector should be unique_pars_vector.shape = N
-        In other words, each parameter has an upper and lower value.
-        If the limits array is not supplied, then each parameter in
-        unique_pars_vector will use the limits from the individual fitObject
-        that it came from. When you setup the individual fitObject if you don't
-        supply the limits keyword, then the default is 0 and 2 times the initial
-        parametervalue.
-        '''
-        if 'limits' in kwds and kwds['limits'] is not None and np.size(kwds['limits'], 1) == self.unique_pars_vector.size:
-            # self.limits gets setup in the superclass constructor
-            pass
-        else:
-            # setup limits from individual fitObject
-            limits = np.zeros((2, self.unique_pars_vector.size))
+        #setup bounds from individual fit_object
+        #default limits are 0 and twice the parameter
+        limits = np.zeros((2, self.p_unique_vals.size))
+        limits[1, :] = 2 * self.p_unique_vals
 
-            for idx, pos in enumerate(uniquelocs):
-                row = int(pos // np.size(self.linkageArray, 1))
-                col = pos % (np.size(self.linkageArray, 1))
-                limits[0, idx] = fitObjectTuple[row].limits[0, col]
-                limits[1, idx] = fitObjectTuple[row].limits[1, col]
+        for idx, pos in enumerate(uniquelocs):
+            row = int(pos // np.size(self.linkage_array, 1))
+            if fitter_objects[row].bounds is not None:
+                col = pos % (np.size(self.linkage_array, 1))
 
-            kwds['limits'] = limits
+                limits[0, idx] = fitter_objects[row].bounds[col][0]
+                limits[1, idx] = fitter_objects[row].bounds[col][1]
+
+        bounds = [(low, high) for low, high in zip(limits[0], limits[1])]
 
         # initialise the FitObject superclass
-        super(GlobalFitObject, self).__init__(None,
-                                              totalydata,
-                                              totaledata,
-                                              None,
-                                              self.unique_pars_vector,
-                                              args=args,
-                                              **kwds)
+        super(GlobalFitter, self).__init__(None,
+                                           ydata_total,
+                                           None,
+                                           self.p_unique_vals,
+                                           edata=edata_total,
+                                           p_held=p_held,
+                                           args=args,
+                                           bounds=bounds,
+                                           **kwds)
 
-    def model(self, parameters=None, *args):
+    def model(self, p, *args, **kwds):
         '''
         calculate the model function for the global fit function.
         params is a np.array that has the same size as self.parameters
         '''
 
-        if parameters is not None:
-            test_parameters = parameters
-        else:
-            test_parameters = self.parameters
+        p_individuals = self._p_substituted(p)
 
-        substituted_pars = test_parameters[
-            self.unique_pars[self.unique_pars_inv]]
+        model_data = [x.model(p_individuals[i], *x.args, **x.kwds).flatten()
+                      for i, x in enumerate(self.fitter_objects)]
 
-        off = lambda idx: idx * np.size(self.linkageArray, 1)
+        return np.r_[model_data]
 
-        evaluateddata = [x.model(
-            parameters=substituted_pars[off(i): off(i) + x.numparams],
-            *args) for i,
-            x in enumerate(self.fitObjectTuple)]
+    def _p_substituted(self, p):
+        '''
+        transform collective parameter set into individual parameter sets
+        '''
+        p_substituted = p[self.p_unique[self.p_unique_inv]]
+        off = lambda idx: idx * np.size(self.linkage_array, 1)
 
-        return np.r_[evaluateddata].flatten()
+        individuals = [p_substituted[off(i): off(i) + fo.nparams]
+                       for i, fo in enumerate(self.fitter_objects)]
+        return individuals
 
-    def fit(self, method=None):
-        pars, uncertainty, chi2 = super(GlobalFitObject, self).fit(method)
-        substituted_pars = pars[self.unique_pars[self.unique_pars_inv]]
-        substituted_uncertainty = uncertainty[
-            self.unique_pars[self.unique_pars_inv]]
-        return substituted_pars, substituted_uncertainty, chi2
+    def fit(self, method='leastsq', minimizer_kwds=None):
+        fit_result = super(GlobalFitter, self).fit(method=method,
+                                         minimizer_kwds=minimizer_kwds)
+        p_individuals = self._p_substituted(fit_result.p)
+
+        return p_individuals
 
     def is_linkage_array_corrupted(self):
         '''
-        Is the linkageArray corrupted?
+        Is the linkage_array corrupted?
         Although this is against the spirit of python, some testing here
         seems like a very good idea because the fitting process may accept
         garbage linkages.
         '''
         uniqueparam = -1
-        for ii in xrange(np.size(self.linkageArray, 0)):
-            for jj in xrange(np.size(self.linkageArray, 1)):
-                val = self.linkageArray[ii, jj]
-                if val < 0 and jj <= self.fitObjectTuple[ii].numparams - 1:
+        for i in range(np.size(self.linkage_array, 0)):
+            for j in range(np.size(self.linkage_array, 1)):
+                val = self.linkage_array[i, j]
+                if val < 0 and j <= self.fitter_objects[i].numparams - 1:
                     raise LinkageException
                 if val > uniqueparam + 1:
                     raise LinkageException
-                if self.linkageArray[ii, jj] < -1:
+                if self.linkage_array[i, j] < -1:
                     raise LinkageException
                 if val == uniqueparam + 1:
                     uniqueparam += 1

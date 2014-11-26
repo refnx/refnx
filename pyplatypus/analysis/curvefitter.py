@@ -19,7 +19,7 @@ class FitResult(object):
         self.nfev = nfev
         self.success = success
         self.cov_p = np.copy(cov_p)
-        self.pheld = None
+        self.p_held = None
 
 class CurveFitter(object):
     '''Non-linear regression.
@@ -53,8 +53,8 @@ class CurveFitter(object):
     attribute.
     '''
 
-    def __init__(self, xdata, ydata, func, p0, edata=None, args=(), kwds={},
-                 cost_func=None):
+    def __init__(self, xdata, ydata, func, p0, edata=None, bounds=None, args=(),
+                 kwds={}, cost_func=None, p_held=None):
         '''
         Initialises the data for the curve fit.
 
@@ -76,12 +76,17 @@ class CurveFitter(object):
         use None for fitfunction _IF_ you subclass CurveFitter and provide your
         own cost method, or if you subclass the model method.
 
-        parameters : np.ndarray
+        p0 : np.ndarray
         Contains _all_ the parameters to be supplied to ``func``.
 
         edata : np.ndarray, optional
         Contains the measured uncertainty (s.d.) for each of the observed y data
         points. (Use None if you do not have measured uncertainty on each point)
+
+        bounds : sequence, optional
+        Bounds for variables.  ``(min, max)`` pairs for each element in ``p0``,
+        defining the lower and upper bounds. It is required to have
+        ``len(bounds) == len(p0)``.
 
         args : tuple, optional
         Used to pass extra arguments to CurveFitter.model(), your
@@ -100,6 +105,10 @@ class CurveFitter(object):
         This cost_func is only used if a scipy.optimize.minimize method is used
         instead of leastsq.
 
+        p_held : sequence, optional
+        Used to specify which parameters are going to be held.  To hold
+        parameters 1 and 2:  p_held = [1, 2]
+
         Notes
         -----
         The cost method is supplied by the subset of parameters that are
@@ -110,20 +119,21 @@ class CurveFitter(object):
         '''
         self.xdata = np.asfarray(xdata)
         self.ydata = np.asfarray(ydata)
-        self.npoints = np.size(ydata, 0)
+        self.npoints = ydata.size
         self.weighting = False
-        self.edata = np.ones(self.npoints, np.float64)
+        self.edata = np.ones_like(self.ydata, np.float64)
 
         if edata is not None:
             self.weighting = True
             self.edata = np.asfarray(edata)
 
+        self.bounds = bounds
         self.func = func
 
         self.p0 = np.asfarray(p0)
         self.p = np.copy(self.p0)
         self.ptemp = np.copy(self.p0)
-        self.nparams = np.size(self.p0, 0)
+        self.nparams = self.p0.size
         self.cost_func = cost_func
 
         self.args = args
@@ -131,6 +141,9 @@ class CurveFitter(object):
         self.history = []
 
         self.fitted_parameters = np.arange(self.nparams)
+        if p_held is not None:
+            self.fitted_parameters = np.setdiff1d(self.fitted_parameters,
+                                                  p_held)
 
     @property
     def fit_result(self):
@@ -197,7 +210,7 @@ class CurveFitter(object):
                                   self.edata), p, *self.args, **self.kwds)
         else:
             residuals = self.residuals(p_subset)
-            return np.nansum(np.power(residuals, 2))
+            return np.nansum(np.power(residuals.flatten(), 2))
 
     def model(self, p, *args, **kwds):
         '''
@@ -218,7 +231,7 @@ class CurveFitter(object):
 
         return self.func(self.xdata, p, *args, **kwds)
 
-    def fit(self, method='leastsq', pheld=None, minimizer_kwds=None):
+    def fit(self, method='leastsq', p_held=None, minimizer_kwds=None):
         '''
         Start the fit.
 
@@ -244,8 +257,11 @@ class CurveFitter(object):
             'trust-ncg'
 
 
-        pheld : sequence, optional
-        Specifies the parameter numbers to hold/fix during the fit.
+        p_held : 'clear' or sequence, optional
+        If p_held is 'clear', then the parameters that were specified held in
+        the initialisation of the object are cleared.
+        If p_held is a sequence, then that sequence specifies the parameter
+        numbers to hold/fix during the fit.
 
         minimizer_kwds : dict, optional
         Extra parameters to pass to the selected minimizer.
@@ -262,11 +278,15 @@ class CurveFitter(object):
         If you select 'leastsq', then normal least squares is
         performed and your cost_func is ignored.
         '''
-        self.fitted_parameters = np.arange(self.nparams)
 
-        if pheld is not None:
-            self.fitted_parameters = np.setdiff1d(self.fitted_parameters,
-                                                  pheld)
+        if p_held is not None:
+            if p_held == 'clear':
+                self.fitted_parameters = np.arange(self.nparams)
+            else:
+                self.fitted_parameters = np.arange(self.nparams)
+                self.fitted_parameters = np.setdiff1d(self.fitted_parameters,
+                                                      p_held)
+
         if method == 'leastsq':
             fit_result = self._leastsquares(minimizer_kwds=minimizer_kwds)
         elif method in _MINIMIZE or callable(method):
@@ -275,7 +295,7 @@ class CurveFitter(object):
             raise ValueError(repr(method) + 'is not a valid argument to'
                              'scipy.optimize.minimize')
 
-        fit_result.pheld = pheld
+        fit_result.p_held = p_held
 
         if fit_result.cov_p is not None:
             if not self.weighting:
@@ -283,7 +303,7 @@ class CurveFitter(object):
                                  self.fitted_parameters.size)
 
             cov_p = np.zeros((self.nparams, self.nparams))
-            for i in range(np.size(self.fitted_parameters)):
+            for i in range(self.fitted_parameters.size):
                 r = self.fitted_parameters[i]
                 for j in range(0, i + 1):
                     c = self.fitted_parameters[j]
@@ -322,7 +342,7 @@ class CurveFitter(object):
         '''
         minimize cost function using scipy.optimize.minimize
         '''
-        min_kwds = {'method':method}
+        min_kwds = {'method':method, 'bounds':self.bounds}
         if minimizer_kwds is not None:
             min_kwds.update(minimizer_kwds)
 
