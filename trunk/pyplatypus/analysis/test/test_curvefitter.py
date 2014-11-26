@@ -61,7 +61,7 @@ class TestFitter(unittest.TestCase):
     def test_holding_parameter(self):
         #holding parameters means that those parameters shouldn't change
         #during a fit
-        p = self.f.fit(pheld=[0]).p
+        p = self.f.fit(p_held=[0]).p
         assert_almost_equal(p[0], self.f.p0[0])
 
     def test_covariance_matrices_same(self):
