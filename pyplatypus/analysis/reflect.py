@@ -4,7 +4,7 @@ import scipy as sp
 import scipy.linalg
 import scipy.integrate as spi
 import math
-import pyplatypus.analysis.fitting as fitting
+import pyplatypus.analysis.curvefitter as curvefitter
 import pyplatypus.util.ErrorProp as EP
 import warnings
 
@@ -221,7 +221,7 @@ def sld_profile(coefs, z):
     return summ
 
 
-class ReflectivityFitObject(fitting.FitObject):
+class ReflectivityFitObject(curvefitter.CurveFitter):
 
     '''
         A sub class of pyplatypus.analysis.fitting.FitObject suited for fitting
