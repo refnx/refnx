@@ -106,10 +106,10 @@ def events(f, endoflastevent=127):
                         t_neutrons.append(t)
                         f_neutrons.append(frame_number)
 
-    if len(x_neutrons):
-        x_events = np.append(x_events, x_neutrons)
-        y_events = np.append(y_events, y_neutrons)
-        t_events = np.append(t_events, t_neutrons)
-        f_events = np.append(f_events, f_neutrons)
+        if len(x_neutrons):
+            x_events = np.append(x_events, x_neutrons)
+            y_events = np.append(y_events, y_neutrons)
+            t_events = np.append(t_events, t_neutrons)
+            f_events = np.append(f_events, f_neutrons)
 
     return (x_events, y_events, t_events, f_events), endoflastevent
