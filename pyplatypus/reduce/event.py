@@ -111,5 +111,6 @@ def events(f, endoflastevent=127):
             y_events = np.append(y_events, y_neutrons)
             t_events = np.append(t_events, t_neutrons)
             f_events = np.append(f_events, f_neutrons)
-
+    
+    t_events = t_events // 1000
     return (x_events, y_events, t_events, f_events), endoflastevent
