@@ -1,442 +1,393 @@
-from __future__ import division
+# -*- coding: utf-8 -*-
+"""
+Created on Sun Dec 21 15:37:29 2014
+
+@author: anz
+"""
+from lmfit import Minimizer, Parameters
 import numpy as np
-import math
-import scipy
-from scipy.optimize import leastsq
-from scipy.optimize import differential_evolution
+import re
 
-_MINIMIZE = ['Nelder-Mead', 'Powell', 'CG', 'BFGS', 'Newton-CG', 'Anneal',
-    'L-BFGS-B', 'TNC', 'COBYLA', 'SLSQP', 'dogleg', 'trust-ncg']
+def params(p0, varies=None, bounds=None, names=None, expr=None):
+    """
+    Utility function to convert sequences into a lmfit.Parameters instance
 
-MACHEPS = np.finfo(np.float64).eps
+    Parameters
+    ----------
+    p0 : np.ndarray
+        numpy array containing parameter values.
+    varies : bool sequence, optional
+        Specifies whether a parameter is being held or varied.
+    bounds : sequence, optional
+        Tuple of (min, max) pairs specifying the lower and upper bounds for
+        each parameter
+    name : str sequence, optional
+        Name of each parameter
+    expr : str sequence, optional
+        Constraints for each parameter
 
-class FitResult(object):
-    def __init__(self, p=None, cost=np.nan, cov_p=None, success=False,
-                 status=-1, message='', nfev=-1, **kwds):
-        self.p = np.copy(p)
-        self.cost = cost
-        self.message = message
-        self.nfev = nfev
-        self.success = success
-        self.cov_p = np.copy(cov_p)
-        self.p_held = None
+    Returns
+    -------
+    p : lmfit.Parameters instance
+    """
+    if varies is None:
+        varies = [True] * p0.size
 
-class CurveFitter(object):
-    '''Non-linear regression.
+    if names is None:
+        names = ['p%d'%i for i in range(p0.size)]
 
-    A flexible class for curvefitting analyses, using either
-    scipy.optimize.leastsq or scipy.optimize.minimize.  In comparison to
-    leastsq/minimize you can specify a fitfunction instead of having to
-    return residuals or the costfunction itself.  Moreover, you can hold
-    parameters if they don't vary during the fit.
-    The default mode of operation is minimization of `chi2` using leastsq,
-    :math:`np.sum(np.power((ydata - self.model) / edata), 2)`
+    if bounds is not None:
+        lowlim = np.array(bounds)[:, 0]
+        hilim = np.array(bounds)[:, 1]
+    else:
+        lowlim = [None] * p0.size
+        hilim = [None] * p0.size
 
-    There are several ways of using this class.
+    if expr is None:
+        expr = [None] * p0.size
 
-    1) Instantiate the class 'as' is. Here you have to supply a fitfunction
-    to calculate the theoretical model. Chi2 is minimised by default.
-    However, you have the option of supplying a costfunction if you wish to
-    minimise a different costmetric.
+    p = Parameters()
+    p.add_many(*zip(names, p0, varies, lowlim, hilim, expr))
+    return p
 
-    2) Alternatively you can subclass the Fitter class.
-        option 1) Override the Fitter.model() method.
-        If you override the Fitter.model() method, then you no longer
-        have to supply a fitfunction.
-        -OR-
-        option 2) Override the Fitter.cost() method.
-        If you override the Fitter.cost() method you no longer have to
-        supply a fitfunction, or a costfunction. This method should specify
-        how the cost metric varies as the fitted parameters vary.
 
-    All fits performed using an instance of this class are stored in the history
-    attribute.
-    '''
+class GlobalFitter(Minimizer):
+    """
+    A class for simultaneous curvefitting of multiple datasets
+    """
+    def __init__(self, datasets, constraints=(), minimizer_kwds=None,
+                 callback=None):
+        """
+        datasets : sequence of CurveFitter instances
+            Contains all the datasets and fitfunctions for the global fit.
+        constraints : str sequence, optional
+            Of the type 'dNpM:constraint'. Sets a constraint expression for
+            parameter M in dataset N.  The constraint 'd2p3:d0p1' constrains
+            parameter 3 in dataset 2 to be equal to parameter 1 in dataset 0.
+        minimizer_kwds : dict, optional
+            Extra minimization keywords to be passed to the minimizer of
+            choice.
+        callback : callable, optional
+            Function called at each step of the minimization. Has the signature
+            ``callback(params, iter, resid)``
 
-    def __init__(self, xdata, ydata, func, p0, edata=None, bounds=None, args=(),
-                 kwds={}, cost_func=None, p_held=None):
-        '''
-        Initialises the data for the curve fit.
+        """
+        self.callback = callback
+        min_kwds = {}
+        if minimizer_kwds is not None:
+            min_kwds = minimizer_kwds
 
-        Parameters
-        ----------
-        xdata : np.ndarray
-        Contains the independent variables for the fit. This is not used by this
-        class, other than pass it directly to the fitfunction.  Whilst xdata is
-        normally rank 1, if can be rank 2 if the are several independent
-        variables.
+        for dataset in datasets:
+            if not isinstance(dataset, CurveFitter):
+                raise ValueError('All items in curve_fitter_list must be '
+                                 'instances of CurveFitter')
 
-        ydata : np.ndarray
-        Contains the observations corresponding to each measurement point.
+        self.datasets = datasets
 
-        func : callable
-        'fitfunction' of the form func(xdata, parameters, args=(), **kwds). The
-        args tuple and kwds supplied in the construction of the CurveFitter
-        object are also passed in as extra arguments to the function. You can
-        use None for fitfunction _IF_ you subclass CurveFitter and provide your
-        own cost method, or if you subclass the model method.
+        self.new_param_names = []
+        p = Parameters()
+        for i, dataset in enumerate(self.datasets):
+            # add all the parameters for a given dataset
+            new_names = {}
+            for j, item in enumerate(dataset.params.items()):
+                old_name = item[0]
+                param = item[1]
+                new_name = old_name + '_d%dp%d' % (i, j)
+                new_names[new_name] = old_name
 
-        p0 : np.ndarray
-        Contains _all_ the parameters to be supplied to ``func``.
+                p.add(new_name,
+                      value=param.value,
+                      vary=param.vary,
+                      min=param.min,
+                      max=param.max,
+                      expr=param.expr)
 
-        edata : np.ndarray, optional
-        Contains the measured uncertainty (s.d.) for each of the observed y data
-        points. (Use None if you do not have measured uncertainty on each point)
+            self.new_param_names.append(new_names)
 
-        bounds : sequence, optional
-        Bounds for variables.  ``(min, max)`` pairs for each element in ``p0``,
-        defining the lower and upper bounds. It is required to have
-        ``len(bounds) == len(p0)``.
+            # if there are any expressions they have to be updated
+            # iterate through all the parameters in the dataset
+            old_names = dict((v, k) for k, v in new_names.iteritems())
+            for i, param in enumerate(dataset.params.values()):
+                expr = param.expr
+                new_name = old_names[param.name]
+                # if it's got an expression you'll have to update it
+                if expr is not None:
+                    # see if any of the old names are in there.
+                    for old_name in old_names:
+                        regex = re.compile('(%s)' % old_name)
+                        if regex.search(expr):
+                            new_expr_name = old_names[old_name]
+                            new_expr = expr.replace(old_name, new_expr_name)
+                            p[new_name].set(expr=new_expr)
 
-        args : tuple, optional
-        Used to pass extra arguments to CurveFitter.model(), your
-        fitfunction, or costfunction.
+        # now set constraints/linkages up. They're specified as dNpM:constraint
+        regex = re.compile('d([0-9]*)p([0-9]*)[\s]*:[\s]*(.*)')
+        data_regex = re.compile('d([0-9]*)p([0-9]*)')
 
-        kwds : dict, optional
-        Used to pass extra arguments to CurveFitter.model(), your
-        func, or cost_func.
+        all_names = p.valuesdict().keys()
+        for constraint in constraints:
+            r = regex.search(constraint)
+            if r:
+                N, M = int(r.groups()[0]), int(r.groups()[1])
+                const = r.groups()[2]
 
-        cost_func : callable, optional
-        If you wish to minimize a cost metric other than chisqr then supply a
-        function of the form cost_func(model, data, p, *args, **kwds), where
-        `model` is the data returned by `func`, data is a tuple containing the
-        data (xdata, ydata, edata), p is the parameter vector and args and kwds
-        were used to construct the CurveFitter object.
-        This cost_func is only used if a scipy.optimize.minimize method is used
-        instead of leastsq.
+                n_left = re.compile('.*(_d%dp%d)' % (N, M))
+                # search all the names
+                name_left = [m.group(0) for l in all_names for m in
+                              [n_left.search(l)] if m]
+                if not len(name_left):
+                    continue
 
-        p_held : sequence, optional
-        Used to specify which parameters are going to be held.  To hold
-        parameters 1 and 2:  p_held = [1, 2]
+                # now search for datasets mentioned in constraint
+                d_mentioned = data_regex.findall(const)
+                for d in d_mentioned:
+                    # we need to replace all datasets mentioned in constraint
+                    n_right = re.compile('.*(_d%sp%s)' % (d[0], d[1]))
+                    name_right = [m.group(0) for l in all_names for m in
+                                  [n_right.search(l)] if m]
 
-        Notes
-        -----
-        The cost method is supplied by the subset of parameters that are
-        being varied by the fit. If you are only varying parameters [0, 1, 3],
-        then self.p[[0, 1, 3]] is supplied.
-        In contrast the model method is supplied by the entire set of parameters
-        (those being held and those being varied).
-        '''
-        self.xdata = np.asfarray(xdata)
-        self.ydata = np.asfarray(ydata)
-        self.npoints = ydata.size
-        self.weighting = False
-        self.edata = np.ones_like(self.ydata, np.float64)
+                    if len(name_right):
+                        const = const.replace(
+                                    'd%sp%s' % (d[0], d[1]),
+                                    name_right[0])
 
-        if edata is not None:
-            self.weighting = True
-            self.edata = np.asfarray(edata)
+                p[name_left[0]].set(expr=const)
 
-        self.bounds = bounds
-        self.func = func
+        self.params = p
+        super(GlobalFitter, self).__init__(self.residuals,
+                                           self.params,
+                                           iter_cb=self.callback,
+                                           **min_kwds)
 
-        self.p0 = np.asfarray(p0)
-        self.p = np.copy(self.p0)
-        self.ptemp = np.copy(self.p0)
-        self.nparams = self.p0.size
-        self.cost_func = cost_func
-
-        self.args = args
-        self.kwds = kwds
-        self.history = []
-
-        self.fitted_parameters = np.arange(self.nparams)
-        if p_held is not None:
-            self.fitted_parameters = np.setdiff1d(self.fitted_parameters,
-                                                  p_held)
-
-    @property
-    def fit_result(self):
-        '''returns the last fit performed'''
-        if len(self.history):
-            return self.history[-1]
-        else:
-            return None
-
-    def residuals(self, p_subset=None):
-        '''
-        return the fit residuals, :math:`(ydata - model()) / edata`
-
-        Parameters
-        ----------
-
-        p_subset : np.ndarray, optional
-        The subset of parameters that are being fitted.  This array will have
-        a size in the range [0, np.size(p0)].
-
-        Returns
-        -------
-        residuals : np.ndarray
-        '''
-        p = self.p
-        if p_subset is not None:
-            self.ptemp[self.fitted_parameters] = p_subset
-            p = self.ptemp
-
-        model_data = self.model(p, *self.args, **self.kwds)
-
-        return (self.ydata - model_data) / self.edata
-
-    def cost(self, p_subset=None):
-        '''
-        The default cost function for the fit object is chisq,
-        :math:`np.sum(np.power((ydata - self.model) / edata), 2)`
-        If you require a different cost function provide a subclass that
-        overloads this method. An alternative is to provide the costfunction
-        keyword to the constructor.
+    def model(self, params):
+        """
+        Calculates the model.
 
         Parameters
         ----------
-
-        p_subset : np.ndarray, optional
-        The subset of parameters that are being fitted.  This array will have
-        a size in the range [0, np.size(p0)].
-
-        Returns
-        -------
-        chisqr : :math:`np.sum(np.power((ydata - self.model) / edata), 2)`
-
-        '''
-        if self.cost_func:
-            p = self.p
-
-            if p_subset is not None:
-                self.ptemp[self.fitted_parameters] = p_subset
-                p = self.ptemp
-
-            model_data = self.model(p)
-
-            return self.cost_func(model_data, (self.xdata, self.ydata,
-                                  self.edata), p, *self.args, **self.kwds)
-        else:
-            residuals = self.residuals(p_subset)
-            return np.nansum(np.power(residuals.flatten(), 2))
-
-    def model(self, p, *args, **kwds):
-        '''
-        Returns the theoretical model.
-
-        Parameters
-        ----------
-
-        p : np.ndarray
-        The parameters required for the fitfunction
+        params : lmfit.Parameters instance
+            Specifies the entire parameter set, across all the datasets
 
         Returns
         -------
         model : np.ndarray
-        The theoretical model, i.e.
-        :math:`self.func(self.xdata, test_parameters, *self.args, **self.kwds)`
-        '''
+            The model.
+        """
+        values = params.valuesdict()
+        model = np.zeros(0, dtype='float64')
+        for i, dataset in enumerate(self.datasets):
+            new_names = self.new_param_names[i]
+            for new_name, old_name in new_names.items():
+                dataset.params[old_name].set(value=values[new_name])
+            model = np.append(model,
+                              dataset.model(dataset.params))
 
-        return self.func(self.xdata, p, *args, **kwds)
+        return model
 
-    def fit(self, method='leastsq', p_held=None, minimizer_kwds=None):
-        '''
-        Start the fit.
+    def residuals(self, params):
+        """
+        Calculate the difference between the data and the model.
+        Also known as the objective function.  This function is minimized
+        during a fit.
+        residuals = (fitfunc - ydata) / edata
 
         Parameters
         ----------
-
-        method : str or callable, optional
-        Selects the fitting algorithm.
-            'leastsq' - scipy.optimize.leastsq is used for the minimization,
-                with chisqr.
-            callable - a function that uses the scipy.optimize.minimize
-                interface.
-            'Nelder-Mead'
-            'Powell'
-            'CG'
-            'BFGS'
-            'Newton-CG'
-            'L-BFGS-B'
-            'TNC'
-            'COBYLA'
-            'SLSQP'
-            'dogleg'
-            'trust-ncg'
-
-
-        p_held : 'clear' or sequence, optional
-        If p_held is 'clear', then the parameters that were specified held in
-        the initialisation of the object are cleared.
-        If p_held is a sequence, then that sequence specifies the parameter
-        numbers to hold/fix during the fit.
-
-        minimizer_kwds : dict, optional
-        Extra parameters to pass to the selected minimizer.
+        params : lmfit.Parameters instance
+            Specifies the entire parameter set
 
         Returns
         -------
-        fit_result : curvefitter.FitResult object
+        residuals : np.ndarray
+            The difference between the data and the model.
+        """
+        values = params.valuesdict()
+        total_residuals = np.zeros(0, dtype='float64')
+        for i, dataset in enumerate(self.datasets):
+            new_names = self.new_param_names[i]
+            for new_name, old_name in new_names.items():
+                dataset.params[old_name].set(value=values[new_name])
+            total_residuals = np.append(total_residuals,
+                                        dataset.residuals(dataset.params))
 
-        Notes
-        -----
-        It will be necessary to pass in the extra minimizer keyword arguments
-        required by the minimizer method chosen.
+        return total_residuals
 
-        If you select 'leastsq', then normal least squares is
-        performed and your cost_func is ignored.
-        '''
+    def fit(self, method='leastsq'):
+        """
+        Fits the dataset.
 
-        if p_held is not None:
-            if p_held == 'clear':
-                self.fitted_parameters = np.arange(self.nparams)
-            else:
-                self.fitted_parameters = np.arange(self.nparams)
-                self.fitted_parameters = np.setdiff1d(self.fitted_parameters,
-                                                      p_held)
+        Parameters
+        ----------
+        method : str, optional
+            Name of the fitting method to use.
+            One of:
+            'leastsq'                -    Levenberg-Marquardt (default)
+            'nelder'                 -    Nelder-Mead
+            'lbfgsb'                 -    L-BFGS-B
+            'powell'                 -    Powell
+            'cg'                     -    Conjugate-Gradient
+            'newton'                 -    Newton-CG
+            'cobyla'                 -    Cobyla
+            'tnc'                    -    Truncate Newton
+            'trust-ncg'              -    Trust Newton-CGn
+            'dogleg'                 -    Dogleg
+            'slsqp'                  -    Sequential Linear Squares Programming
+            'differential_evolution' -    differential evolution
 
-        if method == 'leastsq':
-            fit_result = self._leastsquares(minimizer_kwds=minimizer_kwds)
-        elif method in _MINIMIZE or callable(method):
-            fit_result = self._minimze(method, minimizer_kwds=minimizer_kwds)
+        Returns
+        -------
+        success : bool
+            Whether the fit succeeded.
+        """
+        success = self.minimize(method=method)
+        self.residuals(self.params)
+        return success
+
+
+class CurveFitter(Minimizer):
+    """
+    A curvefitting class that extends lmfit.Minimize
+    """
+    def __init__(self, params, xdata, ydata, fitfunc, edata=None, args=(),
+                 kwds=None, minimizer_kwds=None, callback=None):
+        """
+        params : lmfit.Parameters instance
+            Specifies the parameter set for the fit
+        xdata : np.ndarray
+            The independent variables
+        ydata : np.ndarray
+            The dependent (observed) variable
+        fitfunc : callable
+            Function calculating the model for the fit.  Should have the
+            signature: ``fitfunc(xdata, params, *args, **kwds)``
+        edata : np.ndarray, optional
+            The measured uncertainty in the dependent variable, expressed as
+            sd.  If this array is not specified, then edata is set to unity.
+        args : tuple, optional
+            Extra parameters required to fully specify fitfunc.
+        kwds : dict, optional
+            Extra keyword parameters needed to fully specify fitfunc.
+        minimizer_kwds : dict, optional
+            Keywords passed to the minimizer.
+        callback : callable, optional
+            A function called at each minimization step. Has the signature:
+            ``callback(params, iter, resid, *args, **kwds)``
+        """
+        self.fitfunc = fitfunc
+        self.xdata = np.asfarray(xdata)
+        self.ydata = np.asfarray(ydata)
+        self.params = params
+        if edata is not None:
+            self.edata = np.asfarray(edata)
         else:
-            raise ValueError(repr(method) + 'is not a valid argument to'
-                             'scipy.optimize.minimize')
+            self.edata = np.ones_like(self.ydata)
 
-        fit_result.p_held = p_held
+        self.args = args
 
-        if fit_result.cov_p is not None:
-            if not self.weighting:
-                fit_result.cov_p *= self.cost() / (self.npoints -
-                                 self.fitted_parameters.size)
+        self.kwds = {}
+        if kwds is not None:
+            self.kwds = kwds
 
-            cov_p = np.zeros((self.nparams, self.nparams))
-            for i in range(self.fitted_parameters.size):
-                r = self.fitted_parameters[i]
-                for j in range(0, i + 1):
-                    c = self.fitted_parameters[j]
-                    cov_p[r, c] = fit_result.cov_p[i, j]
-                    cov_p[c, r] = fit_result.cov_p[i, j]
-
-            fit_result.cov_p = cov_p
-
-        self.history.append(fit_result)
-        return fit_result
-
-    def _leastsquares(self, minimizer_kwds=None):
-        '''scipy.optimize.leastsq fit of data'''
-
-        min_kwds = {'full_output':True}
+        min_kwds = {}
         if minimizer_kwds is not None:
-            min_kwds.update(minimizer_kwds)
+            min_kwds = minimizer_kwds
 
-        p_subset = self.p[self.fitted_parameters]
-        output = scipy.optimize.leastsq(self.residuals, p_subset,
-                                        **min_kwds)
+        self.callback = None
+        if callable(callback):
+            self.callback = callback
 
-        p_subset, cov_p, infodict, mesg, ier = output
-        success = False
-        cost = np.nan
-        self.p[self.fitted_parameters] = p_subset
+        super(CurveFitter, self).__init__(self.residuals,
+                                          self.params,
+                                          iter_cb=self.callback,
+                                          **min_kwds)
 
-        if ier in [1, 2, 3, 4]:
-            success = True
-            cost = self.cost()
+    def residuals(self, params):
+        """
+        Calculate the difference between the data and the model.
+        Also known as the objective function.  This function is minimized
+        during a fit.
+        residuals = (fitfunc - ydata) / edata
 
-        return FitResult(p=self.p, cov_p=cov_p, nfev=infodict['nfev'],
-                         cost=cost, message=mesg, success=success)
+        Parameters
+        ----------
+        params : lmfit.Parameters instance
+            Specifies the entire parameter set
 
-    def _minimze(self, method, minimizer_kwds=None):
-        '''
-        minimize cost function using scipy.optimize.minimize
-        '''
-        min_kwds = {'method':method, 'bounds':self.bounds}
-        if minimizer_kwds is not None:
-            min_kwds.update(minimizer_kwds)
+        Returns
+        -------
+        residuals : np.ndarray
+            The difference between the data and the model.
+        """
+        model = self.fitfunc(self.xdata, params, *self.args, **self.kwds)
+        resid = (model - self.ydata) / self.edata
+        return resid.flatten()
 
-        p_subset = self.p[self.fitted_parameters]
+    def model(self, params):
+        """
+        Calculates the model.
 
-        opt_res = scipy.optimize.minimize(self.cost, p_subset, **min_kwds)
-        opt_res.cost = opt_res.fun
+        Parameters
+        ----------
+        params : lmfit.Parameters instance
+            Specifies the entire parameter set
 
-        self.p[self.fitted_parameters] = opt_res.x
-        opt_res.p = self.p
+        Returns
+        -------
+        model : np.ndarray
+            The model.
+        """
+        return self.fitfunc(self.xdata, params, *self.args, **self.kwds)
 
-        '''
-        depending on the method chosen minimize may not always provide hess or
-        hess_inv in opt_res.  To try and standardise the output we will use a
-        single way of estimating the covariance matrix.
-        '''
-        opt_res.cov_p = self.estimate_covariance_matrix()
+    def fit(self, method='leastsq'):
+        """
+        Fits the dataset.
 
-        fit_result = FitResult(**opt_res)
-        return fit_result
+        Parameters
+        ----------
+        method : str, optional
+            Name of the fitting method to use.
+            One of:
+            'leastsq'                -    Levenberg-Marquardt (default)
+            'nelder'                 -    Nelder-Mead
+            'lbfgsb'                 -    L-BFGS-B
+            'powell'                 -    Powell
+            'cg'                     -    Conjugate-Gradient
+            'newton'                 -    Newton-CG
+            'cobyla'                 -    Cobyla
+            'tnc'                    -    Truncate Newton
+            'trust-ncg'              -    Trust Newton-CGn
+            'dogleg'                 -    Dogleg
+            'slsqp'                  -    Sequential Linear Squares Programming
+            'differential_evolution' -    differential evolution
 
-    def estimate_covariance_matrix(self):
-        '''
-        Estimates the covariance matrix.
-        '''
-        alpha, beta = self.estimate_mrqcof(self.p[self.fitted_parameters])
-        return scipy.linalg.pinv(alpha)
+        Returns
+        -------
+        success : bool
+            Whether the fit succeeded.
+        """
+        return self.minimize(method=method)
 
-    def estimate_mrqcof(self, p_subset):
-        '''
-        Estimates the gradient and hessian matrix for the curvefit.
-        '''
-        nvary = self.fitted_parameters.size
-
-        derivmatrix = np.zeros((nvary, self.npoints), np.float64)
-        ei = np.zeros((nvary,), np.float64)
-        epsilon = (pow(MACHEPS, 1. / 3)
-                   * np.fmax(np.fabs(p_subset), 0.1))
-
-        alpha = np.zeros((nvary, nvary), np.float64)
-        beta = np.zeros(nvary, np.float64)
-
-        #this is wasteful of function evaluations. Requires 2 evaluations for
-        #LHS and RHS
-        for k in range(nvary):
-            self.ptemp[self.fitted_parameters] = p_subset
-            d = epsilon[k]
-
-            rcost = self.cost(p_subset[k] + d)
-            lcost = self.cost(p_subset[k] - d)
-            beta[k] = (rcost - lcost) / 2. / d
-
-            self.ptemp[self.fitted_parameters[k]] = p_subset[k] + d
-            f2 = self.model(self.ptemp, *self.args, **self.kwds)
-            self.ptemp[self.fitted_parameters[k]] = p_subset[k] - d
-            f1 = self.model(self.ptemp, *self.args, **self.kwds)
-
-            derivmatrix[k, :] = (f2 - f1) / 2. / d
-
-        for i in range(nvary):
-            for j in range(i + 1):
-                val = np.sum(derivmatrix[i] * derivmatrix[j] / self.edata**2)
-                alpha[i, j] = val;
-                alpha[j, i] = val;
-
-        return alpha, beta
-
-
-def de_wrapper(func, x0, args=(), **kwargs):
-    '''
-    A wrapper for scipy.optimize.differential_evolution that allows it to be
-    used as a custom method in scipy.optimize.minimize
-    '''
-    de_kwds = {'strategy':'best1bin', 'maxiter':None, 'popsize':15,
-               'tol':0.01, 'mutation':(0.5, 1), 'recombination':0.7,
-               'seed':None, 'callback':None, 'disp':False, 'polish':True,
-               'init':'latinhypercube'}
-
-    for k, v in kwargs.items():
-        if k in de_kwds:
-            de_kwds[k] = v
-
-    return differential_evolution(func, kwargs['bounds'], args=args, **de_kwds)
 
 if __name__ == '__main__':
-    def gauss(x, p, *args):
+    from lmfit import fit_report
+    def gauss(x, params, *args):
+        'Calculates a Gaussian model'
+        p = params.valuesdict().values()
         return p[0] + p[1] * np.exp(-((x - p[2]) / p[3])**2)
+
     xdata = np.linspace(-4, 4, 100)
     p0 = np.array([0., 1., 0., 1.])
-    ydata = gauss(xdata, p0)
-
-    f = CurveFitter(xdata, ydata, gauss, p0 + 0.2)
-    res = f.fit()
-
     bounds = [(-1., 1.), (0., 2.), (-3., 3.), (0.001, 2.)]
-    res1 = f.fit(method=de_wrapper, minimizer_kwds={'bounds':bounds})
 
+    temp_pars = params(p0, bounds=bounds)
+    pars = params(p0 + 0.2, bounds=bounds)
+
+    ydata = gauss(xdata, temp_pars) + 0.1 * np.random.random(xdata.size)
+
+    f = CurveFitter(pars, xdata, ydata, gauss)
+    f.fit('differential_evolution')
+    print fit_report(f)
+
+    g = GlobalFitter([f], ['d0p3:1'])
+    g.fit()
+    print fit_report(g)

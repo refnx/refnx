@@ -4,7 +4,9 @@ import pyplatypus.analysis._creflect as _creflect
 
 import numpy as np
 import numpy.testing as npt
+import os.path
 
+path = os.path.dirname(os.path.abspath(__file__))
 
 class TestReflect(unittest.TestCase):
 
@@ -24,7 +26,7 @@ class TestReflect(unittest.TestCase):
             with values generated from Motofit
 
         '''
-        theoretical = np.loadtxt('pyplatypus/analysis/test/theoretical.txt')
+        theoretical = np.loadtxt(os.path.join(path, 'theoretical.txt'))
         qvals, rvals = np.hsplit(theoretical, 2)
         calc = reflect.abeles(qvals.flatten(), self.coefs)
 
@@ -35,8 +37,7 @@ class TestReflect(unittest.TestCase):
             test smeared reflectivity calculation
             with values generated from Motofit (quadrature precsion order = 13)
         '''
-        theoretical = np.loadtxt(
-            'pyplatypus/analysis/test/smeared_theoretical.txt')
+        theoretical = np.loadtxt(os.path.join(path, 'smeared_theoretical.txt'))
         qvals, rvals, dqvals = np.hsplit(theoretical, 3)
         '''
         the order of the quadrature precision used to create these smeared
@@ -53,7 +54,7 @@ class TestReflect(unittest.TestCase):
             test SLD profile with SLD profile from Motofit.
         '''
         np.seterr(invalid='raise')
-        profile = np.loadtxt('pyplatypus/analysis/test/sld_theoretical_R.txt')
+        profile = np.loadtxt(os.path.join(path, 'sld_theoretical_R.txt'))
         z, rho = np.split(profile, 2)
         myrho = reflect.sld_profile(self.coefs, z.flatten())
         npt.assert_almost_equal(myrho, rho.flatten())

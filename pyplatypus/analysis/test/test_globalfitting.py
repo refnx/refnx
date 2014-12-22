@@ -1,13 +1,20 @@
 import unittest
 import pyplatypus.analysis.reflect as reflect
-import pyplatypus.analysis.model as model
-import pyplatypus.analysis.globalfitting as gfit
+import pyplatypus.analysis.curvefitter as curvefitter
+from pyplatypus.analysis.curvefitter import GlobalFitter, CurveFitter
 import numpy as np
-import numpy.testing as npt
-import warnings
+from lmfit import fit_report
+import os.path
+from numpy.testing import assert_, assert_equal, assert_almost_equal
+import time
 
 SEED = 1
 
+path = os.path.dirname(os.path.abspath(__file__))
+
+def reflect_fitfunc(q, params, *args):
+    coefs = np.asfarray(params.valuesdict().values())
+    return np.log10(reflect.abeles(q, coefs))
 
 class TestGlobalFitting(unittest.TestCase):
 
@@ -17,63 +24,65 @@ class TestGlobalFitting(unittest.TestCase):
         coefs[1] = 1.
         coefs[2] = 2.07
         coefs[4] = 6.36
-        coefs[6] = 2e-6
+        coefs[6] = 2.e-07
         coefs[7] = 3
-        coefs[8] = 300
+        coefs[8] = 40
         coefs[9] = 3.47
-        coefs[11] = 4
-        coefs[12] = 250
+        coefs[11] = 3
+        coefs[12] = 200.
         coefs[13] = 2
-        coefs[15] = 4
+        coefs[15] = 3
         self.coefs = coefs
-        pass
+
+        self.best_fit = np.array([2, 8.9692702e-01, 2.07, 0., 6.36, 0.,
+                                  3.3588842e-07, 2.8938204, 38.128943,
+                                  3.47, 0., 3.0, 2.5909985e+02, 2.5406819e+00,
+                                  0., 3.])
+
+        lowlim = np.zeros(16)
+        hilim = 2 * coefs
+        self.bounds = zip(lowlim, hilim)
+        self.params = curvefitter.params(coefs, bounds=self.bounds,
+                                         varies=[False] * 16)
+
+        fname = os.path.join(path, 'c_PLP0011859_q.txt')
+        theoretical = np.loadtxt(fname)
+        qvals, rvals, evals, dummy = np.hsplit(theoretical, 4)
+        rvals = np.log10(rvals)
+        self.f = curvefitter.CurveFitter(self.params, qvals.flatten(),
+                                         rvals.flatten(), reflect_fitfunc)
+
+    def test_residuals_length(self):
+        # the residuals should be the same length as the data
+        a = GlobalFitter([self.f])
+        residuals = a.residuals(a.params)
+        assert_equal(residuals.size, a.datasets[0].ydata.size)
 
     def test_globalfitting(self):
-        '''
-            test differential evolution fitting process on globalfit object
-        '''
-        theoretical = np.loadtxt('pyplatypus/analysis/test/c_PLP0011859_q.txt')
+        # can the global fitting run?
+        fit = [1, 6, 7, 8, 12, 13]
+        for p in fit:
+            self.params['p%d' % p].vary = True
 
-        qvals, rvals, evals, dummy = np.hsplit(theoretical, 4)
+        a = GlobalFitter([self.f], minimizer_kwds={'options':{'seed':1}})
+        a.fit(method='differential_evolution')
 
-        fitted_parameters = np.array([6, 7, 8, 9, 11, 12, 13, 15])
-
-        a = reflect.ReflectivityFitObject(
-            qvals, rvals, evals, self.coefs, fitted_parameters=fitted_parameters, seed=SEED)
-        linkageArray = np.arange(16)
-
-        gfo = gfit.GlobalFitObject(tuple([a]), linkageArray)
-        gfo.fit()
+        values = self.params.valuesdict().values()
+        assert_almost_equal(values, self.best_fit, 4)
 
     def test_globfit_modelvals_same_as_indidivual(self):
-        '''
-            make sure that the global fit would return the same model values as the individual fitobject
-        '''
-        theoretical = np.loadtxt('pyplatypus/analysis/test/c_PLP0011859_q.txt')
+        # make sure that the global fit would return the same model values as
+        # the individual fitobject
+        values = self.f.model(self.params)
 
-        qvals, rvals, evals, dummy = np.hsplit(theoretical, 4)
+        a = GlobalFitter([self.f])
+        values2 = a.model(a.params)
 
-        fitted_parameters = np.array(
-            [3, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15])
+        assert_almost_equal(values2, values)
 
-        a = reflect.ReflectivityFitObject(
-            qvals, rvals, evals, self.coefs, fitted_parameters=fitted_parameters)
-        linkageArray = np.arange(16)
-
-        gfo = gfit.GlobalFitObject(tuple([a]), linkageArray)
-        gfomodel = gfo.model(self.coefs)
-
-        normalmodel = a.model(self.coefs)
-        npt.assert_almost_equal(gfomodel, normalmodel)
 
     def test_globfit_modelvals_degenerate_layers(self):
-        '''
-            try fitting dataset with a deposited layer split into two degenerate layers
-        '''
-        theoretical = np.loadtxt('pyplatypus/analysis/test/c_PLP0011859_q.txt')
-
-        qvals, rvals, evals, dummy = np.hsplit(theoretical, 4)
-
+        # try fitting dataset with a deposited layer split into two degenerate layers
         coefs = np.zeros((20))
         coefs[0] = 3
         coefs[1] = 1.
@@ -91,72 +100,33 @@ class TestGlobalFitting(unittest.TestCase):
         coefs[17] = 2
         coefs[19] = 4
 
-        fitted_parameters = np.array([6, 7, 8, 11, 12, 13, 15, 16, 17, 19])
+        lowlim = np.zeros(20)
+        hilim = 2 * coefs
+        self.bounds = zip(lowlim, hilim)
+        params = curvefitter.params(coefs, bounds=self.bounds,
+                                         varies=[False] * 20)
 
-        a = reflect.ReflectivityFitObject(
-            qvals, rvals, evals, coefs, fitted_parameters=fitted_parameters)
-        linkageArray = np.arange(20)
-        linkageArray[16] = 12
-        linkageArray[17] = 16
-        linkageArray[18] = 17
-        linkageArray[19] = 18
+        fit = np.array([6, 7, 8, 11, 12, 13, 15, 16, 17, 19])
+        for p in fit:
+            params['p%d' % p].vary = True
 
-        gfo = gfit.GlobalFitObject(tuple([a]), linkageArray)
-        pars, dummy, chi2 = gfo.fit()
-        npt.assert_almost_equal(pars[12], pars[16])
+        self.f.params = params
+        a = GlobalFitter([self.f], constraints=['d0p16:d0p12', 'd0p17:d0p13',
+                         'd0p19:d0p15'])
 
-    def test_linkageArray(self):
-        '''
-            test incorrect linkageArrays
-        '''
-        theoretical = np.loadtxt('pyplatypus/analysis/test/c_PLP0011859_q.txt')
+        a.fit(method='differential_evolution')
 
-        qvals, rvals, evals, dummy = np.hsplit(theoretical, 4)
+        values = params.valuesdict().values()
 
-        coefs = np.zeros((20))
-        coefs[0] = 3
-        coefs[1] = 1.
-        coefs[2] = 2.07
-        coefs[4] = 6.36
-        coefs[6] = 2e-6
-        coefs[7] = 3
-        coefs[8] = 30
-        coefs[9] = 3.47
-        coefs[11] = 4
-        coefs[12] = 125
-        coefs[13] = 2
-        coefs[15] = 4
-        coefs[16] = 125
-        coefs[17] = 2
-        coefs[19] = 4
-
-        fitted_parameters = np.array([6, 7, 8, 11, 12, 13, 15, 16, 17, 19])
-
-        a = reflect.ReflectivityFitObject(qvals,
-                                          rvals,
-                                          evals,
-                                          coefs,
-                                          fitted_parameters=fitted_parameters)
-        linkageArray = np.arange(20)
-        linkageArray[16] = 12
-        linkageArray[17] = 15
-        linkageArray[18] = 17
-        linkageArray[19] = 18
-
-        npt.assert_raises(gfit.LinkageException,
-                          gfit.GlobalFitObject, tuple([a]), linkageArray)
-        linkageArray[17] = 16
-        linkageArray[19] = -1
-        npt.assert_raises(gfit.LinkageException,
-                          gfit.GlobalFitObject, tuple([a]), linkageArray)
+        assert_equal(values[12], values[16])
+        assert_equal(values[13], values[17])
+        assert_equal(values[15], values[19])
 
     def test_multipledataset_corefinement(self):
-        '''
-            test corefinement of three datasets
-        '''
-        e361 = np.loadtxt('pyplatypus/analysis/test/e361r.txt')
-        e365 = np.loadtxt('pyplatypus/analysis/test/e365r.txt')
-        e366 = np.loadtxt('pyplatypus/analysis/test/e366r.txt')
+        # test corefinement of three datasets
+        e361 = np.loadtxt(os.path.join(path, 'e361r.txt'))
+        e365 = np.loadtxt(os.path.join(path, 'e365r.txt'))
+        e366 = np.loadtxt(os.path.join(path, 'e366r.txt'))
 
         coefs361 = np.zeros((16))
         coefs361[0] = 2
@@ -181,34 +151,42 @@ class TestGlobalFitting(unittest.TestCase):
         qvals365, rvals365, evals365 = np.hsplit(e365, 3)
         qvals366, rvals366, evals366 = np.hsplit(e366, 3)
 
-        fitted_parameters = np.array([1, 6, 8, 12, 13])
+        lowlim = np.zeros(16)
+        lowlim[4] = -0.8
+        hilim = 2 * coefs361
+        bounds = zip(lowlim, hilim)
 
-        a = reflect.ReflectivityFitObject(
-            qvals361, rvals361, evals361, coefs361, fitted_parameters=fitted_parameters)
-        b = reflect.ReflectivityFitObject(
-            qvals365, rvals365, evals365, coefs365, fitted_parameters=fitted_parameters)
-        c = reflect.ReflectivityFitObject(
-            qvals366, rvals366, evals366, coefs366, fitted_parameters=fitted_parameters)
+        params361 = curvefitter.params(coefs361, bounds=bounds,
+                                       varies=[False] * 16)
+        params365 = curvefitter.params(coefs365, bounds=bounds,
+                                       varies=[False] * 16)
+        params366 = curvefitter.params(coefs366, bounds=bounds,
+                                       varies=[False] * 16)
 
-        linkageArray = np.array(
-            [[0,  1,  2,  3,  4,  5,  6,  7,  8,  9,  10,  11,  12,  13,  14,  15],
-             [16, 17, 18, 19, 20, 21, 22, 23,  8, 24,
-              25,  26,  12,  27,  28,  29],
-             [30, 31, 32, 33, 34, 35, 36, 37,  8, 38,  39,  40,  12,  41,  42,  43]])
+        fit = [1, 6, 8, 12, 13]
+        for p in fit:
+            params361['p%d' % p].vary = True
+            params365['p%d' % p].vary = True
+            params366['p%d' % p].vary = True
 
-        gfo = gfit.GlobalFitObject(tuple([a, b, c]), linkageArray, seed=SEED)
-        np.seterr(all='ignore')
-        pars, dummy, chi2 = gfo.fit()
+        a = CurveFitter(params361, qvals361.flatten(),
+                        np.log10(rvals361.flatten()),
+                        reflect_fitfunc)
+        b = CurveFitter(params365, qvals365.flatten(),
+                        np.log10(rvals365.flatten()),
+                        reflect_fitfunc)
+        c = CurveFitter(params366, qvals366.flatten(),
+                        np.log10(rvals366.flatten()),
+                        reflect_fitfunc)
 
-#         modeltosave = model.Model(pars)
-#         with open('pyplatypus/analysis/test/corefinee361.txt', 'w') as f:
-#             modeltosave.save(f)
+        g = GlobalFitter([a, b, c], constraints=['d1p8:d0p8', 'd2p8:d0p8',
+                         'd1p12:d0p12', 'd2p12:d0p12']),
+                         minimizer_kwds={'options':{'seed':1}})
+        
+        g.fit('differential_evolution')
+        print fit_report(g)
+        assert_almost_equal(g.chisqr, 0.774590447535)
 
-        with open('pyplatypus/analysis/test/corefinee361.txt', 'Ur') as f:
-            savedmodel = model.Model(None, file=f)
-
-        npt.assert_almost_equal(pars, savedmodel.parameters)
-        npt.assert_almost_equal(chi2, 1711.4701781844269)
 
 if __name__ == '__main__':
     unittest.main()
