@@ -41,6 +41,7 @@ class TestGlobalFitting(unittest.TestCase):
 
         lowlim = np.zeros(16)
         hilim = 2 * coefs
+
         self.bounds = zip(lowlim, hilim)
         self.params = curvefitter.params(coefs, bounds=self.bounds,
                                          varies=[False] * 16)
@@ -180,11 +181,11 @@ class TestGlobalFitting(unittest.TestCase):
                         reflect_fitfunc)
 
         g = GlobalFitter([a, b, c], constraints=['d1p8:d0p8', 'd2p8:d0p8',
-                         'd1p12:d0p12', 'd2p12:d0p12']),
+                         'd1p12:d0p12', 'd2p12:d0p12'],
                          minimizer_kwds={'options':{'seed':1}})
         
         g.fit('differential_evolution')
-        print fit_report(g)
+        #print fit_report(g)
         assert_almost_equal(g.chisqr, 0.774590447535)
 
 

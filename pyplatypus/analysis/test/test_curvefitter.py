@@ -55,7 +55,7 @@ class TestFitter(unittest.TestCase):
     def test_resid_length(self):
         # the residuals length should be equal to the data length
         resid = self.f.residuals(self.params)
-        assert_equal(resid.size, self.f.ydata)
+        assert_equal(resid.size, self.f.ydata.size)
 
     def test_scalar_minimize(self):
         assert_equal(self.pvals(self.params), self.p0 + 0.2)
