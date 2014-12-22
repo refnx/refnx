@@ -220,45 +220,51 @@ def sld_profile(coefs, z):
     return summ
 
 
-class ReflectivityFitObject(curvefitter.CurveFitter):
+class ReflectivityFitter(curvefitter.CurveFitter):
 
     '''
-        A sub class of pyplatypus.analysis.fitting.FitObject suited for fitting
-        reflectometry data.
+        A sub class of pyplatypus.analysis.fitting.CurveFitter suited for
+        fitting reflectometry data.
 
-        If you wish to fit analytic profiles you should subclass this fitobject,
-        overriding the model() method of the FitObject super class.  If you do
-        this you should also override the sld_profile method of
-        ReflectivityFitObject.
+        If you wish to fit analytic profiles you should subclass this class,
+        overriding the reflectivity() method.  If you do this you should also
+        override the sld_profile method of ReflectivityFitter.
     '''
 
-    def __init__(self, xdata, ydata, edata, parameters, args=(), **kwds):
+    def __init__(self, parameters, xdata, ydata, edata=None, args=(),
+                 kwds=None, minimizer_kwds=None):
         '''
-        Initialises the ReflectivityFitObject.
-        See the constructor of the FitObject for more details, especially the
+        Initialises the ReflectivityFitter.
+        See the constructor of the CurveFitter for more details, especially the
         entries in kwds that are used.
 
-        ReflectivityFitObject uses one extra kwds entry:
+        ReflectivityFitter uses one extra kwds entry:
 
         kwds['transform'] - a callable with the signature
          transformed_y = f(x_evals, y_vals).
         If specified, then this function is used to transform the data returned
         by the model method.
         '''
+        if kwds is None:
+            kwds = {}
+        if minimizer_kwds is None:
+            minimizer_kwds = {}
 
-        super(ReflectivityFitObject, self).__init__(xdata,
-                                                    ydata,
-                                                    edata,
-                                                    None,
-                                                    parameters,
-                                                    args=args,
-                                                    **kwds)
+        super(ReflectivityFitter, self).__init__(parameters,
+                                                 xdata,
+                                                 ydata,
+                                                 self.reflectivity,
+                                                 edata=edata,
+                                                 args=args,
+                                                 callback=self.callback,
+                                                 kwds=kwds,
+                                                 minimizer_kwds=minimizer_kwds)
 
         self.transform = None
         if 'transform' in kwds:
             self.transform = kwds['transform']
 
-    def model(self, parameters, *args):
+    def reflectivity(self, xdata, parameters, *args, **kwds):
         '''
         calculate the theoretical model, given a set of parameters.
         parameters - the full np.ndarray containing the parameters that are
@@ -267,46 +273,48 @@ class ReflectivityFitObject(curvefitter.CurveFitter):
         returns the theoretical model for the xdata, i.e.
         self.fitfunction(self.xdata, test_parameters, *args, **kwds)
         '''
+        params = np.asfarray(parameters.valuesdict().values())
 
         if not len(args):
             args = self.args
 
-        yvals = abeles(self.xdata, parameters, *args, **self.kwds)
+        yvals = abeles(xdata, params, *args, **kwds)
 
         if self.transform:
-            yvals, temp = self.transform(self.xdata, yvals)
+            yvals, temp = self.transform(xdata, yvals)
 
         return yvals
 
     def sld_profile(self, parameters, args=(), **kwds):
         '''
-            returns the SLD profile corresponding to the model parameters.
+        returns the SLD profile corresponding to the model parameters.
 
-            returns z, rho(z) - the distance from the top interface and the SLD
-            at that point
+        returns z, rho(z) - the distance from the top interface and the SLD
+        at that point
         '''
+        params = np.asfarray(parameters.valuesdict().values())
 
         if 'points' in kwds and kwds['points'] is not None:
-            return points, sld_profile(parameters, points)
+            return points, sld_profile(params, points)
 
         if not int(parameters[0]):
-            zstart = -5 - 4 * math.fabs(parameters[7])
+            zstart = -5 - 4 * math.fabs(params[7])
         else:
-            zstart = -5 - 4 * math.fabs(parameters[11])
+            zstart = -5 - 4 * math.fabs(params[11])
 
         temp = 0
-        if not int(parameters[0]):
-            zend = 5 + 4 * math.fabs(parameters[7])
+        if not int(params[0]):
+            zend = 5 + 4 * math.fabs(params[7])
         else:
-            for ii in xrange(int(parameters[0])):
-                temp += math.fabs(parameters[4 * ii + 8])
-            zend = 5 + temp + 4 * math.fabs(parameters[7])
+            for ii in xrange(int(params[0])):
+                temp += math.fabs(params[4 * ii + 8])
+            zend = 5 + temp + 4 * math.fabs(params[7])
 
         points = np.linspace(zstart, zend, num=500)
 
-        return points, sld_profile(parameters, points)
+        return points, sld_profile(params, points)
 
-    def callback(self, parameters, convergence=0.):
+    def callback(self, parameters, iter, resid, *args, **kwds):
         return True
 
 
