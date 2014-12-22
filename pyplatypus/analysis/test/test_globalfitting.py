@@ -34,9 +34,9 @@ class TestGlobalFitting(unittest.TestCase):
         coefs[15] = 3
         self.coefs = coefs
 
-        self.best_fit = np.array([2, 8.9692702e-01, 2.07, 0., 6.36, 0.,
-                                  3.3588842e-07, 2.8938204, 38.128943,
-                                  3.47, 0., 3.0, 2.5909985e+02, 2.5406819e+00,
+        self.best_fit = np.array([2, 8.9692e-01, 2.07, 0., 6.36, 0.,
+                                  3.3588842e-07, 2.8938204, 38.129,
+                                  3.47, 0., 3.0, 2.5910e+02, 2.5406,
                                   0., 3.])
 
         lowlim = np.zeros(16)
@@ -65,11 +65,11 @@ class TestGlobalFitting(unittest.TestCase):
         for p in fit:
             self.params['p%d' % p].vary = True
 
-        a = GlobalFitter([self.f], minimizer_kwds={'options':{'seed':1}})
+        a = GlobalFitter([self.f], minimizer_kwds={'options':{'seed': 1}})
         a.fit(method='differential_evolution')
 
         values = self.params.valuesdict().values()
-        assert_almost_equal(values, self.best_fit, 4)
+        assert_almost_equal(values, self.best_fit, 3)
 
     def test_globfit_modelvals_same_as_indidivual(self):
         # make sure that the global fit would return the same model values as

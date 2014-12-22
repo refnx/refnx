@@ -25,7 +25,7 @@
 #include <pthread.h>
 #endif
 
-#define NUM_CPUS 4
+#define NUM_CPUS 2
 #define PI 3.141592653589793
 
 using namespace std;
