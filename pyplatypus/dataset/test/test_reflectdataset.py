@@ -1,7 +1,11 @@
 import unittest
 import pyplatypus.dataset.reflectdataset as reflectdataset
 import numpy as np
-import numpy.testing as npt
+from numpy.testing import assert_equal
+import os.path
+
+
+path = os.path.dirname(os.path.abspath(__file__))
 
 class TestReflectDataset(unittest.TestCase):
 
@@ -15,18 +19,18 @@ class TestReflectDataset(unittest.TestCase):
         
         '''
         dataset = reflectdataset.ReflectDataset()
-        with open('pyplatypus/dataset/test/c_PLP0000708.xml') as f:
+        with open(os.path.join(path, 'c_PLP0000708.xml')) as f:
             dataset.load(f)
         
-        self.assertEqual(dataset.numpoints, 90)
-        self.assertEqual(90, np.size(dataset.xdata))
+        assert_equal(dataset.numpoints, 90)
+        assert_equal(90, np.size(dataset.xdata))
         
         dataset1 = reflectdataset.ReflectDataset()
-        with open('pyplatypus/dataset/test/c_PLP0000708.dat') as f:
+        with open(os.path.join(path, 'c_PLP0000708.dat')) as f:
             dataset1.load(f)
         
-        self.assertEqual(dataset1.numpoints, 90)
-        self.assertEqual(90, np.size(dataset1.xdata))
+        assert_equal(dataset1.numpoints, 90)
+        assert_equal(90, np.size(dataset1.xdata))
         
         
 if __name__ == '__main__':

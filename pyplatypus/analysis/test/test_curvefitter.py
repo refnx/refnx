@@ -3,12 +3,15 @@ import pyplatypus.analysis.curvefitter as curvefitter
 from pyplatypus.analysis.curvefitter import CurveFitter
 import numpy as np
 from numpy.testing import assert_almost_equal, assert_equal, assert_
-
+import os.path
 SEED = 1
+
+path = os.path.dirname(os.path.abspath(__file__))
 
 def gauss(x, p0, *args):
     p = p0.valuesdict().values()
     return p[0] + p[1] * np.exp(-((x - p[2]) / p[3])**2)
+
 
 class TestFitter(unittest.TestCase):
 
@@ -68,6 +71,62 @@ class TestFitter(unittest.TestCase):
         self.params['p0'].vary = False
         self.f.fit()
         assert_almost_equal(self.p0[0] + 0.2, self.params['p0'].value)
+        
+class TestFitterGauss(unittest.TestCase):
+    #Test CurveFitter with a noisy gaussian, weighted and unweighted, to see
+    #if the parameters and uncertainties come out correct
+
+    def setUp(self):
+        np.seterr(invalid='raise')
+        
+        theoretical = np.loadtxt(os.path.join(path, 'gauss_data.txt'))
+        xvals, yvals, evals = np.hsplit(theoretical, 3)
+        self.xvals = xvals.flatten()
+        self.yvals = yvals.flatten()
+        self.evals = evals.flatten()
+        
+        self.best_weighted = [-0.0024609479081880714, 19.52991613793462,
+                              -0.082844576308140461, 1.2469169306656911]
+        self.best_weighted_errors = [0.019809, 1.014120,
+                                     0.040242, 0.037003]
+        self.best_weighted_chisqr = 77.6040960351
+        
+        self.best_unweighted = [-0.10584111872702096, 19.240347049328989,
+                                0.0092623066070940396, 1.501362314145845]
+        
+        self.best_unweighted_errors = [0.34246565477, 0.689820935208,
+                                       0.0411243173041, 0.0693429375282]
+
+        self.best_unweighted_chisqr = 497.102084956
+
+        self.p0 = np.array([0.1, 20., 0.1, 0.1])
+        self.bounds = [(-1, 1), (0, 30), (-5., 5.), (0.001, 2)]
+
+        self.params = curvefitter.params(self.p0, bounds=self.bounds)
+
+    def test_best_weighted(self):
+        f = CurveFitter(self.params, self.xvals, self.yvals, gauss,
+                        edata=self.evals)
+        f.fit()
+        
+        output = self.params.valuesdict().values()
+        assert_almost_equal(output, self.best_weighted, 5)
+        assert_almost_equal(f.chisqr, self.best_weighted_chisqr)
+
+        uncertainties = [f.params['p%d'%i].stderr for i in range(4)]
+        assert_almost_equal(uncertainties, self.best_weighted_errors, 3)
+        
+    def test_best_unweighted(self):
+        f = CurveFitter(self.params, self.xvals, self.yvals, gauss)
+        f.fit()
+        
+        output = self.params.valuesdict().values()
+        assert_almost_equal(output, self.best_unweighted, 5)
+        assert_almost_equal(f.chisqr, self.best_unweighted_chisqr)
+
+        uncertainties = [f.params['p%d'%i].stderr for i in range(4)]
+        assert_almost_equal(uncertainties, self.best_unweighted_errors, 3)
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -5,7 +5,7 @@ import pyplatypus.analysis._reflect as _reflect
 import pyplatypus.analysis.curvefitter as curvefitter
 
 import numpy as np
-import numpy.testing as npt
+from numpy.testing import assert_almost_equal
 import os.path
 
 path = os.path.dirname(os.path.abspath(__file__))
@@ -33,17 +33,17 @@ class TestReflect(unittest.TestCase):
         #    test reflectivity calculation with values generated from Motofit
         calc = reflect.abeles(self.qvals, self.coefs)
 
-        npt.assert_almost_equal(calc, self.rvals)
+        assert_almost_equal(calc, self.rvals)
 
     def test_c_abeles(self):
         #    test reflectivity calculation with values generated from Motofit
         calc = _creflect.abeles(self.qvals, self.layer_format)
-        npt.assert_almost_equal(calc, self.rvals)
+        assert_almost_equal(calc, self.rvals)
 
     def test_py_abeles(self):
         # test reflectivity calculation with values generated from Motofit
         calc = _reflect.abeles(self.qvals, self.layer_format)
-        npt.assert_almost_equal(calc, self.rvals)
+        assert_almost_equal(calc, self.rvals)
 
     def test_reflectivity_fitter(self):
         # test reflectivity calculation with values generated from Motofit
@@ -52,7 +52,7 @@ class TestReflect(unittest.TestCase):
         fitter = reflect.ReflectivityFitter(params, self.qvals, self.rvals)
         model = fitter.model(params)
 
-        npt.assert_almost_equal(model, self.rvals)
+        assert_almost_equal(model, self.rvals)
         
     def test_smearedabeles(self):
         # test smeared reflectivity calculation with values generated from
@@ -67,7 +67,7 @@ class TestReflect(unittest.TestCase):
         calc = reflect.abeles(qvals.flatten(), self.coefs,
                               **{'dqvals': dqvals.flatten(), 'quad_order': 13})
 
-        npt.assert_almost_equal(calc, rvals.flatten())
+        assert_almost_equal(calc, rvals.flatten())
 
     def test_smeared_reflectivity_fitter(self):
         # test smeared reflectivity calculation with values generated from
@@ -87,7 +87,7 @@ class TestReflect(unittest.TestCase):
                                                   'quad_order': 13})
         model = fitter.model(params)
 
-        npt.assert_almost_equal(model, rvals.flatten())
+        assert_almost_equal(model, rvals.flatten())
         
     def test_sld_profile(self):
         # test SLD profile with SLD profile from Motofit.
@@ -95,7 +95,7 @@ class TestReflect(unittest.TestCase):
         profile = np.loadtxt(os.path.join(path, 'sld_theoretical_R.txt'))
         z, rho = np.split(profile, 2)
         myrho = reflect.sld_profile(self.coefs, z.flatten())
-        npt.assert_almost_equal(myrho, rho.flatten())
+        assert_almost_equal(myrho, rho.flatten())
 
 
 if __name__ == '__main__':

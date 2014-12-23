@@ -2,18 +2,16 @@ from __future__ import division
 import string
 import numpy as np
 from time import gmtime, strftime
-import pyplatypus.reduce.rebin
 
 try:
     import xml.etree.cElementTree as ET
 except ImportError:
     import xml.etree.ElementTree as ET
 import os.path
-import pyplatypus.util.ErrorProp as EP
-from .data_1D import Data_1D
+from .data1d import Data1D
 
 
-class ReflectDataset(Data_1D):
+class ReflectDataset(Data1D):
     _template_ref_xml = """<?xml version="1.0"?>
     <REFroot xmlns="">
     <REFentry time="$time">
@@ -87,24 +85,3 @@ class ReflectDataset(Data_1D):
         except ET.ParseError:
             with open(f.name, 'Ur') as g:
                 super(ReflectDataset, self).load(g)
-
-    def rebin(self, rebinpercent=4):
-        xdata, ydata, ydataSD, xdataSD = self.data
-        frac = 1. + (rebinpercent / 100.)
-
-        lowQ = (2 * xdata[0]) / (1. + frac)
-        hiQ = frac * (2 * xdata[-1]) / (1. + frac)
-
-        qq, rr, dr, dq = rebin.rebin_Q(xdata,
-                                       ydata,
-                                       ydataSD,
-                                       xdataSD,
-                                       lowerQ=lowQ,
-                                       upperQ=hiQ,
-                                       rebinpercent=rebinpercent)
-        qdat = qq
-        rdat = rr
-        drdat = dr
-        qsddat = dq
-
-        self.data = (qdat, rdat, drdat, qsddat)

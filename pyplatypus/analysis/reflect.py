@@ -1,8 +1,7 @@
 from __future__ import division
 import numpy as np
-import scipy as sp
+import scipy
 import scipy.linalg
-import scipy.integrate as spi
 import math
 import pyplatypus.analysis.curvefitter as curvefitter
 import pyplatypus.util.ErrorProp as EP
@@ -18,13 +17,17 @@ FWHM = 2 * math.sqrt(2 * math.log(2.0))
 INTLIMIT = 3.5
 
 def gauss_legendre(n):
-    '''
-    a function return gaussian quadrature weights
-    '''
+    """
+    Calculate gaussian quadrature abscissae and weights
+    Returns
+    -------
+    (x, w) : tuple
+        The abscissae and weights for Gauss Legendre integration.
+    """
     k = np.arange(1.0, n)
     a_band = np.zeros((2, n))
     a_band[1, 0: n - 1] = k / np.sqrt(4 * k * k - 1)
-    x, V = sp.linalg.eig_banded(a_band, lower=True)
+    x, V = scipy.linalg.eig_banded(a_band, lower=True)
     w = 2 * np.real(np.power(V[0, :], 2))
     return x, w
 
@@ -53,7 +56,6 @@ def convert_coefs_to_layer_format(coefs):
 
 def abeles(q, coefs, *args, **kwds):
     """
-
     Abeles matrix formalism for calculating reflectivity from a stratified
     medium.
 
@@ -169,7 +171,7 @@ def abeles(q, coefs, *args, **kwds):
 
 def is_proper_Abeles_input(coefs):
     '''
-    a test to see if the coefs array is suitable input for the abeles function
+    Test to see if the coefs array is suitable input for the abeles function
     '''
     if np.size(coefs, 0) != 4 * int(coefs[0]) + 8:
         return False
@@ -227,7 +229,7 @@ class ReflectivityFitter(curvefitter.CurveFitter):
         fitting reflectometry data.
 
         If you wish to fit analytic profiles you should subclass this class,
-        overriding the reflectivity() method.  If you do this you should also
+        overriding the model() method.  If you do this you should also
         override the sld_profile method of ReflectivityFitter.
     '''
 
@@ -238,12 +240,47 @@ class ReflectivityFitter(curvefitter.CurveFitter):
         See the constructor of the CurveFitter for more details, especially the
         entries in kwds that are used.
 
+        Parameters
+        ----------
+        parameters : lmfit.Parameters instance
+            Specifies the parameter set for the fit
+        xdata : np.ndarray
+            The independent variables
+        ydata : np.ndarray
+            The dependent (observed) variable
+        edata : np.ndarray, optional
+            The measured uncertainty in the dependent variable, expressed as
+            sd.  If this array is not specified, then edata is set to unity.
+        args : tuple, optional
+            Extra parameters for supplying to the abeles function.
+        kwds : dict, optional
+            Extra keyword parameters for supplying to the abeles function.
+            See the notes below.
+        minimizer_kwds : dict, optional
+            Keywords passed to the minimizer.
+
+        Notes
+        -----
         ReflectivityFitter uses one extra kwds entry:
 
-        kwds['transform'] - a callable with the signature
-         transformed_y = f(x_evals, y_vals).
-        If specified, then this function is used to transform the data returned
-        by the model method.
+        kwds['transform'] : callable, optional
+            If specified then this function is used to transform the data
+            returned by the model method. With the signature:
+            ``transformed_y_vals = f(x_vals, y_vals)``.
+
+       kwds['dqvals'] : np.ndarray, optional
+            An array containing the FWHM of the Gaussian approximated resolution
+            kernel. Has the same size as qvals.
+
+        kwds['quad_order'] : int, optional
+            The order of the Gaussian quadrature polynomial for doing the
+            resolution smearing. default = 17. Don't choose less than 13. If
+            quad_order == 'ultimate' then adaptive quadrature is used. Adaptive
+            quadrature will always work, but takes a _long_ time (2 or 3 orders
+            of magnitude longer). Fixed quadrature will always take a lot less
+            time. BUT it won't necessarily work across all samples. For
+            example 13 points may be fine for a thin layer, but will be
+            atrocious at describing a multilayer with Bragg peaks.
         '''
         if kwds is None:
             kwds = {}
@@ -253,7 +290,7 @@ class ReflectivityFitter(curvefitter.CurveFitter):
         super(ReflectivityFitter, self).__init__(parameters,
                                                  xdata,
                                                  ydata,
-                                                 self.reflectivity,
+                                                 None,
                                                  edata=edata,
                                                  args=args,
                                                  callback=self.callback,
@@ -264,37 +301,49 @@ class ReflectivityFitter(curvefitter.CurveFitter):
         if 'transform' in kwds:
             self.transform = kwds['transform']
 
-    def reflectivity(self, xdata, parameters, *args, **kwds):
+    def model(self, parameters):
         '''
-        calculate the theoretical model, given a set of parameters.
-        parameters - the full np.ndarray containing the parameters that are
-        required for the fitfunction
+        Calculate the theoretical model, given a set of parameters.
 
-        returns the theoretical model for the xdata, i.e.
-        self.fitfunction(self.xdata, test_parameters, *args, **kwds)
+        Parameters
+        ----------
+        parameters : lmfit.parameters.Parameters instance
+            Contains the parameters that are required for reflectivity
+            calculation.
+
+        Returns
+        -------
+        yvals : np.ndarray
+            The theoretical model for the xdata, i.e.
+            abeles(self.xdata, parameters, *self.args, **self.kwds)
         '''
         params = np.asfarray(parameters.valuesdict().values())
 
-        if not len(args):
-            args = self.args
-
-        yvals = abeles(xdata, params, *args, **kwds)
+        yvals = abeles(self.xdata, params, *self.args, **self.kwds)
 
         if self.transform:
-            yvals, temp = self.transform(xdata, yvals)
+            yvals, temp = self.transform(self.xdata, yvals)
 
         return yvals
 
     def sld_profile(self, parameters, args=(), **kwds):
         '''
-        returns the SLD profile corresponding to the model parameters.
+        Calculate the SLD profile corresponding to the model parameters.
 
-        returns z, rho(z) - the distance from the top interface and the SLD
-        at that point
+        Parameters
+        ----------
+        parameters : lmfit.parameters.Parameters instance
+
+        Returns
+        -------
+        (z, rho_z) : tuple of np.ndarrays
+            The distance from the top interface and the SLD at that point.
         '''
+
         params = np.asfarray(parameters.valuesdict().values())
 
         if 'points' in kwds and kwds['points'] is not None:
+            points = kwds['points']
             return points, sld_profile(params, points)
 
         if not int(parameters[0]):
@@ -314,11 +363,11 @@ class ReflectivityFitter(curvefitter.CurveFitter):
 
         return points, sld_profile(params, points)
 
-    def callback(self, parameters, iter, resid, *args, **kwds):
+    def callback(self, parameters, iteration, resid, *args, **kwds):
         return True
 
 
-class Transform:
+class Transform(object):
 
     def __init__(self, form):
         types = ['None', 'lin', 'logY', 'YX4', 'YX2']

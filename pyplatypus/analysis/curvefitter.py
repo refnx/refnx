@@ -207,8 +207,11 @@ class GlobalFitter(Minimizer):
             new_names = self.new_param_names[i]
             for new_name, old_name in new_names.items():
                 dataset.params[old_name].set(value=values[new_name])
+            resid = (dataset.ydata - dataset.model(dataset.params))
+            resid /= dataset.edata
+            
             total_residuals = np.append(total_residuals,
-                                        dataset.residuals(dataset.params))
+                                        resid)
 
         return total_residuals
 
@@ -318,7 +321,7 @@ class CurveFitter(Minimizer):
         residuals : np.ndarray
             The difference between the data and the model.
         """
-        model = self.fitfunc(self.xdata, params, *self.args, **self.kwds)
+        model = self.model(params)
         resid = (model - self.ydata) / self.edata
         return resid.flatten()
 
