@@ -1,15 +1,16 @@
 #! /usr/bin/env python
 # System imports
-from distutils.core import setup
-from distutils.extension import Extension
 from Cython.Distutils import build_ext
-import numpy as np                           # <---- New line
+import numpy as np
+from setuptools import setup, Extension, find_packages
 
 # Obtain the numpy include directory.  This logic works across numpy versions.
 try:
     numpy_include = np.get_include()
 except AttributeError:
     numpy_include = np.get_numpy_include()
+
+packages = find_packages()
 
 # creflect extension module
 _creflect = Extension(
@@ -23,13 +24,30 @@ _creflect = Extension(
              )
 
 # pyplatypus setup
-setup(  name        = "pyplatypus",
-        cmdclass = {'build_ext': build_ext},
-        description = "Processing and Analysing Reflectometry data",
-        author      = "Andrew Nelson",
-        version     = "1.0",
+setup(  name        = 'pyplatypus',
         ext_modules = [_creflect],
-        packages = ['pyplatypus', 'pyplatypus.reduce', 'pyplatypus.analysis',
-                    'pyplatypus.dataset', 'pyplatypus.util'],
-        requires = ['numpy', 'scipy']
+
+        cmdclass = {'build_ext': build_ext},
+
+        description = 'Neutron and X-ray Reflectometry Analysis',
+        author      = 'Andrew Nelson',
+        author_email = 'andrew.nelson@ansto.gov.au',
+        version     = '0.0.1',
+        license     = 'BSD',
+        url         = 'https://github.com/andyfaff/pyplatypus',
+        platforms = ["Windows", "Linux", "Solaris", "Mac OS-X", "Unix"],
+        classifiers =[
+        'Development Status :: 3 - Alpha',
+        'Environment :: Console',
+        'Intended Audience :: Science/Research',
+        'License :: Public Domain',
+        'Operating System :: OS Independent',
+        'Programming Language :: Python',
+        'Programming Language :: Python :: 3',
+        'Topic :: Scientific/Engineering',
+        'Topic :: Scientific/Engineering :: Chemistry',
+        'Topic :: Scientific/Engineering :: Physics',
+        ],
+        packages = packages,
+        install_requires = ['numpy', 'scipy', 'lmfit', 'cython'],
      )
