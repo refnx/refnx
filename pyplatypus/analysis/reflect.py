@@ -356,7 +356,7 @@ class ReflectivityFitter(curvefitter.CurveFitter):
             points = kwds['points']
             return points, sld_profile(params, points)
 
-        if not int(parameters[0]):
+        if not int(params[0]):
             zstart = -5 - 4 * math.fabs(params[7])
         else:
             zstart = -5 - 4 * math.fabs(params[11])
