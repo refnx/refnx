@@ -47,12 +47,22 @@ def convert_coefs_to_layer_format(coefs):
     w[-1, 2] = coefs[5]
     w[-1, 3] = coefs[7]
     for i in range(nlayers):
-        w[i + 1, 0] = coefs[4 * i + 8]
-        w[i + 1, 1] = coefs[4 * i + 9]
-        w[i + 1, 2] = coefs[4 * i + 10]
-        w[i + 1, 3] = coefs[4 * i + 11]
+        w[i + 1, 0: 4] = coefs[4 * i + 8: 4 * i + 12]
 
     return w
+
+def convert_layer_format_to_coefs(layers):
+    nlayers = np.size(layers, 0) - 2
+    coefs = np.zeros(4 * nlayers + 8, np.float64)
+    coefs[0] = nlayers
+    coefs[1] = 1.0
+    coefs[2: 4] = layers[0, 1:3]
+    coefs[4: 6] = layers[-1, 1:3]
+    coefs[7] = layers[-1, 3]
+    for i in range(nlayers):
+        coefs[4 * i + 8: 4 * i + 12] = layers[i + 1, 0:4]
+    
+    return coefs
 
 def abeles(q, coefs, *args, **kwds):
     """

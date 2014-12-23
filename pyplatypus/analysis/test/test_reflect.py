@@ -5,7 +5,7 @@ import pyplatypus.analysis._reflect as _reflect
 import pyplatypus.analysis.curvefitter as curvefitter
 
 import numpy as np
-from numpy.testing import assert_almost_equal
+from numpy.testing import assert_almost_equal, assert_equal
 import os.path
 
 path = os.path.dirname(os.path.abspath(__file__))
@@ -35,6 +35,10 @@ class TestReflect(unittest.TestCase):
 
         assert_almost_equal(calc, self.rvals)
 
+    def test_format_conversion(self):
+        coefs = reflect.convert_layer_format_to_coefs(self.layer_format)
+        assert_equal(coefs, self.coefs)
+        
     def test_c_abeles(self):
         #    test reflectivity calculation with values generated from Motofit
         calc = _creflect.abeles(self.qvals, self.layer_format)
