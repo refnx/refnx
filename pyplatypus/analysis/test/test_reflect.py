@@ -10,10 +10,11 @@ import pyplatypus.analysis._reflect as _reflect
 import pyplatypus.analysis.curvefitter as curvefitter
 
 import numpy as np
-from numpy.testing import assert_almost_equal, assert_equal
+from numpy.testing import assert_almost_equal, assert_equal, assert_
 import os.path
 
 path = os.path.dirname(os.path.abspath(__file__))
+
 
 class TestReflect(unittest.TestCase):
 
@@ -54,7 +55,38 @@ class TestReflect(unittest.TestCase):
         # test reflectivity calculation with values generated from Motofit
         calc = _reflect.abeles(self.qvals, self.layer_format)
         assert_almost_equal(calc, self.rvals)
+        
+    def test_compare_c_py_abeles(self):
+        # test python and c are equivalent
+        # but not the same file
+        if not HAVE_CREFLECT:
+            return
+        assert_(_reflect.__file__ != _creflect.__file__)
 
+        calc1 = _reflect.abeles(self.qvals, self.layer_format)
+        calc2 = _creflect.abeles(self.qvals, self.layer_format)
+        assert_almost_equal(calc1, calc2)
+        calc1 = _reflect.abeles(self.qvals, self.layer_format, scale=2.)
+        calc2 = _creflect.abeles(self.qvals, self.layer_format, scale=2.)
+        assert_almost_equal(calc1, calc2)
+        calc1 = _reflect.abeles(self.qvals, self.layer_format, scale=0.5,
+                                bkg=0.1)
+        calc2 = _creflect.abeles(self.qvals, self.layer_format, scale=0.5,
+                                 bkg=0.1)
+        assert_almost_equal(calc1, calc2)    
+
+    def test_compare_c_py_abeles2(self):        
+        #test two layer system
+        if not HAVE_CREFLECT:
+            return
+        layer2 = np.array([[0, 2.07, 0.01, 3],
+                           [10, 3.47, 0.01, 3],
+                           [100, 1.0, 0.01, 4],
+                           [0, 6.36, 0.1, 3]])
+        calc1 = _reflect.abeles(self.qvals, layer2, scale=0.99, bkg=1e-8)
+        calc2 = _creflect.abeles(self.qvals, layer2, scale=0.99, bkg=1e-8)
+        assert_almost_equal(calc1, calc2)
+          
     def test_reflectivity_fitter(self):
         # test reflectivity calculation with values generated from Motofit
         params = curvefitter.params(self.coefs)

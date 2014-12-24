@@ -9,14 +9,14 @@ SEED = 1
 path = os.path.dirname(os.path.abspath(__file__))
 
 def gauss(x, p0, *args):
-    p = p0.valuesdict().values()
+    p = list(p0.valuesdict().values())
+
     return p[0] + p[1] * np.exp(-((x - p[2]) / p[3])**2)
 
 
 class TestFitter(unittest.TestCase):
 
     def setUp(self):
-        np.seterr(invalid='raise')
         self.xdata = np.linspace(-4, 4, 100)
         self.p0 = np.array([0., 1., 0.0, 1.])
         self.bounds = [(-1, 1), (0, 2), (-1, 1.), (0.001, 2)]
@@ -28,7 +28,7 @@ class TestFitter(unittest.TestCase):
         self.f = CurveFitter(self.params, self.xdata, self.ydata, gauss)
 
     def pvals(self, params):
-        return np.asfarray(params.valuesdict().values())
+        return np.asfarray(list(params.valuesdict().values()))
 
     def test_fitting(self):
         #the simplest test - a really simple gauss curve with perfect data
@@ -76,9 +76,7 @@ class TestFitterGauss(unittest.TestCase):
     #Test CurveFitter with a noisy gaussian, weighted and unweighted, to see
     #if the parameters and uncertainties come out correct
 
-    def setUp(self):
-        np.seterr(invalid='raise')
-        
+    def setUp(self):        
         theoretical = np.loadtxt(os.path.join(path, 'gauss_data.txt'))
         xvals, yvals, evals = np.hsplit(theoretical, 3)
         self.xvals = xvals.flatten()
@@ -109,7 +107,7 @@ class TestFitterGauss(unittest.TestCase):
                         edata=self.evals)
         f.fit()
         
-        output = self.params.valuesdict().values()
+        output = list(self.params.valuesdict().values())
         assert_almost_equal(output, self.best_weighted, 5)
         assert_almost_equal(f.chisqr, self.best_weighted_chisqr)
 
@@ -120,7 +118,7 @@ class TestFitterGauss(unittest.TestCase):
         f = CurveFitter(self.params, self.xvals, self.yvals, gauss)
         f.fit()
         
-        output = self.params.valuesdict().values()
+        output = list(self.params.valuesdict().values())
         assert_almost_equal(output, self.best_unweighted, 5)
         assert_almost_equal(f.chisqr, self.best_unweighted_chisqr)
 

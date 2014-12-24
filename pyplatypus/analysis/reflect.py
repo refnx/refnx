@@ -12,6 +12,7 @@ try:
 except ImportError:
     import pyplatypus.analysis._reflect as refcalc
 
+
 # some definitions for resolution smearing
 FWHM = 2 * math.sqrt(2 * math.log(2.0))
 INTLIMIT = 3.5
@@ -197,7 +198,7 @@ def sld_profile(coefs, z):
 
     for idx, zed in enumerate(z):
         dist = 0
-        for ii in xrange(nlayers + 1):
+        for ii in range(nlayers + 1):
             if ii == 0:
                 if nlayers:
                     deltarho = -coefs[2] + coefs[9]
@@ -327,7 +328,7 @@ class ReflectivityFitter(curvefitter.CurveFitter):
             The theoretical model for the xdata, i.e.
             abeles(self.xdata, parameters, *self.args, **self.kwds)
         '''
-        params = np.asfarray(parameters.valuesdict().values())
+        params = np.asfarray(list(parameters.valuesdict().values()))
 
         yvals = abeles(self.xdata, params, *self.args, **self.kwds)
 

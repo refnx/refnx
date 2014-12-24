@@ -4,6 +4,7 @@ Created on Sun Dec 21 15:37:29 2014
 
 @author: anz
 """
+from __future__ import print_function
 from lmfit import Minimizer, Parameters
 import numpy as np
 import re
@@ -43,8 +44,11 @@ def params(p0, varies=None, bounds=None, names=None, expr=None):
         names = ['p%d'%i for i in range(p0.size)]
 
     if bounds is not None:
-        lowlim = np.array(bounds)[:, 0]
-        hilim = np.array(bounds)[:, 1]
+        lowlim = []
+        hilim = []
+        for bound in bounds:
+            lowlim.append(bound[0])
+            hilim.append(bound[1])
     else:
         lowlim = [None] * p0.size
         hilim = [None] * p0.size
@@ -64,7 +68,7 @@ def params(p0, varies=None, bounds=None, names=None, expr=None):
         if (lowlim[i] is not None and hilim[i] is not None and
             np.isfinite(lowlim[i]) and np.isfinite(hilim[i]) and
             lowlim[i] == hilim[i]):
-            hilim[i] += _MACHEPS
+            hilim[i] += 1
             _p0[i] = lowlim[i]
             _varies[i] = False
             warnings.warn('Parameter min==max and parameter %s was varying. %s'
@@ -131,7 +135,7 @@ class GlobalFitter(Minimizer):
 
             # if there are any expressions they have to be updated
             # iterate through all the parameters in the dataset
-            old_names = dict((v, k) for k, v in new_names.iteritems())
+            old_names = dict((v, k) for k, v in new_names.items())
             for i, param in enumerate(dataset.params.values()):
                 expr = param.expr
                 new_name = old_names[param.name]
@@ -414,8 +418,8 @@ if __name__ == '__main__':
 
     f = CurveFitter(pars, xdata, ydata, gauss)
     f.fit('differential_evolution')
-    print fit_report(f)
+    print(fit_report(f))
 
     g = GlobalFitter([f], ['d0p3:1'])
     g.fit()
-    print fit_report(g)
+    print*(fit_report(g))

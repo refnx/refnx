@@ -1,4 +1,4 @@
-from __future__ import division
+from __future__ import division, print_function
 import numpy as np
 import math
 
@@ -86,4 +86,4 @@ if __name__ == '__main__':
         abeles(len(b), b, a)
 
     t = timeit.Timer(stmt=loop)
-    print t.timeit(number=1000)
+    print(t.timeit(number=1000))
