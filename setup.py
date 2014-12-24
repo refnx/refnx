@@ -1,8 +1,13 @@
 #! /usr/bin/env python
 # System imports
-from Cython.Distutils import build_ext
 import numpy as np
 from setuptools import setup, Extension, find_packages
+try:
+    from Cython.Distutils import build_ext
+except ImportError:
+    USE_CYTHON = False
+else:
+    USE_CYTHON = True
 
 # Obtain the numpy include directory.  This logic works across numpy versions.
 try:
@@ -12,20 +17,25 @@ except AttributeError:
 
 packages = find_packages()
 
-# creflect extension module
-_creflect = Extension(
-             name = 'pyplatypus.analysis._creflect',
-             sources=['src/_creflect.pyx', 'src/refcalc.cpp'],
-             include_dirs = [numpy_include],
-             language = 'c',
-             extra_link_args = ['-lpthread']
-                 # libraries=
-                 # extra_compile_args = "...".split(),
-             )
+ext_modules = []
+
+if USE_CYTHON:
+    # creflect extension module
+    _creflect = Extension(
+                          name = 'pyplatypus.analysis._creflect',
+                          sources=['src/_creflect.pyx', 'src/refcalc.cpp'],
+                          include_dirs = [numpy_include],
+                          language = 'c',
+                          extra_link_args = ['-lpthread']
+                          # libraries=
+                          # extra_compile_args = "...".split(),
+                          )
+    ext_modules.append(_creflect)
+
 
 # pyplatypus setup
 setup(  name        = 'pyplatypus',
-        ext_modules = [_creflect],
+        ext_modules = ext_modules,
 
         cmdclass = {'build_ext': build_ext},
 
@@ -49,5 +59,5 @@ setup(  name        = 'pyplatypus',
         'Topic :: Scientific/Engineering :: Physics',
         ],
         packages = packages,
-        install_requires = ['numpy', 'scipy', 'lmfit', 'cython'],
+        install_requires = ['numpy', 'scipy', 'lmfit'],
      )

@@ -1,6 +1,11 @@
 import unittest
 import pyplatypus.analysis.reflect as reflect
-import pyplatypus.analysis._creflect as _creflect
+try:
+    import pyplatypus.analysis._creflect as _creflect
+except ImportError:
+    HAVE_CREFLECT = False
+else:
+    HAVE_CREFLECT = True
 import pyplatypus.analysis._reflect as _reflect
 import pyplatypus.analysis.curvefitter as curvefitter
 
@@ -40,9 +45,10 @@ class TestReflect(unittest.TestCase):
         assert_equal(coefs, self.coefs)
         
     def test_c_abeles(self):
-        #    test reflectivity calculation with values generated from Motofit
-        calc = _creflect.abeles(self.qvals, self.layer_format)
-        assert_almost_equal(calc, self.rvals)
+        if HAVE_CREFLECT:
+            #    test reflectivity calculation with values generated from Motofit
+            calc = _creflect.abeles(self.qvals, self.layer_format)
+            assert_almost_equal(calc, self.rvals)
 
     def test_py_abeles(self):
         # test reflectivity calculation with values generated from Motofit

@@ -7,6 +7,10 @@ Created on Sun Dec 21 15:37:29 2014
 from lmfit import Minimizer, Parameters
 import numpy as np
 import re
+import warnings
+
+
+_MACHEPS = np.finfo(np.float64).eps
 
 def params(p0, varies=None, bounds=None, names=None, expr=None):
     """
@@ -31,7 +35,9 @@ def params(p0, varies=None, bounds=None, names=None, expr=None):
     p : lmfit.Parameters instance
     """
     if varies is None:
-        varies = [True] * p0.size
+        _varies = [True] * p0.size
+    else:
+        _varies = list(varies)
 
     if names is None:
         names = ['p%d'%i for i in range(p0.size)]
@@ -45,9 +51,28 @@ def params(p0, varies=None, bounds=None, names=None, expr=None):
 
     if expr is None:
         expr = [None] * p0.size
-
+        
+    _p0 = np.copy(p0)
+        
     p = Parameters()
-    p.add_many(*zip(names, p0, varies, lowlim, hilim, expr))
+    #go through and add the parameters
+    for i in range(p0.size):
+        # if the limits are finite and equal, then you shouldn't be fitting
+        # the parameter. So fix the parameter and set the upper limit to be
+        # slightly larger (otherwise you'll get an error when setting the
+        # Parameter up)
+        if (lowlim[i] is not None and hilim[i] is not None and
+            np.isfinite(lowlim[i]) and np.isfinite(hilim[i]) and
+            lowlim[i] == hilim[i]):
+            hilim[i] += _MACHEPS
+            _p0[i] = lowlim[i]
+            _varies[i] = False
+            warnings.warn('Parameter min==max and parameter %s was varying. %s'
+                          ' now fixed' % (names[i], names[i]), RuntimeWarning)
+                
+        p.add(names[i], value=_p0[i], min=lowlim[i], max=hilim[i],
+              vary=_varies[i], expr=expr[i])
+
     return p
 
 

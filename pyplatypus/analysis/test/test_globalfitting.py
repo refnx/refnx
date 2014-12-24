@@ -6,7 +6,6 @@ import numpy as np
 from lmfit import fit_report
 import os.path
 from numpy.testing import assert_, assert_equal, assert_almost_equal
-import time
 
 SEED = 1
 
@@ -19,6 +18,8 @@ def reflect_fitfunc(q, params, *args):
 class TestGlobalFitting(unittest.TestCase):
 
     def setUp(self):
+        self.err_state = np.geterr()
+        np.seterr(divide = 'warn')
         coefs = np.zeros((16))
         coefs[0] = 2
         coefs[1] = 1.
@@ -43,8 +44,11 @@ class TestGlobalFitting(unittest.TestCase):
         hilim = 2 * coefs
 
         self.bounds = zip(lowlim, hilim)
-        self.params = curvefitter.params(coefs, bounds=self.bounds,
-                                         varies=[False] * 16)
+        try:
+            self.params = curvefitter.params(coefs, bounds=self.bounds,
+                                             varies=[False] * 16)
+        except FloatingPointError:
+            pass
 
         fname = os.path.join(path, 'c_PLP0011859_q.txt')
         theoretical = np.loadtxt(fname)
@@ -53,6 +57,9 @@ class TestGlobalFitting(unittest.TestCase):
         self.f = curvefitter.CurveFitter(self.params, qvals.flatten(),
                                          rvals.flatten(), reflect_fitfunc)
 
+    def tearDown(self):
+        np.seterr(**self.err_state)
+        
     def test_residuals_length(self):
         # the residuals should be the same length as the data
         a = GlobalFitter([self.f])
