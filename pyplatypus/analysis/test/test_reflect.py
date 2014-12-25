@@ -27,7 +27,7 @@ class TestReflect(unittest.TestCase):
         self.coefs[8] = 100
         self.coefs[9] = 3.47
         self.coefs[11] = 2
-        
+
         self.layer_format = reflect.convert_coefs_to_layer_format(self.coefs)
 
         theoretical = np.loadtxt(os.path.join(path, 'theoretical.txt'))
@@ -44,7 +44,7 @@ class TestReflect(unittest.TestCase):
     def test_format_conversion(self):
         coefs = reflect.convert_layer_format_to_coefs(self.layer_format)
         assert_equal(coefs, self.coefs)
-        
+
     def test_c_abeles(self):
         if HAVE_CREFLECT:
             #    test reflectivity calculation with values generated from Motofit
@@ -55,7 +55,7 @@ class TestReflect(unittest.TestCase):
         # test reflectivity calculation with values generated from Motofit
         calc = _reflect.abeles(self.qvals, self.layer_format)
         assert_almost_equal(calc, self.rvals)
-        
+
     def test_compare_c_py_abeles(self):
         # test python and c are equivalent
         # but not the same file
@@ -73,9 +73,19 @@ class TestReflect(unittest.TestCase):
                                 bkg=0.1)
         calc2 = _creflect.abeles(self.qvals, self.layer_format, scale=0.5,
                                  bkg=0.1)
-        assert_almost_equal(calc1, calc2)    
+        assert_almost_equal(calc1, calc2)
 
-    def test_compare_c_py_abeles2(self):        
+    def test_compare_c_py_abeles0(self):
+        #test two layer system
+        if not HAVE_CREFLECT:
+            return
+        layer0 = np.array([[0, 2.07, 0.01, 3],
+                           [0, 6.36, 0.1, 3]])
+        calc1 = _reflect.abeles(self.qvals, layer0, scale=0.99, bkg=1e-8)
+        calc2 = _creflect.abeles(self.qvals, layer0, scale=0.99, bkg=1e-8)
+        assert_almost_equal(calc1, calc2)
+
+    def test_compare_c_py_abeles2(self):
         #test two layer system
         if not HAVE_CREFLECT:
             return
@@ -86,16 +96,16 @@ class TestReflect(unittest.TestCase):
         calc1 = _reflect.abeles(self.qvals, layer2, scale=0.99, bkg=1e-8)
         calc2 = _creflect.abeles(self.qvals, layer2, scale=0.99, bkg=1e-8)
         assert_almost_equal(calc1, calc2)
-          
+
     def test_reflectivity_fitter(self):
         # test reflectivity calculation with values generated from Motofit
         params = curvefitter.params(self.coefs)
-        
+
         fitter = reflect.ReflectivityFitter(params, self.qvals, self.rvals)
         model = fitter.model(params)
 
         assert_almost_equal(model, self.rvals)
-        
+
     def test_smearedabeles(self):
         # test smeared reflectivity calculation with values generated from
         # Motofit (quadrature precsion order = 13)
@@ -122,15 +132,15 @@ class TestReflect(unittest.TestCase):
         Do the same here
         '''
         params = curvefitter.params(self.coefs)
-        
-        fitter = reflect.ReflectivityFitter(params, qvals.flatten(), 
+
+        fitter = reflect.ReflectivityFitter(params, qvals.flatten(),
                                             rvals.flatten(),
                                             kwds={'dqvals': dqvals.flatten(),
                                                   'quad_order': 13})
         model = fitter.model(params)
 
         assert_almost_equal(model, rvals.flatten())
-        
+
     def test_sld_profile(self):
         # test SLD profile with SLD profile from Motofit.
         np.seterr(invalid='raise')

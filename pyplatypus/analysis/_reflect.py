@@ -1,6 +1,5 @@
 from __future__ import division, print_function
 import numpy as np
-import math
 
 
 def abeles(qvals, w, scale=1., bkg=0):
@@ -29,6 +28,7 @@ def abeles(qvals, w, scale=1., bkg=0):
             Q=4*Pi/lambda * sin(omega).
             Units = Angstrom**-1
     """
+
     nlayers = w.shape[0] - 2
     npnts = np.size(qvals, 0)
 
@@ -36,7 +36,6 @@ def abeles(qvals, w, scale=1., bkg=0):
 
     SLD = np.zeros(nlayers + 2, np.complex128)
     SLD[:] += ((w[:, 1] - w[0, 1]) + 1j * (w[:, 2] - w[0, 2])) * 1.e-6
-
     kn[:] = np.sqrt(qvals[:, np.newaxis]**2. / 4. - 4. * np.pi * SLD)
 
     # work out the fresnel reflection for each layer
@@ -46,7 +45,7 @@ def abeles(qvals, w, scale=1., bkg=0):
     beta = np.ones((npnts, w.shape[0] - 1), np.complex128)
 
     if nlayers:
-        beta[:, 1:] = np.exp(kn[:, 1::-2] * 1j * np.fabs(w[1::-2, 0]))
+        beta[:, 1:] = np.exp(kn[:, 1: -1] * 1j * np.fabs(w[1: -1, 0]))
 
     MRtotal = np.zeros((npnts, 2, 2), np.complex128)
     MI = np.zeros((npnts, nlayers + 1, 2, 2), np.complex128)
