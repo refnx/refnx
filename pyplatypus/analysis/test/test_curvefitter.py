@@ -83,10 +83,11 @@ class TestFitterGauss(unittest.TestCase):
         self.yvals = yvals.flatten()
         self.evals = evals.flatten()
         
-        self.best_weighted = [-0.0024609479081880714, 19.52991613793462,
-                              -0.082844576308140461, 1.2469169306656911]
-        self.best_weighted_errors = [0.019809, 1.014120,
-                                     0.040242, 0.037003]
+        self.best_weighted = [-0.00246095, 19.5299, -8.28446e-2, 1.24692]
+
+        self.best_weighted_errors = [0.0220313708486, 1.12879436221,
+                                     0.0447659158681, 0.0412022938883]
+
         self.best_weighted_chisqr = 77.6040960351
         
         self.best_unweighted = [-0.10584111872702096, 19.240347049328989,
@@ -108,7 +109,7 @@ class TestFitterGauss(unittest.TestCase):
         f.fit()
         
         output = list(self.params.valuesdict().values())
-        assert_almost_equal(output, self.best_weighted, 5)
+        assert_almost_equal(output, self.best_weighted, 4)
         assert_almost_equal(f.chisqr, self.best_weighted_chisqr)
 
         uncertainties = [f.params['p%d'%i].stderr for i in range(4)]

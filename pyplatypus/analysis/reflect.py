@@ -244,8 +244,8 @@ class ReflectivityFitter(curvefitter.CurveFitter):
         override the sld_profile method of ReflectivityFitter.
     '''
 
-    def __init__(self, parameters, xdata, ydata, edata=None, args=(),
-                 kwds=None, minimizer_kwds=None):
+    def __init__(self, parameters, xdata, ydata, edata=None, fcn_args=(),
+                 fcn_kws=None, kws=None):
         '''
         Initialises the ReflectivityFitter.
         See the constructor of the CurveFitter for more details, especially the
@@ -262,28 +262,28 @@ class ReflectivityFitter(curvefitter.CurveFitter):
         edata : np.ndarray, optional
             The measured uncertainty in the dependent variable, expressed as
             sd.  If this array is not specified, then edata is set to unity.
-        args : tuple, optional
+        fcn_args : tuple, optional
             Extra parameters for supplying to the abeles function.
-        kwds : dict, optional
+        fcn_kws : dict, optional
             Extra keyword parameters for supplying to the abeles function.
             See the notes below.
-        minimizer_kwds : dict, optional
+        kws : dict, optional
             Keywords passed to the minimizer.
 
         Notes
         -----
         ReflectivityFitter uses one extra kwds entry:
 
-        kwds['transform'] : callable, optional
+        fcn_kws['transform'] : callable, optional
             If specified then this function is used to transform the data
             returned by the model method. With the signature:
             ``transformed_y_vals = f(x_vals, y_vals)``.
 
-       kwds['dqvals'] : np.ndarray, optional
+        fcn_kws['dqvals'] : np.ndarray, optional
             An array containing the FWHM of the Gaussian approximated resolution
             kernel. Has the same size as qvals.
 
-        kwds['quad_order'] : int, optional
+        fcn_kws['quad_order'] : int, optional
             The order of the Gaussian quadrature polynomial for doing the
             resolution smearing. default = 17. Don't choose less than 13. If
             quad_order == 'ultimate' then adaptive quadrature is used. Adaptive
@@ -293,9 +293,9 @@ class ReflectivityFitter(curvefitter.CurveFitter):
             example 13 points may be fine for a thin layer, but will be
             atrocious at describing a multilayer with Bragg peaks.
         '''
-        if kwds is None:
-            kwds = {}
-        if minimizer_kwds is None:
+        if fcn_kws is None:
+            fcn_kws = {}
+        if kws is None:
             minimizer_kwds = {}
 
         super(ReflectivityFitter, self).__init__(parameters,
@@ -303,14 +303,14 @@ class ReflectivityFitter(curvefitter.CurveFitter):
                                                  ydata,
                                                  None,
                                                  edata=edata,
-                                                 args=args,
+                                                 fcn_args=fcn_args,
                                                  callback=self.callback,
-                                                 kwds=kwds,
-                                                 minimizer_kwds=minimizer_kwds)
+                                                 fcn_kws=fcn_kws,
+                                                 kws=minimizer_kwds)
 
         self.transform = None
-        if 'transform' in kwds:
-            self.transform = kwds['transform']
+        if 'transform' in fcn_kws:
+            self.transform = fcn_kws['transform']
 
     def model(self, parameters):
         '''
@@ -330,14 +330,14 @@ class ReflectivityFitter(curvefitter.CurveFitter):
         '''
         params = np.asfarray(list(parameters.valuesdict().values()))
 
-        yvals = abeles(self.xdata, params, *self.args, **self.kwds)
+        yvals = abeles(self.xdata, params, *self.userargs, **self.userkws)
 
         if self.transform:
             yvals, temp = self.transform(self.xdata, yvals)
 
         return yvals
 
-    def sld_profile(self, parameters, args=(), **kwds):
+    def sld_profile(self, parameters, fcn_args=(), **fcn_kws):
         '''
         Calculate the SLD profile corresponding to the model parameters.
 
@@ -353,8 +353,8 @@ class ReflectivityFitter(curvefitter.CurveFitter):
 
         params = np.asfarray(parameters.valuesdict().values())
 
-        if 'points' in kwds and kwds['points'] is not None:
-            points = kwds['points']
+        if 'points' in fcn_kws and fcn_kws['points'] is not None:
+            points = fcn_kws['points']
             return points, sld_profile(params, points)
 
         if not int(params[0]):
@@ -374,7 +374,7 @@ class ReflectivityFitter(curvefitter.CurveFitter):
 
         return points, sld_profile(params, points)
 
-    def callback(self, parameters, iteration, resid, *args, **kwds):
+    def callback(self, parameters, iteration, resid, *fcn_args, **fcn_kws):
         return True
 
 

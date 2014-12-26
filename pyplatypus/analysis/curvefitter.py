@@ -311,10 +311,10 @@ class CurveFitter(Minimizer):
         self.MDL = None
         if edata is not None:
             self.edata = np.asfarray(edata)
-            self.scale_covar = True
+            self.scale_covar = False
         else:
             self.edata = np.ones_like(self.ydata)
-            self.scale_covar = False
+            self.scale_covar = True
 
         min_kwds = {}
         if kws is not None:
@@ -399,7 +399,8 @@ class CurveFitter(Minimizer):
         """
         Samples the posterior for the curvefitting system using MCMC.
         This method updates curvefitter.params at the end of the sampling
-        process.
+        process.  You have to have set bounds on all of the parameters, and it
+        is assumed that the prior is Uniform.
         
         Parameters
         ----------
@@ -464,8 +465,8 @@ class CurveFitter(Minimizer):
     
         self.MDL = MDL
         return MDL
-        
-        
+
+
 if __name__ == '__main__':
     from lmfit import fit_report
     import matplotlib

@@ -90,7 +90,7 @@ class TestGlobalFitting(unittest.TestCase):
         for p in fit:
             self.params['p%d' % p].vary = True
 
-        a = GlobalFitter([self.f], minimizer_kwds={'options':{'seed': 1}})
+        a = GlobalFitter([self.f], kws={'options':{'seed': 1}})
         a.fit(method='differential_evolution')
 
         values = list(self.params.valuesdict().values())
@@ -209,7 +209,7 @@ class TestGlobalFitting(unittest.TestCase):
 
         g = GlobalFitter([a, b, c], constraints=['d1p8:d0p8', 'd2p8:d0p8',
                          'd1p12:d0p12', 'd2p12:d0p12'],
-                         minimizer_kwds={'options':{'seed':1}})
+                         kws={'options':{'seed':1}})
         
         g.fit('differential_evolution')
         assert_almost_equal(g.chisqr, 0.774590447535)
