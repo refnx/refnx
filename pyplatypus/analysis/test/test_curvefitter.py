@@ -2,7 +2,9 @@ import unittest
 import pyplatypus.analysis.curvefitter as curvefitter
 from pyplatypus.analysis.curvefitter import CurveFitter
 import numpy as np
-from numpy.testing import assert_almost_equal, assert_equal, assert_
+from copy import deepcopy
+from numpy.testing import (assert_almost_equal, assert_equal, assert_,
+                           assert_allclose)
 import os.path
 SEED = 1
 
@@ -125,6 +127,15 @@ class TestFitterGauss(unittest.TestCase):
 
         uncertainties = [f.params['p%d'%i].stderr for i in range(4)]
         assert_almost_equal(uncertainties, self.best_unweighted_errors, 3)
+        
+    def test_mcmc_vs_lm(self):
+        #test mcmc output vs lm
+        f = CurveFitter(self.params, self.xvals, self.yvals, gauss,
+                        edata=self.evals)
+        np.random.seed(123456)
+        f.mcmc(samples=2000, burn=1000, thin=30, verbose=0)
+        output = list(self.params.valuesdict().values())
+        assert_allclose(output, self.best_weighted, rtol=0.02, atol=0.01)
 
 
 if __name__ == '__main__':

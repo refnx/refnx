@@ -328,7 +328,7 @@ class CurveFitter(Minimizer):
                                           scale_covar=self.scale_covar,
                                           **min_kwds)
 
-    def residuals(self, params):
+    def residuals(self, params, *args, **kwds):
         """
         Calculate the difference between the data and the model.
         Also known as the objective function.  This function is minimized
@@ -395,7 +395,7 @@ class CurveFitter(Minimizer):
         """
         return self.minimize(method=method)
     
-    def mcmc(self, samples=1e4, burn=0, thin=1):
+    def mcmc(self, samples=1e4, burn=0, thin=1, verbose=0):
         """
         Samples the posterior for the curvefitting system using MCMC.
         This method updates curvefitter.params at the end of the sampling
@@ -411,6 +411,8 @@ class CurveFitter(Minimizer):
             Discard this many samples from the start of the sampling regime.
         thin : int, optional
             Only accept 1 in `thin` samples.
+        verbose : integer, optional
+            Level of output verbosity: 0=none, 1=low, 2=medium, 3=high
         
         Returns
         -------
@@ -418,58 +420,72 @@ class CurveFitter(Minimizer):
             Contains the samples.
         """
         
+        # fitted is a dict of tuples. the key is the param name. The tuple
+        # (i, j) has i = i'th parameter, j = index into the j'th fitted
+        # parameter
         fitted = {}
+        self.__fun_evals = 0
+        j = 0
+        for i, par in enumerate(self.params):
+            parameter = self.params[par]
+            if parameter.vary:
+                fitted[parameter.name] = (i, j)
+                j += 1
+        
         def driver():
-            p = np.empty(len(self.params), dtype=object)
-            j = 0
-            for i, par in enumerate(self.params):
+            p = np.empty(len(fitted), dtype=object)
+            for par, idx in fitted.items():
                 parameter = self.params[par]
-                if parameter.vary:
-                    p[j] = pymc.Uniform(parameter.name, parameter.min,
-                                        parameter.max, value=parameter.value)
-                    fitted[parameter.name] = i
-                    j += 1
+                p[idx[1]] = pymc.Uniform(parameter.name, parameter.min,
+                                         parameter.max, value=parameter.value)
     
             @pymc.deterministic(plot=False)
             def model(p=p):
+                self.__fun_evals += 1
                 for name in fitted:
-                    self.params[name].value = p[fitted[name]]
+                    self.params[name].value = p[fitted[name][1]]
                 return self.model(self.params)
 
             y = pymc.Normal('y', mu=model, tau=1.0 / self.edata**2,
                             value=self.ydata, observed=True)
+
             return locals()
 
-        MDL = pymc.MCMC(driver())
+        MDL = pymc.MCMC(driver(), verbose=verbose)
         MDL.sample(samples, burn=burn, thin=thin)
         stats = MDL.stats()
 
         #work out correlation coefficients
         corrcoefs = np.corrcoef(np.vstack(
                      [MDL.trace(par, chain=None)[:] for par in fitted.keys()]))
-
+                
         for par in self.params:
-            param = self.params[par]
+            self.params[par].stderr = None
+            self.params[par].correl = None
 
-            if par in fitted.keys():
-                params.correl = {}
-                param.value = stats[par]['mean']
-                param.stderr = stats[par]['standard deviation']
-                for par2 in fitted.keys():
-                    i, j = fitted[par], fitted[par2]
-                    if i != j:
-                        param.correl[par2] = corrcoefs[i, j]
-            else:
-                param.stderr = None
-                param.correl = None
-    
+        for par in fitted.keys():
+            i = fitted[par][1]
+            param = self.params[par]
+            param.correl = {}
+            param.value = stats[par]['mean']
+            param.stderr = stats[par]['standard deviation']
+            for par2 in fitted.keys():
+                j = fitted[par2][1]
+                if i != j:
+                    param.correl[par2] = corrcoefs[i, j]
+
         self.MDL = MDL
+        self.ndata = self.ydata.size
+        self.nvarys = len(fitted)
+        self.nfev = self.__fun_evals
+        self.chisqr = np.sum(self.residuals(self.params) ** 2)
+        self.redchi = self.chisqr / (self.ndata - self.nvarys)
+        del(self.__fun_evals)
         return MDL
 
 
 if __name__ == '__main__':
     from lmfit import fit_report
-    import matplotlib
    
     def gauss(x, params, *args):
         'Calculates a Gaussian model'
