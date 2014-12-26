@@ -6,6 +6,7 @@ Created on Sun Dec 21 15:37:29 2014
 """
 from __future__ import print_function
 from lmfit import Minimizer, Parameters
+import pymc
 import numpy as np
 import re
 import warnings
@@ -84,7 +85,7 @@ class GlobalFitter(Minimizer):
     """
     A class for simultaneous curvefitting of multiple datasets
     """
-    def __init__(self, datasets, constraints=(), minimizer_kwds=None,
+    def __init__(self, datasets, constraints=(), kws=None,
                  callback=None):
         """
         datasets : sequence of CurveFitter instances
@@ -93,7 +94,7 @@ class GlobalFitter(Minimizer):
             Of the type 'dNpM:constraint'. Sets a constraint expression for
             parameter M in dataset N.  The constraint 'd2p3:d0p1' constrains
             parameter 3 in dataset 2 to be equal to parameter 1 in dataset 0.
-        minimizer_kwds : dict, optional
+        kws : dict, optional
             Extra minimization keywords to be passed to the minimizer of
             choice.
         callback : callable, optional
@@ -101,10 +102,9 @@ class GlobalFitter(Minimizer):
             ``callback(params, iter, resid)``
 
         """
-        self.callback = callback
         min_kwds = {}
-        if minimizer_kwds is not None:
-            min_kwds = minimizer_kwds
+        if kws is not None:
+            min_kwds = kws
 
         for dataset in datasets:
             if not isinstance(dataset, CurveFitter):
@@ -185,7 +185,7 @@ class GlobalFitter(Minimizer):
         self.params = p
         super(GlobalFitter, self).__init__(self.residuals,
                                            self.params,
-                                           iter_cb=self.callback,
+                                           iter_cb=callback,
                                            **min_kwds)
 
     def model(self, params):
@@ -280,8 +280,8 @@ class CurveFitter(Minimizer):
     """
     A curvefitting class that extends lmfit.Minimize
     """
-    def __init__(self, params, xdata, ydata, fitfunc, edata=None, args=(),
-                 kwds=None, minimizer_kwds=None, callback=None):
+    def __init__(self, params, xdata, ydata, fitfunc, edata=None, fcn_args=(),
+                fcn_kws=None, kws=None, callback=None):
         """
         params : lmfit.Parameters instance
             Specifies the parameter set for the fit
@@ -291,13 +291,13 @@ class CurveFitter(Minimizer):
             The dependent (observed) variable
         fitfunc : callable
             Function calculating the model for the fit.  Should have the
-            signature: ``fitfunc(xdata, params, *args, **kwds)``
+            signature: ``fitfunc(xdata, params, *fcn_args, **fcn_kws)``
         edata : np.ndarray, optional
             The measured uncertainty in the dependent variable, expressed as
             sd.  If this array is not specified, then edata is set to unity.
-        args : tuple, optional
+        fcn_args : tuple, optional
             Extra parameters required to fully specify fitfunc.
-        kwds : dict, optional
+        fcn_kws : dict, optional
             Extra keyword parameters needed to fully specify fitfunc.
         minimizer_kwds : dict, optional
             Keywords passed to the minimizer.
@@ -308,29 +308,24 @@ class CurveFitter(Minimizer):
         self.fitfunc = fitfunc
         self.xdata = np.asfarray(xdata)
         self.ydata = np.asfarray(ydata)
-        self.params = params
+        self.MDL = None
         if edata is not None:
             self.edata = np.asfarray(edata)
+            self.scale_covar = True
         else:
             self.edata = np.ones_like(self.ydata)
-
-        self.args = args
-
-        self.kwds = {}
-        if kwds is not None:
-            self.kwds = kwds
+            self.scale_covar = False
 
         min_kwds = {}
-        if minimizer_kwds is not None:
-            min_kwds = minimizer_kwds
-
-        self.callback = None
-        if callable(callback):
-            self.callback = callback
+        if kws is not None:
+            min_kwds = kws
 
         super(CurveFitter, self).__init__(self.residuals,
-                                          self.params,
-                                          iter_cb=self.callback,
+                                          params,
+                                          iter_cb=callback,
+                                          fcn_args=fcn_args,
+                                          fcn_kws=fcn_kws,
+                                          scale_covar=self.scale_covar,
                                           **min_kwds)
 
     def residuals(self, params):
@@ -368,7 +363,8 @@ class CurveFitter(Minimizer):
         model : np.ndarray
             The model.
         """
-        return self.fitfunc(self.xdata, params, *self.args, **self.kwds)
+        return self.fitfunc(self.xdata, params, *self.userargs,
+                            **self.userkws)
 
     def fit(self, method='leastsq'):
         """
@@ -398,10 +394,82 @@ class CurveFitter(Minimizer):
             Whether the fit succeeded.
         """
         return self.minimize(method=method)
+    
+    def mcmc(self, samples=1e4, burn=0, thin=1):
+        """
+        Samples the posterior for the curvefitting system using MCMC.
+        This method updates curvefitter.params at the end of the sampling
+        process.
+        
+        Parameters
+        ----------
+        samples : int, optional
+            How many samples you would like to draw from the posterior
+            distribution.
+        burn : int, optional
+            Discard this many samples from the start of the sampling regime.
+        thin : int, optional
+            Only accept 1 in `thin` samples.
+        
+        Returns
+        -------
+        MDL : pymc.MCMC.MCMC instance
+            Contains the samples.
+        """
+        
+        fitted = {}
+        def driver(x, y):
+            p = np.empty(len(self.params), dtype=object)
+            j = 0
+            for i, par in enumerate(self.params):
+                parameter = self.params[par]
+                if parameter.vary:
+                    p[j] = pymc.Uniform(parameter.name, parameter.min,
+                                        parameter.max, value=parameter.value)
+                    fitted[parameter.name] = i
+                    j += 1
+    
+            @pymc.deterministic(plot=False)
+            def mod(p=p, x=x):
+                for name in fitted:
+                    self.params[name].value = p[fitted[name]]
+                return self.model(self.params)
 
+            y = pymc.Normal('y', mu=mod, tau=1.0 / self.edata**2, value=y,
+                            observed=True)
+            return locals()
 
+        MDL = pymc.MCMC(driver(self.xdata, self.ydata))
+        MDL.sample(samples, burn=burn, thin=thin)
+        stats = MDL.stats()
+
+        #work out correlation coefficients
+        corrcoefs = np.corrcoef(np.vstack(
+                     [MDL.trace(par, chain=None)[:] for par in fitted.keys()]))
+
+        for par in self.params:
+            param = self.params[par]
+
+            if par in fitted.keys():
+                params.correl = {}
+                param.value = stats[par]['mean']
+                param.stderr = stats[par]['standard deviation']
+                for par2 in fitted.keys():
+                    i, j = fitted[par], fitted[par2]
+                    if i != j:
+                        param.correl[par2] = corrcoefs[i, j]
+            else:
+                param.stderr = None
+                param.correl = None
+    
+        self.MDL = MDL
+        return MDL
+        
+        
 if __name__ == '__main__':
     from lmfit import fit_report
+    import matplotlib
+   
     def gauss(x, params, *args):
         'Calculates a Gaussian model'
         p = params.valuesdict().values()
@@ -417,9 +485,13 @@ if __name__ == '__main__':
     ydata = gauss(xdata, temp_pars) + 0.1 * np.random.random(xdata.size)
 
     f = CurveFitter(pars, xdata, ydata, gauss)
-    f.fit('differential_evolution')
-    print(fit_report(f))
+    f.fit()
 
-    g = GlobalFitter([f], ['d0p3:1'])
-    g.fit()
-    print*(fit_report(g))
+    print(fit_report(f.params))
+
+#    g = GlobalFitter([f], ['d0p3:1'])
+#    g.fit()
+#    print(fit_report(g))
+
+    MDL = f.mcmc(samples=1e4)
+    print(fit_report(f.params))
