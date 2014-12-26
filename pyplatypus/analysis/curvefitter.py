@@ -418,7 +418,7 @@ class CurveFitter(Minimizer):
         """
         
         fitted = {}
-        def driver(x, y):
+        def driver():
             p = np.empty(len(self.params), dtype=object)
             j = 0
             for i, par in enumerate(self.params):
@@ -430,16 +430,16 @@ class CurveFitter(Minimizer):
                     j += 1
     
             @pymc.deterministic(plot=False)
-            def mod(p=p, x=x):
+            def model(p=p):
                 for name in fitted:
                     self.params[name].value = p[fitted[name]]
                 return self.model(self.params)
 
-            y = pymc.Normal('y', mu=mod, tau=1.0 / self.edata**2, value=y,
-                            observed=True)
+            y = pymc.Normal('y', mu=model, tau=1.0 / self.edata**2,
+                            value=self.ydata, observed=True)
             return locals()
 
-        MDL = pymc.MCMC(driver(self.xdata, self.ydata))
+        MDL = pymc.MCMC(driver())
         MDL.sample(samples, burn=burn, thin=thin)
         stats = MDL.stats()
 
