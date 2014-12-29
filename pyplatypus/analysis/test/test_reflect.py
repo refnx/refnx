@@ -97,7 +97,7 @@ class TestReflect(unittest.TestCase):
         calc2 = _creflect.abeles(self.qvals, layer2, scale=0.99, bkg=1e-8)
         assert_almost_equal(calc1, calc2)
 
-    def test_reflectivity_fitter(self):
+    def test_reflectivity_model(self):
         # test reflectivity calculation with values generated from Motofit
         params = curvefitter.params(self.coefs)
 
@@ -105,6 +105,12 @@ class TestReflect(unittest.TestCase):
         model = fitter.model(params)
 
         assert_almost_equal(model, self.rvals)
+
+    def test_reflectivity_fit(self):
+        params = curvefitter.params(self.coefs)
+
+        fitter = reflect.ReflectivityFitter(self.qvals, self.rvals, params)
+        fitter.fit()
 
     def test_smearedabeles(self):
         # test smeared reflectivity calculation with values generated from
