@@ -244,7 +244,7 @@ class ReflectivityFitter(curvefitter.CurveFitter):
         override the sld_profile method of ReflectivityFitter.
     '''
 
-    def __init__(self, parameters, xdata, ydata, edata=None, fcn_args=(),
+    def __init__(self, xdata, ydata, parameters, edata=None, fcn_args=(),
                  fcn_kws=None, kws=None):
         '''
         Initialises the ReflectivityFitter.
@@ -253,12 +253,12 @@ class ReflectivityFitter(curvefitter.CurveFitter):
 
         Parameters
         ----------
-        parameters : lmfit.Parameters instance
-            Specifies the parameter set for the fit
         xdata : np.ndarray
             The independent variables
         ydata : np.ndarray
             The dependent (observed) variable
+        parameters : lmfit.Parameters instance
+            Specifies the parameter set for the fit
         edata : np.ndarray, optional
             The measured uncertainty in the dependent variable, expressed as
             sd.  If this array is not specified, then edata is set to unity.

@@ -101,7 +101,7 @@ class TestReflect(unittest.TestCase):
         # test reflectivity calculation with values generated from Motofit
         params = curvefitter.params(self.coefs)
 
-        fitter = reflect.ReflectivityFitter(params, self.qvals, self.rvals)
+        fitter = reflect.ReflectivityFitter(self.qvals, self.rvals, params)
         model = fitter.model(params)
 
         assert_almost_equal(model, self.rvals)
@@ -133,8 +133,8 @@ class TestReflect(unittest.TestCase):
         '''
         params = curvefitter.params(self.coefs)
 
-        fitter = reflect.ReflectivityFitter(params, qvals.flatten(),
-                                           rvals.flatten(),
+        fitter = reflect.ReflectivityFitter(qvals.flatten(),
+                                           rvals.flatten(), params,
                                            fcn_kws={'dqvals': dqvals.flatten(),
                                            'quad_order': 13})
         model = fitter.model(params)

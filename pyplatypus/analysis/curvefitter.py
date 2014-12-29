@@ -85,18 +85,18 @@ class CurveFitter(Minimizer):
     """
     A curvefitting class that extends lmfit.Minimize
     """
-    def __init__(self, params, xdata, ydata, fitfunc, edata=None, fcn_args=(),
+    def __init__(self, fitfunc, xdata, ydata, params, edata=None, fcn_args=(),
                 fcn_kws=None, kws=None, callback=None):
         """
-        params : lmfit.Parameters instance
-            Specifies the parameter set for the fit
+        fitfunc : callable
+            Function calculating the model for the fit.  Should have the
+            signature: ``fitfunc(xdata, params, *fcn_args, **fcn_kws)``
         xdata : np.ndarray
             The independent variables
         ydata : np.ndarray
             The dependent (observed) variable
-        fitfunc : callable
-            Function calculating the model for the fit.  Should have the
-            signature: ``fitfunc(xdata, params, *fcn_args, **fcn_kws)``
+        params : lmfit.Parameters instance
+            Specifies the parameter set for the fit
         edata : np.ndarray, optional
             The measured uncertainty in the dependent variable, expressed as
             sd.  If this array is not specified, then edata is set to unity.
@@ -224,69 +224,72 @@ class CurveFitter(Minimizer):
         MDL : pymc.MCMC.MCMC instance
             Contains the samples.
         """
-        
-        # fitted is a dict of tuples. the key is the param name. The tuple
-        # (i, j) has i = i'th parameter, j = index into the j'th fitted
-        # parameter
-        fitted = {}
-        self.__fun_evals = 0
-        j = 0
-        for i, par in enumerate(self.params):
-            parameter = self.params[par]
-            if parameter.vary:
-                fitted[parameter.name] = (i, j)
-                j += 1
-        
-        def driver():
-            p = np.empty(len(fitted), dtype=object)
-            for par, idx in fitted.items():
-                parameter = self.params[par]
-                p[idx[1]] = pymc.Uniform(parameter.name, parameter.min,
-                                         parameter.max, value=parameter.value)
-    
-            @pymc.deterministic(plot=False)
-            def model(p=p):
-                self.__fun_evals += 1
-                for name in fitted:
-                    self.params[name].value = p[fitted[name][1]]
-                return self.model(self.params)
+        return super(CurveFitter, self).mcmc(samples, burn=burn, thin=thin)
 
-            y = pymc.Normal('y', mu=model, tau=1.0 / self.edata**2,
-                            value=self.ydata, observed=True)
-
-            return locals()
-
-        MDL = pymc.MCMC(driver(), verbose=verbose)
-        MDL.sample(samples, burn=burn, thin=thin)
-        stats = MDL.stats()
-
-        #work out correlation coefficients
-        corrcoefs = np.corrcoef(np.vstack(
-                     [MDL.trace(par, chain=None)[:] for par in fitted.keys()]))
-                
-        for par in self.params:
-            self.params[par].stderr = None
-            self.params[par].correl = None
-
-        for par in fitted.keys():
-            i = fitted[par][1]
-            param = self.params[par]
-            param.correl = {}
-            param.value = stats[par]['mean']
-            param.stderr = stats[par]['standard deviation']
-            for par2 in fitted.keys():
-                j = fitted[par2][1]
-                if i != j:
-                    param.correl[par2] = corrcoefs[i, j]
-
-        self.MDL = MDL
-        self.ndata = self.ydata.size
-        self.nvarys = len(fitted)
-        self.nfev = self.__fun_evals
-        self.chisqr = np.sum(self.residuals(self.params) ** 2)
-        self.redchi = self.chisqr / (self.ndata - self.nvarys)
-        del(self.__fun_evals)
-        return MDL
+#==============================================================================
+#         # fitted is a dict of tuples. the key is the param name. The tuple
+#         # (i, j) has i = i'th parameter, j = index into the j'th fitted
+#         # parameter
+#         fitted = {}
+#         self.__fun_evals = 0
+#         j = 0
+#         for i, par in enumerate(self.params):
+#             parameter = self.params[par]
+#             if parameter.vary:
+#                 fitted[parameter.name] = (i, j)
+#                 j += 1
+#         
+#         def driver():
+#             p = np.empty(len(fitted), dtype=object)
+#             for par, idx in fitted.items():
+#                 parameter = self.params[par]
+#                 p[idx[1]] = pymc.Uniform(parameter.name, parameter.min,
+#                                          parameter.max, value=parameter.value)
+#     
+#             @pymc.deterministic(plot=False)
+#             def model(p=p):
+#                 self.__fun_evals += 1
+#                 for name in fitted:
+#                     self.params[name].value = p[fitted[name][1]]
+#                 return self.model(self.params)
+# 
+#             y = pymc.Normal('y', mu=model, tau=1.0 / self.edata**2,
+#                             value=self.ydata, observed=True)
+# 
+#             return locals()
+# 
+#         MDL = pymc.MCMC(driver(), verbose=verbose)
+#         MDL.sample(samples, burn=burn, thin=thin)
+#         stats = MDL.stats()
+# 
+#         #work out correlation coefficients
+#         corrcoefs = np.corrcoef(np.vstack(
+#                      [MDL.trace(par, chain=None)[:] for par in fitted.keys()]))
+#                 
+#         for par in self.params:
+#             self.params[par].stderr = None
+#             self.params[par].correl = None
+# 
+#         for par in fitted.keys():
+#             i = fitted[par][1]
+#             param = self.params[par]
+#             param.correl = {}
+#             param.value = stats[par]['mean']
+#             param.stderr = stats[par]['standard deviation']
+#             for par2 in fitted.keys():
+#                 j = fitted[par2][1]
+#                 if i != j:
+#                     param.correl[par2] = corrcoefs[i, j]
+# 
+#         self.MDL = MDL
+#         self.ndata = self.ydata.size
+#         self.nvarys = len(fitted)
+#         self.nfev = self.__fun_evals
+#         self.chisqr = np.sum(self.residuals(self.params) ** 2)
+#        self.redchi = self.chisqr / (self.ndata - self.nvarys)
+#        del(self.__fun_evals)
+#        return MDL
+#==============================================================================
 
 
 class GlobalFitter(CurveFitter):
@@ -394,10 +397,10 @@ class GlobalFitter(CurveFitter):
         xdata = [dataset.xdata for dataset in datasets]
         ydata = [dataset.ydata for dataset in datasets]
         edata = [dataset.edata for dataset in datasets]
-        super(GlobalFitter, self).__init__(self.params,
+        super(GlobalFitter, self).__init__(None,
                                            xdata,
                                            ydata,
-                                           None,
+                                           self.params,
                                            edata=edata,
                                            callback=callback,
                                            kws=min_kwds)
@@ -476,7 +479,7 @@ if __name__ == '__main__':
 
     ydata = gauss(xdata, temp_pars) + 0.1 * np.random.random(xdata.size)
 
-    f = CurveFitter(pars, xdata, ydata, gauss)
+    f = CurveFitter(gauss, xdata, ydata, pars)
     f.fit()
 
     print(fit_report(f.params))

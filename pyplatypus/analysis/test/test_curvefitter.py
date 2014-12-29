@@ -27,7 +27,7 @@ class TestFitter(unittest.TestCase):
         self.final_params = curvefitter.params(self.p0, bounds=self.bounds)
 
         self.ydata = gauss(self.xdata, self.final_params)
-        self.f = CurveFitter(self.params, self.xdata, self.ydata, gauss)
+        self.f = CurveFitter(gauss, self.xdata, self.ydata, self.params)
 
     def pvals(self, params):
         return np.asfarray(list(params.valuesdict().values()))
@@ -106,7 +106,7 @@ class TestFitterGauss(unittest.TestCase):
         self.params = curvefitter.params(self.p0, bounds=self.bounds)
 
     def test_best_weighted(self):
-        f = CurveFitter(self.params, self.xvals, self.yvals, gauss,
+        f = CurveFitter(gauss, self.xvals, self.yvals, self.params,
                         edata=self.evals)
         f.fit()
         
@@ -118,7 +118,7 @@ class TestFitterGauss(unittest.TestCase):
         assert_almost_equal(uncertainties, self.best_weighted_errors, 3)
         
     def test_best_unweighted(self):
-        f = CurveFitter(self.params, self.xvals, self.yvals, gauss)
+        f = CurveFitter(gauss, self.xvals, self.yvals, self.params)
         f.fit()
         
         output = list(self.params.valuesdict().values())
@@ -130,11 +130,11 @@ class TestFitterGauss(unittest.TestCase):
         
     def test_mcmc_vs_lm(self):
         #test mcmc output vs lm
-        f = CurveFitter(self.params, self.xvals, self.yvals, gauss,
+        f = CurveFitter(gauss, self.xvals, self.yvals, self.params,
                         edata=self.evals)
         np.random.seed(123456)
         f.mcmc(samples=2000, burn=1000, thin=30, verbose=0)
-        output = list(self.params.valuesdict().values())
+        output = list(f.params.valuesdict().values())
         assert_allclose(output, self.best_weighted, rtol=0.02, atol=0.01)
 
 
