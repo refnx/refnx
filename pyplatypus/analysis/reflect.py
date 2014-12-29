@@ -3,7 +3,7 @@ import numpy as np
 import scipy
 import scipy.linalg
 import math
-import pyplatypus.analysis.curvefitter as curvefitter
+from pyplatypus.analysis.curvefitter import CurveFitter
 import pyplatypus.util.ErrorProp as EP
 import warnings
 
@@ -233,7 +233,7 @@ def sld_profile(coefs, z):
     return summ
 
 
-class ReflectivityFitter(curvefitter.CurveFitter):
+class ReflectivityFitter(CurveFitter):
 
     '''
         A sub class of pyplatypus.analysis.fitting.CurveFitter suited for

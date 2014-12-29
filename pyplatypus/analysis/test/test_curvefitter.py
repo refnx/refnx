@@ -133,7 +133,7 @@ class TestFitterGauss(unittest.TestCase):
         f = CurveFitter(gauss, self.xvals, self.yvals, self.params,
                         edata=self.evals)
         np.random.seed(123456)
-        f.mcmc(samples=2000, burn=1000, thin=30, verbose=0)
+        f.mcmc(samples=2000, burn=1000, thin=30)
         output = list(f.params.valuesdict().values())
         assert_allclose(output, self.best_weighted, rtol=0.02, atol=0.01)
 

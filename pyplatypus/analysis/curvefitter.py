@@ -200,7 +200,7 @@ class CurveFitter(Minimizer):
         """
         return self.minimize(method=method)
     
-    def mcmc(self, samples=1e4, burn=0, thin=1, verbose=0):
+    def mcmc1(self, samples=1e4, burn=0, thin=1, verbose=0):
         """
         Samples the posterior for the curvefitting system using MCMC.
         This method updates curvefitter.params at the end of the sampling
