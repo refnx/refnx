@@ -298,10 +298,10 @@ class ReflectivityFitter(curvefitter.CurveFitter):
         if kws is None:
             minimizer_kwds = {}
 
-        super(ReflectivityFitter, self).__init__(parameters,
+        super(ReflectivityFitter, self).__init__(None,
                                                  xdata,
                                                  ydata,
-                                                 None,
+                                                 parameters,
                                                  edata=edata,
                                                  fcn_args=fcn_args,
                                                  callback=self.callback,
