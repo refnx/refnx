@@ -6,7 +6,7 @@ Created on Sun Dec 21 15:37:29 2014
 """
 from __future__ import print_function
 from lmfit import Minimizer, Parameters
-import pymc
+#import pymc
 import numpy as np
 import re
 import warnings
