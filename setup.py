@@ -22,7 +22,7 @@ ext_modules = []
 if USE_CYTHON:
     # creflect extension module
     _creflect = Extension(
-                          name = 'pyplatypus.analysis._creflect',
+                          name = 'refnx.analysis._creflect',
                           sources=['src/_creflect.pyx', 'src/refcalc.cpp'],
                           include_dirs = [numpy_include],
                           language = 'c',
@@ -33,18 +33,16 @@ if USE_CYTHON:
     ext_modules.append(_creflect)
 
 
-# pyplatypus setup
-setup(  name        = 'pyplatypus',
+# refnx setup
+setup(  name        = 'refnx',
         ext_modules = ext_modules,
-
         cmdclass = {'build_ext': build_ext},
-
         description = 'Neutron and X-ray Reflectometry Analysis',
         author      = 'Andrew Nelson',
         author_email = 'andrew.nelson@ansto.gov.au',
         version     = '0.0.1',
         license     = 'BSD',
-        url         = 'https://github.com/andyfaff/pyplatypus',
+        url         = 'https://github.com/andyfaff/refnx',
         platforms = ["Windows", "Linux", "Solaris", "Mac OS-X", "Unix"],
         classifiers =[
         'Development Status :: 3 - Alpha',

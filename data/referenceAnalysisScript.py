@@ -1,7 +1,7 @@
 from __future__ import print_function, division
-from pyplatypus.dataset.reflectdataset import ReflectDataset
-import pyplatypus.analysis.reflect as reflect
-import pyplatypus.analysis.curvefitter as curvefitter
+from refnx.dataset.reflectdataset import ReflectDataset
+import refnx.analysis.reflect as reflect
+import refnx.analysis.curvefitter as curvefitter
 from lmfit.printfuncs import fit_report
 import numpy as np
 from matplotlib.pyplot import *

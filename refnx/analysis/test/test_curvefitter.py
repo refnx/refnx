@@ -1,6 +1,6 @@
 import unittest
-import pyplatypus.analysis.curvefitter as curvefitter
-from pyplatypus.analysis.curvefitter import CurveFitter
+import refnx.analysis.curvefitter as curvefitter
+from refnx.analysis.curvefitter import CurveFitter
 import numpy as np
 from copy import deepcopy
 from numpy.testing import (assert_almost_equal, assert_equal, assert_,

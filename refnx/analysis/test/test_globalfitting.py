@@ -1,7 +1,7 @@
 import unittest
-import pyplatypus.analysis.reflect as reflect
-import pyplatypus.analysis.curvefitter as curvefitter
-from pyplatypus.analysis.curvefitter import GlobalFitter, CurveFitter
+import refnx.analysis.reflect as reflect
+import refnx.analysis.curvefitter as curvefitter
+from refnx.analysis.curvefitter import GlobalFitter, CurveFitter
 import numpy as np
 #from lmfit import fit_report, Parameters
 import os.path
@@ -213,7 +213,7 @@ class TestGlobalFitting(unittest.TestCase):
                          kws={'options':{'seed':1}})
         
         g.fit('differential_evolution')
-        assert_almost_equal(g.chisqr, 0.774590447535)
+        assert_almost_equal(g.chisqr, 0.774590447535, 4)
 
 if __name__ == '__main__':
     unittest.main()

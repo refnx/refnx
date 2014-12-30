@@ -3,14 +3,14 @@ import numpy as np
 import scipy
 import scipy.linalg
 import math
-from pyplatypus.analysis.curvefitter import CurveFitter
-import pyplatypus.util.ErrorProp as EP
+from refnx.analysis.curvefitter import CurveFitter
+import refnx.util.ErrorProp as EP
 import warnings
 
 try:
-    import pyplatypus.analysis._creflect as refcalc
+    import refnx.analysis._creflect as refcalc
 except ImportError:
-    import pyplatypus.analysis._reflect as refcalc
+    import refnx.analysis._reflect as refcalc
 
 
 # some definitions for resolution smearing
@@ -236,7 +236,7 @@ def sld_profile(coefs, z):
 class ReflectivityFitter(CurveFitter):
 
     '''
-        A sub class of pyplatypus.analysis.fitting.CurveFitter suited for
+        A sub class of refnx.analysis.fitting.CurveFitter suited for
         fitting reflectometry data.
 
         If you wish to fit analytic profiles you should subclass this class,

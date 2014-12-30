@@ -1,4 +1,4 @@
-import pyplatypus.analysis.reflect as reflect
+import refnx.analysis.reflect as reflect
 import numpy as np
 from time import time
 
@@ -9,7 +9,7 @@ def smearing_precision_comparison(maxorder=50):
     '''
     # import q values and dqvalues from the smearing test
     theoretical = np.loadtxt(
-        'pyplatypus/analysis/test/smeared_theoretical.txt')
+        'refnx/analysis/test/smeared_theoretical.txt')
     qvals, rvals, dqvals = np.hsplit(theoretical, 3)
     qvals = qvals.flatten()
     dqvals = dqvals.flatten()

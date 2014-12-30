@@ -1,7 +1,7 @@
 from __future__ import division
-import pyplatypus.dataset.reflectdataset as reflectdataset
+import refnx.dataset.reflectdataset as reflectdataset
 import numpy as np
-import pyplatypus.analysis.reflect as reflect
+import refnx.analysis.reflect as reflect
 import matplotlib.artist as artist
 import os.path
 import os

@@ -1,5 +1,5 @@
 import unittest
-import pyplatypus.dataset.reflectdataset as reflectdataset
+import refnx.dataset.reflectdataset as reflectdataset
 import numpy as np
 from numpy.testing import assert_equal
 import os.path

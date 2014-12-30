@@ -6,8 +6,8 @@
 from __future__ import division
 import numpy as np
 import os.path
-import pyplatypus.reduce.nsplice as nsplice
-import pyplatypus.util.ErrorProp as EP
+import refnx.reduce.nsplice as nsplice
+import refnx.util.ErrorProp as EP
 
 
 class Data1D(object):

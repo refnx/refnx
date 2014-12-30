@@ -1,4 +1,4 @@
-pyplatypus
-==========
+refnx
+=====
 
-Neutron and X-ray reflectometry analysis in python
+Neutron and X-ray reflectometry analysis in Python

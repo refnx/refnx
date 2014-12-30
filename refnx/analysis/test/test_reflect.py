@@ -1,13 +1,13 @@
 import unittest
-import pyplatypus.analysis.reflect as reflect
+import refnx.analysis.reflect as reflect
 try:
-    import pyplatypus.analysis._creflect as _creflect
+    import refnx.analysis._creflect as _creflect
 except ImportError:
     HAVE_CREFLECT = False
 else:
     HAVE_CREFLECT = True
-import pyplatypus.analysis._reflect as _reflect
-import pyplatypus.analysis.curvefitter as curvefitter
+import refnx.analysis._reflect as _reflect
+import refnx.analysis.curvefitter as curvefitter
 
 import numpy as np
 from numpy.testing import assert_almost_equal, assert_equal, assert_
