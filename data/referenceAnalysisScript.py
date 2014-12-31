@@ -57,7 +57,7 @@ hilim[6] = 9e-6
 bounds = zip(lowlim, hilim)
 
 # create a parameter instance
-parameters = curvefitter.params(coefs, bounds=bounds, varies=[False] * 16)
+parameters = curvefitter.to_Parameters(coefs, bounds=bounds, varies=[False] * 16)
 
 # which parameters do you want to allow to vary
 fitted_parameters = np.array([1, 6, 7, 8, 11, 12, 13, 15])

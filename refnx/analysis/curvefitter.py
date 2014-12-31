@@ -14,7 +14,7 @@ import warnings
 
 _MACHEPS = np.finfo(np.float64).eps
 
-def params(p0, varies=None, bounds=None, names=None, expr=None):
+def to_Parameters(p0, varies=None, bounds=None, names=None, expr=None):
     """
     Utility function to convert sequences into a lmfit.Parameters instance
 

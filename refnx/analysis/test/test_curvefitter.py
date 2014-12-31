@@ -23,8 +23,8 @@ class TestFitter(unittest.TestCase):
         self.p0 = np.array([0., 1., 0.0, 1.])
         self.bounds = [(-1, 1), (0, 2), (-1, 1.), (0.001, 2)]
 
-        self.params = curvefitter.params(self.p0 + 0.2, bounds=self.bounds)
-        self.final_params = curvefitter.params(self.p0, bounds=self.bounds)
+        self.params = curvefitter.to_Parameters(self.p0 + 0.2, bounds=self.bounds)
+        self.final_params = curvefitter.to_Parameters(self.p0, bounds=self.bounds)
 
         self.ydata = gauss(self.xdata, self.final_params)
         self.f = CurveFitter(gauss, self.xdata, self.ydata, self.params)
@@ -103,7 +103,7 @@ class TestFitterGauss(unittest.TestCase):
         self.p0 = np.array([0.1, 20., 0.1, 0.1])
         self.bounds = [(-1, 1), (0, 30), (-5., 5.), (0.001, 2)]
 
-        self.params = curvefitter.params(self.p0, bounds=self.bounds)
+        self.params = curvefitter.to_Parameters(self.p0, bounds=self.bounds)
 
     def test_best_weighted(self):
         f = CurveFitter(gauss, self.xvals, self.yvals, self.params,

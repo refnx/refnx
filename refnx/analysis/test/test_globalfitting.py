@@ -36,7 +36,7 @@ class Test_reflect(unittest.TestCase):
 
     def test_abeles(self):
         #    test reflectivity calculation with values generated from Motofit
-        p = curvefitter.params(self.coefs)
+        p = curvefitter.to_Parameters(self.coefs)
         calc = reflect_fitfunc(self.qvals, p)
         calc = np.power(10, calc)
         assert_almost_equal(calc, self.rvals)
@@ -67,7 +67,7 @@ class TestGlobalFitting(unittest.TestCase):
 
         lowlim = np.zeros(16)
         hilim = 2 * coefs
-        self.params = curvefitter.params(coefs, bounds=zip(lowlim, hilim),
+        self.params = curvefitter.to_Parameters(coefs, bounds=zip(lowlim, hilim),
                                          varies=[False] * 16)
 
         fname = os.path.join(CURDIR, 'c_PLP0011859_q.txt')
@@ -129,7 +129,7 @@ class TestGlobalFitting(unittest.TestCase):
         lowlim = np.zeros(20)
         hilim = 2 * coefs
         bounds = zip(lowlim, hilim)
-        params = curvefitter.params(coefs, bounds=bounds,
+        params = curvefitter.to_Parameters(coefs, bounds=bounds,
                                          varies=[False] * 20)
 
         fit = np.array([6, 7, 8, 11, 12, 13, 15, 16, 17, 19])
@@ -182,11 +182,11 @@ class TestGlobalFitting(unittest.TestCase):
         hilim = 2 * coefs361
         
         bounds = zip(lowlim, hilim)
-        params361 = curvefitter.params(coefs361, bounds=bounds,
+        params361 = curvefitter.to_Parameters(coefs361, bounds=bounds,
                                        varies=[False] * 16)
-        params365 = curvefitter.params(coefs365, bounds=bounds,
+        params365 = curvefitter.to_Parameters(coefs365, bounds=bounds,
                                        varies=[False] * 16)
-        params366 = curvefitter.params(coefs366, bounds=bounds,
+        params366 = curvefitter.to_Parameters(coefs366, bounds=bounds,
                                        varies=[False] * 16)
         assert_(len(params361), 16)
         assert_(len(params365), 16)
