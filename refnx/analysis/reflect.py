@@ -65,6 +65,17 @@ def convert_layer_format_to_coefs(layers):
     
     return coefs
 
+def parameter_names(coefs):
+    names = ['nlayers', 'scale', 'SLDfront', 'iSLDfront', 'SLDback',
+             'iSLDback', 'bkg', 'sigma_back']
+    nlayers = (coefs.size - 8 / 4)
+    for i in range(nlayers):
+        nlayers.append('thick%d'%i)
+        nlayers.append('SLD%d'%i)
+        nlayers.append('iSLD%d'%i)
+        nlayers.append('sigma%d'%i)
+    return names
+    
 def abeles(q, coefs, *args, **kwds):
     """
     Abeles matrix formalism for calculating reflectivity from a stratified
