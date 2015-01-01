@@ -10,31 +10,41 @@ import py2app
 import periodictable
 from distutils.core import *
 from distutils import sysconfig
+import numpy as np
+try:
+    from Cython.Distutils import build_ext
+except ImportError:
+    USE_CYTHON = False
+else:
+    USE_CYTHON = True
 
-# Third-party modules - we depend on numpy for everything
-import numpy
 # Obtain the numpy include directory.  This logic works across numpy versions.
 try:
-    numpy_include = numpy.get_include()
+    numpy_include = np.get_include()
 except AttributeError:
-    numpy_include = numpy.get_numpy_include()
+    numpy_include = np.get_numpy_include()
 
+packages = find_packages()
+
+ext_modules = []
+
+if USE_CYTHON:
+    # creflect extension module
+    _creflect = Extension(
+                          name = 'refnx.analysis._creflect',
+                          sources=['src/_creflect.pyx', 'src/refcalc.cpp'],
+                          include_dirs = [numpy_include],
+                          language = 'c',
+                          extra_link_args = ['-lpthread']
+                          # libraries=
+                          # extra_compile_args = "...".split(),
+                          )
+    ext_modules.append(_creflect)
 
 APP = ['qt/motofit.py']
 DATA_FILES = ['qt/icons']
-PACKAGES = ['pyplatypus',
+PACKAGES = ['refnx',
             'periodictable']
-
-#  creflect extension module#
-_creflect = Extension("pyplatypus.analysis.__creflect",
-                      ["src/reflect.i", "src/reflect.c", "src/refcalc.cpp"],
-                      include_dirs=[numpy_include],
-                      undef_macros=['NDEBUG']
-                      )
-OPTIONS = {'argv_emulation': True,
-           'includes': ['numdifftools'],
-           'packages': PACKAGES,
-           'excludes': []}
 
 setup(
     app=APP,

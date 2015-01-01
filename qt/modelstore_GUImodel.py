@@ -1,7 +1,7 @@
 from __future__ import division
 from PySide import QtCore, QtGui
 import datastore
-import pyplatypus.analysis.reflect as reflect
+import refnxs.analysis.reflect as reflect
 
 
 class ModelStoreModel(QtCore.QAbstractListModel):

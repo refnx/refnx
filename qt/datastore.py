@@ -1,7 +1,7 @@
 from __future__ import division
 import numpy as np
 import dataobject
-import pyplatypus.analysis.model as model
+import refnx.analysis.model as model
 from copy import deepcopy, copy
 import matplotlib.artist as artist
 import os.path
@@ -101,7 +101,7 @@ class DataStore(object):
 class ModelStore(object):
 
     '''
-        a container for storing pyplatypus.analysis.model.Models
+        a container for storing refnx.analysis.model.Models
     '''
 
     def __init__(self):

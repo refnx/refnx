@@ -4,9 +4,9 @@ import scipy as sp
 import scipy.linalg
 import scipy.integrate as spi
 import math
-import pyplatypus.analysis.fitting as fitting
-import pyplatypus.util.ErrorProp as EP
-import pyplatypus.analysis.reflect as reflect
+import refnx.analysis.fitting as fitting
+import refnx.util.ErrorProp as EP
+import refnx.analysis.reflect as reflect
 
 
 class line(fitting.FitObject):

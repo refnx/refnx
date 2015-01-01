@@ -6,8 +6,8 @@ import inspect
 import hashlib
 import os.path
 import numpy as np
-import pyplatypus.analysis.reflect as reflect
-import pyplatypus.analysis.fitting as fitting
+import refnx.analysis.reflect as reflect
+import refnx.analysis.fitting as fitting
 
 
 def loadPluginModule(filepath):

@@ -1,7 +1,7 @@
 packaging for OSX:
 
 1) You need to change the options line to:
-OPTIONS = {'argv_emulation': True, 'includes':['matplotlib.tri','matplotlib.projections.geo', 'matplotlib.projections.polar', 'matplotlib.tri.triplot','matplotlib.tri.tripcolor','matplotlib.tri.tricontour', 'matplotlib.tri.triangulation', 'matplotlib.delaunay.triangulate','sip', 'PySide', 'PySide.QtGui', 'PySide.QtCore', 'pyplatypus', 'pyplatypus.analysis', 'pyplatypus.dataset', 'pyplatypus.util']}
+OPTIONS = {'argv_emulation': True, 'includes':['matplotlib.tri','matplotlib.projections.geo', 'matplotlib.projections.polar', 'matplotlib.tri.triplot','matplotlib.tri.tripcolor','matplotlib.tri.tricontour', 'matplotlib.tri.triangulation', 'matplotlib.delaunay.triangulate','sip', 'PySide', 'PySide.QtGui', 'PySide.QtCore', 'refnx', 'refnx.analysis', 'refnx.dataset', 'refnx.util']}
 
 2) Use the following line to build the app:
 

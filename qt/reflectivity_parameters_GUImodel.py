@@ -1,8 +1,8 @@
 from __future__ import division
 from PySide import QtCore, QtGui
 import numpy as np
-import pyplatypus.analysis.reflect as reflect
-import pyplatypus.analysis.fitting as fitting
+import refnx.analysis.reflect as reflect
+import refnx.analysis.fitting as fitting
 
 
 class BaseModel(QtCore.QAbstractTableModel):

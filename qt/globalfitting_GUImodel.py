@@ -1,10 +1,10 @@
 from __future__ import division
 from PySide import QtCore, QtGui
-import pyplatypus.analysis.fitting as fitting
-import pyplatypus.analysis.globalfitting as globalfitting
-import pyplatypus.analysis.reflect as reflect
+import refnx.analysis.fitting as fitting
+import refnx.analysis.globalfitting as globalfitting
+import refnx.analysis.reflect as reflect
 import numpy as np
-import pyplatypus.analysis.model as model
+import refnx.analysis.model as model
 import re
 
 

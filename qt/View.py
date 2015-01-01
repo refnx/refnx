@@ -17,10 +17,8 @@ import reflectivity_parameters_GUImodel
 import limits_GUImodel
 import globalfitting_GUImodel
 
-import pyplatypus.analysis.model as pam_model
-import pyplatypus.analysis.reflect as reflect
-import pyplatypus.analysis.fitting as fitting
-import pyplatypus.analysis.globalfitting as globalfitting
+import refnx.analysis.reflect as reflect
+import refnx.analysis.curvefitter as curvefitter
 from dataobject import DataObject
 import limitsUI
 import qrangedialogUI

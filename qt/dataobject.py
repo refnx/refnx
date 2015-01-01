@@ -1,9 +1,9 @@
 from __future__ import division
 from PySide import QtGui, QtCore
-import pyplatypus.dataset.reflectdataset as reflectdataset
-import pyplatypus.analysis.reflect as reflect
-import pyplatypus.analysis.fitting as fitting
-import pyplatypus.util.ErrorProp as EP
+import refnx.dataset.reflectdataset as reflectdataset
+import refnx.analysis.reflect as reflect
+import refnx.analysis.fitting as fitting
+import refnx.util.ErrorProp as EP
 import numpy as np
 from copy import deepcopy, copy
 import matplotlib.artist as artist
