@@ -1,17 +1,17 @@
 from __future__ import division
-import numpy as np
-import dataobject
-import refnx.analysis.model as model
-from copy import deepcopy, copy
-import matplotlib.artist as artist
+import refnx.dataset.reflectdataset as reflectdataset
+from refnx.analysis.curvefitter import CurveFitter
+from lmfit import Parameters
+from copy import deepcopy
 import os.path
-import os
-import string
+import pickle
+from collections import OrderedDict
+from graphproperties import GraphProperties
+
 try:
     import xml.etree.cElementTree as ET
 except ImportError:
     import xml.etree.ElementTree as ET
-
 
 def zipper(dir, zip):
     root_len = len(os.path.abspath(dir))
@@ -24,132 +24,136 @@ def zipper(dir, zip):
 
 
 class DataStore(object):
-
     '''
-        A container for storing dataobject.DataObjects
+        A container for storing datasets
     '''
 
     def __init__(self):
         super(DataStore, self).__init__()
-        self.dataObjects = {}
-        self.numDataObjects = 0
-        self.names = []
+        self.datasets = OrderedDict()
 
     def __getitem__(self, key):
-        if key in self.dataObjects:
-            return self.dataObjects[key]
+        if key in self.datasets:
+            return self.datasets[key]
         return None
 
     def __iter__(self):
-        for key in self.dataObjects:
-            yield self.dataObjects[key]
+        for key in self.datasets:
+            yield self.datasets[key]
 
-    def add(self, dataObject):
-        self.dataObjects[dataObject.name] = dataObject
-        self.names.append(dataObject.name)
-        self.numDataObjects += 1
+    def __len__(self):
+        return len(self.datasets)
+
+    @property
+    def names(self):
+        return list(self.datasets.keys())
+
+    def add(self, dataset):
+        dataset.graph_properties = GraphProperties()
+        self.datasets[dataset.name] = dataset
 
     def load(self, filename):
         if os.path.basename(filename) in self.names:
-            self.dataObjects[os.path.basename(filename)].refresh()
+            self.datasets[os.path.basename(filename)].refresh()
             return None
 
-        TdataObject = dataobject.DataObject()
+        dataset = reflectdataset.ReflectDataset()
         with open(filename, 'Ur') as f:
-            TdataObject.load(f)
+            dataset.load(f)
+            self.add(dataset)
 
-        self.add(TdataObject)
+        return dataset
 
-        return TdataObject
+    def snapshot(self, name, snapshot_name):
+        dataset = deepcopy(self.datasets[name])
+        dataset.name = snapshot_name
+        self.add(dataset)
+        return dataset
 
-    def save_DataStore(self, folderName):
-        for key in self.dataObjects.keys():
-            dataObject = self.dataObjects[key]
-            try:
-                filename = os.path.join(folderName, dataObject.name)
-            except AttributeError:
-                print folderName, key
-
-            with open(filename, 'w') as f:
-                pass
-
-            with open(filename, 'r+') as f:
-                dataObject.save(f)
-
-    def load_DataStore(self, files, clear=False):
-        if clear:
-            self.dataObjects.clear()
-            self.names = []
-            self.numDataObjects = 0
-
-        for file in files:
-            try:
-                self.loadData(file)
-            except IOError:
-                continue
-
-    def remove_DataObject(self, name):
-        del(self.dataObjects[name])
-        del(self.names[self.names.index(name)])
-        self.numDataObjects -= 1
+    def remove_dataset(self, name):
+        self.datasets.pop(name)
 
     def refresh(self):
-        for dataObject in self:
-            dataObject.refresh()
+        for dataset in self.datasets:
+            self.datasets[dataset].refresh()
 
 
-class ModelStore(object):
-
+class ParametersStore(object):
     '''
-        a container for storing refnx.analysis.model.Models
+        a container for storing lmfit.Parameters
     '''
 
     def __init__(self):
-        super(ModelStore, self).__init__()
-        self.models = {}
-        self.names = []
+        super(ParametersStore, self).__init__()
+        self.parameters = OrderedDict()
         self.displayOtherThanReflect = False
 
     def __getitem__(self, key):
-        return self.models[key]
+        return self.parameters[key]
+
+    def __setitem__(self, key, value):
+        if isinstance(value, Parameters):
+            self.parameters[key] = value
 
     def __iter__(self):
-        for key in self.models:
-            yield self.models[key]
+        for key in self.parameters:
+            yield self.parameters[key]
 
-    def add(self, model, modelName):
-        self.models[modelName] = model
-        if modelName not in self.names:
-            self.names.append(modelName)
+    def __len__(self):
+        return len(self.parameters)
 
-    def save_ModelStore(self, folderName):
-        for modelname in self.names:
-            model = self.models[modelname]
-            filename = os.path.join(folderName, modelname)
-            with open(filename, 'wb+') as f:
-                model.save(f)
+    @property
+    def names(self):
+        return list(self.parameters.keys())
 
-    def load_ModelStore(self, files, clear=False):
-        if clear:
-            self.models.clear()
-            self.names = []
+    def save(self, name, fname):
+        params = self[name]
+        with open(fname, 'wb') as f:
+            pickle.dump(params, f)
 
-        for file in files:
-            try:
-                with open(file, 'Ur') as f:
-                    model = model.Model(None)
-                    model.load(f)
-                    self.add(model, os.path.basename(file))
-            except IOError:
-                # may be a directory
-                continue
+    def load(self, fname):
+        with open(fname, 'rb') as f:
+            p = pickle.load(f)
 
-    def snapshot(self, name, snapshotname):
-        model = self.models[name]
-        snapshot = model.Model(parameters=model.parameters,
-                               fitted_parameters=model.fitted_parameters,
-                               limits=model.limits,
-                               useerrors=model.useerrors,
-                               costfunction=model.costfunction,
-                               usedq=model.usedq)
-        self.add(snapshot, snapshotname)
+        if isinstance(p, Parameters):
+            name = os.path.basename(fname)
+            name = os.path.splitext(name)[0]
+            print(name)
+            self.add(p, name)
+
+    def add(self, parameters, name):
+        self.parameters[name] = parameters
+
+    def snapshot(self, name, snapshot_name):
+        parameters = self.parameters[name]
+        self.parameters[snapshot_name] = deepcopy(parameters)
+
+
+class MinimizersStore(object):
+    '''
+        a container for storing lmfit.Minimizers
+    '''
+
+    def __init__(self):
+        super(MinimizersStore, self).__init__()
+        self.minimizers = OrderedDict()
+
+    def __getitem__(self, key):
+        return self.minimizers[key]
+
+    def __setitem__(self, key, value):
+        if not isinstance(value, CurveFitter):
+            raise ValueError
+        else:
+            self.minimizers[key] = value
+
+    def __iter__(self):
+        for key in self.minimizers:
+            yield self.minimizers[key]
+
+    def __len__(self):
+        return len(self.minimizers)
+
+    @property
+    def names(self):
+        return list(self.minimizers.keys())

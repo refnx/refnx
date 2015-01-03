@@ -7,10 +7,13 @@ import hashlib
 import os.path
 import numpy as np
 import refnx.analysis.reflect as reflect
-import refnx.analysis.fitting as fitting
+from refnx.analysis.curvefitter import CurveFitter
+import refnx.analysis.curvefitter as curvefitter
+from lmfit import Parameters
+from collections import OrderedDict
 
 
-def loadPluginModule(filepath):
+def load_plugin_module(filepath):
     # this loads all modules
     hash = hashlib.md5(filepath)
 
@@ -23,7 +26,7 @@ def loadPluginModule(filepath):
 
     members = inspect.getmembers(module, inspect.isclass)
     for member in members:
-        if issubclass(member[1], fitting.FitObject):
+        if issubclass(member[1], CurveFitter):
             rfos.append(member)
             print 'Loaded', name, 'plugin fitting module'
 
@@ -38,17 +41,25 @@ class PluginStoreModel(QtCore.QAbstractTableModel):
 
     def __init__(self, parent=None):
         super(PluginStoreModel, self).__init__(parent)
-        self.plugins = []
-        self.plugins.append(
-            {'name': 'default', 'rfo': reflect.ReflectivityFitObject})
+        self.plugins = OrderedDict()
+        self.plugins['default'] = (reflect.ReflectivityFitter, '')
 
-    def get_plugin_by_name(self, name):
-        for plugin in self.plugins:
-            if plugin['name'] == name:
-                return plugin
+    def __len__(self):
+        return len(self.plugins)
+
+    def __getitem__(self, key):
+        return self.plugins[key][0]
+
+    def __setitem__(self, key, value, filepath=''):
+        if issubclass(value, curvefitter.CurveFitter):
+            self.plugins[key] = (value, filepath)
+
+    @property
+    def names(self):
+        return list(self.plugins.keys())
 
     def rowCount(self, parent=QtCore.QModelIndex()):
-        return len(self.plugins)
+        return len(self)
 
     def columnCount(self, parent=QtCore.QModelIndex()):
         return 1
@@ -75,19 +86,16 @@ class PluginStoreModel(QtCore.QAbstractTableModel):
 
         if role == QtCore.Qt.DisplayRole:
             if index.column() == 0:
-                return self.plugins[index.row()]['name']
+                return self.names[index.row()]
 
     def add(self, filepath):
-        module, rfos = loadPluginModule(filepath)
+        module, rfos = load_plugin_module(filepath)
 
         if rfos is None:
             return
 
         for obj in rfos:
-            self.plugins.append(
-                {'name': obj[0],
-                 'rfo': obj[1],
-                    'filename': filepath})
+            self.plugins[obj[0]] = (obj[1], filepath)
 
         self.insertRows(len(self.plugins), rows=len(rfos))
         self.dataChanged.emit(QtCore.QModelIndex(), QtCore.QModelIndex())
@@ -95,19 +103,20 @@ class PluginStoreModel(QtCore.QAbstractTableModel):
 
 class UDFParametersModel(QtCore.QAbstractTableModel):
 
-    def __init__(self, model, parent=None):
+    def __init__(self, params, parent=None):
         super(UDFParametersModel, self).__init__(parent)
-
-        self.model = model
+        if params is not None:
+            self.params = params
+        else:
+            self.params = Parameters()
 
     def rowCount(self, parent=QtCore.QModelIndex()):
-        return len(self.model.parameters) + 1
+        return len(self.params) + 1
 
     def columnCount(self, parent=QtCore.QModelIndex()):
         return 3
 
     def flags(self, index):
-        numlayers = int(self.model.parameters[0])
         row = index.row()
         col = index.column()
 
@@ -144,18 +153,17 @@ class UDFParametersModel(QtCore.QAbstractTableModel):
     def setData(self, index, value, role=QtCore.Qt.EditRole):
         row = index.row()
         col = index.column()
+        names = curvefitter.names(self.params)
+
+        if row:
+            name = names[row - 1]
 
         if role == QtCore.Qt.CheckStateRole:
             if row > 0 and col == 0:
-                fitted_parameters = self.model.fitted_parameters
                 if value == QtCore.Qt.Checked:
-                    fitted_parameters = np.delete(
-                        fitted_parameters,
-                        np.where(fitted_parameters == row - 1))
+                    self.params[name].vary = False
                 else:
-                    fitted_parameters = np.append(fitted_parameters, row - 1)
-
-                self.model.fitted_parameters = fitted_parameters[:]
+                    self.params[name].vary = True
 
         if role == QtCore.Qt.EditRole:
             if row == 0 and col == 0:
@@ -180,11 +188,6 @@ class UDFParametersModel(QtCore.QAbstractTableModel):
                             newparams + 1,
                             currentparams)
 
-                    self.model.parameters = np.resize(
-                        self.model.parameters,
-                        newparams)
-                    self.model.parameters[currentparams:] = 0.
-
                     if newparams > currentparams:
                         self.model.limits = np.append(
                             self.model.limits, np.zeros((2, newparams - currentparams)), axis=1)
@@ -199,16 +202,12 @@ class UDFParametersModel(QtCore.QAbstractTableModel):
                         self.model.fitted_parameters = np.append(
                             self.model.fitted_parameters, range(currentparams, newparams))
                         self.endInsertRows()
+
                     if newparams < currentparams:
-                        self.model.limits = self.model.limits[:, 0: newparams]
-                        self.model.fitted_parameters.sort()
-                        # get rid of all parameters greater than newparams
-                        idx = np.searchsorted(
-                            self.model.fitted_parameters,
-                            newparams)
-                        self.model.fitted_parameters = self.model.fitted_parameters[
-                            : idx]
+                        remove_names = names[newparams:]
+                        map(self.params.pop, remove_names)
                         self.endRemoveRows()
+
                     self.modelReset.emit()
             if row > 0:
                 validator = QtGui.QDoubleValidator()
@@ -220,11 +219,11 @@ class UDFParametersModel(QtCore.QAbstractTableModel):
                     return False
 
                 if col == 0:
-                    self.model.parameters[row - 1] = number
+                    self.params[name].value = number
                 if col == 1:
-                    self.model.limits[0, row - 1] = number
+                    self.params[name].min = number
                 if col == 2:
-                    self.model.limits[1, row - 1] = number
+                    self.params[name].max = number
 
         self.dataChanged.emit(index, index)
         return True
@@ -235,41 +234,26 @@ class UDFParametersModel(QtCore.QAbstractTableModel):
 
         row = index.row()
         col = index.column()
+        names = curvefitter.names(self.params)
+
+        if row:
+            name = names[row - 1]
 
         if role == QtCore.Qt.DisplayRole:
-            limitssize = np.size(self.model.limits, 1)
-            paramssize = np.size(self.model.parameters)
-            currentlims = np.copy(self.model.limits)
-            defaultlimits = self.model.default_limits()
-            if limitssize != paramssize:
-                if limitssize < paramssize:
-                    self.model.limits = np.zeros((2, paramssize))
-                    self.model.limits[
-                        :,
-                        0: limitssize] = currentlims[
-                        :,
-                        0:limitssize]
-                elif limitssize > paramssize:
-                    self.model.limits = np.zeros((2, paramssize))
-                    self.model.limits[
-                        :,
-                        0:paramssize] = currentlims[
-                        :,
-                        0:paramssize]
-
             if col == 0:
                 if row == 0:
-                    return str(np.size(self.model.parameters))
+                    return str(len(self.params))
                 else:
-                    return str(self.model.parameters[row - 1])
+                    return str(self.params[name].value)
+
             elif col == 1 and row > 0:
-                return str(self.model.limits[0, row - 1])
+                return str(self.params[name].min)
             elif col == 2 and row > 0:
-                return str(self.model.limits[1, row - 1])
+                return str(self.params[name].max)
 
         if role == QtCore.Qt.CheckStateRole:
             if row > 0 and col == 0:
-                if (row - 1) in self.model.fitted_parameters:
+                if self.params[name].vary:
                     return QtCore.Qt.Unchecked
                 else:
                     return QtCore.Qt.Checked

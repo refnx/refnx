@@ -80,6 +80,44 @@ def to_Parameters(p0, varies=None, bounds=None, names=None, expr=None):
 
     return p
 
+def varys(params):
+    """
+    A convenience function that takes a Parameters instance and finds out which
+    ones vary
+
+    Parameters
+    ----------
+    parameters : lmfit.Parameters
+
+    Returns
+    -------
+    varys : int, sequence
+        Which parameters are varying
+    """
+    varying = []
+    for i, par in enumerate(params):
+        if params[par].vary:
+            varying.append(True)
+        else:
+            varying.append(False)
+    return varying
+
+def values(params):
+    """
+    A convenience function that returns the values of the parameters
+    """
+    return np.array(params.valuesdict().values(), dtype='float64')
+
+def names(params):
+    return list(params.keys())
+
+def bounds(params):
+    return [(params[par].min, params[par].max) for par in params]
+
+def clear_bounds(params):
+    for par in params:
+        params[par].min = -np.inf
+        params[par].max = np.inf
 
 class CurveFitter(Minimizer):
     """
@@ -132,6 +170,16 @@ class CurveFitter(Minimizer):
                                           fcn_kws=fcn_kws,
                                           scale_covar=self.scale_covar,
                                           **min_kwds)
+    @property
+    def data(self):
+        return (self.xdata, self.ydata, self.edata)
+
+    @data.setter
+    def data(self, data):
+        self.xdata = np.copy(data[0])
+        self.ydata = np.copy(data[1])
+        if len(data) > 2:
+            self.edata = np.copy(data[2])
 
     def residuals(self, params, *args, **kwds):
         """

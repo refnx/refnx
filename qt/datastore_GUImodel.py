@@ -1,22 +1,31 @@
+"""
+Qt Model class for dealing with all the datasets.  It provides data for the
+GUI. It deals with GUI requests for loading datasets as well.
+"""
 from __future__ import division
 from PySide import QtCore, QtGui
+from PySide.QtCore import QAbstractItemModel
 import datastore
-import numpy as np
-from dataobject import DataObject
 
 
 class DataStoreModel(QtCore.QAbstractTableModel):
 
     def __init__(self, parent=None):
         super(DataStoreModel, self).__init__(parent)
-        self.dataStore = datastore.DataStore()
+        self.datastore = datastore.DataStore()
 
     def __iter__(self):
-        for dataObject in self.dataStore:
-            yield dataObject
+        for dataset in self.datastore:
+            yield dataset
+
+    def __getitem__(self, key):
+        return self.datastore[key]
+
+    def __len__(self):
+        return len(self.datastore)
 
     def rowCount(self, parent=QtCore.QModelIndex()):
-        return self.dataStore.numDataObjects
+        return len(self)
 
     def columnCount(self, parent=QtCore.QModelIndex()):
         return 3
@@ -36,27 +45,21 @@ class DataStoreModel(QtCore.QAbstractTableModel):
 
     def flags(self, index):
         if index.column() == 1:
-            return (
-                (QtCore.Qt.ItemIsUserCheckable |
-                 QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable)
-            )
+            return (QtCore.Qt.ItemIsUserCheckable |
+                 QtCore.Qt.ItemIsEnabled |
+                 QtCore.Qt.ItemIsSelectable)
         else:
             return (QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled)
 
     def setData(self, index, value, role=QtCore.Qt.EditRole):
         if index.column() == 1:
+            name = self.datastore.names[index.row()]
+            dataset = self.datastore.datasets[name]
+
             if value == QtCore.Qt.Checked:
-                self.dataStore.dataObjects[
-                    self.dataStore.names[
-                        index.row(
-                        )]].graph_properties[
-                    'visible'] = True
+                dataset.graph_properties['visible'] = True
             else:
-                self.dataStore.dataObjects[
-                    self.dataStore.names[
-                        index.row(
-                        )]].graph_properties[
-                    'visible'] = False
+                dataset.graph_properties['visible'] = False
 
             self.dataChanged.emit(index, index)
 
@@ -66,13 +69,16 @@ class DataStoreModel(QtCore.QAbstractTableModel):
         if not index.isValid():
             return None
 
+        name = self.datastore.names[index.row()]
+        dataset = self.datastore.datasets[name]
+
         if role == QtCore.Qt.DisplayRole:
             if index.column() == 0:
-                return self.dataStore.names[index.row()]
+                return name
 
         if role == QtCore.Qt.CheckStateRole:
             if index.column() == 1:
-                if self.dataStore.dataObjects[self.dataStore.names[index.row()]].graph_properties['visible']:
+                if dataset.graph_properties['visible']:
                     return QtCore.Qt.Checked
                 else:
                     return QtCore.Qt.Unchecked
@@ -92,27 +98,36 @@ class DataStoreModel(QtCore.QAbstractTableModel):
 
         return None
 
-    def add(self, dataObject):
-        self.dataStore.add(dataObject)
-        self.insertRows(self.dataStore.numDataObjects)
-        self.dataChanged.emit(QtCore.QModelIndex(), QtCore.QModelIndex())
+    def add(self, dataset):
+        self.datastore.add(dataset)
+        self.insertRows(len(self.datastore))
+        lindex = self.createIndex(len(self.datastore) - 1, 0)
+        rindex = self.createIndex(len(self.datastore) - 1, 2)
 
-    def snapshot(self, snapshotname):
-        original = self.dataStore['theoretical']
-        dataTuple = (np.copy(original.xdata), np.copy(original.fit))
-        snapshot = DataObject(name=snapshotname, dataTuple=dataTuple)
-        self.add(snapshot)
-        self.insertRows(self.dataStore.numDataObjects)
-        self.dataChanged.emit(QtCore.QModelIndex(), QtCore.QModelIndex())
+        self.dataChanged.emit(lindex, rindex)
+
+    def snapshot(self, snapshot_name):
+        original = self.datastore['theoretical']
+        dataset = self.datastore.snapshot('theoretical', snapshot_name)
+        self.insertRows(len(self.datastore))
+        lindex = self.createIndex(len(self.datastore) - 1, 0)
+        rindex = self.createIndex(len(self.datastore) - 1, 2)
+        self.dataChanged.emit(lindex, rindex)
+        return dataset
 
     def remove(self, name):
-        index = self.dataStore.names.index(name)
-        self.dataStore.remove_DataObject(name)
+        index = self.datastore.names.index(name)
+        self.datastore.remove_dataset(name)
         self.removeRows(index, 0)
         self.dataChanged.emit(QtCore.QModelIndex(), QtCore.QModelIndex())
 
-    def load(self, file):
-        dataObject = self.dataStore.load(file)
-        self.insertRows(self.dataStore.numDataObjects)
-        self.dataChanged.emit(QtCore.QModelIndex(), QtCore.QModelIndex())
-        return dataObject
+    def load(self, filename):
+        dataset = self.datastore.load(filename)
+        self.insertRows(len(self.datastore))
+        lindex = self.createIndex(len(self.datastore) - 1, 0)
+        rindex = self.createIndex(len(self.datastore) - 1, 2)
+
+        self.dataChanged.emit(lindex, rindex)
+        return dataset
+
+

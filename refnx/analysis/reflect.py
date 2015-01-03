@@ -69,11 +69,11 @@ def parameter_names(coefs):
     names = ['nlayers', 'scale', 'SLDfront', 'iSLDfront', 'SLDback',
              'iSLDback', 'bkg', 'sigma_back']
     nlayers = (coefs.size - 8 / 4)
-    for i in range(nlayers):
-        nlayers.append('thick%d'%i)
-        nlayers.append('SLD%d'%i)
-        nlayers.append('iSLD%d'%i)
-        nlayers.append('sigma%d'%i)
+    for i in range(int(nlayers)):
+        names.append('thick%d'%i)
+        names.append('SLD%d'%i)
+        names.append('iSLD%d'%i)
+        names.append('sigma%d'%i)
     return names
     
 def abeles(q, coefs, *args, **kwds):
@@ -348,6 +348,41 @@ class ReflectivityFitter(CurveFitter):
 
         return yvals
 
+    def set_dq(self, res, quad_order=17):
+        '''
+            Sets the resolution information.
+
+        Parameters
+        ----------
+        res: None, float or np.ndarray
+            If `None` then there is no resolution smearing.
+            If a float, e.g. 5, then dq/q smearing of 5% is applied. If res==0
+            then resolution smearing is removed.
+            If an np.ndarray the same length as ydata, it contains the FWHM of
+            the Gaussian approximated resolution kernel.
+        quad_order: int or 'ultimate'
+            The order of the Gaussian quadrature polynomial for doing the
+            resolution smearing. default = 17. Don't choose less than 13. If
+            quad_order == 'ultimate' then adaptive quadrature is used. Adaptive
+            quadrature will always work, but takes a _long_ time (2 or 3 orders
+            of magnitude longer). Fixed quadrature will always take a lot less
+            time. BUT it won't necessarily work across all samples. For
+            example 13 points may be fine for a thin layer, but will be
+            atrocious at describing a multilayer with Bragg peaks.
+        '''
+        if res is None:
+            self.userkws.pop('dqvals')
+        elif type(res) is float or type(res) is int:
+            if res == 0:
+                self.userkws.pop('dqvals')
+            dq = self.xdata * res / 100.
+            self.userkws['dqvals'] = dq
+        elif type(res) is np.ndarray and res.shape == self.ydata.shape:
+            self.userkws['dqvals'] = res
+
+        if quad_order > 12:
+            self.userkws['quad_order'] = quad_order
+
     def sld_profile(self, parameters, fcn_args=(), **fcn_kws):
         '''
         Calculate the SLD profile corresponding to the model parameters.
@@ -427,7 +462,6 @@ class Transform(object):
         elif self.form == 'YX2':
             yt = ydata * np.power(xdata, 2)
             et = etemp * np.power(xdata, 2)
-
         if edata is None:
             return yt, None
         else:

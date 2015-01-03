@@ -8,12 +8,17 @@ import numpy as np
 import os.path
 import refnx.reduce.nsplice as nsplice
 import refnx.util.ErrorProp as EP
+from refnx.analysis.curvefitter import CurveFitter
 
 
 class Data1D(object):
 
-    def __init__(self, dataTuple=None):
+    def __init__(self, dataTuple=None, curvefitter=None):
         self.filename = None
+        self.fit = None
+        self.params = None
+        self.chisqr = np.inf
+        self.residuals = None
 
         if dataTuple is not None:
             self.xdata = np.copy(dataTuple[0]).flatten()
@@ -23,15 +28,15 @@ class Data1D(object):
             if len(dataTuple) > 3:
                 self.xdataSD = np.copy(dataTuple[3]).flatten()
 
-            self.numpoints = np.size(self.xdata, 0)
-
         else:
             self.xdata = np.zeros(0)
             self.ydata = np.zeros(0)
             self.ydataSD = np.zeros(0)
             self.xdataSD = np.zeros(0)
 
-            self.numpoints = 0
+    @property
+    def npoints(self):
+        return np.size(self.ydata, 0)
 
     @property
     def data(self):
@@ -52,8 +57,6 @@ class Data1D(object):
         else:
             self.xdataSD = np.zeros(np.size(self.xdata))
 
-        self.numpoints = len(self.xdata)
-
     def scale(self, scalefactor=1.):
         self.ydata /= scalefactor
         self.ydataSD /= scalefactor
@@ -69,7 +72,7 @@ class Data1D(object):
         dq = np.r_[xdataSD]
 
         # go through and stitch them together.
-        if requires_splice and self.numpoints > 1:
+        if requires_splice and self.npoints > 1:
             scale, dscale = nsplice.get_scaling_in_overlap(qq,
                                                            rr,
                                                            dr,
@@ -106,6 +109,10 @@ class Data1D(object):
                                 self.ydata,
                                 self.ydataSD,
                                 self.xdataSD)))
+    def save_fit(self, f):
+        if self.fit is not None:
+            np.savetxt(f, np.column_stack((self.xdata,
+                                           self.fit)))
 
     def load(self, f):
         array = np.loadtxt(f)

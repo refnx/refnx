@@ -1,21 +1,24 @@
 from __future__ import division
 from PySide import QtCore, QtGui
 import numpy as np
+import refnx.analysis.curvefitter as curvefitter
 
 
 class LimitsModel(QtCore.QAbstractTableModel):
 
-    def __init__(self, parameters, fitted_parameters, limits, parent=None):
+    def __init__(self, params, finite_bounds=False, parent=None):
         super(LimitsModel, self).__init__(parent)
-        self.parameters = np.copy(parameters)
-        self.fitted_parameters = np.unique(fitted_parameters)
-        self.limits = np.copy(limits)
+        self.params = params
+        self.finite_bounds = finite_bounds
+        self.varys = curvefitter.varys(self.params)
+        self.fitted_params = np.where(self.varys)[0]
+        self.names = curvefitter.names(self.params)
 
     def columnCount(self, parent=QtCore.QModelIndex()):
-        return 4
+        return 5
 
     def rowCount(self, parent=QtCore.QModelIndex()):
-        return np.size(self.fitted_parameters)
+        return len(self.params)
 
     def data(self, index, role=QtCore.Qt.DisplayRole):
         if not index.isValid():
@@ -24,16 +27,26 @@ class LimitsModel(QtCore.QAbstractTableModel):
         row = index.row()
         col = index.column()
 
-        uniquevals = np.unique(self.fitted_parameters)
+        name = self.names[row]
+        param = self.params[name]
+
+        if role == QtCore.Qt.BackgroundRole and col < 2:
+            return QtGui.QBrush(QtCore.Qt.cyan)
+
+        if role == QtCore.Qt.BackgroundRole and (not row in self.fitted_params):
+            return QtGui.QBrush(QtCore.Qt.cyan)
+
         if role == QtCore.Qt.DisplayRole:
             if col == 0:
-                return str(self.fitted_parameters[row])
+                return name
             if col == 1:
-                return str(self.parameters[self.fitted_parameters[row]])
+                return str(param.value)
             if col == 2:
-                return str(self.limits[0, self.fitted_parameters[row]])
+                return str(param.min)
             if col == 3:
-                return str(self.limits[1, self.fitted_parameters[row]])
+                return str(param.max)
+            if col == 4:
+                return str(param.expr)
 
     def headerData(self, section, orientation, role=QtCore.Qt.DisplayRole):
         """ Set the headers to be displayed. """
@@ -51,13 +64,15 @@ class LimitsModel(QtCore.QAbstractTableModel):
                 return 'lower limit'
             if section == 3:
                 return 'upper limit'
+            if section == 4:
+                return 'expr'
         return None
 
     def flags(self, index):
         row = index.row()
         col = index.column()
 
-        if col == 0 or col == 1:
+        if col == 0 or col == 1 or (not row in self.fitted_params):
             return QtCore.Qt.NoItemFlags
 
         return (QtCore.Qt.ItemIsEditable |
@@ -71,19 +86,41 @@ class LimitsModel(QtCore.QAbstractTableModel):
         if not index.isValid():
             return False
 
-        if col < 0 or col > 3:
+        if col < 0 or col > 4:
             return False
 
+        if not row in self.fitted_params:
+            return False
+
+        name = self.names[row]
+        param = self.params[name]
+
+        none = ['none', 'None']
+        lowlim = ['none', 'None', '-inf', '-Inf']
+        hilim = ['none', 'None', 'inf', 'Inf']
+
         if role == QtCore.Qt.EditRole:
-            validator = QtGui.QDoubleValidator()
-            voutput = validator.validate(value, 1)
-            if voutput[0] == QtGui.QValidator.State.Acceptable:
-                if col == 2:
-                    self.limits[0, self.fitted_parameters[row]] = voutput[1]
-                if col == 3:
-                    self.limits[1, self.fitted_parameters[row]] = voutput[1]
+            if col == 4:
+                if value in none :
+                    value = None
+                param.expr = value
+
+            if self.finite_bounds:
+                validator = QtGui.QDoubleValidator()
+                voutput = validator.validate(value, 1)
+
+                if voutput[0] == QtGui.QValidator.State.Acceptable:
+                    if col == 2:
+                        param.min = float(voutput[1])
+                    if col == 3:
+                        param.max = float(voutput[1])
             else:
-                return False
+                if col == 2:
+                    if value in lowlim:
+                        param.min = -np.inf
+                if col == 3:
+                    if value in hilim:
+                        param.max = np.inf
 
         self.dataChanged.emit(index, index)
         return True

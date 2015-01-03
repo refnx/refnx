@@ -527,7 +527,6 @@
     <property name="title">
      <string>Help</string>
     </property>
-    <addaction name="actionAbout"/>
    </widget>
    <widget class="QMenu" name="menuPlot_type">
     <property name="title">
@@ -539,6 +538,7 @@
      </property>
      <addaction name="actionDifferential_Evolution"/>
      <addaction name="actionLevenberg_Marquardt"/>
+     <addaction name="actionMCMC"/>
     </widget>
     <widget class="QMenu" name="menuFit_as">
      <property name="title">
@@ -574,14 +574,15 @@
      <string>Misc</string>
     </property>
     <addaction name="actionSLD_calculator"/>
+    <addaction name="actionAbout"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuData"/>
    <addaction name="menuModel"/>
    <addaction name="menuPlot_type"/>
    <addaction name="menuSettings"/>
-   <addaction name="menuHelp"/>
    <addaction name="menuMisc"/>
+   <addaction name="menuHelp"/>
   </widget>
   <widget class="QDockWidget" name="dockWidget">
    <property name="sizePolicy">
@@ -792,7 +793,7 @@
            </property>
            <property name="icon">
             <iconset>
-             <activeon>icons/go.png</activeon>
+             <activeon>icons/go.jpeg</activeon>
             </iconset>
            </property>
            <property name="iconSize">
@@ -1243,9 +1244,12 @@
     <string>Remove Data</string>
    </property>
   </action>
-  <action name="actionAbout">
+  <action name="actionAboutProgram">
    <property name="text">
     <string>About</string>
+   </property>
+   <property name="visible">
+    <bool>true</bool>
    </property>
   </action>
   <action name="actionDifferential_Evolution">
@@ -1334,6 +1338,19 @@
    </property>
    <property name="shortcut">
     <string>Meta+F</string>
+   </property>
+  </action>
+  <action name="actionAbout">
+   <property name="text">
+    <string>Motofit?</string>
+   </property>
+  </action>
+  <action name="actionMCMC">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>MCMC</string>
    </property>
   </action>
  </widget>

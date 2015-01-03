@@ -32,7 +32,8 @@ class DataObject(reflectdataset.ReflectDataset):
                                  'markeredgecolor': str,
                                  'markerfacecolor': str,
                                  'zorder': int,
-                                 'color': str}
+                                 'color': str,
+                                 'visible': bool}
 
     def __init__(self, dataTuple=None,
                  name='theoretical', filename=None):

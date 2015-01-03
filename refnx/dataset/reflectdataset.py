@@ -35,6 +35,7 @@ class ReflectDataset(Data1D):
         # args should be a list of reduce objects
         super(ReflectDataset, self).__init__(dataTuple=dataTuple)
         self.datafilenumber = list()
+        self.sld_profile = None
         if datasets is not None:
             [self.add_dataset(data) for data in datasets]
 

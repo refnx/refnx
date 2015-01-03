@@ -2,7 +2,7 @@ from __future__ import division
 from PySide import QtCore, QtGui
 import numpy as np
 import refnx.analysis.reflect as reflect
-import refnx.analysis.fitting as fitting
+import refnx.analysis.curvefitter as curvefitter
 
 
 class BaseModel(QtCore.QAbstractTableModel):
@@ -16,9 +16,9 @@ class BaseModel(QtCore.QAbstractTableModel):
     layersFinishedBeingInserted = QtCore.Signal()
     layersFinishedBeingRemoved = QtCore.Signal()
 
-    def __init__(self, model, parent=None):
+    def __init__(self, params, parent=None):
         super(BaseModel, self).__init__(parent)
-        self.model = model
+        self.params = params
 
     def rowCount(self, parent=QtCore.QModelIndex()):
         return 1
@@ -35,42 +35,41 @@ class BaseModel(QtCore.QAbstractTableModel):
     def setData(self, index, value, role=QtCore.Qt.EditRole):
         if not index.isValid():
             return False
+        row = index.row()
+        col = index.column()
 
-        coltopar = [0, 1, 6]
+        coltopar = ['nlayers', 'scale', 'bkg']
 
-        if index.row() != 0 or index.column() < 0 or index.column() > 2:
+        if row != 0 or col < 0 or col > 2:
             return False
 
         if role == QtCore.Qt.CheckStateRole and index.column() > 0:
-            fitted_parameters = np.copy(self.model.fitted_parameters)
-            if value == QtCore.Qt.Checked:
-                fitted_parameters = np.delete(
-                    fitted_parameters,
-                    np.where(fitted_parameters == coltopar[index.column()]))
-            else:
-                fitted_parameters = np.append(
-                    fitted_parameters,
-                    coltopar[index.column()])
+            name = coltopar[col]
 
-            self.model.fitted_parameters = fitted_parameters[:]
+            if value == QtCore.Qt.Checked:
+                self.params[name].vary = False
+            else:
+                self.params[name].vary = True
+
             return True
 
         if role == QtCore.Qt.EditRole:
-            if index.column() == 0:
+            if col == 0:
                 validator = QtGui.QIntValidator()
                 voutput = validator.validate(value, 1)
 
-                parameters = np.copy(self.model.parameters)
+                values = curvefitter.values(self.params)
 
-                if not reflect.is_proper_Abeles_input(parameters):
-                    raise ValueError(
-                        "The size of the parameter array passed to abeles should be 4 * coefs[0] + 8")
+                if not reflect.is_proper_Abeles_input(values):
+                    raise ValueError('The size of the parameter array passed'
+                                     ' to abeles should be 4 * coefs[0] + 8')
 
-                fitted_parameters = np.copy(self.model.fitted_parameters)
+                if (voutput[0] is QtGui.QValidator.State.Acceptable
+                    and int(voutput[1]) >= 0):
 
-                if voutput[0] is QtGui.QValidator.State.Acceptable and int(voutput[1]) >= 0:
-                    oldlayers = int(parameters[0])
+                    oldlayers = int(values[0])
                     newlayers = int(voutput[1])
+
                     if oldlayers == newlayers:
                         return True
 
@@ -79,15 +78,16 @@ class BaseModel(QtCore.QAbstractTableModel):
                         end = oldlayers
                         self.layersAboutToBeRemoved.emit(start, end)
 
-                        parameters.resize(8, refcheck=False)
+                        names = curvefitter.names(self.params)[8:]
+                        map(self.params.pop, names)
+                        self.params['nlayers'].value = newlayers
+
                         thesignal = self.layersFinishedBeingRemoved
-                        fitted_parameters = np.extract(
-                            fitted_parameters < 8,
-                            fitted_parameters)
-                        parameters[0] = newlayers
                     else:
                         if newlayers > oldlayers:
-                            title = 'Where would you like to insert the new layers'
+                            title = ('Where would you like to insert the new'
+                                     ' layers')
+
                             maxValue = oldlayers
                             minValue = 0
                             value = 0
@@ -99,59 +99,91 @@ class BaseModel(QtCore.QAbstractTableModel):
 
                         label = 'layer'
                         insertpoint, ok = QtGui.QInputDialog.getInt(None,
-                                                                    title,
-                                                                    label,
-                                                                    value=value,
-                                                                    minValue=minValue,
-                                                                    maxValue=maxValue)
+                                                            title,
+                                                            label,
+                                                            value=value,
+                                                            minValue=minValue,
+                                                            maxValue=maxValue)
                         if not ok:
                             return False
 
-                        parameters[0] = newlayers
+                        self.params['nlayers'].value = newlayers
                         if newlayers > oldlayers:
                             start = insertpoint + 1
                             end = insertpoint + newlayers - oldlayers
                             self.layersAboutToBeInserted.emit(start, end)
 
-                            parameters = np.insert(parameters,
-                                                   [4 * insertpoint + 8] *
-                                                   4 *
-                                                   (newlayers -
-                                                    oldlayers),
-                                                   [0, 0, 0, 0] * (newlayers - oldlayers))
-                            fitted_parameters = np.where(
-                                fitted_parameters >= 4 * insertpoint + 8,
-                                fitted_parameters +
-                                (newlayers - oldlayers) *
-                                4,
-                                fitted_parameters)
-                            fitted_parameters = np.append(fitted_parameters,
-                                                          np.arange(4 * insertpoint + 8, 4 * insertpoint + 8 + (newlayers - oldlayers) * 4))
+                            values = curvefitter.values(self.params)
+                            varys = curvefitter.varys(self.params)
+                            bounds = curvefitter.bounds(self.params)
+
+                            #do the insertion
+                            startP = 4 * insertpoint + 8
+                            endP = 4 * (insertpoint + newlayers
+                                        - oldlayers) + 8
+                            nvals = endP - startP
+
+                            values = np.insert(values, startP, [0] * nvals)
+
+                            dummy = [varys.insert(startP, i) for i
+                                     in [True] * nvals]
+
+                            dummy = [bounds.insert(startP, i) for i
+                                     in [(None, None)] * nvals]
+
+                            bounds = np.array(bounds)
+                            names = reflect.parameter_names(values)
+
+                            #clear the parameters
+                            map(self.params.pop, self.params.keys())
+
+                            # reinsert parameters
+                            parlist = zip(names,
+                                          values,
+                                          varys,
+                                          bounds.T[0],
+                                          bounds.T[1],
+                                          [None] * values.size)
+
+                            for para in parlist:
+                                self.params.add(*para)
 
                             thesignal = self.layersFinishedBeingInserted
                         elif newlayers < oldlayers:
-                            insertpoint -= 1
-                            start = insertpoint + 1
-                            end = insertpoint + 1 + (oldlayers - newlayers) - 1
+                            start = insertpoint
+                            end = insertpoint + (oldlayers - newlayers) - 1
                             self.layersAboutToBeRemoved.emit(start, end)
 
-                            paramslost = np.arange(
-                                4 * insertpoint + 8,
-                                4 * insertpoint + 8 + (oldlayers - newlayers) * 4)
-                            parameters = np.delete(parameters, paramslost)
-                            fitted_parameters = np.array(
-                                [val for val in fitted_parameters.tolist() if (val < paramslost[0] or val > paramslost[-1])])
-                            fitted_parameters = np.where(
-                                fitted_parameters > paramslost[-1],
-                                fitted_parameters +
-                                (newlayers - oldlayers) * 4,
-                                fitted_parameters)
+                            startP = 4 * (insertpoint - 1) + 8
+                            endP = (4 * (insertpoint - 1 + oldlayers
+                                         - newlayers) + 8)
+
+                            #get rid of parameters we don't need anymore
+                            names_lost = curvefitter.names(self.params)[startP: endP]
+                            map(self.params.pop, names_lost)
+
+                            # but now we need to rejig parameters names
+                            # the only way to do this is to pop them all and readd
+                            values = curvefitter.values(self.params)
+                            varys = curvefitter.varys(self.params)
+                            bounds = np.array(curvefitter.bounds(self.params))
+                            names = reflect.parameter_names(values)
+                            map(self.params.pop, self.params.keys())
+
+                            parlist = zip(names,
+                                          values,
+                                          varys,
+                                          bounds.T[0],
+                                          bounds.T[1],
+                                          [None] * values.size)
+
+                            for para in parlist:
+                                self.params.add(*para)
+
 
                             thesignal = self.layersFinishedBeingRemoved
 
                     # YOU HAVE TO RESIZE LAYER PARAMS
-                    self.model.parameters = parameters[:]
-                    self.model.fitted_parameters = fitted_parameters[:]
                     thesignal.emit()
 
                 else:
@@ -160,8 +192,7 @@ class BaseModel(QtCore.QAbstractTableModel):
                 validator = QtGui.QDoubleValidator()
                 voutput = validator.validate(value, 1)
                 if voutput[0] is QtGui.QValidator.State.Acceptable:
-                    self.model.parameters[
-                        coltopar[index.column()]] = voutput[1]
+                    self.params[coltopar[index.column()]].value = voutput[1]
                 else:
                     return False
 
@@ -171,20 +202,22 @@ class BaseModel(QtCore.QAbstractTableModel):
     def data(self, index, role=QtCore.Qt.DisplayRole):
         if not index.isValid():
             return None
+        values = curvefitter.values(self.params)
 
-        if not reflect.is_proper_Abeles_input(self.model.parameters):
+        if not reflect.is_proper_Abeles_input(values):
             return None
 
         if index.row() != 0 or index.column() < 0 or index.column() > 2:
             return None
 
-        coltopar = [0, 1, 6]
+        coltopar = ['nlayers', 'scale', 'bkg']
 
         if role == QtCore.Qt.DisplayRole:
-            return str(self.model.parameters[coltopar[index.column()]])
+            return str(self.params[coltopar[index.column()]].value)
 
         if role == QtCore.Qt.CheckStateRole:
-            if coltopar[index.column()] in self.model.fitted_parameters and index.column() != 0:
+            if (self.params[coltopar[index.column()]].vary
+                and index.column() != 0):
                 return QtCore.Qt.Unchecked
             else:
                 return QtCore.Qt.Checked
@@ -210,25 +243,25 @@ class LayerModel(QtCore.QAbstractTableModel):
         a model for displaying in a QtGui.QTableView
     '''
 
-    def __init__(self, model, parent=None):
+    def __init__(self, params, parent=None):
         super(LayerModel, self).__init__(parent)
-        self.model = model
+        self.params = params
 
     def rowCount(self, parent=QtCore.QModelIndex()):
-        return int(self.model.parameters[0]) + 2
+        return int(self.params['nlayers'].value) + 2
 
     def columnCount(self, parent=QtCore.QModelIndex()):
         return 4
 
     def flags(self, index):
-        numlayers = int(self.model.parameters[0])
+        nlayers = int(self.params['nlayers'].value)
         row = index.row()
         col = index.column()
 
         if row == 0 and (col == 0 or col == 3):
             return QtCore.Qt.NoItemFlags
 
-        if row == numlayers + 1 and col == 0:
+        if row == nlayers + 1 and col == 0:
             return QtCore.Qt.NoItemFlags
 
         return (QtCore.Qt.ItemIsEditable |
@@ -236,21 +269,22 @@ class LayerModel(QtCore.QAbstractTableModel):
                 QtCore.Qt.ItemIsEnabled |
                 QtCore.Qt.ItemIsSelectable)
 
-    def rowcoltoparam(self, row, col, numlayers):
+    def rowcol_to_name(self, row, col, nlayers):
         if row == 0 and col == 1:
             param = 2
         elif row == 0 and col == 2:
             param = 3
-        elif row == numlayers + 1 and col == 1:
+        elif row == nlayers + 1 and col == 1:
             param = 4
-        elif row == numlayers + 1 and col == 2:
+        elif row == nlayers + 1 and col == 2:
             param = 5
-        elif row == numlayers + 1 and col == 3:
+        elif row == nlayers + 1 and col == 3:
             param = 7
         else:
             param = 4 * (row - 1) + col + 8
 
-        return param
+        names = curvefitter.names(self.params)
+        return names[param]
 
     def layersAboutToBeInserted(self, start, end):
         self.beginInsertRows(QtCore.QModelIndex(), start, end)
@@ -267,7 +301,7 @@ class LayerModel(QtCore.QAbstractTableModel):
     def setData(self, index, value, role=QtCore.Qt.EditRole):
         row = index.row()
         col = index.column()
-        numlayers = int(self.model.parameters[0])
+        nlayers = int(self.params['nlayers'].value)
 
         if not index.isValid():
             return False
@@ -275,24 +309,19 @@ class LayerModel(QtCore.QAbstractTableModel):
         if col < 0 or col > 3:
             return False
 
-        param = self.rowcoltoparam(row, col, numlayers)
+        name = self.rowcol_to_name(row, col, nlayers)
 
         if role == QtCore.Qt.CheckStateRole:
-            fitted_parameters = self.model.fitted_parameters
             if value == QtCore.Qt.Checked:
-                fitted_parameters = np.delete(
-                    fitted_parameters,
-                    np.where(fitted_parameters == param))
+                self.params[name].vary = False
             else:
-                fitted_parameters = np.append(fitted_parameters, param)
-
-            self.model.fitted_parameters = fitted_parameters[:]
+                self.params[name].vary = True
 
         if role == QtCore.Qt.EditRole:
             validator = QtGui.QDoubleValidator()
             voutput = validator.validate(value, 1)
             if voutput[0] == QtGui.QValidator.State.Acceptable:
-                self.model.parameters[param] = voutput[1]
+                self.params[name].value = float(voutput[1])
             else:
                 return False
 
@@ -306,24 +335,24 @@ class LayerModel(QtCore.QAbstractTableModel):
         row = index.row()
         col = index.column()
 
-        if not reflect.is_proper_Abeles_input(self.model.parameters):
+        if not reflect.is_proper_Abeles_input(curvefitter.values(self.params)):
             return None
 
-        numlayers = int(self.model.parameters[0])
+        nlayers = int(self.params['nlayers'].value)
 
         if row == 0 and (col == 0 or col == 3):
             return None
 
-        if row == numlayers + 1 and col == 0:
+        if row == nlayers + 1 and col == 0:
             return None
 
-        param = self.rowcoltoparam(row, col, numlayers)
+        name = self.rowcol_to_name(row, col, nlayers)
 
         if role == QtCore.Qt.DisplayRole:
-            return str(self.model.parameters[param])
+            return str(self.params[name].value)
 
         if role == QtCore.Qt.CheckStateRole:
-            if param in self.model.fitted_parameters:
+            if self.params[name].vary:
                 return QtCore.Qt.Unchecked
             else:
                 return QtCore.Qt.Checked
@@ -334,10 +363,10 @@ class LayerModel(QtCore.QAbstractTableModel):
             return None
 
         if orientation == QtCore.Qt.Vertical:
-            numlayers = (self.model.parameters[0])
+            nlayers = int(self.params['nlayers'].value)
             if section == 0:
                 return 'fronting'
-            elif section == numlayers + 1:
+            elif section == nlayers + 1:
                 return 'backing'
             else:
                 return str(section)

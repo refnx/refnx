@@ -2,8 +2,8 @@
 
 # Form implementation generated from reading ui file 'Motofit.ui'
 #
-# Created: Thu Feb 20 20:57:07 2014
-#      by: pyside-uic 0.2.15 running on PySide 1.2.1
+# Created: Thu Jan  8 12:19:06 2015
+#      by: pyside-uic 0.2.15 running on PySide 1.2.2
 #
 # WARNING! All changes made in this file will be lost!
 
@@ -310,7 +310,7 @@ class Ui_MainWindow(object):
         self.do_fit_button.setMaximumSize(QtCore.QSize(60, 75))
         self.do_fit_button.setText("")
         icon = QtGui.QIcon()
-        icon.addPixmap(QtGui.QPixmap("icons/go.png"), QtGui.QIcon.Active, QtGui.QIcon.On)
+        icon.addPixmap(QtGui.QPixmap("icons/go.jpeg"), QtGui.QIcon.Active, QtGui.QIcon.On)
         self.do_fit_button.setIcon(icon)
         self.do_fit_button.setIconSize(QtCore.QSize(60, 75))
         self.do_fit_button.setObjectName("do_fit_button")
@@ -471,9 +471,7 @@ class Ui_MainWindow(object):
         self.do_gf_fit = QtGui.QPushButton(self.tab_7)
         self.do_gf_fit.setMinimumSize(QtCore.QSize(50, 70))
         self.do_gf_fit.setText("")
-        icon1 = QtGui.QIcon()
-        icon1.addPixmap(QtGui.QPixmap("icons/go.jpeg"), QtGui.QIcon.Active, QtGui.QIcon.On)
-        self.do_gf_fit.setIcon(icon1)
+        self.do_gf_fit.setIcon(icon)
         self.do_gf_fit.setIconSize(QtCore.QSize(70, 70))
         self.do_gf_fit.setObjectName("do_gf_fit")
         self.gridLayout_10.addWidget(self.do_gf_fit, 0, 1, 1, 1)
@@ -532,8 +530,9 @@ class Ui_MainWindow(object):
         self.actionBatch_Fit.setObjectName("actionBatch_Fit")
         self.actionRemove_Data = QtGui.QAction(MainWindow)
         self.actionRemove_Data.setObjectName("actionRemove_Data")
-        self.actionAbout = QtGui.QAction(MainWindow)
-        self.actionAbout.setObjectName("actionAbout")
+        self.actionAboutProgram = QtGui.QAction(MainWindow)
+        self.actionAboutProgram.setVisible(True)
+        self.actionAboutProgram.setObjectName("actionAboutProgram")
         self.actionDifferential_Evolution = QtGui.QAction(MainWindow)
         self.actionDifferential_Evolution.setCheckable(True)
         self.actionDifferential_Evolution.setChecked(True)
@@ -564,6 +563,13 @@ class Ui_MainWindow(object):
         self.actionResolution_smearing.setObjectName("actionResolution_smearing")
         self.actionSLD_calculator = QtGui.QAction(MainWindow)
         self.actionSLD_calculator.setObjectName("actionSLD_calculator")
+        self.actionFit = QtGui.QAction(MainWindow)
+        self.actionFit.setObjectName("actionFit")
+        self.actionAbout = QtGui.QAction(MainWindow)
+        self.actionAbout.setObjectName("actionAbout")
+        self.actionMCMC = QtGui.QAction(MainWindow)
+        self.actionMCMC.setCheckable(True)
+        self.actionMCMC.setObjectName("actionMCMC")
         self.menuData.addAction(self.actionLoad_Data)
         self.menuData.addAction(self.actionRefresh_Data)
         self.menuData.addAction(self.actionRemove_Data)
@@ -575,9 +581,9 @@ class Ui_MainWindow(object):
         self.menuModel.addAction(self.actionTake_Snapshot)
         self.menuModel.addSeparator()
         self.menuModel.addAction(self.actionLoad_Plugin)
-        self.menuHelp.addAction(self.actionAbout)
         self.menuAlgorithm.addAction(self.actionDifferential_Evolution)
         self.menuAlgorithm.addAction(self.actionLevenberg_Marquardt)
+        self.menuAlgorithm.addAction(self.actionMCMC)
         self.menuFit_as.addAction(self.actionY_vs_X)
         self.menuFit_as.addAction(self.actionlogY_vs_X)
         self.menuFit_as.addAction(self.actionYX4_vs_X)
@@ -592,13 +598,14 @@ class Ui_MainWindow(object):
         self.menuSettings.addAction(self.actionChange_Q_range)
         self.menuSettings.addAction(self.actionResolution_smearing)
         self.menuMisc.addAction(self.actionSLD_calculator)
+        self.menuMisc.addAction(self.actionAbout)
         self.menubar.addAction(self.menuFile.menuAction())
         self.menubar.addAction(self.menuData.menuAction())
         self.menubar.addAction(self.menuModel.menuAction())
         self.menubar.addAction(self.menuPlot_type.menuAction())
         self.menubar.addAction(self.menuSettings.menuAction())
-        self.menubar.addAction(self.menuHelp.menuAction())
         self.menubar.addAction(self.menuMisc.menuAction())
+        self.menubar.addAction(self.menuHelp.menuAction())
 
         self.retranslateUi(MainWindow)
         self.graphs.setCurrentIndex(0)
@@ -659,7 +666,7 @@ class Ui_MainWindow(object):
         self.actionLoad_File.setShortcut(QtGui.QApplication.translate("MainWindow", "Meta+O", None, QtGui.QApplication.UnicodeUTF8))
         self.actionBatch_Fit.setText(QtGui.QApplication.translate("MainWindow", "Batch Fit", None, QtGui.QApplication.UnicodeUTF8))
         self.actionRemove_Data.setText(QtGui.QApplication.translate("MainWindow", "Remove Data", None, QtGui.QApplication.UnicodeUTF8))
-        self.actionAbout.setText(QtGui.QApplication.translate("MainWindow", "About", None, QtGui.QApplication.UnicodeUTF8))
+        self.actionAboutProgram.setText(QtGui.QApplication.translate("MainWindow", "About", None, QtGui.QApplication.UnicodeUTF8))
         self.actionDifferential_Evolution.setText(QtGui.QApplication.translate("MainWindow", "Differential Evolution", None, QtGui.QApplication.UnicodeUTF8))
         self.actionLevenberg_Marquardt.setText(QtGui.QApplication.translate("MainWindow", "Levenberg Marquardt", None, QtGui.QApplication.UnicodeUTF8))
         self.actionY_vs_X.setText(QtGui.QApplication.translate("MainWindow", "lin(Y) vs X", None, QtGui.QApplication.UnicodeUTF8))
@@ -670,4 +677,8 @@ class Ui_MainWindow(object):
         self.actionTake_Snapshot.setText(QtGui.QApplication.translate("MainWindow", "Take Snapshot", None, QtGui.QApplication.UnicodeUTF8))
         self.actionResolution_smearing.setText(QtGui.QApplication.translate("MainWindow", "Resolution Smearing", None, QtGui.QApplication.UnicodeUTF8))
         self.actionSLD_calculator.setText(QtGui.QApplication.translate("MainWindow", "SLD calculator", None, QtGui.QApplication.UnicodeUTF8))
+        self.actionFit.setText(QtGui.QApplication.translate("MainWindow", "Fit", None, QtGui.QApplication.UnicodeUTF8))
+        self.actionFit.setShortcut(QtGui.QApplication.translate("MainWindow", "Meta+F", None, QtGui.QApplication.UnicodeUTF8))
+        self.actionAbout.setText(QtGui.QApplication.translate("MainWindow", "Motofit?", None, QtGui.QApplication.UnicodeUTF8))
+        self.actionMCMC.setText(QtGui.QApplication.translate("MainWindow", "MCMC", None, QtGui.QApplication.UnicodeUTF8))
 
