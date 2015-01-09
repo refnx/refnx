@@ -210,7 +210,7 @@ class MyMainWindow(QtGui.QMainWindow):
         #     self.globalfitting_ParamModel.changed_fitplugin)
         # self.globalfitting_ParamModel.dataChanged.connect(
         #     self.calculate_gf_model)
-            
+
         print('Session started at:', time.asctime(time.localtime(time.time())))
 
     def __del__(self):
@@ -267,70 +267,52 @@ class MyMainWindow(QtGui.QMainWindow):
         self.ui.plainTextEdit.moveCursor(QtGui.QTextCursor.End)
         self.ui.plainTextEdit.insertPlainText(text)
 
-    def __saveState(self, experimentFileName):
+    def __saveState(self, experiment_file_name):
         state = {}
-        state['data_store_model.dataStore'] = self.data_store_model.dataStore
-        state['params_store_model.params_store'] = self.params_store_model.modelStore
+        state['data_store_model.datastore'] = self.data_store_model.datastore
+        state['params_store_model.params_store'] = self.params_store_model.params_store
         state['history'] = self.ui.plainTextEdit.toPlainText()
         state['settings'] = self.settings
-        state['plugins'] = self.pluginStoreModel.plugins
-        state['globalfitting_settings'] = self.globalfitting_ParamModel.gf_settings
+        state['plugins'] = self.plugin_store_model.plugins
+#        state['globalfitting_settings'] = self.globalfitting_ParamModel.gf_settings
 
-        try:
-            tempdirectory = tempfile.mkdtemp()
-
-            with open(os.path.join(tempdirectory, 'state'), 'wb') as f:
-                pickle.dump(state, f, -1)
-
-            with zipfile.ZipFile(experimentFileName, 'w') as zip:
-                datastore.zipper(tempdirectory, zip)
-        except Exception as e:
-            print(type(e), e.message)
-        finally:
-            shutil.rmtree(tempdirectory)
+        with open(os.path.join(experiment_file_name), 'wb') as f:
+            pickle.dump(state, f, 0)
 
     @QtCore.Slot()
     def on_actionSave_File_triggered(self):
-        experimentFileName, ok = QtGui.QFileDialog.getSaveFileName(
+        experiment_file_name, ok = QtGui.QFileDialog.getSaveFileName(
             self, caption='Save experiment as:', dir='experiment.fdob')
 
         if not ok:
             return
 
-        path, ext = os.path.splitext(experimentFileName)
+        path, ext = os.path.splitext(experiment_file_name)
         if ext != '.fdob':
-            experimentFileName = path + '.fdob'
+            experiment_file_name = path + '.fdob'
 
-        self.__saveState(experimentFileName)
+        self.__saveState(experiment_file_name)
 
-    def __restoreState(self, experimentFileName):
+    def __restoreState(self, experiment_file_name):
         state = None
-        try:
-            tempdirectory = tempfile.mkdtemp()
-            with zipfile.ZipFile(experimentFileName, 'r') as zip:
-                zip.extractall(tempdirectory)
-
-            with open(os.path.join(tempdirectory, 'state'), 'rb') as f:
-                state = pickle.load(f)
-        except Exception as e:
-            print(type(e), e.message)
-        finally:
-            shutil.rmtree(tempdirectory)
+        with open(experiment_file_name, 'rb') as f:
+            state = pickle.load(f)
 
         if not state:
             print("Couldn't load experiment")
             return
 
         try:
-            self.data_store_model.dataStore = state['data_store_model.dataStore']
-            self.params_store_model.modelStore = state[
-                'params_store_model.params_store']
+            self.data_store_model.datastore = state[
+                                    'data_store_model.datastore']
+            self.params_store_model.params_store = state[
+                                    'params_store_model.params_store']
             self.ui.plainTextEdit.setPlainText(state['history'])
             self.settings = state['settings']
-            self.pluginStoreModel.plugins = state['plugins']
-            self.globalfitting_ParamModel.gf_settings = state['globalfitting_settings']
-            self.globalfitting_DataModel.gf_settings = state['globalfitting_settings']
-            
+            self.plugin_store_model.plugins = state['plugins']
+            # self.globalfitting_ParamModel.gf_settings = state['globalfitting_settings']
+            # self.globalfitting_DataModel.gf_settings = state['globalfitting_settings']
+
         except KeyError as e:
             print(type(e), e.message)
             return
@@ -338,29 +320,32 @@ class MyMainWindow(QtGui.QMainWindow):
         self.data_store_model.modelReset.emit()
         self.params_store_model.modelReset.emit()
 
-        dataStore = self.data_store_model.dataStore
         self.restore_settings()
 
         # remove and add dataObjectsToGraphs
         self.reflectivitygraphs.removeTraces()
         self.sldgraphs.removeTraces()
-        self.add_datasets_to_graphs(dataStore)
+        ds = [d for d in self.data_store_model]
+        self.add_datasets_to_graphs(ds)
 
-        self.theoretical = dataStore['theoretical']
 #        self.reflectivitygraphs.axes[0].lines.remove(self.theoretical.line2D)
 # self.reflectivitygraphs.axes[1].lines.remove(self.theoretical.line2Dresiduals)
 
         # when you load in the theoretical model you destroy the link to the
         # gui, reinstate it.
-        self.theoreticalmodel = self.params_store_model.modelStore['theoretical']
-        self.base_model.model = self.theoreticalmodel
-        self.layer_model.model = self.theoreticalmodel
-        self.theoretical.evaluate_model(self.theoreticalmodel, store=True)
+        params = self.params_store_model['theoretical']
+        self.base_model.params = params
+        self.layer_model.params = params
+        self.update_gui_model()
 
-        self.theoretical.line2Dfit = self.reflectivitygraphs.axes[0].plot(
-            self.theoretical.xdata,
-            self.theoretical.fit, color='b',
-            linestyle='-', lw=2, label='theoretical')[0]
+        #re-add the theoretical line to the reflectivity graph
+        # theoretical = self.data_store_model['theoretical']
+        # graph_properties = theoretical.graph_properties
+        # graph_properties.line2Dfit = self.reflectivitygraphs.axes[0].plot(
+        #                                             theoretical.xdata,
+        #                                             theoretical.fit, color='b',
+        #                                             linestyle='-', lw=2,
+        #                                             label='theoretical')[0]
         self.reflectivitygraphs.draw()
 
     def restore_settings(self):
@@ -390,11 +375,11 @@ class MyMainWindow(QtGui.QMainWindow):
             self.ui.actionDifferential_Evolution.setChecked(True)
 
         self.settransformoption(self.settings.transformdata)
-    
+
     def apply_settings_to_params(self, model):
          for key in self.settings.__dict__:
              params[key] = self.settings[key]
-                
+
     @QtCore.Slot()
     def on_actionLoad_File_triggered(self):
         experimentFileName, ok = QtGui.QFileDialog.getOpenFileName(self,
@@ -557,7 +542,7 @@ class MyMainWindow(QtGui.QMainWindow):
         numpnts = len(theoretical.xdata)
 
         dvalidator = QtGui.QDoubleValidator(-2.0e-308, 2.0e308, 6)
-        
+
         qrangedialog = QtGui.QDialog()
         qrangeGUI = qrangedialogUI.Ui_qrange()
         qrangeGUI.setupUi(qrangedialog)
@@ -1134,9 +1119,9 @@ class MyMainWindow(QtGui.QMainWindow):
         self.currentCell['hilim'] = hilim
         self.currentCell['readyToChange'] = True
         self.currentCell['model'] = self.UDFModel
-        
+
     @QtCore.Slot(QtCore.QModelIndex)
-    def on_globalfitting_ParamsView_clicked(self, index):      
+    def on_globalfitting_ParamsView_clicked(self, index):
         row = index.row()
         col = index.column()
 
@@ -1337,6 +1322,7 @@ class MyMainWindow(QtGui.QMainWindow):
             minimizer.transform = None
 
     def add_datasets_to_graphs(self, datasets):
+        print(datasets)
         for dataset in datasets:
             self.reflectivitygraphs.add_dataset(dataset, transform=self.settings.transformdata)
             self.sldgraphs.add_dataset(dataset)
@@ -1363,8 +1349,8 @@ class MyMainWindow(QtGui.QMainWindow):
         select = self.ui.globalfitting_DataView.selectionModel()
         indices = select.selectedIndexes()
         self.globalfitting_DataModel.unlink_selection(indices)
-    
-    @QtCore.Slot(int)    
+
+    @QtCore.Slot(int)
     def on_globalParamsSlider_valueChanged(self, arg_1):
         try:
             c = self.currentCell
@@ -1374,10 +1360,10 @@ class MyMainWindow(QtGui.QMainWindow):
 
             val = c['lowlim'] + \
                 (arg_1 / 1000.) * math.fabs(c['lowlim'] - c['hilim'])
-            
+
             col = c['col']
             row = c['param']
-            
+
             c['model'].models[col].parameters[row] = val
 
             c['model'].dataChanged.emit(
@@ -1387,7 +1373,7 @@ class MyMainWindow(QtGui.QMainWindow):
             return
         except KeyError:
             return
-                    
+
     @QtCore.Slot()
     def on_globalParamsSlider_sliderReleased(self):
         try:
@@ -1412,12 +1398,12 @@ class MyMainWindow(QtGui.QMainWindow):
 
         except (ValueError, AttributeError, KeyError):
             return
-        
+
     @QtCore.Slot()
     def on_do_gf_fit_clicked(self):
         evalf = self.calculate_gf_model()
         print(evalf)
-        
+
     def calculate_gf_model(self):
         globalFitting = self.create_gf_object()
         eval = globalFitting.model()
@@ -1449,7 +1435,7 @@ class MyMainWindow(QtGui.QMainWindow):
             # retrieve the required fitplugin from the pluginStoreModel
             fitClass = \
                 self.pluginStoreModel.get_plugin_by_name(datamodel.fitplugins[idx])['rfo']
-            
+
             fitObject = fitClass(**callerInfo)
             fitObjects.append(fitObject)
 
@@ -1539,17 +1525,15 @@ class MyReflectivityGraphs(FigureCanvas):
         self.draw()
 
     def add_dataset(self, dataset, transform=None):
-        if dataset.name == 'theoretical':
-            return
         graph_properties = dataset.graph_properties
 
         t = reflect.Transform(transform)
         yt, edata = t.transform(dataset.xdata, dataset.ydata, dataset.ydataSD)
 
-        if graph_properties.line2D is None:
+        if graph_properties.line2D is None and dataset.name != 'theoretical':
             lineInstance = self.axes[0].plot(dataset.xdata,
                                              yt,
-                                             markersize=5,
+                                             markersize=3,
                                              marker='o',
                                              linestyle='',
                                              markeredgecolor=None,
@@ -1564,6 +1548,7 @@ class MyReflectivityGraphs(FigureCanvas):
 
         if graph_properties.line2Dfit is None and dataset.fit is not None:
             yfit_t, temp = t.transform(dataset.xdata, dataset.fit)
+            color = 'b'
             if graph_properties.line2D:
                 color = artist.getp(graph_properties.line2D, 'color')
             graph_properties.line2Dfit = self.axes[0].plot(dataset.xdata,
@@ -1682,6 +1667,7 @@ class MySLDGraphs(FigureCanvas):
             and dataset.sld_profile is not None):
 
             color = 'b'
+            lw = 2
             if graph_properties.line2D:
                 color = artist.getp(graph_properties.line2D, 'color')
                 lw = artist.getp(graph_properties.line2D, 'lw')
@@ -1694,10 +1680,9 @@ class MySLDGraphs(FigureCanvas):
                                                 lw=lw,
                                                 label='sld_' + dataset.name)[0]
 
-            # if dataObject.graph_properties['line2Dsld_profile_properties']:
-            #     artist.setp(
-            #         dataObject.line2Dsld_profile,
-            #         **dataObject.graph_properties['line2Dsld_profile_properties'])
+            if graph_properties['line2Dsld_profile_properties']:
+                artist.setp(graph_properties.line2Dsld_profile,
+                    **graph_properties['line2Dsld_profile_properties'])
 
         self.axes[0].relim()
         self.axes[0].autoscale(axis='both', tight=False, enable=True)

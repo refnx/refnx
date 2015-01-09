@@ -16,6 +16,11 @@ _requiredgraphproperties = {'lw': float,
                              'color': str,
                              'visible': bool}
 
+_lines = {'line2D_properties': dict,
+          'line2Dfit_properties': dict,
+          'line2Dsld_profile_properties': dict,
+          'line2Dresiduals_properties': dict}
+
 class GraphProperties(dict):
     def __init__(self):
         self['visible'] = True
@@ -31,13 +36,15 @@ class GraphProperties(dict):
         self['line2Dresiduals_properties'] = {}
 
     def __getattr__(self, key):
-        return super(GraphProperties, self).__getitem__(key)
+        if key in _requiredgraphproperties:
+            return self[key]
 
-    def __setitem__(self, key, value):
-        super(GraphProperties, self).__setitem__(key, value)
-
-    def __getitem__(self, key):
-        return super(GraphProperties, self).__getitem__(key)
+    def __getstate__(self):
+        self.save_graph_properties()
+        d = {}
+        for line in _lines:
+            d[line] = self[line]
+        return d
 
     def save_graph_properties(self):
         if self.line2D:

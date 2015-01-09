@@ -84,7 +84,7 @@ def abeles(q, coefs, *args, **kwds):
     Parameters
     ----------
 
-    qvals : np.ndarray
+    q : np.ndarray
         The qvalues required for the calculation. Q=4*Pi/lambda * sin(omega).
         Units = Angstrom**-1
 
@@ -109,8 +109,17 @@ def abeles(q, coefs, *args, **kwds):
         The following keys are used:
 
         'dqvals' - np.ndarray, optional
-            an array containing the FWHM of the Gaussian approximated resolution
-            kernel. Has the same size as qvals.
+            an array containing resolution information.
+            If `dqvals` is 1D, and is the same length as `q`, then the array
+            contains the FWHM of a Gaussian approximated resolution kernel.
+            If `dqvals` is 3D, then an individual resolution kernel is
+            applied to each measurement point.  This resolution kernel is a
+            probability distribution function (PDF). `dqvals` will have the
+            shape (qvals.size, M, 2).  The resolution kernel for a given
+            measurement point is given by dqvals[N], and is a (M, 2) 2D array.
+            There are `M` points in the kernel.  `dqvals[N, M, 0]` would give
+            the q values for the kernel, `dqvals[N, M, 1]` gives the
+            corresponding probability.
 
         'quad_order' - int, optional
             the order of the Gaussian quadrature polynomial for doing the
@@ -139,53 +148,70 @@ def abeles(q, coefs, *args, **kwds):
     if 'dqvals' in kwds and kwds['dqvals'] is not None:
         dqvals = kwds['dqvals']
 
-        if quad_order == 'ultimate':
-            # adaptive gaussian quadrature.
-            smeared_rvals = np.zeros(qvals.size)
-            warnings.simplefilter('ignore', Warning)
-            for idx, val in enumerate(qvals):
-                smeared_rvals[idx], err = scipy.integrate.quadrature(
-                    _smearkernel,
-                    -INTLIMIT,
-                    INTLIMIT,
-                    tol=2 * np.finfo(np.float64).eps,
-                    rtol=2 * np.finfo(np.float64).eps,
-                    args=(coefs, qvals[idx], dqvals[idx]))
+        if dqvals.ndim == 1:
+            if quad_order == 'ultimate':
+                # adaptive gaussian quadrature.
+                smeared_rvals = np.zeros(qvals.size)
+                warnings.simplefilter('ignore', Warning)
+                for idx, val in enumerate(qvals):
+                    smeared_rvals[idx], err = scipy.integrate.quadrature(
+                        _smearkernel,
+                        -INTLIMIT,
+                        INTLIMIT,
+                        tol=2 * np.finfo(np.float64).eps,
+                        rtol=2 * np.finfo(np.float64).eps,
+                        args=(coefs, qvals[idx], dqvals[idx]))
 
-            smeared_rvals *= coefs[1]
-            smeared_rvals += coefs[6]
-            warnings.resetwarnings()
-            return smeared_rvals
-        else:
-            # just do gaussian quadrature of fixed order
-            # get the gauss-legendre weights and abscissa
-            abscissa, weights = gauss_legendre(quad_order)
-            # get the normal distribution at that point
-            prefactor = 1. / math.sqrt(2 * math.pi)
-            gauss = lambda x: np.exp(-0.5 * x * x)
-            gaussvals = prefactor * gauss(abscissa * INTLIMIT)
+                smeared_rvals *= coefs[1]
+                smeared_rvals += coefs[6]
+                warnings.resetwarnings()
+                return smeared_rvals
+            else:
+                # just do gaussian quadrature of fixed order
+                # get the gauss-legendre weights and abscissa
+                abscissa, weights = gauss_legendre(quad_order)
+                # get the normal distribution at that point
+                prefactor = 1. / math.sqrt(2 * math.pi)
+                gauss = lambda x: np.exp(-0.5 * x * x)
+                gaussvals = prefactor * gauss(abscissa * INTLIMIT)
 
-            # integration between -3.5 and 3.5 sigma
-            va = qvals - INTLIMIT * dqvals / FWHM
-            vb = qvals + INTLIMIT * dqvals / FWHM
+                # integration between -3.5 and 3.5 sigma
+                va = qvals - INTLIMIT * dqvals / FWHM
+                vb = qvals + INTLIMIT * dqvals / FWHM
 
-            va = va[:, np.newaxis]
-            vb = vb[:, np.newaxis]
+                va = va[:, np.newaxis]
+                vb = vb[:, np.newaxis]
 
-            qvals_for_res = ((np.atleast_2d(abscissa) *
-                             (vb - va)
-                             + vb + va) / 2.)
+                qvals_for_res = ((np.atleast_2d(abscissa) *
+                                 (vb - va)
+                                 + vb + va) / 2.)
+                smeared_rvals = refcalc.abeles(qvals_for_res.flatten(),
+                                               w,
+                                               scale=coefs[1],
+                                               bkg=coefs[6])
+
+                smeared_rvals = np.reshape(smeared_rvals,
+                                           (qvals.size, abscissa.size))
+
+                smeared_rvals *= np.atleast_2d(gaussvals * weights)
+
+                return np.sum(smeared_rvals, 1) * INTLIMIT
+        elif dqvals.ndim == 3:
+            qvals_for_res = dqvals[..., 0]
+            # work out the reflectivity at the kernel evaluation points
             smeared_rvals = refcalc.abeles(qvals_for_res.flatten(),
                                            w,
                                            scale=coefs[1],
                                            bkg=coefs[6])
 
             smeared_rvals = np.reshape(smeared_rvals,
-                                       (qvals.size, abscissa.size))
+                                       dqvals[..., 1].shape)
 
-            smeared_rvals *= np.atleast_2d(gaussvals * weights)
+            #multiply by probability
+            smeared_rvals *= dqvals[..., 1]
 
-            return np.sum(smeared_rvals, 1) * INTLIMIT
+            #now do simpson integration
+            return scipy.integrate.simps(smeared_rvals, x=dqvals[..., 0])
     else:
         return refcalc.abeles(qvals.flatten(), w,
                               scale=coefs[1], bkg=coefs[6])
