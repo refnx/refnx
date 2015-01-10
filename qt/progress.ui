@@ -20,16 +20,6 @@
    <bool>true</bool>
   </property>
   <layout class="QGridLayout" name="gridLayout">
-   <item row="3" column="0" colspan="2">
-    <widget class="QDialogButtonBox" name="buttonBox">
-     <property name="orientation">
-      <enum>Qt::Horizontal</enum>
-     </property>
-     <property name="standardButtons">
-      <set>QDialogButtonBox::Abort</set>
-     </property>
-    </widget>
-   </item>
    <item row="0" column="0" rowspan="2" colspan="2">
     <widget class="QLCDNumber" name="timer">
      <property name="palette">
@@ -471,10 +461,20 @@
      </property>
     </widget>
    </item>
+   <item row="3" column="0" colspan="2">
+    <widget class="QDialogButtonBox" name="buttonBox">
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
+     </property>
+     <property name="standardButtons">
+      <set>QDialogButtonBox::Abort</set>
+     </property>
+    </widget>
+   </item>
    <item row="2" column="0">
     <widget class="QPlainTextEdit" name="values">
      <property name="textInteractionFlags">
-      <set>Qt::TextSelectableByKeyboard|Qt::TextSelectableByMouse</set>
+      <set>Qt::NoTextInteraction</set>
      </property>
     </widget>
    </item>

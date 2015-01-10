@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'Motofit.ui'
 #
-# Created: Thu Jan  8 12:19:06 2015
+# Created: Sat Jan 10 18:39:21 2015
 #      by: pyside-uic 0.2.15 running on PySide 1.2.2
 #
 # WARNING! All changes made in this file will be lost!
@@ -660,9 +660,9 @@ class Ui_MainWindow(object):
         self.actionSave_experiment.setText(QtGui.QApplication.translate("MainWindow", "Save", None, QtGui.QApplication.UnicodeUTF8))
         self.actionSave_experiment.setShortcut(QtGui.QApplication.translate("MainWindow", "Meta+M", None, QtGui.QApplication.UnicodeUTF8))
         self.actionLoad_Plugin.setText(QtGui.QApplication.translate("MainWindow", "Load Fitting Plugin", None, QtGui.QApplication.UnicodeUTF8))
-        self.actionSave_File.setText(QtGui.QApplication.translate("MainWindow", "Save", None, QtGui.QApplication.UnicodeUTF8))
+        self.actionSave_File.setText(QtGui.QApplication.translate("MainWindow", "Save Experiment", None, QtGui.QApplication.UnicodeUTF8))
         self.actionSave_File.setShortcut(QtGui.QApplication.translate("MainWindow", "Meta+S", None, QtGui.QApplication.UnicodeUTF8))
-        self.actionLoad_File.setText(QtGui.QApplication.translate("MainWindow", "Load", None, QtGui.QApplication.UnicodeUTF8))
+        self.actionLoad_File.setText(QtGui.QApplication.translate("MainWindow", "Load Experiment", None, QtGui.QApplication.UnicodeUTF8))
         self.actionLoad_File.setShortcut(QtGui.QApplication.translate("MainWindow", "Meta+O", None, QtGui.QApplication.UnicodeUTF8))
         self.actionBatch_Fit.setText(QtGui.QApplication.translate("MainWindow", "Batch Fit", None, QtGui.QApplication.UnicodeUTF8))
         self.actionRemove_Data.setText(QtGui.QApplication.translate("MainWindow", "Remove Data", None, QtGui.QApplication.UnicodeUTF8))

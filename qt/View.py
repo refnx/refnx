@@ -234,6 +234,12 @@ class MyMainWindow(QtGui.QMainWindow):
         urls = m.urls()
         for url in urls:
             try:
+                self.__restoreState(url.toLocalFile())
+                continue
+            except Exception:
+                pass
+
+            try:
                 self.load_data([url.toLocalFile()])
                 continue
             except Exception as inst:
@@ -247,12 +253,6 @@ class MyMainWindow(QtGui.QMainWindow):
 
             try:
                 self.pluginStoreModel.add(url.toLocalFile())
-                continue
-            except Exception:
-                pass
-
-            try:
-                self.__restoreState(url.toLocalFile())
                 continue
             except Exception:
                 pass
@@ -282,14 +282,14 @@ class MyMainWindow(QtGui.QMainWindow):
     @QtCore.Slot()
     def on_actionSave_File_triggered(self):
         experiment_file_name, ok = QtGui.QFileDialog.getSaveFileName(
-            self, caption='Save experiment as:', dir='experiment.fdob')
+            self, caption='Save experiment as:', dir='experiment.mtft')
 
         if not ok:
             return
 
         path, ext = os.path.splitext(experiment_file_name)
-        if ext != '.fdob':
-            experiment_file_name = path + '.fdob'
+        if ext != '.mtft':
+            experiment_file_name = path + '.mtft'
 
         self.__saveState(experiment_file_name)
 
@@ -775,8 +775,7 @@ class MyMainWindow(QtGui.QMainWindow):
         print ('___________________________________________________')
         print ('fitting to:', dataset.name)
         # try:
-        print(self.settings.fitting_algorithm)
-        print(self.settings.transformdata)
+        print(self.settings.fitting_algorithm, self.settings.transformdata)
 
         # how did you want to fit the dataset - logY vs X, lin Y vs X, etc.
         # select a transform.  Note that we have to transform the data for
@@ -810,22 +809,25 @@ class MyMainWindow(QtGui.QMainWindow):
         else:
             minimizer.set_dq(self.settings.resolution)
 
+        progress = ProgressCallback(self)
+        progress.show()
+        minimizer.iter_cb = progress.callback2
+
         if alg == 'DE':
-            progress = ProgressCallback(self)
-            progress.show()
             minimizer.kws.update({'callback': progress.callback})
             minimizer.fit(method='differential_evolution')
-
-            progress.destroy()
             minimizer.kws.pop('callback')
 
         elif alg == 'LM':
             minimizer.fit(method='leastsq')
+
         elif alg == 'MCMC':
             minimizer.mcmc()
 
-
+        progress.destroy()
+        minimizer.iter_cb = None
         minimizer.transform = None
+
         dataset.fit = minimizer.model(minimizer.params)
         dataset.sld_profile = minimizer.sld_profile(minimizer.params)
 
@@ -1322,7 +1324,6 @@ class MyMainWindow(QtGui.QMainWindow):
             minimizer.transform = None
 
     def add_datasets_to_graphs(self, datasets):
-        print(datasets)
         for dataset in datasets:
             self.reflectivitygraphs.add_dataset(dataset, transform=self.settings.transformdata)
             self.sldgraphs.add_dataset(dataset)
@@ -1452,17 +1453,38 @@ class ProgressCallback(QtGui.QDialog):
         self.ui = progressUI.Ui_progress()
         self.ui.setupUi(self)
         self.elapsed = 0.
+        self.chi2 = 1e308
         self.ui.buttonBox.rejected.connect(self.abort)
 
     def abort(self):
         self.abort_flag = True
 
     def callback(self, xk, *args, **kwds):
-        self.elapsed = time.clock() - self.start
-        self.ui.timer.display(float(self.elapsed))
-        QtGui.QApplication.processEvents()
+        # a callback for scipy.optimize.minimize, which enters
+        # every iteration.
+        new_time = time.clock()
+        if new_time - self.elapsed > 2:
+            self.elapsed = new_time - self.start
+            self.ui.timer.display(float(self.elapsed))
+            QtGui.QApplication.processEvents()
+
         return self.abort_flag
 
+    def callback2(self, xk, iter, resid, *fcn_args, **fcn_kws):
+        # a callback for lmfit, which enters at every calculation
+        # of the residuals.
+
+        #we only want to update every so often
+        if iter % 100:
+            return
+
+        chi2 = np.sum(resid**2) / resid.size
+        if chi2 < self.chi2:
+            self.chi2 = chi2
+        text = ('Function evaluations : %d\n'
+                'Chi2 : %f' % (iter, self.chi2))
+        self.ui.values.setPlainText(text)
+        QtGui.QApplication.processEvents()
 
 class ProgramSettings(object):
 
