@@ -437,11 +437,20 @@
     </disabled>
    </palette>
   </property>
+  <property name="font">
+   <font>
+    <pointsize>14</pointsize>
+   </font>
+  </property>
   <property name="acceptDrops">
    <bool>true</bool>
   </property>
   <property name="windowTitle">
    <string>Motofit</string>
+  </property>
+  <property name="windowIcon">
+   <iconset>
+    <normaloff>icons/scattering.png</normaloff>icons/scattering.png</iconset>
   </property>
   <property name="documentMode">
    <bool>false</bool>
@@ -473,6 +482,11 @@
         <width>0</width>
         <height>350</height>
        </size>
+      </property>
+      <property name="font">
+       <font>
+        <pointsize>13</pointsize>
+       </font>
       </property>
       <property name="currentIndex">
        <number>0</number>
@@ -597,6 +611,11 @@
      <height>350</height>
     </size>
    </property>
+   <property name="font">
+    <font>
+     <pointsize>13</pointsize>
+    </font>
+   </property>
    <property name="features">
     <set>QDockWidget::DockWidgetFloatable|QDockWidget::DockWidgetMovable</set>
    </property>
@@ -628,6 +647,11 @@
          <height>200</height>
         </size>
        </property>
+       <property name="font">
+        <font>
+         <pointsize>14</pointsize>
+        </font>
+       </property>
        <property name="currentIndex">
         <number>0</number>
        </property>
@@ -658,7 +682,7 @@
            </property>
            <property name="font">
             <font>
-             <pointsize>10</pointsize>
+             <pointsize>13</pointsize>
              <weight>50</weight>
              <bold>false</bold>
             </font>
@@ -684,7 +708,7 @@
            </property>
            <property name="font">
             <font>
-             <pointsize>11</pointsize>
+             <pointsize>13</pointsize>
             </font>
            </property>
            <property name="text">
@@ -708,7 +732,7 @@
            </property>
            <property name="font">
             <font>
-             <pointsize>11</pointsize>
+             <pointsize>13</pointsize>
              <weight>50</weight>
              <bold>false</bold>
             </font>
@@ -737,7 +761,7 @@
            </property>
            <property name="font">
             <font>
-             <pointsize>11</pointsize>
+             <pointsize>13</pointsize>
              <weight>50</weight>
              <bold>false</bold>
             </font>
@@ -788,6 +812,11 @@
              <height>75</height>
             </size>
            </property>
+           <property name="font">
+            <font>
+             <pointsize>14</pointsize>
+            </font>
+           </property>
            <property name="text">
             <string/>
            </property>
@@ -817,7 +846,7 @@
            </property>
            <property name="font">
             <font>
-             <pointsize>11</pointsize>
+             <pointsize>13</pointsize>
             </font>
            </property>
            <property name="whatsThis">
@@ -827,6 +856,11 @@
          </item>
          <item row="1" column="3">
           <widget class="QCheckBox" name="use_dqwave_checkbox">
+           <property name="font">
+            <font>
+             <pointsize>13</pointsize>
+            </font>
+           </property>
            <property name="text">
             <string>Use dq wave?</string>
            </property>
@@ -842,6 +876,11 @@
              <horstretch>0</horstretch>
              <verstretch>0</verstretch>
             </sizepolicy>
+           </property>
+           <property name="font">
+            <font>
+             <pointsize>13</pointsize>
+            </font>
            </property>
            <property name="text">
             <string>Use errors?</string>
@@ -864,7 +903,7 @@
            </property>
            <property name="font">
             <font>
-             <pointsize>10</pointsize>
+             <pointsize>13</pointsize>
             </font>
            </property>
            <attribute name="horizontalHeaderStretchLastSection">
@@ -885,6 +924,11 @@
              <width>16777215</width>
              <height>22</height>
             </size>
+           </property>
+           <property name="font">
+            <font>
+             <pointsize>14</pointsize>
+            </font>
            </property>
            <property name="focusPolicy">
             <enum>Qt::StrongFocus</enum>
@@ -983,7 +1027,7 @@
           <widget class="QPlainTextEdit" name="plainTextEdit">
            <property name="font">
             <font>
-             <pointsize>11</pointsize>
+             <pointsize>13</pointsize>
             </font>
            </property>
           </widget>
@@ -1080,7 +1124,7 @@
                </property>
                <property name="icon">
                 <iconset>
-                 <activeon>icons/go.jpeg</activeon>
+                 <activeon>../../../../../.designer/backup/icons/go.jpeg</activeon>
                 </iconset>
                </property>
                <property name="iconSize">
@@ -1138,7 +1182,7 @@
     <string>Load Data</string>
    </property>
    <property name="shortcut">
-    <string>Meta+L</string>
+    <string>Ctrl+L</string>
    </property>
    <property name="shortcutContext">
     <enum>Qt::ApplicationShortcut</enum>
@@ -1191,7 +1235,7 @@
     <string>Refresh Data</string>
    </property>
    <property name="shortcut">
-    <string>Meta+R</string>
+    <string>Ctrl+R</string>
    </property>
   </action>
   <action name="actionLoad_experiment">
@@ -1223,7 +1267,7 @@
     <string/>
    </property>
    <property name="shortcut">
-    <string>Meta+S</string>
+    <string>Ctrl+S</string>
    </property>
   </action>
   <action name="actionLoad_File">
@@ -1231,7 +1275,7 @@
     <string>Load Experiment</string>
    </property>
    <property name="shortcut">
-    <string>Meta+O</string>
+    <string>Ctrl+O</string>
    </property>
   </action>
   <action name="actionBatch_Fit">

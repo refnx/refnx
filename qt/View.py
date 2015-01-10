@@ -1454,6 +1454,7 @@ class ProgressCallback(QtGui.QDialog):
         self.ui.setupUi(self)
         self.elapsed = 0.
         self.chi2 = 1e308
+        self.ui.timer.display(float(self.elapsed))
         self.ui.buttonBox.rejected.connect(self.abort)
 
     def abort(self):

@@ -80,7 +80,7 @@ class ReflectDataset(Data1D):
             dqvals = [float(val) for val in dqtext.text.split()]
 
             self.filename = f.name
-            self.name = os.path.basename(f.name)
+            self.name = os.path.splitext(os.path.basename(f.name))[0]
             self.data = (qvals, rvals, drvals, dqvals)
             self.filename = f.name
         except ET.ParseError:

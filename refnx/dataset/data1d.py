@@ -117,7 +117,7 @@ class Data1D(object):
     def load(self, f):
         array = np.loadtxt(f)
         self.filename = f.name
-        self.name = os.path.basename(f.name)
+        self.name = os.path.splitext(os.path.basename(f.name))[0]
         self.data = tuple(np.hsplit(array, np.size(array, 1)))
 
     def refresh(self):
