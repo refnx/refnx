@@ -64,12 +64,6 @@ class DataStore(object):
 
         return dataset
 
-    def snapshot(self, name, snapshot_name):
-        dataset = deepcopy(self.datasets[name])
-        dataset.name = snapshot_name
-        self.add(dataset)
-        return dataset
-
     def remove_dataset(self, name):
         self.datasets.pop(name)
 

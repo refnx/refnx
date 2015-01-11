@@ -6,6 +6,8 @@ from __future__ import division
 from PySide import QtCore, QtGui
 from PySide.QtCore import QAbstractItemModel
 import datastore
+import numpy as np
+import refnx.dataset.reflectdataset as reflectdataset
 
 
 class DataStoreModel(QtCore.QAbstractTableModel):
@@ -108,11 +110,11 @@ class DataStoreModel(QtCore.QAbstractTableModel):
 
     def snapshot(self, snapshot_name):
         original = self.datastore['theoretical']
-        dataset = self.datastore.snapshot('theoretical', snapshot_name)
-        self.insertRows(len(self.datastore))
-        lindex = self.createIndex(len(self.datastore) - 1, 0)
-        rindex = self.createIndex(len(self.datastore) - 1, 2)
-        self.dataChanged.emit(lindex, rindex)
+        dataset = reflectdataset.ReflectDataset()
+        dataset.data = original.data
+        dataset.ydata = np.copy(original.fit)
+        dataset.name = snapshot_name
+        self.add(dataset)
         return dataset
 
     def remove(self, name):

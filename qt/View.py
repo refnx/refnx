@@ -319,7 +319,7 @@ class MyMainWindow(QtGui.QMainWindow):
 
         self.restore_settings()
 
-        # remove and add dataObjectsToGraphs
+        # remove and add datasetsToGraphs
         self.reflectivitygraphs.removeTraces()
         self.sldgraphs.removeTraces()
         ds = [d for d in self.data_store_model]
@@ -425,9 +425,9 @@ class MyMainWindow(QtGui.QMainWindow):
     @QtCore.Slot()
     def on_actionSave_Fit_triggered(self):
         fits = []
-        for dataObject in self.data_store_model:
-            if dataObject.fit is not None:
-                fits.append(dataObject.name)
+        for dataset in self.data_store_model:
+            if dataset.fit is not None:
+                fits.append(dataset.name)
 
         fits.append('-all-')
 
@@ -443,7 +443,7 @@ class MyMainWindow(QtGui.QMainWindow):
                 folder = dialog.selectedFiles()
                 fits.pop()
                 for fit in fits:
-                    self.data_store_model.dataStore[fit].savefit(
+                    self.data_store_model.datastore[fit].savefit(
                         os.path.join(folder[0], 'fit_' + fit + '.dat'))
         else:
             fitFileName, ok = QtGui.QFileDialog.getSaveFileName(
@@ -567,7 +567,7 @@ class MyMainWindow(QtGui.QMainWindow):
 
         self.data_store_model.snapshot(snapshotname)
         self.add_datasets_to_graphs(
-            [self.data_store_model.dataStore[snapshotname]])
+            [self.data_store_model[snapshotname]])
 
     @QtCore.Slot()
     def on_actionResolution_smearing_triggered(self):
@@ -609,11 +609,11 @@ class MyMainWindow(QtGui.QMainWindow):
             theoreticalmodel.limits = np.copy(limits)
 
 #       Have to iterate over list because datasets are stored in dictionary
-        for name in self.data_store_model.dataStore.names:
+        for name in self.data_store_model.datastore.names:
             if name == 'theoretical':
                 continue
             self.do_a_fit_and_add_to_gui(
-                self.data_store_model.dataStore[name],
+                self.data_store_model.datastore[name],
                 theoreticalmodel)
 
     @QtCore.Slot()
@@ -857,9 +857,6 @@ class MyMainWindow(QtGui.QMainWindow):
             QtCore.QModelIndex(),
             QtCore.QModelIndex())
         self.base_model.dataChanged.emit(
-            QtCore.QModelIndex(),
-            QtCore.QModelIndex())
-        self.UDF_params_model.dataChanged.emit(
             QtCore.QModelIndex(),
             QtCore.QModelIndex())
 
@@ -1327,7 +1324,7 @@ class MyMainWindow(QtGui.QMainWindow):
 
     @QtCore.Slot()
     def on_addGFDataSet_clicked(self):
-        datasets = self.data_store_model.dataStore.names
+        datasets = self.data_store_model.datastore.names
 
         which_dataset, ok = QtGui.QInputDialog.getItem(
             self, "Which dataset did you want to add?", "dataset", datasets, editable=False)
@@ -1418,7 +1415,7 @@ class MyMainWindow(QtGui.QMainWindow):
 
         for idx, dataset in enumerate(datamodel.dataset_names):
             # retrieve the dataobject
-            dataobject = self.data_store_model.dataStore[dataset]
+            dataobject = self.data_store_model.datastore[dataset]
             # get the parameters
             model = parammodel.models[idx]
 
@@ -1708,9 +1705,9 @@ class MySLDGraphs(FigureCanvas):
         self.axes[0].autoscale(axis='both', tight=False, enable=True)
         self.draw()
 
-    def removeTrace(self, dataObject):
-        if dataObject.line2Dsld_profile:
-            dataObject.line2Dsld_profile.remove()
+    def removeTrace(self, dataset):
+        if dataset.line2Dsld_profile:
+            dataset.line2Dsld_profile.remove()
         self.draw()
 
     def removeTraces(self):
