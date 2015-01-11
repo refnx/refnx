@@ -104,7 +104,7 @@ class MyMainWindow(QtGui.QMainWindow):
         graph_properties.line2Dfit = self.reflectivitygraphs.axes[0].plot(
                                         theoretical.xdata,
                                         theoretical.fit, color='b',
-                                        linestyle='-', lw=2,
+                                        linestyle='-', lw=1,
                                         label='theoretical')[0]
 
         graph_properties.line2Dsld_profile = self.sldgraphs.axes[0].plot(
@@ -341,7 +341,7 @@ class MyMainWindow(QtGui.QMainWindow):
         # graph_properties.line2Dfit = self.reflectivitygraphs.axes[0].plot(
         #                                             theoretical.xdata,
         #                                             theoretical.fit, color='b',
-        #                                             linestyle='-', lw=2,
+        #                                             linestyle='-', lw=1,
         #                                             label='theoretical')[0]
         self.reflectivitygraphs.draw()
 
@@ -1572,7 +1572,7 @@ class MyReflectivityGraphs(FigureCanvas):
                                                      yfit_t,
                                                      linestyle='-',
                                                      color=color,
-                                                     lw=2,
+                                                     lw=1,
                                                      label='fit_' + dataset.name)[0]
             if graph_properties['line2Dfit_properties']:
                 artist.setp(graph_properties.line2Dfit,
@@ -1582,7 +1582,7 @@ class MyReflectivityGraphs(FigureCanvas):
 #             dataObject.line2Dresiduals = self.axes[1].plot(dataObject.xdata,
 #                                                   dataObject.residuals,
 #                                                    linestyle='-',
-#                                                     lw = 2,
+#                                                     lw = 1,
 #                                                      label = 'residuals_' + dataObject.name)[0]
 #
 #             if dataObject.graph_properties['line2Dresiduals_properties']:

@@ -44,12 +44,20 @@ PACKAGES = ['refnx',
             'lmfit',
             'pymc']
 
+VERSION = '0.0.1'
+
+CFBUNDLEDOCUMENTYPES = [{'CFBundleTypeIconFiles': 'Motofit.icns',
+                         'CFBundleTypeExtensions': ['mtft']}]
+
 OPTIONS = {'argv_emulation': True,
            'includes': ['scipy', 'numpy', 'matplotlib', 'lmfit', 'refnx'],
            'packages': PACKAGES,
            'iconfile': 'qt/icons/Motofit.icns',
-           'excludes': [],
-           'plist': dict(CFBundleIconFile='Motofit.icns')}
+           'excludes': ['refnx.reduce'],
+           'plist': dict(CFBundleIconFile='Motofit.icns',
+                         CFBundleDocumentTypes=CFBUNDLEDOCUMENTYPES,
+                         CFBundleShortVersionString=VERSION,
+                         CFBundleVersion=VERSION)}
 
 setup(
     name='Motofit',
