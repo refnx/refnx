@@ -1,0 +1,2 @@
+pyside-rcc resources.qrc -o resources_rc.py
+pyside-uic Motofit.ui -o MotofitUI.py

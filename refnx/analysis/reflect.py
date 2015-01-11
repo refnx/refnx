@@ -33,6 +33,9 @@ def gauss_legendre(n):
     return x, w
 
 def _smearkernel(x, coefs, q, dq):
+    '''
+    Kernel for Gaussian Quadrature
+    '''
     prefactor = 1 / math.sqrt(2 * math.pi)
     gauss = prefactor * np.exp(-0.5 * x * x)
     localq = q + x * dq / FWHM

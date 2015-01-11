@@ -30,9 +30,6 @@ import numpy as np
 import pickle
 import datastore
 import math
-import tempfile
-import shutil
-import zipfile
 import os
 import sys
 import time

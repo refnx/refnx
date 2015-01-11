@@ -449,8 +449,8 @@
    <string>Motofit</string>
   </property>
   <property name="windowIcon">
-   <iconset>
-    <normaloff>icons/scattering.png</normaloff>icons/scattering.png</iconset>
+   <iconset resource="resources.qrc">
+    <normaloff>:/icons/scattering.png</normaloff>:/icons/scattering.png</iconset>
   </property>
   <property name="documentMode">
    <bool>false</bool>
@@ -821,9 +821,8 @@
             <string/>
            </property>
            <property name="icon">
-            <iconset>
-             <activeon>icons/go.jpeg</activeon>
-            </iconset>
+            <iconset resource="resources.qrc">
+             <normaloff>:/icons/go.jpeg</normaloff>:/icons/go.jpeg</iconset>
            </property>
            <property name="iconSize">
             <size>
@@ -1042,7 +1041,7 @@
          <item row="0" column="0">
           <widget class="QTabWidget" name="tabWidget_2">
            <property name="currentIndex">
-            <number>0</number>
+            <number>1</number>
            </property>
            <widget class="QWidget" name="tab_6">
             <attribute name="title">
@@ -1123,9 +1122,8 @@
                 <string/>
                </property>
                <property name="icon">
-                <iconset>
-                 <activeon>../../../../../.designer/backup/icons/go.jpeg</activeon>
-                </iconset>
+                <iconset resource="resources.qrc">
+                 <normaloff>:/icons/go.jpeg</normaloff>:/icons/go.jpeg</iconset>
                </property>
                <property name="iconSize">
                 <size>
@@ -1398,6 +1396,8 @@
    </property>
   </action>
  </widget>
- <resources/>
+ <resources>
+  <include location="resources.qrc"/>
+ </resources>
  <connections/>
 </ui>

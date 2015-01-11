@@ -1,0 +1,6 @@
+<RCC>
+	<qresource>
+		<file>icons/go.jpeg</file>
+		<file>icons/scattering.png</file>
+	</qresource>
+</RCC>

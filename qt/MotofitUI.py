@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'Motofit.ui'
 #
-# Created: Sat Jan 10 19:36:23 2015
+# Created: Sat Jan 10 23:18:03 2015
 #      by: pyside-uic 0.2.15 running on PySide 1.2.2
 #
 # WARNING! All changes made in this file will be lost!
@@ -161,7 +161,7 @@ class Ui_MainWindow(object):
         MainWindow.setFont(font)
         MainWindow.setAcceptDrops(True)
         icon = QtGui.QIcon()
-        icon.addPixmap(QtGui.QPixmap("icons/scattering.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        icon.addPixmap(QtGui.QPixmap(":/icons/scattering.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         MainWindow.setWindowIcon(icon)
         MainWindow.setDocumentMode(False)
         MainWindow.setTabShape(QtGui.QTabWidget.Rounded)
@@ -328,7 +328,7 @@ class Ui_MainWindow(object):
         self.do_fit_button.setFont(font)
         self.do_fit_button.setText("")
         icon1 = QtGui.QIcon()
-        icon1.addPixmap(QtGui.QPixmap("icons/go.jpeg"), QtGui.QIcon.Active, QtGui.QIcon.On)
+        icon1.addPixmap(QtGui.QPixmap(":/icons/go.jpeg"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.do_fit_button.setIcon(icon1)
         self.do_fit_button.setIconSize(QtCore.QSize(60, 75))
         self.do_fit_button.setObjectName("do_fit_button")
@@ -498,9 +498,7 @@ class Ui_MainWindow(object):
         self.do_gf_fit = QtGui.QPushButton(self.tab_7)
         self.do_gf_fit.setMinimumSize(QtCore.QSize(50, 70))
         self.do_gf_fit.setText("")
-        icon2 = QtGui.QIcon()
-        icon2.addPixmap(QtGui.QPixmap("../../../../../.designer/backup/icons/go.jpeg"), QtGui.QIcon.Active, QtGui.QIcon.On)
-        self.do_gf_fit.setIcon(icon2)
+        self.do_gf_fit.setIcon(icon1)
         self.do_gf_fit.setIconSize(QtCore.QSize(70, 70))
         self.do_gf_fit.setObjectName("do_gf_fit")
         self.gridLayout_10.addWidget(self.do_gf_fit, 0, 1, 1, 1)
@@ -640,7 +638,7 @@ class Ui_MainWindow(object):
         self.graphs.setCurrentIndex(0)
         self.tabWidget.setCurrentIndex(0)
         self.dataset_comboBox.setCurrentIndex(-1)
-        self.tabWidget_2.setCurrentIndex(0)
+        self.tabWidget_2.setCurrentIndex(1)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def retranslateUi(self, MainWindow):
@@ -711,3 +709,4 @@ class Ui_MainWindow(object):
         self.actionAbout.setText(QtGui.QApplication.translate("MainWindow", "Motofit?", None, QtGui.QApplication.UnicodeUTF8))
         self.actionMCMC.setText(QtGui.QApplication.translate("MainWindow", "MCMC", None, QtGui.QApplication.UnicodeUTF8))
 
+import resources_rc
