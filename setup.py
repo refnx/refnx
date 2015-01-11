@@ -14,6 +14,8 @@ else:
 versioneer.VCS = 'git'
 versioneer.versionfile_source = 'refnx/_version.py'
 versioneer.versionfile_build = 'refnx/_version.py'
+versioneer.versionfile_build = 'motofit/_version.py'
+versioneer.versionfile_source = 'motofit/_version.py'
 versioneer.tag_prefix = ''
 versioneer.parentdir_prefix = 'refnx-'
 
@@ -41,11 +43,10 @@ if USE_CYTHON:
                           )
     ext_modules.append(_creflect)
 
-#cmdclass=versioneer.get_cmdclass()
 # refnx setup
 setup(  name        = 'refnx',
         ext_modules = ext_modules,
-        cmdclass =  versioneer.get_cmdclass(),
+        cmdclass = {'build_ext': build_ext},
         description = 'Neutron and X-ray Reflectometry Analysis',
         author      = 'Andrew Nelson',
         author_email = 'andrew.nelson@ansto.gov.au',

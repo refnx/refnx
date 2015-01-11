@@ -36,7 +36,7 @@ class PlatypusSpectrum(spectrum.Spectrum):
 				
 				self.M_lambda[N, T]			-wavelength values for each bin (in Angstrom)
 				
-				self.M_lambdaSD[N, T]		-uncertainty in M_lambda (FWHM)
+				self.M_lambdaSD[N, T]		-uncertainty in M_lambda (_FWHM)
 				
 				self.M_lambdaHIST[N, T+1]	-bin edges for M_lambda
 				
@@ -95,7 +95,7 @@ class PlatypusSpectrum(spectrum.Spectrum):
 		<R uncertainty="dR">$r</R>
 		<lambda uncertainty="dlambda" units="1/A">$l</lambda>
 		<dR type="SD">$dr</dR>
-		<dlambda type="FWHM" units="1/A">$dl</dlambda>
+		<dlambda type="_FWHM" units="1/A">$dl</dlambda>
 		</REFdata>
 		</REFentry>
 		</REFroot>"""

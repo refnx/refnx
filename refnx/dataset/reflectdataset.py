@@ -26,7 +26,7 @@ class ReflectDataset(Data1D):
     <R uncertainty="dR">$_ydata</R>
     <Qz uncertainty="dQz" units="1/A">$_xdata</Qz>
     <dR type="SD">$_ydataSD</dR>
-    <dQz type="FWHM" units="1/A">$_xdataSD</dQz>
+    <dQz type="_FWHM" units="1/A">$_xdataSD</dQz>
     </REFdata>
     </REFentry>
     </REFroot>"""

@@ -30,7 +30,7 @@ class Reduce(object):
 			
 			Following successful construction of the object the following attributes are available:
 			self.xdata[N, T]					-Q values
-			self.xdataSD[N, T]				-uncertainty in Q values (FWHM)
+			self.xdataSD[N, T]				-uncertainty in Q values (_FWHM)
 			self.ydata[N, T]				-specular reflectivity
 			self.ydataSD[N, T]				-uncertainty in specular reflectivity (SD)
 			self.M_ref[N, T, Y]				-offspecular reflectivity map
@@ -128,7 +128,7 @@ class Reduce(object):
 		<R uncertainty="dR">$_r</R>
 		<Qz uncertainty="dQz" units="1/A">$_qz</Qz>
 		<dR type="SD">$_dr</dR>
-		<Qy type="FWHM" units="1/A">$_qy</Qy>
+		<Qy type="_FWHM" units="1/A">$_qy</Qy>
 		</REFdata>
 		</REFentry>
 		</REFroot>"""

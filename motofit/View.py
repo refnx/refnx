@@ -1,11 +1,11 @@
 from __future__ import print_function, division
 from PySide import QtCore, QtGui
 from MotofitUI import Ui_MainWindow
+import limitsUI, progressUI, qrangedialogUI, SLDcalculatorView, aboutUI
 
 import matplotlib
 matplotlib.use('Qt4Agg')
 matplotlib.rcParams['backend.qt4'] = 'PySide'
-
 from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt4agg import NavigationToolbar2QT as NavigationToolbar
 from matplotlib.figure import Figure
@@ -20,16 +20,16 @@ from datastore_GUImodel import DataStoreModel
 
 import refnx.analysis.reflect as reflect
 import refnx.analysis.curvefitter as curvefitter
+from refnx.analysis import ReflectivityFitter, Transform
+from refnx.dataset import Data1D, ReflectDataset
+
 from lmfit import Parameters, fit_report
-from refnx.dataset.data1d import Data1D
-from refnx.dataset.reflectdataset import ReflectDataset
-import limitsUI, progressUI, qrangedialogUI, SLDcalculatorView, aboutUI
+
 import os.path
 from copy import deepcopy
 import numpy as np
 import pickle
 import datastore
-import math
 import os
 import sys
 import time
@@ -84,7 +84,7 @@ class MyMainWindow(QtGui.QMainWindow):
         theoretical.name = 'theoretical'
         kws = {'dqvals': theoretical.xdataSD}
 
-        evaluator = reflect.ReflectivityFitter(theoretical.xdata,
+        evaluator = ReflectivityFitter(theoretical.xdata,
                                                theoretical.ydata,
                                                params,
                                                fcn_kws=kws)
@@ -103,14 +103,14 @@ class MyMainWindow(QtGui.QMainWindow):
         graph_properties = theoretical.graph_properties
         graph_properties.line2Dfit = self.reflectivitygraphs.axes[0].plot(
                                         theoretical.xdata,
-                                        theoretical.fit, color='b',
+                                        theoretical.fit, color='r',
                                         linestyle='-', lw=1,
                                         label='theoretical')[0]
 
         graph_properties.line2Dsld_profile = self.sldgraphs.axes[0].plot(
                                         theoretical.sld_profile[0],
                                         theoretical.sld_profile[1],
-                                        linestyle='-', color='b')[0]
+                                        linestyle='-', color='r')[0]
 
         self.restore_settings()
 
@@ -139,14 +139,6 @@ class MyMainWindow(QtGui.QMainWindow):
         self.ui.model_comboBox.setModel(self.params_store_model)
         self.ui.baseModelView.setModel(self.base_model)
         self.ui.layerModelView.setModel(self.layer_model)
-        self.base_model.layersAboutToBeInserted.connect(
-            self.layer_model.layersAboutToBeInserted)
-        self.base_model.layersAboutToBeRemoved.connect(
-            self.layer_model.layersAboutToBeRemoved)
-        self.base_model.layersFinishedBeingInserted.connect(
-            self.layer_model.layersFinishedBeingInserted)
-        self.base_model.layersFinishedBeingRemoved.connect(
-            self.layer_model.layersFinishedBeingRemoved)
         self.layer_model.dataChanged.connect(self.update_gui_model)
         self.base_model.dataChanged.connect(self.update_gui_model)
 
@@ -314,10 +306,8 @@ class MyMainWindow(QtGui.QMainWindow):
             print(type(e), e.message)
             return
 
-        self.data_store_model.modelReset.emit()
-        self.params_store_model.modelReset.emit()
-
         self.restore_settings()
+        self.params_store_model.modelReset.emit()
 
         # remove and add datasetsToGraphs
         self.reflectivitygraphs.removeTraces()
@@ -381,7 +371,7 @@ class MyMainWindow(QtGui.QMainWindow):
     def on_actionLoad_File_triggered(self):
         experimentFileName, ok = QtGui.QFileDialog.getOpenFileName(self,
                                                                    caption='Select Experiment File',
-                                                                   filter='Experiment Files (*.fdob)')
+                                                                   filter='Experiment Files (*.mtft)')
         if not ok:
             return
 
@@ -685,9 +675,11 @@ class MyMainWindow(QtGui.QMainWindow):
             for name in names:
                 param = params[name]
                 if not np.isfinite(param.min):
-                    param.min = 0
+                    param.min = 0.
                 if not np.isfinite(param.max):
-                    param.max = 2 * param.value
+                    param.max = 2. * param.value
+                if param.min > param.max:
+                    param.min, param.max = param.max, param.min
                 if param.min == param.max:
                     param.max = param.min + 0.1
 
@@ -717,6 +709,40 @@ class MyMainWindow(QtGui.QMainWindow):
         return ok
 
     @QtCore.Slot()
+    def on_add_layer_clicked(self):
+        params = self.params_store_model['theoretical']
+        oldlayers = params['nlayers'].value
+
+        insertpoint, ok = QtGui.QInputDialog.getInt(None,
+                    'Where would you like to insert the new layer?',
+                    'layer',
+                    value=0,
+                    minValue=0,
+                    maxValue=oldlayers)
+        if not ok:
+            return False
+
+        self.layer_model.add_layer(insertpoint)
+
+    @QtCore.Slot()
+    def on_remove_layer_clicked(self):
+        params = self.params_store_model['theoretical']
+        oldlayers = params['nlayers'].value
+        if oldlayers == 0:
+            return False
+
+        remove_point, ok = QtGui.QInputDialog.getInt(None,
+                    'Which layer would you like to remove?',
+                    'layer',
+                    value=1,
+                    minValue=1,
+                    maxValue=oldlayers)
+        if not ok:
+            return False
+
+        self.layer_model.remove_layer(remove_point)
+
+    @QtCore.Slot()
     def on_do_fit_button_clicked(self):
         '''
             you should do a fit
@@ -733,10 +759,33 @@ class MyMainWindow(QtGui.QMainWindow):
         dataset = self.data_store_model[cur_data_name]
         params = self.params_store_model['theoretical']
 
+        try:
+            previous_coefs = self.params_store_model['coef_' + cur_data_name]
+            if len(previous_coefs) == len(params):
+                msgBox = QtGui.QMessageBox()
+                msgBox.setText("Did you want to use previous limits/expressions?")
+                msgBox.setStandardButtons(QtGui.QMessageBox.Yes | QtGui.QMessageBox.No)
+                msgBox.setDefaultButton(QtGui.QMessageBox.Yes)
+                ret = msgBox.exec_()
+                if ret == QtGui.QMessageBox.Yes:
+                    for name, param in params.items():
+                        if param.vary == True:
+                            param.min = previous_coefs[name].min
+                            param.max = previous_coefs[name].max
+                        if param.expr is not None and len(param.expr):
+                            param.expr = previous_coefs[name].expr
+
+        except KeyError:
+            pass
+
+            #copy the limits for those that are varying
+
         ok = self.get_limits(params)
         if not ok:
             return
 
+        params['nlayers'].vary = False
+        params['nlayers'].expr = None
         self.do_a_fit_and_add_to_gui(dataset, params)
 
     @QtCore.Slot()
@@ -764,7 +813,7 @@ class MyMainWindow(QtGui.QMainWindow):
                                      theoreticalmodel,
                                      fit_plugin=self.settings.fitPlugin['rfo'])
 
-    def do_a_fit_and_add_to_gui(self, dataset, params, fit_plugin=None):
+    def do_a_fit_and_add_to_gui(self, dataset, params):
         if dataset.name == 'theoretical':
             print('You tried to fit the theoretical dataset')
             return
@@ -777,7 +826,7 @@ class MyMainWindow(QtGui.QMainWindow):
         # how did you want to fit the dataset - logY vs X, lin Y vs X, etc.
         # select a transform.  Note that we have to transform the data for
         # the fit as well
-        transform_fnctn = reflect.Transform(
+        transform_fnctn = Transform(
             self.settings.transformdata).transform
         alg = self.settings.fitting_algorithm
         res = self.settings.resolution
@@ -788,15 +837,13 @@ class MyMainWindow(QtGui.QMainWindow):
                                                 tempdataset.xdata,
                                                 tempdataset.ydata,
                                                 tempdataset.ydataSD)
-        minimizer = self.minimizer_store['default']
-        minimizer.params = deepcopy(params)
 
-        previous_data = minimizer.data
+        minimizer = ReflectivityFitter(tempdataset.xdata,
+                                       tempdataset.ydata,
+                                       params,
+                                       edata=tempdataset.ydataSD)
 
-        minimizer.data = tempdataset.data
-
-        if isinstance(minimizer, reflect.ReflectivityFitter):
-            minimizer.transform = transform_fnctn
+        minimizer.transform = transform_fnctn
 
         if not self.settings.useerrors:
             tempdataset.ydataSD = None
@@ -806,9 +853,13 @@ class MyMainWindow(QtGui.QMainWindow):
         else:
             minimizer.set_dq(self.settings.resolution)
 
-        progress = ProgressCallback(self)
+        progress = ProgressCallback(self, minimizer=minimizer,
+                                    dataset=dataset)
+
         progress.show()
         minimizer.iter_cb = progress.callback2
+
+        assert reflect.refcalc is refnx.analysis._creflect
 
         if alg == 'DE':
             minimizer.kws.update({'callback': progress.callback})
@@ -839,9 +890,6 @@ class MyMainWindow(QtGui.QMainWindow):
 
         self.params_store_model.add(new_params, 'coef_' + dataset.name)
 
-        minimizer.data = previous_data
-        minimizer.set_dq(res)
-
         #update the chi2 value
         self.update_gui_model()
 
@@ -849,7 +897,7 @@ class MyMainWindow(QtGui.QMainWindow):
         #     print('you aborted the fit')
         #     raise e
 
-        print(fit_report(minimizer.params))
+        print(fit_report(minimizer))
         print('___________________________________________________')
 
         # update GUI
@@ -959,6 +1007,7 @@ class MyMainWindow(QtGui.QMainWindow):
             params = self.params_store_model[arg_1]
             if params is not None:
                 theoretical = deepcopy(params)
+                curvefitter.clear_bounds(params)
                 self.params_store_model['theoretical'] = theoretical
 
             self.base_model.params = theoretical
@@ -1017,6 +1066,7 @@ class MyMainWindow(QtGui.QMainWindow):
             return
 
         params = self.params_store_model.params_store['theoretical']
+        curvefitter.clear_bounds(params)
         self.layer_model.params = params
 
         nlayers = int(params['nlayers'].value)
@@ -1052,14 +1102,12 @@ class MyMainWindow(QtGui.QMainWindow):
         col = index.column()
 
         params = self.params_store_model.params_store['theoretical']
+        curvefitter.clear_bounds(params)
         self.base_model.params = params
 
         self.currentCell = {}
 
-        if col == 0:
-            return
-
-        col2par = ['nlayers', 'scale', 'bkg']
+        col2par = ['scale', 'bkg']
         try:
             val = params[col2par[col]]
         except ValueError:
@@ -1156,7 +1204,7 @@ class MyMainWindow(QtGui.QMainWindow):
             params = self.params_store_model['theoretical']
 
             val = c['lowlim'] + \
-                (arg_1 / 1000.) * math.fabs(c['lowlim'] - c['hilim'])
+                (arg_1 / 1000.) * np.fabs(c['lowlim'] - c['hilim'])
 
             params[c['name']].value = val
 
@@ -1220,7 +1268,6 @@ class MyMainWindow(QtGui.QMainWindow):
 
     def update_gui_model(self):
         params = self.params_store_model['theoretical']
-        curvefitter.clear_bounds(params)
 
         cur_data_name = self.settings.current_dataset_name
         #self.apply_settings_to_params(params)
@@ -1232,7 +1279,7 @@ class MyMainWindow(QtGui.QMainWindow):
         theoretical.fit = minimizer.model(params)
         self.redraw_dataset_graphs([theoretical])
 
-        if isinstance(minimizer, reflect.ReflectivityFitter):
+        if isinstance(minimizer, ReflectivityFitter):
             theoretical.sld_profile = minimizer.sld_profile(params)
 
         if (cur_data_name != 'theoretical'
@@ -1247,7 +1294,7 @@ class MyMainWindow(QtGui.QMainWindow):
             usedq = self.settings.usedq
             useerrors = self.settings.useerrors
             if self.settings.transformdata is not None:
-                t = reflect.Transform(self.settings.transformdata)
+                t = Transform(self.settings.transformdata)
                 data = current_dataset.data
                 yt, et = t.transform(data[0], data[1], edata=data[2])
                 minimizer.data = (data[0], yt, et)
@@ -1262,7 +1309,7 @@ class MyMainWindow(QtGui.QMainWindow):
                 minimizer.edata[:] = 1
 
             chisqr = np.sum(minimizer.residuals(params)**2) / (minimizer.ydata.size)
-            self.ui.chi2.setText(str(round(chisqr, 3)))
+            self.ui.chi2.setValue(chisqr)
             minimizer.data = theoretical.data
             minimizer.set_dq(res)
 
@@ -1282,7 +1329,7 @@ class MyMainWindow(QtGui.QMainWindow):
         theoretical.fit = minimizer.model(params)
         self.redraw_dataset_graphs([theoretical])
 
-        if isinstance(minimizer, reflect.ReflectivityFitter):
+        if isinstance(minimizer, ReflectivityFitter):
             theoretical.sld_profile = minimizer.sld_profile(params)
 
         if (cur_data_name != 'theoretical'
@@ -1297,7 +1344,7 @@ class MyMainWindow(QtGui.QMainWindow):
             usedq = self.settings.usedq
             useerrors = self.settings.useerrors
             if self.settings.transformdata is not None:
-                t = reflect.Transform(self.settings.transformdata)
+                t = Transform(self.settings.transformdata)
                 data = current_dataset.data
                 yt, et = t.transform(data[0], data[1], edata=data[2])
                 minimizer.data = (data[0], yt, et)
@@ -1312,7 +1359,7 @@ class MyMainWindow(QtGui.QMainWindow):
                 minimizer.edata[:] = 1
 
             chisqr = np.sum(minimizer.residuals(params)**2) / (minimizer.ydata.size)
-            self.ui.chi2.setText(str(round(chisqr, 3)))
+            self.ui.chi2.setValue(chisqr)
             minimizer.data = theoretical.data
             minimizer.set_dq(res)
             minimizer.transform = None
@@ -1354,7 +1401,7 @@ class MyMainWindow(QtGui.QMainWindow):
                 return
 
             val = c['lowlim'] + \
-                (arg_1 / 1000.) * math.fabs(c['lowlim'] - c['hilim'])
+                (arg_1 / 1000.) * np.fabs(c['lowlim'] - c['hilim'])
 
             col = c['col']
             row = c['param']
@@ -1440,16 +1487,20 @@ class MyMainWindow(QtGui.QMainWindow):
 
 
 class ProgressCallback(QtGui.QDialog):
-    def __init__(self, parent=None):
-        self.start = time.clock()
+    def __init__(self, parent=None, minimizer=None, dataset=None):
+        self.start = time.time()
+        self.last_time = time.time()
         self.abort_flag = False
         super(ProgressCallback, self).__init__(parent)
+        self.parent = parent
         self.ui = progressUI.Ui_progress()
         self.ui.setupUi(self)
         self.elapsed = 0.
-        self.chi2 = 1e308
+        self.chi2 = 1.e308
         self.ui.timer.display(float(self.elapsed))
         self.ui.buttonBox.rejected.connect(self.abort)
+        self.minimizer = minimizer
+        self.dataset = dataset
 
     def abort(self):
         self.abort_flag = True
@@ -1457,11 +1508,32 @@ class ProgressCallback(QtGui.QDialog):
     def callback(self, xk, *args, **kwds):
         # a callback for scipy.optimize.minimize, which enters
         # every iteration.
-        new_time = time.clock()
-        if new_time - self.elapsed > 2:
+        new_time = time.time()
+        if new_time - self.last_time > 2:
+            if hasattr(self.minimizer, 'transform'):
+                t = self.minimizer.transform
+                self.minimizer.transform = None
+
+            params = deepcopy(self.minimizer.params)
+            for i, var in enumerate(self.minimizer.var_map):
+                param = params[var]
+                param.value = param.from_internal(xk[i])
+
+            self.dataset.fit = self.minimizer.model(params)
+
+            gp = self.dataset.graph_properties
+            if gp.line2Dfit is not None:
+                self.parent.redraw_dataset_graphs([self.dataset])
+            else:
+                self.parent.add_datasets_to_graphs([self.dataset])
+
+            if hasattr(self.minimizer, 'transform'):
+                self.minimizer.transform = t
+
             self.elapsed = new_time - self.start
             self.ui.timer.display(float(self.elapsed))
             QtGui.QApplication.processEvents()
+            self.last_time = new_time
 
         return self.abort_flag
 
@@ -1469,8 +1541,10 @@ class ProgressCallback(QtGui.QDialog):
         # a callback for lmfit, which enters at every calculation
         # of the residuals.
 
+        new_time = time.time()
+
         #we only want to update every so often
-        if iter % 100:
+        if iter % 1000:
             return
 
         chi2 = np.sum(resid**2) / resid.size
@@ -1544,7 +1618,7 @@ class MyReflectivityGraphs(FigureCanvas):
     def add_dataset(self, dataset, transform=None):
         graph_properties = dataset.graph_properties
 
-        t = reflect.Transform(transform)
+        t = Transform(transform)
         yt, edata = t.transform(dataset.xdata, dataset.ydata, dataset.ydataSD)
 
         if graph_properties.line2D is None and dataset.name != 'theoretical':
@@ -1601,7 +1675,7 @@ class MyReflectivityGraphs(FigureCanvas):
             if not dataset:
                 continue
 
-            t = reflect.Transform(transform)
+            t = Transform(transform)
 
             x = dataset.xdata
             y, e = t.transform(dataset.xdata, dataset.ydata)
@@ -1683,7 +1757,7 @@ class MySLDGraphs(FigureCanvas):
         if (graph_properties.line2Dsld_profile is None
             and dataset.sld_profile is not None):
 
-            color = 'b'
+            color = 'r'
             lw = 2
             if graph_properties.line2D:
                 color = artist.getp(graph_properties.line2D, 'color')

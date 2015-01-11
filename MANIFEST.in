@@ -1,2 +1,3 @@
 include versioneer.py
 include refnx/_version.py
+include qt/_version.py

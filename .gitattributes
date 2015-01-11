@@ -1,1 +1,2 @@
 refnx/_version.py export-subst
+motofit/_version.py export-subst

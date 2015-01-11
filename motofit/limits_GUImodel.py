@@ -33,7 +33,8 @@ class LimitsModel(QtCore.QAbstractTableModel):
         if role == QtCore.Qt.BackgroundRole and col < 2:
             return QtGui.QBrush(QtCore.Qt.cyan)
 
-        if role == QtCore.Qt.BackgroundRole and (not row in self.fitted_params):
+        if role == QtCore.Qt.BackgroundRole and (not row in self.fitted_params
+                                                 and col != 4):
             return QtGui.QBrush(QtCore.Qt.cyan)
 
         if role == QtCore.Qt.DisplayRole:
@@ -72,7 +73,10 @@ class LimitsModel(QtCore.QAbstractTableModel):
         row = index.row()
         col = index.column()
 
-        if col == 0 or col == 1 or (not row in self.fitted_params):
+        if col == 0 or col == 1:
+            return QtCore.Qt.NoItemFlags
+
+        if (col == 2 or col == 3) and (not row in self.fitted_params):
             return QtCore.Qt.NoItemFlags
 
         return (QtCore.Qt.ItemIsEditable |
@@ -86,10 +90,10 @@ class LimitsModel(QtCore.QAbstractTableModel):
         if not index.isValid():
             return False
 
-        if col < 0 or col > 4:
+        if col < 2 or col > 4:
             return False
 
-        if not row in self.fitted_params:
+        if not row in self.fitted_params and col < 4:
             return False
 
         name = self.names[row]
@@ -108,12 +112,15 @@ class LimitsModel(QtCore.QAbstractTableModel):
             if self.finite_bounds:
                 validator = QtGui.QDoubleValidator()
                 voutput = validator.validate(value, 1)
+                val = param.value
 
                 if voutput[0] == QtGui.QValidator.State.Acceptable:
                     if col == 2:
                         param.min = float(voutput[1])
+                        param.value = val
                     if col == 3:
                         param.max = float(voutput[1])
+                        param.value = val
             else:
                 if col == 2:
                     if value in lowlim:

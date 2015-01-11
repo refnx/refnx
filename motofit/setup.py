@@ -8,6 +8,7 @@ import py2app
 import periodictable
 import numpy as np
 from setuptools import setup, Extension, find_packages
+
 try:
     from Cython.Distutils import build_ext
 except ImportError:
@@ -36,9 +37,8 @@ if USE_CYTHON:
                           )
     ext_modules.append(_creflect)
 
-APP = ['qt/motofit.py']
+APP = ['motofit/motofit.py']
 DATA_FILES = []
-# DATA_FILES = ['qt/icons', 'qt/resources_rc.py']
 PACKAGES = ['refnx',
             'periodictable',
             'lmfit',
@@ -52,7 +52,7 @@ CFBUNDLEDOCUMENTYPES = [{'CFBundleTypeIconFiles': 'Motofit.icns',
 OPTIONS = {'argv_emulation': True,
            'includes': ['scipy', 'numpy', 'matplotlib', 'lmfit', 'refnx'],
            'packages': PACKAGES,
-           'iconfile': 'qt/icons/Motofit.icns',
+           'iconfile': 'motofit/icons/Motofit.icns',
            'excludes': ['refnx.reduce'],
            'plist': dict(CFBundleIconFile='Motofit.icns',
                          CFBundleDocumentTypes=CFBUNDLEDOCUMENTYPES,

@@ -91,16 +91,26 @@ def varys(params):
 
     Returns
     -------
-    varys : int, sequence
+    varys : bool, sequence
         Which parameters are varying
     """
-    varying = []
-    for i, par in enumerate(params):
-        if params[par].vary:
-            varying.append(True)
-        else:
-            varying.append(False)
-    return varying
+    return [params[par].vary for par in params]
+
+def exprs(params):
+    """
+    A convenience function that takes a Parameters instance and returns the
+    the constraint expressions
+
+    Parameters
+    ----------
+    parameters : lmfit.Parameters
+
+    Returns
+    -------
+    exprs : list of str
+
+    """
+    expr = [params[par].expr for par in params]
 
 def values(params):
     """
@@ -118,6 +128,7 @@ def clear_bounds(params):
     for par in params:
         params[par].min = -np.inf
         params[par].max = np.inf
+
 
 class CurveFitter(Minimizer):
     """

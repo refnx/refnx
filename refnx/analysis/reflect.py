@@ -2,20 +2,21 @@ from __future__ import division
 import numpy as np
 import scipy
 import scipy.linalg
-import math
-from refnx.analysis.curvefitter import CurveFitter
+from .curvefitter import CurveFitter
 import refnx.util.ErrorProp as EP
 import warnings
+import math
 
 try:
-    import refnx.analysis._creflect as refcalc
+    from . import _creflect as refcalc
 except ImportError:
-    import refnx.analysis._reflect as refcalc
+    print('WARNING, Using slow reflectivity calculation')
+    from . import _reflect as refcalc
 
 
 # some definitions for resolution smearing
-FWHM = 2 * math.sqrt(2 * math.log(2.0))
-INTLIMIT = 3.5
+_FWHM = 2 * np.sqrt(2 * np.log(2.0))
+_INTLIMIT = 3.5
 
 def gauss_legendre(n):
     """
@@ -36,9 +37,9 @@ def _smearkernel(x, coefs, q, dq):
     '''
     Kernel for Gaussian Quadrature
     '''
-    prefactor = 1 / math.sqrt(2 * math.pi)
+    prefactor = 1 / np.sqrt(2 * np.pi)
     gauss = prefactor * np.exp(-0.5 * x * x)
-    localq = q + x * dq / FWHM
+    localq = q + x * dq / _FWHM
     w = convert_coefs_to_layer_format(coefs)
     return refcalc.abeles(localq, w) * gauss
 
@@ -73,10 +74,10 @@ def parameter_names(coefs):
              'iSLDback', 'bkg', 'sigma_back']
     nlayers = (coefs.size - 8 / 4)
     for i in range(int(nlayers)):
-        names.append('thick%d'%i)
-        names.append('SLD%d'%i)
-        names.append('iSLD%d'%i)
-        names.append('sigma%d'%i)
+        names.append('thick%d'%(i + 1))
+        names.append('SLD%d'%(i + 1))
+        names.append('iSLD%d'%(i + 1))
+        names.append('sigma%d'%(i + 1))
     return names
     
 def abeles(q, coefs, *args, **kwds):
@@ -114,7 +115,7 @@ def abeles(q, coefs, *args, **kwds):
         'dqvals' - np.ndarray, optional
             an array containing resolution information.
             If `dqvals` is 1D, and is the same length as `q`, then the array
-            contains the FWHM of a Gaussian approximated resolution kernel.
+            contains the _FWHM of a Gaussian approximated resolution kernel.
             If `dqvals` is 3D, then an individual resolution kernel is
             applied to each measurement point.  This resolution kernel is a
             probability distribution function (PDF). `dqvals` will have the
@@ -159,8 +160,8 @@ def abeles(q, coefs, *args, **kwds):
                 for idx, val in enumerate(qvals):
                     smeared_rvals[idx], err = scipy.integrate.quadrature(
                         _smearkernel,
-                        -INTLIMIT,
-                        INTLIMIT,
+                        -_INTLIMIT,
+                        _INTLIMIT,
                         tol=2 * np.finfo(np.float64).eps,
                         rtol=2 * np.finfo(np.float64).eps,
                         args=(coefs, qvals[idx], dqvals[idx]))
@@ -174,13 +175,13 @@ def abeles(q, coefs, *args, **kwds):
                 # get the gauss-legendre weights and abscissa
                 abscissa, weights = gauss_legendre(quad_order)
                 # get the normal distribution at that point
-                prefactor = 1. / math.sqrt(2 * math.pi)
+                prefactor = 1. / np.sqrt(2 * np.pi)
                 gauss = lambda x: np.exp(-0.5 * x * x)
-                gaussvals = prefactor * gauss(abscissa * INTLIMIT)
+                gaussvals = prefactor * gauss(abscissa * _INTLIMIT)
 
                 # integration between -3.5 and 3.5 sigma
-                va = qvals - INTLIMIT * dqvals / FWHM
-                vb = qvals + INTLIMIT * dqvals / FWHM
+                va = qvals - _INTLIMIT * dqvals / _FWHM
+                vb = qvals + _INTLIMIT * dqvals / _FWHM
 
                 va = va[:, np.newaxis]
                 vb = vb[:, np.newaxis]
@@ -198,7 +199,7 @@ def abeles(q, coefs, *args, **kwds):
 
                 smeared_rvals *= np.atleast_2d(gaussvals * weights)
 
-                return np.sum(smeared_rvals, 1) * INTLIMIT
+                return np.sum(smeared_rvals, 1) * _INTLIMIT
         elif dqvals.ndim == 3:
             qvals_for_res = dqvals[..., 0]
             # work out the reflectivity at the kernel evaluation points
@@ -243,21 +244,21 @@ def sld_profile(coefs, z):
                 if nlayers:
                     deltarho = -coefs[2] + coefs[9]
                     thick = 0
-                    sigma = math.fabs(coefs[11])
+                    sigma = np.fabs(coefs[11])
                 else:
-                    sigma = math.fabs(coefs[7])
+                    sigma = np.fabs(coefs[7])
                     deltarho = -coefs[2] + coefs[4]
             elif ii == nlayers:
                 SLD1 = coefs[4 * ii + 5]
                 deltarho = -SLD1 + coefs[4]
-                thick = math.fabs(coefs[4 * ii + 4])
-                sigma = math.fabs(coefs[7])
+                thick = np.fabs(coefs[4 * ii + 4])
+                sigma = np.fabs(coefs[7])
             else:
                 SLD1 = coefs[4 * ii + 5]
                 SLD2 = coefs[4 * (ii + 1) + 5]
                 deltarho = -SLD1 + SLD2
-                thick = math.fabs(coefs[4 * ii + 4])
-                sigma = math.fabs(coefs[4 * (ii + 1) + 7])
+                thick = np.fabs(coefs[4 * ii + 4])
+                sigma = np.fabs(coefs[4 * (ii + 1) + 7])
 
             dist += thick
 
@@ -268,7 +269,7 @@ def sld_profile(coefs, z):
 
             #summ += deltarho * (norm.cdf((zed - dist)/sigma))
             summ[idx] += deltarho * \
-                (0.5 + 0.5 * math.erf((zed - dist) / (sigma * math.sqrt(2.))))
+                (0.5 + 0.5 * math.erf((zed - dist) / (sigma * np.sqrt(2.))))
 
     return summ
 
@@ -317,10 +318,10 @@ class ReflectivityFitter(CurveFitter):
         fcn_kws['transform'] : callable, optional
             If specified then this function is used to transform the data
             returned by the model method. With the signature:
-            ``transformed_y_vals = f(x_vals, y_vals)``.
+            ``transformed_y_vals = transform(x_vals, y_vals)``.
 
         fcn_kws['dqvals'] : np.ndarray, optional
-            An array containing the FWHM of the Gaussian approximated resolution
+            An array containing the _FWHM of the Gaussian approximated resolution
             kernel. Has the same size as qvals.
 
         fcn_kws['quad_order'] : int, optional
@@ -387,7 +388,7 @@ class ReflectivityFitter(CurveFitter):
             If `None` then there is no resolution smearing.
             If a float, e.g. 5, then dq/q smearing of 5% is applied. If res==0
             then resolution smearing is removed.
-            If an np.ndarray the same length as ydata, it contains the FWHM of
+            If an np.ndarray the same length as ydata, it contains the _FWHM of
             the Gaussian approximated resolution kernel.
         quad_order: int or 'ultimate'
             The order of the Gaussian quadrature polynomial for doing the
@@ -402,10 +403,11 @@ class ReflectivityFitter(CurveFitter):
         if res is None:
             self.userkws.pop('dqvals')
         elif type(res) is float or type(res) is int:
-            if res == 0:
+            if res < 0.4 and 'dqvals' in self.userkws:
                 self.userkws.pop('dqvals')
-            dq = self.xdata * res / 100.
-            self.userkws['dqvals'] = dq
+            else:
+                dq = self.xdata * res / 100.
+                self.userkws['dqvals'] = dq
         elif type(res) is np.ndarray and res.shape == self.ydata.shape:
             self.userkws['dqvals'] = res
 
@@ -433,17 +435,17 @@ class ReflectivityFitter(CurveFitter):
             return points, sld_profile(params, points)
 
         if not int(params[0]):
-            zstart = -5 - 4 * math.fabs(params[7])
+            zstart = -5 - 4 * np.fabs(params[7])
         else:
-            zstart = -5 - 4 * math.fabs(params[11])
+            zstart = -5 - 4 * np.fabs(params[11])
 
         temp = 0
         if not int(params[0]):
-            zend = 5 + 4 * math.fabs(params[7])
+            zend = 5 + 4 * np.fabs(params[7])
         else:
             for ii in xrange(int(params[0])):
-                temp += math.fabs(params[4 * ii + 8])
-            zend = 5 + temp + 4 * math.fabs(params[7])
+                temp += np.fabs(params[4 * ii + 8])
+            zend = 5 + temp + 4 * np.fabs(params[7])
 
         points = np.linspace(zstart, zend, num=500)
 
@@ -512,8 +514,8 @@ if __name__ == '__main__':
     b /= 20000.
     b += 0.0005
 
-    def loop():
+    def _loop():
         abeles(b, a)
 
-    t = timeit.Timer(stmt=loop)
+    t = timeit.Timer(stmt=_loop)
     print(t.timeit(number=1000))
