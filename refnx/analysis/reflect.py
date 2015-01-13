@@ -8,16 +8,27 @@ import warnings
 import math
 
 try:
-    from . import _creflect as refcalc
+    import _creflect as refcalc
 except ImportError:
     print('WARNING, Using slow reflectivity calculation')
-    from . import _reflect as refcalc
+    import _reflect as refcalc
 
 
 # some definitions for resolution smearing
 _FWHM = 2 * np.sqrt(2 * np.log(2.0))
 _INTLIMIT = 3.5
 
+def _memoize_gl(f):
+    cache = {}
+    def inner(n):
+        if n in cache:
+            return cache[n]
+        else:
+            result = cache[n] = f(n)
+            return result
+    return inner
+
+@_memoize_gl
 def gauss_legendre(n):
     """
     Calculate gaussian quadrature abscissae and weights
@@ -33,40 +44,38 @@ def gauss_legendre(n):
     w = 2 * np.real(np.power(V[0, :], 2))
     return x, w
 
-def _smearkernel(x, coefs, q, dq):
+def _smearkernel(x, w, q, dq):
     '''
     Kernel for Gaussian Quadrature
     '''
     prefactor = 1 / np.sqrt(2 * np.pi)
     gauss = prefactor * np.exp(-0.5 * x * x)
     localq = q + x * dq / _FWHM
-    w = convert_coefs_to_layer_format(coefs)
     return refcalc.abeles(localq, w) * gauss
 
 def convert_coefs_to_layer_format(coefs):
     nlayers = int(coefs[0])
     w = np.zeros((nlayers + 2, 4), np.float64)
-    w[0, 1] = coefs[2]
-    w[0, 2] = coefs[3]
-    w[-1, 1] = coefs[4]
-    w[-1, 2] = coefs[5]
+    w[0, 1: 3] = coefs[2: 4]
+    w[-1, 1: 3] = coefs[4: 6]
     w[-1, 3] = coefs[7]
-    for i in range(nlayers):
-        w[i + 1, 0: 4] = coefs[4 * i + 8: 4 * i + 12]
+    if nlayers:
+        w[1: -1] = np.array(coefs[8: ]).reshape(nlayers, 4)
 
     return w
 
-def convert_layer_format_to_coefs(layers):
+def convert_layer_format_to_coefs(layers, scale=1, bkg=0):
     nlayers = np.size(layers, 0) - 2
     coefs = np.zeros(4 * nlayers + 8, np.float64)
     coefs[0] = nlayers
-    coefs[1] = 1.0
-    coefs[2: 4] = layers[0, 1:3]
-    coefs[4: 6] = layers[-1, 1:3]
+    coefs[1] = scale
+    coefs[2:4] = layers[0, 1: 3]
+    coefs[4: 6] = layers[-1, 1: 3]
+    coefs[6] = bkg
     coefs[7] = layers[-1, 3]
-    for i in range(nlayers):
-        coefs[4 * i + 8: 4 * i + 12] = layers[i + 1, 0:4]
-    
+    if nlayers:
+        coefs[8:] = layers.flatten()[4: -4]
+
     return coefs
 
 def parameter_names(coefs):
@@ -136,7 +145,7 @@ def abeles(q, coefs, *args, **kwds):
             describing a multilayer with bragg peaks.
     """
 
-    qvals = q.flatten()
+    qvals = q
     quad_order = 17
 
     if not is_proper_Abeles_input(coefs):
@@ -152,7 +161,10 @@ def abeles(q, coefs, *args, **kwds):
     if 'dqvals' in kwds and kwds['dqvals'] is not None:
         dqvals = kwds['dqvals']
 
-        if dqvals.ndim == 1:
+        if dqvals.size == qvals.size:
+            qvals = q.flatten()
+            dqvals_flat = dqvals.flatten()
+
             if quad_order == 'ultimate':
                 # adaptive gaussian quadrature.
                 smeared_rvals = np.zeros(qvals.size)
@@ -164,15 +176,15 @@ def abeles(q, coefs, *args, **kwds):
                         _INTLIMIT,
                         tol=2 * np.finfo(np.float64).eps,
                         rtol=2 * np.finfo(np.float64).eps,
-                        args=(coefs, qvals[idx], dqvals[idx]))
+                        args=(w, qvals[idx], dqvals_flat[idx]))
 
                 smeared_rvals *= coefs[1]
                 smeared_rvals += coefs[6]
                 warnings.resetwarnings()
-                return smeared_rvals
+                return smeared_rvals.reshape(q.shape)
             else:
                 # just do gaussian quadrature of fixed order
-                # get the gauss-legendre weights and abscissa
+                # get the gauss-legendre weights and abscissae
                 abscissa, weights = gauss_legendre(quad_order)
                 # get the normal distribution at that point
                 prefactor = 1. / np.sqrt(2 * np.pi)
@@ -180,8 +192,8 @@ def abeles(q, coefs, *args, **kwds):
                 gaussvals = prefactor * gauss(abscissa * _INTLIMIT)
 
                 # integration between -3.5 and 3.5 sigma
-                va = qvals - _INTLIMIT * dqvals / _FWHM
-                vb = qvals + _INTLIMIT * dqvals / _FWHM
+                va = qvals - _INTLIMIT * dqvals_flat / _FWHM
+                vb = qvals + _INTLIMIT * dqvals_flat / _FWHM
 
                 va = va[:, np.newaxis]
                 vb = vb[:, np.newaxis]
@@ -199,17 +211,14 @@ def abeles(q, coefs, *args, **kwds):
 
                 smeared_rvals *= np.atleast_2d(gaussvals * weights)
 
-                return np.sum(smeared_rvals, 1) * _INTLIMIT
-        elif dqvals.ndim == 3:
+                return np.reshape((np.sum(smeared_rvals, 1) * _INTLIMIT), q.shape)
+        elif (dqvals.ndim == qvals.ndim + 2
+              and dqvals.shape[0: qvals.ndim] == qvals.shape):
+            #TODO may not work yet.
             qvals_for_res = dqvals[..., 0]
             # work out the reflectivity at the kernel evaluation points
-            smeared_rvals = refcalc.abeles(qvals_for_res.flatten(),
-                                           w,
-                                           scale=coefs[1],
+            smeared_rvals = refcalc.abeles(qvals_for_res, w, scale=coefs[1],
                                            bkg=coefs[6])
-
-            smeared_rvals = np.reshape(smeared_rvals,
-                                       dqvals[..., 1].shape)
 
             #multiply by probability
             smeared_rvals *= dqvals[..., 1]
@@ -217,9 +226,7 @@ def abeles(q, coefs, *args, **kwds):
             #now do simpson integration
             return scipy.integrate.simps(smeared_rvals, x=dqvals[..., 0])
     else:
-        return refcalc.abeles(qvals.flatten(), w,
-                              scale=coefs[1], bkg=coefs[6])
-
+        return refcalc.abeles(q, w, scale=coefs[1], bkg=coefs[6])
 
 def is_proper_Abeles_input(coefs):
     '''
@@ -228,7 +235,6 @@ def is_proper_Abeles_input(coefs):
     if np.size(coefs, 0) != 4 * int(coefs[0]) + 8:
         return False
     return True
-
 
 def sld_profile(coefs, z):
 
@@ -369,8 +375,7 @@ class ReflectivityFitter(CurveFitter):
             The theoretical model for the xdata, i.e.
             abeles(self.xdata, parameters, *self.args, **self.kwds)
         '''
-        params = np.asfarray(list(parameters.valuesdict().values()))
-
+        params = np.array([param.value for param in parameters.values()], float)
         yvals = abeles(self.xdata, params, *self.userargs, **self.userkws)
 
         if self.transform:

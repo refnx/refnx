@@ -6,7 +6,6 @@
     @Copyright, Andrew Nelson 2014.
  */
 
-
 #include "refcalc.h"
 #include <math.h>
 #include "MyComplex.h"
@@ -20,7 +19,7 @@
    #include <omp.h>
 #endif
 
-#ifdef _POSIX_THREADS
+#ifdef PTHREAD_H
 #include <unistd.h>
 #include <pthread.h>
 #endif
@@ -150,7 +149,7 @@ void AbelesCalc_ImagAll(int numcoefs,
 	}
 
 /* pthread version*/
-#ifdef	_POSIX_THREADS
+#ifdef PTHREAD_H
 
 	typedef struct{
 		//a double array containing the model coefficients
@@ -164,7 +163,6 @@ void AbelesCalc_ImagAll(int numcoefs,
 		//the Q values to do the calculation for.
 		const double *xP;
 	}  pointCalcParm;
-
 
 	void *ThreadWorker(void *arg){
 	    int err = NULL;
@@ -252,7 +250,7 @@ void reflect(int numcoefs,
 choose between the mode of calculation, depending on whether pthreads or omp.h
 is present for parallelisation.
 */
-#ifdef _POSIX_THREADS
+#ifdef PTHREAD_H
     AbelesCalc_Imag(numcoefs, coefP, npoints, yP, xP);
 #else
     AbelesCalc_ImagAll(numcoefs, coefP, npoints, yP, xP);
