@@ -186,7 +186,7 @@ void AbelesCalc_ImagAll(int numcoefs,
 		pthread_t *threads = NULL;
 		pointCalcParm *arg = NULL;
 
-		int threadsToCreate = NUM_CPUS;
+		int threadsToCreate = NUM_CPUS - 1;
 		int pointsEachThread, pointsRemaining, pointsConsumed;
 
 		//create threads for the calculation
@@ -205,17 +205,17 @@ void AbelesCalc_ImagAll(int numcoefs,
 		}
 
 		//need to calculated how many points are given to each thread.
-		pointsEachThread = floorl(npoints / threadsToCreate);
+		pointsEachThread = floorl(npoints / (threadsToCreate + 1));
 		pointsRemaining = npoints;
 		pointsConsumed = 0;
 
 		//if you have two CPU's, only create one extra thread because the main
 		//thread does half the work
-		for (int ii = 0; ii < threadsToCreate; ii++){
+		for (int ii = 0; ii < threadsToCreate + 1; ii++){
 			arg[ii].coefP = coefP;
 			arg[ii].numcoefs = numcoefs;
 
-			if(ii == threadsToCreate - 1)
+			if(ii == threadsToCreate)
 				pointsEachThread = pointsRemaining;
 
 			arg[ii].npoints = pointsEachThread;
@@ -260,4 +260,3 @@ is present for parallelisation.
 #ifdef __cplusplus
 	}
 #endif
-

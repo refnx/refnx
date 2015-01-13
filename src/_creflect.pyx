@@ -24,7 +24,7 @@ def abeles(np.ndarray[DTYPE_t] x,
     cdef int npoints = x.size
     cdef np.ndarray[DTYPE_t, ndim=1] coefs = np.empty(4 * nlayers + 8,
                                                       DTYPE)
-    cdef np.ndarray[DTYPE_t] y = np.empty(npoints,
+    cdef np.ndarray[DTYPE_t] y = np.empty(x.shape,
                                           DTYPE)
 
     coefs[0] = nlayers
