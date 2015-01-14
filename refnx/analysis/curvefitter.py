@@ -116,7 +116,7 @@ def values(params):
     """
     A convenience function that returns the values of the parameters
     """
-    return np.array([param.value for param in params.values()], float64)
+    return np.array([param.value for param in params.values()], np.float64)
 
 def names(params):
     return list(params.keys())
