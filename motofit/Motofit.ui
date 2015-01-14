@@ -784,11 +784,17 @@
            </property>
            <property name="font">
             <font>
-             <pointsize>14</pointsize>
+             <pointsize>13</pointsize>
             </font>
+           </property>
+           <property name="mouseTracking">
+            <bool>false</bool>
            </property>
            <property name="focusPolicy">
             <enum>Qt::StrongFocus</enum>
+           </property>
+           <property name="contextMenuPolicy">
+            <enum>Qt::PreventContextMenu</enum>
            </property>
            <property name="maximum">
             <number>999</number>
@@ -804,6 +810,9 @@
            </property>
            <property name="invertedControls">
             <bool>false</bool>
+           </property>
+           <property name="tickPosition">
+            <enum>QSlider::NoTicks</enum>
            </property>
           </widget>
          </item>

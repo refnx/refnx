@@ -649,6 +649,17 @@ class MyMainWindow(QtGui.QMainWindow):
         self.settings.transformdata = transform
         self.redraw_dataset_graphs(None, all=True)
 
+        # need to relimit graphs and display on a log scale if the transform
+        # has changed
+        self.reflectivitygraphs.axes[0].autoscale(axis='both', tight = False,
+                                                  enable = True)
+        self.reflectivitygraphs.axes[0].relim()
+        if transform in ['lin', 'YX2']:
+            self.reflectivitygraphs.axes[0].set_yscale('log')
+        else:
+            self.reflectivitygraphs.axes[0].set_yscale('linear')
+        self.reflectivitygraphs.draw()
+
     @QtCore.Slot()
     def on_actionAbout_triggered(self):
         about_dialog = QtGui.QDialog()
@@ -858,8 +869,6 @@ class MyMainWindow(QtGui.QMainWindow):
 
         progress.show()
         minimizer.iter_cb = progress.callback2
-
-        assert reflect.refcalc is refnx.analysis._creflect
 
         if alg == 'DE':
             minimizer.kws.update({'callback': progress.callback})
@@ -1662,8 +1671,8 @@ class MyReflectivityGraphs(FigureCanvas):
 #             if dataObject.graph_properties['line2Dresiduals_properties']:
 #                 artist.setp(dataObject.line2Dresiduals, **dataObject.graph_properties['line2Dresiduals_properties'])
 
-        self.axes[0].relim()
-        self.axes[0].autoscale(axis='both', tight=False, enable=True)
+        # self.axes[0].relim()
+        # self.axes[0].autoscale(axis='both', tight=False, enable=True)
         self.draw()
         graph_properties.save_graph_properties()
 
@@ -1694,12 +1703,12 @@ class MyReflectivityGraphs(FigureCanvas):
 #                dataObject.line2Dresiduals.set_data(dataObject.xdata, dataObject.residuals)
 #                dataObject.line2Dresiduals.set_visible(visible)
 
-        self.axes[0].autoscale(axis='both', tight = False, enable = True)
-        self.axes[0].relim()
-        if transform in ['lin', 'YX2']:
-            self.axes[0].set_yscale('log')
-        else:
-            self.axes[0].set_yscale('linear')
+        # self.axes[0].autoscale(axis='both', tight = False, enable = True)
+        # self.axes[0].relim()
+        # if transform in ['lin', 'YX2']:
+        #     self.axes[0].set_yscale('log')
+        # else:
+        #     self.axes[0].set_yscale('linear')
 
         self.draw()
 
