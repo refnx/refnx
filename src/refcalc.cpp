@@ -15,13 +15,16 @@
 #include <vector>
 #include <assert.h>
 
-#ifdef _OPENMP
-   #include <omp.h>
-#endif
+#ifdef _WIN32
 
-#ifdef PTHREAD_H
+#else
 #include <unistd.h>
 #include <pthread.h>
+#define HAVE_PTHREAD_H
+#endif
+
+#ifdef _OPENMP
+   #include <omp.h>
 #endif
 
 #define NUM_CPUS 2
@@ -149,7 +152,7 @@ void AbelesCalc_ImagAll(int numcoefs,
 	}
 
 /* pthread version*/
-#ifdef PTHREAD_H
+#ifdef HAVE_PTHREAD_H
 
 	typedef struct{
 		//a double array containing the model coefficients
@@ -198,27 +201,30 @@ void AbelesCalc_ImagAll(int numcoefs,
 
 		//create arguments to be supplied to each of the threads
 		arg = (pointCalcParm *) malloc(sizeof(pointCalcParm)
-		                               * threadsToCreate);
+		                               * (threadsToCreate));
 		if(!arg && NUM_CPUS > 1){
 			err = 1;
 			goto done;
 		}
 
 		//need to calculated how many points are given to each thread.
-		pointsEachThread = floorl(npoints / (threadsToCreate + 1));
+		if(threadsToCreate > 0){
+			pointsEachThread = floorl(npoints / (threadsToCreate));
+		} else {
+			pointsEachThread = npoints;
+		}
+
 		pointsRemaining = npoints;
 		pointsConsumed = 0;
 
 		//if you have two CPU's, only create one extra thread because the main
 		//thread does half the work
-		for (int ii = 0; ii < threadsToCreate + 1; ii++){
+		for (int ii = 0; ii < threadsToCreate ; ii++){
 			arg[ii].coefP = coefP;
 			arg[ii].numcoefs = numcoefs;
 
-			if(ii == threadsToCreate)
-				pointsEachThread = pointsRemaining;
-
 			arg[ii].npoints = pointsEachThread;
+
 			//the following two lines specify where the Q values and R values
 			//i.e. an offset of the original array.
 			arg[ii].xP = xP + pointsConsumed;
@@ -228,10 +234,14 @@ void AbelesCalc_ImagAll(int numcoefs,
 			               (void *)(arg + ii));
 			pointsRemaining -= pointsEachThread;
 			pointsConsumed += pointsEachThread;
+
 		}
+		//do the last points in the main thread.
+		AbelesCalc_ImagAll(numcoefs, coefP, pointsRemaining, yP + pointsConsumed, xP + pointsConsumed);
 
 		for (int ii = 0; ii < threadsToCreate ; ii++)
 			pthread_join(threads[ii], NULL);
+
 
 	done:
 		if(threads)
@@ -250,7 +260,7 @@ void reflect(int numcoefs,
 choose between the mode of calculation, depending on whether pthreads or omp.h
 is present for parallelisation.
 */
-#ifdef PTHREAD_H
+#ifdef HAVE_PTHREAD_H
     AbelesCalc_Imag(numcoefs, coefP, npoints, yP, xP);
 #else
     AbelesCalc_ImagAll(numcoefs, coefP, npoints, yP, xP);

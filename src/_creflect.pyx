@@ -3,6 +3,7 @@ import numpy as np
 
 cimport numpy as np
 cimport cython
+from cython.view cimport array as cvarray
 
 cdef extern from "refcalc.h":
     void reflect(int numcoefs, const double *coefP, int npoints, double *yP,
@@ -12,7 +13,8 @@ DTYPE = np.float64
 ctypedef np.float64_t DTYPE_t
 
 @cython.boundscheck(False)
-def abeles(np.ndarray[DTYPE_t] x,
+@cython.cdivision(False)
+def abeles(np.ndarray x,
            np.ndarray[DTYPE_t, ndim=2] w,
            double scale=1.0, bkg=0.):
     if w.shape[1] != 4 or w.shape[0] < 2:
@@ -24,8 +26,8 @@ def abeles(np.ndarray[DTYPE_t] x,
     cdef int npoints = x.size
     cdef np.ndarray[DTYPE_t, ndim=1] coefs = np.empty(4 * nlayers + 8,
                                                       DTYPE)
-    cdef np.ndarray[DTYPE_t] y = np.empty_like(x,
-                                               DTYPE)
+    cdef np.ndarray y = np.empty_like(x,
+                                      DTYPE)
 
     coefs[0] = nlayers
     coefs[1] = scale
@@ -37,7 +39,7 @@ def abeles(np.ndarray[DTYPE_t] x,
         coefs[8:] = w.flatten()[4: -4]
 
     reflect(4 * nlayers + 8, <const double*>coefs.data, npoints,
-           <double*>y.data, <const double*>x.data)
+            <double*>y.data, <const double*>x.data)
     return y
 
 """

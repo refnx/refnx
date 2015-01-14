@@ -12,6 +12,7 @@ import refnx.analysis.curvefitter as curvefitter
 import numpy as np
 from numpy.testing import assert_almost_equal, assert_equal, assert_
 import os.path
+import time
 
 path = os.path.dirname(os.path.abspath(__file__))
 
@@ -97,6 +98,24 @@ class TestReflect(unittest.TestCase):
         calc2 = _creflect.abeles(self.qvals, layer2, scale=0.99, bkg=1e-8)
         assert_almost_equal(calc1, calc2)
 
+    def test_c_abeles_reshape(self):
+        # c abeles should be able to deal with multidimensional input
+        if not HAVE_CREFLECT:
+            return
+        reshaped_q = np.reshape(self.qvals, (2, 250))
+        reshaped_r = self.rvals.reshape(2, 250)
+        calc = _creflect.abeles(reshaped_q, self.layer_format)
+        assert_equal(reshaped_r.shape, calc.shape)
+        assert_almost_equal(reshaped_r, calc, 15)
+
+    def test_abeles_reshape(self):
+        # abeles should be able to deal with multidimensional input
+        reshaped_q = np.reshape(self.qvals, (2, 250))
+        reshaped_r = self.rvals.reshape(2, 250)
+        calc = _reflect.abeles(reshaped_q, self.layer_format)
+        assert_equal(reshaped_r.shape, calc.shape)
+        assert_almost_equal(reshaped_r, calc, 15)
+
     def test_reflectivity_model(self):
         # test reflectivity calculation with values generated from Motofit
         params = curvefitter.to_Parameters(self.coefs)
@@ -127,6 +146,24 @@ class TestReflect(unittest.TestCase):
 
         assert_almost_equal(calc, rvals.flatten())
 
+    def test_smearedabeles_reshape(self):
+        # test smeared reflectivity calculation with values generated from
+        # Motofit (quadrature precsion order = 13)
+        theoretical = np.loadtxt(os.path.join(path, 'smeared_theoretical.txt'))
+        qvals, rvals, dqvals = np.hsplit(theoretical, 3)
+        '''
+        the order of the quadrature precision used to create these smeared
+        values in Motofit was 13.
+        Do the same here
+        '''
+        reshaped_q = np.reshape(qvals, (2, 250))
+        reshaped_r = np.reshape(rvals, (2, 250))
+        reshaped_dq = np.reshape(dqvals, (2, 250))
+        calc = reflect.abeles(reshaped_q, self.coefs,
+                              **{'dqvals': reshaped_dq, 'quad_order': 13})
+
+        assert_almost_equal(calc, reshaped_r, 15)
+
     def test_smeared_reflectivity_fitter(self):
         # test smeared reflectivity calculation with values generated from
         # Motofit (quadrature precsion order = 13)
@@ -139,13 +176,13 @@ class TestReflect(unittest.TestCase):
         '''
         params = curvefitter.to_Parameters(self.coefs)
 
-        fitter = reflect.ReflectivityFitter(qvals.flatten(),
-                                           rvals.flatten(), params,
-                                           fcn_kws={'dqvals': dqvals.flatten(),
-                                           'quad_order': 13})
+        fitter = reflect.ReflectivityFitter(qvals,
+                                        rvals, params,
+                                        fcn_kws={'dqvals': dqvals.flatten(),
+                                       'quad_order': 13})
         model = fitter.model(params)
 
-        assert_almost_equal(model, rvals.flatten())
+        assert_almost_equal(model, rvals)
 
     def test_sld_profile(self):
         # test SLD profile with SLD profile from Motofit.

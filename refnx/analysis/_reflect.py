@@ -2,7 +2,7 @@ from __future__ import division, print_function
 import numpy as np
 
 
-def abeles(qvals, w, scale=1., bkg=0):
+def abeles(q, w, scale=1., bkg=0):
     """
 
        Abeles matrix formalism for calculating reflectivity from a stratified
@@ -23,19 +23,22 @@ def abeles(qvals, w, scale=1., bkg=0):
            w[-1, 2] - iSLD of backing (/1e-6 Angstrom**-2)
            w[-1, 3] - roughness between backing and last layer
 
-        qvals - np.ndarray
+        q - np.ndarray
             the qvalues required for the calculation.
             Q=4*Pi/lambda * sin(omega).
             Units = Angstrom**-1
     """
 
+    qvals = q.flatten()
     nlayers = w.shape[0] - 2
-    npnts = np.size(qvals, 0)
+    npnts = qvals.size
 
     kn = np.zeros((npnts, nlayers + 2), np.complex128)
 
     SLD = np.zeros(nlayers + 2, np.complex128)
     SLD[:] += ((w[:, 1] - w[0, 1]) + 1j * (w[:, 2] - w[0, 2])) * 1.e-6
+
+    # kn is a 2D array. Rows are Q points, columns are kn in a layer.
     kn[:] = np.sqrt(qvals[:, np.newaxis]**2. / 4. - 4. * np.pi * SLD)
 
     # work out the fresnel reflection for each layer
@@ -63,7 +66,9 @@ def abeles(qvals, w, scale=1., bkg=0):
     reflectivity = (MRtotal[:, 1, 0] * np.conj(MRtotal[:, 1, 0])) / \
         (MRtotal[:, 0, 0] * np.conj(MRtotal[:, 0, 0]))
 
-    return scale * reflectivity.real + bkg
+    reflectivity *= scale
+    reflectivity += bkg
+    return np.reshape(reflectivity, q.shape)
 
 
 if __name__ == '__main__':
