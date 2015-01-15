@@ -2,10 +2,13 @@ from __future__ import division
 import numpy as np
 import scipy
 import scipy.linalg
+from scipy.signal import convolve, fftconvolve
+from scipy.interpolate import interp1d
 from .curvefitter import CurveFitter
 import refnx.util.ErrorProp as EP
 import warnings
 import math
+
 
 try:
     import _creflect as refcalc
@@ -13,45 +16,9 @@ except ImportError:
     print('WARNING, Using slow reflectivity calculation')
     import _reflect as refcalc
 
-
 # some definitions for resolution smearing
 _FWHM = 2 * np.sqrt(2 * np.log(2.0))
 _INTLIMIT = 3.5
-
-def _memoize_gl(f):
-    cache = {}
-    def inner(n):
-        if n in cache:
-            return cache[n]
-        else:
-            result = cache[n] = f(n)
-            return result
-    return inner
-
-@_memoize_gl
-def gauss_legendre(n):
-    """
-    Calculate gaussian quadrature abscissae and weights
-    Returns
-    -------
-    (x, w) : tuple
-        The abscissae and weights for Gauss Legendre integration.
-    """
-    k = np.arange(1.0, n)
-    a_band = np.zeros((2, n))
-    a_band[1, 0: n - 1] = k / np.sqrt(4 * k * k - 1)
-    x, V = scipy.linalg.eig_banded(a_band, lower=True)
-    w = 2 * np.real(np.power(V[0, :], 2))
-    return x, w
-
-def _smearkernel(x, w, q, dq):
-    '''
-    Kernel for Gaussian Quadrature
-    '''
-    prefactor = 1 / np.sqrt(2 * np.pi)
-    gauss = prefactor * np.exp(-0.5 * x * x)
-    localq = q + x * dq / _FWHM
-    return refcalc.abeles(localq, w) * gauss
 
 def convert_coefs_to_layer_format(coefs):
     nlayers = int(coefs[0])
@@ -147,6 +114,8 @@ def abeles(q, coefs, *args, **kwds):
 
     qvals = q
     quad_order = 17
+    scale = coefs[1]
+    bkg = coefs[6]
 
     if not is_proper_Abeles_input(coefs):
         raise ValueError('The size of the parameter array passed to abeles'
@@ -161,56 +130,34 @@ def abeles(q, coefs, *args, **kwds):
     if 'dqvals' in kwds and kwds['dqvals'] is not None:
         dqvals = kwds['dqvals']
 
+        # constant dq/q smearing
+        if type(dqvals) == float:
+            return (scale * _smeared_abeles_constant(qvals, w, dqvals)) + bkg
+
+        # point by point resolution smearing
         if dqvals.size == qvals.size:
-            qvals = q.flatten()
             dqvals_flat = dqvals.flatten()
+            qvals_flat = q.flatten()
+
+            # adaptive quadrature
             if quad_order == 'ultimate':
-                # adaptive gaussian quadrature.
-                smeared_rvals = np.zeros(qvals.size)
-                warnings.simplefilter('ignore', Warning)
-                for idx, val in enumerate(qvals):
-                    smeared_rvals[idx], err = scipy.integrate.quadrature(
-                        _smearkernel,
-                        -_INTLIMIT,
-                        _INTLIMIT,
-                        tol=2 * np.finfo(np.float64).eps,
-                        rtol=2 * np.finfo(np.float64).eps,
-                        args=(w, qvals[idx], dqvals_flat[idx]))
-
-                smeared_rvals *= coefs[1]
-                smeared_rvals += coefs[6]
-                warnings.resetwarnings()
+                smeared_rvals = (scale *
+                                 _smeared_abeles_adaptive(qvals_flat,
+                                                          w,
+                                                          dqvals_flat)
+                                 + bkg)
                 return smeared_rvals.reshape(q.shape)
+            # fixed order quadrature
             else:
-                # just do gaussian quadrature of fixed order
-                # get the gauss-legendre weights and abscissae
-                abscissa, weights = gauss_legendre(quad_order)
-                # get the normal distribution at that point
-                prefactor = 1. / np.sqrt(2 * np.pi)
-                gauss = lambda x: np.exp(-0.5 * x * x)
-                gaussvals = prefactor * gauss(abscissa * _INTLIMIT)
+                smeared_rvals = (scale * _smeared_abeles_fixed(
+                                                      qvals_flat,
+                                                      w,
+                                                      dqvals_flat,
+                                                      quad_order=quad_order)
+                                 + bkg)
+                return np.reshape((smeared_rvals), q.shape)
 
-                # integration between -3.5 and 3.5 sigma
-                va = qvals - _INTLIMIT * dqvals_flat / _FWHM
-                vb = qvals + _INTLIMIT * dqvals_flat / _FWHM
-
-                va = va[:, np.newaxis]
-                vb = vb[:, np.newaxis]
-
-                qvals_for_res = ((np.atleast_2d(abscissa) *
-                                 (vb - va)
-                                 + vb + va) / 2.)
-                smeared_rvals = refcalc.abeles(qvals_for_res.flatten(),
-                                               w,
-                                               scale=coefs[1],
-                                               bkg=coefs[6])
-
-                smeared_rvals = np.reshape(smeared_rvals,
-                                           (qvals.size, abscissa.size))
-
-                smeared_rvals *= np.atleast_2d(gaussvals * weights)
-
-                return np.reshape((np.sum(smeared_rvals, 1) * _INTLIMIT), q.shape)
+        # resolution kernel smearing
         elif (dqvals.ndim == qvals.ndim + 2
               and dqvals.shape[0: qvals.ndim] == qvals.shape):
             #TODO may not work yet.
@@ -224,8 +171,121 @@ def abeles(q, coefs, *args, **kwds):
 
             #now do simpson integration
             return scipy.integrate.simps(smeared_rvals, x=dqvals[..., 0])
+
     else:
+        # no smearing
         return refcalc.abeles(q, w, scale=coefs[1], bkg=coefs[6])
+
+
+def _memoize_gl(f):
+    cache = {}
+    def inner(n):
+        if n in cache:
+            return cache[n]
+        else:
+            result = cache[n] = f(n)
+            return result
+    return inner
+
+@_memoize_gl
+def gauss_legendre(n):
+    """
+    Calculate gaussian quadrature abscissae and weights
+    Returns
+    -------
+    (x, w) : tuple
+        The abscissae and weights for Gauss Legendre integration.
+    """
+    k = np.arange(1.0, n)
+    a_band = np.zeros((2, n))
+    a_band[1, 0: n - 1] = k / np.sqrt(4 * k * k - 1)
+    x, V = scipy.linalg.eig_banded(a_band, lower=True)
+    w = 2 * np.real(np.power(V[0, :], 2))
+    return x, w
+
+def _smearkernel(x, w, q, dq):
+    '''
+    Kernel for Gaussian Quadrature
+    '''
+    prefactor = 1 / np.sqrt(2 * np.pi)
+    gauss = prefactor * np.exp(-0.5 * x * x)
+    localq = q + x * dq / _FWHM
+    return refcalc.abeles(localq, w) * gauss
+
+def _smeared_abeles_adaptive(qvals, w, dqvals):
+    # adaptive gaussian quadrature smearing
+    smeared_rvals = np.zeros(qvals.size)
+    warnings.simplefilter('ignore', Warning)
+    for idx, val in enumerate(qvals):
+        smeared_rvals[idx], err = scipy.integrate.quadrature(
+            _smearkernel,
+            -_INTLIMIT,
+            _INTLIMIT,
+            tol=2 * np.finfo(np.float64).eps,
+            rtol=2 * np.finfo(np.float64).eps,
+            args=(w, qvals[idx], dqvals[idx]))
+
+    warnings.resetwarnings()
+    return smeared_rvals
+
+def _smeared_abeles_fixed(qvals, w, dqvals, quad_order=17):
+    # fixed order gaussian quadrature smearing
+    # get the gauss-legendre weights and abscissae
+    abscissa, weights = gauss_legendre(quad_order)
+    # get the normal distribution at that point
+    prefactor = 1. / np.sqrt(2 * np.pi)
+    gauss = lambda x: np.exp(-0.5 * x * x)
+    gaussvals = prefactor * gauss(abscissa * _INTLIMIT)
+
+    # integration between -3.5 and 3.5 sigma
+    va = qvals - _INTLIMIT * dqvals / _FWHM
+    vb = qvals + _INTLIMIT * dqvals / _FWHM
+
+    va = va[:, np.newaxis]
+    vb = vb[:, np.newaxis]
+
+    qvals_for_res = ((np.atleast_2d(abscissa) *
+                     (vb - va)
+                     + vb + va) / 2.)
+    smeared_rvals = refcalc.abeles(qvals_for_res.flatten(), w)
+
+    smeared_rvals = np.reshape(smeared_rvals,
+                               (qvals.size, abscissa.size))
+
+    smeared_rvals *= np.atleast_2d(gaussvals * weights)
+    return np.sum(smeared_rvals, 1) * _INTLIMIT
+
+def _smeared_abeles_constant(q, w, resolution):
+    # constant dq/q resolution smearing.
+    resolution /= 100
+    gaussnum = 51
+    gaussgpoint = (gaussnum - 1) / 2
+
+    gauss = lambda x, s: (1. / s / np.sqrt(2 * np.pi)
+                          * np.exp(-0.5 * x**2 / s / s))
+
+    lowQ = np.min(q)
+    highQ = np.max(q)
+    if lowQ <= 0:
+        lowQ = 1e-6
+
+    start = np.log10(lowQ) - 6 * resolution / _FWHM
+    finish = np.log10(highQ * (1 + 6 * resolution / _FWHM))
+    interpnum = np.round(np.abs(1 * (np.abs(start - finish))
+                                / (1.7 * resolution / _FWHM / gaussgpoint)))
+    xtemp = np.linspace(start, finish, interpnum)
+    xlim = np.power(10., xtemp)
+
+    gauss_x = np.linspace(-1.7 * resolution, 1.7 * resolution, gaussnum)
+    gauss_y = gauss(gauss_x, resolution / _FWHM)
+
+    rvals = abeles(xlin, w)
+    smeared_rvals = fftconvolve(rvals, gauss_y, mode='same')
+    interpolator = interp1d(xlin, smeared_rvals)
+
+    smeared_output = interpolator(q)
+    smeared_output /= np.sum(gauss_y)
+    return smeared_output
 
 def is_proper_Abeles_input(coefs):
     '''
@@ -404,14 +464,13 @@ class ReflectivityFitter(CurveFitter):
             example 13 points may be fine for a thin layer, but will be
             atrocious at describing a multilayer with Bragg peaks.
         '''
-        if res is None:
+        if res is None and 'dqvals' in self.userkws:
             self.userkws.pop('dqvals')
         elif type(res) is float or type(res) is int:
             if res < 0.4 and 'dqvals' in self.userkws:
                 self.userkws.pop('dqvals')
             else:
-                dq = self.xdata * res / 100.
-                self.userkws['dqvals'] = dq
+                self.userkws['dqvals'] = float(res)
         elif type(res) is np.ndarray and res.shape == self.ydata.shape:
             self.userkws['dqvals'] = res
 
