@@ -164,7 +164,6 @@ def abeles(q, coefs, *args, **kwds):
         if dqvals.size == qvals.size:
             qvals = q.flatten()
             dqvals_flat = dqvals.flatten()
-            assert(False)
             if quad_order == 'ultimate':
                 # adaptive gaussian quadrature.
                 smeared_rvals = np.zeros(qvals.size)
