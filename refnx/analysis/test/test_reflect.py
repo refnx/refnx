@@ -10,7 +10,8 @@ import refnx.analysis._reflect as _reflect
 import refnx.analysis.curvefitter as curvefitter
 
 import numpy as np
-from numpy.testing import assert_almost_equal, assert_equal, assert_
+from numpy.testing import (assert_almost_equal, assert_equal, assert_,\
+                           assert_allclose)
 import os.path
 import time
 
@@ -144,7 +145,17 @@ class TestReflect(unittest.TestCase):
         calc = reflect.abeles(qvals.flatten(), self.coefs,
                               **{'dqvals': dqvals.flatten(), 'quad_order': 13})
 
-        assert_almost_equal(calc, rvals.flatten())
+        assert_almost_equal(rvals.flatten(), calc)
+
+    def test_constant_smearing(self):
+        #check that constant dq/q smearing is the same as point by point
+        dqvals = 0.05 * self.qvals
+        calc = reflect.abeles(self.qvals, self.coefs,
+                              **{'dqvals': dqvals, 'quad_order': 'ultimate'})
+        calc2 = reflect.abeles(self.qvals, self.coefs,
+                              **{'dqvals': 5.})
+
+        assert_allclose(calc, calc2, rtol=0.011)
 
     def test_smearedabeles_reshape(self):
         # test smeared reflectivity calculation with values generated from

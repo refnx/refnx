@@ -276,17 +276,18 @@ def _smeared_abeles_constant(q, w, resolution):
     interpnum = np.round(np.abs(1 * (np.abs(start - finish))
                                 / (1.7 * resolution / _FWHM / gaussgpoint)))
     xtemp = np.linspace(start, finish, interpnum)
-    xlim = np.power(10., xtemp)
+    xlin = np.power(10., xtemp)
 
     gauss_x = np.linspace(-1.7 * resolution, 1.7 * resolution, gaussnum)
     gauss_y = gauss(gauss_x, resolution / _FWHM)
 
-    rvals = abeles(xlin, w)
+    rvals = refcalc.abeles(xlin, w)
     smeared_rvals = fftconvolve(rvals, gauss_y, mode='same')
     interpolator = interp1d(xlin, smeared_rvals)
 
     smeared_output = interpolator(q)
-    smeared_output /= np.sum(gauss_y)
+    # smeared_output *= np.sum(gauss_y)
+    smeared_output *= gauss_x[1] - gauss_x[0]
     return smeared_output
 
 def is_proper_Abeles_input(coefs):
