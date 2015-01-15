@@ -3,7 +3,7 @@ from __future__ import division
 __author__ = 'anz'
 from refnx.analysis import abeles
 import numpy as np
-from scipy.signal import convolve
+from scipy.signal import convolve, fftconvolve
 from scipy.interpolate import interp1d
 
 def res(qq, layer, resolution=5):
@@ -27,7 +27,7 @@ def res(qq, layer, resolution=5):
     gauss_y = gauss(gauss_x, resolution / (2 * np.sqrt(2 * np.log(2))))
 
     rvals = abeles(np.power(10, xtemp), layer)
-    smeared_rvals = convolve(rvals, gauss_y, mode='same')
+    smeared_rvals = fftconvolve(rvals, gauss_y, mode='same')
     interpolator = interp1d(np.power(10, xtemp), smeared_rvals)
 
     smeared_output = interpolator(qq)
