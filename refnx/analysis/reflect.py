@@ -88,18 +88,20 @@ def abeles(q, coefs, *args, **kwds):
     kwds : dict, optional
         The following keys are used:
 
-        'dqvals' - np.ndarray, optional
-            an array containing resolution information.
-            If `dqvals` is 1D, and is the same length as `q`, then the array
-            contains the _FWHM of a Gaussian approximated resolution kernel.
-            If `dqvals` is 3D, then an individual resolution kernel is
-            applied to each measurement point.  This resolution kernel is a
-            probability distribution function (PDF). `dqvals` will have the
-            shape (qvals.size, M, 2).  The resolution kernel for a given
-            measurement point is given by dqvals[N], and is a (M, 2) 2D array.
-            There are `M` points in the kernel.  `dqvals[N, M, 0]` would give
-            the q values for the kernel, `dqvals[N, M, 1]` gives the
-            corresponding probability.
+        'dqvals' - float or np.ndarray, optional
+            If dqvals is a float, then a constant dQ/Q resolution smearing is
+            employed.  For 5% resolution smearing supply 5.
+            If `dqvals` is the same shape as q, then the array contains the
+            FWHM of a Gaussian approximated resolution kernel. Point by point
+            resolution smearing is employed.  Use this option if dQ/Q varies
+            across your dataset.
+            If `dqvals.ndim == q.ndim + 2` and
+            `q.shape == dqvals[..., -3].shape` then an individual resolution
+            kernel is applied to each measurement point.  This resolution kernel
+            is a probability distribution function (PDF). `dqvals` will have the
+            shape (qvals.shape, M, 2).  There are `M` points in the kernel.
+            `dqvals[..., 0]` holds the q values for the kernel, `dqvals[..., 1]`
+            gives the corresponding probability.
 
         'quad_order' - int, optional
             the order of the Gaussian quadrature polynomial for doing the
