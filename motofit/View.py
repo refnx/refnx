@@ -76,6 +76,7 @@ class MyMainWindow(QtGui.QMainWindow):
         params['nlayers'].vary = False
 
         self.settings.current_dataset_name = 'theoretical'
+
         tempq = np.linspace(0.008, 0.5, 1000)
         tempr = np.ones_like(tempq)
         tempe = np.ones_like(tempq)
@@ -223,7 +224,7 @@ class MyMainWindow(QtGui.QMainWindow):
         urls = m.urls()
         for url in urls:
             try:
-                self.__restoreState(url.toLocalFile())
+                self._restoreState(url.toLocalFile())
                 continue
             except Exception:
                 pass
@@ -256,8 +257,9 @@ class MyMainWindow(QtGui.QMainWindow):
         self.ui.plainTextEdit.moveCursor(QtGui.QTextCursor.End)
         self.ui.plainTextEdit.insertPlainText(text)
 
-    def __saveState(self, experiment_file_name):
+    def _saveState(self, experiment_file_name):
         state = {}
+        self.settings.experiment_file_name = experiment_file_name
         state['data_store_model.datastore'] = self.data_store_model.datastore
         state['params_store_model.params_store'] = self.params_store_model.params_store
         state['history'] = self.ui.plainTextEdit.toPlainText()
@@ -268,8 +270,17 @@ class MyMainWindow(QtGui.QMainWindow):
         with open(os.path.join(experiment_file_name), 'wb') as f:
             pickle.dump(state, f, 0)
 
+        self.setWindowTitle('Motofit - ' + experiment_file_name)
+
     @QtCore.Slot()
     def on_actionSave_File_triggered(self):
+        if os.path.isfile(self.settings.experiment_file_name):
+            self._saveState(self.settings.experiment_file_name)
+        else:
+            self.on_actionSave_File_As_triggered()
+
+    @QtCore.Slot()
+    def on_actionSave_File_As_triggered(self):
         experiment_file_name, ok = QtGui.QFileDialog.getSaveFileName(
             self, caption='Save experiment as:', dir='experiment.mtft')
 
@@ -280,9 +291,10 @@ class MyMainWindow(QtGui.QMainWindow):
         if ext != '.mtft':
             experiment_file_name = path + '.mtft'
 
-        self.__saveState(experiment_file_name)
+        self._saveState(experiment_file_name)
 
-    def __restoreState(self, experiment_file_name):
+
+    def _restoreState(self, experiment_file_name):
         state = None
         with open(experiment_file_name, 'rb') as f:
             state = pickle.load(f)
@@ -298,6 +310,7 @@ class MyMainWindow(QtGui.QMainWindow):
                                     'params_store_model.params_store']
             self.ui.plainTextEdit.setPlainText(state['history'])
             self.settings = state['settings']
+            self.settings.experiment_file_name = experiment_file_name
             self.plugin_store_model.plugins = state['plugins']
             # self.globalfitting_ParamModel.gf_settings = state['globalfitting_settings']
             # self.globalfitting_DataModel.gf_settings = state['globalfitting_settings']
@@ -351,6 +364,11 @@ class MyMainWindow(QtGui.QMainWindow):
         except (AttributeError, KeyError, ValueError):
             pass
 
+        title = 'Motofit'
+        if len(self.settings.experiment_file_name):
+            title += ' - ' + self.settings.experiment_file_name
+        self.setWindowTitle(title)
+
         self.ui.res_SpinBox.setValue(self.settings.resolution)
         self.ui.use_dqwave_checkbox.setChecked(self.settings.usedq)
         self.ui.use_errors_checkbox.setChecked(self.settings.useerrors)
@@ -375,7 +393,7 @@ class MyMainWindow(QtGui.QMainWindow):
         if not ok:
             return
 
-        self.__restoreState(experimentFileName)
+        self._restoreState(experimentFileName)
 
     def load_data(self, files):
         for file in files:
@@ -516,7 +534,7 @@ class MyMainWindow(QtGui.QMainWindow):
         minimizer.xdata = theoretical.xdata
         minimizer.ydata = theoretical.ydata
         minimizer.edata = np.ones_like(theoretical.ydata)
-        minimizer.set_dq(res)
+        minimizer.set_dq(float(res))
         minimizer.userkws.update({'dqvals': theoretical.xdataSD})
 
         self.update_gui_model()
@@ -785,7 +803,8 @@ class MyMainWindow(QtGui.QMainWindow):
                             param.max = previous_coefs[name].max
                         if param.expr is not None and len(param.expr):
                             param.expr = previous_coefs[name].expr
-
+                else:
+                    pass
         except KeyError:
             pass
 
@@ -849,6 +868,9 @@ class MyMainWindow(QtGui.QMainWindow):
                                                 tempdataset.ydata,
                                                 tempdataset.ydataSD)
 
+        # filter the dataset for NaN.
+        tempdataset.data = tempdataset.finite_data
+
         minimizer = ReflectivityFitter(tempdataset.xdata,
                                        tempdataset.ydata,
                                        params,
@@ -862,7 +884,7 @@ class MyMainWindow(QtGui.QMainWindow):
         if self.settings.usedq:
             minimizer.set_dq(tempdataset.xdataSD)
         else:
-            minimizer.set_dq(self.settings.resolution)
+            minimizer.set_dq(float(self.settings.resolution))
 
         progress = ProgressCallback(self, minimizer=minimizer,
                                     dataset=dataset)
@@ -885,6 +907,11 @@ class MyMainWindow(QtGui.QMainWindow):
         minimizer.iter_cb = None
         minimizer.transform = None
 
+        # the minimizer dataset has had non finite values removed. Put the
+        # entire data back
+        minimizer.data = dataset.data
+
+        #evaluate the fit and sld_profile
         dataset.fit = minimizer.model(minimizer.params)
         dataset.sld_profile = minimizer.sld_profile(minimizer.params)
 
@@ -1302,17 +1329,25 @@ class MyMainWindow(QtGui.QMainWindow):
             res = self.settings.resolution
             usedq = self.settings.usedq
             useerrors = self.settings.useerrors
+
+            tempdataset = Data1D(current_dataset.data)
+
             if self.settings.transformdata is not None:
                 t = Transform(self.settings.transformdata)
-                data = current_dataset.data
-                yt, et = t.transform(data[0], data[1], edata=data[2])
-                minimizer.data = (data[0], yt, et)
+                tempdataset.ydata, tempdataset.ydataSD = t.transform(
+                                        tempdataset.xdata,
+                                        tempdataset.ydata,
+                                        edata=tempdataset.ydataSD)
                 minimizer.transform = t.transform
 
+            #filter out non finite values
+            tempdataset.data = tempdataset.finite_data
+            minimizer.data = tempdataset.finite_data
+
             if usedq:
-                minimizer.set_dq(current_dataset.xdataSD)
+                minimizer.set_dq(tempdataset.xdataSD)
             else:
-                minimizer.set_dq(res)
+                minimizer.set_dq(float(res))
 
             if not useerrors:
                 minimizer.edata[:] = 1
@@ -1320,7 +1355,7 @@ class MyMainWindow(QtGui.QMainWindow):
             chisqr = np.sum(minimizer.residuals(params)**2) / (minimizer.ydata.size)
             self.ui.chi2.setValue(chisqr)
             minimizer.data = theoretical.data
-            minimizer.set_dq(res)
+            minimizer.set_dq(float(res))
 
             minimizer.transform = None
 
@@ -1362,7 +1397,7 @@ class MyMainWindow(QtGui.QMainWindow):
             if usedq:
                 minimizer.set_dq(current_dataset.xdataSD)
             else:
-                minimizer.set_dq(res)
+                minimizer.set_dq(float(res))
 
             if not useerrors:
                 minimizer.edata[:] = 1
@@ -1370,7 +1405,7 @@ class MyMainWindow(QtGui.QMainWindow):
             chisqr = np.sum(minimizer.residuals(params)**2) / (minimizer.ydata.size)
             self.ui.chi2.setValue(chisqr)
             minimizer.data = theoretical.data
-            minimizer.set_dq(res)
+            minimizer.set_dq(float(res))
             minimizer.transform = None
 
     def add_datasets_to_graphs(self, datasets):
@@ -1518,7 +1553,7 @@ class ProgressCallback(QtGui.QDialog):
         # a callback for scipy.optimize.minimize, which enters
         # every iteration.
         new_time = time.time()
-        if new_time - self.last_time > 2:
+        if new_time - self.last_time > 1:
             if hasattr(self.minimizer, 'transform'):
                 t = self.minimizer.transform
                 self.minimizer.transform = None
@@ -1528,7 +1563,14 @@ class ProgressCallback(QtGui.QDialog):
                 param = params[var]
                 param.value = param.from_internal(xk[i])
 
+            # input data might have had non finite values
+            fitted_data = self.minimizer.data
+            self.minimizer.data = self.dataset.data
+
             self.dataset.fit = self.minimizer.model(params)
+
+            # input data might have had non finite values
+            self.minimizer.data = fitted_data
 
             gp = self.dataset.graph_properties
             if gp.line2Dfit is not None:
@@ -1553,7 +1595,7 @@ class ProgressCallback(QtGui.QDialog):
         new_time = time.time()
 
         #we only want to update every so often
-        if iter % 1000:
+        if iter % 10:
             return
 
         chi2 = np.sum(resid**2) / resid.size
@@ -1567,21 +1609,22 @@ class ProgressCallback(QtGui.QDialog):
 class ProgramSettings(object):
 
     def __init__(self, **kwds):
-        __members = {'fitting_algorithm': 'DE',
+        _members = {'fitting_algorithm': 'DE',
                      'transformdata': 'logY',
                      'quad_order': 17,
                      'current_dataset_name': None,
+                     'experiment_file_name': '',
                      'current_model_name': None,
                      'usedq': True,
                      'resolution': 5,
                      'fit_plugin': None,
                      'useerrors': True}
 
-        for key in __members:
+        for key in _members:
             if key in kwds:
                 setattr(self, key, kwds[key])
             else:
-                setattr(self, key, __members[key])
+                setattr(self, key, _members[key])
 
     def __getitem__(self, key):
 #         if key in self.__dict__:

@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'Motofit.ui'
 #
-# Created: Mon Jan 12 12:35:03 2015
+# Created: Fri Jan 16 11:59:45 2015
 #      by: pyside-uic 0.2.15 running on PySide 1.2.2
 #
 # WARNING! All changes made in this file will be lost!
@@ -296,14 +296,17 @@ class Ui_MainWindow(object):
         self.horizontalSlider.setSizePolicy(sizePolicy)
         self.horizontalSlider.setMaximumSize(QtCore.QSize(16777215, 22))
         font = QtGui.QFont()
-        font.setPointSize(14)
+        font.setPointSize(13)
         self.horizontalSlider.setFont(font)
+        self.horizontalSlider.setMouseTracking(False)
         self.horizontalSlider.setFocusPolicy(QtCore.Qt.StrongFocus)
+        self.horizontalSlider.setContextMenuPolicy(QtCore.Qt.PreventContextMenu)
         self.horizontalSlider.setMaximum(999)
         self.horizontalSlider.setProperty("value", 499)
         self.horizontalSlider.setOrientation(QtCore.Qt.Horizontal)
         self.horizontalSlider.setInvertedAppearance(False)
         self.horizontalSlider.setInvertedControls(False)
+        self.horizontalSlider.setTickPosition(QtGui.QSlider.NoTicks)
         self.horizontalSlider.setObjectName("horizontalSlider")
         self.gridLayout_12.addWidget(self.horizontalSlider, 5, 0, 1, 2)
         self.remove_layer = QtGui.QPushButton(self.tab)
@@ -661,6 +664,8 @@ class Ui_MainWindow(object):
         self.actionMCMC = QtGui.QAction(MainWindow)
         self.actionMCMC.setCheckable(True)
         self.actionMCMC.setObjectName("actionMCMC")
+        self.actionSave_File_As = QtGui.QAction(MainWindow)
+        self.actionSave_File_As.setObjectName("actionSave_File_As")
         self.menuData.addAction(self.actionLoad_Data)
         self.menuData.addAction(self.actionRefresh_Data)
         self.menuData.addAction(self.actionRemove_Data)
@@ -685,6 +690,8 @@ class Ui_MainWindow(object):
         self.menuPlot_type.addSeparator()
         self.menuPlot_type.addAction(self.actionBatch_Fit)
         self.menuFile.addAction(self.actionSave_File)
+        self.menuFile.addAction(self.actionSave_File_As)
+        self.menuFile.addSeparator()
         self.menuFile.addAction(self.actionLoad_File)
         self.menuSettings.addAction(self.actionChange_Q_range)
         self.menuSettings.addAction(self.actionResolution_smearing)
@@ -780,5 +787,7 @@ class Ui_MainWindow(object):
         self.actionFit.setShortcut(QtGui.QApplication.translate("MainWindow", "Meta+F", None, QtGui.QApplication.UnicodeUTF8))
         self.actionAbout.setText(QtGui.QApplication.translate("MainWindow", "Motofit?", None, QtGui.QApplication.UnicodeUTF8))
         self.actionMCMC.setText(QtGui.QApplication.translate("MainWindow", "MCMC", None, QtGui.QApplication.UnicodeUTF8))
+        self.actionSave_File_As.setText(QtGui.QApplication.translate("MainWindow", "Save Experiment As", None, QtGui.QApplication.UnicodeUTF8))
+        self.actionSave_File_As.setShortcut(QtGui.QApplication.translate("MainWindow", "Ctrl+Shift+S", None, QtGui.QApplication.UnicodeUTF8))
 
 import resources_rc

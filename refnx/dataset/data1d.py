@@ -42,6 +42,14 @@ class Data1D(object):
     def data(self):
         return (self.xdata, self.ydata, self.ydataSD, self.xdataSD)
 
+    @property
+    def finite_data(self):
+        finite_loc = np.where(np.isfinite(self.ydata))
+        return (self.xdata[finite_loc],
+                self.ydata[finite_loc],
+                self.ydataSD[finite_loc],
+                self.xdataSD[finite_loc])
+
     @data.setter
     def data(self, dataTuple):
         self.xdata = np.copy(dataTuple[0]).flatten()

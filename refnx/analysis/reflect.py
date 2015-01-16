@@ -3,7 +3,7 @@ import numpy as np
 import scipy
 import scipy.linalg
 from scipy.signal import convolve, fftconvolve
-from scipy.interpolate import interp1d
+from scipy.interpolate import InterpolatedUnivariateSpline
 from .curvefitter import CurveFitter
 import refnx.util.ErrorProp as EP
 import warnings
@@ -174,9 +174,8 @@ def abeles(q, coefs, *args, **kwds):
             #now do simpson integration
             return scipy.integrate.simps(smeared_rvals, x=dqvals[..., 0])
 
-    else:
-        # no smearing
-        return refcalc.abeles(q, w, scale=coefs[1], bkg=coefs[6])
+    # no smearing
+    return refcalc.abeles(q, w, scale=coefs[1], bkg=coefs[6])
 
 
 def _memoize_gl(f):
@@ -259,6 +258,9 @@ def _smeared_abeles_fixed(qvals, w, dqvals, quad_order=17):
 
 def _smeared_abeles_constant(q, w, resolution):
     # constant dq/q resolution smearing.
+    if resolution < 0.5:
+        return refcalc.abeles(q, w)
+
     resolution /= 100
     gaussnum = 51
     gaussgpoint = (gaussnum - 1) / 2
@@ -283,7 +285,7 @@ def _smeared_abeles_constant(q, w, resolution):
 
     rvals = refcalc.abeles(xlin, w)
     smeared_rvals = fftconvolve(rvals, gauss_y, mode='same')
-    interpolator = interp1d(xlin, smeared_rvals)
+    interpolator = InterpolatedUnivariateSpline(xlin, smeared_rvals)
 
     smeared_output = interpolator(q)
     # smeared_output *= np.sum(gauss_y)
@@ -467,12 +469,17 @@ class ReflectivityFitter(CurveFitter):
             example 13 points may be fine for a thin layer, but will be
             atrocious at describing a multilayer with Bragg peaks.
         '''
-        if res is None and 'dqvals' in self.userkws:
+        remove_smearing = False
+        if res is None:
+            remove_smearing = True
+        if (type(res) is float or type(res) is int) and res < 0.5:
+            remove_smearing = True
+
+        if remove_smearing is True and 'dqvals' in self.userkws:
             self.userkws.pop('dqvals')
-        elif type(res) is float or type(res) is int:
-            if res < 0.4 and 'dqvals' in self.userkws:
-                self.userkws.pop('dqvals')
-            else:
+            return
+
+        if type(res) is float or type(res) is int:
                 self.userkws['dqvals'] = float(res)
         elif type(res) is np.ndarray and res.shape == self.ydata.shape:
             self.userkws['dqvals'] = res

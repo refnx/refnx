@@ -52,7 +52,7 @@ class BaseModel(QtCore.QAbstractTableModel):
                 validator = QtGui.QDoubleValidator()
                 voutput = validator.validate(value, 1)
                 if voutput[0] is QtGui.QValidator.State.Acceptable:
-                    self.params[coltopar[index.column()]].value = voutput[1]
+                    self.params[coltopar[index.column()]].value = float(voutput[1])
                 else:
                     return False
 
