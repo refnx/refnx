@@ -1,7 +1,6 @@
 from __future__ import division, print_function
 import numpy as np
 
-
 def abeles(q, w, scale=1., bkg=0):
     """
 
@@ -72,7 +71,6 @@ def abeles(q, w, scale=1., bkg=0):
 
 
 if __name__ == '__main__':
-    import timeit
     a = np.zeros((12))
     a[0] = 1.
     a[1] = 1.
@@ -87,7 +85,7 @@ if __name__ == '__main__':
     b += 0.001
 
     def loop():
-        abeles(len(b), b, a)
+        abeles(b, a)
 
-    t = timeit.Timer(stmt=loop)
-    print(t.timeit(number=1000))
+    for i in range(1000):
+        loop()

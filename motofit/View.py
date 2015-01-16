@@ -1062,7 +1062,7 @@ class MyMainWindow(QtGui.QMainWindow):
         self.settings.resolution = arg_1
 
         theoretical = self.data_store_model['theoretical']
-        np.copyto(theoretical.xdataSD, arg_1 * theoretical.xdata / 100)
+        theoretical.xdataSD = arg_1 * theoretical.xdata / 100.
         self.update_gui_model()
 
     @QtCore.Slot(int)
