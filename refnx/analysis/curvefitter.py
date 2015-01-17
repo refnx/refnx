@@ -8,6 +8,7 @@ from __future__ import print_function
 from lmfit import Minimizer, Parameters
 #import pymc
 import numpy as np
+import numpy.ma as ma
 import re
 import warnings
 
@@ -134,8 +135,8 @@ class CurveFitter(Minimizer):
     """
     A curvefitting class that extends lmfit.Minimize
     """
-    def __init__(self, fitfunc, xdata, ydata, params, edata=None, fcn_args=(),
-                fcn_kws=None, kws=None, callback=None):
+    def __init__(self, fitfunc, xdata, ydata, params, edata=None, mask=None,
+                 fcn_args=(), fcn_kws=None, kws=None, callback=None):
         """
         fitfunc : callable
             Function calculating the model for the fit.  Should have the
@@ -149,6 +150,9 @@ class CurveFitter(Minimizer):
         edata : np.ndarray, optional
             The measured uncertainty in the dependent variable, expressed as
             sd.  If this array is not specified, then edata is set to unity.
+        mask : np.ndarray, optional
+            A boolean array with the same shape as ydata.  If mask is True
+            then that point is excluded from the residuals calculation.
         fcn_args : tuple, optional
             Extra parameters required to fully specify fitfunc.
         fcn_kws : dict, optional
@@ -160,8 +164,19 @@ class CurveFitter(Minimizer):
             ``callback(params, iter, resid, *args, **kwds)``
         """
         self.fitfunc = fitfunc
+
         self.xdata = np.asfarray(xdata)
         self.ydata = np.asfarray(ydata)
+
+        if mask is not None:
+            if self.ydata.shape != mask.shape:
+                raise ValueError('mask shape should be same as data')
+
+            self.mask = mask
+        else:
+            self.mask = np.empty((self.ydata.shape), bool)
+            self.mask[:] = False
+
         self.MDL = None
         if edata is not None:
             self.edata = np.asfarray(edata)
@@ -183,14 +198,18 @@ class CurveFitter(Minimizer):
                                           **min_kwds)
     @property
     def data(self):
-        return (self.xdata, self.ydata, self.edata)
+        #returns the unmasked data, and the mask
+        return (self.xdata,
+                self.ydata,
+                self.edata,
+                self.mask)
 
     @data.setter
     def data(self, data):
-        self.xdata = np.copy(data[0])
-        self.ydata = np.copy(data[1])
+        self.xdata = np.asfarray(data[0])
+        self.ydata = np.asfarray(data[1])
         if len(data) > 2:
-            self.edata = np.copy(data[2])
+            self.edata = np.asfarray(data[2])
 
     def residuals(self, params, *args, **kwds):
         """
@@ -208,10 +227,19 @@ class CurveFitter(Minimizer):
         -------
         residuals : np.ndarray
             The difference between the data and the model.
+
+        Note
+        ----
+        This method should only return the points that are not masked.
         """
         model = self.model(params)
         resid = (model - self.ydata) / self.edata
-        return resid.flatten()
+
+        if self.mask is not None:
+            resid_ma = ma.array(resid, mask=self.mask)
+            return resid_ma[~resid_ma.mask].data.flatten()
+        else:
+            return resid.flatten()
 
     def model(self, params):
         """
@@ -512,9 +540,7 @@ class GlobalFitter(CurveFitter):
             new_names = self.new_param_names[i]
             for new_name, old_name in new_names.items():
                 dataset.params[old_name].set(value=values[new_name])
-            resid = (dataset.ydata - dataset.model(dataset.params))
-            resid /= dataset.edata
-            
+            resid = dataset.residuals(dataset.params)
             total_residuals = np.append(total_residuals,
                                         resid)
 

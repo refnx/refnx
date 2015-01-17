@@ -1,5 +1,6 @@
 from __future__ import division
 import numpy as np
+import numpy.ma as ma
 import scipy
 import scipy.linalg
 from scipy.signal import convolve, fftconvolve
@@ -355,8 +356,8 @@ class ReflectivityFitter(CurveFitter):
         override the sld_profile method of ReflectivityFitter.
     '''
 
-    def __init__(self, xdata, ydata, parameters, edata=None, fcn_args=(),
-                 fcn_kws=None, kws=None):
+    def __init__(self, xdata, ydata, parameters, edata=None, mask=None,
+                 fcn_args=(), fcn_kws=None, kws=None):
         '''
         Initialises the ReflectivityFitter.
         See the constructor of the CurveFitter for more details, especially the
@@ -373,6 +374,10 @@ class ReflectivityFitter(CurveFitter):
         edata : np.ndarray, optional
             The measured uncertainty in the dependent variable, expressed as
             sd.  If this array is not specified, then edata is set to unity.
+        mask : np.ndarray, optional
+            A boolean array with the same shape as ydata.  If a value in mask
+            is `True` then that point is excluded from the residuals
+            calculation.
         fcn_args : tuple, optional
             Extra parameters for supplying to the abeles function.
         fcn_kws : dict, optional
@@ -414,6 +419,7 @@ class ReflectivityFitter(CurveFitter):
                                                  ydata,
                                                  parameters,
                                                  edata=edata,
+                                                 mask=mask,
                                                  fcn_args=fcn_args,
                                                  callback=self.callback,
                                                  fcn_kws=fcn_kws,
@@ -440,6 +446,7 @@ class ReflectivityFitter(CurveFitter):
             abeles(self.xdata, parameters, *self.args, **self.kwds)
         '''
         params = np.array([param.value for param in parameters.values()], float)
+
         yvals = abeles(self.xdata, params, *self.userargs, **self.userkws)
 
         if self.transform:

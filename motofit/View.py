@@ -868,13 +868,14 @@ class MyMainWindow(QtGui.QMainWindow):
                                                 tempdataset.ydata,
                                                 tempdataset.ydataSD)
 
-        # filter the dataset for NaN.
-        tempdataset.data = tempdataset.finite_data
+        # find out which points in the dataset aren't finite
+        mask = ~np.isfinite(tempdataset.ydata)
 
         minimizer = ReflectivityFitter(tempdataset.xdata,
                                        tempdataset.ydata,
                                        params,
-                                       edata=tempdataset.ydataSD)
+                                       edata=tempdataset.ydataSD,
+                                       mask=mask)
 
         minimizer.transform = transform_fnctn
 
@@ -906,10 +907,6 @@ class MyMainWindow(QtGui.QMainWindow):
         progress.destroy()
         minimizer.iter_cb = None
         minimizer.transform = None
-
-        # the minimizer dataset has had non finite values removed. Put the
-        # entire data back
-        minimizer.data = dataset.data
 
         #evaluate the fit and sld_profile
         dataset.fit = minimizer.model(minimizer.params)
@@ -1340,9 +1337,11 @@ class MyMainWindow(QtGui.QMainWindow):
                                         edata=tempdataset.ydataSD)
                 minimizer.transform = t.transform
 
-            #filter out non finite values
-            tempdataset.data = tempdataset.finite_data
-            minimizer.data = tempdataset.finite_data
+            #mask non finite values
+            mask = ~np.isfinite(tempdataset.ydata)
+
+            minimizer.data = tempdataset.data
+            minimizer.mask = mask
 
             if usedq:
                 minimizer.set_dq(tempdataset.xdataSD)
@@ -1353,11 +1352,13 @@ class MyMainWindow(QtGui.QMainWindow):
                 minimizer.edata[:] = 1
 
             chisqr = np.sum(minimizer.residuals(params)**2) / (minimizer.ydata.size)
+
             self.ui.chi2.setValue(chisqr)
             minimizer.data = theoretical.data
             minimizer.set_dq(float(res))
 
             minimizer.transform = None
+            minimizer.mask = None
 
     def UDFupdate_gui_model(self):
         # TODO implement this.
@@ -1558,19 +1559,7 @@ class ProgressCallback(QtGui.QDialog):
                 t = self.minimizer.transform
                 self.minimizer.transform = None
 
-            params = deepcopy(self.minimizer.params)
-            for i, var in enumerate(self.minimizer.var_map):
-                param = params[var]
-                param.value = param.from_internal(xk[i])
-
-            # input data might have had non finite values
-            fitted_data = self.minimizer.data
-            self.minimizer.data = self.dataset.data
-
-            self.dataset.fit = self.minimizer.model(params)
-
-            # input data might have had non finite values
-            self.minimizer.data = fitted_data
+            self.dataset.fit = self.minimizer.model(self.minimizer.params)
 
             gp = self.dataset.graph_properties
             if gp.line2Dfit is not None:
@@ -1583,7 +1572,6 @@ class ProgressCallback(QtGui.QDialog):
 
             self.elapsed = new_time - self.start
             self.ui.timer.display(float(self.elapsed))
-            QtGui.QApplication.processEvents()
             self.last_time = new_time
 
         return self.abort_flag

@@ -186,12 +186,13 @@ class TestReflect(unittest.TestCase):
         Do the same here
         '''
         params = curvefitter.to_Parameters(self.coefs)
-
         fitter = reflect.ReflectivityFitter(qvals,
                                         rvals, params,
-                                        fcn_kws={'dqvals': dqvals.flatten(),
+                                        fcn_kws={'dqvals': dqvals,
                                        'quad_order': 13})
+
         model = fitter.model(params)
+        print(qvals.shape, rvals.shape, dqvals.shape, model.shape)
 
         assert_almost_equal(model, rvals)
 
