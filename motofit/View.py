@@ -359,6 +359,8 @@ class MyMainWindow(QtGui.QMainWindow):
         try:
             self.ui.dataset_comboBox.setCurrentIndex(
                 datastore.names.index(self.settings.current_dataset_name))
+            self.ui.UDFdataset_comboBox.setCurrentIndex(
+                datastore.names.index(self.settings.current_dataset_name))
             self.ui.model_comboBox.setCurrentIndex(
                 params_store.names.index(self.settings.current_model_name))
         except (AttributeError, KeyError, ValueError):
@@ -957,44 +959,9 @@ class MyMainWindow(QtGui.QMainWindow):
         if arg_1 == 2:
             self.UDF_params_model.modelReset.emit()
 
-    @QtCore.Slot(int)
+    @QtCore.Slot(unicode)
     def on_UDFplugin_comboBox_currentIndexChanged(self, arg_1):
-        #TODO
-        return
-
-        if arg_1 == 0:
-            # the default reflectometry calculation is being used
-            self.params_store_model.modelStore.displayOtherThanReflect = False
-
-            '''
-                you need to display a model suitable for reflectometry
-            '''
-            areAnyModelsValid = [
-                reflect.is_proper_Abeles_input(
-                    model.parameters) for model in self.params_store_model.modelStore]
-            try:
-                idx = areAnyModelsValid.index(True)
-                self.select_a_model(self.params_store_model.modelStore.names[idx])
-            except ValueError:
-                # none are valid, reset the theoretical model
-                parameters = np.array(
-                    [1, 1.0, 0, 0, 2.07, 0, 1e-7, 3, 25, 3.47, 0, 3])
-                fitted_parameters = np.array(
-                    [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11])
-                self.params_store_model.modelStore[
-                    'theoretical'].parameters = parameters[
-                    :]
-                self.params_store_model.modelStore[
-                    'theoretical'].fitted_parameters = fitted_parameters[
-                    :]
-                self.params_store_model.modelStore[
-                    'theoretical'].default_limits(True)
-
-                self.UDF_params_model.modelReset.emit()
-        else:
-            # a user plugin is being used.
-            self.params_store_model.modelStore.displayOtherThanReflect = True
-        self.settings.fitPlugin = self.pluginStoreModel.plugins[arg_1]
+        self.settings.fit_plugin = self.plugin_store_model[arg_1]
 
     @QtCore.Slot(unicode)
     def on_UDFmodel_comboBox_currentIndexChanged(self, arg_1):
@@ -1005,7 +972,7 @@ class MyMainWindow(QtGui.QMainWindow):
         """
         dataset to be fitted changed, must update chi2
         """
-        self.settings.current_dataset_name = arg_1
+        self.settings.UDFcurrent_dataset_name = arg_1
 
     @QtCore.Slot()
     def on_UDFloadPlugin_clicked(self):
@@ -1017,7 +984,7 @@ class MyMainWindow(QtGui.QMainWindow):
                                                                filter='Python Plugin File (*.py)')
         if not ok:
             return
-        self.pluginStoreModel.add(pluginFileName)
+        self.plugin_store_model.add(pluginFileName)
 
     @QtCore.Slot(unicode)
     def on_dataset_comboBox_currentIndexChanged(self, arg_1):
@@ -1299,6 +1266,64 @@ class MyMainWindow(QtGui.QMainWindow):
                                     transform=self.settings.transformdata)
         self.sldgraphs.redraw_datasets(datasets, visible=visible)
 
+    def UDFupdate_gui_model(self):
+        params = self.UDF_params_model.params
+        cur_data_name = self.settings.UDFcurrent_dataset_name
+        theoretical = self.data_store_model['theoretical']
+
+        plugin = self.settings.fit_plugin
+        minimizer = plugin(theoretical.xdata, theoretical.ydata, params)
+
+        # evaluate the model against the dataset
+        try:
+            model = minimizer.model(params)
+        except Exception as e:
+            print(e.message)
+            return
+
+        theoretical.fit = minimizer.model(params)
+        self.redraw_dataset_graphs([theoretical])
+
+        if hasattr(minimizer, 'sld_profile'):
+            theoretical.sld_profile = minimizer.sld_profile(params)
+        else:
+            theoretical.sld_profile = None
+
+        if (cur_data_name != 'theoretical'
+            and cur_data_name is not None):
+
+            try:
+                current_dataset = self.data_store_model[cur_data_name]
+            except KeyError:
+                return
+
+            useerrors = self.settings.useerrors
+
+            tempdataset = Data1D(current_dataset.data)
+
+            if self.settings.transformdata is not None:
+                t = Transform(self.settings.transformdata)
+                tempdataset.ydata, tempdataset.ydataSD = t.transform(
+                                        tempdataset.xdata,
+                                        tempdataset.ydata,
+                                        edata=tempdataset.ydataSD)
+                minimizer.userkws.update('transform', t)
+
+            minimizer.userkws.update('dqvals', tempdataset.xdataSD)
+
+            #mask non finite values
+            mask = ~np.isfinite(tempdataset.ydata)
+
+            minimizer.data = tempdataset.data
+            minimizer.mask = mask
+
+            if not useerrors:
+                minimizer.edata[:] = 1
+
+            chisqr = np.sum(minimizer.residuals(params)**2) / (minimizer.ydata.size)
+
+            self.ui.chi2UDF.setValue(chisqr)
+
     def update_gui_model(self):
         params = self.params_store_model['theoretical']
 
@@ -1359,55 +1384,6 @@ class MyMainWindow(QtGui.QMainWindow):
 
             minimizer.transform = None
             minimizer.mask = None
-
-    def UDFupdate_gui_model(self):
-        # TODO implement this.
-        return
-        params = self.UDF_p['theoretical']
-        cur_data_name = self.settings.current_dataset_name
-        #self.apply_settings_to_params(params)
-
-        minimizer = self.minimizer_store['default']
-        theoretical = self.data_store_model['theoretical']
-
-        # evaluate the model against the dataset
-        theoretical.fit = minimizer.model(params)
-        self.redraw_dataset_graphs([theoretical])
-
-        if isinstance(minimizer, ReflectivityFitter):
-            theoretical.sld_profile = minimizer.sld_profile(params)
-
-        if (cur_data_name != 'theoretical'
-            and cur_data_name is not None):
-
-            try:
-                current_dataset = self.data_store_model[cur_data_name]
-            except KeyError:
-                return
-
-            res = self.settings.resolution
-            usedq = self.settings.usedq
-            useerrors = self.settings.useerrors
-            if self.settings.transformdata is not None:
-                t = Transform(self.settings.transformdata)
-                data = current_dataset.data
-                yt, et = t.transform(data[0], data[1], edata=data[2])
-                minimizer.data = (data[0], yt, et)
-                minimizer.transform = t.transform
-
-            if usedq:
-                minimizer.set_dq(current_dataset.xdataSD)
-            else:
-                minimizer.set_dq(float(res))
-
-            if not useerrors:
-                minimizer.edata[:] = 1
-
-            chisqr = np.sum(minimizer.residuals(params)**2) / (minimizer.ydata.size)
-            self.ui.chi2.setValue(chisqr)
-            minimizer.data = theoretical.data
-            minimizer.set_dq(float(res))
-            minimizer.transform = None
 
     def add_datasets_to_graphs(self, datasets):
         for dataset in datasets:
@@ -1594,6 +1570,7 @@ class ProgressCallback(QtGui.QDialog):
         self.ui.values.setPlainText(text)
         QtGui.QApplication.processEvents()
 
+
 class ProgramSettings(object):
 
     def __init__(self, **kwds):
@@ -1601,6 +1578,7 @@ class ProgramSettings(object):
                      'transformdata': 'logY',
                      'quad_order': 17,
                      'current_dataset_name': None,
+                     'UDFcurrent_dataset_name': None,
                      'experiment_file_name': '',
                      'current_model_name': None,
                      'usedq': True,

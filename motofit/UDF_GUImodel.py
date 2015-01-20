@@ -7,9 +7,11 @@ import hashlib
 import os.path
 import numpy as np
 import refnx.analysis.reflect as reflect
+from refnx.analysis import ReflectivityFitter
 from refnx.analysis.curvefitter import CurveFitter
 import refnx.analysis.curvefitter as curvefitter
-from lmfit import Parameters
+from lmfit import Parameters, Parameter
+from lmfit.astutils import valid_symbol_name
 from collections import OrderedDict
 
 
@@ -26,6 +28,10 @@ def load_plugin_module(filepath):
 
     members = inspect.getmembers(module, inspect.isclass)
     for member in members:
+        if (member[1] == ReflectivityFitter
+           or member[1] == CurveFitter):
+           continue
+
         if issubclass(member[1], CurveFitter):
             rfos.append(member)
             print 'Loaded', name, 'plugin fitting module'
@@ -114,7 +120,7 @@ class UDFParametersModel(QtCore.QAbstractTableModel):
         return len(self.params) + 1
 
     def columnCount(self, parent=QtCore.QModelIndex()):
-        return 3
+        return 5
 
     def flags(self, index):
         row = index.row()
@@ -125,17 +131,32 @@ class UDFParametersModel(QtCore.QAbstractTableModel):
         
         if row == 0 and col > 0:
             retval = False
-            
+
+        #parameter name
         if col == 0 and row > 0:
+            retval = (QtCore.Qt.ItemIsEditable |
+                      QtCore.Qt.ItemIsEnabled |
+                      QtCore.Qt.ItemIsSelectable)
+
+        #parameter value
+        if col == 1 and row > 0:
             retval = (QtCore.Qt.ItemIsEditable |
                       QtCore.Qt.ItemIsUserCheckable |
                       QtCore.Qt.ItemIsEnabled |
                       QtCore.Qt.ItemIsSelectable)
 
-        if col > 0 and row > 0:
+        #min/max values
+        if (col == 2 or col == 3) and row > 0:
             retval = (QtCore.Qt.ItemIsEditable |
                       QtCore.Qt.ItemIsEnabled |
                       QtCore.Qt.ItemIsSelectable)
+
+        #expr
+        if col == 4 and row > 0:
+            retval = (QtCore.Qt.ItemIsEditable |
+                      QtCore.Qt.ItemIsEnabled |
+                      QtCore.Qt.ItemIsSelectable)
+
         return retval
 
  #    def layersAboutToBeInserted(self, start, end):
@@ -159,7 +180,7 @@ class UDFParametersModel(QtCore.QAbstractTableModel):
             name = names[row - 1]
 
         if role == QtCore.Qt.CheckStateRole:
-            if row > 0 and col == 0:
+            if row > 0 and col == 1:
                 if value == QtCore.Qt.Checked:
                     self.params[name].vary = False
                 else:
@@ -189,18 +210,8 @@ class UDFParametersModel(QtCore.QAbstractTableModel):
                             currentparams)
 
                     if newparams > currentparams:
-                        self.model.limits = np.append(
-                            self.model.limits, np.zeros((2, newparams - currentparams)), axis=1)
-                        defaultlimits = self.model.default_limits()
-                        self.model.limits[
-                            :,
-                            currentparams:-
-                            1] = defaultlimits[
-                            :,
-                            currentparams:-
-                            1]
-                        self.model.fitted_parameters = np.append(
-                            self.model.fitted_parameters, range(currentparams, newparams))
+                        for i in range(currentparams, newparams):
+                            self.params.add('p%d'%i, 0, True, -np.inf, np.inf, None)
                         self.endInsertRows()
 
                     if newparams < currentparams:
@@ -209,21 +220,42 @@ class UDFParametersModel(QtCore.QAbstractTableModel):
                         self.endRemoveRows()
 
                     self.modelReset.emit()
-            if row > 0:
+            if row > 0 and col in [1, 2, 3]:
                 validator = QtGui.QDoubleValidator()
                 voutput = validator.validate(value, 1)
                 if voutput[0] == QtGui.QValidator.State.Acceptable:
-                    number = voutput[1]
+                    number = float(voutput[1])
                 else:
-                    print 'not true'
                     return False
 
-                if col == 0:
-                    self.params[name].value = number
                 if col == 1:
-                    self.params[name].min = number
+                    self.params[name].value = number
                 if col == 2:
+                    self.params[name].min = number
+                if col == 3:
                     self.params[name].max = number
+            if row > 0 and col == 0:
+                #change a parameter name requires making a new dictionary
+                if not valid_symbol_name(value):
+                    return False
+
+                p = Parameters()
+                param = self.params[name]
+                newparam = Parameter(value, param.value, param.vary,
+                                     param.min, param.max, param.expr)
+
+                for k, v in self.params.items():
+                    if k == name:
+                        p[value] = newparam
+                    else:
+                        p[k] = v
+
+                self.params = p
+
+            if row > 0 and col == 4:
+                #set an expression
+                param = self.params[name]
+                param.expr = value
 
         self.dataChanged.emit(index, index)
         return True
@@ -244,15 +276,18 @@ class UDFParametersModel(QtCore.QAbstractTableModel):
                 if row == 0:
                     return str(len(self.params))
                 else:
-                    return str(self.params[name].value)
-
+                    return name
             elif col == 1 and row > 0:
-                return str(self.params[name].min)
+                    return str(self.params[name].value)
             elif col == 2 and row > 0:
+                return str(self.params[name].min)
+            elif col == 3 and row > 0:
                 return str(self.params[name].max)
+            elif col == 4 and row > 0:
+                return str(self.params[name].expr)
 
         if role == QtCore.Qt.CheckStateRole:
-            if row > 0 and col == 0:
+            if row > 0 and col == 1:
                 if self.params[name].vary:
                     return QtCore.Qt.Unchecked
                 else:
@@ -267,13 +302,18 @@ class UDFParametersModel(QtCore.QAbstractTableModel):
             if section == 0:
                 return 'number of parameters'
             else:
-                return str(section - 1)
+                names = self.params.keys()
+                return names[section - 1]
 
         if orientation == QtCore.Qt.Horizontal:
             if section == 0:
-                return 'value'
+                return 'name'
             if section == 1:
-                return 'lower limit'
+                return 'value'
             if section == 2:
+                return 'lower limit'
+            if section == 3:
                 return 'upper limit'
+            if section == 4:
+                return 'expr'
         return None

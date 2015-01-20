@@ -4,42 +4,46 @@ import scipy as sp
 import scipy.linalg
 import scipy.integrate as spi
 import math
-import refnx.analysis.fitting as fitting
-import refnx.util.ErrorProp as EP
-import refnx.analysis.reflect as reflect
+from refnx.analysis import CurveFitter
 
 
-class line(fitting.FitObject):
+class line(CurveFitter):
     '''
         fitfunction for a straightline
         y = p[0] + p[1] * x
     '''
-    def __init__(self, xdata, ydata, edata, parameters, args=(), **kwds):
+    def __init__(self, xdata, ydata, parameters, edata=None, fcn_args=(),
+                 fcn_kws=None):
 
-        super(line, self).__init__(xdata,
+        super(line, self).__init__(None,
+                                   xdata,
                                    ydata,
-                                   edata,
-                                   None,
                                    parameters,
-                                   args=args, **kwds)
+                                   edata=edata,
+                                   fcn_args=fcn_args,
+                                   fcn_kws=fcn_kws)
 
     def model(self, parameters, *args):
-        return parameters[0] + self.xdata * parameters[1]
+        values = [param.value for param in parameters.values()]
 
-class gauss1D(fitting.FitObject):
+        return values[0] + self.xdata * values[1]
+
+class gauss1D(CurveFitter):
     '''
         fitfunction for a Gaussian
         y = p[0] + p[1] * exp(-0.5 * ((x - p[2])/p[3])**2)
     '''
 
-    def __init__(self, xdata, ydata, edata, parameters, args=(), **kwds):
+    def __init__(self, xdata, ydata, parameters, edata=None, fcn_args=(),
+                 fcn_kws=None):
 
-        super(gauss1D, self).__init__(xdata,
-                                   ydata,
-                                   edata,
-                                   None,
-                                   parameters,
-                                   args=args, **kwds)
+        super(gauss1D, self).__init__(None,
+                                      xdata,
+                                      ydata,
+                                      parameters,
+                                      edata=edata,
+                                      fcn_args=fcn_args,
+                                      fcn_kws=fcn_kws)
 
     def model(self, parameters, *args):
         return parameters[0] + parameters[1] * \
