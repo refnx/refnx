@@ -26,6 +26,7 @@ def load_plugin_module(filepath):
 
     rfos = []
 
+    #load plugins that subclass CurveFitter
     members = inspect.getmembers(module, inspect.isclass)
     for member in members:
         if (member[1] == ReflectivityFitter
@@ -34,7 +35,13 @@ def load_plugin_module(filepath):
 
         if issubclass(member[1], CurveFitter):
             rfos.append(member)
-            print 'Loaded', name, 'plugin fitting module'
+            print 'Loaded', member[0], 'plugin fitting module'
+
+    #also load functions that have the curvefitter.fitfunc decorator
+    functions = inspect.getmembers(module, inspect.isfunction)
+    for function in functions:
+        if hasattr(function, 'fitfuncwraps'):
+            rfos.append(function)
 
     if not len(rfos):
         del sys.modules[name]
@@ -58,6 +65,8 @@ class PluginStoreModel(QtCore.QAbstractTableModel):
 
     def __setitem__(self, key, value, filepath=''):
         if issubclass(value, curvefitter.CurveFitter):
+            self.plugins[key] = (value, filepath)
+        if hasattr(value, 'fitfuncwraps'):
             self.plugins[key] = (value, filepath)
 
     @property

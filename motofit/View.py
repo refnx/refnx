@@ -21,7 +21,7 @@ from datastore_GUImodel import DataStoreModel
 
 import refnx.analysis.reflect as reflect
 import refnx.analysis.curvefitter as curvefitter
-from refnx.analysis import ReflectivityFitter, Transform
+from refnx.analysis import ReflectivityFitter, Transform, CurveFitter
 from refnx.dataset import Data1D, ReflectDataset
 
 from lmfit import Parameters, fit_report
@@ -73,7 +73,7 @@ class MyMainWindow(QtGui.QMainWindow):
         #create a set of theoretical parameters
         coefs = np.array([1, 1.0, 0, 0, 2.07, 0, 1e-7, 3, 25, 3.47, 0, 3])
         params = curvefitter.to_Parameters(coefs,
-                                           names=reflect.parameter_names(coefs))
+                                       names=reflect.parameter_names(coefs))
         params['nlayers'].vary = False
 
         self.settings.current_dataset_name = 'theoretical'
@@ -87,9 +87,9 @@ class MyMainWindow(QtGui.QMainWindow):
         kws = {'dqvals': theoretical.xdataSD}
 
         evaluator = ReflectivityFitter(theoretical.xdata,
-                                               theoretical.ydata,
-                                               params,
-                                               fcn_kws=kws)
+                                       theoretical.ydata,
+                                       params,
+                                       fcn_kws=kws)
 
         self.minimizer_store['default'] = evaluator
 
@@ -895,12 +895,23 @@ class MyMainWindow(QtGui.QMainWindow):
             print('Please choose a fit plugin again')
             return
 
-        minimizer = fit_plugin(tempdataset.xdata,
-                               tempdataset.ydata,
-                               params,
-                               edata=tempdataset.ydataSD,
-                               mask=mask,
-                               fcn_kws=kws)
+        if isinstance(fit_plugin, CurveFitter):
+            minimizer = fit_plugin(tempdataset.xdata,
+                                   tempdataset.ydata,
+                                   params,
+                                   edata=tempdataset.ydataSD,
+                                   mask=mask,
+                                   fcn_kws=kws)
+        elif hasattr(fit_plugin, 'fitfuncwraps'):
+            minimizer = CurveFitter(fit_plugin,
+                                    tempdataset.xdata,
+                                    tempdataset.ydata,
+                                    params,
+                                    edata=tempdataset.ydataSD,
+                                    mask=mask,
+                                    fcn_kws=kws)
+        else:
+            raise TypeError('fit_plugin did not subclass CurveFitter')
 
         minimizer.transform = transform_fnctn
 
@@ -1393,7 +1404,18 @@ class MyMainWindow(QtGui.QMainWindow):
         theoretical = self.data_store_model['theoretical']
 
         plugin = self.settings.fit_plugin
-        minimizer = plugin(theoretical.xdata, theoretical.ydata, params)
+
+        if isinstance(plugin, CurveFitter):
+            minimizer = plugin(theoretical.xdata,
+                               theoretical.ydata,
+                               params)
+        elif hasattr(plugin, 'fitfuncwraps'):
+            minimizer = CurveFitter(plugin,
+                                    theoretical.xdata,
+                                    theoretical.ydata,
+                                    params)
+        else:
+            raise TypeError('fit_plugin did not subclass CurveFitter')
 
         # evaluate the model against the dataset
         try:
@@ -1442,9 +1464,9 @@ class MyMainWindow(QtGui.QMainWindow):
             #mask non finite values
             mask = ~np.isfinite(tempdataset.ydata)
 
-            minimizer = plugin(tempdataset.xdata, tempdataset.ydata, params,
-                               fcn_kws=kws, mask=mask,
-                               edata=tempdataset.ydataSD)
+            minimizer.data = tempdataset.data
+            minimizer.userkws = kws
+            minimizer.mask = mask
 
             chisqr = np.sum(minimizer.residuals(params)**2) / (minimizer.ydata.size)
 
@@ -1629,8 +1651,8 @@ class MyMainWindow(QtGui.QMainWindow):
                           }
 
             # retrieve the required fitplugin from the pluginStoreModel
-            fitClass = \
-                self.pluginStoreModel.get_plugin_by_name(datamodel.fitplugins[idx])['rfo']
+            fitClass = self.pluginStoreModel.get_plugin_by_name(
+                                    datamodel.fitplugins[idx])['rfo']
 
             fitObject = fitClass(**callerInfo)
             fitObjects.append(fitObject)
@@ -1851,8 +1873,6 @@ class MyReflectivityGraphs(FigureCanvas):
 #             if dataObject.graph_properties['line2Dresiduals_properties']:
 #                 artist.setp(dataObject.line2Dresiduals, **dataObject.graph_properties['line2Dresiduals_properties'])
 
-        # self.axes[0].relim()
-        # self.axes[0].autoscale(axis='both', tight=False, enable=True)
         self.draw()
         graph_properties.save_graph_properties()
 

@@ -130,6 +130,13 @@ def clear_bounds(params):
         params[par].min = -np.inf
         params[par].max = np.inf
 
+def fitfunc(f):
+    """
+    A decorator that can be used to say if something is a fitfunc.
+    """
+    f.fitfuncwraps = True
+    return f
+
 
 class CurveFitter(Minimizer):
     """
