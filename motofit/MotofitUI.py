@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'Motofit.ui'
 #
-# Created: Fri Jan 16 11:59:45 2015
+# Created: Wed Jan 21 10:21:19 2015
 #      by: pyside-uic 0.2.15 running on PySide 1.2.2
 #
 # WARNING! All changes made in this file will be lost!
@@ -492,14 +492,19 @@ class Ui_MainWindow(object):
         self.UDFmodel_comboBox = QtGui.QComboBox(self.tab_3)
         self.UDFmodel_comboBox.setObjectName("UDFmodel_comboBox")
         self.gridLayout_7.addWidget(self.UDFmodel_comboBox, 4, 1, 1, 1)
-        self.chi2UDF = QtGui.QLineEdit(self.tab_3)
-        self.chi2UDF.setObjectName("chi2UDF")
-        self.gridLayout_7.addWidget(self.chi2UDF, 5, 1, 1, 1)
         self.UDFmodelView = QtGui.QTableView(self.tab_3)
         self.UDFmodelView.setEnabled(True)
         self.UDFmodelView.setMinimumSize(QtCore.QSize(600, 0))
         self.UDFmodelView.setObjectName("UDFmodelView")
         self.gridLayout_7.addWidget(self.UDFmodelView, 0, 0, 6, 1)
+        self.chi2UDF = QtGui.QDoubleSpinBox(self.tab_3)
+        self.chi2UDF.setEnabled(True)
+        self.chi2UDF.setReadOnly(True)
+        self.chi2UDF.setButtonSymbols(QtGui.QAbstractSpinBox.NoButtons)
+        self.chi2UDF.setDecimals(6)
+        self.chi2UDF.setMaximum(1000000000.0)
+        self.chi2UDF.setObjectName("chi2UDF")
+        self.gridLayout_7.addWidget(self.chi2UDF, 5, 1, 1, 1)
         self.tabWidget.addTab(self.tab_3, "")
         self.tab_4 = QtGui.QWidget()
         self.tab_4.setObjectName("tab_4")

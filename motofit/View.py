@@ -113,10 +113,6 @@ class MyMainWindow(QtGui.QMainWindow):
                                         theoretical.sld_profile[1],
                                         linestyle='-', color='r')[0]
 
-        self.restore_settings()
-
-        self.redraw_dataset_graphs([theoretical])
-
         # These are QtCore.QAbstract<x>Models for displaying reflectometry
         # parameters
         self.base_model = BaseModel(params, self)
@@ -127,7 +123,7 @@ class MyMainWindow(QtGui.QMainWindow):
         self.UDFparams_store_model = ParamsStoreModel(self)
 
         # A QAbstractTableModel for displaying UDF parameters.
-        self.UDF_params_model = UDFParametersModel(None, self)
+        self.UDFparams_model = UDFParametersModel(None, self)
 
         # A widget for deciding which datasets to view in the graphs.
         self.ui.dataOptions_tableView.setModel(self.data_store_model)
@@ -161,10 +157,13 @@ class MyMainWindow(QtGui.QMainWindow):
         self.ui.UDFdataset_comboBox.setCurrentIndex)
 
         # User defined function tab
-        self.ui.UDFmodelView.setModel(self.UDF_params_model)
-        self.UDF_params_model.dataChanged.connect(self.UDFupdate_gui_model)
+        self.ui.UDFmodelView.setModel(self.UDFparams_model)
+        self.UDFparams_model.dataChanged.connect(self.UDFupdate_gui_model)
         self.ui.UDFmodel_comboBox.setModel(self.UDFparams_store_model)
         self.ui.UDFplugin_comboBox.setModel(self.plugin_store_model)
+
+        self.restore_settings()
+        self.redraw_dataset_graphs([theoretical])
 
         # # globalfitting tab
         # self.globalfitting_DataModel = globalfitting_GUImodel.GlobalFitting_DataModel(
@@ -216,7 +215,8 @@ class MyMainWindow(QtGui.QMainWindow):
         graph_properties = dataset.graph_properties
         if graph_properties['line2D'] is not None:
             graph_properties['line2D'].set_visible(graph_properties['visible'])
-        self.redraw_dataset_graphs([dataset], visible=graph_properties['visible'])
+        self.redraw_dataset_graphs([dataset],
+                                   visible=graph_properties['visible'])
 
     @QtCore.Slot(QtGui.QDropEvent)
     def dropEvent(self, event):
@@ -262,6 +262,8 @@ class MyMainWindow(QtGui.QMainWindow):
         self.settings.experiment_file_name = experiment_file_name
         state['data_store_model.datastore'] = self.data_store_model.datastore
         state['params_store_model.params_store'] = self.params_store_model.params_store
+        state['UDFparams_store_model.params_store'] = self.UDFparams_store_model.params_store
+
         state['history'] = self.ui.plainTextEdit.toPlainText()
         state['settings'] = self.settings
         state['plugins'] = self.plugin_store_model.plugins
@@ -308,6 +310,8 @@ class MyMainWindow(QtGui.QMainWindow):
                                     'data_store_model.datastore']
             self.params_store_model.params_store = state[
                                     'params_store_model.params_store']
+            self.UDFparams_store_model.params_store = state[
+                                    'UDFparams_store_model.params_store']
             self.ui.plainTextEdit.setPlainText(state['history'])
             self.settings = state['settings']
             self.settings.experiment_file_name = experiment_file_name
@@ -321,6 +325,7 @@ class MyMainWindow(QtGui.QMainWindow):
 
         self.restore_settings()
         self.params_store_model.modelReset.emit()
+        self.UDFparams_store_model.modelReset.emit()
 
         # remove and add datasetsToGraphs
         self.reflectivitygraphs.removeTraces()
@@ -355,14 +360,17 @@ class MyMainWindow(QtGui.QMainWindow):
 
         datastore = self.data_store_model.datastore
         params_store = self.params_store_model.params_store
+        UDFparams_store = self.UDFparams_store_model.params_store
 
         try:
             self.ui.dataset_comboBox.setCurrentIndex(
                 datastore.names.index(self.settings.current_dataset_name))
             self.ui.UDFdataset_comboBox.setCurrentIndex(
-                datastore.names.index(self.settings.current_dataset_name))
+                datastore.names.index(self.settings.UDFcurrent_dataset_name))
             self.ui.model_comboBox.setCurrentIndex(
                 params_store.names.index(self.settings.current_model_name))
+            self.ui.UDFmodel_comboBox.setCurrentIndex(
+                UDFparams_store.names.index(self.settings.UDFcurrent_model_name))
         except (AttributeError, KeyError, ValueError):
             pass
 
@@ -596,7 +604,7 @@ class MyMainWindow(QtGui.QMainWindow):
     @QtCore.Slot()
     def on_actionLoad_Plugin_triggered(self):
         # load a model plugin
-        self.loadPlugin()
+        self.load_plugin()
 
     @QtCore.Slot()
     def on_actionBatch_Fit_triggered(self):
@@ -667,6 +675,7 @@ class MyMainWindow(QtGui.QMainWindow):
         elif transform == 'YX2':
             self.ui.actionYX2_vs_X.setChecked(True)
         self.settings.transformdata = transform
+
         self.redraw_dataset_graphs(None, all=True)
 
         # need to relimit graphs and display on a log scale if the transform
@@ -825,8 +834,8 @@ class MyMainWindow(QtGui.QMainWindow):
         '''
             you should do a fit using the fit plugin
         '''
-        cur_data_name = self.settings.current_dataset_name
-        dataset = self.params_store_model[cur_data_name]
+        cur_data_name = self.settings.UDFcurrent_dataset_name
+        dataset = self.data_store_model[cur_data_name]
 
         if cur_data_name == 'theoretical':
             msgBox = QtGui.QMessageBox()
@@ -834,16 +843,103 @@ class MyMainWindow(QtGui.QMainWindow):
             msgBox.exec_()
             return
 
-        theoreticalmodel = self.params_store_model['theoretical']
+        params = self.UDFparams_model.params
 
-        ok = self.get_limits(theoreticalmodel)
+        ok = self.get_limits(params)
 
         if not ok:
             return
 
-        self.do_a_fit_and_add_to_gui(dataset,
-                                     theoreticalmodel,
-                                     fit_plugin=self.settings.fitPlugin['rfo'])
+        self.UDFdo_a_fit_and_add_to_gui(dataset,
+                                     params,
+                                     fit_plugin=self.settings.fit_plugin)
+
+    def UDFdo_a_fit_and_add_to_gui(self, dataset, params, fit_plugin=None):
+        if dataset.name == 'theoretical':
+            print('You tried to fit the theoretical dataset')
+            return
+
+        print ('___________________________________________________')
+        print ('fitting to:', dataset.name)
+        print(self.settings.fitting_algorithm, self.settings.transformdata)
+
+        # how did you want to fit the dataset - logY vs X, lin Y vs X, etc.
+        # select a transform.  Note that we have to transform the data for
+        # the fit as well
+        transform_fnctn = Transform(
+            self.settings.transformdata).transform
+        alg = self.settings.fitting_algorithm
+
+        tempdataset = Data1D(dataset.data)
+
+        tempdataset.ydata, tempdataset.ydataSD = transform_fnctn(
+                                                tempdataset.xdata,
+                                                tempdataset.ydata,
+                                                tempdataset.ydataSD)
+
+        # find out which points in the dataset aren't finite
+        mask = ~np.isfinite(tempdataset.ydata)
+
+        #have a kws dictionary
+        kws = {'dqvals': tempdataset.xdataSD, 'transform': transform_fnctn}
+
+        if fit_plugin is None:
+            print('Please choose a fit plugin again')
+            return
+
+        minimizer = fit_plugin(tempdataset.xdata,
+                               tempdataset.ydata,
+                               params,
+                               edata=tempdataset.ydataSD,
+                               mask=mask,
+                               fcn_kws=kws)
+
+        minimizer.transform = transform_fnctn
+
+        if not self.settings.useerrors:
+            tempdataset.ydataSD = None
+
+        progress = ProgressCallback(self, minimizer=minimizer,
+                                    dataset=dataset)
+
+        progress.show()
+        minimizer.iter_cb = progress.callback2
+
+        if alg == 'DE':
+            minimizer.kws.update({'callback': progress.callback})
+            minimizer.fit(method='differential_evolution')
+            minimizer.kws.pop('callback')
+
+        elif alg == 'LM':
+            minimizer.fit(method='leastsq')
+
+        elif alg == 'MCMC':
+            minimizer.mcmc()
+
+        progress.destroy()
+        minimizer.iter_cb = None
+        minimizer.transform = None
+
+        #evaluate the fit and sld_profile
+        dataset.fit = minimizer.model(minimizer.params)
+        if hasattr(minimizer, 'sld_profile'):
+            dataset.sld_profile = minimizer.sld_profile(minimizer.params)
+
+        new_params = deepcopy(minimizer.params)
+        self.UDFparams_model.modelReset.emit()
+        self.UDFparams_store_model.add(new_params, 'coef_' + dataset.name)
+
+        #update the chi2 value
+        self.UDFupdate_gui_model()
+
+        print(fit_report(minimizer))
+        print('___________________________________________________')
+
+        if dataset.graph_properties.line2Dfit is None:
+            self.add_datasets_to_graphs([dataset])
+        else:
+            self.redraw_dataset_graphs([dataset],
+                                  visible=dataset.graph_properties['visible'])
 
     def do_a_fit_and_add_to_gui(self, dataset, params):
         if dataset.name == 'theoretical':
@@ -943,13 +1039,15 @@ class MyMainWindow(QtGui.QMainWindow):
             QtCore.QModelIndex(),
             QtCore.QModelIndex())
 
-        self.add_datasets_to_graphs([dataset])
+        if dataset.graph_properties.line2Dfit is None:
+            self.add_datasets_to_graphs([dataset])
+        else:
+            self.redraw_dataset_graphs([dataset],
+                                  visible=dataset.graph_properties['visible'])
 
         if self.ui.model_comboBox.findText('coef_' + dataset.name) < 0:
             self.ui.model_comboBox.setCurrentIndex(
                 self.ui.model_comboBox.findText('coef_' + dataset.name))
-        self.redraw_dataset_graphs([dataset],
-                                  visible=dataset.graph_properties['visible'])
 
     @QtCore.Slot(int)
     def on_tabWidget_currentChanged(self, arg_1):
@@ -957,7 +1055,7 @@ class MyMainWindow(QtGui.QMainWindow):
             self.layer_model.modelReset.emit()
             self.base_model.modelReset.emit()
         if arg_1 == 2:
-            self.UDF_params_model.modelReset.emit()
+            self.UDFparams_model.modelReset.emit()
 
     @QtCore.Slot(unicode)
     def on_UDFplugin_comboBox_currentIndexChanged(self, arg_1):
@@ -965,7 +1063,15 @@ class MyMainWindow(QtGui.QMainWindow):
 
     @QtCore.Slot(unicode)
     def on_UDFmodel_comboBox_currentIndexChanged(self, arg_1):
-        self.select_a_model(arg_1)
+        try:
+            params = self.UDFparams_store_model[arg_1]
+            theoretical = deepcopy(params)
+            self.UDFparams_model.params = theoretical
+            self.settings.UDFcurrent_model_name = arg_1
+            self.UDFupdate_gui_model()
+        except Exception as e:
+            print(e)
+            raise e
 
     @QtCore.Slot(unicode)
     def on_UDFdataset_comboBox_currentIndexChanged(self, arg_1):
@@ -976,9 +1082,9 @@ class MyMainWindow(QtGui.QMainWindow):
 
     @QtCore.Slot()
     def on_UDFloadPlugin_clicked(self):
-        self.loadPlugin()
+        self.load_plugin()
 
-    def loadPlugin(self):
+    def load_plugin(self):
         pluginFileName, ok = QtGui.QFileDialog.getOpenFileName(self,
                                                                caption='Select plugin File',
                                                                filter='Python Plugin File (*.py)')
@@ -1258,16 +1364,23 @@ class MyMainWindow(QtGui.QMainWindow):
         header = self.ui.UDFmodelView.horizontalHeader()
         header.setResizeMode(QtGui.QHeaderView.Stretch)
 
-    def redraw_dataset_graphs(self, datasets, visible=True, all=False):
+    def redraw_dataset_graphs(self, datasets, visible=True, all=False,
+                              transform=None):
         if all:
             datasets = [dataset for dataset in self.data_store_model]
 
+        if transform is not None:
+            t = transform
+        else:
+            transform = Transform(self.settings.transformdata)
+            t = transform.transform
+
         self.reflectivitygraphs.redraw_datasets(datasets, visible=visible,
-                                    transform=self.settings.transformdata)
+                                    transform=t)
         self.sldgraphs.redraw_datasets(datasets, visible=visible)
 
     def UDFupdate_gui_model(self):
-        params = self.UDF_params_model.params
+        params = self.UDFparams_model.params
         cur_data_name = self.settings.UDFcurrent_dataset_name
         theoretical = self.data_store_model['theoretical']
 
@@ -1278,10 +1391,10 @@ class MyMainWindow(QtGui.QMainWindow):
         try:
             model = minimizer.model(params)
         except Exception as e:
-            print(e.message)
-            return
+            print(e)
+            raise e
 
-        theoretical.fit = minimizer.model(params)
+        theoretical.fit = model
         self.redraw_dataset_graphs([theoretical])
 
         if hasattr(minimizer, 'sld_profile'):
@@ -1297,28 +1410,33 @@ class MyMainWindow(QtGui.QMainWindow):
             except KeyError:
                 return
 
-            useerrors = self.settings.useerrors
 
             tempdataset = Data1D(current_dataset.data)
 
+            kws = {}
             if self.settings.transformdata is not None:
-                t = Transform(self.settings.transformdata)
-                tempdataset.ydata, tempdataset.ydataSD = t.transform(
-                                        tempdataset.xdata,
-                                        tempdataset.ydata,
-                                        edata=tempdataset.ydataSD)
-                minimizer.userkws.update('transform', t)
+                transform = Transform(self.settings.transformdata)
+                t = transform.transform
+            else:
+                t = None
+            if t is not None:
+                tempdataset.ydata, tempdataset.ydataSD = t(tempdataset.xdata,
+                                                   tempdataset.ydata,
+                                                   edata=tempdataset.ydataSD)
+                kws['transform'] = t
 
-            minimizer.userkws.update('dqvals', tempdataset.xdataSD)
+            kws['dqvals'] = tempdataset.xdataSD
+
+            useerrors = self.settings.useerrors
+            if not useerrors:
+                tempdataset.ydataSD[:] = 1
 
             #mask non finite values
             mask = ~np.isfinite(tempdataset.ydata)
 
-            minimizer.data = tempdataset.data
-            minimizer.mask = mask
-
-            if not useerrors:
-                minimizer.edata[:] = 1
+            minimizer = plugin(tempdataset.xdata, tempdataset.ydata, params,
+                               fcn_kws=kws, mask=mask,
+                               edata=tempdataset.ydataSD)
 
             chisqr = np.sum(minimizer.residuals(params)**2) / (minimizer.ydata.size)
 
@@ -1354,13 +1472,17 @@ class MyMainWindow(QtGui.QMainWindow):
 
             tempdataset = Data1D(current_dataset.data)
 
+            t = None
             if self.settings.transformdata is not None:
-                t = Transform(self.settings.transformdata)
-                tempdataset.ydata, tempdataset.ydataSD = t.transform(
+                transform = Transform(self.settings.transformdata)
+                t = transform.transform
+
+            if t is not None:
+                tempdataset.ydata, tempdataset.ydataSD = t(
                                         tempdataset.xdata,
                                         tempdataset.ydata,
                                         edata=tempdataset.ydataSD)
-                minimizer.transform = t.transform
+                minimizer.transform = t
 
             #mask non finite values
             mask = ~np.isfinite(tempdataset.ydata)
@@ -1386,8 +1508,11 @@ class MyMainWindow(QtGui.QMainWindow):
             minimizer.mask = None
 
     def add_datasets_to_graphs(self, datasets):
+        transform = Transform(self.settings.transformdata)
+        t = transform.transform
+
         for dataset in datasets:
-            self.reflectivitygraphs.add_dataset(dataset, transform=self.settings.transformdata)
+            self.reflectivitygraphs.add_dataset(dataset, transform=t)
             self.sldgraphs.add_dataset(dataset)
 
     @QtCore.Slot()
@@ -1581,6 +1706,7 @@ class ProgramSettings(object):
                      'UDFcurrent_dataset_name': None,
                      'experiment_file_name': '',
                      'current_model_name': None,
+                     'UDFcurrent_model_name': None,
                      'usedq': True,
                      'resolution': 5,
                      'fit_plugin': None,
@@ -1636,10 +1762,11 @@ class MyReflectivityGraphs(FigureCanvas):
     def add_dataset(self, dataset, transform=None):
         graph_properties = dataset.graph_properties
 
-        t = Transform(transform)
-        yt, edata = t.transform(dataset.xdata, dataset.ydata, dataset.ydataSD)
-
         if graph_properties.line2D is None and dataset.name != 'theoretical':
+            yt = dataset.ydata
+            if transform is not None:
+                yt, edata = transform(dataset.xdata, dataset.ydata, dataset.ydataSD)
+
             lineInstance = self.axes[0].plot(dataset.xdata,
                                              yt,
                                              markersize=3,
@@ -1656,7 +1783,11 @@ class MyReflectivityGraphs(FigureCanvas):
                             **graph_properties['line2D_properties'])
 
         if graph_properties.line2Dfit is None and dataset.fit is not None:
-            yfit_t, temp = t.transform(dataset.xdata, dataset.fit)
+            yfit_t = dataset.fit
+            if transform is not None:
+                yfit_t, edata = transform(dataset.xdata, dataset.fit)
+
+            yfit_t, temp = transform(dataset.xdata, dataset.fit)
             color = 'b'
             if graph_properties.line2D:
                 color = artist.getp(graph_properties.line2D, 'color')
@@ -1693,12 +1824,17 @@ class MyReflectivityGraphs(FigureCanvas):
             if not dataset:
                 continue
 
-            t = Transform(transform)
-
             x = dataset.xdata
-            y, e = t.transform(dataset.xdata, dataset.ydata)
-            if dataset.fit is not None:
-                yfit, efit = t.transform(dataset.xdata, dataset.fit)
+
+            if transform is not None:
+                y, e = transform(dataset.xdata, dataset.ydata)
+            else:
+                y, e = dataset.ydata, dataset.ydataSD
+
+            if dataset.fit is not None and transform is not None:
+                yfit, efit = transform(dataset.xdata, dataset.fit)
+            else:
+                yfit = dataset.fit
 
             graph_properties = dataset.graph_properties
 
@@ -1711,13 +1847,6 @@ class MyReflectivityGraphs(FigureCanvas):
 #             if dataObject.line2Dresiduals:
 #                dataObject.line2Dresiduals.set_data(dataObject.xdata, dataObject.residuals)
 #                dataObject.line2Dresiduals.set_visible(visible)
-
-        # self.axes[0].autoscale(axis='both', tight = False, enable = True)
-        # self.axes[0].relim()
-        # if transform in ['lin', 'YX2']:
-        #     self.axes[0].set_yscale('log')
-        # else:
-        #     self.axes[0].set_yscale('linear')
 
         self.draw()
 

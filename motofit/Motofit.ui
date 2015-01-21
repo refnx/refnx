@@ -1214,9 +1214,6 @@
          <item row="4" column="1">
           <widget class="QComboBox" name="UDFmodel_comboBox"/>
          </item>
-         <item row="5" column="1">
-          <widget class="QLineEdit" name="chi2UDF"/>
-         </item>
          <item row="0" column="0" rowspan="6">
           <widget class="QTableView" name="UDFmodelView">
            <property name="enabled">
@@ -1227,6 +1224,25 @@
              <width>600</width>
              <height>0</height>
             </size>
+           </property>
+          </widget>
+         </item>
+         <item row="5" column="1">
+          <widget class="QDoubleSpinBox" name="chi2UDF">
+           <property name="enabled">
+            <bool>true</bool>
+           </property>
+           <property name="readOnly">
+            <bool>true</bool>
+           </property>
+           <property name="buttonSymbols">
+            <enum>QAbstractSpinBox::NoButtons</enum>
+           </property>
+           <property name="decimals">
+            <number>6</number>
+           </property>
+           <property name="maximum">
+            <double>999999999.999999046325684</double>
            </property>
           </widget>
          </item>
