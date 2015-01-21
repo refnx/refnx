@@ -14,7 +14,8 @@ _requiredgraphproperties = {'lw': float,
                              'markerfacecolor': str,
                              'zorder': int,
                              'color': str,
-                             'visible': bool}
+                             'visible': bool,
+                             'picker': float}
 
 _lines = {'line2D_properties': dict,
           'line2Dfit_properties': dict,

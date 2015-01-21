@@ -46,5 +46,6 @@ class gauss1D(CurveFitter):
                                       fcn_kws=fcn_kws)
 
     def model(self, parameters, *args):
-        return parameters[0] + parameters[1] * \
-            np.exp(-0.5 * np.power((self.xdata - parameters[2])/parameters[3], 2))
+        values = [param.value for param in parameters.values()]
+        return values[0] + values[1] * \
+            np.exp(-0.5 * np.power((self.xdata - values[2])/values[3], 2))

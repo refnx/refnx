@@ -10,6 +10,7 @@ from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt4agg import NavigationToolbar2QT as NavigationToolbar
 from matplotlib.figure import Figure
 import matplotlib.artist as artist
+import matplotlib.lines as lines
 
 from UDF_GUImodel import PluginStoreModel, UDFParametersModel
 from paramsstore_GUImodel import ParamsStoreModel
@@ -106,7 +107,8 @@ class MyMainWindow(QtGui.QMainWindow):
                                         theoretical.xdata,
                                         theoretical.fit, color='r',
                                         linestyle='-', lw=1,
-                                        label='theoretical')[0]
+                                        label='theoretical',
+                                        picker=5)[0]
 
         graph_properties.line2Dsld_profile = self.sldgraphs.axes[0].plot(
                                         theoretical.sld_profile[0],
@@ -126,7 +128,7 @@ class MyMainWindow(QtGui.QMainWindow):
         self.UDFparams_model = UDFParametersModel(None, self)
 
         # A widget for deciding which datasets to view in the graphs.
-        self.ui.dataOptions_tableView.setModel(self.data_store_model)
+        self.ui.data_options_tableView.setModel(self.data_store_model)
 
         # combo boxes for the reflectivity dataset selection
         self.ui.dataset_comboBox.setModel(self.data_store_model)
@@ -254,8 +256,8 @@ class MyMainWindow(QtGui.QMainWindow):
             event.acceptProposedAction()
 
     def writeTextToConsole(self, text):
-        self.ui.plainTextEdit.moveCursor(QtGui.QTextCursor.End)
-        self.ui.plainTextEdit.insertPlainText(text)
+        self.ui.console_text_edit.moveCursor(QtGui.QTextCursor.End)
+        self.ui.console_text_edit.insertPlainText(text)
 
     def _saveState(self, experiment_file_name):
         state = {}
@@ -264,7 +266,7 @@ class MyMainWindow(QtGui.QMainWindow):
         state['params_store_model.params_store'] = self.params_store_model.params_store
         state['UDFparams_store_model.params_store'] = self.UDFparams_store_model.params_store
 
-        state['history'] = self.ui.plainTextEdit.toPlainText()
+        state['history'] = self.ui.console_text_edit.toPlainText()
         state['settings'] = self.settings
         state['plugins'] = self.plugin_store_model.plugins
 #        state['globalfitting_settings'] = self.globalfitting_ParamModel.gf_settings
@@ -312,7 +314,7 @@ class MyMainWindow(QtGui.QMainWindow):
                                     'params_store_model.params_store']
             self.UDFparams_store_model.params_store = state[
                                     'UDFparams_store_model.params_store']
-            self.ui.plainTextEdit.setPlainText(state['history'])
+            self.ui.console_text_edit.setPlainText(state['history'])
             self.settings = state['settings']
             self.settings.experiment_file_name = experiment_file_name
             self.plugin_store_model.plugins = state['plugins']
@@ -492,7 +494,9 @@ class MyMainWindow(QtGui.QMainWindow):
         listofmodels.append('-all-')
 
         which_model, ok = QtGui.QInputDialog.getItem(
-            self, "Which model did you want to save?", "model", listofmodels, editable=False)
+            self, "Which model did you want to save?", "model", listofmodels,
+            editable=False)
+
         if not ok:
             return
 
@@ -695,6 +699,10 @@ class MyMainWindow(QtGui.QMainWindow):
         aboutGUI = aboutUI.Ui_Dialog()
         aboutGUI.setupUi(about_dialog)
         ok = about_dialog.exec_()
+
+    @QtCore.Slot()
+    def on_actionAutoscale_graph_triggered(self):
+        self.reflectivitygraphs.autoscale()
 
     @QtCore.Slot()
     def on_actionSLD_calculator_triggered(self):
@@ -1730,6 +1738,14 @@ class ProgramSettings(object):
             setattr(self, key, value)
 
 
+class NavToolBar(NavigationToolbar):
+    """
+    This class overloads the NavigationToolbar of matplotlib.
+    """
+    def __init__(self, canvas, parent, coordinates=True):
+        NavigationToolbar.__init__(self, canvas, parent, coordinates)
+        self.setIconSize(QtCore.QSize(20, 20))
+
 class MyReflectivityGraphs(FigureCanvas):
 
     """Ultimately, this is a QWidget (as well as a FigureCanvasAgg, etc.)."""
@@ -1738,7 +1754,8 @@ class MyReflectivityGraphs(FigureCanvas):
         self.figure = Figure(facecolor=(1, 1, 1), edgecolor=(0, 0, 0))
         # reflectivity graph
         self.axes = []
-        ax = self.figure.add_axes([0.1, 0.15, 0.85, 0.8])
+        ax = self.figure.add_axes([0.06, 0.15, 0.9, 0.8])
+        ax.margins(0.0005)
         self.axes.append(ax)
 
         self.axes[0].autoscale(axis='both', tight=False, enable=True)
@@ -1755,8 +1772,29 @@ class MyReflectivityGraphs(FigureCanvas):
 
         FigureCanvas.__init__(self, self.figure)
         self.setParent(parent)
-#        self.figure.subplots_adjust(left=0.1, right=0.95, top = 0.98)
-        self.mpl_toolbar = NavigationToolbar(self, parent)
+        self.figure.canvas.setFocusPolicy( QtCore.Qt.ClickFocus )
+
+        self.mpl_toolbar = NavToolBar(self, parent)
+        self.figure.canvas.mpl_connect('pick_event', self._pick_event)
+        # self.figure.canvas.mpl_connect('key_press_event', self._key_press)
+
+        self.draw()
+
+    def _key_press(self, event):
+        #auto scale
+        if event.key == 'super+a':
+            self.autoscale()
+
+    def _pick_event(self, event):
+        #pick event was a double click on the graph
+        if (event.mouseevent.dblclick == True
+            and event.mouseevent.button == 1):
+            if isinstance(event.artist, lines.Line2D):
+                self.mpl_toolbar.edit_parameters()
+
+    def autoscale(self):
+        self.axes[0].relim()
+        self.axes[0].autoscale(axis='both', tight=False, enable=True)
         self.draw()
 
     def add_dataset(self, dataset, transform=None):
@@ -1773,7 +1811,8 @@ class MyReflectivityGraphs(FigureCanvas):
                                              marker='o',
                                              linestyle='',
                                              markeredgecolor=None,
-                                             label=dataset.name)
+                                             label=dataset.name,
+                                             picker=5)
             mfc = artist.getp(lineInstance[0], 'markerfacecolor')
             artist.setp(lineInstance[0], **{'markeredgecolor': mfc})
 
@@ -1796,7 +1835,8 @@ class MyReflectivityGraphs(FigureCanvas):
                                                      linestyle='-',
                                                      color=color,
                                                      lw=1,
-                                                     label='fit_' + dataset.name)[0]
+                                                     label='fit_' + dataset.name,
+                                                     picker=5)[0]
             if graph_properties['line2Dfit_properties']:
                 artist.setp(graph_properties.line2Dfit,
                             **graph_properties['line2Dfit_properties'])
