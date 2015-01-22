@@ -5,6 +5,7 @@ import scipy.linalg
 import scipy.integrate as spi
 import math
 from refnx.analysis import CurveFitter
+import refnx.analysis.curvefitter as curvefitter
 
 
 class line(CurveFitter):
@@ -28,6 +29,7 @@ class line(CurveFitter):
 
         return values[0] + self.xdata * values[1]
 
+
 class gauss1D(CurveFitter):
     '''
         fitfunction for a Gaussian
@@ -49,3 +51,8 @@ class gauss1D(CurveFitter):
         values = [param.value for param in parameters.values()]
         return values[0] + values[1] * \
             np.exp(-0.5 * np.power((self.xdata - values[2])/values[3], 2))
+
+
+@curvefitter.fitfunc
+def liney(x, params, *args, **kwds):
+    pass

@@ -40,7 +40,7 @@ def load_plugin_module(filepath):
     #also load functions that have the curvefitter.fitfunc decorator
     functions = inspect.getmembers(module, inspect.isfunction)
     for function in functions:
-        if hasattr(function, 'fitfuncwraps'):
+        if hasattr(function[1], 'fitfuncwraps'):
             rfos.append(function)
 
     if not len(rfos):
