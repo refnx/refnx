@@ -16,7 +16,9 @@ from UDF_GUImodel import PluginStoreModel, UDFParametersModel
 from paramsstore_GUImodel import ParamsStoreModel
 from reflectivity_parameters_GUImodel import BaseModel, LayerModel
 import limits_GUImodel
-#import globalfitting_GUImodel
+from globalfitting_GUImodel import (GlobalFitting_DataModel,
+                                    FitPluginItemDelegate,
+                                    GlobalFitting_ParamModel)
 from datastore_GUImodel import DataStoreModel
 
 import refnx.analysis.reflect as reflect
@@ -167,23 +169,22 @@ class MyMainWindow(QtGui.QMainWindow):
         self.restore_settings()
         self.redraw_dataset_graphs([theoretical])
 
-        # # globalfitting tab
-        # self.globalfitting_DataModel = globalfitting_GUImodel.GlobalFitting_DataModel(
-        #     self)
-        # self.globalfitting_ParamModel = globalfitting_GUImodel.GlobalFitting_ParamModel(
-        #     self)
+        # globalfitting tab
+        self.globalfitting_DataModel = GlobalFitting_DataModel(self)
+        self.globalfitting_ParamModel = GlobalFitting_ParamModel(self)
         #
-        # self.ui.globalfitting_DataView.setModel(self.globalfitting_DataModel)
-        # self.ui.globalfitting_ParamsView.setModel(self.globalfitting_ParamModel)
+        self.ui.globalfitting_DataView.setModel(self.globalfitting_DataModel)
+        self.ui.globalfitting_ParamsView.setModel(self.globalfitting_ParamModel)
         #
-        # self.ui.FitPluginDelegate = globalfitting_GUImodel.FitPluginItemDelegate(
-        #     self.pluginStoreModel.plugins,
-        #     self.ui.globalfitting_DataView)
-        # self.ui.globalfitting_DataView.setEditTriggers(
-        #     QtGui.QAbstractItemView.AllEditTriggers)
-        # self.ui.globalfitting_DataView.setItemDelegateForRow(
-        #     1,
-        #     self.ui.FitPluginDelegate)
+        self.ui.FitPluginDelegate = FitPluginItemDelegate(
+                                    self.plugin_store_model.plugins,
+                                    self.ui.globalfitting_DataView)
+
+        self.ui.globalfitting_DataView.setEditTriggers(
+            QtGui.QAbstractItemView.AllEditTriggers)
+        self.ui.globalfitting_DataView.setItemDelegateForRow(
+            1,
+            self.ui.FitPluginDelegate)
         #
         # self.globalfitting_DataModel.changed_linkages.connect(
         #     self.globalfitting_ParamModel.changed_linkages)
