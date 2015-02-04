@@ -185,21 +185,21 @@ class MyMainWindow(QtGui.QMainWindow):
         self.ui.globalfitting_DataView.setItemDelegateForRow(
             1,
             self.ui.FitPluginDelegate)
-        #
-        # self.globalfitting_DataModel.changed_linkages.connect(
-        #     self.globalfitting_ParamModel.changed_linkages)
-        # self.globalfitting_DataModel.added_DataSet.connect(
-        #     self.globalfitting_ParamModel.added_DataSet)
-        # self.globalfitting_DataModel.removed_DataSet.connect(
-        #     self.globalfitting_ParamModel.removed_DataSet)
-        # self.globalfitting_DataModel.added_params.connect(
-        #     self.globalfitting_ParamModel.added_params)
-        # self.globalfitting_DataModel.removed_params.connect(
-        #     self.globalfitting_ParamModel.removed_params)
-        # self.globalfitting_DataModel.resized_rows.connect(
-        #     self.globalfitting_ParamModel.resized_rows)
-        # self.globalfitting_DataModel.changed_fitplugin.connect(
-        #     self.globalfitting_ParamModel.changed_fitplugin)
+
+        self.globalfitting_DataModel.changed_linkages.connect(
+            self.globalfitting_ParamModel.changed_linkages)
+        self.globalfitting_DataModel.added_DataSet.connect(
+            self.globalfitting_ParamModel.added_DataSet)
+        self.globalfitting_DataModel.removed_DataSet.connect(
+            self.globalfitting_ParamModel.removed_DataSet)
+        self.globalfitting_DataModel.added_params.connect(
+            self.globalfitting_ParamModel.added_params)
+        self.globalfitting_DataModel.removed_params.connect(
+            self.globalfitting_ParamModel.removed_params)
+        self.globalfitting_DataModel.resized_rows.connect(
+            self.globalfitting_ParamModel.resized_rows)
+        self.globalfitting_DataModel.changed_fitplugin.connect(
+            self.globalfitting_ParamModel.changed_fitplugin)
         # self.globalfitting_ParamModel.dataChanged.connect(
         #     self.calculate_gf_model)
 
@@ -1635,13 +1635,13 @@ class MyMainWindow(QtGui.QMainWindow):
 
         linkageArray = \
             globalfitting_GUImodel.generate_linkage_matrix(datamodel.linkages,
-                                                           datamodel.numparams)
+                                                           datamodel.nparams)
 
         for idx, dataset in enumerate(datamodel.dataset_names):
             # retrieve the dataobject
             dataobject = self.data_store_model.datastore[dataset]
             # get the parameters
-            model = parammodel.models[idx]
+            model = parammodel.parameters[idx]
 
             callerInfo = {'xdata': dataobject.xdata,
                           'ydata': dataobject.ydata,

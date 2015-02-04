@@ -137,8 +137,9 @@ class TestGlobalFitting(unittest.TestCase):
             params['p%d' % p].vary = True
 
         self.f.params = params
-        a = GlobalFitter([self.f], constraints=['d0p16:d0p12', 'd0p17:d0p13',
-                         'd0p19:d0p15'])
+        a = GlobalFitter([self.f], constraints=['d0:p16=d0:p12',
+                                                'd0:p17=d0:p13',
+                                                'd0:p19=d0:p15'])
 
         a.fit(method='differential_evolution')
 
@@ -208,8 +209,10 @@ class TestGlobalFitting(unittest.TestCase):
                         np.log10(rvals366.flatten()),
                         params366)
 
-        g = GlobalFitter([a, b, c], constraints=['d1p8:d0p8', 'd2p8:d0p8',
-                         'd1p12:d0p12', 'd2p12:d0p12'],
+        g = GlobalFitter([a, b, c], constraints=['d1:p8=d0:p8',
+                                                 'd2:p8=d0:p8',
+                                                 'd1:p12=d0:p12',
+                                                 'd2:p12 = d0:p12'],
                          kws={'options':{'seed':1}})
         
         g.fit('differential_evolution')

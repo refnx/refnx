@@ -128,7 +128,7 @@ class TestReflect(unittest.TestCase):
 
     def test_reflectivity_fit(self):
         params = curvefitter.to_Parameters(self.coefs)
-
+        params['p1'].value = 1.1
         fitter = reflect.ReflectivityFitter(self.qvals, self.rvals, params)
         fitter.fit()
 

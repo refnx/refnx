@@ -57,9 +57,9 @@ def to_Parameters(p0, varies=None, bounds=None, names=None, expr=None):
 
     if expr is None:
         expr = [None] * p0.size
-        
+
     _p0 = np.copy(p0)
-        
+
     p = Parameters()
     #go through and add the parameters
     for i in range(p0.size):
@@ -75,7 +75,7 @@ def to_Parameters(p0, varies=None, bounds=None, names=None, expr=None):
             _varies[i] = False
             warnings.warn('Parameter min==max and parameter %s was varying. %s'
                           ' now fixed' % (names[i], names[i]), RuntimeWarning)
-                
+
         p.add(names[i], value=_p0[i], min=lowlim[i], max=hilim[i],
               vary=_varies[i], expr=expr[i])
 
@@ -293,7 +293,7 @@ class CurveFitter(Minimizer):
             Whether the fit succeeded.
         """
         return self.minimize(method=method)
-    
+
     def mcmc1(self, samples=1e4, burn=0, thin=1, verbose=0):
         """
         Samples the posterior for the curvefitting system using MCMC.
@@ -396,16 +396,17 @@ class GlobalFitter(CurveFitter):
         datasets : sequence of CurveFitter instances
             Contains all the datasets and fitfunctions for the global fit.
         constraints : str sequence, optional
-            Of the type 'dNpM:constraint'. Sets a constraint expression for
-            parameter M in dataset N.  The constraint 'd2p3:d0p1' constrains
-            parameter 3 in dataset 2 to be equal to parameter 1 in dataset 0.
+            Of the type 'dN:param_name = constraint'. Sets a constraint
+            expression for the parameter `param_name` in dataset N. The
+            constraint 'd2:scale = 2 * d0:back' constrains the `scale`
+            parameter in dataset 2 to be twice the `back` parameter in
+            dataset 0.
         kws : dict, optional
             Extra minimization keywords to be passed to the minimizer of
             choice.
         callback : callable, optional
-            Function called at each step of the minimization. Has the signature
-            ``callback(params, iter, resid)``
-
+            Function called at each step of the minimization. Has the
+            signature ``callback(params, iter, resid)``
         """
         min_kwds = {}
         if kws is not None:
@@ -426,7 +427,7 @@ class GlobalFitter(CurveFitter):
             for j, item in enumerate(dataset.params.items()):
                 old_name = item[0]
                 param = item[1]
-                new_name = old_name + '_d%dp%d' % (i, j)
+                new_name = old_name + '_d%d' % (i)
                 new_names[new_name] = old_name
 
                 p.add(new_name,
@@ -454,38 +455,41 @@ class GlobalFitter(CurveFitter):
                             new_expr = expr.replace(old_name, new_expr_name)
                             p[new_name].set(expr=new_expr)
 
-        # now set constraints/linkages up. They're specified as dNpM:constraint
-        regex = re.compile('d([0-9]*)p([0-9]*)[\s]*:[\s]*(.*)')
-        data_regex = re.compile('d([0-9]*)p([0-9]*)')
+        # now set constraints/linkages up. They're specified as
+        # dN:param_name=constraint
+        dp_string = 'd([0-9]+):([0-9a-zA-Z_]+)'
+        constraint_regex = re.compile(dp_string + '\s*=\s*(.*)')
+        param_regex = re.compile(dp_string)
 
         all_names = p.valuesdict().keys()
         for constraint in constraints:
-            r = regex.search(constraint)
-            if r:
-                N, M = int(r.groups()[0]), int(r.groups()[1])
-                const = r.groups()[2]
+            r = constraint_regex.search(constraint)
 
-                n_left = re.compile('.*(_d%dp%d)' % (N, M))
-                # search all the names
-                name_left = [m.group(0) for l in all_names for m in
-                              [n_left.search(l)] if m]
-                if not len(name_left):
+            if r is not None:
+                groups = r.groups()
+                dataset_num = int(groups[0])
+                param_name = groups[1]
+                const = groups[2]
+
+                # see if this parameter is in the list of parameters
+                modified_param_name = param_name + ('_d%d' % dataset_num)
+                if not modified_param_name in all_names:
                     continue
 
                 # now search for datasets mentioned in constraint
-                d_mentioned = data_regex.findall(const)
+                d_mentioned = param_regex.findall(const)
                 for d in d_mentioned:
-                    # we need to replace all datasets mentioned in constraint
-                    n_right = re.compile('.*(_d%sp%s)' % (d[0], d[1]))
-                    name_right = [m.group(0) for l in all_names for m in
-                                  [n_right.search(l)] if m]
+                    new_name = d[1] + ('_d%d' % int(d[0]))
+                    # see if the dataset mentioned is actually a parameter
+                    if new_name in self.new_param_names[int(d[0])]:
+                        # if it is, then rename it.
+                        const = const.replace('d' + d[0] + ':' + d[1],
+                                              new_name)
+                    else:
+                        const = None
+                        break
 
-                    if len(name_right):
-                        const = const.replace(
-                                    'd%sp%s' % (d[0], d[1]),
-                                    name_right[0])
-
-                p[name_left[0]].set(expr=const)
+                p[modified_param_name].set(expr=const)
 
         self.params = p
         xdata = [dataset.xdata for dataset in datasets]
@@ -556,7 +560,7 @@ class GlobalFitter(CurveFitter):
 
 if __name__ == '__main__':
     from lmfit import fit_report
-   
+
     def gauss(x, params, *args):
         'Calculates a Gaussian model'
         p = params.valuesdict().values()
@@ -575,10 +579,6 @@ if __name__ == '__main__':
     f.fit()
 
     print(fit_report(f.params))
-
-#    g = GlobalFitter([f], ['d0p3:1'])
-#    g.fit()
-#    print(fit_report(g))
 
     MDL = f.mcmc(samples=1e4)
     print(fit_report(f.params))

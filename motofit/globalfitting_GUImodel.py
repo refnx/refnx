@@ -1,78 +1,115 @@
 from __future__ import division
 from PySide import QtCore, QtGui
-import refnx.analysis.fitting as fitting
-import refnx.analysis.globalfitting as globalfitting
+import refnx.analysis.curvefitter as curvefitter
+from refnx.analysis import CurveFitter, GlobalFitter
 import refnx.analysis.reflect as reflect
 import numpy as np
-import refnx.analysis.model as model
+from lmfit import Parameters
 import re
 
 
-def position_in_linkage(linkages, parameter):
-    for idx, linkage in enumerate(linkages):
-        if parameter in linkage:
-            return idx
-    return -1
-
-
 def is_linked(linkages, parameter):
-    idx = position_in_linkage(linkages, parameter)
-    if idx == -1:
-        return (False, False, '')
-    # now test to see if it's a master linkage
-    if linkages[idx].index(parameter) == 0:
-        return (True, True, parameter)
-    else:
-        return (True, False, linkages[idx][0])
+    """
+    Given a set of linkages and a parameter determine whether the parameter
+    is linked, is a master link, and what the master link is.
+
+    Parameters
+    ----------
+    linkages: sequence
+        The linkages for the analysis. 'd0p1:d1p2' would link parameter 2
+        of dataset 1 with parameter 1 of dataset 0.
+    parameter: str
+        The parameter of interest
+
+    Returns
+    -------
+    (is_linked, is_master, master_link): bool, bool, str
+    """
+    is_linked, is_master, master_link = False, False, ''
+
+    if not len(linkages):
+        return is_linked, is_master, master_link
+
+    dataset, param = parameter_to_CR(parameter)
+
+    for linkage in linkages:
+        d_master, p_master, d_slave, p_slave = linkage_to_CR(linkage)
+
+        if dataset == d_master and param == p_master:
+            is_linked = True
+            is_master = True
+            master_link = 'd%dp%d' % (dataset, param)
+            break
+        elif dataset == d_slave and param == p_slave:
+            is_linked = True
+            master_link = 'd%dp%d' % (d_master, p_slave)
+            break
+
+    return is_linked, is_master, master_link
 
 
 def RC_to_parameter(row, col):
-    return 'd' + str(col) + ':p' + str(row)
+    return 'd%dp%d' % (col, row)
 
 
-def parameter_to_RC(parameter):
-    regex = re.compile("[a-z]([0-9]*):[a-z]([0-9]*)")
-    r = regex.search(parameter)
-    groups = r.groups()
-    col = int(groups[0])
-    row = int(groups[1])
+def linkage_to_CR(linkage):
+    """
+    Get the dataset and parameter numbers for a linkage
 
-    return (row, col)
+    Parameters
+    ----------
+    linkage: str
+        linkage specified as 'dNpM:dApB'
+
+    Returns
+    -------
+    A tuple (N, M, A, B)
+    """
+
+    linkage_regex = re.compile('d([0-9]+)p([0-9]+):d([0-9]+)p([0-9]+)')
+    linkage_search = linkage_regex.search(linkage)
+    if linkage_search is not None:
+        vals = [int(val) for val in linkage_search.groups()]
+        d_master, p_master, d_slave, p_slave = vals
+        return d_master, p_master, d_slave, p_slave
+    else:
+        return ValueError("Parameter needs to be in form 'dNpM'")
 
 
-def generate_linkage_matrix(linkages, numparams):
-    # initialise linkage matrix
-    totalparams = np.insert(np.cumsum(numparams), 0, 0)
+def parameter_to_CR(parameter):
+    """
+    Get the dataset and parameter number for a given parameter
 
-    linkage_matrix = np.zeros([len(numparams), max(numparams)],
-                              dtype='int64')
-    linkage_matrix -= 1
+    Parameters
+    ----------
+    parameter: str
+        Parameter specified as 'dNpM'
 
-    cumulative_param = 0
-    linkages.sort()
+    Returns
+    -------
+    A tuple (N, M)
+    """
 
-    for i in range(len(numparams)):
-        for j in range(numparams[i]):
-            isLinked, isMaster, master_link = is_linked(linkages,
-                                                        RC_to_parameter(j, i))
-            if isLinked and isMaster is False:
-                p, d = parameter_to_RC(master_link)
-                linkage_matrix[i, j] = linkage_matrix[d, p]
-            else:
-                linkage_matrix[i, j] = cumulative_param
-                cumulative_param += 1
+    parameter_regex = re.compile('d([0-9]+)p([0-9]+)')
+    par_search = parameter_regex.search(parameter)
+    if par_search:
+        return (int(par_search.groups()[0]),
+                int(par_search.groups()[1]))
+    else:
+        return ValueError("Parameter needs to be in form 'dNpM'")
 
-    return linkage_matrix
 
 class GlobalFitting_Settings(object):
+    # a lightweight class to enable pickling of the globalfitting state
     def __init__(self):
-        self.numdatasets = 0
+        self.ndatasets = 0
         self.dataset_names = []
-        self.numparams = []
+        self.nparams = []
         self.fitplugins = []
         self.linkages = []
-        self.models = []
-        
+        self.parameters = []
+
+
 class GlobalFitting_DataModel(QtCore.QAbstractTableModel):
 
     added_DataSet = QtCore.Signal(unicode)
@@ -95,12 +132,12 @@ class GlobalFitting_DataModel(QtCore.QAbstractTableModel):
 
     def rowCount(self, parent=QtCore.QModelIndex()):
         val = 3
-        if len(self.gf_settings.numparams):
-            val += max(self.gf_settings.numparams)
+        if len(self.gf_settings.nparams):
+            val += max(self.gf_settings.nparams)
         return val
 
     def columnCount(self, parent=QtCore.QModelIndex()):
-        return len(self.gf_settings.dataset_names)
+        return self.gf_settings.ndatasets
 
     def flags(self, index):
         row = index.row()
@@ -113,7 +150,7 @@ class GlobalFitting_DataModel(QtCore.QAbstractTableModel):
                     QtCore.Qt.ItemIsEnabled |
                     QtCore.Qt.ItemIsSelectable)
 
-        if row < self.gf_settings.numparams[col] + 3:
+        if row < self.gf_settings.nparams[col] + 3:
             return QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled
 
         return False
@@ -130,55 +167,56 @@ class GlobalFitting_DataModel(QtCore.QAbstractTableModel):
                 validator = QtGui.QIntValidator()
                 voutput = validator.validate(value, 1)
 
-                if voutput[0] is QtGui.QValidator.State.Acceptable and \
-                        int(voutput[1]) >= 0:
+                if (voutput[0] is QtGui.QValidator.State.Acceptable
+                    and int(voutput[1]) >= 0):
 
                     val = int(voutput[1])
                     if self.gf_settings.fitplugins[col] == 'default':
                         if (val - 8) % 4:
                             msgBox = QtGui.QMessageBox()
                             msgBox.setText(
-                                'The default fitting plugin is reflectivity. The number of parameters must be 4N+8.')
+                                'The default fitting plugin is reflectivity.'
+                                ' The number of parameters must be 4N+8.')
                             msgBox.exec_()
                             return False
 
-                    oldparams = self.gf_settings.numparams[col]
+                    oldparams = self.gf_settings.nparams[col]
 
-                    if val > max(self.gf_settings.numparams):
+                    if val > max(self.gf_settings.nparams):
                         # this change causes the table to grow
-                        self.gf_settings.numparams[col] = val
-                        currentrows = max(self.gf_settings.numparams)
+                        self.gf_settings.nparams[col] = val
+                        currentrows = max(self.gf_settings.nparams)
                         self.beginInsertRows(QtCore.QModelIndex(),
                                              oldparams + 3,
                                              3 + val - 1)
                         self.endInsertRows()
                         self.resized_rows.emit(currentrows, val)
-                    elif val < max(self.gf_settings.numparams):
+                    elif val < max(self.gf_settings.nparams):
                         # there is at least one other parameter vector bigger
-                        self.gf_settings.numparams[col] = val
+                        self.gf_settings.nparams[col] = val
                     else:
                         #val == max(self.numparams)
                         # this may be the largest, but another may be the same
                         # you might have to shrink the number of parameters
-                        numparams_copy = list(self.gf_settings.numparams)
+                        numparams_copy = list(self.gf_settings.nparams)
                         numparams_copy[col] = val
-                        if max(numparams_copy) < \
-                            max(self.gf_settings.numparams):
+                        if max(numparams_copy) < max(self.gf_settings.nparams):
                             # it was the biggest, now we have to shrink
                             self.beginRemoveRows(QtCore.QModelIndex(),
-                                                 max(numparams_copy),
-                                                 max(self.gf_settings.numparams) - 1)
+                                             max(numparams_copy),
+                                             max(self.gf_settings.nparams) - 1)
                             self.endRemoveRows()
-                            self.gf_settings.numparams[col] = val
-                            self.resized_rows.emit(max(self.gf_settings.numparams),
-                                                       max(numparams_copy))
+                            self.gf_settings.nparams[col] = val
+                            self.resized_rows.emit(
+                                        max(self.gf_settings.nparams),
+                                        max(numparams_copy))
                         else:
                             # there was one other that was just as big,
                             # don't shrink
-                            self.gf_settings.numparams[col] = val
+                            self.gf_settings.nparams[col] = val
 
                     if oldparams > val:
-                        for row in range(val, self.gf_settings.numparams[col]):
+                        for row in range(val, self.gf_settings.nparams[col]):
                             self.unlink_parameter(RC_to_parameter(row, col))
                         self.removed_params.emit(val, col)
                     elif oldparams < val:
@@ -188,13 +226,13 @@ class GlobalFitting_DataModel(QtCore.QAbstractTableModel):
         return True
 
     def convert_indices_to_parameter_list(self, indices):
-        # first convert indices to entries like 'd0:p1'
+        # first convert indices to entries like 'd0p1'
         parameter_list = list()
         for index in indices:
             row = index.row() - 3
             col = index.column()
             if row > -1:
-                parameter_list.append('d' + str(col) + ':p' + str(row))
+                parameter_list.append('d%dp%d' % (col, row))
 
         return parameter_list
 
@@ -214,9 +252,11 @@ class GlobalFitting_DataModel(QtCore.QAbstractTableModel):
 
         # now link the parameters
         parameter_list.sort()
-        self.gf_settings.linkages.append(parameter_list)
+        master_link = parameter_list[0]
+        for parameter in parameter_list[1:]:
+            link = master_link + ':' + parameter
+            self.gf_settings.linkages.append(link)
 
-        self.remove_single_linkages()
         self.modelReset.emit()
         self.changed_linkages.emit(self.gf_settings.linkages)
 
@@ -230,42 +270,38 @@ class GlobalFitting_DataModel(QtCore.QAbstractTableModel):
             if is_linked(self.gf_settings.linkages, parameter)[0]:
                 self.unlink_parameter(parameter)
 
-        self.remove_single_linkages()
         self.modelReset.emit()
         self.changed_linkages.emit(self.gf_settings.linkages)
 
     def unlink_parameter(self, parameter):
-        # find out which entry in the linkage list it is.
-        # It should only be in there once.
-        idx = position_in_linkage(self.gf_settings.linkages, parameter)
-        isLinked, isMaster, master_link = is_linked(self.gf_settings.linkages, parameter)
+        # remove all entries that contain the parameter
+        linkages = self.gf_settings.linkages
 
-        if isLinked:
-            linkage = self.gf_settings.linkages[idx]
-            del(linkage[linkage.index(parameter)])
+        isLinked, isMaster, master_link = is_linked(linkages,
+                                                    parameter)
+        if not isLinked:
+            return
 
-        # if the parameter was a 'master link', then delete all other linkages
-        if isMaster:
-            del(self.gf_settings.linkages[idx])
+        param_regex = re.compile(parameter)
+        linkages_to_remove = filter(param_regex.search,
+                                    linkages)
+        new_linkages = [val for val in linkages if val
+                        not in linkages_to_remove]
 
+        self.gf_settings.linkages = new_linkages
         self.changed_linkages.emit(self.gf_settings.linkages)
-
-    def remove_single_linkages(self):
-        for idx, linkage in enumerate(self.gf_settings.linkages):
-            if len(linkage) == 1:
-                del[self.gf_settings.linkages[idx]]
 
     def add_DataSet(self, dataset):
         if dataset in self.gf_settings.dataset_names:
             return
 
         self.beginInsertColumns(QtCore.QModelIndex(),
-                                self.gf_settings.numdatasets,
-                                self.gf_settings.numdatasets)
-        self.insertColumns(self.gf_settings.numdatasets, 1)
+                                self.gf_settings.ndatasets,
+                                self.gf_settings.ndatasets)
+        self.insertColumns(self.gf_settings.ndatasets, 1)
         self.endInsertColumns()
-        self.gf_settings.numdatasets += 1
-        self.gf_settings.numparams.append(0)
+        self.gf_settings.ndatasets += 1
+        self.gf_settings.nparams.append(0)
         self.gf_settings.fitplugins.append('default')
         self.gf_settings.dataset_names.append(dataset)
         self.added_DataSet.emit(dataset)
@@ -286,15 +322,13 @@ class GlobalFitting_DataModel(QtCore.QAbstractTableModel):
             if row == 1:
                 return self.gf_settings.fitplugins[col]
             if row == 2:
-                return self.gf_settings.numparams[col]
+                return self.gf_settings.nparams[col]
 
-            if row < self.gf_settings.numparams[col] + 3:
+            if row < self.gf_settings.nparams[col] + 3:
                 parameter = RC_to_parameter(row - 3, col)
                 isLinked, isMaster, master_link = \
                     is_linked(self.gf_settings.linkages, parameter)
                 if isLinked and isMaster is False:
-                    idx = position_in_linkage(self.gf_settings.linkages,
-                                              parameter)
                     return 'linked: ' + master_link
 
                 return parameter
@@ -325,7 +359,7 @@ class FitPluginItemDelegate(QtGui.QStyledItemDelegate):
 
     def createEditor(self, parent, option, index):
         ComboBox = QtGui.QComboBox(parent)
-        pluginlist = [plugin['name'] for plugin in self.plugins]
+        pluginlist = self.plugins.keys()
         ComboBox.addItems(pluginlist)
         return ComboBox
 
@@ -342,58 +376,64 @@ class GlobalFitting_ParamModel(QtCore.QAbstractTableModel):
     def changed_linkages(self, linkages):
         self.gf_settings.linkages = linkages
         for linkage in linkages:
-            masterParam, masterDataSet = parameter_to_RC(linkage[0])
-            for link in linkage:
-                param, which_dataset = parameter_to_RC(link)
-                self.gf_settings.models[which_dataset].parameters[param] = \
-                    self.gf_settings.models[masterDataSet].parameters[masterParam]
-    
+            d_master, p_master, d_slave, p_slave = linkage_to_CR(linkage)
+            # TODO update parameters
+
     def added_DataSet(self, dataset):
         if dataset in self.gf_settings.dataset_names:
             return
 
-        self.gf_settings.numdatasets += 1
-        self.gf_settings.numparams.append(0)
+        self.gf_settings.ndatasets += 1
+        self.gf_settings.nparams.append(0)
         self.gf_settings.fitplugins.append('default')
         self.gf_settings.dataset_names.append(dataset)
-        self.gf_settings.models.append(model.Model(np.zeros_like([])))
+        self.gf_settings.parameters.append(Parameters())
         self.beginInsertColumns(QtCore.QModelIndex(),
-                                self.gf_settings.numdatasets - 1,
-                                self.gf_settings.numdatasets - 1)
+                                self.gf_settings.ndatasets - 1,
+                                self.gf_settings.ndatasets - 1)
         self.endInsertColumns()
 
     def removed_DataSet(self, which_dataset):
-        self.gf_settings.numdatasets -= 1
+        linkages = self.gf_settings.linkages
+
+        # remove all the linkages referring to this dataset.
+        for i in range(len(linkages - 1), -1, -1):
+            linkage = linkages[i]
+            d_master, p_master, d_slave, p_slave = linkage_to_CR(linkage)
+            if which_dataset in [d_master, d_slave]:
+                del(linkages[i])
+
+        self.gf_settings.ndatasets -= 1
         del(self.gf_settings.dataset_names[which_dataset])
         self.beginRemoveColumns(QtCore.QModelIndex(),
                                 which_dataset,
                                 which_dataset)
-        del[self.gf_settings.models[which_dataset]]
+        del(self.gf_settings.parameters[which_dataset])
         self.endRemoveColumns()
 
     def added_params(self, newparams, which_dataset):
-        oldparams = self.gf_settings.numparams[which_dataset]
-        self.gf_settings.numparams[which_dataset] = newparams
-        model = self.gf_settings.models[which_dataset]
-        model.parameters = \
-            np.resize(model.parameters,
-                      newparams)
+        oldparams = self.gf_settings.nparams[which_dataset]
+        self.gf_settings.nparams[which_dataset] = newparams
+        params = self.gf_settings.parameters[which_dataset]
+        for i in range(oldparams, newparams):
+            params.add_many(('d%dp%d' % (which_dataset, i),
+                             0,
+                             True,
+                             None,
+                             None,
+                             None))
 
-        model.parameters[oldparams:] = 0.
-        model.fitted_parameters = \
-            np.append(model.fitted_parameters,
-                      np.arange(oldparams, newparams))
-        
         start = self.createIndex(oldparams, which_dataset)
         finish = self.createIndex(newparams, which_dataset)
         self.dataChanged.emit(start, finish)
 
     def removed_params(self, newparams, which_dataset):
-        oldparams = self.gf_settings.numparams[which_dataset]
-        self.gf_settings.numparams[which_dataset] = newparams
-        self.gf_settings.models[which_dataset].parameters = \
-            np.resize(self.gf_settings.models[which_dataset].parameters,
-                      newparams)
+        oldparams = self.gf_settings.nparams[which_dataset]
+        self.gf_settings.nparams[which_dataset] = newparams
+        params = self.gf_settings.parameters[which_dataset]
+        names_to_remove = params.keys()[newparams:]
+        map(params.pop, names_to_remove)
+
         start = self.createIndex(newparams, which_dataset)
         self.dataChanged.emit(start, start)
 
@@ -401,12 +441,12 @@ class GlobalFitting_ParamModel(QtCore.QAbstractTableModel):
         self.modelReset.emit()
 
     def rowCount(self, parent=QtCore.QModelIndex()):
-        if len(self.gf_settings.numparams):
-            return max(self.gf_settings.numparams)
+        if len(self.gf_settings.nparams):
+            return max(self.gf_settings.nparams)
         return 0
 
     def columnCount(self, parent=QtCore.QModelIndex()):
-        return self.gf_settings.numdatasets
+        return self.gf_settings.ndatasets
 
     def insertRows(self, position, rows=1, index=QtCore.QModelIndex()):
         pass
@@ -415,11 +455,12 @@ class GlobalFitting_ParamModel(QtCore.QAbstractTableModel):
         row = index.row()
         col = index.column()
 
-        if row > self.gf_settings.numparams[col] - 1:
+        if row > self.gf_settings.nparams[col] - 1:
             return False
 
         parameter = RC_to_parameter(row, col)
-        isLinked, isMaster, master_link = is_linked(self.gf_settings.linkages, parameter)
+        isLinked, isMaster, master_link = is_linked(self.gf_settings.linkages,
+                                                    parameter)
 
         theflags = (QtCore.Qt.ItemIsUserCheckable |
                     QtCore.Qt.ItemIsEnabled)
@@ -427,9 +468,9 @@ class GlobalFitting_ParamModel(QtCore.QAbstractTableModel):
         if isLinked and isMaster is False:
             pass
         else:
-            theflags = (theflags |
-                        QtCore.Qt.ItemIsEditable |
-                        QtCore.Qt.ItemIsSelectable)
+            theflags = (theflags
+                        | QtCore.Qt.ItemIsEditable
+                        | QtCore.Qt.ItemIsSelectable)
 
         return theflags
 
@@ -438,24 +479,23 @@ class GlobalFitting_ParamModel(QtCore.QAbstractTableModel):
         col = index.column()
 
         parameter = RC_to_parameter(row, col)
-        isLinked, isMaster, master_link = is_linked(self.gf_settings.linkages, parameter)
+        isLinked, isMaster, master_link = is_linked(self.gf_settings.linkages,
+                                                    parameter)
 
-        model = self.gf_settings.models[col]
+        params = self.gf_settings.parameters[col]
+        name = params.keys()[row]
 
         if role == QtCore.Qt.CheckStateRole:
             # if the default plugin is the reflectivity one,
             # don't allow the value to be changed.
             # this is the number of layers
             if row == 0 and self.gf_settings.fitplugins[col] == 'default':
-                model.fitted_parameters = np.append(model.fitted_parameters,
-                                                    0)
+                param[name].vary = False
 
             if value == QtCore.Qt.Checked:
-                model.fitted_parameters = np.delete(model.fitted_parameters,
-                                                    np.where(model.fitted_parameters == row))
+                params[name].vary = False
             else:
-                model.fitted_parameters = np.append(model.fitted_parameters,
-                                                    row)
+                params[name].vary = True
 
         if role == QtCore.Qt.EditRole:
             validator = QtGui.QDoubleValidator()
@@ -463,25 +503,28 @@ class GlobalFitting_ParamModel(QtCore.QAbstractTableModel):
             if voutput[0] is not QtGui.QValidator.State.Acceptable:
                 return False
 
-            val = voutput[1]
+            val = float(voutput[1])
 
             if row == 0 and self.gf_settings.fitplugins[col] == 'default':
-                testparams = np.copy(model.parameters)
-                testparams[0] = float(int(val))
-                if not reflect.is_proper_Abeles_input(testparams):
+                if not reflect.is_proper_Abeles_input(
+                                    curvefitter.values(params)):
                     msgBox = QtGui.QMessageBox()
                     msgBox.setText(
-                        'The default fitting plugin for this model is reflectivity. This parameter must be (numparams - 8)/4.')
+                        "The default fitting plugin for this model is"
+                        " reflectivity. This parameter must be "
+                        "(numparams - 8)/4.")
                     msgBox.exec_()
                     return False
 
-            model.parameters[row] = val
+            params[name].value = val
             if isMaster and isLinked:
-                linkage = self.gf_settings.linkages[position_in_linkage(self.gf_settings.linkages,
-                                                                        parameter)]
-                for link in linkage:
-                    row, col = parameter_to_RC(link)
-                    self.gf_settings.models[col].parameters[row] = val
+                for linkage in self.gf_settings.linkages:
+                    d_master, p_master, d_slave, p_slave = linkage_to_CR(
+                                                                    linkage)
+                    if d_master == col and p_master == row:
+                        slave_params = self.gf_settings.parameters[col]
+                        name = slave_params.keys()[p_slave]
+                        slave_params[name].value = val
 
         self.dataChanged.emit(index, index)
         return True
@@ -490,23 +533,25 @@ class GlobalFitting_ParamModel(QtCore.QAbstractTableModel):
         row = index.row()
         col = index.column()
 
-        if row > self.gf_settings.numparams[col] - 1:
+        if row > self.gf_settings.nparams[col] - 1:
             return None
 
         parameter = RC_to_parameter(row, col)
-        isLinked, isMaster, master_link = is_linked(self.gf_settings.linkages, parameter)
-        model = self.gf_settings.models[col]
+        isLinked, isMaster, master_link = is_linked(self.gf_settings.linkages,
+                                                    parameter)
+        params = self.gf_settings.parameters[col]
+        name = params.keys()[row]
 
         if role == QtCore.Qt.DisplayRole:
-            if row < self.gf_settings.numparams[col]:
-                return str(model.parameters[row])
+            if row < self.gf_settings.nparams[col]:
+                return str(params[name].value)
 
         if role == QtCore.Qt.CheckStateRole:
             if row == 0 and self.gf_settings.fitplugins[col] == 'default':
                 return QtCore.Qt.Checked
             if isLinked and isMaster is False:
                 return None
-            if row in model.fitted_parameters:
+            if params[name].vary:
                 return QtCore.Qt.Unchecked
             else:
                 return QtCore.Qt.Checked
