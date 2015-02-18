@@ -42,7 +42,7 @@ def convert_layer_format_to_coefs(layers, scale=1, bkg=0):
     coefs[6] = bkg
     coefs[7] = layers[-1, 3]
     if nlayers:
-        coefs[8:] = layers.flatten()[4: -4]
+        coefs[8:] = layers.ravel()[4: -4]
 
     return coefs
 

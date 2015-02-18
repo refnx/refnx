@@ -18,7 +18,8 @@ from reflectivity_parameters_GUImodel import BaseModel, LayerModel
 import limits_GUImodel
 from globalfitting_GUImodel import (GlobalFitting_DataModel,
                                     FitPluginItemDelegate,
-                                    GlobalFitting_ParamModel)
+                                    GlobalFitting_ParamModel,
+                                    GlobalFitting_Settings)
 from datastore_GUImodel import DataStoreModel
 
 import refnx.analysis.reflect as reflect
@@ -124,7 +125,7 @@ class MyMainWindow(QtGui.QMainWindow):
 
         # A QAbstractListModel for holding parameters for UDF plugins.
         # displays the UDF parameters in a combobox.
-        self.UDFparams_store_model = ParamsStoreModel(self)
+        self.UDFparams_store_model = self.params_store_model
 
         # A QAbstractTableModel for displaying UDF parameters.
         self.UDFparams_model = UDFParametersModel(None, self)
@@ -170,12 +171,13 @@ class MyMainWindow(QtGui.QMainWindow):
         self.redraw_dataset_graphs([theoretical])
 
         # globalfitting tab
-        self.globalfitting_DataModel = GlobalFitting_DataModel(self)
-        self.globalfitting_ParamModel = GlobalFitting_ParamModel(self)
-        #
+        gf_settings = GlobalFitting_Settings()
+        self.globalfitting_DataModel = GlobalFitting_DataModel(gf_settings, self)
+        self.globalfitting_ParamModel = GlobalFitting_ParamModel(gf_settings, self)
+
         self.ui.globalfitting_DataView.setModel(self.globalfitting_DataModel)
         self.ui.globalfitting_ParamsView.setModel(self.globalfitting_ParamModel)
-        #
+
         self.ui.FitPluginDelegate = FitPluginItemDelegate(
                                     self.plugin_store_model.plugins,
                                     self.ui.globalfitting_DataView)
@@ -183,25 +185,13 @@ class MyMainWindow(QtGui.QMainWindow):
         self.ui.globalfitting_DataView.setEditTriggers(
             QtGui.QAbstractItemView.AllEditTriggers)
         self.ui.globalfitting_DataView.setItemDelegateForRow(
-            1,
+            0,
             self.ui.FitPluginDelegate)
 
-        self.globalfitting_DataModel.changed_linkages.connect(
-            self.globalfitting_ParamModel.changed_linkages)
-        self.globalfitting_DataModel.added_DataSet.connect(
-            self.globalfitting_ParamModel.added_DataSet)
-        self.globalfitting_DataModel.removed_DataSet.connect(
-            self.globalfitting_ParamModel.removed_DataSet)
-        self.globalfitting_DataModel.added_params.connect(
-            self.globalfitting_ParamModel.added_params)
-        self.globalfitting_DataModel.removed_params.connect(
-            self.globalfitting_ParamModel.removed_params)
-        self.globalfitting_DataModel.resized_rows.connect(
-            self.globalfitting_ParamModel.resized_rows)
-        self.globalfitting_DataModel.changed_fitplugin.connect(
-            self.globalfitting_ParamModel.changed_fitplugin)
-        # self.globalfitting_ParamModel.dataChanged.connect(
-        #     self.calculate_gf_model)
+        self.globalfitting_DataModel.data_model_changed.connect(
+            self.globalfitting_ParamModel.data_model_changed)
+        self.globalfitting_ParamModel.dataChanged.connect(
+             self.calculate_gf_model)
 
         print('Session started at:', time.asctime(time.localtime(time.time())))
 
@@ -1132,6 +1122,10 @@ class MyMainWindow(QtGui.QMainWindow):
         try:
             params = self.params_store_model[arg_1]
             if params is not None:
+                # see if it's a proper reflectivity model
+                if params.values()[0] * 4 + 8 != len(params):
+                    return
+
                 theoretical = deepcopy(params)
                 curvefitter.clear_bounds(params)
                 self.params_store_model['theoretical'] = theoretical
@@ -1624,6 +1618,7 @@ class MyMainWindow(QtGui.QMainWindow):
         print(evalf)
 
     def calculate_gf_model(self):
+        return
         globalFitting = self.create_gf_object()
         eval = globalFitting.model()
         return eval

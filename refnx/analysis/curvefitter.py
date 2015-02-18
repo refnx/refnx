@@ -244,9 +244,9 @@ class CurveFitter(Minimizer):
 
         if self.mask is not None:
             resid_ma = ma.array(resid, mask=self.mask)
-            return resid_ma[~resid_ma.mask].data.flatten()
+            return resid_ma[~resid_ma.mask].data
         else:
-            return resid.flatten()
+            return resid
 
     def model(self, params):
         """
@@ -423,6 +423,9 @@ class GlobalFitter(CurveFitter):
         p = Parameters()
         for i, dataset in enumerate(self.datasets):
             # add all the parameters for a given dataset
+            # the parameters are all given new names:
+            # abc -> abc_d0
+            # parameter `abc` in dataset 0 becomes abc_d0
             new_names = {}
             for j, item in enumerate(dataset.params.items()):
                 old_name = item[0]
