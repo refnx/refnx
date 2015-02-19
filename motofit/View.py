@@ -1649,8 +1649,41 @@ class MyMainWindow(QtGui.QMainWindow):
 
     @QtCore.Slot()
     def on_do_gf_fit_clicked(self):
-        evalf = self.calculate_gf_model()
-        print(evalf)
+        print ('___________________________________________________')
+        print(self.settings.fitting_algorithm, self.settings.transformdata)
+
+        # how did you want to fit the dataset - logY vs X, lin Y vs X, etc.
+        # select a transform.  Note that we have to transform the data for
+        # the fit as well
+        transform_fnctn = Transform(
+            self.settings.transformdata).transform
+        alg = self.settings.fitting_algorithm
+
+        gf_settings = self.globalfitting_DataModel.gf_settings
+        global_fitter = self.create_gf_object()
+
+        if not self.settings.useerrors:
+            global_fitter.edata[:] = 1.
+
+        if alg == 'DE':
+            global_fitter.fit(method='differential_evolution')
+
+        elif alg == 'LM':
+            global_fitter.fit(method='leastsq')
+
+        elif alg == 'MCMC':
+            global_fitter.mcmc()
+
+        #update the GUI
+        self.GFupdate_gui_model()
+
+        for name, params in gf_settings.dataset_names, gf_settings.parameters:
+            new_params = deepcopy(params)
+            self.params_store_model.add(new_params, 'coef_%s' % name)
+
+        print(fit_report(minimizer))
+        print('___________________________________________________')
+
 
     def GFupdate_gui_model(self):
         gf_settings = self.globalfitting_DataModel.gf_settings
@@ -1658,6 +1691,7 @@ class MyMainWindow(QtGui.QMainWindow):
         residuals = global_fitter.residuals(global_fitter.params).ravel()
         chisqr = np.sum(residuals**2)
         chisqr /= residuals.size
+        self.ui.chi2GF.setValue(chisqr)
 
         global_fitter = self.create_gf_object(transform=False)
 

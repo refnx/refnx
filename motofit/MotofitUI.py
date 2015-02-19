@@ -2,8 +2,8 @@
 
 # Form implementation generated from reading ui file 'Motofit.ui'
 #
-# Created: Wed Feb 18 13:52:20 2015
-#      by: pyside-uic 0.2.15 running on PySide 1.2.1
+# Created: Thu Feb 19 16:10:44 2015
+#      by: pyside-uic 0.2.15 running on PySide 1.2.2
 #
 # WARNING! All changes made in this file will be lost!
 
@@ -592,6 +592,8 @@ class Ui_MainWindow(object):
         self.tab_7 = QtGui.QWidget()
         self.tab_7.setObjectName("tab_7")
         self.gridLayout_10 = QtGui.QGridLayout(self.tab_7)
+        self.gridLayout_10.setContentsMargins(-1, 12, -1, 20)
+        self.gridLayout_10.setVerticalSpacing(3)
         self.gridLayout_10.setObjectName("gridLayout_10")
         self.do_gf_fit = QtGui.QPushButton(self.tab_7)
         self.do_gf_fit.setMinimumSize(QtCore.QSize(50, 70))
@@ -611,6 +613,17 @@ class Ui_MainWindow(object):
         self.globalfitting_ParamsView = QtGui.QTableView(self.tab_7)
         self.globalfitting_ParamsView.setObjectName("globalfitting_ParamsView")
         self.gridLayout_10.addWidget(self.globalfitting_ParamsView, 0, 0, 1, 1)
+        self.chi2GF = QtGui.QDoubleSpinBox(self.tab_7)
+        self.chi2GF.setMinimumSize(QtCore.QSize(130, 0))
+        font = QtGui.QFont()
+        font.setPointSize(12)
+        self.chi2GF.setFont(font)
+        self.chi2GF.setReadOnly(True)
+        self.chi2GF.setButtonSymbols(QtGui.QAbstractSpinBox.NoButtons)
+        self.chi2GF.setMaximum(1000000000.0)
+        self.chi2GF.setProperty("value", 999999999.0)
+        self.chi2GF.setObjectName("chi2GF")
+        self.gridLayout_10.addWidget(self.chi2GF, 1, 1, 1, 1)
         self.tabWidget_2.addTab(self.tab_7, "")
         self.gridLayout_9.addWidget(self.tabWidget_2, 0, 0, 1, 1)
         self.tabWidget.addTab(self.tab_6, "")
@@ -786,6 +799,7 @@ class Ui_MainWindow(object):
         self.linkGFparam.setText(QtGui.QApplication.translate("MainWindow", "Link selection", None, QtGui.QApplication.UnicodeUTF8))
         self.unlinkGFparam.setText(QtGui.QApplication.translate("MainWindow", "Unlink selection", None, QtGui.QApplication.UnicodeUTF8))
         self.tabWidget_2.setTabText(self.tabWidget_2.indexOf(self.tab_61), QtGui.QApplication.translate("MainWindow", "datasets", None, QtGui.QApplication.UnicodeUTF8))
+        self.chi2GF.setPrefix(QtGui.QApplication.translate("MainWindow", "chi2: ", None, QtGui.QApplication.UnicodeUTF8))
         self.tabWidget_2.setTabText(self.tabWidget_2.indexOf(self.tab_7), QtGui.QApplication.translate("MainWindow", "parameters", None, QtGui.QApplication.UnicodeUTF8))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_6), QtGui.QApplication.translate("MainWindow", "Global fit", None, QtGui.QApplication.UnicodeUTF8))
         self.actionLoad_Data.setText(QtGui.QApplication.translate("MainWindow", "Load Data", None, QtGui.QApplication.UnicodeUTF8))

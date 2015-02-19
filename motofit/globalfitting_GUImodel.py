@@ -283,12 +283,13 @@ class GlobalFitting_DataModel(QtCore.QAbstractTableModel):
                                 self.gf_settings.ndatasets,
                                 self.gf_settings.ndatasets)
         self.insertColumns(self.gf_settings.ndatasets, 1)
-        self.endInsertColumns()
         self.gf_settings.ndatasets += 1
         self.gf_settings.nparams.append(0)
         self.gf_settings.parameters.append(Parameters())
         self.gf_settings.fitplugins.append('default')
         self.gf_settings.dataset_names.append(dataset)
+        self.endInsertColumns()
+
         self.data_model_changed.emit()
 
     def data(self, index, role=QtCore.Qt.DisplayRole):
@@ -330,7 +331,6 @@ class GlobalFitting_DataModel(QtCore.QAbstractTableModel):
                 return 'number of parameters'
 
         if orientation == QtCore.Qt.Horizontal:
-            print(section)
             if self.gf_settings.ndatasets:
                 return self.gf_settings.dataset_names[section]
 

@@ -1470,6 +1470,36 @@
              <item row="0" column="0">
               <widget class="QTableView" name="globalfitting_ParamsView"/>
              </item>
+             <item row="1" column="1">
+              <widget class="QDoubleSpinBox" name="chi2GF">
+               <property name="minimumSize">
+                <size>
+                 <width>130</width>
+                 <height>0</height>
+                </size>
+               </property>
+               <property name="font">
+                <font>
+                 <pointsize>12</pointsize>
+                </font>
+               </property>
+               <property name="readOnly">
+                <bool>true</bool>
+               </property>
+               <property name="buttonSymbols">
+                <enum>QAbstractSpinBox::NoButtons</enum>
+               </property>
+               <property name="prefix">
+                <string>chi2: </string>
+               </property>
+               <property name="maximum">
+                <double>1000000000.000000000000000</double>
+               </property>
+               <property name="value">
+                <double>999999999.000000000000000</double>
+               </property>
+              </widget>
+             </item>
             </layout>
            </widget>
           </widget>
