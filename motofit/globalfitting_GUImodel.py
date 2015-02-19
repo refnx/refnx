@@ -8,7 +8,7 @@ from lmfit import Parameters
 import re
 
 
-def is_linked(linkages, parameter, dataset):
+def is_linked(linkages, dataset, parameter):
     """
     Given a set of linkages and a parameter determine whether the parameter
     is linked, is a master link, and what the master link is.
@@ -18,10 +18,11 @@ def is_linked(linkages, parameter, dataset):
     linkages: sequence
         The linkages for the analysis. 'd1:abc=d2:def' would link parameter
         `def` of dataset 2 with parameter `abc` of dataset 1.
-    parameter: str
-        The parameter name of interest.
     dataset: integer
         The dataset index the parameter belongs to.
+    parameter: str
+        The parameter name of interest.
+
     Returns
     -------
     (is_linked, is_master, master_link): bool, bool, str
@@ -229,7 +230,9 @@ class GlobalFitting_DataModel(QtCore.QAbstractTableModel):
 
         for dataset, parameter in parameter_list:
             isLinked, isMaster, master_link = is_linked(
-                              self.gf_settings.linkages, parameter, dataset)
+                              self.gf_settings.linkages,
+                              dataset,
+                              parameter)
             if isLinked or isMaster:
                 self.unlink_parameter(dataset, parameter)
 
@@ -246,9 +249,11 @@ class GlobalFitting_DataModel(QtCore.QAbstractTableModel):
         parameter_list = sorted(
             self.convert_indices_to_parameter_list(indices))
 
-        for parameter in parameter_list:
-            if is_linked(self.gf_settings.linkages, parameter)[0]:
-                self.unlink_parameter(parameter)
+        for dataset, parameter in parameter_list:
+            if is_linked(self.gf_settings.linkages,
+                         dataset,
+                         parameter)[0]:
+                self.unlink_parameter(dataset, parameter)
 
         self.modelReset.emit()
 
@@ -257,8 +262,8 @@ class GlobalFitting_DataModel(QtCore.QAbstractTableModel):
         linkages = self.gf_settings.linkages
 
         isLinked, isMaster, master_link = is_linked(linkages,
-                                                    parameter,
-                                                    dataset)
+                                                    dataset,
+                                                    parameter)
         if not isLinked:
             return
 
@@ -307,7 +312,7 @@ class GlobalFitting_DataModel(QtCore.QAbstractTableModel):
             if row < self.gf_settings.nparams[col] + 2:
                 name = names[row - 2]
                 isLinked, isMaster, master_link = \
-                    is_linked(self.gf_settings.linkages, name, col)
+                    is_linked(self.gf_settings.linkages, col, name)
                 if isLinked and isMaster is False:
                     return '%s is linked: %s' %(name, master_link)
 
@@ -325,6 +330,7 @@ class GlobalFitting_DataModel(QtCore.QAbstractTableModel):
                 return 'number of parameters'
 
         if orientation == QtCore.Qt.Horizontal:
+            print(section)
             if self.gf_settings.ndatasets:
                 return self.gf_settings.dataset_names[section]
 
@@ -382,8 +388,8 @@ class GlobalFitting_ParamModel(QtCore.QAbstractTableModel):
         name = params.keys()[row]
 
         isLinked, isMaster, master_link = is_linked(self.gf_settings.linkages,
-                                                    name,
-                                                    which_dataset)
+                                                    which_dataset,
+                                                    name)
 
         theflags = (QtCore.Qt.ItemIsUserCheckable |
                     QtCore.Qt.ItemIsEnabled)
@@ -406,8 +412,8 @@ class GlobalFitting_ParamModel(QtCore.QAbstractTableModel):
         name = params.keys()[row]
         param = params[name]
         isLinked, isMaster, master_link = is_linked(self.gf_settings.linkages,
-                                                    name,
-                                                    which_dataset)
+                                                    which_dataset,
+                                                    name)
 
         # 0, 2, 4, ... are the names of the parameters
         if not (col % 2):
@@ -418,7 +424,7 @@ class GlobalFitting_ParamModel(QtCore.QAbstractTableModel):
             # don't allow the value to be changed.
             # this is the number of layers
             if row == 0 and self.gf_settings.fitplugins[which_dataset] == 'default':
-                param[name].vary = False
+                params[name].vary = False
 
             if value == QtCore.Qt.Checked:
                 params[name].vary = False
@@ -467,8 +473,8 @@ class GlobalFitting_ParamModel(QtCore.QAbstractTableModel):
         name = params.keys()[row]
 
         isLinked, isMaster, master_link = is_linked(self.gf_settings.linkages,
-                                                    name,
-                                                    which_dataset)
+                                                    which_dataset,
+                                                    name)
 
         if role == QtCore.Qt.DisplayRole:
             if not (col % 2):

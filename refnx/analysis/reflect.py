@@ -538,7 +538,7 @@ class ReflectivityFitter(CurveFitter):
 class Transform(object):
 
     def __init__(self, form):
-        types = ['None', 'lin', 'logY', 'YX4', 'YX2']
+        types = [None, 'lin', 'logY', 'YX4', 'YX2']
         self.form = None
 
         if form in types:
@@ -559,7 +559,7 @@ class Transform(object):
         else:
             etemp = edata
 
-        if self.form == 'None':
+        if self.form == None:
             yt = np.copy(ydata)
             et = np.copy(etemp)
         elif self.form == 'lin':

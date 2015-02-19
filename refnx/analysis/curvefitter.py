@@ -390,11 +390,11 @@ class GlobalFitter(CurveFitter):
     """
     A class for simultaneous curvefitting of multiple datasets
     """
-    def __init__(self, datasets, constraints=(), kws=None,
+    def __init__(self, fitters, constraints=(), kws=None,
                  callback=None):
         """
-        datasets : sequence of CurveFitter instances
-            Contains all the datasets and fitfunctions for the global fit.
+        fitters : sequence of CurveFitter instances
+            Contains all the fitters and fitfunctions for the global fit.
         constraints : str sequence, optional
             Of the type 'dN:param_name = constraint'. Sets a constraint
             expression for the parameter `param_name` in dataset N. The
@@ -412,22 +412,22 @@ class GlobalFitter(CurveFitter):
         if kws is not None:
             min_kwds = kws
 
-        for dataset in datasets:
-            if not isinstance(dataset, CurveFitter):
+        for fitter in fitters:
+            if not isinstance(fitter, CurveFitter):
                 raise ValueError('All items in curve_fitter_list must be '
                                  'instances of CurveFitter')
 
-        self.datasets = datasets
+        self.fitters = fitters
 
         self.new_param_names = []
         p = Parameters()
-        for i, dataset in enumerate(self.datasets):
+        for i, fitter in enumerate(self.fitters):
             # add all the parameters for a given dataset
             # the parameters are all given new names:
             # abc -> abc_d0
             # parameter `abc` in dataset 0 becomes abc_d0
             new_names = {}
-            for j, item in enumerate(dataset.params.items()):
+            for j, item in enumerate(fitter.params.items()):
                 old_name = item[0]
                 param = item[1]
                 new_name = old_name + '_d%d' % (i)
@@ -445,7 +445,7 @@ class GlobalFitter(CurveFitter):
             # if there are any expressions they have to be updated
             # iterate through all the parameters in the dataset
             old_names = dict((v, k) for k, v in new_names.items())
-            for i, param in enumerate(dataset.params.values()):
+            for i, param in enumerate(fitter.params.values()):
                 expr = param.expr
                 new_name = old_names[param.name]
                 # if it's got an expression you'll have to update it
@@ -479,7 +479,7 @@ class GlobalFitter(CurveFitter):
                 if not modified_param_name in all_names:
                     continue
 
-                # now search for datasets mentioned in constraint
+                # now search for fitters mentioned in constraint
                 d_mentioned = param_regex.findall(const)
                 for d in d_mentioned:
                     new_name = d[1] + ('_d%d' % int(d[0]))
@@ -495,16 +495,32 @@ class GlobalFitter(CurveFitter):
                 p[modified_param_name].set(expr=const)
 
         self.params = p
-        xdata = [dataset.xdata for dataset in datasets]
-        ydata = [dataset.ydata for dataset in datasets]
-        edata = [dataset.edata for dataset in datasets]
+        xdata = [fitter.xdata for fitter in fitters]
+        ydata = [fitter.ydata for fitter in fitters]
+        edata = [fitter.edata for fitter in fitters]
         super(GlobalFitter, self).__init__(None,
-                                           xdata,
-                                           ydata,
+                                           np.hstack(xdata),
+                                           np.hstack(ydata),
                                            self.params,
-                                           edata=edata,
+                                           edata=np.hstack(edata),
                                            callback=callback,
                                            kws=min_kwds)
+
+    def distribute_params(self, params):
+        """
+        Takes the combined parameter set and distributes linked parameters
+        into the individual parameter sets.
+
+        Parameters
+        ----------
+        params: lmfit.Parameters
+            Specifies the entire parameter set, across all the datasets
+        """
+        values = params.valuesdict()
+        for i, fitter in enumerate(self.fitters):
+            new_names = self.new_param_names[i]
+            for new_name, old_name in new_names.items():
+                fitter.params[old_name].set(value=values[new_name])
 
     def model(self, params):
         """
@@ -512,7 +528,7 @@ class GlobalFitter(CurveFitter):
 
         Parameters
         ----------
-        params : lmfit.Parameters instance
+        params : lmfit.Parameters
             Specifies the entire parameter set, across all the datasets
 
         Returns
@@ -520,15 +536,12 @@ class GlobalFitter(CurveFitter):
         model : np.ndarray
             The model.
         """
-        values = params.valuesdict()
         model = np.zeros(0, dtype='float64')
-        for i, dataset in enumerate(self.datasets):
-            new_names = self.new_param_names[i]
-            for new_name, old_name in new_names.items():
-                dataset.params[old_name].set(value=values[new_name])
-            model = np.append(model,
-                              dataset.model(dataset.params))
+        self.distribute_params(params)
 
+        for fitter in self.fitters:
+            model = np.append(model,
+                              fitter.model(fitter.params))
         return model
 
     def residuals(self, params):
@@ -548,13 +561,11 @@ class GlobalFitter(CurveFitter):
         residuals : np.ndarray
             The difference between the data and the model.
         """
-        values = params.valuesdict()
         total_residuals = np.zeros(0, dtype='float64')
-        for i, dataset in enumerate(self.datasets):
-            new_names = self.new_param_names[i]
-            for new_name, old_name in new_names.items():
-                dataset.params[old_name].set(value=values[new_name])
-            resid = dataset.residuals(dataset.params)
+        self.distribute_params(params)
+
+        for fitter in self.fitters:
+            resid = fitter.residuals(fitter.params)
             total_residuals = np.append(total_residuals,
                                         resid)
 

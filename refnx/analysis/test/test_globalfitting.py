@@ -82,8 +82,7 @@ class TestGlobalFitting(unittest.TestCase):
         # the residuals should be the same length as the data
         a = GlobalFitter([self.f])
         residuals = a.residuals(a.params)
-        print(a.params)
-        assert_equal(residuals.size, a.datasets[0].ydata.size)
+        assert_equal(residuals.size, a.fitters[0].ydata.size)
 
     def test_globalfitting(self):
         # can the global fitting run?

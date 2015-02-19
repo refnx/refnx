@@ -24,7 +24,8 @@ from datastore_GUImodel import DataStoreModel
 
 import refnx.analysis.reflect as reflect
 import refnx.analysis.curvefitter as curvefitter
-from refnx.analysis import ReflectivityFitter, Transform, CurveFitter
+from refnx.analysis import (ReflectivityFitter, Transform, CurveFitter,
+                            GlobalFitter)
 from refnx.dataset import Data1D, ReflectDataset
 
 from lmfit import Parameters, fit_report
@@ -99,7 +100,7 @@ class MyMainWindow(QtGui.QMainWindow):
         theoretical.fit = evaluator.model(params)
         theoretical.residuals = evaluator.residuals(params)
         theoretical.params = params
-        theoretical.chisqr = np.sum(theoretical.residuals**2)
+        theoretical.chisqr = np.sum(theoretical.residuals.ravel()**2)
         theoretical.sld_profile = evaluator.sld_profile(params)
         self.data_store_model.add(theoretical)
 
@@ -191,7 +192,7 @@ class MyMainWindow(QtGui.QMainWindow):
         self.globalfitting_DataModel.data_model_changed.connect(
             self.globalfitting_ParamModel.data_model_changed)
         self.globalfitting_ParamModel.dataChanged.connect(
-             self.calculate_gf_model)
+             self.GFupdate_gui_model)
 
         print('Session started at:', time.asctime(time.localtime(time.time())))
 
@@ -327,7 +328,7 @@ class MyMainWindow(QtGui.QMainWindow):
         self.add_datasets_to_graphs(ds)
 
 #        self.reflectivitygraphs.axes[0].lines.remove(self.theoretical.line2D)
-# self.reflectivitygraphs.axes[1].lines.remove(self.theoretical.line2Dresiduals)
+#        self.reflectivitygraphs.axes[1].lines.remove(self.theoretical.line2Dresiduals)
 
         # when you load in the theoretical model you destroy the link to the
         # gui, reinstate it.
@@ -384,7 +385,7 @@ class MyMainWindow(QtGui.QMainWindow):
 
         self.settransformoption(self.settings.transformdata)
 
-    def apply_settings_to_params(self, model):
+    def apply_settings_to_params(self, params):
          for key in self.settings.__dict__:
              params[key] = self.settings[key]
 
@@ -1288,11 +1289,16 @@ class MyMainWindow(QtGui.QMainWindow):
     def on_globalfitting_ParamsView_clicked(self, index):
         row = index.row()
         col = index.column()
+        which_dataset = col // 2
+
+        gf_settings = self.globalfitting_DataModel.gf_settings
+        params = gf_settings.parameters[which_dataset]
+        names = params.keys()
 
         self.currentCell = {}
 
         try:
-            val = self.globalfitting_ParamModel.models[col].parameters[row]
+            val = params[names[row]].value
         except ValueError:
             return
         except AttributeError:
@@ -1306,7 +1312,7 @@ class MyMainWindow(QtGui.QMainWindow):
             hilim = 2 * val
 
         self.currentCell['col'] = col
-        self.currentCell['param'] = row
+        self.currentCell['name'] = names[row]
         self.currentCell['val'] = val
         self.currentCell['lowlim'] = lowlim
         self.currentCell['hilim'] = hilim
@@ -1379,15 +1385,35 @@ class MyMainWindow(QtGui.QMainWindow):
         header.setResizeMode(QtGui.QHeaderView.Stretch)
 
     def redraw_dataset_graphs(self, datasets, visible=True, all=False,
-                              transform=None):
+                              transform=True):
+        """ Asks the graphs to be redrawn
+
+        Parameters
+        ----------
+        datasets: list
+            all the datasets to be redrawn
+        visible: bool
+            show or hide a particular dataset
+        all: bool
+            redraw all the datasets
+
+        transform: bool or curvefitter.Transform
+            Transform the data in the dataset for visualisation.
+            False - don't transform
+            True - transform the data using the program default
+            curvefitter.Transform - use a custom transform
+        """
+
         if all:
             datasets = [dataset for dataset in self.data_store_model]
 
-        if transform is not None:
+        if callable(transform):
             t = transform
-        else:
+        elif transform:
             transform = Transform(self.settings.transformdata)
             t = transform.transform
+        else:
+            t = None
 
         self.reflectivitygraphs.redraw_datasets(datasets, visible=visible,
                                     transform=t)
@@ -1400,7 +1426,7 @@ class MyMainWindow(QtGui.QMainWindow):
 
         plugin = self.settings.fit_plugin
 
-        if isinstance(plugin, CurveFitter):
+        if issubclass(plugin, CurveFitter):
             minimizer = plugin(theoretical.xdata,
                                theoretical.ydata,
                                params)
@@ -1463,7 +1489,7 @@ class MyMainWindow(QtGui.QMainWindow):
             minimizer.userkws = kws
             minimizer.mask = mask
 
-            chisqr = np.sum(minimizer.residuals(params)**2) / (minimizer.ydata.size)
+            chisqr = np.sum(minimizer.residuals(params).ravel()**2) / (minimizer.ydata.size)
 
             self.ui.chi2UDF.setValue(chisqr)
 
@@ -1523,7 +1549,7 @@ class MyMainWindow(QtGui.QMainWindow):
             if not useerrors:
                 minimizer.edata[:] = 1
 
-            chisqr = np.sum(minimizer.residuals(params)**2) / (minimizer.ydata.size)
+            chisqr = np.sum(minimizer.residuals(params).ravel()**2) / (minimizer.ydata.size)
 
             self.ui.chi2.setValue(chisqr)
             minimizer.data = theoretical.data
@@ -1568,16 +1594,19 @@ class MyMainWindow(QtGui.QMainWindow):
         try:
             c = self.currentCell
 
+            which_dataset = c['col'] // 2
+
+            gf_settings = self.globalfitting_DataModel.gf_settings
+            params = gf_settings.parameters[which_dataset]
+            name = c['name']
+
             if not c['readyToChange']:
                 return
 
             val = c['lowlim'] + \
-                (arg_1 / 1000.) * np.fabs(c['lowlim'] - c['hilim'])
+                (arg_1 / 1000.) * np.abs(c['lowlim'] - c['hilim'])
 
-            col = c['col']
-            row = c['param']
-
-            c['model'].models[col].parameters[row] = val
+            params[name].value = val
 
             c['model'].dataChanged.emit(
                 QtCore.QModelIndex(),
@@ -1592,10 +1621,16 @@ class MyMainWindow(QtGui.QMainWindow):
         try:
             c = self.currentCell
             c['readyToChange'] = False
-            row = c['param']
-            col = c['col']
+
+            which_dataset = c['col'] // 2
+
+            gf_settings = self.globalfitting_DataModel.gf_settings
+            params = gf_settings.parameters[which_dataset]
+            name = c['name']
+
             self.ui.globalParamsSlider.setValue(499)
-            val = c['model'].gf_settings.models[col].parameters[row]
+
+            val = params[name].value
 
             if val < 0:
                 lowlim = 2 * val
@@ -1617,45 +1652,102 @@ class MyMainWindow(QtGui.QMainWindow):
         evalf = self.calculate_gf_model()
         print(evalf)
 
-    def calculate_gf_model(self):
-        return
-        globalFitting = self.create_gf_object()
-        eval = globalFitting.model()
-        return eval
+    def GFupdate_gui_model(self):
+        gf_settings = self.globalfitting_DataModel.gf_settings
+        global_fitter = self.create_gf_object()
+        residuals = global_fitter.residuals(global_fitter.params).ravel()
+        chisqr = np.sum(residuals**2)
+        chisqr /= residuals.size
 
-    def create_gf_object(self):
-        datamodel = self.globalfitting_DataModel.gf_settings
-        parammodel = self.globalfitting_ParamModel.gf_settings
-        fitObjects = list()
+        global_fitter = self.create_gf_object(transform=False)
 
-        linkageArray = \
-            globalfitting_GUImodel.generate_linkage_matrix(datamodel.linkages,
-                                                           datamodel.nparams)
+        #evaluate the fit and sld_profile
+        for fitter, dataset_name in zip(global_fitter.fitters, gf_settings.dataset_names):
+            dataset = self.data_store_model[dataset_name]
+            dataset.fit = fitter.model(fitter.params)
 
-        for idx, dataset in enumerate(datamodel.dataset_names):
+            if hasattr(fitter, 'sld_profile'):
+                dataset.sld_profile = fitter.sld_profile(fitter.params)
+
+        # new_params = deepcopy(minimizer.params)
+        # self.UDFparams_store_model.add(new_params, 'coef_' + dataset.name)
+        # #update the chi2 value
+        # self.UDFupdate_gui_model()
+        #
+            if dataset.graph_properties.line2Dfit is None:
+                self.add_datasets_to_graphs([dataset])
+            else:
+                self.redraw_dataset_graphs([dataset],
+                                      visible=dataset.graph_properties['visible'])
+
+        return global_fitter.model(global_fitter.params)
+
+    def create_gf_object(self, transform=True):
+        """
+        Create a global fitter object that can fit data
+
+        Parameters
+        ----------
+        transform: bool
+            True - transform the data according to program default
+            False - no transform applied
+        """
+        gf_settings = self.globalfitting_DataModel.gf_settings
+        datasets = self.data_store_model.datastore
+
+        fitters = list()
+
+        constraints = gf_settings.linkages
+
+        for idx, dataset_name in enumerate(gf_settings.dataset_names):
             # retrieve the dataobject
-            dataobject = self.data_store_model.datastore[dataset]
+            dataset = datasets[dataset_name]
+
             # get the parameters
-            model = parammodel.parameters[idx]
+            params = gf_settings.parameters[idx]
 
-            callerInfo = {'xdata': dataobject.xdata,
-                          'ydata': dataobject.ydata,
-                          'edata': dataobject.ydataSD,
-                          'parameters': model.parameters,
-                          'fitted_parameters': model.fitted_parameters,
-                          'dqvals': dataobject.xdataSD
-                          }
+            if transform:
+                transform_fnctn = Transform(
+                    self.settings.transformdata).transform
+            else:
+                transform_fnctn = Transform(None).transform
 
-            # retrieve the required fitplugin from the pluginStoreModel
-            fitClass = self.pluginStoreModel.get_plugin_by_name(
-                                    datamodel.fitplugins[idx])['rfo']
+            tempdataset = Data1D(dataset.data)
 
-            fitObject = fitClass(**callerInfo)
-            fitObjects.append(fitObject)
+            tempdataset.ydata, tempdataset.ydataSD = transform_fnctn(
+                                                    tempdataset.xdata,
+                                                    tempdataset.ydata,
+                                                    tempdataset.ydataSD)
 
-        globalFitting = globalfitting.GlobalFitObject(tuple(fitObjects),
-                                                      linkageArray)
-        return globalFitting
+            # find out which points in the dataset aren't finite
+            mask = ~np.isfinite(tempdataset.ydata)
+
+            #have a kws dictionary
+            kws = {'dqvals': tempdataset.xdataSD, 'transform': transform_fnctn}
+
+            fit_plugin = self.plugin_store_model[gf_settings.fitplugins[idx]]
+
+            if issubclass(fit_plugin, CurveFitter):
+                fitter = fit_plugin(tempdataset.xdata,
+                                    tempdataset.ydata,
+                                    params,
+                                    edata=tempdataset.ydataSD,
+                                    mask=mask,
+                                    fcn_kws=kws)
+            elif hasattr(fit_plugin, 'fitfuncwraps'):
+                fitter = CurveFitter(fit_plugin,
+                                     tempdataset.xdata,
+                                     tempdataset.ydata,
+                                     params,
+                                     edata=tempdataset.ydataSD,
+                                     mask=mask,
+                                     fcn_kws=kws)
+
+            fitters.append(fitter)
+
+        global_fitter = GlobalFitter(fitters, constraints=constraints)
+
+        return global_fitter
 
 
 class ProgressCallback(QtGui.QDialog):
@@ -1713,7 +1805,7 @@ class ProgressCallback(QtGui.QDialog):
         if iter % 10:
             return
 
-        chi2 = np.sum(resid**2) / resid.size
+        chi2 = np.sum(resid.ravel()**2) / resid.size
         if chi2 < self.chi2:
             self.chi2 = chi2
         text = ('Function evaluations : %d\n'

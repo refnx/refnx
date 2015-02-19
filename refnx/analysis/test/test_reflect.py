@@ -192,7 +192,6 @@ class TestReflect(unittest.TestCase):
                                        'quad_order': 13})
 
         model = fitter.model(params)
-        print(qvals.shape, rvals.shape, dqvals.shape, model.shape)
 
         assert_almost_equal(model, rvals)
 
