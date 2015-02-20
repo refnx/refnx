@@ -127,7 +127,14 @@ class TestFitterGauss(unittest.TestCase):
 
         uncertainties = [f.params['p%d'%i].stderr for i in range(4)]
         assert_almost_equal(uncertainties, self.best_unweighted_errors, 3)
-        
+
+    def test_parameter_names(self):
+        # each instance of CurveFitter should be able to give a default set of
+        # parameter names
+        names = ['p%i' % i for i in range(10)]
+        names2 = CurveFitter.parameter_names(nparams=10)
+        assert_(names == names2)
+
     # def test_mcmc_vs_lm(self):
     #     #test mcmc output vs lm
     #     f = CurveFitter(gauss, self.xvals, self.yvals, self.params,

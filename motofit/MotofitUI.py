@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'Motofit.ui'
 #
-# Created: Thu Feb 19 16:10:44 2015
+# Created: Fri Feb 20 09:48:26 2015
 #      by: pyside-uic 0.2.15 running on PySide 1.2.2
 #
 # WARNING! All changes made in this file will be lost!
@@ -508,6 +508,9 @@ class Ui_MainWindow(object):
         self.UDFmodelView = QtGui.QTableView(self.tab_3)
         self.UDFmodelView.setEnabled(True)
         self.UDFmodelView.setMinimumSize(QtCore.QSize(600, 0))
+        font = QtGui.QFont()
+        font.setPointSize(12)
+        self.UDFmodelView.setFont(font)
         self.UDFmodelView.setObjectName("UDFmodelView")
         self.gridLayout_7.addWidget(self.UDFmodelView, 0, 0, 6, 1)
         self.chi2UDF = QtGui.QDoubleSpinBox(self.tab_3)
@@ -592,8 +595,8 @@ class Ui_MainWindow(object):
         self.tab_7 = QtGui.QWidget()
         self.tab_7.setObjectName("tab_7")
         self.gridLayout_10 = QtGui.QGridLayout(self.tab_7)
-        self.gridLayout_10.setContentsMargins(-1, 12, -1, 20)
-        self.gridLayout_10.setVerticalSpacing(3)
+        self.gridLayout_10.setContentsMargins(-1, 12, 20, 2)
+        self.gridLayout_10.setVerticalSpacing(2)
         self.gridLayout_10.setObjectName("gridLayout_10")
         self.do_gf_fit = QtGui.QPushButton(self.tab_7)
         self.do_gf_fit.setMinimumSize(QtCore.QSize(50, 70))
@@ -611,6 +614,9 @@ class Ui_MainWindow(object):
         self.globalParamsSlider.setObjectName("globalParamsSlider")
         self.gridLayout_10.addWidget(self.globalParamsSlider, 1, 0, 1, 1)
         self.globalfitting_ParamsView = QtGui.QTableView(self.tab_7)
+        font = QtGui.QFont()
+        font.setPointSize(12)
+        self.globalfitting_ParamsView.setFont(font)
         self.globalfitting_ParamsView.setObjectName("globalfitting_ParamsView")
         self.gridLayout_10.addWidget(self.globalfitting_ParamsView, 0, 0, 1, 1)
         self.chi2GF = QtGui.QDoubleSpinBox(self.tab_7)

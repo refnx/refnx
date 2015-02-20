@@ -77,7 +77,8 @@ class MyMainWindow(QtGui.QMainWindow):
         #create a set of theoretical parameters
         coefs = np.array([1, 1.0, 0, 0, 2.07, 0, 1e-7, 3, 25, 3.47, 0, 3])
         params = curvefitter.to_Parameters(coefs,
-                                       names=reflect.parameter_names(coefs))
+                                names=ReflectivityFitter.parameter_names(
+                                    nparams=coefs.size))
         params['nlayers'].vary = False
 
         self.settings.current_dataset_name = 'theoretical'
@@ -1660,10 +1661,8 @@ class MyMainWindow(QtGui.QMainWindow):
         alg = self.settings.fitting_algorithm
 
         gf_settings = self.globalfitting_DataModel.gf_settings
-        global_fitter = self.create_gf_object()
-
-        if not self.settings.useerrors:
-            global_fitter.edata[:] = 1.
+        global_fitter = self.create_gf_object(use_errors=self.settings.useerrors,
+                                              transform=transform_fnctn)
 
         if alg == 'DE':
             global_fitter.fit(method='differential_evolution')
@@ -1687,13 +1686,16 @@ class MyMainWindow(QtGui.QMainWindow):
 
     def GFupdate_gui_model(self):
         gf_settings = self.globalfitting_DataModel.gf_settings
-        global_fitter = self.create_gf_object()
+
+        use_errors = self.settings.useerrors
+        global_fitter = self.create_gf_object(use_errors=use_errors)
         residuals = global_fitter.residuals(global_fitter.params).ravel()
         chisqr = np.sum(residuals**2)
         chisqr /= residuals.size
         self.ui.chi2GF.setValue(chisqr)
 
-        global_fitter = self.create_gf_object(transform=False)
+        global_fitter = self.create_gf_object(transform=False,
+                                              use_errors=use_errors)
 
         #evaluate the fit and sld_profile
         for fitter, dataset_name in zip(global_fitter.fitters, gf_settings.dataset_names):
@@ -1716,7 +1718,7 @@ class MyMainWindow(QtGui.QMainWindow):
 
         return global_fitter.model(global_fitter.params)
 
-    def create_gf_object(self, transform=True):
+    def create_gf_object(self, transform=True, use_errors=True):
         """
         Create a global fitter object that can fit data
 
@@ -1725,6 +1727,8 @@ class MyMainWindow(QtGui.QMainWindow):
         transform: bool
             True - transform the data according to program default
             False - no transform applied
+        use_errors: bool
+            Use error bar weighting during a fit?
         """
         gf_settings = self.globalfitting_DataModel.gf_settings
         datasets = self.data_store_model.datastore
@@ -1755,6 +1759,9 @@ class MyMainWindow(QtGui.QMainWindow):
 
             # find out which points in the dataset aren't finite
             mask = ~np.isfinite(tempdataset.ydata)
+
+            if not use_errors:
+                tempdataset.ydataSD = np.ones_like(tempdataset.ydata)
 
             #have a kws dictionary
             kws = {'dqvals': tempdataset.xdataSD, 'transform': transform_fnctn}

@@ -195,12 +195,24 @@ class GlobalFitting_DataModel(QtCore.QAbstractTableModel):
 
                     if oldparams > val:
                         for row in range(val, oldparams):
-                            self.unlink_parameter(RC_to_parameter(row, col))
+                            self.unlink_parameter(col, RC_to_parameter(row, col))
                             # remove parameters
+
+                        names_to_remove = params.keys()[val: oldparams]
+                        map(params.pop, names_to_remove)
+
                     elif oldparams < val:
                         # add parameters
-                        for idx in range(oldparams, val):
-                            params.add_many(('p%d' % idx, 0, True, None, None,
+                        fitter = self.gf_settings.fitplugins[col]
+                        if hasattr(fitter, 'parameter_names'):
+                            new_names = fitter.parameter_names(nparams=val)
+                            new_names = new_names[oldparams:]
+                        else:
+                            new_names = ['p%d' % i for i in range(oldparams,
+                                                                  val)]
+
+                        for i in range(val - oldparams):
+                            params.add_many((new_names[i], 0, True, None, None,
                                              None))
 
         self.dataChanged.emit(index, index)

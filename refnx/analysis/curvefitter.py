@@ -294,6 +294,26 @@ class CurveFitter(Minimizer):
         """
         return self.minimize(method=method)
 
+    @staticmethod
+    def parameter_names(nparams=0):
+        """
+        Provides a set of names for constructing an lmfit.Parameters instance
+
+        Parameters
+        ----------
+        nparams: int, optional
+                >= 0 - provide a set of names with length `nparams`
+        Returns
+        -------
+        names: list
+            names for the lmfit.Parameters instance
+        """
+        names = list()
+        if nparams > 0:
+            names = ['p%d' % i for i in range(nparams)]
+
+        return names
+
     def mcmc1(self, samples=1e4, burn=0, thin=1, verbose=0):
         """
         Samples the posterior for the curvefitting system using MCMC.

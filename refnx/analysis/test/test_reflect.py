@@ -10,7 +10,7 @@ import refnx.analysis._reflect as _reflect
 import refnx.analysis.curvefitter as curvefitter
 
 import numpy as np
-from numpy.testing import (assert_almost_equal, assert_equal, assert_,\
+from numpy.testing import (assert_almost_equal, assert_equal, assert_,
                            assert_allclose)
 import os.path
 import time
@@ -202,6 +202,15 @@ class TestReflect(unittest.TestCase):
         z, rho = np.split(profile, 2)
         myrho = reflect.sld_profile(self.coefs, z.flatten())
         assert_almost_equal(myrho, rho.flatten())
+
+    def test_parameter_names(self):
+        names = ['nlayers', 'scale', 'SLDfront', 'iSLDfront', 'SLDback',
+                 'iSLDback', 'bkg', 'sigma_back']
+
+        names += ['thick1', 'SLD1', 'iSLD1', 'sigma1']
+
+        names2 = reflect.ReflectivityFitter.parameter_names(12)
+        assert_(names == names2)
 
 
 if __name__ == '__main__':

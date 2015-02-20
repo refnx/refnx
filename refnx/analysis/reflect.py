@@ -46,17 +46,7 @@ def convert_layer_format_to_coefs(layers, scale=1, bkg=0):
 
     return coefs
 
-def parameter_names(coefs):
-    names = ['nlayers', 'scale', 'SLDfront', 'iSLDfront', 'SLDback',
-             'iSLDback', 'bkg', 'sigma_back']
-    nlayers = (coefs.size - 8 / 4)
-    for i in range(int(nlayers)):
-        names.append('thick%d'%(i + 1))
-        names.append('SLD%d'%(i + 1))
-        names.append('iSLD%d'%(i + 1))
-        names.append('sigma%d'%(i + 1))
-    return names
-    
+
 def abeles(q, coefs, *args, **kwds):
     """
     Abeles matrix formalism for calculating reflectivity from a stratified
@@ -530,6 +520,18 @@ class ReflectivityFitter(CurveFitter):
         points = np.linspace(zstart, zend, num=500)
 
         return points, sld_profile(params, points)
+
+    @staticmethod
+    def parameter_names(nparams=8):
+        names = ['nlayers', 'scale', 'SLDfront', 'iSLDfront', 'SLDback',
+                 'iSLDback', 'bkg', 'sigma_back']
+        nlayers = (nparams - 8 / 4)
+        for i in range(int(nlayers)):
+            names.append('thick%d'%(i + 1))
+            names.append('SLD%d'%(i + 1))
+            names.append('iSLD%d'%(i + 1))
+            names.append('sigma%d'%(i + 1))
+        return names
 
     def callback(self, parameters, iteration, resid, *fcn_args, **fcn_kws):
         return True

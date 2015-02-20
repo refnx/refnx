@@ -2,6 +2,7 @@ from __future__ import division
 from PySide import QtCore, QtGui
 import numpy as np
 import refnx.analysis.reflect as reflect
+from refnx.analysis import ReflectivityFitter
 import refnx.analysis.curvefitter as curvefitter
 
 
@@ -170,7 +171,7 @@ class LayerModel(QtCore.QAbstractTableModel):
                  in [(None, None)] * 4]
 
         bounds = np.array(bounds)
-        names = reflect.parameter_names(values)
+        names = ReflectivityFitter.parameter_names(nparams=values.size)
 
         #clear the parameters
         map(self.params.pop, self.params.keys())
@@ -215,7 +216,7 @@ class LayerModel(QtCore.QAbstractTableModel):
         values = curvefitter.values(self.params)
         varys = curvefitter.varys(self.params)
         bounds = np.array(curvefitter.bounds(self.params))
-        names = reflect.parameter_names(values)
+        names = ReflectivityFitter.parameter_names(values.size)
         map(self.params.pop, self.params.keys())
 
         parlist = zip(names,
