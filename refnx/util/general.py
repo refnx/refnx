@@ -166,7 +166,7 @@ def wavelength_velocity(wavelength):
     return K / wavelength
 
 
-def resolution_double_chopper(wavelength, z0=0.358, R=0.35, freq=24, N=1,
+def resolution_double_chopper(wavelength, z0=0.358, R=0.35, freq=24,
                               H=0.005, xsi=0, L=7.5):
     """
     Calculates the fractional resolution of a double chopper pair, dl/l.
