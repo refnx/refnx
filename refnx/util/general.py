@@ -166,6 +166,25 @@ def wavelength_velocity(wavelength):
     return K / wavelength
 
 
+def double_chopper_frequency(min_wavelength, max_wavelength, L, N=1):
+   """
+    Calculates the maximum frequency available for a given wavelength band
+    without getting frame overlap in a chopper spectrometer.
+
+    Parameters
+    ----------
+    min_wavelength: float
+        minimum wavelength to be used
+    max_wavelength: float
+        maximum wavelength to be used
+    L: float
+        Flight length of instrument (m)
+    N: float, optional
+        number of windows in chopper pair
+    """
+   return K / ((max_wavelength - min_wavelength) * L * N)
+
+
 def resolution_double_chopper(wavelength, z0=0.358, R=0.35, freq=24,
                               H=0.005, xsi=0, L=7.5):
     """
