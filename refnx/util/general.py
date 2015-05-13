@@ -44,7 +44,7 @@ def div(d1, d2, L12 = 2859):
     return np.degrees(np.sqrt(divergence)), np.degrees(alpha), np.degrees(beta)
 
 
-def qcalc(angle, wavelength):
+def q(angle, wavelength):
     """
     Calculate Q given angle of incidence and wavelength
     angle - angle of incidence (degrees)
@@ -53,7 +53,7 @@ def qcalc(angle, wavelength):
     return 4 * np.pi * np.sin(np.radians(angle)) / wavelength
 
 
-def qcalc2(omega, twotheta, phi, wavelength):
+def q2(omega, twotheta, phi, wavelength):
     """
     convert angles and wavelength (lambda) to Q vector.
 

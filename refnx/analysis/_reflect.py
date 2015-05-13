@@ -67,7 +67,7 @@ def abeles(q, w, scale=1., bkg=0):
 
     reflectivity *= scale
     reflectivity += bkg
-    return np.reshape(reflectivity, q.shape)
+    return np.real(np.reshape(reflectivity, q.shape))
 
 
 if __name__ == '__main__':

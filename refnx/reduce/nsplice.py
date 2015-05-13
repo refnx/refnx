@@ -1,38 +1,65 @@
 from __future__ import division
 import numpy as np
 
-def get_scaling_in_overlap(qq1,rr1, dr1, qq2, rr2, dr2):
+def get_scaling_in_overlap(x0,y0, dy0, x1, y1, dy1):
     """
-    Get the vertical scaling factor that would splice the second dataset onto the first.
-    returns the scaling factor and the uncertainty in scaling factor
+    Obtain vertical scaling factor that splices the second dataset onto the
+    first.
+
+    Parameters
+    ----------
+    x0: np.ndarray
+        abscissae for the first dataset
+
+    y0: np.ndarray
+        y values for the first dataset
+    dy0: np.ndarray
+        dy (standard deviation) values for the first dataset
+    x1: np.ndarray
+        abscissae values for the second dataset
+    y1: np.ndarray
+        y values for the second dataset
+    dy1: np.ndarray
+        dy (standard deviation) values for the second dataset
+
+    Returns
+    -------
+    (scale, dscale):
+        The scaling factor and the uncertainty in scaling factor, or
+        (np.nan, np.nan) if there is no overlap in abscissae values.
     """
-    #sort the abscissae
-    sortarray = np.argsort(qq1)
-    qq1 = qq1[sortarray]
-    rr1 = rr1[sortarray]
-    dr1 = dr1[sortarray]
+
+    # the datasets should be sorted, but we may not want to sort the data
+    # so make a temporary copy of the data
+
+    sortarray = np.argsort(x0)
+    tx0 = x0[sortarray]
+    ty0 = y0[sortarray]
+    tdy0 = dy0[sortarray]
     
-    sortarray = np.argsort(qq2)
-    qq2 = qq2[sortarray]
-    rr2 = rr2[sortarray]
-    dr2 = dr2[sortarray]
+    sortarray = np.argsort(x1)
+    tx1 = x1[sortarray]
+    ty1 = y1[sortarray]
+    tdy1 = dy1[sortarray]
     
-    #largest point number of qq2 in overlap region
-    num2 = np.interp(qq1[-1:-2:-1], qq2, np.arange(len(qq2) * 1.))
-    
-    if np.size(num2) == 0:
+    #largest point number of x1 in overlap region
+    num2 = np.interp(tx0[-1:-2:-1], tx1, np.arange(len(tx1) * 1.))
+    num2 = int(np.ceil(num2[0]))
+
+    if num2 == 0:
         return np.NaN, np.NaN
-    num2 = int(num2[0])
-    
+
     #get scaling factor at each point of dataset 2 in the overlap region
     #get the intensity of wave1 at an overlap point
-    #print qq1.shape, rr1.shape, dr1.shape
-    newi = np.interp(qq2[:num2], qq1, rr1)
-    newdi = np.interp(qq2[:num2], qq1, dr1)
+    #print x0.shape, y0.shape, dy0.shape
+    newi = np.interp(tx1[:num2], tx0, ty0)
+    newdi = np.interp(tx1[:num2], tx0, tdy0)
     
-    W_scalefactor = newi / rr2[:num2]
-    W_dscalefactor = W_scalefactor * np.sqrt((newdi / newi)**2 + (dr2[:num2] / rr2[:num2])**2)
-    W_dscalefactor =  np.sqrt((newdi / rr2[:num2])**2 + ((newi * dr2[:num2])**2) / rr2[:num2]**4)
+    W_scalefactor = newi / ty1[:num2]
+    W_dscalefactor = W_scalefactor * np.sqrt((newdi / newi)**2
+                                             + (tdy1[:num2] / ty1[:num2])**2)
+    W_dscalefactor =  np.sqrt((newdi / ty1[:num2])**2
+                              + ((newi * tdy1[:num2])**2) / ty1[:num2]**4)
 
 
     W_dscalefactor = 1 / (W_dscalefactor**2)
@@ -41,7 +68,7 @@ def get_scaling_in_overlap(qq1,rr1, dr1, qq2, rr2, dr2):
     den = np.sum(W_dscalefactor)
  
     normal = num / den
-    dnormal = np.sqrt(1/den)
+    dnormal = np.sqrt(1 / den)
 
     return normal, dnormal
 	
