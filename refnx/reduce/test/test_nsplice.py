@@ -4,7 +4,6 @@ import numpy as np
 from numpy.testing import (assert_almost_equal, assert_)
 import os.path
 import refnx.reduce.nsplice as nsplice
-import time
 
 path = os.path.dirname(os.path.abspath(__file__))
 

@@ -51,7 +51,6 @@ def get_scaling_in_overlap(x0,y0, dy0, x1, y1, dy1):
 
     #get scaling factor at each point of dataset 2 in the overlap region
     #get the intensity of wave1 at an overlap point
-    #print x0.shape, y0.shape, dy0.shape
     newi = np.interp(tx1[:num2], tx0, ty0)
     newdi = np.interp(tx1[:num2], tx0, tdy0)
     

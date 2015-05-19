@@ -4,11 +4,23 @@ import numpy as np
 kMassNeutron = 1.6749286e-27
 kPlanck = 6.62606896e-34
 #(mm/us)
-kPlanck_over_MN = kPlanck/kMassNeutron
+kPlanck_over_MN = kPlanck / kMassNeutron
 
 def to_q(omega, lamda):
     """
     Calculate Q from angle of incidence and wavelength
+
+    Parameters
+    ----------
+    omega: float
+        Angle of incidence for specular reflection
+    lamda: float
+        wavelength of radiation (Angstrom)
+
+    Returns
+    -------
+    qz: float
+        Momentum transfer (Angstrom**-1)
     """
     return 4 * np.pi * np.sin(omega) / lamda
     
@@ -28,4 +40,5 @@ def to_qzqy(omega, twotheta, lamda):
     """
     Calculate Qz and Qy from angle of incidence, twotheta and wavelength
     """
-    return 2 * np.pi * (np.sin(twotheta - omega) + np.sin(omega))/lamda, 2 * np.pi * (np.cos(twotheta - omega) - np.cos(omega))/lamda
+    return (2 * np.pi * (np.sin(twotheta - omega) + np.sin(omega))/lamda,
+            2 * np.pi * (np.cos(twotheta - omega) - np.cos(omega))/lamda)
