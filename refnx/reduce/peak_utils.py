@@ -1,21 +1,9 @@
 from __future__ import division
 import numpy as np
-from scipy.integrate import simps
+from scipy.integrate import simps, cumtrapz
 from scipy.optimize import curve_fit
-import random
-import hashlib
-#from scipy.interpolate import interp1d
+from scipy.interpolate import interp1d
 
-
-#def searchinterp(a, val):
-#	"""
-#	finds an interpolated x position of val array in a array
-#	returns an interpolated position.  If the value is before the first value in the array,
-#	 or if the value is after the last point in the array, location will be NaN
-#	"""	   
-#	f = interp1d(np.arange(np.size(a, 0)) * 1., a, bounds_error = False)
-#	
-#	return f(val)
 
 def centroid(y, x=None, dx=1.):
     '''Computes the centroid for the specified data.
@@ -40,27 +28,85 @@ def centroid(y, x=None, dx=1.):
     centroid = simps(x * yt, x) / normaliser
     var = simps((x - centroid)**2 * yt, x) / normaliser
     return centroid, np.sqrt(var)
-	
+
+def median(y, x=None, dx=1.):
+    '''Computes the median for the specified data.
+
+    Parameters
+    ----------
+    y : array_like
+        Array whose median is to be calculated.
+    x : array_like, optional
+        The points at which y is sampled.
+    Returns
+    -------
+    (median, sd)
+        Centroid and standard deviation of the data.
+    '''
+    yt = np.array(y)
+
+    if x is None:
+        x = np.arange(yt.size, dtype='float') * dx
+
+    c = cumtrapz(yt, x=x, initial=0)
+    c /= c[-1]
+    f = interp1d(c, x)
+    median = f(0.5)
+    mean, sd = centroid(y, x=x)
+    return median, sd
+
 def gauss_fit(p0, x, y, sigma = None):
-	popt, pcov = curve_fit(gauss, x, y, p0 = p0, sigma = sigma)
+	popt, pcov = curve_fit(gauss, x, y, p0=p0, sigma=sigma)
 	return popt
 	
 def gauss(x, bkg, peak, mean, sd):
+    '''Computes the gaussian function.
+
+    Parameters
+    ----------
+    x : array_like
+        The points at which the distribution is sampled.
+    bkg : float
+        constant background value.
+    peak : float
+        peak multiplier.
+    mean : float
+        mean of gaussian distribution.
+    sd : float
+        standard deviation of distribution.
+
+    Returns
+    -------
+    gval : float
+        evaluated gaussian distribution value at each of the sampling points.
+    '''
+
 	return bkg + peak * np.exp(-0.5 * ((mean - x) / sd)**2) 
 	
-def peak_finder(y, x = None):
+def peak_finder(y, x=None):
+    '''Finds a peak in the specified data.
+
+    Parameters
+    ----------
+    y : array_like
+        Array in which a peak is to be found.
+    x : array_like, optional
+        The points at which y is sampled.
+    Returns
+    -------
+    (centroid, sd), (gfit_mean, gfit_sd) : (float, float), (float, float)
+    centroid and sd are the centroid and standard deviation of the data.
+    gfit_mean and gfit_sd are the mean and standard deviation obtained by
+    fitting the data to a Gaussian function.
+    '''
+
 	maxval = np.amax(y)
-	if not x:
+	if x is None:
 		x = np.arange(1. * len(y))
 	
-	expected_centre, expected_SD = centroid(y, x = x)
+	expected_centre, expected_SD = centroid(y, x=x)
 	
 	p0 = np.array([2., maxval, expected_centre, expected_SD])
 	popt = gauss_fit(p0, x, y)
 	return np.array([expected_centre, expected_SD]), popt[2:4]
 
-def peakfinder_test():
-	random.seed()
-	x = np.random.uniform(-10, 10, 300)
-	y = gauss(x, 0.2, 10, 2, 1.25) + random.gauss(0, 0.5)
-	peak_finder(y, x = x)
