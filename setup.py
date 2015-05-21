@@ -45,7 +45,7 @@ setup(  name        = 'refnx',
         license     = 'BSD',
         url         = 'https://github.com/andyfaff/refnx',
         platforms = ["Windows", "Linux", "Solaris", "Mac OS-X", "Unix"],
-        classifiers =[
+        classifiers = [
         'Development Status :: 3 - Alpha',
         'Environment :: Console',
         'Intended Audience :: Science/Research',
@@ -58,5 +58,5 @@ setup(  name        = 'refnx',
         'Topic :: Scientific/Engineering :: Physics',
         ],
         packages = packages,
-        install_requires = ['numpy', 'scipy', 'lmfit'],
+        install_requires = ['numpy', 'scipy', 'lmfit', 'uncertainties'],
      )

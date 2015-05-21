@@ -715,24 +715,28 @@ class ProcessPlatypusNexus(processnexus.ProcessNexus):
 		
 		return histo, endoflastevent
 
+
 def createdetectornorm(h5norm, xmin, xmax):
 	"""
 	produces a detector normalisation for Platypus
 	you give it a water run and it average n, t and x to provide 
 	a relative efficiency for each y wire.
 	"""
+
 	#average over n and TOF and x
 	#n
-	norm = np.sum(np.array(h5norm['entry1/data/hmm']), axis = 0, dtype = 'float64')
+	norm = np.sum(np.array(h5norm['entry1/data/hmm']), axis=0,
+                  dtype='float64')
 	#t
-	norm = np.sum(norm, axis = 0, dtype = 'float64')
+	norm = np.sum(norm, axis=0, dtype='float64')
+
 	# by this point you have norm[y][x]
 	norm = norm[:, xmin:xmax + 1]
-	norm = np.sum(norm, axis = 1, dtype = 'float64')    
+	norm = np.sum(norm, axis=1, dtype='float64')
 		
-	normSD = np.empty_like(norm)
 	normSD = np.sqrt(norm)
-	
+
+	mean = np.mean(norm)
 	norm /= mean
 	normSD /= mean		
 		
@@ -968,16 +972,6 @@ def deflection(lamda, travel_distance, trajectory):
 	pp *= 1000
 
 	return pp
-	
-
-def is_platypus_file(filename):
-	path, file = os.path.split(filename)
-	reg = re.compile('(\d+)')
-	components = re.split(reg, file)
-	if len(components) == 3 and components[0] == 'PLP' and components[2] == '.nx.hdf' and int(components[1]) > 1 and int(components[1]) < 9999999:
-		return int(components[1])
-	else:
-		return False
 
 	
 def catalogue_all(basedir = None, fname = None):
