@@ -186,7 +186,7 @@ def double_chopper_frequency(min_wavelength, max_wavelength, L, N=1):
 
 
 def resolution_double_chopper(wavelength, z0=0.358, R=0.35, freq=24,
-                              H=0.005, xsi=0, L=7.5):
+                              H=0.005, xsi=0, L=7.5, tau_da=0):
     """
     Calculates the fractional resolution of a double chopper pair, dl/l.
 
@@ -208,11 +208,13 @@ def resolution_double_chopper(wavelength, z0=0.358, R=0.35, freq=24,
         phase opening of chopper pair (degrees)
     L: float
         Flight length of instrument (m)
+    tau_da : float
+        Width of timebin (s)
     """
     TOF = L / wavelength_velocity(wavelength)
     tc = tauC(wavelength, xsi=xsi, z0=z0, freq=freq)
     tauH = H / R / (2 * np.pi * freq)
-    return 0.68 * np.sqrt((tc / TOF)**2 + (tauH / TOF)**2)
+    return 0.68 * np.sqrt((tc / TOF)**2 + (tauH / TOF)**2 + (tau_da / TOF)**2)
 
 
 def resolution_single_chopper(wavelength, R=0.35, freq=24, H=0.005, phi=60,

@@ -1,5 +1,5 @@
 import unittest
-import pyplatypus.reduce.event as event
+import refnx.reduce.event as event
 import numpy as np
 import os
 from numpy.testing import assert_equal
@@ -9,15 +9,17 @@ class TestEvent(unittest.TestCase):
     def setUp(self):
         path = os.path.dirname(__file__)
         self.path = path
-        event_file_path = os.path.join(path, 'DAQ_2012-01-19T15-45-52',
-                                       'DATASET_0', 'EOS.bin')
+        event_file_path = os.path.join(path,
+                                       'DAQ_2012-01-19T15-45-52',
+                                       'DATASET_0',
+                                       'EOS.bin')
 
         with open(event_file_path, 'rb') as f:
             event_list, fpos = event.events(f)
 
         self.event_list = event_list
         self.fpos = fpos
-        self.x, self.y, self.t, self.f = event_list
+        self.f, self.t, self.y, self.x = event_list
         
     def test_num_events(self):
         assert_equal(1056618, self.x.size)
@@ -33,6 +35,21 @@ class TestEvent(unittest.TestCase):
         assert_equal(self.y[-1], 13)
         assert_equal(self.f[-1], 23998)
 
-        
+    def test_process_event_stream(self):
+        x_bins = np.array([60.5, -60.5])
+        y_bins = np.linspace(110.5, -110.5, 222)
+        t_bins = np.linspace(0, 50000, 1001)
+        f_bins = np.linspace(0, 24000, 7)
+        detector, fbins = event.process_event_stream(self.event_list,
+                                                     f_bins,
+                                                     t_bins,
+                                                     y_bins,
+                                                     x_bins)
+        assert_equal(detector[0, 382, 97, 0], 70)
+        assert_equal(detector[1, 383, 97, 0], 64)
+        assert_equal(detector[4, 377, 98, 0], 57)
+
+
+
 if __name__ == '__main__':
     unittest.main()

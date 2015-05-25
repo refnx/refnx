@@ -34,12 +34,12 @@ try:
 except ImportError:
     nom = lambda x: x
 
-from .bounded_splines import BoundedUnivariateSpline, BoundedRectBivariateSpline
+from bounded_splines import BoundedUnivariateSpline, BoundedRectBivariateSpline
 
 
 def midpoints(xx):
     """Return midpoints of edges in xx."""
-    return xx[:-1] + 0.5*np.ediff1d(xx)
+    return xx[:-1] + 0.5 * np.ediff1d(xx)
 
 
 def edge_step(x, y, **kwargs):
@@ -54,6 +54,102 @@ def edge_step(x, y, **kwargs):
 
     """
     return plt.plot(x, np.hstack([y,y[-1]]), drawstyle='steps-post', **kwargs)
+
+
+def rebin_along_axis(y1, x1, x2, axis=0):
+    """
+    Rebins an N-dimensional array along a given axis, in a piecewise-constant
+    fashion.
+
+    Parameters
+    ----------
+    y1 : array_like
+        The input image
+    x1 : array_like
+        The monotonically increasing/decreasing original bin edges along
+        `axis`, must be 1 greater than `np.size(y1, axis)`.
+    y2 : array_like
+        The final bin_edges along `axis`.
+    axis : int
+        The axis to be rebinned, it must exist in the original image.
+
+    Returns
+    -------
+    output : array_like
+        The rebinned image
+
+    The output dtype is float, otherwise things like integer truncation can
+    occur.  If the original dtype was np.object, then the output dtype is also
+    np.object.
+    """
+
+    orig_shape = np.array(y1.shape)
+    num_axes = np.size(orig_shape)
+
+    # Output is going to need reshaping
+    new_shape = np.copy(orig_shape)
+    new_shape[axis] = np.size(x2) - 1
+
+    if axis > num_axes - 1:
+        raise ValueError("That axis is not in y1")
+
+    if np.size(y1, axis) != np.size(x1) - 1:
+        raise ValueError("The original number of xbins does not match the axis"
+                         "size")
+
+    odtype = np.dtype('float')
+    if y1.dtype is np.dtype('O'):
+        odtype = np.dtype('O')
+
+    output = np.empty(new_shape, dtype=odtype)
+
+    it = np.nditer(y1, flags=['multi_index'])
+    it.remove_axis(axis)
+
+    while not it.finished:
+        a = list(it.multi_index)
+        a.insert(axis, slice(None))
+        rebinned = rebin_piecewise_constant(x1, y1[a], x2)
+        output[a] = rebinned[:]
+        it.iternext()
+    return output
+
+
+def rebinND(y1, axes, old_bins, new_bins):
+    """
+    Rebin y1 along several axes, in a piecewise-constant fashion.
+
+    Parameters
+    ----------
+    y1 : array_like
+        The image to be rebinned
+    axes : tuple of int
+        The axes to be rebinned.
+    old_bins : tuple of np.ndarray
+        The old histogram bins along each axis in `axes`.
+    new_bins : tuple of np.ndarray
+        The new histogram bins along each axis in `axes`.
+
+    Returns
+    -------
+    output : np.ndarray
+    """
+    num_axes = len(y1.shape)
+    if np.max(axes) > num_axes - 1 or np.min(axes) < 0:
+        raise ValueError("One of the axes is not in the original array")
+
+    if (len(old_bins) != len(new_bins) or len(old_bins) != len(axes)):
+        raise ValueError("The number of bins must be the same as the number"
+                         "of axes you wish to rebin")
+
+    output = np.copy(y1)
+    for i, axis in enumerate(axes):
+        output = rebin_along_axis(output,
+                                  old_bins[i],
+                                  new_bins[i],
+                                  axis)
+
+    return output
 
 
 def rebin(x1, y1, x2, interp_kind=3):
@@ -130,7 +226,6 @@ def rebin_spline(x1, y1, x2, interp_kind):
 
     # area under spline for each old bin
     areas1 = np.array([spline.integral(x1[i], x1[i+1]) for i in range(m)])
-
 
     # insert old bin edges into new edges
     x1_in_x2 = x1[ np.logical_and(x1 > x2[0], x1 < x2[-1]) ]
@@ -298,7 +393,7 @@ def rebin2d(x1, y1, z1, x2, y2, interp_kind=3):
 
     # area under spline for each old bin
     # todo: only integrate over old bins which will contribute to new bins
-    areas1 = np.zeros((m,n))
+    areas1 = np.zeros((m, n))
     for i in range(m):
         for j in range(n):
             areas1[i,j] = spline.integral(x1[i], x1[i+1], y1[j], y1[j+1])

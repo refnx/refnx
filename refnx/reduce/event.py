@@ -5,6 +5,70 @@ unpack streaming file
 """
 import numpy as np
 
+def process_event_stream(events, frame_bins, t_bins, y_bins, x_bins):
+    """
+    Processes the event mode dataset into a histogram.
+
+    Parameters
+    ----------
+    events : tuple(np.ndarray, np.ndarray, np.ndarray, np.ndarray)
+        the 4-tuple of events (F, T, Y, X)
+    frame_bins : array_like
+        specifies the frame bins required in the image.
+    t_bins : array_like
+        specifies the time bins required in the image
+    x_bins : array_like
+        specifies the x bins required in the image
+    y_bins : array_like
+        specifies the y bins required in the image
+
+    Returns
+    -------
+    detector, frame_bins : np.ndarray, np.ndarray
+        The new detector image and the amended frame bins. The frame bins that
+        are supplied to this function are truncated to 0 and the maximum frame
+        bin in the event file.
+    """
+    max_frame = max(events[0])
+    frame_bins = np.sort(frame_bins)
+
+    # truncate the lower limit of frame bins to be 0 if they exceed it.
+    loc = np.searchsorted(frame_bins, 0)
+    frame_bins = frame_bins[loc:]
+    frame_bins[0] = 0
+
+    # truncate the upper limit of frame bins to be the max frame number
+    # if they exceed it.
+    # loc = np.searchsorted(frame_bins, max_frame)
+    # frame_bins = frame_bins[: loc]
+
+    localxbins = np.array(x_bins)
+    localybins = np.array(y_bins)
+    localtbins = np.sort(np.array(t_bins))
+    localframe_bins = np.array(frame_bins)
+    reversed_x, reversed_y = False, False
+
+    if localxbins[0] > localxbins[-1]:
+        localxbins = localxbins[::-1]
+        reversed_x = True
+
+    if localybins[0] > localybins[-1]:
+        localybins = localybins[::-1]
+        reversed_y = True
+
+    detector, edge = np.histogramdd(events, bins=(localframe_bins,
+                                                    localtbins,
+                                                    localybins,
+                                                    localxbins))
+    if reversed_x:
+        detector = detector[:, :, :, ::-1]
+
+    if reversed_y:
+        detector = detector[:, :, ::-1, :]
+
+    return detector, localframe_bins
+
+
 def events(f, endoflastevent=127):
     """
     Unpacks event data from packedbinary format for the ANSTO Platypus
@@ -21,7 +85,7 @@ def events(f, endoflastevent=127):
         
     Returns
     -------
-    (x_events, y_events, t_events, f_events), endoflastevent:
+    (f_events, t_events, y_events, x_events), endoflastevent:
         x_events, y_events, t_events and f_events are numpy arrays containing
         the events. endoflastevent is a byte offset to the end of the last
         successful event read from the file. Use this value to extract more
@@ -43,7 +107,7 @@ def events(f, endoflastevent=127):
     t_events = np.array((), dtype='uint32')
     f_events = np.array((), dtype='int32')
 
-    BUFSIZE = 16384
+    BUFSIZE = 32768
 
     while True:
         x_neutrons = []
@@ -113,4 +177,4 @@ def events(f, endoflastevent=127):
             f_events = np.append(f_events, f_neutrons)
     
     t_events = t_events // 1000
-    return (x_events, y_events, t_events, f_events), endoflastevent
+    return (f_events, t_events, y_events, x_events), endoflastevent
