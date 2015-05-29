@@ -1,7 +1,6 @@
 from __future__ import division
 import numpy as np
 from uncertainties import unumpy as unp
-from uncertainties import umath as um
 import h5py
 import peak_utils as ut
 import refnx.util.general as general
@@ -14,7 +13,7 @@ import rebin
 import os
 import os.path
 import argparse
-import re
+
 
 Y_PIXEL_SPACING = 1.177  # in mm
 O_C1 = 1.04719755
@@ -136,14 +135,19 @@ class Catalogue(object):
                            chopper2_speed,
                            chopper3_speed,
                            chopper4_speed])
-        phases = np.array([0, ch2phase, ch3phase, ch4phase])
 
-        return master, slave, speeds[0] / 60., phases[slave]
+        phases = np.array([np.zeros_like(ch2phase),
+                           ch2phase,
+                           ch3phase,
+                           ch4phase])
+
+        return master[:], slave[:], speeds[0] / 60., phases[slave[0] - 1]
 
 
 class PlatypusNexus(object):
     """
-    Processes Platypus NeXus files to produce an intensity vs wavelength spectrum
+    Processes Platypus NeXus files to produce an intensity vs wavelength
+    spectrum
     """
 
     def __init__(self, h5data):
@@ -154,7 +158,7 @@ class PlatypusNexus(object):
         ----------
         h5data : HDF5 NeXus file or str
         """
-        if type(h5py.File):
+        if type(h5data) == h5py.File:
             self.cat = Catalogue(h5data)
         else:
             with h5py.File(h5data, 'r') as h5data:
@@ -1123,37 +1127,37 @@ def calculate_wavelength_bins(lo_wavelength, hi_wavelength, rebin):
 #     return uniquelist
 
 
-# if __name__ == "__main__":
-#     parser = argparse.ArgumentParser(description='Process some Platypus NeXUS files to produce their TOF spectra.')
-#     parser.add_argument('file_list', metavar='N', type=int, nargs='+',
-#                         help='integer file numbers')
-#     parser.add_argument('--basedir', type=str, help='define the location to find the nexus files')
-#     parser.add_argument('--rebinpercent', type=float, help='rebin percentage for the wavelength -1<rebin<10', default=4)
-#     parser.add_argument('--lolambda', type=float, help='lo wavelength cutoff for the rebinning', default=2.8)
-#     parser.add_argument('--hilambda', type=float, help='lo wavelength cutoff for the rebinning', default=18.)
-#     parser.add_argument('--typeofintegration', type=float,
-#                         help='0 to integrate all spectra, 1 to output individual spectra', default=0)
-#     args = parser.parse_args()
-#     print args
-#
-#     for file in args.file_list:
-#         print 'processing: %d' % file
-#         try:
-#             a = processnexus(file,
-#                              basedir=args.basedir)
-#
-#             M_lambda, M_lambdaSD, M_spec, M_specSD = a.process(lolambda=args.lolambda,
-#                                                                hilambda=args.hilambda,
-#                                                                rebinpercent=args.rebin,
-#                                                                typeofintegration=args.typeofintegration)
-#
-#             for index in xrange(a.numspectra):
-#                 filename = 'PLP{:07d}_{:d}.spectrum'.format(a.datafilenumber, index)
-#                 f = open(filename, 'w')
-#                 a.writespectrum(f, scanpoint=index)
-#                 f.close()
-#
-#         except IOError:
-#             print 'Couldn\'t find file: %d.  Use --basedir option' % file
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='Process some Platypus NeXUS files to produce their TOF spectra.')
+    parser.add_argument('file_list', metavar='N', type=int, nargs='+',
+                        help='integer file numbers')
+    parser.add_argument('--basedir', type=str, help='define the location to find the nexus files')
+    parser.add_argument('--rebinpercent', type=float, help='rebin percentage for the wavelength -1<rebin<10', default=1)
+    parser.add_argument('--lolambda', type=float, help='lo wavelength cutoff for the rebinning', default=2.5)
+    parser.add_argument('--hilambda', type=float, help='lo wavelength cutoff for the rebinning', default=19.)
+    parser.add_argument('--typeofintegration', type=float,
+                        help='0 to integrate all spectra, 1 to output individual spectra', default=0)
+    args = parser.parse_args()
+    print args
+
+    for file in args.file_list:
+        fname = 'PLP%07d.nx.hdf' % file
+        path = os.path.join(args.basedir, fname)
+        try:
+            a = PlatypusNexus(path)
+
+            # M_lambda, M_lambdaSD, M_spec, M_specSD = a.process(lolambda=args.lolambda,
+            #                                                    hilambda=args.hilambda,
+            #                                                    rebinpercent=args.rebin,
+            #                                                    typeofintegration=args.typeofintegration)
+            #
+            # for index in xrange(a.numspectra):
+            #     filename = 'PLP{:07d}_{:d}.spectrum'.format(a.datafilenumber, index)
+            #     f = open(filename, 'w')
+            #     a.writespectrum(f, scanpoint=index)
+            #     f.close()
+
+        except IOError:
+            print "Couldn't find file: %d.  Use --basedir option" % file
         
 
