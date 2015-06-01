@@ -165,7 +165,7 @@ class PlatypusNexus(object):
                 self.cat = Catalogue(h5data)
 
     def process(self, h5norm=None, lo_wavelength=2.8, hi_wavelength=19.,
-                background=True, is_direct=False, omega=0, twotheta=0,
+                background=True, is_direct=False, omega=0, two_theta=0,
                 rebin=1., wavelength_bins=None, normalise=True, integrate=0,
                 eventmode=None, peak_pos=None, background_mask=None):
         """
@@ -187,7 +187,7 @@ class PlatypusNexus(object):
             can be applied.
         omega : float
             Expected angle of incidence of beam
-        twotheta : float
+        two_theta : float
             Expected two theta value of specular beam
         rebin : float
             Specifies the rebinning percentage for the spectrum.  If `rebinning
@@ -296,7 +296,7 @@ class PlatypusNexus(object):
                                          - cat.slit2_distance[0]))[0]
 
             # work out the total flight length
-            output = self.chod(omega, twotheta, scanpoint=scanpoint)
+            output = self.chod(omega, two_theta, scanpoint=scanpoint)
             flight_distance[idx], d_cx[idx] = output
 
             # calculate phase openings
@@ -568,7 +568,7 @@ class PlatypusNexus(object):
         """
         cat = self.cat
         master = cat.master[scanpoint]
-        slave = cat.master[scanpoint]
+        slave = cat.slave[scanpoint]
         disc_phase = cat.phase[scanpoint]
         phase_angle = 0
 
@@ -594,7 +594,7 @@ class PlatypusNexus(object):
 
         return phase_angle, master_opening
 
-    def chod(self, omega=0., twotheta=0., scanpoint=0):
+    def chod(self, omega=0., two_theta=0., scanpoint=0):
         """
         Calculates the flight length of the neutrons in the Platypus instrument.
 
@@ -602,7 +602,7 @@ class PlatypusNexus(object):
         ----------
         omega : float, optional
             Rough angle of incidence
-        twotheta : float, optional
+        two_theta : float, optional
             Rough 2 theta angle
         scanpoint : int, optional
             Which dataset is being considered
@@ -659,19 +659,19 @@ class PlatypusNexus(object):
 
         if mode in ['FOC', 'POL', 'MT', 'POLANAL']:
             chod += cat.sample_distance[0]
-            chod += cat.dy[scanpoint] / np.cos(np.radians(twotheta))
+            chod += cat.dy[scanpoint] / np.cos(np.radians(two_theta))
 
         elif mode == 'SB':
             # assumes guide1_distance is in the MIDDLE OF THE MIRROR
             chod += cat.guide1_distance[0]
             chod += ((cat.sample_distance[0] - cat.guide1_distance[0])
                      / np.cos(np.radians(omega)))
-            if twotheta > omega:
+            if two_theta > omega:
                 chod += (cat.dy[scanpoint] /
-                         np.cos(np.radians(twotheta - omega)))
+                         np.cos(np.radians(two_theta - omega)))
             else:
                 chod += (cat.dy[scanpoint]
-                         / np.cos(np.radians(omega - twotheta)))
+                         / np.cos(np.radians(omega - two_theta)))
 
         elif mode == 'DB':
             # guide2_distance in in the middle of the 2nd compound mirror
@@ -686,12 +686,12 @@ class PlatypusNexus(object):
                      / np.cos(np.radians(4.8)))
 
             # add on sample -> detector
-            if twotheta > omega:
+            if two_theta > omega:
                 chod += (cat.dy[scanpoint]
-                         / np.cos(np.radians(twotheta - 4.8)))
+                         / np.cos(np.radians(two_theta - 4.8)))
             else:
                 chod += (cat.dy[scanpoint]
-                         / np.cos(np.radians(4.8 - twotheta)))
+                         / np.cos(np.radians(4.8 - two_theta)))
 
         return chod, d_cx
 
@@ -1069,13 +1069,12 @@ def calculate_wavelength_bins(lo_wavelength, hi_wavelength, rebin):
     -------
     wavelength_bins : np.ndarray
     """
-    frac = (rebin / 100.)
+    frac = (rebin / 100.) + 1
     lowspac = rebin / 100. * lo_wavelength
     hispac = rebin / 100. * hi_wavelength
 
     lowl = lo_wavelength - lowspac / 2.
     hil = hi_wavelength + hispac / 2.
-
     num_steps = np.floor(np.log10(hil / lowl) / np.log10(frac)) + 1
     rebinning = np.logspace(np.log10(lowl), np.log10(hil), num=num_steps)
     return rebinning
@@ -1131,10 +1130,10 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Process some Platypus NeXUS files to produce their TOF spectra.')
     parser.add_argument('file_list', metavar='N', type=int, nargs='+',
                         help='integer file numbers')
-    parser.add_argument('--basedir', type=str, help='define the location to find the nexus files')
-    parser.add_argument('--rebinpercent', type=float, help='rebin percentage for the wavelength -1<rebin<10', default=1)
-    parser.add_argument('--lolambda', type=float, help='lo wavelength cutoff for the rebinning', default=2.5)
-    parser.add_argument('--hilambda', type=float, help='lo wavelength cutoff for the rebinning', default=19.)
+    parser.add_argument('-b', '--basedir', type=str, help='define the location to find the nexus files')
+    parser.add_argument('-r', '--rebinpercent', type=float, help='rebin percentage for the wavelength -1<rebin<10', default=1)
+    parser.add_argument('-l', '--lolambda', type=float, help='lo wavelength cutoff for the rebinning', default=2.5)
+    parser.add_argument('-h', '--hilambda', type=float, help='lo wavelength cutoff for the rebinning', default=19.)
     parser.add_argument('--typeofintegration', type=float,
                         help='0 to integrate all spectra, 1 to output individual spectra', default=0)
     args = parser.parse_args()
