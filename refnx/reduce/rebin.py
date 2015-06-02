@@ -103,7 +103,7 @@ def rebin_along_axis(y1, x1, x2, axis=0):
 
     output = np.empty(new_shape, dtype=odtype)
 
-    it = np.nditer(y1, flags=['multi_index'])
+    it = np.nditer(y1, flags=['multi_index', 'refs_ok'])
     it.remove_axis(axis)
 
     while not it.finished:
@@ -293,7 +293,7 @@ def rebin_piecewise_constant(x1, y1, x2):
 
     # loop over all new bins
     for i in range(n):
-        x2_lo, x2_hi = x2[i], x2[i+1]
+        x2_lo, x2_hi = x2[i], x2[i + 1]
 
         i_lo, i_hi = np.searchsorted(x1, [x2_lo, x2_hi])
 
@@ -310,21 +310,21 @@ def rebin_piecewise_constant(x1, y1, x2):
 
         # new bin overlaps lower x1 boundary
         elif i_lo == 0:
-            sub_edges = np.hstack( [ x1[i_lo:i_hi], x2_hi ] )
+            sub_edges = np.hstack( [ x1[i_lo: i_hi], x2_hi ] )
             sub_dx    = np.ediff1d(sub_edges)
-            sub_y_ave = y1_ave[i_lo:i_hi]
+            sub_y_ave = y1_ave[i_lo: i_hi]
 
         # new bin overlaps upper x1 boundary
         elif i_hi == x1.size:
-            sub_edges = np.hstack( [ x2_lo, x1[i_lo:i_hi] ] )
+            sub_edges = np.hstack( [ x2_lo, x1[i_lo: i_hi] ] )
             sub_dx    = np.ediff1d(sub_edges)
-            sub_y_ave = y1_ave[i_lo-1:i_hi]
+            sub_y_ave = y1_ave[i_lo-1: i_hi]
 
         # new bin is enclosed in x1 range
         else:
-            sub_edges = np.hstack( [ x2_lo, x1[i_lo:i_hi], x2_hi ] )
+            sub_edges = np.hstack( [ x2_lo, x1[i_lo: i_hi], x2_hi ] )
             sub_dx    = np.ediff1d(sub_edges)
-            sub_y_ave = y1_ave[i_lo-1:i_hi]
+            sub_y_ave = y1_ave[i_lo-1: i_hi]
 
         y2.append( (sub_dx * sub_y_ave).sum() )
 

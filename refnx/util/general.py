@@ -144,8 +144,9 @@ def tauC(wavelength, xsi=0, z0=0.358, freq=24):
     kernel for time-of-flight neutron reflectometers, J. Appl. Cryst. (2013)
     46, 1338-1343
     """
-    tauC = np.radians(xsi) / (2 * np.pi * freq)
-    tauC += z0 / wavelength_velocity(wavelength)
+    tauC = z0 / wavelength_velocity(wavelength)
+    tauC += np.radians(xsi) / (2 * np.pi * freq)
+
     return tauC
 
 

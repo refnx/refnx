@@ -94,7 +94,7 @@ def gauss(x, bkg, peak, mean, sd):
     return bkg + peak * np.exp(-0.5 * ((mean - x) / sd)**2)
 
 
-def peak_finder(y, x=None):
+def peak_finder(y, x=None, sigma=None):
     '''Finds a peak in the specified data.
 
     Parameters

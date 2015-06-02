@@ -59,7 +59,7 @@ class Catalogue(object):
             # daq_dirname doesn't exist in this file
             d['daq_dirname'] = None
 
-        d['t_bins'] = h5data['entry1/data/time_of_flight'].astype('float64')
+        d['t_bins'] = h5data['entry1/data/time_of_flight'][:].astype('float64')
         d['x_bins'] = h5data['entry1/data/x_bin'][:]
         d['y_bins'] = h5data['entry1/data/y_bin'][:]
 
@@ -75,7 +75,7 @@ class Catalogue(object):
         d['chopper4_distance'] = h5data[
             'entry1/instrument/parameters/chopper4_distance'][:]
         d['chopper1_phase_offset'] = h5data[
-            'entry1/instrument/parameters/chopper1_distance'][:]
+            'entry1/instrument/parameters/chopper1_phase_offset'][:]
         d['chopper2_phase_offset'] = h5data[
             'entry1/instrument/parameters/chopper2_phase_offset'][:]
         d['chopper3_phase_offset'] = h5data[
@@ -88,6 +88,10 @@ class Catalogue(object):
             'entry1/instrument/parameters/guide2_distance'][:]
         d['sample_distance'] = h5data[
             'entry1/instrument/parameters/sample_distance'][:]
+        d['slit2_distance'] = h5data[
+            'entry1/instrument/parameters/slit2_distance'][:]
+        d['slit3_distance'] = h5data[
+            'entry1/instrument/parameters/slit3_distance'][:]
         d['dy'] = h5data[
             'entry1/instrument/detector/longitudinal_translation'][:]
         d['dz'] = h5data[
@@ -157,6 +161,8 @@ class PlatypusNexus(object):
         Parameters
         ----------
         h5data : HDF5 NeXus file or str
+            An HDF5 NeXus file for Platypus, or a `str` containing the path
+            to one.
         """
         if type(h5data) == h5py.File:
             self.cat = Catalogue(h5data)
@@ -166,7 +172,7 @@ class PlatypusNexus(object):
 
     def process(self, h5norm=None, lo_wavelength=2.8, hi_wavelength=19.,
                 background=True, is_direct=False, omega=0, two_theta=0,
-                rebin=1., wavelength_bins=None, normalise=True, integrate=0,
+                rebin_percent=1., wavelength_bins=None, normalise=True, integrate=0,
                 eventmode=None, peak_pos=None, background_mask=None):
         """
         Processes the ProcessNexus object to produce a time of flight spectrum.
@@ -189,12 +195,12 @@ class PlatypusNexus(object):
             Expected angle of incidence of beam
         two_theta : float
             Expected two theta value of specular beam
-        rebin : float
+        rebin_percent : float
             Specifies the rebinning percentage for the spectrum.  If `rebinning
             is None`, then no rebinning is done.
         wavelength_bins : array_like
             The wavelength bins for rebinning.  If `wavelength_bins is not
-             None` then the `rebin` parameter is ignored.
+             None` then the `rebin_percent` parameter is ignored.
         normalise : bool
             Normalise by the monitor counts.
         integrate : int
@@ -242,17 +248,18 @@ class PlatypusNexus(object):
 
             # integrate over all spectra
             if integrate == 0:
-                detector = np.sum(detector, 0)
+                detector = np.sum(detector, 0)[np.newaxis, ]
                 bm1_counts[:] = np.sum(bm1_counts)
 
-        num_spectra = np.size(detector)
+        num_spectra = np.size(detector, 0)
 
         # pre-average over x, leaving (n, t, y) also convert to dp
         detector = np.sum(detector, axis=3, dtype='float64')
 
         # detector shape should now be (n, t, y)
         # calculate the counting uncertainties
-        detector = unp.uarray(detector, np.sqrt(detector))
+        detector_sd = np.sqrt(detector)
+        detector = unp.uarray(detector, detector_sd)
         bm1_counts = unp.uarray(bm1_counts, np.sqrt(bm1_counts))
 
         # detector normalisation with a water file
@@ -357,12 +364,12 @@ class PlatypusNexus(object):
         '''
         if wavelength_bins is not None:
             rebinning = wavelength_bins
-        elif 0. < rebin < 10.:
+        elif 0. < rebin_percent < 15.:
             rebinning = calculate_wavelength_bins(lo_wavelength,
                                                   hi_wavelength,
-                                                  rebin)
+                                                  rebin_percent)
 
-        # rebin percentage is zero. No rebinning, just cutoff wavelength
+        # rebin_percent percentage is zero. No rebinning, just cutoff wavelength
         else:
             rebinning = M_lambdaHIST[0, :]
             rebinning = rebinning[np.searchsorted(rebinning, lo_wavelength):
@@ -383,6 +390,9 @@ class PlatypusNexus(object):
             output.append(plane)
 
         detector = np.vstack(output)
+
+        if len(detector.shape) == 2:
+            detector = detector[np.newaxis, ]
 
         #(1, T)
         M_lambdaHIST = np.atleast_2d(rebinning)
@@ -472,11 +482,11 @@ class PlatypusNexus(object):
         tau_da = M_specTOFHIST[:, 1:] - M_specTOFHIST[:, :-1]
 
         M_lambdaSD = general.resolution_double_chopper(M_lambda,
-                                     z0=d_cx[np.newaxis, :] / 1000.,
-                                     freq=cat.frequency[np.newaxis, :],
-                                     L=flight_distance[np.newaxis, :] / 1000.,
+                                     z0=d_cx[:, np.newaxis] / 1000.,
+                                     freq=cat.frequency[:, np.newaxis],
+                                     L=flight_distance[:, np.newaxis] / 1000.,
                                      H=cat.ss2vg[originalscanpoint],
-                                     xsi=phase_angle,
+                                     xsi=phase_angle[:, np.newaxis],
                                      tau_da=tau_da)
 
         M_lambdaSD *= M_lambda
@@ -853,7 +863,7 @@ def background_subtract_line(profile, background_mask):
 
     # which values to use as a background region
     mask = np.array(background_mask).astype('bool')
-    x_vals = np.where(mask)
+    x_vals = np.where(mask)[0]
 
     y_vals = unp.nominal_values(profile[x_vals])
     y_sdvals = unp.std_devs(profile[x_vals])
@@ -929,11 +939,15 @@ def find_specular_ridge(detector, starting_offset=50, tolerance=0.01):
 
     for i in range(num_increments):
         det_subset = det_ty[-1: -starting_offset - search_increment * i: -1]
-        total_y = np.sum(det_subset, axis=0)
+
+        # Uncertainties code takes a while to run
+        # total_y = np.sum(det_subset, axis=0)
+        y_nom = np.sum(unp.nominal_values(det_subset), axis=0)
+        y_sd = np.sqrt(np.sum(unp.std_devs(det_subset) ** 2., axis=0))
 
         # find the centroid and gauss peak in the last sections of the TOF
         # plot
-        centroid, gauss_peak = ut.peak_finder(total_y)
+        centroid, gauss_peak = ut.peak_finder(y_nom, sigma=y_sd)
 
         if (abs((gauss_peak[0] - last_centre) / last_centre) < tolerance
             and abs((gauss_peak[1] - last_SD) / last_SD) < tolerance):
@@ -943,7 +957,6 @@ def find_specular_ridge(detector, starting_offset=50, tolerance=0.01):
 
         last_centre = gauss_peak[0]
         last_SD = gauss_peak[1]
-
 
     return last_centre, last_SD
 
@@ -1133,7 +1146,7 @@ if __name__ == "__main__":
     parser.add_argument('-b', '--basedir', type=str, help='define the location to find the nexus files')
     parser.add_argument('-r', '--rebinpercent', type=float, help='rebin percentage for the wavelength -1<rebin<10', default=1)
     parser.add_argument('-l', '--lolambda', type=float, help='lo wavelength cutoff for the rebinning', default=2.5)
-    parser.add_argument('-h', '--hilambda', type=float, help='lo wavelength cutoff for the rebinning', default=19.)
+    parser.add_argument('--hilambda', type=float, help='lo wavelength cutoff for the rebinning', default=19.)
     parser.add_argument('--typeofintegration', type=float,
                         help='0 to integrate all spectra, 1 to output individual spectra', default=0)
     args = parser.parse_args()
@@ -1144,6 +1157,7 @@ if __name__ == "__main__":
         path = os.path.join(args.basedir, fname)
         try:
             a = PlatypusNexus(path)
+            a.process()
 
             # M_lambda, M_lambdaSD, M_spec, M_specSD = a.process(lolambda=args.lolambda,
             #                                                    hilambda=args.hilambda,
