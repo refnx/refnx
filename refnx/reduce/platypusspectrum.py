@@ -4,69 +4,68 @@ import spectrum
 from time import gmtime, strftime
 import string
 
-class PlatypusSpectrum(spectrum.Spectrum):
+class PlatypusSpectrum(object):
 
 	"""
-	
-		Objects of this class represent a processed Platypus spectrum
-		
-			N is the number of scanpoints
-			T is the number of wavelength/timebins in the rebinned data.
-			Y is the number of y pixels in the rebinned data
-			
-			The following object attributes are available:
-			
-				self.basedir
-				
-				self.datafilename
-				
-				self.datafilenumber
-				
-				self.normfilename
-				
-				self.normfilenumber
-			
-				self.M_topandtail[N, T, Y]	-rebinned, background subtracted, detector image. There are Y vertical pixels
-				
-				self.M_topandtailSD[N, T, Y]	-corresponding SD for M_topandtail
-				
-				self.M_spec[N, T]			-integrated intensity for a particular wavelength bin
-				
-				self.M_specSD[N, T]			-corresponding SD for M_spec (standard deviation
-				
-				self.M_lambda[N, T]			-wavelength values for each bin (in Angstrom)
-				
-				self.M_lambdaSD[N, T]		-uncertainty in M_lambda (_FWHM)
-				
-				self.M_lambdaHIST[N, T+1]	-bin edges for M_lambda
-				
-				self.M_spectof[N, T]			-time of flight values for each bin
-				
-				self.mode					-mode for a given acquisition (FOC, MT, DB, SB, etc)
-				
-				self.detectorZ[N]			-detector vertical translation (mm)
-				
-				self.detectorY				-detector horizontal translation from the sample (mm)
-				
-				self.domega					-angular divergence of the beam (radians)
-				
-				self.M_beampos[N, T]			-beamposition for specular beam
-				
-				self.lopx = lopx			-lowest pixel to be used for integrating specular beam
-				
-				self.hipx = hipx			-highest pixel to be used for integrating specular beam
-				
-				self.title					-title of experiment
-				
-				self.sample					-sample name
-				
-				self.user					-user name
+	Representation of a processed Platypus spectrum
 
+    N is the number of scanpoints
+    T is the number of wavelength/timebins in the rebinned data.
+    Y is the number of y pixels in the rebinned data
+
+    The following object attributes are available:
+    path : str
+        path to the dataset
+    datafilename : str
+        datafile name
+    datafilenumber : int
+        number of datafile
+    normfilename
+    normfilenumber
+    M_topandtail : np.ndarray
+        Rebinned, Background subtracted, Detector image. [N, T, Y]
+    M_topandtailSD : np.ndarray
+        Corresponding standard deviation for M_topandtail
+    M_spec : np.ndarray
+    	Specular intensity [N, T]
+    M_lambda : np.ndarray
+        Wavelength values [N, T]
+    M_lambdaSD : np.ndarray
+    	Uncertainty in M_lambda (_FWHM)
+    M_lambdaHIST : np.ndarray
+        Bin edges for M_lambda [N, T + 1]
+    M_spectof : np.ndarray
+        Time of flight values
+    mode : str
+    	Mode for a given acquisition (FOC, MT, DB, SB, etc)
+    detectorZ : np.ndarray
+    	Detector vertical translation (mm)
+    detectorY : np.ndarray
+    	Detector horizontal translation from the sample (mm)
+    domega : np.ndarray
+    	Angular divergence of the beam (radians)
+    M_beampos : np.ndarray
+        Beamposition for specular beam [N, T]
+    lopx : float
+        Lowest pixel to be used for integrating specular beam
+    hipx : float
+        Highest pixel to be used for integrating specular beam
+    title : str
+    	Title of experiment
+    sample : str
+    	Sample name
+    user : str
+        User name
 	"""
 	
-	__allowed_attributes = ['M_spec', 'M_specSD', 'M_topandtail', 'M_topandtailSD', 'M_beampos', 'M_lambda', 'M_lambdaSD', 'M_lambdaHIST', 'bmon1_counts',
-					'M_spectof', 'mode', 'detectorZ', 'detectorY', 'domega', 'lopx', 'hipx', 'title', 'sample', 'user', 'numspectra',
-					'basedir', 'datafilename', 'datafilenumber', 'normfilename', 'normfilenumber']
+	__allowed_attributes = ['M_spec', 'M_spec_sd', 'M_topandtail',
+                            'M_topandtail_sd', 'M_beampos', 'M_lambda',
+                            'M_lambda_sd', 'M_lambda_hist', 'bm1_counts',
+                            'M_spec_tof', 'mode', 'detectorZ', 'detectorY',
+                            'domega', 'lopx', 'hipx', 'title', 'sample',
+                            'user', 'num_spectra', 'path', 'datafilename',
+                            'datafile_number', 'normfilename',
+                            'normfilenumber']
 				
 			
 	def __init__(self, **kwds):
@@ -77,13 +76,17 @@ class PlatypusSpectrum(spectrum.Spectrum):
 				object.__setattr__(self, key, value)
 		
 		
-	def write_spectrum_XML(self, f, scanpoint = 0):
+	def write_spectrum_XML(self, f, scanpoint=0):
 		"""
-			
-			This method writes an XML representation of the corrected spectrum to the file f (supplied by callee).
-			You must have processed the data before calling this method. The default scanpoint is 0.  See process() for further
-			details on what scanpoint means.
-		
+        This method writes an XML representation of the corrected spectrum to
+        file.
+
+        Parameters
+        ----------
+        f : file-like object or str
+            The file to write the spectrum to
+        scanpoint : int
+            Which scanpoint to write.
 		"""
 		
 		spectrum_template = """<?xml version="1.0"?>
@@ -127,14 +130,21 @@ class PlatypusSpectrum(spectrum.Spectrum):
 		
 	def write_spectrum_dat(self, f, scanpoint = 0):
 		"""
-			
-			This method writes an dat representation of the corrected spectrum to the file f (supplied by callee).
-			The default scanpoint is 0.  See ProcessPlatypusNexus.process() for further
-			details on what scanpoint means.
-		
+        This method writes a dat representation of the corrected spectrum to
+        file.
+
+        Parameters
+        ----------
+        f : file-like object or str
+            The file to write the spectrum to
+        scanpoint : int
+            Which scanpoint to write.
 		"""
-		
-		for L, I, dI, dL in zip(self.M_lambda[scanpoint], self.M_spec[scanpoint], self.M_specSD[scanpoint], self.M_lambdaSD[scanpoint]):
+		for L, I, dI, dL in zip(self.M_lambda[scanpoint],
+                                self.M_spec[scanpoint],
+                                self.M_specSD[scanpoint],
+                                self.M_lambdaSD[scanpoint]):
+
 			thedata = '{:g}\t{:g}\t{:g}\t{:g}\n'.format(L, I, dI, dL)
 			f.write(thedata)
 		

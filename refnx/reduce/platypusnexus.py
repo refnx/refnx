@@ -1,9 +1,9 @@
 from __future__ import division
 import numpy as np
-from uncertainties import unumpy as unp
 import h5py
 import peak_utils as ut
 import refnx.util.general as general
+import refnx.util.ErrorProp as EP
 import platypusspectrum
 import event
 import Qtransforms as qtrans
@@ -13,17 +13,15 @@ import rebin
 import os
 import os.path
 import argparse
+import re
 
 
 Y_PIXEL_SPACING = 1.177  # in mm
-O_C1 = 1.04719755
-O_C2 = 0.17453293
-O_C3 = 0.43633231
-O_C4 = 1.04719755
-O_C1d = 60.
-O_C2d = 10.
-O_C3d = 25.
-O_C4d = 60.
+
+disc_openings = (60., 10., 25., 60.)
+O_C1d, O_C2d, O_C3d, O_C4d = disc_openings
+O_C1, O_C2, O_C3, O_C4 = np.radians(disc_openings)
+
 DISCRADIUS = 350.
 EXTENT_MULT = 2
 PIXEL_OFFSET = 1
@@ -101,6 +99,10 @@ class Catalogue(object):
     def __getattr__(self, item):
         return self.cat[item]
 
+    @property
+    def datafile_number(self):
+        return datafile_number(self.filename)
+
     def _chopper_values(self, h5data):
         """
         Obtains chopper settings from NeXUS file
@@ -146,6 +148,17 @@ class Catalogue(object):
                            ch4phase])
 
         return master[:], slave[:], speeds[0] / 60., phases[slave[0] - 1]
+
+
+def datafile_number(fname):
+    regex = re.compile("PLP([0-9]{7}).nx.hdf")
+    _fname = os.path.basename(fname)
+    r = regex.search(_fname)
+
+    if r:
+        return int(r.groups()[0])
+
+    return None
 
 
 class PlatypusNexus(object):
@@ -259,24 +272,26 @@ class PlatypusNexus(object):
         # detector shape should now be (n, t, y)
         # calculate the counting uncertainties
         detector_sd = np.sqrt(detector)
-        detector = unp.uarray(detector, detector_sd)
-        bm1_counts = unp.uarray(bm1_counts, np.sqrt(bm1_counts))
+        bm1_counts_sd = np.sqrt(bm1_counts)
 
         # detector normalisation with a water file
         if h5norm:
             x_bins = cat.x_bins[scanpoint]
             # shape (y,)
-            detector_norm = create_detector_norm(h5norm, x_bins[0], x_bins[1])
+            detector_norm, detector_norm_sd = create_detector_norm(h5norm,
+                                                                   x_bins[0],
+                                                                   x_bins[1])
             # detector has shape (N, T, Y), shape of detector_norm should
             # broadcast to (1,1,y)
-            detector /= detector_norm
+            detector, detector_sd = EP.EPdiv(detector, detector_sd,
+                                             detector_norm, detector_norm_sd)
 
         # shape of these is (num_spectra, TOFbins)
-        M_specTOFHIST = np.zeros((num_spectra, np.size(TOF, 0)),
+        M_spec_tof_hist = np.zeros((num_spectra, np.size(TOF, 0)),
+                                   dtype='float64')
+        M_lambda_hist = np.zeros((num_spectra, np.size(TOF, 0)),
                                  dtype='float64')
-        M_lambdaHIST = np.zeros((num_spectra, np.size(TOF, 0)),
-                                dtype='float64')
-        M_specTOFHIST[:] = TOF
+        M_spec_tof_hist[:] = TOF
 
         # chopper to detector distances
         # note that if eventmode is specified the num_spectra is NOT
@@ -298,9 +313,9 @@ class PlatypusNexus(object):
 
             # calculate the angular divergence
             domega[idx] = general.div(cat.ss2vg[scanpoint],
-                                        cat.ss3vg[scanpoint],
-                                        (cat.slit3_distance[0]
-                                         - cat.slit2_distance[0]))[0]
+                                      cat.ss3vg[scanpoint],
+                                      (cat.slit3_distance[0]
+                                       - cat.slit2_distance[0]))[0]
 
             # work out the total flight length
             output = self.chod(omega, two_theta, scanpoint=scanpoint)
@@ -321,12 +336,12 @@ class PlatypusNexus(object):
             toffset = (poffset
                        + 1.e6 * master_opening / 2 / (2 * np.pi) / freq
                        - 1.e6 * phase_angle / (360 * 2 * freq))
-            M_specTOFHIST[idx] -= toffset
+            M_spec_tof_hist[idx] -= toffset
 
             detpositions[idx] = cat.dy[scanpoint]
 
             if eventmode is not None and integrate > 0:
-                M_specTOFHIST[:] = TOF - toffset
+                M_spec_tof_hist[:] = TOF - toffset
                 flight_distance[:] = flight_distance[0]
                 detpositions[:] = detpositions[0]
                 break
@@ -336,26 +351,29 @@ class PlatypusNexus(object):
         scanpoint = originalscanpoint
 
         # convert TOF to lambda
-        # M_specTOFHIST (n, t) and chod is (n,)
-        M_lambdaHIST = qtrans.tof_to_lambda(M_specTOFHIST,
-                                            flight_distance[:, np.newaxis])
-        M_lambda = 0.5 * (M_lambdaHIST[:, 1:] + M_lambdaHIST[:, :-1])
+        # M_spec_tof_hist (n, t) and chod is (n,)
+        M_lambda_hist = qtrans.tof_to_lambda(M_spec_tof_hist,
+                                             flight_distance[:, np.newaxis])
+        M_lambda = 0.5 * (M_lambda_hist[:, 1:] + M_lambda_hist[:, :-1])
         TOF -= toffset
 
         # get the specular ridge on the averaged detector image
         if peak_pos is not None:
             beam_centre, beam_sd = peak_pos
         else:
-            beam_centre, beam_sd = find_specular_ridge(detector)
+            beam_centre, beam_sd = find_specular_ridge(detector, detector_sd)
 
         # gravity correction if direct beam
         if is_direct:
-            detector, M_gravcorrcoefs = correct_for_gravity(detector,
-                                                            M_lambda,
-                                                            0,
-                                                            lo_wavelength,
-                                                            hi_wavelength)
-            beam_centre, beam_sd = find_specular_ridge(detector)
+            output = correct_for_gravity(detector,
+                                         detector_sd,
+                                         M_lambda,
+                                         0,
+                                         lo_wavelength,
+                                         hi_wavelength)
+            detector, detector_sd, M_gravcorrcoefs = output
+
+            beam_centre, beam_sd = find_specular_ridge(detector, detector_sd)
 
         '''
         Rebinning in lambda for all detector
@@ -371,47 +389,54 @@ class PlatypusNexus(object):
 
         # rebin_percent percentage is zero. No rebinning, just cutoff wavelength
         else:
-            rebinning = M_lambdaHIST[0, :]
+            rebinning = M_lambda_hist[0, :]
             rebinning = rebinning[np.searchsorted(rebinning, lo_wavelength):
                                   np.searchsorted(rebinning, hi_wavelength)]
 
         '''
         now do the rebinning for all the N detector images
-        rebin.rebinND could do all of these at once.  However, M_lambdaHIST
+        rebin.rebinND could do all of these at once.  However, M_lambda_hist
         could vary across the range of spectra.  If it was the same I could
         eliminate the loop.
         '''
         output = []
+        output_sd = []
         for idx in range(num_spectra):
-            plane = rebin.rebinND(detector[idx],
-                                  (0, ),
-                                  (M_lambdaHIST[idx],),
-                                  (rebinning,))
+            plane, plane_sd = rebin.rebin_along_axis(detector[idx],
+                                                     M_lambda_hist[idx],
+                                                     rebinning,
+                                                     y1_sd=detector_sd[idx])
             output.append(plane)
+            output_sd.append(plane_sd)
 
         detector = np.vstack(output)
+        detector_sd = np.vstack(output_sd)
 
         if len(detector.shape) == 2:
             detector = detector[np.newaxis, ]
+            detector_sd = detector_sd[np.newaxis, ]
 
         #(1, T)
-        M_lambdaHIST = np.atleast_2d(rebinning)
+        M_lambda_hist = np.atleast_2d(rebinning)
 
         '''
         Divide the detector intensities by the width of the wavelength bin.
         This is so the intensities between different rebinning strategies can
         be compared.
         '''
-        detector /= np.ediff1d(M_lambdaHIST[0])[:, np.newaxis]
+        div = 1 / np.ediff1d(M_lambda_hist[0])[:, np.newaxis]
+        detector, detector_sd = EP.EPmulk(detector,
+                                          detector_sd,
+                                          div)
 
         # convert the wavelength base to a timebase
-        M_specTOFHIST = qtrans.lambda_to_tof(M_lambdaHIST,
-                                             flight_distance[:, np.newaxis])
+        M_spec_tof_hist = qtrans.lambda_to_tof(M_lambda_hist,
+                                               flight_distance[:, np.newaxis])
 
-        M_lambda = 0.5 * (M_lambdaHIST[:, 1:] + M_lambdaHIST[:, :-1])
+        M_lambda = 0.5 * (M_lambda_hist[:, 1:] + M_lambda_hist[:, :-1])
 
-        M_spectof = qtrans.lambda_to_tof(M_lambda,
-                                         flight_distance[:, np.newaxis])
+        M_spec_tof = qtrans.lambda_to_tof(M_lambda,
+                                          flight_distance[:, np.newaxis])
 
         '''
         Now work out where the beam hits the detector
@@ -425,7 +450,9 @@ class PlatypusNexus(object):
         are contained in M_gravcorrcoefs.
         '''
         if is_direct:
-            M_beampos[:] = self._beampos(M_gravcorrcoefs, detpositions)
+            M_beampos[:] = self._beampos(M_lambda,
+                                         M_gravcorrcoefs,
+                                         detpositions)
             M_beampos *= Y_PIXEL_SPACING
         else:
             M_beampos[:] = beam_centre * Y_PIXEL_SPACING
@@ -449,7 +476,9 @@ class PlatypusNexus(object):
                 background_mask[y0: y1] = True
                 background_mask[y2 + 1: y3 + 1] = True
 
-            detector = background_subtract(detector, background_mask)
+            detector, detector_sd = background_subtract(detector,
+                                                        detector_sd,
+                                                        background_mask)
 
         '''
         top and tail the specular beam with the known beam centres.
@@ -457,7 +486,8 @@ class PlatypusNexus(object):
         i.e. integrate over specular beam
         '''
         M_spec = np.sum(detector[:, :, lopx: hipx + 1], axis=2)
-
+        M_spec_sd = np.sqrt(np.sum(detector_sd[:, :, lopx: hipx + 1]**2,
+                                   axis=2))
         # assert np.isfinite(M_spec).all()
         # assert np.isfinite(M_specSD).all()
         # assert np.isfinite(detector).all()
@@ -465,11 +495,18 @@ class PlatypusNexus(object):
 
         # normalise by beam monitor 1.
         if normalise:
-            #have to make to the same shape as M_spec
-            M_spec /= bm1_counts[:, np.newaxis]
+            # have to make to the same shape as M_spec
+            M_spec, M_spec_sd = EP.EPdiv(M_spec,
+                                         M_spec_sd,
+                                         bm1_counts[:, np.newaxis],
+                                         bm1_counts_sd[:, np.newaxis])
 
             # have to make to the same shape as detector
-            detector /= bm1_counts[:, np.newaxis, np.newaxis]
+            output = EP.EPdiv(detector,
+                              detector_sd,
+                              bm1_counts[:, np.newaxis, np.newaxis],
+                              bm1_counts_sd[:, np.newaxis, np.newaxis])
+            detector, detector_sd = output
 
         '''
         now work out dlambda/lambda, the resolution contribution from
@@ -479,9 +516,9 @@ class PlatypusNexus(object):
         discs have smaller openings compared to the master chopper.
         Therefore the burst time needs to be looked at.
         '''
-        tau_da = M_specTOFHIST[:, 1:] - M_specTOFHIST[:, :-1]
+        tau_da = M_spec_tof_hist[:, 1:] - M_spec_tof_hist[:, :-1]
 
-        M_lambdaSD = general.resolution_double_chopper(M_lambda,
+        M_lambda_sd = general.resolution_double_chopper(M_lambda,
                                      z0=d_cx[:, np.newaxis] / 1000.,
                                      freq=cat.frequency[:, np.newaxis],
                                      L=flight_distance[:, np.newaxis] / 1000.,
@@ -489,7 +526,7 @@ class PlatypusNexus(object):
                                      xsi=phase_angle[:, np.newaxis],
                                      tau_da=tau_da)
 
-        M_lambdaSD *= M_lambda
+        M_lambda_sd *= M_lambda
 
         # put the detector positions and mode into the dictionary as well.
         detectorZ = np.atleast_2d(cat.dz)
@@ -497,20 +534,23 @@ class PlatypusNexus(object):
         mode = np.atleast_2d(cat.mode)
 
         d = dict()
+        d['path'] = cat.path
         d['datafilename'] = cat.filename
-        d['datafilenumber'] = cat.datafilenumber
+        d['datafile_number'] = cat.datafile_number
 
         if h5norm is not None:
             d['normfilename'] = h5norm.filename
         d['M_topandtail'] = detector
+        d['M_topandtail_sd'] = detector_sd
         d['num_spectra'] = num_spectra
         d['bm1_counts'] = bm1_counts
         d['M_spec'] = M_spec
+        d['M_spec_sd'] = M_spec_sd
         d['M_beampos'] = M_beampos
         d['M_lambda'] = M_lambda
-        d['M_lambdaSD'] = M_lambdaSD
-        d['M_lambdaHIST'] = M_lambdaHIST
-        d['M_spectof'] = M_spectof
+        d['M_lambda_sd'] = M_lambda_sd
+        d['M_lambda_hist'] = M_lambda_hist
+        d['M_spec_tof'] = M_spec_tof
         d['mode'] = mode
         d['detectorZ'] = detectorZ
         d['detectorY'] = detectorY
@@ -539,7 +579,6 @@ class PlatypusNexus(object):
         beam_pos : array
             beam positions
 
-
         The following correction assumes that the directbeam neutrons are
         falling from a point position W_gravcorrcoefs[0] before the
         detector. At the sample stage
@@ -553,6 +592,7 @@ class PlatypusNexus(object):
         Factor of 2 is out the front to give an estimation of the
         increase in 2theta of the reflected beam.
         """
+        M_beampos = np.zeros_like(lamda)
         M_beampos[:] = M_gravcorrcoefs[:, 1][:, np.newaxis]
         M_beampos[:] -= 2. * (1000. / Y_PIXEL_SPACING * 9.81
                               * (M_gravcorrcoefs[:, 0][:, np.newaxis]
@@ -560,6 +600,7 @@ class PlatypusNexus(object):
                               * (dz[:, np.newaxis] / 1000.)
                               * lamda ** 2
                               / ((qtrans.kPlanck_over_MN * 1.e10) ** 2))
+        return M_beampos
 
     def phase_angle(self, scanpoint=0):
         """
@@ -705,7 +746,6 @@ class PlatypusNexus(object):
 
         return chod, d_cx
 
-
     def process_event_stream(self, t_bins=None, x_bins=None, y_bins=None,
                              frame_bins=None, scanpoint=0):
         """
@@ -803,7 +843,7 @@ def create_detector_norm(h5norm, x_min, x_max):
 
     Returns
     -------
-    norm : array_like
+    norm, norm_sd : array_like
         1D array containing the normalisation data for each y pixel
     """
     # sum over N and T
@@ -817,10 +857,10 @@ def create_detector_norm(h5norm, x_min, x_max):
 
     mean = np.mean(norm)
 
-    return unp.uarray(norm / mean, np.sqrt(norm) / mean)
+    return norm / mean, np.sqrt(norm) / mean
 
 
-def background_subtract(detector, background_mask):
+def background_subtract(detector, detector_sd, background_mask):
     """
     Background subtraction of Platypus detector image.
     Shape of detector is (N, T, Y), do a linear background subn for each
@@ -828,34 +868,39 @@ def background_subtract(detector, background_mask):
 
     Parameters
     ----------
-    detector : unp.uarray
+    detector : np.ndarray
         detector array with shape (N, T, Y).
+    detector_sd : np.ndarray
+        standard deviations for detector array
     background_mask : array_like
         array of bool that specifies which Y pixels to use for background
         subtraction.
 
     Returns
     -------
-    detector : unp.uarray
+    detector, detector_sd : np.ndarray, np.ndarray
         Detector image with background subtracted
     """
-    ret = unp.uarray(np.zeros(detector.shape, dtype='float64'),
-                     np.zeros(detector.shape, dtype='float64'))
+    ret = np.zeros_like(detector)
+    ret_sd = np.zeros_like(detector)
 
-    for index in np.ndindex(detector.shape[0: 2]):
-        ret[index] = background_subtract_line(detector[index],
-                                              background_mask)
-    return ret
+    for idx in np.ndindex(detector.shape[0: 2]):
+        ret[idx], ret_sd[idx] = background_subtract_line(detector[idx],
+                                                         detector_sd[idx],
+                                                         background_mask)
+    return ret, ret_sd
 
 
-def background_subtract_line(profile, background_mask):
+def background_subtract_line(profile, profile_sd, background_mask):
     """
     Performs a linear background subtraction on a 1D peak profile
 
     Parameters
     ----------
-    profile : unp.uarray
-        1D profile, with uncertainties
+    profile : np.ndarray
+        1D profile
+    profile_sd : np.ndarray
+        standard deviations for profile
     background_mask : array_like
         array of bool that specifies which Y pixels to use for background
         subtraction.
@@ -865,15 +910,16 @@ def background_subtract_line(profile, background_mask):
     mask = np.array(background_mask).astype('bool')
     x_vals = np.where(mask)[0]
 
-    y_vals = unp.nominal_values(profile[x_vals])
-    y_sdvals = unp.std_devs(profile[x_vals])
+    y_vals = profile[x_vals]
+    y_sdvals = profile_sd[x_vals]
     x_vals = x_vals.astype('float')
 
     # some SD values may have 0 SD, which will screw up curvefitting.
     y_sdvals = np.where(y_sdvals == 0, 1, y_sdvals)
 
     # equation for a straight line
-    f = lambda x, a, b: a + b * x
+    def f(x, a, b):
+        return a + b * x
 
     # estimate the linear fit
     y_bar = np.mean(y_vals)
@@ -886,8 +932,9 @@ def background_subtract_line(profile, background_mask):
     popt, pcov = curve_fit(f, x_vals, y_vals, sigma=y_sdvals,
                            p0=np.array([ahat, bhat]))
 
-    CI = lambda x, pcovmat: (pcovmat[0, 0] + pcovmat[1, 0] * x
-                             + pcovmat[0, 1] * x + pcovmat[1, 1] * (x ** 2))
+    def CI(xx, pcovmat):
+        return (pcovmat[0, 0] + pcovmat[1, 0] * xx
+                + pcovmat[0, 1] * xx + pcovmat[1, 1] * (xx ** 2))
 
     bkgd = f(np.arange(np.size(profile, 0)), popt[0], popt[1])
     bkgd_sd = np.empty_like(bkgd)
@@ -901,20 +948,25 @@ def background_subtract_line(profile, background_mask):
 
     bkgd_sd = np.sqrt(bkgd_sd)
 
-    # get the t value for a two sided student t test at the 68.3 confidence level
+    # get the t value for a two sided student t test at the 68.3 confidence
+    # level
     bkgd_sd *= t.isf(0.1585, np.size(x_vals, 0) - 2)
 
-    return profile - unp.uarray(bkgd, bkgd_sd)
+    return EP.EPsub(profile, profile_sd, bkgd, bkgd_sd)
 
 
-def find_specular_ridge(detector, starting_offset=50, tolerance=0.01):
+def find_specular_ridge(detector, detector_sd, starting_offset=50,
+                        tolerance=0.01):
     """
-    Find the specular ridge in a detector(n, t, y) plot.
+    Find the specular ridge in a detector(n, t, y) plot. Assumes that the
+    specular ridge _does not_ change position.
 
     Parameters
     ----------
     detector : array_like
         detector array
+    detector_sd : array_like
+        standard deviations of detector array
 
     Returns
     -------
@@ -927,42 +979,46 @@ def find_specular_ridge(detector, starting_offset=50, tolerance=0.01):
     # if [N,T,Y] sum over all N planes, left with [T, Y]
     if len(detector.shape) > 2:
         det_ty = np.sum(detector, axis=0)
+        det_sd_ty = np.sqrt(np.sum(detector_sd**2, axis=0))
     else:
-        det_ty = detector
+        det_ty, det_sd_ty = detector, detector_sd
 
     starting_offset = abs(starting_offset)
 
     num_increments = (np.size(det_ty, 0) - starting_offset) // search_increment
 
     last_centre = -1.
-    last_SD = -1.
+    last_sd = -1.
 
     for i in range(num_increments):
-        det_subset = det_ty[-1: -starting_offset - search_increment * i: -1]
+        how_many = -starting_offset - search_increment * i
+
+        det_subset = det_ty[-1: how_many: -1]
+        det_sd_subset = det_sd_ty[-1: how_many: -1]
 
         # Uncertainties code takes a while to run
         # total_y = np.sum(det_subset, axis=0)
-        y_nom = np.sum(unp.nominal_values(det_subset), axis=0)
-        y_sd = np.sqrt(np.sum(unp.std_devs(det_subset) ** 2., axis=0))
+        y_cross = np.sum(det_subset, axis=0)
+        y_cross_sd = np.sqrt(np.sum(det_sd_subset ** 2., axis=0))
 
         # find the centroid and gauss peak in the last sections of the TOF
         # plot
-        centroid, gauss_peak = ut.peak_finder(y_nom, sigma=y_sd)
+        centroid, gauss_peak = ut.peak_finder(y_cross, sigma=y_cross_sd)
 
         if (abs((gauss_peak[0] - last_centre) / last_centre) < tolerance
-            and abs((gauss_peak[1] - last_SD) / last_SD) < tolerance):
+            and abs((gauss_peak[1] - last_sd) / last_sd) < tolerance):
             last_centre = gauss_peak[0]
-            last_SD = gauss_peak[1]
+            last_sd = gauss_peak[1]
             break
 
         last_centre = gauss_peak[0]
-        last_SD = gauss_peak[1]
+        last_sd = gauss_peak[1]
 
-    return last_centre, last_SD
+    return last_centre, last_sd
 
 
-def correct_for_gravity(detector, lamda, trajectory, lo_wavelength,
-                        hi_wavelength):
+def correct_for_gravity(detector, detector_sd, lamda, trajectory,
+                        lo_wavelength, hi_wavelength):
     """
     Returns a gravity corrected yt plot, given the data, its associated errors,
     the wavelength corresponding to each of the time bins, and the trajectory
@@ -971,8 +1027,10 @@ def correct_for_gravity(detector, lamda, trajectory, lo_wavelength,
 
     Parameters
     ----------
-    detector : unp.uarray
+    detector : np.ndarray
         Detector image. Has shape (N, T, Y)
+    detector_sd : np.ndarray
+        Standard deviations of detector image
     lamda : np.ndarray
         Wavelengths corresponding to the detector image, has shape (N, T)
     trajectory : float
@@ -984,11 +1042,11 @@ def correct_for_gravity(detector, lamda, trajectory, lo_wavelength,
 
     Returns
     -------
-    corrected_data, M_gravcorrcoefs : unp.uarray, np.ndarray
-        Corrected image
-        This is a theoretical prediction where the spectral ridge is for each
-        wavelength.  This will be used to calculate the actual angle of
-        incidence in the reduction process.
+    corrected_data, corrected_data_sd, M_gravcorrcoefs :
+                    np.ndarray, np.ndarray, np.ndarray
+        Corrected image. This is a theoretical prediction where the spectral
+        ridge is for each wavelength.  This will be used to calculate the
+        actual angle of incidence in the reduction process.
 
     """
     num_lambda = np.size(lamda, axis=1)
@@ -1000,14 +1058,13 @@ def correct_for_gravity(detector, lamda, trajectory, lo_wavelength,
 
     M_gravcorrcoefs = np.zeros((np.size(detector, 0), 2), dtype='float64')
 
-    corrected_data = np.copy(detector)
-    corrected_data *= 0
-
-    nom_detector = unp.nominal_values(detector)
+    corrected_data = np.zeros_like(detector)
+    corrected_data_sd = np.zeros_like(detector)
 
     for spec in range(np.size(detector, 0)):
-        #centres(t,)
-        centroids = np.apply_along_axis(ut.centroid, 1, nom_detector[spec])
+        # centres(t,)
+        # TODO, don't use centroids, use Gaussian peak
+        centroids = np.apply_along_axis(ut.centroid, 1, detector[spec])
         lopx = np.searchsorted(lamda[spec], lo_wavelength)
         hipx = np.searchsorted(lamda[spec], hi_wavelength)
 
@@ -1021,10 +1078,13 @@ def correct_for_gravity(detector, lamda, trajectory, lo_wavelength,
 
         x_rebin = x_init.T + total_deflection[:, np.newaxis]
         for wavelength in range(np.size(detector, axis=1)):
-            corrected_data[spec, wavelength] = rebin.rebin(x_init,
-                                             detector[spec, wavelength],
-                                             x_rebin[wavelength],
-                                             interp_kind='piecewise_constant')
+            output = rebin.rebin(x_init,
+                                 detector[spec, wavelength],
+                                 x_rebin[wavelength],
+                                 y1_sd=detector_sd[spec, wavelength])
+
+            corrected_data[spec, wavelength] = output[0]
+            corrected_data_sd[spec, wavelength] = output[1]
 
     return corrected_data, M_gravcorrcoefs
 
@@ -1063,11 +1123,11 @@ def deflection(lamda, flight_length, trajectory):
     return y_t * 1000.
 
 
-def calculate_wavelength_bins(lo_wavelength, hi_wavelength, rebin):
+def calculate_wavelength_bins(lo_wavelength, hi_wavelength, rebin_percent):
     """
     Calculates optimal logarithmically spaced wavelength histogram bins. The
     bins are equal size in log10 space, but they may not be exactly be
-    `rebin` in size. The limits would have to change slightly for that.
+    `rebin_percent` in size. The limits would have to change slightly for that.
 
     Parameters
     ----------
@@ -1075,16 +1135,16 @@ def calculate_wavelength_bins(lo_wavelength, hi_wavelength, rebin):
         Low wavelength cutoff
     hi_wavelength : float
         High wavelength cutoff
-    rebin : float
+    rebin_percent : float
         Rebinning percentage
 
     Returns
     -------
     wavelength_bins : np.ndarray
     """
-    frac = (rebin / 100.) + 1
-    lowspac = rebin / 100. * lo_wavelength
-    hispac = rebin / 100. * hi_wavelength
+    frac = (rebin_percent / 100.) + 1
+    lowspac = rebin_percent / 100. * lo_wavelength
+    hispac = rebin_percent / 100. * hi_wavelength
 
     lowl = lo_wavelength - lowspac / 2.
     hil = hi_wavelength + hispac / 2.
