@@ -387,7 +387,8 @@ class PlatypusNexus(object):
                                                   hi_wavelength,
                                                   rebin_percent)
 
-        # rebin_percent percentage is zero. No rebinning, just cutoff wavelength
+        # rebin_percent percentage is zero. No rebinning, just cutoff
+        # wavelength
         else:
             rebinning = M_lambda_hist[0, :]
             rebinning = rebinning[np.searchsorted(rebinning, lo_wavelength):
@@ -442,7 +443,7 @@ class PlatypusNexus(object):
         Now work out where the beam hits the detector
         this is used to work out the correct angle of incidence.
         '''
-        M_beampos = np.zeros_like(M_lambda)
+        M_beampos = np.ones_like(M_lambda) * beam_centre
 
         '''
         The spectral ridge for the direct beam has a gravity correction
@@ -453,9 +454,7 @@ class PlatypusNexus(object):
             M_beampos[:] = self._beampos(M_lambda,
                                          M_gravcorrcoefs,
                                          detpositions)
-            M_beampos *= Y_PIXEL_SPACING
-        else:
-            M_beampos[:] = beam_centre * Y_PIXEL_SPACING
+        M_beampos[:] *= Y_PIXEL_SPACING
 
         # we want to integrate over the following pixel region
         lopx = np.floor(beam_centre - beam_sd * EXTENT_MULT)
@@ -561,7 +560,7 @@ class PlatypusNexus(object):
         return platypusspectrum.PlatypusSpectrum(**d)
 
 
-    def _beampos(self, lamda, M_gravcorrcoefs, dz):
+    def _beampos(self, lamda, M_gravcorrcoefs, dy):
         """
         Workout beam position for a droopy beam
 
@@ -571,8 +570,8 @@ class PlatypusNexus(object):
             wavelength (Angstrom)
         M_gravcorrcoefs : array_like
             Gravity correction coefficients
-        dz : array
-            Detector vertical translation
+        dy : array
+            Detector horizontal translation
 
         Returns
         -------
@@ -596,8 +595,8 @@ class PlatypusNexus(object):
         M_beampos[:] = M_gravcorrcoefs[:, 1][:, np.newaxis]
         M_beampos[:] -= 2. * (1000. / Y_PIXEL_SPACING * 9.81
                               * (M_gravcorrcoefs[:, 0][:, np.newaxis]
-                                 - dz[:, np.newaxis]) / 1000.
-                              * (dz[:, np.newaxis] / 1000.)
+                                 - dy[:, np.newaxis]) / 1000.
+                              * (dy[:, np.newaxis] / 1000.)
                               * lamda ** 2
                               / ((qtrans.kPlanck_over_MN * 1.e10) ** 2))
         return M_beampos
@@ -1115,7 +1114,7 @@ def deflection(lamda, flight_length, trajectory):
     # x = v_0 . t . cos(trajectory)
     # y = v_0 . t . sin(trajectory) - 0.5gt^2
 
-    flight_time = flight_length / 1000. / initial_velocity / np.cos(traj)
+    flight_time = flight_length / 1000. / (initial_velocity * np.cos(traj))
 
     y_t = (initial_velocity * flight_time * np.sin(traj)
            - 0.5 * 9.81 * flight_time ** 2)

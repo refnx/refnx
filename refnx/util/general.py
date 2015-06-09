@@ -97,8 +97,18 @@ def q2(omega, twotheta, phi, wavelength):
 def wavelength(q, angle):
     '''
     calculate wavelength given Q vector and angle
-    q - wavevector (A^-1)
-    angle - angle of incidence (degrees)
+
+    Parameters
+    ----------
+    q : float
+        Wavevector (A**-1)
+    angle : float
+        angle of incidence (degrees)
+
+    Returns
+    -------
+    wavelength : float
+        Wavelength of radiation (Å)
     '''
     return  4. * np.pi * np.sin(angle * np.pi / 180.)/q
 
@@ -109,7 +119,7 @@ def angle(q, wavelength):
     q - wavevector (A^-1)
     wavelength -  wavelength of radiation (Angstrom)
     '''
-    return  np.asin(q / 4. / np.pi * wavelength) * 180 / np.pi
+    return  np.arcsin(q / 4. / np.pi * wavelength) * 180 / np.pi
 
 
 def qcrit(SLD1, SLD2):
@@ -165,6 +175,40 @@ def wavelength_velocity(wavelength):
         velocity of neutron in ms**-1
     """
     return K / wavelength
+
+
+def wavelength_energy(wavelength):
+    """
+    Converts wavelength to energy in meV
+    Parameters
+    ----------
+    wavelength : float
+        Wavelength in Angstrom.
+
+    Returns
+    -------
+    energy : float
+        Energy in meV.
+    """
+    c = 0.5e23 / constants.eV * constants.h ** 2 / constants.m_n
+    return c / wavelength ** 2
+
+
+def energy_wavelength(energy):
+    """
+    Converts wavelength to energy in meV
+    Parameters
+    ----------
+    energy : float
+        Energy in meV.
+
+    Returns
+    -------
+    wavelength : float
+        Wavelength in Angstrom.
+    """
+    c = 0.5e23 / constants.eV * constants.h ** 2 / constants.m_n
+    return np.sqrt(c / energy)
 
 
 def double_chopper_frequency(min_wavelength, max_wavelength, L, N=1):
@@ -308,14 +352,14 @@ def transmission_single_chopper(R=0.35, phi=60, N=1, H=0.005):
     return N * (np.radians(phi) * R + H) / (2 * np.pi * R)
 
 
-def xraylam(energy):
+def xray_wavelength(energy):
     '''
     convert energy (keV) to wavelength (angstrom)
     '''
     return 12.398/ energy
 
 
-def xrayenergy(wavelength):
+def xray_energy(wavelength):
     '''
     convert energy (keV) to wavelength (angstrom)
     '''

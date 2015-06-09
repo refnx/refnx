@@ -11,8 +11,8 @@ def y_deflection(initial_trajectory, flight_length, speed):
     Parameters
     ----------
     initial_trajectory : float
-        Initial trajectory of the object (degrees).  A positive angle lies
-        above the x-axis.
+        The initial angular trajectory of the path (degrees), measured from
+        the x-axis. A positive angle is in an anticlockwise direction.
     flight_length : float
         The horizontal component of the distance of the object from the origin
         (m).
@@ -24,21 +24,35 @@ def y_deflection(initial_trajectory, flight_length, speed):
     displacement : float
         Vertical displacement of the object (m).
     """
-    traj_rad = np.radians(initial_trajectory)
-    ret = flight_length * np.tan(traj_rad)
-    ret -= (constants.g * flight_length ** 2
-            / 2. / speed ** 2 / np.cos(traj_rad) ** 2.)
-    return ret
+    eqn = parabola_eqn(initial_trajectory, speed)
+    return poly.polyval(flight_length, eqn)
 
 
 def elevation(initial_trajectory, flight_length, speed):
     """
     The immediate inclination of an object moving in a parabolic path
+
+    Parameters
+    ----------
+    initial_trajectory : float
+        The initial angular trajectory of the path (degrees), measured from
+        the x-axis. A positive angle is in an anticlockwise direction.
+    flight_length : float
+        The horizontal component of the distance of a point on the line from
+        the origin (m).
+    speed : float
+        The initial speed of the object (m/s)
+
+    Returns
+    -------
+    elevation : float
+        The direction in which the object is currently moving (degrees). The
+        angle is measured relative to the x-axis, with a positive angle in an
+        anticlockwise direction.
     """
-    traj_rad = np.radians(initial_trajectory)
-    ret = np.tan(traj_rad)
-    ret -= constants.g * flight_length / (speed * np.cos(traj_rad)) ** 2.
-    return np.degrees(np.arctan(ret))
+    eqn = parabola_eqn(initial_trajectory, speed)
+    dydx = poly.polyder(eqn)
+    return np.degrees(np.arctan(poly.polyval(flight_length, dydx)))
 
 
 def find_trajectory(theta, flight_length, speed):
@@ -50,7 +64,7 @@ def find_trajectory(theta, flight_length, speed):
     ----------
     theta : float
         The angle between the x-axis and the point (degrees). A positive angle
-        lies above the x-axis.
+        is in an anticlockwise direction.
     flight_length : float
         The horizontal component of the distance of a point on the line from
         the origin (m).
@@ -72,8 +86,24 @@ def find_trajectory(theta, flight_length, speed):
                 - y_deflection(trajectory, flight_length, speed))
 
     trajectory = newton(traj, 0)
-
     return trajectory
+
+
+def parabola_eqn(initial_trajectory, speed):
+    """
+    Find the quadratic form of the parabolic path
+
+    Parameters
+    ----------
+    initial_trajectory : float
+        The initial angular trajectory of the path (degrees), measured from
+        the x-axis. A positive angle is in an anticlockwise direction.
+    speed : float
+        The initial speed of the object (m/s)
+    """
+    traj_rad = np.radians(initial_trajectory)
+    return np.array([0., np.tan(traj_rad),
+                     -constants.g / 2. / (speed * np.cos(traj_rad)) ** 2.])
 
 
 def parabola_line_intersection_point(initial_trajectory, speed, theta,
@@ -86,11 +116,13 @@ def parabola_line_intersection_point(initial_trajectory, speed, theta,
     Parameters
     ----------
     initial_trajectory : float
-        The initial trajectory of the object (degrees).
+        The initial trajectory of the object (degrees). A positive angle is in
+        an anticlockwise direction.
     speed : float
         The initial speed of the object (m/s).
     theta : float
-        The declination of a point on the line from the origin (degrees).
+        The declination of a point on the line from the origin (degrees). A
+        positive angle is in an anticlockwise direction.
     flight_length : float
         The horizontal component of the distance of a point on the line from
         the origin (m).
@@ -107,18 +139,15 @@ def parabola_line_intersection_point(initial_trajectory, speed, theta,
     """
     omega_rad = np.radians(omega)
     theta_rad = np.radians(theta)
-    traj_rad = np.radians(initial_trajectory)
 
     # equation of line
     a1 = flight_length * (np.tan(theta_rad) - np.tan(omega_rad))
     b1 = np.tan(omega_rad)
 
     # equation of parabola
-    a2 = 0.
-    b2 = np.tan(traj_rad)
-    c2 = -constants.g / 2. / (speed * np.cos(traj_rad)) ** 2.
+    eqn = parabola_eqn(initial_trajectory, speed)
 
-    intersection_x = np.max(poly.polyroots([a2 - a1, b2 - b1, c2]))
+    intersection_x = np.max(poly.polyroots([eqn[0] - a1, eqn[1] - b1, eqn[2]]))
     intersection_y = a1 + intersection_x * b1
     distance = ((intersection_x - flight_length) ** 2
                 + (intersection_y - flight_length * np.tan(theta_rad)) ** 2)

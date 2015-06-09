@@ -197,10 +197,14 @@ def rebin(x1, y1, x2, y1_sd=None):
 
     # allocating y2 vector
     n  = x2.size - 1
-    y2 = []
-    y2_var = []
+    y2 = np.zeros(n)
+    y2_var = np.zeros_like(y2)
 
     i_place = np.searchsorted(x1, x2)
+
+    # create a placeholder array for holding subset of fractional bin widths
+    max_i_place_length = np.max(np.ediff1d(i_place))
+    p_sub_dx = np.zeros(max_i_place_length + 1)
 
     # loop over all new bins
     for i in range(n):
@@ -210,8 +214,6 @@ def rebin(x1, y1, x2, y1_sd=None):
 
         # new bin out of x1 range
         if i_hi == 0 or i_lo == x1.size:
-            y2.append(0.)
-            y2_var.append(0.)
             continue
 
         # new bin totally covers x1 range
@@ -237,15 +239,24 @@ def rebin(x1, y1, x2, y1_sd=None):
 
         # new bin is enclosed in x1 range
         else:
-            sub_edges = np.hstack( [ x2_lo, x1[i_lo: i_hi], x2_hi ] )
-            sub_dx    = np.ediff1d(sub_edges)
+            # sub_edges = np.hstack( [ x2_lo, x1[i_lo: i_hi], x2_hi ] )
+            # sub_dx    = np.ediff1d(sub_edges)
+
+            # hstack and ediff1d are expensive operations. The bin widths have
+            # already been calculated, so let's reuse them.
+            p_sub_dx[0] = x1[i_lo] - x2_lo
+            length = i_hi - i_lo
+            p_sub_dx[1: length] = x1_bin_widths[i_lo: i_hi - 1]
+            p_sub_dx[length] = x2_hi - x1[i_hi - 1]
+            sub_dx = p_sub_dx[0: length + 1]
+
             sub_y_ave = y1_ave[i_lo - 1: i_hi]
             sub_y_ave_var = y1_ave_var[i_lo - 1: i_hi]
 
-        y2.append((sub_dx * sub_y_ave).sum())
-        y2_var.append((sub_y_ave_var * (sub_dx ** 2)).sum())
+        y2[i] = np.sum(sub_dx * sub_y_ave)
+        y2_var[i] = np.sum(sub_y_ave_var * (sub_dx ** 2))
 
     if y1_sd is None:
-        return np.array(y2)
+        return y2
     else:
-        return np.array(y2), np.sqrt(np.array(y2_var))
+        return y2, np.sqrt(y2_var)
