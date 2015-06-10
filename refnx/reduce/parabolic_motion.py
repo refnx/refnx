@@ -1,6 +1,7 @@
 from __future__ import division
 import numpy as np
 import numpy.polynomial.polynomial as poly
+from numpy.polynomial import Polynomial
 from scipy import constants
 from scipy.optimize import newton
 
@@ -24,8 +25,8 @@ def y_deflection(initial_trajectory, flight_length, speed):
     displacement : float
         Vertical displacement of the object (m).
     """
-    eqn = parabola_eqn(initial_trajectory, speed)
-    return poly.polyval(flight_length, eqn)
+    eqn = parabola(initial_trajectory, speed)
+    return eqn(flight_length)
 
 
 def elevation(initial_trajectory, flight_length, speed):
@@ -50,9 +51,9 @@ def elevation(initial_trajectory, flight_length, speed):
         angle is measured relative to the x-axis, with a positive angle in an
         anticlockwise direction.
     """
-    eqn = parabola_eqn(initial_trajectory, speed)
-    dydx = poly.polyder(eqn)
-    return np.degrees(np.arctan(poly.polyval(flight_length, dydx)))
+    eqn = parabola(initial_trajectory, speed)
+    dydx = eqn.deriv()
+    return np.degrees(np.arctan(dydx(flight_length)))
 
 
 def find_trajectory(theta, flight_length, speed):
@@ -89,7 +90,7 @@ def find_trajectory(theta, flight_length, speed):
     return trajectory
 
 
-def parabola_eqn(initial_trajectory, speed):
+def parabola(initial_trajectory, speed):
     """
     Find the quadratic form of the parabolic path
 
@@ -100,10 +101,17 @@ def parabola_eqn(initial_trajectory, speed):
         the x-axis. A positive angle is in an anticlockwise direction.
     speed : float
         The initial speed of the object (m/s)
+
+    Returns
+    -------
+    eqn : np.polynomial.Polynomial object
+        Equation of parabolic path
     """
     traj_rad = np.radians(initial_trajectory)
-    return np.array([0., np.tan(traj_rad),
-                     -constants.g / 2. / (speed * np.cos(traj_rad)) ** 2.])
+    eqn = Polynomial([0,
+                      np.tan(traj_rad),
+                      -constants.g / 2. / (speed * np.cos(traj_rad)) ** 2.])
+    return eqn
 
 
 def parabola_line_intersection_point(initial_trajectory, speed, theta,
@@ -141,14 +149,16 @@ def parabola_line_intersection_point(initial_trajectory, speed, theta,
     theta_rad = np.radians(theta)
 
     # equation of line
-    a1 = flight_length * (np.tan(theta_rad) - np.tan(omega_rad))
-    b1 = np.tan(omega_rad)
+    line_eqn = Polynomial([(flight_length
+                            * (np.tan(theta_rad) - np.tan(omega_rad))),
+                           np.tan(omega_rad)])
 
     # equation of parabola
-    eqn = parabola_eqn(initial_trajectory, speed)
+    parab_eqn = parabola(initial_trajectory, speed)
 
-    intersection_x = np.max(poly.polyroots([eqn[0] - a1, eqn[1] - b1, eqn[2]]))
-    intersection_y = a1 + intersection_x * b1
+    diff = parab_eqn - line_eqn
+    intersection_x = np.max(diff.roots())
+    intersection_y = line_eqn(intersection_x)
     distance = ((intersection_x - flight_length) ** 2
                 + (intersection_y - flight_length * np.tan(theta_rad)) ** 2)
     return intersection_x, intersection_y, np.sqrt(distance)
