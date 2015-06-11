@@ -1,6 +1,5 @@
 from __future__ import division
 import numpy as np
-import numpy.polynomial.polynomial as poly
 from numpy.polynomial import Polynomial
 from scipy import constants
 from scipy.optimize import newton
@@ -31,7 +30,8 @@ def y_deflection(initial_trajectory, flight_length, speed):
 
 def elevation(initial_trajectory, flight_length, speed):
     """
-    The immediate inclination of an object moving in a parabolic path
+    Angle between x-axis and tangent of flight path at a given horizontal
+    distance from the origin.
 
     Parameters
     ----------
@@ -59,7 +59,8 @@ def elevation(initial_trajectory, flight_length, speed):
 def find_trajectory(theta, flight_length, speed):
     """
     Find the initial trajectory of an object that has to pass through a certain
-    point on a parabolic path
+    point on a parabolic path.  This point is specified by the horizontal distance
+    component and an angle (polar coordinates).
 
     Parameters
     ----------
@@ -114,8 +115,8 @@ def parabola(initial_trajectory, speed):
     return eqn
 
 
-def parabola_line_intersection_point(initial_trajectory, speed, theta,
-                                     flight_length, omega):
+def parabola_line_intersection_point(initial_trajectory, flight_length, speed,
+                                     theta, omega):
     """
     Find the intersection point of the parabolic motion path and a line.
     The line is specified by an angle and a point through which the line
@@ -126,39 +127,49 @@ def parabola_line_intersection_point(initial_trajectory, speed, theta,
     initial_trajectory : float
         The initial trajectory of the object (degrees). A positive angle is in
         an anticlockwise direction.
+    flight_length : float
+        The horizontal component of the distance of a point on the line from
+        the origin (m).
     speed : float
         The initial speed of the object (m/s).
     theta : float
         The declination of a point on the line from the origin (degrees). A
         positive angle is in an anticlockwise direction.
-    flight_length : float
-        The horizontal component of the distance of a point on the line from
-        the origin (m).
     omega : float
-        The arctan of the gradient of the line (degrees) going through that
-        point (degrees).  i.e. np.tan(np.radians(omega)) is the gradient of
-        the line.
+        Included angle between the line and line drawn between the point on the
+        line and the origin.
 
     Returns
     -------
-    intersect_x, intersect_y, distance : float, float, float
+    intersect_x, intersect_y, x_prime : float, float, float
         Co-ordinates of intersection point of parabola and line, and distance
         from the intersection to the point used to specify the line.
     """
     omega_rad = np.radians(omega)
     theta_rad = np.radians(theta)
 
+    # omega_prime is the angle between the line and the x-axis. It tells us
+    # about the gradient of the line.
+    omega_prime = omega_rad + theta_rad
+    line_gradient = np.tan(omega_prime)
+
     # equation of line
     line_eqn = Polynomial([(flight_length
-                            * (np.tan(theta_rad) - np.tan(omega_rad))),
-                           np.tan(omega_rad)])
+                            * (np.tan(theta_rad) - line_gradient)),
+                           line_gradient])
 
     # equation of parabola
     parab_eqn = parabola(initial_trajectory, speed)
 
+    # find the intersection
     diff = parab_eqn - line_eqn
     intersection_x = np.max(diff.roots())
+
+    # find y location at intersection
     intersection_y = line_eqn(intersection_x)
+
+    # distance between parabola-line intersection and 'point on line'
     distance = ((intersection_x - flight_length) ** 2
                 + (intersection_y - flight_length * np.tan(theta_rad)) ** 2)
-    return intersection_x, intersection_y, np.sqrt(distance)
+    x_prime = np.sqrt(distance)
+    return intersection_x, intersection_y, x_prime
