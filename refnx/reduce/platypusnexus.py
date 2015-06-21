@@ -928,16 +928,18 @@ def background_subtract_line(profile, profile_sd, background_mask):
     ahat = y_bar - bhat * x_bar
 
     # get the weighted fit values
+    # we know the absolute sigma values
     popt, pcov = curve_fit(f, x_vals, y_vals, sigma=y_sdvals,
-                           p0=np.array([ahat, bhat]))
+                           p0=np.array([ahat, bhat]), absolute_sigma=True)
 
     def CI(xx, pcovmat):
         return (pcovmat[0, 0] + pcovmat[1, 0] * xx
                 + pcovmat[0, 1] * xx + pcovmat[1, 1] * (xx ** 2))
 
     bkgd = f(np.arange(np.size(profile, 0)), popt[0], popt[1])
-    bkgd_sd = np.empty_like(bkgd)
 
+    # now work out confidence intervals
+    # TODO, should this be confidence interval or prediction interval?
     # if you try to do a fit which has a singular matrix
     if np.isfinite(pcov).all():
         bkgd_sd = np.asarray([CI(x, pcov) for x in np.arange(len(profile))],

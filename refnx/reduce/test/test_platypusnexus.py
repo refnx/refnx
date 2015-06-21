@@ -3,7 +3,7 @@ import refnx.reduce.platypusnexus as plp
 import numpy as np
 import os
 from numpy.testing import assert_almost_equal
-
+from refnx.reduce.peak_utils import gauss
 
 class TestPlatypusNexus(unittest.TestCase):
 
@@ -40,6 +40,32 @@ class TestPlatypusNexus(unittest.TestCase):
         phase_angle, master_opening = self.f641.phase_angle()
         assert_almost_equal(phase_angle, 0)
         assert_almost_equal(master_opening, 1.04719755)
+
+    def test_background_subtract_line(self):
+        # checked each step of the background subtraction with IGOR
+        # so this test background correction should be correct.
+
+        # create some test data
+        xvals = np.linspace(-10, 10, 201)
+        yvals = np.ceil(gauss(xvals, 0, 100, 0, 1) + 2 * xvals + 30)
+
+        # add some reproducible random noise
+        np.random.seed(1)
+        yvals += np.sqrt(yvals) * np.random.randn(yvals.size)
+        yvals_sd = np.sqrt(yvals)
+
+        mask = np.zeros(201, np.bool)
+        mask[30:70] = True
+        mask[130:160] = True
+
+        profile, profile_sd = plp.background_subtract_line(yvals,
+                                                           yvals_sd,
+                                                           mask)
+
+        verified_data = np.load(os.path.join(self.path,
+                                             'background_subtract.npy'))
+
+        assert_almost_equal(verified_data, np.c_[profile, profile_sd])
 
 
 if __name__ == '__main__':
