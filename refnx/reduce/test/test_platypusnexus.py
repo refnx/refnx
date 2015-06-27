@@ -67,6 +67,44 @@ class TestPlatypusNexus(unittest.TestCase):
 
         assert_almost_equal(verified_data, np.c_[profile, profile_sd])
 
+    def test_background_subtract(self):
+        # create some test data
+        xvals = np.linspace(-10, 10, 201)
+        yvals = np.ceil(gauss(xvals, 0, 100, 0, 1) + 2 * xvals + 30)
+
+        # add some reproducible random noise
+        np.random.seed(1)
+        yvals += np.sqrt(yvals) * np.random.randn(yvals.size)
+        yvals_sd = np.sqrt(yvals)
+
+        # now make an (N, T, Y) detector image
+        n_tbins = 10
+        detector = np.repeat(yvals, n_tbins).reshape(xvals.size, n_tbins).T
+        detectorSD = np.repeat(yvals_sd, n_tbins).reshape(xvals.size, n_tbins).T
+        detector = detector.reshape(1, n_tbins, xvals.size)
+        detectorSD = detectorSD.reshape(1, n_tbins, xvals.size)
+
+        mask = np.zeros(201, np.bool)
+        mask[30:70] = True
+        mask[130:160] = True
+
+        det_bkg, detSD_bkg = plp.background_subtract(detector,
+                                                     detectorSD,
+                                                     mask)
+
+        # each of the (N, T) entries should have the same background subtracted
+        # entries
+        verified_data = np.load(os.path.join(self.path,
+                                             'background_subtract.npy'))
+
+        it = np.nditer(detector, flags=['multi_index'])
+        it.remove_axis(2)
+        while not it.finished:
+            profile = det_bkg[it.multi_index]
+            profile_sd = detSD_bkg[it.multi_index]
+            assert_almost_equal(verified_data, np.c_[profile, profile_sd])
+            it.iternext()
+
 
 if __name__ == '__main__':
     unittest.main()
