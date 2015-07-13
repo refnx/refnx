@@ -4,10 +4,11 @@ import h5py
 import peak_utils as ut
 import refnx.util.general as general
 import refnx.util.ErrorProp as EP
+import refnx.reduce.parabolic_motion as pm
 import platypusspectrum
 import event
 import Qtransforms as qtrans
-from scipy.optimize import curve_fit
+from scipy.optimize import leastsq
 from scipy.stats import t
 import rebin
 import os
@@ -90,6 +91,7 @@ class Catalogue(object):
             'entry1/instrument/parameters/slit2_distance'][:]
         d['slit3_distance'] = h5data[
             'entry1/instrument/parameters/slit3_distance'][:]
+        d['collimation_distance'] = d['slit3_distance'] - d['slit2_distance']
         d['dy'] = h5data[
             'entry1/instrument/detector/longitudinal_translation'][:]
         d['dz'] = h5data[
@@ -264,7 +266,7 @@ class PlatypusNexus(object):
                 detector = np.sum(detector, 0)[np.newaxis, ]
                 bm1_counts[:] = np.sum(bm1_counts)
 
-        num_spectra = np.size(detector, 0)
+        n_spectra = np.size(detector, 0)
 
         # pre-average over x, leaving (n, t, y) also convert to dp
         detector = np.sum(detector, axis=3, dtype='float64')
@@ -286,29 +288,29 @@ class PlatypusNexus(object):
             detector, detector_sd = EP.EPdiv(detector, detector_sd,
                                              detector_norm, detector_norm_sd)
 
-        # shape of these is (num_spectra, TOFbins)
-        M_spec_tof_hist = np.zeros((num_spectra, np.size(TOF, 0)),
+        # shape of these is (n_spectra, TOFbins)
+        M_spec_tof_hist = np.zeros((n_spectra, np.size(TOF, 0)),
                                    dtype='float64')
-        M_lambda_hist = np.zeros((num_spectra, np.size(TOF, 0)),
+        M_lambda_hist = np.zeros((n_spectra, np.size(TOF, 0)),
                                  dtype='float64')
         M_spec_tof_hist[:] = TOF
 
         # chopper to detector distances
-        # note that if eventmode is specified the num_spectra is NOT
+        # note that if eventmode is specified the n_spectra is NOT
         # equal to the number of entries in e.g. /longitudinal_translation
         # this means you have to copy values in from the correct scanpoint
-        flight_distance = np.zeros(num_spectra, dtype='float64')
-        d_cx = np.zeros(num_spectra, dtype='float64')
-        detpositions = np.zeros(num_spectra, dtype='float64')
+        flight_distance = np.zeros(n_spectra, dtype='float64')
+        d_cx = np.zeros(n_spectra, dtype='float64')
+        detpositions = np.zeros(n_spectra, dtype='float64')
 
         # The angular divergence of the instrument
-        domega = np.zeros(num_spectra, dtype='float64')
+        domega = np.zeros(n_spectra, dtype='float64')
 
-        phase_angle = np.zeros(num_spectra, dtype='float64')
+        phase_angle = np.zeros(n_spectra, dtype='float64')
 
         # process each of the spectra taken in the detector image
         originalscanpoint = scanpoint
-        for idx in range(num_spectra):
+        for idx in range(n_spectra):
             freq = cat.frequency[scanpoint]
 
             # calculate the angular divergence
@@ -357,23 +359,25 @@ class PlatypusNexus(object):
         M_lambda = 0.5 * (M_lambda_hist[:, 1:] + M_lambda_hist[:, :-1])
         TOF -= toffset
 
-        # get the specular ridge on the averaged detector image
-        if peak_pos is not None:
-            beam_centre, beam_sd = peak_pos
-        else:
-            beam_centre, beam_sd = find_specular_ridge(detector, detector_sd)
-
         # gravity correction if direct beam
         if is_direct:
             output = correct_for_gravity(detector,
                                          detector_sd,
                                          M_lambda,
-                                         0,
+                                         self.cat.collimation_distance,
+                                         self.cat.dy
                                          lo_wavelength,
                                          hi_wavelength)
             detector, detector_sd, M_gravcorrcoefs = output
-
             beam_centre, beam_sd = find_specular_ridge(detector, detector_sd)
+            beam_centre = M_gravcorrcoefs
+        else:
+            beam_centre, beam_sd = find_specular_ridge(detector, detector_sd)
+
+        # you want to specify the specular ridge on the averaged detector image
+        if peak_pos is not None:
+            beam_centre = np.ones(n_spectra) * peak_pos[0]
+            beam_sd = np.ones(n_spectra) * peak_pos[1]
 
         '''
         Rebinning in lambda for all detector
@@ -402,7 +406,7 @@ class PlatypusNexus(object):
         '''
         output = []
         output_sd = []
-        for idx in range(num_spectra):
+        for idx in range(n_spectra):
             plane, plane_sd = rebin.rebin_along_axis(detector[idx],
                                                      M_lambda_hist[idx],
                                                      rebinning,
@@ -439,54 +443,42 @@ class PlatypusNexus(object):
         M_spec_tof = qtrans.lambda_to_tof(M_lambda,
                                           flight_distance[:, np.newaxis])
 
-        '''
-        Now work out where the beam hits the detector
-        this is used to work out the correct angle of incidence.
-        '''
-        M_beampos = np.ones_like(M_lambda) * beam_centre
-
-        '''
-        The spectral ridge for the direct beam has a gravity correction
-        involved with it. The correction coefficients for the beamposition
-        are contained in M_gravcorrcoefs.
-        '''
-        if is_direct:
-            M_beampos[:] = self._beampos(M_lambda,
-                                         M_gravcorrcoefs,
-                                         detpositions)
-        M_beampos[:] *= Y_PIXEL_SPACING
-
         # we want to integrate over the following pixel region
         lopx = np.floor(beam_centre - beam_sd * EXTENT_MULT)
         hipx = np.ceil(beam_centre + beam_sd * EXTENT_MULT)
 
-        # background subtraction
-        if background:
-            if background_mask is not None:
-                pass
-            else:
-                y1 = round(lopx - PIXEL_OFFSET)
-                y0 = round(y1 - (EXTENT_MULT * beam_sd))
+        M_spec = np.zeros((n_spectra, np.size(detector, 1)))
+        M_spec_sd = np.zeros_like(M_spec)
+        for i in range(n_spectra):
+            # background subtraction
+            if background:
+                if background_mask is not None:
+                    pass
+                else:
+                    y1 = round(lopx[i] - PIXEL_OFFSET)
+                    y0 = round(y1 - (EXTENT_MULT * beam_sd[i]))
 
-                y2 = round(hipx + PIXEL_OFFSET)
-                y3 = round(y2 + (EXTENT_MULT * beam_sd))
+                    y2 = round(hipx[i] + PIXEL_OFFSET)
+                    y3 = round(y2 + (EXTENT_MULT * beam_sd[i]))
 
-                background_mask = np.zeros(detector.shape[2], dtype='bool')
-                background_mask[y0: y1] = True
-                background_mask[y2 + 1: y3 + 1] = True
+                    background_mask = np.zeros(detector.shape[2], dtype='bool')
+                    background_mask[y0: y1] = True
+                    background_mask[y2 + 1: y3 + 1] = True
 
-            detector, detector_sd = background_subtract(detector,
-                                                        detector_sd,
-                                                        background_mask)
+                detector[i], detector_sd[i] = background_subtract(detector[i],
+                                                               detector_sd[i],
+                                                               background_mask)
 
-        '''
-        top and tail the specular beam with the known beam centres.
-        All this does is produce a specular intensity with shape (N, T),
-        i.e. integrate over specular beam
-        '''
-        M_spec = np.sum(detector[:, :, lopx: hipx + 1], axis=2)
-        M_spec_sd = np.sqrt(np.sum(detector_sd[:, :, lopx: hipx + 1]**2,
-                                   axis=2))
+            '''
+            top and tail the specular beam with the known beam centres.
+            All this does is produce a specular intensity with shape (N, T),
+            i.e. integrate over specular beam
+            '''
+            M_spec[i] = np.sum(detector[i, :, lopx[i]: hipx[i] + 1], axis=1)
+            sd = np.sum(detector_sd[i, :, lopx[i]: hipx[i] + 1] ** 2,
+                        axis=1))
+            M_spec_sd[i] = np.sqrt(sd)
+
         # assert np.isfinite(M_spec).all()
         # assert np.isfinite(M_specSD).all()
         # assert np.isfinite(detector).all()
@@ -541,11 +533,11 @@ class PlatypusNexus(object):
             d['normfilename'] = h5norm.filename
         d['M_topandtail'] = detector
         d['M_topandtail_sd'] = detector_sd
-        d['num_spectra'] = num_spectra
+        d['n_spectra'] = n_spectra
         d['bm1_counts'] = bm1_counts
         d['M_spec'] = M_spec
         d['M_spec_sd'] = M_spec_sd
-        d['M_beampos'] = M_beampos
+        d['M_beampos'] = beam_centre
         d['M_lambda'] = M_lambda
         d['M_lambda_sd'] = M_lambda_sd
         d['M_lambda_hist'] = M_lambda_hist
@@ -558,48 +550,6 @@ class PlatypusNexus(object):
         d['hipx'] = hipx
 
         return platypusspectrum.PlatypusSpectrum(**d)
-
-
-    def _beampos(self, lamda, M_gravcorrcoefs, dy):
-        """
-        Workout beam position for a droopy beam
-
-        Parameters
-        ----------
-        lamda : array_like
-            wavelength (Angstrom)
-        M_gravcorrcoefs : array_like
-            Gravity correction coefficients
-        dy : array
-            Detector horizontal translation
-
-        Returns
-        -------
-        beam_pos : array
-            beam positions
-
-        The following correction assumes that the directbeam neutrons are
-        falling from a point position W_gravcorrcoefs[0] before the
-        detector. At the sample stage
-        (W_gravcorrcoefs[0] - detectorpos[0]) they have a certain vertical
-        velocity, assuming that the neutrons had an initial vertical
-        velocity of 0. Although the motion past the sample stage will be
-        parabolic, assume that the neutrons travel in a straight line
-        after that (i.e. the tangent of the parabolic motion at the
-        sample stage). This should give an idea of the direction of the
-        true incident beam, as experienced by the sample.
-        Factor of 2 is out the front to give an estimation of the
-        increase in 2theta of the reflected beam.
-        """
-        M_beampos = np.zeros_like(lamda)
-        M_beampos[:] = M_gravcorrcoefs[:, 1][:, np.newaxis]
-        M_beampos[:] -= 2. * (1000. / Y_PIXEL_SPACING * 9.81
-                              * (M_gravcorrcoefs[:, 0][:, np.newaxis]
-                                 - dy[:, np.newaxis]) / 1000.
-                              * (dy[:, np.newaxis] / 1000.)
-                              * lamda ** 2
-                              / ((qtrans.kPlanck_over_MN * 1.e10) ** 2))
-        return M_beampos
 
     def phase_angle(self, scanpoint=0):
         """
@@ -959,7 +909,7 @@ def background_subtract_line(profile, profile_sd, background_mask):
 def find_specular_ridge(detector, detector_sd, starting_offset=50,
                         tolerance=0.01):
     """
-    Find the specular ridge in a detector(n, t, y) plot. Assumes that the
+    Find the specular ridges in a detector(n, t, y) plot. Assumes that the
     specular ridge _does not_ change position.
 
     Parameters
@@ -972,54 +922,52 @@ def find_specular_ridge(detector, detector_sd, starting_offset=50,
     Returns
     -------
     centre, SD:
-        peak centre and standard deviation of peak width
+        peak centres and standard deviations of peak width
     """
-
+    beam_centre = np.zeros(np.size(detector, 0))
+    beam_sd = np.zeros(np.size(detector, 0))
     search_increment = 50
-
-    # if [N,T,Y] sum over all N planes, left with [T, Y]
-    if len(detector.shape) > 2:
-        det_ty = np.sum(detector, axis=0)
-        det_sd_ty = np.sqrt(np.sum(detector_sd**2, axis=0))
-    else:
-        det_ty, det_sd_ty = detector, detector_sd
 
     starting_offset = abs(starting_offset)
 
-    num_increments = (np.size(det_ty, 0) - starting_offset) // search_increment
+    n_increments = ((np.size(detector, 1) - starting_offset)
+                      // search_increment)
 
-    last_centre = -1.
-    last_sd = -1.
+    for j in range(np.size(detector, 0)):
+        last_centre = -1.
+        last_sd = -1.
 
-    for i in range(num_increments):
-        how_many = -starting_offset - search_increment * i
+        for i in range(n_increments):
+            how_many = -starting_offset - search_increment * i
 
-        det_subset = det_ty[-1: how_many: -1]
-        det_sd_subset = det_sd_ty[-1: how_many: -1]
+            det_subset = detector[j, -1: how_many: -1]
+            det_sd_subset = detector_sd[j, -1: how_many: -1]
 
-        # Uncertainties code takes a while to run
-        # total_y = np.sum(det_subset, axis=0)
-        y_cross = np.sum(det_subset, axis=0)
-        y_cross_sd = np.sqrt(np.sum(det_sd_subset ** 2., axis=0))
+            # Uncertainties code takes a while to run
+            # total_y = np.sum(det_subset, axis=0)
+            y_cross = np.sum(det_subset, axis=0)
+            y_cross_sd = np.sqrt(np.sum(det_sd_subset ** 2., axis=0))
 
-        # find the centroid and gauss peak in the last sections of the TOF
-        # plot
-        centroid, gauss_peak = ut.peak_finder(y_cross, sigma=y_cross_sd)
+            # find the centroid and gauss peak in the last sections of the TOF
+            # plot
+            centroid, gauss_peak = ut.peak_finder(y_cross, sigma=y_cross_sd)
 
-        if (abs((gauss_peak[0] - last_centre) / last_centre) < tolerance
-            and abs((gauss_peak[1] - last_sd) / last_sd) < tolerance):
+            if (abs((gauss_peak[0] - last_centre) / last_centre) < tolerance
+                and abs((gauss_peak[1] - last_sd) / last_sd) < tolerance):
+                last_centre = gauss_peak[0]
+                last_sd = gauss_peak[1]
+                break
+
             last_centre = gauss_peak[0]
             last_sd = gauss_peak[1]
-            break
 
-        last_centre = gauss_peak[0]
-        last_sd = gauss_peak[1]
-
-    return last_centre, last_sd
+        beam_centre[j] = last_centre
+        beam_sd[j] = last_sd
 
 
-def correct_for_gravity(detector, detector_sd, lamda, trajectory,
-                        lo_wavelength, hi_wavelength):
+def correct_for_gravity(detector, detector_sd, lamda, coll_distance,
+                        sample_det, lo_wavelength, hi_wavelength,
+                        theta=0):
     """
     Returns a gravity corrected yt plot, given the data, its associated errors,
     the wavelength corresponding to each of the time bins, and the trajectory
@@ -1034,12 +982,17 @@ def correct_for_gravity(detector, detector_sd, lamda, trajectory,
         Standard deviations of detector image
     lamda : np.ndarray
         Wavelengths corresponding to the detector image, has shape (N, T)
-    trajectory : float
-        Initial trajectory of neutrons
+    coll_distance : float
+        Collimation distance between slits, mm
+    sample_det : float
+        Sample - detector distance, mm
     lo_wavelength : float
-        Low wavelength cut off
+        Low wavelength cut off, Angstrom
     hi_wavelength : float
-        High wavelength cutoff
+        High wavelength cutoff, Angstrom
+    theta : float
+        Angle between second collimation slit, first collimation slit, and
+        horizontal
 
     Returns
     -------
@@ -1054,28 +1007,41 @@ def correct_for_gravity(detector, detector_sd, lamda, trajectory,
 
     x_init = np.arange((np.size(detector, axis=2) + 1) * 1.) - 0.5
 
-    def f(x, travel_distance, tru_centre):
-        return deflection(x, travel_distance, 0) / Y_PIXEL_SPACING + tru_centre
-
-    M_gravcorrcoefs = np.zeros((np.size(detector, 0), 2), dtype='float64')
+    M_gravcorrcoefs = np.zeros((np.size(detector, 0)), dtype='float64')
 
     corrected_data = np.zeros_like(detector)
     corrected_data_sd = np.zeros_like(detector)
 
     for spec in range(np.size(detector, 0)):
+        neutron_speeds = general.wavelength_velocity(lamda[spec])
+        trajectories = pm.find_trajectory(theta,
+                                          coll_distance / 1000.,
+                                          neutron_speeds)
+        travel_distance = (coll_distance + sample_det[spec]) / 1000.
+
         # centres(t,)
         # TODO, don't use centroids, use Gaussian peak
         centroids = np.apply_along_axis(ut.centroid, 1, detector[spec])
         lopx = np.searchsorted(lamda[spec], lo_wavelength)
         hipx = np.searchsorted(lamda[spec], hi_wavelength)
 
-        p0 = np.array([3000., np.mean(centroids)])
-        M_gravcorrcoefs[spec], pcov = curve_fit(f, lamda[spec, lopx: hipx],
-                                                centroids[:, 0][lopx: hipx],
-                                                p0)
-        total_deflection = deflection(lamda[spec],
-                                      M_gravcorrcoefs[spec][0],
-                                      0) / Y_PIXEL_SPACING
+        def f(tru_centre):
+            deflections = pm.y_deflection(trajectories[lopx: hipx],
+                                          travel_distance,
+                                          neutron_speeds[lopx: hipx])
+
+            model = 1000. * deflections / Y_PIXEL_SPACING + tru_centre
+            return model - centroids[:, 0][lopx: hipx]
+
+        # find the beam centre for an infinitely fast neutron
+        x0 = np.array([np.mean(centroids)])
+        res = leastsq(f, x0)
+        M_gravcorrcoefs[spec] = res[0][0]
+
+        total_deflection = pm.y_deflection(trajectories,
+                                           travel_distance,
+                                           neutron_speeds)
+        total_deflection /= Y_PIXEL_SPACING
 
         x_rebin = x_init.T + total_deflection[:, np.newaxis]
         for wavelength in range(np.size(detector, axis=1)):
@@ -1088,40 +1054,6 @@ def correct_for_gravity(detector, detector_sd, lamda, trajectory,
             corrected_data_sd[spec, wavelength] = output[1]
 
     return corrected_data, M_gravcorrcoefs
-
-
-def deflection(lamda, flight_length, trajectory):
-    """
-    The vertical deflection in mm of a ballistic neutron after travelling a
-    certain distance.
-
-    Parameters
-    ----------
-    lamda : float
-        wavelength of neutron in Angstrom
-    flight_length : float
-        Flight length in mm,
-    trajectory : float
-        initial trajectory of neutron in degrees above the horizontal.
-
-    The deflection correction is the distance from where you expect the
-    neutron to hit the detector (detector_distance*tan(trajectory)) to
-    where is actually hits the detector, i.e. the vertical deflection of
-    the neutron due to gravity.
-    """
-    traj = np.radians(trajectory)
-
-    initial_velocity = general.wavelength_velocity(lamda)
-
-    # x = v_0 . t . cos(trajectory)
-    # y = v_0 . t . sin(trajectory) - 0.5gt^2
-
-    flight_time = flight_length / 1000. / (initial_velocity * np.cos(traj))
-
-    y_t = (initial_velocity * flight_time * np.sin(traj)
-           - 0.5 * 9.81 * flight_time ** 2)
-
-    return y_t * 1000.
 
 
 def calculate_wavelength_bins(lo_wavelength, hi_wavelength, rebin_percent):

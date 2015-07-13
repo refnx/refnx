@@ -27,3 +27,6 @@ class TestGeneral(unittest.TestCase):
     def test_angle(self):
         angle = general.angle(0.1096567037, 2.)
         assert_equal(angle, 1.)
+
+if __name__ == '__main__':
+    unittest.main()

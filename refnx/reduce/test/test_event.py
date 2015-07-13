@@ -50,6 +50,5 @@ class TestEvent(unittest.TestCase):
         assert_equal(detector[4, 377, 98, 0], 57)
 
 
-
 if __name__ == '__main__':
     unittest.main()

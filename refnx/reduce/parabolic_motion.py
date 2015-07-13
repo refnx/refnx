@@ -4,6 +4,7 @@ from numpy.polynomial import Polynomial
 from scipy import constants
 from scipy.optimize import newton
 
+@np.vectorize
 def y_deflection(initial_trajectory, flight_length, speed):
     """
     The vertical displacement of an object moving in a parabolic path.
@@ -28,6 +29,7 @@ def y_deflection(initial_trajectory, flight_length, speed):
     return eqn(flight_length)
 
 
+@np.vectorize
 def elevation(initial_trajectory, flight_length, speed):
     """
     Angle between x-axis and tangent of flight path at a given horizontal
@@ -56,6 +58,7 @@ def elevation(initial_trajectory, flight_length, speed):
     return np.degrees(np.arctan(dydx(flight_length)))
 
 
+@np.vectorize
 def find_trajectory(theta, flight_length, speed):
     """
     Find the initial trajectory of an object that has to pass through a certain
@@ -115,6 +118,7 @@ def parabola(initial_trajectory, speed):
     return eqn
 
 
+@np.vectorize
 def parabola_line_intersection_point(initial_trajectory, flight_length, speed,
                                      theta, omega):
     """
@@ -173,29 +177,3 @@ def parabola_line_intersection_point(initial_trajectory, flight_length, speed,
                 + (intersection_y - flight_length * np.tan(theta_rad)) ** 2)
     x_prime = np.sqrt(distance)
     return intersection_x, intersection_y, x_prime
-
-
-def find_location_theta(speeds, locations, dist1, dist2):
-    """
-    Many projectiles are emitted from the origin, over a range of trajectories
-    and with a range of speeds. All the projectiles pass through a common point
-    located a horizontal distance, `dist1` away from the origin. They then go
-    on to pass through a plane which is a horizontal distance, `dist2`, away
-    from the origin.  The projectiles pass through this plane at a range of
-    y-deflections, `locations`, which is determined by their initial speed and
-    trajectory. This function finds the angle, `theta` which the common point
-    makes with the x-axis. It also finds the y-deflection (on the detection
-    plane)that a particle travelling at infinite speed would have.
-
-    Parameters
-    ----------
-    speeds : array_like
-        Speeds at which the projectiles are emitted from the origin (m/s)
-    locations : array_like
-        Locations on the detection plane where the projectiles pass through.
-
-    Returns
-    -------
-    location, theta : float
-    """
-    pass

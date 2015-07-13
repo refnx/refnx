@@ -177,6 +177,23 @@ def wavelength_velocity(wavelength):
     return K / wavelength
 
 
+def velocity_wavelength(velocity):
+    """
+    Converts neutron velocity to wavelength
+
+    Parameters
+    ----------
+    velocity: float
+        velocity of neutron in m/s
+
+    Returns
+    -------
+    wavelength: float
+        wavelength of neutron in A
+    """
+    return K / velocity
+
+
 def wavelength_energy(wavelength):
     """
     Converts wavelength to energy in meV
