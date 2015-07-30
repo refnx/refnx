@@ -2,7 +2,7 @@ import unittest
 import refnx.reduce.platypusnexus as plp
 import numpy as np
 import os
-from numpy.testing import assert_almost_equal
+from numpy.testing import assert_almost_equal, assert_
 from refnx.reduce.peak_utils import gauss
 
 class TestPlatypusNexus(unittest.TestCase):
@@ -16,15 +16,6 @@ class TestPlatypusNexus(unittest.TestCase):
         self.f641 = plp.PlatypusNexus(os.path.join(self.path,
                                                    'PLP0011641.nx.hdf'))
         return 0
-
-    def test_deflection(self):
-        y = plp.deflection(20, 20000, 0.14365919135097724)
-        assert_almost_equal(y, 0)
-
-    def test_rebinning(self):
-        bins = plp.calculate_wavelength_bins(2., 18, 2.)
-        assert_almost_equal(bins[0], 1.98)
-        assert_almost_equal(bins[-1], 18.18)
 
     def test_chod(self):
         flight_length = self.f113.chod()
@@ -67,6 +58,15 @@ class TestPlatypusNexus(unittest.TestCase):
 
         assert_almost_equal(verified_data, np.c_[profile, profile_sd])
 
+    def test_find_specular_ridge(self):
+        xvals = np.linspace(-10, 10, 201)
+        yvals = np.ceil(gauss(xvals, 0, 1000, 0, 1))
+        detector = np.repeat(yvals[:, np.newaxis], 1000, axis=1).T
+        detectorSD = np.sqrt(detector)
+        output = plp.find_specular_ridge(detector[np.newaxis, :], detectorSD[np.newaxis, :])
+        assert_(len(output) == 2)
+        assert_almost_equal(output[0][0], 100)
+
     def test_background_subtract(self):
         # create some test data
         xvals = np.linspace(-10, 10, 201)
@@ -84,9 +84,9 @@ class TestPlatypusNexus(unittest.TestCase):
         detector = detector.reshape(1, n_tbins, xvals.size)
         detectorSD = detectorSD.reshape(1, n_tbins, xvals.size)
 
-        mask = np.zeros(201, np.bool)
-        mask[30:70] = True
-        mask[130:160] = True
+        mask = np.zeros((1, n_tbins, 201), np.bool)
+        mask[:, :, 30:70] = True
+        mask[:, :, 130:160] = True
 
         det_bkg, detSD_bkg = plp.background_subtract(detector,
                                                      detectorSD,
@@ -104,6 +104,15 @@ class TestPlatypusNexus(unittest.TestCase):
             profile_sd = detSD_bkg[it.multi_index]
             assert_almost_equal(verified_data, np.c_[profile, profile_sd])
             it.iternext()
+
+    def test_calculate_bins(self):
+        bins = plp.calculate_wavelength_bins(2., 18, 2.)
+        assert_almost_equal(bins[0], 1.98)
+        assert_almost_equal(bins[-1], 18.18)
+
+    def test_reduction(self):
+        pass
+        # self.f113.process()
 
 
 if __name__ == '__main__':

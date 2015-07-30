@@ -5,16 +5,17 @@ import peak_utils as ut
 import refnx.util.general as general
 import refnx.util.ErrorProp as EP
 import refnx.reduce.parabolic_motion as pm
-import platypusspectrum
 import event
 import Qtransforms as qtrans
-from scipy.optimize import leastsq
+from scipy.optimize import leastsq, curve_fit
 from scipy.stats import t
 import rebin
 import os
 import os.path
 import argparse
 import re
+from time import gmtime, strftime
+import string
 
 
 Y_PIXEL_SPACING = 1.177  # in mm
@@ -34,6 +35,7 @@ class Catalogue(object):
         d['path'] = os.path.dirname(path)
         d['filename'] = h5data.filename
         d['end_time'] = h5data['entry1/end_time'][0]
+        d['sample_name'] = h5data['entry1/sample/name']
         d['ss1vg'] = h5data['entry1/instrument/slits/first/vertical/gap'][:]
         d['ss2vg'] = h5data['entry1/instrument/slits/second/vertical/gap'][:]
         d['ss3vg'] = h5data['entry1/instrument/slits/third/vertical/gap'][:]
@@ -185,13 +187,17 @@ class PlatypusNexus(object):
             with h5py.File(h5data, 'r') as h5data:
                 self.cat = Catalogue(h5data)
 
+        self.processed_spectrum = None
+
     def process(self, h5norm=None, lo_wavelength=2.8, hi_wavelength=19.,
                 background=True, is_direct=False, omega=0, two_theta=0,
-                rebin_percent=1., wavelength_bins=None, normalise=True, integrate=0,
-                eventmode=None, peak_pos=None, background_mask=None):
+                rebin_percent=1., wavelength_bins=None, normalise=True,
+                integrate=-1, eventmode=None, peak_pos=None,
+                background_mask=None):
         """
         Processes the ProcessNexus object to produce a time of flight spectrum.
-        This method returns an instance of PlatypusSpectrum.
+        The processed spectrum is stored in the processed_spectrum attribute.
+        The specular spectrum is also returned from this function.
 
         Parameters
         ----------
@@ -211,17 +217,17 @@ class PlatypusNexus(object):
         two_theta : float
             Expected two theta value of specular beam
         rebin_percent : float
-            Specifies the rebinning percentage for the spectrum.  If `rebinning
-            is None`, then no rebinning is done.
+            Specifies the rebinning percentage for the spectrum.  If
+            `rebin_percent is None`, then no rebinning is done.
         wavelength_bins : array_like
             The wavelength bins for rebinning.  If `wavelength_bins is not
              None` then the `rebin_percent` parameter is ignored.
         normalise : bool
             Normalise by the monitor counts.
         integrate : int
-            integrate == 0
+            integrate == -1
                 the spectrum is integrated over all the scanpoints.
-            integrate != 0
+            integrate >= 0
                 the individual spectra are calculated individually.
                 If `eventmode is not None` then integrate specifies which
                 scanpoint to examine.
@@ -231,7 +237,7 @@ class PlatypusNexus(object):
             times (in seconds) for the detector image, e.g. [0, 20, 30] would
             result in two spectra. The first would contain data for 0 s to 20s,
             the second would contain data for 20 s to 30 s.  This option can
-            only be used when `integrate != 0`.
+            only be used when `integrate >= -1`.
         peak_pos : None or (float, float)
             Specifies the peak position and peak standard deviation to use.
         background_mask : array_like
@@ -239,6 +245,12 @@ class PlatypusNexus(object):
             subtraction.  Should be the same length as the number of y pixels in
             the detector image.  Otherwise an automatic mask is applied (if
             background is True).
+
+        Returns
+        -------
+        M_lambda, M_spec, M_spec_sd: np.ndarray
+            Arrays containing the wavelength, specular intensity as a function
+            of wavelength, standard deviation of specular intensity
         """
         cat = self.cat
 
@@ -251,7 +263,7 @@ class PlatypusNexus(object):
         TOF = cat.t_bins.astype('float64')
 
         # We want event streaming.
-        if eventmode is not None and integrate > 0:
+        if eventmode is not None and integrate > -1:
             scanpoint = integrate
             output = self.process_event_stream(scanpoint=scanpoint,
                                                frame_bins=eventmode)
@@ -262,7 +274,7 @@ class PlatypusNexus(object):
             scanpoint = 0
 
             # integrate over all spectra
-            if integrate == 0:
+            if integrate == -1:
                 detector = np.sum(detector, 0)[np.newaxis, ]
                 bm1_counts[:] = np.sum(bm1_counts)
 
@@ -342,7 +354,7 @@ class PlatypusNexus(object):
 
             detpositions[idx] = cat.dy[scanpoint]
 
-            if eventmode is not None and integrate > 0:
+            if eventmode is not None and integrate > -1:
                 M_spec_tof_hist[:] = TOF - toffset
                 flight_distance[:] = flight_distance[0]
                 detpositions[:] = detpositions[0]
@@ -365,7 +377,7 @@ class PlatypusNexus(object):
                                          detector_sd,
                                          M_lambda,
                                          self.cat.collimation_distance,
-                                         self.cat.dy
+                                         self.cat.dy,
                                          lo_wavelength,
                                          hi_wavelength)
             detector, detector_sd, M_gravcorrcoefs = output
@@ -449,34 +461,49 @@ class PlatypusNexus(object):
 
         M_spec = np.zeros((n_spectra, np.size(detector, 1)))
         M_spec_sd = np.zeros_like(M_spec)
+
+        # background subtraction
+        if background:
+            if background_mask is not None:
+                # background_mask is (Y), need to make 3 dimensional (N, T, Y)
+                # first make into (T, Y)
+                backgnd_mask = np.repeat(background_mask[np.newaxis, :],
+                                         detector.shape[1],
+                                         axis=0)
+                # make into (N, T, Y)
+                full_backgnd_mask = np.repeat(backgnd_mask[np.newaxis, :],
+                                              n_spectra,
+                                              axis=0)
+            else:
+                # there may be different background regions for each spectrum
+                # in the file
+                y1 = np.round(lopx - PIXEL_OFFSET)
+                y0 = np.round(y1 - (EXTENT_MULT * beam_sd))
+
+                y2 = np.round(hipx + PIXEL_OFFSET)
+                y3 = np.round(y2 + (EXTENT_MULT * beam_sd))
+
+                full_backgnd_mask = np.zeros((n_spectra,
+                                              detector.shape[1],
+                                              detector.shape[2]),
+                                              dtype='bool')
+                for i in range(n_spectra):
+                    full_backgnd_mask[i, :, y0: y1] = True
+                    full_backgnd_mask[i, :, y2 + 1: y3 + 1] = True
+
+            detector, detector_sd = background_subtract(detector,
+                                                        detector_sd,
+                                                        full_backgnd_mask)
+
+        '''
+        top and tail the specular beam with the known beam centres.
+        All this does is produce a specular intensity with shape (N, T),
+        i.e. integrate over specular beam
+        '''
         for i in range(n_spectra):
-            # background subtraction
-            if background:
-                if background_mask is not None:
-                    pass
-                else:
-                    y1 = round(lopx[i] - PIXEL_OFFSET)
-                    y0 = round(y1 - (EXTENT_MULT * beam_sd[i]))
-
-                    y2 = round(hipx[i] + PIXEL_OFFSET)
-                    y3 = round(y2 + (EXTENT_MULT * beam_sd[i]))
-
-                    background_mask = np.zeros(detector.shape[2], dtype='bool')
-                    background_mask[y0: y1] = True
-                    background_mask[y2 + 1: y3 + 1] = True
-
-                detector[i], detector_sd[i] = background_subtract(detector[i],
-                                                               detector_sd[i],
-                                                               background_mask)
-
-            '''
-            top and tail the specular beam with the known beam centres.
-            All this does is produce a specular intensity with shape (N, T),
-            i.e. integrate over specular beam
-            '''
             M_spec[i] = np.sum(detector[i, :, lopx[i]: hipx[i] + 1], axis=1)
             sd = np.sum(detector_sd[i, :, lopx[i]: hipx[i] + 1] ** 2,
-                        axis=1))
+                        axis=1)
             M_spec_sd[i] = np.sqrt(sd)
 
         # assert np.isfinite(M_spec).all()
@@ -549,7 +576,9 @@ class PlatypusNexus(object):
         d['lopx'] = lopx
         d['hipx'] = hipx
 
-        return platypusspectrum.PlatypusSpectrum(**d)
+        self.processed_spectrum = d
+        return M_lambda, M_spec, M_spec_sd
+
 
     def phase_angle(self, scanpoint=0):
         """
@@ -593,6 +622,7 @@ class PlatypusNexus(object):
             phase_angle += disc_phase - cat.chopper4_phase_offset[0]
 
         return phase_angle, master_opening
+
 
     def chod(self, omega=0., two_theta=0., scanpoint=0):
         """
@@ -695,6 +725,7 @@ class PlatypusNexus(object):
 
         return chod, d_cx
 
+
     def process_event_stream(self, t_bins=None, x_bins=None, y_bins=None,
                              frame_bins=None, scanpoint=0):
         """
@@ -775,6 +806,108 @@ class PlatypusNexus(object):
         return new_frame_bins, detector, bm1_counts
 
 
+    def write_spectrum_dat(self, f, scanpoint = 0):
+        """
+        This method writes a dat representation of the corrected spectrum to
+        file.
+
+        Parameters
+        ----------
+        f : file-like object
+            The file to write the spectrum to
+        scanpoint : int
+            Which scanpoint to write.
+        """
+        if self.processed_spectrum is None:
+            return
+
+        M_lambda = self.processed_spectrum['M_lambda']
+        M_spec = self.processed_spectrum['M_spec']
+        M_spec_sd = self.processed_spectrum['M_spec']
+        M_lambda_sd = self.processed_spectrum['M_lambda_sd']
+
+        for L, I, dI, dL in zip(M_lambda[scanpoint],
+                                M_spec[scanpoint],
+                                M_spec_sd[scanpoint],
+                                M_lambda_sd[scanpoint]):
+
+            thedata = '{:g}\t{:g}\t{:g}\t{:g}\n'.format(L, I, dI, dL)
+            f.write(thedata)
+
+        f.truncate()
+
+        return True
+
+
+    def write_spectrum_XML(self, f, scanpoint=0):
+        """
+        This method writes an XML representation of the corrected spectrum to
+        file.
+
+        Parameters
+        ----------
+        f : file-like object
+            The file to write the spectrum to
+        scanpoint : int
+            Which scanpoint to write.
+        """
+
+        spectrum_template = """<?xml version="1.0"?>
+        <REFroot xmlns="">
+        <REFentry time="$time">
+        <Title>$title</Title>
+        <REFdata axes="lambda" rank="1" type="POINT" spin="UNPOLARISED" dim="$n_spectra">
+        <Run filename="$runnumber"/>
+        <R uncertainty="dR">$r</R>
+        <lambda uncertainty="dlambda" units="1/A">$l</lambda>
+        <dR type="SD">$dr</dR>
+        <dlambda type="_FWHM" units="1/A">$dl</dlambda>
+        </REFdata>
+        </REFentry>
+        </REFroot>"""
+
+        if self.processed_spectrum is None:
+            return
+
+        s = string.Template(spectrum_template)
+        d = dict()
+        d['title'] = self.cat.sample_name
+        d['time'] = strftime("%a, %d %b %Y %H:%M:%S +0000", gmtime())
+
+        M_lambda = self.processed_spectrum['M_lambda']
+        M_spec = self.processed_spectrum['M_spec']
+        M_spec_sd = self.processed_spectrum['M_spec']
+        M_lambda_sd = self.processed_spectrum['M_lambda_sd']
+
+        #sort the data
+        sorted = np.argsort(self.M_lambda[0])
+
+        r = M_spec[:,sorted]
+        l = M_lambda[:, sorted]
+        dl = M_lambda_sd[:, sorted]
+        dr = M_spec_sd[:, sorted]
+        d['n_spectra'] = self.processed_spectrum['n_spectra']
+        d['runnumber'] = 'PLP{:07d}'.format(self.cat.datafile_number)
+
+        d['r'] = string.translate(repr(r[scanpoint].tolist()), None, ',[]')
+        d['dr'] = string.translate(repr(dr[scanpoint].tolist()), None, ',[]')
+        d['l'] = string.translate(repr(l[scanpoint].tolist()), None, ',[]')
+        d['dl'] = string.translate(repr(dl[scanpoint].tolist()), None, ',[]')
+        thefile = s.safe_substitute(d)
+        f.write(thefile)
+        f.truncate()
+
+        return True
+
+
+    @property
+    def spectrum(self):
+        return (self.processed_spectrum['M_lambda'],
+                self.processed_spectrum['M_spec'],
+                self.processed_spectrum['M_spec'],
+                self.processed_spectrum['M_lambda_sd'])
+
+
 def create_detector_norm(h5norm, x_min, x_max):
     """
     Produces a detector normalisation array for Platypus.
@@ -813,7 +946,7 @@ def background_subtract(detector, detector_sd, background_mask):
     """
     Background subtraction of Platypus detector image.
     Shape of detector is (N, T, Y), do a linear background subn for each
-    (N, T) slice
+    (N, T) slice.
 
     Parameters
     ----------
@@ -822,8 +955,8 @@ def background_subtract(detector, detector_sd, background_mask):
     detector_sd : np.ndarray
         standard deviations for detector array
     background_mask : array_like
-        array of bool that specifies which Y pixels to use for background
-        subtraction.
+        array of bool with shape (N, T, Y) that specifies which Y pixels to use
+        for background subtraction.
 
     Returns
     -------
@@ -836,7 +969,7 @@ def background_subtract(detector, detector_sd, background_mask):
     for idx in np.ndindex(detector.shape[0: 2]):
         ret[idx], ret_sd[idx] = background_subtract_line(detector[idx],
                                                          detector_sd[idx],
-                                                         background_mask)
+                                                         background_mask[idx])
     return ret, ret_sd
 
 
@@ -859,7 +992,11 @@ def background_subtract_line(profile, profile_sd, background_mask):
     mask = np.array(background_mask).astype('bool')
     x_vals = np.where(mask)[0]
 
-    y_vals = profile[x_vals]
+    try:
+        y_vals = profile[x_vals]
+    except IndexError:
+        print x_vals
+
     y_sdvals = profile_sd[x_vals]
     x_vals = x_vals.astype('float')
 
@@ -963,6 +1100,8 @@ def find_specular_ridge(detector, detector_sd, starting_offset=50,
 
         beam_centre[j] = last_centre
         beam_sd[j] = last_sd
+
+    return beam_centre, beam_sd
 
 
 def correct_for_gravity(detector, detector_sd, lamda, coll_distance,

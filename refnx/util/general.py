@@ -383,6 +383,27 @@ def xray_energy(wavelength):
     return 12.398/ wavelength
 
 
+def penetration_depth(qq, rho):
+    '''
+    Calculates the penetration depth of a neutron/xray beam
+
+    Parameters
+    ----------
+    qq: float
+        Q values to calculate the penetration depth at
+    rho: float or complex
+        Complex SLD of material
+
+    Returns
+    -------
+    penetration_depth: float
+    '''
+    kk = 0.25 * qq ** 2.
+    kk -= 4 * np.pi * rho
+    temp = np.sqrt(kk + 0j)
+    return np.abs(1 / temp.imag)
+
+
 def beamfrac(FWHM, length, angle):
     '''
     return the beam fraction intercepted by a sample of length length
