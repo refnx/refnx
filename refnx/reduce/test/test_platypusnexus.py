@@ -110,9 +110,10 @@ class TestPlatypusNexus(unittest.TestCase):
         assert_almost_equal(bins[0], 1.98)
         assert_almost_equal(bins[-1], 18.18)
 
-    def test_reduction(self):
-        pass
-        # self.f113.process()
+    def test_reduction_runs(self):
+        # just check it runs
+        self.f113.process()
+        self.f113.process(direct=True)
 
 
 if __name__ == '__main__':

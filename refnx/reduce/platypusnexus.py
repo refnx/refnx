@@ -28,6 +28,7 @@ DISCRADIUS = 350.
 EXTENT_MULT = 2
 PIXEL_OFFSET = 1
 
+
 class Catalogue(object):
     def __init__(self, h5data):
         d = {}
@@ -190,7 +191,7 @@ class PlatypusNexus(object):
         self.processed_spectrum = None
 
     def process(self, h5norm=None, lo_wavelength=2.8, hi_wavelength=19.,
-                background=True, is_direct=False, omega=0, two_theta=0,
+                background=True, direct=False, omega=0, two_theta=0,
                 rebin_percent=1., wavelength_bins=None, normalise=True,
                 integrate=-1, eventmode=None, peak_pos=None,
                 background_mask=None):
@@ -209,7 +210,7 @@ class PlatypusNexus(object):
             The high wavelength cutoff for the rebinned data (A).
         background : bool
             Should a background subtraction be carried out?
-        is_direct : bool
+        direct : bool
             Is it a direct beam you measured? This is so a gravity correction
             can be applied.
         omega : float
@@ -248,7 +249,7 @@ class PlatypusNexus(object):
 
         Returns
         -------
-        M_lambda, M_spec, M_spec_sd: np.ndarray
+        m_lambda, m_spec, m_spec_sd: np.ndarray
             Arrays containing the wavelength, specular intensity as a function
             of wavelength, standard deviation of specular intensity
         """
@@ -301,11 +302,11 @@ class PlatypusNexus(object):
                                              detector_norm, detector_norm_sd)
 
         # shape of these is (n_spectra, TOFbins)
-        M_spec_tof_hist = np.zeros((n_spectra, np.size(TOF, 0)),
+        m_spec_tof_hist = np.zeros((n_spectra, np.size(TOF, 0)),
                                    dtype='float64')
-        M_lambda_hist = np.zeros((n_spectra, np.size(TOF, 0)),
+        m_lambda_hist = np.zeros((n_spectra, np.size(TOF, 0)),
                                  dtype='float64')
-        M_spec_tof_hist[:] = TOF
+        m_spec_tof_hist[:] = TOF
 
         # chopper to detector distances
         # note that if eventmode is specified the n_spectra is NOT
@@ -350,12 +351,12 @@ class PlatypusNexus(object):
             toffset = (poffset
                        + 1.e6 * master_opening / 2 / (2 * np.pi) / freq
                        - 1.e6 * phase_angle / (360 * 2 * freq))
-            M_spec_tof_hist[idx] -= toffset
+            m_spec_tof_hist[idx] -= toffset
 
             detpositions[idx] = cat.dy[scanpoint]
 
             if eventmode is not None and integrate > -1:
-                M_spec_tof_hist[:] = TOF - toffset
+                m_spec_tof_hist[:] = TOF - toffset
                 flight_distance[:] = flight_distance[0]
                 detpositions[:] = detpositions[0]
                 break
@@ -365,24 +366,24 @@ class PlatypusNexus(object):
         scanpoint = originalscanpoint
 
         # convert TOF to lambda
-        # M_spec_tof_hist (n, t) and chod is (n,)
-        M_lambda_hist = qtrans.tof_to_lambda(M_spec_tof_hist,
+        # m_spec_tof_hist (n, t) and chod is (n,)
+        m_lambda_hist = qtrans.tof_to_lambda(m_spec_tof_hist,
                                              flight_distance[:, np.newaxis])
-        M_lambda = 0.5 * (M_lambda_hist[:, 1:] + M_lambda_hist[:, :-1])
+        m_lambda = 0.5 * (m_lambda_hist[:, 1:] + m_lambda_hist[:, :-1])
         TOF -= toffset
 
         # gravity correction if direct beam
-        if is_direct:
+        if direct:
             output = correct_for_gravity(detector,
                                          detector_sd,
-                                         M_lambda,
+                                         m_lambda,
                                          self.cat.collimation_distance,
                                          self.cat.dy,
                                          lo_wavelength,
                                          hi_wavelength)
-            detector, detector_sd, M_gravcorrcoefs = output
+            detector, detector_sd, m_gravcorrcoefs = output
             beam_centre, beam_sd = find_specular_ridge(detector, detector_sd)
-            beam_centre = M_gravcorrcoefs
+            beam_centre = m_gravcorrcoefs
         else:
             beam_centre, beam_sd = find_specular_ridge(detector, detector_sd)
 
@@ -406,13 +407,13 @@ class PlatypusNexus(object):
         # rebin_percent percentage is zero. No rebinning, just cutoff
         # wavelength
         else:
-            rebinning = M_lambda_hist[0, :]
+            rebinning = m_lambda_hist[0, :]
             rebinning = rebinning[np.searchsorted(rebinning, lo_wavelength):
                                   np.searchsorted(rebinning, hi_wavelength)]
 
         '''
         now do the rebinning for all the N detector images
-        rebin.rebinND could do all of these at once.  However, M_lambda_hist
+        rebin.rebinND could do all of these at once.  However, m_lambda_hist
         could vary across the range of spectra.  If it was the same I could
         eliminate the loop.
         '''
@@ -420,7 +421,7 @@ class PlatypusNexus(object):
         output_sd = []
         for idx in range(n_spectra):
             plane, plane_sd = rebin.rebin_along_axis(detector[idx],
-                                                     M_lambda_hist[idx],
+                                                     m_lambda_hist[idx],
                                                      rebinning,
                                                      y1_sd=detector_sd[idx])
             output.append(plane)
@@ -434,33 +435,33 @@ class PlatypusNexus(object):
             detector_sd = detector_sd[np.newaxis, ]
 
         #(1, T)
-        M_lambda_hist = np.atleast_2d(rebinning)
+        m_lambda_hist = np.atleast_2d(rebinning)
 
         '''
         Divide the detector intensities by the width of the wavelength bin.
         This is so the intensities between different rebinning strategies can
         be compared.
         '''
-        div = 1 / np.ediff1d(M_lambda_hist[0])[:, np.newaxis]
+        div = 1 / np.ediff1d(m_lambda_hist[0])[:, np.newaxis]
         detector, detector_sd = EP.EPmulk(detector,
                                           detector_sd,
                                           div)
 
         # convert the wavelength base to a timebase
-        M_spec_tof_hist = qtrans.lambda_to_tof(M_lambda_hist,
+        m_spec_tof_hist = qtrans.lambda_to_tof(m_lambda_hist,
                                                flight_distance[:, np.newaxis])
 
-        M_lambda = 0.5 * (M_lambda_hist[:, 1:] + M_lambda_hist[:, :-1])
+        m_lambda = 0.5 * (m_lambda_hist[:, 1:] + m_lambda_hist[:, :-1])
 
-        M_spec_tof = qtrans.lambda_to_tof(M_lambda,
+        m_spec_tof = qtrans.lambda_to_tof(m_lambda,
                                           flight_distance[:, np.newaxis])
 
         # we want to integrate over the following pixel region
         lopx = np.floor(beam_centre - beam_sd * EXTENT_MULT)
         hipx = np.ceil(beam_centre + beam_sd * EXTENT_MULT)
 
-        M_spec = np.zeros((n_spectra, np.size(detector, 1)))
-        M_spec_sd = np.zeros_like(M_spec)
+        m_spec = np.zeros((n_spectra, np.size(detector, 1)))
+        m_spec_sd = np.zeros_like(m_spec)
 
         # background subtraction
         if background:
@@ -486,7 +487,7 @@ class PlatypusNexus(object):
                 full_backgnd_mask = np.zeros((n_spectra,
                                               detector.shape[1],
                                               detector.shape[2]),
-                                              dtype='bool')
+                                             dtype='bool')
                 for i in range(n_spectra):
                     full_backgnd_mask[i, :, y0: y1] = True
                     full_backgnd_mask[i, :, y2 + 1: y3 + 1] = True
@@ -501,21 +502,21 @@ class PlatypusNexus(object):
         i.e. integrate over specular beam
         '''
         for i in range(n_spectra):
-            M_spec[i] = np.sum(detector[i, :, lopx[i]: hipx[i] + 1], axis=1)
+            m_spec[i] = np.sum(detector[i, :, lopx[i]: hipx[i] + 1], axis=1)
             sd = np.sum(detector_sd[i, :, lopx[i]: hipx[i] + 1] ** 2,
                         axis=1)
-            M_spec_sd[i] = np.sqrt(sd)
+            m_spec_sd[i] = np.sqrt(sd)
 
-        # assert np.isfinite(M_spec).all()
-        # assert np.isfinite(M_specSD).all()
+        # assert np.isfinite(m_spec).all()
+        # assert np.isfinite(m_specSD).all()
         # assert np.isfinite(detector).all()
         # assert np.isfinite(detectorSD).all()
 
         # normalise by beam monitor 1.
         if normalise:
-            # have to make to the same shape as M_spec
-            M_spec, M_spec_sd = EP.EPdiv(M_spec,
-                                         M_spec_sd,
+            # have to make to the same shape as m_spec
+            m_spec, m_spec_sd = EP.EPdiv(m_spec,
+                                         m_spec_sd,
                                          bm1_counts[:, np.newaxis],
                                          bm1_counts_sd[:, np.newaxis])
 
@@ -534,9 +535,9 @@ class PlatypusNexus(object):
         discs have smaller openings compared to the master chopper.
         Therefore the burst time needs to be looked at.
         '''
-        tau_da = M_spec_tof_hist[:, 1:] - M_spec_tof_hist[:, :-1]
+        tau_da = m_spec_tof_hist[:, 1:] - m_spec_tof_hist[:, :-1]
 
-        M_lambda_sd = general.resolution_double_chopper(M_lambda,
+        m_lambda_sd = general.resolution_double_chopper(m_lambda,
                                      z0=d_cx[:, np.newaxis] / 1000.,
                                      freq=cat.frequency[:, np.newaxis],
                                      L=flight_distance[:, np.newaxis] / 1000.,
@@ -544,7 +545,7 @@ class PlatypusNexus(object):
                                      xsi=phase_angle[:, np.newaxis],
                                      tau_da=tau_da)
 
-        M_lambda_sd *= M_lambda
+        m_lambda_sd *= m_lambda
 
         # put the detector positions and mode into the dictionary as well.
         detectorZ = np.atleast_2d(cat.dz)
@@ -562,13 +563,13 @@ class PlatypusNexus(object):
         d['M_topandtail_sd'] = detector_sd
         d['n_spectra'] = n_spectra
         d['bm1_counts'] = bm1_counts
-        d['M_spec'] = M_spec
-        d['M_spec_sd'] = M_spec_sd
+        d['m_spec'] = m_spec
+        d['m_spec_sd'] = m_spec_sd
         d['M_beampos'] = beam_centre
-        d['M_lambda'] = M_lambda
-        d['M_lambda_sd'] = M_lambda_sd
-        d['M_lambda_hist'] = M_lambda_hist
-        d['M_spec_tof'] = M_spec_tof
+        d['m_lambda'] = m_lambda
+        d['m_lambda_sd'] = m_lambda_sd
+        d['m_lambda_hist'] = m_lambda_hist
+        d['m_spec_tof'] = m_spec_tof
         d['mode'] = mode
         d['detectorZ'] = detectorZ
         d['detectorY'] = detectorY
@@ -577,8 +578,7 @@ class PlatypusNexus(object):
         d['hipx'] = hipx
 
         self.processed_spectrum = d
-        return M_lambda, M_spec, M_spec_sd
-
+        return m_lambda, m_spec, m_spec_sd
 
     def phase_angle(self, scanpoint=0):
         """
@@ -622,7 +622,6 @@ class PlatypusNexus(object):
             phase_angle += disc_phase - cat.chopper4_phase_offset[0]
 
         return phase_angle, master_opening
-
 
     def chod(self, omega=0., two_theta=0., scanpoint=0):
         """
@@ -821,15 +820,15 @@ class PlatypusNexus(object):
         if self.processed_spectrum is None:
             return
 
-        M_lambda = self.processed_spectrum['M_lambda']
-        M_spec = self.processed_spectrum['M_spec']
-        M_spec_sd = self.processed_spectrum['M_spec']
-        M_lambda_sd = self.processed_spectrum['M_lambda_sd']
+        m_lambda = self.processed_spectrum['m_lambda']
+        m_spec = self.processed_spectrum['m_spec']
+        m_spec_sd = self.processed_spectrum['m_spec']
+        m_lambda_sd = self.processed_spectrum['m_lambda_sd']
 
-        for L, I, dI, dL in zip(M_lambda[scanpoint],
-                                M_spec[scanpoint],
-                                M_spec_sd[scanpoint],
-                                M_lambda_sd[scanpoint]):
+        for L, I, dI, dL in zip(m_lambda[scanpoint],
+                                m_spec[scanpoint],
+                                m_spec_sd[scanpoint],
+                                m_lambda_sd[scanpoint]):
 
             thedata = '{:g}\t{:g}\t{:g}\t{:g}\n'.format(L, I, dI, dL)
             f.write(thedata)
@@ -837,7 +836,6 @@ class PlatypusNexus(object):
         f.truncate()
 
         return True
-
 
     def write_spectrum_XML(self, f, scanpoint=0):
         """
@@ -874,18 +872,18 @@ class PlatypusNexus(object):
         d['title'] = self.cat.sample_name
         d['time'] = strftime("%a, %d %b %Y %H:%M:%S +0000", gmtime())
 
-        M_lambda = self.processed_spectrum['M_lambda']
-        M_spec = self.processed_spectrum['M_spec']
-        M_spec_sd = self.processed_spectrum['M_spec']
-        M_lambda_sd = self.processed_spectrum['M_lambda_sd']
+        m_lambda = self.processed_spectrum['m_lambda']
+        m_spec = self.processed_spectrum['m_spec']
+        m_spec_sd = self.processed_spectrum['m_spec']
+        m_lambda_sd = self.processed_spectrum['m_lambda_sd']
 
         #sort the data
-        sorted = np.argsort(self.M_lambda[0])
+        sorted = np.argsort(self.m_lambda[0])
 
-        r = M_spec[:,sorted]
-        l = M_lambda[:, sorted]
-        dl = M_lambda_sd[:, sorted]
-        dr = M_spec_sd[:, sorted]
+        r = m_spec[:,sorted]
+        l = m_lambda[:, sorted]
+        dl = m_lambda_sd[:, sorted]
+        dr = m_spec_sd[:, sorted]
         d['n_spectra'] = self.processed_spectrum['n_spectra']
         d['runnumber'] = 'PLP{:07d}'.format(self.cat.datafile_number)
 
@@ -899,13 +897,12 @@ class PlatypusNexus(object):
 
         return True
 
-
     @property
     def spectrum(self):
-        return (self.processed_spectrum['M_lambda'],
-                self.processed_spectrum['M_spec'],
-                self.processed_spectrum['M_spec'],
-                self.processed_spectrum['M_lambda_sd'])
+        return (self.processed_spectrum['m_lambda'],
+                self.processed_spectrum['m_spec'],
+                self.processed_spectrum['m_spec'],
+                self.processed_spectrum['m_lambda_sd'])
 
 
 def create_detector_norm(h5norm, x_min, x_max):
@@ -1068,7 +1065,7 @@ def find_specular_ridge(detector, detector_sd, starting_offset=50,
     starting_offset = abs(starting_offset)
 
     n_increments = ((np.size(detector, 1) - starting_offset)
-                      // search_increment)
+                    // search_increment)
 
     for j in range(np.size(detector, 0)):
         last_centre = -1.
@@ -1135,7 +1132,7 @@ def correct_for_gravity(detector, detector_sd, lamda, coll_distance,
 
     Returns
     -------
-    corrected_data, corrected_data_sd, M_gravcorrcoefs :
+    corrected_data, corrected_data_sd, m_gravcorrcoefs :
                     np.ndarray, np.ndarray, np.ndarray
         Corrected image. This is a theoretical prediction where the spectral
         ridge is for each wavelength.  This will be used to calculate the
@@ -1146,7 +1143,7 @@ def correct_for_gravity(detector, detector_sd, lamda, coll_distance,
 
     x_init = np.arange((np.size(detector, axis=2) + 1) * 1.) - 0.5
 
-    M_gravcorrcoefs = np.zeros((np.size(detector, 0)), dtype='float64')
+    m_gravcorrcoefs = np.zeros((np.size(detector, 0)), dtype='float64')
 
     corrected_data = np.zeros_like(detector)
     corrected_data_sd = np.zeros_like(detector)
@@ -1177,7 +1174,7 @@ def correct_for_gravity(detector, detector_sd, lamda, coll_distance,
         # find the beam centre for an infinitely fast neutron
         x0 = np.array([np.nanmean(centroids[lopx: hipx, 0])])
         res = leastsq(f, x0)
-        M_gravcorrcoefs[spec] = res[0][0]
+        m_gravcorrcoefs[spec] = res[0][0]
 
         total_deflection = 1000. * pm.y_deflection(trajectories,
                                                    travel_distance,
@@ -1194,7 +1191,7 @@ def correct_for_gravity(detector, detector_sd, lamda, coll_distance,
             corrected_data[spec, wavelength] = output[0]
             corrected_data_sd[spec, wavelength] = output[1]
 
-    return corrected_data, corrected_data_sd, M_gravcorrcoefs
+    return corrected_data, corrected_data_sd, m_gravcorrcoefs
 
 
 def calculate_wavelength_bins(lo_wavelength, hi_wavelength, rebin_percent):
@@ -1294,7 +1291,7 @@ if __name__ == "__main__":
             a = PlatypusNexus(path)
             a.process(is_direct=True)
 
-            # M_lambda, M_lambdaSD, M_spec, M_specSD = a.process(lolambda=args.lolambda,
+            # m_lambda, m_lambdaSD, m_spec, m_specSD = a.process(lolambda=args.lolambda,
             #                                                    hilambda=args.hilambda,
             #                                                    rebinpercent=args.rebin,
             #                                                    typeofintegration=args.typeofintegration)
