@@ -239,13 +239,17 @@ class PlatypusNexus(object):
             result in two spectra. The first would contain data for 0 s to 20s,
             the second would contain data for 20 s to 30 s.  This option can
             only be used when `integrate >= -1`.
+            If eventmode has zero length (e.g. []), then a single time interval
+            for the entire acquisition is used, [0, acquisition_time].  This
+            would source the image from the eventmode file, rather than the
+            NeXUS file.
         peak_pos : None or (float, float)
             Specifies the peak position and peak standard deviation to use.
         background_mask : array_like
-            An array of bool that specifies which y-pixels to use for background
-            subtraction.  Should be the same length as the number of y pixels in
-            the detector image.  Otherwise an automatic mask is applied (if
-            background is True).
+            An array of bool that specifies which y-pixels to use for
+            background subtraction.  Should be the same length as the number of
+            y pixels in the detector image.  Otherwise an automatic mask is
+            applied (if background is True).
 
         Returns
         -------
@@ -738,7 +742,9 @@ class PlatypusNexus(object):
             specifies the frame bins required in the image. If
             framebins = [5, 10, 120] you will get 2 images.  The first starts
             at 5s and finishes at 10s. The second starts at 10s and finishes
-            at 120s.
+            at 120s. If frame_bins has zero length, e.g. [], then a single
+            interval consisting of the entire acquisition time is used:
+            [0, acquisition_time].
         t_bins : array_like, optional
             specifies the time bins required in the image
         x_bins : array_like, optional
@@ -765,13 +771,14 @@ class PlatypusNexus(object):
         acquisition time if necessary.
         """
         cat = self.cat
+
         if not t_bins:
             t_bins = cat.t_bins
         if not y_bins:
             y_bins = cat.y_bins
         if not x_bins:
             x_bins = cat.x_bins
-        if not frame_bins:
+        if not frame_bins or np.size(frame_bins) == 0:
             frame_bins = [0, cat.time[scanpoint]]
 
         total_acquisition_time = cat.time[scanpoint]
@@ -779,7 +786,7 @@ class PlatypusNexus(object):
 
         bm1_counts_for_scanpoint = cat.bm1_counts[scanpoint]
 
-        event_directory_name = cat['daq_dirname'][0]
+        event_directory_name = cat.daq_dirname
 
         stream_filename = os.path.join(cat.path,
                                        event_directory_name,
@@ -790,7 +797,8 @@ class PlatypusNexus(object):
             events, end_of_last_event = event.events(f)
 
         output = event.process_event_stream(events,
-                                            frame_bins * frequency,
+                                            np.asfarray(frame_bins)
+                                            * frequency,
                                             t_bins,
                                             y_bins,
                                             x_bins)
@@ -1288,7 +1296,7 @@ if __name__ == "__main__":
         path = os.path.join(args.basedir, fname)
         try:
             a = PlatypusNexus(path)
-            a.process(is_direct=True)
+            a.process(direct=True, eventmode=[], integrate=0)
 
             # m_lambda, m_lambdaSD, m_spec, m_specSD = a.process(lolambda=args.lolambda,
             #                                                    hilambda=args.hilambda,

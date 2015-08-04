@@ -57,9 +57,9 @@ def process_event_stream(events, frame_bins, t_bins, y_bins, x_bins):
         reversed_y = True
 
     detector, edge = np.histogramdd(events, bins=(localframe_bins,
-                                                    localtbins,
-                                                    localybins,
-                                                    localxbins))
+                                                  localtbins,
+                                                  localybins,
+                                                  localxbins))
     if reversed_x:
         detector = detector[:, :, :, ::-1]
 
