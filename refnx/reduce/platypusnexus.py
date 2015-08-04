@@ -434,7 +434,7 @@ class PlatypusNexus(object):
             detector = detector[np.newaxis, ]
             detector_sd = detector_sd[np.newaxis, ]
 
-        #(1, T)
+        # (1, T)
         m_lambda_hist = np.atleast_2d(rebinning)
 
         '''
@@ -804,8 +804,7 @@ class PlatypusNexus(object):
 
         return new_frame_bins, detector, bm1_counts
 
-
-    def write_spectrum_dat(self, f, scanpoint = 0):
+    def write_spectrum_dat(self, f, scanpoint=0):
         """
         This method writes a dat representation of the corrected spectrum to
         file.
@@ -877,10 +876,10 @@ class PlatypusNexus(object):
         m_spec_sd = self.processed_spectrum['m_spec']
         m_lambda_sd = self.processed_spectrum['m_lambda_sd']
 
-        #sort the data
+        # sort the data
         sorted = np.argsort(self.m_lambda[0])
 
-        r = m_spec[:,sorted]
+        r = m_spec[:, sorted]
         l = m_lambda[:, sorted]
         dl = m_lambda_sd[:, sorted]
         dr = m_spec_sd[:, sorted]
