@@ -3,32 +3,35 @@ import numpy as np
 
 def abeles(q, w, scale=1., bkg=0):
     """
+    Abeles matrix formalism for calculating reflectivity from a stratified
+    medium.
+    Parameters
+    ----------
+    w - np.ndarray
+        coefficients required for the calculation, has shape (2 + N, 4),
+        where N is the number of layers
+        w[0, 1] - SLD of fronting (/1e-6 Angstrom**-2)
+        w[0, 2] - iSLD of fronting (/1e-6 Angstrom**-2)
+        w[N, 0] - thickness of layer N
+        w[N, 1] - SLD of layer N (/1e-6 Angstrom**-2)
+        w[N, 2] - iSLD of layer N (/1e-6 Angstrom**-2)
+        w[N, 3] - roughness between layer N-1/N
+        w[-1, 1] - SLD of backing (/1e-6 Angstrom**-2)
+        w[-1, 2] - iSLD of backing (/1e-6 Angstrom**-2)
+        w[-1, 3] - roughness between backing and last layer
 
-       Abeles matrix formalism for calculating reflectivity from a stratified
-       medium.
-       Parameters
-       ----------
+    q - array_like
+        the q values required for the calculation.
+        Q = 4 * Pi / lambda * sin(omega).
+        Units = Angstrom**-1
 
-       w - np.ndarray
-           coefficients required for the calculation, has shape (2 + N, 4),
-           where N is the number of layers
-           w[0, 1] - SLD of fronting (/1e-6 Angstrom**-2)
-           w[0, 2] - iSLD of fronting (/1e-6 Angstrom**-2)
-           w[N, 0] - thickness of layer N
-           w[N, 1] - SLD of layer N (/1e-6 Angstrom**-2)
-           w[N, 2] - iSLD of layer N (/1e-6 Angstrom**-2)
-           w[N, 3] - roughness between layer N-1/N
-           w[-1, 1] - SLD of backing (/1e-6 Angstrom**-2)
-           w[-1, 2] - iSLD of backing (/1e-6 Angstrom**-2)
-           w[-1, 3] - roughness between backing and last layer
-
-        q - np.ndarray
-            the qvalues required for the calculation.
-            Q=4*Pi/lambda * sin(omega).
-            Units = Angstrom**-1
+    Returns
+    -------
+    Reflectivity - np.ndarray
+        Calculated reflectivity values for each q value.
     """
 
-    qvals = q.flatten()
+    qvals = np.asfarray(q).ravel()
     nlayers = w.shape[0] - 2
     npnts = qvals.size
 
@@ -62,8 +65,8 @@ def abeles(q, w, scale=1., bkg=0):
         MRtotal = np.einsum('...ij,...jk->...ik', MRtotal, MI[:, layer])
 
     # now work out the reflectivity
-    reflectivity = (MRtotal[:, 1, 0] * np.conj(MRtotal[:, 1, 0])) / \
-        (MRtotal[:, 0, 0] * np.conj(MRtotal[:, 0, 0]))
+    reflectivity = ((MRtotal[:, 1, 0] * np.conj(MRtotal[:, 1, 0])) /
+                    (MRtotal[:, 0, 0] * np.conj(MRtotal[:, 0, 0])))
 
     reflectivity *= scale
     reflectivity += bkg

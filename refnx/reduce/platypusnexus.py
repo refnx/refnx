@@ -1170,16 +1170,18 @@ def correct_for_gravity(detector, detector_sd, lamda, coll_distance,
                                           neutron_speeds[lopx: hipx])
 
             model = 1000. * deflections / Y_PIXEL_SPACING + tru_centre
-            return model - centroids[:, 0][lopx: hipx]
+            diff = model - centroids[lopx: hipx, 0]
+            diff = diff[~np.isnan(diff)]
+            return diff
 
         # find the beam centre for an infinitely fast neutron
-        x0 = np.array([np.mean(centroids)])
+        x0 = np.array([np.nanmean(centroids[lopx: hipx, 0])])
         res = leastsq(f, x0)
         M_gravcorrcoefs[spec] = res[0][0]
 
-        total_deflection = pm.y_deflection(trajectories,
-                                           travel_distance,
-                                           neutron_speeds)
+        total_deflection = 1000. * pm.y_deflection(trajectories,
+                                                   travel_distance,
+                                                   neutron_speeds)
         total_deflection /= Y_PIXEL_SPACING
 
         x_rebin = x_init.T + total_deflection[:, np.newaxis]
@@ -1192,7 +1194,7 @@ def correct_for_gravity(detector, detector_sd, lamda, coll_distance,
             corrected_data[spec, wavelength] = output[0]
             corrected_data_sd[spec, wavelength] = output[1]
 
-    return corrected_data, M_gravcorrcoefs
+    return corrected_data, corrected_data_sd, M_gravcorrcoefs
 
 
 def calculate_wavelength_bins(lo_wavelength, hi_wavelength, rebin_percent):
@@ -1276,6 +1278,7 @@ if __name__ == "__main__":
     parser.add_argument('file_list', metavar='N', type=int, nargs='+',
                         help='integer file numbers')
     parser.add_argument('-b', '--basedir', type=str, help='define the location to find the nexus files')
+    parser.add_argument('-d', '--direct', action='store_const', const=True, help='is the file a direct beam?')
     parser.add_argument('-r', '--rebinpercent', type=float, help='rebin percentage for the wavelength -1<rebin<10', default=1)
     parser.add_argument('-l', '--lolambda', type=float, help='lo wavelength cutoff for the rebinning', default=2.5)
     parser.add_argument('--hilambda', type=float, help='lo wavelength cutoff for the rebinning', default=19.)
@@ -1289,7 +1292,7 @@ if __name__ == "__main__":
         path = os.path.join(args.basedir, fname)
         try:
             a = PlatypusNexus(path)
-            a.process()
+            a.process(is_direct=True)
 
             # M_lambda, M_lambdaSD, M_spec, M_specSD = a.process(lolambda=args.lolambda,
             #                                                    hilambda=args.hilambda,
