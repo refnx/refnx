@@ -32,8 +32,8 @@ PIXEL_OFFSET = 1
 class Catalogue(object):
     def __init__(self, h5data):
         d = {}
-        path = os.path.realpath(h5data.filename)
-        d['path'] = os.path.dirname(path)
+        file_path = os.path.realpath(h5data.filename)
+        d['path'] = os.path.dirname(file_path)
         d['filename'] = h5data.filename
         d['end_time'] = h5data['entry1/end_time'][0]
         d['sample_name'] = h5data['entry1/sample/name']
@@ -129,8 +129,8 @@ class Catalogue(object):
         ch3phase = h5data['entry1/instrument/disk_chopper/ch3phase']
         ch4phase = h5data['entry1/instrument/disk_chopper/ch4phase']
 
-        if ('entry1/instrument/parameters/slave' in h5data
-            and 'entry1/instrument/parameters/master' in h5data):
+        if ('entry1/instrument/parameters/slave' in h5data and
+            'entry1/instrument/parameters/master' in h5data):
             master = h5data['entry1/instrument/parameters/master']
             slave = h5data['entry1/instrument/parameters/slave']
         else:
@@ -552,8 +552,8 @@ class PlatypusNexus(object):
         m_lambda_sd *= m_lambda
 
         # put the detector positions and mode into the dictionary as well.
-        detectorZ = np.atleast_2d(cat.dz)
-        detectorY = np.atleast_2d(cat.dy)
+        detector_z = np.atleast_2d(cat.dz)
+        detector_y = np.atleast_2d(cat.dy)
         mode = np.atleast_2d(cat.mode)
 
         d = dict()
@@ -575,8 +575,8 @@ class PlatypusNexus(object):
         d['m_lambda_hist'] = m_lambda_hist
         d['m_spec_tof'] = m_spec_tof
         d['mode'] = mode
-        d['detectorZ'] = detectorZ
-        d['detectorY'] = detectorY
+        d['detector_z'] = detector_z
+        d['detector_y'] = detector_y
         d['domega'] = domega
         d['lopx'] = lopx
         d['hipx'] = hipx
@@ -728,7 +728,6 @@ class PlatypusNexus(object):
 
         return chod, d_cx
 
-
     def process_event_stream(self, t_bins=None, x_bins=None, y_bins=None,
                              frame_bins=None, scanpoint=0):
         """
@@ -825,26 +824,19 @@ class PlatypusNexus(object):
             Which scanpoint to write.
         """
         if self.processed_spectrum is None:
-            return
+            return False
 
-        m_lambda = self.processed_spectrum['m_lambda']
-        m_spec = self.processed_spectrum['m_spec']
-        m_spec_sd = self.processed_spectrum['m_spec']
-        m_lambda_sd = self.processed_spectrum['m_lambda_sd']
+        m_lambda = self.processed_spectrum['m_lambda'][scanpoint]
+        m_spec = self.processed_spectrum['m_spec'][scanpoint]
+        m_spec_sd = self.processed_spectrum['m_spec'][scanpoint]
+        m_lambda_sd = self.processed_spectrum['m_lambda_sd'][scanpoint]
 
-        for L, I, dI, dL in zip(m_lambda[scanpoint],
-                                m_spec[scanpoint],
-                                m_spec_sd[scanpoint],
-                                m_lambda_sd[scanpoint]):
-
-            thedata = '{:g}\t{:g}\t{:g}\t{:g}\n'.format(L, I, dI, dL)
-            f.write(thedata)
-
-        f.truncate()
+        stacked_data = np.c_[m_lambda, m_spec, m_spec_sd, m_lambda_sd]
+        np.savetxt(f, stacked_data, delimiter='\t')
 
         return True
 
-    def write_spectrum_XML(self, f, scanpoint=0):
+    def write_spectrum_xml(self, f, scanpoint=0):
         """
         This method writes an XML representation of the corrected spectrum to
         file.
@@ -1231,85 +1223,56 @@ def calculate_wavelength_bins(lo_wavelength, hi_wavelength, rebin_percent):
     return rebinning
 
 
-# def catalogue_all(basedir=None, fname=None):
-#     if not basedir:
-#         files_to_catalogue = [filename for filename in os.listdir(os.getcwd()) if is_platypus_file(filename)]
-#     else:
-#         files_to_catalogue = []
-#         for root, dirs, files in os.walk(basedir):
-#             files_to_catalogue.append(
-#                 [os.path.join(root, filename) for filename in files if is_platypus_file(filename)])
-#
-#     files_to_catalogue = [item for sublist in files_to_catalogue for item in sublist]
-#     filenumbers = [is_platypus_file(filename) for filename in files_to_catalogue]
-#
-#     Tppn = ProcessPlatypusNexus()
-#
-#     listdata = []
-#
-#     for filename in files_to_catalogue:
-#         try:
-#             with h5.File(filename, 'r') as h5data:
-#                 listdata.append((is_platypus_file(filename), Tppn.catalogue(h5data)))
-#                 h5data.close()
-#         except:
-#             pass
-#
-#     uniquelist = []
-#     uniquefnums = []
-#     for item in listdata:
-#         if not item[0] in uniquefnums:
-#             uniquelist.append(item)
-#             uniquefnums.append(item[0])
-#
-#     uniquelist.sort()
-#     if fname:
-#         template = """$datafilenumber\t$end_time\t$ss1vg\t$ss2vg\t$ss3vg\t$ss4vg\t$total_counts\t$bm1_counts\t$time\t$mode\t$daq_dirname\n"""
-#         with open(fname, 'w') as f:
-#             f.write(template)
-#             s = string.Template(template)
-#
-#             for item in uniquelist:
-#                 f.write(s.safe_substitute(item[1]))
-#
-#             f.truncate()
-#
-#     return uniquelist
-
-
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Process some Platypus NeXUS files to produce their TOF spectra.')
+    parser = argparse.ArgumentParser(description='Process some Platypus NeXUS'
+                                                 'files to produce their TOF '
+                                                 'spectra.')
+
     parser.add_argument('file_list', metavar='N', type=int, nargs='+',
                         help='integer file numbers')
-    parser.add_argument('-b', '--basedir', type=str, help='define the location to find the nexus files')
-    parser.add_argument('-d', '--direct', action='store_const', const=True, help='is the file a direct beam?')
-    parser.add_argument('-r', '--rebinpercent', type=float, help='rebin percentage for the wavelength -1<rebin<10', default=1)
-    parser.add_argument('-l', '--lolambda', type=float, help='lo wavelength cutoff for the rebinning', default=2.5)
-    parser.add_argument('--hilambda', type=float, help='lo wavelength cutoff for the rebinning', default=19.)
-    parser.add_argument('--typeofintegration', type=float,
-                        help='0 to integrate all spectra, 1 to output individual spectra', default=0)
+
+    parser.add_argument('-b', '--bdir', type=str,
+                        help='define the location to find the nexus files')
+
+    parser.add_argument('-d', '--direct', action='store_true', default=False,
+                        help='is the file a direct beam?')
+
+    parser.add_argument('-r', '--rebin', type=float,
+                        help='rebin percentage for the wavelength -1<rebin<10',
+                        default=1)
+
+    parser.add_argument('-ll', '--lolambda', type=float,
+                        help='lo wavelength cutoff for the rebinning',
+                        default=2.5)
+
+    parser.add_argument('-hl', '--hilambda', type=float,
+                        help='lo wavelength cutoff for the rebinning',
+                        default=19.)
+
+    parser.add_argument('-i', '--integrate', type=int,
+                        help='-1 to integrate all spectra, otherwise enter the'
+                             ' spectrum number.', default=-1)
     args = parser.parse_args()
-    print args
 
     for file in args.file_list:
         fname = 'PLP%07d.nx.hdf' % file
-        path = os.path.join(args.basedir, fname)
+        path = os.path.join(args.bdir, fname)
         try:
             a = PlatypusNexus(path)
-            a.process(direct=True, eventmode=[], integrate=0)
+            a.process(lo_wavelength=args.lolambda,
+                      hi_wavelength=args.hilambda,
+                      direct=args.direct,
+                      rebin_percent=args.rebin,
+                      integrate=args.integrate)
 
-            # m_lambda, m_lambdaSD, m_spec, m_specSD = a.process(lolambda=args.lolambda,
-            #                                                    hilambda=args.hilambda,
-            #                                                    rebinpercent=args.rebin,
-            #                                                    typeofintegration=args.typeofintegration)
-            #
-            # for index in xrange(a.numspectra):
-            #     filename = 'PLP{:07d}_{:d}.spectrum'.format(a.datafilenumber, index)
-            #     f = open(filename, 'w')
-            #     a.writespectrum(f, scanpoint=index)
-            #     f.close()
+            fname = 'PLP%07d.spectrum' % file
+            out_fname = os.path.join(args.bdir, fname)
+
+            integrate = args.integrate
+            if args.integrate < 0:
+                integrate = 0
+
+            a.write_spectrum_dat(out_fname, scanpoint=integrate)
 
         except IOError:
             print "Couldn't find file: %d.  Use --basedir option" % file
-        
-

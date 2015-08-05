@@ -127,7 +127,7 @@ def spectra_to_zip(spectra):
     with zipfile.ZipFile(theZipFile, 'w') as Tzipfile:
         for spectrum in spectra:
             spectrum_file = StringIO.StringIO()
-            spectrum.write_spectrum_XML(spectrum_file)
+            spectrum.write_spectrum_xml(spectrum_file)
             filename = 'PLP{:07d}.spectrum'.format(spectrum.datafilenumber)
 
             Tzipfile.writestr(filename, spectrum_file.getvalue())

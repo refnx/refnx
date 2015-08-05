@@ -2,8 +2,9 @@ import unittest
 import refnx.reduce.platypusnexus as plp
 import numpy as np
 import os
-from numpy.testing import assert_almost_equal, assert_
+from numpy.testing import assert_almost_equal, assert_, assert_equal
 from refnx.reduce.peak_utils import gauss
+
 
 class TestPlatypusNexus(unittest.TestCase):
 
@@ -62,8 +63,8 @@ class TestPlatypusNexus(unittest.TestCase):
         xvals = np.linspace(-10, 10, 201)
         yvals = np.ceil(gauss(xvals, 0, 1000, 0, 1))
         detector = np.repeat(yvals[:, np.newaxis], 1000, axis=1).T
-        detectorSD = np.sqrt(detector)
-        output = plp.find_specular_ridge(detector[np.newaxis, :], detectorSD[np.newaxis, :])
+        detector_sd = np.sqrt(detector)
+        output = plp.find_specular_ridge(detector[np.newaxis, :], detector_sd[np.newaxis, :])
         assert_(len(output) == 2)
         assert_almost_equal(output[0][0], 100)
 
@@ -80,16 +81,16 @@ class TestPlatypusNexus(unittest.TestCase):
         # now make an (N, T, Y) detector image
         n_tbins = 10
         detector = np.repeat(yvals, n_tbins).reshape(xvals.size, n_tbins).T
-        detectorSD = np.repeat(yvals_sd, n_tbins).reshape(xvals.size, n_tbins).T
+        detector_sd = np.repeat(yvals_sd, n_tbins).reshape(xvals.size, n_tbins).T
         detector = detector.reshape(1, n_tbins, xvals.size)
-        detectorSD = detectorSD.reshape(1, n_tbins, xvals.size)
+        detector_sd = detector_sd.reshape(1, n_tbins, xvals.size)
 
         mask = np.zeros((1, n_tbins, 201), np.bool)
         mask[:, :, 30:70] = True
         mask[:, :, 130:160] = True
 
         det_bkg, detSD_bkg = plp.background_subtract(detector,
-                                                     detectorSD,
+                                                     detector_sd,
                                                      mask)
 
         # each of the (N, T) entries should have the same background subtracted
@@ -113,7 +114,12 @@ class TestPlatypusNexus(unittest.TestCase):
     def test_reduction_runs(self):
         # just check it runs
         self.f113.process()
-        self.f113.process(direct=True)
+
+        # check that event mode reduction gives the same output as non-event
+        # mode reduction.
+        spectrum0 = self.f113.process(direct=True)
+        spectrum1 = self.f113.process(direct=True, eventmode=[], integrate=0)
+        assert_equal(spectrum0[1][0], spectrum1[1][0])
 
 
 if __name__ == '__main__':
