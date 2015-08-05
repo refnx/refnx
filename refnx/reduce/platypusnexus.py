@@ -16,6 +16,7 @@ import argparse
 import re
 from time import gmtime, strftime
 import string
+import warnings
 
 
 Y_PIXEL_SPACING = 1.177  # in mm
@@ -1069,6 +1070,7 @@ def find_specular_ridge(detector, detector_sd, starting_offset=50,
     for j in range(np.size(detector, 0)):
         last_centre = -1.
         last_sd = -1.
+        converged = False
 
         for i in range(n_increments):
             how_many = -starting_offset - search_increment * i
@@ -1083,16 +1085,25 @@ def find_specular_ridge(detector, detector_sd, starting_offset=50,
 
             # find the centroid and gauss peak in the last sections of the TOF
             # plot
-            centroid, gauss_peak = ut.peak_finder(y_cross, sigma=y_cross_sd)
+
+            try:
+                centroid, gauss_peak = ut.peak_finder(y_cross, sigma=y_cross_sd)
+            except RuntimeError:
+                continue
 
             if (abs((gauss_peak[0] - last_centre) / last_centre) < tolerance
                 and abs((gauss_peak[1] - last_sd) / last_sd) < tolerance):
                 last_centre = gauss_peak[0]
                 last_sd = gauss_peak[1]
+                converged = True
                 break
 
             last_centre = gauss_peak[0]
             last_sd = gauss_peak[1]
+
+        if not converged:
+            warnings.warn('specular ridge search did not work properly'
+                          ' using last known centre', RuntimeWarning)
 
         beam_centre[j] = last_centre
         beam_sd[j] = last_sd

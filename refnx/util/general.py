@@ -406,9 +406,21 @@ def penetration_depth(qq, rho):
 
 def beamfrac(FWHM, length, angle):
     '''
-    return the beam fraction intercepted by a sample of length length
-    at sample tilt angle.
-    The beam is assumed to be gaussian, with a FWHM of FWHM.
+    Calculate the beam fraction intercepted by a sample.
+
+    Parameters
+    ----------
+    FWHM: float
+        The FWHM of the beam height
+    length: float
+        Length of the sample in mm
+    angle: float
+        Angle that the sample makes w.r.t the beam (degrees)
+
+    Returns
+    -------
+    beamfrac: float
+        The fraction of the beam that intercepts the sample
     '''
     height_of_sample = length * np.sin(np.radians(angle))
     beam_sd = FWHM / 2 / np.sqrt(2 * np.log(2))
@@ -429,7 +441,8 @@ def beamfrackernel(kernelx, kernely, length, angle):
     lowlimit = np.where(-height_of_sample / 2. >= kernelx)[0][-1]
     hilimit = np.where(height_of_sample / 2. <= kernelx)[0][0]
 
-    area = integrate.simps(kernely[lowlimit: hilimit + 1], kernelx[lowlimit: hilimit + 1])
+    area = integrate.simps(kernely[lowlimit: hilimit + 1],
+                           kernelx[lowlimit: hilimit + 1])
     return area / total
 
 

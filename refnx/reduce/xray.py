@@ -1,0 +1,147 @@
+from __future__ import division
+import numpy as np
+import refnx.util.general as general
+import refnx.util.ErrorProp as EP
+import Qtransforms as qtrans
+import xml.etree.ElementTree as et
+
+
+XRR_BEAMWIDTH_SD = 0.019449 # mm
+
+def reduce_xrdml(f, bkg=None, scale=1, sample_length=None):
+    """
+    Reduces a Panalytical XRDML file
+
+    Parameters
+    ----------
+    f: file-like object or string
+        The specular reflectivity (XRDML) file of interest
+    bkg: list
+        A list of file-like objects or strings that contain background
+        measurements. The background is assumed to have the same number of
+        points as the specular reflectivity curve.  The backgrounds are
+        averaged and subtracted from the specular reflectivity
+    scale: float
+        The direct beam intensity (cps)
+    sample_length: None or float
+        If None then no footprint correction is done. Otherwise the transverse
+        footprint of the sample (mm).
+
+    Returns
+    -------
+    specular_q, specular_r, specular_dr: np.ndarray
+        The specular reflectivity as a function of momentum transfer, Q.
+    """
+
+    spec = parse_xrdml_file(f)
+
+    reflectivity = spec['intensities'] / spec['count_time']
+    reflectivity_s = np.sqrt(reflectivity) / spec['count_time']
+
+    # do the background subtraction
+    if bkg is not None:
+        bkgds = [parse_xrdml_file(fi) for fi in bkg]
+
+        bkgd_refs = np.r_[[bkgd['intensities'] for bkgd in bkgds]]
+        bkgd_refs_s = np.r_[[np.sqrt(bkgd['intensities']) / bkgd['count_time']
+                             for bkgd in bkgds]]
+        bkgd_refs_var = bkgd_refs_s ** 2
+        weights = 1. / bkgd_refs_var
+        numerator = np.sum(bkgd_refs * weights, axis=0)
+        denominator = np.sum(weights, axis=0)
+
+        total_bkgd = numerator / denominator
+        total_bkgd_s = np.sqrt(1 / denominator)
+
+        reflectivity, reflectivity_s = EP.EPsub(reflectivity,
+                                                reflectivity_s,
+                                                total_bkgd,
+                                                total_bkgd_s)
+
+    # work out the Q values
+    qz, qy = qtrans.to_qzqy(spec['omega'],
+                            spec['twotheta'],
+                            spec['wavelength'])
+
+    # do a footprint correction
+    footprint_correction = general.beamfrac(np.array([XRR_BEAMWIDTH_SD]) * 2.35,
+                                            np.array([sample_length]),
+                                            spec['omega'])
+    reflectivity /= footprint_correction
+    reflectivity_s /= footprint_correction
+
+    # divide by the direct beam intensity
+    # assumes that the direct beam intensity is enormous, so the counting
+    # uncertainties in the scale factor are negligible.
+    reflectivity /= scale
+    reflectivity_s /= scale
+
+    return qz, reflectivity, reflectivity_s
+
+
+def parse_xrdml_file(f):
+    """
+    Parses an XRML file
+
+    Parameters
+    ----------
+    f: file-like object or string
+
+    Returns
+    -------
+    d: dict
+        A dictionary containing the XRDML file information.  The following keys
+        are used:
+
+        'intensities' - np.ndarray
+            Intensities
+        'twotheta' - np.ndarray
+            Two theta values
+        'omega' - np.ndarray
+            Omega values
+        'count_time' - float
+            How long each point was counted for
+        'wavelength' - float
+            Wavelength of X-ray radiation
+    """
+    tree = et.parse(f)
+    root = tree.getroot()
+    ns = {'xrdml': 'http://www.xrdml.com/XRDMeasurement/1.0'}
+
+    query = {'intensities': './/xrdml:intensities',
+             'twotheta_start': './/xrdml:positions[@axis=\'2Theta\']'
+                               '/xrdml:startPosition',
+             'twotheta_end': './/xrdml:positions[@axis=\'2Theta\']'
+                             '/xrdml:endPosition',
+             'omega_start': './/xrdml:positions[@axis=\'Omega\']'
+                            '/xrdml:startPosition',
+             'omega_end': './/xrdml:positions[@axis=\'Omega\']'
+                          '/xrdml:endPosition',
+             'cnt_time': './/xrdml:commonCountingTime',
+             'kAlpha1': './/xrdml:kAlpha1',
+             'kAlpha2': './/xrdml:kAlpha2',
+             'ratio': './/xrdml:ratioKAlpha2KAlpha1'
+             }
+
+    res = {key: root.find(value, ns).text for key, value in query.iteritems()}
+
+    kAlpha1 = float(res['kAlpha1'])
+    kAlpha2 = float(res['kAlpha2'])
+    ratio = float(res['ratio'])
+    wavelength = (kAlpha1 + ratio * kAlpha2) / (1 + ratio)
+
+    d = dict()
+
+    intensities = np.fromstring(res['intensities'], sep=' ')
+    n_pnts = intensities.size
+    d['intensities'] = intensities
+    d['twotheta'] = np.linspace(float(res['twotheta_start']),
+                                float(res['twotheta_end']),
+                                n_pnts)
+    d['omega'] = np.linspace(float(res['omega_start']),
+                             float(res['omega_end']),
+                             n_pnts)
+    d['count_time'] = float(res['cnt_time'])
+    d['wavelength'] = wavelength
+
+    return d
