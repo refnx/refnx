@@ -2,7 +2,6 @@ from __future__ import division
 import numpy as np
 import refnx.util.general as general
 import refnx.util.ErrorProp as EP
-import Qtransforms as qtrans
 import xml.etree.ElementTree as et
 
 
@@ -59,16 +58,18 @@ def reduce_xrdml(f, bkg=None, scale=1, sample_length=None):
                                                 total_bkgd_s)
 
     # work out the Q values
-    qz, qy = qtrans.to_qzqy(spec['omega'],
+    qx, qy, qz = general.q2(spec['omega'],
                             spec['twotheta'],
+                            np.zeros_like(spec['omega']),
                             spec['wavelength'])
 
     # do a footprint correction
-    footprint_correction = general.beamfrac(np.array([XRR_BEAMWIDTH_SD]) * 2.35,
-                                            np.array([sample_length]),
-                                            spec['omega'])
-    reflectivity /= footprint_correction
-    reflectivity_s /= footprint_correction
+    if sample_length is not None:
+        footprint_correction = general.beamfrac(np.array([XRR_BEAMWIDTH_SD]) * 2.35,
+                                                np.array([sample_length]),
+                                                spec['omega'])
+        reflectivity /= footprint_correction
+        reflectivity_s /= footprint_correction
 
     # divide by the direct beam intensity
     # assumes that the direct beam intensity is enormous, so the counting

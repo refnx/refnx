@@ -6,7 +6,6 @@ import refnx.util.general as general
 import refnx.util.ErrorProp as EP
 import refnx.reduce.parabolic_motion as pm
 import event
-import Qtransforms as qtrans
 from scipy.optimize import leastsq, curve_fit
 from scipy.stats import t
 import rebin
@@ -372,8 +371,9 @@ class PlatypusNexus(object):
 
         # convert TOF to lambda
         # m_spec_tof_hist (n, t) and chod is (n,)
-        m_lambda_hist = qtrans.tof_to_lambda(m_spec_tof_hist,
-                                             flight_distance[:, np.newaxis])
+        m_lambda_hist = general.velocity_wavelength(
+                    1.e3 * flight_distance[:, np.newaxis] / m_spec_tof_hist)
+
         m_lambda = 0.5 * (m_lambda_hist[:, 1:] + m_lambda_hist[:, :-1])
         TOF -= toffset
 
@@ -453,13 +453,13 @@ class PlatypusNexus(object):
                                           div)
 
         # convert the wavelength base to a timebase
-        m_spec_tof_hist = qtrans.lambda_to_tof(m_lambda_hist,
-                                               flight_distance[:, np.newaxis])
+        m_spec_tof_hist = (0.001 * flight_distance[:, np.newaxis]
+                           / general.wavelength_velocity(m_lambda_hist))
 
         m_lambda = 0.5 * (m_lambda_hist[:, 1:] + m_lambda_hist[:, :-1])
 
-        m_spec_tof = qtrans.lambda_to_tof(m_lambda,
-                                          flight_distance[:, np.newaxis])
+        m_spec_tof = (0.001 * flight_distance[:, np.newaxis]
+                      / general.wavelength_velocity(m_lambda))
 
         # we want to integrate over the following pixel region
         lopx = np.floor(beam_centre - beam_sd * EXTENT_MULT)

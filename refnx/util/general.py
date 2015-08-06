@@ -108,7 +108,7 @@ def wavelength(q, angle):
     Returns
     -------
     wavelength : float
-        Wavelength of radiation (Å)
+        Wavelength of radiation (A)
     '''
     return  4. * np.pi * np.sin(angle * np.pi / 180.)/q
 

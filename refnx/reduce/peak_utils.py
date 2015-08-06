@@ -59,7 +59,7 @@ def median(y, x=None, dx=1.):
     c -= c0
     c /= cl
 
-    median = np.interp(np.median(c), c, x)
+    median = np.interp(0.5, c, x)
     mean, sd = centroid(y, x=x)
     return median, sd
 
