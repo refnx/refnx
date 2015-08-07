@@ -197,7 +197,7 @@ class PlatypusNexus(object):
                 background_mask=None):
         """
         Processes the ProcessNexus object to produce a time of flight spectrum.
-        The processed spectrum is stored in the processed_spectrum attribute.
+        The processed spectrum is stored in the `processed_spectrum` attribute.
         The specular spectrum is also returned from this function.
 
         Parameters
@@ -542,15 +542,15 @@ class PlatypusNexus(object):
         '''
         tau_da = m_spec_tof_hist[:, 1:] - m_spec_tof_hist[:, :-1]
 
-        m_lambda_sd = general.resolution_double_chopper(m_lambda,
+        m_lambda_fwhm = general.resolution_double_chopper(m_lambda,
                                      z0=d_cx[:, np.newaxis] / 1000.,
                                      freq=cat.frequency[:, np.newaxis],
                                      L=flight_distance[:, np.newaxis] / 1000.,
-                                     H=cat.ss2vg[originalscanpoint],
+                                     H=cat.ss2vg[originalscanpoint] / 1000.,
                                      xsi=phase_angle[:, np.newaxis],
                                      tau_da=tau_da)
 
-        m_lambda_sd *= m_lambda
+        m_lambda_fwhm *= m_lambda
 
         # put the detector positions and mode into the dictionary as well.
         detector_z = np.atleast_2d(cat.dz)
@@ -572,7 +572,7 @@ class PlatypusNexus(object):
         d['m_spec_sd'] = m_spec_sd
         d['M_beampos'] = beam_centre
         d['m_lambda'] = m_lambda
-        d['m_lambda_sd'] = m_lambda_sd
+        d['m_lambda_fwhm'] = m_lambda_fwhm
         d['m_lambda_hist'] = m_lambda_hist
         d['m_spec_tof'] = m_spec_tof
         d['mode'] = mode

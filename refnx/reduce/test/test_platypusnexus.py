@@ -2,7 +2,8 @@ import unittest
 import refnx.reduce.platypusnexus as plp
 import numpy as np
 import os
-from numpy.testing import assert_almost_equal, assert_, assert_equal
+from numpy.testing import (assert_almost_equal, assert_, assert_equal,
+                           assert_array_less)
 from refnx.reduce.peak_utils import gauss
 
 
@@ -120,6 +121,13 @@ class TestPlatypusNexus(unittest.TestCase):
         spectrum0 = self.f113.process(direct=True)
         spectrum1 = self.f113.process(direct=True, eventmode=[], integrate=0)
         assert_equal(spectrum0[1][0], spectrum1[1][0])
+
+        # check that the wavelength resolution is roughly right, between 7 and
+        # 8%.
+        res = (self.f113.processed_spectrum['m_lambda_fwhm'][0] /
+               self.f113.processed_spectrum['m_lambda'][0])
+        assert_array_less(res, np.ones_like(res) * 0.08)
+        assert_array_less(np.ones_like(res) * 0.07, res)
 
 
 if __name__ == '__main__':
