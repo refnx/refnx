@@ -43,14 +43,14 @@ def get_scaling_in_overlap(x0,y0, dy0, x1, y1, dy1):
     tdy1 = dy1[sortarray]
     
     #largest point number of x1 in overlap region
-    num2 = np.interp(tx0[-1:-2:-1], tx1, np.arange(len(tx1) * 1.))
+    num2 = np.interp(tx0[-1: -2: -1], tx1, np.arange(len(tx1) * 1.))
     num2 = int(np.ceil(num2[0]))
 
     if num2 == 0:
         return np.NaN, np.NaN
 
-    #get scaling factor at each point of dataset 2 in the overlap region
-    #get the intensity of wave1 at an overlap point
+    # get scaling factor at each point of dataset 2 in the overlap region
+    # get the intensity of wave1 at an overlap point
     newi = np.interp(tx1[:num2], tx0, ty0)
     newdi = np.interp(tx1[:num2], tx0, tdy0)
     

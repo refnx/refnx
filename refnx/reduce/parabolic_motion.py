@@ -5,7 +5,7 @@ from scipy import constants
 from scipy.optimize import newton
 
 @np.vectorize
-def y_deflection(initial_trajectory, flight_length, speed):
+def y_deflection(initial_trajectory, speed, flight_length):
     """
     The vertical displacement of an object moving in a parabolic path.
 
@@ -14,11 +14,11 @@ def y_deflection(initial_trajectory, flight_length, speed):
     initial_trajectory : float
         The initial angular trajectory of the path (degrees), measured from
         the x-axis. A positive angle is in an anticlockwise direction.
+    speed : float
+        The initial speed of the object (m/s)
     flight_length : float
         The horizontal component of the distance of the object from the origin
         (m).
-    speed : float
-        The initial speed of the object (m/s)
 
     Returns
     -------
@@ -30,7 +30,7 @@ def y_deflection(initial_trajectory, flight_length, speed):
 
 
 @np.vectorize
-def elevation(initial_trajectory, flight_length, speed):
+def elevation(initial_trajectory, speed, flight_length):
     """
     Angle between x-axis and tangent of flight path at a given horizontal
     distance from the origin.
@@ -40,11 +40,11 @@ def elevation(initial_trajectory, flight_length, speed):
     initial_trajectory : float
         The initial angular trajectory of the path (degrees), measured from
         the x-axis. A positive angle is in an anticlockwise direction.
+    speed : float
+        The initial speed of the object (m/s)
     flight_length : float
         The horizontal component of the distance of a point on the line from
         the origin (m).
-    speed : float
-        The initial speed of the object (m/s)
 
     Returns
     -------
@@ -59,7 +59,7 @@ def elevation(initial_trajectory, flight_length, speed):
 
 
 @np.vectorize
-def find_trajectory(theta, flight_length, speed):
+def find_trajectory(flight_length, theta, speed):
     """
     Find the initial trajectory of an object that has to pass through a certain
     point on a parabolic path.  This point is specified by the horizontal distance
@@ -67,12 +67,12 @@ def find_trajectory(theta, flight_length, speed):
 
     Parameters
     ----------
-    theta : float
-        The angle between the x-axis and the point (degrees). A positive angle
-        is in an anticlockwise direction.
     flight_length : float
         The horizontal component of the distance of a point on the line from
         the origin (m).
+    theta : float
+        The angle between the x-axis and the point (degrees). A positive angle
+        is in an anticlockwise direction.
     speed : float
         The initial speed of the object (m/s)
 
@@ -88,7 +88,7 @@ def find_trajectory(theta, flight_length, speed):
     # now find trajectory that will put object through defined point
     def traj(trajectory):
         return (vertical_deflection_vertex
-                - y_deflection(trajectory, flight_length, speed))
+                - y_deflection(trajectory, speed, flight_length))
 
     trajectory = newton(traj, 0)
     return trajectory
@@ -119,8 +119,7 @@ def parabola(initial_trajectory, speed):
 
 
 @np.vectorize
-def parabola_line_intersection_point(initial_trajectory, flight_length, speed,
-                                     theta, omega):
+def parabola_line_intersection_point(flight_length, theta, initial_trajectory, speed, omega):
     """
     Find the intersection point of the parabolic motion path and a line.
     The line is specified by an angle and a point through which the line
@@ -128,26 +127,27 @@ def parabola_line_intersection_point(initial_trajectory, flight_length, speed,
 
     Parameters
     ----------
-    initial_trajectory : float
-        The initial trajectory of the object (degrees). A positive angle is in
-        an anticlockwise direction.
     flight_length : float
         The horizontal component of the distance of a point on the line from
         the origin (m).
-    speed : float
-        The initial speed of the object (m/s).
     theta : float
         The declination of a point on the line from the origin (degrees). A
         positive angle is in an anticlockwise direction.
+    initial_trajectory : float
+        The initial trajectory of the object (degrees). A positive angle is in
+        an anticlockwise direction.
+    speed : float
+        The initial speed of the object (m/s).
     omega : float
         Included angle between the line and line drawn between the point on the
         line and the origin.
 
     Returns
     -------
-    intersect_x, intersect_y, x_prime : float, float, float
-        Co-ordinates of intersection point of parabola and line, and distance
-        from the intersection to the point used to specify the line.
+    intersect_x, intersect_y, x_prime, elev : float, float, float, float
+        Co-ordinates of intersection point of parabola and line, distance
+        from the intersection to the point used to specify the line, and
+        elevation at the intersection point
     """
     omega_rad = np.radians(omega)
     theta_rad = np.radians(theta)
@@ -176,4 +176,8 @@ def parabola_line_intersection_point(initial_trajectory, flight_length, speed,
     distance = ((intersection_x - flight_length) ** 2
                 + (intersection_y - flight_length * np.tan(theta_rad)) ** 2)
     x_prime = np.sqrt(distance)
-    return intersection_x, intersection_y, x_prime
+
+    # calculate the elevation
+    elev = elevation(initial_trajectory, speed, flight_length)
+
+    return intersection_x, intersection_y, x_prime, elev

@@ -53,6 +53,7 @@ def q(angle, wavelength):
     return 4 * np.pi * np.sin(np.radians(angle)) / wavelength
 
 
+@np.vectorize
 def q2(omega, twotheta, phi, wavelength):
     """
     convert angles and wavelength (lambda) to Q vector.

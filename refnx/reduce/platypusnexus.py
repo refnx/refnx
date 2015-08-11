@@ -18,7 +18,8 @@ import string
 import warnings
 
 
-Y_PIXEL_SPACING = 1.177  # in mm
+# detector y pixel spacing in mm per pixel
+Y_PIXEL_SPACING = 1.177
 
 disc_openings = (60., 10., 25., 60.)
 O_C1d, O_C2d, O_C3d, O_C4d = disc_openings
@@ -188,7 +189,15 @@ class PlatypusNexus(object):
             with h5py.File(h5data, 'r') as h5data:
                 self.cat = Catalogue(h5data)
 
-        self.processed_spectrum = None
+        self.processed_spectrum = dict()
+
+    def __getattr__(self, item):
+        if item in self.__dict__:
+            return self.__dict__[item]
+        elif item in self.processed_spectrum:
+            return self.processed_spectrum['item']
+        else:
+            raise AttributeError
 
     def process(self, h5norm=None, lo_wavelength=2.8, hi_wavelength=19.,
                 background=True, direct=False, omega=0, two_theta=0,
@@ -256,6 +265,32 @@ class PlatypusNexus(object):
         m_lambda, m_spec, m_spec_sd: np.ndarray
             Arrays containing the wavelength, specular intensity as a function
             of wavelength, standard deviation of specular intensity
+
+        Note
+        ----
+        After processing this object contains the following the following
+        attributes:
+
+        path - path to the data file
+        datafilename - name of the datafile
+        datafile_number - datafile number.
+        m_topandtail - the corrected 2D detector image, (n_spectra, TOF, Y)
+        m_topandtail_sd - corresponding standard deviations
+        n_spectra - number of spectra in processed data
+        bm1_counts - beam montor counts, (n_spectra,)
+        m_spec - specular intensity, (n_spectra, TOF)
+        m_spec_sd - corresponding standard deviations
+        m_beampos - beam_centre for each spectrum, (n_spectra, )
+        m_lambda - wavelengths for each spectrum, (n_spectra, TOF)
+        m_lambda_fwhm - corresponding FWHM of wavelength distribution
+        m_lambda_hist - wavelength bins for each spectrum, (n_spectra, TOF)
+        m_spec_tof - TOF for each wavelength bin, (n_spectra, TOF)
+        mode - the Platypus mode, e.g. FOC/MT/POL/POLANAL/SB/DB
+        detector_z - detector height, (n_spectra, )
+        detector_y - sample-detector distance, (n_spectra, )
+        domega - collimation uncertainty
+        lopx - lowest extent of specular beam (in y pixels), (n_spectra, )
+        hipx - highest extent of specular beam (in y pixels), (n_spectra, )
         """
         cat = self.cat
 
@@ -301,7 +336,8 @@ class PlatypusNexus(object):
                                                                    x_bins[0],
                                                                    x_bins[1])
             # detector has shape (N, T, Y), shape of detector_norm should
-            # broadcast to (1,1,y)
+            # broadcast to (1, 1, y)
+            # TODO: Correlated Uncertainties?
             detector, detector_sd = EP.EPdiv(detector, detector_sd,
                                              detector_norm, detector_norm_sd)
 
@@ -379,6 +415,7 @@ class PlatypusNexus(object):
 
         # gravity correction if direct beam
         if direct:
+            # TODO: Correlated Uncertainties?
             output = correct_for_gravity(detector,
                                          detector_sd,
                                          m_lambda,
@@ -425,6 +462,7 @@ class PlatypusNexus(object):
         output = []
         output_sd = []
         for idx in range(n_spectra):
+            # TODO: Correlated Uncertainties?
             plane, plane_sd = rebin.rebin_along_axis(detector[idx],
                                                      m_lambda_hist[idx],
                                                      rebinning,
@@ -497,6 +535,7 @@ class PlatypusNexus(object):
                     full_backgnd_mask[i, :, y0: y1] = True
                     full_backgnd_mask[i, :, y2 + 1: y3 + 1] = True
 
+            # TODO: Correlated Uncertainties?
             detector, detector_sd = background_subtract(detector,
                                                         detector_sd,
                                                         full_backgnd_mask)
@@ -519,13 +558,13 @@ class PlatypusNexus(object):
 
         # normalise by beam monitor 1.
         if normalise:
-            # have to make to the same shape as m_spec
+            # TODO: Correlated Uncertainties?
             m_spec, m_spec_sd = EP.EPdiv(m_spec,
                                          m_spec_sd,
                                          bm1_counts[:, np.newaxis],
                                          bm1_counts_sd[:, np.newaxis])
 
-            # have to make to the same shape as detector
+            # TODO: Correlated Uncertainties?
             output = EP.EPdiv(detector,
                               detector_sd,
                               bm1_counts[:, np.newaxis, np.newaxis],
@@ -570,7 +609,7 @@ class PlatypusNexus(object):
         d['bm1_counts'] = bm1_counts
         d['m_spec'] = m_spec
         d['m_spec_sd'] = m_spec_sd
-        d['M_beampos'] = beam_centre
+        d['m_beampos'] = beam_centre
         d['m_lambda'] = m_lambda
         d['m_lambda_fwhm'] = m_lambda_fwhm
         d['m_lambda_hist'] = m_lambda_hist
@@ -1160,9 +1199,7 @@ def correct_for_gravity(detector, detector_sd, lamda, coll_distance,
 
     for spec in range(np.size(detector, 0)):
         neutron_speeds = general.wavelength_velocity(lamda[spec])
-        trajectories = pm.find_trajectory(theta,
-                                          coll_distance / 1000.,
-                                          neutron_speeds)
+        trajectories = pm.find_trajectory(coll_distance / 1000., theta, neutron_speeds)
         travel_distance = (coll_distance + sample_det[spec]) / 1000.
 
         # centres(t,)
@@ -1172,9 +1209,7 @@ def correct_for_gravity(detector, detector_sd, lamda, coll_distance,
         hipx = np.searchsorted(lamda[spec], hi_wavelength)
 
         def f(tru_centre):
-            deflections = pm.y_deflection(trajectories[lopx: hipx],
-                                          travel_distance,
-                                          neutron_speeds[lopx: hipx])
+            deflections = pm.y_deflection(trajectories[lopx: hipx], neutron_speeds[lopx: hipx], travel_distance)
 
             model = 1000. * deflections / Y_PIXEL_SPACING + tru_centre
             diff = model - centroids[lopx: hipx, 0]
@@ -1186,9 +1221,7 @@ def correct_for_gravity(detector, detector_sd, lamda, coll_distance,
         res = leastsq(f, x0)
         m_gravcorrcoefs[spec] = res[0][0]
 
-        total_deflection = 1000. * pm.y_deflection(trajectories,
-                                                   travel_distance,
-                                                   neutron_speeds)
+        total_deflection = 1000. * pm.y_deflection(trajectories, neutron_speeds, travel_distance)
         total_deflection /= Y_PIXEL_SPACING
 
         x_rebin = x_init.T + total_deflection[:, np.newaxis]
