@@ -124,7 +124,7 @@ def parse_xrdml_file(f):
              'ratio': './/xrdml:ratioKAlpha2KAlpha1'
              }
 
-    res = {key: root.find(value, ns).text for key, value in query.iteritems()}
+    res = {key: root.find(value, ns).text for key, value in query.items()}
 
     kAlpha1 = float(res['kAlpha1'])
     kAlpha2 = float(res['kAlpha2'])

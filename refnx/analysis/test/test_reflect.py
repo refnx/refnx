@@ -21,7 +21,7 @@ path = os.path.dirname(os.path.abspath(__file__))
 class TestReflect(unittest.TestCase):
 
     def setUp(self):
-        self.coefs = np.zeros((12))
+        self.coefs = np.zeros(12)
         self.coefs[0] = 1.
         self.coefs[1] = 1.
         self.coefs[4] = 2.07
@@ -55,7 +55,7 @@ class TestReflect(unittest.TestCase):
 
             # test for non-contiguous Q values
             tempq = self.qvals[0::5]
-            assert_(tempq.flags['C_CONTIGUOUS'] == False)
+            assert_(tempq.flags['C_CONTIGUOUS'] is False)
             calc = _creflect.abeles(tempq, self.layer_format)
             assert_almost_equal(calc, self.rvals[0::5])
 
@@ -84,7 +84,7 @@ class TestReflect(unittest.TestCase):
         assert_almost_equal(calc1, calc2)
 
     def test_compare_c_py_abeles0(self):
-        #test two layer system
+        # test two layer system
         if not HAVE_CREFLECT:
             return
         layer0 = np.array([[0, 2.07, 0.01, 3],
@@ -94,7 +94,7 @@ class TestReflect(unittest.TestCase):
         assert_almost_equal(calc1, calc2)
 
     def test_compare_c_py_abeles2(self):
-        #test two layer system
+        # test two layer system
         if not HAVE_CREFLECT:
             return
         layer2 = np.array([[0, 2.07, 0.01, 3],
@@ -154,12 +154,12 @@ class TestReflect(unittest.TestCase):
         assert_almost_equal(rvals.flatten(), calc)
 
     def test_constant_smearing(self):
-        #check that constant dq/q smearing is the same as point by point
+        # check that constant dq/q smearing is the same as point by point
         dqvals = 0.05 * self.qvals
         calc = reflect.abeles(self.qvals, self.coefs,
                               **{'dqvals': dqvals, 'quad_order': 'ultimate'})
         calc2 = reflect.abeles(self.qvals, self.coefs,
-                              **{'dqvals': 5.})
+                               **{'dqvals': 5.})
 
         assert_allclose(calc, calc2, rtol=0.011)
 
@@ -186,6 +186,7 @@ class TestReflect(unittest.TestCase):
         # Motofit (quadrature precsion order = 13)
         theoretical = np.loadtxt(os.path.join(path, 'smeared_theoretical.txt'))
         qvals, rvals, dqvals = np.hsplit(theoretical, 3)
+
         '''
         the order of the quadrature precision used to create these smeared
         values in Motofit was 13.
@@ -193,9 +194,9 @@ class TestReflect(unittest.TestCase):
         '''
         params = curvefitter.to_Parameters(self.coefs)
         fitter = reflect.ReflectivityFitter(qvals,
-                                        rvals, params,
-                                        fcn_kws={'dqvals': dqvals,
-                                       'quad_order': 13})
+                                            rvals, params,
+                                            fcn_kws={'dqvals': dqvals,
+                                                     'quad_order': 13})
 
         model = fitter.model(params)
 
@@ -215,9 +216,7 @@ class TestReflect(unittest.TestCase):
 
         names += ['thick1', 'SLD1', 'iSLD1', 'sigma1']
 
-        print(names)
         names2 = reflect.ReflectivityFitter.parameter_names(12)
-        print(names2)
         assert_(names == names2)
 
 

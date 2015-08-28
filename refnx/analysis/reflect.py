@@ -2,7 +2,7 @@ from __future__ import division
 import numpy as np
 import scipy
 import scipy.linalg
-from scipy.signal import convolve, fftconvolve
+from scipy.signal import fftconvolve
 from scipy.interpolate import InterpolatedUnivariateSpline
 from .curvefitter import CurveFitter
 import refnx.util.ErrorProp as EP
@@ -20,6 +20,7 @@ except ImportError:
 _FWHM = 2 * np.sqrt(2 * np.log(2.0))
 _INTLIMIT = 3.5
 
+
 def convert_coefs_to_layer_format(coefs):
     nlayers = int(coefs[0])
     w = np.zeros((nlayers + 2, 4), np.float64)
@@ -27,9 +28,10 @@ def convert_coefs_to_layer_format(coefs):
     w[-1, 1: 3] = coefs[4: 6]
     w[-1, 3] = coefs[7]
     if nlayers:
-        w[1: -1] = np.array(coefs[8: ]).reshape(nlayers, 4)
+        w[1:-1] = np.array(coefs[8:]).reshape(nlayers, 4)
 
     return w
+
 
 def convert_layer_format_to_coefs(layers, scale=1, bkg=0):
     nlayers = np.size(layers, 0) - 2
@@ -53,7 +55,6 @@ def abeles(q, coefs, *args, **kwds):
 
     Parameters
     ----------
-
     q : np.ndarray
         The qvalues required for the calculation. Q=4*Pi/lambda * sin(omega).
         Units = Angstrom**-1
@@ -113,7 +114,7 @@ def abeles(q, coefs, *args, **kwds):
         raise ValueError('The size of the parameter array passed to abeles'
                          ' should be 4 * coefs[0] + 8')
 
-    #make into form suitable for reflection calculation
+    # make into form suitable for reflection calculation
     w = convert_coefs_to_layer_format(coefs)
 
     if 'quad_order' in kwds:
@@ -134,10 +135,9 @@ def abeles(q, coefs, *args, **kwds):
             # adaptive quadrature
             if quad_order == 'ultimate':
                 smeared_rvals = (scale *
-                                 _smeared_abeles_adaptive(qvals_flat,
-                                                          w,
-                                                          dqvals_flat)
-                                 + bkg)
+                    _smeared_abeles_adaptive(qvals_flat,
+                                             w,
+                                             dqvals_flat) + bkg)
                 return smeared_rvals.reshape(q.shape)
             # fixed order quadrature
             else:
@@ -152,16 +152,16 @@ def abeles(q, coefs, *args, **kwds):
         # resolution kernel smearing
         elif (dqvals.ndim == qvals.ndim + 2
               and dqvals.shape[0: qvals.ndim] == qvals.shape):
-            #TODO may not work yet.
+            # TODO may not work yet.
             qvals_for_res = dqvals[..., 0]
             # work out the reflectivity at the kernel evaluation points
             smeared_rvals = refcalc.abeles(qvals_for_res, w, scale=coefs[1],
                                            bkg=coefs[6])
 
-            #multiply by probability
+            # multiply by probability
             smeared_rvals *= dqvals[..., 1]
 
-            #now do simpson integration
+            # now do simpson integration
             return scipy.integrate.simps(smeared_rvals, x=dqvals[..., 0])
 
     # no smearing
@@ -169,7 +169,12 @@ def abeles(q, coefs, *args, **kwds):
 
 
 def _memoize_gl(f):
+    """
+    Cache the gaussian quadrature abscissae, so they don't have to be
+    calculated all the time.
+    """
     cache = {}
+
     def inner(n):
         if n in cache:
             return cache[n]
@@ -177,6 +182,7 @@ def _memoize_gl(f):
             result = cache[n] = f(n)
             return result
     return inner
+
 
 @_memoize_gl
 def gauss_legendre(n):
@@ -190,18 +196,20 @@ def gauss_legendre(n):
     k = np.arange(1.0, n)
     a_band = np.zeros((2, n))
     a_band[1, 0: n - 1] = k / np.sqrt(4 * k * k - 1)
-    x, V = scipy.linalg.eig_banded(a_band, lower=True)
-    w = 2 * np.real(np.power(V[0, :], 2))
+    x, v = scipy.linalg.eig_banded(a_band, lower=True)
+    w = 2 * np.real(np.power(v[0, :], 2))
     return x, w
 
+
 def _smearkernel(x, w, q, dq):
-    '''
+    """
     Kernel for Gaussian Quadrature
-    '''
+    """
     prefactor = 1 / np.sqrt(2 * np.pi)
     gauss = prefactor * np.exp(-0.5 * x * x)
     localq = q + x * dq / _FWHM
     return refcalc.abeles(localq, w) * gauss
+
 
 def _smeared_abeles_adaptive(qvals, w, dqvals):
     # adaptive gaussian quadrature smearing
@@ -219,8 +227,10 @@ def _smeared_abeles_adaptive(qvals, w, dqvals):
     warnings.resetwarnings()
     return smeared_rvals
 
+
 def _smeared_abeles_fixed(qvals, w, dqvals, quad_order=17):
     # fixed order gaussian quadrature smearing
+
     # get the gauss-legendre weights and abscissae
     abscissa, weights = gauss_legendre(quad_order)
     # get the normal distribution at that point
@@ -246,8 +256,25 @@ def _smeared_abeles_fixed(qvals, w, dqvals, quad_order=17):
     smeared_rvals *= np.atleast_2d(gaussvals * weights)
     return np.sum(smeared_rvals, 1) * _INTLIMIT
 
+
 def _smeared_abeles_constant(q, w, resolution):
-    # constant dq/q resolution smearing.
+    """
+    A kernel for constant dQ/Q smearing
+    Parameters
+    ----------
+    q: np.ndarray
+        Q values to evaluate the reflectivity at
+    w: np.ndarray
+        Parameters for the reflectivity model
+    resolution: float
+        Percentage dq/q resolution. dq specified as FWHM of a resolution
+        kernel.
+    Returns
+    -------
+    reflectivity: np.ndarray
+        The resolution smeared reflectivity
+    """
+
     if resolution < 0.5:
         return refcalc.abeles(q, w)
 
@@ -258,18 +285,19 @@ def _smeared_abeles_constant(q, w, resolution):
     gauss = lambda x, s: (1. / s / np.sqrt(2 * np.pi)
                           * np.exp(-0.5 * x**2 / s / s))
 
-    lowQ = np.min(q)
-    highQ = np.max(q)
-    if lowQ <= 0:
-        lowQ = 1e-6
+    lowq = np.min(q)
+    highq = np.max(q)
+    if lowq <= 0:
+        lowq = 1e-6
 
-    start = np.log10(lowQ) - 6 * resolution / _FWHM
-    finish = np.log10(highQ * (1 + 6 * resolution / _FWHM))
+    start = np.log10(lowq) - 6 * resolution / _FWHM
+    finish = np.log10(highq * (1 + 6 * resolution / _FWHM))
     interpnum = np.round(np.abs(1 * (np.abs(start - finish))
                                 / (1.7 * resolution / _FWHM / gaussgpoint)))
     xtemp = np.linspace(start, finish, interpnum)
     xlin = np.power(10., xtemp)
 
+    # resolution smear over [-4 sigma, 4 sigma]
     gauss_x = np.linspace(-1.7 * resolution, 1.7 * resolution, gaussnum)
     gauss_y = gauss(gauss_x, resolution / _FWHM)
 
@@ -282,13 +310,15 @@ def _smeared_abeles_constant(q, w, resolution):
     smeared_output *= gauss_x[1] - gauss_x[0]
     return smeared_output
 
+
 def is_proper_Abeles_input(coefs):
-    '''
+    """
     Test to see if the coefs array is suitable input for the abeles function
-    '''
+    """
     if np.size(coefs, 0) != 4 * int(coefs[0]) + 8:
         return False
     return True
+
 
 def sld_profile(coefs, z):
 
@@ -309,14 +339,14 @@ def sld_profile(coefs, z):
                     sigma = np.fabs(coefs[7])
                     deltarho = -coefs[2] + coefs[4]
             elif ii == nlayers:
-                SLD1 = coefs[4 * ii + 5]
-                deltarho = -SLD1 + coefs[4]
+                sld1 = coefs[4 * ii + 5]
+                deltarho = -sld1 + coefs[4]
                 thick = np.fabs(coefs[4 * ii + 4])
                 sigma = np.fabs(coefs[7])
             else:
-                SLD1 = coefs[4 * ii + 5]
-                SLD2 = coefs[4 * (ii + 1) + 5]
-                deltarho = -SLD1 + SLD2
+                sld1 = coefs[4 * ii + 5]
+                sld2 = coefs[4 * (ii + 1) + 5]
+                deltarho = -sld1 + sld2
                 thick = np.fabs(coefs[4 * ii + 4])
                 sigma = np.fabs(coefs[4 * (ii + 1) + 7])
 
@@ -327,7 +357,7 @@ def sld_profile(coefs, z):
             if sigma == 0:
                 sigma += 1e-3
 
-            #summ += deltarho * (norm.cdf((zed - dist)/sigma))
+            # summ += deltarho * (norm.cdf((zed - dist)/sigma))
             summ[idx] += deltarho * \
                 (0.5 + 0.5 * math.erf((zed - dist) / (sigma * np.sqrt(2.))))
 
@@ -335,19 +365,18 @@ def sld_profile(coefs, z):
 
 
 class ReflectivityFitter(CurveFitter):
-
-    '''
+    """
         A sub class of refnx.analysis.fitting.CurveFitter suited for
         fitting reflectometry data.
 
         If you wish to fit analytic profiles you should subclass this class,
         overriding the model() method.  If you do this you should also
         override the sld_profile method of ReflectivityFitter.
-    '''
+    """
 
     def __init__(self, xdata, ydata, parameters, edata=None, mask=None,
                  fcn_args=(), fcn_kws=None, kws=None):
-        '''
+        """
         Initialises the ReflectivityFitter.
         See the constructor of the CurveFitter for more details, especially the
         entries in kwds that are used.
@@ -397,7 +426,7 @@ class ReflectivityFitter(CurveFitter):
             time. BUT it won't necessarily work across all samples. For
             example 13 points may be fine for a thin layer, but will be
             atrocious at describing a multilayer with Bragg peaks.
-        '''
+        """
         if fcn_kws is None:
             fcn_kws = {}
         if kws is None:
@@ -419,7 +448,7 @@ class ReflectivityFitter(CurveFitter):
             self.transform = fcn_kws['transform']
 
     def model(self, parameters):
-        '''
+        """
         Calculate the theoretical model, given a set of parameters.
 
         Parameters
@@ -433,7 +462,7 @@ class ReflectivityFitter(CurveFitter):
         yvals : np.ndarray
             The theoretical model for the xdata, i.e.
             abeles(self.xdata, parameters, *self.args, **self.kwds)
-        '''
+        """
         params = np.array([param.value for param in parameters.values()], float)
 
         yvals = abeles(self.xdata, params, *self.userargs, **self.userkws)
@@ -444,8 +473,8 @@ class ReflectivityFitter(CurveFitter):
         return yvals
 
     def set_dq(self, res, quad_order=17):
-        '''
-            Sets the resolution information.
+        """
+        Sets the resolution information.
 
         Parameters
         ----------
@@ -453,7 +482,7 @@ class ReflectivityFitter(CurveFitter):
             If `None` then there is no resolution smearing.
             If a float, e.g. 5, then dq/q smearing of 5% is applied. If res==0
             then resolution smearing is removed.
-            If an np.ndarray the same length as ydata, it contains the _FWHM of
+            If an np.ndarray the same length as ydata, it contains the FWHM of
             the Gaussian approximated resolution kernel.
         quad_order: int or 'ultimate'
             The order of the Gaussian quadrature polynomial for doing the
@@ -464,7 +493,7 @@ class ReflectivityFitter(CurveFitter):
             time. BUT it won't necessarily work across all samples. For
             example 13 points may be fine for a thin layer, but will be
             atrocious at describing a multilayer with Bragg peaks.
-        '''
+        """
         remove_smearing = False
         if res is None:
             remove_smearing = True
@@ -484,7 +513,7 @@ class ReflectivityFitter(CurveFitter):
             self.userkws['quad_order'] = quad_order
 
     def sld_profile(self, parameters, fcn_args=(), **fcn_kws):
-        '''
+        """
         Calculate the SLD profile corresponding to the model parameters.
 
         Parameters
@@ -495,7 +524,7 @@ class ReflectivityFitter(CurveFitter):
         -------
         (z, rho_z) : tuple of np.ndarrays
             The distance from the top interface and the SLD at that point.
-        '''
+        """
 
         params = np.asfarray(parameters.valuesdict().values())
 
@@ -524,12 +553,12 @@ class ReflectivityFitter(CurveFitter):
     def parameter_names(nparams=8):
         names = ['nlayers', 'scale', 'SLDfront', 'iSLDfront', 'SLDback',
                  'iSLDback', 'bkg', 'sigma_back']
-        nlayers = (nparams - 8 / 4)
+        nlayers = (nparams - 8) / 4
         for i in range(int(nlayers)):
-            names.append('thick%d'%(i + 1))
-            names.append('SLD%d'%(i + 1))
-            names.append('iSLD%d'%(i + 1))
-            names.append('sigma%d'%(i + 1))
+            names.append('thick%d' % (i + 1))
+            names.append('SLD%d' % (i + 1))
+            names.append('iSLD%d' % (i + 1))
+            names.append('sigma%d' % (i + 1))
         return names
 
     def callback(self, parameters, iteration, resid, *fcn_args, **fcn_kws):
@@ -546,14 +575,14 @@ class Transform(object):
             self.form = form
 
     def transform(self, xdata, ydata, edata=None):
-        '''
-            An irreversible transform from lin R vs Q, to some other form
-            form - specifies the transform
-                form = None - no transform is made.
-                form = 'logY' - log transform
-                form = 'YX4' - YX**4 transform
-                form = 'YX2' - YX**2 transform
-        '''
+        """
+        An irreversible transform from lin R vs Q, to some other form
+        form - specifies the transform
+            form = None - no transform is made.
+            form = 'logY' - log transform
+            form = 'YX4' - YX**4 transform
+            form = 'YX2' - YX**2 transform
+        """
 
         if edata is None:
             etemp = np.ones_like(ydata)

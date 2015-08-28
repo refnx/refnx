@@ -46,6 +46,7 @@ def abeles(np.ndarray x,
     return y
 
 """
+This is around 7 times slower than wrapped C.
 @cython.boundscheck(False)
 @cython.cdivision(False)
 def reflect(np.ndarray[DTYPE_t, ndim=1] x,

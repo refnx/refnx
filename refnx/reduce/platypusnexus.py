@@ -1032,7 +1032,7 @@ def background_subtract_line(profile, profile_sd, background_mask):
     try:
         y_vals = profile[x_vals]
     except IndexError:
-        print x_vals
+        print(x_vals)
 
     y_sdvals = profile_sd[x_vals]
     x_vals = x_vals.astype('float')
@@ -1320,4 +1320,4 @@ if __name__ == "__main__":
             a.write_spectrum_dat(out_fname, scanpoint=integrate)
 
         except IOError:
-            print "Couldn't find file: %d.  Use --basedir option" % file
+            print("Couldn't find file: %d.  Use --basedir option" % file)

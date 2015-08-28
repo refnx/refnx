@@ -1,13 +1,14 @@
 from __future__ import division, print_function
 import numpy as np
 
+
 def abeles(q, w, scale=1., bkg=0):
     """
     Abeles matrix formalism for calculating reflectivity from a stratified
     medium.
     Parameters
     ----------
-    w - np.ndarray
+    w: np.ndarray
         coefficients required for the calculation, has shape (2 + N, 4),
         where N is the number of layers
         w[0, 1] - SLD of fronting (/1e-6 Angstrom**-2)
@@ -20,14 +21,20 @@ def abeles(q, w, scale=1., bkg=0):
         w[-1, 2] - iSLD of backing (/1e-6 Angstrom**-2)
         w[-1, 3] - roughness between backing and last layer
 
-    q - array_like
+    q: array_like
         the q values required for the calculation.
         Q = 4 * Pi / lambda * sin(omega).
         Units = Angstrom**-1
 
+    scale: float
+        Multiply all reflectivities by this value.
+
+    bkg: float
+        Linear background to be added to all reflectivities
+
     Returns
     -------
-    Reflectivity - np.ndarray
+    Reflectivity: np.ndarray
         Calculated reflectivity values for each q value.
     """
 
@@ -37,11 +44,11 @@ def abeles(q, w, scale=1., bkg=0):
 
     kn = np.zeros((npnts, nlayers + 2), np.complex128)
 
-    SLD = np.zeros(nlayers + 2, np.complex128)
-    SLD[:] += ((w[:, 1] - w[0, 1]) + 1j * (w[:, 2] - w[0, 2])) * 1.e-6
+    sld = np.zeros(nlayers + 2, np.complex128)
+    sld[:] += ((w[:, 1] - w[0, 1]) + 1j * (w[:, 2] - w[0, 2])) * 1.e-6
 
     # kn is a 2D array. Rows are Q points, columns are kn in a layer.
-    kn[:] = np.sqrt(qvals[:, np.newaxis]**2. / 4. - 4. * np.pi * SLD)
+    kn[:] = np.sqrt(qvals[:, np.newaxis]**2. / 4. - 4. * np.pi * sld)
 
     # work out the fresnel reflection for each layer
     rj = (kn[:, :-1] - kn[:, 1:]) / (kn[:, :-1] + kn[:, 1:])
@@ -52,21 +59,21 @@ def abeles(q, w, scale=1., bkg=0):
     if nlayers:
         beta[:, 1:] = np.exp(kn[:, 1: -1] * 1j * np.fabs(w[1: -1, 0]))
 
-    MRtotal = np.zeros((npnts, 2, 2), np.complex128)
-    MI = np.zeros((npnts, nlayers + 1, 2, 2), np.complex128)
-    MI[:, :, 0, 0] = beta
-    MI[:, :, 1, 1] = 1. / beta
-    MI[:, :, 0, 1] = rj * beta
-    MI[:, :, 1, 0] = rj * MI[:, :, 1, 1]
+    mrtotal = np.zeros((npnts, 2, 2), np.complex128)
+    mi = np.zeros((npnts, nlayers + 1, 2, 2), np.complex128)
+    mi[:, :, 0, 0] = beta
+    mi[:, :, 1, 1] = 1. / beta
+    mi[:, :, 0, 1] = rj * beta
+    mi[:, :, 1, 0] = rj * mi[:, :, 1, 1]
 
-    MRtotal[:] = MI[:, 0]
+    mrtotal[:] = mi[:, 0]
 
     for layer in range(1, nlayers + 1):
-        MRtotal = np.einsum('...ij,...jk->...ik', MRtotal, MI[:, layer])
+        mrtotal = np.einsum('...ij,...jk->...ik', mrtotal, mi[:, layer])
 
     # now work out the reflectivity
-    reflectivity = ((MRtotal[:, 1, 0] * np.conj(MRtotal[:, 1, 0])) /
-                    (MRtotal[:, 0, 0] * np.conj(MRtotal[:, 0, 0])))
+    reflectivity = ((mrtotal[:, 1, 0] * np.conj(mrtotal[:, 1, 0])) /
+                    (mrtotal[:, 0, 0] * np.conj(mrtotal[:, 0, 0])))
 
     reflectivity *= scale
     reflectivity += bkg
@@ -74,7 +81,7 @@ def abeles(q, w, scale=1., bkg=0):
 
 
 if __name__ == '__main__':
-    a = np.zeros((12))
+    a = np.zeros(12)
     a[0] = 1.
     a[1] = 1.
     a[4] = 2.07

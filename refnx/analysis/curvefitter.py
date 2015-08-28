@@ -6,7 +6,7 @@ Created on Sun Dec 21 15:37:29 2014
 """
 from __future__ import print_function
 from lmfit import Minimizer, Parameters
-#import pymc
+# import pymc
 import numpy as np
 import numpy.ma as ma
 import re
@@ -14,6 +14,7 @@ import warnings
 
 
 _MACHEPS = np.finfo(np.float64).eps
+
 
 def to_Parameters(p0, varies=None, bounds=None, names=None, expr=None):
     """
@@ -43,7 +44,7 @@ def to_Parameters(p0, varies=None, bounds=None, names=None, expr=None):
         _varies = list(varies)
 
     if names is None:
-        names = ['p%d'%i for i in range(p0.size)]
+        names = ['p%d' % i for i in range(p0.size)]
 
     if bounds is not None:
         lowlim = []
@@ -61,7 +62,7 @@ def to_Parameters(p0, varies=None, bounds=None, names=None, expr=None):
     _p0 = np.copy(p0)
 
     p = Parameters()
-    #go through and add the parameters
+    # go through and add the parameters
     for i in range(p0.size):
         # if the limits are finite and equal, then you shouldn't be fitting
         # the parameter. So fix the parameter and set the upper limit to be
@@ -70,6 +71,7 @@ def to_Parameters(p0, varies=None, bounds=None, names=None, expr=None):
         if (lowlim[i] is not None and hilim[i] is not None and
             np.isfinite(lowlim[i]) and np.isfinite(hilim[i]) and
             lowlim[i] == hilim[i]):
+
             hilim[i] += 1
             _p0[i] = lowlim[i]
             _varies[i] = False
@@ -81,10 +83,11 @@ def to_Parameters(p0, varies=None, bounds=None, names=None, expr=None):
 
     return p
 
+
 def varys(params):
     """
-    A convenience function that takes a Parameters instance and finds out which
-    ones vary
+    A convenience function that takes an lmfit.Parameters instance and finds
+    out which ones vary
 
     Parameters
     ----------
@@ -97,10 +100,11 @@ def varys(params):
     """
     return [params[par].vary for par in params]
 
+
 def exprs(params):
     """
-    A convenience function that takes a Parameters instance and returns the
-    the constraint expressions
+    A convenience function that takes an lmfit.Parameters instance and returns
+    the the constraint expressions
 
     Parameters
     ----------
@@ -112,23 +116,30 @@ def exprs(params):
 
     """
     expr = [params[par].expr for par in params]
+    return expr
+
 
 def values(params):
     """
-    A convenience function that returns the values of the parameters
+    A convenience function that takes an lmfit.Parameters instance and returns
+    the the values
     """
     return np.array([param.value for param in params.values()], np.float64)
+
 
 def names(params):
     return list(params.keys())
 
+
 def bounds(params):
     return [(params[par].min, params[par].max) for par in params]
+
 
 def clear_bounds(params):
     for par in params:
         params[par].min = -np.inf
         params[par].max = np.inf
+
 
 def fitfunc(f):
     """
@@ -181,7 +192,7 @@ class CurveFitter(Minimizer):
 
             self.mask = mask
         else:
-            self.mask = np.empty((self.ydata.shape), bool)
+            self.mask = np.empty(self.ydata.shape, bool)
             self.mask[:] = False
 
         self.MDL = None
@@ -203,9 +214,10 @@ class CurveFitter(Minimizer):
                                           fcn_kws=fcn_kws,
                                           scale_covar=self.scale_covar,
                                           **min_kwds)
+
     @property
     def data(self):
-        #returns the unmasked data, and the mask
+        # returns the unmasked data, and the mask
         return (self.xdata,
                 self.ydata,
                 self.edata,
@@ -259,7 +271,7 @@ class CurveFitter(Minimizer):
 
         Returns
         -------
-        model : np.ndarray
+        model : array_like
             The model.
         """
         return self.fitfunc(self.xdata, params, *self.userargs,
@@ -308,11 +320,10 @@ class CurveFitter(Minimizer):
         names: list
             names for the lmfit.Parameters instance
         """
-        names = list()
+        name = list()
         if nparams > 0:
-            names = ['p%d' % i for i in range(nparams)]
-
-        return names
+            name = ['p%d' % i for i in range(nparams)]
+        return name
 
     def mcmc1(self, samples=1e4, burn=0, thin=1, verbose=0):
         """
@@ -340,70 +351,70 @@ class CurveFitter(Minimizer):
         """
         return super(CurveFitter, self).mcmc(samples, burn=burn, thin=thin)
 
-#==============================================================================
-#         # fitted is a dict of tuples. the key is the param name. The tuple
-#         # (i, j) has i = i'th parameter, j = index into the j'th fitted
-#         # parameter
-#         fitted = {}
-#         self.__fun_evals = 0
-#         j = 0
-#         for i, par in enumerate(self.params):
-#             parameter = self.params[par]
-#             if parameter.vary:
-#                 fitted[parameter.name] = (i, j)
-#                 j += 1
-#         
-#         def driver():
-#             p = np.empty(len(fitted), dtype=object)
-#             for par, idx in fitted.items():
-#                 parameter = self.params[par]
-#                 p[idx[1]] = pymc.Uniform(parameter.name, parameter.min,
-#                                          parameter.max, value=parameter.value)
-#     
-#             @pymc.deterministic(plot=False)
-#             def model(p=p):
-#                 self.__fun_evals += 1
-#                 for name in fitted:
-#                     self.params[name].value = p[fitted[name][1]]
-#                 return self.model(self.params)
-# 
-#             y = pymc.Normal('y', mu=model, tau=1.0 / self.edata**2,
-#                             value=self.ydata, observed=True)
-# 
-#             return locals()
-# 
-#         MDL = pymc.MCMC(driver(), verbose=verbose)
-#         MDL.sample(samples, burn=burn, thin=thin)
-#         stats = MDL.stats()
-# 
-#         #work out correlation coefficients
-#         corrcoefs = np.corrcoef(np.vstack(
-#                      [MDL.trace(par, chain=None)[:] for par in fitted.keys()]))
-#                 
-#         for par in self.params:
-#             self.params[par].stderr = None
-#             self.params[par].correl = None
-# 
-#         for par in fitted.keys():
-#             i = fitted[par][1]
-#             param = self.params[par]
-#             param.correl = {}
-#             param.value = stats[par]['mean']
-#             param.stderr = stats[par]['standard deviation']
-#             for par2 in fitted.keys():
-#                 j = fitted[par2][1]
-#                 if i != j:
-#                     param.correl[par2] = corrcoefs[i, j]
-# 
-#         self.MDL = MDL
-#         self.ndata = self.ydata.size
-#         self.nvarys = len(fitted)
-#         self.nfev = self.__fun_evals
-#         self.chisqr = np.sum(self.residuals(self.params) ** 2)
-#        self.redchi = self.chisqr / (self.ndata - self.nvarys)
-#        del(self.__fun_evals)
-#        return MDL
-#==============================================================================
+"""
+        # fitted is a dict of tuples. the key is the param name. The tuple
+        # (i, j) has i = i'th parameter, j = index into the j'th fitted
+        # parameter
+        fitted = {}
+        self.__fun_evals = 0
+        j = 0
+        for i, par in enumerate(self.params):
+            parameter = self.params[par]
+            if parameter.vary:
+                fitted[parameter.name] = (i, j)
+                j += 1
+
+        def driver():
+            p = np.empty(len(fitted), dtype=object)
+            for par, idx in fitted.items():
+                parameter = self.params[par]
+                p[idx[1]] = pymc.Uniform(parameter.name, parameter.min,
+                                         parameter.max, value=parameter.value)
+
+            @pymc.deterministic(plot=False)
+            def model(p=p):
+                self.__fun_evals += 1
+                for name in fitted:
+                    self.params[name].value = p[fitted[name][1]]
+                return self.model(self.params)
+
+            y = pymc.Normal('y', mu=model, tau=1.0 / self.edata**2,
+                            value=self.ydata, observed=True)
+
+            return locals()
+
+        MDL = pymc.MCMC(driver(), verbose=verbose)
+        MDL.sample(samples, burn=burn, thin=thin)
+        stats = MDL.stats()
+
+        #work out correlation coefficients
+        corrcoefs = np.corrcoef(np.vstack(
+                     [MDL.trace(par, chain=None)[:] for par in fitted.keys()]))
+
+        for par in self.params:
+            self.params[par].stderr = None
+            self.params[par].correl = None
+
+        for par in fitted.keys():
+            i = fitted[par][1]
+            param = self.params[par]
+            param.correl = {}
+            param.value = stats[par]['mean']
+            param.stderr = stats[par]['standard deviation']
+            for par2 in fitted.keys():
+                j = fitted[par2][1]
+                if i != j:
+                    param.correl[par2] = corrcoefs[i, j]
+
+        self.MDL = MDL
+        self.ndata = self.ydata.size
+        self.nvarys = len(fitted)
+        self.nfev = self.__fun_evals
+        self.chisqr = np.sum(self.residuals(self.params) ** 2)
+       self.redchi = self.chisqr / (self.ndata - self.nvarys)
+       del(self.__fun_evals)
+       return MDL
+"""
 
 
 class GlobalFitter(CurveFitter):
@@ -413,18 +424,18 @@ class GlobalFitter(CurveFitter):
     def __init__(self, fitters, constraints=(), kws=None,
                  callback=None):
         """
-        fitters : sequence of CurveFitter instances
+        fitters: sequence of CurveFitter instances
             Contains all the fitters and fitfunctions for the global fit.
-        constraints : str sequence, optional
+        constraints: str sequence, optional
             Of the type 'dN:param_name = constraint'. Sets a constraint
             expression for the parameter `param_name` in dataset N. The
             constraint 'd2:scale = 2 * d0:back' constrains the `scale`
             parameter in dataset 2 to be twice the `back` parameter in
             dataset 0.
-        kws : dict, optional
+        kws: dict, optional
             Extra minimization keywords to be passed to the minimizer of
             choice.
-        callback : callable, optional
+        callback: callable, optional
             Function called at each step of the minimization. Has the
             signature ``callback(params, iter, resid)``
         """
@@ -450,7 +461,7 @@ class GlobalFitter(CurveFitter):
             for j, item in enumerate(fitter.params.items()):
                 old_name = item[0]
                 param = item[1]
-                new_name = old_name + '_d%d' % (i)
+                new_name = old_name + '_d%d' % i
                 new_names[new_name] = old_name
 
                 p.add(new_name,
@@ -465,7 +476,7 @@ class GlobalFitter(CurveFitter):
             # if there are any expressions they have to be updated
             # iterate through all the parameters in the dataset
             old_names = dict((v, k) for k, v in new_names.items())
-            for i, param in enumerate(fitter.params.values()):
+            for param in fitter.params.values():
                 expr = param.expr
                 new_name = old_names[param.name]
                 # if it's got an expression you'll have to update it
@@ -496,7 +507,7 @@ class GlobalFitter(CurveFitter):
 
                 # see if this parameter is in the list of parameters
                 modified_param_name = param_name + ('_d%d' % dataset_num)
-                if not modified_param_name in all_names:
+                if modified_param_name not in all_names:
                     continue
 
                 # now search for fitters mentioned in constraint
@@ -536,11 +547,11 @@ class GlobalFitter(CurveFitter):
         params: lmfit.Parameters
             Specifies the entire parameter set, across all the datasets
         """
-        values = params.valuesdict()
+        vals = params.valuesdict()
         for i, fitter in enumerate(self.fitters):
             new_names = self.new_param_names[i]
             for new_name, old_name in new_names.items():
-                fitter.params[old_name].set(value=values[new_name])
+                fitter.params[old_name].set(value=vals[new_name])
 
     def model(self, params):
         """
@@ -548,7 +559,7 @@ class GlobalFitter(CurveFitter):
 
         Parameters
         ----------
-        params : lmfit.Parameters
+        params: lmfit.Parameters
             Specifies the entire parameter set, across all the datasets
 
         Returns
@@ -566,14 +577,13 @@ class GlobalFitter(CurveFitter):
 
     def residuals(self, params):
         """
-        Calculate the difference between the data and the model.
-        Also known as the objective function.  This function is minimized
-        during a fit.
+        Calculate the difference between the data and the model. Also known as
+        the objective function.  This function is minimized during a fit.
         residuals = (fitfunc - ydata) / edata
 
         Parameters
         ----------
-        params : lmfit.Parameters instance
+        params: lmfit.Parameters
             Specifies the entire parameter set
 
         Returns
@@ -596,7 +606,7 @@ if __name__ == '__main__':
     from lmfit import fit_report
 
     def gauss(x, params, *args):
-        'Calculates a Gaussian model'
+        """Calculates a Gaussian model"""
         p = params.valuesdict().values()
         return p[0] + p[1] * np.exp(-((x - p[2]) / p[3])**2)
 
@@ -604,8 +614,8 @@ if __name__ == '__main__':
     p0 = np.array([0., 1., 0., 1.])
     bounds = [(-1., 1.), (0., 2.), (-3., 3.), (0.001, 2.)]
 
-    temp_pars = params(p0, bounds=bounds)
-    pars = params(p0 + 0.2, bounds=bounds)
+    temp_pars = to_Parameters(p0, bounds=bounds)
+    pars = to_Parameters(p0 + 0.2, bounds=bounds)
 
     ydata = gauss(xdata, temp_pars) + 0.1 * np.random.random(xdata.size)
 

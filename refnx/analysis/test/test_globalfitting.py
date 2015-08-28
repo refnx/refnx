@@ -154,7 +154,7 @@ class TestGlobalFitting(unittest.TestCase):
         e365 = np.loadtxt(os.path.join(CURDIR, 'e365r.txt'))
         e366 = np.loadtxt(os.path.join(CURDIR, 'e366r.txt'))
 
-        coefs361 = np.zeros((16))
+        coefs361 = np.zeros(16)
         coefs361[0] = 2
         coefs361[1] = 1.
         coefs361[2] = 2.07
@@ -181,7 +181,7 @@ class TestGlobalFitting(unittest.TestCase):
         lowlim[4] = -0.8
         hilim = 2 * coefs361
         
-        bounds = zip(lowlim, hilim)
+        bounds = list(zip(lowlim, hilim))
         params361 = curvefitter.to_Parameters(coefs361, bounds=bounds,
                                        varies=[False] * 16)
         params365 = curvefitter.to_Parameters(coefs365, bounds=bounds,

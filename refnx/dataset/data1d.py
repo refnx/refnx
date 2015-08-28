@@ -8,7 +8,6 @@ import numpy as np
 import os.path
 import refnx.reduce.nsplice as nsplice
 import refnx.util.ErrorProp as EP
-from refnx.analysis.curvefitter import CurveFitter
 
 
 class Data1D(object):

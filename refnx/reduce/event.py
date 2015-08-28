@@ -94,13 +94,13 @@ def events(f, endoflastevent=127):
     if not f:
         return None
 
-    state = 0L
-    event_ended = 0L
-    frame_number = -1L
-    dt = 0L
-    t = 0L
-    x = -0L
-    y = -0L
+    state = 0
+    event_ended = 0
+    frame_number = -1
+    dt = 0
+    t = 0
+    x = -0
+    y = -0
 
     x_events = np.array((), dtype='int32')
     y_events = np.array((), dtype='int32')
@@ -123,7 +123,7 @@ def events(f, endoflastevent=127):
         if not len(buf):
             break
 
-        buf = map(ord, buf)
+        buf = bytearray(buf)
         state = 0
 
         for i, c in enumerate(buf):
