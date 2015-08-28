@@ -29,6 +29,9 @@ def abeles(np.ndarray x,
     cdef np.ndarray y = np.empty_like(x,
                                       DTYPE)
 
+    # we need the abscissae in a contiguous block of memory
+    cdef np.ndarray xtemp = np.ascontiguousarray(x, dtype=DTYPE)
+
     coefs[0] = nlayers
     coefs[1] = scale
     coefs[2:4] = w[0, 1: 3]
@@ -39,7 +42,7 @@ def abeles(np.ndarray x,
         coefs[8:] = w.flatten()[4: -4]
 
     reflect(4 * nlayers + 8, <const double*>coefs.data, npoints,
-            <double*>y.data, <const double*>x.data)
+            <double*>y.data, <const double*>xtemp.data)
     return y
 
 """

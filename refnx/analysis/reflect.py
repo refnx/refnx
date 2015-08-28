@@ -1,6 +1,5 @@
 from __future__ import division
 import numpy as np
-import numpy.ma as ma
 import scipy
 import scipy.linalg
 from scipy.signal import convolve, fftconvolve
@@ -12,10 +11,10 @@ import math
 
 
 try:
-    import _creflect as refcalc
+    from . import _creflect as refcalc
 except ImportError:
     print('WARNING, Using slow reflectivity calculation')
-    import _reflect as refcalc
+    from . import _reflect as refcalc
 
 # some definitions for resolution smearing
 _FWHM = 2 * np.sqrt(2 * np.log(2.0))

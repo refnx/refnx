@@ -13,7 +13,7 @@ import numpy as np
 from numpy.testing import (assert_almost_equal, assert_equal, assert_,
                            assert_allclose)
 import os.path
-import time
+
 
 path = os.path.dirname(os.path.abspath(__file__))
 
@@ -49,9 +49,15 @@ class TestReflect(unittest.TestCase):
 
     def test_c_abeles(self):
         if HAVE_CREFLECT:
-            #    test reflectivity calculation with values generated from Motofit
+            # test reflectivity calculation with values generated from Motofit
             calc = _creflect.abeles(self.qvals, self.layer_format)
             assert_almost_equal(calc, self.rvals)
+
+            # test for non-contiguous Q values
+            tempq = self.qvals[0::5]
+            assert_(tempq.flags['C_CONTIGUOUS'] == False)
+            calc = _creflect.abeles(tempq, self.layer_format)
+            assert_almost_equal(calc, self.rvals[0::5])
 
     def test_py_abeles(self):
         # test reflectivity calculation with values generated from Motofit
@@ -209,7 +215,9 @@ class TestReflect(unittest.TestCase):
 
         names += ['thick1', 'SLD1', 'iSLD1', 'sigma1']
 
+        print(names)
         names2 = reflect.ReflectivityFitter.parameter_names(12)
+        print(names2)
         assert_(names == names2)
 
 

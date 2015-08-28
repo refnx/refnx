@@ -100,6 +100,7 @@ class Catalogue(object):
             'entry1/instrument/detector/longitudinal_translation'][:]
         d['dz'] = h5data[
             'entry1/instrument/detector/vertical_translation'][:]
+        # TODO put HDF file y pixel spacing in here.
         self.cat = d
 
     def __getattr__(self, item):
@@ -195,7 +196,7 @@ class PlatypusNexus(object):
         if item in self.__dict__:
             return self.__dict__[item]
         elif item in self.processed_spectrum:
-            return self.processed_spectrum['item']
+            return self.processed_spectrum[item]
         else:
             raise AttributeError
 
@@ -603,8 +604,8 @@ class PlatypusNexus(object):
 
         if h5norm is not None:
             d['normfilename'] = h5norm.filename
-        d['M_topandtail'] = detector
-        d['M_topandtail_sd'] = detector_sd
+        d['m_topandtail'] = detector
+        d['m_topandtail_sd'] = detector_sd
         d['n_spectra'] = n_spectra
         d['bm1_counts'] = bm1_counts
         d['m_spec'] = m_spec

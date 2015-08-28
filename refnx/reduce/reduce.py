@@ -7,15 +7,17 @@ import refnx.util.general as general
 import string
 from time import gmtime, strftime
 import refnx.reduce.parabolic_motion as pm
+from refnx.dataset import reflectdataset
 import os
-    
+
+
 class ReducePlatypus(object):
     """
     Reduces Platypus reflectometer data to give the specular reflectivity.
     Offspecular data maps are also produced.
     """
 
-    def __init__(self, h5ref, h5direct, **kwds):
+    def __init__(self, h5ref, h5direct, scale=1., **kwds):
         """
         Parameters
         ----------
@@ -25,14 +27,16 @@ class ReducePlatypus(object):
         h5direct: string or file-like object
             A string containing the path to the direct beam hdf5 file,
             or the hdf5 file itself.
+        scale: float
+            Divide all the reflectivity values by this number.
 
         kwds: dict
-            Options passed directly to refnx.reduce.platypusnexus.process, look
-            at that method docstring for specification of options.
+            Options passed directly to refnx.reduce.platypusnexus.process, for
+            processing of individual spectra. Look at that method docstring for
+            specification of options.
 
         Returns
         -------
-
 
         Notes
         -----
@@ -70,7 +74,7 @@ class ReducePlatypus(object):
         Y corresponds to the number of y pixels on the detector.
 
         This class reduces all the spectra present in the reflected beam file
-        (see platypusnexus.PlatypusNexus.process nexus for eventmode
+        (see platypusnexus.PlatypusNexus.process for eventmode
         specification and other related options), but aggregates all data in
         the direct beam spectrum.
 
@@ -82,13 +86,18 @@ class ReducePlatypus(object):
         self.reflected_beam = pn.PlatypusNexus(h5ref)
         self.reflected_beam.process(**keywords)
 
-        # get the reflected beam spectrum
+        # get the direct beam spectrum
         keywords['direct'] = True
         keywords['integrate'] = -1
+
+        # got to use the same wavelength bins as the reflected spectrum.
+        keywords['wavelength_bins'] = self.reflected_beam.m_lambda_hist[0]
+
         self.direct_beam = pn.PlatypusNexus(h5direct)
         self.direct_beam.process(**keywords)
 
         self.__reduce_single_angle()
+        self.scale(scale)
 
     def data(self, scanpoint=0):
         """
@@ -100,6 +109,10 @@ class ReducePlatypus(object):
             Find a particular specular reflectivity image. scanpoints upto
             `self.n_spectra - 1` can be specified.
 
+        Returns
+        -------
+        (Q, R, dR, dQ): np.ndarray tuple
+            dR is standard deviation, dQ is FWHM
         """
         return (self.xdata[scanpoint],
                 self.ydata[scanpoint],
@@ -140,17 +153,6 @@ class ReducePlatypus(object):
         self.ydata /= scale
         self.ydata_sd /= scale
 
-    def get_reflected_dataset(self, scanpoint=0):
-        """
-
-            returns a reflectdataset.ReflectDataset() created from this Reduce object. By default a scanpoint of 0 is
-            used. scanpoints upto self.numspectra - 1 can be specified.
-
-        """
-        reflectedDatasetObj = reflectdataset.ReflectDataset([self], scanpoint = scanpoint)
-#		reflectedDatasetObj.add_dataset(self, scanpoint = scanpoint)
-        return reflectedDatasetObj
-
     def write_offspecular(self, f, scanpoint=0):
         __template_ref_xml = """<?xml version="1.0"?>
         <REFroot xmlns="">
@@ -178,7 +180,7 @@ class ReducePlatypus(object):
 
         s = string.Template(__template_ref_xml)
 
-        #			filename = 'off_PLP{:07d}_{:d}.xml'.format(self._rnumber, index)
+        # filename = 'off_PLP{:07d}_{:d}.xml'.format(self._rnumber, index)
         d['_r'] = string.translate(repr(self.m_ref[scanpoint].tolist()), None, ',[]')
         d['_qz'] = string.translate(repr(self.m_qz[scanpoint].tolist()), None, ',[]')
         d['_dr'] = string.translate(repr(self.m_ref_sd[scanpoint].tolist()), None, ',[]')
@@ -242,6 +244,7 @@ class ReducePlatypus(object):
 
             # correct the angle of incidence with a wavelength dependent
             # elevation.
+            # TODO check that this works for vectorised calculation
             omega_corrected = omega_nom[:, np.newaxis] - elevation
 
         elif mode == 'SB' or mode == 'DB':
@@ -261,8 +264,14 @@ class ReducePlatypus(object):
 
         '''
         --Specular Reflectivity--
-        Calculate by dividing the two integrated spectra, rather than operating
-        on 2D image.
+        Use the (constant wavelength) spectra that have already been integrated
+        over 2theta (in processnexus) to calculate the specular reflectivity.
+        Beware: this is because m_topandtail has already been divided through
+        by monitor counts and error propagated (at the end of processnexus).
+        Thus, the 2theta pixels are correlated to some degree. If we use the 2D
+        plot to calculate reflectivity
+        (sum {Iref_{2theta, lambda}}/I_direct_{lambda}) then the error bars in
+        the reflectivity turn out much larger than they should be.
         '''
         ydata, ydata_sd = EP.EPdiv(self.reflected_beam.m_spec,
                                    self.reflected_beam.m_spec_sd,
@@ -324,25 +333,25 @@ def sanitize_string_input(file_list_string):
     return [int(item) for sublist in temp for item in sublist if 0 < int(item) < 9999999]
 
 
-def reduce_stitch_files(reflect_list, direct_list, normfilenumber = None, **kwds):
+def reduce_stitch_files(reflect_list, direct_list, normfilenumber=None,
+                        **kwds):
     """
+    Reduces a list of reflected beam run numbers and a list of corresponding
+    direct beam run numbers from the Platypus reflectometer.
+    e.g.
+        reflect_list = [708, 709, 710]
+        direct_list = [711, 711, 711]
 
-        reduces a list of reflected beam run numbers and a list of corresponding direct beam run numbers from the Platypus reflectometer.
-        e.g.
-            reflect_list = [708, 709, 710]
-            direct_list = [711, 711, 711]
+    708 is corresponds to the file PLP0000708.nx.hdf.
 
-        708 is corresponds to the file PLP0000708.nx.hdf.
+    normfilenumber is the run number for the water flood field correction.
 
-        normfilenumber is the run number for the water flood field correction.
-
-        kwds is passed onto processplatypusnexus.ProcessPlatypusNexus.process, look at that docstring for specification of options.
-
+    kwds is passed onto processplatypusnexus.ProcessPlatypusNexus.process, look
+    at that docstring for specification of options.
     """
-
     scalefactor = kwds.get('scalefactor', 1.)
 
-    #now reduce all the files.
+    # now reduce all the files.
     zipped = zip(reflect_list, direct_list)
 
     combineddataset = reflectdataset.ReflectDataset()
