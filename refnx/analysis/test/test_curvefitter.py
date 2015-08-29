@@ -8,7 +8,9 @@ from numpy.testing import (assert_almost_equal, assert_equal, assert_,
 import os.path
 SEED = 1
 
+
 path = os.path.dirname(os.path.abspath(__file__))
+
 
 def gauss(x, p0, *args):
     p = list(p0.valuesdict().values())
@@ -33,7 +35,7 @@ class TestFitter(unittest.TestCase):
         return np.asfarray(list(params.valuesdict().values()))
 
     def test_fitting(self):
-        #the simplest test - a really simple gauss curve with perfect data
+        # the simplest test - a really simple gauss curve with perfect data
         res = self.f.fit()
         assert_(res, 'True')
         assert_almost_equal(self.pvals(self.params), self.p0)
@@ -53,7 +55,7 @@ class TestFitter(unittest.TestCase):
         assert_almost_equal(0, np.sum(resid**2))
 
     def test_leastsq(self):
-        #test that a custom method can be used with scipy.optimize.minimize
+        # test that a custom method can be used with scipy.optimize.minimize
         self.f.fit()
         assert_almost_equal(self.pvals(self.params), self.p0)
         
@@ -68,15 +70,16 @@ class TestFitter(unittest.TestCase):
         assert_almost_equal(self.pvals(self.params), self.p0, 3)
 
     def test_holding_parameter(self):
-        #holding parameters means that those parameters shouldn't change
-        #during a fit
+        # holding parameters means that those parameters shouldn't change
+        # during a fit
         self.params['p0'].vary = False
         self.f.fit()
         assert_almost_equal(self.p0[0] + 0.2, self.params['p0'].value)
-        
+
+
 class TestFitterGauss(unittest.TestCase):
-    #Test CurveFitter with a noisy gaussian, weighted and unweighted, to see
-    #if the parameters and uncertainties come out correct
+    # Test CurveFitter with a noisy gaussian, weighted and unweighted, to see
+    # if the parameters and uncertainties come out correct
 
     def setUp(self):        
         theoretical = np.loadtxt(os.path.join(path, 'gauss_data.txt'))
@@ -114,7 +117,7 @@ class TestFitterGauss(unittest.TestCase):
         assert_almost_equal(output, self.best_weighted, 4)
         assert_almost_equal(f.chisqr, self.best_weighted_chisqr)
 
-        uncertainties = [f.params['p%d'%i].stderr for i in range(4)]
+        uncertainties = [f.params['p%d' % i].stderr for i in range(4)]
         assert_almost_equal(uncertainties, self.best_weighted_errors, 3)
         
     def test_best_unweighted(self):
@@ -125,7 +128,7 @@ class TestFitterGauss(unittest.TestCase):
         assert_almost_equal(output, self.best_unweighted, 5)
         assert_almost_equal(f.chisqr, self.best_unweighted_chisqr)
 
-        uncertainties = [f.params['p%d'%i].stderr for i in range(4)]
+        uncertainties = [f.params['p%d' % i].stderr for i in range(4)]
         assert_almost_equal(uncertainties, self.best_unweighted_errors, 3)
 
     def test_parameter_names(self):
@@ -135,14 +138,23 @@ class TestFitterGauss(unittest.TestCase):
         names2 = CurveFitter.parameter_names(nparams=10)
         assert_(names == names2)
 
-    # def test_mcmc_vs_lm(self):
-    #     #test mcmc output vs lm
-    #     f = CurveFitter(gauss, self.xvals, self.yvals, self.params,
-    #                     edata=self.evals)
-    #     np.random.seed(123456)
-    #     f.mcmc(samples=2000, burn=1000, thin=30)
-    #     output = list(f.params.valuesdict().values())
-    #     assert_allclose(output, self.best_weighted, rtol=0.02, atol=0.01)
+    def test_mcmc_vs_lm(self):
+        # test mcmc output vs lm
+        f = CurveFitter(gauss, self.xvals, self.yvals, self.params,
+                        edata=self.evals)
+        np.random.seed(123456)
+        f.mcmc(samples=2000, burn=500, thin=20)
+        output = list(f.params.valuesdict().values())
+        assert_allclose(output, self.best_weighted, rtol=0.02, atol=0.01)
+
+    def test_emcee_vs_lm(self):
+        # test mcmc output vs lm
+        f = CurveFitter(gauss, self.xvals, self.yvals, self.params,
+                        edata=self.evals)
+        np.random.seed(123456)
+        f.emcee(nwalkers=20, steps=1500, burn=100, thin=20)
+        output = list(f.params.valuesdict().values())
+        assert_allclose(output, self.best_weighted, rtol=0.02, atol=0.01)
 
 
 if __name__ == '__main__':

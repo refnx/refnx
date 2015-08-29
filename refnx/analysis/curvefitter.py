@@ -11,6 +11,13 @@ import numpy as np
 import numpy.ma as ma
 import re
 import warnings
+# check for EMCEE
+HAS_EMCEE = False
+try:
+    import emcee as emcee
+    HAS_EMCEE = True
+except ImportError:
+    pass
 
 
 _MACHEPS = np.finfo(np.float64).eps
@@ -325,6 +332,115 @@ class CurveFitter(Minimizer):
             name = ['p%d' % i for i in range(nparams)]
         return name
 
+    def emcee(self, steps=1000, nwalkers=100, burn=0, thin=1):
+        """
+        Samples the posterior for the curvefitting system using MCMC.
+        This method updates curvefitter.params at the end of the sampling
+        process.  You have to have set bounds on all of the parameters, and it
+        is assumed that the prior is Uniform.
+
+        Parameters
+        ----------
+        steps : int, optional
+            How many samples you would like to draw from the posterior
+            distribution.
+        burn : int, optional
+            Discard this many samples from the start of the sampling regime.
+        thin : int, optional
+            Only accept 1 in every `thin` samples.
+
+        Returns
+        -------
+        chain : np.ndarray
+            Contains the samples. Has shape (nwalkers, steps, ndims).
+        """
+        if not HAS_EMCEE:
+            raise NotImplementedError('You must have emcee to use the emcee '
+                                      'method')
+
+        self.prepare_fit()
+        params = self.params
+        self.nvarys = len(self.var_map)
+
+        self.vars = []
+        bounds_varying = []
+        for par in self.var_map:
+            parameter = params[par]
+
+            # every parameter in Parameters has an attribute, from_internal
+            # that scales a fully bounded parameter to (-np.pi/2, np.pi/2).
+            # We have to remove this because the emcee distribution only draws
+            # from between the (min, max) bounds.  This scaling is done from
+            # self.__residual
+            parameter.from_internal = lambda val: val
+            self.vars.append(parameter.value)
+            bounds_varying.append((parameter.min, parameter.max))
+
+        bounds_varying = np.array(bounds_varying)
+        if not np.all(np.isfinite(bounds_varying)):
+            self.unprepare_fit()
+            raise ValueError('With emcee finite (min, max) are required for '
+                             ' every varying parameter')
+
+        self.vars = np.array(self.vars)
+
+        def lnlike(theta):
+            # log likelihood
+            residuals = self._Minimizer__residual(theta)
+            return -0.5 * (np.sum(residuals ** 2))
+
+        def lnprior(theta):
+            # uniform prior
+            if (np.any(theta > bounds_varying[:, 1])
+                    or np.any(theta < bounds_varying[:, 0])):
+                return -np.inf
+            return 0
+
+        def lnprob(theta):
+            lp = lnprior(theta)
+            if not np.isfinite(lp):
+                return -np.inf
+            return lp + lnlike(theta)
+
+        ndim = len(self.var_map)
+        pos = np.array([self.vars * (1 + 1e-2 * np.random.randn(ndim))
+                    for i in range(nwalkers)])
+
+        sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob)
+        sampler.run_mcmc(pos, steps)
+        chain = sampler.chain[:, burn::thin, :]
+
+        flat_chain = chain.reshape((-1, ndim))
+
+        # work out correlation coefficients
+        corrcoefs = np.corrcoef(flat_chain.T)
+
+        for par in self.params:
+            self.params[par].stderr = None
+            self.params[par].correl = None
+
+        for i, par in enumerate(self.var_map):
+            mean, std = np.mean(flat_chain[:, i]), np.std(flat_chain[:, i])
+            self.params[par].value = mean
+            self.vars[i] = mean
+            self.params[par].stderr = std
+            self.params[par].correl = {}
+            for j, par2 in enumerate(self.var_map):
+                if i != j:
+                    self.params[par].correl[par2] = corrcoefs[i, j]
+
+        residuals = self._Minimizer__residual(self.vars)
+        self.ndata = residuals.size
+        self.chisqr = np.sum(residuals ** 2)
+        self.redchi = self.chisqr / (self.ndata - self.nvarys)
+        self.unprepare_fit()
+
+        for par in self.var_map:
+            # return internal parameter scaling to original state
+            self.params[par].setup_bounds()
+
+        return chain
+
     def mcmc1(self, samples=1e4, burn=0, thin=1, verbose=0):
         """
         Samples the posterior for the curvefitting system using MCMC.
@@ -350,71 +466,6 @@ class CurveFitter(Minimizer):
             Contains the samples.
         """
         return super(CurveFitter, self).mcmc(samples, burn=burn, thin=thin)
-
-"""
-        # fitted is a dict of tuples. the key is the param name. The tuple
-        # (i, j) has i = i'th parameter, j = index into the j'th fitted
-        # parameter
-        fitted = {}
-        self.__fun_evals = 0
-        j = 0
-        for i, par in enumerate(self.params):
-            parameter = self.params[par]
-            if parameter.vary:
-                fitted[parameter.name] = (i, j)
-                j += 1
-
-        def driver():
-            p = np.empty(len(fitted), dtype=object)
-            for par, idx in fitted.items():
-                parameter = self.params[par]
-                p[idx[1]] = pymc.Uniform(parameter.name, parameter.min,
-                                         parameter.max, value=parameter.value)
-
-            @pymc.deterministic(plot=False)
-            def model(p=p):
-                self.__fun_evals += 1
-                for name in fitted:
-                    self.params[name].value = p[fitted[name][1]]
-                return self.model(self.params)
-
-            y = pymc.Normal('y', mu=model, tau=1.0 / self.edata**2,
-                            value=self.ydata, observed=True)
-
-            return locals()
-
-        MDL = pymc.MCMC(driver(), verbose=verbose)
-        MDL.sample(samples, burn=burn, thin=thin)
-        stats = MDL.stats()
-
-        #work out correlation coefficients
-        corrcoefs = np.corrcoef(np.vstack(
-                     [MDL.trace(par, chain=None)[:] for par in fitted.keys()]))
-
-        for par in self.params:
-            self.params[par].stderr = None
-            self.params[par].correl = None
-
-        for par in fitted.keys():
-            i = fitted[par][1]
-            param = self.params[par]
-            param.correl = {}
-            param.value = stats[par]['mean']
-            param.stderr = stats[par]['standard deviation']
-            for par2 in fitted.keys():
-                j = fitted[par2][1]
-                if i != j:
-                    param.correl[par2] = corrcoefs[i, j]
-
-        self.MDL = MDL
-        self.ndata = self.ydata.size
-        self.nvarys = len(fitted)
-        self.nfev = self.__fun_evals
-        self.chisqr = np.sum(self.residuals(self.params) ** 2)
-       self.redchi = self.chisqr / (self.ndata - self.nvarys)
-       del(self.__fun_evals)
-       return MDL
-"""
 
 
 class GlobalFitter(CurveFitter):
