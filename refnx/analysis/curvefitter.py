@@ -311,7 +311,8 @@ class CurveFitter(Minimizer):
         success : bool
             Whether the fit succeeded.
         """
-        return self.minimize(method=method)
+        result = self.minimize(method=method)
+        return result
 
     @staticmethod
     def parameter_names(nparams=0):
@@ -332,7 +333,8 @@ class CurveFitter(Minimizer):
             name = ['p%d' % i for i in range(nparams)]
         return name
 
-    def emcee(self, steps=1000, nwalkers=100, burn=0, thin=1):
+    def emcee(self, params=None, steps=1000, nwalkers=100, burn=0, thin=1,
+              ntemps=1):
         """
         Samples the posterior for the curvefitting system using MCMC.
         This method updates curvefitter.params at the end of the sampling
@@ -348,52 +350,32 @@ class CurveFitter(Minimizer):
             Discard this many samples from the start of the sampling regime.
         thin : int, optional
             Only accept 1 in every `thin` samples.
+        ntemps : int, optional
+            If `ntemps > 1` perform a Parallel Tempering.
 
         Returns
         -------
-        chain : np.ndarray
-            Contains the samples. Has shape (nwalkers, steps, ndims).
+        result, chain : MinimizerResult, np.ndarray
+            MinimizerResult object contains updated params, fit statistics, etc.
+            `chain` contains the samples. Has shape (steps, ndims).
         """
         if not HAS_EMCEE:
             raise NotImplementedError('You must have emcee to use the emcee '
                                       'method')
 
-        self.prepare_fit()
-        params = self.params
-        self.nvarys = len(self.var_map)
+        result = self.prepare_fit(params=params)
+        vars   = result.init_vals
+        params = result.params
 
-        self.vars = []
-        bounds_varying = []
-        for par in self.var_map:
-            parameter = params[par]
-
-            # every parameter in Parameters has an attribute, from_internal
-            # that scales a fully bounded parameter to (-np.pi/2, np.pi/2).
-            # We have to remove this because the emcee distribution only draws
-            # from between the (min, max) bounds.  This scaling is done from
-            # self.__residual
-            parameter.from_internal = lambda val: val
-            self.vars.append(parameter.value)
-            bounds_varying.append((parameter.min, parameter.max))
-
-        bounds_varying = np.array(bounds_varying)
-        if not np.all(np.isfinite(bounds_varying)):
-            self.unprepare_fit()
-            raise ValueError('With emcee finite (min, max) are required for '
-                             ' every varying parameter')
-
-        self.vars = np.array(self.vars)
+        self.nvarys = len(result.var_names)
 
         def lnlike(theta):
             # log likelihood
-            residuals = self._Minimizer__residual(theta)
-            return -0.5 * (np.sum(residuals ** 2))
+            return -0.5 * self.penalty(theta)
 
         def lnprior(theta):
-            # uniform prior
-            if (np.any(theta > bounds_varying[:, 1])
-                    or np.any(theta < bounds_varying[:, 0])):
-                return -np.inf
+            # we should always be within the prior because of the bounds
+            # treatment in lmfit
             return 0
 
         def lnprob(theta):
@@ -402,44 +384,53 @@ class CurveFitter(Minimizer):
                 return -np.inf
             return lp + lnlike(theta)
 
-        ndim = len(self.var_map)
-        pos = np.array([self.vars * (1 + 1e-2 * np.random.randn(ndim))
-                    for i in range(nwalkers)])
+        if ntemps > 1:
+            # TODO setup pos
+            sampler = emcee.PTSampler(ntemps, nwalkers, self.nvarys, lnlike,
+                                      lnprob)
+        else:
+            p0 = np.array([vars * (1 + 1e-2 * np.random.randn(self.nvarys))
+                        for i in range(nwalkers)])
+            sampler = emcee.EnsembleSampler(nwalkers, self.nvarys, lnprob)
 
-        sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob)
-        sampler.run_mcmc(pos, steps)
-        chain = sampler.chain[:, burn::thin, :]
+        # burn in the sampler
+        for output in sampler.sample(p0, iterations=burn):
+            pass
+        p0 = output[0]
+        sampler.reset()
 
-        flat_chain = chain.reshape((-1, ndim))
+        # now do a production run
+        for output in sampler.sample(p0, iterations=steps - burn, thin=thin):
+            pass
+
+        flat_chain = sampler.flatchain
+
+        mean = np.mean(flat_chain, axis=0)
+        quantiles = np.percentile(flat_chain, [15.8, 84.2], axis=0)
+
+        for i, var_name in enumerate(result.var_names):
+            f = params[var_name].from_internal
+            flat_chain[:, i] = f(flat_chain[:, i])
+            std_l, std_u = f(quantiles[:, i])
+            params[var_name].value = f(mean[i])
+            params[var_name].stderr = std_u - std_l
+            params[var_name].correl = {}
 
         # work out correlation coefficients
         corrcoefs = np.corrcoef(flat_chain.T)
 
-        for par in self.params:
-            self.params[par].stderr = None
-            self.params[par].correl = None
-
-        for i, par in enumerate(self.var_map):
-            mean, std = np.mean(flat_chain[:, i]), np.std(flat_chain[:, i])
-            self.params[par].value = mean
-            self.vars[i] = mean
-            self.params[par].stderr = std
-            self.params[par].correl = {}
-            for j, par2 in enumerate(self.var_map):
+        for i, var_name in enumerate(result.var_names):
+            for j, var_name2 in enumerate(result.var_names):
                 if i != j:
-                    self.params[par].correl[par2] = corrcoefs[i, j]
+                    result.params[var_name].correl[var_name2] = corrcoefs[i, j]
 
-        residuals = self._Minimizer__residual(self.vars)
-        self.ndata = residuals.size
-        self.chisqr = np.sum(residuals ** 2)
-        self.redchi = self.chisqr / (self.ndata - self.nvarys)
+        result.ndata = 1
+        result.nfree = 1
+        result.chisqr = self.penalty(mean)
+        result.redchi = result.chisqr / (result.ndata - result.nvarys)
         self.unprepare_fit()
 
-        for par in self.var_map:
-            # return internal parameter scaling to original state
-            self.params[par].setup_bounds()
-
-        return chain
+        return result, flat_chain
 
     def mcmc1(self, samples=1e4, burn=0, thin=1, verbose=0):
         """

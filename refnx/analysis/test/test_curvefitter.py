@@ -3,6 +3,8 @@ import refnx.analysis.curvefitter as curvefitter
 from refnx.analysis.curvefitter import CurveFitter
 import numpy as np
 from copy import deepcopy
+from lmfit import Parameters
+
 from numpy.testing import (assert_almost_equal, assert_equal, assert_,
                            assert_allclose)
 import os.path
@@ -37,9 +39,8 @@ class TestFitter(unittest.TestCase):
     def test_fitting(self):
         # the simplest test - a really simple gauss curve with perfect data
         res = self.f.fit()
-        assert_(res, 'True')
-        assert_almost_equal(self.pvals(self.params), self.p0)
-        assert_almost_equal(self.f.chisqr, 0)
+        assert_almost_equal(self.pvals(res.params), self.p0)
+        assert_almost_equal(res.chisqr, 0)
 
     def test_model_returns_function(self):
         ydata = gauss(self.xdata, self.final_params)
@@ -56,8 +57,8 @@ class TestFitter(unittest.TestCase):
 
     def test_leastsq(self):
         # test that a custom method can be used with scipy.optimize.minimize
-        self.f.fit()
-        assert_almost_equal(self.pvals(self.params), self.p0)
+        res = self.f.fit()
+        assert_almost_equal(self.pvals(res.params), self.p0)
         
     def test_resid_length(self):
         # the residuals length should be equal to the data length
@@ -66,14 +67,14 @@ class TestFitter(unittest.TestCase):
 
     def test_scalar_minimize(self):
         assert_equal(self.pvals(self.params), self.p0 + 0.2)
-        self.f.fit(method='differential_evolution')
-        assert_almost_equal(self.pvals(self.params), self.p0, 3)
+        res = self.f.fit(method='differential_evolution')
+        assert_almost_equal(self.pvals(res.params), self.p0, 3)
 
     def test_holding_parameter(self):
         # holding parameters means that those parameters shouldn't change
         # during a fit
         self.params['p0'].vary = False
-        self.f.fit()
+        res = self.f.fit()
         assert_almost_equal(self.p0[0] + 0.2, self.params['p0'].value)
 
 
@@ -81,23 +82,23 @@ class TestFitterGauss(unittest.TestCase):
     # Test CurveFitter with a noisy gaussian, weighted and unweighted, to see
     # if the parameters and uncertainties come out correct
 
-    def setUp(self):        
+    def setUp(self):
         theoretical = np.loadtxt(os.path.join(path, 'gauss_data.txt'))
         xvals, yvals, evals = np.hsplit(theoretical, 3)
         self.xvals = xvals.flatten()
         self.yvals = yvals.flatten()
         self.evals = evals.flatten()
-        
+
         self.best_weighted = [-0.00246095, 19.5299, -8.28446e-2, 1.24692]
 
         self.best_weighted_errors = [0.0220313708486, 1.12879436221,
                                      0.0447659158681, 0.0412022938883]
 
         self.best_weighted_chisqr = 77.6040960351
-        
+
         self.best_unweighted = [-0.10584111872702096, 19.240347049328989,
                                 0.0092623066070940396, 1.501362314145845]
-        
+
         self.best_unweighted_errors = [0.34246565477, 0.689820935208,
                                        0.0411243173041, 0.0693429375282]
 
@@ -111,24 +112,24 @@ class TestFitterGauss(unittest.TestCase):
     def test_best_weighted(self):
         f = CurveFitter(gauss, self.xvals, self.yvals, self.params,
                         edata=self.evals)
-        f.fit()
-        
-        output = list(self.params.valuesdict().values())
-        assert_almost_equal(output, self.best_weighted, 4)
-        assert_almost_equal(f.chisqr, self.best_weighted_chisqr)
+        res = f.fit()
 
-        uncertainties = [f.params['p%d' % i].stderr for i in range(4)]
+        output = list(res.params.valuesdict().values())
+        assert_almost_equal(output, self.best_weighted, 4)
+        assert_almost_equal(res.chisqr, self.best_weighted_chisqr)
+
+        uncertainties = [res.params['p%d' % i].stderr for i in range(4)]
         assert_almost_equal(uncertainties, self.best_weighted_errors, 3)
-        
+
     def test_best_unweighted(self):
         f = CurveFitter(gauss, self.xvals, self.yvals, self.params)
-        f.fit()
-        
-        output = list(self.params.valuesdict().values())
-        assert_almost_equal(output, self.best_unweighted, 5)
-        assert_almost_equal(f.chisqr, self.best_unweighted_chisqr)
+        res = f.fit()
 
-        uncertainties = [f.params['p%d' % i].stderr for i in range(4)]
+        output = list(res.params.valuesdict().values())
+        assert_almost_equal(output, self.best_unweighted, 5)
+        assert_almost_equal(res.chisqr, self.best_unweighted_chisqr)
+
+        uncertainties = [res.params['p%d' % i].stderr for i in range(4)]
         assert_almost_equal(uncertainties, self.best_unweighted_errors, 3)
 
     def test_parameter_names(self):
@@ -138,14 +139,14 @@ class TestFitterGauss(unittest.TestCase):
         names2 = CurveFitter.parameter_names(nparams=10)
         assert_(names == names2)
 
-    def test_mcmc_vs_lm(self):
-        # test mcmc output vs lm
-        f = CurveFitter(gauss, self.xvals, self.yvals, self.params,
-                        edata=self.evals)
-        np.random.seed(123456)
-        f.mcmc(samples=2000, burn=500, thin=20)
-        output = list(f.params.valuesdict().values())
-        assert_allclose(output, self.best_weighted, rtol=0.02, atol=0.01)
+    # def test_mcmc_vs_lm(self):
+    #     # test mcmc output vs lm
+    #     f = CurveFitter(gauss, self.xvals, self.yvals, self.params,
+    #                     edata=self.evals)
+    #     np.random.seed(123456)
+    #     f.mcmc(samples=2000, burn=500, thin=20)
+    #     output = list(f.params.valuesdict().values())
+    #     assert_allclose(output, self.best_weighted, rtol=0.02, atol=0.01)
 
     def test_emcee_vs_lm(self):
         # test mcmc output vs lm
@@ -153,7 +154,24 @@ class TestFitterGauss(unittest.TestCase):
                         edata=self.evals)
         np.random.seed(123456)
         f.emcee(nwalkers=20, steps=1500, burn=100, thin=20)
-        output = list(f.params.valuesdict().values())
+        output = list(f.result.params.valuesdict().values())
+        assert_allclose(output, self.best_weighted, rtol=0.02, atol=0.01)
+
+        # test mcmc output vs lm, some parameters not bounded
+        self.params['p1'].max = None
+        f = CurveFitter(gauss, self.xvals, self.yvals, self.params,
+                        edata=self.evals)
+        np.random.seed(123456)
+        f.emcee(nwalkers=20, steps=1500, burn=100, thin=20)
+        output = list(f.result.params.valuesdict().values())
+        assert_allclose(output, self.best_weighted, rtol=0.02, atol=0.01)
+
+        # test mcmc output vs lm, some parameters not bounded
+        self.params['p1'].min = None
+        f = CurveFitter(gauss, self.xvals, self.yvals, self.params,
+                        edata=self.evals)
+        f.emcee(nwalkers=20, steps=1500, burn=100, thin=20)
+        output = list(f.result.params.valuesdict().values())
         assert_allclose(output, self.best_weighted, rtol=0.02, atol=0.01)
 
 

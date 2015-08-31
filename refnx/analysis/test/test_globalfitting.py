@@ -214,8 +214,8 @@ class TestGlobalFitting(unittest.TestCase):
                                                  'd2:p12 = d0:p12'],
                          kws={'options':{'seed':1}})
         
-        g.fit('differential_evolution')
-        assert_almost_equal(g.chisqr, 0.774590447535, 4)
+        res = g.fit('differential_evolution')
+        assert_almost_equal(res.chisqr, 0.774590447535, 4)
 
 if __name__ == '__main__':
     unittest.main()
