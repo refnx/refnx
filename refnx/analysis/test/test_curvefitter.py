@@ -4,6 +4,7 @@ from refnx.analysis.curvefitter import CurveFitter
 import numpy as np
 from copy import deepcopy
 from lmfit import Parameters
+from lmfit.minimizer import MinimizerResult
 
 from numpy.testing import (assert_almost_equal, assert_equal, assert_,
                            assert_allclose)
@@ -76,6 +77,11 @@ class TestFitter(unittest.TestCase):
         self.params['p0'].vary = False
         res = self.f.fit()
         assert_almost_equal(self.p0[0] + 0.2, self.params['p0'].value)
+
+    def test_fit_returns_MinimizerResult(self):
+        self.params['p0'].vary = False
+        res = self.f.fit()
+        assert_(isinstance(res, MinimizerResult))
 
 
 class TestFitterGauss(unittest.TestCase):
