@@ -38,7 +38,7 @@ def div(d1, d2, L12 = 2859):
     reflectometer at IRI Delft Nuclear Instruments and Methods in Physics
     Research A, 1995, 362, 434-453
     """
-    divergence = 0.68 * 0.68 * (d1 * d1 + d2 * d2) / L12 / L12
+    divergence = 0.68 * 0.68 * (d1 ** 2 + d2 ** 2) / (L12 ** 2)
     alpha = (d1 + d2) / 2. / L12
     beta = abs(d1 - d2) / 2. / L12
     return np.degrees(np.sqrt(divergence)), np.degrees(alpha), np.degrees(beta)
@@ -276,8 +276,8 @@ def resolution_double_chopper(wavelength, z0=0.358, R=0.35, freq=24,
     """
     TOF = L / wavelength_velocity(wavelength)
     tc = tauC(wavelength, xsi=xsi, z0=z0, freq=freq)
-    tauH = H / R / (2 * np.pi * freq)
-    return 0.68 * np.sqrt((tc / TOF)**2 + (tauH / TOF)**2 + (tau_da / TOF)**2)
+    tau_h = H / R / (2 * np.pi * freq)
+    return 0.68 * np.sqrt((tc / TOF)**2 + (tau_h / TOF)**2 + (tau_da / TOF)**2)
 
 
 def resolution_single_chopper(wavelength, R=0.35, freq=24, H=0.005, phi=60,

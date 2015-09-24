@@ -23,15 +23,15 @@ class Data1D(object):
             self.xdata = np.copy(dataTuple[0]).flatten()
             self.ydata = np.copy(dataTuple[1]).flatten()
             if len(dataTuple) > 2:
-                self.ydataSD = np.copy(dataTuple[2]).flatten()
+                self.ydata_sd = np.copy(dataTuple[2]).flatten()
             if len(dataTuple) > 3:
-                self.xdataSD = np.copy(dataTuple[3]).flatten()
+                self.xdata_sd = np.copy(dataTuple[3]).flatten()
 
         else:
             self.xdata = np.zeros(0)
             self.ydata = np.zeros(0)
-            self.ydataSD = np.zeros(0)
-            self.xdataSD = np.zeros(0)
+            self.ydata_sd = np.zeros(0)
+            self.xdata_sd = np.zeros(0)
 
     @property
     def npoints(self):
@@ -39,15 +39,15 @@ class Data1D(object):
 
     @property
     def data(self):
-        return (self.xdata, self.ydata, self.ydataSD, self.xdataSD)
+        return (self.xdata, self.ydata, self.ydata_sd, self.xdata_sd)
 
     @property
     def finite_data(self):
         finite_loc = np.where(np.isfinite(self.ydata))
         return (self.xdata[finite_loc],
                 self.ydata[finite_loc],
-                self.ydataSD[finite_loc],
-                self.xdataSD[finite_loc])
+                self.ydata_sd[finite_loc],
+                self.xdata_sd[finite_loc])
 
     @data.setter
     def data(self, dataTuple):
@@ -55,21 +55,21 @@ class Data1D(object):
         self.ydata = np.copy(dataTuple[1]).flatten()
 
         if len(dataTuple) > 2:
-            self.ydataSD = np.copy(dataTuple[2]).flatten()
+            self.ydata_sd = np.copy(dataTuple[2]).flatten()
         else:
-            self.ydataSD = np.ones_like(self.xdata)
+            self.ydata_sd = np.ones_like(self.xdata)
 
         if len(dataTuple) > 3:
-            self.xdataSD = np.copy(dataTuple[3]).flatten()
+            self.xdata_sd = np.copy(dataTuple[3]).flatten()
         else:
-            self.xdataSD = np.zeros(np.size(self.xdata))
+            self.xdata_sd = np.zeros(np.size(self.xdata))
 
     def scale(self, scalefactor=1.):
         self.ydata /= scalefactor
-        self.ydataSD /= scalefactor
+        self.ydata_sd /= scalefactor
 
     def add_data(self, dataTuple, requires_splice=False):
-        xdata, ydata, ydataSD, xdataSD = self.data()
+        xdata, ydata, ydataSD, xdataSD = self.data
 
         axdata, aydata, aydataSD, axdataSD = dataTuple
 
@@ -100,22 +100,23 @@ class Data1D(object):
         rr = np.r_[rr, appendR]
         dr = np.r_[dr, appendDR]
 
-        self.set_data((qq, rr, dr, dq))
+        self.data = (qq, rr, dr, dq)
         self.sort()
 
     def sort(self):
         sorted = np.argsort(self.xdata)
-        self.xdata = self.xdata[:, sorted]
-        self.ydata = self.ydata[:, sorted]
-        self.ydataSD = self.ydataSD[:, sorted]
-        self.xdataSD = self.xdataSD[:, sorted]
+        self.xdata = self.xdata[sorted]
+        self.ydata = self.ydata[sorted]
+        self.ydata_sd = self.ydata_sd[sorted]
+        self.xdata_sd = self.xdata_sd[sorted]
 
     def save(self, f):
         np.savetxt(
             f, np.column_stack((self.xdata,
                                 self.ydata,
-                                self.ydataSD,
-                                self.xdataSD)))
+                                self.ydata_sd,
+                                self.xdata_sd)))
+
     def save_fit(self, f):
         if self.fit is not None:
             np.savetxt(f, np.column_stack((self.xdata,

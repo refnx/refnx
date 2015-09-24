@@ -15,6 +15,7 @@ import warnings
 HAS_EMCEE = False
 try:
     import emcee as emcee
+    from pandas import DataFrame
     HAS_EMCEE = True
 except ImportError:
     pass
@@ -339,7 +340,8 @@ class CurveFitter(Minimizer):
         Samples the posterior for the curvefitting system using MCMC.
         This method updates curvefitter.params at the end of the sampling
         process.  You have to have set bounds on all of the parameters, and it
-        is assumed that the prior is Uniform.
+        is assumed that the prior is Uniform. You need to have `emcee` and
+        `pandas` installed to use this method.
 
         Parameters
         ----------
@@ -355,9 +357,9 @@ class CurveFitter(Minimizer):
 
         Returns
         -------
-        result, chain : MinimizerResult, np.ndarray
+        result, chain : MinimizerResult, pandas.DataFrame
             MinimizerResult object contains updated params, fit statistics, etc.
-            `chain` contains the samples. Has shape (steps, ndims).
+            The `chain` contains the samples. Has shape (steps, ndims).
         """
         if not HAS_EMCEE:
             raise NotImplementedError('You must have emcee to use the emcee '
@@ -367,6 +369,22 @@ class CurveFitter(Minimizer):
         vars   = result.init_vals
         params = result.params
 
+        # Removing internal parameter scaling. We could possibly keep it,
+        # but I don't know how this affects the emcee sampling.
+        bounds_varying = []
+        for i, par in enumerate(params):
+            param = params[par]
+            vars[i] = param.from_internal(param.value)
+            param.from_internal = lambda val: val
+            lb, ub = param.min, param.max
+            if lb is None or lb is np.nan:
+                lb = -np.inf
+            if ub is None or ub is np.nan:
+                ub = np.inf
+            bounds_varying.append((lb, ub))
+
+        bounds_varying = np.array(bounds_varying)
+
         self.nvarys = len(result.var_names)
 
         def lnlike(theta):
@@ -374,8 +392,10 @@ class CurveFitter(Minimizer):
             return -0.5 * self.penalty(theta)
 
         def lnprior(theta):
-            # we should always be within the prior because of the bounds
-            # treatment in lmfit
+            # stay within the prior specified by the parameter bounds
+            if (np.any(theta > bounds_varying[:, 1])
+                    or np.any(theta < bounds_varying[:, 0])):
+                return -np.inf
             return 0
 
         def lnprob(theta):
@@ -387,7 +407,7 @@ class CurveFitter(Minimizer):
         if ntemps > 1:
             # TODO setup pos
             sampler = emcee.PTSampler(ntemps, nwalkers, self.nvarys, lnlike,
-                                      lnprob)
+                                      lnprior)
         else:
             p0 = np.array([vars * (1 + 1e-2 * np.random.randn(self.nvarys))
                         for i in range(nwalkers)])
@@ -395,24 +415,21 @@ class CurveFitter(Minimizer):
 
         # burn in the sampler
         for output in sampler.sample(p0, iterations=burn):
-            pass
-        p0 = output[0]
+            p0 = output[0]
         sampler.reset()
 
         # now do a production run
         for output in sampler.sample(p0, iterations=steps - burn, thin=thin):
             pass
 
-        flat_chain = sampler.flatchain
+        flat_chain = DataFrame(sampler.flatchain, columns=result.var_names)
 
         mean = np.mean(flat_chain, axis=0)
         quantiles = np.percentile(flat_chain, [15.8, 84.2], axis=0)
 
         for i, var_name in enumerate(result.var_names):
-            f = params[var_name].from_internal
-            flat_chain[:, i] = f(flat_chain[:, i])
-            std_l, std_u = f(quantiles[:, i])
-            params[var_name].value = f(mean[i])
+            std_l, std_u = quantiles[:, i]
+            params[var_name].value = mean[i]
             params[var_name].stderr = std_u - std_l
             params[var_name].correl = {}
 
@@ -424,6 +441,7 @@ class CurveFitter(Minimizer):
                 if i != j:
                     result.params[var_name].correl[var_name2] = corrcoefs[i, j]
 
+        result.errorbars == True
         result.ndata = 1
         result.nfree = 1
         result.chisqr = self.penalty(mean)

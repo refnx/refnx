@@ -52,7 +52,7 @@ class Catalogue(object):
         d['bm1_counts'] = h5data['entry1/monitor/bm1_counts'][:]
         d['total_counts'] = h5data['entry1/instrument/detector/total_counts'][:]
         d['time'] = h5data['entry1/instrument/detector/time'][:]
-        d['mode'] = h5data['entry1/instrument/parameters/mode'][0]
+        d['mode'] = h5data['entry1/instrument/parameters/mode'][0].decode()
 
         try:
             event_directory_name = h5data[
@@ -137,9 +137,9 @@ class Catalogue(object):
             slave = h5data['entry1/instrument/parameters/slave']
         else:
             master = 1
-            if abs(chopper2_speed) > 10:
+            if abs(chopper2_speed[0]) > 10:
                 slave = 2
-            elif abs(chopper3_speed) > 10:
+            elif abs(chopper3_speed[0]) > 10:
                 slave = 3
             else:
                 slave = 4
@@ -154,10 +154,20 @@ class Catalogue(object):
                            ch3phase,
                            ch4phase])
 
-        return master[:], slave[:], speeds[0] / 60., phases[slave[0] - 1]
+        return master, slave, speeds[0] / 60., phases[slave - 1]
+
+
+def number_datafile(run_number):
+    """
+    From a run number figure out what the file name is.
+    """
+    return 'PLP{0:07d}.nx.hdf'.format(int(abs(run_number)))
 
 
 def datafile_number(fname):
+    """
+    From a filename figure out what the run number was
+    """
     regex = re.compile("PLP([0-9]{7}).nx.hdf")
     _fname = os.path.basename(fname)
     r = regex.search(_fname)
@@ -593,9 +603,9 @@ class PlatypusNexus(object):
         m_lambda_fwhm *= m_lambda
 
         # put the detector positions and mode into the dictionary as well.
-        detector_z = np.atleast_2d(cat.dz)
-        detector_y = np.atleast_2d(cat.dy)
-        mode = np.atleast_2d(cat.mode)
+        detector_z = cat.dz
+        detector_y = cat.dy
+        mode = cat.mode
 
         d = dict()
         d['path'] = cat.path
@@ -641,8 +651,8 @@ class PlatypusNexus(object):
             chopper
         """
         cat = self.cat
-        master = cat.master[scanpoint]
-        slave = cat.slave[scanpoint]
+        master = cat.master
+        slave = cat.slave
         disc_phase = cat.phase[scanpoint]
         phase_angle = 0
 
@@ -699,8 +709,8 @@ class PlatypusNexus(object):
         mode = cat.mode
 
         # Find out chopper pairing
-        master = cat.master[scanpoint]
-        slave = cat.slave[scanpoint]
+        master = cat.master
+        slave = cat.slave
 
         d_cx = 0
 
@@ -1146,7 +1156,7 @@ def find_specular_ridge(detector, detector_sd, starting_offset=50,
                           ' using last known centre', RuntimeWarning)
 
         beam_centre[j] = last_centre
-        beam_sd[j] = last_sd
+        beam_sd[j] = np.abs(last_sd)
 
     return beam_centre, beam_sd
 

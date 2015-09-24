@@ -31,39 +31,28 @@ class ReflectDataset(Data1D):
     </REFentry>
     </REFroot>"""
 
-    def __init__(self, dataTuple=None, datasets=None, **kwds):
-        # args should be a list of reduce objects
+    def __init__(self, dataTuple=None, **kwds):
         super(ReflectDataset, self).__init__(dataTuple=dataTuple)
         self.datafilenumber = list()
         self.sld_profile = None
-        if datasets is not None:
-            [self.add_dataset(data) for data in datasets]
 
-    def add_dataset(self, reduceObj, scanpoint=0):
-        # when you add a dataset to splice only the first numspectra dimension
-        # is used. The others are discarded
-        self.add_data(reduceObj.get_1D_data(scanpoint=scanpoint),
-                      requires_splice=True)
-        self.datafilenumber.append(reduceObj.datafilenumber)
-
-    def save(self, f):
+    def save_xml(self, f):
         s = string.Template(self._template_ref_xml)
         self.time = strftime("%a, %d %b %Y %H:%M:%S +0000", gmtime())
 
-        #filename = 'c_PLP{:07d}_{:d}.xml'.format(self._rnumber[0], 0)
+        # filename = 'c_PLP{:07d}_{:d}.xml'.format(self._rnumber[0], 0)
 
         self._ydata = string.translate(repr(self.ydata.tolist()), None, ',[]')
         self._xdata = string.translate(repr(self.xdata.tolist()), None, ',[]')
-        self._ydataSD = string.translate(repr(self.ydataSD.tolist()),
+        self._ydataSD = string.translate(repr(self.ydata_sd.tolist()),
                                          None,
                                          ',[]')
-        self._xdataSD = string.translate(repr(self.xdataSD.tolist()),
+        self._xdataSD = string.translate(repr(self.xdata_sd.tolist()),
                                          None,
                                          ',[]')
 
         thefile = s.safe_substitute(self.__dict__)
         f.write(thefile)
-#        f.truncate()
 
     def load(self, f):
         try:

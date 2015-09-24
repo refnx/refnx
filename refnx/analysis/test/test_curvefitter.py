@@ -1,9 +1,7 @@
 import unittest
 import refnx.analysis.curvefitter as curvefitter
-from refnx.analysis.curvefitter import CurveFitter
+from refnx.analysis.curvefitter import CurveFitter, HAS_EMCEE
 import numpy as np
-from copy import deepcopy
-from lmfit import Parameters
 from lmfit.minimizer import MinimizerResult
 
 from numpy.testing import (assert_almost_equal, assert_equal, assert_,
@@ -156,10 +154,13 @@ class TestFitterGauss(unittest.TestCase):
 
     def test_emcee_vs_lm(self):
         # test mcmc output vs lm
+        if not HAS_EMCEE:
+            return True
+
         f = CurveFitter(gauss, self.xvals, self.yvals, self.params,
                         edata=self.evals)
         np.random.seed(123456)
-        f.emcee(nwalkers=20, steps=1500, burn=100, thin=20)
+        f.emcee(nwalkers=40, steps=400, burn=75, thin=5)
         output = list(f.result.params.valuesdict().values())
         assert_allclose(output, self.best_weighted, rtol=0.02, atol=0.01)
 
@@ -168,7 +169,7 @@ class TestFitterGauss(unittest.TestCase):
         f = CurveFitter(gauss, self.xvals, self.yvals, self.params,
                         edata=self.evals)
         np.random.seed(123456)
-        f.emcee(nwalkers=20, steps=1500, burn=100, thin=20)
+        f.emcee(nwalkers=40, steps=400, burn=75, thin=5)
         output = list(f.result.params.valuesdict().values())
         assert_allclose(output, self.best_weighted, rtol=0.02, atol=0.01)
 
@@ -176,9 +177,25 @@ class TestFitterGauss(unittest.TestCase):
         self.params['p1'].min = None
         f = CurveFitter(gauss, self.xvals, self.yvals, self.params,
                         edata=self.evals)
-        f.emcee(nwalkers=20, steps=1500, burn=100, thin=20)
+        f.emcee(nwalkers=40, steps=400, burn=75, thin=5)
         output = list(f.result.params.valuesdict().values())
         assert_allclose(output, self.best_weighted, rtol=0.02, atol=0.01)
+
+    def test_emcee_output(self):
+        # test mcmc output vs lm
+        if not HAS_EMCEE:
+            return True
+        try:
+            from pandas import DataFrame
+        except ImportError:
+            return True
+
+        f = CurveFitter(gauss, self.xvals, self.yvals, self.params,
+                        edata=self.evals)
+        np.random.seed(123456)
+        params, chain = f.emcee(nwalkers=10, steps=10)
+        assert_(isinstance(params, MinimizerResult))
+        assert_(isinstance(chain, DataFrame))
 
 
 if __name__ == '__main__':

@@ -1,6 +1,5 @@
 from __future__ import division
 import numpy as np
-import h5py
 import platypusnexus as pn
 import refnx.util.ErrorProp as EP
 import refnx.util.general as general
@@ -8,7 +7,6 @@ import string
 from time import gmtime, strftime
 import refnx.reduce.parabolic_motion as pm
 from refnx.dataset import reflectdataset
-import os
 
 
 class ReducePlatypus(object):
@@ -31,9 +29,9 @@ class ReducePlatypus(object):
             Divide all the reflectivity values by this number.
 
         kwds: dict
-            Options passed directly to refnx.reduce.platypusnexus.process, for
-            processing of individual spectra. Look at that method docstring for
-            specification of options.
+            Options passed directly to `refnx.reduce.platypusnexus.process`,
+            for processing of individual spectra. Look at that method docstring
+            for specification of options.
 
         Returns
         -------
@@ -202,7 +200,7 @@ class ReducePlatypus(object):
         wavelengths = self.reflected_beam.m_lambda
         m_twotheta = np.zeros((n_spectra, n_tpixels, n_ypixels))
 
-        if mode == 'FOC' or mode == 'POL' or mode == 'POLANAL' or mode == 'MT':
+        if mode in ['FOC', 'POL', 'POLANAL', 'MT']:
             detector_z_difference = (self.reflected_beam.detector_z -
                                      self.direct_beam.detector_z)
             beampos_z_difference = (self.reflected_beam.m_beampos
@@ -212,8 +210,8 @@ class ReducePlatypus(object):
                                   + beampos_z_difference * pn.Y_PIXEL_SPACING)
 
             # omega_nom.shape = (N, )
-            omega_nom = np.arctan(total_z_deflection
-                                  / self.reflected_beam.detector_y)
+            omega_nom = np.degrees(np.arctan(total_z_deflection
+                                   / self.reflected_beam.detector_y) / 2.)
 
             '''
             Wavelength specific angle of incidence correction
@@ -232,10 +230,11 @@ class ReducePlatypus(object):
 
             # work out the trajectories of the neutrons for them to pass
             # through the collimation system.
-            trajectories = pm.find_trajectory(collimation_distance, 0, speeds)
+            trajectories = pm.find_trajectory(collimation_distance / 1000.,
+                                              0, speeds)
             
             # work out where the beam hits the sample
-            res = pm.parabola_line_intersection_point(s2_sample_distance,
+            res = pm.parabola_line_intersection_point(s2_sample_distance / 1000,
                                                       0,
                                                       trajectories,
                                                       speeds,
@@ -280,8 +279,10 @@ class ReducePlatypus(object):
 
         # calculate the 1D Qz values.
         xdata = general.q(omega_corrected, wavelengths)
-        xdata_sd = (self.reflected_beam.m_lambda_sd / self.reflected_beam.m_lambda)**2
-        xdata_sd += (self.reflected_beam.domega[:, np.newaxis] / omega_corrected) ** 2
+        xdata_sd = (self.reflected_beam.m_lambda_fwhm
+                    / self.reflected_beam.m_lambda) ** 2
+        xdata_sd += (self.reflected_beam.domega[:, np.newaxis]
+                     / omega_corrected) ** 2
         xdata_sd = np.sqrt(xdata_sd) * xdata
 
         '''
@@ -319,13 +320,12 @@ class ReducePlatypus(object):
         self.m_qz = qz
         self.m_qy = qy
         self.n_spectra = n_spectra
-        self.datafile_number = self.reflected_beam.datafilenumber
+        self.datafile_number = self.reflected_beam.datafile_number
 
 
 def sanitize_string_input(file_list_string):
     """
-    
-        given a string like '1 2 3 4 1000 -1 sijsiojsoij' return an integer list where the numbers are greater than 0 and less than 9999999
+    given a string like '1 2 3 4 1000 -1 sijsiojsoij' return an integer list where the numbers are greater than 0 and less than 9999999
     it strips the string.ascii_letters and any string.punctuation, and converts all the numbers to ints.
     
     """
@@ -333,7 +333,7 @@ def sanitize_string_input(file_list_string):
     return [int(item) for sublist in temp for item in sublist if 0 < int(item) < 9999999]
 
 
-def reduce_stitch_files(reflect_list, direct_list, normfilenumber=None,
+def reduce_stitch_files(reflect_list, direct_list, norm_file_num=None,
                         **kwds):
     """
     Reduces a list of reflected beam run numbers and a list of corresponding
@@ -344,66 +344,44 @@ def reduce_stitch_files(reflect_list, direct_list, normfilenumber=None,
 
     708 is corresponds to the file PLP0000708.nx.hdf.
 
-    normfilenumber is the run number for the water flood field correction.
+    norm_file_num is the run number for the water flood field correction.
 
-    kwds is passed onto processplatypusnexus.ProcessPlatypusNexus.process, look
-    at that docstring for specification of options.
+    kwds : dict, optional
+        Options passed directly to `refnx.reduce.platypusnexus.process`,
+        for processing of individual spectra. Look at that method docstring
+        for specification of options.
     """
-    scalefactor = kwds.get('scalefactor', 1.)
+    scale = kwds.get('scale', 1.)
 
     # now reduce all the files.
     zipped = zip(reflect_list, direct_list)
 
-    combineddataset = reflectdataset.ReflectDataset()
+    combined_dataset = reflectdataset.ReflectDataset()
 
-    if kwds.get('basedir'):
-        basedir = kwds.get('basedir')
-    else:
-        kwds['basedir'] = os.getcwd()
-        basedir = os.getcwd()
-
-    normfiledatafilename = ''
-    if normfilenumber:
-        nfdfn = 'PLP{0:07d}.nx.hdf'.format(int(abs(normfilenumber)))
-        for root, dirs, files in os.walk(self.basedir):
-            if nfdfn in files:
-                normfiledatafilename = os.path.join(root, nfdfn)
-                break
+    if norm_file_num:
+        norm_datafile = pn.number_datafile(norm_file_num)
+        kwds['h5norm'] = norm_datafile
 
     for index, val in enumerate(zipped):
-        rdfn = 'PLP{0:07d}.nx.hdf'.format(int(abs(val[0])))
-        ddfn = 'PLP{0:07d}.nx.hdf'.format(int(abs(val[1])))
-        reflectdatafilename = ''
-        directdatafilename = ''
+        reflect_datafile = pn.number_datafile(val[0])
+        direct_datafile = pn.number_datafile(val[1])
 
-        for root, dirs, files in os.walk(basedir):
-            if rdfn in files:
-                reflectdatafilename = os.path.join(root, rdfn)
-            if ddfn in files:
-                directdatafilename = os.path.join(root, ddfn)
-            if len(reflectdatafilename) and len(directdatafilename):
-                break
+        reduced = ReducePlatypus(reflect_datafile, direct_datafile,
+                                 **kwds)
+        if not index:
+            reduced.scale(scale)
 
-        with h5py.File(reflectdatafilename, 'r') as h5ref, h5py.File(directdatafilename, 'r') as h5direct:
-            if len(normfiledatafilename):
-                with h5py.File(normfiledatafilename, 'r') as h5norm:
-                    reduced = Reduce(h5ref, h5direct, h5norm = h5norm, **kwds)
-            else:
-                reduced = Reduce(h5ref, h5direct, **kwds)
+        combined_dataset.add_data(reduced.data(), requires_splice=True)
 
-        combineddataset.add_dataset(reduced)
-
-    return combineddataset
+    return combined_dataset
 
 
 if __name__ == "__main__":
-    print strftime("%a, %d %b %Y %H:%M:%S +0000", gmtime())
+    print(strftime("%a, %d %b %Y %H:%M:%S +0000", gmtime()))
 
-    a = reduce_stitch_files([708, 709, 710], [711,711,711])
+    a = reduce_stitch_files([708, 709, 710], [711, 711, 711])
 
-    a.rebin(rebinpercent = 4)
-    with open('test.xml', 'w') as f:
-        a.save(f)
+    a.save('test.dat')
 
-    print strftime("%a, %d %b %Y %H:%M:%S +0000", gmtime())
+    print(strftime("%a, %d %b %Y %H:%M:%S +0000", gmtime()))
 
