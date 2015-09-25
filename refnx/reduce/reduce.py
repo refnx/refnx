@@ -243,7 +243,6 @@ class ReducePlatypus(object):
 
             # correct the angle of incidence with a wavelength dependent
             # elevation.
-            # TODO check that this works for vectorised calculation
             omega_corrected = omega_nom[:, np.newaxis] - elevation
 
         elif mode == 'SB' or mode == 'DB':
@@ -323,18 +322,8 @@ class ReducePlatypus(object):
         self.datafile_number = self.reflected_beam.datafile_number
 
 
-def sanitize_string_input(file_list_string):
-    """
-    given a string like '1 2 3 4 1000 -1 sijsiojsoij' return an integer list where the numbers are greater than 0 and less than 9999999
-    it strips the string.ascii_letters and any string.punctuation, and converts all the numbers to ints.
-    
-    """
-    temp = [x.translate(None, string.punctuation).translate(None, string.ascii_letters).split() for x in file_list_string]
-    return [int(item) for sublist in temp for item in sublist if 0 < int(item) < 9999999]
-
-
 def reduce_stitch_files(reflect_list, direct_list, norm_file_num=None,
-                        **kwds):
+                        trim_trailing=True, **kwds):
     """
     Reduces a list of reflected beam run numbers and a list of corresponding
     direct beam run numbers from the Platypus reflectometer.
@@ -371,7 +360,8 @@ def reduce_stitch_files(reflect_list, direct_list, norm_file_num=None,
         if not index:
             reduced.scale(scale)
 
-        combined_dataset.add_data(reduced.data(), requires_splice=True)
+        combined_dataset.add_data(reduced.data(), requires_splice=True,
+                                  trim_trailing=trim_trailing)
 
     return combined_dataset
 
@@ -379,9 +369,9 @@ def reduce_stitch_files(reflect_list, direct_list, norm_file_num=None,
 if __name__ == "__main__":
     print(strftime("%a, %d %b %Y %H:%M:%S +0000", gmtime()))
 
-    a = reduce_stitch_files([708, 709, 710], [711, 711, 711])
+    a = reduce_stitch_files([708, 709, 710], [711, 711, 711], rebin_percent=2)
 
-    a.save('test.dat')
+    a.save('test1.dat')
 
     print(strftime("%a, %d %b %Y %H:%M:%S +0000", gmtime()))
 

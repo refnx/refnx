@@ -39,7 +39,7 @@ class Data1D(object):
 
     @property
     def data(self):
-        return (self.xdata, self.ydata, self.ydata_sd, self.xdata_sd)
+        return self.xdata, self.ydata, self.ydata_sd, self.xdata_sd
 
     @property
     def finite_data(self):
@@ -50,17 +50,17 @@ class Data1D(object):
                 self.xdata_sd[finite_loc])
 
     @data.setter
-    def data(self, dataTuple):
-        self.xdata = np.copy(dataTuple[0]).flatten()
-        self.ydata = np.copy(dataTuple[1]).flatten()
+    def data(self, data_tuple):
+        self.xdata = np.copy(data_tuple[0]).flatten()
+        self.ydata = np.copy(data_tuple[1]).flatten()
 
-        if len(dataTuple) > 2:
-            self.ydata_sd = np.copy(dataTuple[2]).flatten()
+        if len(data_tuple) > 2:
+            self.ydata_sd = np.copy(data_tuple[2]).flatten()
         else:
             self.ydata_sd = np.ones_like(self.xdata)
 
-        if len(dataTuple) > 3:
-            self.xdata_sd = np.copy(dataTuple[3]).flatten()
+        if len(data_tuple) > 3:
+            self.xdata_sd = np.copy(data_tuple[3]).flatten()
         else:
             self.xdata_sd = np.zeros(np.size(self.xdata))
 
@@ -68,37 +68,38 @@ class Data1D(object):
         self.ydata /= scalefactor
         self.ydata_sd /= scalefactor
 
-    def add_data(self, dataTuple, requires_splice=False):
-        xdata, ydata, ydataSD, xdataSD = self.data
+    def add_data(self, data_tuple, requires_splice=False, trim_trailing=True):
+        xdata, ydata, ydata_sd, xdata_sd = self.data
 
-        axdata, aydata, aydataSD, axdataSD = dataTuple
+        axdata, aydata, aydata_sd, axdata_sd = data_tuple
 
         qq = np.r_[xdata]
         rr = np.r_[ydata]
-        dr = np.r_[ydataSD]
-        dq = np.r_[xdataSD]
+        dr = np.r_[ydata_sd]
+        dq = np.r_[xdata_sd]
+
+        # which values in the first dataset overlap with the second
+        overlap_points = np.zeros_like(qq, 'bool')
 
         # go through and stitch them together.
+        scale = 1.
+        dscale = 0.
         if requires_splice and self.npoints > 1:
-            scale, dscale = nsplice.get_scaling_in_overlap(qq,
-                                                           rr,
-                                                           dr,
-                                                           axdata,
-                                                           aydata,
-                                                           aydataSD)
-        else:
-            scale = 1.
-            dscale = 0.
+            scale, dscale, overlap_points = (
+                nsplice.get_scaling_in_overlap(qq,
+                                               rr,
+                                               dr,
+                                               axdata,
+                                               aydata,
+                                               aydata_sd))
+        if not trim_trailing:
+            overlap_points[:] = False
 
-        qq = np.r_[qq, axdata]
-        dq = np.r_[dq, axdataSD]
+        qq = np.r_[qq[~overlap_points], axdata]
+        dq = np.r_[dq[~overlap_points], axdata_sd]
 
-        appendR, appendDR = EP.EPmul(aydata,
-                                     aydataSD,
-                                     scale,
-                                     dscale)
-        rr = np.r_[rr, appendR]
-        dr = np.r_[dr, appendDR]
+        rr = np.r_[rr[~overlap_points], aydata * scale]
+        dr = np.r_[dr[~overlap_points], aydata_sd * scale]
 
         self.data = (qq, rr, dr, dq)
         self.sort()
