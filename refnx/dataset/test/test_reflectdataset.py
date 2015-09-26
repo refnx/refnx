@@ -23,14 +23,14 @@ class TestReflectDataset(unittest.TestCase):
             dataset.load(f)
         
         assert_equal(dataset.npoints, 90)
-        assert_equal(90, np.size(dataset.xdata))
+        assert_equal(90, np.size(dataset.x))
         
         dataset1 = reflectdataset.ReflectDataset()
         with open(os.path.join(path, 'c_PLP0000708.dat')) as f:
             dataset1.load(f)
         
         assert_equal(dataset1.npoints, 90)
-        assert_equal(90, np.size(dataset1.xdata))
+        assert_equal(90, np.size(dataset1.x))
         
         
 if __name__ == '__main__':

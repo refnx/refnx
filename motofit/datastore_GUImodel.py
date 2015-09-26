@@ -112,7 +112,7 @@ class DataStoreModel(QtCore.QAbstractTableModel):
         original = self.datastore['theoretical']
         dataset = reflectdataset.ReflectDataset()
         dataset.data = original.data
-        dataset.ydata = np.copy(original.fit)
+        dataset.y = np.copy(original.fit)
         dataset.name = snapshot_name
         self.add(dataset)
         return dataset

@@ -42,12 +42,12 @@ class ReflectDataset(Data1D):
 
         # filename = 'c_PLP{:07d}_{:d}.xml'.format(self._rnumber[0], 0)
 
-        self._ydata = string.translate(repr(self.ydata.tolist()), None, ',[]')
-        self._xdata = string.translate(repr(self.xdata.tolist()), None, ',[]')
-        self._ydataSD = string.translate(repr(self.ydata_sd.tolist()),
+        self._ydata = string.translate(repr(self.y.tolist()), None, ',[]')
+        self._xdata = string.translate(repr(self.x.tolist()), None, ',[]')
+        self._ydataSD = string.translate(repr(self.y_sd.tolist()),
                                          None,
                                          ',[]')
-        self._xdataSD = string.translate(repr(self.xdata_sd.tolist()),
+        self._xdataSD = string.translate(repr(self.x_sd.tolist()),
                                          None,
                                          ',[]')
 

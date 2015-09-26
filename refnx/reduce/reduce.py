@@ -40,13 +40,13 @@ class ReducePlatypus(object):
         -----
         Following successful construction of the object the following
         attributes are available:
-        self.xdata[N, T]:
+        self.x[N, T]:
             Q values
-        self.xdata_sd[N, T]:
+        self.x_sd[N, T]:
             uncertainty in Q values (FWHM)
-        self.ydata[N, T]:
+        self.y[N, T]:
             specular reflectivity
-        self.ydata_sd[N, T]
+        self.y_sd[N, T]
             uncertainty in specular reflectivity (SD)
         self.m_ref[N, T, Y]
             offspecular reflectivity map

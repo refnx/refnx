@@ -48,7 +48,45 @@ def convert_layer_format_to_coefs(layers, scale=1, bkg=0):
     return coefs
 
 
-def abeles(q, coefs, *args, **kwds):
+def abeles(q, layers, scale=1, bkg=0.):
+    """
+    Abeles matrix formalism for calculating reflectivity from a stratified
+    medium.
+    Parameters
+    ----------
+    w: np.ndarray
+        coefficients required for the calculation, has shape (2 + N, 4),
+        where N is the number of layers
+        w[0, 1] - SLD of fronting (/ 1e-6 Angstrom**-2)
+        w[0, 2] - iSLD of fronting (/ 1e-6 Angstrom**-2)
+        w[N, 0] - thickness of layer N
+        w[N, 1] - SLD of layer N (/ 1e-6 Angstrom**-2)
+        w[N, 2] - iSLD of layer N (/ 1e-6 Angstrom**-2)
+        w[N, 3] - roughness between layer N-1/N
+        w[-1, 1] - SLD of backing (/ 1e-6 Angstrom**-2)
+        w[-1, 2] - iSLD of backing (/ 1e-6 Angstrom**-2)
+        w[-1, 3] - roughness between backing and last layer
+
+    q: array_like
+        the q values required for the calculation.
+        Q = 4 * Pi / lambda * sin(omega).
+        Units = Angstrom**-1
+
+    scale: float
+        Multiply all reflectivities by this value.
+
+    bkg: float
+        Linear background to be added to all reflectivities
+
+    Returns
+    -------
+    Reflectivity: np.ndarray
+        Calculated reflectivity values for each q value.
+    """
+    return refcalc.abeles(q, layers, scale=scale, bkg=bkg)
+
+
+def reflect(q, coefs, *args, **kwds):
     """
     Abeles matrix formalism for calculating reflectivity from a stratified
     medium.
@@ -71,8 +109,8 @@ def abeles(q, coefs, *args, **kwds):
 
         coefs[4 * (N - 1) + 8] = thickness of layer N in Angstrom (layer 1 is
         closest to fronting)
-        coefs[4 * (N - 1) + 9] = SLD of layer N
-        coefs[4 * (N - 1) + 10] = iSLD of layer N
+        coefs[4 * (N - 1) + 9] = SLD of layer N (/ 1e-6 Angstrom**-2)
+        coefs[4 * (N - 1) + 10] = iSLD of layer N (/ 1e-6 Angstrom**-2)
         coefs[4 * (N - 1) + 11] = roughness between layer N and N-1.
 
 
@@ -111,7 +149,7 @@ def abeles(q, coefs, *args, **kwds):
     bkg = coefs[6]
 
     if not is_proper_Abeles_input(coefs):
-        raise ValueError('The size of the parameter array passed to abeles'
+        raise ValueError('The size of the parameter array passed to reflect'
                          ' should be 4 * coefs[0] + 8')
 
     # make into form suitable for reflection calculation
@@ -313,7 +351,7 @@ def _smeared_abeles_constant(q, w, resolution):
 
 def is_proper_Abeles_input(coefs):
     """
-    Test to see if the coefs array is suitable input for the abeles function
+    Test to see if the coefs array is suitable input for the reflect function
     """
     if np.size(coefs, 0) != 4 * int(coefs[0]) + 8:
         return False
@@ -383,9 +421,9 @@ class ReflectivityFitter(CurveFitter):
 
         Parameters
         ----------
-        xdata : np.ndarray
+        x : np.ndarray
             The independent variables
-        ydata : np.ndarray
+        y : np.ndarray
             The dependent (observed) variable
         parameters : lmfit.Parameters instance
             Specifies the parameter set for the fit
@@ -393,13 +431,13 @@ class ReflectivityFitter(CurveFitter):
             The measured uncertainty in the dependent variable, expressed as
             sd.  If this array is not specified, then edata is set to unity.
         mask : np.ndarray, optional
-            A boolean array with the same shape as ydata.  If a value in mask
+            A boolean array with the same shape as y.  If a value in mask
             is `True` then that point is excluded from the residuals
             calculation.
         fcn_args : tuple, optional
-            Extra parameters for supplying to the abeles function.
+            Extra parameters for supplying to the reflect function.
         fcn_kws : dict, optional
-            Extra keyword parameters for supplying to the abeles function.
+            Extra keyword parameters for supplying to the reflect function.
             See the notes below.
         kws : dict, optional
             Keywords passed to the minimizer.
@@ -453,19 +491,19 @@ class ReflectivityFitter(CurveFitter):
 
         Parameters
         ----------
-        parameters : lmfit.parameters.Parameters instance
+        parameters : lmfit.Parameters instance
             Contains the parameters that are required for reflectivity
             calculation.
 
         Returns
         -------
         yvals : np.ndarray
-            The theoretical model for the xdata, i.e.
-            abeles(self.xdata, parameters, *self.args, **self.kwds)
+            The theoretical model for the x, i.e.
+            reflect(self.x, parameters, *self.args, **self.kwds)
         """
-        params = np.array([param.value for param in parameters.values()], float)
+        params = np.array([parameters[param].value for param in parameters], float)
 
-        yvals = abeles(self.xdata, params, *self.userargs, **self.userkws)
+        yvals = reflect(self.xdata, params, *self.userargs, **self.userkws)
 
         if self.transform:
             yvals, temp = self.transform(self.xdata, yvals)
@@ -482,7 +520,7 @@ class ReflectivityFitter(CurveFitter):
             If `None` then there is no resolution smearing.
             If a float, e.g. 5, then dq/q smearing of 5% is applied. If res==0
             then resolution smearing is removed.
-            If an np.ndarray the same length as ydata, it contains the FWHM of
+            If an np.ndarray the same length as y, it contains the FWHM of
             the Gaussian approximated resolution kernel.
         quad_order: int or 'ultimate'
             The order of the Gaussian quadrature polynomial for doing the
@@ -541,8 +579,8 @@ class ReflectivityFitter(CurveFitter):
         if not int(params[0]):
             zend = 5 + 4 * np.fabs(params[7])
         else:
-            for ii in xrange(int(params[0])):
-                temp += np.fabs(params[4 * ii + 8])
+            for i in range(int(params[0])):
+                temp += np.fabs(params[4 * i + 8])
             zend = 5 + temp + 4 * np.fabs(params[7])
 
         points = np.linspace(zstart, zend, num=500)
@@ -562,7 +600,7 @@ class ReflectivityFitter(CurveFitter):
         return names
 
     def callback(self, parameters, iteration, resid, *fcn_args, **fcn_kws):
-        return True
+        return False
 
 
 class Transform(object):
@@ -625,7 +663,7 @@ if __name__ == '__main__':
     b += 0.0005
 
     def _loop():
-        abeles(b, a)
+        reflect(b, a)
 
     t = timeit.Timer(stmt=_loop)
     print(t.timeit(number=1000))

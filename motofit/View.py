@@ -89,10 +89,10 @@ class MyMainWindow(QtGui.QMainWindow):
         tempdq = tempq * 5 / 100.
         theoretical = ReflectDataset((tempq, tempr, tempe, tempdq))
         theoretical.name = 'theoretical'
-        kws = {'dqvals': theoretical.xdata_sd}
+        kws = {'dqvals': theoretical.x_sd}
 
-        evaluator = ReflectivityFitter(theoretical.xdata,
-                                       theoretical.ydata,
+        evaluator = ReflectivityFitter(theoretical.x,
+                                       theoretical.y,
                                        params,
                                        fcn_kws=kws)
 
@@ -109,7 +109,7 @@ class MyMainWindow(QtGui.QMainWindow):
 
         graph_properties = theoretical.graph_properties
         graph_properties.line2Dfit = self.reflectivitygraphs.axes[0].plot(
-                                        theoretical.xdata,
+                                        theoretical.x,
                                         theoretical.fit, color='r',
                                         linestyle='-', lw=1,
                                         label='theoretical',
@@ -342,7 +342,7 @@ class MyMainWindow(QtGui.QMainWindow):
         # theoretical = self.data_store_model['theoretical']
         # graph_properties = theoretical.graph_properties
         # graph_properties.line2Dfit = self.reflectivitygraphs.axes[0].plot(
-        #                                             theoretical.xdata,
+        #                                             theoretical.x,
         #                                             theoretical.fit, color='b',
         #                                             linestyle='-', lw=1,
         #                                             label='theoretical')[0]
@@ -873,34 +873,34 @@ class MyMainWindow(QtGui.QMainWindow):
 
         tempdataset = Data1D(dataset.data)
 
-        tempdataset.ydata, tempdataset.ydata_sd = transform_fnctn(
-                                                tempdataset.xdata,
-                                                tempdataset.ydata,
-                                                tempdataset.ydata_sd)
+        tempdataset.y, tempdataset.y_sd = transform_fnctn(
+                                                tempdataset.x,
+                                                tempdataset.y,
+                                                tempdataset.y_sd)
 
         # find out which points in the dataset aren't finite
-        mask = ~np.isfinite(tempdataset.ydata)
+        mask = ~np.isfinite(tempdataset.y)
 
         #have a kws dictionary
-        kws = {'dqvals': tempdataset.xdata_sd, 'transform': transform_fnctn}
+        kws = {'dqvals': tempdataset.x_sd, 'transform': transform_fnctn}
 
         if fit_plugin is None:
             print('Please choose a fit plugin again')
             return
 
         if isinstance(fit_plugin, CurveFitter):
-            minimizer = fit_plugin(tempdataset.xdata,
-                                   tempdataset.ydata,
+            minimizer = fit_plugin(tempdataset.x,
+                                   tempdataset.y,
                                    params,
-                                   edata=tempdataset.ydata_sd,
+                                   edata=tempdataset.y_sd,
                                    mask=mask,
                                    fcn_kws=kws)
         elif hasattr(fit_plugin, 'fitfuncwraps'):
             minimizer = CurveFitter(fit_plugin,
-                                    tempdataset.xdata,
-                                    tempdataset.ydata,
+                                    tempdataset.x,
+                                    tempdataset.y,
                                     params,
-                                    edata=tempdataset.ydata_sd,
+                                    edata=tempdataset.y_sd,
                                     mask=mask,
                                     fcn_kws=kws)
         else:
@@ -909,7 +909,7 @@ class MyMainWindow(QtGui.QMainWindow):
         minimizer.transform = transform_fnctn
 
         if not self.settings.useerrors:
-            tempdataset.ydata_sd = None
+            tempdataset.y_sd = None
 
         progress = ProgressCallback(self, minimizer=minimizer,
                                     dataset=dataset)
@@ -973,27 +973,27 @@ class MyMainWindow(QtGui.QMainWindow):
 
         tempdataset = Data1D(dataset.data)
 
-        tempdataset.ydata, tempdataset.ydata_sd = transform_fnctn(
-                                                tempdataset.xdata,
-                                                tempdataset.ydata,
-                                                tempdataset.ydata_sd)
+        tempdataset.y, tempdataset.y_sd = transform_fnctn(
+                                                tempdataset.x,
+                                                tempdataset.y,
+                                                tempdataset.y_sd)
 
         # find out which points in the dataset aren't finite
-        mask = ~np.isfinite(tempdataset.ydata)
+        mask = ~np.isfinite(tempdataset.y)
 
-        minimizer = ReflectivityFitter(tempdataset.xdata,
-                                       tempdataset.ydata,
+        minimizer = ReflectivityFitter(tempdataset.x,
+                                       tempdataset.y,
                                        params,
-                                       edata=tempdataset.ydata_sd,
+                                       edata=tempdataset.y_sd,
                                        mask=mask)
 
         minimizer.transform = transform_fnctn
 
         if not self.settings.useerrors:
-            tempdataset.ydata_sd = None
+            tempdataset.y_sd = None
 
         if self.settings.usedq:
-            minimizer.set_dq(tempdataset.xdata_sd)
+            minimizer.set_dq(tempdataset.x_sd)
         else:
             minimizer.set_dq(float(self.settings.resolution))
 
@@ -1472,19 +1472,19 @@ class MyMainWindow(QtGui.QMainWindow):
             else:
                 t = None
             if t is not None:
-                tempdataset.ydata, tempdataset.ydata_sd = t(tempdataset.xdata,
-                                                   tempdataset.ydata,
-                                                   edata=tempdataset.ydata_sd)
+                tempdataset.y, tempdataset.y_sd = t(tempdataset.x,
+                                                   tempdataset.y,
+                                                   edata=tempdataset.y_sd)
                 kws['transform'] = t
 
-            kws['dqvals'] = tempdataset.xdata_sd
+            kws['dqvals'] = tempdataset.x_sd
 
             useerrors = self.settings.useerrors
             if not useerrors:
-                tempdataset.ydata_sd[:] = 1
+                tempdataset.y_sd[:] = 1
 
             #mask non finite values
-            mask = ~np.isfinite(tempdataset.ydata)
+            mask = ~np.isfinite(tempdataset.y)
 
             minimizer.data = tempdataset.data
             minimizer.userkws = kws
@@ -1530,20 +1530,20 @@ class MyMainWindow(QtGui.QMainWindow):
                 t = transform.transform
 
             if t is not None:
-                tempdataset.ydata, tempdataset.ydata_sd = t(
-                                        tempdataset.xdata,
-                                        tempdataset.ydata,
-                                        edata=tempdataset.ydata_sd)
+                tempdataset.y, tempdataset.y_sd = t(
+                                        tempdataset.x,
+                                        tempdataset.y,
+                                        edata=tempdataset.y_sd)
                 minimizer.transform = t
 
             #mask non finite values
-            mask = ~np.isfinite(tempdataset.ydata)
+            mask = ~np.isfinite(tempdataset.y)
 
             minimizer.data = tempdataset.data
             minimizer.mask = mask
 
             if usedq:
-                minimizer.set_dq(tempdataset.xdata_sd)
+                minimizer.set_dq(tempdataset.x_sd)
             else:
                 minimizer.set_dq(float(res))
 
@@ -1752,35 +1752,35 @@ class MyMainWindow(QtGui.QMainWindow):
 
             tempdataset = Data1D(dataset.data)
 
-            tempdataset.ydata, tempdataset.ydata_sd = transform_fnctn(
-                                                    tempdataset.xdata,
-                                                    tempdataset.ydata,
-                                                    tempdataset.ydata_sd)
+            tempdataset.y, tempdataset.y_sd = transform_fnctn(
+                                                    tempdataset.x,
+                                                    tempdataset.y,
+                                                    tempdataset.y_sd)
 
             # find out which points in the dataset aren't finite
-            mask = ~np.isfinite(tempdataset.ydata)
+            mask = ~np.isfinite(tempdataset.y)
 
             if not use_errors:
-                tempdataset.ydata_sd = np.ones_like(tempdataset.ydata)
+                tempdataset.y_sd = np.ones_like(tempdataset.y)
 
             #have a kws dictionary
-            kws = {'dqvals': tempdataset.xdata_sd, 'transform': transform_fnctn}
+            kws = {'dqvals': tempdataset.x_sd, 'transform': transform_fnctn}
 
             fit_plugin = self.plugin_store_model[gf_settings.fitplugins[idx]]
 
             if issubclass(fit_plugin, CurveFitter):
-                fitter = fit_plugin(tempdataset.xdata,
-                                    tempdataset.ydata,
+                fitter = fit_plugin(tempdataset.x,
+                                    tempdataset.y,
                                     params,
-                                    edata=tempdataset.ydata_sd,
+                                    edata=tempdataset.y_sd,
                                     mask=mask,
                                     fcn_kws=kws)
             elif hasattr(fit_plugin, 'fitfuncwraps'):
                 fitter = CurveFitter(fit_plugin,
-                                     tempdataset.xdata,
-                                     tempdataset.ydata,
+                                     tempdataset.x,
+                                     tempdataset.y,
                                      params,
-                                     edata=tempdataset.ydata_sd,
+                                     edata=tempdataset.y_sd,
                                      mask=mask,
                                      fcn_kws=kws)
 
@@ -1993,7 +1993,7 @@ class MyReflectivityGraphs(FigureCanvas):
                             **graph_properties['line2Dfit_properties'])
 
 #         if dataObject.line2Dresiduals is None and dataObject.residuals is not None:
-#             dataObject.line2Dresiduals = self.axes[1].plot(dataObject.xdata,
+#             dataObject.line2Dresiduals = self.axes[1].plot(dataObject.x,
 #                                                   dataObject.residuals,
 #                                                    linestyle='-',
 #                                                     lw = 1,
@@ -2034,7 +2034,7 @@ class MyReflectivityGraphs(FigureCanvas):
                 graph_properties.line2Dfit.set_data(x, yfit)
                 graph_properties.line2Dfit.set_visible(visible)
 #             if dataObject.line2Dresiduals:
-#                dataObject.line2Dresiduals.set_data(dataObject.xdata, dataObject.residuals)
+#                dataObject.line2Dresiduals.set_data(dataObject.x, dataObject.residuals)
 #                dataObject.line2Dresiduals.set_visible(visible)
 
         self.draw()

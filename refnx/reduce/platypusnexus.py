@@ -5,7 +5,7 @@ import refnx.reduce.peak_utils as ut
 import refnx.util.general as general
 import refnx.util.ErrorProp as EP
 import refnx.reduce.parabolic_motion as pm
-from . import event, rebin
+from refnx.reduce import event, rebin
 from scipy.optimize import leastsq, curve_fit
 from scipy.stats import t
 import os
@@ -131,7 +131,7 @@ class Catalogue(object):
         ch4phase = h5data['entry1/instrument/disk_chopper/ch4phase']
 
         if ('entry1/instrument/parameters/slave' in h5data and
-            'entry1/instrument/parameters/master' in h5data):
+                'entry1/instrument/parameters/master' in h5data):
             master = h5data['entry1/instrument/parameters/master'][0]
             slave = h5data['entry1/instrument/parameters/slave'][0]
         else:
@@ -400,7 +400,7 @@ class PlatypusNexus(object):
             poffset = 1.e6 * poff / (2. * 360. * freq)
             toffset = (poffset
                        + 1.e6 * master_opening / 2 / (2 * np.pi) / freq
-                       - 1.e6 * phase_angle / (360 * 2 * freq))
+                       - 1.e6 * phase_angle[scanpoint] / (360 * 2 * freq))
             m_spec_tof_hist[idx] -= toffset
 
             detpositions[idx] = cat.dy[scanpoint]
@@ -480,8 +480,8 @@ class PlatypusNexus(object):
             output.append(plane)
             output_sd.append(plane_sd)
 
-        detector = np.vstack(output)
-        detector_sd = np.vstack(output_sd)
+        detector = np.array(output)
+        detector_sd = np.array(output_sd)
 
         if len(detector.shape) == 2:
             detector = detector[np.newaxis, ]
@@ -531,19 +531,16 @@ class PlatypusNexus(object):
             else:
                 # there may be different background regions for each spectrum
                 # in the file
-                y1 = int(np.round(lopx - PIXEL_OFFSET))
-                y0 = int(np.round(y1 - (EXTENT_MULT * beam_sd)))
+                y1 = np.round(lopx - PIXEL_OFFSET).astype('int')
+                y0 = np.round(y1 - (EXTENT_MULT * beam_sd)).astype('int')
 
-                y2 = int(np.round(hipx + PIXEL_OFFSET))
-                y3 = int(np.round(y2 + (EXTENT_MULT * beam_sd)))
+                y2 = np.round(hipx + PIXEL_OFFSET).astype('int')
+                y3 = np.round(y2 + (EXTENT_MULT * beam_sd)).astype('int')
 
-                full_backgnd_mask = np.zeros((n_spectra,
-                                              detector.shape[1],
-                                              detector.shape[2]),
-                                             dtype='bool')
+                full_backgnd_mask = np.zeros_like(detector, dtype='bool')
                 for i in range(n_spectra):
-                    full_backgnd_mask[i, :, y0: y1] = True
-                    full_backgnd_mask[i, :, y2 + 1: y3 + 1] = True
+                    full_backgnd_mask[i, :, y0[i]: y1[i]] = True
+                    full_backgnd_mask[i, :, y2[i] + 1: y3[i] + 1] = True
 
             # TODO: Correlated Uncertainties?
             detector, detector_sd = background_subtract(detector,
@@ -568,13 +565,11 @@ class PlatypusNexus(object):
 
         # normalise by beam monitor 1.
         if normalise:
-            # TODO: Correlated Uncertainties?
             m_spec, m_spec_sd = EP.EPdiv(m_spec,
                                          m_spec_sd,
                                          bm1_counts[:, np.newaxis],
                                          bm1_counts_sd[:, np.newaxis])
 
-            # TODO: Correlated Uncertainties?
             output = EP.EPdiv(detector,
                               detector_sd,
                               bm1_counts[:, np.newaxis, np.newaxis],

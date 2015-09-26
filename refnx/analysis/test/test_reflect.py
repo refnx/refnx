@@ -39,7 +39,7 @@ class TestReflect(unittest.TestCase):
 
     def test_abeles(self):
         #    test reflectivity calculation with values generated from Motofit
-        calc = reflect.abeles(self.qvals, self.coefs)
+        calc = reflect.reflect(self.qvals, self.coefs)
 
         assert_almost_equal(calc, self.rvals)
 
@@ -106,7 +106,7 @@ class TestReflect(unittest.TestCase):
         assert_almost_equal(calc1, calc2)
 
     def test_c_abeles_reshape(self):
-        # c abeles should be able to deal with multidimensional input
+        # c reflect should be able to deal with multidimensional input
         if not HAVE_CREFLECT:
             return
         reshaped_q = np.reshape(self.qvals, (2, 250))
@@ -116,7 +116,7 @@ class TestReflect(unittest.TestCase):
         assert_almost_equal(reshaped_r, calc, 15)
 
     def test_abeles_reshape(self):
-        # abeles should be able to deal with multidimensional input
+        # reflect should be able to deal with multidimensional input
         reshaped_q = np.reshape(self.qvals, (2, 250))
         reshaped_r = self.rvals.reshape(2, 250)
         calc = _reflect.abeles(reshaped_q, self.layer_format)
@@ -148,7 +148,7 @@ class TestReflect(unittest.TestCase):
         values in Motofit was 13.
         Do the same here
         '''
-        calc = reflect.abeles(qvals.flatten(), self.coefs,
+        calc = reflect.reflect(qvals.flatten(), self.coefs,
                               **{'dqvals': dqvals.flatten(), 'quad_order': 13})
 
         assert_almost_equal(rvals.flatten(), calc)
@@ -156,9 +156,9 @@ class TestReflect(unittest.TestCase):
     def test_constant_smearing(self):
         # check that constant dq/q smearing is the same as point by point
         dqvals = 0.05 * self.qvals
-        calc = reflect.abeles(self.qvals, self.coefs,
+        calc = reflect.reflect(self.qvals, self.coefs,
                               **{'dqvals': dqvals, 'quad_order': 'ultimate'})
-        calc2 = reflect.abeles(self.qvals, self.coefs,
+        calc2 = reflect.reflect(self.qvals, self.coefs,
                                **{'dqvals': 5.})
 
         assert_allclose(calc, calc2, rtol=0.011)
@@ -176,7 +176,7 @@ class TestReflect(unittest.TestCase):
         reshaped_q = np.reshape(qvals, (2, 250))
         reshaped_r = np.reshape(rvals, (2, 250))
         reshaped_dq = np.reshape(dqvals, (2, 250))
-        calc = reflect.abeles(reshaped_q, self.coefs,
+        calc = reflect.reflect(reshaped_q, self.coefs,
                               **{'dqvals': reshaped_dq, 'quad_order': 13})
 
         assert_almost_equal(calc, reshaped_r, 15)

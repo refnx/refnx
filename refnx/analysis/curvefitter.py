@@ -166,10 +166,10 @@ class CurveFitter(Minimizer):
         """
         fitfunc : callable
             Function calculating the model for the fit.  Should have the
-            signature: ``fitfunc(xdata, params, *fcn_args, **fcn_kws)``
-        xdata : np.ndarray
+            signature: ``fitfunc(x, params, *fcn_args, **fcn_kws)``
+        x : np.ndarray
             The independent variables
-        ydata : np.ndarray
+        y : np.ndarray
             The dependent (observed) variable
         params : lmfit.Parameters instance
             Specifies the parameter set for the fit
@@ -177,7 +177,7 @@ class CurveFitter(Minimizer):
             The measured uncertainty in the dependent variable, expressed as
             sd.  If this array is not specified, then edata is set to unity.
         mask : np.ndarray, optional
-            A boolean array with the same shape as ydata.  If mask is True
+            A boolean array with the same shape as y.  If mask is True
             then that point is excluded from the residuals calculation.
         fcn_args : tuple, optional
             Extra parameters required to fully specify fitfunc.
@@ -243,7 +243,7 @@ class CurveFitter(Minimizer):
         Calculate the difference between the data and the model.
         Also known as the objective function.  This function is minimized
         during a fit.
-        residuals = (fitfunc - ydata) / edata
+        residuals = (fitfunc - y) / edata
 
         Parameters
         ----------
@@ -639,7 +639,7 @@ class GlobalFitter(CurveFitter):
         """
         Calculate the difference between the data and the model. Also known as
         the objective function.  This function is minimized during a fit.
-        residuals = (fitfunc - ydata) / edata
+        residuals = (fitfunc - y) / edata
 
         Parameters
         ----------

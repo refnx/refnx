@@ -77,7 +77,7 @@ class DataObject(reflectdataset.ReflectDataset):
     def save_fit(self, filename):
         if self.fit is not None:
             with open(filename, 'wb+') as f:
-                np.savetxt(f, np.column_stack((self.xdata, self.fit)))
+                np.savetxt(f, np.column_stack((self.x, self.fit)))
 
     def save(self, f):
         # this will save it as XML
@@ -237,13 +237,13 @@ class DataObject(reflectdataset.ReflectDataset):
         '''
 
         callerInfo = deepcopy(model.__dict__)
-        callerInfo['xdata'] = self.xdata
-        callerInfo['ydata'] = self.ydata
-        callerInfo['edata'] = self.ydata_sd
+        callerInfo['x'] = self.x
+        callerInfo['y'] = self.y
+        callerInfo['edata'] = self.y_sd
 
         try:
             if model.usedq:
-                callerInfo['dqvals'] = self.xdata_sd
+                callerInfo['dqvals'] = self.x_sd
             else:
                 del(callerInfo['dqvals'])
         except KeyError:
@@ -289,13 +289,13 @@ class DataObject(reflectdataset.ReflectDataset):
     def evaluate_chi2(self, model, store=False, fitPlugin=None):
 
         callerInfo = deepcopy(model.__dict__)
-        callerInfo['xdata'] = self.xdata
-        callerInfo['ydata'] = self.ydata
-        callerInfo['edata'] = self.ydata_sd
+        callerInfo['x'] = self.x
+        callerInfo['y'] = self.y
+        callerInfo['edata'] = self.y_sd
 
         try:
             if model.usedq:
-                callerInfo['dqvals'] = self.xdata_sd
+                callerInfo['dqvals'] = self.x_sd
             else:
                 del(callerInfo['dqvals'])
         except KeyError:
@@ -315,13 +315,13 @@ class DataObject(reflectdataset.ReflectDataset):
     def evaluate_model(self, model, store=False, fitPlugin=None):
 
         callerInfo = deepcopy(model.__dict__)
-        callerInfo['xdata'] = self.xdata
-        callerInfo['ydata'] = self.ydata
-        callerInfo['edata'] = self.ydata_sd
+        callerInfo['x'] = self.x
+        callerInfo['y'] = self.y
+        callerInfo['edata'] = self.y_sd
 
         try:
             if model.usedq:
-                callerInfo['dqvals'] = self.xdata_sd
+                callerInfo['dqvals'] = self.x_sd
             else:
                 del(callerInfo['dqvals'])
         except KeyError:
@@ -343,4 +343,4 @@ class DataObject(reflectdataset.ReflectDataset):
             self.residuals = (self.fit - RFO.ydata) / RFO.edata
             self.sld_profile = sld_profile
 
-        return fit, fit - self.ydata, sld_profile
+        return fit, fit - self.y, sld_profile

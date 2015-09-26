@@ -251,11 +251,11 @@ void AbelesCalc_ImagAll(int numcoefs,
 	}
 #endif
 
-void reflect(int numcoefs,
-              const double *coefP,
-               int npoints,
-                double *yP,
-                 const double *xP){
+void abeles(int numcoefs,
+            const double *coefP,
+            int npoints,
+            double *yP,
+            const double *xP){
 /*
 choose between the mode of calculation, depending on whether pthreads or omp.h
 is present for parallelisation.
