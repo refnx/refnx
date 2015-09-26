@@ -1,13 +1,10 @@
 """"
-
     A basic representation of a 1D dataset
-
 """
 from __future__ import division
 import numpy as np
 import os.path
 import refnx.reduce.nsplice as nsplice
-import refnx.util.ErrorProp as EP
 
 
 class Data1D(object):

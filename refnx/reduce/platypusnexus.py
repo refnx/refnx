@@ -1,14 +1,13 @@
 from __future__ import division
 import numpy as np
 import h5py
-import peak_utils as ut
+import refnx.reduce.peak_utils as ut
 import refnx.util.general as general
 import refnx.util.ErrorProp as EP
 import refnx.reduce.parabolic_motion as pm
-import event
+from . import event, rebin
 from scipy.optimize import leastsq, curve_fit
 from scipy.stats import t
-import rebin
 import os
 import os.path
 import argparse
@@ -57,7 +56,7 @@ class Catalogue(object):
         try:
             event_directory_name = h5data[
                 'entry1/instrument/detector/daq_dirname'][0]
-            d['daq_dirname'] = event_directory_name
+            d['daq_dirname'] = event_directory_name.decode()
         except KeyError:
             # daq_dirname doesn't exist in this file
             d['daq_dirname'] = None
@@ -133,8 +132,8 @@ class Catalogue(object):
 
         if ('entry1/instrument/parameters/slave' in h5data and
             'entry1/instrument/parameters/master' in h5data):
-            master = h5data['entry1/instrument/parameters/master']
-            slave = h5data['entry1/instrument/parameters/slave']
+            master = h5data['entry1/instrument/parameters/master'][0]
+            slave = h5data['entry1/instrument/parameters/slave'][0]
         else:
             master = 1
             if abs(chopper2_speed[0]) > 10:
@@ -511,8 +510,8 @@ class PlatypusNexus(object):
                       / general.wavelength_velocity(m_lambda))
 
         # we want to integrate over the following pixel region
-        lopx = np.floor(beam_centre - beam_sd * EXTENT_MULT)
-        hipx = np.ceil(beam_centre + beam_sd * EXTENT_MULT)
+        lopx = np.floor(beam_centre - beam_sd * EXTENT_MULT).astype('int')
+        hipx = np.ceil(beam_centre + beam_sd * EXTENT_MULT).astype('int')
 
         m_spec = np.zeros((n_spectra, np.size(detector, 1)))
         m_spec_sd = np.zeros_like(m_spec)
@@ -532,11 +531,11 @@ class PlatypusNexus(object):
             else:
                 # there may be different background regions for each spectrum
                 # in the file
-                y1 = np.round(lopx - PIXEL_OFFSET)
-                y0 = np.round(y1 - (EXTENT_MULT * beam_sd))
+                y1 = int(np.round(lopx - PIXEL_OFFSET))
+                y0 = int(np.round(y1 - (EXTENT_MULT * beam_sd)))
 
-                y2 = np.round(hipx + PIXEL_OFFSET)
-                y3 = np.round(y2 + (EXTENT_MULT * beam_sd))
+                y2 = int(np.round(hipx + PIXEL_OFFSET))
+                y3 = int(np.round(y2 + (EXTENT_MULT * beam_sd)))
 
                 full_backgnd_mask = np.zeros((n_spectra,
                                               detector.shape[1],
@@ -843,7 +842,7 @@ class PlatypusNexus(object):
                                        'DATASET_%d' % scanpoint,
                                        'EOS.bin')
 
-        with open(stream_filename, 'r') as f:
+        with open(stream_filename, 'rb') as f:
             events, end_of_last_event = event.events(f)
 
         output = event.process_event_stream(events,
