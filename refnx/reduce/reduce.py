@@ -1,6 +1,6 @@
 from __future__ import division
 import numpy as np
-import platypusnexus as pn
+import refnx.reduce.platypusnexus as pn
 import refnx.util.ErrorProp as EP
 import refnx.util.general as general
 import string

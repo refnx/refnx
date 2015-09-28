@@ -149,7 +149,7 @@ class LayerModel(QtCore.QAbstractTableModel):
 
         if not reflect.is_proper_Abeles_input(values):
             raise ValueError('The size of the parameter array passed'
-                             ' to reflect should be 4 * coefs[0] + 8')
+                             ' to reflectivity should be 4 * coefs[0] + 8')
 
         oldlayers = int(values[0])
 
@@ -197,7 +197,7 @@ class LayerModel(QtCore.QAbstractTableModel):
 
         if not reflect.is_proper_Abeles_input(values):
             raise ValueError('The size of the parameter array passed'
-                             ' to reflect should be 4 * coefs[0] + 8')
+                             ' to reflectivity should be 4 * coefs[0] + 8')
 
         oldlayers = int(values[0])
 

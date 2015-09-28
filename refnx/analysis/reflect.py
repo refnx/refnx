@@ -86,7 +86,7 @@ def abeles(q, layers, scale=1, bkg=0.):
     return refcalc.abeles(q, layers, scale=scale, bkg=bkg)
 
 
-def reflect(q, coefs, *args, **kwds):
+def reflectivity(q, coefs, *args, **kwds):
     """
     Abeles matrix formalism for calculating reflectivity from a stratified
     medium.
@@ -149,7 +149,7 @@ def reflect(q, coefs, *args, **kwds):
     bkg = coefs[6]
 
     if not is_proper_Abeles_input(coefs):
-        raise ValueError('The size of the parameter array passed to reflect'
+        raise ValueError('The size of the parameter array passed to reflectivity'
                          ' should be 4 * coefs[0] + 8')
 
     # make into form suitable for reflection calculation
@@ -351,7 +351,7 @@ def _smeared_abeles_constant(q, w, resolution):
 
 def is_proper_Abeles_input(coefs):
     """
-    Test to see if the coefs array is suitable input for the reflect function
+    Test to see if the coefs array is suitable input for the reflectivity function
     """
     if np.size(coefs, 0) != 4 * int(coefs[0]) + 8:
         return False
@@ -435,9 +435,9 @@ class ReflectivityFitter(CurveFitter):
             is `True` then that point is excluded from the residuals
             calculation.
         fcn_args : tuple, optional
-            Extra parameters for supplying to the reflect function.
+            Extra parameters for supplying to the reflectivity function.
         fcn_kws : dict, optional
-            Extra keyword parameters for supplying to the reflect function.
+            Extra keyword parameters for supplying to the reflectivity function.
             See the notes below.
         kws : dict, optional
             Keywords passed to the minimizer.
@@ -499,11 +499,11 @@ class ReflectivityFitter(CurveFitter):
         -------
         yvals : np.ndarray
             The theoretical model for the x, i.e.
-            reflect(self.x, parameters, *self.args, **self.kwds)
+            reflectivity(self.x, parameters, *self.args, **self.kwds)
         """
         params = np.array([parameters[param].value for param in parameters], float)
 
-        yvals = reflect(self.xdata, params, *self.userargs, **self.userkws)
+        yvals = reflectivity(self.xdata, params, *self.userargs, **self.userkws)
 
         if self.transform:
             yvals, temp = self.transform(self.xdata, yvals)
@@ -663,7 +663,7 @@ if __name__ == '__main__':
     b += 0.0005
 
     def _loop():
-        reflect(b, a)
+        reflectivity(b, a)
 
     t = timeit.Timer(stmt=_loop)
     print(t.timeit(number=1000))

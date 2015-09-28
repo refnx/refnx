@@ -1852,7 +1852,7 @@ g10
 (lp744
 S'default'
 p745
-a(crefnx.analysis.reflect
+a(crefnx.analysis.reflectivity
 ReflectivityFitter
 p746
 S''

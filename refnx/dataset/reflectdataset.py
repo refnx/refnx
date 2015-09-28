@@ -31,8 +31,8 @@ class ReflectDataset(Data1D):
     </REFentry>
     </REFroot>"""
 
-    def __init__(self, dataTuple=None, **kwds):
-        super(ReflectDataset, self).__init__(dataTuple=dataTuple)
+    def __init__(self, data_tuple=None, **kwds):
+        super(ReflectDataset, self).__init__(data_tuple=data_tuple)
         self.datafilenumber = list()
         self.sld_profile = None
 

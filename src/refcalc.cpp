@@ -251,7 +251,7 @@ void AbelesCalc_ImagAll(int numcoefs,
 	}
 #endif
 
-void abeles(int numcoefs,
+void reflect(int numcoefs,
             const double *coefP,
             int npoints,
             double *yP,

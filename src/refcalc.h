@@ -12,7 +12,7 @@ extern "C" {
 #endif
 
 /*
-    abeles uses the Abeles matrix method to calculate specular reflectivity.
+    reflect uses the Abeles matrix method to calculate specular reflectivity.
     The system is assumed to consist of a series of uniformly dense layers
     (slabs). The radiation is incident through the fronting medium, leaving
     through the backing medium.
@@ -66,7 +66,7 @@ extern "C" {
     coefP[4 * M + 11] - roughness between layer M - 1 / M (Å)
 */
 
-void abeles(int numcoefs, const double *coefP, int npoints, double *yP,
+void reflect(int numcoefs, const double *coefP, int npoints, double *yP,
              const double *xP);
 
 #ifdef __cplusplus

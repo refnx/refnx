@@ -39,7 +39,6 @@ class TestRebin(unittest.TestCase):
 
         assert_allclose(y_new, y_old)
 
-
     def test_x2_surrounds_x1(self):
         """
         x2 range surrounds x1 range
@@ -70,6 +69,42 @@ class TestRebin(unittest.TestCase):
         assert_allclose(y_new, y_new_here)
         assert_allclose(y_new.sum(), y_old.sum())
 
+    def test_x2_surrounds_x1_2(self):
+        """
+        x2 has some bins that span several x1 bins
+        Also tests uncertainty propagation. Values calculated using
+        original jhykes piecewise constant code
+        """
+        # old size
+        m = 10
+
+        # new size
+        n = 3
+
+        # bin edges
+        x_old = np.linspace(0., 1., m + 1)
+        x_new = np.linspace(-0.1, 1.2, n + 1)
+
+        # some arbitrary distribution
+        y_old = 1. + np.sin(x_old[:-1] * np.pi) / np.ediff1d(x_old)
+
+        # with uncertainties
+        np.random.seed(1)
+        y_old_sd = 0.1 * y_old * uniform((m,))
+
+        # rebin
+        y_new, y_new_sd = rebin.rebin(x_old,
+                                      y_old,
+                                      x_new,
+                                      y1_sd=y_old_sd)
+
+        # compute answer here to check rebin
+        y_new_here = np.array([14.99807911, 44.14135692, 13.99807911])
+        y_new_here_sd = np.array([5.381524308729351, 12.73174109312833, 5.345145324353735])
+
+        assert_allclose(y_new, y_new_here)
+        assert_allclose(y_new_sd, y_new_here_sd)
+        assert_allclose(y_new.sum(), y_old.sum())
 
     def test_x2_lower_than_x1(self):
         """
@@ -94,7 +129,6 @@ class TestRebin(unittest.TestCase):
         assert_allclose(y_new, [0., 0., 0.])
         assert_allclose(y_new.sum(), 0.)
 
-
     def test_x2_above_x1(self):
         """
         x2 range is completely above x1 range
@@ -117,7 +151,6 @@ class TestRebin(unittest.TestCase):
 
         assert_allclose(y_new, np.zeros((n,)))
         assert_allclose(y_new.sum(), 0.)
-
 
     def test_x2_in_x1(self):
         """
@@ -145,7 +178,6 @@ class TestRebin(unittest.TestCase):
                       + y_old_ave[2] * (x_new[1] - x_old[2]) )
 
         assert_allclose(y_new, y_new_here)
-
 
     def test_y1_uncertainties(self):
         """
