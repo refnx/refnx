@@ -35,7 +35,7 @@ class Test_reflect(unittest.TestCase):
         self.rvals = rvals.flatten()
 
     def test_abeles(self):
-        #    test reflectivity calculation with values generated from Motofit
+        # test reflectivity calculation with values generated from Motofit
         p = curvefitter.to_Parameters(self.coefs)
         calc = reflect_fitfunc(self.qvals, p)
         calc = np.power(10, calc)
@@ -90,7 +90,7 @@ class TestGlobalFitting(unittest.TestCase):
         for p in fit:
             self.params['p%d' % p].vary = True
 
-        a = GlobalFitter([self.f], kws={'options':{'seed': 1}})
+        a = GlobalFitter([self.f], kws={'seed': 1})
         a.fit(method='differential_evolution')
 
         values = list(self.params.valuesdict().values())
@@ -212,10 +212,17 @@ class TestGlobalFitting(unittest.TestCase):
                                                  'd2:p8=d0:p8',
                                                  'd1:p12=d0:p12',
                                                  'd2:p12 = d0:p12'],
-                         kws={'options':{'seed':1}})
-        
+                         kws={'seed':1})
+
+        indiv_chisqr = (a.residuals(a.params) ** 2
+                        + b.residuals(b.params) ** 2
+                        + c.residuals(c.params) ** 2)
+        global_chisqr = g.residuals(g.params) ** 2
+        assert_equal(indiv_chisqr.sum(), global_chisqr.sum())
+
         res = g.fit('differential_evolution')
         assert_almost_equal(res.chisqr, 0.774590447535, 4)
+
 
 if __name__ == '__main__':
     unittest.main()
