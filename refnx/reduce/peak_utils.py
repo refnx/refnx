@@ -16,7 +16,8 @@ def centroid(y, x=None, dx=1.):
     Returns
     -------
     (centroid, sd)
-        Centroid and standard deviation of the data.
+        Centroid and standard deviation of the data. If there are no
+        intensities at all in `y`, then `centroid` and `sd` are `np.nan`.
 
     This is not really all that good of an algorithm, unless the peak is much
     higher than the background
@@ -27,7 +28,13 @@ def centroid(y, x=None, dx=1.):
         x = np.arange(yt.size, dtype='float') * dx
 
     normaliser = simps(yt, x)
-    centroid = simps(x * yt, x) / normaliser
+
+    if normaliser == 0:
+        return np.nan, np.nan
+
+    centroid = simps(x * yt, x)
+
+    centroid /= normaliser
 
     var = simps((x - centroid)**2 * yt, x) / normaliser
 

@@ -123,7 +123,7 @@ def events(f, endoflastevent=127):
         if not len(buf):
             break
 
-        # buf = bytearray(buf)
+        buf = bytearray(buf)
         state = 0
 
         for i, c in enumerate(buf):
