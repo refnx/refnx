@@ -20,6 +20,20 @@ class TestReduce(unittest.TestCase):
                           data_folder=self.path, rebin_percent=2)
         a.save('test1.dat')
 
+    def test_reduction_method(self):
+        # a quick smoke test to check that the reduction can occur
+        a = ReducePlatypus('PLP0000711.nx.hdf', data_folder=self.path,
+                           rebin_percent=4)
+
+        # try reduction with the reduce method
+        a.reduce('PLP0000708.nx.hdf', data_folder=self.path, rebin_percent=4)
+
+        # try reduction with the __call__ method
+        a('PLP0000708.nx.hdf', data_folder=self.path, rebin_percent=4)
+
+        # try writing offspecular data
+        a.write_offspecular('offspec.xml', 0)
+
     def test_event_reduction(self):
         # check that eventmode reduction can occur, and that there are the
         # correct number of datasets produced.
