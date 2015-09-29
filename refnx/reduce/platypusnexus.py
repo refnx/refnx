@@ -1,11 +1,11 @@
 from __future__ import division
 import numpy as np
 import h5py
-import refnx.reduce.peak_utils as ut
+from . import peak_utils as ut
 import refnx.util.general as general
 import refnx.util.ErrorProp as EP
-import refnx.reduce.parabolic_motion as pm
-from refnx.reduce import event, rebin
+from . import parabolic_motion as pm
+from . import event, rebin
 from scipy.optimize import leastsq, curve_fit
 from scipy.stats import t
 import os
@@ -312,14 +312,19 @@ class PlatypusNexus(object):
         # TOF bins
         TOF = cat.t_bins.astype('float64')
 
+        # This section controls how multiple detector images are handled.
         # We want event streaming.
-        if eventmode is not None and integrate > -1:
+        if eventmode is not None:
             scanpoint = integrate
+            if integrate == -1:
+                scanpoint = 0
+
             output = self.process_event_stream(scanpoint=scanpoint,
                                                frame_bins=eventmode)
             frame_bins, detector, bm1_counts = output
 
         else:
+            # we don't want detector streaming
             detector = cat.detector
             scanpoint = 0
 
@@ -330,7 +335,8 @@ class PlatypusNexus(object):
 
         n_spectra = np.size(detector, 0)
 
-        # pre-average over x, leaving (n, t, y) also convert to dp
+        # Up until this point detector.shape=(N, T, Y,
+        #  pre-average over x, leaving (n, t, y) also convert to dp
         detector = np.sum(detector, axis=3, dtype='float64')
 
         # detector shape should now be (n, t, y)
@@ -405,7 +411,7 @@ class PlatypusNexus(object):
 
             detpositions[idx] = cat.dy[scanpoint]
 
-            if eventmode is not None and integrate > -1:
+            if eventmode is not None:
                 m_spec_tof_hist[:] = TOF - toffset
                 flight_distance[:] = flight_distance[0]
                 detpositions[:] = detpositions[0]

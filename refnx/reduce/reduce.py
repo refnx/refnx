@@ -1,12 +1,14 @@
 from __future__ import division
 import numpy as np
-import refnx.reduce.platypusnexus as pn
-import refnx.util.ErrorProp as EP
+from . import platypusnexus as pn
+from refnx.util import ErrorProp as EP
 import refnx.util.general as general
 import string
 from time import gmtime, strftime
-import refnx.reduce.parabolic_motion as pm
-from refnx.dataset import reflectdataset
+from . import parabolic_motion as pm
+from refnx.dataset import ReflectDataset
+from copy import deepcopy
+import os.path
 
 
 class ReducePlatypus(object):
@@ -15,87 +17,132 @@ class ReducePlatypus(object):
     Offspecular data maps are also produced.
     """
 
-    def __init__(self, h5ref, h5direct, scale=1., **kwds):
+    def __init__(self, direct, reflect=None, scale=1., save=True,
+                 **kwds):
         """
         Parameters
         ----------
-        h5ref: string or file-like object
-            A string containing the path to the specularly reflected hdf5 file,
-            or the hdf5 file itself.
-        h5direct: string or file-like object
+        direct : string, hdf5 file-handle or PlatypusNexus object
             A string containing the path to the direct beam hdf5 file,
-            or the hdf5 file itself.
-        scale: float
-            Divide all the reflectivity values by this number.
-
-        kwds: dict
+            the hdf5 file itself, or a PlatypusNexus object.
+        reflect : string, hdf5 file-handle or PlatypusNexus object, optional
+            A string containing the path to the specularly reflected hdf5 file,
+            the hdf5 file itself, or a PlatypusNexus object.
+        scale : float, optional
+            Divide all specular reflectivity values by this number.
+        save : bool, optional
+            If `True` then the reduced dataset is saved to the current
+            directory, with a name os.path.basename(reflect)
+        kwds : dict, optional
             Options passed directly to `refnx.reduce.platypusnexus.process`,
             for processing of individual spectra. Look at that method docstring
             for specification of options.
 
         Returns
         -------
+        None
 
         Notes
         -----
-        Following successful construction of the object the following
-        attributes are available:
-        self.x[N, T]:
-            Q values
-        self.x_sd[N, T]:
-            uncertainty in Q values (FWHM)
-        self.y[N, T]:
-            specular reflectivity
-        self.y_sd[N, T]
-            uncertainty in specular reflectivity (SD)
-        self.m_ref[N, T, Y]
-            offspecular reflectivity map
-        self.m_refSD[N, T, Y]			
-            uncertainty in offspecular reflectivity
-        self.m_qz[N, T, Y]
-            Qz for offspecular map
-        self.m_qy[N, T, Y]
-            Qy for offspecular map
-        self.n_spectra
-            N
-        self.datafile_number
-            run number for the reflected beam
-        self.reflected_beam
-            a platypusnexus.PlatypusNexus object for the reflected beam
-            spectrum
-        self.direct_beam
-            a platypusnexus.PlatypusNexus object for the direct beam
-            spectrum
+        If `reflect` was specified during construction a reduction will be
+        done. See ``reduce`` for attributes available from this object on
+        completion of reduction.
+        """
+        if isinstance(direct, pn.PlatypusNexus):
+            self.direct_beam = direct
+        else:
+            self.direct_beam = pn.PlatypusNexus(direct)
+
+        if reflect is not None:
+            self.reduce(reflect, save=save, scale=scale, **kwds)
+
+    def __call__(self, reflect, scale=1, save=True, **kwds):
+        return self.reduce(reflect, scale=scale, save=save, **kwds)
+
+    def reduce(self, reflect, scale=1., save=True, **kwds):
+        """
+        Reduction of a single dataset.
+
+        The reduction uses the direct beam specified during construction of
+        this object. This method reduces all the spectra present in the
+        reflected beam file (see platypusnexus.PlatypusNexus.process for
+        eventmode specification and other related options), but aggregates
+        all data in the direct beam spectrum.
+
+        Parameters
+        ----------
+        reflect : string, hdf5 file-handle or PlatypusNexus object
+            A string containing the path to the specularly reflected hdf5 file,
+            the hdf5 file itself, or a PlatypusNexus object.
+        scale : float, optional
+            Divide all the reflectivity values by this number.
+        save : bool, optional
+            If `True` then the reduced dataset is saved to the current
+            directory, with a name os.path.basename(reflect)
+        kwds : dict, optional
+            Options passed directly to `refnx.reduce.platypusnexus.process`,
+            for processing of individual spectra. Look at that method docstring
+            for specification of options.
+
+        Returns
+        -------
+        reduction : dict
+            Contains the following entries:
+                'x' : np.ndarray
+                    Q values, shape (N, T).
+                'x_sd' : np.ndarray
+                    Uncertainty in Q values (FWHM), shape (N, T).
+                'y' : np.ndarray
+                    Specular Reflectivity, shape (N, T)
+                'y_sd' : np.ndarray
+                    Uncertainty in specular reflectivity (SD), shape (N, T)
+                'm_ref' : np.ndarray
+                    Offspecular reflectivity map, shape (N, T, Y)
+                'm_refSD' : np.ndarray
+                    uncertainty in offspecular reflectivity, shape (N, T, Y)
+                'm_qz' : np.ndarray
+                    Qz for offspecular map, shape (N, T, Y)
+                'm_qy' : np.ndarray
+                    Qy for offspecular map, shape (N, T, Y)
+                'n_spectra' : int
+                    number of reflectivity spectra
+                'datafile_number': int
+                    run number for the reflected beam
 
         N corresponds to the number of spectra
         T corresponds to the number of Q (wavelength) bins
         Y corresponds to the number of y pixels on the detector.
 
-        This class reduces all the spectra present in the reflected beam file
-        (see platypusnexus.PlatypusNexus.process for eventmode
-        specification and other related options), but aggregates all data in
-        the direct beam spectrum.
-
+        Notes
+        -----
+        All the values returned from this method are also contained as instance
+        attributes for this object.
         """
         keywords = kwds.copy()
         keywords['direct'] = False
 
         # get the reflected beam spectrum
-        self.reflected_beam = pn.PlatypusNexus(h5ref)
+        if isinstance(reflect, pn.PlatypusNexus):
+            self.reflected_beam = reflect
+        else:
+            self.reflected_beam = pn.PlatypusNexus(reflect)
         self.reflected_beam.process(**keywords)
 
         # get the direct beam spectrum
         keywords['direct'] = True
         keywords['integrate'] = -1
 
+        if 'eventmode' in keywords:
+            keywords.pop('eventmode')
+
         # got to use the same wavelength bins as the reflected spectrum.
         keywords['wavelength_bins'] = self.reflected_beam.m_lambda_hist[0]
 
-        self.direct_beam = pn.PlatypusNexus(h5direct)
         self.direct_beam.process(**keywords)
 
-        self.__reduce_single_angle()
-        self.scale(scale)
+        self.save = save
+        reduction = self._reduce_single_angle(scale)
+        return reduction
 
     def data(self, scanpoint=0):
         """
@@ -179,16 +226,19 @@ class ReducePlatypus(object):
         s = string.Template(__template_ref_xml)
 
         # filename = 'off_PLP{:07d}_{:d}.xml'.format(self._rnumber, index)
-        d['_r'] = string.translate(repr(self.m_ref[scanpoint].tolist()), None, ',[]')
-        d['_qz'] = string.translate(repr(self.m_qz[scanpoint].tolist()), None, ',[]')
-        d['_dr'] = string.translate(repr(self.m_ref_sd[scanpoint].tolist()), None, ',[]')
-        d['_qy'] = string.translate(repr(self.m_qy[scanpoint].tolist()), None, ',[]')
+        d['_r'] = repr(self.m_ref[scanpoint].tolist()).strip(',[]')
+        d['_qz'] = repr(self.m_qz[scanpoint].tolist()).strip(',[]')
+        d['_dr'] = repr(self.m_ref_sd[scanpoint].tolist()).strip(',[]')
+        d['_qy'] = repr(self.m_qy[scanpoint].tolist()).strip(',[]')
 
         thefile = s.safe_substitute(d)
         f.write(thefile)
         f.truncate()
 
-    def __reduce_single_angle(self):
+    def _reduce_single_angle(self, scale=1):
+        """
+        Reduce a single angle.
+        """
         n_spectra = self.reflected_beam.n_spectra
         n_tpixels = np.size(self.reflected_beam.m_topandtail, 1)
         n_ypixels = np.size(self.reflected_beam.m_topandtail, 2)
@@ -310,31 +360,57 @@ class ReducePlatypus(object):
                                 0,
                                 wavelengths[:, :, np.newaxis])
 
-        self.xdata = xdata
-        self.xdata_sd = xdata_sd
-        self.ydata = ydata
-        self.ydata_sd = ydata_sd
-        self.m_ref = m_ref
-        self.m_ref_sd = m_ref_sd
-        self.m_qz = qz
-        self.m_qy = qy
-        self.n_spectra = n_spectra
-        self.datafile_number = self.reflected_beam.datafile_number
+        reduction = {}
+        reduction['xdata'] = self.xdata = xdata
+        reduction['xdata_sd'] = self.xdata_sd = xdata_sd
+        reduction['ydata'] = self.ydata = ydata
+        reduction['ydata_sd'] = self.ydata_sd = ydata_sd
+        reduction['m_ref'] = self.m_ref = m_ref
+        reduction['m_ref_sd'] = self.m_ref_sd = m_ref_sd
+        reduction['qz'] = self.m_qz = qz
+        reduction['qy'] = self.m_qy = qy
+        reduction['nspectra'] = self.n_spectra = n_spectra
+        reduction['datafile_number'] = self.datafile_number = (
+            self.reflected_beam.datafile_number)
+
+        if self.save:
+            for i in range(n_spectra):
+                data_tup = self.data(scanpoint=i)
+                dataset = ReflectDataset(data_tup)
+                fname = 'PLP{0:07d}_{1}.dat'.format(self.datafile_number, i)
+                with open(fname, 'wb') as f:
+                    dataset.save(f)
+                fname = 'PLP{0:07d}_{1}.xml'.format(self.datafile_number, i)
+                with open(fname, 'w') as f:
+                    dataset.save_xml(f)
+
+        return deepcopy(reduction)
 
 
-def reduce_stitch_files(reflect_list, direct_list, norm_file_num=None,
-                        trim_trailing=True, **kwds):
+def reduce_stitch(reflect_list, direct_list, norm_file_num=None,
+                  data_folder=None, trim_trailing=True, save=True, **kwds):
     """
     Reduces a list of reflected beam run numbers and a list of corresponding
-    direct beam run numbers from the Platypus reflectometer.
-    e.g.
-        reflect_list = [708, 709, 710]
-        direct_list = [711, 711, 711]
+    direct beam run numbers from the Platypus reflectometer. If there are
+    multiple reflectivity files they are spliced together.
 
-    708 is corresponds to the file PLP0000708.nx.hdf.
-
-    norm_file_num is the run number for the water flood field correction.
-
+    Parameters
+    ----------
+    reflect_list : list
+        Reflected beam run numbers, e.g. `[708, 709, 710]`
+        708 corresponds to the file PLP0000708.nx.hdf.
+    direct_list : list
+        Direct beam run numbers, e.g. `[71, 711, 711]`
+    norm_file_num : int, optional
+        The run number for the water flood field correction.
+    data_folder : str, optional
+        Where is the raw data stored?
+    trim_trailing : bool, optional
+        When datasets are spliced together do you want to remove points in the
+        overlap region from the preceding dataset?
+    save : bool, optional
+        If `True` then the spliced file is written to a file (in the working
+        directory) with a name like: `c_PLP0000708.dat`.
     kwds : dict, optional
         Options passed directly to `refnx.reduce.platypusnexus.process`,
         for processing of individual spectra. Look at that method docstring
@@ -345,23 +421,39 @@ def reduce_stitch_files(reflect_list, direct_list, norm_file_num=None,
     # now reduce all the files.
     zipped = zip(reflect_list, direct_list)
 
-    combined_dataset = reflectdataset.ReflectDataset()
+    combined_dataset = ReflectDataset()
+
+    if data_folder is None:
+        data_folder = os.getcwd()
 
     if norm_file_num:
         norm_datafile = pn.number_datafile(norm_file_num)
         kwds['h5norm'] = norm_datafile
 
     for index, val in enumerate(zipped):
-        reflect_datafile = pn.number_datafile(val[0])
-        direct_datafile = pn.number_datafile(val[1])
+        reflect_datafile = os.path.join(data_folder,
+                                        pn.number_datafile(val[0]))
+        direct_datafile = os.path.join(data_folder,
+                                       pn.number_datafile(val[1]))
 
-        reduced = ReducePlatypus(reflect_datafile, direct_datafile,
+        reduced = ReducePlatypus(direct_datafile,
+                                 reflect=reflect_datafile,
+                                 save=save,
                                  **kwds)
         if not index:
             reduced.scale(scale)
 
-        combined_dataset.add_data(reduced.data(), requires_splice=True,
+        combined_dataset.add_data(reduced.data(),
+                                  requires_splice=True,
                                   trim_trailing=trim_trailing)
+
+    if save:
+        fname = 'c_PLP{0:07d}.dat'.format(reflect_list[0])
+        with open(fname, 'wb') as f:
+            combined_dataset.save(f)
+        fname = 'c_PLP{0:07d}.xml'.format(reflect_list[0])
+        with open(fname, 'w') as f:
+            combined_dataset.save_xml(f)
 
     return combined_dataset
 
@@ -369,7 +461,7 @@ def reduce_stitch_files(reflect_list, direct_list, norm_file_num=None,
 if __name__ == "__main__":
     print(strftime("%a, %d %b %Y %H:%M:%S +0000", gmtime()))
 
-    a = reduce_stitch_files([708, 709, 710], [711, 711, 711], rebin_percent=2)
+    a = reduce_stitch([708, 709, 710], [711, 711, 711], rebin_percent=2)
 
     a.save('test1.dat')
 

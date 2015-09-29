@@ -1,9 +1,11 @@
 __author__ = 'anz'
 import unittest
+
 import numpy as np
 from numpy.testing import (assert_almost_equal, assert_, assert_equal)
 import os.path
-import refnx.reduce.nsplice as nsplice
+
+import refnx.util.nsplice as nsplice
 
 path = os.path.dirname(os.path.abspath(__file__))
 

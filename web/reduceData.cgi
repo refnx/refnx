@@ -47,7 +47,7 @@ def main():
 	kwds['basedir'] = FILEPATH
 	
 	try:
-		combineddataset = reduce.reduce_stitch_files(reflect_spectrum_list, direct_spectrum_list, normfilenumber = normfilenumber)
+		combineddataset = reduce.reduce_stitch(reflect_spectrum_list, direct_spectrum_list, normfilenumber = normfilenumber)
 		combineddataset.rebin(rebinpercent = kwds['rebinpercent'])
 	except:
 		print "Content-type: text/plain\n"

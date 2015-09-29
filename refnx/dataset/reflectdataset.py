@@ -1,6 +1,5 @@
 from __future__ import division
 import string
-import numpy as np
 from time import gmtime, strftime
 
 try:
@@ -8,7 +7,7 @@ try:
 except ImportError:
     import xml.etree.ElementTree as ET
 import os.path
-from .data1d import Data1D
+from refnx.dataset import Data1D
 
 
 class ReflectDataset(Data1D):
@@ -42,22 +41,23 @@ class ReflectDataset(Data1D):
 
         # filename = 'c_PLP{:07d}_{:d}.xml'.format(self._rnumber[0], 0)
 
-        self._ydata = string.translate(repr(self.y.tolist()), None, ',[]')
-        self._xdata = string.translate(repr(self.x.tolist()), None, ',[]')
-        self._ydataSD = string.translate(repr(self.y_sd.tolist()),
-                                         None,
-                                         ',[]')
-        self._xdataSD = string.translate(repr(self.x_sd.tolist()),
-                                         None,
-                                         ',[]')
+        self._ydata = repr(self.y.tolist()).strip(',[]')
+        self._xdata = repr(self.x.tolist()).strip(',[]')
+        self._ydataSD = repr(self.y_sd.tolist()).strip(',[]')
+        self._xdataSD = repr(self.x_sd.tolist()).strip(',[]')
 
         thefile = s.safe_substitute(self.__dict__)
         f.write(thefile)
 
     def load(self, f):
+        own_fh = None
+        g = f
+        if not hasattr(f, 'read'):
+            own_fh = open(f, 'rb')
+            g = own_fh
         try:
             tree = ET.ElementTree()
-            tree.parse(f)
+            tree.parse(g)
             qtext = tree.find('.//Qz')
             rtext = tree.find('.//R')
             drtext = tree.find('.//dR')
@@ -73,5 +73,8 @@ class ReflectDataset(Data1D):
             self.data = (qvals, rvals, drvals, dqvals)
             self.filename = f.name
         except ET.ParseError:
-            with open(f.name, 'Ur') as g:
-                super(ReflectDataset, self).load(g)
+            g.seek(0)
+            super(ReflectDataset, self).load(g)
+        finally:
+            if own_fh is not None:
+                own_fh.close()

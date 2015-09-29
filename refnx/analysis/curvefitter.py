@@ -83,8 +83,6 @@ def to_Parameters(p0, varies=None, bounds=None, names=None, expr=None):
             hilim[i] += 1
             _p0[i] = lowlim[i]
             _varies[i] = False
-            warnings.warn('Parameter min==max and parameter %s was varying. %s'
-                          ' now fixed' % (names[i], names[i]), RuntimeWarning)
 
         p.add(names[i], value=_p0[i], min=lowlim[i], max=hilim[i],
               vary=_varies[i], expr=expr[i])

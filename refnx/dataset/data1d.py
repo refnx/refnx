@@ -2,9 +2,11 @@
     A basic representation of a 1D dataset
 """
 from __future__ import division
+
 import numpy as np
 import os.path
-import refnx.reduce.nsplice as nsplice
+
+import refnx.util.nsplice as nsplice
 
 
 class Data1D(object):
@@ -92,18 +94,19 @@ class Data1D(object):
             2 to 4 member tuple containing the (x, y, y_sd, x_sd) data to
             specify the dataset. `y_sd` and `x_sd` are optional.
         """
-        self.x = data_tuple[0].flatten()
-        self.y = data_tuple[1].flatten()
+        self.x = np.asfarray(data_tuple[0]).flatten()
+        self.y = np.asfarray(data_tuple[1]).flatten()
 
         if len(data_tuple) > 2:
-            self.y_sd = data_tuple[2].flatten()
+            self.y_sd = np.asfarray(data_tuple[2]).flatten()
         else:
             self.y_sd = np.ones_like(self.x)
 
         if len(data_tuple) > 3:
-            self.x_sd = data_tuple[3].flatten()
+            self.x_sd = np.asfarray(data_tuple[3]).flatten()
         else:
             self.x_sd = np.zeros(np.size(self.x))
+        self.sort()
 
     def scale(self, scalefactor=1.):
         """

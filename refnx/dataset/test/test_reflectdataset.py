@@ -1,5 +1,5 @@
 import unittest
-import refnx.dataset.reflectdataset as reflectdataset
+from refnx.dataset import ReflectDataset
 import numpy as np
 from numpy.testing import assert_equal
 import os.path
@@ -18,14 +18,14 @@ class TestReflectDataset(unittest.TestCase):
             with values generated from Motofit
         
         '''
-        dataset = reflectdataset.ReflectDataset()
+        dataset = ReflectDataset()
         with open(os.path.join(path, 'c_PLP0000708.xml')) as f:
             dataset.load(f)
         
         assert_equal(dataset.npoints, 90)
         assert_equal(90, np.size(dataset.x))
         
-        dataset1 = reflectdataset.ReflectDataset()
+        dataset1 = ReflectDataset()
         with open(os.path.join(path, 'c_PLP0000708.dat')) as f:
             dataset1.load(f)
         

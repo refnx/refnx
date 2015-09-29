@@ -3,9 +3,11 @@ import numpy as np
 import refnx.util.general as general
 import refnx.util.ErrorProp as EP
 import xml.etree.ElementTree as et
+from refnx.dataset import reflectdataset
 
 
 XRR_BEAMWIDTH_SD = 0.019449 # mm
+
 
 def reduce_xrdml(f, bkg=None, scale=1, sample_length=None):
     """
