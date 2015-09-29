@@ -24,9 +24,7 @@ before_install:
   - travis_retry pip install --install-option="--no-cython-compile" Cython==0.22
   # Replace dep1 dep2 ... with your dependencies
   - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION atlas numpy
-  - conda install --yes scipy
-  - conda install --yes nose
-  - conda install --yes h5py
+  - conda install --yes scipy nose uncertainties h5py
   - pip install lmfit emcee
 
 install:

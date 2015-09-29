@@ -37,7 +37,7 @@ if USE_CYTHON:
 # refnx setup
 setup(  name        = 'refnx',
         ext_modules = ext_modules,
-        cmdclass = {'build_ext': build_ext},
+        # cmdclass = {'build_ext': build_ext},
         description = 'Neutron and X-ray Reflectometry Analysis',
         author      = 'Andrew Nelson',
         author_email = 'andrew.nelson@ansto.gov.au',
