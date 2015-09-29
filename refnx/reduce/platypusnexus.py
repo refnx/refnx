@@ -213,7 +213,7 @@ class PlatypusNexus(object):
                 background=True, direct=False, omega=0, two_theta=0,
                 rebin_percent=1., wavelength_bins=None, normalise=True,
                 integrate=-1, eventmode=None, peak_pos=None,
-                background_mask=None):
+                background_mask=None, **kwds):
         """
         Processes the ProcessNexus object to produce a time of flight spectrum.
         The processed spectrum is stored in the `processed_spectrum` attribute.

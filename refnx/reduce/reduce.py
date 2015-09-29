@@ -1,6 +1,7 @@
 from __future__ import division
 import numpy as np
-from . import platypusnexus as pn
+from refnx.reduce.platypusnexus import (PlatypusNexus, number_datafile,
+                                        Y_PIXEL_SPACING)
 from refnx.util import ErrorProp as EP
 import refnx.util.general as general
 import string
@@ -17,8 +18,8 @@ class ReducePlatypus(object):
     Offspecular data maps are also produced.
     """
 
-    def __init__(self, direct, reflect=None, scale=1., save=True,
-                 **kwds):
+    def __init__(self, direct, reflect=None, data_folder=None, scale=1.,
+                 save=True, **kwds):
         """
         Parameters
         ----------
@@ -28,6 +29,8 @@ class ReducePlatypus(object):
         reflect : string, hdf5 file-handle or PlatypusNexus object, optional
             A string containing the path to the specularly reflected hdf5 file,
             the hdf5 file itself, or a PlatypusNexus object.
+        data_folder : str, optional
+            Where is the raw data stored?
         scale : float, optional
             Divide all specular reflectivity values by this number.
         save : bool, optional
@@ -48,10 +51,15 @@ class ReducePlatypus(object):
         done. See ``reduce`` for attributes available from this object on
         completion of reduction.
         """
-        if isinstance(direct, pn.PlatypusNexus):
+        self.data_folder = os.path.curdir
+        if data_folder is not None:
+            self.data_folder = data_folder
+
+        if isinstance(direct, PlatypusNexus):
             self.direct_beam = direct
         else:
-            self.direct_beam = pn.PlatypusNexus(direct)
+            direct = os.path.join(self.data_folder, direct)
+            self.direct_beam = PlatypusNexus(direct)
 
         if reflect is not None:
             self.reduce(reflect, save=save, scale=scale, **kwds)
@@ -122,10 +130,12 @@ class ReducePlatypus(object):
         keywords['direct'] = False
 
         # get the reflected beam spectrum
-        if isinstance(reflect, pn.PlatypusNexus):
+        if isinstance(reflect, PlatypusNexus):
             self.reflected_beam = reflect
         else:
-            self.reflected_beam = pn.PlatypusNexus(reflect)
+            reflect = os.path.join(self.data_folder, reflect)
+            self.reflected_beam = PlatypusNexus(reflect)
+
         self.reflected_beam.process(**keywords)
 
         # get the direct beam spectrum
@@ -219,7 +229,7 @@ class ReducePlatypus(object):
         </REFroot>"""
         d = dict()
         d['time'] = strftime("%a, %d %b %Y %H:%M:%S +0000", gmtime())
-        d['_rnumber'] = self.reflected_beam.datafilenumber
+        d['_rnumber'] = self.reflected_beam.datafile_number
         d['_numpointsz'] = np.size(self.m_ref, 1)
         d['_numpointsy'] = np.size(self.m_ref, 2)
 
@@ -232,8 +242,18 @@ class ReducePlatypus(object):
         d['_qy'] = repr(self.m_qy[scanpoint].tolist()).strip(',[]')
 
         thefile = s.safe_substitute(d)
-        f.write(thefile)
-        f.truncate()
+
+        g = f
+        own_fh = None
+        if not hasattr(f, 'read'):
+            own_fh = open(f, 'w')
+            g = own_fh
+
+        try:
+            g.write(thefile)
+            g.truncate()
+        finally:
+            g.close()
 
     def _reduce_single_angle(self, scale=1):
         """
@@ -257,7 +277,7 @@ class ReducePlatypus(object):
                                     - self.direct_beam.m_beampos)
 
             total_z_deflection = (detector_z_difference
-                                  + beampos_z_difference * pn.Y_PIXEL_SPACING)
+                                  + beampos_z_difference * Y_PIXEL_SPACING)
 
             # omega_nom.shape = (N, )
             omega_nom = np.degrees(np.arctan(total_z_deflection
@@ -427,14 +447,14 @@ def reduce_stitch(reflect_list, direct_list, norm_file_num=None,
         data_folder = os.getcwd()
 
     if norm_file_num:
-        norm_datafile = pn.number_datafile(norm_file_num)
+        norm_datafile = number_datafile(norm_file_num)
         kwds['h5norm'] = norm_datafile
 
     for index, val in enumerate(zipped):
         reflect_datafile = os.path.join(data_folder,
-                                        pn.number_datafile(val[0]))
+                                        number_datafile(val[0]))
         direct_datafile = os.path.join(data_folder,
-                                       pn.number_datafile(val[1]))
+                                       number_datafile(val[1]))
 
         reduced = ReducePlatypus(direct_datafile,
                                  reflect=reflect_datafile,
