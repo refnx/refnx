@@ -5,6 +5,7 @@ python:
   - "3.4"
 
 before_install:
+  - sudo apt-get install libhdf5-serial-dev
   # We do this conditionally because it saves us some downloading if the
   # version is the same.
   - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then
@@ -20,7 +21,6 @@ before_install:
   # Useful for debugging any issues with conda
   - conda info -a
 
-install:
   - travis_retry pip install --install-option="--no-cython-compile" Cython==0.22
   # Replace dep1 dep2 ... with your dependencies
   - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION atlas numpy
@@ -28,6 +28,8 @@ install:
   - conda install --yes nose
   - conda install --yes h5py
   - pip install lmfit emcee
+
+install:
   - source activate test-environment
   - python setup.py install
 
