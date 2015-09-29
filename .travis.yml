@@ -12,6 +12,7 @@ install:
     else
       wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
     fi
+  - sudo apt-get install -qq libhdf5-serial-dev
   - bash miniconda.sh -b -p $HOME/miniconda
   - export PATH="$HOME/miniconda/bin:$PATH"
   - hash -r
@@ -21,11 +22,16 @@ install:
   - conda info -a
 
   # Replace dep1 dep2 ... with your dependencies
-  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION numpy scipy matplotlib nose emcee
-  - pip install lmfit cython
+  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION numpy scipy matplotlib nose
+  - pip install lmfit cython h5py emcee
   - source activate test-environment
   - python setup.py install
 
 script:
     - cd refnx
     - nosetests
+
+notifications:
+  # Perhaps we should have status emails sent to the mailing list, but
+  # let's wait to see what people think before turning that on.
+  email: false
