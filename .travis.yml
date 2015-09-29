@@ -34,7 +34,11 @@ before_install:
     - travis_retry pip install --install-option="--no-cython-compile" Cython==0.22
 
     - conda install --yes python=$TRAVIS_PYTHON_VERSION atlas numpy scipy nose h5py
-    - pip install lmfit emcee uncertainties
+    - pip install emcee uncertainties
+    - git clone https://github.com/lmfit/lmfit-py.git
+    - cd lmfit
+    - python setup.py install
+    - cd ..
 
 install:
     - python setup.py install
