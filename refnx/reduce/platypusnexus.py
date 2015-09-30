@@ -15,6 +15,7 @@ import re
 from time import gmtime, strftime
 import string
 import warnings
+import io
 
 
 # detector y pixel spacing in mm per pixel
@@ -843,8 +844,9 @@ class PlatypusNexus(object):
                                        'DATASET_%d' % scanpoint,
                                        'EOS.bin')
 
-        with open(stream_filename, 'rb') as f:
-            events, end_of_last_event = event.events(f)
+        with io.open(stream_filename, 'rb') as f:
+            events, end_of_last_event = event.events(f,
+                                    max_frames=int(frame_bins[-1] * frequency))
 
         output = event.process_event_stream(events,
                                             np.asfarray(frame_bins)

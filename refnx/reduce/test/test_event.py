@@ -9,12 +9,12 @@ class TestEvent(unittest.TestCase):
     def setUp(self):
         path = os.path.dirname(__file__)
         self.path = path
-        event_file_path = os.path.join(path,
+        self.event_file_path = os.path.join(path,
                                        'DAQ_2012-01-19T15-45-52',
                                        'DATASET_0',
                                        'EOS.bin')
 
-        with open(event_file_path, 'rb') as f:
+        with open(self.event_file_path, 'rb') as f:
             event_list, fpos = event.events(f)
 
         self.event_list = event_list
@@ -24,7 +24,17 @@ class TestEvent(unittest.TestCase):
     def test_num_events(self):
         assert_equal(1056618, self.x.size)
 
+    def test_max_frames(self):
+        # test reading only a certain number of frames
+        with open(self.event_file_path, 'rb') as f:
+            event_list, fpos = event.events(f, max_frames=10)
+        f, t, y, x = event_list
+        max_f = np.max(f)
+        assert_equal(9, max_f)
+
     def test_values(self):
+        # We know the values of all the events in the file from another program
+        # test that a set of random events are correct.
         assert_equal(self.t[0], 47350)
         assert_equal(self.x[0], 18)
         assert_equal(self.y[0], 96)

@@ -5,6 +5,7 @@ unpack streaming file
 """
 import numpy as np
 
+
 def process_event_stream(events, frame_bins, t_bins, y_bins, x_bins):
     """
     Processes the event mode dataset into a histogram.
@@ -69,7 +70,7 @@ def process_event_stream(events, frame_bins, t_bins, y_bins, x_bins):
     return detector, localframe_bins
 
 
-def events(f, endoflastevent=127):
+def events(f, endoflastevent=127, max_frames=np.inf):
     """
     Unpacks event data from packedbinary format for the ANSTO Platypus
     instrument
@@ -82,6 +83,8 @@ def events(f, endoflastevent=127):
     endoflastevent : uint
         The file position to start the read from. The data starts from byte
         127.
+    max_frames : int
+        Stop reading the event file when you get to this many frames.
         
     Returns
     -------
@@ -109,7 +112,7 @@ def events(f, endoflastevent=127):
 
     BUFSIZE = 32768
 
-    while True:
+    while True and frame_number < max_frames:
         x_neutrons = []
         y_neutrons = []
         t_neutrons = []
@@ -161,6 +164,8 @@ def events(f, endoflastevent=127):
                     if x == 0 and y == 0 and dt == 0xFFFFFFFF:
                         t = 0
                         frame_number += 1
+                        if frame_number == max_frames:
+                            break
                     else:
                         t += dt
                         if frame_number == -1:
