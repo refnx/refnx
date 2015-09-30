@@ -70,7 +70,7 @@ def q2(omega, twotheta, phi, wavelength):
 
     Returns
     -------
-        (Qx, Qy, Qz)
+    Qx, Qy, Qz : float, float, float
         Momentum transfer in A**-1.
 
     Notes
@@ -92,11 +92,11 @@ def q2(omega, twotheta, phi, wavelength):
           - np.cos(omega)))
     qz = 2 * np.pi / wavelength * (np.sin(twotheta - omega) + np.sin(omega))
 
-    return (qx, qy, qz)
+    return qx, qy, qz
 
 
 def wavelength(q, angle):
-    '''
+    """
     calculate wavelength given Q vector and angle
 
     Parameters
@@ -110,25 +110,25 @@ def wavelength(q, angle):
     -------
     wavelength : float
         Wavelength of radiation (A)
-    '''
+    """
     return  4. * np.pi * np.sin(angle * np.pi / 180.)/q
 
 
 def angle(q, wavelength):
-    '''
+    """
     calculate angle given Q and wavelength
     q - wavevector (A^-1)
     wavelength -  wavelength of radiation (Angstrom)
-    '''
+    """
     return  np.arcsin(q / 4. / np.pi * wavelength) * 180 / np.pi
 
 
 def qcrit(SLD1, SLD2):
-    '''
+    """
     calculate critical Q vector given SLD of super and subphases
     SLD1 - SLD of superphase (10^-6 A^-2)
     SLD2 - SLD of subphase (10^-6 A^-2)
-    '''
+    """
     return np.sqrt(16. * np.pi * (SLD2 - SLD1) * 1.e-6)
 
 
@@ -230,7 +230,7 @@ def energy_wavelength(energy):
 
 
 def double_chopper_frequency(min_wavelength, max_wavelength, L, N=1):
-   """
+    """
     Calculates the maximum frequency available for a given wavelength band
     without getting frame overlap in a chopper spectrometer.
 
@@ -245,7 +245,7 @@ def double_chopper_frequency(min_wavelength, max_wavelength, L, N=1):
     N: float, optional
         number of windows in chopper pair
     """
-   return K / ((max_wavelength - min_wavelength) * L * N)
+    return K / ((max_wavelength - min_wavelength) * L * N)
 
 
 def resolution_double_chopper(wavelength, z0=0.358, R=0.35, freq=24,
@@ -338,7 +338,6 @@ def transmission_double_chopper(wavelength, z0=0.358, R=0.35, freq=24, N=1,
     kernel for time-of-flight neutron reflectometers, J. Appl. Cryst. (2013)
     46, 1338-1343
     """
-
     transmission = tauC(wavelength, xsi=xsi, z0=z0, freq=freq) * freq
     transmission += H * constants.h / (2 * np.pi * R)
     return transmission * N
@@ -371,21 +370,21 @@ def transmission_single_chopper(R=0.35, phi=60, N=1, H=0.005):
 
 
 def xray_wavelength(energy):
-    '''
+    """
     convert energy (keV) to wavelength (angstrom)
-    '''
+    """
     return 12.398/ energy
 
 
 def xray_energy(wavelength):
-    '''
+    """
     convert energy (keV) to wavelength (angstrom)
-    '''
+    """
     return 12.398/ wavelength
 
 
 def penetration_depth(qq, rho):
-    '''
+    """
     Calculates the penetration depth of a neutron/xray beam
 
     Parameters
@@ -398,7 +397,7 @@ def penetration_depth(qq, rho):
     Returns
     -------
     penetration_depth: float
-    '''
+    """
     kk = 0.25 * qq ** 2.
     kk -= 4 * np.pi * rho
     temp = np.sqrt(kk + 0j)
@@ -406,7 +405,7 @@ def penetration_depth(qq, rho):
 
 
 def beamfrac(FWHM, length, angle):
-    '''
+    """
     Calculate the beam fraction intercepted by a sample.
 
     Parameters
@@ -422,7 +421,7 @@ def beamfrac(FWHM, length, angle):
     -------
     beamfrac: float
         The fraction of the beam that intercepts the sample
-    '''
+    """
     height_of_sample = length * np.sin(np.radians(angle))
     beam_sd = FWHM / 2 / np.sqrt(2 * np.log(2))
     probability = 2. * (stats.norm.cdf(height_of_sample / 2. / beam_sd) - 0.5)
@@ -430,13 +429,13 @@ def beamfrac(FWHM, length, angle):
 
 
 def beamfrackernel(kernelx, kernely, length, angle):
-    '''
+    """
     return the beam fraction intercepted by a sample of length length at sample
     tilt angle.
     The beam has the shape 'kernel', a 2 row array, which gives the PDF for the
     beam intensity as a function of height. The first row is position, the
     second row is probability at that position.
-    '''
+    """
     height_of_sample = length * np.sin(np.radians(angle))
     total = integrate.simps(kernely, kernelx)
     lowlimit = np.where(-height_of_sample / 2. >= kernelx)[0][-1]
@@ -475,7 +474,7 @@ def height_of_beam_after_dx(d1, d2, L12, distance):
 
 
 def actual_footprint(d1, d2, L12, L2S, angle):
-    '''
+    """
     Calculate the actual footprint on a sample.
     Parameters:
         d1 - opening of first collimation slit
@@ -486,7 +485,7 @@ def actual_footprint(d1, d2, L12, L2S, angle):
     Returns:
         (umbra_footprint, penumbra_footprint)
 
-    '''
+    """
     umbra, penumbra = height_of_beam_after_dx(d1, d2, L12, L2S)
     return  umbra / np.radians(angle), penumbra / np.radians(angle)
 
