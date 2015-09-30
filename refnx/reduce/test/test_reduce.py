@@ -16,7 +16,7 @@ class TestReduce(unittest.TestCase):
 
     def test_smoke(self):
         # a quick smoke test to check that the reduction can occur
-        a = reduce_stitch([708, 709, 710], [711, 711, 711],
+        a, fname = reduce_stitch([708, 709, 710], [711, 711, 711],
                           data_folder=self.path, rebin_percent=2)
         a.save('test1.dat')
 

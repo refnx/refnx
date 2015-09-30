@@ -393,17 +393,20 @@ class ReducePlatypus(object):
         reduction['datafile_number'] = self.datafile_number = (
             self.reflected_beam.datafile_number)
 
+        fnames = []
         if self.save:
             for i in range(n_spectra):
                 data_tup = self.data(scanpoint=i)
                 dataset = ReflectDataset(data_tup)
                 fname = 'PLP{0:07d}_{1}.dat'.format(self.datafile_number, i)
+                fnames.append(fname)
                 with open(fname, 'wb') as f:
                     dataset.save(f)
                 fname = 'PLP{0:07d}_{1}.xml'.format(self.datafile_number, i)
                 with open(fname, 'w') as f:
                     dataset.save_xml(f)
 
+        reduction['fname'] = fnames
         return deepcopy(reduction)
 
 
@@ -435,6 +438,12 @@ def reduce_stitch(reflect_list, direct_list, norm_file_num=None,
         Options passed directly to `refnx.reduce.platypusnexus.process`,
         for processing of individual spectra. Look at that method docstring
         for specification of options.
+
+    Returns
+    -------
+    combined_dataset, reduced_filename : refnx.dataset.ReflectDataset, str
+        The combined dataset and the file name of the reduced data, if it was
+        saved. If it wasn't saved `reduced_filename` is `None`.
     """
     scale = kwds.get('scale', 1.)
 
@@ -467,6 +476,7 @@ def reduce_stitch(reflect_list, direct_list, norm_file_num=None,
                                   requires_splice=True,
                                   trim_trailing=trim_trailing)
 
+    fname = None
     if save:
         fname = 'c_PLP{0:07d}.dat'.format(reflect_list[0])
         with open(fname, 'wb') as f:
@@ -475,7 +485,7 @@ def reduce_stitch(reflect_list, direct_list, norm_file_num=None,
         with open(fname, 'w') as f:
             combined_dataset.save_xml(f)
 
-    return combined_dataset
+    return combined_dataset, fname
 
 
 if __name__ == "__main__":
