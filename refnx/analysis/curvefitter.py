@@ -76,9 +76,11 @@ def to_Parameters(p0, varies=None, bounds=None, names=None, expr=None):
         # the parameter. So fix the parameter and set the upper limit to be
         # slightly larger (otherwise you'll get an error when setting the
         # Parameter up)
-        if (lowlim[i] is not None and hilim[i] is not None and
-            np.isfinite(lowlim[i]) and np.isfinite(hilim[i]) and
-            lowlim[i] == hilim[i]):
+        if (lowlim[i] is not None
+            and hilim[i] is not None
+            and np.isfinite(lowlim[i])
+            and np.isfinite(hilim[i])
+            and lowlim[i] == hilim[i]):
 
             hilim[i] += 1
             _p0[i] = lowlim[i]
@@ -163,8 +165,8 @@ class CurveFitter(Minimizer):
                  fcn_args=(), fcn_kws=None, kws=None, callback=None):
         """
         fitfunc : callable
-            Function calculating the model for the fit.  Should have the
-            signature: ``fitfunc(x, params, *fcn_args, **fcn_kws)``
+            Function calculating the generative model for the fit.  Should have
+            the signature: ``fitfunc(x, params, *fcn_args, **fcn_kws)``
         x : np.ndarray
             The independent variables
         y : np.ndarray
@@ -201,7 +203,6 @@ class CurveFitter(Minimizer):
             self.mask = np.empty(self.ydata.shape, bool)
             self.mask[:] = False
 
-        self.MDL = None
         if edata is not None:
             self.edata = np.asfarray(edata)
             self.scale_covar = False
@@ -321,7 +322,7 @@ class CurveFitter(Minimizer):
         Parameters
         ----------
         nparams: int, optional
-                >= 0 - provide a set of names with length `nparams`
+            >= 0 - provide a set of names with length `nparams`
         Returns
         -------
         names: list
@@ -364,7 +365,7 @@ class CurveFitter(Minimizer):
                                       'method')
 
         result = self.prepare_fit(params=params)
-        vars   = result.init_vals
+        vars = result.init_vals
         params = result.params
 
         # Removing internal parameter scaling. We could possibly keep it,
@@ -439,7 +440,7 @@ class CurveFitter(Minimizer):
                 if i != j:
                     result.params[var_name].correl[var_name2] = corrcoefs[i, j]
 
-        result.errorbars == True
+        result.errorbars = True
         result.ndata = 1
         result.nfree = 1
         result.chisqr = self.penalty(mean)
@@ -447,32 +448,6 @@ class CurveFitter(Minimizer):
         self.unprepare_fit()
 
         return result, flat_chain
-
-    def mcmc1(self, samples=1e4, burn=0, thin=1, verbose=0):
-        """
-        Samples the posterior for the curvefitting system using MCMC.
-        This method updates curvefitter.params at the end of the sampling
-        process.  You have to have set bounds on all of the parameters, and it
-        is assumed that the prior is Uniform.
-        
-        Parameters
-        ----------
-        samples : int, optional
-            How many samples you would like to draw from the posterior
-            distribution.
-        burn : int, optional
-            Discard this many samples from the start of the sampling regime.
-        thin : int, optional
-            Only accept 1 in `thin` samples.
-        verbose : integer, optional
-            Level of output verbosity: 0=none, 1=low, 2=medium, 3=high
-        
-        Returns
-        -------
-        MDL : pymc.MCMC.MCMC instance
-            Contains the samples.
-        """
-        return super(CurveFitter, self).mcmc(samples, burn=burn, thin=thin)
 
 
 class GlobalFitter(CurveFitter):
@@ -633,7 +608,7 @@ class GlobalFitter(CurveFitter):
                               fitter.model(fitter.params))
         return model
 
-    def residuals(self, params):
+    def residuals(self, params, *args, **kwds):
         """
         Calculate the difference between the data and the model. Also known as
         the objective function.  This function is minimized during a fit.
@@ -680,7 +655,4 @@ if __name__ == '__main__':
     f = CurveFitter(gauss, xdata, ydata, pars)
     f.fit()
 
-    print(fit_report(f.params))
-
-    MDL = f.mcmc(samples=1e4)
     print(fit_report(f.params))
