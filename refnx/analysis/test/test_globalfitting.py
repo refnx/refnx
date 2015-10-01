@@ -11,6 +11,7 @@ SEED = 1
 
 CURDIR = os.path.dirname(os.path.abspath(__file__))
 
+
 def reflect_fitfunc(q, params, *args):
     coefs = np.asfarray(list(params.valuesdict().values()))
     return np.log10(reflect.reflectivity(q, coefs))

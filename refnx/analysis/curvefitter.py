@@ -6,11 +6,11 @@ Created on Sun Dec 21 15:37:29 2014
 """
 from __future__ import print_function
 from lmfit import Minimizer, Parameters
-# import pymc
+import warnings
 import numpy as np
 import numpy.ma as ma
 import re
-import warnings
+from collections import OrderedDict
 # check for EMCEE
 HAS_EMCEE = False
 try:
@@ -333,122 +333,6 @@ class CurveFitter(Minimizer):
             name = ['p%d' % i for i in range(nparams)]
         return name
 
-    def emcee(self, params=None, steps=1000, nwalkers=100, burn=0, thin=1,
-              ntemps=1):
-        """
-        Samples the posterior for the curvefitting system using MCMC.
-        This method updates curvefitter.params at the end of the sampling
-        process.  You have to have set bounds on all of the parameters, and it
-        is assumed that the prior is Uniform. You need to have `emcee` and
-        `pandas` installed to use this method.
-
-        Parameters
-        ----------
-        steps : int, optional
-            How many samples you would like to draw from the posterior
-            distribution.
-        burn : int, optional
-            Discard this many samples from the start of the sampling regime.
-        thin : int, optional
-            Only accept 1 in every `thin` samples.
-        ntemps : int, optional
-            If `ntemps > 1` perform a Parallel Tempering.
-
-        Returns
-        -------
-        result, chain : MinimizerResult, pandas.DataFrame
-            MinimizerResult object contains updated params, fit statistics, etc.
-            The `chain` contains the samples. Has shape (steps, ndims).
-        """
-        if not HAS_EMCEE:
-            raise NotImplementedError('You must have emcee to use the emcee '
-                                      'method')
-
-        result = self.prepare_fit(params=params)
-        vars = result.init_vals
-        params = result.params
-
-        # Removing internal parameter scaling. We could possibly keep it,
-        # but I don't know how this affects the emcee sampling.
-        bounds_varying = []
-        for i, par in enumerate(params):
-            param = params[par]
-            vars[i] = param.from_internal(param.value)
-            param.from_internal = lambda val: val
-            lb, ub = param.min, param.max
-            if lb is None or lb is np.nan:
-                lb = -np.inf
-            if ub is None or ub is np.nan:
-                ub = np.inf
-            bounds_varying.append((lb, ub))
-
-        bounds_varying = np.array(bounds_varying)
-
-        self.nvarys = len(result.var_names)
-
-        def lnlike(theta):
-            # log likelihood
-            return -0.5 * self.penalty(theta)
-
-        def lnprior(theta):
-            # stay within the prior specified by the parameter bounds
-            if (np.any(theta > bounds_varying[:, 1])
-                    or np.any(theta < bounds_varying[:, 0])):
-                return -np.inf
-            return 0
-
-        def lnprob(theta):
-            lp = lnprior(theta)
-            if not np.isfinite(lp):
-                return -np.inf
-            return lp + lnlike(theta)
-
-        if ntemps > 1:
-            # TODO setup pos
-            sampler = emcee.PTSampler(ntemps, nwalkers, self.nvarys, lnlike,
-                                      lnprior)
-        else:
-            p0 = np.array([vars * (1 + 1e-2 * np.random.randn(self.nvarys))
-                        for i in range(nwalkers)])
-            sampler = emcee.EnsembleSampler(nwalkers, self.nvarys, lnprob)
-
-        # burn in the sampler
-        for output in sampler.sample(p0, iterations=burn):
-            p0 = output[0]
-        sampler.reset()
-
-        # now do a production run
-        for output in sampler.sample(p0, iterations=steps - burn, thin=thin):
-            pass
-
-        flat_chain = DataFrame(sampler.flatchain, columns=result.var_names)
-
-        mean = np.mean(flat_chain, axis=0)
-        quantiles = np.percentile(flat_chain, [15.8, 84.2], axis=0)
-
-        for i, var_name in enumerate(result.var_names):
-            std_l, std_u = quantiles[:, i]
-            params[var_name].value = mean[i]
-            params[var_name].stderr = std_u - std_l
-            params[var_name].correl = {}
-
-        # work out correlation coefficients
-        corrcoefs = np.corrcoef(flat_chain.T)
-
-        for i, var_name in enumerate(result.var_names):
-            for j, var_name2 in enumerate(result.var_names):
-                if i != j:
-                    result.params[var_name].correl[var_name2] = corrcoefs[i, j]
-
-        result.errorbars = True
-        result.ndata = 1
-        result.nfree = 1
-        result.chisqr = self.penalty(mean)
-        result.redchi = result.chisqr / (result.ndata - result.nvarys)
-        self.unprepare_fit()
-
-        return result, flat_chain
-
 
 class GlobalFitter(CurveFitter):
     """
@@ -465,6 +349,11 @@ class GlobalFitter(CurveFitter):
             constraint 'd2:scale = 2 * d0:back' constrains the `scale`
             parameter in dataset 2 to be twice the `back` parameter in
             dataset 0.
+            **Important** For a parameter (`d2:scale` in this example) to be
+            constrained by this mechanism it must not have any pre-existing
+            constraints within its individual fitter. If there are
+            pre-existing constraints then those are honoured, and constraints
+            specified here are ignored.
         kws: dict, optional
             Extra minimization keywords to be passed to the minimizer of
             choice.
@@ -483,7 +372,7 @@ class GlobalFitter(CurveFitter):
 
         self.fitters = fitters
 
-        self.new_param_names = []
+        self.new_param_reference = dict()
         p = Parameters()
         for i, fitter in enumerate(self.fitters):
             # add all the parameters for a given dataset
@@ -491,11 +380,11 @@ class GlobalFitter(CurveFitter):
             # abc -> abc_d0
             # parameter `abc` in dataset 0 becomes abc_d0
             new_names = {}
-            for j, item in enumerate(fitter.params.items()):
-                old_name = item[0]
-                param = item[1]
+            for old_name, param in fitter.params.items():
                 new_name = old_name + '_d%d' % i
                 new_names[new_name] = old_name
+
+                self.new_param_reference[new_name] = param
 
                 p.add(new_name,
                       value=param.value,
@@ -503,8 +392,6 @@ class GlobalFitter(CurveFitter):
                       min=param.min,
                       max=param.max,
                       expr=param.expr)
-
-            self.new_param_names.append(new_names)
 
             # if there are any expressions they have to be updated
             # iterate through all the parameters in the dataset
@@ -520,17 +407,16 @@ class GlobalFitter(CurveFitter):
                         if regex.search(expr):
                             new_expr_name = old_names[old_name]
                             new_expr = expr.replace(old_name, new_expr_name)
-                            p[new_name].set(expr=new_expr)
+                            p[new_name].expr = new_expr
 
         # now set constraints/linkages up. They're specified as
-        # dN:param_name=constraint
+        # dN:param_name = constraint
         dp_string = 'd([0-9]+):([0-9a-zA-Z_]+)'
-        constraint_regex = re.compile(dp_string + '\s*=\s*(.*)')
-        param_regex = re.compile(dp_string)
+        parameter_regex = re.compile(dp_string + '\s*=\s*(.*)')
+        constraint_regex = re.compile(dp_string)
 
-        all_names = p.valuesdict().keys()
         for constraint in constraints:
-            r = constraint_regex.search(constraint)
+            r = parameter_regex.search(constraint)
 
             if r is not None:
                 groups = r.groups()
@@ -539,16 +425,25 @@ class GlobalFitter(CurveFitter):
                 const = groups[2]
 
                 # see if this parameter is in the list of parameters
-                modified_param_name = param_name + ('_d%d' % dataset_num)
-                if modified_param_name not in all_names:
+                par_to_be_constrained = param_name + ('_d%d' % dataset_num)
+                if par_to_be_constrained not in p:
+                    continue
+
+                # if it already has a constraint / expr don't override it
+                if p[par_to_be_constrained].expr is not None:
+                    warning_msg = ("%s already has a constraint within its"
+                                   " individual fitter. The %s constraint"
+                                   "is ignored."
+                                   % (par_to_be_constrained, constraint))
+                    warnings.warn(warning_msg, UserWarning)
                     continue
 
                 # now search for fitters mentioned in constraint
-                d_mentioned = param_regex.findall(const)
+                d_mentioned = constraint_regex.findall(const)
                 for d in d_mentioned:
                     new_name = d[1] + ('_d%d' % int(d[0]))
                     # see if the dataset mentioned is actually a parameter
-                    if new_name in self.new_param_names[int(d[0])]:
+                    if new_name in self.new_param_reference:
                         # if it is, then rename it.
                         const = const.replace('d' + d[0] + ':' + d[1],
                                               new_name)
@@ -556,7 +451,7 @@ class GlobalFitter(CurveFitter):
                         const = None
                         break
 
-                p[modified_param_name].set(expr=const)
+                p[par_to_be_constrained].expr = const
 
         self.params = p
         xdata = [fitter.xdata for fitter in fitters]
@@ -570,7 +465,7 @@ class GlobalFitter(CurveFitter):
                                            callback=callback,
                                            kws=min_kwds)
 
-    def distribute_params(self, params):
+    def _distribute_params(self, params):
         """
         Takes the combined parameter set and distributes linked parameters
         into the individual parameter sets.
@@ -580,11 +475,9 @@ class GlobalFitter(CurveFitter):
         params: lmfit.Parameters
             Specifies the entire parameter set, across all the datasets
         """
-        vals = params.valuesdict()
-        for i, fitter in enumerate(self.fitters):
-            new_names = self.new_param_names[i]
-            for new_name, old_name in new_names.items():
-                fitter.params[old_name].set(value=vals[new_name])
+        for name, param in params.items():
+            # if param.vary or param.expr is not None:
+            self.new_param_reference[name].value = param.value
 
     def model(self, params):
         """
@@ -601,7 +494,7 @@ class GlobalFitter(CurveFitter):
             The model.
         """
         model = np.zeros(0, dtype='float64')
-        self.distribute_params(params)
+        self._distribute_params(params)
 
         for fitter in self.fitters:
             model = np.append(model,
@@ -625,7 +518,7 @@ class GlobalFitter(CurveFitter):
             The difference between the data and the model.
         """
         total_residuals = np.zeros(0, dtype='float64')
-        self.distribute_params(params)
+        self._distribute_params(params)
 
         for fitter in self.fitters:
             resid = fitter.residuals(fitter.params)
