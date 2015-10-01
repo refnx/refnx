@@ -21,15 +21,12 @@ def abeles(q, layers, scale=1., bkg=0):
         layers[-1, 1] - SLD of backing (/1e-6 Angstrom**-2)
         layers[-1, 2] - iSLD of backing (/1e-6 Angstrom**-2)
         layers[-1, 3] - roughness between backing and last layer
-
     q: array_like
         the q values required for the calculation.
         Q = 4 * Pi / lambda * sin(omega).
         Units = Angstrom**-1
-
     scale: float
         Multiply all reflectivities by this value.
-
     bkg: float
         Linear background to be added to all reflectivities
 
