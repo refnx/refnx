@@ -58,7 +58,7 @@ for fit in fitted_parameters:
     parameters['p%d' % fit].vary = True
 
 # use resolution smearing and fit on a logR scale (transform the data as well)
-fitter = reflect.ReflectivityFitter(xdata, ydata, parameters, edata=dydata,
+fitter = reflect.ReflectivityFitFunction(xdata, ydata, parameters, edata=dydata,
                                     fcn_kws = {'dqvals': dxdata})
 
 

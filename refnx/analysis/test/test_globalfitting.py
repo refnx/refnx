@@ -220,9 +220,11 @@ class TestGlobalFitting(unittest.TestCase):
                         + c.residuals(c.params) ** 2)
         global_chisqr = g.residuals(g.params) ** 2
         assert_almost_equal(indiv_chisqr.sum(), global_chisqr.sum())
-
+        import time
+        start = time.time()
         res = g.fit('differential_evolution')
-        print(res.chisqr)
+        finish = time.time()
+        print(finish - start)
         assert_almost_equal(res.chisqr, 0.774590447535, 4)
 
 

@@ -1853,7 +1853,7 @@ g10
 S'default'
 p745
 a(crefnx.analysis.reflectivity
-ReflectivityFitter
+ReflectivityFitFunction
 p746
 S''
 p747

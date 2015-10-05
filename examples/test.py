@@ -65,7 +65,7 @@ def run():
     fcn_kws = {'dqvals': dxdata, 'transform': t}
 
     # create the fit instance
-    fitter = reflect.ReflectivityFitter(xdata, ydata, parameters, edata=dydata,
+    fitter = reflect.ReflectivityFitFunction(xdata, ydata, parameters, edata=dydata,
                                         fcn_kws=fcn_kws)
 
     #do the fit

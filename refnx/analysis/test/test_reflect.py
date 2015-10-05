@@ -37,6 +37,34 @@ class TestReflect(unittest.TestCase):
         self.qvals = qvals.flatten()
         self.rvals = rvals.flatten()
 
+        # e361 is an older dataset, but well characterised
+        self.coefs361 = np.zeros(16)
+        self.coefs361[0] = 2
+        self.coefs361[1] = 1.
+        self.coefs361[2] = 2.07
+        self.coefs361[4] = 6.36
+        self.coefs361[6] = 2e-5
+        self.coefs361[7] = 3
+        self.coefs361[8] = 10
+        self.coefs361[9] = 3.47
+        self.coefs361[11] = 4
+        self.coefs361[12] = 200
+        self.coefs361[13] = 1
+        self.coefs361[15] = 3
+        lowlim = np.zeros(16)
+        lowlim[4] = 6.2
+        hilim = 2 * self.coefs361
+
+        bounds = list(zip(lowlim, hilim))
+        e361 = np.loadtxt('e361r.txt')
+        self.qvals361, self.rvals361, self.evals361 = np.hsplit(e361, 3)
+        self.params361 = curvefitter.to_Parameters(self.coefs361,
+                                                   bounds=bounds,
+                                                   varies=[False] * 16)
+        fit = [1, 4, 6, 8, 12, 13]
+        for p in fit:
+            self.params361['p%d' % p].vary = True
+
     def test_abeles(self):
         #    test reflectivity calculation with values generated from Motofit
         calc = reflect.reflectivity(self.qvals, self.coefs)
@@ -127,16 +155,44 @@ class TestReflect(unittest.TestCase):
         # test reflectivity calculation with values generated from Motofit
         params = curvefitter.to_Parameters(self.coefs)
 
-        fitter = reflect.ReflectivityFitter(self.qvals, self.rvals, params)
+        fitter = reflect.ReflectivityFitFunction(self.qvals, self.rvals, params)
         model = fitter.model(params)
 
         assert_almost_equal(model, self.rvals)
 
     def test_reflectivity_fit(self):
+        # a smoke test to make sure the reflectivity fit proceeds
         params = curvefitter.to_Parameters(self.coefs)
         params['p1'].value = 1.1
-        fitter = reflect.ReflectivityFitter(self.qvals, self.rvals, params)
+
+        fitter = reflect.ReflectivityFitFunction(self.qvals, self.rvals, params)
         fitter.fit()
+
+        transform = reflect.Transform('logY')
+        yt, et = transform.transform(self.qvals361,
+                                     self.rvals361,
+                                     self.evals361)
+        kws = {'transform':transform.transform}
+        fitter2 = reflect.ReflectivityFitFunction(self.qvals361,
+                                             yt,
+                                             self.params361,
+                                             edata=et,
+                                             fcn_kws=kws)
+        fitter2.fit('differential_evolution')
+
+    def test_reflectivity_emcee(self):
+        transform = reflect.Transform('logY')
+        yt, et = transform.transform(self.qvals361,
+                                     self.rvals361,
+                                     self.evals361)
+
+        kws = {'transform':transform.transform}
+        fitter2 = reflect.ReflectivityFitFunction(self.qvals361,
+                                             yt,
+                                             self.params361,
+                                             edata=et,
+                                             fcn_kws=kws)
+        fitter2.emcee()
 
     def test_smearedabeles(self):
         # test smeared reflectivity calculation with values generated from
@@ -193,7 +249,7 @@ class TestReflect(unittest.TestCase):
         Do the same here
         '''
         params = curvefitter.to_Parameters(self.coefs)
-        fitter = reflect.ReflectivityFitter(qvals,
+        fitter = reflect.ReflectivityFitFunction(qvals,
                                             rvals, params,
                                             fcn_kws={'dqvals': dqvals,
                                                      'quad_order': 13})
@@ -216,7 +272,7 @@ class TestReflect(unittest.TestCase):
 
         names += ['thick1', 'SLD1', 'iSLD1', 'sigma1']
 
-        names2 = reflect.ReflectivityFitter.parameter_names(12)
+        names2 = reflect.ReflectivityFitFunction.parameter_names(12)
         assert_(names == names2)
 
 

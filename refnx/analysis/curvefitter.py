@@ -10,12 +10,13 @@ import warnings
 import numpy as np
 import numpy.ma as ma
 import re
-from collections import OrderedDict
+from functools import partial
+import abc
+
 # check for EMCEE
 HAS_EMCEE = False
 try:
     import emcee as emcee
-    from pandas import DataFrame
     HAS_EMCEE = True
 except ImportError:
     pass
@@ -157,6 +158,44 @@ def fitfunc(f):
     return f
 
 
+class FitFunction(object):
+    """
+    An abstract FitFunction class.
+    """
+    def __init__(self):
+        pass
+
+    def __call__(self, x, params, *args, **kws):
+        return self.model(x, params, *args, **kws)
+
+    @abc.abstractmethod
+    def model(self, x, params, *args, **kws):
+        """
+        Override this method in your own fitfunction
+        """
+        raise RuntimeError("You can't use the abstract base FitFunction in a"
+                           " real fit")
+
+    @staticmethod
+    def parameter_names(nparams=0):
+        """
+        Provides a set of names for constructing an lmfit.Parameters instance
+
+        Parameters
+        ----------
+        nparams: int, optional
+            >= 0 - provide a set of names with length `nparams`
+        Returns
+        -------
+        names: list
+            names for the lmfit.Parameters instance
+        """
+        name = list()
+        if nparams > 0:
+            name = ['p%d' % i for i in range(nparams)]
+        return name
+
+
 class CurveFitter(Minimizer):
     """
     A curvefitting class that extends lmfit.Minimize
@@ -166,7 +205,7 @@ class CurveFitter(Minimizer):
         """
         fitfunc : callable
             Function calculating the generative model for the fit.  Should have
-            the signature: ``fitfunc(x, params, *fcn_args, **fcn_kws)``
+            the signature: ``fitfunc(x, params, *fcn_args, **fcn_kws)``.
         x : np.ndarray
             The independent variables
         y : np.ndarray
@@ -200,8 +239,7 @@ class CurveFitter(Minimizer):
 
             self.mask = mask
         else:
-            self.mask = np.empty(self.ydata.shape, bool)
-            self.mask[:] = False
+            self.mask = None
 
         if edata is not None:
             self.edata = np.asfarray(edata)
@@ -214,7 +252,16 @@ class CurveFitter(Minimizer):
         if kws is not None:
             min_kwds = kws
 
-        super(CurveFitter, self).__init__(self.residuals,
+        self._resid = partial(_parallel_residuals_calculator,
+                              fitfunc=fitfunc,
+                              data_tuple=(self.xdata,
+                                          self.ydata,
+                                          self.edata),
+                              mask=mask,
+                              fcn_args=fcn_args,
+                              fcn_kws=fcn_kws)
+
+        super(CurveFitter, self).__init__(self._resid,
                                           params,
                                           iter_cb=callback,
                                           fcn_args=fcn_args,
@@ -237,11 +284,12 @@ class CurveFitter(Minimizer):
         if len(data) > 2:
             self.edata = np.asfarray(data[2])
 
-    def residuals(self, params, *args, **kwds):
+    def residuals(self, params):
         """
-        Calculate the difference between the data and the model.
-        Also known as the objective function.  This function is minimized
-        during a fit.
+        Calculate the difference between the data and the model. Also known as
+        the objective function. This is a convenience method. Over-riding it
+        will not change a fit
+
         residuals = (fitfunc - y) / edata
 
         Parameters
@@ -258,18 +306,12 @@ class CurveFitter(Minimizer):
         ----
         This method should only return the points that are not masked.
         """
-        model = self.model(params)
-        resid = (model - self.ydata) / self.edata
-
-        if self.mask is not None:
-            resid_ma = ma.array(resid, mask=self.mask)
-            return resid_ma[~resid_ma.mask].data
-        else:
-            return resid
+        return self._resid(params)
 
     def model(self, params):
         """
-        Calculates the model.
+        Calculates the model. This is a convenience method. Over-riding it will
+        not change a fit.
 
         Parameters
         ----------
@@ -336,7 +378,7 @@ class CurveFitter(Minimizer):
 
 class GlobalFitter(CurveFitter):
     """
-    A class for simultaneous curvefitting of multiple datasets
+    Simultaneous curvefitting of multiple datasets
     """
     def __init__(self, fitters, constraints=(), kws=None,
                  callback=None):
@@ -372,6 +414,10 @@ class GlobalFitter(CurveFitter):
 
         self.fitters = fitters
 
+        # new_param_reference.keys() will be the parameter names for the
+        # composite fitting problem. new_param_reference.values() are the
+        # (i, original_name) of the individual Parameter(s) from the individual
+        # fitting problem, where i is the index of the fitter it's in.
         self.new_param_reference = dict()
         p = Parameters()
         for i, fitter in enumerate(self.fitters):
@@ -384,7 +430,7 @@ class GlobalFitter(CurveFitter):
                 new_name = old_name + '_d%d' % i
                 new_names[new_name] = old_name
 
-                self.new_param_reference[new_name] = param
+                self.new_param_reference[new_name] = (i, param.name)
 
                 p.add(new_name,
                       value=param.value,
@@ -457,27 +503,25 @@ class GlobalFitter(CurveFitter):
         xdata = [fitter.xdata for fitter in fitters]
         ydata = [fitter.ydata for fitter in fitters]
         edata = [fitter.edata for fitter in fitters]
-        super(GlobalFitter, self).__init__(None,
-                                           np.hstack(xdata),
+
+        original_params = [fitter.params for fitter in fitters]
+        original_userargs = [fitter.userargs for fitter in fitters]
+        original_kws = [fitter.userkws for fitter in fitters]
+
+        self._fitfunc = partial(_parallel_global_fitfunc,
+                fitfuncs=[fitter.fitfunc for fitter in fitters],
+                new_param_reference=self.new_param_reference,
+                original_params=original_params,
+                original_userargs=original_userargs,
+                original_kws=original_kws)
+
+        super(GlobalFitter, self).__init__(self._fitfunc,
+                                           xdata,
                                            np.hstack(ydata),
                                            self.params,
                                            edata=np.hstack(edata),
                                            callback=callback,
                                            kws=min_kwds)
-
-    def _distribute_params(self, params):
-        """
-        Takes the combined parameter set and distributes linked parameters
-        into the individual parameter sets.
-
-        Parameters
-        ----------
-        params: lmfit.Parameters
-            Specifies the entire parameter set, across all the datasets
-        """
-        for name, param in params.items():
-            # if param.vary or param.expr is not None:
-            self.new_param_reference[name].value = param.value
 
     def model(self, params):
         """
@@ -493,18 +537,13 @@ class GlobalFitter(CurveFitter):
         model : np.ndarray
             The model.
         """
-        model = np.zeros(0, dtype='float64')
-        self._distribute_params(params)
+        return self._fitfunc(self.xdata, params)
 
-        for fitter in self.fitters:
-            model = np.append(model,
-                              fitter.model(fitter.params))
-        return model
-
-    def residuals(self, params, *args, **kwds):
+    def residuals(self, params):
         """
         Calculate the difference between the data and the model. Also known as
-        the objective function.  This function is minimized during a fit.
+        the objective function.  This is a convenience method. Over-riding it
+        does not change the fitting process.
         residuals = (fitfunc - y) / edata
 
         Parameters
@@ -517,15 +556,56 @@ class GlobalFitter(CurveFitter):
         residuals : np.ndarray
             The difference between the data and the model.
         """
-        total_residuals = np.zeros(0, dtype='float64')
-        self._distribute_params(params)
+        self.residuals(params)
 
-        for fitter in self.fitters:
-            resid = fitter.residuals(fitter.params)
-            total_residuals = np.append(total_residuals,
-                                        resid)
 
-        return total_residuals
+def _parallel_residuals_calculator(params, fitfunc=None, data_tuple=None,
+                                   mask=None, fcn_args=(), fcn_kws=None):
+    """
+    Objective function calculating the residuals for a curvefit. This is a
+    separate function and not a method in CurveFitter to allow for
+    multiprocessing.
+    """
+    kws = {}
+    if fcn_kws is not None:
+        kws = fcn_kws
+
+    x, y, e = data_tuple
+
+    resid = fitfunc(x, params, *fcn_args, **kws)
+    resid -= y
+    resid /= e
+
+    if mask is not None:
+        resid_ma = ma.array(resid, mask=mask)
+        return resid_ma[~resid_ma.mask].data
+    else:
+        return resid
+
+
+def _parallel_global_fitfunc(x, params, fitfuncs=None,
+                             new_param_reference=None, original_params=None,
+                             original_userargs=None, original_kws=None):
+    """
+    Objective function calculating the residuals for a curvefit. This is a
+    separate function and not a method in CurveFitter to allow for
+    multiprocessing.
+    """
+    # distribute params
+    for name, param in params.items():
+        fitter_i, original_name = new_param_reference[name]
+        original_params[i][original_name].value = param._getval()
+
+    model = np.zeros(0, dtype='float64')
+
+    for i, fitfunc in enumerate(fitfuncs):
+        model_i = fitfuncs[i](x[i],
+                              original_params[i],
+                              *original_userargs[i],
+                              **original_kws[i])
+        model = np.append(model,
+                          model_i)
+    return model
 
 
 if __name__ == '__main__':

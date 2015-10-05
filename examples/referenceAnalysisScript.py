@@ -70,7 +70,7 @@ ydata, dydata = t(xdata, ydata, dydata)
 kwds = {'dqvals': dxdata, 'transform': t}
 
 # create the fit instance
-fitter = reflect.ReflectivityFitter(parameters, xdata, ydata, edata=dydata,
+fitter = reflect.ReflectivityFitFunction(parameters, xdata, ydata, edata=dydata,
                                     kwds=kwds)
 
 #do the fit
