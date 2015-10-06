@@ -76,7 +76,7 @@ class MyMainWindow(QtGui.QMainWindow):
 
         #create a set of theoretical parameters
         coefs = np.array([1, 1.0, 0, 0, 2.07, 0, 1e-7, 3, 25, 3.47, 0, 3])
-        params = curvefitter.to_Parameters(coefs,
+        params = curvefitter.to_parameters(coefs,
                                 names=ReflectivityFitFunction.parameter_names(
                                     nparams=coefs.size))
         params['nlayers'].vary = False

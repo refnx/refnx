@@ -43,7 +43,7 @@ class ParamsStoreModel(QtCore.QAbstractListModel):
                     QtCore.Qt.ItemIsSelectable)
         else:
             values = curvefitter.values(params)
-            if reflect.is_proper_Abeles_input(values):
+            if reflect.is_proper_abeles_input(values):
                 return (QtCore.Qt.ItemIsEnabled |
                         QtCore.Qt.ItemIsSelectable)
             else:

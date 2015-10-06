@@ -25,7 +25,7 @@ except ImportError:
 _MACHEPS = np.finfo(np.float64).eps
 
 
-def to_Parameters(p0, varies=None, bounds=None, names=None, expr=None):
+def to_parameters(p0, varies=None, bounds=None, names=None, expr=None):
     """
     Utility function to convert sequences into a lmfit.Parameters instance
 
@@ -252,6 +252,12 @@ class CurveFitter(Minimizer):
         if kws is not None:
             min_kwds = kws
 
+        # self._resid = Calculator(fitfunc,
+        #                          (self.xdata, self.ydata, self.edata),
+        #                          mask=mask,
+        #                          fcn_args=fcn_args,
+        #                          fcn_kws=fcn_kws)
+
         self._resid = partial(_parallel_residuals_calculator,
                               fitfunc=fitfunc,
                               data_tuple=(self.xdata,
@@ -264,8 +270,6 @@ class CurveFitter(Minimizer):
         super(CurveFitter, self).__init__(self._resid,
                                           params,
                                           iter_cb=callback,
-                                          fcn_args=fcn_args,
-                                          fcn_kws=fcn_kws,
                                           scale_covar=self.scale_covar,
                                           **min_kwds)
 
@@ -323,8 +327,7 @@ class CurveFitter(Minimizer):
         model : array_like
             The model.
         """
-        return self.fitfunc(self.xdata, params, *self.userargs,
-                            **self.userkws)
+        return self._resid(params, model=True)
 
     def fit(self, method='leastsq'):
         """
@@ -355,25 +358,6 @@ class CurveFitter(Minimizer):
         """
         result = self.minimize(method=method)
         return result
-
-    @staticmethod
-    def parameter_names(nparams=0):
-        """
-        Provides a set of names for constructing an lmfit.Parameters instance
-
-        Parameters
-        ----------
-        nparams: int, optional
-            >= 0 - provide a set of names with length `nparams`
-        Returns
-        -------
-        names: list
-            names for the lmfit.Parameters instance
-        """
-        name = list()
-        if nparams > 0:
-            name = ['p%d' % i for i in range(nparams)]
-        return name
 
 
 class GlobalFitter(CurveFitter):
@@ -556,11 +540,39 @@ class GlobalFitter(CurveFitter):
         residuals : np.ndarray
             The difference between the data and the model.
         """
-        self.residuals(params)
+        return super(GlobalFitter, self).residuals(params)
+
+
+# class Calculator(object):
+#     def __init__(self, fitfunc, data_tuple, mask=None, fcn_args=(), fcn_kws=None):
+#         self.fitfunc = fitfunc
+#         self.data_tuple = data_tuple
+#         self.mask = mask
+#         self.fcn_args = fcn_args
+#         self.fcn_kws = {}
+#         if fcn_kws is not None:
+#             self.fcn_kws = fcn_kws
+#
+#     def __call__(self, params, model=False):
+#         x, y, e = self.data_tuple
+#
+#         resid = self.fitfunc(x, params, *self.fcn_args, **self.fcn_kws)
+#         if model:
+#             return resid
+#
+#         resid -= y
+#         resid /= e
+#
+#         if self.mask is not None:
+#             resid_ma = ma.array(resid, mask=self.mask)
+#             return resid_ma[~resid_ma.mask].data
+#         else:
+#             return resid
 
 
 def _parallel_residuals_calculator(params, fitfunc=None, data_tuple=None,
-                                   mask=None, fcn_args=(), fcn_kws=None):
+                                   mask=None, fcn_args=(), fcn_kws=None,
+                                   model=False):
     """
     Objective function calculating the residuals for a curvefit. This is a
     separate function and not a method in CurveFitter to allow for
@@ -573,6 +585,9 @@ def _parallel_residuals_calculator(params, fitfunc=None, data_tuple=None,
     x, y, e = data_tuple
 
     resid = fitfunc(x, params, *fcn_args, **kws)
+    if model:
+        return resid
+
     resid -= y
     resid /= e
 
@@ -594,7 +609,7 @@ def _parallel_global_fitfunc(x, params, fitfuncs=None,
     # distribute params
     for name, param in params.items():
         fitter_i, original_name = new_param_reference[name]
-        original_params[i][original_name].value = param._getval()
+        original_params[fitter_i][original_name].value = param._getval()
 
     model = np.zeros(0, dtype='float64')
 
@@ -620,8 +635,8 @@ if __name__ == '__main__':
     p0 = np.array([0., 1., 0., 1.])
     bounds = [(-1., 1.), (0., 2.), (-3., 3.), (0.001, 2.)]
 
-    temp_pars = to_Parameters(p0, bounds=bounds)
-    pars = to_Parameters(p0 + 0.2, bounds=bounds)
+    temp_pars = to_parameters(p0, bounds=bounds)
+    pars = to_parameters(p0 + 0.2, bounds=bounds)
 
     ydata = gauss(xdata, temp_pars) + 0.1 * np.random.random(xdata.size)
 

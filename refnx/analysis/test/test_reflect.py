@@ -8,11 +8,14 @@ else:
     HAVE_CREFLECT = True
 import refnx.analysis._reflect as _reflect
 import refnx.analysis.curvefitter as curvefitter
+from refnx.analysis.curvefitter import CurveFitter
+from refnx.analysis.reflect import ReflectivityFitFunction as RFF
 
 import numpy as np
 from numpy.testing import (assert_almost_equal, assert_equal, assert_,
                            assert_allclose)
 import os.path
+import time
 
 
 path = os.path.dirname(os.path.abspath(__file__))
@@ -58,7 +61,7 @@ class TestReflect(unittest.TestCase):
         bounds = list(zip(lowlim, hilim))
         e361 = np.loadtxt('e361r.txt')
         self.qvals361, self.rvals361, self.evals361 = np.hsplit(e361, 3)
-        self.params361 = curvefitter.to_Parameters(self.coefs361,
+        self.params361 = curvefitter.to_parameters(self.coefs361,
                                                    bounds=bounds,
                                                    varies=[False] * 16)
         fit = [1, 4, 6, 8, 12, 13]
@@ -153,19 +156,20 @@ class TestReflect(unittest.TestCase):
 
     def test_reflectivity_model(self):
         # test reflectivity calculation with values generated from Motofit
-        params = curvefitter.to_Parameters(self.coefs)
+        params = curvefitter.to_parameters(self.coefs)
 
-        fitter = reflect.ReflectivityFitFunction(self.qvals, self.rvals, params)
-        model = fitter.model(params)
+        fitfunc = reflect.ReflectivityFitFunction(dq=0.)
+        model = fitfunc.model(self.qvals, params)
 
         assert_almost_equal(model, self.rvals)
 
     def test_reflectivity_fit(self):
         # a smoke test to make sure the reflectivity fit proceeds
-        params = curvefitter.to_Parameters(self.coefs)
+        params = curvefitter.to_parameters(self.coefs)
         params['p1'].value = 1.1
 
-        fitter = reflect.ReflectivityFitFunction(self.qvals, self.rvals, params)
+        fitfunc = reflect.ReflectivityFitFunction()
+        fitter = CurveFitter(fitfunc, self.qvals, self.rvals, params)
         fitter.fit()
 
         transform = reflect.Transform('logY')
@@ -173,11 +177,12 @@ class TestReflect(unittest.TestCase):
                                      self.rvals361,
                                      self.evals361)
         kws = {'transform':transform.transform}
-        fitter2 = reflect.ReflectivityFitFunction(self.qvals361,
-                                             yt,
-                                             self.params361,
-                                             edata=et,
-                                             fcn_kws=kws)
+        fitter2 = CurveFitter(fitfunc,
+                              self.qvals361,
+                              yt,
+                              self.params361,
+                              edata=et,
+                              fcn_kws=kws)
         fitter2.fit('differential_evolution')
 
     def test_reflectivity_emcee(self):
@@ -187,12 +192,18 @@ class TestReflect(unittest.TestCase):
                                      self.evals361)
 
         kws = {'transform':transform.transform}
-        fitter2 = reflect.ReflectivityFitFunction(self.qvals361,
-                                             yt,
-                                             self.params361,
-                                             edata=et,
-                                             fcn_kws=kws)
-        fitter2.emcee()
+        fitfunc = RFF(transform=transform.transform, dq=5.)
+
+        fitter = CurveFitter(fitfunc,
+                             self.qvals361,
+                             yt,
+                             self.params361,
+                             edata=et,
+                             fcn_kws=kws)
+        # start = time.time()
+        fitter.emcee(steps=10)
+        # finish = time.time()
+        # print(finish - start)
 
     def test_smearedabeles(self):
         # test smeared reflectivity calculation with values generated from
@@ -248,11 +259,13 @@ class TestReflect(unittest.TestCase):
         values in Motofit was 13.
         Do the same here
         '''
-        params = curvefitter.to_Parameters(self.coefs)
-        fitter = reflect.ReflectivityFitFunction(qvals,
-                                            rvals, params,
-                                            fcn_kws={'dqvals': dqvals,
-                                                     'quad_order': 13})
+        params = curvefitter.to_parameters(self.coefs)
+        fitfunc = RFF(quad_order=13)
+        fitter = CurveFitter(fitfunc,
+                             qvals,
+                             rvals,
+                             params,
+                             fcn_kws={'dqvals': dqvals})
 
         model = fitter.model(params)
 
