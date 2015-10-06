@@ -1,7 +1,8 @@
 import unittest
 import refnx.analysis.curvefitter as curvefitter
-from refnx.analysis.curvefitter import CurveFitter, HAS_EMCEE
+from refnx.analysis.curvefitter import (CurveFitter, HAS_EMCEE, FitFunction)
 import numpy as np
+import time
 from lmfit.minimizer import MinimizerResult
 
 from numpy.testing import (assert_almost_equal, assert_equal, assert_,
@@ -26,8 +27,8 @@ class TestFitter(unittest.TestCase):
         self.p0 = np.array([0., 1., 0.0, 1.])
         self.bounds = [(-1, 1), (0, 2), (-1, 1.), (0.001, 2)]
 
-        self.params = curvefitter.to_Parameters(self.p0 + 0.2, bounds=self.bounds)
-        self.final_params = curvefitter.to_Parameters(self.p0, bounds=self.bounds)
+        self.params = curvefitter.to_parameters(self.p0 + 0.2, bounds=self.bounds)
+        self.final_params = curvefitter.to_parameters(self.p0, bounds=self.bounds)
 
         self.ydata = gauss(self.xdata, self.final_params)
         self.f = CurveFitter(gauss, self.xdata, self.ydata, self.params)
@@ -111,7 +112,7 @@ class TestFitterGauss(unittest.TestCase):
         self.p0 = np.array([0.1, 20., 0.1, 0.1])
         self.bounds = [(-1, 1), (0, 30), (-5., 5.), (0.001, 2)]
 
-        self.params = curvefitter.to_Parameters(self.p0, bounds=self.bounds)
+        self.params = curvefitter.to_parameters(self.p0, bounds=self.bounds)
 
     def test_best_weighted(self):
         f = CurveFitter(gauss, self.xvals, self.yvals, self.params,
@@ -136,21 +137,19 @@ class TestFitterGauss(unittest.TestCase):
         uncertainties = [res.params['p%d' % i].stderr for i in range(4)]
         assert_almost_equal(uncertainties, self.best_unweighted_errors, 3)
 
+    def test_pickleable(self):
+        # residuals needs to be pickleable if one wants to use Pool
+        f = CurveFitter(gauss, self.xvals, self.yvals, self.params)
+        import pickle
+        pkl = pickle.dumps(f)
+        pkl = pickle.dumps(f._resid)
+
     def test_parameter_names(self):
         # each instance of CurveFitter should be able to give a default set of
         # parameter names
         names = ['p%i' % i for i in range(10)]
-        names2 = CurveFitter.parameter_names(nparams=10)
+        names2 = FitFunction.parameter_names(nparams=10)
         assert_(names == names2)
-
-    # def test_mcmc_vs_lm(self):
-    #     # test mcmc output vs lm
-    #     f = CurveFitter(gauss, self.xvals, self.yvals, self.params,
-    #                     edata=self.evals)
-    #     np.random.seed(123456)
-    #     f.mcmc(samples=2000, burn=500, thin=20)
-    #     output = list(f.params.valuesdict().values())
-    #     assert_allclose(output, self.best_weighted, rtol=0.02, atol=0.01)
 
     def test_emcee_vs_lm(self):
         # test mcmc output vs lm
@@ -160,42 +159,36 @@ class TestFitterGauss(unittest.TestCase):
         f = CurveFitter(gauss, self.xvals, self.yvals, self.params,
                         edata=self.evals)
         np.random.seed(123456)
-        f.emcee(nwalkers=40, steps=400, burn=75, thin=5)
-        output = list(f.result.params.valuesdict().values())
-        assert_allclose(output, self.best_weighted, rtol=0.02, atol=0.01)
+
+        # start = time.time()
+        out = f.emcee(nwalkers=100, steps=300, burn=100, thin=10)
+        # finish = time.time()
+        # print(finish - start)
+
+        within_sigma(self.best_weighted, out.params)
 
         # test mcmc output vs lm, some parameters not bounded
         self.params['p1'].max = None
         f = CurveFitter(gauss, self.xvals, self.yvals, self.params,
                         edata=self.evals)
         np.random.seed(123456)
-        f.emcee(nwalkers=40, steps=400, burn=75, thin=5)
-        output = list(f.result.params.valuesdict().values())
-        assert_allclose(output, self.best_weighted, rtol=0.02, atol=0.01)
+        f.emcee(nwalkers=100, steps=300, burn=100, thin=5)
+        within_sigma(self.best_weighted, out.params)
 
         # test mcmc output vs lm, some parameters not bounded
         self.params['p1'].min = None
         f = CurveFitter(gauss, self.xvals, self.yvals, self.params,
                         edata=self.evals)
-        f.emcee(nwalkers=40, steps=400, burn=75, thin=5)
-        output = list(f.result.params.valuesdict().values())
-        assert_allclose(output, self.best_weighted, rtol=0.02, atol=0.01)
+        f.emcee(nwalkers=100, steps=300, burn=100, thin=5)
+        within_sigma(self.best_weighted, out.params)
 
-    def test_emcee_output(self):
-        # test mcmc output vs lm
-        if not HAS_EMCEE:
-            return True
-        try:
-            from pandas import DataFrame
-        except ImportError:
-            return True
 
-        f = CurveFitter(gauss, self.xvals, self.yvals, self.params,
-                        edata=self.evals)
-        np.random.seed(123456)
-        params, chain = f.emcee(nwalkers=10, steps=10)
-        assert_(isinstance(params, MinimizerResult))
-        assert_(isinstance(chain, DataFrame))
+def within_sigma(desired, actual_params):
+    # are the fitted params within sigma of where we know them to be?
+    p0 = curvefitter.values(actual_params)
+    sigmas = [actual_params[par].stderr for par in actual_params]
+    for p, sigma, des in zip(p0, sigmas, desired):
+        assert_allclose(p, des, atol=sigma)
 
 
 if __name__ == '__main__':

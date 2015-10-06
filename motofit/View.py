@@ -24,7 +24,7 @@ from datastore_GUImodel import DataStoreModel
 
 import refnx.analysis.reflect as reflect
 import refnx.analysis.curvefitter as curvefitter
-from refnx.analysis import (ReflectivityFitter, Transform, CurveFitter,
+from refnx.analysis import (ReflectivityFitFunction, Transform, CurveFitter,
                             GlobalFitter)
 from refnx.dataset import Data1D, ReflectDataset
 
@@ -76,8 +76,8 @@ class MyMainWindow(QtGui.QMainWindow):
 
         #create a set of theoretical parameters
         coefs = np.array([1, 1.0, 0, 0, 2.07, 0, 1e-7, 3, 25, 3.47, 0, 3])
-        params = curvefitter.to_Parameters(coefs,
-                                names=ReflectivityFitter.parameter_names(
+        params = curvefitter.to_parameters(coefs,
+                                names=ReflectivityFitFunction.parameter_names(
                                     nparams=coefs.size))
         params['nlayers'].vary = False
 
@@ -91,7 +91,7 @@ class MyMainWindow(QtGui.QMainWindow):
         theoretical.name = 'theoretical'
         kws = {'dqvals': theoretical.x_sd}
 
-        evaluator = ReflectivityFitter(theoretical.x,
+        evaluator = ReflectivityFitFunction(theoretical.x,
                                        theoretical.y,
                                        params,
                                        fcn_kws=kws)
@@ -981,7 +981,7 @@ class MyMainWindow(QtGui.QMainWindow):
         # find out which points in the dataset aren't finite
         mask = ~np.isfinite(tempdataset.y)
 
-        minimizer = ReflectivityFitter(tempdataset.x,
+        minimizer = ReflectivityFitFunction(tempdataset.x,
                                        tempdataset.y,
                                        params,
                                        edata=tempdataset.y_sd,
@@ -1507,7 +1507,7 @@ class MyMainWindow(QtGui.QMainWindow):
         theoretical.fit = minimizer.model(params)
         self.redraw_dataset_graphs([theoretical])
 
-        if isinstance(minimizer, ReflectivityFitter):
+        if isinstance(minimizer, ReflectivityFitFunction):
             theoretical.sld_profile = minimizer.sld_profile(params)
 
         if (cur_data_name != 'theoretical'

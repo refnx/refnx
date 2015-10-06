@@ -52,7 +52,7 @@ def run():
     bounds = zip(lowlim, hilim)
 
     # create a parameter instance
-    parameters = curvefitter.to_Parameters(coefs, bounds=bounds, varies=[False] * 16)
+    parameters = curvefitter.to_parameters(coefs, bounds=bounds, varies=[False] * 16)
 
     # which parameters do you want to allow to vary
     fitted_parameters = np.array([1, 6, 7, 8, 11, 12, 13, 15])
@@ -65,7 +65,7 @@ def run():
     fcn_kws = {'dqvals': dxdata, 'transform': t}
 
     # create the fit instance
-    fitter = reflect.ReflectivityFitter(xdata, ydata, parameters, edata=dydata,
+    fitter = reflect.ReflectivityFitFunction(xdata, ydata, parameters, edata=dydata,
                                         fcn_kws=fcn_kws)
 
     #do the fit

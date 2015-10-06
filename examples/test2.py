@@ -50,7 +50,7 @@ hilim[6] = 9e-6
 bounds = zip(lowlim, hilim)
 
 # create a parameter instance
-parameters = curvefitter.to_Parameters(coefs, bounds=bounds, varies=[False] * 16)
+parameters = curvefitter.to_parameters(coefs, bounds=bounds, varies=[False] * 16)
 
 # which parameters do you want to allow to vary
 fitted_parameters = np.array([1, 6, 7, 8, 11, 12, 13, 15])
@@ -58,7 +58,7 @@ for fit in fitted_parameters:
     parameters['p%d' % fit].vary = True
 
 # use resolution smearing and fit on a logR scale (transform the data as well)
-fitter = reflect.ReflectivityFitter(xdata, ydata, parameters, edata=dydata,
+fitter = reflect.ReflectivityFitFunction(xdata, ydata, parameters, edata=dydata,
                                     fcn_kws = {'dqvals': dxdata})
 
 

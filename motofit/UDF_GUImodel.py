@@ -7,7 +7,7 @@ import hashlib
 import os.path
 import numpy as np
 import refnx.analysis.reflect as reflect
-from refnx.analysis import ReflectivityFitter
+from refnx.analysis import ReflectivityFitFunction
 from refnx.analysis.curvefitter import CurveFitter
 import refnx.analysis.curvefitter as curvefitter
 from lmfit import Parameters, Parameter
@@ -29,13 +29,13 @@ def load_plugin_module(filepath):
     #load plugins that subclass CurveFitter
     members = inspect.getmembers(module, inspect.isclass)
     for member in members:
-        if (member[1] == ReflectivityFitter
+        if (member[1] == ReflectivityFitFunction
            or member[1] == CurveFitter):
            continue
 
         if issubclass(member[1], CurveFitter):
             rfos.append(member)
-            print 'Loaded', member[0], 'plugin fitting module'
+            print('Loaded', member[0], 'plugin fitting module')
 
     #also load functions that have the curvefitter.fitfunc decorator
     functions = inspect.getmembers(module, inspect.isfunction)
@@ -55,7 +55,7 @@ class PluginStoreModel(QtCore.QAbstractTableModel):
     def __init__(self, parent=None):
         super(PluginStoreModel, self).__init__(parent)
         self.plugins = OrderedDict()
-        self.plugins['default'] = (reflect.ReflectivityFitter, '')
+        self.plugins['default'] = (reflect.ReflectivityFitFunction, '')
 
     def __len__(self):
         return len(self.plugins)

@@ -4,7 +4,7 @@ import scipy
 import scipy.linalg
 from scipy.signal import fftconvolve
 from scipy.interpolate import InterpolatedUnivariateSpline
-from .curvefitter import CurveFitter
+from .curvefitter import CurveFitter, FitFunction
 import refnx.util.ErrorProp as EP
 import warnings
 import math
@@ -225,7 +225,7 @@ def reflectivity(q, coefs, *args, **kwds):
     scale = coefs[1]
     bkg = coefs[6]
 
-    if not is_proper_Abeles_input(coefs):
+    if not is_proper_abeles_input(coefs):
         raise ValueError('The size of the parameter array passed to reflectivity'
                          ' should be 4 * coefs[0] + 8')
 
@@ -426,7 +426,7 @@ def _smeared_abeles_constant(q, w, resolution):
     return smeared_output
 
 
-def is_proper_Abeles_input(coefs):
+def is_proper_abeles_input(coefs):
     """
     Test to see if the coefs array is suitable input for the `reflectivity`
     function
@@ -501,60 +501,31 @@ def sld_profile(coefs, z):
     return sld
 
 
-class ReflectivityFitter(CurveFitter):
+class ReflectivityFitFunction(FitFunction):
     """
-        A sub class of refnx.analysis.fitting.CurveFitter suited for
-        fitting reflectometry data.
+        A sub class of refnx.analysis.curvefitter.FitFunction suited for
+        calculation of reflectometry profiles.
 
         If you wish to fit analytic profiles you should subclass this class,
         overriding the model() method.  If you do this you should also
-        override the sld_profile method of ReflectivityFitter.
+        override the sld_profile method of ReflectivityFitFunction.
     """
 
-    def __init__(self, xdata, ydata, parameters, edata=None, mask=None,
-                 fcn_args=(), fcn_kws=None, kws=None):
+    def __init__(self, transform=None, dq=5., quad_order=17):
         """
-        Initialises the ReflectivityFitter.
-        See the constructor of the CurveFitter for more details, especially the
-        entries in kwds that are used.
+        Initialises the ReflectivityFitFunction.
 
         Parameters
         ----------
-        x : np.ndarray
-            The independent variables
-        y : np.ndarray
-            The dependent (observed) variable
-        parameters : lmfit.Parameters instance
-            Specifies the parameter set for the fit
-        edata : np.ndarray, optional
-            The measured uncertainty in the dependent variable, expressed as
-            sd.  If this array is not specified, then edata is set to unity.
-        mask : np.ndarray, optional
-            A boolean array with the same shape as y.  If a value in mask
-            is `True` then that point is excluded from the residuals
-            calculation.
-        fcn_args : tuple, optional
-            Extra parameters for supplying to the reflectivity function.
-        fcn_kws : dict, optional
-            Extra keyword parameters for supplying to the reflectivity function.
-            See the notes below.
-        kws : dict, optional
-            Keywords passed to the minimizer.
-
-        Notes
-        -----
-        ReflectivityFitter uses one extra kwds entry:
-
-        fcn_kws['transform'] : callable, optional
+        transform' : callable, optional
             If specified then this function is used to transform the data
             returned by the model method. With the signature:
             ``transformed_y_vals = transform(x_vals, y_vals)``.
 
-        fcn_kws['dqvals'] : np.ndarray, optional
-            An array containing the _FWHM of the Gaussian approximated resolution
-            kernel. Has the same size as qvals.
+        dq : float, optional
+            Default dq/q resolution (as a percentage).
 
-        fcn_kws['quad_order'] : int, optional
+        quad_order : int or str, optional
             The order of the Gaussian quadrature polynomial for doing the
             resolution smearing. default = 17. Don't choose less than 13. If
             quad_order == 'ultimate' then adaptive quadrature is used. Adaptive
@@ -564,32 +535,20 @@ class ReflectivityFitter(CurveFitter):
             example 13 points may be fine for a thin layer, but will be
             atrocious at describing a multilayer with Bragg peaks.
         """
-        if fcn_kws is None:
-            fcn_kws = {}
-        if kws is None:
-            minimizer_kwds = {}
+        super(ReflectivityFitFunction, self).__init__()
 
-        super(ReflectivityFitter, self).__init__(None,
-                                                 xdata,
-                                                 ydata,
-                                                 parameters,
-                                                 edata=edata,
-                                                 mask=mask,
-                                                 fcn_args=fcn_args,
-                                                 callback=self.callback,
-                                                 fcn_kws=fcn_kws,
-                                                 kws=minimizer_kwds)
+        self.transform = transform
+        self.dq = float(dq)
+        self.quad_order=quad_order
 
-        self.transform = None
-        if 'transform' in fcn_kws:
-            self.transform = fcn_kws['transform']
-
-    def model(self, parameters):
+    def model(self, x, parameters, *args, **kwds):
         """
         Calculate the theoretical model, given a set of parameters.
 
         Parameters
         ----------
+        x : array-like
+            Q values to evaluate the reflectivity at
         parameters : lmfit.Parameters instance
             Contains the parameters that are required for reflectivity
             calculation.
@@ -598,26 +557,30 @@ class ReflectivityFitter(CurveFitter):
         -------
         yvals : np.ndarray
             The theoretical model for the x, i.e.
-            reflectivity(self.x, parameters, *self.args, **self.kwds)
+            reflectivity(x, parameters, *args, **kwds)
         """
         params = np.array([parameters[param].value for param in parameters], float)
 
-        yvals = reflectivity(self.xdata, params, *self.userargs, **self.userkws)
+        if not 'quad_order' in kwds:
+            kwds['quad_order'] = self.quad_order
+        if not 'dqvals' in kwds and self.dq > 0.3:
+            kwds['dqvals'] = float(self.dq)
+        yvals = reflectivity(x, params, *args, **kwds)
 
         if self.transform:
-            yvals, temp = self.transform(self.xdata, yvals)
+            yvals, temp = self.transform(x, yvals)
 
         return yvals
 
-    def set_dq(self, res, quad_order=17):
+    def set_dq(self, dq, quad_order=17):
         """
         Sets the resolution information.
 
         Parameters
         ----------
-        res: None, float or np.ndarray
+        dq: None, float or np.ndarray
             If `None` then there is no resolution smearing.
-            If a float, e.g. 5, then dq/q smearing of 5% is applied. If res==0
+            If a float, e.g. 5, then dq/q smearing of 5% is applied. If dq==0
             then resolution smearing is removed.
             If an np.ndarray the same length as y, it contains the FWHM of
             the Gaussian approximated resolution kernel.
@@ -631,31 +594,26 @@ class ReflectivityFitter(CurveFitter):
             example 13 points may be fine for a thin layer, but will be
             atrocious at describing a multilayer with Bragg peaks.
         """
-        remove_smearing = False
-        if res is None:
-            remove_smearing = True
-        if (type(res) is float or type(res) is int) and res < 0.5:
-            remove_smearing = True
+        if type(dq) is float or type(dq) is int:
+            self.dq = float(dq)
 
-        if remove_smearing is True and 'dqvals' in self.userkws:
-            self.userkws.pop('dqvals')
-            return
+        if self.dq < 0.3:
+            self.dq = 0.
 
-        if type(res) is float or type(res) is int:
-                self.userkws['dqvals'] = float(res)
-        elif type(res) is np.ndarray and res.shape == self.ydata.shape:
-            self.userkws['dqvals'] = res
+        if type(quad_order) is int and quad_order > 12:
+            self.quad_order = quad_order
+        elif quad_order == 'ultimate':
+            self.quad_order = 'ultimate'
 
-        if quad_order > 12:
-            self.userkws['quad_order'] = quad_order
-
-    def sld_profile(self, parameters, fcn_args=(), **fcn_kws):
+    def sld_profile(self, parameters, points=None):
         """
         Calculate the SLD profile corresponding to the model parameters.
 
         Parameters
         ----------
         parameters : lmfit.parameters.Parameters instance
+        points : array-like
+            The points to evaluate the SLD profile at.
 
         Returns
         -------
@@ -665,8 +623,7 @@ class ReflectivityFitter(CurveFitter):
 
         params = np.asfarray(parameters.valuesdict().values())
 
-        if 'points' in fcn_kws and fcn_kws['points'] is not None:
-            points = fcn_kws['points']
+        if points is not None:
             return points, sld_profile(params, points)
 
         if not int(params[0]):
@@ -688,6 +645,11 @@ class ReflectivityFitter(CurveFitter):
 
     @staticmethod
     def parameter_names(nparams=8):
+        """
+        Parameter names for a default reflecitivty
+        :param nparams:
+        :return:
+        """
         names = ['nlayers', 'scale', 'SLDfront', 'iSLDfront', 'SLDback',
                  'iSLDback', 'bkg', 'sigma_back']
         nlayers = (nparams - 8) / 4

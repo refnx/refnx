@@ -2,7 +2,7 @@ from __future__ import division
 from PySide import QtCore, QtGui
 import numpy as np
 import refnx.analysis.reflect as reflect
-from refnx.analysis import ReflectivityFitter
+from refnx.analysis import ReflectivityFitFunction
 import refnx.analysis.curvefitter as curvefitter
 
 
@@ -65,7 +65,7 @@ class BaseModel(QtCore.QAbstractTableModel):
             return None
         values = curvefitter.values(self.params)
 
-        if not reflect.is_proper_Abeles_input(values):
+        if not reflect.is_proper_abeles_input(values):
             return None
 
         if index.row() != 0 or index.column() < 0 or index.column() > 1:
@@ -147,7 +147,7 @@ class LayerModel(QtCore.QAbstractTableModel):
         params = self.params
         values = curvefitter.values(params)
 
-        if not reflect.is_proper_Abeles_input(values):
+        if not reflect.is_proper_abeles_input(values):
             raise ValueError('The size of the parameter array passed'
                              ' to reflectivity should be 4 * coefs[0] + 8')
 
@@ -171,7 +171,7 @@ class LayerModel(QtCore.QAbstractTableModel):
                  in [(None, None)] * 4]
 
         bounds = np.array(bounds)
-        names = ReflectivityFitter.parameter_names(nparams=values.size)
+        names = ReflectivityFitFunction.parameter_names(nparams=values.size)
 
         #clear the parameters
         map(self.params.pop, self.params.keys())
@@ -195,7 +195,7 @@ class LayerModel(QtCore.QAbstractTableModel):
         if int(values[0]) == 0:
             return False
 
-        if not reflect.is_proper_Abeles_input(values):
+        if not reflect.is_proper_abeles_input(values):
             raise ValueError('The size of the parameter array passed'
                              ' to reflectivity should be 4 * coefs[0] + 8')
 
@@ -216,7 +216,7 @@ class LayerModel(QtCore.QAbstractTableModel):
         values = curvefitter.values(self.params)
         varys = curvefitter.varys(self.params)
         bounds = np.array(curvefitter.bounds(self.params))
-        names = ReflectivityFitter.parameter_names(values.size)
+        names = ReflectivityFitFunction.parameter_names(values.size)
         map(self.params.pop, self.params.keys())
 
         parlist = zip(names,
@@ -268,7 +268,7 @@ class LayerModel(QtCore.QAbstractTableModel):
         row = index.row()
         col = index.column()
 
-        if not reflect.is_proper_Abeles_input(curvefitter.values(self.params)):
+        if not reflect.is_proper_abeles_input(curvefitter.values(self.params)):
             return None
 
         nlayers = int(self.params['nlayers'].value)

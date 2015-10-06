@@ -133,7 +133,7 @@ class DataObject(reflectdataset.ReflectDataset):
             f.seek(0)
             tree.write(f)
         except Exception as inst:
-            print type(inst)
+            print(type(inst))
 
     def load(self, f):
         # this will load as XML
