@@ -4,7 +4,7 @@ import scipy
 import scipy.linalg
 from scipy.signal import fftconvolve
 from scipy.interpolate import InterpolatedUnivariateSpline
-from .curvefitter import CurveFitter, FitFunction
+from refnx.analysis.curvefitter import FitFunction
 import refnx.util.ErrorProp as EP
 import warnings
 import math
@@ -303,6 +303,11 @@ def _memoize_gl(f):
 def gauss_legendre(n):
     """
     Calculate gaussian quadrature abscissae and weights
+
+    Parameters
+    ----------
+    n : int
+        Gaussian quadrature order.
     Returns
     -------
     (x, w) : tuple
@@ -318,7 +323,24 @@ def gauss_legendre(n):
 
 def _smearkernel(x, w, q, dq):
     """
-    Kernel for Gaussian Quadrature
+    Kernel for adaptive Gaussian quadrature integration
+
+    Parameters
+    ----------
+    x : float
+        Independent variable for integration.
+    w : array-like
+        The uniform slab model parameters in 'layer' form.
+    q : float
+        Nominal mean Q of normal distribution
+    dq : float
+        FWHM of a normal distribution.
+
+    Returns
+    -------
+    reflectivity : float
+        Model reflectivity multiplied by the probability density function
+        evaluated at a given distance, x, away from the mean Q value.
     """
     prefactor = 1 / np.sqrt(2 * np.pi)
     gauss = prefactor * np.exp(-0.5 * x * x)
@@ -327,7 +349,30 @@ def _smearkernel(x, w, q, dq):
 
 
 def _smeared_abeles_adaptive(qvals, w, dqvals):
-    # adaptive gaussian quadrature smearing
+    """
+    Resolution smearing that uses adaptive Gaussian quadrature integration
+    for the convolution.
+
+    Parameters
+    ----------
+    qvals : array-like
+        The Q values for evaluation
+    w : array-like
+        The uniform slab model parameters in 'layer' form.
+    dqvals : array-like
+        dQ values corresponding to each value in `qvals`. Each dqval is the
+        FWHM of a Gaussian approximation to the resolution kernel.
+
+    Returns
+    -------
+    reflectivity : np.ndarray
+        The smeared reflectivity
+
+    Notes
+    -----
+    The integration is adaptive meaning it keeps going until it reaches an
+    absolute tolerance.
+    """
     smeared_rvals = np.zeros(qvals.size)
     warnings.simplefilter('ignore', Warning)
     for idx, val in enumerate(qvals):
@@ -344,10 +389,31 @@ def _smeared_abeles_adaptive(qvals, w, dqvals):
 
 
 def _smeared_abeles_fixed(qvals, w, dqvals, quad_order=17):
-    # fixed order gaussian quadrature smearing
+    """
+    Resolution smearing that uses fixed order Gaussian quadrature integration
+    for the convolution.
 
+    Parameters
+    ----------
+    qvals : array-like
+        The Q values for evaluation
+    w : array-like
+        The uniform slab model parameters in 'layer' form.
+    dqvals : array-like
+        dQ values corresponding to each value in `qvals`. Each dqval is the
+        FWHM of a Gaussian approximation to the resolution kernel.
+    quad-order : int, optional
+        Specify the order of the Gaussian quadrature integration for the
+        convolution.
+
+    Returns
+    -------
+    reflectivity : np.ndarray
+        The smeared reflectivity
+    """
     # get the gauss-legendre weights and abscissae
     abscissa, weights = gauss_legendre(quad_order)
+
     # get the normal distribution at that point
     prefactor = 1. / np.sqrt(2 * np.pi)
     gauss = lambda x: np.exp(-0.5 * x * x)
@@ -374,7 +440,8 @@ def _smeared_abeles_fixed(qvals, w, dqvals, quad_order=17):
 
 def _smeared_abeles_constant(q, w, resolution):
     """
-    A kernel for constant dQ/Q smearing
+    A kernel for fast and constant dQ/Q smearing
+
     Parameters
     ----------
     q: np.ndarray
@@ -384,6 +451,7 @@ def _smeared_abeles_constant(q, w, resolution):
     resolution: float
         Percentage dq/q resolution. dq specified as FWHM of a resolution
         kernel.
+
     Returns
     -------
     reflectivity: np.ndarray
@@ -503,12 +571,12 @@ def sld_profile(coefs, z):
 
 class ReflectivityFitFunction(FitFunction):
     """
-        A sub class of refnx.analysis.curvefitter.FitFunction suited for
-        calculation of reflectometry profiles.
+    A sub class of refnx.analysis.curvefitter.FitFunction suited for
+    calculation of reflectometry profiles.
 
-        If you wish to fit analytic profiles you should subclass this class,
-        overriding the model() method.  If you do this you should also
-        override the sld_profile method of ReflectivityFitFunction.
+    If you wish to fit analytic or freeform SLD profiles you should
+    inherit this class, overriding the `model` method.  If you do this
+    you should also override the `sld_profile` method.
     """
 
     def __init__(self, transform=None, dq=5., quad_order=17):
@@ -646,9 +714,7 @@ class ReflectivityFitFunction(FitFunction):
     @staticmethod
     def parameter_names(nparams=8):
         """
-        Parameter names for a default reflecitivty
-        :param nparams:
-        :return:
+        Parameter names for a default reflecitivty calculation
         """
         names = ['nlayers', 'scale', 'SLDfront', 'iSLDfront', 'SLDback',
                  'iSLDback', 'bkg', 'sigma_back']

@@ -53,6 +53,8 @@ class Data1D(object):
     @property
     def npoints(self):
         """
+        The number of points in the dataset.
+
         Returns
         -------
         npoints : int
@@ -63,6 +65,8 @@ class Data1D(object):
     @property
     def data(self):
         """
+        The data contained within this object.
+
         Returns
         -------
         data_tuple : tuple
@@ -88,6 +92,8 @@ class Data1D(object):
     @data.setter
     def data(self, data_tuple):
         """
+        Set the data for this object from supplied data.
+
         Parameters
         ----------
         data_tuple : tuple
@@ -176,7 +182,7 @@ class Data1D(object):
 
     def sort(self):
         """
-        Sorts the data.
+        Sorts the data in ascending order
         """
         sorted = np.argsort(self.x)
         self.x = self.x[sorted]

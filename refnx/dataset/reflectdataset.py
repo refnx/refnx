@@ -11,6 +11,9 @@ from refnx.dataset import Data1D
 
 
 class ReflectDataset(Data1D):
+    """
+    A 1D Reflectivity dataset.
+    """
     _template_ref_xml = """<?xml version="1.0"?>
     <REFroot xmlns="">
     <REFentry time="$time">
@@ -31,11 +34,27 @@ class ReflectDataset(Data1D):
     </REFroot>"""
 
     def __init__(self, data_tuple=None, **kwds):
+        """
+        Initialise a reflectivity dataset.
+
+        Parameters
+        ----------
+        data_tuple : tuple of np.ndarray
+            Specify the Q, R, dR, dQ data to construct the dataset from.
+        """
         super(ReflectDataset, self).__init__(data_tuple=data_tuple)
         self.datafilenumber = list()
         self.sld_profile = None
 
     def save_xml(self, f):
+        """
+        Saves the reflectivity data to an XML file.
+
+        Parameters
+        ----------
+        f : file-like
+            The file to save the data to.
+        """
         s = string.Template(self._template_ref_xml)
         self.time = strftime("%a, %d %b %Y %H:%M:%S +0000", gmtime())
 
@@ -50,6 +69,14 @@ class ReflectDataset(Data1D):
         f.write(thefile)
 
     def load(self, f):
+        """
+        Load a dataset from file. Can either be 2-4 column ascii or XML file.
+
+        Parameters
+        ----------
+        f : str or file-like
+            File to load reflectivity data from.
+        """
         own_fh = None
         g = f
         if not hasattr(f, 'read'):

@@ -166,12 +166,34 @@ class FitFunction(object):
         pass
 
     def __call__(self, x, params, *args, **kws):
+        """
+        Calculate the FitFunction
+        """
         return self.model(x, params, *args, **kws)
 
     @abc.abstractmethod
     def model(self, x, params, *args, **kws):
         """
-        Override this method in your own fitfunction
+        Calculate the predictive model for the fit.
+        Override this method in your own fitfunction.
+
+        Parameters
+        ----------
+        x : array-like
+            The independent variable for the fit
+        params : lmfit.Parameters
+            The model parameters
+
+        Returns
+        -------
+        predictive : np.ndarray
+            The predictive model for the fitfunction.
+
+        Notes
+        -----
+        `args` and `kws` can be used to fully specify the fit function.
+        Normally you would supply these via when the FitFunction object is
+        constructed.
         """
         raise RuntimeError("You can't use the abstract base FitFunction in a"
                            " real fit")
@@ -205,7 +227,8 @@ class CurveFitter(Minimizer):
         """
         fitfunc : callable
             Function calculating the generative model for the fit.  Should have
-            the signature: ``fitfunc(x, params, *fcn_args, **fcn_kws)``.
+            the signature: ``fitfunc(x, params, *fcn_args, **fcn_kws)``. You
+            can also supply a ``FitFunction`` instance.
         x : np.ndarray
             The independent variables
         y : np.ndarray
@@ -275,7 +298,13 @@ class CurveFitter(Minimizer):
 
     @property
     def data(self):
-        # returns the unmasked data, and the mask
+        """
+        The unmasked data, and the mask
+
+        Returns
+        -------
+        (x, y, e, mask) : data tuple
+        """
         return (self.xdata,
                 self.ydata,
                 self.edata,
@@ -509,7 +538,8 @@ class GlobalFitter(CurveFitter):
 
     def model(self, params):
         """
-        Calculates the model.
+        Calculates the model. This method is provided for convenience purposes
+        and is not used during a fit.
 
         Parameters
         ----------
@@ -602,7 +632,7 @@ def _parallel_global_fitfunc(x, params, fitfuncs=None,
                              new_param_reference=None, original_params=None,
                              original_userargs=None, original_kws=None):
     """
-    Objective function calculating the residuals for a curvefit. This is a
+    Fit function calculating a predictive model for a curvefit. This is a
     separate function and not a method in CurveFitter to allow for
     multiprocessing.
     """

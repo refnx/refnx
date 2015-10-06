@@ -69,7 +69,7 @@ class TestReflect(unittest.TestCase):
             self.params361['p%d' % p].vary = True
 
     def test_abeles(self):
-        #    test reflectivity calculation with values generated from Motofit
+        # test reflectivity calculation with values generated from Motofit
         calc = reflect.reflectivity(self.qvals, self.coefs)
 
         assert_almost_equal(calc, self.rvals)
