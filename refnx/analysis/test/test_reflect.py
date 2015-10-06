@@ -59,7 +59,7 @@ class TestReflect(unittest.TestCase):
         hilim = 2 * self.coefs361
 
         bounds = list(zip(lowlim, hilim))
-        e361 = np.loadtxt('e361r.txt')
+        e361 = np.loadtxt(os.path.join(path, 'e361r.txt'))
         self.qvals361, self.rvals361, self.evals361 = np.hsplit(e361, 3)
         self.params361 = curvefitter.to_parameters(self.coefs361,
                                                    bounds=bounds,
