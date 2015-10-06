@@ -36,8 +36,8 @@ before_install:
     - conda install --yes python=$TRAVIS_PYTHON_VERSION atlas numpy scipy nose h5py cython
     - pip install emcee uncertainties
     - git clone https://github.com/andyfaff/lmfit-py.git
-    - git checkout emcee
-    - cd lmfit-py && python setup.py install && cd ..
+    - cd lmfit-py && git checkout emcee
+    - python setup.py install && cd ..
 
 install:
     - python setup.py install
