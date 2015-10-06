@@ -226,7 +226,7 @@ class TestGlobalFitting(unittest.TestCase):
         # g.emcee(params=res.params, nwalkers=1000, steps=20, workers=4)
         # finish = time.time()
         # print(finish - start)
-        assert_almost_equal(res.chisqr, 0.774590447535, 4)
+        assert_almost_equal(res.chisqr, 0.774590447535, 4.)
 
 
 if __name__ == '__main__':
