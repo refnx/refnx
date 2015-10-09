@@ -66,6 +66,15 @@ extern "C" {
     coefP[4 * M + 11] - roughness between layer M - 1 / M (Å)
 */
 
+/*
+Parallelised
+*/
+void reflectMT(int numcoefs, const double *coefP, int npoints, double *yP,
+             const double *xP);
+
+/*
+Non parallelised
+*/
 void reflect(int numcoefs, const double *coefP, int npoints, double *yP,
              const double *xP);
 
