@@ -223,7 +223,7 @@ class TestGlobalFitting(unittest.TestCase):
         import time
         res = g.fit('differential_evolution')
         start = time.time()
-        g.emcee(params=res.params, nwalkers=500, steps=20, ntemps=10, workers=1)
+        g.emcee(params=res.params, nwalkers=300, steps=500, workers=1)
         finish = time.time()
         print(finish - start)
         assert_almost_equal(res.chisqr, 0.774590447535, 4)

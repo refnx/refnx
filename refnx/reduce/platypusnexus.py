@@ -47,6 +47,9 @@ class Catalogue(object):
         d['ss3hg'] = h5data['entry1/instrument/slits/third/horizontal/gap'][:]
         d['ss4hg'] = h5data['entry1/instrument/slits/fourth/horizontal/gap'][:]
 
+        d['omega'] = h5data['entry1/instrument/parameters/omega'][:]
+        d['twotheta'] = h5data['entry1/instrument/parameters/twotheta'][:]
+
         d['detector'] = h5data['entry1/data/hmm'][:]
         d['sth'] = h5data['entry1/sample/sth'][:]
         d['bm1_counts'] = h5data['entry1/monitor/bm1_counts'][:]
@@ -210,8 +213,8 @@ class PlatypusNexus(object):
         else:
             raise AttributeError
 
-    def process(self, h5norm=None, lo_wavelength=2.8, hi_wavelength=19.,
-                background=True, direct=False, omega=0, two_theta=0,
+    def process(self, h5norm=None, lo_wavelength=2.5, hi_wavelength=19.,
+                background=True, direct=False, omega=None, twotheta=None,
                 rebin_percent=1., wavelength_bins=None, normalise=True,
                 integrate=-1, eventmode=None, peak_pos=None,
                 background_mask=None, **kwds):
@@ -234,9 +237,11 @@ class PlatypusNexus(object):
             Is it a direct beam you measured? This is so a gravity correction
             can be applied.
         omega : float
-            Expected angle of incidence of beam
-        two_theta : float
-            Expected two theta value of specular beam
+            Expected angle of incidence of beam. If this is None, then the
+            rough angle of incidence is obtained from the NeXus file.
+        twotheta : float
+            Expected two theta value of specular beam. If this is None then
+            the rough angle of incidence is obtained from the NeXus file.
         rebin_percent : float
             Specifies the rebinning percentage for the spectrum.  If
             `rebin_percent is None`, then no rebinning is done.
@@ -390,7 +395,15 @@ class PlatypusNexus(object):
                                        - cat.slit2_distance[0]))[0]
 
             # work out the total flight length
-            output = self.chod(omega, two_theta, scanpoint=scanpoint)
+            # IMPORTANT: this varies as a function of twotheta. This is
+            # because the Platypus detector does not move on an arc.
+            # At high angles chod can be ~ 0.75% different. This is will
+            # visibly shift fringes.
+            if omega is None:
+                omega = cat.omega[scanpoint]
+            if twotheta is None:
+                twotheta = cat.twotheta[scanpoint]
+            output = self.chod(omega, twotheta, scanpoint=scanpoint)
             flight_distance[idx], d_cx[idx] = output
 
             # calculate phase openings
@@ -442,7 +455,7 @@ class PlatypusNexus(object):
                                          hi_wavelength)
             detector, detector_sd, m_gravcorrcoefs = output
             beam_centre, beam_sd = find_specular_ridge(detector, detector_sd)
-            beam_centre = m_gravcorrcoefs
+            # beam_centre = m_gravcorrcoefs
         else:
             beam_centre, beam_sd = find_specular_ridge(detector, detector_sd)
 
@@ -679,7 +692,7 @@ class PlatypusNexus(object):
 
         return phase_angle, master_opening
 
-    def chod(self, omega=0., two_theta=0., scanpoint=0):
+    def chod(self, omega=0., twotheta=0., scanpoint=0):
         """
         Calculates the flight length of the neutrons in the Platypus instrument.
 
@@ -687,7 +700,7 @@ class PlatypusNexus(object):
         ----------
         omega : float, optional
             Rough angle of incidence
-        two_theta : float, optional
+        twotheta : float, optional
             Rough 2 theta angle
         scanpoint : int, optional
             Which dataset is being considered
@@ -744,19 +757,19 @@ class PlatypusNexus(object):
 
         if mode in ['FOC', 'POL', 'MT', 'POLANAL']:
             chod += cat.sample_distance[0]
-            chod += cat.dy[scanpoint] / np.cos(np.radians(two_theta))
+            chod += cat.dy[scanpoint] / np.cos(np.radians(twotheta))
 
         elif mode == 'SB':
             # assumes guide1_distance is in the MIDDLE OF THE MIRROR
             chod += cat.guide1_distance[0]
             chod += ((cat.sample_distance[0] - cat.guide1_distance[0])
                      / np.cos(np.radians(omega)))
-            if two_theta > omega:
+            if twotheta > omega:
                 chod += (cat.dy[scanpoint] /
-                         np.cos(np.radians(two_theta - omega)))
+                         np.cos(np.radians(twotheta - omega)))
             else:
                 chod += (cat.dy[scanpoint]
-                         / np.cos(np.radians(omega - two_theta)))
+                         / np.cos(np.radians(omega - twotheta)))
 
         elif mode == 'DB':
             # guide2_distance in in the middle of the 2nd compound mirror
@@ -771,12 +784,12 @@ class PlatypusNexus(object):
                      / np.cos(np.radians(4.8)))
 
             # add on sample -> detector
-            if two_theta > omega:
+            if twotheta > omega:
                 chod += (cat.dy[scanpoint]
-                         / np.cos(np.radians(two_theta - 4.8)))
+                         / np.cos(np.radians(twotheta - 4.8)))
             else:
                 chod += (cat.dy[scanpoint]
-                         / np.cos(np.radians(4.8 - two_theta)))
+                         / np.cos(np.radians(4.8 - twotheta)))
 
         return chod, d_cx
 

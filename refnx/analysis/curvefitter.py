@@ -639,7 +639,7 @@ def _parallel_global_fitfunc(x, params, fitfuncs=None,
     # distribute params
     for name, param in params.items():
         fitter_i, original_name = new_param_reference[name]
-        original_params[fitter_i][original_name].value = param._getval()
+        original_params[fitter_i][original_name].value = param._val#_getval()
 
     model = np.zeros(0, dtype='float64')
 
