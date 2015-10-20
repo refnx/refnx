@@ -48,15 +48,17 @@ info = {
 if USE_CYTHON:
     ext_modules = []
 
+    # creflect extension module
     _creflect = Extension(
                           name='refnx.analysis._creflect',
                           sources=['src/_creflect.pyx', 'src/refcalc.cpp'],
                           include_dirs=[numpy_include],
                           language='c',
-                          extra_compile_args=[''],
-                          extra_link_args=['']
-                          #extra_link_args = ['-lpthread']
+                          extra_link_args=['-lpthread']
+                          # libraries=
+                          # extra_compile_args = "...".split(),
                           )
+    ext_modules.append(_creflect)
 
     ext_modules.append(_creflect)
     info['cmdclass'] = {'build_ext': build_ext}

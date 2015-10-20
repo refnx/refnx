@@ -244,7 +244,6 @@ class ReducePlatypus(object):
         thefile = s.safe_substitute(d)
 
         g = f
-        own_fh = None
         if not hasattr(f, 'read'):
             own_fh = open(f, 'w')
             g = own_fh
@@ -321,7 +320,7 @@ class ReducePlatypus(object):
             omega /= 2 * self.reflected_beam.detectorY[:, np.newaxis, np.newaxis]
             omega = np.arctan(omega)
 
-            m_twotheta += np.arange(n_ypixels * 1.)[np.newaxis, np.newaxis, :] * pn.Y_PIXEL_SPACING
+            m_twotheta += np.arange(n_ypixels * 1.)[np.newaxis, np.newaxis, :] * Y_PIXEL_SPACING
             m_twotheta += self.reflected_beam.detectorZ[:, np.newaxis, np.newaxis]
             m_twotheta -= self.direct_beam.M_beampos[:, :, np.newaxis] + self.direct_beam.detectorZ
             m_twotheta -= self.reflected_beam.detectorY[:, np.newaxis, np.newaxis] * np.tan(omega[:, :, np.newaxis])
