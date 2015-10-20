@@ -24,11 +24,11 @@ ext_modules = []
 if USE_CYTHON:
     # creflect extension module
     _creflect = Extension(
-                          name = 'refnx.analysis._creflect',
+                          name='refnx.analysis._creflect',
                           sources=['src/_creflect.pyx', 'src/refcalc.cpp'],
-                          include_dirs = [numpy_include],
-                          language = 'c',
-                          extra_link_args = ['-lpthread']
+                          include_dirs=[numpy_include],
+                          language='c',
+                          extra_link_args=['-lpthread']
                           # libraries=
                           # extra_compile_args = "...".split(),
                           )
