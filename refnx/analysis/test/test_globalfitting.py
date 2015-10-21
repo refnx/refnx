@@ -141,9 +141,9 @@ class TestGlobalFitting(unittest.TestCase):
                                                 'd0:p17=d0:p13',
                                                 'd0:p19=d0:p15'])
 
-        a.fit(method='differential_evolution')
+        res = a.fit(method='differential_evolution')
 
-        values = list(params.valuesdict().values())
+        values = list(res.params.valuesdict().values())
 
         assert_equal(values[12], values[16])
         assert_equal(values[13], values[17])
@@ -221,7 +221,7 @@ class TestGlobalFitting(unittest.TestCase):
         global_chisqr = g.residuals(g.params) ** 2
         assert_almost_equal(indiv_chisqr.sum(), global_chisqr.sum())
         # import time
-        # res = g.fit('differential_evolution')
+        res = g.fit('differential_evolution')
         # start = time.time()
         # g.emcee(params=res.params, nwalkers=300, steps=500, workers=1)
         # finish = time.time()

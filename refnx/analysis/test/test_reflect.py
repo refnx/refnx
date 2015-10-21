@@ -186,6 +186,8 @@ class TestReflect(unittest.TestCase):
         fitter2.fit('differential_evolution')
 
     def test_reflectivity_emcee(self):
+        if not hasattr(CurveFitter, 'emcee'):
+            return
         transform = reflect.Transform('logY')
         yt, et = transform.transform(self.qvals361,
                                      self.rvals361,
