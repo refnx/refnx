@@ -24,7 +24,7 @@ class TestPlatypusNexus(unittest.TestCase):
         assert_almost_equal(flight_length[0], 7141.413818359375)
         assert_almost_equal(flight_length[1], 808)
 
-        flight_length = self.f641.chod(omega=1.8, two_theta=3.6)
+        flight_length = self.f641.chod(omega=1.8, twotheta=3.6)
         assert_almost_equal(flight_length[0], 7146.3567785516016)
         assert_almost_equal(flight_length[1], 808)
 

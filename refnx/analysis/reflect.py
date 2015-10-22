@@ -132,7 +132,7 @@ def convert_layer_format_to_coefs(layers, scale=1, bkg=0):
     return coefs
 
 
-def abeles(q, layers, scale=1, bkg=0.):
+def abeles(q, layers, scale=1, bkg=0., parallel=True):
     """
     Abeles matrix formalism for calculating reflectivity from a stratified
     medium.
@@ -158,13 +158,17 @@ def abeles(q, layers, scale=1, bkg=0.):
         Multiply all reflectivities by this value.
     bkg: float
         Linear background to be added to all reflectivities
+    parallel: bool
+        Do you want to calculate in parallel? This option is only applicable if
+        you are using the ``_creflect`` module. The option is ignored if using
+        the pure python calculator, ``_reflect``.
 
     Returns
     -------
     Reflectivity: np.ndarray
         Calculated reflectivity values for each q value.
     """
-    return refcalc.abeles(q, layers, scale=scale, bkg=bkg)
+    return refcalc.abeles(q, layers, scale=scale, bkg=bkg, parallel=parallel)
 
 
 def reflectivity(q, coefs, *args, **kwds):
@@ -218,7 +222,16 @@ def reflectivity(q, coefs, *args, **kwds):
             time. BUT it won't necessarily work across all samples. For example,
             13 points may be fine for a thin layer, but will be atrocious at
             describing a multilayer with bragg peaks.
+        'parallel': bool, optional
+            Do you want to calculate in parallel? This option is only
+            applicable if you are using the ``_creflect`` module. The option is
+            ignored if using the pure python calculator, ``_reflect``. The
+            default is `True`.
+
     """
+    parallel=True
+    if 'parallel' in kwds:
+        parallel = kwds['parallel']
 
     qvals = q
     quad_order = 17
@@ -240,7 +253,10 @@ def reflectivity(q, coefs, *args, **kwds):
 
         # constant dq/q smearing
         if type(dqvals) == float:
-            return (scale * _smeared_abeles_constant(qvals, w, dqvals)) + bkg
+            return (scale * _smeared_abeles_constant(qvals,
+                                                     w,
+                                                     dqvals,
+                                                     parallel=parallel)) + bkg
 
         # point by point resolution smearing
         if dqvals.size == qvals.size:
@@ -252,7 +268,8 @@ def reflectivity(q, coefs, *args, **kwds):
                 smeared_rvals = (scale *
                     _smeared_abeles_adaptive(qvals_flat,
                                              w,
-                                             dqvals_flat) + bkg)
+                                             dqvals_flat,
+                                             parallel=parallel) + bkg)
                 return smeared_rvals.reshape(q.shape)
             # fixed order quadrature
             else:
@@ -260,7 +277,8 @@ def reflectivity(q, coefs, *args, **kwds):
                                                       qvals_flat,
                                                       w,
                                                       dqvals_flat,
-                                                      quad_order=quad_order)
+                                                      quad_order=quad_order,
+                                                      parallel=parallel)
                                  + bkg)
                 return np.reshape(smeared_rvals, q.shape)
 
@@ -270,8 +288,11 @@ def reflectivity(q, coefs, *args, **kwds):
             # TODO may not work yet.
             qvals_for_res = dqvals[..., 0]
             # work out the reflectivity at the kernel evaluation points
-            smeared_rvals = refcalc.abeles(qvals_for_res, w, scale=coefs[1],
-                                           bkg=coefs[6])
+            smeared_rvals = refcalc.abeles(qvals_for_res,
+                                           w,
+                                           scale=coefs[1],
+                                           bkg=coefs[6],
+                                           parallel=parallel)
 
             # multiply by probability
             smeared_rvals *= dqvals[..., 1]
@@ -280,7 +301,11 @@ def reflectivity(q, coefs, *args, **kwds):
             return scipy.integrate.simps(smeared_rvals, x=dqvals[..., 0])
 
     # no smearing
-    return refcalc.abeles(q, w, scale=coefs[1], bkg=coefs[6])
+    return refcalc.abeles(q,
+                          w,
+                          scale=coefs[1],
+                          bkg=coefs[6],
+                          parallel=parallel)
 
 
 def _memoize_gl(f):
@@ -321,7 +346,7 @@ def gauss_legendre(n):
     return x, w
 
 
-def _smearkernel(x, w, q, dq):
+def _smearkernel(x, w, q, dq, parallel):
     """
     Kernel for adaptive Gaussian quadrature integration
 
@@ -345,10 +370,10 @@ def _smearkernel(x, w, q, dq):
     prefactor = 1 / np.sqrt(2 * np.pi)
     gauss = prefactor * np.exp(-0.5 * x * x)
     localq = q + x * dq / _FWHM
-    return refcalc.abeles(localq, w) * gauss
+    return refcalc.abeles(localq, w, parallel=parallel) * gauss
 
 
-def _smeared_abeles_adaptive(qvals, w, dqvals):
+def _smeared_abeles_adaptive(qvals, w, dqvals, parallel=True):
     """
     Resolution smearing that uses adaptive Gaussian quadrature integration
     for the convolution.
@@ -362,6 +387,10 @@ def _smeared_abeles_adaptive(qvals, w, dqvals):
     dqvals : array-like
         dQ values corresponding to each value in `qvals`. Each dqval is the
         FWHM of a Gaussian approximation to the resolution kernel.
+    parallel: bool, optional
+        Do you want to calculate in parallel? This option is only applicable if
+        you are using the ``_creflect`` module. The option is ignored if using
+        the pure python calculator, ``_reflect``.
 
     Returns
     -------
@@ -382,13 +411,13 @@ def _smeared_abeles_adaptive(qvals, w, dqvals):
             _INTLIMIT,
             tol=2 * np.finfo(np.float64).eps,
             rtol=2 * np.finfo(np.float64).eps,
-            args=(w, qvals[idx], dqvals[idx]))
+            args=(w, qvals[idx], dqvals[idx], parallel))
 
     warnings.resetwarnings()
     return smeared_rvals
 
 
-def _smeared_abeles_fixed(qvals, w, dqvals, quad_order=17):
+def _smeared_abeles_fixed(qvals, w, dqvals, quad_order=17, parallel=True):
     """
     Resolution smearing that uses fixed order Gaussian quadrature integration
     for the convolution.
@@ -405,6 +434,11 @@ def _smeared_abeles_fixed(qvals, w, dqvals, quad_order=17):
     quad-order : int, optional
         Specify the order of the Gaussian quadrature integration for the
         convolution.
+    parallel: bool, optional
+        Do you want to calculate in parallel? This option is only applicable if
+        you are using the ``_creflect`` module. The option is ignored if using
+        the pure python calculator, ``_reflect``.
+
 
     Returns
     -------
@@ -429,7 +463,9 @@ def _smeared_abeles_fixed(qvals, w, dqvals, quad_order=17):
     qvals_for_res = ((np.atleast_2d(abscissa) *
                      (vb - va)
                      + vb + va) / 2.)
-    smeared_rvals = refcalc.abeles(qvals_for_res.flatten(), w)
+    smeared_rvals = refcalc.abeles(qvals_for_res.flatten(),
+                                   w,
+                                   parallel=parallel)
 
     smeared_rvals = np.reshape(smeared_rvals,
                                (qvals.size, abscissa.size))
@@ -438,7 +474,7 @@ def _smeared_abeles_fixed(qvals, w, dqvals, quad_order=17):
     return np.sum(smeared_rvals, 1) * _INTLIMIT
 
 
-def _smeared_abeles_constant(q, w, resolution):
+def _smeared_abeles_constant(q, w, resolution, parallel=True):
     """
     A kernel for fast and constant dQ/Q smearing
 
@@ -451,6 +487,11 @@ def _smeared_abeles_constant(q, w, resolution):
     resolution: float
         Percentage dq/q resolution. dq specified as FWHM of a resolution
         kernel.
+    parallel: bool, optional
+        Do you want to calculate in parallel? This option is only applicable if
+        you are using the ``_creflect`` module. The option is ignored if using
+        the pure python calculator, ``_reflect``.
+
 
     Returns
     -------
@@ -459,7 +500,7 @@ def _smeared_abeles_constant(q, w, resolution):
     """
 
     if resolution < 0.5:
-        return refcalc.abeles(q, w)
+        return refcalc.abeles(q, w, parallel=parallel)
 
     resolution /= 100
     gaussnum = 51
@@ -484,7 +525,7 @@ def _smeared_abeles_constant(q, w, resolution):
     gauss_x = np.linspace(-1.7 * resolution, 1.7 * resolution, gaussnum)
     gauss_y = gauss(gauss_x, resolution / _FWHM)
 
-    rvals = refcalc.abeles(xlin, w)
+    rvals = refcalc.abeles(xlin, w, parallel=parallel)
     smeared_rvals = fftconvolve(rvals, gauss_y, mode='same')
     interpolator = InterpolatedUnivariateSpline(xlin, smeared_rvals)
 
@@ -579,7 +620,7 @@ class ReflectivityFitFunction(FitFunction):
     you should also override the `sld_profile` method.
     """
 
-    def __init__(self, transform=None, dq=5., quad_order=17):
+    def __init__(self, transform=None, dq=5., quad_order=17, parallel=True):
         """
         Initialises the ReflectivityFitFunction.
 
@@ -602,12 +643,19 @@ class ReflectivityFitFunction(FitFunction):
             time. BUT it won't necessarily work across all samples. For
             example 13 points may be fine for a thin layer, but will be
             atrocious at describing a multilayer with Bragg peaks.
+
+        parallel: bool, optional
+            Do you want to calculate in parallel? This option is only
+            applicable if you are using the ``_creflect`` module. The option is
+            ignored if using the pure python calculator, ``_reflect``.
+
         """
         super(ReflectivityFitFunction, self).__init__()
 
         self.transform = transform
         self.dq = float(dq)
-        self.quad_order=quad_order
+        self.quad_order = quad_order
+        self.parallel = parallel
 
     def model(self, x, parameters, *args, **kwds):
         """
@@ -627,12 +675,15 @@ class ReflectivityFitFunction(FitFunction):
             The theoretical model for the x, i.e.
             reflectivity(x, parameters, *args, **kwds)
         """
-        params = np.array([parameters[param].value for param in parameters], float)
+        params = np.array([parameters[param].value for param in parameters],
+                          float)
 
         if not 'quad_order' in kwds:
             kwds['quad_order'] = self.quad_order
         if not 'dqvals' in kwds and self.dq > 0.3:
             kwds['dqvals'] = float(self.dq)
+        if not 'parallel' in kwds:
+            kwds['parallel'] = self.parallel
         yvals = reflectivity(x, params, *args, **kwds)
 
         if self.transform:

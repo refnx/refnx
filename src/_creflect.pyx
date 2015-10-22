@@ -8,6 +8,8 @@ from cython.view cimport array as cvarray
 cdef extern from "refcalc.h":
     void reflect(int numcoefs, const double *coefP, int npoints, double *yP,
                  const double *xP)
+    void reflectMT(int numcoefs, const double *coefP, int npoints, double *yP,
+                 const double *xP)
 
 DTYPE = np.float64
 ctypedef np.float64_t DTYPE_t
@@ -16,7 +18,7 @@ ctypedef np.float64_t DTYPE_t
 @cython.cdivision(False)
 def abeles(np.ndarray x,
            np.ndarray[DTYPE_t, ndim=2] w,
-           double scale=1.0, bkg=0.):
+           double scale=1.0, bkg=0., parallel=True):
     if w.shape[1] != 4 or w.shape[0] < 2:
         raise ValueError("Parameters for _creflect must have shape (>2, 4)")
     if (w.dtype != np.float64 or x.dtype != np.float64):
@@ -40,8 +42,13 @@ def abeles(np.ndarray x,
     if nlayers:
         coefs[8:] = w.flatten()[4: -4]
 
-    reflect(4 * nlayers + 8, <const double*>coefs.data, npoints,
-            <double*>y.data, <const double*>xtemp.data)
+    if parallel:
+        reflectMT(4 * nlayers + 8, <const double*>coefs.data, npoints,
+                  <double*>y.data, <const double*>xtemp.data)
+    else:
+        reflect(4 * nlayers + 8, <const double*>coefs.data, npoints,
+                  <double*>y.data, <const double*>xtemp.data)
+
     return y
 
 """

@@ -14,7 +14,7 @@ CURDIR = os.path.dirname(os.path.abspath(__file__))
 
 def reflect_fitfunc(q, params, *args):
     coefs = np.asfarray(list(params.valuesdict().values()))
-    return np.log10(reflect.reflectivity(q, coefs))
+    return np.log10(reflect.reflectivity(q, coefs, parallel=True))
 
     
 class Test_reflect(unittest.TestCase):
@@ -141,9 +141,9 @@ class TestGlobalFitting(unittest.TestCase):
                                                 'd0:p17=d0:p13',
                                                 'd0:p19=d0:p15'])
 
-        a.fit(method='differential_evolution')
+        res = a.fit(method='differential_evolution')
 
-        values = list(params.valuesdict().values())
+        values = list(res.params.valuesdict().values())
 
         assert_equal(values[12], values[16])
         assert_equal(values[13], values[17])
@@ -223,7 +223,7 @@ class TestGlobalFitting(unittest.TestCase):
         # import time
         res = g.fit('differential_evolution')
         # start = time.time()
-        # g.emcee(params=res.params, nwalkers=1000, steps=20, workers=4)
+        # g.emcee(params=res.params, nwalkers=300, steps=500, workers=1)
         # finish = time.time()
         # print(finish - start)
         assert_almost_equal(res.chisqr, 0.774590447535, 4)

@@ -74,7 +74,7 @@ void AbelesCalc_ImagAll(int numcoefs,
 		sub = MyComplex(coefP[4] * 1.e-6, coefP[5] * 1.e-6);
 		super = MyComplex(coefP[2] * 1e-6, coefP[3] * 1.e-6);
 
-		//fillout all the SLD's for all the layers
+		// fillout all the SLD's for all the layers
 		for(int ii = 1; ii < nlayers + 1; ii += 1){
 			SLD[ii] = 4 * PI * (MyComplex(coefP[4 * ii + 5] * 1.e-6,
 			                              coefP[4 * ii + 6] * 1.e-6) - super);
@@ -86,7 +86,7 @@ void AbelesCalc_ImagAll(int numcoefs,
 		SLD[nlayers + 1] = 4 * PI * (sub - super);
         roughness[nlayers] = fabs(coefP[7]);
 
-//if you have omp.h, then you may as well do the calculation in parallel.
+// if you have omp.h, then can do the calculation in parallel.
 #ifdef _OPENMP
 #pragma omp parallel for shared(kn) private(j)
 #endif
@@ -96,7 +96,7 @@ void AbelesCalc_ImagAll(int numcoefs,
 
 			qq2 = MyComplex(xP[j] * xP[j] / 4, 0);
 
-			//work out the wavevector in each of the layers
+			// work out the wavevector in each of the layers
 			for(int ii = 0; ii < nlayers + 2 ; ii++)
 				kn[ii] = compsqrt(qq2 - SLD[ii]);
 
@@ -106,13 +106,13 @@ void AbelesCalc_ImagAll(int numcoefs,
 			          * compexp(kn[ii] * kn[ii + 1] * -2.
 			          * roughness[ii] * roughness[ii]) ;
 
-				//work out the beta for the layer
+				// work out the beta for the layer
 				beta = (ii == 0)? oneC
 				                  :
 				                  compexp(kn[ii]
 				                          * MyComplex(0, thickness[ii - 1]));
 
-				//this is the characteristic matrix of a layer
+				// this is the characteristic matrix of a layer
 				MI[0][0] = beta;
 				MI[0][1] = rj * beta;
 				MI[1][1] = oneC / beta;
@@ -123,7 +123,7 @@ void AbelesCalc_ImagAll(int numcoefs,
                 } else {
                     memcpy(temp2, MRtotal, sizeof(MRtotal));
 
-                    //multiply MRtotal, MI to get the updated total matrix.
+                    // multiply MRtotal, MI to get the updated total matrix.
                     matmul(temp2, MI, MRtotal);
                 }
 			}
@@ -155,15 +155,15 @@ void AbelesCalc_ImagAll(int numcoefs,
 #ifdef HAVE_PTHREAD_H
 
 	typedef struct{
-		//a double array containing the model coefficients
+		// a double array containing the model coefficients
 		const double *coefP;
-		//number of coefficients
+		// number of coefficients
 		int numcoefs;
-		//number of Q points we have to calculate
+		// number of Q points we have to calculate
 		int npoints;
-		//the Reflectivity values to return
+		// the Reflectivity values to return
 		double *yP;
-		//the Q values to do the calculation for.
+		// the Q values to do the calculation for.
 		const double *xP;
 	}  pointCalcParm;
 
@@ -192,7 +192,7 @@ void AbelesCalc_ImagAll(int numcoefs,
 		int threadsToCreate = NUM_CPUS - 1;
 		int pointsEachThread, pointsRemaining, pointsConsumed;
 
-		//create threads for the calculation
+		// create threads for the calculation
 		threads = (pthread_t *) malloc((threadsToCreate) * sizeof(pthread_t));
 		if(!threads && NUM_CPUS > 1){
 			err = 1;
@@ -251,7 +251,10 @@ void AbelesCalc_ImagAll(int numcoefs,
 	}
 #endif
 
-void reflect(int numcoefs,
+/*
+Parallelised version
+*/
+void reflectMT(int numcoefs,
             const double *coefP,
             int npoints,
             double *yP,
@@ -265,6 +268,17 @@ is present for parallelisation.
 #else
     AbelesCalc_ImagAll(numcoefs, coefP, npoints, yP, xP);
 #endif
+}
+
+/*
+Non parallelised version
+*/
+void reflect(int numcoefs,
+            const double *coefP,
+            int npoints,
+            double *yP,
+            const double *xP){
+	AbelesCalc_ImagAll(numcoefs, coefP, npoints, yP, xP);
 }
 
 #ifdef __cplusplus

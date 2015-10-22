@@ -1,6 +1,5 @@
 #! /usr/bin/env python
 # System imports
-import numpy as np
 from setuptools import setup, Extension, find_packages
 
 try:
@@ -10,42 +9,19 @@ except ImportError:
 else:
     USE_CYTHON = True
 
-
-# Obtain the numpy include directory.  This logic works across numpy versions.
-try:
-    numpy_include = np.get_include()
-except AttributeError:
-    numpy_include = np.get_numpy_include()
-
 packages = find_packages()
 
-ext_modules = []
-
-if USE_CYTHON:
-    # creflect extension module
-    _creflect = Extension(
-                          name = 'refnx.analysis._creflect',
-                          sources=['src/_creflect.pyx', 'src/refcalc.cpp'],
-                          include_dirs = [numpy_include],
-                          language = 'c',
-                          extra_link_args = ['-lpthread']
-                          # libraries=
-                          # extra_compile_args = "...".split(),
-                          )
-    ext_modules.append(_creflect)
-
 # refnx setup
-setup(  name        = 'refnx',
-        ext_modules = ext_modules,
-        cmdclass = {'build_ext': build_ext},
-        description = 'Neutron and X-ray Reflectometry Analysis',
-        author      = 'Andrew Nelson',
-        author_email = 'andrew.nelson@ansto.gov.au',
-        version     = '0.0.1',
-        license     = 'BSD',
-        url         = 'https://github.com/andyfaff/refnx',
-        platforms = ["Windows", "Linux", "Solaris", "Mac OS-X", "Unix"],
-        classifiers = [
+info = {
+        'name': 'refnx',
+        'description': 'Neutron and X-ray Reflectometry Analysis',
+        'author': 'Andrew Nelson',
+        'author_email': 'andrew.nelson@ansto.gov.au',
+        'version': '0.0.1',
+        'license': 'BSD',
+        'url': 'https://github.com/refnx/refnx',
+        'platforms': ["Windows", "Linux", "Solaris", "Mac OS-X", "Unix"],
+        'classifiers': [
         'Development Status :: 3 - Alpha',
         'Environment :: Console',
         'Intended Audience :: Science/Research',
@@ -57,6 +33,56 @@ setup(  name        = 'refnx',
         'Topic :: Scientific/Engineering :: Chemistry',
         'Topic :: Scientific/Engineering :: Physics',
         ],
-        packages = packages,
-        install_requires = ['numpy', 'scipy', 'lmfit', 'uncertainties'],
-     )
+        'packages': packages,
+        'install_requires': ['numpy', 'scipy', 'lmfit', 'uncertainties']
+        }
+
+if USE_CYTHON:
+    # Obtain the numpy include directory.  This logic works across numpy versions.
+    ext_modules = []
+    HAS_NUMPY = True
+
+    try:
+        import numpy as np
+    except:
+        info['setup_requires'] = ['numpy']
+        HAS_NUMPY = False
+
+    if HAS_NUMPY:
+        try:
+            numpy_include = np.get_include()
+        except AttributeError:
+            numpy_include = np.get_numpy_include()
+
+        # creflect extension module
+        _creflect = Extension(
+                              name='refnx.analysis._creflect',
+                              sources=['src/_creflect.pyx', 'src/refcalc.cpp'],
+                              include_dirs=[numpy_include],
+                              language='c',
+                              extra_link_args=['-lpthread']
+                              # libraries=
+                              # extra_compile_args = "...".split(),
+                              )
+        ext_modules.append(_creflect)
+
+        info['cmdclass'] = {'build_ext': build_ext}
+        info['ext_modules'] = ext_modules
+
+try:
+    setup(**info)
+except ValueError:
+    # there probably wasn't a C-compiler (windows). Try removing extension
+    # compilation
+    print("")
+    print("*****WARNING*****")
+    print("You didn't try to build the Reflectivity calculation extension."
+          " Calculation will be slow, falling back to pure python."
+          " To compile extension install cython. If installing in windows you"
+          " should then install from Visual Studio command prompt (this makes"
+          " C compiler available")
+    print("*****************")
+    print("")
+    info.pop('cmdclass')
+    info.pop('ext_modules')
+    setup(**info)
