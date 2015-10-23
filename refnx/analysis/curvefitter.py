@@ -2,7 +2,7 @@
 """
 Created on Sun Dec 21 15:37:29 2014
 
-@author: anz
+@author: Andrew Nelson
 """
 from __future__ import print_function
 from lmfit import Minimizer, Parameters
@@ -221,36 +221,36 @@ class FitFunction(object):
 class CurveFitter(Minimizer):
     """
     A curvefitting class that extends lmfit.Minimize
+
+    fitfunc : callable
+        Function calculating the generative model for the fit.  Should have
+        the signature: ``fitfunc(x, params, *fcn_args, **fcn_kws)``. You
+        can also supply a ``FitFunction`` instance.
+    x : np.ndarray
+        The independent variables
+    y : np.ndarray
+        The dependent (observed) variable
+    params : lmfit.Parameters instance
+        Specifies the parameter set for the fit
+    edata : np.ndarray, optional
+        The measured uncertainty in the dependent variable, expressed as
+        sd.  If this array is not specified, then edata is set to unity.
+    mask : np.ndarray, optional
+        A boolean array with the same shape as y.  If mask is True
+        then that point is excluded from the residuals calculation.
+    fcn_args : tuple, optional
+        Extra parameters required to fully specify fitfunc.
+    fcn_kws : dict, optional
+        Extra keyword parameters needed to fully specify fitfunc.
+    minimizer_kwds : dict, optional
+        Keywords passed to the minimizer.
+    callback : callable, optional
+        A function called at each minimization step. Has the signature:
+        ``callback(params, iter, resid, *args, **kwds)``
     """
+
     def __init__(self, fitfunc, xdata, ydata, params, edata=None, mask=None,
                  fcn_args=(), fcn_kws=None, kws=None, callback=None):
-        """
-        fitfunc : callable
-            Function calculating the generative model for the fit.  Should have
-            the signature: ``fitfunc(x, params, *fcn_args, **fcn_kws)``. You
-            can also supply a ``FitFunction`` instance.
-        x : np.ndarray
-            The independent variables
-        y : np.ndarray
-            The dependent (observed) variable
-        params : lmfit.Parameters instance
-            Specifies the parameter set for the fit
-        edata : np.ndarray, optional
-            The measured uncertainty in the dependent variable, expressed as
-            sd.  If this array is not specified, then edata is set to unity.
-        mask : np.ndarray, optional
-            A boolean array with the same shape as y.  If mask is True
-            then that point is excluded from the residuals calculation.
-        fcn_args : tuple, optional
-            Extra parameters required to fully specify fitfunc.
-        fcn_kws : dict, optional
-            Extra keyword parameters needed to fully specify fitfunc.
-        minimizer_kwds : dict, optional
-            Keywords passed to the minimizer.
-        callback : callable, optional
-            A function called at each minimization step. Has the signature:
-            ``callback(params, iter, resid, *args, **kwds)``
-        """
         self.fitfunc = fitfunc
 
         self.xdata = np.asfarray(xdata)
@@ -367,18 +367,29 @@ class CurveFitter(Minimizer):
         method : str, optional
             Name of the fitting method to use.
             One of:
-            'leastsq'                -    Levenberg-Marquardt (default)
-            'nelder'                 -    Nelder-Mead
-            'lbfgsb'                 -    L-BFGS-B
-            'powell'                 -    Powell
-            'cg'                     -    Conjugate-Gradient
-            'newton'                 -    Newton-CG
-            'cobyla'                 -    Cobyla
-            'tnc'                    -    Truncate Newton
-            'trust-ncg'              -    Trust Newton-CGn
-            'dogleg'                 -    Dogleg
-            'slsqp'                  -    Sequential Linear Squares Programming
-            'differential_evolution' -    differential evolution
+                'leastsq'                -    Levenberg-Marquardt (default)
+
+                'nelder'                 -    Nelder-Mead
+
+                'lbfgsb'                 -    L-BFGS-B
+
+                'powell'                 -    Powell
+
+                'cg'                     -    Conjugate-Gradient
+
+                'newton'                 -    Newton-CG
+
+                'cobyla'                 -    Cobyla
+
+                'tnc'                    -    Truncate Newton
+
+                'trust-ncg'              -    Trust Newton-CGn
+
+                'dogleg'                 -    Dogleg
+
+                'slsqp'                  -    Sequential Linear Squares Programming
+
+                'differential_evolution' -    differential evolution
 
         Returns
         -------
