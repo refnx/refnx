@@ -35,34 +35,38 @@ def convert_coefs_to_layer_format(coefs):
     Parameters
     ----------
     coefs : np.ndarray
-        coefs[0] = number of layers, N
-        coefs[1] = scale factor
-        coefs[2] = SLD of fronting (/1e-6 Angstrom**-2)
-        coefs[3] = iSLD of fronting (/1e-6 Angstrom**-2)
-        coefs[4] = SLD of backing
-        coefs[5] = iSLD of backing
-        coefs[6] = background
-        coefs[7] = roughness between backing and layer N
 
-        coefs[4 * (N - 1) + 8] = thickness of layer N in Angstrom (layer 1 is
-        closest to fronting)
-        coefs[4 * (N - 1) + 9] = SLD of layer N (/ 1e-6 Angstrom**-2)
-        coefs[4 * (N - 1) + 10] = iSLD of layer N (/ 1e-6 Angstrom**-2)
-        coefs[4 * (N - 1) + 11] = roughness between layer N and N-1.
+        * coefs[0] = number of layers, N
+        * coefs[1] = scale factor
+        * coefs[2] = SLD of fronting (/1e-6 Angstrom**-2)
+        * coefs[3] = iSLD of fronting (/1e-6 Angstrom**-2)
+        * coefs[4] = SLD of backing
+        * coefs[5] = iSLD of backing
+        * coefs[6] = background
+        * coefs[7] = roughness between backing and layer N
+
+        * coefs[4 * (N - 1) + 8] = thickness of layer N in Angstrom (layer 1 is
+        * closest to fronting)
+        * coefs[4 * (N - 1) + 9] = SLD of layer N (/ 1e-6 Angstrom**-2)
+        * coefs[4 * (N - 1) + 10] = iSLD of layer N (/ 1e-6 Angstrom**-2)
+        * coefs[4 * (N - 1) + 11] = roughness between layer N and N-1.
 
     Returns
     -------
     layers: np.ndarray
+
         Has shape (2 + N, 4), where N is the number of layers
-        layers[0, 1] - SLD of fronting (/ 1e-6 Angstrom**-2)
-        layers[0, 2] - iSLD of fronting (/ 1e-6 Angstrom**-2)
-        layers[N, 0] - thickness of layer N
-        layers[N, 1] - SLD of layer N (/ 1e-6 Angstrom**-2)
-        layers[N, 2] - iSLD of layer N (/ 1e-6 Angstrom**-2)
-        layers[N, 3] - roughness between layer N-1/N
-        layers[-1, 1] - SLD of backing (/ 1e-6 Angstrom**-2)
-        layers[-1, 2] - iSLD of backing (/ 1e-6 Angstrom**-2)
-        layers[-1, 3] - roughness between backing and last layer
+
+        * layers[0, 1] - SLD of fronting (/ 1e-6 Angstrom**-2)
+        * layers[0, 2] - iSLD of fronting (/ 1e-6 Angstrom**-2)
+        * layers[N, 0] - thickness of layer N
+        * layers[N, 1] - SLD of layer N (/ 1e-6 Angstrom**-2)
+        * layers[N, 2] - iSLD of layer N (/ 1e-6 Angstrom**-2)
+        * layers[N, 3] - roughness between layer N-1/N
+        * layers[-1, 1] - SLD of backing (/ 1e-6 Angstrom**-2)
+        * layers[-1, 2] - iSLD of backing (/ 1e-6 Angstrom**-2)
+        * layers[-1, 3] - roughness between backing and last layer
+
     """
     nlayers = int(coefs[0])
     layers = np.zeros((nlayers + 2, 4), np.float64)
@@ -90,33 +94,36 @@ def convert_layer_format_to_coefs(layers, scale=1, bkg=0):
     ----------
     layers: np.ndarray
         Has shape (2 + N, 4), where N is the number of layers.
-        layers[0, 1] - SLD of fronting (/ 1e-6 Angstrom**-2)
-        layers[0, 2] - iSLD of fronting (/ 1e-6 Angstrom**-2)
-        layers[N, 0] - thickness of layer N
-        layers[N, 1] - SLD of layer N (/ 1e-6 Angstrom**-2)
-        layers[N, 2] - iSLD of layer N (/ 1e-6 Angstrom**-2)
-        layers[N, 3] - roughness between layer N-1/N
-        layers[-1, 1] - SLD of backing (/ 1e-6 Angstrom**-2)
-        layers[-1, 2] - iSLD of backing (/ 1e-6 Angstrom**-2)
-        layers[-1, 3] - roughness between backing and last layer
+
+        * layers[0, 1] - SLD of fronting (/ 1e-6 Angstrom**-2)
+        * layers[0, 2] - iSLD of fronting (/ 1e-6 Angstrom**-2)
+        * layers[N, 0] - thickness of layer N
+        * layers[N, 1] - SLD of layer N (/ 1e-6 Angstrom**-2)
+        * layers[N, 2] - iSLD of layer N (/ 1e-6 Angstrom**-2)
+        * layers[N, 3] - roughness between layer N-1/N
+        * layers[-1, 1] - SLD of backing (/ 1e-6 Angstrom**-2)
+        * layers[-1, 2] - iSLD of backing (/ 1e-6 Angstrom**-2)
+        * layers[-1, 3] - roughness between backing and last layer
 
     Returns
     -------
     coefs : np.ndarray
-        coefs[0] = number of layers, N
-        coefs[1] = scale factor
-        coefs[2] = SLD of fronting (/1e-6 Angstrom**-2)
-        coefs[3] = iSLD of fronting (/1e-6 Angstrom**-2)
-        coefs[4] = SLD of backing
-        coefs[5] = iSLD of backing
-        coefs[6] = background
-        coefs[7] = roughness between backing and layer N
 
-        coefs[4 * (N - 1) + 8] = thickness of layer N in Angstrom (layer 1 is
+        * coefs[0] = number of layers, N
+        * coefs[1] = scale factor
+        * coefs[2] = SLD of fronting (/1e-6 Angstrom**-2)
+        * coefs[3] = iSLD of fronting (/1e-6 Angstrom**-2)
+        * coefs[4] = SLD of backing
+        * coefs[5] = iSLD of backing
+        * coefs[6] = background
+        * coefs[7] = roughness between backing and layer N
+
+        * coefs[4 * (N - 1) + 8] = thickness of layer N in Angstrom (layer 1 is
         closest to fronting)
-        coefs[4 * (N - 1) + 9] = SLD of layer N (/ 1e-6 Angstrom**-2)
-        coefs[4 * (N - 1) + 10] = iSLD of layer N (/ 1e-6 Angstrom**-2)
-        coefs[4 * (N - 1) + 11] = roughness between layer N and N-1.
+        * coefs[4 * (N - 1) + 9] = SLD of layer N (/ 1e-6 Angstrom**-2)
+        * coefs[4 * (N - 1) + 10] = iSLD of layer N (/ 1e-6 Angstrom**-2)
+        * coefs[4 * (N - 1) + 11] = roughness between layer N and N-1.
+
     """
     nlayers = np.size(layers, 0) - 2
     coefs = np.zeros(4 * nlayers + 8, np.float64)
@@ -145,15 +152,17 @@ def abeles(q, layers, scale=1, bkg=0., parallel=True):
     layers: np.ndarray
         coefficients required for the calculation, has shape (2 + N, 4),
         where N is the number of layers
-        layers[0, 1] - SLD of fronting (/ 1e-6 Angstrom**-2)
-        layers[0, 2] - iSLD of fronting (/ 1e-6 Angstrom**-2)
-        layers[N, 0] - thickness of layer N
-        layers[N, 1] - SLD of layer N (/ 1e-6 Angstrom**-2)
-        layers[N, 2] - iSLD of layer N (/ 1e-6 Angstrom**-2)
-        layers[N, 3] - roughness between layer N-1/N
-        layers[-1, 1] - SLD of backing (/ 1e-6 Angstrom**-2)
-        layers[-1, 2] - iSLD of backing (/ 1e-6 Angstrom**-2)
-        layers[-1, 3] - roughness between backing and last layer
+
+        * layers[0, 1] - SLD of fronting (/ 1e-6 Angstrom**-2)
+        * layers[0, 2] - iSLD of fronting (/ 1e-6 Angstrom**-2)
+        * layers[N, 0] - thickness of layer N
+        * layers[N, 1] - SLD of layer N (/ 1e-6 Angstrom**-2)
+        * layers[N, 2] - iSLD of layer N (/ 1e-6 Angstrom**-2)
+        * layers[N, 3] - roughness between layer N-1/N
+        * layers[-1, 1] - SLD of backing (/ 1e-6 Angstrom**-2)
+        * layers[-1, 2] - iSLD of backing (/ 1e-6 Angstrom**-2)
+        * layers[-1, 3] - roughness between backing and last layer
+
     scale: float
         Multiply all reflectivities by this value.
     bkg: float
@@ -182,20 +191,22 @@ def reflectivity(q, coefs, *args, **kwds):
         The qvalues required for the calculation. Q=4*Pi/lambda * sin(omega).
         Units = Angstrom**-1
     coefs : np.ndarray
-        coefs[0] = number of layers, N
-        coefs[1] = scale factor
-        coefs[2] = SLD of fronting (/1e-6 Angstrom**-2)
-        coefs[3] = iSLD of fronting (/1e-6 Angstrom**-2)
-        coefs[4] = SLD of backing
-        coefs[5] = iSLD of backing
-        coefs[6] = background
-        coefs[7] = roughness between backing and layer N
 
-        coefs[4 * (N - 1) + 8] = thickness of layer N in Angstrom (layer 1 is
+        * coefs[0] = number of layers, N
+        * coefs[1] = scale factor
+        * coefs[2] = SLD of fronting (/1e-6 Angstrom**-2)
+        * coefs[3] = iSLD of fronting (/1e-6 Angstrom**-2)
+        * coefs[4] = SLD of backing
+        * coefs[5] = iSLD of backing
+        * coefs[6] = background
+        * coefs[7] = roughness between backing and layer N
+
+        * coefs[4 * (N - 1) + 8] = thickness of layer N in Angstrom (layer 1 is
         closest to fronting)
-        coefs[4 * (N - 1) + 9] = SLD of layer N (/ 1e-6 Angstrom**-2)
-        coefs[4 * (N - 1) + 10] = iSLD of layer N (/ 1e-6 Angstrom**-2)
-        coefs[4 * (N - 1) + 11] = roughness between layer N and N-1.
+        * coefs[4 * (N - 1) + 9] = SLD of layer N (/ 1e-6 Angstrom**-2)
+        * coefs[4 * (N - 1) + 10] = iSLD of layer N (/ 1e-6 Angstrom**-2)
+        * coefs[4 * (N - 1) + 11] = roughness between layer N and N-1.
+
     kwds : dict, optional
         The following keys are used:
 
@@ -612,43 +623,39 @@ def sld_profile(coefs, z):
 
 class ReflectivityFitFunction(FitFunction):
     """
-    A sub class of refnx.analysis.curvefitter.FitFunction suited for
+    A sub class of `refnx.analysis.curvefitter.FitFunction` suited for
     calculation of reflectometry profiles.
 
     If you wish to fit analytic or freeform SLD profiles you should
     inherit this class, overriding the `model` method.  If you do this
     you should also override the `sld_profile` method.
+
+    Parameters
+    ----------
+    transform : callable, optional
+        If specified then this function is used to transform the data
+        returned by the model method. With the signature:
+        ``transformed_y_vals = transform(x_vals, y_vals)``.
+    dq : float, optional
+        Default dq/q resolution (as a percentage).
+    quad_order : int or str, optional
+        The order of the Gaussian quadrature polynomial for doing the
+        resolution smearing. default = 17. Don't choose less than 13. If
+        quad_order == 'ultimate' then adaptive quadrature is used. Adaptive
+        quadrature will always work, but takes a _long_ time (2 or 3 orders
+        of magnitude longer). Fixed quadrature will always take a lot less
+        time. BUT it won't necessarily work across all samples. For
+        example 13 points may be fine for a thin layer, but will be
+        atrocious at describing a multilayer with Bragg peaks.
+    parallel: bool, optional
+        Do you want to calculate in parallel? This option is only
+        applicable if you are using the ``_creflect`` module. The option is
+        ignored if using the pure python calculator, ``_reflect``.
     """
 
     def __init__(self, transform=None, dq=5., quad_order=17, parallel=True):
         """
         Initialises the ReflectivityFitFunction.
-
-        Parameters
-        ----------
-        transform' : callable, optional
-            If specified then this function is used to transform the data
-            returned by the model method. With the signature:
-            ``transformed_y_vals = transform(x_vals, y_vals)``.
-
-        dq : float, optional
-            Default dq/q resolution (as a percentage).
-
-        quad_order : int or str, optional
-            The order of the Gaussian quadrature polynomial for doing the
-            resolution smearing. default = 17. Don't choose less than 13. If
-            quad_order == 'ultimate' then adaptive quadrature is used. Adaptive
-            quadrature will always work, but takes a _long_ time (2 or 3 orders
-            of magnitude longer). Fixed quadrature will always take a lot less
-            time. BUT it won't necessarily work across all samples. For
-            example 13 points may be fine for a thin layer, but will be
-            atrocious at describing a multilayer with Bragg peaks.
-
-        parallel: bool, optional
-            Do you want to calculate in parallel? This option is only
-            applicable if you are using the ``_creflect`` module. The option is
-            ignored if using the pure python calculator, ``_reflect``.
-
         """
         super(ReflectivityFitFunction, self).__init__()
 
