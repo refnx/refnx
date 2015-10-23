@@ -16,41 +16,40 @@ class ReducePlatypus(object):
     """
     Reduces Platypus reflectometer data to give the specular reflectivity.
     Offspecular data maps are also produced.
+
+    Parameters
+    ----------
+    direct : string, hdf5 file-handle or PlatypusNexus object
+        A string containing the path to the direct beam hdf5 file,
+        the hdf5 file itself, or a PlatypusNexus object.
+    reflect : string, hdf5 file-handle or PlatypusNexus object, optional
+        A string containing the path to the specularly reflected hdf5 file,
+        the hdf5 file itself, or a PlatypusNexus object.
+    data_folder : str, optional
+        Where is the raw data stored?
+    scale : float, optional
+        Divide all specular reflectivity values by this number.
+    save : bool, optional
+        If `True` then the reduced dataset is saved to the current
+        directory, with a name os.path.basename(reflect)
+    kwds : dict, optional
+        Options passed directly to `refnx.reduce.platypusnexus.process`,
+        for processing of individual spectra. Look at that method docstring
+        for specification of options.
+
+    Notes
+    -----
+    If `reflect` was specified during construction a reduction will be
+    done. See ``reduce`` for attributes available from this object on
+    completion of reduction.
+
+    Returns
+    -------
+    None
     """
 
     def __init__(self, direct, reflect=None, data_folder=None, scale=1.,
                  save=True, **kwds):
-        """
-        Parameters
-        ----------
-        direct : string, hdf5 file-handle or PlatypusNexus object
-            A string containing the path to the direct beam hdf5 file,
-            the hdf5 file itself, or a PlatypusNexus object.
-        reflect : string, hdf5 file-handle or PlatypusNexus object, optional
-            A string containing the path to the specularly reflected hdf5 file,
-            the hdf5 file itself, or a PlatypusNexus object.
-        data_folder : str, optional
-            Where is the raw data stored?
-        scale : float, optional
-            Divide all specular reflectivity values by this number.
-        save : bool, optional
-            If `True` then the reduced dataset is saved to the current
-            directory, with a name os.path.basename(reflect)
-        kwds : dict, optional
-            Options passed directly to `refnx.reduce.platypusnexus.process`,
-            for processing of individual spectra. Look at that method docstring
-            for specification of options.
-
-        Returns
-        -------
-        None
-
-        Notes
-        -----
-        If `reflect` was specified during construction a reduction will be
-        done. See ``reduce`` for attributes available from this object on
-        completion of reduction.
-        """
         self.data_folder = os.path.curdir
         if data_folder is not None:
             self.data_folder = data_folder
@@ -96,26 +95,27 @@ class ReducePlatypus(object):
         -------
         reduction : dict
             Contains the following entries:
-                'x' : np.ndarray
-                    Q values, shape (N, T).
-                'x_sd' : np.ndarray
-                    Uncertainty in Q values (FWHM), shape (N, T).
-                'y' : np.ndarray
-                    Specular Reflectivity, shape (N, T)
-                'y_sd' : np.ndarray
-                    Uncertainty in specular reflectivity (SD), shape (N, T)
-                'm_ref' : np.ndarray
-                    Offspecular reflectivity map, shape (N, T, Y)
-                'm_refSD' : np.ndarray
-                    uncertainty in offspecular reflectivity, shape (N, T, Y)
-                'm_qz' : np.ndarray
-                    Qz for offspecular map, shape (N, T, Y)
-                'm_qy' : np.ndarray
-                    Qy for offspecular map, shape (N, T, Y)
-                'n_spectra' : int
-                    number of reflectivity spectra
-                'datafile_number': int
-                    run number for the reflected beam
+
+            - 'x' : np.ndarray
+                Q values, shape (N, T).
+            - 'x_sd' : np.ndarray
+                Uncertainty in Q values (FWHM), shape (N, T).
+            - 'y' : np.ndarray
+                Specular Reflectivity, shape (N, T)
+            - 'y_sd' : np.ndarray
+                Uncertainty in specular reflectivity (SD), shape (N, T)
+            - 'm_ref' : np.ndarray
+                Offspecular reflectivity map, shape (N, T, Y)
+            - 'm_refSD' : np.ndarray
+                uncertainty in offspecular reflectivity, shape (N, T, Y)
+            - 'm_qz' : np.ndarray
+                Qz for offspecular map, shape (N, T, Y)
+            - 'm_qy' : np.ndarray
+                Qy for offspecular map, shape (N, T, Y)
+            - 'n_spectra' : int
+                number of reflectivity spectra
+            - 'datafile_number': int
+                run number for the reflected beam
 
         N corresponds to the number of spectra
         T corresponds to the number of Q (wavelength) bins
@@ -422,7 +422,7 @@ def reduce_stitch(reflect_list, direct_list, norm_file_num=None,
         Reflected beam run numbers, e.g. `[708, 709, 710]`
         708 corresponds to the file PLP0000708.nx.hdf.
     direct_list : list
-        Direct beam run numbers, e.g. `[71, 711, 711]`
+        Direct beam run numbers, e.g. `[711, 711, 711]`
     norm_file_num : int, optional
         The run number for the water flood field correction.
     data_folder : str, optional

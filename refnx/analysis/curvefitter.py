@@ -192,7 +192,7 @@ class FitFunction(object):
         Notes
         -----
         `args` and `kws` can be used to fully specify the fit function.
-        Normally you would supply these via when the FitFunction object is
+        Normally you would supply these via when the **FitFunction** object is
         constructed.
         """
         raise RuntimeError("You can't use the abstract base FitFunction in a"
@@ -201,7 +201,7 @@ class FitFunction(object):
     @staticmethod
     def parameter_names(nparams=0):
         """
-        Provides a set of names for constructing an lmfit.Parameters instance
+        Provides a set of names for constructing an `lmfit.Parameters` instance
 
         Parameters
         ----------
@@ -220,7 +220,7 @@ class FitFunction(object):
 
 class CurveFitter(Minimizer):
     """
-    A curvefitting class that extends lmfit.Minimize
+    A curvefitting class that extends `lmfit.Minimize`
 
     fitfunc : callable
         Function calculating the generative model for the fit.  Should have
@@ -321,9 +321,9 @@ class CurveFitter(Minimizer):
         """
         Calculate the difference between the data and the model. Also known as
         the objective function. This is a convenience method. Over-riding it
-        will not change a fit
+        will not change a fit.
 
-        residuals = (fitfunc - y) / edata
+        :math:`residuals = (fitfunc - y) / edata`
 
         Parameters
         ----------
@@ -363,36 +363,28 @@ class CurveFitter(Minimizer):
         Fits the dataset.
 
         Parameters
-        ----------
+        -----------
+
         method : str, optional
             Name of the fitting method to use.
             One of:
-                'leastsq'                -    Levenberg-Marquardt (default)
 
-                'nelder'                 -    Nelder-Mead
-
-                'lbfgsb'                 -    L-BFGS-B
-
-                'powell'                 -    Powell
-
-                'cg'                     -    Conjugate-Gradient
-
-                'newton'                 -    Newton-CG
-
-                'cobyla'                 -    Cobyla
-
-                'tnc'                    -    Truncate Newton
-
-                'trust-ncg'              -    Trust Newton-CGn
-
-                'dogleg'                 -    Dogleg
-
-                'slsqp'                  -    Sequential Linear Squares Programming
-
-                'differential_evolution' -    differential evolution
+            - 'leastsq'                -    Levenberg-Marquardt (default)
+            - 'nelder'                 -    Nelder-Mead
+            - 'lbfgsb'                 -    L-BFGS-B
+            - 'powell'                 -    Powell
+            - 'cg'                     -    Conjugate-Gradient
+            - 'newton'                 -    Newton-CG
+            - 'cobyla'                 -    Cobyla
+            - 'tnc'                    -    Truncate Newton
+            - 'trust-ncg'              -    Trust Newton-CGn
+            - 'dogleg'                 -    Dogleg
+            - 'slsqp'                  -    Sequential Linear Squares Programming
+            - 'differential_evolution' -    differential evolution
 
         Returns
-        -------
+        --------
+
         success : bool
             Whether the fit succeeded.
         """

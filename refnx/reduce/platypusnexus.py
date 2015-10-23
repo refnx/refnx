@@ -185,17 +185,17 @@ class PlatypusNexus(object):
     """
     Processes Platypus NeXus files to produce an intensity vs wavelength
     spectrum
+
+    Parameters
+    ----------
+    h5data : HDF5 NeXus file or str
+        An HDF5 NeXus file for Platypus, or a `str` containing the path
+        to one
     """
 
     def __init__(self, h5data):
         """
         Initialises the PlatypusNexus object.
-
-        Parameters
-        ----------
-        h5data : HDF5 NeXus file or str
-            An HDF5 NeXus file for Platypus, or a `str` containing the path
-            to one.
         """
         if type(h5data) == h5py.File:
             self.cat = Catalogue(h5data)
@@ -251,12 +251,14 @@ class PlatypusNexus(object):
         normalise : bool
             Normalise by the monitor counts.
         integrate : int
-            integrate == -1
+
+            - integrate == -1
                 the spectrum is integrated over all the scanpoints.
-            integrate >= 0
-                the individual spectra are calculated individually.
-                If `eventmode is not None` then integrate specifies which
-                scanpoint to examine.
+            - integrate >= 0
+              the individual spectra are calculated individually.
+              If `eventmode is not None` then integrate specifies which
+              scanpoint to examine.
+
         eventmode : None or array_like
             If eventmode is `None` then the integrated detector image is used.
             If eventmode is an array then the array specifies the integration
@@ -276,37 +278,37 @@ class PlatypusNexus(object):
             y pixels in the detector image.  Otherwise an automatic mask is
             applied (if background is True).
 
+        Notes
+        -----
+        After processing this object contains the following the following
+        attributes:
+
+        - path - path to the data file
+        - datafilename - name of the datafile
+        - datafile_number - datafile number.
+        - m_topandtail - the corrected 2D detector image, (n_spectra, TOF, Y)
+        - m_topandtail_sd - corresponding standard deviations
+        - n_spectra - number of spectra in processed data
+        - bm1_counts - beam montor counts, (n_spectra,)
+        - m_spec - specular intensity, (n_spectra, TOF)
+        - m_spec_sd - corresponding standard deviations
+        - m_beampos - beam_centre for each spectrum, (n_spectra, )
+        - m_lambda - wavelengths for each spectrum, (n_spectra, TOF)
+        - m_lambda_fwhm - corresponding FWHM of wavelength distribution
+        - m_lambda_hist - wavelength bins for each spectrum, (n_spectra, TOF)
+        - m_spec_tof - TOF for each wavelength bin, (n_spectra, TOF)
+        - mode - the Platypus mode, e.g. FOC/MT/POL/POLANAL/SB/DB
+        - detector_z - detector height, (n_spectra, )
+        - detector_y - sample-detector distance, (n_spectra, )
+        - domega - collimation uncertainty
+        - lopx - lowest extent of specular beam (in y pixels), (n_spectra, )
+        - hipx - highest extent of specular beam (in y pixels), (n_spectra, )
+
         Returns
         -------
         m_lambda, m_spec, m_spec_sd: np.ndarray
             Arrays containing the wavelength, specular intensity as a function
             of wavelength, standard deviation of specular intensity
-
-        Note
-        ----
-        After processing this object contains the following the following
-        attributes:
-
-        path - path to the data file
-        datafilename - name of the datafile
-        datafile_number - datafile number.
-        m_topandtail - the corrected 2D detector image, (n_spectra, TOF, Y)
-        m_topandtail_sd - corresponding standard deviations
-        n_spectra - number of spectra in processed data
-        bm1_counts - beam montor counts, (n_spectra,)
-        m_spec - specular intensity, (n_spectra, TOF)
-        m_spec_sd - corresponding standard deviations
-        m_beampos - beam_centre for each spectrum, (n_spectra, )
-        m_lambda - wavelengths for each spectrum, (n_spectra, TOF)
-        m_lambda_fwhm - corresponding FWHM of wavelength distribution
-        m_lambda_hist - wavelength bins for each spectrum, (n_spectra, TOF)
-        m_spec_tof - TOF for each wavelength bin, (n_spectra, TOF)
-        mode - the Platypus mode, e.g. FOC/MT/POL/POLANAL/SB/DB
-        detector_z - detector height, (n_spectra, )
-        detector_y - sample-detector distance, (n_spectra, )
-        domega - collimation uncertainty
-        lopx - lowest extent of specular beam (in y pixels), (n_spectra, )
-        hipx - highest extent of specular beam (in y pixels), (n_spectra, )
         """
         cat = self.cat
 
