@@ -147,7 +147,17 @@ class Data1D(object):
         """
         xdata, ydata, ydata_sd, xdata_sd = self.data
 
-        axdata, aydata, aydata_sd, axdata_sd = data_tuple
+        axdata, aydata = data_tuple[0:2]
+
+        if len(data_tuple) > 2:
+            aydata_sd = np.asfarray(data_tuple[2]).flatten()
+        else:
+            aydata_sd = np.ones_like(axdata)
+
+        if len(data_tuple) > 3:
+            axdata_sd = np.asfarray(data_tuple[3]).flatten()
+        else:
+            axdata_sd = np.zeros(np.size(axdata))
 
         qq = np.r_[xdata]
         rr = np.r_[ydata]

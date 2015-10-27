@@ -17,7 +17,7 @@ info = {
         'description': 'Neutron and X-ray Reflectometry Analysis',
         'author': 'Andrew Nelson',
         'author_email': 'andrew.nelson@ansto.gov.au',
-        'version': '0.0.1',
+        'version': '0.0.2dev',
         'license': 'BSD',
         'url': 'https://github.com/refnx/refnx',
         'platforms': ["Windows", "Linux", "Solaris", "Mac OS-X", "Unix"],
