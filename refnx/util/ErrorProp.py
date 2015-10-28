@@ -1,7 +1,12 @@
 from __future__ import division
 import numpy as np
-
+"""
+A simple propagation of uncertainty module.
 # http://en.wikipedia.org/wiki/Propagation_of_uncertainty
+
+For more sophisticated handling of uncertainties use the `uncertainties`
+package.
+"""
 
 
 def EPadd(a, da, b, db, covar=0):

@@ -7,6 +7,7 @@ from scipy import stats, integrate, constants, optimize
 #h / m = 3956
 K = constants.h / constants.m_n * 1.e10
 
+
 def div(d1, d2, L12 = 2859):
     """
     Calculate the angular resolution for a set of collimation conditions
@@ -47,8 +48,18 @@ def div(d1, d2, L12 = 2859):
 def q(angle, wavelength):
     """
     Calculate Q given angle of incidence and wavelength
-    angle - angle of incidence (degrees)
-    wavelength -  wavelength of radiation (Angstrom)
+
+    Parameters
+    ----------
+    angle: float
+        angle of incidence (degrees)
+    wavelength: float
+        wavelength of radiation (Angstrom)
+
+    Returns
+    -------
+    Q: float
+        Momentum transfer (A**-1)
     """
     return 4 * np.pi * np.sin(np.radians(angle)) / wavelength
 
@@ -111,7 +122,7 @@ def wavelength(q, angle):
     wavelength : float
         Wavelength of radiation (A)
     """
-    return  4. * np.pi * np.sin(angle * np.pi / 180.)/q
+    return 4. * np.pi * np.sin(angle * np.pi / 180.)/q
 
 
 def angle(q, wavelength):
@@ -126,8 +137,18 @@ def angle(q, wavelength):
 def qcrit(SLD1, SLD2):
     """
     calculate critical Q vector given SLD of super and subphases
-    SLD1 - SLD of superphase (10^-6 A^-2)
-    SLD2 - SLD of subphase (10^-6 A^-2)
+
+    Parameters
+    ----------
+    SLD1: float
+        SLD of superphase (10^-6 A^-2)
+    SLD2: float
+        SLD of subphase (10^-6 A^-2)
+
+    Returns
+    -------
+    qc: float
+        Critical Q vector for a reflectivity system.
     """
     return np.sqrt(16. * np.pi * (SLD2 - SLD1) * 1.e-6)
 
@@ -146,6 +167,11 @@ def tauC(wavelength, xsi=0, z0=0.358, freq=24):
         rotation frequency of choppers (Hz)
     xsi: float
         phase opening of chopper pair (degrees)
+
+    Returns
+    -------
+    tauC: float
+        The burst time of a double chopper pair (s)
 
     References
     ----------
@@ -215,6 +241,7 @@ def wavelength_energy(wavelength):
 def energy_wavelength(energy):
     """
     Converts wavelength to energy in meV
+
     Parameters
     ----------
     energy : float
@@ -244,6 +271,12 @@ def double_chopper_frequency(min_wavelength, max_wavelength, L, N=1):
         Flight length of instrument (m)
     N: float, optional
         number of windows in chopper pair
+
+    Returns
+    -------
+    max_freq: float
+        The maximum frequency a double chopper system can use to avoid frame
+        overlap.
     """
     return K / ((max_wavelength - min_wavelength) * L * N)
 
@@ -273,6 +306,11 @@ def resolution_double_chopper(wavelength, z0=0.358, R=0.35, freq=24,
         Flight length of instrument (m)
     tau_da : float
         Width of timebin (s)
+
+    Returns
+    -------
+    res: float
+        Fractional wavelength resolution of a double chopper system.
     """
     TOF = L / wavelength_velocity(wavelength)
     tc = tauC(wavelength, xsi=xsi, z0=z0, freq=freq)
@@ -301,6 +339,11 @@ def resolution_single_chopper(wavelength, R=0.35, freq=24, H=0.005, phi=60,
         angular opening of chopper window (degrees)
     L: float
         Flight length of instrument (m)
+
+    Returns
+    -------
+    transmission: float
+        Transmission of a single chopper system.
     """
     TOF = L / wavelength_velocity(wavelength)
     tauH = H / R / (2. * np.pi * freq)
@@ -329,6 +372,11 @@ def transmission_double_chopper(wavelength, z0=0.358, R=0.35, freq=24, N=1,
         height of beam (m)
     xsi: float
         phase opening of chopper pair (degrees)
+
+    Returns
+    -------
+    transmission: float
+        The transmission of a double chopper system.
 
     References
     ----------
@@ -430,11 +478,23 @@ def beamfrac(FWHM, length, angle):
 
 def beamfrackernel(kernelx, kernely, length, angle):
     """
-    return the beam fraction intercepted by a sample of length length at sample
-    tilt angle.
-    The beam has the shape 'kernel', a 2 row array, which gives the PDF for the
-    beam intensity as a function of height. The first row is position, the
-    second row is probability at that position.
+    The beam fraction intercepted by a sample, used for calculating footprints.
+
+    Parameters
+    ----------
+    kernelx: array-like
+        x axis for the probability kernel
+    kernely: array-like
+        probability kernel describing the intensity distribution of the beam
+    length: float
+        length of the sample
+    angle: float
+        angle of incidence (degrees)
+
+    Returns
+    -------
+    fraction: float
+        The fraction of the beam intercepted by a sample.
     """
     height_of_sample = length * np.sin(np.radians(angle))
     total = integrate.simps(kernely, kernelx)
@@ -453,15 +513,25 @@ def height_of_beam_after_dx(d1, d2, L12, distance):
     if distance >= 0, then it's taken to be the distance after d2.
     if distance < 0, then it's taken to be the distance before d1.
 
-    Parameters:
-        d1 - opening of first collimation slit
-        d2 - opening of second collimation slit
-        L12 - distance between first and second collimation slits
-        distance - distance from first or last slit to a given position
+    Parameters
+    ----------
+    d1: float
+        opening of first collimation slit
+    d2: float
+        opening of second collimation slit
+    L12: float
+        distance between first and second collimation slits
+    distance: float
+        distance from first or last slit to a given position
+
+    Notes
+    -----
     Units - equivalent distances (inches, mm, light years)
 
-    Returns:
-        (umbra, penumbra)
+    Returns
+    -------
+    (umbra, penumbra): float, float
+        height of umbra and penumbra
 
     """
 
@@ -475,15 +545,25 @@ def height_of_beam_after_dx(d1, d2, L12, distance):
 
 def actual_footprint(d1, d2, L12, L2S, angle):
     """
-    Calculate the actual footprint on a sample.
-    Parameters:
-        d1 - opening of first collimation slit
-        d2 - opening of second collimation slit
-        L12 - distance between first and second collimation slits
-        L2S - distance from second collimation slit to sample
+    Calculate the actual footprint on a reflectivity sample.
 
-    Returns:
-        (umbra_footprint, penumbra_footprint)
+    Parameters
+    ----------
+    d1: float
+        opening of first collimation slit
+    d2: float
+        opening of second collimation slit
+    L12: float
+        distance between first and second collimation slits
+    L2S: float
+        distance from second collimation slit to sample
+    angle: float
+        angle of incidence of sample (degrees)
+
+    Returns
+    -------
+    (umbra_footprint, penumbra_footprint): float, float
+        Footprint of the umbra and penumbra
 
     """
     umbra, penumbra = height_of_beam_after_dx(d1, d2, L12, L2S)
