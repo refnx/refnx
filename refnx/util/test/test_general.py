@@ -2,9 +2,15 @@ from __future__ import division
 
 import unittest
 import refnx.util.general as general
+import refnx
 import numpy as np
 import os
 from numpy.testing import assert_almost_equal
+
+
+def test_version():
+    # check that we can retrieve a version string
+    version = refnx.__version__
 
 
 class TestGeneral(unittest.TestCase):
