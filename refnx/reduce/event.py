@@ -70,7 +70,7 @@ def process_event_stream(events, frame_bins, t_bins, y_bins, x_bins):
     return detector, localframe_bins
 
 
-def events(f, endoflastevent=127, max_frames=np.inf):
+def events(f, end_last_event=127, max_frames=np.inf):
     """
     Unpacks event data from packedbinary format for the ANSTO Platypus
     instrument
@@ -78,27 +78,29 @@ def events(f, endoflastevent=127, max_frames=np.inf):
     Parameters
     ----------
     
-    f : file
-        The file to read the data from.
-    endoflastevent : uint
-        The file position to start the read from. The data starts from byte
-        127.
+    f : file-like or str
+        The file to read the data from. If `f` is not file-like then f is
+        assumed to be a path pointing to the event file.
+    end_last_event : uint
+        The reading of event data starts from `end_last_event + 1`. The default
+        of 127 corresponds to a file header that is 128 bytes long.
     max_frames : int
         Stop reading the event file when you get to this many frames.
         
     Returns
     -------
-    (f_events, t_events, y_events, x_events), endoflastevent:
+    (f_events, t_events, y_events, x_events), end_last_event:
         x_events, y_events, t_events and f_events are numpy arrays containing
-        the events. endoflastevent is a byte offset to the end of the last
+        the events. end_last_event is a byte offset to the end of the last
         successful event read from the file. Use this value to extract more
         events from the same file at a future date.
     """
-    if not f:
-        return None
+    fi = f
+    auto_f = None
+    if not hasattr(fi, 'read'):
+        auto_f = open(f, 'rb')
+        fi = auto_f
 
-    state = 0
-    event_ended = 0
     frame_number = -1
     dt = 0
     t = 0
@@ -118,10 +120,10 @@ def events(f, endoflastevent=127, max_frames=np.inf):
         t_neutrons = []
         f_neutrons = []
 
-        f.seek(endoflastevent + 1)
-        buf = f.read(BUFSIZE)
+        fi.seek(end_last_event + 1)
+        buf = fi.read(BUFSIZE)
 
-        filepos = endoflastevent + 1
+        filepos = end_last_event + 1
 
         if not len(buf):
             break
@@ -142,7 +144,7 @@ def events(f, endoflastevent=127, max_frames=np.inf):
                 state += 1
             else:
                 if state == 2:
-                    y = y | ((c & 0xF) * 64)
+                    y |= (c & 0xF) * 64
 
                     if y & 0x200:
                         y = -(0x100000000 - (y | 0xFFFFFC00))
@@ -153,14 +155,14 @@ def events(f, endoflastevent=127, max_frames=np.inf):
                 if state == 2:
                     dt = c >> 4
                 else:
-                    dt |= (c) << (2 + 6 * (state - 3))
+                    dt |= c << 2 + 6 * (state - 3)
 
                 if not event_ended:
                     state += 1
                 else:
-                    #print "got to state", state, event_ended, x, y, frame_number, t, dt
+                    # print "got to state", state, event_ended, x, y, frame_number, t, dt
                     state = 0
-                    endoflastevent = filepos + i
+                    end_last_event = filepos + i
                     if x == 0 and y == 0 and dt == 0xFFFFFFFF:
                         t = 0
                         frame_number += 1
@@ -181,5 +183,9 @@ def events(f, endoflastevent=127, max_frames=np.inf):
             t_events = np.append(t_events, t_neutrons)
             f_events = np.append(f_events, f_neutrons)
     
-    t_events = t_events // 1000
-    return (f_events, t_events, y_events, x_events), endoflastevent
+    t_events //= 1000
+
+    if auto_f:
+        auto_f.close()
+
+    return (f_events, t_events, y_events, x_events), end_last_event
