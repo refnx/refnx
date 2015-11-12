@@ -402,7 +402,7 @@ class ReducePlatypus(object):
                 with open(fname, 'wb') as f:
                     dataset.save(f)
                 fname = 'PLP{0:07d}_{1}.xml'.format(self.datafile_number, i)
-                with open(fname, 'w') as f:
+                with open(fname, 'wb') as f:
                     dataset.save_xml(f)
 
         reduction['fname'] = fnames
@@ -481,7 +481,7 @@ def reduce_stitch(reflect_list, direct_list, norm_file_num=None,
         with open(fname, 'wb') as f:
             combined_dataset.save(f)
         fname = 'c_PLP{0:07d}.xml'.format(reflect_list[0])
-        with open(fname, 'w') as f:
+        with open(fname, 'wb') as f:
             combined_dataset.save_xml(f)
 
     return combined_dataset, fname

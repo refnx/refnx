@@ -886,20 +886,21 @@ class PlatypusNexus(object):
 
         Parameters
         ----------
-        f : file-like object
-            The file to write the spectrum to
+        f : file-like or str
+            The file to write the spectrum to, or a str that specifies the file
+            name
         scanpoint : int
-            Which scanpoint to write.
+            Which scanpoint to write
         """
         if self.processed_spectrum is None:
             return False
 
         m_lambda = self.processed_spectrum['m_lambda'][scanpoint]
         m_spec = self.processed_spectrum['m_spec'][scanpoint]
-        m_spec_sd = self.processed_spectrum['m_spec'][scanpoint]
-        m_lambda_sd = self.processed_spectrum['m_lambda_sd'][scanpoint]
+        m_spec_sd = self.processed_spectrum['m_spec_sd'][scanpoint]
+        m_lambda_fwhm = self.processed_spectrum['m_lambda_fwhm'][scanpoint]
 
-        stacked_data = np.c_[m_lambda, m_spec, m_spec_sd, m_lambda_sd]
+        stacked_data = np.c_[m_lambda, m_spec, m_spec_sd, m_lambda_fwhm]
         np.savetxt(f, stacked_data, delimiter='\t')
 
         return True
@@ -911,12 +912,12 @@ class PlatypusNexus(object):
 
         Parameters
         ----------
-        f : file-like object
-            The file to write the spectrum to
+        f : file-like or str
+            The file to write the spectrum to, or a str that specifies the file
+            name
         scanpoint : int
-            Which scanpoint to write.
+            Which scanpoint to write
         """
-
         spectrum_template = """<?xml version="1.0"?>
         <REFroot xmlns="">
         <REFentry time="$time">
@@ -930,7 +931,6 @@ class PlatypusNexus(object):
         </REFdata>
         </REFentry>
         </REFroot>"""
-
         if self.processed_spectrum is None:
             return
 
@@ -941,26 +941,37 @@ class PlatypusNexus(object):
 
         m_lambda = self.processed_spectrum['m_lambda']
         m_spec = self.processed_spectrum['m_spec']
-        m_spec_sd = self.processed_spectrum['m_spec']
-        m_lambda_sd = self.processed_spectrum['m_lambda_sd']
+        m_spec_sd = self.processed_spectrum['m_spec_sd']
+        m_lambda_fwhm = self.processed_spectrum['m_lambda_fwhm']
 
         # sort the data
         sorted = np.argsort(self.m_lambda[0])
 
         r = m_spec[:, sorted]
         l = m_lambda[:, sorted]
-        dl = m_lambda_sd[:, sorted]
+        dl = m_lambda_fwhm [:, sorted]
         dr = m_spec_sd[:, sorted]
         d['n_spectra'] = self.processed_spectrum['n_spectra']
         d['runnumber'] = 'PLP{:07d}'.format(self.cat.datafile_number)
 
-        d['r'] = string.translate(repr(r[scanpoint].tolist()), None, ',[]')
-        d['dr'] = string.translate(repr(dr[scanpoint].tolist()), None, ',[]')
-        d['l'] = string.translate(repr(l[scanpoint].tolist()), None, ',[]')
-        d['dl'] = string.translate(repr(dl[scanpoint].tolist()), None, ',[]')
+        d['r'] = repr(r[scanpoint].tolist()).strip(',[]')
+        d['dr'] = repr(dr[scanpoint].tolist()).strip(',[]')
+        d['l'] = repr(l[scanpoint].tolist()).strip(',[]')
+        d['dl'] = repr(dl[scanpoint].tolist()).strip(',[]')
         thefile = s.safe_substitute(d)
-        f.write(thefile)
-        f.truncate()
+
+        g = f
+        auto_fh = None
+
+        if not hasattr(f, 'write'):
+            auto_fh = open(f, 'wb')
+            g = auto_fh
+
+        g.write(thefile.encode('utf-8'))
+        g.truncate()
+
+        if auto_fh is not None:
+            auto_fh.close()
 
         return True
 
@@ -968,8 +979,8 @@ class PlatypusNexus(object):
     def spectrum(self):
         return (self.processed_spectrum['m_lambda'],
                 self.processed_spectrum['m_spec'],
-                self.processed_spectrum['m_spec'],
-                self.processed_spectrum['m_lambda_sd'])
+                self.processed_spectrum['m_spec_sd'],
+                self.processed_spectrum['m_lambda_fwhm'])
 
 
 def create_detector_norm(h5norm, x_min, x_max):

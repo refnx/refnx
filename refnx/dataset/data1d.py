@@ -1,5 +1,5 @@
 """"
-    A basic representation of a 1D dataset
+A basic representation of a 1D dataset
 """
 from __future__ import division
 
@@ -12,25 +12,24 @@ import refnx.util.nsplice as nsplice
 class Data1D(object):
     """
     A basic representation of a 1D dataset.
+
+    Parameters
+    ----------
+    data_tuple : tuple of np.ndarray, optional
+        Tuple containing the data. The tuple should have between 2 and 4
+        members.
+        data_tuple[0] - x
+        data_tuple[1] - y
+        data_tuple[2] - standard deviation of y, y_sd
+        data_tuple[3] - standard deviation of x, x_sd
+
+        `data_tuple` must be at least two long, `x` and `y`.
+        If the tuple is at least 3 long then the third member is `y_sd`.
+        If the tuple is 4 long then the fourth member is `x_sd`.
+        All arrays must have the same shape.
     """
-
     def __init__(self, data_tuple=None, curvefitter=None):
-        """
-        Parameters
-        ----------
-        dataTuple : tuple of np.ndarray, optional
-            Tuple containing the data. The tuple should have between 2 and 4
-            members.
-            data_tuple[0] - x
-            data_tuple[1] - y
-            data_tuple[2] - standard deviation of y, y_sd
-            data_tuple[3] - standard deviation of x, x_sd
 
-            `data_tuple` must be at least two long, `x` and `y`.
-            If the tuple is at least 3 long then the third member is `y_sd`.
-            If the tuple is 4 long then the fourth member is `x_sd`.
-            All arrays must have the same shape.
-        """
         self.filename = None
         self.fit = None
         self.params = None

@@ -32,6 +32,13 @@ class TestEvent(unittest.TestCase):
         max_f = np.max(f)
         assert_equal(9, max_f)
 
+    def test_open_with_path(self):
+        # give the event reader a file path
+        event_list, fpos = event.events(self.event_file_path, max_frames=10)
+        f, t, y, x = event_list
+        max_f = np.max(f)
+        assert_equal(9, max_f)
+
     def test_values(self):
         # We know the values of all the events in the file from another program
         # test that a set of random events are correct.
