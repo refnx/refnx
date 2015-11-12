@@ -954,8 +954,6 @@ class PlatypusNexus(object):
         d['n_spectra'] = self.processed_spectrum['n_spectra']
         d['runnumber'] = 'PLP{:07d}'.format(self.cat.datafile_number)
 
-        repr(self.y.tolist()).strip(',[]')
-
         d['r'] = repr(r[scanpoint].tolist()).strip(',[]')
         d['dr'] = repr(dr[scanpoint].tolist()).strip(',[]')
         d['l'] = repr(l[scanpoint].tolist()).strip(',[]')

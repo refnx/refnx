@@ -85,7 +85,7 @@ class TestReflectDataset(unittest.TestCase):
         assert_(data.npoints==13)
 
     def test_save_xml(self):
-        self.data.save_xml('test.xml', 'wb')
+        self.data.save_xml('test.xml')
         with open('test.xml', 'wb') as f:
             self.data.save_xml(f)
         
