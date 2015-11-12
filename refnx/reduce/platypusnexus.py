@@ -886,10 +886,11 @@ class PlatypusNexus(object):
 
         Parameters
         ----------
-        f : file-like object
-            The file to write the spectrum to
+        f : file-like or str
+            The file to write the spectrum to, or a str that specifies the file
+            name
         scanpoint : int
-            Which scanpoint to write.
+            Which scanpoint to write
         """
         if self.processed_spectrum is None:
             return False
@@ -911,12 +912,12 @@ class PlatypusNexus(object):
 
         Parameters
         ----------
-        f : file-like object
-            The file to write the spectrum to
+        f : file-like or str
+            The file to write the spectrum to, or a str that specifies the file
+            name
         scanpoint : int
-            Which scanpoint to write.
+            Which scanpoint to write
         """
-
         spectrum_template = """<?xml version="1.0"?>
         <REFroot xmlns="">
         <REFentry time="$time">
@@ -930,7 +931,6 @@ class PlatypusNexus(object):
         </REFdata>
         </REFentry>
         </REFroot>"""
-
         if self.processed_spectrum is None:
             return
 
@@ -959,8 +959,19 @@ class PlatypusNexus(object):
         d['l'] = string.translate(repr(l[scanpoint].tolist()), None, ',[]')
         d['dl'] = string.translate(repr(dl[scanpoint].tolist()), None, ',[]')
         thefile = s.safe_substitute(d)
-        f.write(thefile)
-        f.truncate()
+
+        g = f
+        auto_fh = None
+
+        if not hasattr(f, 'write'):
+            auto_fh = open(f, 'wb')
+            g = auto_fh
+
+        g.write(thefile.encode('utf-8'))
+        g.truncate()
+
+        if auto_fh is not None:
+            auto_fh.close()
 
         return True
 

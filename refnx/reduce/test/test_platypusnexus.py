@@ -144,6 +144,22 @@ class TestPlatypusNexus(unittest.TestCase):
         assert_array_less(res, np.ones_like(res) * 0.08)
         assert_array_less(np.ones_like(res) * 0.07, res)
 
+    def test_save_spectrum(self):
+        # test saving spectrum
+        self.f113.process()
+
+        # can save the spectra by supplying a filename
+        self.f113.write_spectrum_xml('test.xml')
+        self.f113.write_spectrum_dat('test.dat')
+
+        # can save by supplying file handle:
+        with open('test.xml', 'wb') as f:
+            self.f113.write_spectrum_xml(f)
+
+        # can save by supplying file handle:
+        with open('test.dat', 'wb') as f:
+            self.f113.write_spectrum_xml(f)
+
 
 if __name__ == '__main__':
     unittest.main()
