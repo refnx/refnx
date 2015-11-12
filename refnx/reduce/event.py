@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-unpack streaming file
-@author: andrew
+Unpack event files
 """
 import numpy as np
 
@@ -85,7 +84,7 @@ def events(f, end_last_event=127, max_frames=np.inf):
         The reading of event data starts from `end_last_event + 1`. The default
         of 127 corresponds to a file header that is 128 bytes long.
     max_frames : int
-        Stop reading the event file when you get to this many frames.
+        Stop reading the event file when have read this many frames.
         
     Returns
     -------
@@ -112,7 +111,7 @@ def events(f, end_last_event=127, max_frames=np.inf):
     t_events = np.array((), dtype='uint32')
     f_events = np.array((), dtype='int32')
 
-    BUFSIZE = 32768
+    bufsize = 32768
 
     while True and frame_number < max_frames:
         x_neutrons = []
@@ -121,7 +120,7 @@ def events(f, end_last_event=127, max_frames=np.inf):
         f_neutrons = []
 
         fi.seek(end_last_event + 1)
-        buf = fi.read(BUFSIZE)
+        buf = fi.read(bufsize)
 
         filepos = end_last_event + 1
 
