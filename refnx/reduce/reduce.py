@@ -402,7 +402,7 @@ class ReducePlatypus(object):
                 with open(fname, 'wb') as f:
                     dataset.save(f)
                 fname = 'PLP{0:07d}_{1}.xml'.format(self.datafile_number, i)
-                with open(fname, 'w') as f:
+                with open(fname, 'wb') as f:
                     dataset.save_xml(f)
 
         reduction['fname'] = fnames
