@@ -74,7 +74,10 @@ class ReflectDataset(Data1D):
             auto_fh = open(f, 'wb')
             g = auto_fh
 
-        g.write(thefile.encode('utf-8'))
+        if 'b' in g.mode:
+            thefile = thefile.encode('utf-8')
+
+        g.write(thefile)
 
         if auto_fh is not None:
             auto_fh.close()

@@ -967,7 +967,10 @@ class PlatypusNexus(object):
             auto_fh = open(f, 'wb')
             g = auto_fh
 
-        g.write(thefile.encode('utf-8'))
+        if 'b' in g.mode:
+            thefile = thefile.encode('utf-8')
+
+        g.write(thefile)
         g.truncate()
 
         if auto_fh is not None:
