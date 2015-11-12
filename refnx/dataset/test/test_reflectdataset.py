@@ -10,8 +10,15 @@ path = os.path.dirname(os.path.abspath(__file__))
 class TestReflectDataset(unittest.TestCase):
 
     def setUp(self):
-        pass
-             
+        data = ReflectDataset()
+
+        x1 = np.linspace(0, 10, 5)
+        y1 = 2 * x1
+        e1 = np.ones_like(x1)
+        dx1 = np.ones_like(x1)
+        data.add_data((x1, y1, e1, dx1))
+        self.data = data
+
     def test_load(self):
         # test reflectivity calculation with values generated from Motofit
         dataset = ReflectDataset()
@@ -77,6 +84,10 @@ class TestReflectDataset(unittest.TestCase):
 
         assert_(data.npoints==13)
 
+    def test_save_xml(self):
+        self.data.save_xml('test.xml', 'wb')
+        with open('test.xml', 'wb') as f:
+            self.data.save_xml(f)
         
 if __name__ == '__main__':
     unittest.main()

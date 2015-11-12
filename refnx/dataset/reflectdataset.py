@@ -52,8 +52,9 @@ class ReflectDataset(Data1D):
 
         Parameters
         ----------
-        f : file-like
-            The file to save the data to.
+        f : str or file-like
+            The file to write the spectrum to, or a str that specifies the file
+            name
         """
         s = string.Template(self._template_ref_xml)
         self.time = strftime("%a, %d %b %Y %H:%M:%S +0000", gmtime())
@@ -66,7 +67,17 @@ class ReflectDataset(Data1D):
         self._xdataSD = repr(self.x_sd.tolist()).strip(',[]')
 
         thefile = s.safe_substitute(self.__dict__)
-        f.write(thefile)
+
+        auto_fh = None
+        g = f
+        if not hasattr(f, 'write'):
+            auto_fh = open(f, 'wb')
+            g = auto_fh
+
+        g.write(thefile.encode('utf-8'))
+
+        if auto_fh is not None:
+            auto_fh.close()
 
     def load(self, f):
         """
@@ -75,13 +86,14 @@ class ReflectDataset(Data1D):
         Parameters
         ----------
         f : str or file-like
-            File to load reflectivity data from.
+            The file to load the spectrum from, or a str that specifies the file
+            name
         """
-        own_fh = None
+        auto_fh = None
         g = f
         if not hasattr(f, 'read'):
-            own_fh = open(f, 'rb')
-            g = own_fh
+            auto_fh = open(f, 'rb')
+            g = auto_fh
         try:
             tree = ET.ElementTree()
             tree.parse(g)
@@ -103,5 +115,5 @@ class ReflectDataset(Data1D):
             g.seek(0)
             super(ReflectDataset, self).load(g)
         finally:
-            if own_fh is not None:
-                own_fh.close()
+            if auto_fh is not None:
+                auto_fh.close()
