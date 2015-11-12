@@ -897,10 +897,10 @@ class PlatypusNexus(object):
 
         m_lambda = self.processed_spectrum['m_lambda'][scanpoint]
         m_spec = self.processed_spectrum['m_spec'][scanpoint]
-        m_spec_sd = self.processed_spectrum['m_spec'][scanpoint]
-        m_lambda_sd = self.processed_spectrum['m_lambda_sd'][scanpoint]
+        m_spec_sd = self.processed_spectrum['m_spec_sd'][scanpoint]
+        m_lambda_fwhm = self.processed_spectrum['m_lambda_fwhm'][scanpoint]
 
-        stacked_data = np.c_[m_lambda, m_spec, m_spec_sd, m_lambda_sd]
+        stacked_data = np.c_[m_lambda, m_spec, m_spec_sd, m_lambda_fwhm]
         np.savetxt(f, stacked_data, delimiter='\t')
 
         return True
@@ -941,15 +941,15 @@ class PlatypusNexus(object):
 
         m_lambda = self.processed_spectrum['m_lambda']
         m_spec = self.processed_spectrum['m_spec']
-        m_spec_sd = self.processed_spectrum['m_spec']
-        m_lambda_sd = self.processed_spectrum['m_lambda_sd']
+        m_spec_sd = self.processed_spectrum['m_spec_sd']
+        m_lambda_fwhm = self.processed_spectrum['m_lambda_fwhm']
 
         # sort the data
         sorted = np.argsort(self.m_lambda[0])
 
         r = m_spec[:, sorted]
         l = m_lambda[:, sorted]
-        dl = m_lambda_sd[:, sorted]
+        dl = m_lambda_fwhm [:, sorted]
         dr = m_spec_sd[:, sorted]
         d['n_spectra'] = self.processed_spectrum['n_spectra']
         d['runnumber'] = 'PLP{:07d}'.format(self.cat.datafile_number)
@@ -979,8 +979,8 @@ class PlatypusNexus(object):
     def spectrum(self):
         return (self.processed_spectrum['m_lambda'],
                 self.processed_spectrum['m_spec'],
-                self.processed_spectrum['m_spec'],
-                self.processed_spectrum['m_lambda_sd'])
+                self.processed_spectrum['m_spec_sd'],
+                self.processed_spectrum['m_lambda_fwhm'])
 
 
 def create_detector_norm(h5norm, x_min, x_max):
