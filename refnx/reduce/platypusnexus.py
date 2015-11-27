@@ -16,6 +16,7 @@ from time import gmtime, strftime
 import string
 import warnings
 import io
+import pandas as pd
 
 
 # detector y pixel spacing in mm per pixel
@@ -30,6 +31,54 @@ EXTENT_MULT = 2
 PIXEL_OFFSET = 1
 
 
+def catalogue(start, stop, path=None):
+    """
+    Extract interesting information from Platypus NeXUS files.
+
+    Parameters
+    ----------
+    start : int
+        start cataloguing from this run number.
+    stop : int
+        stop cataloguing at this run number
+    path : str, optional
+        path specifying location of NeXUS files
+    Returns
+    -------
+    catalog : pd.DataFrame
+        Dataframe containing interesting parameters from Platypus Nexus files
+    """
+    info = ['filename', 'end_time', 'sample_name', 'ss1vg', 'ss2vg', 'ss3vg',
+            'ss4vg', 'omega', 'twotheta', 'bm1_counts', 'time', 'daq_dirname']
+    run_number = []
+    d = {key:[] for key in info}
+
+    if path is None:
+        path = '.'
+
+    for i in range(start, stop + 1):
+        try:
+            pn = PlatypusNexus(os.path.join(path, number_datafile(i)))
+        except OSError:
+            continue
+
+        cat = pn.cat.cat
+        run_number.append(i)
+
+        for key, val in d.items():
+            data = cat[key]
+            if np.size(data) > 1 or type(data) is np.ndarray:
+                data = data[0]
+            if type(data) is bytes:
+                data = data.decode()
+
+            d[key].append(data)
+
+    df = pd.DataFrame(d, index=run_number, columns=info)
+
+    return df
+
+
 class Catalogue(object):
     def __init__(self, h5data):
         d = {}
@@ -37,7 +86,7 @@ class Catalogue(object):
         d['path'] = os.path.dirname(file_path)
         d['filename'] = h5data.filename
         d['end_time'] = h5data['entry1/end_time'][0]
-        d['sample_name'] = h5data['entry1/sample/name']
+        d['sample_name'] = h5data['entry1/sample/name'][:]
         d['ss1vg'] = h5data['entry1/instrument/slits/first/vertical/gap'][:]
         d['ss2vg'] = h5data['entry1/instrument/slits/second/vertical/gap'][:]
         d['ss3vg'] = h5data['entry1/instrument/slits/third/vertical/gap'][:]
