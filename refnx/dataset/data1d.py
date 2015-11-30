@@ -6,7 +6,7 @@ from __future__ import division
 import numpy as np
 import os.path
 
-import refnx.util.nsplice as nsplice
+from refnx.util.nsplice import get_scaling_in_overlap
 
 
 class Data1D(object):
@@ -41,7 +41,6 @@ class Data1D(object):
         uncertainties (1 standard deviation) on the y data
     x_sd : np.ndarray
         uncertainties on the x data
-
     """
     def __init__(self, data_tuple=None, curvefitter=None):
 
@@ -186,12 +185,12 @@ class Data1D(object):
         dscale = 0.
         if requires_splice and self.npoints > 1:
             scale, dscale, overlap_points = (
-                nsplice.get_scaling_in_overlap(qq,
-                                               rr,
-                                               dr,
-                                               axdata,
-                                               aydata,
-                                               aydata_sd))
+                get_scaling_in_overlap(qq,
+                                       rr,
+                                       dr,
+                                       axdata,
+                                       aydata,
+                                       aydata_sd))
         if not trim_trailing:
             overlap_points[:] = False
 

@@ -43,6 +43,7 @@ def catalogue(start, stop, path=None):
         stop cataloguing at this run number
     path : str, optional
         path specifying location of NeXUS files
+
     Returns
     -------
     catalog : pd.DataFrame

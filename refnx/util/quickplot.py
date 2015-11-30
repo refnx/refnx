@@ -2,6 +2,19 @@ import matplotlib.pyplot as plt
 from refnx.dataset import ReflectDataset
 
 def ref_plot(datasets):
+    """
+    Quickly plot a lot of datasets
+
+    Parameters
+    ----------
+    datasets : iterable
+        strings or files identifying the datasets to plot
+
+    Returns
+    -------
+    fig : matplotlib.figure.Figure
+        The figure. Use fig.show() to display
+    """
     fig = plt.figure()
     ax = fig.add_subplot(111)
 
