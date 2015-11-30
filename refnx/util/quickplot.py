@@ -1,16 +1,17 @@
-from matplotlib.figure import Figure
-from matplotlib.patches import Polygon
-from matplotlib.backends.backend_agg import FigureCanvasAgg
-import numpy as np
+import matplotlib.pyplot as plt
+from refnx.dataset import ReflectDataset
 
-def the_ref_plot(name, xdata, ydata, yerr):
-    fig = Figure()
+def ref_plot(datasets):
+    fig = plt.figure()
     ax = fig.add_subplot(111)
-    ax.errorbar(xdata, ydata, yerr = yerr)
+
+    for dataset in datasets:
+        d = ReflectDataset()
+        d.load(dataset)
+        ax.plot(d.x, d.y)
+
     ax.autoscale(tight=True)
-    ax.loglog()
+    ax.set_yscale('log')
     ax.set_xlabel(u"Q /\u212B **-1")
     ax.set_ylabel('reflectivity')
-    canvas = FigureCanvasAgg(fig)
-    
-    canvas.print_figure(name)
+    return fig

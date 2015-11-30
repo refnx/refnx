@@ -27,6 +27,21 @@ class Data1D(object):
         If the tuple is at least 3 long then the third member is `y_sd`.
         If the tuple is 4 long then the fourth member is `x_sd`.
         All arrays must have the same shape.
+
+    Attributes
+    ----------
+    npoints
+    data
+    finite_data
+    x : np.ndarray
+        x data
+    y : np.ndarray
+        y data
+    y_sd : np.ndarray
+        uncertainties (1 standard deviation) on the y data
+    x_sd : np.ndarray
+        uncertainties on the x data
+
     """
     def __init__(self, data_tuple=None, curvefitter=None):
 
