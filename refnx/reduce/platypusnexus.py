@@ -267,7 +267,7 @@ class PlatypusNexus(object):
                 background=True, direct=False, omega=None, twotheta=None,
                 rebin_percent=1., wavelength_bins=None, normalise=True,
                 integrate=-1, eventmode=None, peak_pos=None,
-                background_mask=None, **kwds):
+                background_mask=None, normalise_bins=True, **kwds):
         """
         Processes the ProcessNexus object to produce a time of flight spectrum.
         The processed spectrum is stored in the `processed_spectrum` attribute.
@@ -327,6 +327,10 @@ class PlatypusNexus(object):
             background subtraction.  Should be the same length as the number of
             y pixels in the detector image.  Otherwise an automatic mask is
             applied (if background is True).
+        normalise_bins : bool
+            Divides the intensity in each wavelength bin by the width of the
+            bin. This allows one to compare spectra even if they were processed
+            with different rebin percentages.
 
         Notes
         -----
@@ -394,7 +398,7 @@ class PlatypusNexus(object):
         n_spectra = np.size(detector, 0)
 
         # Up until this point detector.shape=(N, T, Y,
-        #  pre-average over x, leaving (n, t, y) also convert to dp
+        # pre-average over x, leaving (n, t, y) also convert to dp
         detector = np.sum(detector, axis=3, dtype='float64')
 
         # detector shape should now be (n, t, y)
@@ -422,10 +426,12 @@ class PlatypusNexus(object):
                                  dtype='float64')
         m_spec_tof_hist[:] = TOF
 
-        # chopper to detector distances
-        # note that if eventmode is specified the n_spectra is NOT
-        # equal to the number of entries in e.g. /longitudinal_translation
-        # this means you have to copy values in from the correct scanpoint
+        """
+        chopper to detector distances
+        note that if eventmode is specified the n_spectra is NOT
+        equal to the number of entries in e.g. /longitudinal_translation
+        this means you have to copy values in from the correct scanpoint
+        """
         flight_distance = np.zeros(n_spectra, dtype='float64')
         d_cx = np.zeros(n_spectra, dtype='float64')
         detpositions = np.zeros(n_spectra, dtype='float64')
@@ -446,11 +452,13 @@ class PlatypusNexus(object):
                                       (cat.slit3_distance[0]
                                        - cat.slit2_distance[0]))[0]
 
-            # work out the total flight length
-            # IMPORTANT: this varies as a function of twotheta. This is
-            # because the Platypus detector does not move on an arc.
-            # At high angles chod can be ~ 0.75% different. This is will
-            # visibly shift fringes.
+            """
+            work out the total flight length
+            IMPORTANT: this varies as a function of twotheta. This is
+            because the Platypus detector does not move on an arc.
+            At high angles chod can be ~ 0.75% different. This is will
+            visibly shift fringes.
+            """
             if omega is None:
                 omega = cat.omega[scanpoint]
             if twotheta is None:
@@ -462,12 +470,14 @@ class PlatypusNexus(object):
             output = self.phase_angle(scanpoint)
             phase_angle[scanpoint], master_opening = output
 
-            # toffset - the time difference between the magnet pickup on the
-            # choppers (TTL pulse), which is situated in the middle of the
-            # chopper window, and the trailing edge of chopper 1, which is
-            # supposed to be time0.  However, if there is a phase opening this
-            # time offset has to be relocated slightly, as time0 is not at the
-            # trailing edge.
+            """
+            toffset - the time difference between the magnet pickup on the
+            choppers (TTL pulse), which is situated in the middle of the
+            chopper window, and the trailing edge of chopper 1, which is
+            supposed to be time0.  However, if there is a phase opening this
+            time offset has to be relocated slightly, as time0 is not at the
+            trailing edge.
+            """
             poff = cat.chopper1_phase_offset[0]
             poffset = 1.e6 * poff / (2. * 360. * freq)
             toffset = (poffset
@@ -535,12 +545,12 @@ class PlatypusNexus(object):
             rebinning = rebinning[np.searchsorted(rebinning, lo_wavelength):
                                   np.searchsorted(rebinning, hi_wavelength)]
 
-        '''
+        """
         now do the rebinning for all the N detector images
         rebin.rebinND could do all of these at once.  However, m_lambda_hist
         could vary across the range of spectra.  If it was the same I could
         eliminate the loop.
-        '''
+        """
         output = []
         output_sd = []
         for idx in range(n_spectra):
@@ -562,15 +572,16 @@ class PlatypusNexus(object):
         # (1, T)
         m_lambda_hist = np.atleast_2d(rebinning)
 
-        '''
+        """
         Divide the detector intensities by the width of the wavelength bin.
         This is so the intensities between different rebinning strategies can
         be compared.
-        '''
-        div = 1 / np.ediff1d(m_lambda_hist[0])[:, np.newaxis]
-        detector, detector_sd = EP.EPmulk(detector,
-                                          detector_sd,
-                                          div)
+        """
+        if normalise_bins:
+            div = 1 / np.ediff1d(m_lambda_hist[0])[:, np.newaxis]
+            detector, detector_sd = EP.EPmulk(detector,
+                                              detector_sd,
+                                              div)
 
         # convert the wavelength base to a timebase
         m_spec_tof_hist = (0.001 * flight_distance[:, np.newaxis]
