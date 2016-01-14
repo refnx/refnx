@@ -14,6 +14,5 @@ from refnx.util.general import (div, q, q2, qcrit, double_chopper_frequency,
                                 xray_wavelength, velocity_wavelength,
                                 wavelength_velocity, wavelength_energy,
                                 actual_footprint)
-from refnx.util.quickplot import ref_plot
 
 __all__ = [s for s in dir() if not s.startswith('_')]
