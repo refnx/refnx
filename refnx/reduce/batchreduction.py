@@ -4,6 +4,8 @@
 Batch reduction of reflectometry data based on a spreadsheet
 """
 
+from __future__ import print_function, division
+
 import collections
 import numpy as np
 import os.path
@@ -11,7 +13,12 @@ import pandas as pd
 import re
 import sys
 import warnings
-import IPython.display
+
+try:
+    import IPython.display
+    _have_ipython = True
+except ImportError:
+    _have_ipython = False
 
 from refnx.reduce import reduce_stitch
 
@@ -102,8 +109,8 @@ class ReductionCache(list):
         else:
             idx = len(self)
             self.append(data)
-            self.name_cache[name] = idx
 
+        self.name_cache[name] = idx
         self.row_cache[row] = idx
 
         # also cache the runs that made up the reduction, which may be
@@ -114,7 +121,7 @@ class ReductionCache(list):
         return data
 
     def run(self, run_number):
-        """ select a single cached data set by run number
+        """ select a single data set by run number
 
         Parameters
         ----------
@@ -124,7 +131,7 @@ class ReductionCache(list):
         return self[self.run_cache[run_number]]
 
     def runs(self, run_numbers):
-        """ select several cached data sets by run number
+        """ select several data sets by run number
 
         Parameters
         ----------
@@ -134,7 +141,7 @@ class ReductionCache(list):
         return [self.run_cache[r] for r in run_numbers]
 
     def row(self, row_number):
-        """ select a single cached data set by spreadsheet row number
+        """ select a single data set by spreadsheet row number
 
         Parameters
         ----------
@@ -144,7 +151,7 @@ class ReductionCache(list):
         return self[self.row_cache[row_number]]
 
     def rows(self, row_numbers):
-        """ select several cached data sets by spreadsheet row number
+        """ select several data sets by spreadsheet row number
 
         Parameters
         ----------
@@ -154,7 +161,7 @@ class ReductionCache(list):
         return [entry for entry in self if entry.row in row_numbers]
 
     def name(self, name):
-        """ select a single cached data set by sample name
+        """ select a single data set by sample name
 
         Parameters
         ----------
@@ -164,7 +171,7 @@ class ReductionCache(list):
         return self[self.name_cache[name]]
 
     def name_startswith(self, name):
-        """ select cached data sets by start of sample name
+        """ select data sets by start of sample name
 
         Parameters
         ----------
@@ -175,7 +182,7 @@ class ReductionCache(list):
         return matches
 
     def name_search(self, search):
-        """ select cached data sets by a regular expression on sample name
+        """ select data sets by a regular expression on sample name
 
         The search pattern is a `regular expression`_ that is matched with
 
@@ -204,16 +211,31 @@ class ReductionCache(list):
         return matches
 
     def summary(self):
-        """ pretty print a list of all data sets currently in the cache
+        """ pretty print a list of all data sets
 
-        The pandas pretty printer is used with the IPython HTML display.
+        If available, the pandas pretty printer is used with IPython HTML
+        display.
+        """
+        if _have_ipython:
+            IPython.display.display(IPython.display.HTML(self._repr_html_()))
+        else:
+            print(self)
+
+    def _summary_dataframe(self):
+        """ construct a summary table of the data in the cache
         """
         df = pd.DataFrame(columns=self[0].entry.axes)
         for i, entry in enumerate(self):
             df.loc[i] = entry.entry
-        IPython.display.display(
-          IPython.display.HTML("<b>Summary of reduced data</b>"))
-        IPython.display.display(df)
+        return df
+
+    def _repr_html_(self):
+        df = self._summary_dataframe()
+        return "<b>Summary of reduced data</b>" + df._repr_html_()
+
+    def __str__(self):
+        df = self._summary_dataframe()
+        return "Summary of reduced data\n\n" + str(df)
 
 
 class BatchReducer:
@@ -359,9 +381,18 @@ class BatchReducer:
                     cached.rescale(scale)
 
         if show:
-            IPython.display.display(all_runs[mask])
+            if _have_ipython:
+                IPython.display.display(all_runs[mask])
+            else:
+                print(all_runs[mask])
 
         return self.cache
+
+
+    def __call__(self):
+        """ run the reducer as the default action for the BatchReducer
+        """
+        return self.reduce()
 
 
 def run_list(entry, mode='refl'):

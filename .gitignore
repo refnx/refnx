@@ -5,5 +5,16 @@ build/
 dist/
 *.icns
 *.c
+__pycache__
+.ipynb_checkpoints/
+refnx.egg-info/
 
-
+# testing artifacts
+PLP*dat
+PLP*xml
+c_PLP0000708.dat
+c_PLP0000708.xml
+offspec.xml
+test1.dat
+test.dat
+test.xml
