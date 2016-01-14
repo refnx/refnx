@@ -1,2 +1,7 @@
 # Auto detect text files and perform LF normalization
-* text=auto eol=lf
+*.py text=auto eol=lf
+
+# Force git to look at some files as binary
+*.png binary
+*.pdf binary
+*.hdf binary
