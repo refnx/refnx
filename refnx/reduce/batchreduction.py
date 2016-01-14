@@ -109,8 +109,8 @@ class ReductionCache(list):
         else:
             idx = len(self)
             self.append(data)
-            self.name_cache[name] = idx
 
+        self.name_cache[name] = idx
         self.row_cache[row] = idx
 
         # also cache the runs that made up the reduction, which may be
