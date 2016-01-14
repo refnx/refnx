@@ -13,7 +13,7 @@ import sys
 import warnings
 import IPython.display
 
-import refnx.reduce
+from refnx.reduce import reduce_stitch
 
 
 ReductionEntryTuple = collections.namedtuple('ReductionEntry',
@@ -215,7 +215,7 @@ class ReductionCache(list):
         IPython.display.display(df)
 
 
-class BatchReducer():
+class BatchReducer:
     """
     Batch reduction of reflectometry data based on spreadsheet metadata.
 
@@ -224,7 +224,7 @@ class BatchReducer():
 
         >>> from batchreduction import BatchReducer
         >>> pth = r'V:\data\current'
-        >>> b = BatchReducer('reduction.xls', pth, 2.0)
+        >>> b = BatchReducer('reduction.xls', 2.0, pth=pth)
         >>> b.reduce()
         >>> b.summary()
 
@@ -235,23 +235,28 @@ class BatchReducer():
     Only rows where the value of the `reduce` column is 1 will be processed.
     """
 
-    def __init__(self, filename, pth, rebin_percent):
+    def __init__(self, filename, rebin_percent, pth=None):
         """
-       Create a batch reducer using metadata from a spreadsheet
+        Create a batch reducer using metadata from a spreadsheet
 
         Parameters
         ----------
         filename : str
             The filename of the spreadsheet to be used. Must be readable by
             `pandas.read_excel` (`.xls` and `.xlsx` files).
-        pth : str
-            Filesystem path for the raw data files
+        pth : str, None
+            Filesystem path for the raw data files. If `pth is None` then the
+            current working directory is used.
         rebin_percent : float
             percentage rebinning to be applied in the reduction (e.g. 2.0)
         """
         self.cache = ReductionCache()
         self.filename = filename
-        self.pth = pth
+
+        self.pth = os.getcwd()
+        if pth is not None:
+           self.pth = pth
+
         self.rebin_percent = rebin_percent
 
     @staticmethod
@@ -292,9 +297,9 @@ class BatchReducer():
               (entry['source'], entry['name']))
             return None, None
 
-        ds, fname = refnx.reduce.reduce_stitch(runs, directs,
-                                               data_folder=pth,
-                                               rebin_percent=rebin_percent)
+        ds, fname = reduce_stitch(runs, directs,
+                                  data_folder=pth,
+                                  rebin_percent=rebin_percent)
         return ds, fname
 
 
@@ -309,7 +314,7 @@ class BatchReducer():
         """
         cols='A:I'
         all_runs = pd.read_excel(self.filename, parse_cols=cols)
-
+        pd.read_excel
         # Add the row number in the spreadsheet as an extra column
         # row numbers for the runs will start at 2 not 0
         all_runs.insert(0, 'source', all_runs.index + 2)
