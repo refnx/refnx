@@ -4,6 +4,8 @@
 Batch reduction of reflectometry data based on a spreadsheet
 """
 
+from __future__ import print_function, division
+
 import collections
 import numpy as np
 import os.path
