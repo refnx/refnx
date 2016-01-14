@@ -121,7 +121,7 @@ class ReductionCache(list):
         return data
 
     def run(self, run_number):
-        """ select a single cached data set by run number
+        """ select a single data set by run number
 
         Parameters
         ----------
@@ -131,7 +131,7 @@ class ReductionCache(list):
         return self[self.run_cache[run_number]]
 
     def runs(self, run_numbers):
-        """ select several cached data sets by run number
+        """ select several data sets by run number
 
         Parameters
         ----------
@@ -141,7 +141,7 @@ class ReductionCache(list):
         return [self.run_cache[r] for r in run_numbers]
 
     def row(self, row_number):
-        """ select a single cached data set by spreadsheet row number
+        """ select a single data set by spreadsheet row number
 
         Parameters
         ----------
@@ -151,7 +151,7 @@ class ReductionCache(list):
         return self[self.row_cache[row_number]]
 
     def rows(self, row_numbers):
-        """ select several cached data sets by spreadsheet row number
+        """ select several data sets by spreadsheet row number
 
         Parameters
         ----------
@@ -161,7 +161,7 @@ class ReductionCache(list):
         return [entry for entry in self if entry.row in row_numbers]
 
     def name(self, name):
-        """ select a single cached data set by sample name
+        """ select a single data set by sample name
 
         Parameters
         ----------
@@ -171,7 +171,7 @@ class ReductionCache(list):
         return self[self.name_cache[name]]
 
     def name_startswith(self, name):
-        """ select cached data sets by start of sample name
+        """ select data sets by start of sample name
 
         Parameters
         ----------
@@ -182,7 +182,7 @@ class ReductionCache(list):
         return matches
 
     def name_search(self, search):
-        """ select cached data sets by a regular expression on sample name
+        """ select data sets by a regular expression on sample name
 
         The search pattern is a `regular expression`_ that is matched with
 
@@ -211,7 +211,7 @@ class ReductionCache(list):
         return matches
 
     def summary(self):
-        """ pretty print a list of all data sets currently in the cache
+        """ pretty print a list of all data sets
 
         If available, the pandas pretty printer is used with IPython HTML
         display.
