@@ -66,6 +66,7 @@ class ReductionCache(list):
         """
         Create a new reduction cache
         """
+        super(ReductionCache, self).__init__()
         self.name_cache = {}
         self.run_cache = {}
         self.row_cache = {}
@@ -130,7 +131,7 @@ class ReductionCache(list):
         run_numbers : iterable
             run numbers to find
         """
-        return [self.run[r] for r in runs]
+        return [self.run_cache[r] for r in run_numbers]
 
     def row(self, row_number):
         """ select a single cached data set by spreadsheet row number
@@ -255,7 +256,7 @@ class BatchReducer:
 
         self.pth = os.getcwd()
         if pth is not None:
-           self.pth = pth
+            self.pth = pth
 
         self.rebin_percent = rebin_percent
 
@@ -298,10 +299,9 @@ class BatchReducer:
             return None, None
 
         ds, fname = reduce_stitch(runs, directs,
-                                    data_folder=pth,
-                                    rebin_percent=rebin_percent)
+                                  data_folder=pth,
+                                  rebin_percent=rebin_percent)
         return ds, fname
-
 
     def reduce(self, show=True):
         """
@@ -312,9 +312,9 @@ class BatchReducer:
         show : bool (optional, default=True)
             display a summary table of the rows that were reduced
         """
-        cols='A:I'
+        cols = 'A:I'
         all_runs = pd.read_excel(self.filename, parse_cols=cols)
-        pd.read_excel
+
         # Add the row number in the spreadsheet as an extra column
         # row numbers for the runs will start at 2 not 0
         all_runs.insert(0, 'source', all_runs.index + 2)

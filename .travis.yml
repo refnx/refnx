@@ -33,7 +33,7 @@ before_install:
 
     #- travis_retry pip install --install-option="--no-cython-compile" Cython==0.22
 
-    - conda install --yes python=$TRAVIS_PYTHON_VERSION atlas numpy scipy nose h5py cython pandas xlrd matplotlib
+    - conda install --yes python=$TRAVIS_PYTHON_VERSION atlas numpy scipy nose h5py cython matplotlib pandas xlrd Ipython
     - pip install emcee uncertainties
     - git clone https://github.com/andyfaff/lmfit-py.git
     - cd lmfit-py && git checkout emcee
