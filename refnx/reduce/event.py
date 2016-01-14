@@ -17,10 +17,10 @@ def process_event_stream(events, frame_bins, t_bins, y_bins, x_bins):
         specifies the frame bins required in the image.
     t_bins : array_like
         specifies the time bins required in the image
-    x_bins : array_like
-        specifies the x bins required in the image
     y_bins : array_like
         specifies the y bins required in the image
+    x_bins : array_like
+        specifies the x bins required in the image
 
     Returns
     -------

@@ -395,30 +395,30 @@ class CurveFitter(Minimizer):
 class GlobalFitter(CurveFitter):
     """
     Simultaneous curvefitting of multiple datasets
+
+    fitters: sequence of CurveFitter instances
+        Contains all the fitters and fitfunctions for the global fit.
+    constraints: str sequence, optional
+        Of the type 'dN:param_name = constraint'. Sets a constraint
+        expression for the parameter `param_name` in dataset N. The
+        constraint 'd2:scale = 2 * d0:back' constrains the `scale`
+        parameter in dataset 2 to be twice the `back` parameter in
+        dataset 0.
+        **Important** For a parameter (`d2:scale` in this example) to be
+        constrained by this mechanism it must not have any pre-existing
+        constraints within its individual fitter. If there are
+        pre-existing constraints then those are honoured, and constraints
+        specified here are ignored.
+    kws: dict, optional
+        Extra minimization keywords to be passed to the minimizer of
+        choice.
+    callback: callable, optional
+        Function called at each step of the minimization. Has the
+        signature ``callback(params, iter, resid)``
     """
     def __init__(self, fitters, constraints=(), kws=None,
                  callback=None):
-        """
-        fitters: sequence of CurveFitter instances
-            Contains all the fitters and fitfunctions for the global fit.
-        constraints: str sequence, optional
-            Of the type 'dN:param_name = constraint'. Sets a constraint
-            expression for the parameter `param_name` in dataset N. The
-            constraint 'd2:scale = 2 * d0:back' constrains the `scale`
-            parameter in dataset 2 to be twice the `back` parameter in
-            dataset 0.
-            **Important** For a parameter (`d2:scale` in this example) to be
-            constrained by this mechanism it must not have any pre-existing
-            constraints within its individual fitter. If there are
-            pre-existing constraints then those are honoured, and constraints
-            specified here are ignored.
-        kws: dict, optional
-            Extra minimization keywords to be passed to the minimizer of
-            choice.
-        callback: callable, optional
-            Function called at each step of the minimization. Has the
-            signature ``callback(params, iter, resid)``
-        """
+
         min_kwds = {}
         if kws is not None:
             min_kwds = kws
