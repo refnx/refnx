@@ -13,7 +13,12 @@ import pandas as pd
 import re
 import sys
 import warnings
-import IPython.display
+
+try:
+    import IPython.display
+    _have_ipython = True
+except ImportError:
+    _have_ipython = False
 
 from refnx.reduce import reduce_stitch
 
@@ -208,14 +213,29 @@ class ReductionCache(list):
     def summary(self):
         """ pretty print a list of all data sets currently in the cache
 
-        The pandas pretty printer is used with the IPython HTML display.
+        If available, the pandas pretty printer is used with IPython HTML
+        display.
+        """
+        if _have_ipython:
+            IPython.display.display(IPython.display.HTML(self._repr_html_()))
+        else:
+            print(self)
+
+    def _summary_dataframe(self):
+        """ construct a summary table of the data in the cache
         """
         df = pd.DataFrame(columns=self[0].entry.axes)
         for i, entry in enumerate(self):
             df.loc[i] = entry.entry
-        IPython.display.display(
-          IPython.display.HTML("<b>Summary of reduced data</b>"))
-        IPython.display.display(df)
+        return df
+
+    def _repr_html_(self):
+        df = self._summary_dataframe()
+        return "<b>Summary of reduced data</b>" + df._repr_html_()
+
+    def __str__(self):
+        df = self._summary_dataframe()
+        return "Summary of reduced data\n\n" + str(df)
 
 
 class BatchReducer:
@@ -361,7 +381,10 @@ class BatchReducer:
                     cached.rescale(scale)
 
         if show:
-            IPython.display.display(all_runs[mask])
+            if _have_ipython:
+                IPython.display.display(all_runs[mask])
+            else:
+                print(all_runs[mask])
 
         return self.cache
 
