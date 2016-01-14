@@ -13,7 +13,7 @@ import sys
 import warnings
 import IPython.display
 
-import refnx.reduce as r
+import refnx.reduce
 
 
 ReductionEntryTuple = collections.namedtuple('ReductionEntry',
@@ -292,9 +292,9 @@ class BatchReducer():
               (entry['source'], entry['name']))
             return None, None
 
-        ds, fname = r.reduce_stitch(runs, directs,
-                                    data_folder=pth,
-                                    rebin_percent=rebin_percent)
+        ds, fname = refnx.reduce.reduce_stitch(runs, directs,
+                                               data_folder=pth,
+                                               rebin_percent=rebin_percent)
         return ds, fname
 
 
