@@ -44,22 +44,22 @@ class ReductionCache(list):
     Examples
     --------
 
-    >>> reduced = batch_reduce('reduction.xls', pth, rebin_percent, cache)
-    >>> cache.summary()
+    >>> reducer = BatchReducer('reduction.xls', pth, rebin_percent)
+    >>> data = reducer()
 
     Find the filename of a run in the cache by sample name
 
-    >>> cache.name('W1234').fname
+    >>> data.name('W1234').fname
 
     Find a run in the cache by run number and plot it
 
-    >>> data = cache.run(24623)
+    >>> data = data.run(24623)
     >>> plt.plot(data[0], data[1])
 
     Search for data by run name (starting substring or regular expression)
 
-    >>> cache.name_startswith('W')
-    >>> plot_data_sets(cache.name_search('^W')
+    >>> data.name_startswith('W')
+    >>> plot_data_sets(data.name_search('^W')
     """
 
     def __init__(self):
@@ -187,10 +187,10 @@ class ReductionCache(list):
         Examples
         --------
         Select all data where the name starts with `Sample 1`:
-        >>> cache.name_search("^Sample 1")
+        >>> data.name_search("^Sample 1")
 
         Select all data where the name contains `pH 4.0`:
-        >>> cache.name_search(r"pH 4\.0")
+        >>> data.name_search(r"pH 4\.0")
 
         .. _`regular expression`:
            https://docs.python.org/3/howto/regex.html
