@@ -25,16 +25,16 @@ ReductionEntryTuple = collections.namedtuple('ReductionEntry',
       'entry',
     ])
 
-                                        
+
 class ReductionEntry(ReductionEntryTuple):
-                         
+
     def rescale(self, scale_factor, write=True):
         self.ds.scale(scale_factor)
         if write:
             with open(self.fname, 'w') as w:
                 self.ds.save_xml(w)
-    
-    
+
+
 class ReductionCache(list):
     """
     Cache for the reduced data to enable look-up by name, run number or row.
@@ -214,7 +214,7 @@ class ReductionCache(list):
           IPython.display.HTML("<b>Summary of reduced data</b>"))
         IPython.display.display(df)
 
-        
+
 class BatchReducer():
     """
     Batch reduction of reflectometry data based on spreadsheet metadata.
@@ -234,7 +234,7 @@ class BatchReducer():
 
     Only rows where the value of the `reduce` column is 1 will be processed.
     """
-    
+
     def __init__(self, filename, pth, rebin_percent):
         """
        Create a batch reducer using metadata from a spreadsheet
@@ -339,7 +339,7 @@ class BatchReducer():
                 if reduction_ok:
                     # store this away to make plotting easier later
                     ds.name = name
-                   
+
             # record outcomes of reduction in the table
             all_runs.loc[idx, 'filename'] = fname
             all_runs.loc[idx, 'reduced'] = reduction_ok
