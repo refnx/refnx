@@ -389,6 +389,12 @@ class BatchReducer:
         return self.cache
 
 
+    def __call__(self):
+        """ run the reducer as the default action for the BatchReducer
+        """
+        return self.reduce()
+
+
 def run_list(entry, mode='refl'):
     """
     Generates a list of run numbers from a reduction spreadsheet entry
