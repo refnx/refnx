@@ -24,13 +24,11 @@ from refnx.reduce import reduce_stitch
 
 
 ReductionEntryTuple = collections.namedtuple('ReductionEntry',
-    [
-      'row',
-      'ds',
-      'name',
-      'fname',
-      'entry',
-    ])
+                                             ['row',
+                                              'ds',
+                                              'name',
+                                              'fname',
+                                              'entry',])
 
 
 class ReductionEntry(ReductionEntryTuple):
@@ -51,7 +49,7 @@ class ReductionCache(list):
     Examples
     --------
 
-    >>> reducer = BatchReducer('reduction.xls', pth, rebin_percent)
+    >>> reducer = BatchReducer('reduction.xls', data_folder, rebin_percent)
     >>> data = reducer()
 
     Find the filename of a run in the cache by sample name
@@ -68,7 +66,6 @@ class ReductionCache(list):
     >>> data.name_startswith('W')
     >>> plot_data_sets(data.name_search('^W')
     """
-
     def __init__(self):
         """
         Create a new reduction cache
@@ -245,11 +242,10 @@ class BatchReducer:
     Example
     -------
 
-        >>> from batchreduction import BatchReducer
-        >>> pth = r'V:\data\current'
-        >>> b = BatchReducer('reduction.xls', 2.0, pth=pth)
+        >>> from refnx.reduce import BatchReducer
+        >>> data_folder = r'V:\data\current'
+        >>> b = BatchReducer('reduction.xls', data_folder=data_folder)
         >>> b.reduce()
-        >>> b.summary()
 
     The spreadsheet must have columns:
 
@@ -258,7 +254,7 @@ class BatchReducer:
     Only rows where the value of the `reduce` column is 1 will be processed.
     """
 
-    def __init__(self, filename, rebin_percent, pth=None):
+    def __init__(self, filename, data_folder=None, **kwds):
         """
         Create a batch reducer using metadata from a spreadsheet
 
@@ -267,33 +263,30 @@ class BatchReducer:
         filename : str
             The filename of the spreadsheet to be used. Must be readable by
             `pandas.read_excel` (`.xls` and `.xlsx` files).
-        pth : str, None
-            Filesystem path for the raw data files. If `pth is None` then the
-            current working directory is used.
-        rebin_percent : float
-            percentage rebinning to be applied in the reduction (e.g. 2.0)
+        data_folder : str, None
+            Filesystem path for the raw data files. If `data_folder is None`
+            then the current working directory is used.
+        kwds : dict, optional
+            Options passed directly to `refnx.reduce.reduce_stitch`. Look at
+            that docstring for complete specification of options.
         """
         self.cache = ReductionCache()
         self.filename = filename
 
-        self.pth = os.getcwd()
-        if pth is not None:
-            self.pth = pth
+        self.data_folder = os.getcwd()
+        if data_folder is not None:
+            self.data_folder = data_folder
 
-        self.rebin_percent = rebin_percent
+        self.kwds = kwds
+        self.kwds['data_folder'] = self.data_folder
 
-    @staticmethod
-    def _reduce_row(entry, pth, rebin_percent):
+    def _reduce_row(self, entry):
         """ Process a single row using reduce_stitch
 
         Parameters
         ----------
         entry : pandas.Series
             Spreadsheet row for this data set
-        pth : str
-            Filesystem path for the raw data files
-        rebin_percent : float
-            percentage rebinning to be applied in the reduction (e.g. 2.0)
         """
         # Identify the runs to be used for reduction
         runs = run_list(entry, 'refl')
@@ -320,9 +313,8 @@ class BatchReducer:
               (entry['source'], entry['name']))
             return None, None
 
-        ds, fname = reduce_stitch(runs, directs,
-                                  data_folder=pth,
-                                  rebin_percent=rebin_percent)
+        ds, fname = reduce_stitch(runs, directs, **self.kwds)
+
         return ds, fname
 
     def reduce(self, show=True):
@@ -353,8 +345,7 @@ class BatchReducer:
             name = str(all_runs.loc[idx, 'name'])
 
             try:
-                ds, fname = self._reduce_row(all_runs.loc[idx],
-                                             self.pth, self.rebin_percent)
+                ds, fname = self._reduce_row(all_runs.loc[idx])
             except OSError as e:
                 # data file not found (normally)
                 reduction_ok = str(e)

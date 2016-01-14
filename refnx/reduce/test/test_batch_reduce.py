@@ -16,7 +16,7 @@ class TestReduce(unittest.TestCase):
 
     def test_batch_reduce(self):
         filename = os.path.join(self.path, "test_batch_reduction.xls")
-        b = BatchReducer(filename, 2, self.path)
+        b = BatchReducer(filename, self.path)
 
         b.reduce(show=False)
 
