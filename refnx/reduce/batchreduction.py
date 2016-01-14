@@ -25,16 +25,16 @@ ReductionEntryTuple = collections.namedtuple('ReductionEntry',
       'entry',
     ])
 
-                                        
+
 class ReductionEntry(ReductionEntryTuple):
-                         
+
     def rescale(self, scale_factor, write=True):
         self.ds.scale(scale_factor)
         if write:
             with open(self.fname, 'w') as w:
                 self.ds.save_xml(w)
-    
-    
+
+
 class ReductionCache(list):
     """
     Cache for the reduced data to enable look-up by name, run number or row.
@@ -44,22 +44,22 @@ class ReductionCache(list):
     Examples
     --------
 
-    >>> reduced = batch_reduce('reduction.xls', pth, rebin_percent, cache)
-    >>> cache.summary()
+    >>> reducer = BatchReducer('reduction.xls', pth, rebin_percent)
+    >>> data = reducer()
 
     Find the filename of a run in the cache by sample name
 
-    >>> cache.name('W1234').fname
+    >>> data.name('W1234').fname
 
     Find a run in the cache by run number and plot it
 
-    >>> data = cache.run(24623)
+    >>> data = data.run(24623)
     >>> plt.plot(data[0], data[1])
 
     Search for data by run name (starting substring or regular expression)
 
-    >>> cache.name_startswith('W')
-    >>> plot_data_sets(cache.name_search('^W')
+    >>> data.name_startswith('W')
+    >>> plot_data_sets(data.name_search('^W')
     """
 
     def __init__(self):
@@ -188,10 +188,10 @@ class ReductionCache(list):
         Examples
         --------
         Select all data where the name starts with `Sample 1`:
-        >>> cache.name_search("^Sample 1")
+        >>> data.name_search("^Sample 1")
 
         Select all data where the name contains `pH 4.0`:
-        >>> cache.name_search(r"pH 4\.0")
+        >>> data.name_search(r"pH 4\.0")
 
         .. _`regular expression`:
            https://docs.python.org/3/howto/regex.html
@@ -215,7 +215,7 @@ class ReductionCache(list):
           IPython.display.HTML("<b>Summary of reduced data</b>"))
         IPython.display.display(df)
 
-        
+
 class BatchReducer:
     """
     Batch reduction of reflectometry data based on spreadsheet metadata.
@@ -235,7 +235,7 @@ class BatchReducer:
 
     Only rows where the value of the `reduce` column is 1 will be processed.
     """
-    
+
     def __init__(self, filename, rebin_percent, pth=None):
         """
         Create a batch reducer using metadata from a spreadsheet
@@ -344,7 +344,7 @@ class BatchReducer:
                 if reduction_ok:
                     # store this away to make plotting easier later
                     ds.name = name
-                   
+
             # record outcomes of reduction in the table
             all_runs.loc[idx, 'filename'] = fname
             all_runs.loc[idx, 'reduced'] = reduction_ok
