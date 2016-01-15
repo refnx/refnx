@@ -146,6 +146,7 @@ class TestPlatypusNexus(unittest.TestCase):
 
     def test_save_spectrum(self):
         # test saving spectrum
+        print('a')
         self.f113.process()
 
         # can save the spectra by supplying a filename
