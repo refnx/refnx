@@ -28,7 +28,7 @@ class TestGeneral(unittest.TestCase):
 
     def test_wavelength_velocity(self):
         speed = general.wavelength_velocity(20.)
-        assert_almost_equal(speed, 197.8017006541796)
+        assert_almost_equal(speed, 197.8017006541796, 5)
 
     def test_wavelength(self):
         wavelength = general.wavelength(0.1096567037, 1.)

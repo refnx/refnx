@@ -16,7 +16,7 @@ class TestReduce(unittest.TestCase):
 
     def test_batch_reduce(self):
         filename = os.path.join(self.path, "test_batch_reduction.xls")
-        b = BatchReducer(filename, data_folder=self.path)
+        b = BatchReducer(filename, data_folder=self.path, verbose=False)
 
         b.reduce(show=False)
 
@@ -24,12 +24,12 @@ class TestReduce(unittest.TestCase):
         filename = os.path.join(self.path, "test_batch_reduction.xls")
 
         refnx.reduce.batchreduction._have_ipython = False
-        b = BatchReducer(filename, data_folder=self.path)
-        b.reduce()
+        b = BatchReducer(filename, data_folder=self.path, verbose=False)
+        b.reduce(show=False)
 
         refnx.reduce.batchreduction._have_ipython = True
-        b = BatchReducer(filename, data_folder=self.path)
-        b.reduce()
+        b = BatchReducer(filename, data_folder=self.path, verbose=False)
+        b.reduce(show=False)
 
 
 class TestReductionCache(unittest.TestCase):

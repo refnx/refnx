@@ -19,6 +19,7 @@ Examples::
 PROJECT_MODULE = "refnx"
 PROJECT_ROOT_FILES = ['refnx', 'LICENSE', 'setup.py']
 SAMPLE_SUBMODULE = "analysis"
+EXTRA_PATH = ['']
 
 # ---------------------------------------------------------------------
 
@@ -31,6 +32,7 @@ else:
 
 import sys
 import os
+import site
 
 # In case we are run from the source directory, we don't want to import the
 # project from there:
@@ -58,9 +60,11 @@ def main(argv):
                         help="'fast', 'full', or something that could be "
                              "passed to nosetests -A [default: fast]")
     parser.add_argument("--submodule", "-s", default=None,
-                        help="Submodule whose tests to run (analysys, reduce, ...)")
+                        help="Submodule whose tests to run (analysis, reduce, ...)")
     parser.add_argument("--pythonpath", "-p", default=None,
                         help="Paths to prepend to PYTHONPATH")
+    parser.add_argument("--tests", "-t", action='append',
+                        help="Specify tests to run")
     parser.add_argument("--python", action="store_true",
                         help="Start a Python shell with PYTHONPATH set")
     parser.add_argument("--shell", action="store_true",
@@ -81,6 +85,7 @@ def main(argv):
         site_dir = build_project(args)
         sys.path.insert(0, site_dir)
         os.environ['PYTHONPATH'] = site_dir
+        site.addsitedir(site_dir)
 
     extra_argv = args.args[:]
     if extra_argv and extra_argv[0] == '--':
@@ -156,9 +161,7 @@ def main(argv):
         os.chdir(test_dir)
         result = test(args.mode,
                       verbose=args.verbose,
-                      extra_argv=extra_argv,
-                      doctests=args.doctests,
-                      coverage=args.coverage)
+                      extra_argv=extra_argv)
     finally:
         os.chdir(cwd)
 
@@ -193,11 +196,19 @@ def build_project(args):
     env = dict(os.environ)
     cmd = [sys.executable, 'setup.py']
 
-    # Always use ccache, if installed
-    env['PATH'] = os.pathsep.join(EXTRA_PATH + env.get('PATH', '').split(os.pathsep))
+    env['PATH'] = os.pathsep.join(env.get('PATH', '').split(os.pathsep))
 
     cmd += ['build']
     cmd += ['install', '--prefix=' + dst_dir]
+
+    from distutils.sysconfig import get_python_lib
+    site_dir = get_python_lib(prefix=dst_dir, plat_specific=True)
+
+    # easy_install won't install to a path that Python by default cannot see
+    # and isn't on the PYTHONPATH.  Plus, it has to exist.
+    if not os.path.exists(site_dir):
+        os.makedirs(site_dir)
+    env['PYTHONPATH'] = site_dir
 
     log_filename = os.path.join(ROOT_DIR, 'build.log')
 
@@ -235,9 +246,6 @@ def build_project(args):
                 print(f.read())
             print("Build failed!")
         sys.exit(1)
-
-    from distutils.sysconfig import get_python_lib
-    site_dir = get_python_lib(prefix=dst_dir, plat_specific=True)
 
     return site_dir
 

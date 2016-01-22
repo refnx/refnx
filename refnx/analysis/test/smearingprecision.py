@@ -32,15 +32,15 @@ def smearing_precision_comparison(maxorder=50):
     smeared_rvals[0, :] = reflect.reflectivity(
         qvals, a, **{'dqvals': dqvals, 'quad_order': 'ultimate'})
     t1 = time()
-    print 'ultimate takes %f' % (t1 - t0)
+    print('ultimate takes %f' % (t1 - t0))
 
-    for idx in xrange(1, maxorder + 1):
+    for idx in range(1, maxorder + 1):
         t0 = time()
         smeared_rvals[idx, :] = reflect.reflectivity(qvals,
                                                a,
                                                **{'dqvals': dqvals, 'quad_order': idx})
         t1 = time()
-        print idx, ' takes %f' % (t1 - t0)
+        print(idx, ' takes %f' % (t1 - t0))
     np.savetxt('smearing_comp', smeared_rvals.T)
 
 
