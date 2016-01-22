@@ -254,7 +254,7 @@ class BatchReducer:
     Only rows where the value of the `reduce` column is 1 will be processed.
     """
 
-    def __init__(self, filename, data_folder=None, **kwds):
+    def __init__(self, filename, data_folder=None, verbose=True, **kwds):
         """
         Create a batch reducer using metadata from a spreadsheet
 
@@ -266,6 +266,8 @@ class BatchReducer:
         data_folder : str, None
             Filesystem path for the raw data files. If `data_folder is None`
             then the current working directory is used.
+        verbose : bool, optional
+            Prints status information during batch reduction.
         kwds : dict, optional
             Options passed directly to `refnx.reduce.reduce_stitch`. Look at
             that docstring for complete specification of options.
@@ -279,6 +281,7 @@ class BatchReducer:
 
         self.kwds = kwds
         self.kwds['data_folder'] = self.data_folder
+        self.verbose = verbose
 
     def _reduce_row(self, entry):
         """ Process a single row using reduce_stitch
@@ -292,11 +295,13 @@ class BatchReducer:
         runs = run_list(entry, 'refl')
         directs = run_list(entry, 'directs')
 
-        fmt = "Reducing %s [%s]/[%s]"
-        print(fmt % (entry['name'],
-                     ", ".join('%d' % r for r in runs),
-                     ", ".join('%d' % r for r in directs)))
-        sys.stdout.flush()   # keep progress updated
+        if self.verbose:
+            fmt = "Reducing %s [%s]/[%s]"
+
+            print(fmt % (entry['name'],
+                  ", ".join('%d' % r for r in runs),
+                  ", ".join('%d' % r for r in directs)))
+            sys.stdout.flush()   # keep progress updated
 
         if not runs:
             warnings.warn("Row %d (%s) has no reflection runs" %

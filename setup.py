@@ -115,64 +115,71 @@ info = {
         'Topic :: Scientific/Engineering :: Physics',
         ],
         'packages': packages,
+        'include_package_data': True,
+        'setup_requires': ['numpy', 'scipy', 'lmfit', 'uncertainties'],
         'install_requires': ['numpy', 'scipy', 'lmfit', 'uncertainties']
         }
 
 ####################################################################
 # this is where setup starts
 ####################################################################
+def setup_package():
 
-# Rewrite the version file every time
-write_version_py()
-info['version'] = get_version_info()[0]
-print(info['version'])
+    # Rewrite the version file every time
+    write_version_py()
+    info['version'] = get_version_info()[0]
+    print(info['version'])
 
-if USE_CYTHON:
-    # Obtain the numpy include directory.  This logic works across numpy versions.
-    ext_modules = []
-    HAS_NUMPY = True
+    if USE_CYTHON:
+        # Obtain the numpy include directory.  This logic works across numpy versions.
+        ext_modules = []
+        HAS_NUMPY = True
+
+        try:
+            import numpy as np
+        except:
+            info['setup_requires'] = ['numpy']
+            HAS_NUMPY = False
+
+        if HAS_NUMPY:
+            try:
+                numpy_include = np.get_include()
+            except AttributeError:
+                numpy_include = np.get_numpy_include()
+
+            # creflect extension module
+            _creflect = Extension(
+                                  name='refnx.analysis._creflect',
+                                  sources=['src/_creflect.pyx', 'src/refcalc.cpp'],
+                                  include_dirs=[numpy_include],
+                                  language='c',
+                                  extra_link_args=['-lpthread']
+                                  # libraries=
+                                  # extra_compile_args = "...".split(),
+                                  )
+            ext_modules.append(_creflect)
+
+            info['cmdclass'] = {'build_ext': build_ext}
+            info['ext_modules'] = ext_modules
 
     try:
-        import numpy as np
-    except:
-        info['setup_requires'] = ['numpy']
-        HAS_NUMPY = False
+        setup(**info)
+    except ValueError:
+        # there probably wasn't a C-compiler (windows). Try removing extension
+        # compilation
+        print("")
+        print("*****WARNING*****")
+        print("You didn't try to build the Reflectivity calculation extension."
+              " Calculation will be slow, falling back to pure python."
+              " To compile extension install cython. If installing in windows you"
+              " should then install from Visual Studio command prompt (this makes"
+              " C compiler available")
+        print("*****************")
+        print("")
+        info.pop('cmdclass')
+        info.pop('ext_modules')
+        setup(**info)
 
-    if HAS_NUMPY:
-        try:
-            numpy_include = np.get_include()
-        except AttributeError:
-            numpy_include = np.get_numpy_include()
 
-        # creflect extension module
-        _creflect = Extension(
-                              name='refnx.analysis._creflect',
-                              sources=['src/_creflect.pyx', 'src/refcalc.cpp'],
-                              include_dirs=[numpy_include],
-                              language='c',
-                              extra_link_args=['-lpthread']
-                              # libraries=
-                              # extra_compile_args = "...".split(),
-                              )
-        ext_modules.append(_creflect)
-
-        info['cmdclass'] = {'build_ext': build_ext}
-        info['ext_modules'] = ext_modules
-
-try:
-    setup(**info)
-except ValueError:
-    # there probably wasn't a C-compiler (windows). Try removing extension
-    # compilation
-    print("")
-    print("*****WARNING*****")
-    print("You didn't try to build the Reflectivity calculation extension."
-          " Calculation will be slow, falling back to pure python."
-          " To compile extension install cython. If installing in windows you"
-          " should then install from Visual Studio command prompt (this makes"
-          " C compiler available")
-    print("*****************")
-    print("")
-    info.pop('cmdclass')
-    info.pop('ext_modules')
-    setup(**info)
+if __name__ == '__main__':
+    setup_package()
