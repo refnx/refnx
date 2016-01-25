@@ -8,6 +8,7 @@ dist/
 __pycache__
 .ipynb_checkpoints/
 refnx.egg-info/
+build.log
 
 # testing artifacts
 PLP*dat
