@@ -5,4 +5,7 @@ from refnx.reduce.platypusnexus import (catalogue, PlatypusNexus,
 from refnx.reduce.batchreduction import BatchReducer
 from refnx.reduce.xray import reduce_xrdml
 
+import numpy.testing
+test = numpy.testing.Tester().test
+
 __all__ = [s for s in dir() if not s.startswith('_')]
