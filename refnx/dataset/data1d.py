@@ -15,15 +15,18 @@ class Data1D(object):
 
     Parameters
     ----------
-    data_tuple : tuple of np.ndarray, optional
-        Tuple containing the data. The tuple should have between 2 and 4
-        members.
-        data_tuple[0] - x
-        data_tuple[1] - y
-        data_tuple[2] - standard deviation of y, y_sd
-        data_tuple[3] - standard deviation of x, x_sd
+    data : str, file-like or tuple of np.ndarray, optional
+        `data` can be a string or file-like object referring to a File to load
+        the dataset from.
 
-        `data_tuple` must be at least two long, `x` and `y`.
+        Alternatively it is a tuple containing the data from which the dataset
+        will be constructed. The tuple should have between 2 and 4 members.
+            data[0] - x
+            data[1] - y
+            data[2] - standard deviation of y, y_sd
+            data[3] - standard deviation of x, x_sd
+
+        `data` must be at least two long, `x` and `y`.
         If the tuple is at least 3 long then the third member is `y_sd`.
         If the tuple is 4 long then the fourth member is `x_sd`.
         All arrays must have the same shape.
@@ -42,8 +45,7 @@ class Data1D(object):
     x_sd : np.ndarray
         uncertainties on the x data
     """
-    def __init__(self, data_tuple=None, curvefitter=None):
-
+    def __init__(self, data=None):
         self.filename = None
         self.fit = None
         self.params = None
@@ -55,13 +57,16 @@ class Data1D(object):
         self.y_sd = np.zeros(0)
         self.x_sd = np.zeros(0)
 
-        if data_tuple is not None:
-            self.x = data_tuple[0].flatten()
-            self.y = data_tuple[1].flatten()
-            if len(data_tuple) > 2:
-                self.y_sd = data_tuple[2].flatten()
-            if len(data_tuple) > 3:
-                self.x_sd = data_tuple[3].flatten()
+        # if it's a file then open and load the file.
+        if hasattr(data, 'read') or type(data) is str:
+            self.load(data)
+        elif data is not None:
+            self.x = data[0].flatten()
+            self.y = data[1].flatten()
+            if len(data) > 2:
+                self.y_sd = data[2].flatten()
+            if len(data) > 3:
+                self.x_sd = data[3].flatten()
 
     @property
     def npoints(self):
@@ -243,8 +248,14 @@ class Data1D(object):
             File to load the dataset from.
         """
         array = np.loadtxt(f)
-        self.filename = f.name
-        self.name = os.path.splitext(os.path.basename(f.name))[0]
+        if hasattr(f, 'read'):
+            fname = f.name
+        else:
+            fname = f
+
+        self.filename = fname
+        self.name = os.path.splitext(os.path.basename(fname))[0]
+
         self.data = tuple(np.hsplit(array, np.size(array, 1)))
 
     def refresh(self):

@@ -33,16 +33,16 @@ class ReflectDataset(Data1D):
     </REFentry>
     </REFroot>"""
 
-    def __init__(self, data_tuple=None, **kwds):
+    def __init__(self, data=None, **kwds):
         """
         Initialise a reflectivity dataset.
 
         Parameters
         ----------
-        data_tuple : tuple of np.ndarray
+        data : tuple of np.ndarray
             Specify the Q, R, dR, dQ data to construct the dataset from.
         """
-        super(ReflectDataset, self).__init__(data_tuple=data_tuple)
+        super(ReflectDataset, self).__init__(data=data)
         self.datafilenumber = list()
         self.sld_profile = None
 
@@ -110,10 +110,10 @@ class ReflectDataset(Data1D):
             drvals = [float(val) for val in drtext.text.split()]
             dqvals = [float(val) for val in dqtext.text.split()]
 
-            self.filename = f.name
-            self.name = os.path.splitext(os.path.basename(f.name))[0]
+            self.filename = g.name
+            self.name = os.path.splitext(os.path.basename(g.name))[0]
             self.data = (qvals, rvals, drvals, dqvals)
-            self.filename = f.name
+            self.filename = g.name
         except ET.ParseError:
             g.seek(0)
             super(ReflectDataset, self).load(g)

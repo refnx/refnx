@@ -406,15 +406,14 @@ class GlobalFitter(CurveFitter):
         dataset 0.
         **Important** For a parameter (`d2:scale` in this example) to be
         constrained by this mechanism it must not have any pre-existing
-        constraints within its individual fitter. If there are
-        pre-existing constraints then those are honoured, and constraints
-        specified here are ignored.
+        constraints within its individual fitter. If there are pre-existing
+        constraints then those are honoured, and constraints specified here are
+        ignored.
     kws: dict, optional
-        Extra minimization keywords to be passed to the minimizer of
-        choice.
+        Extra minimization keywords to be passed to the minimizer of choice.
     callback: callable, optional
-        Function called at each step of the minimization. Has the
-        signature ``callback(params, iter, resid)``
+        Function called at each step of the minimization. Has the signature
+        ``callback(params, iter, resid)``
     """
     def __init__(self, fitters, constraints=(), kws=None,
                  callback=None):

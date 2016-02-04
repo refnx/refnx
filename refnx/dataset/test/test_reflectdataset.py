@@ -35,6 +35,15 @@ class TestReflectDataset(unittest.TestCase):
         assert_equal(dataset1.npoints, 90)
         assert_equal(90, np.size(dataset1.x))
 
+    def test_construction(self):
+        # test we can construct a dataset directly from a file.
+        pth = os.path.join(path, 'c_PLP0000708.xml')
+
+        dataset = ReflectDataset(pth)
+
+        with open(os.path.join(path, 'c_PLP0000708.xml')) as f:
+            dataset = ReflectDataset(f)
+
     def test_add_data(self):
         # test we can add data to the dataset
 
