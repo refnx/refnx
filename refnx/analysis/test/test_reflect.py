@@ -280,7 +280,7 @@ class TestReflect(unittest.TestCase):
         np.seterr(invalid='raise')
         profile = np.loadtxt(os.path.join(path, 'sld_theoretical_R.txt'))
         z, rho = np.split(profile, 2)
-        myrho = reflect.sld_profile(self.coefs, z.flatten())
+        myrho = reflect.sld_profile(z.flatten(), self.coefs)
         assert_almost_equal(myrho, rho.flatten())
 
     def test_parameter_names(self):

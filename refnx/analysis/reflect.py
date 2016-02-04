@@ -556,19 +556,19 @@ def is_proper_abeles_input(coefs):
     return True
 
 
-def sld_profile(coefs, z):
+def sld_profile(z, coefs):
     """
     Calculates an SLD profile, as a function of distance through the
     interface.
 
     Parameters
     ----------
-    coefs : np.ndarray
-        The reflectivity model parameters in 'layer' form. (See
-        `reflectivity`)
     z : float
         Interfacial distance (Angstrom) measured from interface between the
         fronting medium and the first layer.
+    coefs : np.ndarray
+        The reflectivity model parameters in 'layer' form. (See
+        `reflectivity`)
 
     Returns
     -------
@@ -675,6 +675,34 @@ class ReflectivityFitFunction(FitFunction):
         parameters : lmfit.Parameters instance
             Contains the parameters that are required for reflectivity
             calculation.
+        kwds['dqvals'] - float or np.ndarray, optional
+            If dqvals is a float, then a constant dQ/Q resolution smearing is
+            employed.  For 5% resolution smearing supply 5.
+            If `dqvals` is the same shape as q, then the array contains the
+            FWHM of a Gaussian approximated resolution kernel. Point by point
+            resolution smearing is employed.  Use this option if dQ/Q varies
+            across your dataset.
+            If `dqvals.ndim == q.ndim + 2` and
+            `q.shape == dqvals[..., -3].shape` then an individual resolution
+            kernel is applied to each measurement point.  This resolution kernel
+            is a probability distribution function (PDF). `dqvals` will have the
+            shape (qvals.shape, M, 2).  There are `M` points in the kernel.
+            `dqvals[..., 0]` holds the q values for the kernel, `dqvals[..., 1]`
+            gives the corresponding probability.
+        kwds['quad_order'] - int, optional
+            the order of the Gaussian quadrature polynomial for doing the
+            resolution smearing. default = 17. Don't choose less than 13. If
+            quad_order == 'ultimate' then adaptive quadrature is used. Adaptive
+            quadrature will always work, but takes a _long_ time (2 or 3 orders
+            of magnitude longer). Fixed quadrature will always take a lot less
+            time. BUT it won't necessarily work across all samples. For example,
+            13 points may be fine for a thin layer, but will be atrocious at
+            describing a multilayer with bragg peaks.
+        kwds['parallel']: bool, optional
+            Do you want to calculate in parallel? This option is only
+            applicable if you are using the ``_creflect`` module. The option is
+            ignored if using the pure python calculator, ``_reflect``. The
+            default is `True`.
 
         Returns
         -------
@@ -693,8 +721,9 @@ class ReflectivityFitFunction(FitFunction):
             kwds['parallel'] = self.parallel
         yvals = reflectivity(x, params, *args, **kwds)
 
-        if self.transform:
-            yvals, temp = self.transform(x, yvals)
+        if self.transform or 'transform' in kwds:
+            t = self.transform or kwds['transform']
+            yvals, temp = t(x, yvals)
 
         return yvals
 
@@ -747,10 +776,10 @@ class ReflectivityFitFunction(FitFunction):
             The distance from the top interface and the SLD at that point.
         """
 
-        params = np.asfarray(parameters.valuesdict().values())
+        params = np.asfarray(list(parameters.valuesdict().values()))
 
         if points is not None:
-            return points, sld_profile(params, points)
+            return points, sld_profile(points, params)
 
         if not int(params[0]):
             zstart = -5 - 4 * np.fabs(params[7])
@@ -767,7 +796,7 @@ class ReflectivityFitFunction(FitFunction):
 
         points = np.linspace(zstart, zend, num=500)
 
-        return points, sld_profile(params, points)
+        return points, sld_profile(points, params)
 
     @staticmethod
     def parameter_names(nparams=8):
