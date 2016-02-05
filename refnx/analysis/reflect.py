@@ -21,7 +21,7 @@ _FWHM = 2 * np.sqrt(2 * np.log(2.0))
 _INTLIMIT = 3.5
 
 
-def convert_coefs_to_layer_format(coefs):
+def coefs_to_layer(coefs):
     """
     Converts 'coefs' format array to a 'layer' format array .
     The 'layer' format is used by the `abeles` function, the 'coefs' format
@@ -79,7 +79,7 @@ def convert_coefs_to_layer_format(coefs):
     return layers
 
 
-def convert_layer_format_to_coefs(layers, scale=1, bkg=0):
+def layer_to_coefs(layers, scale=1, bkg=0):
     """
     Converts 'layer' format array to a 'coefs' format array .
     The 'layer' format is used by the `abeles` function, the 'coefs' format
@@ -254,7 +254,7 @@ def reflectivity(q, coefs, *args, **kwds):
                          ' should be 4 * coefs[0] + 8')
 
     # make into form suitable for reflection calculation
-    w = convert_coefs_to_layer_format(coefs)
+    w = coefs_to_layer(coefs)
 
     if 'quad_order' in kwds:
         quad_order = kwds['quad_order']
@@ -801,7 +801,7 @@ class ReflectivityFitFunction(FitFunction):
     @staticmethod
     def parameter_names(nparams=8):
         """
-        Parameter names for a default reflecitivty calculation
+        Parameter names for a default reflectivity calculation
         """
         names = ['nlayers', 'scale', 'SLDfront', 'iSLDfront', 'SLDback',
                  'iSLDback', 'bkg', 'sigma_back']

@@ -28,7 +28,7 @@ class Test_reflect(unittest.TestCase):
         self.coefs[9] = 3.47
         self.coefs[11] = 2
         
-        self.layer_format = reflect.convert_coefs_to_layer_format(self.coefs)
+        self.layer_format = reflect.coefs_to_layer(self.coefs)
 
         theoretical = np.loadtxt(os.path.join(CURDIR, 'theoretical.txt'))
         qvals, rvals = np.hsplit(theoretical, 2)

@@ -41,9 +41,9 @@ hilim = np.array([[0,   2.07, 0, 0],     # fronting medium
 # coefs[1] is the scale factor
 # coefs[6] is the background
 # these will both be 1 and 0 respectively to start off with
-coefs = reflect.convert_layer_format_to_coefs(layers)
-lowlim = reflect.convert_layer_format_to_coefs(lowlim)
-hilim = reflect.convert_layer_format_to_coefs(hilim)
+coefs = reflect.layer_to_coefs(layers)
+lowlim = reflect.layer_to_coefs(lowlim)
+hilim = reflect.layer_to_coefs(hilim)
 
 coefs[1] = 1.0
 coefs[6] = 3.e-6
