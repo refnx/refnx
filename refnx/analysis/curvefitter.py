@@ -12,6 +12,7 @@ import numpy.ma as ma
 import re
 from functools import partial
 import abc
+from refnx.dataset import Data1D
 
 # check for EMCEE
 HAS_EMCEE = False
@@ -131,7 +132,7 @@ def exprs(params):
 def values(params):
     """
     A convenience function that takes an lmfit.Parameters instance and returns
-    the the values
+    the values
     """
     return np.array([param.value for param in params.values()], np.float64)
 
@@ -226,17 +227,24 @@ class CurveFitter(Minimizer):
         Function calculating the generative model for the fit.  Should have
         the signature: ``fitfunc(x, params, *fcn_args, **fcn_kws)``. You
         can also supply a ``FitFunction`` instance.
-    x : np.ndarray
-        The independent variables
-    y : np.ndarray
-        The dependent (observed) variable
+    data : sequence, refnx.dataset.Data1D instance, str or file-like object
+        A sequence containing the data to be analysed.
+        If `data` is a sequence then:
+            data[0] - the independent variable (x-data)
+            data[1] - the dependent (observed) variable (y-data)
+            data[2] - measured uncertainty in the dependent variable, expressed
+                      as a standard deviation.
+        Only data[0] and data[1] are required, data[2] is optional. If data[2]
+        is not specified then the measured uncertainty is set to unity.
+
+        `data` can also be a Data1D instance containing the data.
+        If `data` is a string, or file-like object then the string or file-like
+        object refers to a file containing the data. The data will be loaded
+        through the `refnx.dataset.Data1D` constructor.
     params : lmfit.Parameters instance
         Specifies the parameter set for the fit
-    edata : np.ndarray, optional
-        The measured uncertainty in the dependent variable, expressed as
-        sd.  If this array is not specified, then edata is set to unity.
     mask : np.ndarray, optional
-        A boolean array with the same shape as y.  If mask is True
+        A boolean array with the same shape as `y`.  If `mask is True`
         then that point is excluded from the residuals calculation.
     fcn_args : tuple, optional
         Extra parameters required to fully specify fitfunc.
@@ -249,12 +257,23 @@ class CurveFitter(Minimizer):
         ``callback(params, iter, resid, *args, **kwds)``
     """
 
-    def __init__(self, fitfunc, xdata, ydata, params, edata=None, mask=None,
+    def __init__(self, fitfunc, data, params, mask=None,
                  fcn_args=(), fcn_kws=None, kws=None, callback=None):
         self.fitfunc = fitfunc
 
-        self.xdata = np.asfarray(xdata)
-        self.ydata = np.asfarray(ydata)
+        if isinstance(data, Data1D):
+            tdata = data
+        else:
+            #type(data) == 'str' or hasattr(data, 'seek'):
+            # or data is a sequence.
+            tdata = Data1D(data)
+
+        self.xdata, self.ydata, self.edata, temp = tdata.data
+
+        self.scale_covar = False
+        if not self.edata.size:
+            self.edata = np.ones_like(self.xdata)
+            self.scale_covar = True
 
         if mask is not None:
             if self.ydata.shape != mask.shape:
@@ -263,13 +282,6 @@ class CurveFitter(Minimizer):
             self.mask = mask
         else:
             self.mask = None
-
-        if edata is not None:
-            self.edata = np.asfarray(edata)
-            self.scale_covar = False
-        else:
-            self.edata = np.ones_like(self.ydata)
-            self.scale_covar = True
 
         min_kwds = {}
         if kws is not None:
@@ -531,10 +543,8 @@ class GlobalFitter(CurveFitter):
                 original_kws=original_kws)
 
         super(GlobalFitter, self).__init__(self._fitfunc,
-                                           xdata,
-                                           np.hstack(ydata),
+                                           (xdata, np.hstack(ydata), np.hstack(edata)),
                                            self.params,
-                                           edata=np.hstack(edata),
                                            callback=callback,
                                            kws=min_kwds)
 

@@ -171,7 +171,7 @@ class TestReflect(unittest.TestCase):
         params['p1'].value = 1.1
 
         fitfunc = reflect.ReflectivityFitFunction()
-        fitter = CurveFitter(fitfunc, self.qvals, self.rvals, params)
+        fitter = CurveFitter(fitfunc, (self.qvals, self.rvals), params)
         fitter.fit()
 
         transform = reflect.Transform('logY')
@@ -180,10 +180,8 @@ class TestReflect(unittest.TestCase):
                                      self.evals361)
         kws = {'transform':transform.transform}
         fitter2 = CurveFitter(fitfunc,
-                              self.qvals361,
-                              yt,
+                              (self.qvals361, yt, et),
                               self.params361,
-                              edata=et,
                               fcn_kws=kws)
         fitter2.fit('differential_evolution')
     #
@@ -266,8 +264,7 @@ class TestReflect(unittest.TestCase):
         params = curvefitter.to_parameters(self.coefs)
         fitfunc = RFF(quad_order=13)
         fitter = CurveFitter(fitfunc,
-                             qvals,
-                             rvals,
+                             (qvals, rvals),
                              params,
                              fcn_kws={'dqvals': dqvals})
 

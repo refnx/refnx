@@ -31,7 +31,7 @@ class TestFitter(unittest.TestCase):
         self.final_params = curvefitter.to_parameters(self.p0, bounds=self.bounds)
 
         self.ydata = gauss(self.xdata, self.final_params)
-        self.f = CurveFitter(gauss, self.xdata, self.ydata, self.params)
+        self.f = CurveFitter(gauss, (self.xdata, self.ydata), self.params)
 
     def pvals(self, params):
         return np.asfarray(list(params.valuesdict().values()))
@@ -115,8 +115,7 @@ class TestFitterGauss(unittest.TestCase):
         self.params = curvefitter.to_parameters(self.p0, bounds=self.bounds)
 
     def test_best_weighted(self):
-        f = CurveFitter(gauss, self.xvals, self.yvals, self.params,
-                        edata=self.evals)
+        f = CurveFitter(gauss, (self.xvals, self.yvals, self.evals), self.params)
         res = f.fit()
 
         output = list(res.params.valuesdict().values())
@@ -127,7 +126,9 @@ class TestFitterGauss(unittest.TestCase):
         assert_almost_equal(uncertainties, self.best_weighted_errors, 3)
 
     def test_best_unweighted(self):
-        f = CurveFitter(gauss, self.xvals, self.yvals, self.params)
+        f = CurveFitter(gauss,
+                        (self.xvals, self.yvals),
+                        self.params)
         res = f.fit()
 
         output = list(res.params.valuesdict().values())
@@ -139,7 +140,7 @@ class TestFitterGauss(unittest.TestCase):
 
     def test_pickleable(self):
         # residuals needs to be pickleable if one wants to use Pool
-        f = CurveFitter(gauss, self.xvals, self.yvals, self.params)
+        f = CurveFitter(gauss, (self.xvals, self.yvals), self.params)
         import pickle
         pkl = pickle.dumps(f)
         pkl = pickle.dumps(f._resid)
@@ -156,8 +157,9 @@ class TestFitterGauss(unittest.TestCase):
         if not HAS_EMCEE:
             return True
 
-        f = CurveFitter(gauss, self.xvals, self.yvals, self.params,
-                        edata=self.evals)
+        f = CurveFitter(gauss,
+                        (self.xvals, self.yvals, self.evals),
+                        self.params)
         np.random.seed(123456)
 
         # start = time.time()
@@ -169,16 +171,18 @@ class TestFitterGauss(unittest.TestCase):
 
         # test mcmc output vs lm, some parameters not bounded
         self.params['p1'].max = None
-        f = CurveFitter(gauss, self.xvals, self.yvals, self.params,
-                        edata=self.evals)
+        f = CurveFitter(gauss,
+                        (self.xvals, self.yvals, self.evals),
+                        self.params)
         np.random.seed(123456)
         f.emcee(nwalkers=100, steps=300, burn=100, thin=5)
         within_sigma(self.best_weighted, out.params)
 
         # test mcmc output vs lm, some parameters not bounded
         self.params['p1'].min = None
-        f = CurveFitter(gauss, self.xvals, self.yvals, self.params,
-                        edata=self.evals)
+        f = CurveFitter(gauss,
+                        (self.xvals, self.yvals, self.evals),
+                        self.params)
         f.emcee(nwalkers=100, steps=300, burn=100, thin=5)
         within_sigma(self.best_weighted, out.params)
 

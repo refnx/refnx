@@ -76,8 +76,9 @@ class TestGlobalFitting(unittest.TestCase):
         theoretical = np.loadtxt(fname)
         qvals, rvals, evals, dummy = np.hsplit(theoretical, 4)
         rvals = np.log10(rvals)
-        self.f = curvefitter.CurveFitter(reflect_fitfunc, qvals.flatten(),
-                                         rvals.flatten(), self.params)
+        self.f = curvefitter.CurveFitter(reflect_fitfunc,
+                                         (qvals.flatten(), rvals.flatten()),
+                                         self.params)
         
     def test_residuals_length(self):
         # the residuals should be the same length as the data
@@ -199,14 +200,14 @@ class TestGlobalFitting(unittest.TestCase):
             params365['p%d' % p].vary = True
             params366['p%d' % p].vary = True
 
-        a = CurveFitter(reflect_fitfunc, qvals361.flatten(),
-                        np.log10(rvals361.flatten()),
+        a = CurveFitter(reflect_fitfunc,
+                        (qvals361.flatten(), np.log10(rvals361.flatten())),
                         params361)
-        b = CurveFitter(reflect_fitfunc, qvals365.flatten(),
-                        np.log10(rvals365.flatten()),
+        b = CurveFitter(reflect_fitfunc,
+                        (qvals365.flatten(), np.log10(rvals365.flatten())),
                         params365)
-        c = CurveFitter(reflect_fitfunc, qvals366.flatten(),
-                        np.log10(rvals366.flatten()),
+        c = CurveFitter(reflect_fitfunc,
+                        (qvals366.flatten(), np.log10(rvals366.flatten())),
                         params366)
 
         g = GlobalFitter([a, b, c], constraints=['d1:p8=d0:p8',

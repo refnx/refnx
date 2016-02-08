@@ -61,12 +61,12 @@ class Data1D(object):
         if hasattr(data, 'read') or type(data) is str:
             self.load(data)
         elif data is not None:
-            self.x = data[0].flatten()
-            self.y = data[1].flatten()
+            self.x = np.asfarray(data[0])
+            self.y = np.asfarray(data[1])
             if len(data) > 2:
-                self.y_sd = data[2].flatten()
+                self.y_sd = np.asfarray(data[2])
             if len(data) > 3:
-                self.x_sd = data[3].flatten()
+                self.x_sd = np.asfarray(data[3])
 
     @property
     def npoints(self):
@@ -78,7 +78,7 @@ class Data1D(object):
         npoints : int
             How many points in the dataset
         """
-        return np.size(self.y, 0)
+        return self.y.size
 
     @property
     def data(self):
@@ -118,16 +118,16 @@ class Data1D(object):
             2 to 4 member tuple containing the (x, y, y_sd, x_sd) data to
             specify the dataset. `y_sd` and `x_sd` are optional.
         """
-        self.x = np.asfarray(data_tuple[0]).flatten()
-        self.y = np.asfarray(data_tuple[1]).flatten()
+        self.x = np.asfarray(data_tuple[0])
+        self.y = np.asfarray(data_tuple[1])
 
         if len(data_tuple) > 2:
-            self.y_sd = np.asfarray(data_tuple[2]).flatten()
+            self.y_sd = np.asfarray(data_tuple[2])
         else:
-            self.y_sd = np.ones_like(self.x)
+            self.y_sd = np.ones_like(self.y)
 
         if len(data_tuple) > 3:
-            self.x_sd = np.asfarray(data_tuple[3]).flatten()
+            self.x_sd = np.asfarray(data_tuple[3])
         else:
             self.x_sd = np.zeros(np.size(self.x))
         self.sort()
@@ -168,12 +168,12 @@ class Data1D(object):
         axdata, aydata = data_tuple[0:2]
 
         if len(data_tuple) > 2:
-            aydata_sd = np.asfarray(data_tuple[2]).flatten()
+            aydata_sd = np.asfarray(data_tuple[2])
         else:
-            aydata_sd = np.ones_like(axdata)
+            aydata_sd = np.ones_like(aydata)
 
         if len(data_tuple) > 3:
-            axdata_sd = np.asfarray(data_tuple[3]).flatten()
+            axdata_sd = np.asfarray(data_tuple[3])
         else:
             axdata_sd = np.zeros(np.size(axdata))
 
@@ -256,7 +256,7 @@ class Data1D(object):
         self.filename = fname
         self.name = os.path.splitext(os.path.basename(fname))[0]
 
-        self.data = tuple(np.hsplit(array, np.size(array, 1)))
+        self.data = [np.squeeze(array[:, col]) for col in range(np.size(array, 1))]
 
     def refresh(self):
         """
