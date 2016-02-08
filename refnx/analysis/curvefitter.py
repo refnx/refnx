@@ -329,7 +329,7 @@ class CurveFitter(Minimizer):
         if len(data) > 2:
             self.edata = np.asfarray(data[2])
 
-    def residuals(self, params):
+    def residuals(self, params=None):
         """
         Calculate the difference between the data and the model. Also known as
         the objective function. This is a convenience method. Over-riding it
@@ -351,9 +351,13 @@ class CurveFitter(Minimizer):
         ----
         This method should only return the points that are not masked.
         """
+        if params is None:
+            params = self.params
+
+        params.update_constraints()
         return self._resid(params)
 
-    def model(self, params):
+    def model(self, params=None):
         """
         Calculates the model. This is a convenience method. Over-riding it will
         not change a fit.
@@ -368,6 +372,10 @@ class CurveFitter(Minimizer):
         model : array_like
             The model.
         """
+        if params is None:
+            params = self.params
+
+        params.update_constraints()
         return self._resid(params, model=True)
 
     def fit(self, method='leastsq'):
@@ -401,6 +409,7 @@ class CurveFitter(Minimizer):
             Whether the fit succeeded.
         """
         result = self.minimize(method=method)
+        self.params = result.params
         return result
 
 
@@ -548,7 +557,7 @@ class GlobalFitter(CurveFitter):
                                            callback=callback,
                                            kws=min_kwds)
 
-    def model(self, params):
+    def model(self, params=None):
         """
         Calculates the model. This method is provided for convenience purposes
         and is not used during a fit.
@@ -563,9 +572,13 @@ class GlobalFitter(CurveFitter):
         model : np.ndarray
             The model.
         """
-        return self._fitfunc(self.xdata, params)
+        if params is None:
+            params = self.params
 
-    def residuals(self, params):
+        params.update_constraints()
+        return self._fitfunc(self.xdata, params=params)
+
+    def residuals(self, params=None):
         """
         Calculate the difference between the data and the model. Also known as
         the objective function.  This is a convenience method. Over-riding it
@@ -582,6 +595,10 @@ class GlobalFitter(CurveFitter):
         residuals : np.ndarray
             The difference between the data and the model.
         """
+        if params is None:
+            params = self.params
+
+        params.update_constraints()
         return super(GlobalFitter, self).residuals(params)
 
 
@@ -651,7 +668,7 @@ def _parallel_global_fitfunc(x, params, fitfuncs=None,
     # distribute params
     for name, param in params.items():
         fitter_i, original_name = new_param_reference[name]
-        original_params[fitter_i][original_name].value = param._val#_getval()
+        original_params[fitter_i][original_name].value = param._getval()
 
     model = np.zeros(0, dtype='float64')
 
@@ -682,7 +699,7 @@ if __name__ == '__main__':
 
     ydata = gauss(xdata, temp_pars) + 0.1 * np.random.random(xdata.size)
 
-    f = CurveFitter(gauss, xdata, ydata, pars)
+    f = CurveFitter(gauss, (xdata, ydata), pars)
     f.fit()
 
     print(fit_report(f.params))

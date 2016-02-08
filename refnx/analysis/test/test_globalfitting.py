@@ -216,6 +216,7 @@ class TestGlobalFitting(unittest.TestCase):
                                                  'd2:p12 = d0:p12'],
                          kws={'seed':1})
 
+
         indiv_chisqr = (a.residuals(a.params) ** 2
                         + b.residuals(b.params) ** 2
                         + c.residuals(c.params) ** 2)
@@ -228,6 +229,21 @@ class TestGlobalFitting(unittest.TestCase):
         # finish = time.time()
         # print(finish - start)
         assert_almost_equal(res.chisqr, 0.774590447535, 4)
+
+        # updating of constraints should happen during the fit
+        assert_almost_equal(a.params['p12'].value, res.params['p12_d0'].value)
+        assert_almost_equal(b.params['p12'].value, a.params['p12'].value)
+        assert_almost_equal(c.params['p12'].value, a.params['p12'].value)
+
+        g.params['p8_d0'].value=10.123456
+        # shouldn't need to call update constraints within the gfitter, that
+        # happens when you retrieve a specific value
+        assert_almost_equal(g.params['p8_d1'].value, g.params['p8_d0'].value)
+        # However, you have to call model or residuals to redistribute the
+        # parameters to the original fitters
+        g.model()
+        assert_almost_equal(a.params['p8'].value, 10.123456)
+        assert_almost_equal(b.params['p8'].value, 10.123456)
 
 
 if __name__ == '__main__':
