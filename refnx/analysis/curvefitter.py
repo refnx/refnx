@@ -230,10 +230,14 @@ class CurveFitter(Minimizer):
     data : sequence, refnx.dataset.Data1D instance, str or file-like object
         A sequence containing the data to be analysed.
         If `data` is a sequence then:
-            data[0] - the independent variable (x-data)
-            data[1] - the dependent (observed) variable (y-data)
-            data[2] - measured uncertainty in the dependent variable, expressed
+
+            * data[0] - the independent variable (x-data)
+
+            * data[1] - the dependent (observed) variable (y-data)
+
+            * data[2] - measured uncertainty in the dependent variable, expressed
                       as a standard deviation.
+
         Only data[0] and data[1] are required, data[2] is optional. If data[2]
         is not specified then the measured uncertainty is set to unity.
 
@@ -405,8 +409,8 @@ class CurveFitter(Minimizer):
         Returns
         --------
 
-        success : bool
-            Whether the fit succeeded.
+        result : lmfit.MinimizerResult
+            Result object.
         """
         result = self.minimize(method=method)
         self.params = result.params
