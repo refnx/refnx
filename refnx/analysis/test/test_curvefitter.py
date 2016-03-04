@@ -82,6 +82,17 @@ class TestFitter(unittest.TestCase):
         res = self.f.fit()
         assert_(isinstance(res, MinimizerResult))
 
+    def test_costfun(self):
+        # test user defined costfun
+        res = self.f.fit('nelder')
+
+        def costfun(params, generative, y, e):
+            return np.sum((y - generative / e) ** 2)
+
+        g = CurveFitter(gauss, (self.xdata, self.ydata), self.params, costfun=costfun)
+        res2 = g.fit('nelder')
+        assert_almost_equal(self.pvals(res.params), self.pvals(res2.params))
+
 
 class TestFitterGauss(unittest.TestCase):
     # Test CurveFitter with a noisy gaussian, weighted and unweighted, to see

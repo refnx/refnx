@@ -14,11 +14,7 @@ DATASET_NAME = 'c_PLP0011859_q.txt'
 USE_DIFFERENTIAL_EVOLUTION = True
 
 #load the data
-dataset = ReflectDataset()
-with open(DATASET_NAME) as f:
-    dataset.load(f)
-
-xdata, ydata, dydata, dxdata = dataset.data
+data = ReflectDataset(DATASET_NAME)
 
 # create an array to hold the parameters, also create limits
 layers = np.array([[0,   2.07, 0, 0],     # fronting medium
@@ -36,23 +32,13 @@ hilim = np.array([[0,   2.07, 0, 0],     # fronting medium
                   [300, 3.00, 0, 6],     # 2nd layer
                   [0,   6.36, 0, 6]])     # backing medium
 
-
 # create a linear array of the parameters
 # coefs[1] is the scale factor
 # coefs[6] is the background
 # these will both be 1 and 0 respectively to start off with
-coefs = reflect.layer_to_coefs(layers)
-lowlim = reflect.layer_to_coefs(lowlim)
-hilim = reflect.layer_to_coefs(hilim)
-
-coefs[1] = 1.0
-coefs[6] = 3.e-6
-
-lowlim[1] = 0.9
-hilim[1] = 11
-
-lowlim[6] = 0.
-hilim[6] = 9e-6
+coefs = reflect.layer_to_coefs(layers, scale=1.0, bkg=3e-6)
+lowlim = reflect.layer_to_coefs(lowlim, scale=0.9, bkg=0)
+hilim = reflect.layer_to_coefs(hilim, scale=11, bkg=9e-6)
 
 bounds = zip(lowlim, hilim)
 

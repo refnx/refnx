@@ -235,8 +235,8 @@ class CurveFitter(Minimizer):
 
             * data[1] - the dependent (observed) variable (y-data)
 
-            * data[2] - measured uncertainty in the dependent variable, expressed
-                      as a standard deviation.
+            * data[2] - measured uncertainty in the dependent variable,
+                expressed as a standard deviation.
 
         Only data[0] and data[1] are required, data[2] is optional. If data[2]
         is not specified then the measured uncertainty is set to unity.
@@ -254,21 +254,37 @@ class CurveFitter(Minimizer):
         Extra parameters required to fully specify fitfunc.
     fcn_kws : dict, optional
         Extra keyword parameters needed to fully specify fitfunc.
-    minimizer_kwds : dict, optional
+    kws : dict, optional
         Keywords passed to the minimizer.
     callback : callable, optional
         A function called at each minimization step. Has the signature:
         ``callback(params, iter, resid, *args, **kwds)``
+    costfun : callable, optional
+        specifies your own cost function to minimize. Has the signature:
+        ``costfun(pars, generative, y, e)`` where `pars` is a
+        `lmfit.Parameters` instance, `generative` is an array returned by
+        `fitfunc`, and `y` and `e` correspond to the `data[1]` and
+        `data[2]` arrays. `costfun` should return a single value. See Notes for
+        further details.
+
+    Notes
+    -----
+        The default cost function for CurveFitter is:
+
+        .. math::
+
+            \chi^2=\sum \left( {\frac{\textup{data1 - fitfunc}}{\textup{data2}}}\right)^2
     """
 
     def __init__(self, fitfunc, data, params, mask=None,
-                 fcn_args=(), fcn_kws=None, kws=None, callback=None):
+                 fcn_args=(), fcn_kws=None, kws=None, callback=None,
+                 costfun=None):
         self.fitfunc = fitfunc
 
         if isinstance(data, Data1D):
             tdata = data
         else:
-            #type(data) == 'str' or hasattr(data, 'seek'):
+            # type(data) == 'str' or hasattr(data, 'seek'):
             # or data is a sequence.
             tdata = Data1D(data)
 
@@ -291,12 +307,6 @@ class CurveFitter(Minimizer):
         if kws is not None:
             min_kwds = kws
 
-        # self._resid = Calculator(fitfunc,
-        #                          (self.xdata, self.ydata, self.edata),
-        #                          mask=mask,
-        #                          fcn_args=fcn_args,
-        #                          fcn_kws=fcn_kws)
-
         self._resid = partial(_parallel_residuals_calculator,
                               fitfunc=fitfunc,
                               data_tuple=(self.xdata,
@@ -304,7 +314,8 @@ class CurveFitter(Minimizer):
                                           self.edata),
                               mask=mask,
                               fcn_args=fcn_args,
-                              fcn_kws=fcn_kws)
+                              fcn_kws=fcn_kws,
+                              costfun=costfun)
 
         super(CurveFitter, self).__init__(self._resid,
                                           params,
@@ -606,36 +617,9 @@ class GlobalFitter(CurveFitter):
         return super(GlobalFitter, self).residuals(params)
 
 
-# class Calculator(object):
-#     def __init__(self, fitfunc, data_tuple, mask=None, fcn_args=(), fcn_kws=None):
-#         self.fitfunc = fitfunc
-#         self.data_tuple = data_tuple
-#         self.mask = mask
-#         self.fcn_args = fcn_args
-#         self.fcn_kws = {}
-#         if fcn_kws is not None:
-#             self.fcn_kws = fcn_kws
-#
-#     def __call__(self, params, model=False):
-#         x, y, e = self.data_tuple
-#
-#         resid = self.fitfunc(x, params, *self.fcn_args, **self.fcn_kws)
-#         if model:
-#             return resid
-#
-#         resid -= y
-#         resid /= e
-#
-#         if self.mask is not None:
-#             resid_ma = ma.array(resid, mask=self.mask)
-#             return resid_ma[~resid_ma.mask].data
-#         else:
-#             return resid
-
-
 def _parallel_residuals_calculator(params, fitfunc=None, data_tuple=None,
                                    mask=None, fcn_args=(), fcn_kws=None,
-                                   model=False):
+                                   model=False, costfun=None):
     """
     Objective function calculating the residuals for a curvefit. This is a
     separate function and not a method in CurveFitter to allow for
@@ -650,6 +634,9 @@ def _parallel_residuals_calculator(params, fitfunc=None, data_tuple=None,
     resid = fitfunc(x, params, *fcn_args, **kws)
     if model:
         return resid
+
+    if costfun is not None:
+        return costfun(params, resid, y, e)
 
     resid -= y
     resid /= e
