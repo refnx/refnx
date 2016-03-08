@@ -181,7 +181,7 @@ class TestFitterGauss(unittest.TestCase):
         within_sigma(self.best_weighted, out.params)
 
         # test mcmc output vs lm, some parameters not bounded
-        self.params['p1'].max = None
+        self.params['p1'].max = np.inf
         f = CurveFitter(gauss,
                         (self.xvals, self.yvals, self.evals),
                         self.params)
@@ -190,7 +190,7 @@ class TestFitterGauss(unittest.TestCase):
         within_sigma(self.best_weighted, out.params)
 
         # test mcmc output vs lm, some parameters not bounded
-        self.params['p1'].min = None
+        self.params['p1'].min = -np.inf
         f = CurveFitter(gauss,
                         (self.xvals, self.yvals, self.evals),
                         self.params)
