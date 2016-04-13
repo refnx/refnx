@@ -8,6 +8,7 @@ from refnx.analysis.curvefitter import FitFunction
 import refnx.util.ErrorProp as EP
 import warnings
 import math
+import numbers
 
 
 try:
@@ -263,7 +264,8 @@ def reflectivity(q, coefs, *args, **kwds):
         dqvals = kwds['dqvals']
 
         # constant dq/q smearing
-        if type(dqvals) == float:
+        if isinstance(dqvals, numbers.Real):
+            dqvals = float(dqvals)
             return (scale * _smeared_abeles_constant(qvals,
                                                      w,
                                                      dqvals,
