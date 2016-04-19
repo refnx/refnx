@@ -393,7 +393,7 @@ class CurveFitter(Minimizer):
         params.update_constraints()
         return self._resid(params, model=True)
 
-    def fit(self, method='leastsq'):
+    def fit(self, method='leastsq', params=None, **kws):
         """
         Fits the dataset.
 
@@ -417,15 +417,26 @@ class CurveFitter(Minimizer):
             - 'slsqp'                  -    Sequential Linear Squares Programming
             - 'differential_evolution' -    differential evolution
 
+        params : Parameters, optional
+            parameters to use as starting values
+
         Returns
         --------
 
         result : lmfit.MinimizerResult
             Result object.
         """
-        result = self.minimize(method=method)
+        result = self.minimize(method=method, params=params, **kws)
         self.params = result.params
         return result
+
+    def emcee(self, *args, **kwds):
+        result = super(CurveFitter, self).emcee(*args, **kwds)
+        self.params = result.params
+        return result
+
+setattr(CurveFitter.emcee,'__doc__',
+        CurveFitter.__bases__[0].emcee.__doc__)
 
 
 class GlobalFitter(CurveFitter):
