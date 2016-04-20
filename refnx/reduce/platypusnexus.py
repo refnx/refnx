@@ -12,6 +12,7 @@ import os
 import os.path
 import argparse
 import re
+import shutil
 from time import gmtime, strftime
 import string
 import warnings
@@ -153,6 +154,7 @@ class Catalogue(object):
             'entry1/instrument/detector/longitudinal_translation'][:]
         d['dz'] = h5data[
             'entry1/instrument/detector/vertical_translation'][:]
+        d['original_file_name'] = h5data['entry1/experiment/file_name']
         # TODO put HDF file y pixel spacing in here.
         self.cat = d
 
@@ -221,7 +223,7 @@ def datafile_number(fname):
     """
     From a filename figure out what the run number was
     """
-    regex = re.compile("PLP([0-9]{7}).nx.hdf")
+    regex = re.compile(".*PLP([0-9]{7}).nx.hdf")
     _fname = os.path.basename(fname)
     r = regex.search(_fname)
 
@@ -1365,9 +1367,59 @@ def calculate_wavelength_bins(lo_wavelength, hi_wavelength, rebin_percent):
 
     lowl = lo_wavelength - lowspac / 2.
     hil = hi_wavelength + hispac / 2.
-    num_steps = np.floor(np.log10(hil / lowl) / np.log10(frac)) + 1
+    num_steps = int(np.floor(np.log10(hil / lowl) / np.log10(frac)) + 1)
     rebinning = np.logspace(np.log10(lowl), np.log10(hil), num=num_steps)
     return rebinning
+
+
+def accumulate_HDF_files(files):
+    """
+    Accumulates HDF files together, writing an accumulated file in the current directory.
+    """
+    # don't do anything if no files were supplied.
+    if not len(files):
+        return None
+
+    # the first file is the "master file", lets copy it.
+    file = files[0]
+
+    pth = _check_HDF_file(file)
+    if not pth:
+        raise ValueError('All files must refer to an hdf5 file')
+
+    new_name = 'ADD_' + os.path.basename(pth)
+
+    shutil.copy(pth,
+                os.path.join(os.getcwd(), new_name))
+
+    master_file = os.path.join(os.getcwd(), new_name)
+    with h5py.File(master_file, 'r+') as h5master:
+        # now go through each file and accumulate numbers:
+        for file in files[1:]:
+            pth = _check_HDF_file(file)
+            h5data = h5py.File(pth, 'r')
+
+            h5master['entry1/data/hmm'][0] += \
+                h5data['entry1/data/hmm'][0]
+            h5master['entry1/monitor/bm1_counts'][0] += \
+                h5data['entry1/monitor/bm1_counts'][0]
+            h5master['entry1/instrument/detector/total_counts'][0] += \
+                h5data['entry1/instrument/detector/total_counts'][0]
+            h5master['entry1/instrument/detector/time'][0] += \
+                h5data['entry1/instrument/detector/time'][0]
+
+            h5master.flush()
+
+
+def _check_HDF_file(h5data):
+    if type(h5data) == h5py.File:
+        return h5data.filename
+    else:
+        with h5py.File(h5data, 'r') as h5data:
+            if type(h5data) == h5py.File:
+                return h5data.filename
+
+    return False
 
 
 if __name__ == "__main__":

@@ -5,6 +5,7 @@ import os
 from numpy.testing import (assert_almost_equal, assert_, assert_equal,
                            assert_array_less)
 from refnx.reduce.peak_utils import gauss
+import h5py
 
 
 class TestPlatypusNexus(unittest.TestCase):
@@ -159,6 +160,32 @@ class TestPlatypusNexus(unittest.TestCase):
         # can save by supplying file handle:
         with open('test.dat', 'wb') as f:
             self.f113.write_spectrum_xml(f)
+
+    def test_accumulate_files(self):
+        fnames = ['PLP0000708.nx.hdf', 'PLP0000709.nx.hdf']
+        pths = [os.path.join(self.path, fname) for fname in fnames]
+        plp.accumulate_HDF_files(pths)
+        f8, f9, fadd = None, None, None
+
+        try:
+            f8 = h5py.File(os.path.join(self.path,
+                                        'PLP0000708.nx.hdf'), 'r')
+            f9 = h5py.File(os.path.join(self.path,
+                                        'PLP0000709.nx.hdf'), 'r')
+            fadd = h5py.File(os.path.join(os.path.curdir,
+                                          'ADD_PLP0000708.nx.hdf'), 'r')
+
+            f8d = f8['entry1/data/hmm'][0]
+            f9d = f9['entry1/data/hmm'][0]
+            faddd = fadd['entry1/data/hmm'][0]
+            assert_equal(faddd, f8d + f9d)
+        finally:
+            if f8 is not None:
+                f8.close()
+            if f9 is not None:
+                f9.close()
+            if fadd is not None:
+                fadd.close()
 
 
 if __name__ == '__main__':

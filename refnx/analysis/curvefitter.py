@@ -431,12 +431,15 @@ class CurveFitter(Minimizer):
         return result
 
     def emcee(self, *args, **kwds):
+        """
+        Monte Carlo sampling of the CurveFitting problem. Please see
+        lmfit.Minimizer.emcee documentation for further details. This method is
+        purely a wrapper that also overwrites the ``CurveFitter.params``
+        attribute after the fit has finished (unlike lmfit.Minimizer)
+        """
         result = super(CurveFitter, self).emcee(*args, **kwds)
         self.params = result.params
         return result
-
-setattr(CurveFitter.emcee,'__doc__',
-        CurveFitter.__bases__[0].emcee.__doc__)
 
 
 class GlobalFitter(CurveFitter):

@@ -21,7 +21,7 @@ def res(qq, layer, resolution=5):
     start = np.log10(lowQ) - 6 * resolution / 2.35482
     finish = np.log10(highQ * (1 + 6 * resolution / 2.35482))
     interpnum = np.round(np.abs(1 * (np.abs(start - finish)) / (1.7 * resolution / 2.35482 / gaussgpoint)))
-    xtemp = np.linspace(start, finish, interpnum)
+    xtemp = np.linspace(start, finish, int(interpnum))
 
     gauss_x = np.linspace(-1.7 * resolution, 1.7 * resolution, gaussnum)
     gauss_y = gauss(gauss_x, resolution / (2 * np.sqrt(2 * np.log(2))))

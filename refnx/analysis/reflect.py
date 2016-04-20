@@ -531,7 +531,7 @@ def _smeared_abeles_constant(q, w, resolution, parallel=True):
     finish = np.log10(highq * (1 + 6 * resolution / _FWHM))
     interpnum = np.round(np.abs(1 * (np.abs(start - finish))
                                 / (1.7 * resolution / _FWHM / gaussgpoint)))
-    xtemp = np.linspace(start, finish, interpnum)
+    xtemp = np.linspace(start, finish, int(interpnum))
     xlin = np.power(10., xtemp)
 
     # resolution smear over [-4 sigma, 4 sigma]
