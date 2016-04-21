@@ -19,7 +19,7 @@ class TestPeakUtils(unittest.TestCase):
         assert_almost_equal(res[1][1], sd)
 
     def test_centroid(self):
-        y = np.ones(10.)
+        y = np.ones(10)
         centroid, sd = peak_utils.centroid(y)
         assert_equal(centroid, 4.5)
 
@@ -33,7 +33,7 @@ class TestPeakUtils(unittest.TestCase):
         assert_equal(centroid, 4.5)
 
     def test_median(self):
-        y = np.ones(10.)
+        y = np.ones(10)
         median, sd = peak_utils.median(y)
         assert_equal(median, 4.5)
 
