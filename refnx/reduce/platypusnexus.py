@@ -1374,7 +1374,17 @@ def calculate_wavelength_bins(lo_wavelength, hi_wavelength, rebin_percent):
 
 def accumulate_HDF_files(files):
     """
-    Accumulates HDF files together, writing an accumulated file in the current directory.
+    Accumulates HDF files together, writing an accumulated file in the current
+    directory. The accumulated datafile is written in the current directory
+    (os.getcwd()) and has a filename based on the first file, prepended by
+    'ADD_'. For example, if the first file is PLP0000708.nx.hdf then the
+    accumulated file is ADD_PLP0000708.nx.hdf.
+    
+    Parameters
+    ----------
+    files : list
+        Strings specifying NeXUS filenames to be added together.
+
     """
     # don't do anything if no files were supplied.
     if not len(files):
