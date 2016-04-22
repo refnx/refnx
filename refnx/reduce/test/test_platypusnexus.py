@@ -1,5 +1,6 @@
 import unittest
 import refnx.reduce.platypusnexus as plp
+from refnx.reduce import ReducePlatypus, PlatypusNexus
 import numpy as np
 import os
 from numpy.testing import (assert_almost_equal, assert_, assert_equal,
@@ -14,9 +15,9 @@ class TestPlatypusNexus(unittest.TestCase):
         path = os.path.dirname(__file__)
         self.path = path
 
-        self.f113 = plp.PlatypusNexus(os.path.join(self.path,
+        self.f113 = PlatypusNexus(os.path.join(self.path,
                                                    'PLP0011613.nx.hdf'))
-        self.f641 = plp.PlatypusNexus(os.path.join(self.path,
+        self.f641 = PlatypusNexus(os.path.join(self.path,
                                                    'PLP0011641.nx.hdf'))
         return 0
 
@@ -172,7 +173,7 @@ class TestPlatypusNexus(unittest.TestCase):
                                         'PLP0000708.nx.hdf'), 'r')
             f9 = h5py.File(os.path.join(self.path,
                                         'PLP0000709.nx.hdf'), 'r')
-            fadd = h5py.File(os.path.join(os.path.curdir,
+            fadd = h5py.File(os.path.join(os.getcwd(),
                                           'ADD_PLP0000708.nx.hdf'), 'r')
 
             f8d = f8['entry1/data/hmm'][0]
@@ -186,6 +187,28 @@ class TestPlatypusNexus(unittest.TestCase):
                 f9.close()
             if fadd is not None:
                 fadd.close()
+
+    def test_accumulate_files_reduce(self):
+        # test by adding a file to itself. Should have smaller stats
+        fnames = ['PLP0000708.nx.hdf', 'PLP0000708.nx.hdf']
+        pths = [os.path.join(self.path, fname) for fname in fnames]
+        plp.accumulate_HDF_files(pths)
+
+        # it should be processable
+        fadd = PlatypusNexus(os.path.join(os.getcwd(),
+                                              'ADD_PLP0000708.nx.hdf'))
+        fadd.process()
+
+        # it should also be reduceable
+        reducer = ReducePlatypus(os.path.join(self.path,
+                                            'PLP0000711.nx.hdf'))
+        reduced = reducer.reduce(os.path.join(os.getcwd(), 'ADD_PLP0000708.nx.hdf'))
+        assert_('ydata' in reduced)
+
+        # the error bars should be smaller
+        reduced2 = reducer.reduce(os.path.join(self.path, 'PLP0000708.nx.hdf'))
+
+        assert_(np.all(reduced['ydata_sd'] < reduced2['ydata_sd']))
 
 
 if __name__ == '__main__':
