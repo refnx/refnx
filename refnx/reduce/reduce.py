@@ -96,17 +96,17 @@ class ReducePlatypus(object):
         reduction : dict
             Contains the following entries:
 
-            - 'x' : np.ndarray
+            - 'xdata' : np.ndarray
                 Q values, shape (N, T).
-            - 'x_sd' : np.ndarray
+            - 'xdata_sd' : np.ndarray
                 Uncertainty in Q values (FWHM), shape (N, T).
-            - 'y' : np.ndarray
+            - 'ydata' : np.ndarray
                 Specular Reflectivity, shape (N, T)
-            - 'y_sd' : np.ndarray
+            - 'ydata_sd' : np.ndarray
                 Uncertainty in specular reflectivity (SD), shape (N, T)
             - 'm_ref' : np.ndarray
                 Offspecular reflectivity map, shape (N, T, Y)
-            - 'm_refSD' : np.ndarray
+            - 'm_ref_sd' : np.ndarray
                 uncertainty in offspecular reflectivity, shape (N, T, Y)
             - 'm_qz' : np.ndarray
                 Qz for offspecular map, shape (N, T, Y)
