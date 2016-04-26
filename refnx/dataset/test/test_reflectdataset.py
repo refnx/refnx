@@ -93,6 +93,26 @@ class TestReflectDataset(unittest.TestCase):
 
         assert_(data.npoints==13)
 
+        # test addition of datasets.
+        x1 = np.linspace(0, 10, 5)
+        y1 = 2 * x1
+        e1 = np.ones_like(x1)
+        dx1 = np.ones_like(x1)
+        data = Data1D((x1, y1, e1, dx1))
+
+        x2 = np.linspace(7, 20, 10)
+        y2 = 2 * x2 + 2
+        e2 = np.ones_like(x2)
+        dx2 = np.ones_like(x2)
+        data2 = Data1D((x2, y2, e2, dx2))
+
+        data3 = data + data2
+        assert_(data3.npoints == 13)
+
+        # test radd of datasets
+        data += data2
+        assert_(data.npoints == 13)
+
     def test_save_xml(self):
         self.data.save_xml('test.xml')
         with open('test.xml', 'wb') as f:
