@@ -61,12 +61,12 @@ class Data1D(object):
         if hasattr(data, 'read') or type(data) is str:
             self.load(data)
         elif data is not None:
-            self.x = np.asfarray(data[0])
-            self.y = np.asfarray(data[1])
+            self.x = np.array(data[0], dtype=float)
+            self.y = np.array(data[1], dtype=float)
             if len(data) > 2:
-                self.y_sd = np.asfarray(data[2])
+                self.y_sd = np.array(data[2], dtype=float)
             if len(data) > 3:
-                self.x_sd = np.asfarray(data[3])
+                self.x_sd = np.array(data[3], dtype=float)
 
     @property
     def npoints(self):
@@ -118,16 +118,16 @@ class Data1D(object):
             2 to 4 member tuple containing the (x, y, y_sd, x_sd) data to
             specify the dataset. `y_sd` and `x_sd` are optional.
         """
-        self.x = np.asfarray(data_tuple[0])
-        self.y = np.asfarray(data_tuple[1])
+        self.x = np.array(data_tuple[0], dtype=float)
+        self.y = np.array(data_tuple[1], dtype=float)
 
         if len(data_tuple) > 2:
-            self.y_sd = np.asfarray(data_tuple[2])
+            self.y_sd = np.array(data_tuple[2], dtype=float)
         else:
             self.y_sd = np.ones_like(self.y)
 
         if len(data_tuple) > 3:
-            self.x_sd = np.asfarray(data_tuple[3])
+            self.x_sd = np.array(data_tuple[3], dtype=float)
         else:
             self.x_sd = np.zeros(np.size(self.x))
         self.sort()
@@ -168,12 +168,12 @@ class Data1D(object):
         axdata, aydata = data_tuple[0:2]
 
         if len(data_tuple) > 2:
-            aydata_sd = np.asfarray(data_tuple[2])
+            aydata_sd = np.array(data_tuple[2], dtype=float)
         else:
             aydata_sd = np.ones_like(aydata)
 
         if len(data_tuple) > 3:
-            axdata_sd = np.asfarray(data_tuple[3])
+            axdata_sd = np.array(data_tuple[3], dtype=float)
         else:
             axdata_sd = np.zeros(np.size(axdata))
 
@@ -256,7 +256,9 @@ class Data1D(object):
         self.filename = fname
         self.name = os.path.splitext(os.path.basename(fname))[0]
 
-        self.data = [np.squeeze(array[:, col]) for col in range(np.size(array, 1))]
+        self.data = [np.squeeze(array[:, col])
+                     for col
+                     in range(np.size(array, 1))]
 
     def refresh(self):
         """
@@ -265,3 +267,19 @@ class Data1D(object):
         if self.filename is not None:
             with open(self.filename) as f:
                 self.load(f)
+
+    def __add__(self, other):
+        """
+        Adds two datasets together. Splices the data and trims data in the
+        overlap region.
+        """
+        ret = Data1D(self.data)
+        ret.add_data(other.data, requires_splice=True, trim_trailing=True)
+        return ret
+
+    def __radd__(self, other):
+        """
+        radd of two datasets. Splices the data and trims data in the
+        overlap region.
+        """
+        self.add_data(other.data, requires_splice=True, trim_trailing=True)

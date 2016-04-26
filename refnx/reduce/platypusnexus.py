@@ -1379,7 +1379,7 @@ def accumulate_HDF_files(files):
     (os.getcwd()) and has a filename based on the first file, prepended by
     'ADD_'. For example, if the first file is PLP0000708.nx.hdf then the
     accumulated file is ADD_PLP0000708.nx.hdf.
-    
+
     Parameters
     ----------
     files : list
