@@ -58,7 +58,7 @@ class TestReflectDataset(unittest.TestCase):
         y2 = 2 * x2 + 2
         data.add_data((x2, y2), requires_splice=True)
 
-        assert_(data.npoints==13)
+        assert_(data.npoints == 13)
 
         # 3 columns
         data = Data1D()
@@ -73,7 +73,7 @@ class TestReflectDataset(unittest.TestCase):
         e2 = np.ones_like(x2)
         data.add_data((x2, y2, e2), requires_splice=True)
 
-        assert_(data.npoints==13)
+        assert_(data.npoints == 13)
 
         # 4 columns
         data = Data1D()
@@ -91,7 +91,7 @@ class TestReflectDataset(unittest.TestCase):
 
         data.add_data((x2, y2, e2, dx2), requires_splice=True)
 
-        assert_(data.npoints==13)
+        assert_(data.npoints == 13)
 
         # test addition of datasets.
         x1 = np.linspace(0, 10, 5)
@@ -117,6 +117,7 @@ class TestReflectDataset(unittest.TestCase):
         self.data.save_xml('test.xml')
         with open('test.xml', 'wb') as f:
             self.data.save_xml(f)
-        
+
+
 if __name__ == '__main__':
     unittest.main()
