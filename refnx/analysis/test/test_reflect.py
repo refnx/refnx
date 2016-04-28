@@ -116,6 +116,27 @@ class TestReflect(unittest.TestCase):
                                  bkg=0.1)
         assert_almost_equal(calc1, calc2)
 
+    def test_cabeles_parallelised(self):
+        # I suppose this could fail if someone doesn't have a multicore computer
+        if not HAVE_CREFLECT:
+            return
+
+        coefs = np.array([[0, 0, 0, 0],
+                          [300, 3, 1e-3, 3],
+                          [10, 3.47, 1e-3, 3],
+                          [0, 6.36, 0, 3]])
+
+        x = np.linspace(0.01, 0.2, 1000000)
+        pstart = time.time()
+        _creflect.abeles(x, coefs, parallel=True)
+        pfinish = time.time()
+
+        sstart = time.time()
+        _creflect.abeles(x, coefs, parallel=False)
+        sfinish = time.time()
+
+        assert_(0.7 * (sfinish - sstart) > (pfinish - pstart))
+
     def test_compare_c_py_abeles0(self):
         # test two layer system
         if not HAVE_CREFLECT:
