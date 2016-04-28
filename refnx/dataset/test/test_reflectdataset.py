@@ -109,7 +109,7 @@ class TestReflectDataset(unittest.TestCase):
         data3 = data + data2
         assert_(data3.npoints == 13)
 
-        # test radd of datasets
+        # test iadd of datasets
         data += data2
         assert_(data.npoints == 13)
 
