@@ -1,14 +1,13 @@
 from __future__ import division
-import numpy as np
-import scipy
-import scipy.linalg
-from scipy.signal import fftconvolve
-from scipy.interpolate import InterpolatedUnivariateSpline
-from refnx.analysis.curvefitter import FitFunction
-import refnx.util.ErrorProp as EP
 import warnings
 import math
 import numbers
+import numpy as np
+import scipy
+import scipy.linalg
+from scipy.interpolate import InterpolatedUnivariateSpline
+from refnx.analysis.curvefitter import FitFunction
+import refnx.util.ErrorProp as EP
 
 
 try:
@@ -539,7 +538,7 @@ def _smeared_abeles_constant(q, w, resolution, parallel=True):
     gauss_y = gauss(gauss_x, resolution / _FWHM)
 
     rvals = refcalc.abeles(xlin, w, parallel=parallel)
-    smeared_rvals = fftconvolve(rvals, gauss_y, mode='same')
+    smeared_rvals = np.convolve(rvals, gauss_y, mode='same')
     interpolator = InterpolatedUnivariateSpline(xlin, smeared_rvals)
 
     smeared_output = interpolator(q)
