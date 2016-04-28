@@ -283,3 +283,12 @@ class Data1D(object):
         overlap region.
         """
         self.add_data(other.data, requires_splice=True, trim_trailing=True)
+        return self
+
+    def __iadd__(self, other):
+        """
+        iadd of two datasets. Splices the data and trims data in the
+        overlap region.
+        """
+        self.add_data(other.data, requires_splice=True, trim_trailing=True)
+        return self

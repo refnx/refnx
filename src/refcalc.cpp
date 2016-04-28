@@ -27,7 +27,7 @@
    #include <omp.h>
 #endif
 
-#define NUM_CPUS 2
+#define NUM_CPUS 4
 #define PI 3.141592653589793
 
 using namespace std;
@@ -209,7 +209,7 @@ void AbelesCalc_ImagAll(int numcoefs,
 
 		//need to calculated how many points are given to each thread.
 		if(threadsToCreate > 0){
-			pointsEachThread = floorl(npoints / (threadsToCreate));
+			pointsEachThread = floorl(npoints / (threadsToCreate + 1));
 		} else {
 			pointsEachThread = npoints;
 		}
@@ -234,7 +234,6 @@ void AbelesCalc_ImagAll(int numcoefs,
 			               (void *)(arg + ii));
 			pointsRemaining -= pointsEachThread;
 			pointsConsumed += pointsEachThread;
-
 		}
 		//do the last points in the main thread.
 		AbelesCalc_ImagAll(numcoefs, coefP, pointsRemaining, yP + pointsConsumed, xP + pointsConsumed);
