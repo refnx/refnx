@@ -115,12 +115,16 @@ class TestPlatypusNexus(unittest.TestCase):
         assert_almost_equal(bins[-1], 18.18)
 
     def test_event(self):
-        """
-        When you use event mode processing, make sure the right amount of
-        spectra are created
-        """
+        # When you use event mode processing, make sure the right amount of
+        # spectra are created
         out = self.f113.process(eventmode=[0, 900, 1800], integrate=0)
         assert_(np.size(out[1], axis=0) == 2)
+
+    def test_eventpath(self):
+        # When you use event mode processing, make sure the right amount of
+        # spectra are created
+        out = self.f113.process(eventmode=[0, 900, 1800], integrate=0,
+                                eventpath=self.path)
 
     def test_multiple_acquisitions(self):
         """
