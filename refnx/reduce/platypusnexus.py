@@ -268,7 +268,7 @@ class PlatypusNexus(object):
     def process(self, h5norm=None, lo_wavelength=2.5, hi_wavelength=19.,
                 background=True, direct=False, omega=None, twotheta=None,
                 rebin_percent=1., wavelength_bins=None, normalise=True,
-                integrate=-1, eventmode=None, eventpath=None, peak_pos=None,
+                integrate=-1, eventmode=None, event_folder=None, peak_pos=None,
                 background_mask=None, normalise_bins=True, **kwds):
         """
         Processes the ProcessNexus object to produce a time of flight spectrum.
@@ -322,10 +322,10 @@ class PlatypusNexus(object):
             for the entire acquisition is used, [0, acquisition_time].  This
             would source the image from the eventmode file, rather than the
             NeXUS file.
-        eventpath : None or str
-            Specifies the path for the eventmode data. If `eventpath is None`
+        event_folder : None or str
+            Specifies the path for the eventmode data. If `event_folder is None`
             then the eventmode data is assumed to reside in the same directory
-            as the NeXUS file. If eventpath is a string, then the string
+            as the NeXUS file. If event_folder is a string, then the string
             specifies the path to the eventmode data.
         peak_pos : None or (float, float)
             Specifies the peak position and peak standard deviation to use.
@@ -390,7 +390,7 @@ class PlatypusNexus(object):
 
             output = self.process_event_stream(scanpoint=scanpoint,
                                                frame_bins=eventmode,
-                                               eventpath=eventpath)
+                                               event_folder=event_folder)
             frame_bins, detector, bm1_counts = output
 
         else:
@@ -865,7 +865,7 @@ class PlatypusNexus(object):
         return chod, d_cx
 
     def process_event_stream(self, t_bins=None, x_bins=None, y_bins=None,
-                             frame_bins=None, scanpoint=0, eventpath=None):
+                             frame_bins=None, scanpoint=0, event_folder=None):
         """
         Processes the event mode dataset for the NeXUS file. Assumes that
         there is a event mode directory in the same directory as the NeXUS
@@ -888,6 +888,11 @@ class PlatypusNexus(object):
             specifies the y bins required in the image
         scanpoint : int, optional
             Scanpoint you are interested in
+        event_folder : None or str
+            Specifies the path for the eventmode data. If `event_folder is None`
+            then the eventmode data is assumed to reside in the same directory
+            as the NeXUS file. If event_folder is a string, then the string
+            specifies the path to the eventmode data.
 
         Returns
         -------
@@ -924,8 +929,8 @@ class PlatypusNexus(object):
         event_directory_name = cat.daq_dirname
 
         _eventpath = cat.path
-        if eventpath is not None:
-            _eventpath = eventpath
+        if event_folder is not None:
+            _eventpath = event_folder
 
         stream_filename = os.path.join(_eventpath,
                                        event_directory_name,
