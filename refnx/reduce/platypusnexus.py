@@ -918,7 +918,7 @@ class PlatypusNexus(object):
             y_bins = cat.y_bins
         if not x_bins:
             x_bins = cat.x_bins
-        if not frame_bins or np.size(frame_bins) == 0:
+        if frame_bins is None or np.size(frame_bins) == 0:
             frame_bins = [0, cat.time[scanpoint]]
 
         total_acquisition_time = cat.time[scanpoint]
