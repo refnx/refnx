@@ -12,11 +12,13 @@ Examples::
 import sys
 import numbers
 import time
+from argparse import ArgumentParser
+
 import numpy as np
 from refnx.analysis import (CurveFitter, ReflectivityFitFunction, GlobalFitter,
                             to_parameters, Transform, values, names)
 from refnx.dataset import ReflectDataset
-from argparse import ArgumentParser
+from lmfit.printfuncs import fit_report
 
 
 def global_fitter_setup(global_pilot_file, dqvals=5.0):
@@ -40,7 +42,6 @@ def global_fitter_setup(global_pilot_file, dqvals=5.0):
         # lets just assume for now that the data has resolution info
         # and that we're doing a slab model.
         pv = pars[:, 0][:]
-        bounds = [(b[0], b[1]) for b in pars[:, 2:4]]
         varies = (pars[:, 1].astype(int) == 0)
 
         # workout bounds, and account for the fact that MotofitMPI
@@ -71,7 +72,7 @@ def global_fitter_setup(global_pilot_file, dqvals=5.0):
         else:
             _dqvals = dataset.x_sd
 
-        c = CurveFitter(ReflectivityFitFunction(T.transform),
+        c = CurveFitter(ReflectivityFitFunction(T.transform, parallel=True),
                         (dataset.x, t_data_y, t_data_ysd),
                         parameter,
                         fcn_kws={'dqvals': _dqvals})
@@ -84,7 +85,6 @@ def global_fitter_setup(global_pilot_file, dqvals=5.0):
     # TODO assertions for checking linkage integrity
 
     n_datasets = len(datasets)
-    max_params = max([len(parameter) for parameter in parameters])
 
     def is_unique(row, col):
         ravelled_idx = row * n_datasets + col
@@ -100,7 +100,7 @@ def global_fitter_setup(global_pilot_file, dqvals=5.0):
             master = np.extract(unique == constraints[row, col], indices)[0]
             m_col = master % n_datasets
             m_row = (master - m_col) // n_datasets
-            constraint = 'd%u:p%u = d%u:p%u' %(col, row, m_col, m_row)
+            constraint = 'd%u:p%u = d%u:p%u' % (col, row, m_col, m_row)
             cons.append(constraint)
 
             # also have to rejig the bounds because MotoMPI doesn't
@@ -169,19 +169,31 @@ def main(argv):
     sys.stdout.write("-------------\n")
     start = time.time()
 
+    burn = 0
+    thin = 1
     while n_remaining > 0:
-        todo = min(100, n_remaining)
+        todo = min(50, n_remaining)
+
+        if n_remaining <= 50:
+            burn = args.burn
+            thin = args.thin
+
         res = global_fitter.emcee(nwalkers=args.walkers,
                                   steps=todo,
-                                  burn=args.burn,
-                                  thin=args.thin,
+                                  burn=burn,
+                                  thin=thin,
                                   workers=args.nprocesses,
                                   reuse_sampler=reuse_sampler)
         n_remaining -= todo
         reuse_sampler = True
         done += todo
-        sys.stdout.write("%u iterations in %g seconds\n"
-                         % (done, time.time() - start))
+        sys.stdout.write(
+            "{0:^7} steps, {1:^7} seconds\n".format(done, time.time() - start)
+                         )
+
+    sys.stdout.write("\nFinished MCMC\n")
+    sys.stdout.write("-------------\n")
+    sys.stdout.write(fit_report(res.params))
 
     # the flatchain is what we're interested in.
     # make an output array
@@ -200,7 +212,6 @@ def pgen(parameters, flatchain, idx=None):
     if idx is None:
         idx = range(np.size(flatchain, 0))
     for i in idx:
-        vec = flatchain.iloc[i]
         for var_name in flatchain.columns:
             parameters[var_name].value = flatchain.iloc[i][var_name]
         yield parameters
