@@ -282,13 +282,18 @@ class CurveFitter(Minimizer):
         self.fitfunc = fitfunc
 
         if isinstance(data, Data1D):
-            tdata = data
-        else:
-            # type(data) == 'str' or hasattr(data, 'seek'):
-            # or data is a sequence.
+            self.xdata, self.ydata, self.edata, temp = data.data
+        elif type(data) == 'str' or hasattr(data, 'seek'):
             tdata = Data1D(data)
-
-        self.xdata, self.ydata, self.edata, temp = tdata.data
+            self.xdata, self.ydata, self.edata, temp = tdata.data
+        elif len(data) == 2:
+            self.xdata, self.ydata = data
+            self.edata = np.zeros((0))
+        elif len(data) == 3:
+            self.xdata, self.ydata, self.edata = data
+        else:
+            raise ValueError("Couldn't decipher what kind of data"
+                             " you were providing.")
 
         self.scale_covar = False
         if not self.edata.size:
@@ -629,6 +634,15 @@ class GlobalFitter(CurveFitter):
 
         params.update_constraints()
         return super(GlobalFitter, self).residuals(params)
+
+    def distribute_params(self, params):
+        """
+        Convenience function for re-distributing global parameter values
+        back into each of the original `CurveFitter.params` attributes.
+        """
+        for name, param in params.items():
+            fitter_i, original_name = self.new_param_reference[name]
+            self.original_params[fitter_i][original_name].value = param._getval()
 
 
 def _parallel_residuals_calculator(params, fitfunc=None, data_tuple=None,
