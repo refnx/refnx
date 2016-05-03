@@ -1,0 +1,2 @@
+This example script takes a set of output files from the corefinement setup of
+Motofit (MotoMPI) and runs it with the refnx package
