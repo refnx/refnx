@@ -297,7 +297,7 @@ class CurveFitter(Minimizer):
 
         self.scale_covar = False
         if not self.edata.size:
-            self.edata = np.ones_like(self.xdata)
+            self.edata = np.ones_like(self.ydata)
             self.scale_covar = True
 
         if mask is not None:

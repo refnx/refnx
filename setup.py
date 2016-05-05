@@ -117,7 +117,8 @@ info = {
         'packages': packages,
         'include_package_data': True,
         'setup_requires': ['numpy', 'scipy', 'lmfit', 'uncertainties'],
-        'install_requires': ['numpy', 'scipy', 'lmfit', 'uncertainties']
+        'install_requires': ['numpy', 'scipy', 'lmfit', 'emcee',
+                             'uncertainties']
         }
 
 ####################################################################
