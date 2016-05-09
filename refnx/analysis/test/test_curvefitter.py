@@ -1,13 +1,15 @@
+import os.path
 import unittest
-import refnx.analysis.curvefitter as curvefitter
-from refnx.analysis.curvefitter import (CurveFitter, HAS_EMCEE, FitFunction)
-import numpy as np
 import time
+
+import refnx.analysis.curvefitter as curvefitter
+from refnx.analysis.curvefitter import (values, CurveFitter, HAS_EMCEE, FitFunction)
+import numpy as np
 from lmfit.minimizer import MinimizerResult
+from NISTModels import NIST_runner, Models, ReadNistData
 
 from numpy.testing import (assert_almost_equal, assert_equal, assert_,
                            assert_allclose)
-import os.path
 SEED = 1
 
 
@@ -42,6 +44,15 @@ class TestFitter(unittest.TestCase):
         assert_almost_equal(self.pvals(res.params), self.p0)
         assert_almost_equal(res.chisqr, 0)
 
+    def test_NIST(self):
+        # Run all the NIST standard tests with leastsq
+        for model in Models.keys():
+            try:
+                NIST_runner(model)
+            except Exception:
+                print(model)
+                raise
+
     def test_model_returns_function(self):
         ydata = gauss(self.xdata, self.final_params)
         model = self.f.model(self.final_params)
@@ -59,7 +70,7 @@ class TestFitter(unittest.TestCase):
         # test that a custom method can be used with scipy.optimize.minimize
         res = self.f.fit()
         assert_almost_equal(self.pvals(res.params), self.p0)
-        
+
     def test_resid_length(self):
         # the residuals length should be equal to the data length
         resid = self.f.residuals(self.params)
@@ -92,6 +103,30 @@ class TestFitter(unittest.TestCase):
         g = CurveFitter(gauss, (self.xdata, self.ydata), self.params, costfun=costfun)
         res2 = g.fit('nelder')
         assert_almost_equal(self.pvals(res.params), self.pvals(res2.params))
+
+    # def test_emcee_NIST(self):
+    #     datasets = ['DanWood']
+    #
+    #     for dataset in datasets:
+    #         NIST_dataset = ReadNistData(dataset)
+    #
+    #         x, y = (NIST_dataset['x'], NIST_dataset['y'])
+    #
+    #         params = NIST_dataset['start']
+    #
+    #         fitfunc = Models[dataset][0]
+    #         fitter = CurveFitter(fitfunc, (x, y), params)
+    #         res = fitter.emcee(params=params, steps=1500, nwalkers=100,
+    #                            burn=600, thin=25, workers=4,
+    #                            is_weighted=False, seed=1)
+    #         res.params.pop('__lnsigma')
+    #         errs = np.array([res.params[par].stderr for par in res.params])
+    #         assert_allclose(values(res.params),
+    #                         NIST_dataset['cert_values'],
+    #                         rtol=1e-2)
+    #         # assert_allclose(errs,
+    #         #                 NIST_dataset['cert_stderr'],
+    #         #                 rtol=0.1)
 
 
 class TestFitterGauss(unittest.TestCase):
@@ -165,20 +200,16 @@ class TestFitterGauss(unittest.TestCase):
 
     def test_emcee_vs_lm(self):
         # test mcmc output vs lm
-        if not HAS_EMCEE:
-            return True
-
         f = CurveFitter(gauss,
                         (self.xvals, self.yvals, self.evals),
                         self.params)
         np.random.seed(123456)
 
-        # start = time.time()
-        out = f.emcee(nwalkers=100, steps=300, burn=100, thin=10)
-        # finish = time.time()
-        # print(finish - start)
-
+        out = f.emcee(nwalkers=100, steps=500, burn=250, thin=20)
         within_sigma(self.best_weighted, out.params)
+        # test if the sigmas are similar.
+        errs = np.array([out.params[par].stderr for par in out.params])
+        assert_allclose(errs, self.best_weighted_errors, rtol=0.2)
 
         # test mcmc output vs lm, some parameters not bounded
         self.params['p1'].max = np.inf

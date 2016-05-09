@@ -119,10 +119,59 @@ def global_fitter_setup(global_pilot_file, dqvals=5.0):
     return global_fitter
 
 
+def MCMC_analysis(global_pilot_file, walkers=100, steps=2000, burn=500,
+                  thin=20, dqvals=5.0, pos=None, output=None,
+                  workers=1, chunk=50):
+
+    global_fitter = global_fitter_setup(global_pilot_file,
+                                        dqvals=dqvals)
+
+    # do the sampling
+    n_remaining = steps
+    done = 0
+
+    sys.stdout.write("Starting MCMC\n")
+    sys.stdout.write("-------------\n")
+    start = time.time()
+
+    while n_remaining > 0:
+        todo = min(chunk, n_remaining)
+
+        if done > burn:
+            _burn = burn
+        if (done - burn) > thin:
+            _thin = thin
+
+        res = global_fitter.emcee(nwalkers=args.walkers,
+                                  steps=todo,
+                                  burn=_burn,
+                                  thin=_thin,
+                                  workers=workers,
+                                  pos=pos)
+        n_remaining -= todo
+        done += todo
+        pos = res.chain
+
+        # write the results so far. You should only get anything if the
+        # number of steps is > args.burn.
+        _write_results(arg.output, res)
+
+        # write raw chain in npy format
+        np.save(args.chain_output, res.chain)
+
+        sys.stderr.write(
+            "{0:^7} steps, {1:^7} seconds\n".format(done, time.time() - start)
+                         )
+
+    sys.stderr.write("\nFinished MCMC\n")
+    sys.stderr.write("-------------\n")
+    sys.stderr.write(fit_report(res.params))
+
+
 def main(argv):
     parser = ArgumentParser(usage=__doc__.lstrip())
-    parser.add_argument("global_pilot_file", help="The name of the global pilot"
-                                                  " file")
+    parser.add_argument("global_pilot_file",
+                        help="The name of the global pilot file")
     parser.add_argument("--walkers", "-w", type=int, default=100,
                         help="How many MCMC walkers?")
     parser.add_argument("--steps", "-s", type=int, default=2000,
@@ -135,9 +184,22 @@ def main(argv):
                         help="Constant dq/q resolution")
     parser.add_argument("--pointqres", "-p", action="store_true", default=False,
                         help="Use point by point resolution smearing (default False)")
+    parser.add_argument("--chain_input", "-i", type=str,
+                        help="Initialise/restart emcee with this RAW chain. This file"
+                             " is a numpy array (.npy) that would've originally been"
+                             "saved by the --chain_output option.")
+    parser.add_argument("--chain_output", "-c", default='chain.npy', type=str,
+                        help="Specify filename for unthinned, unburnt RAW"
+                             " chain. The file is saved as a numpy (.npy)"
+                             " array. You can use this file if you'd like to do"
+                             " the burn/thin procedure yourself. You can also use"
+                             " this file to restart the sampling. The array has"
+                             " shape (walkers, steps, walkers, dims), where dims"
+                             " represents the number of parameters you are"
+                             " varying.")
     parser.add_argument("--output", "-o", type=str, default='iterations',
-                        help="Output file for MCMC chain")
-    parser.add_argument("--nprocesses", "-n", type=int, default=4,
+                        help="Output file for burnt and thinned MCMC chain")
+    parser.add_argument("--nprocesses", "-n", type=int, default=1,
                         help="How many processes for parallelisation?")
 
     args = parser.parse_args(argv)
@@ -152,16 +214,22 @@ def main(argv):
         args.nprocesses = 1
 
     if args.thin < 1:
+        sys.stdout.write("Can't have thin < 1, setting to 1.\n")
         args.thin = 1
 
-    if args.burn < 1:
+    if (args.burn < 0) or (args.burn > args.steps):
+        sys.stdout.write("Can't burn < 0 or burn > steps, setting to 1.\n")
         args.burn = 1
 
     global_fitter = global_fitter_setup(args.global_pilot_file,
                                         dqvals=dqvals)
 
+    pos = None
+    if args.chain_input is not None:
+        pos = np.load(args.chain_input)
+
     # do the sampling
-    reuse_sampler = False
+    chunk_size = 50
     n_remaining = args.steps
     done = 0
 
@@ -172,10 +240,11 @@ def main(argv):
     burn = 0
     thin = 1
     while n_remaining > 0:
-        todo = min(50, n_remaining)
+        todo = min(chunk_size, n_remaining)
 
-        if n_remaining <= 50:
+        if done > args.burn:
             burn = args.burn
+        if (done - args.burn) > thin:
             thin = args.thin
 
         res = global_fitter.emcee(nwalkers=args.walkers,
@@ -183,10 +252,18 @@ def main(argv):
                                   burn=burn,
                                   thin=thin,
                                   workers=args.nprocesses,
-                                  reuse_sampler=reuse_sampler)
+                                  pos=pos)
         n_remaining -= todo
-        reuse_sampler = True
         done += todo
+        pos = res.chain
+
+        # write the results so far. You should only get anything if the
+        # number of steps is > args.burn.
+        _write_results(arg.output, res)
+
+        # write raw chain in npy format
+        np.save(args.chain_output, res.chain)
+
         sys.stdout.write(
             "{0:^7} steps, {1:^7} seconds\n".format(done, time.time() - start)
                          )
@@ -195,16 +272,19 @@ def main(argv):
     sys.stdout.write("-------------\n")
     sys.stdout.write(fit_report(res.params))
 
+
+def _write_results(f, emcee_result):
     # the flatchain is what we're interested in.
     # make an output array
     # hopefully the chain has been burned and thinned enough.
-    output = np.zeros((np.size(res.flatchain, 0), len(res.params)))
-    gen = pgen(res.params, res.flatchain)
+    output = np.zeros((np.size(emcee_result.flatchain, 0),
+                       len(emcee_result.params)))
+    gen = pgen(emcee_result.params, emcee_result.flatchain)
     for row in output:
         pars = next(gen)
         row[:] = values(pars)[:]
 
-    np.savetxt(args.output, output, header=' '.join(names(res.params)))
+    np.savetxt(f, output, header=' '.join(names(emcee_result.params)))
 
 
 def pgen(parameters, flatchain, idx=None):

@@ -8,7 +8,7 @@ else:
     HAVE_CREFLECT = True
 import refnx.analysis._reflect as _reflect
 import refnx.analysis.curvefitter as curvefitter
-from refnx.analysis.curvefitter import CurveFitter
+from refnx.analysis.curvefitter import CurveFitter, values
 from refnx.analysis.reflect import ReflectivityFitFunction as RFF
 
 import numpy as np
@@ -55,6 +55,7 @@ class TestReflect(unittest.TestCase):
         self.coefs361[13] = 1
         self.coefs361[15] = 3
         lowlim = np.zeros(16)
+        lowlim[1] = 0.1
         lowlim[4] = 6.2
         hilim = 2 * self.coefs361
 
@@ -188,13 +189,7 @@ class TestReflect(unittest.TestCase):
 
     def test_reflectivity_fit(self):
         # a smoke test to make sure the reflectivity fit proceeds
-        params = curvefitter.to_parameters(self.coefs)
-        params['p1'].value = 1.1
-
         fitfunc = reflect.ReflectivityFitFunction()
-        fitter = CurveFitter(fitfunc, (self.qvals, self.rvals), params)
-        fitter.fit()
-
         transform = reflect.Transform('logY')
         yt, et = transform.transform(self.qvals361,
                                      self.rvals361,
@@ -203,30 +198,31 @@ class TestReflect(unittest.TestCase):
         fitter2 = CurveFitter(fitfunc,
                               (self.qvals361, yt, et),
                               self.params361,
-                              fcn_kws=kws)
+                              fcn_kws=kws,
+                              kws={'seed': 2})
         fitter2.fit('differential_evolution')
-    #
-    # def test_reflectivity_emcee(self):
-    #     if not hasattr(CurveFitter, 'emcee'):
-    #         return
-    #     transform = reflect.Transform('logY')
-    #     yt, et = transform.transform(self.qvals361,
-    #                                  self.rvals361,
-    #                                  self.evals361)
-    #
-    #     kws = {'transform':transform.transform}
-    #     fitfunc = RFF(transform=transform.transform, dq=5.)
-    #
-    #     fitter = CurveFitter(fitfunc,
-    #                          self.qvals361,
-    #                          yt,
-    #                          self.params361,
-    #                          edata=et,
-    #                          fcn_kws=kws)
-    #     # start = time.time()
-    #     fitter.emcee(steps=10)
-    #     # finish = time.time()
-    #     # print(finish - start)
+
+    def test_reflectivity_emcee(self):
+        transform = reflect.Transform('logY')
+        yt, et = transform.transform(self.qvals361,
+                                     self.rvals361,
+                                     self.evals361)
+
+        kws = {'transform':transform.transform}
+        fitfunc = RFF(transform=transform.transform, dq=5.)
+
+        fitter = CurveFitter(fitfunc,
+                             (self.qvals361, yt, et),
+                             self.params361,
+                             fcn_kws=kws)
+        res = fitter.fit()
+        res_em = fitter.emcee(steps=10)
+        # assert_allclose(values(res.params), values(res_em.params), rtol=1e-2)
+        # for par in res.params:
+        #     if res.params[par].vary:
+        #         err = res.params[par].stderr
+        #         em_err = res_em.params[par].stderr
+        #         assert_allclose(err, em_err, rtol=0.1)
 
     def test_smearedabeles(self):
         # test smeared reflectivity calculation with values generated from
