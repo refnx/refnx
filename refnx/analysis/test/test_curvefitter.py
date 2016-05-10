@@ -207,7 +207,7 @@ class TestFitterGauss(unittest.TestCase):
 
         out = f.emcee(nwalkers=100, steps=500, burn=250, thin=20)
         within_sigma(self.best_weighted, out.params)
-        # test if the sigmas are similar.
+        # test if the sigmas are similar as well (within 20 %)
         errs = np.array([out.params[par].stderr for par in out.params])
         assert_allclose(errs, self.best_weighted_errors, rtol=0.2)
 
