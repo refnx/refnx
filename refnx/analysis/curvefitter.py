@@ -280,6 +280,9 @@ class CurveFitter(Minimizer):
                  fcn_args=(), fcn_kws=None, kws=None, callback=None,
                  costfun=None):
         self.fitfunc = fitfunc
+        self.costfun = costfun
+        self._cf_userargs = fcn_args
+        self._cf_userkws = fcn_kws
 
         if isinstance(data, Data1D):
             self.xdata, self.ydata, self.edata, temp = data.data
@@ -295,6 +298,8 @@ class CurveFitter(Minimizer):
             raise ValueError("Couldn't decipher what kind of data"
                              " you were providing.")
 
+        # scale_covar indicates whether uncertainties have been supplied for
+        # each of the data points
         self.scale_covar = False
         if not self.edata.size:
             self.edata = np.ones_like(self.ydata)
@@ -312,21 +317,32 @@ class CurveFitter(Minimizer):
         if kws is not None:
             min_kwds = kws
 
-        self._resid = partial(_parallel_residuals_calculator,
-                              fitfunc=fitfunc,
-                              data_tuple=(self.xdata,
-                                          self.ydata,
-                                          self.edata),
-                              mask=mask,
-                              fcn_args=fcn_args,
-                              fcn_kws=fcn_kws,
-                              costfun=costfun)
+        # setup the residual calculator
+        self._update_resid()
 
         super(CurveFitter, self).__init__(self._resid,
                                           params,
                                           iter_cb=callback,
                                           scale_covar=self.scale_covar,
                                           **min_kwds)
+
+    def _update_resid(self):
+        """
+        Updates the _resid attribute, which is a function that
+        evaluates the residuals and model for the system. This
+        method exists because people could update the data after
+        creation of the CurveFitter object.
+        """
+        self._resid = partial(_parallel_residuals_calculator,
+                              fitfunc=self.fitfunc,
+                              data_tuple=(self.xdata,
+                                          self.ydata,
+                                          self.edata),
+                              mask=self.mask,
+                              fcn_args=self._cf_userargs,
+                              fcn_kws=self._cf_userkws,
+                              costfun=self.costfun)
+        self.userfcn = self._resid
 
     @property
     def data(self):
@@ -348,6 +364,10 @@ class CurveFitter(Minimizer):
         self.ydata = np.asfarray(data[1])
         if len(data) > 2:
             self.edata = np.asfarray(data[2])
+            self.scale_covar = False
+        else:
+            self.edata = np.ones_like(self.ydata)
+            self.scale_covar = True
 
     def residuals(self, params=None):
         """
@@ -375,6 +395,7 @@ class CurveFitter(Minimizer):
             params = self.params
 
         params.update_constraints()
+        self._update_resid()
         return self._resid(params)
 
     def model(self, params=None):
@@ -396,6 +417,7 @@ class CurveFitter(Minimizer):
             params = self.params
 
         params.update_constraints()
+        self._update_resid()
         return self._resid(params, model=True)
 
     def fit(self, method='leastsq', params=None, **kws):
@@ -431,6 +453,7 @@ class CurveFitter(Minimizer):
         result : lmfit.MinimizerResult
             Result object.
         """
+        self._update_resid()
         result = self.minimize(method=method, params=params, **kws)
         self.params = result.params
         return result
@@ -442,9 +465,68 @@ class CurveFitter(Minimizer):
         purely a wrapper that also overwrites the ``CurveFitter.params``
         attribute after the fit has finished (unlike lmfit.Minimizer)
         """
+        self._update_resid()
         result = super(CurveFitter, self).emcee(*args, **kwds)
         self.params = result.params
         return result
+
+    def _resampleMC(self, samples, method='differential_evolution',
+                    params=None):
+        """
+        Monte Carlo Resampling
+        """
+        # data does
+        if self.scale_covar:
+            raise ValueError("To MC resample the data has to have errorbars")
+
+        x, y, e, m = self.data
+
+        tparams = params
+        output = self.prepare_fit(params=tparams)
+        params = output.params
+
+        try:
+            mc = np.zeros((samples, len(output.var_names)))
+            for idx in range(samples):
+                # synthesize a dataset
+                ne = y + e * np.random.randn(y.size)
+                self.ydata = ne
+
+                # update the _resid attribute
+                self._update_resid()
+
+                # do a fit
+                res = self.fit(method=method, params=params)
+
+                # append values from fit
+                for idx2, var_name in enumerate(output.var_names):
+                    mc[idx, idx2] = res.params[var_name].value
+        finally:
+            self.ydata = y
+
+        quantiles = np.percentile(mc, [15.87, 50, 84.13], axis=0)
+
+        for i, var_name in enumerate(output.var_names):
+            std_l, median, std_u = quantiles[:, i]
+            params[var_name].value = median
+            params[var_name].stderr = 0.5 * (std_u - std_l)
+            params[var_name].correl = {}
+
+        params.update_constraints()
+
+        # work out correlation coefficients
+        corrcoefs = np.corrcoef(mc.T)
+
+        for i, var_name in enumerate(output.var_names):
+            for j, var_name2 in enumerate(output.var_names):
+                if i != j:
+                    output.params[var_name].correl[var_name2] = corrcoefs[i, j]
+
+        output.mc = mc
+        output.errorbars = True
+        output.nvarys = len(output.var_names)
+
+        return output
 
 
 class GlobalFitter(CurveFitter):
