@@ -211,6 +211,13 @@ class TestFitterGauss(unittest.TestCase):
         errs = np.array([out.params[par].stderr for par in out.params])
         assert_allclose(errs, self.best_weighted_errors, rtol=0.2)
 
+        # now try with resampling MC
+        out = f._resampleMC(500, params=self.params, method='leastsq')
+        within_sigma(self.best_weighted, out.params)
+        # test if the sigmas are similar as well (within 20 %)
+        errs = np.array([out.params[par].stderr for par in out.params])
+        assert_allclose(errs, self.best_weighted_errors, rtol=0.2)
+
         # test mcmc output vs lm, some parameters not bounded
         self.params['p1'].max = np.inf
         f = CurveFitter(gauss,
