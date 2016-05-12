@@ -88,6 +88,13 @@ class Catalogue(object):
         d['path'] = os.path.dirname(file_path)
         d['filename'] = h5data.filename
         d['end_time'] = h5data['entry1/end_time'][0]
+
+        try:
+            d['start_time'] = h5data['entry1/instrument/detector/start_time'][:]
+        except KeyError:
+            # start times don't exist in this file
+            d['start_time'] = None
+
         d['sample_name'] = h5data['entry1/sample/name'][:]
         d['ss1vg'] = h5data['entry1/instrument/slits/first/vertical/gap'][:]
         d['ss2vg'] = h5data['entry1/instrument/slits/second/vertical/gap'][:]
@@ -393,6 +400,10 @@ class PlatypusNexus(object):
                                                event_folder=event_folder)
             frame_bins, detector, bm1_counts = output
 
+            start_time = np.zeros(np.size(detector, 0))
+            if cat.start_time is not None:
+                start_time += cat.start_time[scanpoint]
+                start_time += frame_bins[:-1]
         else:
             # we don't want detector streaming
             detector = cat.detector
@@ -402,6 +413,11 @@ class PlatypusNexus(object):
             if integrate == -1:
                 detector = np.sum(detector, 0)[np.newaxis, ]
                 bm1_counts[:] = np.sum(bm1_counts)
+
+            start_time = np.zeros(np.size(detector, 0))
+            if cat.start_time is not None:
+                for idx in range(start_time.size):
+                    start_time[idx] = cat.start_time[idx]
 
         n_spectra = np.size(detector, 0)
 
@@ -716,6 +732,7 @@ class PlatypusNexus(object):
         d['domega'] = domega
         d['lopx'] = lopx
         d['hipx'] = hipx
+        d['start_time'] = start_time
 
         self.processed_spectrum = d
         return m_lambda, m_spec, m_spec_sd

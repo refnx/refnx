@@ -389,6 +389,7 @@ class ReducePlatypus(object):
         reduction['qz'] = self.m_qz = qz
         reduction['qy'] = self.m_qy = qy
         reduction['nspectra'] = self.n_spectra = n_spectra
+        reduction['start_time'] = self.reflected_beam.start_time
         reduction['datafile_number'] = self.datafile_number = (
             self.reflected_beam.datafile_number)
 
@@ -403,7 +404,8 @@ class ReducePlatypus(object):
                     dataset.save(f)
                 fname = 'PLP{0:07d}_{1}.xml'.format(self.datafile_number, i)
                 with open(fname, 'wb') as f:
-                    dataset.save_xml(f)
+                    dataset.save_xml(f,
+                                     start_time=reduction['start_time'][i])
 
         reduction['fname'] = fnames
         return deepcopy(reduction)
