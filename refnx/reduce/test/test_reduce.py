@@ -3,7 +3,7 @@ import os.path
 import numpy as np
 from refnx.reduce import reduce_stitch, ReducePlatypus
 from numpy.testing import (assert_almost_equal, assert_, assert_equal,
-                           assert_array_less)
+                           assert_array_less, assert_allclose)
 import xml.etree.ElementTree as ET
 
 class TestReduce(unittest.TestCase):
@@ -43,6 +43,11 @@ class TestReduce(unittest.TestCase):
             integrate=0, rebin_percent=2,
             eventmode=[0, 900, 1800])
         assert_equal(a.ydata.shape[0], 2)
+
+        # check that the resolutions are pretty much the same
+        assert_allclose(a.xdata_sd[0] / a.xdata[0],
+                        a.xdata_sd[1] / a.xdata[1],
+                        atol = 0.001)
 
         # check that the right timestamps are written into the datafile
         tree = ET.parse(os.path.join(os.getcwd(), 'PLP0011641_1.xml'))
