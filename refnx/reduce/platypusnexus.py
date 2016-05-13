@@ -51,7 +51,8 @@ def catalogue(start, stop, path=None):
         Dataframe containing interesting parameters from Platypus Nexus files
     """
     info = ['filename', 'end_time', 'sample_name', 'ss1vg', 'ss2vg', 'ss3vg',
-            'ss4vg', 'omega', 'twotheta', 'bm1_counts', 'time', 'daq_dirname']
+            'ss4vg', 'omega', 'twotheta', 'bm1_counts', 'time', 'daq_dirname',
+            'start_time']
     run_number = []
     d = {key:[] for key in info}
 
