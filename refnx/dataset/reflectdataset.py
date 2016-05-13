@@ -1,6 +1,6 @@
 from __future__ import division
 import string
-from time import strftime, localtime
+from datetime import datetime
 
 try:
     import xml.etree.cElementTree as ET
@@ -59,8 +59,7 @@ class ReflectDataset(Data1D):
             Epoch time specifying when the sample started
         """
         s = string.Template(self._template_ref_xml)
-        self.time = strftime("%a, %d %b %Y %H:%M:%S +0000",
-                             localtime(start_time))
+        self.time = datetime.utcfromtimestamp(start_time).isoformat()
         # filename = 'c_PLP{:07d}_{:d}.xml'.format(self._rnumber[0], 0)
 
         self._ydata = repr(self.y.tolist()).strip(',[]')

@@ -1,10 +1,10 @@
 import unittest
-import numpy as np
 import os.path
+import numpy as np
 from refnx.reduce import reduce_stitch, ReducePlatypus
 from numpy.testing import (assert_almost_equal, assert_, assert_equal,
                            assert_array_less)
-
+import xml.etree.ElementTree as ET
 
 class TestReduce(unittest.TestCase):
 
@@ -43,6 +43,11 @@ class TestReduce(unittest.TestCase):
             integrate=0, rebin_percent=2,
             eventmode=[0, 900, 1800])
         assert_equal(a.ydata.shape[0], 2)
+
+        # check that the right timestamps are written into the datafile
+        tree = ET.parse(os.path.join(os.getcwd(), 'PLP0011641_1.xml'))
+        t = tree.find('.//REFentry').attrib['time']
+        assert_(t == '2012-01-20T11:05:32')
 
 
 if __name__ == '__main__':
