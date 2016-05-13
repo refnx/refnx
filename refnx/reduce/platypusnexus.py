@@ -516,6 +516,9 @@ class PlatypusNexus(object):
                 m_spec_tof_hist[:] = TOF - toffset
                 flight_distance[:] = flight_distance[0]
                 detpositions[:] = detpositions[0]
+                domega[:] = domega[0]
+                d_cx[:] = d_cx[0]
+                phase_angle[:] = phase_angle[0]
                 break
             else:
                 scanpoint += 1
