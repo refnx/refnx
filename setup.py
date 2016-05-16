@@ -160,6 +160,16 @@ def setup_package():
                                   )
             ext_modules.append(_creflect)
 
+            _cevent = Extension(
+                                name='refnx.reduce._cevent',
+                                sources=['src/_cevent.pyx'],
+                                include_dirs=[numpy_include],
+                                language='c',
+                                # libraries=
+                                # extra_compile_args = "...".split(),
+                                )
+            ext_modules.append(_cevent)
+
             info['cmdclass'] = {'build_ext': build_ext}
             info['ext_modules'] = ext_modules
 
