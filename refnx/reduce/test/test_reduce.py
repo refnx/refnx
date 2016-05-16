@@ -44,6 +44,14 @@ class TestReduce(unittest.TestCase):
             eventmode=[0, 900, 1800])
         assert_equal(a.ydata.shape[0], 2)
 
+        # what happens if you have too many frame bins
+        a = ReducePlatypus(
+            os.path.join(self.path, 'PLP0011613.nx.hdf'),
+            reflect=os.path.join(self.path, 'PLP0011641.nx.hdf'),
+            integrate=0, rebin_percent=2,
+            eventmode=[0, 25200, 27000, 30000])
+        assert_equal(a.ydata.shape[0], 1)
+
         # check that the resolutions are pretty much the same
         assert_allclose(a.xdata_sd[0] / a.xdata[0],
                         a.xdata_sd[1] / a.xdata[1],

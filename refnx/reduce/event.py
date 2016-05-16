@@ -31,22 +31,21 @@ def process_event_stream(events, frame_bins, t_bins, y_bins, x_bins):
     Returns
     -------
     detector, frame_bins : np.ndarray, np.ndarray
-        The new detector image and the amended frame bins. The frame bins that
-        are supplied to this function are truncated to 0 and the maximum frame
-        bin in the event file.
+        The new detector image and the amended frame bins.
+
+    Notes
+    -----
+    The frame bins that are supplied to this function are truncated to 0 and
+    the maximum frame bin in the events. Thus, if
+    frame_bins = [-20, -10, 5, 10, 20, 30] and the maximum frame bin is 25 then
+    the amended frame_bins is calculated as [0, 5, 10, 20, 25], i.e. 4 bins are
+    returned instead of 5.
     """
     max_frame = max(events[0])
     frame_bins = np.sort(frame_bins)
 
-    # truncate the lower limit of frame bins to be 0 if they exceed it.
-    loc = np.searchsorted(frame_bins, 0)
-    frame_bins = frame_bins[loc:]
-    frame_bins[0] = 0
-
-    # truncate the upper limit of frame bins to be the max frame number
-    # if they exceed it.
-    # loc = np.searchsorted(frame_bins, max_frame)
-    # frame_bins = frame_bins[: loc]
+    # truncate the limits of frame bins
+    frame_bins = np.unique(np.clip(frame_bins, 0, max_frame))
 
     localxbins = np.array(x_bins)
     localybins = np.array(y_bins)

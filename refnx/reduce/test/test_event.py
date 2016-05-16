@@ -74,6 +74,15 @@ class TestEvent(unittest.TestCase):
         assert_equal(detector[1, 383, 97, 0], 64)
         assert_equal(detector[4, 377, 98, 0], 57)
 
+        # now see what happens if we go too far with the frame_bins
+        f_bins = [0, 24000, 30000]
+        detector, fbins = event.process_event_stream(self.event_list,
+                                                     f_bins,
+                                                     t_bins,
+                                                     y_bins,
+                                                     x_bins)
+        assert_(np.size(detector, 0) == 1)
+
     def test_cevents(self):
         # check that the cython cevents reader also reads the event file
         # accurately.
