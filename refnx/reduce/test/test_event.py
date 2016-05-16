@@ -1,8 +1,9 @@
 import unittest
-import refnx.reduce.event as event
-import numpy as np
 import os
-from numpy.testing import assert_equal
+import numpy as np
+from numpy.testing import assert_equal, assert_
+import refnx.reduce.event as event
+from refnx.reduce import Catalogue, PlatypusNexus
 
 try:
     import refnx.reduce._cevent as _cevent
@@ -39,6 +40,18 @@ class TestEvent(unittest.TestCase):
         f, t, y, x = event_list
         max_f = np.max(f)
         assert_equal(9, max_f)
+
+    def test_event_same_as_detector(self):
+        # the detector file should be the same as the event file
+        orig_file = PlatypusNexus(os.path.join(self.path,
+                                              'PLP0011613.nx.hdf'))
+        orig_det = orig_file.cat.detector
+        event_det, fb  = event.process_event_stream(self.event_list,
+                                                    [0, 24001],
+                                                    orig_file.cat.t_bins[0],
+                                                    orig_file.cat.y_bins[0],
+                                                    orig_file.cat.x_bins[0])
+        assert_equal(event_det, orig_det)
 
     def test_open_with_path(self):
         # give the event reader a file path
@@ -81,7 +94,7 @@ class TestEvent(unittest.TestCase):
                                                      t_bins,
                                                      y_bins,
                                                      x_bins)
-        assert_(np.size(detector, 0) == 1)
+        assert_equal(np.size(detector, 0), 1)
 
     def test_cevents(self):
         # check that the cython cevents reader also reads the event file
