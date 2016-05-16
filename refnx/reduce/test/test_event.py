@@ -4,6 +4,14 @@ import numpy as np
 import os
 from numpy.testing import assert_equal
 
+try:
+    import refnx.reduce._cevent as _cevent
+except ImportError:
+    HAVE_CEVENTS = False
+else:
+    HAVE_CEVENTS = True
+
+
 class TestEvent(unittest.TestCase):
 
     def setUp(self):
@@ -15,7 +23,7 @@ class TestEvent(unittest.TestCase):
                                        'EOS.bin')
 
         with open(self.event_file_path, 'rb') as f:
-            event_list, fpos = event.events(f)
+            event_list, fpos = event._events(f)
 
         self.event_list = event_list
         self.fpos = fpos
@@ -27,14 +35,14 @@ class TestEvent(unittest.TestCase):
     def test_max_frames(self):
         # test reading only a certain number of frames
         with open(self.event_file_path, 'rb') as f:
-            event_list, fpos = event.events(f, max_frames=10)
+            event_list, fpos = event._events(f, max_frames=10)
         f, t, y, x = event_list
         max_f = np.max(f)
         assert_equal(9, max_f)
 
     def test_open_with_path(self):
         # give the event reader a file path
-        event_list, fpos = event.events(self.event_file_path, max_frames=10)
+        event_list, fpos = event._events(self.event_file_path, max_frames=10)
         f, t, y, x = event_list
         max_f = np.max(f)
         assert_equal(9, max_f)
@@ -65,6 +73,20 @@ class TestEvent(unittest.TestCase):
         assert_equal(detector[0, 382, 97, 0], 70)
         assert_equal(detector[1, 383, 97, 0], 64)
         assert_equal(detector[4, 377, 98, 0], 57)
+
+    def test_cevents(self):
+        # check that the cython cevents reader also reads the event file
+        # accurately.
+        if HAVE_CEVENTS:
+            with open(self.event_file_path, 'rb') as f:
+                event_list, fpos = _cevent._cevents(f)
+
+            f, t, y, x = event_list
+
+            assert_equal(self.t, t)
+            assert_equal(self.f, f)
+            assert_equal(self.y, y)
+            assert_equal(self.x, x)
 
 
 if __name__ == '__main__':

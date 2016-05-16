@@ -3,6 +3,12 @@
 Unpack event files
 """
 import numpy as np
+HAVE_CEVENTS = False
+try:
+    from refnx.reduce._cevent import _cevents
+    HAVE_CEVENTS = True
+except ImportError:
+    pass
 
 
 def process_event_stream(events, frame_bins, t_bins, y_bins, x_bins):
@@ -70,6 +76,39 @@ def process_event_stream(events, frame_bins, t_bins, y_bins, x_bins):
 
 
 def events(f, end_last_event=127, max_frames=np.inf):
+    """
+    Unpacks event data from packedbinary format for the ANSTO Platypus
+    instrument
+
+    Parameters
+    ----------
+
+    f : file-like or str
+        The file to read the data from. If `f` is not file-like then f is
+        assumed to be a path pointing to the event file.
+    end_last_event : uint
+        The reading of event data starts from `end_last_event + 1`. The default
+        of 127 corresponds to a file header that is 128 bytes long.
+    max_frames : int
+        Stop reading the event file when have read this many frames.
+
+    Returns
+    -------
+    (f_events, t_events, y_events, x_events), end_last_event:
+        x_events, y_events, t_events and f_events are numpy arrays containing
+        the events. end_last_event is a byte offset to the end of the last
+        successful event read from the file. Use this value to extract more
+        events from the same file at a future date.
+    """
+    if HAVE_CEVENTS:
+        return _cevents(f, end_last_event=end_last_event,
+                        max_frames=max_frames)
+    else:
+        return _events(f, end_last_event=end_last_event,
+                        max_frames=max_frames)
+
+
+def _events(f, end_last_event=127, max_frames=np.inf):
     """
     Unpacks event data from packedbinary format for the ANSTO Platypus
     instrument
