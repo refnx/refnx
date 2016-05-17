@@ -4,7 +4,7 @@ from refnx.reduce import ReducePlatypus, PlatypusNexus
 import numpy as np
 import os
 from numpy.testing import (assert_almost_equal, assert_, assert_equal,
-                           assert_array_less)
+                           assert_array_less, assert_allclose)
 from refnx.reduce.peak_utils import gauss
 import h5py
 
@@ -141,7 +141,7 @@ class TestPlatypusNexus(unittest.TestCase):
         # mode reduction.
         spectrum0 = self.f113.process(direct=True)
         spectrum1 = self.f113.process(direct=True, eventmode=[], integrate=0)
-        assert_equal(spectrum0[1][0], spectrum1[1][0])
+        assert_allclose(spectrum0[1][0], spectrum1[1][0], rtol=0.0001)
 
         # check that the wavelength resolution is roughly right, between 7 and
         # 8%.

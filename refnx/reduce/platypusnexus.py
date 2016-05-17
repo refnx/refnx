@@ -329,7 +329,11 @@ class PlatypusNexus(object):
             If eventmode has zero length (e.g. []), then a single time interval
             for the entire acquisition is used, [0, acquisition_time].  This
             would source the image from the eventmode file, rather than the
-            NeXUS file.
+            NeXUS file. Note: the two approaches will probably not give
+            identical results, because the eventmode method adjusts the total
+            acquisition time and beam monitor counts to the frame number of the
+            last event detected (which may be quite different if the count rate
+            is very low).
         event_folder : None or str
             Specifies the path for the eventmode data. If `event_folder is None`
             then the eventmode data is assumed to reside in the same directory

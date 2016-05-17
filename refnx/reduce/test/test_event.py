@@ -1,8 +1,9 @@
 import unittest
-import refnx.reduce.event as event
-import numpy as np
 import os
-from numpy.testing import assert_equal
+import numpy as np
+from numpy.testing import assert_equal, assert_
+import refnx.reduce.event as event
+from refnx.reduce import PlatypusNexus
 
 try:
     import refnx.reduce._cevent as _cevent
@@ -40,6 +41,22 @@ class TestEvent(unittest.TestCase):
         max_f = np.max(f)
         assert_equal(9, max_f)
 
+    def test_event_same_as_detector(self):
+        # the detector file should be the same as the event file
+        orig_file = PlatypusNexus(os.path.join(self.path,
+                                              'PLP0011613.nx.hdf'))
+        orig_det = orig_file.cat.detector
+        event_det, fb  = event.process_event_stream(self.event_list,
+                                                    [0, 23998],
+                                                    orig_file.cat.t_bins,
+                                                    orig_file.cat.y_bins,
+                                                    orig_file.cat.x_bins)
+        assert_equal(event_det, orig_det)
+
+        # PlatypusNexus.process_event_stream should be the same as well
+        fb, det, bm = orig_file.process_event_stream(frame_bins=[])
+        assert_equal(event_det, orig_det)
+
     def test_open_with_path(self):
         # give the event reader a file path
         event_list, fpos = event._events(self.event_file_path, max_frames=10)
@@ -73,6 +90,15 @@ class TestEvent(unittest.TestCase):
         assert_equal(detector[0, 382, 97, 0], 70)
         assert_equal(detector[1, 383, 97, 0], 64)
         assert_equal(detector[4, 377, 98, 0], 57)
+
+        # now see what happens if we go too far with the frame_bins
+        f_bins = [0, 24000, 30000]
+        detector, fbins = event.process_event_stream(self.event_list,
+                                                     f_bins,
+                                                     t_bins,
+                                                     y_bins,
+                                                     x_bins)
+        assert_equal(np.size(detector, 0), 1)
 
     def test_cevents(self):
         # check that the cython cevents reader also reads the event file

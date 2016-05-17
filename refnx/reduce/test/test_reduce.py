@@ -54,6 +54,14 @@ class TestReduce(unittest.TestCase):
         t = tree.find('.//REFentry').attrib['time']
         assert_(t == '2012-01-20T11:05:32')
 
+        # what happens if you have too many frame bins
+        a = ReducePlatypus(
+            os.path.join(self.path, 'PLP0011613.nx.hdf'),
+            reflect=os.path.join(self.path, 'PLP0011641.nx.hdf'),
+            integrate=0, rebin_percent=2,
+            eventmode=[0, 25200, 27000, 30000])
+        assert_equal(a.ydata.shape[0], 1)
+
 
 if __name__ == '__main__':
     unittest.main()
