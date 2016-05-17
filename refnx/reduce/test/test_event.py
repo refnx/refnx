@@ -3,7 +3,7 @@ import os
 import numpy as np
 from numpy.testing import assert_equal, assert_
 import refnx.reduce.event as event
-from refnx.reduce import Catalogue, PlatypusNexus
+from refnx.reduce import PlatypusNexus
 
 try:
     import refnx.reduce._cevent as _cevent
@@ -47,10 +47,14 @@ class TestEvent(unittest.TestCase):
                                               'PLP0011613.nx.hdf'))
         orig_det = orig_file.cat.detector
         event_det, fb  = event.process_event_stream(self.event_list,
-                                                    [0, 24001],
-                                                    orig_file.cat.t_bins[0],
-                                                    orig_file.cat.y_bins[0],
-                                                    orig_file.cat.x_bins[0])
+                                                    [0, 23998],
+                                                    orig_file.cat.t_bins,
+                                                    orig_file.cat.y_bins,
+                                                    orig_file.cat.x_bins)
+        assert_equal(event_det, orig_det)
+
+        # PlatypusNexus.process_event_stream should be the same as well
+        fb, det, bm = orig_file.process_event_stream(frame_bins=[])
         assert_equal(event_det, orig_det)
 
     def test_open_with_path(self):
