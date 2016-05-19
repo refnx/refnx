@@ -298,8 +298,7 @@ class CurveFitter(Minimizer):
             raise ValueError("Couldn't decipher what kind of data"
                              " you were providing.")
 
-        # scale_covar indicates whether uncertainties have been supplied for
-        # each of the data points
+        # have uncertainties have been supplied for each of the data points?
         self.scale_covar = False
         if not self.edata.size:
             self.edata = np.ones_like(self.ydata)
@@ -458,22 +457,200 @@ class CurveFitter(Minimizer):
         self.params = result.params
         return result
 
-    def emcee(self, *args, **kwds):
+    def emcee(self, params=None, steps=1000, nwalkers=100, burn=0, thin=1,
+              ntemps=1, pos=None, reuse_sampler=False, workers=1, seed=None):
         """
-        Monte Carlo sampling of the CurveFitting problem. Please see
-        lmfit.Minimizer.emcee documentation for further details. This method is
-        purely a wrapper that also overwrites the ``CurveFitter.params``
-        attribute after the fit has finished (unlike lmfit.Minimizer)
+        Bayesian sampling of the posterior distribution for the parameters
+        using the `emcee` Markov Chain Monte Carlo package. The method assumes
+        that the prior is Uniform. You need to have `emcee` installed to use
+        this method.
+
+        Parameters
+        ----------
+        params : lmfit.Parameters, optional
+            Parameters to use as starting point. If this is not specified
+            then the Parameters used to initialise the CurveFitter object are
+            used.
+        steps : int, optional
+            How many samples you would like to draw from the posterior
+            distribution for each of the walkers?
+        nwalkers : int, optional
+            Should be set so :math:`nwalkers >> nvarys`, where `nvarys` are
+            the number of parameters being varied during the fit.
+            "Walkers are the members of the ensemble. They are almost like
+            separate Metropolis-Hastings chains but, of course, the proposal
+            distribution for a given walker depends on the positions of all
+            the other walkers in the ensemble." - from the `emcee` webpage.
+        burn : int, optional
+            Discard this many samples from the start of the sampling regime.
+        thin : int, optional
+            Only accept 1 in every `thin` samples.
+        ntemps : int, optional
+            If `ntemps > 1` perform a Parallel Tempering.
+        pos : np.ndarray, optional
+            Specify the initial positions for the sampler.  If `ntemps == 1`
+            then `pos.shape` should be `(nwalkers, nvarys)`. Otherwise,
+            `(ntemps, nwalkers, nvarys)`. You can also initialise using a
+            previous chain that had the same `ntemps`, `nwalkers` and
+            `nvarys`. Note that `nvarys` may be one larger than you expect it
+            to be if your `userfcn` returns an array and `is_weighted is
+            False`.
+        reuse_sampler : bool, optional
+            If you have already run `emcee` on a given `Minimizer` object then
+            it possesses an internal ``sampler`` attribute. You can continue to
+            draw from the same sampler (retaining the chain history) if you set
+            this option to `True`. Otherwise a new sampler is created. The
+            `nwalkers`, `ntemps`, `pos`, and `params` keywords are ignored with
+            this option.
+            **Important**: the Parameters used to create the sampler must not
+            change in-between calls to `emcee`. Alteration of Parameters
+            would include changed ``min``, ``max``, ``vary`` and ``expr``
+            attributes. This may happen, for example, if you use an altered
+            Parameters object and call the `minimize` method in-between calls
+            to `emcee`.
+        workers : Pool-like or int, optional
+            For parallelization of sampling.  It can be any Pool-like object
+            with a map method that follows the same calling sequence as the
+            built-in `map` function. If int is given as the argument, then a
+            multiprocessing-based pool is spawned internally with the
+            corresponding number of parallel processes. 'mpi4py'-based
+            parallelization and 'joblib'-based parallelization pools can also
+            be used here. **Note**: because of multiprocessing overhead it may
+            only be worth parallelising if the objective function is expensive
+            to calculate, or if there are a large number of objective
+            evaluations per step (`ntemps * nwalkers * nvarys`).
+        seed : int or `np.random.RandomState`, optional
+            If `seed` is an int, a new `np.random.RandomState` instance is used,
+            seeded with `seed`.
+            If `seed` is already a `np.random.RandomState` instance, then that
+            `np.random.RandomState` instance is used.
+            Specify `seed` for repeatable minimizations.
+
+        Returns
+        -------
+        result : MinimizerResult
+            MinimizerResult object containing updated params, statistics,
+            etc. The `MinimizerResult` also contains the ``chain``,
+            ``flatchain`` and ``lnprob`` attributes. The ``chain``
+            and ``flatchain`` attributes contain the samples and have the shape
+            `(nwalkers, (steps - burn) // thin, nvarys)` or
+            `(ntemps, nwalkers, (steps - burn) // thin, nvarys)`,
+            depending on whether Parallel tempering was used or not.
+            `nvarys` is the number of parameters that are allowed to vary.
+            The ``flatchain`` attribute is a `pandas.DataFrame` of the
+            flattened chain, `chain.reshape(-1, nvarys)`. To access flattened
+            chain values for a particular parameter use
+            `result.flatchain[parname]`. The ``lnprob`` attribute contains the
+            log probability for each sample in ``chain``. The sample with the
+            highest probability corresponds to the maximum likelihood estimate.
+
+        Notes
+        -----
+        This method samples the posterior distribution of the parameters using
+        Markov Chain Monte Carlo.  To do so it needs to calculate the
+        log-posterior probability of the model parameters, `F`, given the data,
+        `D`, :math:`\ln p(F_{true} | D)`. This 'posterior probability' is
+        calculated as:
+
+        ..math::
+
+        \ln p(F_{true} | D) \propto \ln p(D | F_{true}) + \ln p(F_{true})
+
+        where :math:`\ln p(D | F_{true})` is the 'log-likelihood' and
+        :math:`\ln p(F_{true})` is the 'log-prior'. The default log-prior
+        encodes prior information already known about the model. This method
+        assumes that the log-prior probability is `-np.inf` (impossible) if the
+        one of the parameters is outside its limits. The log-prior probability
+        term is zero if all the parameters are inside their bounds (known as a
+        uniform prior). The log-likelihood function is given by [1]_:
+
+        ..math::
+
+        \ln p(D|F_{true}) = -\frac{1}{2}\sum_n \left[\frac{\left(g_n(F_{true}) - D_n \right)^2}{s_n^2}+\ln (2\pi s_n^2)\right]
+
+        The first summand in the square brackets represents the residual for a
+        given datapoint (:math:`g` being the generative model) . This term
+        represents :math:`\chi^2` when summed over all datapoints.
+
+
+        References
+        ----------
+        .. [1] http://dan.iel.fm/emcee/current/user/line/
         """
         self._update_resid()
-        result = super(CurveFitter, self).emcee(*args, **kwds)
+
+        try:
+            if self.is_weighted:
+                # get the proper log-likelihood if you have
+                # uncertainties
+                self._resid = partial(_parallel_likelihood_calculator,
+                                      fitfunc=self.fitfunc,
+                                      data_tuple=(self.xdata,
+                                                  self.ydata,
+                                                  self.edata),
+                                      mask=self.mask,
+                                      fcn_args=self._cf_userargs,
+                                      fcn_kws=self._cf_userkws,
+                                      )
+                self.userfcn = self._resid
+            else:
+                pass
+
+            result = super(CurveFitter, self).emcee(params=params, steps=steps,
+                                                    nwalkers=nwalkers,
+                                                    burn=burn,
+                                                    thin=thin, ntemps=ntemps,
+                                                    pos=pos,
+                                                    reuse_sampler=reuse_sampler,
+                                                    workers=workers,
+                                                    float_behavior='posterior',
+                                                    is_weighted=self.is_weighted,
+                                                    seed=seed)
+        finally:
+            self._update_resid()
+
         self.params = result.params
         return result
+
+    @property
+    def is_weighted(self):
+        """
+        Returns the truth that the fit is weighted by measurement uncertainties
+        """
+        return not self.scale_covar
 
     def _resampleMC(self, samples, method='differential_evolution',
                     params=None):
         """
-        Monte Carlo Resampling
+        Monte Carlo Resampling. Refits synthesised data `samples` times. Each
+        synthesised dataset is created from the original dataset by adding
+        Gaussian based on the size of the datapoint:
+        ``synth = y + e * np.random.randn(y.size)``
+        The parameters from each of these fits should be distributed in a way
+        that is related to their statistical uncertainty.
+
+        Parameters
+        ----------
+        samples : int
+            Number of synthesis/refit cycles.
+        method : str
+            Minimisation method. See the `fit` method for other options.
+
+        Returns
+        -------
+
+        result : lmfit.MinimizerResult
+            Result object.
+
+        Notes
+        -----
+        This method is currently semi-private and may disappear in future
+        releases. The uncertainties are estimated as half of the 15.87, 84.13
+        percentiles. The parameter value is estimated as the 50 th percentile.
+        The `result` instance also contains the `mc` attribute which is an
+        array the contains the result of each sample. This array has shape
+        `(samples, len(result.var_names))` (i.e. only the varying parameters
+        are given).
         """
         # data does
         if self.scale_covar:
@@ -756,6 +933,34 @@ def _parallel_residuals_calculator(params, fitfunc=None, data_tuple=None,
         return resid_ma[~resid_ma.mask].data
     else:
         return resid
+
+
+def _parallel_likelihood_calculator(params, fitfunc=None, data_tuple=None,
+                                    mask=None, fcn_args=(), fcn_kws=None):
+    """
+    Function calculating the log-likelihood for a curvefit. This is a
+    separate function and not a method in CurveFitter to allow for
+    multiprocessing.
+    """
+    kws = {}
+    if fcn_kws is not None:
+        kws = fcn_kws
+
+    x, y, e = data_tuple
+
+    resid = fitfunc(x, params, *fcn_args, **kws)
+
+    resid -= y
+    resid /= e
+    resid *= resid
+
+    resid += np.log(2 * np.pi * e**2)
+
+    if mask is not None:
+        resid_ma = ma.array(resid, mask=mask)
+        return -0.5 * np.sum(resid_ma[~resid_ma.mask].data)
+    else:
+        return -0.5 * np.sum(resid)
 
 
 def _parallel_global_fitfunc(x, params, fitfuncs=None,
