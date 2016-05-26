@@ -209,7 +209,7 @@ class TestFitterGauss(unittest.TestCase):
         within_sigma(self.best_weighted, out.params)
         # test if the sigmas are similar as well (within 20 %)
         errs = np.array([out.params[par].stderr for par in out.params])
-        assert_allclose(errs, self.best_weighted_errors, rtol=0.1)
+        assert_allclose(errs, self.best_weighted_errors, rtol=0.2)
 
         # now try with resampling MC
         out = f._resampleMC(500, params=self.params, method='leastsq')
