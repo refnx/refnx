@@ -1,6 +1,7 @@
 from __future__ import division
 import string
 from datetime import datetime
+import re
 
 try:
     import xml.etree.cElementTree as ET
@@ -101,15 +102,17 @@ class ReflectDataset(Data1D):
         try:
             tree = ET.ElementTree()
             tree.parse(g)
-            qtext = tree.find('.//Qz')
-            rtext = tree.find('.//R')
-            drtext = tree.find('.//dR')
-            dqtext = tree.find('.//dQz')
 
-            qvals = [float(val) for val in qtext.text.split()]
-            rvals = [float(val) for val in rtext.text.split()]
-            drvals = [float(val) for val in drtext.text.split()]
-            dqvals = [float(val) for val in dqtext.text.split()]
+            delim = ', | |,'
+            qtext = re.split(delim, tree.find('.//Qz').text)
+            rtext = re.split(delim, tree.find('.//R').text)
+            drtext = re.split(delim, tree.find('.//dR').text)
+            dqtext = re.split(delim, tree.find('.//dQz').text)
+
+            qvals = [float(val) for val in qtext if len(val)]
+            rvals = [float(val) for val in rtext if len(val)]
+            drvals = [float(val) for val in drtext if len(val)]
+            dqvals = [float(val) for val in dqtext if len(val)]
 
             self.filename = g.name
             self.name = os.path.splitext(os.path.basename(g.name))[0]
