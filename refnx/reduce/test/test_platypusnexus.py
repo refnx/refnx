@@ -141,7 +141,7 @@ class TestPlatypusNexus(unittest.TestCase):
         # mode reduction.
         spectrum0 = self.f113.process(direct=True)
         spectrum1 = self.f113.process(direct=True, eventmode=[], integrate=0)
-        assert_allclose(spectrum0[1][0], spectrum1[1][0], rtol=0.0001)
+        assert_allclose(spectrum0[1][0], spectrum1[1][0], rtol=0.001)
 
         # check that the wavelength resolution is roughly right, between 7 and
         # 8%.
