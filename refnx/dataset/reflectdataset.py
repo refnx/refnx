@@ -65,8 +65,8 @@ class ReflectDataset(Data1D):
 
         self._ydata = repr(self.y.tolist()).strip(',[]')
         self._xdata = repr(self.x.tolist()).strip(',[]')
-        self._ydataSD = repr(self.y_sd.tolist()).strip(',[]')
-        self._xdataSD = repr(self.x_sd.tolist()).strip(',[]')
+        self._ydataSD = repr(self.y_err.tolist()).strip(',[]')
+        self._xdataSD = repr(self.x_err.tolist()).strip(',[]')
 
         thefile = s.safe_substitute(self.__dict__)
 

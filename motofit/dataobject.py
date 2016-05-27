@@ -239,11 +239,11 @@ class DataObject(reflectdataset.ReflectDataset):
         callerInfo = deepcopy(model.__dict__)
         callerInfo['x'] = self.x
         callerInfo['y'] = self.y
-        callerInfo['edata'] = self.y_sd
+        callerInfo['edata'] = self.y_err
 
         try:
             if model.usedq:
-                callerInfo['dqvals'] = self.x_sd
+                callerInfo['dqvals'] = self.x_err
             else:
                 del(callerInfo['dqvals'])
         except KeyError:
@@ -291,11 +291,11 @@ class DataObject(reflectdataset.ReflectDataset):
         callerInfo = deepcopy(model.__dict__)
         callerInfo['x'] = self.x
         callerInfo['y'] = self.y
-        callerInfo['edata'] = self.y_sd
+        callerInfo['edata'] = self.y_err
 
         try:
             if model.usedq:
-                callerInfo['dqvals'] = self.x_sd
+                callerInfo['dqvals'] = self.x_err
             else:
                 del(callerInfo['dqvals'])
         except KeyError:
@@ -317,11 +317,11 @@ class DataObject(reflectdataset.ReflectDataset):
         callerInfo = deepcopy(model.__dict__)
         callerInfo['x'] = self.x
         callerInfo['y'] = self.y
-        callerInfo['edata'] = self.y_sd
+        callerInfo['edata'] = self.y_err
 
         try:
             if model.usedq:
-                callerInfo['dqvals'] = self.x_sd
+                callerInfo['dqvals'] = self.x_err
             else:
                 del(callerInfo['dqvals'])
         except KeyError:

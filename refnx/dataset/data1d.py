@@ -23,12 +23,12 @@ class Data1D(object):
         will be constructed. The tuple should have between 2 and 4 members.
             data[0] - x
             data[1] - y
-            data[2] - standard deviation of y, y_sd
-            data[3] - standard deviation of x, x_sd
+            data[2] - uncertainties on y, y_err
+            data[3] - uncertainties of x, x_err
 
         `data` must be at least two long, `x` and `y`.
-        If the tuple is at least 3 long then the third member is `y_sd`.
-        If the tuple is 4 long then the fourth member is `x_sd`.
+        If the tuple is at least 3 long then the third member is `y_err`.
+        If the tuple is 4 long then the fourth member is `x_err`.
         All arrays must have the same shape.
 
     Attributes
@@ -40,9 +40,9 @@ class Data1D(object):
         x data
     y : np.ndarray
         y data
-    y_sd : np.ndarray
-        uncertainties (1 standard deviation) on the y data
-    x_sd : np.ndarray
+    y_err : np.ndarray
+        uncertainties on the y data
+    x_err : np.ndarray
         uncertainties on the x data
     """
     def __init__(self, data=None):
@@ -54,8 +54,8 @@ class Data1D(object):
 
         self.x = np.zeros(0)
         self.y = np.zeros(0)
-        self.y_sd = np.zeros(0)
-        self.x_sd = np.zeros(0)
+        self.y_err = np.zeros(0)
+        self.x_err = np.zeros(0)
 
         # if it's a file then open and load the file.
         if hasattr(data, 'read') or type(data) is str:
@@ -64,9 +64,9 @@ class Data1D(object):
             self.x = np.array(data[0], dtype=float)
             self.y = np.array(data[1], dtype=float)
             if len(data) > 2:
-                self.y_sd = np.array(data[2], dtype=float)
+                self.y_err = np.array(data[2], dtype=float)
             if len(data) > 3:
-                self.x_sd = np.array(data[3], dtype=float)
+                self.x_err = np.array(data[3], dtype=float)
 
     @property
     def npoints(self):
@@ -88,9 +88,9 @@ class Data1D(object):
         Returns
         -------
         data_tuple : tuple
-            4-tuple containing the (x, y, y_sd, x_sd) data
+            4-tuple containing the (x, y, y_err, x_err) data
         """
-        return self.x, self.y, self.y_sd, self.x_sd
+        return self.x, self.y, self.y_err, self.x_err
 
     @property
     def finite_data(self):
@@ -98,14 +98,14 @@ class Data1D(object):
         Returns
         -------
         dataTuple : tuple
-            4-tuple containing the (x, y, y_sd, x_sd) datapoints that are
+            4-tuple containing the (x, y, y_err, x_err) datapoints that are
             finite.
         """
         finite_loc = np.where(np.isfinite(self.y))
         return (self.x[finite_loc],
                 self.y[finite_loc],
-                self.y_sd[finite_loc],
-                self.x_sd[finite_loc])
+                self.y_err[finite_loc],
+                self.x_err[finite_loc])
 
     @data.setter
     def data(self, data_tuple):
@@ -115,26 +115,26 @@ class Data1D(object):
         Parameters
         ----------
         data_tuple : tuple
-            2 to 4 member tuple containing the (x, y, y_sd, x_sd) data to
-            specify the dataset. `y_sd` and `x_sd` are optional.
+            2 to 4 member tuple containing the (x, y, y_err, x_err) data to
+            specify the dataset. `y_err` and `x_err` are optional.
         """
         self.x = np.array(data_tuple[0], dtype=float)
         self.y = np.array(data_tuple[1], dtype=float)
 
         if len(data_tuple) > 2:
-            self.y_sd = np.array(data_tuple[2], dtype=float)
+            self.y_err = np.array(data_tuple[2], dtype=float)
         else:
-            self.y_sd = np.ones_like(self.y)
+            self.y_err = np.ones_like(self.y)
 
         if len(data_tuple) > 3:
-            self.x_sd = np.array(data_tuple[3], dtype=float)
+            self.x_err = np.array(data_tuple[3], dtype=float)
         else:
-            self.x_sd = np.zeros(np.size(self.x))
+            self.x_err = np.zeros(np.size(self.x))
         self.sort()
 
     def scale(self, scalefactor=1.):
         """
-        Scales the y and y_sd data by dividing by `scalefactor`.
+        Scales the y and y_err data by dividing by `scalefactor`.
 
         Parameters
         ----------
@@ -142,7 +142,7 @@ class Data1D(object):
             The scalefactor to divide by.
         """
         self.y /= scalefactor
-        self.y_sd /= scalefactor
+        self.y_err /= scalefactor
 
     def add_data(self, data_tuple, requires_splice=False, trim_trailing=True):
         """
@@ -151,17 +151,17 @@ class Data1D(object):
         Parameters
         ----------
         data_tuple : tuple
-            2 to 4 member tuple containing the (x, y, y_sd, x_sd) data to add
-            to the dataset. `y_sd` and `x_sd` are optional.
+            2 to 4 member tuple containing the (x, y, y_err, x_err) data to add
+            to the dataset. `y_err` and `x_err` are optional.
         requires_splice : bool, optional
             When the new data is added to the dataset do you want to scale it
             vertically so that it overlaps with the existing data? `y` and
-            `y_sd` in `data_tuple` are both multiplied by the scaling factor.
+            `y_err` in `data_tuple` are both multiplied by the scaling factor.
         trim_trailing : bool, optional
             When the new data is concatenated do you want to remove points from
             the existing data that are in the overlap region? This might be
             done because the datapoints in the `data_tuple` you are adding have
-            have lower `y_sd` than the preceding data.
+            have lower `y_err` than the preceding data.
         """
         xdata, ydata, ydata_sd, xdata_sd = self.data
 
@@ -215,8 +215,8 @@ class Data1D(object):
         sorted = np.argsort(self.x)
         self.x = self.x[sorted]
         self.y = self.y[sorted]
-        self.y_sd = self.y_sd[sorted]
-        self.x_sd = self.x_sd[sorted]
+        self.y_err = self.y_err[sorted]
+        self.x_err = self.x_err[sorted]
 
     def save(self, f):
         """
@@ -230,8 +230,8 @@ class Data1D(object):
         np.savetxt(
             f, np.column_stack((self.x,
                                 self.y,
-                                self.y_sd,
-                                self.x_sd)))
+                                self.y_err,
+                                self.x_err)))
 
     def save_fit(self, f):
         if self.fit is not None:
