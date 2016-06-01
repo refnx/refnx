@@ -19,6 +19,7 @@ from refnx.analysis import (CurveFitter, ReflectivityFitFunction, GlobalFitter,
                             to_parameters, Transform, values, names)
 from refnx.dataset import ReflectDataset
 from lmfit.printfuncs import fit_report
+import pandas as pd
 
 
 def global_fitter_setup(global_pilot_file, dqvals=5.0):
@@ -63,17 +64,17 @@ def global_fitter_setup(global_pilot_file, dqvals=5.0):
     fitters = []
 
     for parameter, dataset in zip(parameters, datasets):
-        t_data_y, t_data_ysd = T.transform(dataset.x,
-                                           dataset.y,
-                                           dataset.y_sd)
+        t_data_y, t_data_yerr = T.transform(dataset.x,
+                                            dataset.y,
+                                            dataset.y_err)
 
         if isinstance(dqvals, numbers.Real):
             _dqvals = float(dqvals)
         else:
-            _dqvals = dataset.x_sd
+            _dqvals = dataset.x_err
 
         c = CurveFitter(ReflectivityFitFunction(T.transform, parallel=True),
-                        (dataset.x, t_data_y, t_data_ysd),
+                        (dataset.x, t_data_y, t_data_yerr),
                         parameter,
                         fcn_kws={'dqvals': _dqvals})
         fitters.append(c)
@@ -119,55 +120,6 @@ def global_fitter_setup(global_pilot_file, dqvals=5.0):
     return global_fitter
 
 
-def MCMC_analysis(global_pilot_file, walkers=100, steps=2000, burn=500,
-                  thin=20, dqvals=5.0, pos=None, output=None,
-                  workers=1, chunk=50):
-
-    global_fitter = global_fitter_setup(global_pilot_file,
-                                        dqvals=dqvals)
-
-    # do the sampling
-    n_remaining = steps
-    done = 0
-
-    sys.stdout.write("Starting MCMC\n")
-    sys.stdout.write("-------------\n")
-    start = time.time()
-
-    while n_remaining > 0:
-        todo = min(chunk, n_remaining)
-
-        if done > burn:
-            _burn = burn
-        if (done - burn) > thin:
-            _thin = thin
-
-        res = global_fitter.emcee(nwalkers=args.walkers,
-                                  steps=todo,
-                                  burn=_burn,
-                                  thin=_thin,
-                                  workers=workers,
-                                  pos=pos)
-        n_remaining -= todo
-        done += todo
-        pos = res.chain
-
-        # write the results so far. You should only get anything if the
-        # number of steps is > args.burn.
-        _write_results(arg.output, res)
-
-        # write raw chain in npy format
-        np.save(args.chain_output, res.chain)
-
-        sys.stderr.write(
-            "{0:^7} steps, {1:^7} seconds\n".format(done, time.time() - start)
-                         )
-
-    sys.stderr.write("\nFinished MCMC\n")
-    sys.stderr.write("-------------\n")
-    sys.stderr.write(fit_report(res.params))
-
-
 def main(argv):
     parser = ArgumentParser(usage=__doc__.lstrip())
     parser.add_argument("global_pilot_file",
@@ -176,29 +128,38 @@ def main(argv):
                         help="How many MCMC walkers?")
     parser.add_argument("--steps", "-s", type=int, default=2000,
                         help="How many MCMC steps?")
+    parser.add_argument("--ntemps", '-T', type=int, default=1,
+                        help="How many parallel tempering temperatures?")
     parser.add_argument("--burn", "-b", type=int, default=500,
-                        help="How many initial MCMC steps do you want to burn?")
+                        help="How many initial MCMC steps do you want to "
+                             "burn?")
     parser.add_argument("--thin", "-t", type=int, default=20,
                         help="Thins the chain by accepting 1 in every 'thin'")
     parser.add_argument("--qres", "-q", type=float, default=5.0,
                         help="Constant dq/q resolution")
-    parser.add_argument("--pointqres", "-p", action="store_true", default=False,
-                        help="Use point by point resolution smearing (default False)")
+    parser.add_argument("--pointqres", "-p", action="store_true",
+                        default=False,
+                        help="Use point by point resolution smearing (default "
+                             "False)")
     parser.add_argument("--chain_input", "-i", type=str,
-                        help="Initialise/restart emcee with this RAW chain. This file"
-                             " is a numpy array (.npy) that would've originally been"
-                             "saved by the --chain_output option.")
-    parser.add_argument("--chain_output", "-c", default='chain.npy', type=str,
-                        help="Specify filename for unthinned, unburnt RAW"
-                             " chain. The file is saved as a numpy (.npy)"
-                             " array. You can use this file if you'd like to do"
-                             " the burn/thin procedure yourself. You can also use"
-                             " this file to restart the sampling. The array has"
-                             " shape (walkers, steps, walkers, dims), where dims"
-                             " represents the number of parameters you are"
-                             " varying.")
+                        help="Initialise/restart emcee with this RAW chain. "
+                             "This file is a numpy array (.npy) that would've "
+                             "originally been saved by the --chain_output "
+                             "option.")
+    parser.add_argument("--chain_output", "-c", default='raw_chain.npy', type=str,
+                        help="Specify filename for unthinned, unburnt RAW "
+                             "chain. The file is saved as a numpy (.npy) "
+                             "array. You can use this file if you'd like to do "
+                             "the burn/thin procedure yourself. You can also use "
+                             "this file to restart the sampling. The array has "
+                             "shape (walkers, steps, dims), where dims "
+                             "represents the number of parameters you are "
+                             "varying. If ntemps is > 1 then the array has shape "
+                             " (ntemps, walkers, steps, dims")
     parser.add_argument("--output", "-o", type=str, default='iterations',
-                        help="Output file for burnt and thinned MCMC chain")
+                        help="Output file for burnt and thinned MCMC chain. "
+                             "This is only written once the sampling has "
+                             "finished")
     parser.add_argument("--nprocesses", "-n", type=int, default=1,
                         help="How many processes for parallelisation?")
 
@@ -214,11 +175,11 @@ def main(argv):
         args.nprocesses = 1
 
     if args.thin < 1:
-        sys.stdout.write("Can't have thin < 1, setting to 1.\n")
+        sys.stdout.write("Can't have thin < 1, setting 'thin' to 1.\n")
         args.thin = 1
 
     if (args.burn < 0) or (args.burn > args.steps):
-        sys.stdout.write("Can't burn < 0 or burn > steps, setting to 1.\n")
+        sys.stdout.write("Can't burn < 0 or burn > steps, setting 'burn' to 1.\n")
         args.burn = 1
 
     global_fitter = global_fitter_setup(args.global_pilot_file,
@@ -237,40 +198,41 @@ def main(argv):
     sys.stdout.write("-------------\n")
     start = time.time()
 
-    burn = 0
-    thin = 1
+    reuse_sampler = False
     while n_remaining > 0:
         todo = min(chunk_size, n_remaining)
 
-        if done > args.burn:
-            burn = args.burn
-        if (done - args.burn) > thin:
-            thin = args.thin
-
         res = global_fitter.emcee(nwalkers=args.walkers,
                                   steps=todo,
-                                  burn=burn,
-                                  thin=thin,
+                                  ntemps=args.ntemps,
+                                  burn=0,
+                                  thin=1,
                                   workers=args.nprocesses,
-                                  pos=pos)
+                                  pos=pos,
+                                  reuse_sampler=reuse_sampler)
+        reuse_sampler = True
         n_remaining -= todo
         done += todo
         pos = res.chain
 
-        # write the results so far. You should only get anything if the
-        # number of steps is > args.burn.
-        _write_results(arg.output, res)
-
-        # write raw chain in npy format
+        # write raw chain in npy format. It is unburnt and unthinned
         np.save(args.chain_output, res.chain)
 
         sys.stdout.write(
             "{0:^7} steps, {1:^7} seconds\n".format(done, time.time() - start)
                          )
 
+    # thin and burn the chain.
+    chain = res.chain[..., args.burn::args.thin, :]
+    res.chain = np.copy(chain)
+
+    # write the iterations.
+    _write_results(args.output, res)
+
     sys.stdout.write("\nFinished MCMC\n")
     sys.stdout.write("-------------\n")
     sys.stdout.write(fit_report(res.params))
+    sys.stdout.write("-----------------------------------------------------\n")
 
 
 def _write_results(f, emcee_result):
@@ -295,6 +257,7 @@ def pgen(parameters, flatchain, idx=None):
         for var_name in flatchain.columns:
             parameters[var_name].value = flatchain.iloc[i][var_name]
         yield parameters
+
 
 if __name__ == "__main__":
     main(argv=sys.argv[1:])
