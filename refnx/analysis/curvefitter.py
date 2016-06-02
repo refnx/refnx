@@ -638,7 +638,6 @@ class CurveFitter(Minimizer):
 
         Returns
         -------
-
         result : lmfit.MinimizerResult
             Result object.
 
