@@ -21,7 +21,6 @@ from refnx.analysis import (CurveFitter, ReflectivityFitFunction, GlobalFitter,
                             to_parameters, Transform, values, names)
 from refnx.dataset import ReflectDataset
 from lmfit.printfuncs import fit_report
-import pandas as pd
 
 
 def global_fitter_setup(global_pilot_file, dqvals=5.0):
@@ -124,7 +123,7 @@ def global_fitter_setup(global_pilot_file, dqvals=5.0):
     return global_fitter
 
 
-def _MCMC(args, global_fitter):
+def _mcmc(args, global_fitter):
     # sample via Markov Chain Monte Carlo
     pos = None
     if args.chain_input is not None:
@@ -171,7 +170,7 @@ def _MCMC(args, global_fitter):
     return res
 
 
-def __resampleMCiterator(args):
+def __resample_mc_iterator(args):
     global_fitter, seed = args
     gf = deepcopy(global_fitter)
     np.random.seed(seed)
@@ -179,7 +178,7 @@ def __resampleMCiterator(args):
     return res.mc
 
 
-def _resampleMC(args, global_fitter):
+def _resample_mc(args, global_fitter):
     # do the sampling by Resampling Monte Carlo
 
     sys.stdout.write("----------------------\n")
@@ -203,14 +202,13 @@ def _resampleMC(args, global_fitter):
             seeds = range(done, done + todo)
             gfs = [global_fitter] * todo
 
-            results = pool.map(__resampleMCiterator, zip(gfs, seeds))
+            results = pool.map(__resample_mc_iterator, zip(gfs, seeds))
 
             mcs.append(results)
             done += todo
             remaining -= todo
 
-            sys.stdout.write(
-            "{0:^7} steps, {1:^7} seconds\n".format(done, time.time() - start))
+            sys.stdout.write("{0:^7} steps, {1:^7} seconds\n".format(done, time.time() - start))
 
     mc = np.squeeze(np.vstack(mcs))
 
@@ -316,10 +314,10 @@ def main(argv):
             sys.stdout.write("Can't burn < 0 or burn > steps, setting 'burn' to 1.\n")
             args.burn = 1
 
-        res = _MCMC(args, global_fitter)
+        res = _mcmc(args, global_fitter)
     else:
         # By resampling
-        res = _resampleMC(args, global_fitter)
+        res = _resample_mc(args, global_fitter)
 
     # write the iterations.
     _write_results(args.output, res)
