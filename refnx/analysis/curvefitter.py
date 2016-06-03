@@ -5,13 +5,13 @@ Created on Sun Dec 21 15:37:29 2014
 @author: Andrew Nelson
 """
 from __future__ import print_function
-from lmfit import Minimizer, Parameters
-import warnings
-import numpy as np
-import numpy.ma as ma
 import re
 from functools import partial
 import abc
+import warnings
+from lmfit import Minimizer, Parameters
+import numpy as np
+import numpy.ma as ma
 from refnx.dataset import Data1D
 
 # check for EMCEE
