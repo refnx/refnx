@@ -328,6 +328,19 @@ def main(argv):
     sys.stdout.write("\n-----------------------------------------------------\n")
 
 
+def filter_dependent_params(params, output):
+    # filters dependent parameters from the MonteCarlo output
+    # i.e. reject all parameters where expr is not None.
+    independent = []
+    for idx, param in enumerate(params):
+        if param.expr is not None:
+            independent.append(idx)
+
+    arr = np.zeros((np.size(output, 0), idx))
+    arr = output[:, idx]
+    return arr
+
+
 def _write_results(f, emcee_result):
     # the flatchain is what we're interested in.
     # make an output array
