@@ -8,8 +8,9 @@ else:
     HAVE_CREFLECT = True
 import refnx.analysis._reflect as _reflect
 import refnx.analysis.curvefitter as curvefitter
-from refnx.analysis.curvefitter import CurveFitter, values
+from refnx.analysis.curvefitter import CurveFitter
 from refnx.analysis.reflect import ReflectivityFitFunction as RFF
+from refnx.analysis.reflect import AnalyticalReflectivityFunction as ARF
 
 import numpy as np
 from numpy.testing import (assert_almost_equal, assert_equal, assert_,
@@ -194,7 +195,7 @@ class TestReflect(unittest.TestCase):
         yt, et = transform.transform(self.qvals361,
                                      self.rvals361,
                                      self.evals361)
-        kws = {'transform':transform.transform}
+        kws = {'transform': transform.transform}
         fitter2 = CurveFitter(fitfunc,
                               (self.qvals361, yt, et),
                               self.params361,
@@ -208,7 +209,7 @@ class TestReflect(unittest.TestCase):
                                      self.rvals361,
                                      self.evals361)
 
-        kws = {'transform':transform.transform}
+        kws = {'transform': transform.transform}
         fitfunc = RFF(transform=transform.transform, dq=5.)
 
         fitter = CurveFitter(fitfunc,
@@ -235,7 +236,8 @@ class TestReflect(unittest.TestCase):
         Do the same here
         '''
         calc = reflect.reflectivity(qvals.flatten(), self.coefs,
-                              **{'dqvals': dqvals.flatten(), 'quad_order': 13})
+                                    **{'dqvals': dqvals.flatten(),
+                                       'quad_order': 13})
 
         assert_almost_equal(rvals.flatten(), calc)
 
@@ -243,9 +245,10 @@ class TestReflect(unittest.TestCase):
         # check that constant dq/q smearing is the same as point by point
         dqvals = 0.05 * self.qvals
         calc = reflect.reflectivity(self.qvals, self.coefs,
-                              **{'dqvals': dqvals, 'quad_order': 'ultimate'})
+                                    **{'dqvals': dqvals,
+                                       'quad_order': 'ultimate'})
         calc2 = reflect.reflectivity(self.qvals, self.coefs,
-                               **{'dqvals': 5.})
+                                     **{'dqvals': 5.})
 
         assert_allclose(calc, calc2, rtol=0.011)
 
@@ -263,7 +266,8 @@ class TestReflect(unittest.TestCase):
         reshaped_r = np.reshape(rvals, (2, 250))
         reshaped_dq = np.reshape(dqvals, (2, 250))
         calc = reflect.reflectivity(reshaped_q, self.coefs,
-                              **{'dqvals': reshaped_dq, 'quad_order': 13})
+                                    **{'dqvals': reshaped_dq,
+                                       'quad_order': 13})
 
         assert_almost_equal(calc, reshaped_r, 15)
 
@@ -306,6 +310,26 @@ class TestReflect(unittest.TestCase):
         names2 = reflect.ReflectivityFitFunction.parameter_names(12)
         assert_(names == names2)
 
+
+class AnalyticTestFunction(ARF):
+    def params_to_slab(self, params):
+        return [1, 1., 0, 0, 2.07, 0, 0, 3, 100, 3.47, 0, 2]
+
+
+class TestAnalyticalProfile(unittest.TestCase):
+    def setUp(self):
+        self.arf = AnalyticTestFunction(dq=0)
+
+        theoretical = np.loadtxt(os.path.join(path, 'theoretical.txt'))
+        qvals, rvals = np.hsplit(theoretical, 2)
+        self.qvals = qvals.flatten()
+        self.rvals = rvals.flatten()
+
+    def test_ARF_model(self):
+        # simple smoke test to see if we can calculate reflectivity using
+        # the analytical model setup
+        rvals = self.arf.model(self.qvals, [2])
+        assert_allclose(rvals, self.rvals)
 
 if __name__ == '__main__':
     unittest.main()
