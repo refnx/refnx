@@ -826,7 +826,7 @@ class ReflectivityFitFunction(FitFunction):
 class AnalyticalReflectivityFunction(ReflectivityFitFunction):
     """
     A class for using analytical profiles in Reflectometry problems
-    Usage involves inheriting this class and over-riding ``params_to_slab`` and
+    Usage involves inheriting this class and over-riding ``to_slab`` and
     ``parameter_names``.
     """
     def __init__(self, transform=None, dq=5., quad_order=17, parallel=True):
@@ -862,7 +862,7 @@ class AnalyticalReflectivityFunction(ReflectivityFitFunction):
         Calculates the reflectivity model. You should not need to over-ride
         this method.
         """
-        slab_pars = self.params_to_slab(parameters)
+        slab_pars = self.to_slab(parameters)
         s_klass = super(AnalyticalReflectivityFunction, self)
         return s_klass.model(x, slab_pars, *args, **kwds)
 
@@ -871,12 +871,12 @@ class AnalyticalReflectivityFunction(ReflectivityFitFunction):
         Calculates the SLD profile. You should not need to over-ride
         this method.
         """
-        slab_pars = self.params_to_slab(parameters)
+        slab_pars = self.to_slab(parameters)
         s_klass = super(AnalyticalReflectivityFunction, self)
         return s_klass.sld_profile(slab_pars, points=points)
 
     @abc.abstractmethod
-    def params_to_slab(self, params):
+    def to_slab(self, params):
         """
         Maps Parameters from your analytical model to those suitable
         for a simple slab reflectivity calculation. See ``reflectivity`` for

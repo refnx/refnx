@@ -312,7 +312,7 @@ class TestReflect(unittest.TestCase):
 
 
 class AnalyticTestFunction(ARF):
-    def params_to_slab(self, params):
+    def to_slab(self, params):
         return [1, 1., 0, 0, 2.07, 0, 0, 3, 100, 3.47, 0, 2]
 
 
