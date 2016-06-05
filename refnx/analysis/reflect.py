@@ -1,5 +1,6 @@
 from __future__ import division
 import warnings
+import abc
 import math
 import numbers
 import numpy as np
@@ -8,6 +9,7 @@ import scipy.linalg
 from scipy.interpolate import InterpolatedUnivariateSpline
 from refnx.analysis.curvefitter import FitFunction
 import refnx.util.ErrorProp as EP
+from lmfit import Parameters
 
 
 try:
@@ -625,11 +627,7 @@ def sld_profile(z, coefs):
 class ReflectivityFitFunction(FitFunction):
     """
     A sub class of `refnx.analysis.curvefitter.FitFunction` suited for
-    calculation of reflectometry profiles.
-
-    If you wish to fit analytic or freeform SLD profiles you should
-    inherit this class, overriding the `model` method.  If you do this
-    you should also override the `sld_profile` method.
+    calculation of reflectometry profiles from a simple slab model
 
     Parameters
     ----------
@@ -673,9 +671,10 @@ class ReflectivityFitFunction(FitFunction):
         ----------
         x : array-like
             Q values to evaluate the reflectivity at
-        parameters : lmfit.Parameters instance
+        parameters : lmfit.Parameters instance or sequence
             Contains the parameters that are required for reflectivity
-            calculation.
+            calculation. See ``reflectivity`` for the required parameters for
+            calculation
         kwds['dqvals'] - float or np.ndarray, optional
             If dqvals is a float, then a constant dQ/Q resolution smearing is
             employed.  For 5% resolution smearing supply 5.
@@ -711,8 +710,11 @@ class ReflectivityFitFunction(FitFunction):
             The theoretical model for the x, i.e.
             reflectivity(x, parameters, *args, **kwds)
         """
-        params = np.array([parameters[param].value for param in parameters],
-                          float)
+        if isinstance(parameters, Parameters):
+            params = np.array([parameters[param].value for param in parameters],
+                              float)
+        else:
+            params = parameters
 
         if not 'quad_order' in kwds:
             kwds['quad_order'] = self.quad_order
@@ -767,7 +769,7 @@ class ReflectivityFitFunction(FitFunction):
 
         Parameters
         ----------
-        parameters : lmfit.parameters.Parameters instance
+        parameters : lmfit.parameters.Parameters instance or sequence
         points : array-like
             The points to evaluate the SLD profile at.
 
@@ -776,8 +778,11 @@ class ReflectivityFitFunction(FitFunction):
         (z, rho_z) : tuple of np.ndarrays
             The distance from the top interface and the SLD at that point.
         """
-
-        params = np.asfarray(list(parameters.valuesdict().values()))
+        if isinstance(parameters, Parameters):
+            params = np.array([parameters[param].value for param in parameters],
+                              float)
+        else:
+            params = parameters
 
         if points is not None:
             return points, sld_profile(points, params)
@@ -816,6 +821,97 @@ class ReflectivityFitFunction(FitFunction):
 
     def callback(self, parameters, iteration, resid, *fcn_args, **fcn_kws):
         return False
+
+
+class AnalyticalReflectivityFunction(ReflectivityFitFunction):
+    """
+    A class for using analytical profiles in Reflectometry problems
+    Usage involves inheriting this class and over-riding ``to_slab`` and
+    ``parameter_names``.
+    """
+    def __init__(self, transform=None, dq=5., quad_order=17, parallel=True):
+        """
+        Parameters
+        ----------
+        transform : callable, optional
+            If specified then this function is used to transform the data
+            returned by the model method. With the signature:
+            ``transformed_y_vals = transform(x_vals, y_vals)``.
+        dq : float, optional
+            Default dq/q resolution (as a percentage).
+        quad_order : int or str, optional
+            The order of the Gaussian quadrature polynomial for doing the
+            resolution smearing. default = 17. Don't choose less than 13. If
+            quad_order == 'ultimate' then adaptive quadrature is used. Adaptive
+            quadrature will always work, but takes a _long_ time (2 or 3 orders
+            of magnitude longer). Fixed quadrature will always take a lot less
+            time. BUT it won't necessarily work across all samples. For
+            example 13 points may be fine for a thin layer, but will be
+            atrocious at describing a multilayer with Bragg peaks.
+        parallel: bool, optional
+            Do you want to calculate in parallel? This option is only
+            applicable if you are using the ``_creflect`` module. The option is
+            ignored if using the pure python calculator, ``_reflect``.
+        """
+        s_klass = super(AnalyticalReflectivityFunction, self)
+        s_klass.__init__(transform=transform, dq=dq, quad_order=quad_order,
+                         parallel=parallel)
+
+    def model(self, x, parameters, *args, **kwds):
+        """
+        Calculates the reflectivity model. You should not need to over-ride
+        this method.
+        """
+        slab_pars = self.to_slab(parameters)
+        s_klass = super(AnalyticalReflectivityFunction, self)
+        return s_klass.model(x, slab_pars, *args, **kwds)
+
+    def sld_profile(self, parameters, points=None):
+        """
+        Calculates the SLD profile. You should not need to over-ride
+        this method.
+        """
+        slab_pars = self.to_slab(parameters)
+        s_klass = super(AnalyticalReflectivityFunction, self)
+        return s_klass.sld_profile(slab_pars, points=points)
+
+    @abc.abstractmethod
+    def to_slab(self, params):
+        """
+        Maps Parameters from your analytical model to those suitable
+        for a simple slab reflectivity calculation. See ``reflectivity`` for
+        the correct output format.
+
+        Parameters
+        ----------
+        params : lmfit.Parameters or sequence
+            Parameters specifying your analytical model
+
+        Returns
+        -------
+        slab_params : lmfit.Parameters or sequence
+            Parameters usable for simple slab reflectivity calculation. See
+            ``reflectivity`` for the correct format for slab_params. Should
+            have: `len(slab_params) == 4 * slab_params[0] + 8`.
+        """
+        pass
+
+    @abc.abstractmethod
+    def parameter_names(self, nparams=None):
+        """
+        Specifies the names of the parameters for this analytical model
+
+        Parameters
+        ----------
+        nparams : int
+            Number of parameters
+
+        Returns
+        -------
+        names : sequence
+            List containing the names of each of the parameters in this model
+        """
+        pass
 
 
 class Transform(object):
