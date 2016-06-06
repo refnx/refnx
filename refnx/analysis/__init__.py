@@ -1,4 +1,5 @@
-from .reflect import ReflectivityFitFunction, reflectivity, Transform, abeles
+from .reflect import (ReflectivityFitFunction, reflectivity, Transform, abeles,
+                      AnalyticalReflectivityFunction)
 from .curvefitter import *
 import numpy.testing
 test = numpy.testing.Tester().test
