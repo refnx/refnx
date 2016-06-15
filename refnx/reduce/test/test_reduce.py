@@ -52,8 +52,9 @@ class TestReduce(unittest.TestCase):
         # check that the (right?) timestamps are written into the datafile
         tree = ET.parse(os.path.join(os.getcwd(), 'PLP0011641_1.xml'))
         t = tree.find('.//REFentry').attrib['time']
-        # TODO, timestamp seems to be correct on local machine but not on
-        # travis
+        # TODO, timestamp is created in the local time stamp of the testing
+        # machine. The following works if reduced with a computer in Australian
+        # EST.
         # assert_(t == '2012-01-20T22:05:32')
 
         # what happens if you have too many frame bins
