@@ -261,11 +261,19 @@ class CurveFitter(Minimizer):
         ``callback(params, iter, resid, *args, **kwds)``
     costfun : callable, optional
         specifies your own cost function to minimize. Has the signature:
-        ``costfun(pars, generative, y, e)`` where `pars` is a
-        `lmfit.Parameters` instance, `generative` is an array returned by
+        ``costfun(pars, generative, y, e, *fcn_args, **fcn_kws)`` where `pars`
+        is a `lmfit.Parameters` instance, `generative` is an array returned by
         `fitfunc`, and `y` and `e` correspond to the `data[1]` and
         `data[2]` arrays. `costfun` should return a single value. See Notes for
         further details.
+    lnpost : callable, optional
+        specifies your own log-posterior probablility function. This is only
+        relevant applies to the `emcee` method. Has the signature:
+        ``lnpost(pars, generative, y, e, *fcn_args, **fcn_kws)`` where `pars`
+         is a `lmfit.Parameters` instance, `generative` is an array returned by
+        `fitfunc`, and `y` and `e` correspond to the `data[1]` and
+        `data[2]` arrays. `lnpost` should return a single float value. See
+        `CurveFitter.emcee` for further details.
 
     Notes
     -----
@@ -274,13 +282,18 @@ class CurveFitter(Minimizer):
         .. math::
 
             \chi^2=\sum \left( {\frac{\textup{data1 - fitfunc}}{\textup{data2}}}\right)^2
+
+        This user defined cost function can be used to specify other cost
+        functions for `differential_evolution`, `leastsq`, `least_squares`,
+        etc. However,
     """
 
     def __init__(self, fitfunc, data, params, mask=None,
                  fcn_args=(), fcn_kws=None, kws=None, callback=None,
-                 costfun=None):
+                 costfun=None, lnpost=None):
         self.fitfunc = fitfunc
         self.costfun = costfun
+        self.lnpost = lnpost
         self._cf_userargs = fcn_args
         self._cf_userkws = fcn_kws
 
@@ -461,9 +474,10 @@ class CurveFitter(Minimizer):
               ntemps=1, pos=None, reuse_sampler=False, workers=1, seed=None):
         """
         Bayesian sampling of the posterior distribution for the parameters
-        using the `emcee` Markov Chain Monte Carlo package. The method assumes
-        that the prior is Uniform. You need to have `emcee` installed to use
-        this method.
+        using the `emcee` Markov Chain Monte Carlo package. By default the
+        method assumes that the prior is Uniform. To implement non-uniform
+        priors use the `lnpost` kwd when constructing the CurveFitter. You
+        need to have `emcee` installed to use this method.
 
         Parameters
         ----------
@@ -562,7 +576,7 @@ class CurveFitter(Minimizer):
         assumes that the log-prior probability is `-np.inf` (impossible) if the
         one of the parameters is outside its limits. The log-prior probability
         term is zero if all the parameters are inside their bounds (known as a
-        uniform prior). The log-likelihood function is given by [1]_:
+        uniform prior). The default log-likelihood function is given by [1]_:
 
         ..math::
 
@@ -572,6 +586,12 @@ class CurveFitter(Minimizer):
         given datapoint (:math:`g` being the generative model) . This term
         represents :math:`\chi^2` when summed over all datapoints.
 
+        It is also possible to calculate your own log-posterior probability, by
+        constructing the CurveFitter object with a `lnpost` function. This
+        will allow you to use non-uniform priors, etc. The `lnpost` function
+        has the signature:
+        ``lnpost(pars, generative, y, e, *fcn_args, **fcn_kws)``. You should
+        return a single float from this `lnpost` function
 
         References
         ----------
@@ -580,7 +600,7 @@ class CurveFitter(Minimizer):
         self._update_resid()
 
         try:
-            if self.is_weighted:
+            if self.is_weighted or self.lnpost is not None:
                 # get the proper log-likelihood if you have
                 # uncertainties
                 self._resid = partial(_parallel_likelihood_calculator,
@@ -591,6 +611,7 @@ class CurveFitter(Minimizer):
                                       mask=self.mask,
                                       fcn_args=self._cf_userargs,
                                       fcn_kws=self._cf_userkws,
+                                      lnpost=self.lnpost
                                       )
                 self.userfcn = self._resid
             else:
@@ -922,7 +943,7 @@ def _parallel_residuals_calculator(params, fitfunc=None, data_tuple=None,
         return resid
 
     if costfun is not None:
-        return costfun(params, resid, y, e)
+        return costfun(params, resid, y, e, *fcn_args, **kws)
 
     resid -= y
     resid /= e
@@ -935,7 +956,8 @@ def _parallel_residuals_calculator(params, fitfunc=None, data_tuple=None,
 
 
 def _parallel_likelihood_calculator(params, fitfunc=None, data_tuple=None,
-                                    mask=None, fcn_args=(), fcn_kws=None):
+                                    mask=None, fcn_args=(), fcn_kws=None,
+                                    lnpost=None):
     """
     Function calculating the log-likelihood for a curvefit. This is a
     separate function and not a method in CurveFitter to allow for
@@ -949,17 +971,20 @@ def _parallel_likelihood_calculator(params, fitfunc=None, data_tuple=None,
 
     resid = fitfunc(x, params, *fcn_args, **kws)
 
-    resid -= y
-    resid /= e
-    resid *= resid
-
-    resid += np.log(2 * np.pi * e**2)
-
-    if mask is not None:
-        resid_ma = ma.array(resid, mask=mask)
-        return -0.5 * np.sum(resid_ma[~resid_ma.mask].data)
+    if lnpost is not None:
+        return lnpost(params, resid, y, e, *fcn_args, **kws)
     else:
-        return -0.5 * np.sum(resid)
+        resid -= y
+        resid /= e
+        resid *= resid
+
+        resid += np.log(2 * np.pi * e**2)
+
+        if mask is not None:
+            resid_ma = ma.array(resid, mask=mask)
+            return -0.5 * np.sum(resid_ma[~resid_ma.mask].data)
+        else:
+            return -0.5 * np.sum(resid)
 
 
 def _parallel_global_fitfunc(x, params, fitfuncs=None,
