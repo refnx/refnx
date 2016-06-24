@@ -1,9 +1,12 @@
 import os.path
 import unittest
 import time
+from copy import deepcopy
 
 import refnx.analysis.curvefitter as curvefitter
-from refnx.analysis.curvefitter import (values, CurveFitter, HAS_EMCEE, FitFunction)
+from refnx.analysis.curvefitter import (values, CurveFitter, HAS_EMCEE,
+                                        FitFunction,
+                                        _parallel_likelihood_calculator)
 import numpy as np
 from lmfit.minimizer import MinimizerResult
 from NISTModels import NIST_runner, Models, ReadNistData
@@ -234,6 +237,40 @@ class TestFitterGauss(unittest.TestCase):
                         self.params)
         f.emcee(nwalkers=100, steps=300, burn=100, thin=5)
         within_sigma(self.best_weighted, out.params)
+
+    def test_lnpost(self):
+        data = (self.xvals, self.yvals, self.evals)
+        lnprob = _parallel_likelihood_calculator(self.params,
+                                                 gauss,
+                                                 data)
+
+        def lnpost(pars, generative, y, e):
+            resid = y - generative
+            resid /= e
+            resid *= resid
+            resid += np.log(2 * np.pi * e**2)
+            return -0.5 * np.sum(resid)
+
+        lnprob2 = _parallel_likelihood_calculator(self.params,
+                                                  gauss,
+                                                  data,
+                                                  lnpost=lnpost)
+
+        assert_equal(lnprob2, lnprob)
+
+        pars_copy = deepcopy(self.params)
+
+        f = CurveFitter(gauss,
+                        data,
+                        self.params)
+        res = f.emcee(steps=10, burn=0, thin=1, seed=1)
+
+        g = CurveFitter(gauss,
+                        data,
+                        pars_copy,
+                        lnpost=lnpost)
+        res2 = g.emcee(steps=10, burn=0, thin=1, seed=1)
+        assert_almost_equal(np.array(res.params), np.array(res2.params))
 
 
 def within_sigma(desired, actual_params):
