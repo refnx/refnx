@@ -763,15 +763,18 @@ class ReflectivityFitFunction(FitFunction):
         elif quad_order == 'ultimate':
             self.quad_order = 'ultimate'
 
-    def sld_profile(self, parameters, points=None):
+    def sld_profile(self, parameters, z=None):
         """
         Calculate the SLD profile corresponding to the model parameters.
 
         Parameters
         ----------
         parameters : lmfit.parameters.Parameters instance or sequence
-        points : array-like
-            The points to evaluate the SLD profile at.
+
+        z : array-like, optional
+            Interfacial distances to evaluate the SLD profile at.
+            z = 0 corresponds to the interfaces between the fronting medium
+            and the first layer
 
         Returns
         -------
@@ -784,8 +787,8 @@ class ReflectivityFitFunction(FitFunction):
         else:
             params = parameters
 
-        if points is not None:
-            return points, sld_profile(points, params)
+        if z is not None:
+            return z, sld_profile(z, params)
 
         if not int(params[0]):
             zstart = -5 - 4 * np.fabs(params[7])
@@ -800,9 +803,9 @@ class ReflectivityFitFunction(FitFunction):
                 temp += np.fabs(params[4 * i + 8])
             zend = 5 + temp + 4 * np.fabs(params[7])
 
-        points = np.linspace(zstart, zend, num=500)
+        z = np.linspace(zstart, zend, num=500)
 
-        return points, sld_profile(points, params)
+        return z, sld_profile(z, params)
 
     @staticmethod
     def parameter_names(nparams=8):
@@ -866,14 +869,14 @@ class AnalyticalReflectivityFunction(ReflectivityFitFunction):
         s_klass = super(AnalyticalReflectivityFunction, self)
         return s_klass.model(x, slab_pars, *args, **kwds)
 
-    def sld_profile(self, parameters, points=None):
+    def sld_profile(self, parameters, z=None):
         """
         Calculates the SLD profile. You should not need to over-ride
         this method.
         """
         slab_pars = self.to_slab(parameters)
         s_klass = super(AnalyticalReflectivityFunction, self)
-        return s_klass.sld_profile(slab_pars, points=points)
+        return s_klass.sld_profile(slab_pars, z=z)
 
     @abc.abstractmethod
     def to_slab(self, params):
