@@ -155,21 +155,19 @@ def rebin(x1, y1, x2, y1_sd=None):
 
     Parameters
     ----------
-     x1 : np.ndarray
-         M + 1 array of old bin edges.
-     y1 : np.ndarray
+    x1 : np.ndarray
+        M + 1 array of old bin edges.
+    y1 : np.ndarray
         M + 1 array of old histogram values. This is the total number in
         each bin, not an average.
-     x2 : np.ndarray
+    x2 : np.ndarray
         N + 1 array of new bin edges.
-     y1_sd : np.ndarray, optional
+    y1_sd : np.ndarray, optional
         Standard deviations of values in y1
 
     Returns
     -------
-    y2 : np.ndarray
-    --OR--
-    (y2, y2_sd) : np.ndarray
+    y2 or (y2, y2_sd) : np.ndarray
         An array of rebinned histogram values.
 
     The rebinning algorithm assumes that the counts in each old bin are

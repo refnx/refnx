@@ -3,7 +3,7 @@ import numpy as np
 
 
 def get_scaling_in_overlap(x0, y0, dy0, x1, y1, dy1):
-    """
+    r"""
     Obtain vertical scaling factor that splices the second dataset onto the
     first.
 
@@ -29,7 +29,7 @@ def get_scaling_in_overlap(x0, y0, dy0, x1, y1, dy1):
         They are `np.nan` if the abscissae ranges don't overlap.
         `overlap_points` indicates the points in the *first* dataset that are
         in the overlap region.
-\    """
+    """
 
     # the datasets should be sorted, but we may not want to sort the data
     # so make a temporary copy of the data

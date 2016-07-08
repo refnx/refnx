@@ -4,6 +4,7 @@ All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
+
     * Redistributions of source code must retain the above copyright
       notice, this list of conditions and the following disclaimer.
     * Redistributions in binary form must reproduce the above copyright
@@ -68,9 +69,12 @@ class BoundedRectBivariateSpline(RectBivariateSpline):
 
     Input
     -----
-      x : array_like, length m+1, bin edges in x direction
-      y : array_like, length n+1, bin edges in y direction
-      z : array_like, m by n, values of function to fit spline
+        x : array_like
+            bin edges in x direction, length m+1
+        y : array_like
+            bin edges in y direction, length n+1,
+        z : array_like
+            values of function to fit spline, m by n
 
     """
     def __init__(self, x, y, z, fill_value=0.0, **kwargs):

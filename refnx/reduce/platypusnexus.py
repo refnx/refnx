@@ -278,7 +278,7 @@ class PlatypusNexus(object):
                 rebin_percent=1., wavelength_bins=None, normalise=True,
                 integrate=-1, eventmode=None, event_folder=None, peak_pos=None,
                 background_mask=None, normalise_bins=True, **kwds):
-        """
+        r"""
         Processes the ProcessNexus object to produce a time of flight spectrum.
         The processed spectrum is stored in the `processed_spectrum` attribute.
         The specular spectrum is also returned from this function.
@@ -307,13 +307,13 @@ class PlatypusNexus(object):
             `rebin_percent is None`, then no rebinning is done.
         wavelength_bins : array_like
             The wavelength bins for rebinning.  If `wavelength_bins is not
-             None` then the `rebin_percent` parameter is ignored.
+            None` then the `rebin_percent` parameter is ignored.
         normalise : bool
             Normalise by the monitor counts.
         integrate : int
 
             - integrate == -1
-                the spectrum is integrated over all the scanpoints.
+              the spectrum is integrated over all the scanpoints.
             - integrate >= 0
               the individual spectra are calculated individually.
               If `eventmode is not None` then integrate specifies which
@@ -1228,7 +1228,7 @@ def find_specular_ridge(detector, detector_sd, starting_offset=50,
                         tolerance=0.01):
     """
     Find the specular ridges in a detector(n, t, y) plot. Assumes that the
-    specular ridge _does not_ change position.
+    specular ridge **does not** change position.
 
     Parameters
     ----------
@@ -1326,8 +1326,7 @@ def correct_for_gravity(detector, detector_sd, lamda, coll_distance,
 
     Returns
     -------
-    corrected_data, corrected_data_sd, m_gravcorrcoefs :
-                    np.ndarray, np.ndarray, np.ndarray
+    corrected_data, corrected_data_sd, m_gravcorrcoefs : np.ndarray, np.ndarray, np.ndarray
         Corrected image. This is a theoretical prediction where the spectral
         ridge is for each wavelength.  This will be used to calculate the
         actual angle of incidence in the reduction process.
@@ -1413,11 +1412,11 @@ def calculate_wavelength_bins(lo_wavelength, hi_wavelength, rebin_percent):
 
 
 def accumulate_HDF_files(files):
-    """
+    r"""
     Accumulates HDF files together, writing an accumulated file in the current
     directory. The accumulated datafile is written in the current directory
     (os.getcwd()) and has a filename based on the first file, prepended by
-    'ADD_'. For example, if the first file is PLP0000708.nx.hdf then the
+    'ADD\_'. For example, if the first file is PLP0000708.nx.hdf then the
     accumulated file is ADD_PLP0000708.nx.hdf.
 
     Parameters

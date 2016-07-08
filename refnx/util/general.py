@@ -17,27 +17,26 @@ def div(d1, d2, L12 = 2859):
 
     Parameters
     ----------
-    d1: float
+    d1 : float
         slit 1 opening
-    d2: float
+    d2 : float
         slit 2 opening
-    L12: float
+    L12 : float
         distance between slits
 
     Returns
     -------
-        (dtheta, alpha, beta)
-
-    dtheta is the FWHM of the Gaussian approximation to the trapezoidal
-    resolution function
-    alpha is the angular divergence of the penumbra
-    beta is the angular divergence of the umbra
+    dtheta, alpha, beta
+        dtheta is the FWHM of the Gaussian approximation to the trapezoidal
+        resolution function
+        alpha is the angular divergence of the penumbra
+        beta is the angular divergence of the umbra
 
     When calculating dtheta / theta values for resolution, then dtheta is the
     value you need to use.
-    See equations 11-14 in:
+    See equations 11-14 in [1]_.
 
-    [1] de Haan, V.-O.; de Blois, J.; van der Ende, P.; Fredrikze, H.; van der
+    .. [1] de Haan, V.-O.; de Blois, J.; van der Ende, P.; Fredrikze, H.; van der
     Graaf, A.; Schipper, M.; van Well, A. A. & J., v. d. Z. ROG, the neutron
     reflectometer at IRI Delft Nuclear Instruments and Methods in Physics
     Research A, 1995, 362, 434-453
@@ -191,7 +190,7 @@ def tauC(wavelength, xsi=0, z0=0.358, freq=24):
 
 
 def wavelength_velocity(wavelength):
-    """
+    r"""
     Converts wavelength to neutron velocity
 
     Parameters
@@ -208,7 +207,7 @@ def wavelength_velocity(wavelength):
 
 
 def velocity_wavelength(velocity):
-    """
+    r"""
     Converts neutron velocity to wavelength
 
     Parameters
@@ -225,8 +224,9 @@ def velocity_wavelength(velocity):
 
 
 def wavelength_energy(wavelength):
-    """
+    r"""
     Converts wavelength to energy in meV
+
     Parameters
     ----------
     wavelength : float
@@ -236,13 +236,14 @@ def wavelength_energy(wavelength):
     -------
     energy : float
         Energy in meV.
+
     """
     c = 0.5e23 / constants.eV * constants.h ** 2 / constants.m_n
     return c / wavelength ** 2
 
 
 def energy_wavelength(energy):
-    """
+    r"""
     Converts wavelength to energy in meV
 
     Parameters
@@ -260,7 +261,7 @@ def energy_wavelength(energy):
 
 
 def double_chopper_frequency(min_wavelength, max_wavelength, L, N=1):
-    """
+    r"""
     Calculates the maximum frequency available for a given wavelength band
     without getting frame overlap in a chopper spectrometer.
 

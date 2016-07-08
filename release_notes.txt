@@ -1,10 +1,13 @@
-- bump version number in setup.py, but only do it once
+- bump version number in setup.py, but only do it once, set ISRELEASED to True
 - git clean -xdf (no detritus left over)
+- git tag -a <tagname>
+- git push refnx <tagname>
 - source activate dev3
 - python setup.py bdist_wheel sdist
 - source activate dev2
 - python setup.py bdist_wheel
 - twine upload dist/*
+- go into documents directory, "make html". Then copy html directory to refnx.github.io directory
 
 Go into windows
  - update git repository
@@ -14,3 +17,5 @@ Go into windows
  - activate dev2
  - python setup.py bdist_wheel
  - twine upload dist/*
+
+ go to ISRELEASED to False in setup.py

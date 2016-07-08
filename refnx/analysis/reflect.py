@@ -26,8 +26,8 @@ _INTLIMIT = 3.5
 def coefs_to_layer(coefs):
     """
     Converts 'coefs' format array to a 'layer' format array .
-    The 'layer' format is used by the `abeles` function, the 'coefs' format
-    is used by the `reflectivity` function.
+    The 'layer' format is used by :func:`abeles`, the 'coefs' format
+    is used by :func:`reflectivity`.
     The 'layer' format has N + 2 rows and 4 columns. Each row describes a
     separate layer in the model. The 4 columns describe the thickness, SLD,
     iSLD and roughness of each layer.
@@ -82,10 +82,10 @@ def coefs_to_layer(coefs):
 
 
 def layer_to_coefs(layers, scale=1, bkg=0):
-    """
+    r"""
     Converts 'layer' format array to a 'coefs' format array .
-    The 'layer' format is used by the `abeles` function, the 'coefs' format
-    is used by the `reflectivity` function.
+    The 'layer' format is used by the :func:`abeles` function,
+    the 'coefs' format is used by the :func:`reflectivity` function.
     The 'layer' format has N + 2 rows and 4 columns. Each row describes a
     separate layer in the model. The 4 columns describe the thickness, SLD,
     iSLD and roughness of each layer.
@@ -94,22 +94,23 @@ def layer_to_coefs(layers, scale=1, bkg=0):
 
     Parameters
     ----------
-    layers: np.ndarray
+    layers : np.ndarray
         Has shape (2 + N, 4), where N is the number of layers.
 
-        * layers[0, 1] - SLD of fronting (/ 1e-6 Angstrom**-2)
-        * layers[0, 2] - iSLD of fronting (/ 1e-6 Angstrom**-2)
-        * layers[N, 0] - thickness of layer N
-        * layers[N, 1] - SLD of layer N (/ 1e-6 Angstrom**-2)
-        * layers[N, 2] - iSLD of layer N (/ 1e-6 Angstrom**-2)
-        * layers[N, 3] - roughness between layer N-1/N
-        * layers[-1, 1] - SLD of backing (/ 1e-6 Angstrom**-2)
-        * layers[-1, 2] - iSLD of backing (/ 1e-6 Angstrom**-2)
-        * layers[-1, 3] - roughness between backing and last layer
+        * layers[0, 1] = SLD of fronting (/ 1e-6 Angstrom**-2)
+        * layers[0, 2] = iSLD of fronting (/ 1e-6 Angstrom**-2)
+        * layers[N, 0] = thickness of layer N
+        * layers[N, 1] = SLD of layer N (/ 1e-6 Angstrom**-2)
+        * layers[N, 2] = iSLD of layer N (/ 1e-6 Angstrom**-2)
+        * layers[N, 3] = roughness between layer N-1/N
+        * layers[-1, 1] = SLD of backing (/ 1e-6 Angstrom**-2)
+        * layers[-1, 2] = iSLD of backing (/ 1e-6 Angstrom**-2)
+        * layers[-1, 3] = roughness between backing and last layer
 
     Returns
     -------
     coefs : np.ndarray
+        Has shape (4 * N + 8, ), where N is the number of layers
 
         * coefs[0] = number of layers, N
         * coefs[1] = scale factor
@@ -119,14 +120,14 @@ def layer_to_coefs(layers, scale=1, bkg=0):
         * coefs[5] = iSLD of backing
         * coefs[6] = background
         * coefs[7] = roughness between backing and layer N
-
         * coefs[4 * (N - 1) + 8] = thickness of layer N in Angstrom (layer 1 is
-        closest to fronting)
+          closest to fronting)
         * coefs[4 * (N - 1) + 9] = SLD of layer N (/ 1e-6 Angstrom**-2)
         * coefs[4 * (N - 1) + 10] = iSLD of layer N (/ 1e-6 Angstrom**-2)
         * coefs[4 * (N - 1) + 11] = roughness between layer N and N-1.
 
     """
+
     nlayers = np.size(layers, 0) - 2
     coefs = np.zeros(4 * nlayers + 8, np.float64)
     coefs[0] = nlayers
@@ -142,16 +143,17 @@ def layer_to_coefs(layers, scale=1, bkg=0):
 
 
 def abeles(q, layers, scale=1, bkg=0., parallel=True):
-    """
+    r"""
     Abeles matrix formalism for calculating reflectivity from a stratified
     medium.
+
     Parameters
     ----------
-    q: array_like
+    q : array_like
         the q values required for the calculation.
-        Q = 4 * Pi / lambda * sin(omega).
+        :math:`Q = \frac{4\pi}{\lambda}\sin(\Omega)`.
         Units = Angstrom**-1
-    layers: np.ndarray
+    layers : np.ndarray
         coefficients required for the calculation, has shape (2 + N, 4),
         where N is the number of layers
 
@@ -165,11 +167,11 @@ def abeles(q, layers, scale=1, bkg=0., parallel=True):
         * layers[-1, 2] - iSLD of backing (/ 1e-6 Angstrom**-2)
         * layers[-1, 3] - roughness between backing and last layer
 
-    scale: float
+    scale : float
         Multiply all reflectivities by this value.
-    bkg: float
+    bkg : float
         Linear background to be added to all reflectivities
-    parallel: bool
+    parallel : bool
         Do you want to calculate in parallel? This option is only applicable if
         you are using the ``_creflect`` module. The option is ignored if using
         the pure python calculator, ``_reflect``.
@@ -183,36 +185,35 @@ def abeles(q, layers, scale=1, bkg=0., parallel=True):
 
 
 def reflectivity(q, coefs, *args, **kwds):
-    """
+    r"""
     Abeles matrix formalism for calculating reflectivity from a stratified
     medium.
 
     Parameters
     ----------
     q : np.ndarray
-        The qvalues required for the calculation. Q=4*Pi/lambda * sin(omega).
+        The qvalues required for the calculation. :math:`Q=\frac{4Pi}{\lambda}\sin(\Omega)`.
         Units = Angstrom**-1
     coefs : np.ndarray
 
-        * coefs[0] = number of layers, N
-        * coefs[1] = scale factor
-        * coefs[2] = SLD of fronting (/1e-6 Angstrom**-2)
-        * coefs[3] = iSLD of fronting (/1e-6 Angstrom**-2)
-        * coefs[4] = SLD of backing
-        * coefs[5] = iSLD of backing
-        * coefs[6] = background
-        * coefs[7] = roughness between backing and layer N
-
+        * coefs[0] - number of layers, N
+        * coefs[1] - scale factor
+        * coefs[2] - SLD of fronting (/1e-6 Angstrom**-2)
+        * coefs[3] - iSLD of fronting (/1e-6 Angstrom**-2)
+        * coefs[4] - SLD of backing
+        * coefs[5] - iSLD of backing
+        * coefs[6] - background
+        * coefs[7] - roughness between backing and layer N
         * coefs[4 * (N - 1) + 8] = thickness of layer N in Angstrom (layer 1 is
-        closest to fronting)
-        * coefs[4 * (N - 1) + 9] = SLD of layer N (/ 1e-6 Angstrom**-2)
-        * coefs[4 * (N - 1) + 10] = iSLD of layer N (/ 1e-6 Angstrom**-2)
-        * coefs[4 * (N - 1) + 11] = roughness between layer N and N-1.
+          closest to fronting)
+        * coefs[4 * (N - 1) + 9] - SLD of layer N (/ 1e-6 Angstrom**-2)
+        * coefs[4 * (N - 1) + 10] - iSLD of layer N (/ 1e-6 Angstrom**-2)
+        * coefs[4 * (N - 1) + 11] - roughness between layer N and N-1.
 
     kwds : dict, optional
         The following keys are used:
 
-        'dqvals' - float or np.ndarray, optional
+        'dqvals': float or np.ndarray, optional
             If dqvals is a float, then a constant dQ/Q resolution smearing is
             employed.  For 5% resolution smearing supply 5.
             If `dqvals` is the same shape as q, then the array contains the
@@ -226,7 +227,7 @@ def reflectivity(q, coefs, *args, **kwds):
             shape (qvals.shape, M, 2).  There are `M` points in the kernel.
             `dqvals[..., 0]` holds the q values for the kernel, `dqvals[..., 1]`
             gives the corresponding probability.
-        'quad_order' - int, optional
+        'quad_order': int, optional
             the order of the Gaussian quadrature polynomial for doing the
             resolution smearing. default = 17. Don't choose less than 13. If
             quad_order == 'ultimate' then adaptive quadrature is used. Adaptive
@@ -553,6 +554,17 @@ def is_proper_abeles_input(coefs):
     """
     Test to see if the coefs array is suitable input for the `reflectivity`
     function
+
+    Parameters
+    ----------
+    coefs : np.ndarray
+        Coefficients used for calculating reflectivity, as passed to
+        :func:`reflectivity`
+    Returns
+    -------
+    is_proper_abeles_input : bool
+        Truth of whether the coeffcients have the right number of parameters
+        for the number of layers in the model.
     """
     if np.size(coefs, 0) != 4 * int(coefs[0]) + 8:
         return False
@@ -646,7 +658,7 @@ class ReflectivityFitFunction(FitFunction):
         time. BUT it won't necessarily work across all samples. For
         example 13 points may be fine for a thin layer, but will be
         atrocious at describing a multilayer with Bragg peaks.
-    parallel: bool, optional
+    parallel : bool, optional
         Do you want to calculate in parallel? This option is only
         applicable if you are using the ``_creflect`` module. The option is
         ignored if using the pure python calculator, ``_reflect``.
@@ -675,7 +687,7 @@ class ReflectivityFitFunction(FitFunction):
             Contains the parameters that are required for reflectivity
             calculation. See ``reflectivity`` for the required parameters for
             calculation
-        kwds['dqvals'] - float or np.ndarray, optional
+        kwds['dqvals'] : float or np.ndarray, optional
             If dqvals is a float, then a constant dQ/Q resolution smearing is
             employed.  For 5% resolution smearing supply 5.
             If `dqvals` is the same shape as q, then the array contains the
@@ -689,7 +701,7 @@ class ReflectivityFitFunction(FitFunction):
             shape (qvals.shape, M, 2).  There are `M` points in the kernel.
             `dqvals[..., 0]` holds the q values for the kernel, `dqvals[..., 1]`
             gives the corresponding probability.
-        kwds['quad_order'] - int, optional
+        kwds['quad_order'] : int, optional
             the order of the Gaussian quadrature polynomial for doing the
             resolution smearing. default = 17. Don't choose less than 13. If
             quad_order == 'ultimate' then adaptive quadrature is used. Adaptive
@@ -698,7 +710,7 @@ class ReflectivityFitFunction(FitFunction):
             time. BUT it won't necessarily work across all samples. For example,
             13 points may be fine for a thin layer, but will be atrocious at
             describing a multilayer with bragg peaks.
-        kwds['parallel']: bool, optional
+        kwds['parallel'] : bool, optional
             Do you want to calculate in parallel? This option is only
             applicable if you are using the ``_creflect`` module. The option is
             ignored if using the pure python calculator, ``_reflect``. The
@@ -706,9 +718,9 @@ class ReflectivityFitFunction(FitFunction):
 
         Returns
         -------
-        yvals : np.ndarray
-            The theoretical model for the x, i.e.
-            reflectivity(x, parameters, *args, **kwds)
+        y : np.ndarray
+            The predictive model, i.e.
+            ``reflectivity(x, parameters, *args, **kwds)``
         """
         if isinstance(parameters, Parameters):
             params = np.array([parameters[param].value for param in parameters],
@@ -736,13 +748,13 @@ class ReflectivityFitFunction(FitFunction):
 
         Parameters
         ----------
-        dq: None, float or np.ndarray
+        dq : None, float or np.ndarray
             If `None` then there is no resolution smearing.
             If a float, e.g. 5, then dq/q smearing of 5% is applied. If dq==0
             then resolution smearing is removed.
             If an np.ndarray the same length as y, it contains the FWHM of
             the Gaussian approximated resolution kernel.
-        quad_order: int or 'ultimate'
+        quad_order : int or 'ultimate'
             The order of the Gaussian quadrature polynomial for doing the
             resolution smearing. default = 17. Don't choose less than 13. If
             quad_order == 'ultimate' then adaptive quadrature is used. Adaptive
@@ -851,7 +863,7 @@ class AnalyticalReflectivityFunction(ReflectivityFitFunction):
             time. BUT it won't necessarily work across all samples. For
             example 13 points may be fine for a thin layer, but will be
             atrocious at describing a multilayer with Bragg peaks.
-        parallel: bool, optional
+        parallel : bool, optional
             Do you want to calculate in parallel? This option is only
             applicable if you are using the ``_creflect`` module. The option is
             ignored if using the pure python calculator, ``_reflect``.
@@ -894,7 +906,7 @@ class AnalyticalReflectivityFunction(ReflectivityFitFunction):
         -------
         slab_params : lmfit.Parameters or sequence
             Parameters usable for simple slab reflectivity calculation. See
-            ``reflectivity`` for the correct format for slab_params. Should
+            :func:`reflectivity` for the correct format for slab_params. Should
             have: `len(slab_params) == 4 * slab_params[0] + 8`.
         """
         pass
@@ -918,7 +930,25 @@ class AnalyticalReflectivityFunction(ReflectivityFitFunction):
 
 
 class Transform(object):
+    r"""
+    Mathematical transforms of numeric data
 
+    Parameters
+    ----------
+    form : None or str
+        One of:
+
+            - 'lin'
+                No transform is made
+            - 'logY'
+                log10 transform
+            - 'YX4'
+                YX**4 transform
+            - 'YX2'
+                YX**2 transform
+            - None
+                No transform is made
+    """
     def __init__(self, form):
         types = [None, 'lin', 'logY', 'YX4', 'YX2']
         self.form = None
@@ -927,13 +957,21 @@ class Transform(object):
             self.form = form
 
     def transform(self, xdata, ydata, edata=None):
-        """
-        An irreversible transform from lin R vs Q, to some other form
-        form - specifies the transform
-            form = None - no transform is made.
-            form = 'logY' - log transform
-            form = 'YX4' - YX**4 transform
-            form = 'YX2' - YX**2 transform
+        r"""
+        Transform the data passed in
+
+        Parameters
+        ----------
+        xdata : array-like
+
+        ydata : array-like
+
+        edata : array-like
+
+        Returns
+        -------
+        yt, et : tuple
+            The transformed data
         """
 
         if edata is None:

@@ -10,7 +10,7 @@ from refnx.util.nsplice import get_scaling_in_overlap
 
 
 class Data1D(object):
-    """
+    r"""
     A basic representation of a 1D dataset.
 
     Parameters
@@ -21,10 +21,11 @@ class Data1D(object):
 
         Alternatively it is a tuple containing the data from which the dataset
         will be constructed. The tuple should have between 2 and 4 members.
-            data[0] - x
-            data[1] - y
-            data[2] - uncertainties on y, y_err
-            data[3] - uncertainties of x, x_err
+
+            - data[0] - x
+            - data[1] - y
+            - data[2] - uncertainties on y, y_err
+            - data[3] - uncertainties of x, x_err
 
         `data` must be at least two long, `x` and `y`.
         If the tuple is at least 3 long then the third member is `y_err`.
@@ -33,17 +34,14 @@ class Data1D(object):
 
     Attributes
     ----------
-    npoints
-    data
-    finite_data
-    x : np.ndarray
-        x data
-    y : np.ndarray
-        y data
-    y_err : np.ndarray
-        uncertainties on the y data
-    x_err : np.ndarray
-        uncertainties on the x data
+    npoints : the number of points in the dataset
+    data : the data, (x, y, y_err, x_err)
+    finite_data : the data with mask applied
+    x : x data
+    y : y data
+    y_err : uncertainties on the y data
+    x_err : uncertainties on the x data
+
     """
     def __init__(self, data=None):
         self.filename = None
@@ -71,35 +69,22 @@ class Data1D(object):
     @property
     def npoints(self):
         """
-        The number of points in the dataset.
-
-        Returns
-        -------
-        npoints : int
-            How many points in the dataset
+        the number of points in the dataset.
         """
         return self.y.size
 
     @property
     def data(self):
         """
-        The data contained within this object.
-
-        Returns
-        -------
-        data_tuple : tuple
-            4-tuple containing the (x, y, y_err, x_err) data
+        4-tuple containing the (x, y, y_err, x_err) data
         """
         return self.x, self.y, self.y_err, self.x_err
 
     @property
     def finite_data(self):
         """
-        Returns
-        -------
-        dataTuple : tuple
-            4-tuple containing the (x, y, y_err, x_err) datapoints that are
-            finite.
+        4-tuple containing the (x, y, y_err, x_err) datapoints that are
+        finite.
         """
         finite_loc = np.where(np.isfinite(self.y))
         return (self.x[finite_loc],
