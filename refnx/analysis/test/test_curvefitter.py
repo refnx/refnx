@@ -270,7 +270,7 @@ class TestFitterGauss(unittest.TestCase):
                         pars_copy,
                         lnpost=lnpost)
         res2 = g.emcee(steps=10, burn=0, thin=1, seed=1)
-        assert_almost_equal(np.array(res.params), np.array(res2.params))
+        assert_almost_equal(values(res.params), values(res2.params))
 
 
 def within_sigma(desired, actual_params):
