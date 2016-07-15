@@ -82,7 +82,7 @@ def main(argv):
             sys.path.insert(0, p)
 
     if not args.no_build:
-        site_dir = build_project(args)
+        dst_dir, site_dir = build_project(args)
         sys.path.insert(0, site_dir)
         os.environ['PYTHONPATH'] = site_dir
         site.addsitedir(site_dir)
@@ -164,6 +164,7 @@ def main(argv):
                       extra_argv=extra_argv)
     finally:
         os.chdir(cwd)
+        shutil.rmtree(dst_dir)
 
     if isinstance(result, bool):
         sys.exit(0 if result else 1)
@@ -179,7 +180,8 @@ def build_project(args):
 
     Returns
     -------
-    site_dir
+    dst_dir, site_dir: tuple
+        directory for the test environment
         site-packages directory where it was installed
 
     """
@@ -247,7 +249,7 @@ def build_project(args):
             print("Build failed!")
         sys.exit(1)
 
-    return site_dir
+    return dst_dir, site_dir
 
 
 #
