@@ -232,7 +232,7 @@ class Data1D(object):
         f : file-handle or string
             File to load the dataset from.
         """
-        array = np.loadtxt(f)
+        self.data = np.loadtxt(f, unpack=True)
         if hasattr(f, 'read'):
             fname = f.name
         else:
@@ -240,10 +240,6 @@ class Data1D(object):
 
         self.filename = fname
         self.name = os.path.splitext(os.path.basename(fname))[0]
-
-        self.data = [np.squeeze(array[:, col])
-                     for col
-                     in range(np.size(array, 1))]
 
     def refresh(self):
         """

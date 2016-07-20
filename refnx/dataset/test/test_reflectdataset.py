@@ -20,20 +20,35 @@ class TestReflectDataset(unittest.TestCase):
         self.data = data
 
     def test_load(self):
-        # test reflectivity calculation with values generated from Motofit
+        # load dataset from XML, via file handle
         dataset = ReflectDataset()
         with open(os.path.join(path, 'c_PLP0000708.xml')) as f:
             dataset.load(f)
         
         assert_equal(dataset.npoints, 90)
         assert_equal(90, np.size(dataset.x))
-        
+
+        # load dataset from XML, via string
+        dataset = ReflectDataset()
+        dataset.load(os.path.join(path, 'c_PLP0000708.xml'))
+
+        assert_equal(dataset.npoints, 90)
+        assert_equal(90, np.size(dataset.x))
+
+        # load dataset from .dat, via file handle
         dataset1 = ReflectDataset()
         with open(os.path.join(path, 'c_PLP0000708.dat')) as f:
             dataset1.load(f)
         
         assert_equal(dataset1.npoints, 90)
         assert_equal(90, np.size(dataset1.x))
+
+        # load dataset from .dat, via string
+        dataset2 = ReflectDataset()
+        dataset2.load(os.path.join(path, 'c_PLP0000708.dat'))
+
+        assert_equal(dataset2.npoints, 90)
+        assert_equal(90, np.size(dataset2.x))
 
     def test_construction(self):
         # test we can construct a dataset directly from a file.
@@ -43,6 +58,8 @@ class TestReflectDataset(unittest.TestCase):
 
         with open(os.path.join(path, 'c_PLP0000708.xml')) as f:
             dataset = ReflectDataset(f)
+
+        dataset2 = ReflectDataset(os.path.join(path, 'D2O45.txt'))
 
     def test_add_data(self):
         # test we can add data to the dataset

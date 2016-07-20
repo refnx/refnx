@@ -94,14 +94,13 @@ class ReflectDataset(Data1D):
             The file to load the spectrum from, or a str that specifies the file
             name
         """
-        auto_fh = None
-        g = f
-        if not hasattr(f, 'read'):
-            auto_fh = open(f, 'rb')
-            g = auto_fh
+        if hasattr(f, 'name'):
+            fname = f.name
+        else:
+            fname = f
         try:
             tree = ET.ElementTree()
-            tree.parse(g)
+            tree.parse(f)
 
             delim = ', | |,'
             qtext = re.split(delim, tree.find('.//Qz').text)
@@ -114,13 +113,8 @@ class ReflectDataset(Data1D):
             drvals = [float(val) for val in drtext if len(val)]
             dqvals = [float(val) for val in dqtext if len(val)]
 
-            self.filename = g.name
-            self.name = os.path.splitext(os.path.basename(g.name))[0]
+            self.filename = fname
+            self.name = os.path.splitext(os.path.basename(fname))[0]
             self.data = (qvals, rvals, drvals, dqvals)
-            self.filename = g.name
         except ET.ParseError:
-            g.seek(0)
-            super(ReflectDataset, self).load(g)
-        finally:
-            if auto_fh is not None:
-                auto_fh.close()
+            super(ReflectDataset, self).load(fname)
