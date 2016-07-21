@@ -59,7 +59,7 @@ class TestReflectDataset(unittest.TestCase):
         with open(os.path.join(path, 'c_PLP0000708.xml')) as f:
             dataset = ReflectDataset(f)
 
-        dataset2 = ReflectDataset(os.path.join(path, 'D2O45.txt'))
+        dataset2 = ReflectDataset(os.path.join(path, 'd_a.txt'))
 
     def test_add_data(self):
         # test we can add data to the dataset
