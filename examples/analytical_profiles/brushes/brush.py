@@ -8,6 +8,7 @@ from refnx.analysis import AnalyticalReflectivityFunction, Transform
 from scipy.integrate import simps, trapz
 from numpy.testing import assert_, assert_almost_equal, assert_allclose
 from lmfit import Parameter, Parameters
+from scipy.interpolate import Akima1DInterpolator, InterpolatedUnivariateSpline
 
 
 class Brush(AnalyticalReflectivityFunction):
@@ -490,6 +491,88 @@ def test_brush_slab():
     # Confirm average brush height (2 * first_moment) is correct
     first_moment = brush.moment(P)
     assert_allclose(2 * first_moment, 120.01276074)
+
+
+class BrushSpline(Brush):
+    """
+    Interior slab --> Akima spline
+    """
+    # TODO list the exact parameter names in the class docstring
+
+    # Tail parameter names required for Gaussian tail
+    # tail_par = ['n_nodes', thickness_akima, 'vf_akima_0', ..., 'vf_akima_n-1']
+
+    def __init__(self, n_nodes, *args, **kwds):
+        """
+        Parameters
+        ----------
+        """
+        self.tail_par = ['n_nodes', 'thickness_akima']
+        self.n_nodes = n_nodes
+        for i in range(n_nodes):
+            self.tail_par.append('vf_nodes_%d' % i)
+
+        super(BrushSpline, self).__init__(*args, **kwds)
+
+    def to_slab(self, params):
+        """
+        Parameters
+        ----------
+        params: lmfit.Parameters instance
+            The parameters for this analytic profile
+        Returns
+        -------
+        slab_model: np.ndarray
+            Parameters for a slab-model reflectivity calculation
+        """
+        lmfit_values = params.valuesdict()
+
+        # Interior Slabs, Analytical Slices and SiO2
+        n_layers = self.n_interior + self.n_slices + 1
+        n_par = 4 * n_layers + 8
+
+        # General model parameters
+        slab_model = np.zeros((n_par,), float)
+        slab_model[0] = n_layers
+        slab_model[1] = lmfit_values['scale']
+        slab_model[2] = lmfit_values['SLD_super']
+        slab_model[4] = lmfit_values['SLD_sub']
+        slab_model[6] = lmfit_values['bkg']
+        slab_model[7] = lmfit_values['roughness_backing']
+
+        # SiO2 layer
+        slab_model[8] = lmfit_values['thickness_SiO2']
+        slab_model[9] = lmfit_values['SLD_SiO2']
+        slab_model[11] = lmfit_values['roughness_SiO2']
+
+        def overall_sld(vf1):
+            return vf1 * self.sld_poly + (1 - vf1) * lmfit_values['SLD_sub']
+
+        # Interior Layers
+        for i in range(self.n_interior):
+            slab_model[12 + 4*i] = lmfit_values['thickness_{}'.format(i + 1)]
+            slab_model[13 + 4*i] = overall_sld(lmfit_values['phi_{}'.format(i + 1)])
+            slab_model[15 + 4*i] = lmfit_values['roughness_{}'.format(i + 1)]
+
+        # akima layer
+        thickness_akima = lmfit_values['thickness_akima']
+        vf_nodes = np.zeros(2 + self.n_nodes)
+        vf_nodes[0] = lmfit_values['phi_{}'.format(self.n_interior)]
+        for i in range(self.n_nodes):
+            vf_nodes[1 + i] = lmfit_values['vf_nodes_%d' % i]
+
+        A = InterpolatedUnivariateSpline(np.linspace(0, thickness_akima, 2 + self.n_nodes),
+                                         vf_nodes,
+                                         k=2)
+
+        slab_thick = thickness_akima / self.n_slices
+        phi = A(np.linspace(slab_thick / 2, thickness_akima - slab_thick/2, self.n_slices))
+
+        for i in range(self.n_slices):
+            slab_model[12 + 4 * (self.n_interior + i)] = slab_thick
+            slab_model[13 + 4 * (self.n_interior + i)] = overall_sld(phi[i])
+            slab_model[15 + 4 * (self.n_interior + i)] = slab_thick / 4.
+        return slab_model
 
 
 if __name__ == "__main__":
