@@ -163,6 +163,10 @@ class Catalogue(object):
         d['dz'] = h5data[
             'entry1/instrument/detector/vertical_translation'][:]
         d['original_file_name'] = h5data['entry1/experiment/file_name']
+
+        d['scan_axis_name'] = h5data['entry1/data/hmm'].attrs['axes'].decode('utf8').split(':')[0]
+        d['scan_axis'] = h5data['entry1/data/%s' % d['scan_axis_name']][:]
+
         # TODO put HDF file y pixel spacing in here.
         self.cat = d
 
