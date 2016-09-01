@@ -20,8 +20,7 @@ path = os.path.dirname(os.path.abspath(__file__))
 
 
 def gauss(x, p0, *args):
-    p = list(p0.valuesdict().values())
-
+    p = values(p0)
     return p[0] + p[1] * np.exp(-((x - p[2]) / p[3])**2)
 
 
@@ -38,13 +37,10 @@ class TestFitter(unittest.TestCase):
         self.ydata = gauss(self.xdata, self.final_params)
         self.f = CurveFitter(gauss, (self.xdata, self.ydata), self.params)
 
-    def pvals(self, params):
-        return np.asfarray(list(params.valuesdict().values()))
-
     def test_fitting(self):
         # the simplest test - a really simple gauss curve with perfect data
         res = self.f.fit()
-        assert_almost_equal(self.pvals(res.params), self.p0)
+        assert_almost_equal(values(res.params), self.p0)
         assert_almost_equal(res.chisqr, 0)
 
     def test_NIST(self):
@@ -72,7 +68,7 @@ class TestFitter(unittest.TestCase):
     def test_leastsq(self):
         # test that a custom method can be used with scipy.optimize.minimize
         res = self.f.fit()
-        assert_almost_equal(self.pvals(res.params), self.p0)
+        assert_almost_equal(values(res.params), self.p0)
 
     def test_resid_length(self):
         # the residuals length should be equal to the data length
@@ -80,9 +76,9 @@ class TestFitter(unittest.TestCase):
         assert_equal(resid.size, self.f.ydata.size)
 
     def test_scalar_minimize(self):
-        assert_equal(self.pvals(self.params), self.p0 + 0.2)
+        assert_equal(values(self.params), self.p0 + 0.2)
         res = self.f.fit(method='differential_evolution')
-        assert_almost_equal(self.pvals(res.params), self.p0, 3)
+        assert_almost_equal(values(res.params), self.p0, 3)
 
     def test_holding_parameter(self):
         # holding parameters means that those parameters shouldn't change
@@ -105,7 +101,7 @@ class TestFitter(unittest.TestCase):
 
         g = CurveFitter(gauss, (self.xdata, self.ydata), self.params, costfun=costfun)
         res2 = g.fit('nelder')
-        assert_almost_equal(self.pvals(res.params), self.pvals(res2.params))
+        assert_almost_equal(values(res.params), values(res2.params))
 
     # def test_emcee_NIST(self):
     #     datasets = ['DanWood']
@@ -167,7 +163,7 @@ class TestFitterGauss(unittest.TestCase):
         f = CurveFitter(gauss, (self.xvals, self.yvals, self.evals), self.params)
         res = f.fit()
 
-        output = list(res.params.valuesdict().values())
+        output = values(res.params)
         assert_almost_equal(output, self.best_weighted, 4)
         assert_almost_equal(res.chisqr, self.best_weighted_chisqr)
 
@@ -180,7 +176,7 @@ class TestFitterGauss(unittest.TestCase):
                         self.params)
         res = f.fit()
 
-        output = list(res.params.valuesdict().values())
+        output = values(res.params)
         assert_almost_equal(output, self.best_unweighted, 5)
         assert_almost_equal(res.chisqr, self.best_unweighted_chisqr)
 

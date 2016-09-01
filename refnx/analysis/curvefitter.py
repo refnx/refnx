@@ -134,7 +134,7 @@ def values(params):
     A convenience function that takes an lmfit.Parameters instance and returns
     the values
     """
-    return np.array([param.value for param in params.values()], np.float64)
+    return np.array(params)
 
 
 def names(params):
@@ -223,72 +223,72 @@ class CurveFitter(Minimizer):
     r"""
     A curvefitting class that extends :class:`lmfit:Minimizer.Minimizer`
 
-Parameters
-----------
+    Parameters
+    ----------
 
-fitfunc : callable
-    Function calculating the generative model for the fit.  Should have
-    the signature: ``fitfunc(x, params, *fcn_args, **fcn_kws)``. You
-    can also supply a :class:`FitFunction` instance.
-data : sequence, :class:`refnx.dataset.Data1D` instance, str or file-like object
-    A sequence containing the data to be analysed.
-    If `data` is a sequence then:
+    fitfunc : callable
+        Function calculating the generative model for the fit.  Should have
+        the signature: ``fitfunc(x, params, *fcn_args, **fcn_kws)``. You
+        can also supply a :class:`FitFunction` instance.
+    data : sequence, :class:`refnx.dataset.Data1D` instance, str or file-like object
+        A sequence containing the data to be analysed.
+        If `data` is a sequence then:
 
-        * data[0] - the independent variable (x-data)
+            * data[0] - the independent variable (x-data)
 
-        * data[1] - the dependent (observed) variable (y-data)
+            * data[1] - the dependent (observed) variable (y-data)
 
-        * data[2] - measured uncertainty in the dependent variable,
-            expressed as a standard deviation.
+            * data[2] - measured uncertainty in the dependent variable,
+                expressed as a standard deviation.
 
-    Only data[0] and data[1] are required, data[2] is optional. If data[2]
-    is not specified then the measured uncertainty is set to unity.
+        Only data[0] and data[1] are required, data[2] is optional. If data[2]
+        is not specified then the measured uncertainty is set to unity.
 
-    `data` can also be a :class:`refnx.dataset.Data1D` instance containing the data.
-    If `data` is a string, or file-like object then the string or file-like
-    object refers to a file containing the data. The data will be loaded
-    through the :class:`refnx.dataset.Data1D` constructor.
-params : :class:`lmfit.parameter.Parameters` instance
-    Specifies the parameter set for the fit
-mask : np.ndarray, optional
-    A boolean array with the same shape as `y`.  If `mask is True`
-    then that point is excluded from the residuals calculation.
-fcn_args : tuple, optional
-    Extra parameters required to fully specify fitfunc.
-fcn_kws : dict, optional
-    Extra keyword parameters needed to fully specify fitfunc.
-kws : dict, optional
-    Keywords passed to the minimizer.
-callback : callable, optional
-    A function called at each minimization step. Has the signature:
-    ``callback(params, iter, resid, *args, **kwds)``
-costfun : callable, optional
-    specifies your own cost function to minimize. Has the signature:
-    ``costfun(pars, generative, y, e, *fcn_args, **fcn_kws)`` where `pars`
-    is a `lmfit.Parameters` instance, `generative` is an array returned by
-    `fitfunc`, and `y` and `e` correspond to the `data[1]` and
-    `data[2]` arrays. `costfun` should return a single value. See Notes for
-    further details.
-lnpost : callable, optional
-    specifies your own log-posterior probablility function. This is only
-    relevant applies to the `emcee` method. Has the signature:
-    ``lnpost(pars, generative, y, e, *fcn_args, **fcn_kws)`` where `pars`
-    is a `lmfit.Parameters` instance, `generative` is an array returned by
-    `fitfunc`, and `y` and `e` correspond to the `data[1]` and
-    `data[2]` arrays. `lnpost` should return a single float value. See
-    :meth:`CurveFitter.emcee` for further details.
+        `data` can also be a :class:`refnx.dataset.Data1D` instance containing the data.
+        If `data` is a string, or file-like object then the string or file-like
+        object refers to a file containing the data. The data will be loaded
+        through the :class:`refnx.dataset.Data1D` constructor.
+    params : :class:`lmfit.parameter.Parameters` instance
+        Specifies the parameter set for the fit
+    mask : np.ndarray, optional
+        A boolean array with the same shape as `y`.  If `mask is True`
+        then that point is excluded from the residuals calculation.
+    fcn_args : tuple, optional
+        Extra parameters required to fully specify fitfunc.
+    fcn_kws : dict, optional
+        Extra keyword parameters needed to fully specify fitfunc.
+    kws : dict, optional
+        Keywords passed to the minimizer.
+    callback : callable, optional
+        A function called at each minimization step. Has the signature:
+        ``callback(params, iter, resid, *args, **kwds)``
+    costfun : callable, optional
+        specifies your own cost function to minimize. Has the signature:
+        ``costfun(pars, generative, y, e, *fcn_args, **fcn_kws)`` where `pars`
+        is a `lmfit.Parameters` instance, `generative` is an array returned by
+        `fitfunc`, and `y` and `e` correspond to the `data[1]` and
+        `data[2]` arrays. `costfun` should return a single value. See Notes for
+        further details.
+    lnpost : callable, optional
+        specifies your own log-posterior probablility function. This is only
+        relevant applies to the `emcee` method. Has the signature:
+        ``lnpost(pars, generative, y, e, *fcn_args, **fcn_kws)`` where `pars`
+        is a `lmfit.Parameters` instance, `generative` is an array returned by
+        `fitfunc`, and `y` and `e` correspond to the `data[1]` and
+        `data[2]` arrays. `lnpost` should return a single float value. See
+        :meth:`CurveFitter.emcee` for further details.
 
-Notes
------
-The default cost function for CurveFitter is:
+    Notes
+    -----
+    The default cost function for CurveFitter is:
 
-.. math::
-    \chi^2=\sum \left(\frac{\mathrm{data[1]} - \mathrm{fitfunc}}{\mathrm{data[2]}}\right)^2
+    .. math::
+        \chi^2=\sum \left(\frac{\mathrm{data[1]} - \mathrm{fitfunc}}{\mathrm{data[2]}}\right)^2
 
-This user defined cost function can be used to specify other cost
-functions for `differential_evolution`, `leastsq`, `least_squares`.
+    This user defined cost function can be used to specify other cost
+    functions for `differential_evolution`, `leastsq`, `least_squares`.
 
-.. _lmfit.Minimizer: http://lmfit.github.io/lmfit-py/fitting.html#module-Minimizer
+    .. _lmfit.Minimizer: http://lmfit.github.io/lmfit-py/fitting.html#module-Minimizer
     """
 
     def __init__(self, fitfunc, data, params, mask=None,
@@ -1022,7 +1022,7 @@ if __name__ == '__main__':
 
     def gauss(x, params, *args):
         """Calculates a Gaussian model"""
-        p = params.valuesdict().values()
+        p = values(params)
         return p[0] + p[1] * np.exp(-((x - p[2]) / p[3])**2)
 
     xdata = np.linspace(-4, 4, 100)
