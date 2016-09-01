@@ -5,7 +5,6 @@ import math
 import numbers
 import numpy as np
 import scipy
-import scipy.linalg
 from scipy.interpolate import InterpolatedUnivariateSpline
 from refnx.analysis.curvefitter import FitFunction
 import refnx.util.ErrorProp as EP
@@ -353,11 +352,7 @@ def gauss_legendre(n):
     (x, w) : tuple
         The abscissae and weights for Gauss Legendre integration.
     """
-    k = np.arange(1.0, n)
-    a_band = np.zeros((2, n))
-    a_band[1, 0: n - 1] = k / np.sqrt(4 * k * k - 1)
-    x, v = scipy.linalg.eig_banded(a_band, lower=True)
-    w = 2 * np.real(np.power(v[0, :], 2))
+    return scipy.special.p_roots(n)
     return x, w
 
 
