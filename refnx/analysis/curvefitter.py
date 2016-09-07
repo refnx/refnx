@@ -12,7 +12,7 @@ import warnings
 from lmfit import Minimizer, Parameters
 import numpy as np
 import numpy.ma as ma
-from refnx.dataset import Data1D
+from refnx.dataset import Data1D, ReflectDataset
 
 # check for EMCEE
 HAS_EMCEE = False
@@ -298,35 +298,27 @@ class CurveFitter(Minimizer):
         self.costfun = costfun
         self.lnpost = lnpost
         self._cf_userargs = fcn_args
-        self._cf_userkws = fcn_kws
+        self._cf_userkws = {}
 
+        if fcn_kws is not None:
+            self._cf_userkws = fcn_kws
+
+        # bind the data to this object
         if isinstance(data, Data1D):
-            self.xdata, self.ydata, self.edata, temp = data.data
-        elif type(data) == 'str' or hasattr(data, 'seek'):
-            tdata = Data1D(data)
-            self.xdata, self.ydata, self.edata, temp = tdata.data
-        elif len(data) == 2:
-            self.xdata, self.ydata = data
-            self.edata = np.zeros((0))
-        elif len(data) == 3:
-            self.xdata, self.ydata, self.edata = data
+            self.dataset = data
         else:
-            raise ValueError("Couldn't decipher what kind of data"
-                             " you were providing.")
-
-        # have uncertainties have been supplied for each of the data points?
-        self.scale_covar = False
-        if not self.edata.size:
-            self.edata = np.ones_like(self.ydata)
-            self.scale_covar = True
+            self.dataset = ReflectDataset(data)
 
         if mask is not None:
-            if self.ydata.shape != mask.shape:
+            if self.dataset.y.shape != mask.shape:
                 raise ValueError('mask shape should be same as data')
 
             self.mask = mask
         else:
             self.mask = None
+
+        # have uncertainties have been supplied for each of the data points?
+        self.scale_covar = not self.is_weighted
 
         min_kwds = {}
         if kws is not None:
@@ -350,9 +342,9 @@ class CurveFitter(Minimizer):
         """
         self._resid = partial(_parallel_residuals_calculator,
                               fitfunc=self.fitfunc,
-                              data_tuple=(self.xdata,
-                                          self.ydata,
-                                          self.edata),
+                              data_tuple=(self.dataset.x,
+                                          self.dataset.y,
+                                          self.dataset.y_err),
                               mask=self.mask,
                               fcn_args=self._cf_userargs,
                               fcn_kws=self._cf_userkws,
@@ -368,21 +360,15 @@ class CurveFitter(Minimizer):
         -------
         (x, y, e, mask) : data tuple
         """
-        return (self.xdata,
-                self.ydata,
-                self.edata,
+        return (self.dataset.x,
+                self.dataset.y,
+                self.dataset.y_err,
                 self.mask)
 
     @data.setter
     def data(self, data):
-        self.xdata = np.asfarray(data[0])
-        self.ydata = np.asfarray(data[1])
-        if len(data) > 2:
-            self.edata = np.asfarray(data[2])
-            self.scale_covar = False
-        else:
-            self.edata = np.ones_like(self.ydata)
-            self.scale_covar = True
+        self.dataset = ReflectDataset(data)
+        self.scale_covar = self.dataset.weighted
 
     def residuals(self, params=None):
         """
@@ -610,9 +596,9 @@ class CurveFitter(Minimizer):
                 # uncertainties
                 self._resid = partial(_parallel_likelihood_calculator,
                                       fitfunc=self.fitfunc,
-                                      data_tuple=(self.xdata,
-                                                  self.ydata,
-                                                  self.edata),
+                                      data_tuple=(self.dataset.x,
+                                                  self.dataset.y,
+                                                  self.dataset.y_err),
                                       mask=self.mask,
                                       fcn_args=self._cf_userargs,
                                       fcn_kws=self._cf_userkws,
@@ -643,7 +629,7 @@ class CurveFitter(Minimizer):
         """
         Returns the truth that the fit is weighted by measurement uncertainties
         """
-        return not self.scale_covar
+        return self.dataset.weighted
 
     def _resampleMC(self, samples, method='differential_evolution',
                     params=None):
@@ -692,7 +678,7 @@ class CurveFitter(Minimizer):
             for idx in range(samples):
                 # synthesize a dataset
                 ne = y + e * np.random.randn(y.size)
-                self.ydata = ne
+                self.dataset.y = ne
 
                 # update the _resid attribute
                 self._update_resid()
@@ -704,7 +690,7 @@ class CurveFitter(Minimizer):
                 for idx2, var_name in enumerate(output.var_names):
                     mc[idx, idx2] = res.params[var_name].value
         finally:
-            self.ydata = y
+            self.dataset.y = y
 
         quantiles = np.percentile(mc, [15.87, 50, 84.13], axis=0)
 
@@ -854,13 +840,13 @@ class GlobalFitter(CurveFitter):
                 p[par_to_be_constrained].expr = const
 
         self.params = p
-        xdata = [fitter.xdata for fitter in fitters]
-        ydata = [fitter.ydata for fitter in fitters]
-        edata = [fitter.edata for fitter in fitters]
+        xdata = [fitter.dataset.x for fitter in fitters]
+        ydata = [fitter.dataset.y for fitter in fitters]
+        edata = [fitter.dataset.y_err for fitter in fitters]
 
         original_params = [fitter.params for fitter in fitters]
-        original_userargs = [fitter.userargs for fitter in fitters]
-        original_kws = [fitter.userkws for fitter in fitters]
+        original_userargs = [fitter._cf_userargs for fitter in fitters]
+        original_kws = [fitter._cf_userkws for fitter in fitters]
 
         self._fitfunc = partial(_parallel_global_fitfunc,
                 fitfuncs=[fitter.fitfunc for fitter in fitters],
@@ -894,7 +880,7 @@ class GlobalFitter(CurveFitter):
             params = self.params
 
         params.update_constraints()
-        return self._fitfunc(self.xdata, params=params)
+        return self._fitfunc(self.dataset.x, params=params)
 
     def residuals(self, params=None):
         """

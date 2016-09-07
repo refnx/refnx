@@ -9,6 +9,7 @@ from refnx.analysis.curvefitter import (values, CurveFitter, HAS_EMCEE,
                                         _parallel_likelihood_calculator)
 import numpy as np
 from lmfit.minimizer import MinimizerResult
+from lmfit import Parameters
 from NISTModels import NIST_runner, Models, ReadNistData
 
 from numpy.testing import (assert_almost_equal, assert_equal, assert_,
@@ -73,7 +74,7 @@ class TestFitter(unittest.TestCase):
     def test_resid_length(self):
         # the residuals length should be equal to the data length
         resid = self.f.residuals(self.params)
-        assert_equal(resid.size, self.f.ydata.size)
+        assert_equal(resid.size, self.f.dataset.y.size)
 
     def test_scalar_minimize(self):
         assert_equal(values(self.params), self.p0 + 0.2)
@@ -99,9 +100,39 @@ class TestFitter(unittest.TestCase):
         def costfun(params, generative, y, e):
             return np.sum((y - generative / e) ** 2)
 
-        g = CurveFitter(gauss, (self.xdata, self.ydata), self.params, costfun=costfun)
+        g = CurveFitter(gauss,
+                        (self.xdata, self.ydata),
+                        self.params,
+                        costfun=costfun)
+
         res2 = g.fit('nelder')
         assert_almost_equal(values(res.params), values(res2.params))
+
+    def test_args_kwds_are_used(self):
+        # check that user defined args and kwds make their way into the user function
+        a = [1., 2.]
+        x = np.linspace(0, 10, 11)
+        y = a[0] + 1 + 2 * a[1] * x
+
+        par = Parameters()
+        par.add('p0', 1.5)
+        par.add('p1', 2.5)
+
+        def fun(x, p, *args, **kwds):
+            assert_equal(args, a)
+            return args[0] + p['p0'] + p['p1'] * a[1] * x
+
+        g = CurveFitter(fun, (x, y), par, fcn_args=a)
+        res = g.fit()
+        assert_almost_equal(values(res.params), [1., 2.])
+
+        d = {'a': 1, 'b': 2}
+        def fun(x, p, *args, **kwds):
+            return kwds['a'] + p['p0'] + p['p1'] * kwds['b'] * x
+
+        g = CurveFitter(fun, (x, y), par, fcn_kws=d)
+        res = g.fit()
+        assert_almost_equal(values(res.params), [1., 2.])
 
     # def test_emcee_NIST(self):
     #     datasets = ['DanWood']
