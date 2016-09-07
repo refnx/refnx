@@ -45,15 +45,12 @@ class Data1D(object):
     """
     def __init__(self, data=None):
         self.filename = None
-        self.fit = None
-        self.params = None
-        self.chisqr = np.inf
-        self.residuals = None
 
         self.x = np.zeros(0)
         self.y = np.zeros(0)
         self.y_err = np.zeros(0)
         self.x_err = np.zeros(0)
+        self.weighted = False
 
         # if it's a file then open and load the file.
         if hasattr(data, 'read') or type(data) is str:
@@ -63,8 +60,14 @@ class Data1D(object):
             self.y = np.array(data[1], dtype=float)
             if len(data) > 2:
                 self.y_err = np.array(data[2], dtype=float)
+                self.weighted = True
+            else:
+                self.y_err = np.ones_like(self.y, dtype=float)
+
             if len(data) > 3:
                 self.x_err = np.array(data[3], dtype=float)
+            else:
+                self.x_err = np.zeros_like(self.x, dtype=float)
 
     @property
     def npoints(self):
@@ -105,16 +108,17 @@ class Data1D(object):
         """
         self.x = np.array(data_tuple[0], dtype=float)
         self.y = np.array(data_tuple[1], dtype=float)
-
+        self.weighted = False
         if len(data_tuple) > 2:
             self.y_err = np.array(data_tuple[2], dtype=float)
+            self.weighted = True
         else:
-            self.y_err = np.ones_like(self.y)
+            self.y_err = np.ones_like(self.y, dtype=float)
 
         if len(data_tuple) > 3:
             self.x_err = np.array(data_tuple[3], dtype=float)
         else:
-            self.x_err = np.zeros(np.size(self.x))
+            self.x_err = np.zeros_like(self.x, dtype=float)
         self.sort()
 
     def scale(self, scalefactor=1.):
@@ -156,6 +160,7 @@ class Data1D(object):
             aydata_sd = np.array(data_tuple[2], dtype=float)
         else:
             aydata_sd = np.ones_like(aydata)
+            self.weighted = False
 
         if len(data_tuple) > 3:
             axdata_sd = np.array(data_tuple[3], dtype=float)
@@ -217,11 +222,6 @@ class Data1D(object):
                                 self.y,
                                 self.y_err,
                                 self.x_err)))
-
-    def save_fit(self, f):
-        if self.fit is not None:
-            np.savetxt(f, np.column_stack((self.x,
-                                           self.fit)))
 
     def load(self, f):
         """
