@@ -297,11 +297,10 @@ class CurveFitter(Minimizer):
         self.fitfunc = fitfunc
         self.costfun = costfun
         self.lnpost = lnpost
-        self._cf_userargs = fcn_args
-        self._cf_userkws = {}
 
+        userkws = {}
         if fcn_kws is not None:
-            self._cf_userkws = fcn_kws
+            userkws = fcn_kws
 
         # bind the data to this object
         if isinstance(data, Data1D):
@@ -331,6 +330,8 @@ class CurveFitter(Minimizer):
                                           params,
                                           iter_cb=callback,
                                           scale_covar=self.scale_covar,
+                                          fcn_args=fcn_args,
+                                          fcn_kws=userkws,
                                           **min_kwds)
 
     def _update_resid(self):
@@ -346,8 +347,6 @@ class CurveFitter(Minimizer):
                                           self.dataset.y,
                                           self.dataset.y_err),
                               mask=self.mask,
-                              fcn_args=self._cf_userargs,
-                              fcn_kws=self._cf_userkws,
                               costfun=self.costfun)
         self.userfcn = self._resid
 
@@ -397,7 +396,7 @@ class CurveFitter(Minimizer):
 
         params.update_constraints()
         self._update_resid()
-        return self._resid(params)
+        return self._resid(params, *self.userargs, **self.userkws)
 
     def model(self, params=None):
         """
@@ -419,7 +418,7 @@ class CurveFitter(Minimizer):
 
         params.update_constraints()
         self._update_resid()
-        return self._resid(params, model=True)
+        return self._resid(params, *self.userargs, model=True, **self.userkws)
 
     def fit(self, method='leastsq', params=None, **kws):
         """
@@ -600,8 +599,6 @@ class CurveFitter(Minimizer):
                                                   self.dataset.y,
                                                   self.dataset.y_err),
                                       mask=self.mask,
-                                      fcn_args=self._cf_userargs,
-                                      fcn_kws=self._cf_userkws,
                                       lnpost=self.lnpost
                                       )
                 self.userfcn = self._resid
@@ -845,8 +842,8 @@ class GlobalFitter(CurveFitter):
         edata = [fitter.dataset.y_err for fitter in fitters]
 
         original_params = [fitter.params for fitter in fitters]
-        original_userargs = [fitter._cf_userargs for fitter in fitters]
-        original_kws = [fitter._cf_userkws for fitter in fitters]
+        original_userargs = [fitter.userargs for fitter in fitters]
+        original_kws = [fitter.userkws for fitter in fitters]
 
         self._fitfunc = partial(_parallel_global_fitfunc,
                 fitfuncs=[fitter.fitfunc for fitter in fitters],
@@ -915,26 +912,25 @@ class GlobalFitter(CurveFitter):
             self.original_params[fitter_i][original_name].value = param._getval()
 
 
-def _parallel_residuals_calculator(params, fitfunc=None, data_tuple=None,
-                                   mask=None, fcn_args=(), fcn_kws=None,
-                                   model=False, costfun=None):
+def _parallel_residuals_calculator(params, *userargs, fitfunc=None, data_tuple=None,
+                                   mask=None, model=False, costfun=None, **userkws):
     """
     Objective function calculating the residuals for a curvefit. This is a
     separate function and not a method in CurveFitter to allow for
     multiprocessing.
     """
-    kws = {}
-    if fcn_kws is not None:
-        kws = fcn_kws
+    # kws = {}
+    # if fcn_kws is not None:
+    #     kws = fcn_kws
 
     x, y, e = data_tuple
 
-    resid = fitfunc(x, params, *fcn_args, **kws)
+    resid = fitfunc(x, params, *userargs, **userkws)
     if model:
         return resid
 
     if costfun is not None:
-        return costfun(params, resid, y, e, *fcn_args, **kws)
+        return costfun(params, resid, y, e, *userargs, **userkws)
 
     resid -= y
     resid /= e
@@ -946,24 +942,19 @@ def _parallel_residuals_calculator(params, fitfunc=None, data_tuple=None,
         return resid
 
 
-def _parallel_likelihood_calculator(params, fitfunc=None, data_tuple=None,
-                                    mask=None, fcn_args=(), fcn_kws=None,
-                                    lnpost=None):
+def _parallel_likelihood_calculator(params, *userargs, fitfunc=None, data_tuple=None,
+                                    mask=None, lnpost=None, **userkws):
     """
     Function calculating the log-likelihood for a curvefit. This is a
     separate function and not a method in CurveFitter to allow for
     multiprocessing.
     """
-    kws = {}
-    if fcn_kws is not None:
-        kws = fcn_kws
-
     x, y, e = data_tuple
 
-    resid = fitfunc(x, params, *fcn_args, **kws)
+    resid = fitfunc(x, params, *userargs, **userkws)
 
     if lnpost is not None:
-        return lnpost(params, resid, y, e, *fcn_args, **kws)
+        return lnpost(params, resid, y, e, *userargs, **userkws)
     else:
         resid -= y
         resid /= e
