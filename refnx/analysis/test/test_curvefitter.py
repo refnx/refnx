@@ -267,9 +267,9 @@ class TestFitterGauss(unittest.TestCase):
 
     def test_lnpost(self):
         data = (self.xvals, self.yvals, self.evals)
-        lnprob = _parallel_likelihood_calculator(self.params,
-                                                 gauss,
-                                                 data)
+        f = _parallel_likelihood_calculator(gauss,
+                                            data_tuple=data)
+        lnprob = f(self.params)
 
         def lnpost(pars, generative, y, e):
             resid = y - generative
@@ -278,10 +278,10 @@ class TestFitterGauss(unittest.TestCase):
             resid += np.log(2 * np.pi * e**2)
             return -0.5 * np.sum(resid)
 
-        lnprob2 = _parallel_likelihood_calculator(self.params,
-                                                  gauss,
-                                                  data,
-                                                  lnpost=lnpost)
+        g = _parallel_likelihood_calculator(gauss,
+                                            data_tuple=data,
+                                            lnpost=lnpost)
+        lnprob2 = g(self.params)
 
         assert_equal(lnprob2, lnprob)
 
