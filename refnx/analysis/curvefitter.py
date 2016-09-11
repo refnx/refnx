@@ -6,7 +6,7 @@ Created on Sun Dec 21 15:37:29 2014
 """
 from __future__ import print_function
 import re
-from functools import partial
+from functools import partial, wraps
 import abc
 import warnings
 from lmfit import Minimizer, Parameters
@@ -341,13 +341,13 @@ class CurveFitter(Minimizer):
         method exists because people could update the data after
         creation of the CurveFitter object.
         """
-        self._resid = partial(_parallel_residuals_calculator,
-                              fitfunc=self.fitfunc,
-                              data_tuple=(self.dataset.x,
-                                          self.dataset.y,
-                                          self.dataset.y_err),
-                              mask=self.mask,
-                              costfun=self.costfun)
+        self._resid = _parallel_residuals_calculator(self.fitfunc,
+                                     data_tuple=(self.dataset.x,
+                                                 self.dataset.y,
+                                                 self.dataset.y_err),
+                                     mask=self.mask,
+                                     costfun=self.costfun)
+
         self.userfcn = self._resid
 
     @property
@@ -417,8 +417,8 @@ class CurveFitter(Minimizer):
             params = self.params
 
         params.update_constraints()
-        self._update_resid()
-        return self._resid(params, *self.userargs, model=True, **self.userkws)
+
+        return self.fitfunc(self.dataset.x, params, *self.userargs, **self.userkws)
 
     def fit(self, method='leastsq', params=None, **kws):
         """
@@ -593,14 +593,13 @@ class CurveFitter(Minimizer):
             if self.is_weighted or self.lnpost is not None:
                 # get the proper log-likelihood if you have
                 # uncertainties
-                self._resid = partial(_parallel_likelihood_calculator,
-                                      fitfunc=self.fitfunc,
+                self._resid = _parallel_likelihood_calculator(
+                                      self.fitfunc,
                                       data_tuple=(self.dataset.x,
                                                   self.dataset.y,
                                                   self.dataset.y_err),
                                       mask=self.mask,
-                                      lnpost=self.lnpost
-                                      )
+                                      lnpost=self.lnpost)
                 self.userfcn = self._resid
             else:
                 pass
@@ -912,61 +911,63 @@ class GlobalFitter(CurveFitter):
             self.original_params[fitter_i][original_name].value = param._getval()
 
 
-def _parallel_residuals_calculator(params, *userargs, fitfunc=None, data_tuple=None,
-                                   mask=None, model=False, costfun=None, **userkws):
+class _parallel_residuals_calculator(object):
     """
     Objective function calculating the residuals for a curvefit. This is a
-    separate function and not a method in CurveFitter to allow for
+    separate object and not a method in CurveFitter to allow for
     multiprocessing.
     """
-    # kws = {}
-    # if fcn_kws is not None:
-    #     kws = fcn_kws
+    def __init__(self, fitfunc, data_tuple=None, mask=None, costfun=None):
+        self.x, self.y, self.e = data_tuple
+        self.fitfunc = fitfunc
+        self.mask=mask
+        self.costfun=costfun
 
-    x, y, e = data_tuple
+    def __call__(self, params, *userargs, **userkws):
+        resid = self.fitfunc(self.x, params, *userargs, **userkws)
 
-    resid = fitfunc(x, params, *userargs, **userkws)
-    if model:
-        return resid
+        if self.costfun is not None:
+            return self.costfun(params, resid, self.y, self.e, *userargs, **userkws)
 
-    if costfun is not None:
-        return costfun(params, resid, y, e, *userargs, **userkws)
+        resid -= self.y
+        resid /= self.e
 
-    resid -= y
-    resid /= e
-
-    if mask is not None:
-        resid_ma = ma.array(resid, mask=mask)
-        return resid_ma[~resid_ma.mask].data
-    else:
-        return resid
+        if self.mask is not None:
+            resid_ma = ma.array(resid, mask=self.mask)
+            return resid_ma[~resid_ma.mask].data
+        else:
+            return resid
 
 
-def _parallel_likelihood_calculator(params, *userargs, fitfunc=None, data_tuple=None,
-                                    mask=None, lnpost=None, **userkws):
+class _parallel_likelihood_calculator(object):
     """
     Function calculating the log-likelihood for a curvefit. This is a
     separate function and not a method in CurveFitter to allow for
     multiprocessing.
     """
-    x, y, e = data_tuple
+    def __init__(self, fitfunc, data_tuple=None, mask=None, lnpost=None):
+        self.x, self.y, self.e = data_tuple
+        self.fitfunc = fitfunc
+        self.mask=mask
+        self.lnpost=lnpost
 
-    resid = fitfunc(x, params, *userargs, **userkws)
+    def __call__(self, params, *userargs, **userkws):
+        resid = self.fitfunc(self.x, params, *userargs, **userkws)
 
-    if lnpost is not None:
-        return lnpost(params, resid, y, e, *userargs, **userkws)
-    else:
-        resid -= y
-        resid /= e
-        resid *= resid
-
-        resid += np.log(2 * np.pi * e**2)
-
-        if mask is not None:
-            resid_ma = ma.array(resid, mask=mask)
-            return -0.5 * np.sum(resid_ma[~resid_ma.mask].data)
+        if self.lnpost is not None:
+            return self.lnpost(params, resid, self.y, self.e, *userargs, **userkws)
         else:
-            return -0.5 * np.sum(resid)
+            resid -= self.y
+            resid /= self.e
+            resid *= resid
+
+            resid += np.log(2 * np.pi * self.e ** 2)
+
+            if self.mask is not None:
+                resid_ma = ma.array(resid, mask=self.mask)
+                return -0.5 * np.sum(resid_ma[~resid_ma.mask].data)
+            else:
+                return -0.5 * np.sum(resid)
 
 
 def _parallel_global_fitfunc(x, params, fitfuncs=None,
