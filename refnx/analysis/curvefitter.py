@@ -920,8 +920,8 @@ class _parallel_residuals_calculator(object):
     def __init__(self, fitfunc, data_tuple=None, mask=None, costfun=None):
         self.x, self.y, self.e = data_tuple
         self.fitfunc = fitfunc
-        self.mask=mask
-        self.costfun=costfun
+        self.mask = mask
+        self.costfun = costfun
 
     def __call__(self, params, *userargs, **userkws):
         resid = self.fitfunc(self.x, params, *userargs, **userkws)
@@ -948,8 +948,8 @@ class _parallel_likelihood_calculator(object):
     def __init__(self, fitfunc, data_tuple=None, mask=None, lnpost=None):
         self.x, self.y, self.e = data_tuple
         self.fitfunc = fitfunc
-        self.mask=mask
-        self.lnpost=lnpost
+        self.mask = mask
+        self.lnpost = lnpost
 
     def __call__(self, params, *userargs, **userkws):
         resid = self.fitfunc(self.x, params, *userargs, **userkws)
