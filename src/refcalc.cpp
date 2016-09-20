@@ -168,14 +168,13 @@ void AbelesCalc_ImagAll(int numcoefs,
 	}  pointCalcParm;
 
 	void *ThreadWorker(void *arg){
-	    int err = NULL;
 		pointCalcParm *p = (pointCalcParm *) arg;
         AbelesCalc_ImagAll(p->numcoefs,
                            p->coefP,
                            p->npoints,
                            p->yP,
                            p->xP);
-		pthread_exit((void*)err);
+		pthread_exit((void*)0);
 		return NULL;
 	}
 
@@ -184,7 +183,6 @@ void AbelesCalc_ImagAll(int numcoefs,
 	                       int npoints,
 	                        double *yP,
 	                         const double *xP){
-		int err = 0;
 
 		pthread_t *threads = NULL;
 		pointCalcParm *arg = NULL;
@@ -194,18 +192,14 @@ void AbelesCalc_ImagAll(int numcoefs,
 
 		// create threads for the calculation
 		threads = (pthread_t *) malloc((threadsToCreate) * sizeof(pthread_t));
-		if(!threads && NUM_CPUS > 1){
-			err = 1;
+		if(!threads && NUM_CPUS > 1)
 			goto done;
-		}
 
 		//create arguments to be supplied to each of the threads
 		arg = (pointCalcParm *) malloc(sizeof(pointCalcParm)
 		                               * (threadsToCreate));
-		if(!arg && NUM_CPUS > 1){
-			err = 1;
+		if(!arg && NUM_CPUS > 1)
 			goto done;
-		}
 
 		//need to calculated how many points are given to each thread.
 		if(threadsToCreate > 0){
