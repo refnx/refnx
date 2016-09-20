@@ -141,7 +141,7 @@ def layer_to_coefs(layers, scale=1, bkg=0):
     return coefs
 
 
-def abeles(q, layers, scale=1, bkg=0., parallel=True):
+def abeles(q, layers, scale=1, bkg=0., workers=0):
     r"""
     Abeles matrix formalism for calculating reflectivity from a stratified
     medium.
@@ -170,17 +170,18 @@ def abeles(q, layers, scale=1, bkg=0., parallel=True):
         Multiply all reflectivities by this value.
     bkg : float
         Linear background to be added to all reflectivities
-    parallel : bool
-        Do you want to calculate in parallel? This option is only applicable if
-        you are using the ``_creflect`` module. The option is ignored if using
-        the pure python calculator, ``_reflect``.
+    workers : int
+        Specifies the number of threads for parallel calculation. This option
+        is only applicable if you are using the ``_creflect`` module. The
+        option is ignored if using the pure python calculator, ``_reflect``.
+        If `workers == 0` then all available processors are used.
 
     Returns
     -------
     Reflectivity: np.ndarray
         Calculated reflectivity values for each q value.
     """
-    return refcalc.abeles(q, layers, scale=scale, bkg=bkg, parallel=parallel)
+    return refcalc.abeles(q, layers, scale=scale, bkg=bkg, workers=workers)
 
 
 def reflectivity(q, coefs, *args, **kwds):
@@ -235,16 +236,17 @@ def reflectivity(q, coefs, *args, **kwds):
             time. BUT it won't necessarily work across all samples. For example,
             13 points may be fine for a thin layer, but will be atrocious at
             describing a multilayer with bragg peaks.
-        'parallel': bool, optional
-            Do you want to calculate in parallel? This option is only
-            applicable if you are using the ``_creflect`` module. The option is
-            ignored if using the pure python calculator, ``_reflect``. The
-            default is `True`.
+        'workers': int, optional
+            Specifies the number of threads for parallel calculation. This
+            option is only applicable if you are using the ``_creflect``
+            module. The option is ignored if using the pure python calculator,
+            ``_reflect``. If `workers == 0` then all available processors are
+            used.
 
     """
-    parallel=True
-    if 'parallel' in kwds:
-        parallel = kwds['parallel']
+    workers = 0
+    if 'workers' in kwds:
+        workers = kwds['workers']
 
     qvals = q
     quad_order = 17
@@ -270,7 +272,7 @@ def reflectivity(q, coefs, *args, **kwds):
             return (scale * _smeared_abeles_constant(qvals,
                                                      w,
                                                      dqvals,
-                                                     parallel=parallel)) + bkg
+                                                     workers=workers)) + bkg
 
         # point by point resolution smearing
         if dqvals.size == qvals.size:
@@ -280,10 +282,10 @@ def reflectivity(q, coefs, *args, **kwds):
             # adaptive quadrature
             if quad_order == 'ultimate':
                 smeared_rvals = (scale *
-                    _smeared_abeles_adaptive(qvals_flat,
-                                             w,
-                                             dqvals_flat,
-                                             parallel=parallel) + bkg)
+                                 _smeared_abeles_adaptive(qvals_flat,
+                                                          w,
+                                                          dqvals_flat,
+                                                          workers=workers) + bkg)
                 return smeared_rvals.reshape(q.shape)
             # fixed order quadrature
             else:
@@ -292,7 +294,7 @@ def reflectivity(q, coefs, *args, **kwds):
                                                       w,
                                                       dqvals_flat,
                                                       quad_order=quad_order,
-                                                      parallel=parallel)
+                                                      workers=workers)
                                  + bkg)
                 return np.reshape(smeared_rvals, q.shape)
 
@@ -306,7 +308,7 @@ def reflectivity(q, coefs, *args, **kwds):
                                            w,
                                            scale=coefs[1],
                                            bkg=coefs[6],
-                                           parallel=parallel)
+                                           workers=workers)
 
             # multiply by probability
             smeared_rvals *= dqvals[..., 1]
@@ -319,7 +321,7 @@ def reflectivity(q, coefs, *args, **kwds):
                           w,
                           scale=coefs[1],
                           bkg=coefs[6],
-                          parallel=parallel)
+                          workers=workers)
 
 
 def _memoize_gl(f):
@@ -356,7 +358,7 @@ def gauss_legendre(n):
     return x, w
 
 
-def _smearkernel(x, w, q, dq, parallel):
+def _smearkernel(x, w, q, dq, workers):
     """
     Kernel for adaptive Gaussian quadrature integration
 
@@ -370,6 +372,8 @@ def _smearkernel(x, w, q, dq, parallel):
         Nominal mean Q of normal distribution
     dq : float
         FWHM of a normal distribution.
+    workers : int
+        number of threads for parallel calculation
 
     Returns
     -------
@@ -380,10 +384,10 @@ def _smearkernel(x, w, q, dq, parallel):
     prefactor = 1 / np.sqrt(2 * np.pi)
     gauss = prefactor * np.exp(-0.5 * x * x)
     localq = q + x * dq / _FWHM
-    return refcalc.abeles(localq, w, parallel=parallel) * gauss
+    return refcalc.abeles(localq, w, workers=workers) * gauss
 
 
-def _smeared_abeles_adaptive(qvals, w, dqvals, parallel=True):
+def _smeared_abeles_adaptive(qvals, w, dqvals, workers=0):
     """
     Resolution smearing that uses adaptive Gaussian quadrature integration
     for the convolution.
@@ -397,7 +401,7 @@ def _smeared_abeles_adaptive(qvals, w, dqvals, parallel=True):
     dqvals : array-like
         dQ values corresponding to each value in `qvals`. Each dqval is the
         FWHM of a Gaussian approximation to the resolution kernel.
-    parallel: bool, optional
+    workers : int, optional
         Do you want to calculate in parallel? This option is only applicable if
         you are using the ``_creflect`` module. The option is ignored if using
         the pure python calculator, ``_reflect``.
@@ -421,13 +425,13 @@ def _smeared_abeles_adaptive(qvals, w, dqvals, parallel=True):
             _INTLIMIT,
             tol=2 * np.finfo(np.float64).eps,
             rtol=2 * np.finfo(np.float64).eps,
-            args=(w, qvals[idx], dqvals[idx], parallel))
+            args=(w, qvals[idx], dqvals[idx], workers))
 
     warnings.resetwarnings()
     return smeared_rvals
 
 
-def _smeared_abeles_fixed(qvals, w, dqvals, quad_order=17, parallel=True):
+def _smeared_abeles_fixed(qvals, w, dqvals, quad_order=17, workers=0):
     """
     Resolution smearing that uses fixed order Gaussian quadrature integration
     for the convolution.
@@ -444,10 +448,12 @@ def _smeared_abeles_fixed(qvals, w, dqvals, quad_order=17, parallel=True):
     quad-order : int, optional
         Specify the order of the Gaussian quadrature integration for the
         convolution.
-    parallel: bool, optional
-        Do you want to calculate in parallel? This option is only applicable if
-        you are using the ``_creflect`` module. The option is ignored if using
-        the pure python calculator, ``_reflect``.
+    workers: int, optional
+        Specifies the number of threads for parallel calculation. This
+        option is only applicable if you are using the ``_creflect``
+        module. The option is ignored if using the pure python calculator,
+        ``_reflect``. If `workers == 0` then all available processors are
+        used.
 
 
     Returns
@@ -475,7 +481,7 @@ def _smeared_abeles_fixed(qvals, w, dqvals, quad_order=17, parallel=True):
                      + vb + va) / 2.)
     smeared_rvals = refcalc.abeles(qvals_for_res.flatten(),
                                    w,
-                                   parallel=parallel)
+                                   workers=workers)
 
     smeared_rvals = np.reshape(smeared_rvals,
                                (qvals.size, abscissa.size))
@@ -484,7 +490,7 @@ def _smeared_abeles_fixed(qvals, w, dqvals, quad_order=17, parallel=True):
     return np.sum(smeared_rvals, 1) * _INTLIMIT
 
 
-def _smeared_abeles_constant(q, w, resolution, parallel=True):
+def _smeared_abeles_constant(q, w, resolution, workers=True):
     """
     A kernel for fast and constant dQ/Q smearing
 
@@ -497,7 +503,7 @@ def _smeared_abeles_constant(q, w, resolution, parallel=True):
     resolution: float
         Percentage dq/q resolution. dq specified as FWHM of a resolution
         kernel.
-    parallel: bool, optional
+    workers: int, optional
         Do you want to calculate in parallel? This option is only applicable if
         you are using the ``_creflect`` module. The option is ignored if using
         the pure python calculator, ``_reflect``.
@@ -510,7 +516,7 @@ def _smeared_abeles_constant(q, w, resolution, parallel=True):
     """
 
     if resolution < 0.5:
-        return refcalc.abeles(q, w, parallel=parallel)
+        return refcalc.abeles(q, w, workers=workers)
 
     resolution /= 100
     gaussnum = 51
@@ -535,7 +541,7 @@ def _smeared_abeles_constant(q, w, resolution, parallel=True):
     gauss_x = np.linspace(-1.7 * resolution, 1.7 * resolution, gaussnum)
     gauss_y = gauss(gauss_x, resolution / _FWHM)
 
-    rvals = refcalc.abeles(xlin, w, parallel=parallel)
+    rvals = refcalc.abeles(xlin, w, workers=workers)
     smeared_rvals = np.convolve(rvals, gauss_y, mode='same')
     interpolator = InterpolatedUnivariateSpline(xlin, smeared_rvals)
 
@@ -653,13 +659,15 @@ class ReflectivityFitFunction(FitFunction):
         time. BUT it won't necessarily work across all samples. For
         example 13 points may be fine for a thin layer, but will be
         atrocious at describing a multilayer with Bragg peaks.
-    parallel : bool, optional
-        Do you want to calculate in parallel? This option is only
-        applicable if you are using the ``_creflect`` module. The option is
-        ignored if using the pure python calculator, ``_reflect``.
+    workers : int, optional
+        Specifies the number of threads for parallel calculation. This
+        option is only applicable if you are using the ``_creflect``
+        module. The option is ignored if using the pure python calculator,
+        ``_reflect``. If `workers == 0` then all available processors are
+        used.
     """
 
-    def __init__(self, transform=None, dq=5., quad_order=17, parallel=True):
+    def __init__(self, transform=None, dq=5., quad_order=17, workers=True):
         """
         Initialises the ReflectivityFitFunction.
         """
@@ -668,7 +676,7 @@ class ReflectivityFitFunction(FitFunction):
         self.transform = transform
         self.dq = float(dq)
         self.quad_order = quad_order
-        self.parallel = parallel
+        self.workers = workers
 
     def model(self, x, parameters, *args, **kwds):
         """
@@ -705,11 +713,12 @@ class ReflectivityFitFunction(FitFunction):
             time. BUT it won't necessarily work across all samples. For example,
             13 points may be fine for a thin layer, but will be atrocious at
             describing a multilayer with bragg peaks.
-        kwds['parallel'] : bool, optional
-            Do you want to calculate in parallel? This option is only
-            applicable if you are using the ``_creflect`` module. The option is
-            ignored if using the pure python calculator, ``_reflect``. The
-            default is `True`.
+        kwds['workers'] : int, optional
+            Specifies the number of threads for parallel calculation. This
+            option is only applicable if you are using the ``_creflect``
+            module. The option is ignored if using the pure python calculator,
+            ``_reflect``. If `workers == 0` then all available processors are
+            used.
 
         Returns
         -------
@@ -727,8 +736,8 @@ class ReflectivityFitFunction(FitFunction):
             kwds['quad_order'] = self.quad_order
         if not 'dqvals' in kwds and self.dq > 0.3:
             kwds['dqvals'] = float(self.dq)
-        if not 'parallel' in kwds:
-            kwds['parallel'] = self.parallel
+        if not 'workers' in kwds:
+            kwds['workers'] = self.workers
         yvals = reflectivity(x, params, *args, **kwds)
 
         if self.transform or 'transform' in kwds:
@@ -839,7 +848,7 @@ class AnalyticalReflectivityFunction(ReflectivityFitFunction):
     Usage involves inheriting this class and over-riding ``to_slab`` and
     ``parameter_names``.
     """
-    def __init__(self, transform=None, dq=5., quad_order=17, parallel=True):
+    def __init__(self, transform=None, dq=5., quad_order=17, workers=True):
         """
         Parameters
         ----------
@@ -858,14 +867,16 @@ class AnalyticalReflectivityFunction(ReflectivityFitFunction):
             time. BUT it won't necessarily work across all samples. For
             example 13 points may be fine for a thin layer, but will be
             atrocious at describing a multilayer with Bragg peaks.
-        parallel : bool, optional
-            Do you want to calculate in parallel? This option is only
-            applicable if you are using the ``_creflect`` module. The option is
-            ignored if using the pure python calculator, ``_reflect``.
+        workers : int, optional
+            Specifies the number of threads for parallel calculation. This
+            option is only applicable if you are using the ``_creflect``
+            module. The option is ignored if using the pure python calculator,
+            ``_reflect``. If `workers == 0` then all available processors are
+            used.
         """
         s_klass = super(AnalyticalReflectivityFunction, self)
         s_klass.__init__(transform=transform, dq=dq, quad_order=quad_order,
-                         parallel=parallel)
+                         workers=workers)
 
     def model(self, x, parameters, *args, **kwds):
         """

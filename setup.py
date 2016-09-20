@@ -132,7 +132,8 @@ def setup_package():
     print(info['version'])
 
     if USE_CYTHON:
-        # Obtain the numpy include directory.  This logic works across numpy versions.
+        # Obtain the numpy include directory.  This logic works across numpy
+        # versions.
         ext_modules = []
         HAS_NUMPY = True
 
@@ -151,9 +152,11 @@ def setup_package():
             # creflect extension module
             _creflect = Extension(
                                   name='refnx.analysis._creflect',
-                                  sources=['src/_creflect.pyx', 'src/refcalc.cpp'],
+                                  sources=['src/_creflect.pyx',
+                                           'src/refcalc.cpp'],
                                   include_dirs=[numpy_include],
-                                  language='c',
+                                  language='c++',
+                                  extra_compile_args=[],
                                   extra_link_args=['-lpthread']
                                   # libraries=
                                   # extra_compile_args = "...".split(),

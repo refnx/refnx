@@ -1,4 +1,5 @@
 from __future__ import division
+from multiprocessing import cpu_count
 import numpy as np
 
 cimport numpy as np
@@ -9,16 +10,21 @@ cdef extern from "refcalc.h":
     void reflect(int numcoefs, const double *coefP, int npoints, double *yP,
                  const double *xP)
     void reflectMT(int numcoefs, const double *coefP, int npoints, double *yP,
-                 const double *xP)
+                   const double *xP, int workers)
 
 DTYPE = np.float64
 ctypedef np.float64_t DTYPE_t
+
+
+# figure out CPU count
+NCPU = cpu_count()
+
 
 @cython.boundscheck(False)
 @cython.cdivision(False)
 def abeles(np.ndarray x,
            np.ndarray[DTYPE_t, ndim=2] w,
-           double scale=1.0, bkg=0., parallel=True):
+           double scale=1.0, double bkg=0., int workers=0):
     if w.shape[1] != 4 or w.shape[0] < 2:
         raise ValueError("Parameters for _creflect must have shape (>2, 4)")
     if (w.dtype != np.float64 or x.dtype != np.float64):
@@ -42,12 +48,14 @@ def abeles(np.ndarray x,
     if nlayers:
         coefs[8:] = w.flatten()[4: -4]
 
-    if parallel:
-        reflectMT(4 * nlayers + 8, <const double*>coefs.data, npoints,
-                  <double*>y.data, <const double*>xtemp.data)
+    workers = workers or NCPU
+
+    if workers > 1:
+        reflectMT(4*nlayers + 8, <const double*>coefs.data, npoints,
+                  <double*>y.data, <const double*>xtemp.data, workers)
     else:
-        reflect(4 * nlayers + 8, <const double*>coefs.data, npoints,
-                  <double*>y.data, <const double*>xtemp.data)
+        reflect(4*nlayers + 8, <const double*>coefs.data, npoints,
+                <double*>y.data, <const double*>xtemp.data)
 
     return y
 

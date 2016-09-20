@@ -76,7 +76,7 @@ def global_fitter_setup(global_pilot_file, dqvals=5.0):
         else:
             _dqvals = dataset.x_err
 
-        c = CurveFitter(ReflectivityFitFunction(T.transform, parallel=True),
+        c = CurveFitter(ReflectivityFitFunction(T.transform, workers=True),
                         (dataset.x, t_data_y, t_data_yerr),
                         parameter,
                         fcn_kws={'dqvals': _dqvals})
