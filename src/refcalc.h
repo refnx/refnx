@@ -34,6 +34,8 @@ extern "C" {
     xP - array containing the Q (momentum transfer) points. It has units Å**-1.
     The array is npoints long
 
+    workers - specifies the number of parallel threads to use.
+
 
     Detailed description of the entries in coefP
     --------------------------------------------
@@ -70,7 +72,7 @@ extern "C" {
 Parallelised
 */
 void reflectMT(int numcoefs, const double *coefP, int npoints, double *yP,
-             const double *xP);
+               const double *xP, int workers);
 
 /*
 Non parallelised

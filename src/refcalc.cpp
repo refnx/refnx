@@ -12,8 +12,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <vector>
-#include <assert.h>
 
 #ifdef _WIN32
 
@@ -37,22 +35,48 @@ using namespace MyComplexNumber;
 extern "C" {
 #endif
 
+
+void* malloc2d(int ii, int jj, int sz){
+	void** p;
+	int sz_ptr_array;
+	int sz_elt_array;
+	int sz_allocation;
+	long i;
+
+	sz_ptr_array = ii * sizeof(void*);
+	sz_elt_array = jj * sz;
+	sz_allocation = sz_ptr_array + ii * sz_elt_array;
+
+	p = (void**) malloc(sz_allocation);
+	if (p == NULL)
+		return p;
+	memset(p, 0, sz_allocation);
+	for (i = 0; i < ii; ++i)
+	{
+		*(p+i) = (void*) ((long)p + sz_ptr_array + i * sz_elt_array);
+	}
+	return p;
+}
+
+
 void AbelesCalc_ImagAll(int numcoefs,
                         const double *coefP,
                         int npoints,
                         double *yP,
-                        const double *xP){
+                        const double *xP,
+                        int workers){
 		int j;
 		double scale, bkg;
 		double num = 0, den = 0, answer = 0;
 
 		MyComplex super;
 		MyComplex sub;
-		MyComplex oneC = MyComplex(1,0);
+		MyComplex oneC = MyComplex(1, 0);
 		MyComplex MRtotal[2][2];
 		MyComplex MI[2][2];
 		MyComplex temp2[2][2];
 		MyComplex qq2;
+		MyComplex **kn_all = NULL;
 		MyComplex *kn = NULL;
 		MyComplex *SLD = NULL;
 		double *thickness = NULL;
@@ -61,7 +85,11 @@ void AbelesCalc_ImagAll(int numcoefs,
 		int nlayers = (int) coefP[0];
 
 		try{
-			kn = new MyComplex[nlayers + 2];
+		    // 2D array to hold wavevectors for each point, kn[npoints][nlayers + 2]
+		    kn_all = (MyComplex **) malloc2d(npoints, nlayers + 2, sizeof(MyComplex));
+		    if(kn_all == NULL)
+		        goto done;
+
 			SLD = new MyComplex[nlayers + 2];
 			thickness = new double[nlayers];
 			roughness = new double[nlayers + 1];
@@ -88,11 +116,13 @@ void AbelesCalc_ImagAll(int numcoefs,
 
 // if you have omp.h, then can do the calculation in parallel.
 #ifdef _OPENMP
-#pragma omp parallel for shared(kn) private(j)
+        omp_set_num_threads(workers);
+        #pragma omp parallel for shared(kn_all) private(j, num, den, answer, qq2, MRtotal, MI, temp2, kn)
 #endif
 
 		for (j = 0; j < npoints; j++) {
 			MyComplex beta, rj;
+            kn = kn_all[j];
 
 			qq2 = MyComplex(xP[j] * xP[j] / 4, 0);
 
@@ -100,7 +130,7 @@ void AbelesCalc_ImagAll(int numcoefs,
 			for(int ii = 0; ii < nlayers + 2 ; ii++)
 				kn[ii] = compsqrt(qq2 - SLD[ii]);
 
-			//now calculate reflectivities
+			// now calculate reflectivities
 			for(int ii = 0 ; ii < nlayers + 1 ; ii++){
 			    rj = ((kn[ii] - kn[ii + 1])/(kn[ii] + kn[ii + 1]))
 			          * compexp(kn[ii] * kn[ii + 1] * -2.
@@ -136,13 +166,9 @@ void AbelesCalc_ImagAll(int numcoefs,
 			yP[j] = answer;
 		}
 
-#ifdef _OPENMP
-#pragma omp join
-#endif
-
 	done:
-		if(kn)
-			delete [] kn;
+		if(kn_all)
+			free(kn_all);
 		if(SLD)
 			delete[] SLD;
         if(thickness)
@@ -151,7 +177,7 @@ void AbelesCalc_ImagAll(int numcoefs,
 			delete[] roughness;
 	}
 
-/* pthread version*/
+/* pthread version */
 #ifdef HAVE_PTHREAD_H
 
 	typedef struct{
@@ -173,7 +199,8 @@ void AbelesCalc_ImagAll(int numcoefs,
                            p->coefP,
                            p->npoints,
                            p->yP,
-                           p->xP);
+                           p->xP,
+                           0);
 		pthread_exit((void*)0);
 		return NULL;
 	}
@@ -182,26 +209,27 @@ void AbelesCalc_ImagAll(int numcoefs,
 	                      const double *coefP,
 	                       int npoints,
 	                        double *yP,
-	                         const double *xP){
+	                         const double *xP,
+	                          int workers){
 
 		pthread_t *threads = NULL;
 		pointCalcParm *arg = NULL;
 
-		int threadsToCreate = NUM_CPUS - 1;
+		int threadsToCreate = workers - 1;
 		int pointsEachThread, pointsRemaining, pointsConsumed;
 
 		// create threads for the calculation
 		threads = (pthread_t *) malloc((threadsToCreate) * sizeof(pthread_t));
-		if(!threads && NUM_CPUS > 1)
+		if(!threads && workers > 1)
 			goto done;
 
-		//create arguments to be supplied to each of the threads
+		// create arguments to be supplied to each of the threads
 		arg = (pointCalcParm *) malloc(sizeof(pointCalcParm)
 		                               * (threadsToCreate));
-		if(!arg && NUM_CPUS > 1)
+		if(!arg && workers > 1)
 			goto done;
 
-		//need to calculated how many points are given to each thread.
+		// need to calculated how many points are given to each thread.
 		if(threadsToCreate > 0){
 			pointsEachThread = floorl(npoints / (threadsToCreate + 1));
 		} else {
@@ -211,8 +239,8 @@ void AbelesCalc_ImagAll(int numcoefs,
 		pointsRemaining = npoints;
 		pointsConsumed = 0;
 
-		//if you have two CPU's, only create one extra thread because the main
-		//thread does half the work
+		// if you have two CPU's, only create one extra thread because the main
+		// thread does half the work
 		for (int ii = 0; ii < threadsToCreate ; ii++){
 			arg[ii].coefP = coefP;
 			arg[ii].numcoefs = numcoefs;
@@ -229,8 +257,8 @@ void AbelesCalc_ImagAll(int numcoefs,
 			pointsRemaining -= pointsEachThread;
 			pointsConsumed += pointsEachThread;
 		}
-		//do the last points in the main thread.
-		AbelesCalc_ImagAll(numcoefs, coefP, pointsRemaining, yP + pointsConsumed, xP + pointsConsumed);
+		// do the last points in the main thread.
+		AbelesCalc_ImagAll(numcoefs, coefP, pointsRemaining, yP + pointsConsumed, xP + pointsConsumed, 0);
 
 		for (int ii = 0; ii < threadsToCreate ; ii++)
 			pthread_join(threads[ii], NULL);
@@ -244,22 +272,26 @@ void AbelesCalc_ImagAll(int numcoefs,
 	}
 #endif
 
+
 /*
 Parallelised version
 */
 void reflectMT(int numcoefs,
-            const double *coefP,
-            int npoints,
-            double *yP,
-            const double *xP){
+               const double *coefP,
+               int npoints,
+               double *yP,
+               const double *xP,
+               int workers){
 /*
 choose between the mode of calculation, depending on whether pthreads or omp.h
 is present for parallelisation.
 */
-#ifdef HAVE_PTHREAD_H
-    AbelesCalc_Imag(numcoefs, coefP, npoints, yP, xP);
+#if defined HAVE_PTHREAD_H
+    AbelesCalc_Imag(numcoefs, coefP, npoints, yP, xP, workers);
+#elif defined _OPENMP
+    AbelesCalc_ImagAll(numcoefs, coefP, npoints, yP, xP, workers);
 #else
-    AbelesCalc_ImagAll(numcoefs, coefP, npoints, yP, xP);
+    AbelesCalc_ImagAll(numcoefs, coefP, npoints, yP, xP, 0);
 #endif
 }
 
@@ -271,7 +303,7 @@ void reflect(int numcoefs,
             int npoints,
             double *yP,
             const double *xP){
-	AbelesCalc_ImagAll(numcoefs, coefP, npoints, yP, xP);
+	AbelesCalc_ImagAll(numcoefs, coefP, npoints, yP, xP, 0);
 }
 
 #ifdef __cplusplus

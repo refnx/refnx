@@ -130,11 +130,11 @@ class TestReflect(unittest.TestCase):
 
         x = np.linspace(0.01, 0.2, 1000000)
         pstart = time.time()
-        _creflect.abeles(x, coefs, parallel=True)
+        _creflect.abeles(x, coefs, workers=0)
         pfinish = time.time()
 
         sstart = time.time()
-        _creflect.abeles(x, coefs, parallel=False)
+        _creflect.abeles(x, coefs, workers=1)
         sfinish = time.time()
 
         assert_(0.7 * (sfinish - sstart) > (pfinish - pstart))

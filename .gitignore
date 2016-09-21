@@ -4,10 +4,12 @@
 build/
 dist/
 *.icns
-*.c
 __pycache__
 .ipynb_checkpoints/
 refnx.egg-info/
+src/_cevent.c
+src/_creflect.c
+src/_creflect.cpp
 build.log
 
 # testing artifacts

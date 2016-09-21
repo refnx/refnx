@@ -1,7 +1,6 @@
 #pragma once
 
 
-
 namespace MyComplexNumber{
 	//Complex Class definition
 	class MyComplex
@@ -27,31 +26,31 @@ namespace MyComplexNumber{
 			const MyComplex operator*(const double s) 
 			{
 				
-				return MyComplex(s*re,s*im);
+				return MyComplex(s * re, s * im);
 			} 
 			
 			friend const MyComplex operator*(MyComplex lhs, MyComplex rhs)
 			{
-				return MyComplex((lhs.re*rhs.re-lhs.im*rhs.im),(lhs.re*rhs.im+lhs.im*rhs.re));
+				return MyComplex((lhs.re*rhs.re - lhs.im*rhs.im), (lhs.re*rhs.im + lhs.im*rhs.re));
 				
 			}
 			
 			friend const MyComplex operator/(MyComplex lhs, MyComplex rhs)
 			{
-				double denom = rhs.re*rhs.re+rhs.im*rhs.im;
+				double denom = rhs.re*rhs.re + rhs.im*rhs.im;
 				
-				return MyComplex((lhs.re*rhs.re+lhs.im*rhs.im)/denom,(lhs.im*rhs.re-lhs.re*rhs.im)/denom);
+				return MyComplex((lhs.re*rhs.re + lhs.im*rhs.im) / denom, (lhs.im*rhs.re - lhs.re*rhs.im) / denom);
 			}
 			
 			
-			friend MyComplex operator+(MyComplex lhs,MyComplex rhs)
+			friend MyComplex operator+(MyComplex lhs, MyComplex rhs)
 			{
-				return MyComplex(lhs.re+rhs.re,lhs.im+rhs.im);
+				return MyComplex(lhs.re + rhs.re, lhs.im + rhs.im);
 			}
 			
 			friend const MyComplex operator-(const MyComplex lhs, const MyComplex rhs)
 			{
-				return MyComplex(lhs.re-rhs.re,lhs.im-rhs.im);
+				return MyComplex(lhs.re - rhs.re, lhs.im - rhs.im);
 			}
 		};
 	
@@ -59,17 +58,17 @@ namespace MyComplexNumber{
 	inline MyComplex compexp(MyComplex comp)
 	{
 		//	double exponent = exp(comp.re);
-		return MyComplex(exp(comp.re)*cos(comp.im),exp(comp.re)*sin(comp.im));
+		return MyComplex(exp(comp.re) * cos(comp.im), exp(comp.re) *sin(comp.im));
 	}
 	
 	inline MyComplex compcos(MyComplex comp)
 	{
-		return MyComplex(cos(comp.re)*cosh(comp.im),0-(sin(comp.re)*sinh(comp.im)));
+		return MyComplex(cos(comp.re) * cosh(comp.im), 0 - (sin(comp.re) * sinh(comp.im)));
 	}
 	
 	inline MyComplex compsin(MyComplex comp)
 	{
-		return MyComplex(sin(comp.re)*cosh(comp.im),cos(comp.re)*sinh(comp.im));
+		return MyComplex(sin(comp.re) * cosh(comp.im), cos(comp.re) * sinh(comp.im));
 	}
 	
 	inline double comparg(MyComplex comp)
@@ -79,42 +78,42 @@ namespace MyComplexNumber{
 	
     inline double compnorm(MyComplex comp)
 	{
-		return comp.im*comp.im+comp.re*comp.re;
+		return comp.im*comp.im + comp.re*comp.re;
 	}
 	
 	inline MyComplex compsqrt(MyComplex comp)
 	{
-		//Use the half angle relation to calculate the square root. Prevents buffer
-		//over/under flows. Don't change this code. This problem actually occurs
+		// Use the half angle relation to calculate the square root. Prevents buffer
+		// over/under flows. Don't change this code. This problem actually occurs
 		double mag;
 		double theta;
 		double sqrtholder;
 		
 		if(comp.im != 0)
 		{
-			mag = sqrt(comp.re*comp.re+comp.im*comp.im);
-			theta = atan2(comp.im,(comp.re+mag));
+			mag = sqrt(comp.re*comp.re + comp.im*comp.im);
+			theta = atan2(comp.im, (comp.re + mag));
 			sqrtholder = sqrt(mag);
-			return MyComplex(sqrtholder*cos(theta),sqrtholder*sin(theta));
+			return MyComplex(sqrtholder * cos(theta), sqrtholder * sin(theta));
 		}
 		
 		if(comp.re < 0)
 			return MyComplex(0, sqrt(fabs(comp.re)));
 		
-		return MyComplex(sqrt(comp.re),0);
+		return MyComplex(sqrt(comp.re), 0);
 	};
 	
 	inline double compabs(MyComplex comp)
 	{
-		//While inefficient, this prevents buffer under/overflows - from Numerical Recipes in C++
-		double placeholder=0;
+		// While inefficient, this prevents buffer under/overflows - from Numerical Recipes in C++
+		double placeholder = 0;
 		if(comp.re >= comp.im)
 		{
 			if(comp.re == 0)
 				return fabs(comp.im);
 			
-			placeholder = comp.im/comp.re;
-			return(fabs(comp.re)*sqrt(1.0+placeholder*placeholder));
+			placeholder = comp.im / comp.re;
+			return(fabs(comp.re) * sqrt(1.0 + placeholder*placeholder));
 		}
 		else
 		{
@@ -122,18 +121,18 @@ namespace MyComplexNumber{
 				return fabs(comp.re);
 			
 			placeholder = comp.re/comp.im;
-			return (fabs(comp.im)*sqrt(1.0+placeholder*placeholder));
+			return (fabs(comp.im) * sqrt(1.0 + placeholder*placeholder));
 		}
 		
 	};
 	
 	inline MyComplex cln(MyComplex comp)
 	{
-		return MyComplex(log(compabs(comp)),comparg(comp));
+		return MyComplex(log(compabs(comp)), comparg(comp));
 	}
 	
 	inline void
-	matmul(MyComplex a[2][2],MyComplex b[2][2],MyComplex c[2][2]){
+	matmul(MyComplex a[2][2], MyComplex b[2][2], MyComplex c[2][2]){
 		
 		//		c[0][0] = a[0][0]*b[0][0] + a[0][1]*b[1][0];
 		//		c[0][1] = a[0][0]*b[0][1] + a[0][1]*b[1][1];
@@ -150,4 +149,3 @@ namespace MyComplexNumber{
 		c[1][1].im = (a[1][0].re * b[0][1].im) + (a[1][1].re * b[1][1].im) + (a[1][0].im*b[0][1].re) + (a[1][1].im*b[1][1].re);		
 	}
 };
-
