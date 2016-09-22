@@ -14,11 +14,12 @@
 #include <string.h>
 
 #ifdef _WIN32
-
+    #include <windows.h>
+    #include <process.h>
 #else
-#include <unistd.h>
-#include <pthread.h>
-#define HAVE_PTHREAD_H
+    #include <unistd.h>
+    #include <pthread.h>
+    #define HAVE_PTHREAD_H
 #endif
 
 #ifdef _OPENMP
@@ -177,9 +178,6 @@ void AbelesCalc_ImagAll(int numcoefs,
 			delete[] roughness;
 	}
 
-/* pthread version */
-#ifdef HAVE_PTHREAD_H
-
 	typedef struct{
 		// a double array containing the model coefficients
 		const double *coefP;
@@ -192,6 +190,9 @@ void AbelesCalc_ImagAll(int numcoefs,
 		// the Q values to do the calculation for.
 		const double *xP;
 	}  pointCalcParm;
+
+/* pthread version */
+#ifdef HAVE_PTHREAD_H
 
 	void *ThreadWorker(void *arg){
 		pointCalcParm *p = (pointCalcParm *) arg;
@@ -263,13 +264,106 @@ void AbelesCalc_ImagAll(int numcoefs,
 		for (int ii = 0; ii < threadsToCreate ; ii++)
 			pthread_join(threads[ii], NULL);
 
-
 	done:
 		if(threads)
 			free(threads);
 		if(arg)
 			free(arg);
 	}
+#endif
+
+#ifdef _WIN32
+    unsigned int ThreadWorker(void *arg){
+            pointCalcParm *p = (pointCalcParm *) arg;
+            AbelesCalc_ImagAll(p->numcoefs,
+                               p->coefP,
+                               p->npoints,
+                               p->yP,
+                               p->xP,
+                               0);
+            return 0;
+    }
+
+    void AbelesCalc_Imag(int numcoefs,
+                          const double *coefP,
+                           int npoints,
+                            double *yP,
+                             const double *xP,
+                              int workers){
+
+        uintptr_t *threads = NULL;
+        pointCalcParm *arg = NULL;
+
+        int threadsToCreate = workers - 1;
+        int pointsEachThread, pointsRemaining, pointsConsumed;
+
+        // create threads for the calculation
+        threads = (uintptr_t *) malloc((threadsToCreate) * sizeof(uintptr_t));
+        if(!threads && workers > 1)
+            goto done;
+
+        // create arguments to be supplied to each of the threads
+        arg = (pointCalcParm *) malloc(sizeof(pointCalcParm)
+                                           * (threadsToCreate));
+        if(!arg && workers > 1)
+            goto done;
+
+        // need to calculated how many points are given to each thread.
+        if(threadsToCreate > 0){
+            pointsEachThread = (int) floor((double) npoints / ((double) threadsToCreate + 1));
+        } else {
+            pointsEachThread = npoints;
+        }
+
+        pointsRemaining = npoints;
+        pointsConsumed = 0;
+
+        for( int ii=0; ii<threadsToCreate; ii++ )
+        {
+            // if you have two CPU's, only create one extra thread because the main
+            // thread does half the work
+            arg[ii].coefP = coefP;
+            arg[ii].numcoefs = numcoefs;
+
+            arg[ii].npoints = pointsEachThread;
+
+            //the following two lines specify where the Q values and R values
+            //i.e. an offset of the original array.
+            arg[ii].xP = xP + pointsConsumed;
+            arg[ii].yP = yP + pointsConsumed;
+
+            threads[ii] = _beginthreadex(
+                                         NULL,                   // default security attributes
+                                         0,                      // use default stack size
+                                         ThreadWorker,           // thread function name
+                                         (void*) &arg[ii],        // argument to thread function
+                                         0,                      // use default creation flags
+                                         NULL);                  // returns the thread identifier
+
+            if(threads[ii] == 0)
+                goto done;
+
+            pointsRemaining -= pointsEachThread;
+            pointsConsumed += pointsEachThread;
+        }
+        // do the last points in the main thread.
+        AbelesCalc_ImagAll(numcoefs, coefP, pointsRemaining, yP + pointsConsumed, xP + pointsConsumed, 0);
+
+        // Wait until all threads have terminated.
+        WaitForMultipleObjects(threadsToCreate, (HANDLE *)threads, TRUE, INFINITE);
+
+        done:
+            if(threads)
+                // Close all thread handles and free memory allocations.
+                for(int ii=0; ii<threadsToCreate; ii++){
+                    if(threads[ii])
+                        CloseHandle((HANDLE) threads[ii]);
+                }
+
+                free(threads);
+            if(arg)
+                free(arg);
+    }
 #endif
 
 
@@ -290,6 +384,8 @@ is present for parallelisation.
     AbelesCalc_Imag(numcoefs, coefP, npoints, yP, xP, workers);
 #elif defined _OPENMP
     AbelesCalc_ImagAll(numcoefs, coefP, npoints, yP, xP, workers);
+#elif defined _WIN32
+    AbelesCalc_Imag(numcoefs, coefP, npoints, yP, xP, workers);
 #else
     AbelesCalc_ImagAll(numcoefs, coefP, npoints, yP, xP, 0);
 #endif

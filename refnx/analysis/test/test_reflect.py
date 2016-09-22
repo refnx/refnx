@@ -1,4 +1,7 @@
 import unittest
+import os.path
+import time
+from multiprocessing import cpu_count
 import refnx.analysis.reflect as reflect
 try:
     import refnx.analysis._creflect as _creflect
@@ -15,8 +18,7 @@ from refnx.analysis.reflect import AnalyticalReflectivityFunction as ARF
 import numpy as np
 from numpy.testing import (assert_almost_equal, assert_equal, assert_,
                            assert_allclose)
-import os.path
-import time
+
 
 
 path = os.path.dirname(os.path.abspath(__file__))
@@ -114,10 +116,17 @@ class TestReflect(unittest.TestCase):
         assert_almost_equal(calc1, calc2)
         calc1 = _reflect.abeles(self.qvals, self.layer_format, scale=0.5,
                                 bkg=0.1)
+        # workers = 1 is a non-threaded implementation
         calc2 = _creflect.abeles(self.qvals, self.layer_format, scale=0.5,
-                                 bkg=0.1)
+                                 bkg=0.1, workers=1)
+        # workers = 2 forces the calculation to go through multithreaded calcn,
+        # even on single core processor
+        calc3 = _creflect.abeles(self.qvals, self.layer_format, scale=0.5,
+                                 bkg=0.1, workers=2)
         assert_almost_equal(calc1, calc2)
+        assert_almost_equal(calc1, calc3)
 
+    @np.testing.decorators.knownfailureif(cpu_count()==1)
     def test_cabeles_parallelised(self):
         # I suppose this could fail if someone doesn't have a multicore computer
         if not HAVE_CREFLECT:
@@ -136,7 +145,7 @@ class TestReflect(unittest.TestCase):
         sstart = time.time()
         _creflect.abeles(x, coefs, workers=1)
         sfinish = time.time()
-
+        print(sfinish - sstart, pfinish - pstart)
         assert_(0.7 * (sfinish - sstart) > (pfinish - pstart))
 
     def test_compare_c_py_abeles0(self):
