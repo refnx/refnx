@@ -32,8 +32,8 @@ before_install:
     # Useful for debugging any issues with conda
     - conda info -a
 
-    - conda install --yes python=$TRAVIS_PYTHON_VERSION atlas numpy scipy nose h5py cython matplotlib pandas xlrd jupyter
-    - pip install emcee uncertainties codecov lmfit
+    - conda install --yes python=$TRAVIS_PYTHON_VERSION atlas numpy scipy nose h5py cython pandas xlrd
+    - pip install emcee uncertainties codecov lmfit matplotlib jupyter
 
     #- git clone https://github.com/lmfit/lmfit-py.git
     #- cd lmfit-py
