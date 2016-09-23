@@ -6,10 +6,11 @@ General release instructions
 - bump version number in setup.py, but only do it once
 - git commit -a
 - git push refnx master
+- change ISRELEASED to True in setup.py
+- git commit -a
 - git tag -a <tagname>
 - git push refnx <tagname>
 - git checkout -b maintenance/<tagname>
-- change ISRELEASED to True in setup.py
 - git commit -a
 - git push refnx maintenance/<tagname>
 - source activate dev3
