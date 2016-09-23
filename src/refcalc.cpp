@@ -12,11 +12,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <cstdio>
 
 #ifdef _WIN32
     #include <windows.h>
     #include <process.h>
-#else
+#endif
+#if defined (__unix__) || (defined (__APPLE__) && defined (__MACH__))
     #include <unistd.h>
     #include <pthread.h>
     #define HAVE_PTHREAD_H
@@ -29,7 +31,6 @@
 #define NUM_CPUS 4
 #define PI 3.141592653589793
 
-using namespace std;
 using namespace MyComplexNumber;
 
 #ifdef __cplusplus
@@ -273,7 +274,7 @@ void AbelesCalc_ImagAll(int numcoefs,
 #endif
 
 #ifdef _WIN32
-    unsigned int ThreadWorker(void *arg){
+    unsigned int __stdcall ThreadWorker(void *arg){
             pointCalcParm *p = (pointCalcParm *) arg;
             AbelesCalc_ImagAll(p->numcoefs,
                                p->coefP,

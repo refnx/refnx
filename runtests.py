@@ -164,7 +164,6 @@ def main(argv):
                       extra_argv=extra_argv)
     finally:
         os.chdir(cwd)
-        shutil.rmtree(dst_dir)
 
     if isinstance(result, bool):
         sys.exit(0 if result else 1)
