@@ -177,6 +177,7 @@ def setup_package():
 
             info['cmdclass'] = {'build_ext': build_ext}
             info['ext_modules'] = ext_modules
+            info['zip_safe'] = False
 
     try:
         setup(**info)
