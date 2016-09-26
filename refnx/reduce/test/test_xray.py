@@ -1,6 +1,6 @@
 import unittest
-import refnx.reduce.xray as xray
 import os
+import refnx.reduce.xray as xray
 
 
 class TestXray(unittest.TestCase):

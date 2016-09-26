@@ -1,12 +1,14 @@
 import unittest
+import os
+
 import refnx.reduce.platypusnexus as plp
 from refnx.reduce import ReducePlatypus, PlatypusNexus
 import numpy as np
-import os
 from numpy.testing import (assert_almost_equal, assert_, assert_equal,
                            assert_array_less, assert_allclose)
 from refnx.reduce.peak_utils import gauss
 import h5py
+from refnx._lib import TemporaryDirectory
 
 
 class TestPlatypusNexus(unittest.TestCase):
@@ -19,7 +21,14 @@ class TestPlatypusNexus(unittest.TestCase):
                                                    'PLP0011613.nx.hdf'))
         self.f641 = PlatypusNexus(os.path.join(self.path,
                                                    'PLP0011641.nx.hdf'))
+        self.cwd = os.getcwd()
+        self.tmpdir = TemporaryDirectory()
+        os.chdir(self.tmpdir.name)
         return 0
+
+    def tearDown(self):
+        os.chdir(self.cwd)
+        self.tmpdir.cleanup()
 
     def test_chod(self):
         flight_length = self.f113.chod()

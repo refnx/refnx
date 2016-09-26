@@ -1,10 +1,13 @@
 import unittest
+import os
 import os.path
 import numpy as np
 from refnx.reduce import reduce_stitch, ReducePlatypus
 from numpy.testing import (assert_almost_equal, assert_, assert_equal,
                            assert_array_less, assert_allclose)
 import xml.etree.ElementTree as ET
+from refnx._lib import TemporaryDirectory
+
 
 class TestReduce(unittest.TestCase):
 
@@ -12,7 +15,14 @@ class TestReduce(unittest.TestCase):
         path = os.path.dirname(__file__)
         self.path = path
 
+        self.cwd = os.getcwd()
+        self.tmpdir = TemporaryDirectory()
+        os.chdir(self.tmpdir.name)
         return 0
+
+    def tearDown(self):
+        os.chdir(self.cwd)
+        self.tmpdir.cleanup()
 
     def test_smoke(self):
         # a quick smoke test to check that the reduction can occur

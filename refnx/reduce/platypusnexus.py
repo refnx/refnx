@@ -1,4 +1,14 @@
 from __future__ import division
+import io
+import os
+import os.path
+import argparse
+import re
+import shutil
+from time import gmtime, strftime
+import string
+import warnings
+
 import numpy as np
 import h5py
 from . import peak_utils as ut
@@ -8,15 +18,6 @@ from . import parabolic_motion as pm
 from . import event, rebin
 from scipy.optimize import leastsq, curve_fit
 from scipy.stats import t
-import os
-import os.path
-import argparse
-import re
-import shutil
-from time import gmtime, strftime
-import string
-import warnings
-import io
 import pandas as pd
 
 
@@ -1460,8 +1461,9 @@ def accumulate_HDF_files(files):
                 h5data['entry1/instrument/detector/total_counts'][0]
             h5master['entry1/instrument/detector/time'][0] += \
                 h5data['entry1/instrument/detector/time'][0]
-
             h5master.flush()
+
+            h5data.close()
 
 
 def _check_HDF_file(h5data):

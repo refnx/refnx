@@ -1,10 +1,11 @@
 import unittest
-import numpy as np
 import os.path
+import os
 from refnx.reduce import BatchReducer
 
 # also get access to file-scope variables
 import refnx.reduce.batchreduction
+from refnx._lib import TemporaryDirectory
 
 
 class TestReduce(unittest.TestCase):
@@ -12,7 +13,14 @@ class TestReduce(unittest.TestCase):
         path = os.path.dirname(__file__)
         self.path = path
 
+        self.cwd = os.getcwd()
+        self.tmpdir = TemporaryDirectory()
+        os.chdir(self.tmpdir.name)
         return 0
+
+    def tearDown(self):
+        os.chdir(self.cwd)
+        self.tmpdir.cleanup()
 
     def test_batch_reduce(self):
         filename = os.path.join(self.path, "test_batch_reduction.xls")
