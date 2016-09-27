@@ -1,9 +1,10 @@
+import os.path
 import unittest
+
 from refnx.dataset import ReflectDataset, Data1D
 import numpy as np
 from numpy.testing import assert_equal, assert_
-import os.path
-
+from refnx._lib import TemporaryDirectory
 
 path = os.path.dirname(os.path.abspath(__file__))
 
@@ -18,6 +19,13 @@ class TestReflectDataset(unittest.TestCase):
         dx1 = np.ones_like(x1)
         data.add_data((x1, y1, e1, dx1))
         self.data = data
+
+        self.cwd = os.getcwd()
+        self.tmpdir = TemporaryDirectory()
+        os.chdir(self.tmpdir.name)
+
+    def tearDown(self):
+        os.chdir(self.cwd)
 
     def test_load(self):
         # load dataset from XML, via file handle
