@@ -1,0 +1,20 @@
+dependencies:
+  override:
+    - sudo apt-get install libatlas-dev libatlas-base-dev liblapack-dev gfortran libhdf5-serial-dev
+    - pip install -q cython
+    - pip install -q numpy
+    - pip install -q nose lmfit emcee scipy xlrd h5py pandas uncertainties
+
+machine:
+  python:
+    version: 3.5.2
+
+## Customize checkout
+checkout:
+  post:
+    - git submodule sync
+    - git submodule update --init # use submodules
+
+test:
+  override:
+    - python -u runtests.py
