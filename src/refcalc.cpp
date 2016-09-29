@@ -56,6 +56,7 @@ void* malloc2d(int ii, int jj, int sz){
 	memset(p, 0, sz_allocation);
 
 	c = ((char*) p) + sz_ptr_array;
+	
 	for (i = 0; i < ii; ++i)
 	{
 		//*(p+i) = (void*) ((long)p + sz_ptr_array + i * sz_elt_array);
