@@ -1,0 +1,85 @@
+environment:
+
+  # SDK v7.0 MSVC Express 2008's SetEnv.cmd script will fail if the
+  # /E:ON and /V:ON options are not enabled in the batch script interpreter
+  # See: http://stackoverflow.com/a/13751649/163740
+  CMD_IN_ENV: "cmd /E:ON /V:ON /C obvci_appveyor_python_build_env.cmd"
+
+  # Workaround for https://github.com/conda/conda-build/issues/636
+  PYTHONIOENCODING: "UTF-8"
+
+  matrix:
+    # Note: Because we have to separate the py2 and py3 components due to compiler version, we have a race condition for non-python packages.
+    # Not sure how to resolve this, but maybe we should be tracking the VS version in the build string anyway?
+    #- TARGET_ARCH: "x86"
+    #  CONDA_PY: "27"
+    #  PY_CONDITION: "python >=2.7,<3"
+    #  CONDA_INSTALL_LOCN: "C:\\Miniconda"
+    #- TARGET_ARCH: "x86"
+    #  CONDA_PY: "34"
+    #  PY_CONDITION: "python >=3.4,<3.5"
+    #  CONDA_INSTALL_LOCN: "C:\\Miniconda3"
+    #- TARGET_ARCH: "x86"
+    #  CONDA_PY: "35"
+    #  PY_CONDITION: "python >=3.5"
+    #  CONDA_INSTALL_LOCN: "C:\\Miniconda35"
+    #- TARGET_ARCH: "x64"
+    #  CONDA_PY: "27"
+    #  PY_CONDITION: "python >=2.7,<3"
+    #  CONDA_INSTALL_LOCN: "C:\\Miniconda-x64"
+    #- TARGET_ARCH: "x64"
+    #  CONDA_PY: "34"
+    #  PY_CONDITION: "python >=3.4,<3.5"
+    #  CONDA_INSTALL_LOCN: "C:\\Miniconda3-x64"
+    - TARGET_ARCH: "x64"
+      CONDA_PY: "35"
+      PY_CONDITION: "python >=3.5"
+      CONDA_INSTALL_LOCN: "C:\\Miniconda35-x64"
+
+# We always use a 64-bit machine, but can build x86 distributions
+# with the TARGET_ARCH variable (which is used by CMD_IN_ENV).
+platform:
+    - x64
+
+install:
+    # Set the CONDA_NPY, although it has no impact on the actual build. We need this because of a test within conda-build.
+    - cmd: set CONDA_NPY=19
+
+    # Remove cygwin (and therefore the git that comes with it).
+    - cmd: rmdir C:\cygwin /s /q
+
+    # Use the pre-installed Miniconda for the desired arch
+    #
+    # However, it is really old. So, we need to update some
+    # things before we proceed. That seems to require it being
+    # on the path. So, we temporarily put conda on the path
+    # so that we can update it. Then we remove it so that
+    # we can do a proper activation.
+    - cmd: set "OLDPATH=%PATH%"
+    - cmd: set "PATH=%CONDA_INSTALL_LOCN%\\Scripts;%CONDA_INSTALL_LOCN%\\Library\\bin;%PATH%"
+    - cmd: conda update --yes --quiet conda python
+    - cmd: set "PATH=%OLDPATH%"
+    - cmd: call %CONDA_INSTALL_LOCN%\Scripts\activate.bat
+
+    - cmd: conda config --add channels conda-forge
+    - cmd: conda config --set show_channel_urls true
+    - cmd: conda update --yes --quiet conda
+    - cmd: conda install --yes --quiet obvious-ci
+    - cmd: conda install --yes --quiet numpy toolchain scipy lmfit emcee h5py xlrd pandas uncertainties cython nose
+
+build_script:
+  # Build the compiled extension
+  - "%CMD_IN_ENV% python setup.py build"
+
+test_script:
+  # Run the project tests
+  - "%CMD_IN_ENV% python runtests.py -t refnx/analysis/test/test_reflect.py"
+
+after_test:
+  # If tests are successful, create binary packages for the project.
+  - "%CMD_IN_ENV% python setup.py bdist_wheel"
+  - ps: "ls dist"
+
+artifacts:
+  # Archive the generated packages in the ci.appveyor.com build report.
+  - path: dist\*.whl

@@ -40,9 +40,9 @@ extern "C" {
 
 void* malloc2d(int ii, int jj, int sz){
 	void** p;
-	int sz_ptr_array;
-	int sz_elt_array;
-	int sz_allocation;
+	size_t sz_ptr_array;
+	size_t sz_elt_array;
+	size_t sz_allocation;
 	long i;
 
 	sz_ptr_array = ii * sizeof(void*);
@@ -55,7 +55,8 @@ void* malloc2d(int ii, int jj, int sz){
 	memset(p, 0, sz_allocation);
 	for (i = 0; i < ii; ++i)
 	{
-		*(p+i) = (void*) ((long)p + sz_ptr_array + i * sz_elt_array);
+		//*(p+i) = (void*) ((long)p + sz_ptr_array + i * sz_elt_array);
+		p[i] = (void*) ((size_t) p + sz_ptr_array + i * sz_elt_array);
 	}
 	return p;
 }
