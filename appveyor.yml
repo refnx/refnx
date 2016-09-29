@@ -11,26 +11,26 @@ environment:
   matrix:
     # Note: Because we have to separate the py2 and py3 components due to compiler version, we have a race condition for non-python packages.
     # Not sure how to resolve this, but maybe we should be tracking the VS version in the build string anyway?
-    #- TARGET_ARCH: "x86"
-    #  CONDA_PY: "27"
-    #  PY_CONDITION: "python >=2.7,<3"
-    #  CONDA_INSTALL_LOCN: "C:\\Miniconda"
-    #- TARGET_ARCH: "x86"
-    #  CONDA_PY: "34"
-    #  PY_CONDITION: "python >=3.4,<3.5"
-    #  CONDA_INSTALL_LOCN: "C:\\Miniconda3"
-    #- TARGET_ARCH: "x86"
-    #  CONDA_PY: "35"
-    #  PY_CONDITION: "python >=3.5"
-    #  CONDA_INSTALL_LOCN: "C:\\Miniconda35"
-    #- TARGET_ARCH: "x64"
-    #  CONDA_PY: "27"
-    #  PY_CONDITION: "python >=2.7,<3"
-    #  CONDA_INSTALL_LOCN: "C:\\Miniconda-x64"
-    #- TARGET_ARCH: "x64"
-    #  CONDA_PY: "34"
-    #  PY_CONDITION: "python >=3.4,<3.5"
-    #  CONDA_INSTALL_LOCN: "C:\\Miniconda3-x64"
+    - TARGET_ARCH: "x86"
+      CONDA_PY: "27"
+      PY_CONDITION: "python >=2.7,<3"
+      CONDA_INSTALL_LOCN: "C:\\Miniconda"
+    - TARGET_ARCH: "x86"
+      CONDA_PY: "34"
+      PY_CONDITION: "python >=3.4,<3.5"
+      CONDA_INSTALL_LOCN: "C:\\Miniconda3"
+    - TARGET_ARCH: "x86"
+      CONDA_PY: "35"
+      PY_CONDITION: "python >=3.5"
+      CONDA_INSTALL_LOCN: "C:\\Miniconda35"
+    - TARGET_ARCH: "x64"
+      CONDA_PY: "27"
+      PY_CONDITION: "python >=2.7,<3"
+      CONDA_INSTALL_LOCN: "C:\\Miniconda-x64"
+    - TARGET_ARCH: "x64"
+      CONDA_PY: "34"
+      PY_CONDITION: "python >=3.4,<3.5"
+      CONDA_INSTALL_LOCN: "C:\\Miniconda3-x64"
     - TARGET_ARCH: "x64"
       CONDA_PY: "35"
       PY_CONDITION: "python >=3.5"
@@ -73,7 +73,7 @@ build_script:
 
 test_script:
   # Run the project tests
-  - "%CMD_IN_ENV% python runtests.py -t refnx/analysis/test/test_reflect.py"
+  - "%CMD_IN_ENV% python runtests.py"
 
 after_test:
   # If tests are successful, create binary packages for the project.
