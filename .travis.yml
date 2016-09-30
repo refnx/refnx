@@ -45,9 +45,9 @@ before_install:
     # Useful for debugging any issues with conda
     - conda info -a
 
-    - conda install --yes python=$PY numpy scipy nose h5py cython pandas xlrd
+    - conda install --yes python=$PY numpy scipy nose h5py cython pandas xlrd jupyter
 
-    - pip install emcee uncertainties lmfit matplotlib jupyter
+    - pip install emcee uncertainties lmfit
 
 
 install:
