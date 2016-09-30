@@ -1,5 +1,10 @@
 sudo: false
 language: python
+
+os:
+  - linux
+  - osx
+
 python:
     # We don't actually use the Travis Python, but this keeps it organized.
     - "2.7"
@@ -16,14 +21,14 @@ addons:
             - libhdf5-serial-dev
 
 before_install:
-    #- sudo apt-get install libhdf5-serial-dev
-    # We do this conditionally because it saves us some downloading if the
-    # version is the same.
-    - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then
-          wget https://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh;
-      else
+    - if [[ "$TRAVIS_OS_NAME" == "osx" ]]
+      then
+          wget https://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh -O miniconda.sh
+      elif [[ "$TRAVIS_OS_NAME" == "linux" ]]
+      then
           wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
       fi
+
     - bash miniconda.sh -b -p $HOME/miniconda
     - export PATH="$HOME/miniconda/bin:$PATH"
     - hash -r
@@ -32,24 +37,18 @@ before_install:
     # Useful for debugging any issues with conda
     - conda info -a
 
-    - conda install --yes python=$TRAVIS_PYTHON_VERSION atlas numpy scipy nose h5py cython pandas xlrd
-    - pip install emcee uncertainties codecov lmfit matplotlib jupyter
+    - conda install --yes python=$TRAVIS_PYTHON_VERSION numpy scipy nose h5py cython pandas xlrd
 
-    #- git clone https://github.com/lmfit/lmfit-py.git
-    #- cd lmfit-py
-    #- python setup.py install && cd ..
+    - pip install emcee uncertainties lmfit matplotlib jupyter
+
 
 install:
     - python setup.py install
 
 script:
-    - cd refnx
-    - nosetests
+    - python runtests.py
 
 notifications:
     # Perhaps we should have status emails sent to the mailing list, but
     # let's wait to see what people think before turning that on.
     email: false
-
-after_success:
-  - codecov
