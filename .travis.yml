@@ -1,15 +1,24 @@
 sudo: false
+
 language: python
 
-os:
-  - linux
-  - osx
-
-python:
-    # We don't actually use the Travis Python, but this keeps it organized.
-    - "2.7"
-    - "3.4"
-    - "3.5"
+matrix:
+    include:
+        - os: linux
+          env: PY=2.7
+        - os: linux
+          env: PY=3.4
+        - os: linux
+          env: PY=3.5
+        - os: osx
+          language: generic
+          env: PY=2.7
+        - os: osx
+          language: generic
+          env: PY=3.4
+        - os: osx
+          language: generic
+          env: PY=3.5
 
 addons:
     apt:
@@ -21,11 +30,10 @@ addons:
             - libhdf5-serial-dev
 
 before_install:
-    - if [[ "$TRAVIS_OS_NAME" == "osx" ]]
-      then
-          wget https://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh -O miniconda.sh
-      elif [[ "$TRAVIS_OS_NAME" == "linux" ]]
-      then
+    - echo $TRAVIS_OS_NAME
+    - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
+          wget https://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh -O miniconda.sh;
+      elif [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
           wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
       fi
 
@@ -37,7 +45,7 @@ before_install:
     # Useful for debugging any issues with conda
     - conda info -a
 
-    - conda install --yes python=$TRAVIS_PYTHON_VERSION numpy scipy nose h5py cython pandas xlrd
+    - conda install --yes python=$PY numpy scipy nose h5py cython pandas xlrd
 
     - pip install emcee uncertainties lmfit matplotlib jupyter
 
