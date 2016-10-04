@@ -45,7 +45,7 @@ before_install:
     # Useful for debugging any issues with conda
     - conda info -a
 
-    - conda install --yes python=$PY numpy scipy nose h5py cython pandas xlrd jupyter
+    - conda install --yes python=$PY numpy scipy nose h5py cython pandas xlrd
 
     - pip install emcee uncertainties lmfit
 
@@ -54,6 +54,8 @@ install:
     - python setup.py install
 
 script:
+    # definitely want to test the _creflect module on travis.
+    - export REQUIRE_C=1
     - python runtests.py
 
 notifications:
