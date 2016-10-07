@@ -82,23 +82,21 @@ void AbelesCalc_ImagAll(int numcoefs,
 		MyComplex MI[2][2];
 		MyComplex temp2[2][2];
 		MyComplex qq2;
-		MyComplex **kn_all = NULL;
-		MyComplex *kn = NULL;
 		MyComplex *SLD = NULL;
 		double *thickness = NULL;
-		double *roughness = NULL;
+		double *rough_sqr = NULL;
 
 		int nlayers = (int) coefP[0];
 
 		try{
-		    // 2D array to hold wavevectors for each point, kn[npoints][nlayers + 2]
-		    kn_all = (MyComplex **) malloc2d(npoints, nlayers + 2, sizeof(MyComplex));
-		    if(kn_all == NULL)
-		        goto done;
+//		    // 2D array to hold wavevectors for each point, kn[npoints][nlayers + 2]
+//		    kn_all = (MyComplex **) malloc2d(npoints, nlayers + 2, sizeof(MyComplex));
+//		    if(kn_all == NULL)
+//		        goto done;
 
 			SLD = new MyComplex[nlayers + 2];
 			thickness = new double[nlayers];
-			roughness = new double[nlayers + 1];
+			rough_sqr = new double[nlayers + 1];
 		} catch(...) {
 			goto done;
         }
@@ -113,59 +111,59 @@ void AbelesCalc_ImagAll(int numcoefs,
 			SLD[ii] = 4 * PI * (MyComplex(coefP[4 * ii + 5] * 1.e-6,
 			                              coefP[4 * ii + 6] * 1.e-6) - super);
 			thickness[ii - 1] = fabs(coefP[4 * ii + 4]);
-			roughness[ii - 1] = fabs(coefP[4 * ii + 7]);
+			rough_sqr[ii - 1] = -2 * coefP[4 * ii + 7] * coefP[4 * ii + 7];
         }
 
 		SLD[0] = MyComplex(0, 0);
 		SLD[nlayers + 1] = 4 * PI * (sub - super);
-        roughness[nlayers] = fabs(coefP[7]);
+        rough_sqr[nlayers] = -2 * coefP[7] * coefP[7];
 
 // if you have omp.h, then can do the calculation in parallel.
 #ifdef _OPENMP
         omp_set_num_threads(workers);
-        #pragma omp parallel for shared(kn_all) private(j, num, den, answer, qq2, MRtotal, MI, temp2, kn)
+        #pragma omp parallel for shared(kn_all) private(j, num, den, answer, qq2, MRtotal, MI, temp2)
 #endif
 
 		for (j = 0; j < npoints; j++) {
 			MyComplex beta, rj;
-            kn = kn_all[j];
+            MyComplex kn, kn_next;
 
 			qq2 = MyComplex(xP[j] * xP[j] / 4, 0);
 
-			// work out the wavevector in each of the layers
-			for(int ii = 0; ii < nlayers + 2 ; ii++)
-				kn[ii] = compsqrt(qq2 - SLD[ii]);
-
-			// now calculate reflectivities
+			// now calculate reflectivities and wavevectors
+			kn = compsqrt(qq2 - SLD[0]);
 			for(int ii = 0 ; ii < nlayers + 1 ; ii++){
-			    rj = ((kn[ii] - kn[ii + 1])/(kn[ii] + kn[ii + 1]))
-			          * compexp(kn[ii] * kn[ii + 1] * -2.
-			          * roughness[ii] * roughness[ii]) ;
+			    // wavevector in the layer
+			    kn_next = compsqrt(qq2 - SLD[ii + 1]);
 
-				// work out the beta for the layer
-				beta = (ii == 0)? oneC
-				                  :
-				                  compexp(kn[ii]
-				                          * MyComplex(0, thickness[ii - 1]));
+                // reflectance of the interface
+			    rj = (kn - kn_next)/(kn + kn_next)
+			          * compexp(kn * kn_next * rough_sqr[ii]) ;
 
-				// this is the characteristic matrix of a layer
-				MI[0][0] = beta;
-				MI[0][1] = rj * beta;
-				MI[1][1] = oneC / beta;
-				MI[1][0] = rj * MI[1][1];
-
-                if(!ii){
-                    memcpy(MRtotal, MI, sizeof(MRtotal));
+                if (!ii){
+                    // characteristic matrix for first interface
+                    MRtotal[0][0] = oneC;
+                    MRtotal[0][1] = rj;
+                    MRtotal[1][1] = oneC;
+                    MRtotal[1][0] = rj;
                 } else {
-                    memcpy(temp2, MRtotal, sizeof(MRtotal));
+                    // work out the beta for the layer
+                    beta = compexp(kn * MyComplex(0, thickness[ii - 1]));
+                    // this is the characteristic matrix of a layer
+                    MI[0][0] = beta;
+                    MI[0][1] = rj * beta;
+                    MI[1][1] = oneC / beta;
+                    MI[1][0] = rj * MI[1][1];
 
                     // multiply MRtotal, MI to get the updated total matrix.
+                    memcpy(temp2, MRtotal, sizeof(MRtotal));
                     matmul(temp2, MI, MRtotal);
                 }
+                kn = kn_next;
 			}
 
-			den = compnorm(MRtotal[0][0]);
 			num = compnorm(MRtotal[1][0]);
+			den = compnorm(MRtotal[0][0]);
 			answer = (num / den);
 			answer = (answer * scale) + fabs(bkg);
 
@@ -173,14 +171,12 @@ void AbelesCalc_ImagAll(int numcoefs,
 		}
 
 	done:
-		if(kn_all)
-			free(kn_all);
 		if(SLD)
 			delete[] SLD;
         if(thickness)
 			delete[] thickness;
-        if(roughness)
-			delete[] roughness;
+        if(rough_sqr)
+			delete[] rough_sqr;
 	}
 
 	typedef struct{
