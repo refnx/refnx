@@ -48,6 +48,7 @@ def abeles(q, layers, scale=1., bkg=0, workers=0):
                + 1j * (layers[:, 2] - layers[0, 2])) * 1.e-6
 
     # kn is a 2D array. Rows are Q points, columns are kn in a layer.
+    # calculate wavevector in each layer, for each Q point.
     kn[:] = np.sqrt(qvals[:, np.newaxis] ** 2. / 4. - 4. * np.pi * sld)
 
     # initialise matrix total
@@ -59,6 +60,8 @@ def abeles(q, layers, scale=1., bkg=0, workers=0):
 
     for idx in range(1, nlayers + 2):
         k_next = kn[:, idx]
+
+        # reflectance of an interface
         rj = (k - k_next) / (k + k_next)
         rj *= np.exp(k * k_next * -2. * layers[idx, 3] ** 2)
 
@@ -69,7 +72,7 @@ def abeles(q, layers, scale=1., bkg=0, workers=0):
         mi10 = rj * mi00
         mi01 = rj * mi11
 
-        # matrix multiply mrtot and mi
+        # matrix multiply mrtot by characteristic matrix
         p0 = mrtot00 * mi00 + mrtot10 * mi01
         p1 = mrtot00 * mi10 + mrtot10 * mi11
         mrtot00 = p0
