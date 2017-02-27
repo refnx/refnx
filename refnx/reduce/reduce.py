@@ -325,8 +325,8 @@ class ReducePlatypus(object):
 
             # you may be reflecting upside down, reverse the sign.
             upside_down = np.sign(omega_corrected[:, 0])
-            m_twotheta *= upside_down
-            omega_corrected *= upside_down
+            m_twotheta *= upside_down[:, np.newaxis, np.newaxis]
+            omega_corrected *= upside_down[:, np.newaxis]
 
         elif mode == 'SB' or mode == 'DB':
             omega = np.arctan(total_z_deflection
