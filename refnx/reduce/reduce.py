@@ -269,15 +269,16 @@ class ReducePlatypus(object):
         wavelengths = self.reflected_beam.m_lambda
         m_twotheta = np.zeros((n_spectra, n_tpixels, n_ypixels))
 
+        detector_z_difference = (self.reflected_beam.detector_z -
+                                 self.direct_beam.detector_z)
+
+        beampos_z_difference = (self.reflected_beam.m_beampos
+                                - self.direct_beam.m_beampos)
+
+        total_z_deflection = (detector_z_difference
+                              + beampos_z_difference * Y_PIXEL_SPACING)
+
         if mode in ['FOC', 'POL', 'POLANAL', 'MT']:
-            detector_z_difference = (self.reflected_beam.detector_z -
-                                     self.direct_beam.detector_z)
-            beampos_z_difference = (self.reflected_beam.m_beampos
-                                    - self.direct_beam.m_beampos)
-
-            total_z_deflection = (detector_z_difference
-                                  + beampos_z_difference * Y_PIXEL_SPACING)
-
             # omega_nom.shape = (N, )
             omega_nom = np.degrees(np.arctan(total_z_deflection
                                    / self.reflected_beam.detector_y) / 2.)
@@ -314,20 +315,37 @@ class ReducePlatypus(object):
             # elevation.
             omega_corrected = omega_nom[:, np.newaxis] - elevation
 
+            m_twotheta += np.arange(n_ypixels * 1.)[np.newaxis, np.newaxis, :]
+            m_twotheta -= self.direct_beam.m_beampos[:, np.newaxis, np.newaxis]
+            m_twotheta *= Y_PIXEL_SPACING
+            m_twotheta += detector_z_difference
+            m_twotheta /= self.reflected_beam.detector_y[:, np.newaxis, np.newaxis]
+            m_twotheta = np.arctan(m_twotheta)
+            m_twotheta = np.degrees(m_twotheta)
+
+            # you may be reflecting upside down, reverse the sign.
+            upside_down = np.sign(omega_corrected[:, 0])
+            m_twotheta *= upside_down[:, np.newaxis, np.newaxis]
+            omega_corrected *= upside_down[:, np.newaxis]
+
         elif mode == 'SB' or mode == 'DB':
-            omega = self.reflected_beam.M_beampos + self.reflected_beam.detectorZ[:, np.newaxis]
-            omega -= self.direct_beam.M_beampos + self.direct_beam.detectorZ
-            omega /= 2 * self.reflected_beam.detectorY[:, np.newaxis, np.newaxis]
-            omega = np.arctan(omega)
+            omega = np.arctan(total_z_deflection
+                                  / self.reflected_beam.detector_y) / 2.
 
-            m_twotheta += np.arange(n_ypixels * 1.)[np.newaxis, np.newaxis, :] * Y_PIXEL_SPACING
-            m_twotheta += self.reflected_beam.detectorZ[:, np.newaxis, np.newaxis]
-            m_twotheta -= self.direct_beam.M_beampos[:, :, np.newaxis] + self.direct_beam.detectorZ
-            m_twotheta -= self.reflected_beam.detectorY[:, np.newaxis, np.newaxis] * np.tan(omega[:, :, np.newaxis])
+            m_twotheta += np.arange(n_ypixels * 1.)[np.newaxis, np.newaxis, :]
+            m_twotheta -= self.direct_beam.m_beampos[:, :, np.newaxis]
+            m_theta *= Y_PIXEL_SPACING
+            m_twotheta += detector_z_difference
+            m_twotheta -= (self.reflected_beam.detector_y[:, np.newaxis, np.newaxis]
+                           * np.tan(omega[:, :, np.newaxis]))
 
-            m_twotheta /= self.reflected_beam.detectorY[:, np.newaxis, np.newaxis]
+            m_twotheta /= self.reflected_beam.detector_y[:, np.newaxis, np.newaxis]
             m_twotheta = np.arctan(m_twotheta)
             m_twotheta += omega[:, :, np.newaxis]
+
+            # still in radians at this point
+            omega_corrected = np.degrees(omega)
+            m_twotheta = np.degrees(m_twotheta)
 
         '''
         --Specular Reflectivity--
