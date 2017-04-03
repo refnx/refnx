@@ -130,10 +130,20 @@ def wavelength(q, angle):
 def angle(q, wavelength):
     """
     calculate angle given Q and wavelength
-    q - wavevector (A^-1)
-    wavelength -  wavelength of radiation (Angstrom)
+
+    Parameters
+    ----------
+    q : float
+        Wavevector (A**-1)
+    wavelength : float
+        Wavelength of radiation (A)
+
+    Returns
+    -------
+    angle : float
+        angle of incidence (degrees)
     """
-    return  np.arcsin(q / 4. / np.pi * wavelength) * 180 / np.pi
+    return np.arcsin((q * wavelength) / 4. / np.pi) * 180 / np.pi
 
 
 def qcrit(SLD1, SLD2):
