@@ -96,7 +96,7 @@ def global_fitter_setup(global_pilot_file, dqvals=5.0):
 
     cons = []
     for col in range(n_datasets):
-        for row in range(len(parameters[col])):
+        for row, val in enumerate(parameters[col]):
             if constraints[row, col] == -1 or is_unique(row, col):
                 continue
             # so it's not unique, but which parameter does it depend on?
