@@ -4,7 +4,7 @@ import refnx.analysis.reflect as reflect
 import refnx.analysis.curvefitter as curvefitter
 from lmfit.printfuncs import fit_report
 import numpy as np
-from matplotlib.pyplot import *
+import matplotlib.pyplot as plt
 import matplotlib
 matplotlib.pyplot.rcParams['figure.figsize'] = (10.0, 10.0)
 matplotlib.pyplot.rcParams['figure.dpi'] = 600
@@ -69,16 +69,16 @@ print('-------------------------------------------------------------------')
 print(DATASET_NAME)
 print(fit_report(fitter))
 
-fig = figure()
+fig = plt.figure()
 ax = fig.add_subplot(2, 1, 1)
 ax.scatter(xdata, ydata, label=DATASET_NAME)
 ax.plot(xdata, fitter.model(parameters), label='fit')
-ylim(min(np.min(ydata), np.min(fitter.model(parameters))),
-     max(np.max(ydata), np.max(fitter.model(parameters))))
-xlim(np.min(xdata), np.max(xdata))
-xlabel('Q')
-ylabel('logR')
-legend()
+plt.ylim(min(np.min(ydata), np.min(fitter.model(parameters))),
+         max(np.max(ydata), np.max(fitter.model(parameters))))
+plt.xlim(np.min(xdata), np.max(xdata))
+plt.xlabel('Q')
+plt.ylabel('logR')
+plt.legend()
 ax2 = fig.add_subplot(2, 1, 2)
 z, rho_z = fitter.sld_profile(parameters)
 ax2.plot(z, rho_z)
