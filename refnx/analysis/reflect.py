@@ -355,7 +355,6 @@ def gauss_legendre(n):
         The abscissae and weights for Gauss Legendre integration.
     """
     return scipy.special.p_roots(n)
-    return x, w
 
 
 def _smearkernel(x, w, q, dq, workers):
