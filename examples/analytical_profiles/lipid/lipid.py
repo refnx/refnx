@@ -82,7 +82,8 @@ class bilayer_au(AnalyticalReflectivityFunction):
         slab_model[17] = lmfit_values['SLD_au']
         slab_model[19] = lmfit_values['roughness_au_sticker']
 
-        overall_SLD = lambda vf1, SLD1, SLD2: vf1 * SLD1 + (1 - vf1) * SLD2
+        def overall_SLD(vf1, SLD1, SLD2):
+            return vf1 * SLD1 + (1 - vf1) * SLD2
 
         area_per_molecule = lmfit_values['area_per_molecule']
 
@@ -119,8 +120,8 @@ class bilayer_au(AnalyticalReflectivityFunction):
                                      lmfit_values['SLD_sub'])
         slab_model[31] = lmfit_values['roughness_head_tail']
 
-
         return slab_model
+
 
     def parameter_names(self, nparams=None):
         return ['scale', 'bkg',

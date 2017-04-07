@@ -610,10 +610,12 @@ def slit_optimiser(footprint,
         print('fractional angular resolution (FWHM):', resolution)
         print('theta:', angle, 'degrees')
 
-    d1star = lambda d2star : np.sqrt(1 - np.power(d2star, 2))
+    def d1star(d2star):
+        return np.sqrt(1 - np.power(d2star, 2))
     L1star = 0.68 * footprint/L12/resolution
 
-    gseekfun = lambda d2star : np.power((d2star + L2S / L12 * (d2star + d1star(d2star))) - L1star, 2)
+    def gseekfun(d2star):
+        return np.power((d2star + L2S / L12 * (d2star + d1star(d2star))) - L1star, 2)
 
     res = optimize.minimize_scalar(gseekfun, method='bounded', bounds=(0, 1))
     if res['success'] is False:

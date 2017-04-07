@@ -465,7 +465,10 @@ def _smeared_abeles_fixed(qvals, w, dqvals, quad_order=17, workers=0):
 
     # get the normal distribution at that point
     prefactor = 1. / np.sqrt(2 * np.pi)
-    gauss = lambda x: np.exp(-0.5 * x * x)
+
+    def gauss(x):
+        return np.exp(-0.5 * x * x)
+
     gaussvals = prefactor * gauss(abscissa * _INTLIMIT)
 
     # integration between -3.5 and 3.5 sigma
@@ -521,8 +524,8 @@ def _smeared_abeles_constant(q, w, resolution, workers=True):
     gaussnum = 51
     gaussgpoint = (gaussnum - 1) / 2
 
-    gauss = lambda x, s: (1. / s / np.sqrt(2 * np.pi)
-                          * np.exp(-0.5 * x**2 / s / s))
+    def gauss(x, s):
+        return (1. / s / np.sqrt(2 * np.pi) * np.exp(-0.5 * x**2 / s / s))
 
     lowq = np.min(q)
     highq = np.max(q)
