@@ -14,14 +14,6 @@ import numpy as np
 import numpy.ma as ma
 from refnx.dataset import Data1D, ReflectDataset
 
-# check for EMCEE
-HAS_EMCEE = False
-try:
-    import emcee as emcee
-    HAS_EMCEE = True
-except ImportError:
-    pass
-
 
 _MACHEPS = np.finfo(np.float64).eps
 
@@ -1019,10 +1011,10 @@ if __name__ == '__main__':
 
     xdata = np.linspace(-4, 4, 100)
     p0 = np.array([0., 1., 0., 1.])
-    bounds = [(-1., 1.), (0., 2.), (-3., 3.), (0.001, 2.)]
+    lbounds = [(-1., 1.), (0., 2.), (-3., 3.), (0.001, 2.)]
 
-    temp_pars = to_parameters(p0, bounds=bounds)
-    pars = to_parameters(p0 + 0.2, bounds=bounds)
+    temp_pars = to_parameters(p0, bounds=lbounds)
+    pars = to_parameters(p0 + 0.2, bounds=lbounds)
 
     ydata = gauss(xdata, temp_pars) + 0.1 * np.random.random(xdata.size)
 
