@@ -39,29 +39,29 @@ extern "C" {
 
 
 void* malloc2d(int ii, int jj, int sz){
-	void** p;
-	size_t sz_ptr_array;
-	size_t sz_elt_array;
-	size_t sz_allocation;
-	long i = 0;
+    void** p;
+    size_t sz_ptr_array;
+    size_t sz_elt_array;
+    size_t sz_allocation;
+    long i = 0;
     char *c = NULL;
 
-	sz_ptr_array = ii * sizeof(void*);
-	sz_elt_array = jj * sz;
-	sz_allocation = sz_ptr_array + ii * sz_elt_array;
+    sz_ptr_array = ii * sizeof(void*);
+    sz_elt_array = jj * sz;
+    sz_allocation = sz_ptr_array + ii * sz_elt_array;
 
-	p = (void**) malloc(sz_allocation);
-	if (p == NULL)
-		return p;
-	memset(p, 0, sz_allocation);
+    p = (void**) malloc(sz_allocation);
+    if (p == NULL)
+        return p;
+    memset(p, 0, sz_allocation);
 
-	c = ((char*) p) + sz_ptr_array;
-	for (i = 0; i < ii; ++i)
-	{
-		//*(p+i) = (void*) ((long)p + sz_ptr_array + i * sz_elt_array);
-		p[i] = (void*) (c + i * sz_elt_array);
-	}
-	return p;
+    c = ((char*) p) + sz_ptr_array;
+    for (i = 0; i < ii; ++i)
+    {
+        //*(p+i) = (void*) ((long)p + sz_ptr_array + i * sz_elt_array);
+        p[i] = (void*) (c + i * sz_elt_array);
+    }
+    return p;
 }
 
 
@@ -71,51 +71,51 @@ void AbelesCalc_ImagAll(int numcoefs,
                         double *yP,
                         const double *xP,
                         int workers){
-		int j;
-		double scale, bkg;
-		double num = 0, den = 0, answer = 0;
+        int j;
+        double scale, bkg;
+        double num = 0, den = 0, answer = 0;
 
-		MyComplex super;
-		MyComplex sub;
-		MyComplex oneC = MyComplex(1, 0);
-		MyComplex MRtotal[2][2];
-		MyComplex MI[2][2];
-		MyComplex temp2[2][2];
-		MyComplex qq2;
-		MyComplex *SLD = NULL;
-		double *thickness = NULL;
-		double *rough_sqr = NULL;
+        MyComplex super;
+        MyComplex sub;
+        MyComplex oneC = MyComplex(1, 0);
+        MyComplex MRtotal[2][2];
+        MyComplex MI[2][2];
+        MyComplex temp2[2][2];
+        MyComplex qq2;
+        MyComplex *SLD = NULL;
+        double *thickness = NULL;
+        double *rough_sqr = NULL;
 
-		int nlayers = (int) coefP[0];
+        int nlayers = (int) coefP[0];
 
-		try{
+        try{
 //		    // 2D array to hold wavevectors for each point, kn[npoints][nlayers + 2]
 //		    kn_all = (MyComplex **) malloc2d(npoints, nlayers + 2, sizeof(MyComplex));
 //		    if(kn_all == NULL)
 //		        goto done;
 
-			SLD = new MyComplex[nlayers + 2];
-			thickness = new double[nlayers];
-			rough_sqr = new double[nlayers + 1];
-		} catch(...) {
-			goto done;
+            SLD = new MyComplex[nlayers + 2];
+            thickness = new double[nlayers];
+            rough_sqr = new double[nlayers + 1];
+        } catch(...) {
+            goto done;
         }
 
-		scale = coefP[1];
-		bkg = coefP[6];
-		sub = MyComplex(coefP[4] * 1.e-6, coefP[5] * 1.e-6);
-		super = MyComplex(coefP[2] * 1e-6, coefP[3] * 1.e-6);
+        scale = coefP[1];
+        bkg = coefP[6];
+        sub = MyComplex(coefP[4] * 1.e-6, coefP[5] * 1.e-6);
+        super = MyComplex(coefP[2] * 1e-6, coefP[3] * 1.e-6);
 
-		// fillout all the SLD's for all the layers
-		for(int ii = 1; ii < nlayers + 1; ii += 1){
-			SLD[ii] = 4 * PI * (MyComplex(coefP[4 * ii + 5] * 1.e-6,
-			                              coefP[4 * ii + 6] * 1.e-6) - super);
-			thickness[ii - 1] = fabs(coefP[4 * ii + 4]);
-			rough_sqr[ii - 1] = -2 * coefP[4 * ii + 7] * coefP[4 * ii + 7];
+        // fillout all the SLD's for all the layers
+        for(int ii = 1; ii < nlayers + 1; ii += 1){
+            SLD[ii] = 4 * PI * (MyComplex(coefP[4 * ii + 5] * 1.e-6,
+                                          coefP[4 * ii + 6] * 1.e-6) - super);
+            thickness[ii - 1] = fabs(coefP[4 * ii + 4]);
+            rough_sqr[ii - 1] = -2 * coefP[4 * ii + 7] * coefP[4 * ii + 7];
         }
 
-		SLD[0] = MyComplex(0, 0);
-		SLD[nlayers + 1] = 4 * PI * (sub - super);
+        SLD[0] = MyComplex(0, 0);
+        SLD[nlayers + 1] = 4 * PI * (sub - super);
         rough_sqr[nlayers] = -2 * coefP[7] * coefP[7];
 
 // if you have omp.h, then can do the calculation in parallel.
@@ -124,21 +124,21 @@ void AbelesCalc_ImagAll(int numcoefs,
         #pragma omp parallel for shared(kn_all) private(j, num, den, answer, qq2, MRtotal, MI, temp2)
 #endif
 
-		for (j = 0; j < npoints; j++) {
-			MyComplex beta, rj;
+        for (j = 0; j < npoints; j++) {
+            MyComplex beta, rj;
             MyComplex kn, kn_next;
 
-			qq2 = MyComplex(xP[j] * xP[j] / 4, 0);
+            qq2 = MyComplex(xP[j] * xP[j] / 4, 0);
 
-			// now calculate reflectivities and wavevectors
-			kn = compsqrt(qq2 - SLD[0]);
-			for(int ii = 0 ; ii < nlayers + 1 ; ii++){
-			    // wavevector in the layer
-			    kn_next = compsqrt(qq2 - SLD[ii + 1]);
+            // now calculate reflectivities and wavevectors
+            kn = compsqrt(qq2 - SLD[0]);
+            for(int ii = 0 ; ii < nlayers + 1 ; ii++){
+                // wavevector in the layer
+                kn_next = compsqrt(qq2 - SLD[ii + 1]);
 
                 // reflectance of the interface
-			    rj = (kn - kn_next)/(kn + kn_next)
-			          * compexp(kn * kn_next * rough_sqr[ii]) ;
+                rj = (kn - kn_next)/(kn + kn_next)
+                      * compexp(kn * kn_next * rough_sqr[ii]) ;
 
                 if (!ii){
                     // characteristic matrix for first interface
@@ -159,118 +159,118 @@ void AbelesCalc_ImagAll(int numcoefs,
                     memcpy(temp2, MRtotal, sizeof(MRtotal));
                     matmul(temp2, MI, MRtotal);
                 }
-                kn = kn_next;
-			}
+                    kn = kn_next;
+            }
 
-			num = compnorm(MRtotal[1][0]);
-			den = compnorm(MRtotal[0][0]);
-			answer = (num / den);
-			answer = (answer * scale) + fabs(bkg);
+            num = compnorm(MRtotal[1][0]);
+            den = compnorm(MRtotal[0][0]);
+            answer = (num / den);
+            answer = (answer * scale) + fabs(bkg);
 
-			yP[j] = answer;
-		}
+            yP[j] = answer;
+        }
 
-	done:
-		if(SLD)
-			delete[] SLD;
+    done:
+        if(SLD)
+            delete[] SLD;
         if(thickness)
-			delete[] thickness;
+            delete[] thickness;
         if(rough_sqr)
-			delete[] rough_sqr;
-	}
+            delete[] rough_sqr;
+    }
 
-	typedef struct{
-		// a double array containing the model coefficients
-		const double *coefP;
-		// number of coefficients
-		int numcoefs;
-		// number of Q points we have to calculate
-		int npoints;
-		// the Reflectivity values to return
-		double *yP;
-		// the Q values to do the calculation for.
-		const double *xP;
-	}  pointCalcParm;
+    typedef struct{
+        // a double array containing the model coefficients
+        const double *coefP;
+        // number of coefficients
+        int numcoefs;
+        // number of Q points we have to calculate
+        int npoints;
+        // the Reflectivity values to return
+        double *yP;
+        // the Q values to do the calculation for.
+        const double *xP;
+    }  pointCalcParm;
 
 /* pthread version */
 #ifdef HAVE_PTHREAD_H
 
-	void *ThreadWorker(void *arg){
-		pointCalcParm *p = (pointCalcParm *) arg;
+    void *ThreadWorker(void *arg){
+        pointCalcParm *p = (pointCalcParm *) arg;
         AbelesCalc_ImagAll(p->numcoefs,
                            p->coefP,
                            p->npoints,
                            p->yP,
                            p->xP,
                            0);
-		pthread_exit((void*)0);
-		return NULL;
-	}
+        pthread_exit((void*)0);
+        return NULL;
+    }
 
-	void AbelesCalc_Imag(int numcoefs,
-	                      const double *coefP,
-	                       int npoints,
-	                        double *yP,
-	                         const double *xP,
-	                          int workers){
+    void AbelesCalc_Imag(int numcoefs,
+                          const double *coefP,
+                           int npoints,
+                            double *yP,
+                             const double *xP,
+                              int workers){
 
-		pthread_t *threads = NULL;
-		pointCalcParm *arg = NULL;
+        pthread_t *threads = NULL;
+        pointCalcParm *arg = NULL;
 
-		int threadsToCreate = workers - 1;
-		int pointsEachThread, pointsRemaining, pointsConsumed;
+        int threadsToCreate = workers - 1;
+        int pointsEachThread, pointsRemaining, pointsConsumed;
 
-		// create threads for the calculation
-		threads = (pthread_t *) malloc((threadsToCreate) * sizeof(pthread_t));
-		if(!threads && workers > 1)
-			goto done;
+        // create threads for the calculation
+        threads = (pthread_t *) malloc((threadsToCreate) * sizeof(pthread_t));
+        if(!threads && workers > 1)
+            goto done;
 
-		// create arguments to be supplied to each of the threads
-		arg = (pointCalcParm *) malloc(sizeof(pointCalcParm)
-		                               * (threadsToCreate));
-		if(!arg && workers > 1)
-			goto done;
+        // create arguments to be supplied to each of the threads
+        arg = (pointCalcParm *) malloc(sizeof(pointCalcParm)
+                                       * (threadsToCreate));
+        if(!arg && workers > 1)
+            goto done;
 
-		// need to calculated how many points are given to each thread.
-		if(threadsToCreate > 0){
-			pointsEachThread = floorl(npoints / (threadsToCreate + 1));
-		} else {
-			pointsEachThread = npoints;
-		}
+        // need to calculated how many points are given to each thread.
+        if(threadsToCreate > 0){
+            pointsEachThread = floorl(npoints / (threadsToCreate + 1));
+        } else {
+            pointsEachThread = npoints;
+        }
 
-		pointsRemaining = npoints;
-		pointsConsumed = 0;
+        pointsRemaining = npoints;
+        pointsConsumed = 0;
 
-		// if you have two CPU's, only create one extra thread because the main
-		// thread does half the work
-		for (int ii = 0; ii < threadsToCreate ; ii++){
-			arg[ii].coefP = coefP;
-			arg[ii].numcoefs = numcoefs;
+        // if you have two CPU's, only create one extra thread because the main
+        // thread does half the work
+        for (int ii = 0; ii < threadsToCreate ; ii++){
+            arg[ii].coefP = coefP;
+            arg[ii].numcoefs = numcoefs;
 
-			arg[ii].npoints = pointsEachThread;
+            arg[ii].npoints = pointsEachThread;
 
-			//the following two lines specify where the Q values and R values
-			//i.e. an offset of the original array.
-			arg[ii].xP = xP + pointsConsumed;
-			arg[ii].yP = yP + pointsConsumed;
+            //the following two lines specify where the Q values and R values
+            //i.e. an offset of the original array.
+            arg[ii].xP = xP + pointsConsumed;
+            arg[ii].yP = yP + pointsConsumed;
 
-			pthread_create(&threads[ii], NULL, ThreadWorker,
-			               (void *)(arg + ii));
-			pointsRemaining -= pointsEachThread;
-			pointsConsumed += pointsEachThread;
-		}
-		// do the last points in the main thread.
-		AbelesCalc_ImagAll(numcoefs, coefP, pointsRemaining, yP + pointsConsumed, xP + pointsConsumed, 0);
+            pthread_create(&threads[ii], NULL, ThreadWorker,
+                           (void *)(arg + ii));
+            pointsRemaining -= pointsEachThread;
+            pointsConsumed += pointsEachThread;
+        }
+        // do the last points in the main thread.
+        AbelesCalc_ImagAll(numcoefs, coefP, pointsRemaining, yP + pointsConsumed, xP + pointsConsumed, 0);
 
-		for (int ii = 0; ii < threadsToCreate ; ii++)
-			pthread_join(threads[ii], NULL);
+        for (int ii = 0; ii < threadsToCreate ; ii++)
+            pthread_join(threads[ii], NULL);
 
-	done:
-		if(threads)
-			free(threads);
-		if(arg)
-			free(arg);
-	}
+    done:
+        if(threads)
+            free(threads);
+        if(arg)
+            free(arg);
+    }
 #endif
 
 #ifdef _WIN32
@@ -400,9 +400,9 @@ void reflect(int numcoefs,
             int npoints,
             double *yP,
             const double *xP){
-	AbelesCalc_ImagAll(numcoefs, coefP, npoints, yP, xP, 0);
+    AbelesCalc_ImagAll(numcoefs, coefP, npoints, yP, xP, 0);
 }
 
 #ifdef __cplusplus
-	}
+    }
 #endif
