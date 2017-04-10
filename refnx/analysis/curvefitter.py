@@ -6,7 +6,7 @@ Created on Sun Dec 21 15:37:29 2014
 """
 from __future__ import print_function
 import re
-from functools import partial, wraps
+from functools import partial
 import abc
 import warnings
 from lmfit import Minimizer, Parameters
@@ -28,7 +28,8 @@ _MACHEPS = np.finfo(np.float64).eps
 
 def to_parameters(p0, varies=None, bounds=None, names=None, expr=None):
     """
-    Utility function to convert sequences into a :class:`lmfit.parameter.Parameters` instance
+    Utility function to convert sequences into a
+    :class:`lmfit.parameter.Parameters` instance
 
     Parameters
     ----------
@@ -39,7 +40,7 @@ def to_parameters(p0, varies=None, bounds=None, names=None, expr=None):
     bounds : sequence, optional
         Tuple of (min, max) pairs specifying the lower and upper bounds for
         each parameter
-    name : str sequence, optional
+    names : str sequence, optional
         Name of each parameter
     expr : str sequence, optional
         Constraints for each parameter
@@ -78,11 +79,9 @@ def to_parameters(p0, varies=None, bounds=None, names=None, expr=None):
         # the parameter. So fix the parameter and set the upper limit to be
         # slightly larger (otherwise you'll get an error when setting the
         # Parameter up)
-        if (lowlim[i] is not None
-            and hilim[i] is not None
-            and np.isfinite(lowlim[i])
-            and np.isfinite(hilim[i])
-            and lowlim[i] == hilim[i]):
+        if (lowlim[i] is not None and hilim[i] is not None and
+            np.isfinite(lowlim[i]) and np.isfinite(hilim[i]) and
+                (lowlim[i] == hilim[i])):
 
             hilim[i] += 1
             _p0[i] = lowlim[i]
@@ -101,7 +100,7 @@ def varys(params):
 
     Parameters
     ----------
-    parameters : lmfit.Parameters
+    params : lmfit.Parameters
 
     Returns
     -------
@@ -118,7 +117,7 @@ def exprs(params):
 
     Parameters
     ----------
-    parameters : lmfit.Parameters
+    params : lmfit.Parameters
 
     Returns
     -------
@@ -202,7 +201,8 @@ class FitFunction(object):
     @staticmethod
     def parameter_names(nparams=0):
         """
-        Provides a set of names for constructing an :class:`lmfit.parameter.Parameters` instance
+        Provides a set of names for constructing an
+        :class:`lmfit.parameter.Parameters` instance
 
         Parameters
         ----------
@@ -230,7 +230,8 @@ class CurveFitter(Minimizer):
         Function calculating the generative model for the fit.  Should have
         the signature: ``fitfunc(x, params, *fcn_args, **fcn_kws)``. You
         can also supply a :class:`FitFunction` instance.
-    data : sequence, :class:`refnx.dataset.Data1D` instance, str or file-like object
+    data : sequence, :class:`refnx.dataset.Data1D` instance, str or
+           file-like object
         A sequence containing the data to be analysed.
         If `data` is a sequence then:
 
@@ -244,10 +245,10 @@ class CurveFitter(Minimizer):
         Only data[0] and data[1] are required, data[2] is optional. If data[2]
         is not specified then the measured uncertainty is set to unity.
 
-        `data` can also be a :class:`refnx.dataset.Data1D` instance containing the data.
-        If `data` is a string, or file-like object then the string or file-like
-        object refers to a file containing the data. The data will be loaded
-        through the :class:`refnx.dataset.Data1D` constructor.
+        `data` can also be a :class:`refnx.dataset.Data1D` instance containing
+         the data. If `data` is a string, or file-like object then the string
+         or file-like object refers to a file containing the data. The data
+         will be loaded through the :class:`refnx.dataset.Data1D` constructor.
     params : :class:`lmfit.parameter.Parameters` instance
         Specifies the parameter set for the fit
     mask : np.ndarray, optional
@@ -341,12 +342,13 @@ class CurveFitter(Minimizer):
         method exists because people could update the data after
         creation of the CurveFitter object.
         """
-        self._resid = _parallel_residuals_calculator(self.fitfunc,
-                                     data_tuple=(self.dataset.x,
-                                                 self.dataset.y,
-                                                 self.dataset.y_err),
-                                     mask=self.mask,
-                                     costfun=self.costfun)
+        self._resid = (
+            _parallel_residuals_calculator(self.fitfunc,
+                                           data_tuple=(self.dataset.x,
+                                                       self.dataset.y,
+                                                       self.dataset.y_err),
+                                           mask=self.mask,
+                                           costfun=self.costfun))
 
         self.userfcn = self._resid
 
@@ -418,7 +420,8 @@ class CurveFitter(Minimizer):
 
         params.update_constraints()
 
-        return self.fitfunc(self.dataset.x, params, *self.userargs, **self.userkws)
+        return self.fitfunc(self.dataset.x, params,
+                            *self.userargs, **self.userkws)
 
     def fit(self, method='leastsq', params=None, **kws):
         """
@@ -440,7 +443,8 @@ class CurveFitter(Minimizer):
             - 'tnc'                    -    Truncate Newton
             - 'trust-ncg'              -    Trust Newton-CGn
             - 'dogleg'                 -    Dogleg
-            - 'slsqp'                  -    Sequential Linear Squares Programming
+            - 'slsqp'                  -    Sequential Linear Squares
+                                            Programming
             - 'differential_evolution' -    differential evolution
 
         params : Parameters, optional
@@ -521,8 +525,8 @@ class CurveFitter(Minimizer):
             to calculate, or if there are a large number of objective
             evaluations per step (`ntemps * nwalkers * nvarys`).
         seed : int or `np.random.RandomState`, optional
-            If `seed` is an int, a new `np.random.RandomState` instance is used,
-            seeded with `seed`.
+            If `seed` is an int, a new `np.random.RandomState` instance is
+            used, seeded with `seed`.
             If `seed` is already a `np.random.RandomState` instance, then that
             `np.random.RandomState` instance is used.
             Specify `seed` for repeatable minimizations.
@@ -604,16 +608,17 @@ class CurveFitter(Minimizer):
             else:
                 pass
 
-            result = super(CurveFitter, self).emcee(params=params, steps=steps,
-                                                    nwalkers=nwalkers,
-                                                    burn=burn,
-                                                    thin=thin, ntemps=ntemps,
-                                                    pos=pos,
-                                                    reuse_sampler=reuse_sampler,
-                                                    workers=workers,
-                                                    float_behavior='posterior',
-                                                    is_weighted=self.is_weighted,
-                                                    seed=seed)
+            result = (
+                super(CurveFitter, self).emcee(params=params, steps=steps,
+                                               nwalkers=nwalkers,
+                                               burn=burn,
+                                               thin=thin, ntemps=ntemps,
+                                               pos=pos,
+                                               reuse_sampler=reuse_sampler,
+                                               workers=workers,
+                                               float_behavior='posterior',
+                                               is_weighted=self.is_weighted,
+                                               seed=seed))
         finally:
             self._update_resid()
 
@@ -627,8 +632,8 @@ class CurveFitter(Minimizer):
         """
         return self.dataset.weighted
 
-    def _resampleMC(self, samples, method='differential_evolution',
-                    params=None):
+    def _resample_mc(self, samples, method='differential_evolution',
+                     params=None):
         """
         Monte Carlo Resampling. Refits synthesised data `samples` times. Each
         synthesised dataset is created from the original dataset by adding
@@ -643,6 +648,10 @@ class CurveFitter(Minimizer):
             Number of synthesis/refit cycles.
         method : str
             Minimisation method. See the `fit` method for other options.
+        params : lmfit.Parameters, optional
+            Parameters to use as starting point. If this is not specified
+            then the Parameters used to initialise the CurveFitter object are
+            used.
 
         Returns
         -------
@@ -717,7 +726,8 @@ class GlobalFitter(CurveFitter):
     """
     Simultaneous curvefitting of multiple datasets
 
-    fitters : sequence of :class:`refnx.analysis.curvefitter.CurveFitter` instances
+    fitters : sequence of :class:`refnx.analysis.curvefitter.CurveFitter`
+        instances
         Contains all the fitters and fitfunctions for the global fit.
     constraints : str sequence, optional
         Of the type 'dN:param_name = constraint'. Sets a constraint
@@ -845,14 +855,16 @@ class GlobalFitter(CurveFitter):
         original_kws = [fitter.userkws for fitter in fitters]
 
         self._fitfunc = partial(_parallel_global_fitfunc,
-                fitfuncs=[fitter.fitfunc for fitter in fitters],
-                new_param_reference=self.new_param_reference,
-                original_params=original_params,
-                original_userargs=original_userargs,
-                original_kws=original_kws)
+                                fitfuncs=[fitter.fitfunc for
+                                          fitter in fitters],
+                                new_param_reference=self.new_param_reference,
+                                original_params=original_params,
+                                original_userargs=original_userargs,
+                                original_kws=original_kws)
 
         super(GlobalFitter, self).__init__(self._fitfunc,
-                                           (xdata, np.hstack(ydata), np.hstack(edata)),
+                                           (xdata, np.hstack(ydata),
+                                            np.hstack(edata)),
                                            self.params,
                                            callback=callback,
                                            kws=min_kwds)
@@ -907,8 +919,8 @@ class GlobalFitter(CurveFitter):
         back into each of the original `CurveFitter.params` attributes.
         """
         for name, param in params.items():
-            fitter_i, original_name = self.new_param_reference[name]
-            self.original_params[fitter_i][original_name].value = param._getval()
+            fitter_i, orig_name = self.new_param_reference[name]
+            self.original_params[fitter_i][orig_name].value = param._getval()
 
 
 class _parallel_residuals_calculator(object):
@@ -927,7 +939,8 @@ class _parallel_residuals_calculator(object):
         resid = self.fitfunc(self.x, params, *userargs, **userkws)
 
         if self.costfun is not None:
-            return self.costfun(params, resid, self.y, self.e, *userargs, **userkws)
+            return self.costfun(params, resid, self.y, self.e, *userargs,
+                                **userkws)
 
         resid -= self.y
         resid /= self.e
@@ -955,7 +968,8 @@ class _parallel_likelihood_calculator(object):
         resid = self.fitfunc(self.x, params, *userargs, **userkws)
 
         if self.lnpost is not None:
-            return self.lnpost(params, resid, self.y, self.e, *userargs, **userkws)
+            return self.lnpost(params, resid, self.y, self.e, *userargs,
+                               **userkws)
         else:
             resid -= self.y
             resid /= self.e

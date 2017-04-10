@@ -174,7 +174,7 @@ def __resample_mc_iterator(args):
     global_fitter, seed = args
     gf = deepcopy(global_fitter)
     np.random.seed(seed)
-    res = gf._resampleMC(1, 'differential_evolution')
+    res = gf._resample_mc(1, 'differential_evolution')
     return res.mc
 
 
