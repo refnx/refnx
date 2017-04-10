@@ -733,7 +733,7 @@ class ReflectivityFitFunction(FitFunction):
             ``reflectivity(x, parameters, *args, **kwds)``
         """
         if isinstance(parameters, Parameters):
-            params = np.array(parameters, float)
+            params = np.array(parameters)
         else:
             params = parameters
 
@@ -803,8 +803,7 @@ class ReflectivityFitFunction(FitFunction):
             The distance from the top interface and the SLD at that point.
         """
         if isinstance(parameters, Parameters):
-            params = np.array(parameters,
-                              float)
+            params = np.array(parameters)
         else:
             params = parameters
 
