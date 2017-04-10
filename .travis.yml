@@ -46,8 +46,6 @@ before_install:
     - conda info -a
 
     - conda install --yes python=$PY numpy scipy nose h5py cython pandas xlrd pyflakes pep8
-    - pyflakes refnx
-    - pep8 refnx
     - pip install emcee uncertainties lmfit
 
 
