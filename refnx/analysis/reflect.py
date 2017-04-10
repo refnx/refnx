@@ -260,9 +260,6 @@ def reflectivity(q, coefs, *args, **kwds):
     # make into form suitable for reflection calculation
     w = coefs_to_layer(coefs)
 
-    if 'quad_order' in kwds:
-        quad_order = kwds['quad_order']
-
     if 'dqvals' in kwds and kwds['dqvals'] is not None:
         dqvals = kwds['dqvals']
 
@@ -275,6 +272,9 @@ def reflectivity(q, coefs, *args, **kwds):
                                                      workers=workers)) + bkg
 
         # point by point resolution smearing
+        if 'quad_order' in kwds:
+            quad_order = kwds['quad_order']
+
         if dqvals.size == qvals.size:
             dqvals_flat = dqvals.flatten()
             qvals_flat = q.flatten()
@@ -285,16 +285,17 @@ def reflectivity(q, coefs, *args, **kwds):
                                  _smeared_abeles_adaptive(qvals_flat,
                                                           w,
                                                           dqvals_flat,
-                                                          workers=workers) + bkg)
+                                                          workers=workers)
+                                 + bkg)
                 return smeared_rvals.reshape(q.shape)
             # fixed order quadrature
             else:
-                smeared_rvals = (scale * _smeared_abeles_fixed(
-                                                      qvals_flat,
-                                                      w,
-                                                      dqvals_flat,
-                                                      quad_order=quad_order,
-                                                      workers=workers)
+                smeared_rvals = (scale *
+                                 _smeared_abeles_fixed(qvals_flat,
+                                                       w,
+                                                       dqvals_flat,
+                                                       quad_order=quad_order,
+                                                       workers=workers)
                                  + bkg)
                 return np.reshape(smeared_rvals, q.shape)
 
@@ -525,7 +526,7 @@ def _smeared_abeles_constant(q, w, resolution, workers=True):
     gaussgpoint = (gaussnum - 1) / 2
 
     def gauss(x, s):
-        return (1. / s / np.sqrt(2 * np.pi) * np.exp(-0.5 * x**2 / s / s))
+        return 1. / s / np.sqrt(2 * np.pi) * np.exp(-0.5 * x**2 / s / s)
 
     lowq = np.min(q)
     highq = np.max(q)
@@ -734,11 +735,11 @@ class ReflectivityFitFunction(FitFunction):
         else:
             params = parameters
 
-        if not 'quad_order' in kwds:
+        if 'quad_order' not in kwds:
             kwds['quad_order'] = self.quad_order
-        if not 'dqvals' in kwds and self.dq > 0.3:
+        if 'dqvals' not in kwds and self.dq > 0.3:
             kwds['dqvals'] = float(self.dq)
-        if not 'workers' in kwds:
+        if 'workers' not in kwds:
             kwds['workers'] = self.workers
         yvals = reflectivity(x, params, *args, **kwds)
 
