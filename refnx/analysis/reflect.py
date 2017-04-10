@@ -192,7 +192,8 @@ def reflectivity(q, coefs, *args, **kwds):
     Parameters
     ----------
     q : np.ndarray
-        The qvalues required for the calculation. :math:`Q=\frac{4Pi}{\lambda}\sin(\Omega)`.
+        The qvalues required for the calculation.
+        :math:`Q=\frac{4Pi}{\lambda}\sin(\Omega)`.
         Units = Angstrom**-1
     coefs : np.ndarray
 
@@ -222,20 +223,20 @@ def reflectivity(q, coefs, *args, **kwds):
             across your dataset.
             If `dqvals.ndim == q.ndim + 2` and
             `q.shape == dqvals[..., -3].shape` then an individual resolution
-            kernel is applied to each measurement point.  This resolution kernel
-            is a probability distribution function (PDF). `dqvals` will have the
-            shape (qvals.shape, M, 2).  There are `M` points in the kernel.
-            `dqvals[..., 0]` holds the q values for the kernel, `dqvals[..., 1]`
-            gives the corresponding probability.
+            kernel is applied to each measurement point.  This resolution
+            kernel is a probability distribution function (PDF). `dqvals` will
+            have the shape (qvals.shape, M, 2).  There are `M` points in the
+            kernel. `dqvals[..., 0]` holds the q values for the kernel,
+            `dqvals[..., 1]` gives the corresponding probability.
         'quad_order': int, optional
             the order of the Gaussian quadrature polynomial for doing the
             resolution smearing. default = 17. Don't choose less than 13. If
             quad_order == 'ultimate' then adaptive quadrature is used. Adaptive
             quadrature will always work, but takes a _long_ time (2 or 3 orders
             of magnitude longer). Fixed quadrature will always take a lot less
-            time. BUT it won't necessarily work across all samples. For example,
-            13 points may be fine for a thin layer, but will be atrocious at
-            describing a multilayer with bragg peaks.
+            time. BUT it won't necessarily work across all samples. For
+            example, 13 points may be fine for a thin layer, but will be
+            atrocious at describing a multilayer with bragg peaks.
         'workers': int, optional
             Specifies the number of threads for parallel calculation. This
             option is only applicable if you are using the ``_creflect``
@@ -254,8 +255,8 @@ def reflectivity(q, coefs, *args, **kwds):
     bkg = coefs[6]
 
     if not is_proper_abeles_input(coefs):
-        raise ValueError('The size of the parameter array passed to reflectivity'
-                         ' should be 4 * coefs[0] + 8')
+        raise ValueError('The size of the parameter array passed to'
+                         ' reflectivity should be 4 * coefs[0] + 8')
 
     # make into form suitable for reflection calculation
     w = coefs_to_layer(coefs)
@@ -266,10 +267,11 @@ def reflectivity(q, coefs, *args, **kwds):
         # constant dq/q smearing
         if isinstance(dqvals, numbers.Real):
             dqvals = float(dqvals)
-            return (scale * _smeared_abeles_constant(qvals,
-                                                     w,
-                                                     dqvals,
-                                                     workers=workers)) + bkg
+            return (scale *
+                    _smeared_abeles_constant(qvals,
+                                             w,
+                                             dqvals,
+                                             workers=workers)) + bkg
 
         # point by point resolution smearing
         if 'quad_order' in kwds:
@@ -285,8 +287,8 @@ def reflectivity(q, coefs, *args, **kwds):
                                  _smeared_abeles_adaptive(qvals_flat,
                                                           w,
                                                           dqvals_flat,
-                                                          workers=workers)
-                                 + bkg)
+                                                          workers=workers) +
+                                 bkg)
                 return smeared_rvals.reshape(q.shape)
             # fixed order quadrature
             else:
@@ -295,13 +297,13 @@ def reflectivity(q, coefs, *args, **kwds):
                                                        w,
                                                        dqvals_flat,
                                                        quad_order=quad_order,
-                                                       workers=workers)
-                                 + bkg)
+                                                       workers=workers) +
+                                 bkg)
                 return np.reshape(smeared_rvals, q.shape)
 
         # resolution kernel smearing
-        elif (dqvals.ndim == qvals.ndim + 2
-              and dqvals.shape[0: qvals.ndim] == qvals.shape):
+        elif (dqvals.ndim == qvals.ndim + 2 and
+              dqvals.shape[0: qvals.ndim] == qvals.shape):
             # TODO may not work yet.
             qvals_for_res = dqvals[..., 0]
             # work out the reflectivity at the kernel evaluation points
@@ -480,8 +482,7 @@ def _smeared_abeles_fixed(qvals, w, dqvals, quad_order=17, workers=0):
     vb = vb[:, np.newaxis]
 
     qvals_for_res = ((np.atleast_2d(abscissa) *
-                     (vb - va)
-                     + vb + va) / 2.)
+                     (vb - va) + vb + va) / 2.)
     smeared_rvals = refcalc.abeles(qvals_for_res.flatten(),
                                    w,
                                    workers=workers)
@@ -535,8 +536,8 @@ def _smeared_abeles_constant(q, w, resolution, workers=True):
 
     start = np.log10(lowq) - 6 * resolution / _FWHM
     finish = np.log10(highq * (1 + 6 * resolution / _FWHM))
-    interpnum = np.round(np.abs(1 * (np.abs(start - finish))
-                                / (1.7 * resolution / _FWHM / gaussgpoint)))
+    interpnum = np.round(np.abs(1 * (np.abs(start - finish)) /
+                         (1.7 * resolution / _FWHM / gaussgpoint)))
     xtemp = np.linspace(start, finish, int(interpnum))
     xlin = np.power(10., xtemp)
 
@@ -635,7 +636,9 @@ def sld_profile(z, coefs):
 
             # summ += deltarho * (norm.cdf((zed - dist)/sigma))
             sld[idx] += (deltarho *
-                (0.5 + 0.5 * math.erf((zed - dist) / (sigma * np.sqrt(2.)))))
+                         (0.5 +
+                          0.5 *
+                          math.erf((zed - dist) / (sigma * np.sqrt(2.)))))
 
     return sld
 
@@ -702,20 +705,20 @@ class ReflectivityFitFunction(FitFunction):
             across your dataset.
             If `dqvals.ndim == q.ndim + 2` and
             `q.shape == dqvals[..., -3].shape` then an individual resolution
-            kernel is applied to each measurement point.  This resolution kernel
-            is a probability distribution function (PDF). `dqvals` will have the
-            shape (qvals.shape, M, 2).  There are `M` points in the kernel.
-            `dqvals[..., 0]` holds the q values for the kernel, `dqvals[..., 1]`
-            gives the corresponding probability.
+            kernel is applied to each measurement point.  This resolution
+            kernel is a probability distribution function (PDF). `dqvals` will
+            have the shape (qvals.shape, M, 2).  There are `M` points in the
+            kernel. `dqvals[..., 0]` holds the q values for the kernel,
+            `dqvals[..., 1]` gives the corresponding probability.
         kwds['quad_order'] : int, optional
             the order of the Gaussian quadrature polynomial for doing the
             resolution smearing. default = 17. Don't choose less than 13. If
             quad_order == 'ultimate' then adaptive quadrature is used. Adaptive
             quadrature will always work, but takes a _long_ time (2 or 3 orders
             of magnitude longer). Fixed quadrature will always take a lot less
-            time. BUT it won't necessarily work across all samples. For example,
-            13 points may be fine for a thin layer, but will be atrocious at
-            describing a multilayer with bragg peaks.
+            time. BUT it won't necessarily work across all samples. For
+            example, 13 points may be fine for a thin layer, but will be
+            atrocious at describing a multilayer with bragg peaks.
         kwds['workers'] : int, optional
             Specifies the number of threads for parallel calculation. This
             option is only applicable if you are using the ``_creflect``
@@ -730,8 +733,7 @@ class ReflectivityFitFunction(FitFunction):
             ``reflectivity(x, parameters, *args, **kwds)``
         """
         if isinstance(parameters, Parameters):
-            params = np.array([parameters[param].value for param in parameters],
-                              float)
+            params = np.array(parameters, float)
         else:
             params = parameters
 
@@ -801,7 +803,7 @@ class ReflectivityFitFunction(FitFunction):
             The distance from the top interface and the SLD at that point.
         """
         if isinstance(parameters, Parameters):
-            params = np.array([parameters[param].value for param in parameters],
+            params = np.array(parameters,
                               float)
         else:
             params = parameters
@@ -988,7 +990,7 @@ class Transform(object):
         else:
             etemp = edata
 
-        if self.form == None:
+        if self.form is None:
             yt = np.copy(ydata)
             et = np.copy(etemp)
         elif self.form == 'lin':
