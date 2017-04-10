@@ -4,7 +4,7 @@ import time
 from copy import deepcopy
 
 import refnx.analysis.curvefitter as curvefitter
-from refnx.analysis.curvefitter import (values, CurveFitter, HAS_EMCEE,
+from refnx.analysis.curvefitter import (values, CurveFitter,
                                         FitFunction,
                                         _parallel_likelihood_calculator)
 import numpy as np
