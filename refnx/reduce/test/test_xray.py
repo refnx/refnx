@@ -16,7 +16,7 @@ class TestXray(unittest.TestCase):
         # We're not testing for correctness here (yet)
 
         fpath = os.path.join(self.path, '180706_HA_DG2.xrdml')
-        spec = xray.reduce_xrdml(fpath)
+        xray.reduce_xrdml(fpath)
 
 
 if __name__ == '__main__':

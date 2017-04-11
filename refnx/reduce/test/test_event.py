@@ -1,7 +1,7 @@
 import unittest
 import os
 import numpy as np
-from numpy.testing import assert_equal, assert_
+from numpy.testing import assert_equal
 import refnx.reduce.event as event
 from refnx.reduce import PlatypusNexus
 
@@ -19,9 +19,9 @@ class TestEvent(unittest.TestCase):
         path = os.path.dirname(__file__)
         self.path = path
         self.event_file_path = os.path.join(path,
-                                       'DAQ_2012-01-19T15-45-52',
-                                       'DATASET_0',
-                                       'EOS.bin')
+                                            'DAQ_2012-01-19T15-45-52',
+                                            'DATASET_0',
+                                            'EOS.bin')
 
         with open(self.event_file_path, 'rb') as f:
             event_list, fpos = event._events(f)
@@ -29,7 +29,7 @@ class TestEvent(unittest.TestCase):
         self.event_list = event_list
         self.fpos = fpos
         self.f, self.t, self.y, self.x = event_list
-        
+
     def test_num_events(self):
         assert_equal(1056618, self.x.size)
 
@@ -44,13 +44,13 @@ class TestEvent(unittest.TestCase):
     def test_event_same_as_detector(self):
         # the detector file should be the same as the event file
         orig_file = PlatypusNexus(os.path.join(self.path,
-                                              'PLP0011613.nx.hdf'))
+                                               'PLP0011613.nx.hdf'))
         orig_det = orig_file.cat.detector
-        event_det, fb  = event.process_event_stream(self.event_list,
-                                                    [0, 23998],
-                                                    orig_file.cat.t_bins,
-                                                    orig_file.cat.y_bins,
-                                                    orig_file.cat.x_bins)
+        event_det, fb = event.process_event_stream(self.event_list,
+                                                   [0, 23998],
+                                                   orig_file.cat.t_bins,
+                                                   orig_file.cat.y_bins,
+                                                   orig_file.cat.x_bins)
         assert_equal(event_det, orig_det)
 
         # PlatypusNexus.process_event_stream should be the same as well

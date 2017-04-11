@@ -18,9 +18,9 @@ class TestPlatypusNexus(unittest.TestCase):
         self.path = path
 
         self.f113 = PlatypusNexus(os.path.join(self.path,
-                                                   'PLP0011613.nx.hdf'))
+                                               'PLP0011613.nx.hdf'))
         self.f641 = PlatypusNexus(os.path.join(self.path,
-                                                   'PLP0011641.nx.hdf'))
+                                               'PLP0011641.nx.hdf'))
         self.cwd = os.getcwd()
         self.tmpdir = TemporaryDirectory()
         os.chdir(self.tmpdir.name)
@@ -76,7 +76,8 @@ class TestPlatypusNexus(unittest.TestCase):
         yvals = np.ceil(gauss(xvals, 0, 1000, 0, 1))
         detector = np.repeat(yvals[:, np.newaxis], 1000, axis=1).T
         detector_sd = np.sqrt(detector)
-        output = plp.find_specular_ridge(detector[np.newaxis, :], detector_sd[np.newaxis, :])
+        output = plp.find_specular_ridge(detector[np.newaxis, :],
+                                         detector_sd[np.newaxis, :])
         assert_(len(output) == 2)
         assert_almost_equal(output[0][0], 100)
 
@@ -92,8 +93,10 @@ class TestPlatypusNexus(unittest.TestCase):
 
         # now make an (N, T, Y) detector image
         n_tbins = 10
-        detector = np.repeat(yvals, n_tbins).reshape(xvals.size, n_tbins).T
-        detector_sd = np.repeat(yvals_sd, n_tbins).reshape(xvals.size, n_tbins).T
+        detector = np.repeat(yvals,
+                             n_tbins).reshape(xvals.size, n_tbins).T
+        detector_sd = np.repeat(yvals_sd,
+                                n_tbins).reshape(xvals.size, n_tbins).T
         detector = detector.reshape(1, n_tbins, xvals.size)
         detector_sd = detector_sd.reshape(1, n_tbins, xvals.size)
 
@@ -132,8 +135,8 @@ class TestPlatypusNexus(unittest.TestCase):
     def test_event_folder(self):
         # When you use event mode processing, make sure the right amount of
         # spectra are created
-        out = self.f113.process(eventmode=[0, 900, 1800], integrate=0,
-                                event_folder=self.path)
+        self.f113.process(eventmode=[0, 900, 1800], integrate=0,
+                          event_folder=self.path)
 
     def test_multiple_acquisitions(self):
         """
@@ -209,13 +212,14 @@ class TestPlatypusNexus(unittest.TestCase):
 
         # it should be processable
         fadd = PlatypusNexus(os.path.join(os.getcwd(),
-                                              'ADD_PLP0000708.nx.hdf'))
+                                          'ADD_PLP0000708.nx.hdf'))
         fadd.process()
 
         # it should also be reduceable
         reducer = ReducePlatypus(os.path.join(self.path,
-                                            'PLP0000711.nx.hdf'))
-        reduced = reducer.reduce(os.path.join(os.getcwd(), 'ADD_PLP0000708.nx.hdf'))
+                                              'PLP0000711.nx.hdf'))
+        reduced = reducer.reduce(os.path.join(os.getcwd(),
+                                              'ADD_PLP0000708.nx.hdf'))
         assert_('ydata' in reduced)
 
         # the error bars should be smaller

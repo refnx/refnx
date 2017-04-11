@@ -1,8 +1,9 @@
 import numpy as np
 import unittest
-from numpy.testing import (assert_almost_equal, assert_equal, assert_)
+from numpy.testing import (assert_almost_equal, assert_)
 from scipy import constants
 import refnx.reduce.parabolic_motion as pm
+
 
 class TestParabolicMotion(unittest.TestCase):
 

@@ -1,10 +1,9 @@
 import unittest
 import os
 import os.path
-import numpy as np
+
 from refnx.reduce import reduce_stitch, ReducePlatypus
-from numpy.testing import (assert_almost_equal, assert_, assert_equal,
-                           assert_array_less, assert_allclose)
+from numpy.testing import (assert_equal, assert_allclose)
 import xml.etree.ElementTree as ET
 from refnx._lib import TemporaryDirectory
 
@@ -27,7 +26,7 @@ class TestReduce(unittest.TestCase):
     def test_smoke(self):
         # a quick smoke test to check that the reduction can occur
         a, fname = reduce_stitch([708, 709, 710], [711, 711, 711],
-                          data_folder=self.path, rebin_percent=2)
+                                 data_folder=self.path, rebin_percent=2)
         a.save('test1.dat')
 
     def test_reduction_method(self):
@@ -57,11 +56,11 @@ class TestReduce(unittest.TestCase):
         # check that the resolutions are pretty much the same
         assert_allclose(a.xdata_sd[0] / a.xdata[0],
                         a.xdata_sd[1] / a.xdata[1],
-                        atol = 0.001)
+                        atol=0.001)
 
         # check that the (right?) timestamps are written into the datafile
         tree = ET.parse(os.path.join(os.getcwd(), 'PLP0011641_1.xml'))
-        t = tree.find('.//REFentry').attrib['time']
+        tree.find('.//REFentry').attrib['time']
         # TODO, timestamp is created in the local time stamp of the testing
         # machine. The following works if reduced with a computer in Australian
         # EST.

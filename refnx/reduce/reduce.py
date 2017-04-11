@@ -1,15 +1,38 @@
 from __future__ import division
+import string
+from copy import deepcopy
+import os.path
+from time import gmtime, strftime
+
 import numpy as np
 from refnx.reduce.platypusnexus import (PlatypusNexus, number_datafile,
                                         Y_PIXEL_SPACING)
 from refnx.util import ErrorProp as EP
 import refnx.util.general as general
-import string
-from time import gmtime, strftime
-from . import parabolic_motion as pm
+from .parabolic_motion import (parabola_line_intersection_point,
+                               find_trajectory)
 from refnx.dataset import ReflectDataset
-from copy import deepcopy
-import os.path
+
+
+_template_ref_xml = """<?xml version="1.0"?>
+<REFroot xmlns="">
+<REFentry time="$time">
+<Title>$title</Title>
+<User>$user</User>
+<REFsample>
+<ID>$sample</ID>
+</REFsample>
+<REFdata axes="Qz:Qy" rank="2" type="POINT" \
+spin="UNPOLARISED" dim="$_numpointsz:$_numpointsy">
+<Run filename="$_rnumber" preset="" size="">
+</Run>
+<R uncertainty="dR">$_r</R>
+<Qz uncertainty="dQz" units="1/A">$_qz</Qz>
+<dR type="SD">$_dr</dR>
+<Qy type="_FWHM" units="1/A">$_qy</Qy>
+</REFdata>
+</REFentry>
+</REFroot>"""
 
 
 class ReducePlatypus(object):
@@ -157,7 +180,7 @@ class ReducePlatypus(object):
     def data(self, scanpoint=0):
         """
         The specular reflectivity
-        
+
         Parameters
         ----------
         scanpoint: int
@@ -177,11 +200,11 @@ class ReducePlatypus(object):
     def data2d(self, scanpoint=0):
         """
         The offspecular data
-        
+
         Parameters
         ----------
         scanpoint: int
-            Find a particular offspecular image. scanpoints upto 
+            Find a particular offspecular image. scanpoints upto
             self.n_spectra - 1 can be specified.
 
         Returns
@@ -197,7 +220,7 @@ class ReducePlatypus(object):
     def scale(self, scale):
         """
         Divides the reflectivity values by this scale factor
-        
+
         Parameters
         ----------
         scale: float
@@ -209,31 +232,13 @@ class ReducePlatypus(object):
         self.ydata_sd /= scale
 
     def write_offspecular(self, f, scanpoint=0):
-        __template_ref_xml = """<?xml version="1.0"?>
-        <REFroot xmlns="">
-        <REFentry time="$time">
-        <Title>$title</Title>
-        <User>$user</User>
-        <REFsample>
-        <ID>$sample</ID>
-        </REFsample>
-        <REFdata axes="Qz:Qy" rank="2" type="POINT" spin="UNPOLARISED" dim="$_numpointsz:$_numpointsy">
-        <Run filename="$_rnumber" preset="" size="">
-        </Run>
-        <R uncertainty="dR">$_r</R>
-        <Qz uncertainty="dQz" units="1/A">$_qz</Qz>
-        <dR type="SD">$_dr</dR>
-        <Qy type="_FWHM" units="1/A">$_qy</Qy>
-        </REFdata>
-        </REFentry>
-        </REFroot>"""
         d = dict()
         d['time'] = strftime("%a, %d %b %Y %H:%M:%S +0000", gmtime())
         d['_rnumber'] = self.reflected_beam.datafile_number
         d['_numpointsz'] = np.size(self.m_ref, 1)
         d['_numpointsy'] = np.size(self.m_ref, 2)
 
-        s = string.Template(__template_ref_xml)
+        s = string.Template(_template_ref_xml)
 
         # filename = 'off_PLP{:07d}_{:d}.xml'.format(self._rnumber, index)
         d['_r'] = repr(self.m_ref[scanpoint].tolist()).strip(',[]')
@@ -272,16 +277,16 @@ class ReducePlatypus(object):
         detector_z_difference = (self.reflected_beam.detector_z -
                                  self.direct_beam.detector_z)
 
-        beampos_z_difference = (self.reflected_beam.m_beampos
-                                - self.direct_beam.m_beampos)
+        beampos_z_difference = (self.reflected_beam.m_beampos -
+                                self.direct_beam.m_beampos)
 
-        total_z_deflection = (detector_z_difference
-                              + beampos_z_difference * Y_PIXEL_SPACING)
+        total_z_deflection = (detector_z_difference +
+                              beampos_z_difference * Y_PIXEL_SPACING)
 
         if mode in ['FOC', 'POL', 'POLANAL', 'MT']:
             # omega_nom.shape = (N, )
-            omega_nom = np.degrees(np.arctan(total_z_deflection
-                                   / self.reflected_beam.detector_y) / 2.)
+            omega_nom = np.degrees(np.arctan(total_z_deflection /
+                                   self.reflected_beam.detector_y) / 2.)
 
             '''
             Wavelength specific angle of incidence correction
@@ -295,20 +300,20 @@ class ReducePlatypus(object):
             '''
             speeds = general.wavelength_velocity(wavelengths)
             collimation_distance = self.reflected_beam.cat.collimation_distance
-            s2_sample_distance = (self.reflected_beam.cat.sample_distance
-                                  - self.reflected_beam.cat.slit2_distance)
+            s2_sample_distance = (self.reflected_beam.cat.sample_distance -
+                                  self.reflected_beam.cat.slit2_distance)
 
             # work out the trajectories of the neutrons for them to pass
             # through the collimation system.
-            trajectories = pm.find_trajectory(collimation_distance / 1000.,
-                                              0, speeds)
-            
+            trajectories = find_trajectory(collimation_distance / 1000.,
+                                           0, speeds)
+
             # work out where the beam hits the sample
-            res = pm.parabola_line_intersection_point(s2_sample_distance / 1000,
-                                                      0,
-                                                      trajectories,
-                                                      speeds,
-                                                      omega_nom[:, np.newaxis])
+            res = parabola_line_intersection_point(s2_sample_distance / 1000,
+                                                   0,
+                                                   trajectories,
+                                                   speeds,
+                                                   omega_nom[:, np.newaxis])
             intersect_x, intersect_y, x_prime, elevation = res
 
             # correct the angle of incidence with a wavelength dependent
@@ -319,7 +324,8 @@ class ReducePlatypus(object):
             m_twotheta -= self.direct_beam.m_beampos[:, np.newaxis, np.newaxis]
             m_twotheta *= Y_PIXEL_SPACING
             m_twotheta += detector_z_difference
-            m_twotheta /= self.reflected_beam.detector_y[:, np.newaxis, np.newaxis]
+            m_twotheta /= (
+                self.reflected_beam.detector_y[:, np.newaxis, np.newaxis])
             m_twotheta = np.arctan(m_twotheta)
             m_twotheta = np.degrees(m_twotheta)
 
@@ -328,18 +334,20 @@ class ReducePlatypus(object):
             m_twotheta *= upside_down[:, np.newaxis, np.newaxis]
             omega_corrected *= upside_down[:, np.newaxis]
 
-        elif mode == 'SB' or mode == 'DB':
-            omega = np.arctan(total_z_deflection
-                                  / self.reflected_beam.detector_y) / 2.
+        elif mode in ['SB', 'DB']:
+            omega = np.arctan(total_z_deflection /
+                              self.reflected_beam.detector_y) / 2.
 
             m_twotheta += np.arange(n_ypixels * 1.)[np.newaxis, np.newaxis, :]
             m_twotheta -= self.direct_beam.m_beampos[:, :, np.newaxis]
-            m_theta *= Y_PIXEL_SPACING
+            # m_theta *= Y_PIXEL_SPACING
             m_twotheta += detector_z_difference
-            m_twotheta -= (self.reflected_beam.detector_y[:, np.newaxis, np.newaxis]
-                           * np.tan(omega[:, :, np.newaxis]))
+            m_twotheta -= (
+                self.reflected_beam.detector_y[:, np.newaxis, np.newaxis] *
+                np.tan(omega[:, :, np.newaxis]))
 
-            m_twotheta /= self.reflected_beam.detector_y[:, np.newaxis, np.newaxis]
+            m_twotheta /= (
+                self.reflected_beam.detector_y[:, np.newaxis, np.newaxis])
             m_twotheta = np.arctan(m_twotheta)
             m_twotheta += omega[:, :, np.newaxis]
 
@@ -365,10 +373,10 @@ class ReducePlatypus(object):
 
         # calculate the 1D Qz values.
         xdata = general.q(omega_corrected, wavelengths)
-        xdata_sd = (self.reflected_beam.m_lambda_fwhm
-                    / self.reflected_beam.m_lambda) ** 2
-        xdata_sd += (self.reflected_beam.domega[:, np.newaxis]
-                     / omega_corrected) ** 2
+        xdata_sd = (self.reflected_beam.m_lambda_fwhm /
+                    self.reflected_beam.m_lambda) ** 2
+        xdata_sd += (self.reflected_beam.domega[:, np.newaxis] /
+                     omega_corrected) ** 2
         xdata_sd = np.sqrt(xdata_sd) * xdata
 
         '''
@@ -376,14 +384,15 @@ class ReducePlatypus(object):
         normalise the counts in the reflected beam by the direct beam
         spectrum this gives a reflectivity. Also propagate the errors,
         leaving the fractional variance (dr/r)^2.
-        --Note-- that adjacent y-pixels (same wavelength) are correlated in this
-        treatment, so you can't just sum over them.
+        --Note-- that adjacent y-pixels (same wavelength) are correlated in
+        this treatment, so you can't just sum over them.
         i.e. (c_0 / d) + ... + c_n / d) != (c_0 + ... + c_n) / d
         '''
-        m_ref, m_ref_sd = EP.EPdiv(self.reflected_beam.m_topandtail,
-                                   self.reflected_beam.m_topandtail_sd,
-                                   self.direct_beam.m_spec[:, :, np.newaxis],
-                                   self.direct_beam.m_spec_sd[:, :, np.newaxis])
+        m_ref, m_ref_sd = EP.EPdiv(
+            self.reflected_beam.m_topandtail,
+            self.reflected_beam.m_topandtail_sd,
+            self.direct_beam.m_spec[:, :, np.newaxis],
+            self.direct_beam.m_spec_sd[:, :, np.newaxis])
 
         # you may have had divide by zero's.
         m_ref = np.where(np.isinf(m_ref), 0, m_ref)
@@ -515,4 +524,3 @@ if __name__ == "__main__":
     a.save('test1.dat')
 
     print(strftime("%a, %d %b %Y %H:%M:%S +0000", gmtime()))
-

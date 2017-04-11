@@ -26,6 +26,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import numpy as np
 from scipy.interpolate import UnivariateSpline, RectBivariateSpline
 
+
 class BoundedUnivariateSpline(UnivariateSpline):
     """
     1D spline that returns a constant for x outside the specified domain.
@@ -37,13 +38,14 @@ class BoundedUnivariateSpline(UnivariateSpline):
 
     def is_outside_domain(self, x):
         x = np.asarray(x)
-        return np.logical_or(x<self.bnds[0], x>self.bnds[1])
+        return np.logical_or(x < self.bnds[0], x > self.bnds[1])
 
     def __call__(self, x):
         outside = self.is_outside_domain(x)
 
-        return np.where(outside, self.fill_value,
-                                 UnivariateSpline.__call__(self, x))
+        return np.where(outside,
+                        self.fill_value,
+                        UnivariateSpline.__call__(self, x))
 
     def integral(self, a, b):
         # capturing contributions outside domain of interpolation
@@ -60,7 +62,7 @@ class BoundedUnivariateSpline(UnivariateSpline):
             return outside_contribution
         else:
             return (outside_contribution +
-                      UnivariateSpline.integral(self, a_f, b_f) )
+                    UnivariateSpline.integral(self, a_f, b_f))
 
 
 class BoundedRectBivariateSpline(RectBivariateSpline):
@@ -86,14 +88,17 @@ class BoundedRectBivariateSpline(RectBivariateSpline):
     def is_outside_domain(self, x, y):
         x = np.asarray(x)
         y = np.asarray(y)
-        return np.logical_or( np.logical_or(x<self.xbnds[0], x>self.xbnds[1]),
-                              np.logical_or(y<self.ybnds[0], y>self.xbnds[1]) )
+        return np.logical_or(np.logical_or(x < self.xbnds[0],
+                                           x > self.xbnds[1]),
+                             np.logical_or(y < self.ybnds[0],
+                                           y > self.xbnds[1]))
 
     def __call__(self, x, y):
         outside = self.is_outside_domain(x, y)
 
-        return np.where(outside, self.fill_value,
-                                 RectBivariateSpline.__call__(self, x, y))
+        return np.where(outside,
+                        self.fill_value,
+                        RectBivariateSpline.__call__(self, x, y))
 
     def integral(self, xa, xb, ya, yb):
         assert xa <= xb
@@ -111,10 +116,9 @@ class BoundedRectBivariateSpline(RectBivariateSpline):
         if xa_f >= xb_f or ya_f >= yb_f:
             return total_area * self.fill_value
 
-
         # Rectangle overlaps with spline domain
         else:
             spline_area = (xb_f - xa_f) * (yb_f - ya_f)
             outside_contribution = (total_area - spline_area) * self.fill_value
             return (outside_contribution +
-                      RectBivariateSpline.integral(self, xa_f, xb_f, ya_f, yb_f) )
+                    RectBivariateSpline.integral(self, xa_f, xb_f, ya_f, yb_f))

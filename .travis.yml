@@ -47,7 +47,7 @@ before_install:
 
     - conda install --yes python=$PY numpy scipy nose h5py cython pandas xlrd flake8
     # gradually expand flake8 to all of codebase
-    - flake8 --ignore=F401 refnx/analysis refnx/util refnx/dataset
+    - flake8 --ignore=F401 refnx
     - pip install emcee uncertainties lmfit
 
 

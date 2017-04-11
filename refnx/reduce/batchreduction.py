@@ -28,7 +28,7 @@ ReductionEntryTuple = collections.namedtuple('ReductionEntry',
                                               'ds',
                                               'name',
                                               'fname',
-                                              'entry',])
+                                              'entry', ])
 
 
 class ReductionEntry(ReductionEntryTuple):
@@ -299,8 +299,8 @@ class BatchReducer:
             fmt = "Reducing %s [%s]/[%s]"
 
             print(fmt % (entry['name'],
-                  ", ".join('%d' % r for r in runs),
-                  ", ".join('%d' % r for r in directs)))
+                         ", ".join('%d' % r for r in runs),
+                         ", ".join('%d' % r for r in directs)))
             sys.stdout.flush()   # keep progress updated
 
         if not runs:
@@ -384,7 +384,6 @@ class BatchReducer:
 
         return self.cache
 
-
     def __call__(self):
         """ run the reducer as the default action for the BatchReducer
         """
@@ -426,6 +425,5 @@ def run_list(entry, mode='refl'):
                 raise ValueError(
                   "Value '%s' could not be interpreted as a run number" % run)
 
-    #valid = [int(r) for r in l if not np.isnan(r)]
+    # valid = [int(r) for r in l if not np.isnan(r)]
     return [int(v) for v in valid]
-

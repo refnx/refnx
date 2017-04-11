@@ -71,7 +71,7 @@ def median(y, x=None, dx=1.):
     return median, sd
 
 
-def gauss_fit(p0, x, y, sigma = None):
+def gauss_fit(p0, x, y, sigma=None):
     popt, pcov = curve_fit(gauss, x, y, p0=p0, sigma=sigma)
     return popt
 

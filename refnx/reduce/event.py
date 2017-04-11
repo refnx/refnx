@@ -104,17 +104,17 @@ def events(f, end_last_event=127, max_frames=np.inf):
                         max_frames=max_frames)
     else:
         return _events(f, end_last_event=end_last_event,
-                        max_frames=max_frames)
+                       max_frames=max_frames)
 
 
 def _events(f, end_last_event=127, max_frames=np.inf):
     """
     Unpacks event data from packedbinary format for the ANSTO Platypus
     instrument
-    
+
     Parameters
     ----------
-    
+
     f : file-like or str
         The file to read the data from. If `f` is not file-like then f is
         assumed to be a path pointing to the event file.
@@ -123,7 +123,7 @@ def _events(f, end_last_event=127, max_frames=np.inf):
         of 127 corresponds to a file header that is 128 bytes long.
     max_frames : int
         Stop reading the event file when have read this many frames.
-        
+
     Returns
     -------
     (f_events, t_events, y_events, x_events), end_last_event:
@@ -197,7 +197,7 @@ def _events(f, end_last_event=127, max_frames=np.inf):
                 if not event_ended:
                     state += 1
                 else:
-                    # print "got to state", state, event_ended, x, y, frame_number, t, dt
+                    # "state", state, event_ended, x, y, frame_number, t, dt
                     state = 0
                     end_last_event = filepos + i
                     if x == 0 and y == 0 and dt == 0xFFFFFFFF:
@@ -214,12 +214,12 @@ def _events(f, end_last_event=127, max_frames=np.inf):
                         t_neutrons.append(t)
                         f_neutrons.append(frame_number)
 
-        if len(x_neutrons):
+        if x_neutrons:
             x_events = np.append(x_events, x_neutrons)
             y_events = np.append(y_events, y_neutrons)
             t_events = np.append(t_events, t_neutrons)
             f_events = np.append(f_events, f_neutrons)
-    
+
     t_events //= 1000
 
     if auto_f:

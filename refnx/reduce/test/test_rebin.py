@@ -60,10 +60,10 @@ class TestRebin(unittest.TestCase):
         y_new = rebin.rebin(x_old, y_old, x_new)
 
         # compute answer here to check rebin
-        y_old_ave  = y_old / np.ediff1d(x_old)
+        y_old_ave = y_old / np.ediff1d(x_old)
         y_new_here = [y_old_ave[0] * (x_new[1] - 0.),
-                      y_old_ave[0] * (x_old[1]- x_new[1])
-                      + y_old_ave[1] * (x_new[2] - x_old[1]),
+                      y_old_ave[0] * (x_old[1] - x_new[1]) +
+                      y_old_ave[1] * (x_new[2] - x_old[1]),
                       y_old_ave[1] * (x_old[-1] - x_new[-2])]
 
         assert_allclose(y_new, y_new_here)
@@ -100,7 +100,9 @@ class TestRebin(unittest.TestCase):
 
         # compute answer here to check rebin
         y_new_here = np.array([14.99807911, 44.14135692, 13.99807911])
-        y_new_here_sd = np.array([5.381524308729351, 12.73174109312833, 5.345145324353735])
+        y_new_here_sd = np.array([5.381524308729351,
+                                  12.73174109312833,
+                                  5.345145324353735])
 
         assert_allclose(y_new, y_new_here)
         assert_allclose(y_new_sd, y_new_here_sd)
@@ -173,9 +175,9 @@ class TestRebin(unittest.TestCase):
         y_new = rebin.rebin(x_old, y_old, x_new)
 
         # compute answer here to check rebin
-        y_old_ave  = y_old / np.ediff1d(x_old)
-        y_new_here = (y_old_ave[1] * (x_old[2] - x_new[0])
-                      + y_old_ave[2] * (x_new[1] - x_old[2]) )
+        y_old_ave = y_old / np.ediff1d(x_old)
+        y_new_here = (y_old_ave[1] * (x_old[2] - x_new[0]) +
+                      y_old_ave[2] * (x_new[1] - x_old[2]))
 
         assert_allclose(y_new, y_new_here)
 
@@ -206,13 +208,12 @@ class TestRebin(unittest.TestCase):
                                       y1_sd=unp.std_devs(y_old))
 
         # compute answer here to check rebin
-        y_old_ave  = y_old / np.ediff1d(x_old)
+        y_old_ave = y_old / np.ediff1d(x_old)
         y_new_here = np.array(
                      [y_old_ave[0] * (x_new[1] - 0.),
-                      y_old_ave[0] * (x_old[1] - x_new[1])
-                      + y_old_ave[1]*(x_new[2] - x_old[1]),
+                      y_old_ave[0] * (x_old[1] - x_new[1]) +
+                      y_old_ave[1]*(x_new[2] - x_old[1]),
                       y_old_ave[1] * (x_old[-1] - x_new[-2])])
-
 
         # mean or nominal value comparison
         assert_allclose(y_new,
@@ -228,13 +229,13 @@ class TestRebin(unittest.TestCase):
     def test_rebinND(self):
         input = np.arange(24).reshape(4, 3, 2)
         x1 = np.arange(5)
-        x2  =np.array([0,1,2.5,4])
+        x2 = np.array([0, 1, 2.5, 4])
         y1 = np.arange(4)
         y2 = np.array([0.5, 1.5])
         output = rebin.rebinND(input, (0, 1), (x1, y1), (x2, y2))
-        res = np.array([[[  1. ,   2. ]],
-                        [[ 13.5,  15. ]],
-                        [[ 25.5,  27. ]]])
+        res = np.array([[[1.,   2.]],
+                        [[13.5,  15.]],
+                        [[25.5,  27.]]])
 
         assert_equal(res, output)
 

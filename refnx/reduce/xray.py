@@ -3,10 +3,10 @@ import numpy as np
 import refnx.util.general as general
 import refnx.util.ErrorProp as EP
 import xml.etree.ElementTree as et
-from refnx.dataset import reflectdataset
+# from refnx.dataset import reflectdataset
 
-
-XRR_BEAMWIDTH_SD = 0.019449 # mm
+# mm
+XRR_BEAMWIDTH_SD = 0.019449
 
 
 def reduce_xrdml(f, bkg=None, scale=1, sample_length=None):
@@ -67,7 +67,8 @@ def reduce_xrdml(f, bkg=None, scale=1, sample_length=None):
 
     # do a footprint correction
     if sample_length is not None:
-        footprint_correction = general.beamfrac(np.array([XRR_BEAMWIDTH_SD]) * 2.35,
+        footprint_correction = general.beamfrac(np.array([XRR_BEAMWIDTH_SD]) *
+                                                2.35,
                                                 np.array([sample_length]),
                                                 spec['omega'])
         reflectivity /= footprint_correction

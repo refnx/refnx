@@ -61,7 +61,7 @@ class TestReductionCache(unittest.TestCase):
             self._addentry(line)
 
     def _addentry(self, line, **kwargs):
-        runs = dict(zip(['refl1', 'refl2','refl3'], line[4]))
+        runs = dict(zip(['refl1', 'refl2', 'refl3'], line[4]))
         entry = line[:]
         entry[4] = runs
         self.cache.add(*entry, **kwargs)

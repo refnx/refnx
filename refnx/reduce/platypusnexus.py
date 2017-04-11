@@ -13,6 +13,7 @@ import numpy as np
 import h5py
 from . import peak_utils as ut
 import refnx.util.general as general
+from refnx.util.general import resolution_double_chopper
 import refnx.util.ErrorProp as EP
 from . import parabolic_motion as pm
 from . import event, rebin
@@ -31,6 +32,21 @@ O_C1, O_C2, O_C3, O_C4 = np.radians(disc_openings)
 DISCRADIUS = 350.
 EXTENT_MULT = 2
 PIXEL_OFFSET = 1
+
+spectrum_template = """<?xml version="1.0"?>
+<REFroot xmlns="">
+<REFentry time="$time">
+<Title>$title</Title>
+<REFdata axes="lambda" rank="1" type="POINT"\
+ spin="UNPOLARISED" dim="$n_spectra">
+<Run filename="$runnumber"/>
+<R uncertainty="dR">$r</R>
+<lambda uncertainty="dlambda" units="1/A">$l</lambda>
+<dR type="SD">$dr</dR>
+<dlambda type="_FWHM" units="1/A">$dl</dlambda>
+</REFdata>
+</REFentry>
+</REFroot>"""
 
 
 def catalogue(start, stop, path=None):
@@ -55,7 +71,7 @@ def catalogue(start, stop, path=None):
             'ss4vg', 'omega', 'twotheta', 'bm1_counts', 'time', 'daq_dirname',
             'start_time']
     run_number = []
-    d = {key:[] for key in info}
+    d = {key: [] for key in info}
 
     if path is None:
         path = '.'
@@ -84,89 +100,103 @@ def catalogue(start, stop, path=None):
 
 
 class Catalogue(object):
-    def __init__(self, h5data):
+    """
+    Extract relevant parts of a NeXus file for reflectometry reduction
+    """
+    def __init__(self, h5d):
+        """
+        Extract relevant parts of a NeXus file for reflectometry reduction
+        Access information via dict access, e.g. cat['detector'].
+
+        Parameters
+        ----------
+        h5d - HDF5 file handle
+        """
         d = {}
-        file_path = os.path.realpath(h5data.filename)
+        file_path = os.path.realpath(h5d.filename)
         d['path'] = os.path.dirname(file_path)
-        d['filename'] = h5data.filename
-        d['end_time'] = h5data['entry1/end_time'][0]
+        d['filename'] = h5d.filename
+        d['end_time'] = h5d['entry1/end_time'][0]
 
         try:
-            d['start_time'] = h5data['entry1/instrument/detector/start_time'][:]
+            d['start_time'] = (
+                h5d['entry1/instrument/detector/start_time'][:])
         except KeyError:
             # start times don't exist in this file
             d['start_time'] = None
 
-        d['sample_name'] = h5data['entry1/sample/name'][:]
-        d['ss1vg'] = h5data['entry1/instrument/slits/first/vertical/gap'][:]
-        d['ss2vg'] = h5data['entry1/instrument/slits/second/vertical/gap'][:]
-        d['ss3vg'] = h5data['entry1/instrument/slits/third/vertical/gap'][:]
-        d['ss4vg'] = h5data['entry1/instrument/slits/fourth/vertical/gap'][:]
-        d['ss1hg'] = h5data['entry1/instrument/slits/first/horizontal/gap'][:]
-        d['ss2hg'] = h5data['entry1/instrument/slits/second/horizontal/gap'][:]
-        d['ss3hg'] = h5data['entry1/instrument/slits/third/horizontal/gap'][:]
-        d['ss4hg'] = h5data['entry1/instrument/slits/fourth/horizontal/gap'][:]
+        d['sample_name'] = h5d['entry1/sample/name'][:]
+        d['ss1vg'] = h5d['entry1/instrument/slits/first/vertical/gap'][:]
+        d['ss2vg'] = h5d['entry1/instrument/slits/second/vertical/gap'][:]
+        d['ss3vg'] = h5d['entry1/instrument/slits/third/vertical/gap'][:]
+        d['ss4vg'] = h5d['entry1/instrument/slits/fourth/vertical/gap'][:]
+        d['ss1hg'] = h5d['entry1/instrument/slits/first/horizontal/gap'][:]
+        d['ss2hg'] = h5d['entry1/instrument/slits/second/horizontal/gap'][:]
+        d['ss3hg'] = h5d['entry1/instrument/slits/third/horizontal/gap'][:]
+        d['ss4hg'] = h5d['entry1/instrument/slits/fourth/horizontal/gap'][:]
 
-        d['omega'] = h5data['entry1/instrument/parameters/omega'][:]
-        d['twotheta'] = h5data['entry1/instrument/parameters/twotheta'][:]
+        d['omega'] = h5d['entry1/instrument/parameters/omega'][:]
+        d['twotheta'] = h5d['entry1/instrument/parameters/twotheta'][:]
 
-        d['detector'] = h5data['entry1/data/hmm'][:]
-        d['sth'] = h5data['entry1/sample/sth'][:]
-        d['bm1_counts'] = h5data['entry1/monitor/bm1_counts'][:]
-        d['total_counts'] = h5data['entry1/instrument/detector/total_counts'][:]
-        d['time'] = h5data['entry1/instrument/detector/time'][:]
-        d['mode'] = h5data['entry1/instrument/parameters/mode'][0].decode()
+        d['detector'] = h5d['entry1/data/hmm'][:]
+        d['sth'] = h5d['entry1/sample/sth'][:]
+        d['bm1_counts'] = h5d['entry1/monitor/bm1_counts'][:]
+        d['total_counts'] = h5d['entry1/instrument/detector/total_counts'][:]
+
+        d['time'] = h5d['entry1/instrument/detector/time'][:]
+        d['mode'] = h5d['entry1/instrument/parameters/mode'][0].decode()
 
         try:
-            event_directory_name = h5data[
+            event_directory_name = h5d[
                 'entry1/instrument/detector/daq_dirname'][0]
             d['daq_dirname'] = event_directory_name.decode()
         except KeyError:
             # daq_dirname doesn't exist in this file
             d['daq_dirname'] = None
 
-        d['t_bins'] = h5data['entry1/data/time_of_flight'][:].astype('float64')
-        d['x_bins'] = h5data['entry1/data/x_bin'][:]
-        d['y_bins'] = h5data['entry1/data/y_bin'][:]
+        d['t_bins'] = h5d['entry1/data/time_of_flight'][:].astype('float64')
+        d['x_bins'] = h5d['entry1/data/x_bin'][:]
+        d['y_bins'] = h5d['entry1/data/y_bin'][:]
 
-        master, slave, frequency, phase = self._chopper_values(h5data)
+        master, slave, frequency, phase = self._chopper_values(h5d)
         d['master'] = master
         d['slave'] = slave
         d['frequency'] = frequency
         d['phase'] = phase
-        d['chopper2_distance'] = h5data[
+        d['chopper2_distance'] = h5d[
             'entry1/instrument/parameters/chopper2_distance'][:]
-        d['chopper3_distance'] = h5data[
+        d['chopper3_distance'] = h5d[
             'entry1/instrument/parameters/chopper3_distance'][:]
-        d['chopper4_distance'] = h5data[
+        d['chopper4_distance'] = h5d[
             'entry1/instrument/parameters/chopper4_distance'][:]
-        d['chopper1_phase_offset'] = h5data[
+        d['chopper1_phase_offset'] = h5d[
             'entry1/instrument/parameters/chopper1_phase_offset'][:]
-        d['chopper2_phase_offset'] = h5data[
+        d['chopper2_phase_offset'] = h5d[
             'entry1/instrument/parameters/chopper2_phase_offset'][:]
-        d['chopper3_phase_offset'] = h5data[
+        d['chopper3_phase_offset'] = h5d[
             'entry1/instrument/parameters/chopper3_phase_offset'][:]
-        d['chopper4_phase_offset'] = h5data[
+        d['chopper4_phase_offset'] = h5d[
             'entry1/instrument/parameters/chopper4_phase_offset'][:]
-        d['guide1_distance'] = h5data[
+        d['guide1_distance'] = h5d[
             'entry1/instrument/parameters/guide1_distance'][:]
-        d['guide2_distance'] = h5data[
+        d['guide2_distance'] = h5d[
             'entry1/instrument/parameters/guide2_distance'][:]
-        d['sample_distance'] = h5data[
+        d['sample_distance'] = h5d[
             'entry1/instrument/parameters/sample_distance'][:]
-        d['slit2_distance'] = h5data[
+        d['slit2_distance'] = h5d[
             'entry1/instrument/parameters/slit2_distance'][:]
-        d['slit3_distance'] = h5data[
+        d['slit3_distance'] = h5d[
             'entry1/instrument/parameters/slit3_distance'][:]
         d['collimation_distance'] = d['slit3_distance'] - d['slit2_distance']
-        d['dy'] = h5data[
+        d['dy'] = h5d[
             'entry1/instrument/detector/longitudinal_translation'][:]
-        d['dz'] = h5data[
+        d['dz'] = h5d[
             'entry1/instrument/detector/vertical_translation'][:]
-        d['original_file_name'] = h5data['entry1/experiment/file_name']
+        d['original_file_name'] = h5d['entry1/experiment/file_name']
 
-        d['scan_axis_name'] = h5data['entry1/data/hmm'].attrs['axes'].decode('utf8').split(':')[0]
-        d['scan_axis'] = h5data['entry1/data/%s' % d['scan_axis_name']][:]
+        d['scan_axis_name'] = (
+            h5d['entry1/data/hmm'].attrs['axes'].decode('utf8').split(':')[0])
+        d['scan_axis'] = h5d['entry1/data/%s' % d['scan_axis_name']][:]
 
         # TODO put HDF file y pixel spacing in here.
         self.cat = d
@@ -340,10 +370,10 @@ class PlatypusNexus(object):
             last event detected (which may be quite different if the count rate
             is very low).
         event_folder : None or str
-            Specifies the path for the eventmode data. If `event_folder is None`
-            then the eventmode data is assumed to reside in the same directory
-            as the NeXUS file. If event_folder is a string, then the string
-            specifies the path to the eventmode data.
+            Specifies the path for the eventmode data. If
+            `event_folder is None` then the eventmode data is assumed to reside
+            in the same directory as the NeXUS file. If event_folder is a
+            string, then the string specifies the path to the eventmode data.
         peak_pos : None or (float, float)
             Specifies the peak position and peak standard deviation to use.
         background_mask : array_like
@@ -483,8 +513,8 @@ class PlatypusNexus(object):
             # calculate the angular divergence
             domega[idx] = general.div(cat.ss2vg[scanpoint],
                                       cat.ss3vg[scanpoint],
-                                      (cat.slit3_distance[0]
-                                       - cat.slit2_distance[0]))[0]
+                                      (cat.slit3_distance[0] -
+                                       cat.slit2_distance[0]))[0]
 
             """
             work out the total flight length
@@ -514,9 +544,9 @@ class PlatypusNexus(object):
             """
             poff = cat.chopper1_phase_offset[0]
             poffset = 1.e6 * poff / (2. * 360. * freq)
-            toffset = (poffset
-                       + 1.e6 * master_opening / 2 / (2 * np.pi) / freq
-                       - 1.e6 * phase_angle[scanpoint] / (360 * 2 * freq))
+            toffset = (poffset +
+                       1.e6 * master_opening / 2 / (2 * np.pi) / freq -
+                       1.e6 * phase_angle[scanpoint] / (360 * 2 * freq))
             m_spec_tof_hist[idx] -= toffset
 
             detpositions[idx] = cat.dy[scanpoint]
@@ -621,13 +651,13 @@ class PlatypusNexus(object):
                                               div)
 
         # convert the wavelength base to a timebase
-        m_spec_tof_hist = (0.001 * flight_distance[:, np.newaxis]
-                           / general.wavelength_velocity(m_lambda_hist))
+        m_spec_tof_hist = (0.001 * flight_distance[:, np.newaxis] /
+                           general.wavelength_velocity(m_lambda_hist))
 
         m_lambda = 0.5 * (m_lambda_hist[:, 1:] + m_lambda_hist[:, :-1])
 
-        m_spec_tof = (0.001 * flight_distance[:, np.newaxis]
-                      / general.wavelength_velocity(m_lambda))
+        m_spec_tof = (0.001 * flight_distance[:, np.newaxis] /
+                      general.wavelength_velocity(m_lambda))
 
         # we want to integrate over the following pixel region
         lopx = np.floor(beam_centre - beam_sd * EXTENT_MULT).astype('int')
@@ -706,13 +736,14 @@ class PlatypusNexus(object):
         '''
         tau_da = m_spec_tof_hist[:, 1:] - m_spec_tof_hist[:, :-1]
 
-        m_lambda_fwhm = general.resolution_double_chopper(m_lambda,
-                                     z0=d_cx[:, np.newaxis] / 1000.,
-                                     freq=cat.frequency[:, np.newaxis],
-                                     L=flight_distance[:, np.newaxis] / 1000.,
-                                     H=cat.ss2vg[originalscanpoint] / 1000.,
-                                     xsi=phase_angle[:, np.newaxis],
-                                     tau_da=tau_da)
+        m_lambda_fwhm = (
+            resolution_double_chopper(m_lambda,
+                                      z0=d_cx[:, np.newaxis] / 1000.,
+                                      freq=cat.frequency[:, np.newaxis],
+                                      L=flight_distance[:, np.newaxis] / 1000.,
+                                      H=cat.ss2vg[originalscanpoint] / 1000.,
+                                      xsi=phase_angle[:, np.newaxis],
+                                      tau_da=tau_da))
 
         m_lambda_fwhm *= m_lambda
 
@@ -795,7 +826,8 @@ class PlatypusNexus(object):
 
     def chod(self, omega=0., twotheta=0., scanpoint=0):
         """
-        Calculates the flight length of the neutrons in the Platypus instrument.
+        Calculates the flight length of the neutrons in the Platypus
+        instrument.
 
         Parameters
         ----------
@@ -863,34 +895,34 @@ class PlatypusNexus(object):
         elif mode == 'SB':
             # assumes guide1_distance is in the MIDDLE OF THE MIRROR
             chod += cat.guide1_distance[0]
-            chod += ((cat.sample_distance[0] - cat.guide1_distance[0])
-                     / np.cos(np.radians(omega)))
+            chod += ((cat.sample_distance[0] - cat.guide1_distance[0]) /
+                     np.cos(np.radians(omega)))
             if twotheta > omega:
                 chod += (cat.dy[scanpoint] /
                          np.cos(np.radians(twotheta - omega)))
             else:
-                chod += (cat.dy[scanpoint]
-                         / np.cos(np.radians(omega - twotheta)))
+                chod += (cat.dy[scanpoint] /
+                         np.cos(np.radians(omega - twotheta)))
 
         elif mode == 'DB':
             # guide2_distance in in the middle of the 2nd compound mirror
             # guide2_distance - longitudinal length from midpoint1 -> midpoint2
             #  + direct length from midpoint1->midpoint2
-            chod += (cat.guide2_distance[0]
-                     + 600. * np.cos(np.radians(1.2))
-                     * (1 - np.cos(np.radians(2.4))))
+            chod += (cat.guide2_distance[0] +
+                     600. * np.cos(np.radians(1.2)) *
+                     (1 - np.cos(np.radians(2.4))))
 
             # add on distance from midpoint2 to sample
-            chod += ((cat.sample_distance[0] - cat.guide2_distance[0])
-                     / np.cos(np.radians(4.8)))
+            chod += ((cat.sample_distance[0] - cat.guide2_distance[0]) /
+                     np.cos(np.radians(4.8)))
 
             # add on sample -> detector
             if twotheta > omega:
-                chod += (cat.dy[scanpoint]
-                         / np.cos(np.radians(twotheta - 4.8)))
+                chod += (cat.dy[scanpoint] /
+                         np.cos(np.radians(twotheta - 4.8)))
             else:
-                chod += (cat.dy[scanpoint]
-                         / np.cos(np.radians(4.8 - twotheta)))
+                chod += (cat.dy[scanpoint] /
+                         np.cos(np.radians(4.8 - twotheta)))
 
         return chod, d_cx
 
@@ -919,10 +951,10 @@ class PlatypusNexus(object):
         scanpoint : int, optional
             Scanpoint you are interested in
         event_folder : None or str
-            Specifies the path for the eventmode data. If `event_folder is None`
-            then the eventmode data is assumed to reside in the same directory
-            as the NeXUS file. If event_folder is a string, then the string
-            specifies the path to the eventmode data.
+            Specifies the path for the eventmode data. If
+            `event_folder is None` then the eventmode data is assumed to reside
+            in the same directory as the NeXUS file. If event_folder is a
+            string, then the string specifies the path to the eventmode data.
 
         Returns
         -------
@@ -968,12 +1000,13 @@ class PlatypusNexus(object):
                                        'EOS.bin')
 
         with io.open(stream_filename, 'rb') as f:
+            last_frame = int(frame_bins[-1] * frequency)
             events, end_of_last_event = event.events(f,
-                                    max_frames=int(frame_bins[-1] * frequency))
+                                                     max_frames=last_frame)
 
         output = event.process_event_stream(events,
-                                            np.asfarray(frame_bins)
-                                            * frequency,
+                                            np.asfarray(frame_bins) *
+                                            frequency,
                                             t_bins,
                                             y_bins,
                                             x_bins)
@@ -1026,19 +1059,6 @@ class PlatypusNexus(object):
         scanpoint : int
             Which scanpoint to write
         """
-        spectrum_template = """<?xml version="1.0"?>
-        <REFroot xmlns="">
-        <REFentry time="$time">
-        <Title>$title</Title>
-        <REFdata axes="lambda" rank="1" type="POINT" spin="UNPOLARISED" dim="$n_spectra">
-        <Run filename="$runnumber"/>
-        <R uncertainty="dR">$r</R>
-        <lambda uncertainty="dlambda" units="1/A">$l</lambda>
-        <dR type="SD">$dr</dR>
-        <dlambda type="_FWHM" units="1/A">$dl</dlambda>
-        </REFdata>
-        </REFentry>
-        </REFroot>"""
         if self.processed_spectrum is None:
             return
 
@@ -1057,7 +1077,7 @@ class PlatypusNexus(object):
 
         r = m_spec[:, sorted]
         l = m_lambda[:, sorted]
-        dl = m_lambda_fwhm [:, sorted]
+        dl = m_lambda_fwhm[:, sorted]
         dr = m_spec_sd[:, sorted]
         d['n_spectra'] = self.processed_spectrum['n_spectra']
         d['runnumber'] = 'PLP{:07d}'.format(self.cat.datafile_number)
@@ -1206,8 +1226,8 @@ def background_subtract_line(profile, profile_sd, background_mask):
                            p0=np.array([ahat, bhat]), absolute_sigma=True)
 
     def CI(xx, pcovmat):
-        return (pcovmat[0, 0] + pcovmat[1, 0] * xx
-                + pcovmat[0, 1] * xx + pcovmat[1, 1] * (xx ** 2))
+        return (pcovmat[0, 0] + pcovmat[1, 0] * xx +
+                pcovmat[0, 1] * xx + pcovmat[1, 1] * (xx ** 2))
 
     bkgd = f(np.arange(np.size(profile, 0)), popt[0], popt[1])
 
@@ -1230,7 +1250,7 @@ def background_subtract_line(profile, profile_sd, background_mask):
 
 
 def find_specular_ridge(detector, detector_sd, starting_offset=50,
-                        tolerance=0.01):
+                        tol=0.01):
     """
     Find the specular ridges in a detector(n, t, y) plot. Assumes that the
     specular ridge **does not** change position.
@@ -1241,6 +1261,8 @@ def find_specular_ridge(detector, detector_sd, starting_offset=50,
         detector array
     detector_sd : array_like
         standard deviations of detector array
+    tol : float
+        specifies threshold of fractional change for beam centre to be found
 
     Returns
     -------
@@ -1253,8 +1275,8 @@ def find_specular_ridge(detector, detector_sd, starting_offset=50,
 
     starting_offset = abs(starting_offset)
 
-    n_increments = ((np.size(detector, 1) - starting_offset)
-                    // search_increment)
+    n_increments = ((np.size(detector, 1) - starting_offset) //
+                    search_increment)
 
     for j in range(np.size(detector, 0)):
         last_centre = -1.
@@ -1276,12 +1298,13 @@ def find_specular_ridge(detector, detector_sd, starting_offset=50,
             # plot
 
             try:
-                centroid, gauss_peak = ut.peak_finder(y_cross, sigma=y_cross_sd)
+                centroid, gauss_peak = ut.peak_finder(y_cross,
+                                                      sigma=y_cross_sd)
             except RuntimeError:
                 continue
 
-            if (abs((gauss_peak[0] - last_centre) / last_centre) < tolerance
-                and abs((gauss_peak[1] - last_sd) / last_sd) < tolerance):
+            if (abs((gauss_peak[0] - last_centre) / last_centre) < tol and
+                    abs((gauss_peak[1] - last_sd) / last_sd) < tol):
                 last_centre = gauss_peak[0]
                 last_sd = gauss_peak[1]
                 converged = True
@@ -1331,14 +1354,14 @@ def correct_for_gravity(detector, detector_sd, lamda, coll_distance,
 
     Returns
     -------
-    corrected_data, corrected_data_sd, m_gravcorrcoefs : np.ndarray, np.ndarray, np.ndarray
+    corrected_data, corrected_data_sd, m_gravcorrcoefs :
+        np.ndarray, np.ndarray, np.ndarray
+
         Corrected image. This is a theoretical prediction where the spectral
         ridge is for each wavelength.  This will be used to calculate the
         actual angle of incidence in the reduction process.
 
     """
-    num_lambda = np.size(lamda, axis=1)
-
     x_init = np.arange((np.size(detector, axis=2) + 1) * 1.) - 0.5
 
     m_gravcorrcoefs = np.zeros((np.size(detector, 0)), dtype='float64')
@@ -1348,7 +1371,9 @@ def correct_for_gravity(detector, detector_sd, lamda, coll_distance,
 
     for spec in range(np.size(detector, 0)):
         neutron_speeds = general.wavelength_velocity(lamda[spec])
-        trajectories = pm.find_trajectory(coll_distance / 1000., theta, neutron_speeds)
+        trajectories = pm.find_trajectory(coll_distance / 1000.,
+                                          theta,
+                                          neutron_speeds)
         travel_distance = (coll_distance + sample_det[spec]) / 1000.
 
         # centres(t,)
@@ -1358,7 +1383,9 @@ def correct_for_gravity(detector, detector_sd, lamda, coll_distance,
         hipx = np.searchsorted(lamda[spec], hi_wavelength)
 
         def f(tru_centre):
-            deflections = pm.y_deflection(trajectories[lopx: hipx], neutron_speeds[lopx: hipx], travel_distance)
+            deflections = pm.y_deflection(trajectories[lopx: hipx],
+                                          neutron_speeds[lopx: hipx],
+                                          travel_distance)
 
             model = 1000. * deflections / Y_PIXEL_SPACING + tru_centre
             diff = model - centroids[lopx: hipx, 0]
@@ -1370,7 +1397,9 @@ def correct_for_gravity(detector, detector_sd, lamda, coll_distance,
         res = leastsq(f, x0)
         m_gravcorrcoefs[spec] = res[0][0]
 
-        total_deflection = 1000. * pm.y_deflection(trajectories, neutron_speeds, travel_distance)
+        total_deflection = 1000. * pm.y_deflection(trajectories,
+                                                   neutron_speeds,
+                                                   travel_distance)
         total_deflection /= Y_PIXEL_SPACING
 
         x_rebin = x_init.T + total_deflection[:, np.newaxis]

@@ -2,6 +2,7 @@ from __future__ import print_function
 
 import warnings as _warnings
 import os as _os
+import sys as _sys
 
 from tempfile import mkdtemp
 
@@ -20,7 +21,8 @@ class TemporaryDirectory(object):
 
     def __init__(self, suffix="", prefix="tmp", dir=None):
         self._closed = False
-        self.name = None # Handle mkdtemp raising an exception
+        # Handle mkdtemp raising an exception
+        self.name = None
         self.name = mkdtemp(suffix, prefix, dir)
 
     def __repr__(self):
