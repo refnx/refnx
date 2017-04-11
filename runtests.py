@@ -86,7 +86,9 @@ def main(argv):
 
     if not args.no_build:
         cwd = os.getcwd()
+        os.makedirs(test_dir)
         os.chdir(test_dir)
+
         dst_dir, site_dir = build_project(args)
         sys.path.insert(0, site_dir)
         os.environ['PYTHONPATH'] = site_dir
