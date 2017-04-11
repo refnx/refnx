@@ -77,11 +77,16 @@ def main(argv):
                         help="Arguments to pass to Nose, Python or shell")
     args = parser.parse_args(argv)
 
+    test_dir = os.path.join(ROOT_DIR, 'build', 'test')
+    cwd = os.getcwd()
+
     if args.pythonpath:
         for p in reversed(args.pythonpath.split(os.pathsep)):
             sys.path.insert(0, p)
 
     if not args.no_build:
+        cwd = os.getcwd()
+        os.chdir(test_dir)
         dst_dir, site_dir = build_project(args)
         sys.path.insert(0, site_dir)
         os.environ['PYTHONPATH'] = site_dir
@@ -113,8 +118,6 @@ def main(argv):
         print("Spawning a Unix shell...")
         os.execv(shell, [shell] + extra_argv)
         sys.exit(1)
-
-    test_dir = os.path.join(ROOT_DIR, 'build', 'test')
 
     if args.build_only:
         sys.exit(0)
@@ -156,7 +159,6 @@ def main(argv):
     except OSError:
         pass
 
-    cwd = os.getcwd()
     try:
         os.chdir(test_dir)
         result = test(args.mode,
@@ -201,6 +203,7 @@ def build_project(args):
 
     cmd += ['build']
     cmd += ['install', '--prefix=' + dst_dir]
+    cmd += ['--single-version-externally-managed', '--record=t']
 
     from distutils.sysconfig import get_python_lib
     site_dir = get_python_lib(prefix=dst_dir, plat_specific=True)
