@@ -88,5 +88,6 @@ class TestNSplice(unittest.TestCase):
         assert_almost_equal(scale, 0.5)
         assert_equal(np.count_nonzero(overlap), 4)
 
+
 if __name__ == '__main__':
     unittest.main()
