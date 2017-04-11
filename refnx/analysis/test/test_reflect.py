@@ -345,5 +345,6 @@ class TestAnalyticalProfile(unittest.TestCase):
         rvals = self.arf.model(self.qvals, [2])
         assert_allclose(rvals, self.rvals)
 
+
 if __name__ == '__main__':
     unittest.main()
