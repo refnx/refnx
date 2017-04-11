@@ -8,6 +8,7 @@ from refnx._lib import TemporaryDirectory
 
 path = os.path.dirname(os.path.abspath(__file__))
 
+
 class TestReflectDataset(unittest.TestCase):
 
     def setUp(self):
@@ -32,7 +33,7 @@ class TestReflectDataset(unittest.TestCase):
         dataset = ReflectDataset()
         with open(os.path.join(path, 'c_PLP0000708.xml')) as f:
             dataset.load(f)
-        
+
         assert_equal(dataset.npoints, 90)
         assert_equal(90, np.size(dataset.x))
 
@@ -47,7 +48,7 @@ class TestReflectDataset(unittest.TestCase):
         dataset1 = ReflectDataset()
         with open(os.path.join(path, 'c_PLP0000708.dat')) as f:
             dataset1.load(f)
-        
+
         assert_equal(dataset1.npoints, 90)
         assert_equal(90, np.size(dataset1.x))
 
@@ -62,12 +63,12 @@ class TestReflectDataset(unittest.TestCase):
         # test we can construct a dataset directly from a file.
         pth = os.path.join(path, 'c_PLP0000708.xml')
 
-        dataset = ReflectDataset(pth)
+        ReflectDataset(pth)
 
         with open(os.path.join(path, 'c_PLP0000708.xml')) as f:
-            dataset = ReflectDataset(f)
+            ReflectDataset(f)
 
-        dataset2 = ReflectDataset(os.path.join(path, 'd_a.txt'))
+        ReflectDataset(os.path.join(path, 'd_a.txt'))
 
     def test_add_data(self):
         # test we can add data to the dataset

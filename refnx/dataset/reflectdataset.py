@@ -11,28 +11,30 @@ import os.path
 from refnx.dataset import Data1D
 
 
+_template_ref_xml = """<?xml version="1.0"?>
+<REFroot xmlns="">
+<REFentry time="$time">
+<Title>$title</Title>
+<User>$user</User>
+<REFsample>
+<ID>$sample</ID>
+</REFsample>
+<REFdata axes="Qz" rank="1" type="POINT" spin="UNPOLARISED" dim="$numpoints">
+<Run filename="$datafilenumber" preset="" size="">
+</Run>
+<R uncertainty="dR">$_ydata</R>
+<Qz uncertainty="dQz" units="1/A">$_xdata</Qz>
+<dR type="SD">$_ydataSD</dR>
+<dQz type="_FWHM" units="1/A">$_xdataSD</dQz>
+</REFdata>
+</REFentry>
+</REFroot>"""
+
+
 class ReflectDataset(Data1D):
     """
     A 1D Reflectivity dataset.
     """
-    _template_ref_xml = """<?xml version="1.0"?>
-    <REFroot xmlns="">
-    <REFentry time="$time">
-    <Title>$title</Title>
-    <User>$user</User>
-    <REFsample>
-    <ID>$sample</ID>
-    </REFsample>
-    <REFdata axes="Qz" rank="1" type="POINT" spin="UNPOLARISED" dim="$numpoints">
-    <Run filename="$datafilenumber" preset="" size="">
-    </Run>
-    <R uncertainty="dR">$_ydata</R>
-    <Qz uncertainty="dQz" units="1/A">$_xdata</Qz>
-    <dR type="SD">$_ydataSD</dR>
-    <dQz type="_FWHM" units="1/A">$_xdataSD</dQz>
-    </REFdata>
-    </REFentry>
-    </REFroot>"""
 
     def __init__(self, data=None, **kwds):
         """
@@ -59,7 +61,7 @@ class ReflectDataset(Data1D):
         start_time: int, optional
             Epoch time specifying when the sample started
         """
-        s = string.Template(self._template_ref_xml)
+        s = string.Template(_template_ref_xml)
         self.time = datetime.fromtimestamp(start_time).isoformat()
         # filename = 'c_PLP{:07d}_{:d}.xml'.format(self._rnumber[0], 0)
 
@@ -91,8 +93,8 @@ class ReflectDataset(Data1D):
         Parameters
         ----------
         f : str or file-like
-            The file to load the spectrum from, or a str that specifies the file
-            name
+            The file to load the spectrum from, or a str that specifies the
+            file name
         """
         if hasattr(f, 'name'):
             fname = f.name
