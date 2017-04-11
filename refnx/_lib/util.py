@@ -46,8 +46,10 @@ class TemporaryDirectory(object):
                 return
             self._closed = True
             if _warn:
-                self._warn("Implicitly cleaning up {!r}".format(self),
-                           ResourceWarning)
+                # ResourceWarning
+                self._warn("ResourceWarning: Implicitly cleaning"
+                           " up {!r}".format(self))
+
 
     def __exit__(self, exc, value, tb):
         self.cleanup()
