@@ -45,5 +45,6 @@ class TestPeakUtils(unittest.TestCase):
         median, sd = peak_utils.median(y, dx=9.)
         assert_equal(median, 4.5)
 
+
 if __name__ == '__main__':
     unittest.main()

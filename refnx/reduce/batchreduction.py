@@ -313,9 +313,9 @@ class BatchReducer:
             return None, None
 
         if len(runs) != len(directs):
-            warnings.warn(
-              "Row %d (%s) has differing numbers of direct & refln runs" %
-              (entry['source'], entry['name']))
+            warnings.warn("Row %d (%s) has differing numbers of"
+                          " direct & refln runs" %
+                          (entry['source'], entry['name']))
             return None, None
 
         ds, fname = reduce_stitch(runs, directs, **self.kwds)
@@ -422,8 +422,8 @@ def run_list(entry, mode='refl'):
                 if not np.isnan(run):
                     valid.append(run)
             except TypeError:
-                raise ValueError(
-                  "Value '%s' could not be interpreted as a run number" % run)
+                raise ValueError("Value '%s' could not be interpreted as a run"
+                                 " number" % run)
 
     # valid = [int(r) for r in l if not np.isnan(r)]
     return [int(v) for v in valid]

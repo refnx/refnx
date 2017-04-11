@@ -210,10 +210,10 @@ class TestRebin(unittest.TestCase):
         # compute answer here to check rebin
         y_old_ave = y_old / np.ediff1d(x_old)
         y_new_here = np.array(
-                     [y_old_ave[0] * (x_new[1] - 0.),
-                      y_old_ave[0] * (x_old[1] - x_new[1]) +
-                      y_old_ave[1]*(x_new[2] - x_old[1]),
-                      y_old_ave[1] * (x_old[-1] - x_new[-2])])
+            [y_old_ave[0] * (x_new[1] - 0.),
+             y_old_ave[0] * (x_old[1] - x_new[1]) +
+             y_old_ave[1] * (x_new[2] - x_old[1]),
+             y_old_ave[1] * (x_old[-1] - x_new[-2])])
 
         # mean or nominal value comparison
         assert_allclose(y_new,
@@ -233,11 +233,12 @@ class TestRebin(unittest.TestCase):
         y1 = np.arange(4)
         y2 = np.array([0.5, 1.5])
         output = rebin.rebinND(input, (0, 1), (x1, y1), (x2, y2))
-        res = np.array([[[1.,   2.]],
-                        [[13.5,  15.]],
-                        [[25.5,  27.]]])
+        res = np.array([[[1., 2.]],
+                        [[13.5, 15.]],
+                        [[25.5, 27.]]])
 
         assert_equal(res, output)
+
 
 if __name__ == '__main__':
     unittest.main()

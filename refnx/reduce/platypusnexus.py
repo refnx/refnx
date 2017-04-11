@@ -567,7 +567,7 @@ class PlatypusNexus(object):
         # convert TOF to lambda
         # m_spec_tof_hist (n, t) and chod is (n,)
         m_lambda_hist = general.velocity_wavelength(
-                    1.e3 * flight_distance[:, np.newaxis] / m_spec_tof_hist)
+            1.e3 * flight_distance[:, np.newaxis] / m_spec_tof_hist)
 
         m_lambda = 0.5 * (m_lambda_hist[:, 1:] + m_lambda_hist[:, :-1])
         TOF -= toffset

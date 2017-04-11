@@ -49,8 +49,8 @@ class BoundedUnivariateSpline(UnivariateSpline):
 
     def integral(self, a, b):
         # capturing contributions outside domain of interpolation
-        below_dx = np.max([0., self.bnds[0]-a])
-        above_dx = np.max([0., b-self.bnds[1]])
+        below_dx = np.max([0., self.bnds[0] - a])
+        above_dx = np.max([0., b - self.bnds[1]])
 
         outside_contribution = (below_dx + above_dx) * self.fill_value
 
