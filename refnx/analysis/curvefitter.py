@@ -276,12 +276,14 @@ class CurveFitter(Minimizer):
     The default cost function for CurveFitter is:
 
     .. math::
-        \chi^2=\sum \left(\frac{\mathrm{data[1]} - \mathrm{fitfunc}}{\mathrm{data[2]}}\right)^2
+        \chi^2=\sum \left(\frac{\mathrm{data[1]} -
+                    \mathrm{fitfunc}}{\mathrm{data[2]}}\right)^2
 
     This user defined cost function can be used to specify other cost
     functions for `differential_evolution`, `leastsq`, `least_squares`.
 
-    .. _lmfit.Minimizer: http://lmfit.github.io/lmfit-py/fitting.html#module-Minimizer
+    .. _lmfit.Minimizer:
+        http://lmfit.github.io/lmfit-py/fitting.html#module-Minimizer
     """
 
     def __init__(self, fitfunc, data, params, mask=None,
@@ -564,7 +566,9 @@ class CurveFitter(Minimizer):
 
         .. math::
 
-            \ln p(D|F_{true}) = -\frac{1}{2}\sum_n \left[\frac{\left(g_n(F_{true}) - D_n \right)^2}{s_n^2}+\ln (2\pi s_n^2)\right]
+            \ln p(D|F_{true}) = -\frac{1}{2}\sum_n
+                \left[\frac{\left(g_n(F_{true}) -
+                   D_n \right)^2}{s_n^2}+\ln (2\pi s_n^2)\right]
 
         The first summand in the square brackets represents the residual for a
         given datapoint (:math:`g` being the generative model) . This term
@@ -589,13 +593,14 @@ class CurveFitter(Minimizer):
             if self.is_weighted or self.lnpost is not None:
                 # get the proper log-likelihood if you have
                 # uncertainties
-                self._resid = _parallel_likelihood_calculator(
-                                      self.fitfunc,
-                                      data_tuple=(self.dataset.x,
-                                                  self.dataset.y,
-                                                  self.dataset.y_err),
-                                      mask=self.mask,
-                                      lnpost=self.lnpost)
+                data_tuple = (self.dataset.x,
+                              self.dataset.y,
+                              self.dataset.y_err)
+                self._resid = (
+                    _parallel_likelihood_calculator(self.fitfunc,
+                                                    data_tuple=data_tuple,
+                                                    mask=self.mask,
+                                                    lnpost=self.lnpost))
                 self.userfcn = self._resid
             else:
                 pass

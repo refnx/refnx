@@ -1,7 +1,5 @@
 import unittest
 import os.path
-import time
-from multiprocessing import cpu_count
 import os
 
 import refnx.analysis.reflect as reflect
@@ -12,7 +10,7 @@ except ImportError:
     HAVE_CREFLECT = False
 import refnx.analysis._reflect as _reflect
 import refnx.analysis.curvefitter as curvefitter
-from refnx.analysis.curvefitter import CurveFitter
+from refnx.analysis.curvefitter import CurveFitter, values
 from refnx.analysis.reflect import ReflectivityFitFunction as RFF
 from refnx.analysis.reflect import AnalyticalReflectivityFunction as ARF
 
@@ -133,7 +131,8 @@ class TestReflect(unittest.TestCase):
     """
     @np.testing.decorators.knownfailure
     def test_cabeles_parallelised(self):
-        # I suppose this could fail if someone doesn't have a multicore computer
+        # I suppose this could fail if someone doesn't have a multicore
+        # computer
         if not TEST_C_REFLECT:
             return
 
@@ -232,8 +231,8 @@ class TestReflect(unittest.TestCase):
                              self.params361,
                              fcn_kws=kws)
         res = fitter.fit()
-        res_em = fitter.emcee(steps=10)
-        # assert_allclose(values(res.params), values(res_em.params), rtol=1e-2)
+        res_em = fitter.emcee(steps=10, seed=1)
+        assert_allclose(values(res.params), values(res_em.params), rtol=1e-2)
         # for par in res.params:
         #     if res.params[par].vary:
         #         err = res.params[par].stderr

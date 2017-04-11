@@ -1,6 +1,5 @@
 import os.path
 import unittest
-import time
 from copy import deepcopy
 
 import refnx.analysis.curvefitter as curvefitter
@@ -10,7 +9,7 @@ from refnx.analysis.curvefitter import (values, CurveFitter,
 import numpy as np
 from lmfit.minimizer import MinimizerResult
 from lmfit import Parameters
-from NISTModels import NIST_runner, Models, ReadNistData
+from NISTModels import NIST_runner, Models
 
 from numpy.testing import (assert_almost_equal, assert_equal, assert_,
                            assert_allclose)
@@ -32,8 +31,10 @@ class TestFitter(unittest.TestCase):
         self.p0 = np.array([0., 1., 0.0, 1.])
         self.bounds = [(-1, 1), (0, 2), (-1, 1.), (0.001, 2)]
 
-        self.params = curvefitter.to_parameters(self.p0 + 0.2, bounds=self.bounds)
-        self.final_params = curvefitter.to_parameters(self.p0, bounds=self.bounds)
+        self.params = curvefitter.to_parameters(self.p0 + 0.2,
+                                                bounds=self.bounds)
+        self.final_params = curvefitter.to_parameters(self.p0,
+                                                      bounds=self.bounds)
 
         self.ydata = gauss(self.xdata, self.final_params)
         self.f = CurveFitter(gauss, (self.xdata, self.ydata), self.params)
@@ -46,7 +47,7 @@ class TestFitter(unittest.TestCase):
 
     def test_NIST(self):
         # Run all the NIST standard tests with leastsq
-        for model in Models.keys():
+        for model in Models:
             try:
                 NIST_runner(model)
             except Exception:
@@ -87,6 +88,7 @@ class TestFitter(unittest.TestCase):
         self.params['p0'].vary = False
         res = self.f.fit()
         assert_almost_equal(self.p0[0] + 0.2, self.params['p0'].value)
+        assert_almost_equal(res.params['p0'].value, self.params['p0'].value)
 
     def test_fit_returns_MinimizerResult(self):
         self.params['p0'].vary = False
@@ -109,7 +111,8 @@ class TestFitter(unittest.TestCase):
         assert_almost_equal(values(res.params), values(res2.params))
 
     def test_args_kwds_are_used(self):
-        # check that user defined args and kwds make their way into the user function
+        # check that user defined args and kwds make their way into the user
+        # function
         a = [1., 2.]
         x = np.linspace(0, 10, 11)
         y = a[0] + 1 + 2 * a[1] * x
@@ -127,6 +130,7 @@ class TestFitter(unittest.TestCase):
         assert_almost_equal(values(res.params), [1., 2.])
 
         d = {'a': 1, 'b': 2}
+
         def fun(x, p, *args, **kwds):
             return kwds['a'] + p['p0'] + p['p1'] * kwds['b'] * x
 
@@ -191,7 +195,9 @@ class TestFitterGauss(unittest.TestCase):
         self.params = curvefitter.to_parameters(self.p0, bounds=self.bounds)
 
     def test_best_weighted(self):
-        f = CurveFitter(gauss, (self.xvals, self.yvals, self.evals), self.params)
+        f = CurveFitter(gauss,
+                        (self.xvals, self.yvals, self.evals),
+                        self.params)
         res = f.fit()
 
         output = values(res.params)
@@ -218,8 +224,8 @@ class TestFitterGauss(unittest.TestCase):
         # residuals needs to be pickleable if one wants to use Pool
         f = CurveFitter(gauss, (self.xvals, self.yvals), self.params)
         import pickle
-        pkl = pickle.dumps(f)
-        pkl = pickle.dumps(f._resid)
+        pickle.dumps(f)
+        pickle.dumps(f._resid)
 
     def test_parameter_names(self):
         # each instance of CurveFitter should be able to give a default set of

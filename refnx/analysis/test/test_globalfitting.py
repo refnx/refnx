@@ -43,8 +43,9 @@ class TestGlobalFitting(unittest.TestCase):
 
         lowlim = np.zeros(16)
         hilim = 2 * coefs
-        self.params = curvefitter.to_parameters(coefs, bounds=zip(lowlim, hilim),
-                                         varies=[False] * 16)
+        self.params = curvefitter.to_parameters(coefs,
+                                                bounds=zip(lowlim, hilim),
+                                                varies=[False] * 16)
 
         fname = os.path.join(CURDIR, 'c_PLP0011859_q.txt')
 
@@ -54,7 +55,7 @@ class TestGlobalFitting(unittest.TestCase):
         self.f = curvefitter.CurveFitter(reflect_fitfunc,
                                          (qvals.flatten(), rvals.flatten()),
                                          self.params)
-        
+
     def test_residuals_length(self):
         # the residuals should be the same length as the data
         a = GlobalFitter([self.f])
@@ -84,7 +85,8 @@ class TestGlobalFitting(unittest.TestCase):
         assert_almost_equal(values2, values)
 
     def test_globfit_modelvals_degenerate_layers(self):
-        # try fitting dataset with a deposited layer split into two degenerate layers
+        # try fitting dataset with a deposited layer split into two degenerate
+        # layers
         coefs = np.zeros((20))
         coefs[0] = 3
         coefs[1] = 1.
@@ -105,8 +107,9 @@ class TestGlobalFitting(unittest.TestCase):
         lowlim = np.zeros(20)
         hilim = 2 * coefs
         bounds = zip(lowlim, hilim)
-        params = curvefitter.to_parameters(coefs, bounds=bounds,
-                                         varies=[False] * 20)
+        params = curvefitter.to_parameters(coefs,
+                                           bounds=bounds,
+                                           varies=[False] * 20)
 
         fit = np.array([6, 7, 8, 11, 12, 13, 15, 16, 17, 19])
         for p in fit:
@@ -157,14 +160,17 @@ class TestGlobalFitting(unittest.TestCase):
         lowlim = np.zeros(16)
         lowlim[4] = -0.8
         hilim = 2 * coefs361
-        
+
         bounds = list(zip(lowlim, hilim))
-        params361 = curvefitter.to_parameters(coefs361, bounds=bounds,
-                                       varies=[False] * 16)
-        params365 = curvefitter.to_parameters(coefs365, bounds=bounds,
-                                       varies=[False] * 16)
-        params366 = curvefitter.to_parameters(coefs366, bounds=bounds,
-                                       varies=[False] * 16)
+        params361 = curvefitter.to_parameters(coefs361,
+                                              bounds=bounds,
+                                              varies=[False] * 16)
+        params365 = curvefitter.to_parameters(coefs365,
+                                              bounds=bounds,
+                                              varies=[False] * 16)
+        params366 = curvefitter.to_parameters(coefs366,
+                                              bounds=bounds,
+                                              varies=[False] * 16)
         assert_(len(params361), 16)
         assert_(len(params365), 16)
         assert_(len(params366), 16)
@@ -189,12 +195,11 @@ class TestGlobalFitting(unittest.TestCase):
                                                  'd2:p8=d0:p8',
                                                  'd1:p12=d0:p12',
                                                  'd2:p12 = d0:p12'],
-                         kws={'seed':1})
+                         kws={'seed': 1})
 
-
-        indiv_chisqr = (a.residuals(a.params) ** 2
-                        + b.residuals(b.params) ** 2
-                        + c.residuals(c.params) ** 2)
+        indiv_chisqr = (a.residuals(a.params) ** 2 +
+                        b.residuals(b.params) ** 2 +
+                        c.residuals(c.params) ** 2)
         global_chisqr = g.residuals(g.params) ** 2
         assert_almost_equal(indiv_chisqr.sum(), global_chisqr.sum())
         # import time
@@ -210,7 +215,7 @@ class TestGlobalFitting(unittest.TestCase):
         assert_almost_equal(b.params['p12'].value, a.params['p12'].value)
         assert_almost_equal(c.params['p12'].value, a.params['p12'].value)
 
-        g.params['p8_d0'].value=10.123456
+        g.params['p8_d0'].value = 10.123456
         # shouldn't need to call update constraints within the gfitter, that
         # happens when you retrieve a specific value
         assert_almost_equal(g.params['p8_d1'].value, g.params['p8_d0'].value)
@@ -240,6 +245,7 @@ class TestGlobalFitting(unittest.TestCase):
         assert_almost_equal(values(res.params), [1., 2.])
 
         d = {'a': 1, 'b': 2}
+
         def fun(x, p, *args, **kwds):
             return kwds['a'] + p['p0'] + p['p1'] * kwds['b'] * x
 

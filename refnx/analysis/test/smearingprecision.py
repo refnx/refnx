@@ -5,7 +5,8 @@ from time import time
 
 def smearing_precision_comparison(maxorder=50):
     '''
-    a quick script to see how the smeared reflectivity changes as a function of smearing precision
+    a quick script to see how the smeared reflectivity changes as a function of
+    smearing precision
     '''
     # import q values and dqvalues from the smearing test
     theoretical = np.loadtxt(
@@ -37,8 +38,9 @@ def smearing_precision_comparison(maxorder=50):
     for idx in range(1, maxorder + 1):
         t0 = time()
         smeared_rvals[idx, :] = reflect.reflectivity(qvals,
-                                               a,
-                                               **{'dqvals': dqvals, 'quad_order': idx})
+                                                     a,
+                                                     **{'dqvals': dqvals,
+                                                        'quad_order': idx})
         t1 = time()
         print(idx, ' takes %f' % (t1 - t0))
     np.savetxt('smearing_comp', smeared_rvals.T)

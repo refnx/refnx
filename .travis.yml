@@ -45,7 +45,9 @@ before_install:
     # Useful for debugging any issues with conda
     - conda info -a
 
-    - conda install --yes python=$PY numpy scipy nose h5py cython pandas xlrd pyflakes pep8
+    - conda install --yes python=$PY numpy scipy nose h5py cython pandas xlrd flake8
+    # gradually expand flake8 to all of codebase
+    - flake8 --ignore=F401 refnx/analysis
     - pip install emcee uncertainties lmfit
 
 
