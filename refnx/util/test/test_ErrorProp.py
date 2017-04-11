@@ -6,6 +6,7 @@ import numpy as np
 import os
 from numpy.testing import assert_equal, assert_array_almost_equal
 
+
 class TestErrorProp(unittest.TestCase):
 
     def setUp(self):
@@ -78,6 +79,7 @@ class TestErrorProp(unittest.TestCase):
         c, dc = EP.EPtan(1.1, 0.5)
         assert_array_almost_equal(1.9647596572486525, c)
         assert_array_almost_equal(2.430140255375921, dc)
+
 
 if __name__ == '__main__':
     unittest.main()

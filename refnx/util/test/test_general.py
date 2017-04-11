@@ -10,7 +10,7 @@ from numpy.testing import assert_almost_equal
 
 def test_version():
     # check that we can retrieve a version string
-    version = refnx.__version__
+    refnx.__version__
 
 
 class TestGeneral(unittest.TestCase):

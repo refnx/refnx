@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 from refnx.dataset import ReflectDataset
 
+
 def ref_plot(datasets):
     """
     Quickly plot a lot of datasets

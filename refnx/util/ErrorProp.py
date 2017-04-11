@@ -42,8 +42,8 @@ def EPdiv(a, da, b, db, covar=0):
     C = A / B
     """
     return (a / b,
-            np.sqrt(((da / b)**2 + ((a**2) * (db**2) / (b**4)))
-                    - (2 * covar * a / (b**3))))
+            np.sqrt(((da / b)**2 + ((a**2) * (db**2) / (b**4))) -
+                    (2 * covar * a / (b**3))))
 
 
 def EPpow(a, da, b, db, covar=0):
@@ -51,9 +51,9 @@ def EPpow(a, da, b, db, covar=0):
     C = A ** B
     """
     c = a ** b
-    dc = np.absolute(c) * np.sqrt(((da * b / a)**2)
-                                  + (np.log(a) * db)**2
-                                  + 2 * b * np.log(a) * covar / a)
+    dc = np.absolute(c) * np.sqrt(((da * b / a)**2) +
+                                  (np.log(a) * db)**2 +
+                                  2 * b * np.log(a) * covar / a)
     return c, dc
 
 
@@ -98,6 +98,7 @@ def EPcos(a, da):
     C = cos (A)
     """
     return np.cos(a), np.absolute(-np.sin(a) * da)
+
 
 def EPtan(a, da):
     """

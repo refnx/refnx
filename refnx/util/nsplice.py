@@ -38,12 +38,12 @@ def get_scaling_in_overlap(x0, y0, dy0, x1, y1, dy1):
     tx0 = x0[sort_arr0]
     ty0 = y0[sort_arr0]
     tdy0 = dy0[sort_arr0]
-    
+
     sort_arr1 = np.argsort(x1)
     tx1 = x1[sort_arr1]
     ty1 = y1[sort_arr1]
     tdy1 = dy1[sort_arr1]
-    
+
     # largest point number of x1 in overlap region
     num2 = tx1[tx1 < tx0[-1]].size
 
@@ -54,16 +54,16 @@ def get_scaling_in_overlap(x0, y0, dy0, x1, y1, dy1):
     # get the intensity of wave1 at an overlap point
     newi = np.interp(tx1[:num2], tx0, ty0)
     newdi = np.interp(tx1[:num2], tx0, tdy0)
-    
+
     w_scalefactor = newi / ty1[:num2]
-    w_dscalefactor = np.sqrt((newdi / ty1[:num2])**2
-                             + ((newi * tdy1[:num2])**2) / ty1[:num2]**4)
+    w_dscalefactor = np.sqrt((newdi / ty1[:num2])**2 +
+                             ((newi * tdy1[:num2])**2) / ty1[:num2]**4)
 
     w_dscalefactor = 1 / (w_dscalefactor**2)
-    
+
     num = np.sum(w_scalefactor * w_dscalefactor)
     den = np.sum(w_dscalefactor)
- 
+
     normal = num / den
     dnormal = np.sqrt(1 / den)
 
