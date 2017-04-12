@@ -145,7 +145,8 @@ info = {
         'install_requires': ['numpy', 'scipy'],
         'extras_require': {'all': ['IPython', 'ipywidgets', 'traitlets',
                                    'matplotlib', 'xlrd', 'h5py', 'tqdm',
-                                   'pymc3', 'theano', 'ptemcee', 'pandas']},
+                                   'pymc3', 'theano', 'ptemcee', 'pandas',
+                                   'pyparsing', 'periodictable', 'pyqt']},
         'tests_require': ['pytest', 'uncertainties'],
         'cmdclass': {'test': PyTest},
         }
