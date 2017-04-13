@@ -34,18 +34,29 @@ class Data1D(object):
 
     Attributes
     ----------
-    npoints : the number of points in the dataset
-    data : the data, (x, y, y_err, x_err)
-    finite_data : the data with mask applied
-    x : x data
-    y : y data
-    y_err : uncertainties on the y data
-    x_err : uncertainties on the x data
-
+    data : tuple of np.ndarray
+        The data, (x, y, y_err, x_err)
+    finite_data : tuple of np.ndarray
+        Data points that are finite
+    x : np.ndarray
+        x data
+    y : np.ndarray
+        y data
+    y_err : np.ndarray
+        uncertainties on the y data
+    x_err : np.ndarray
+        uncertainties on the x data
+    filename : str or None
+        The file the data was read from
+    weighted : bool
+        Whether the y data has uncertainties
+    metadata : dict
+        Information that should be retained with the dataset.
     """
-    def __init__(self, data=None):
+    def __init__(self, data=None, **kwds):
         self.filename = None
 
+        self.metadata = kwds
         self.x = np.zeros(0)
         self.y = np.zeros(0)
         self.y_err = np.zeros(0)
@@ -69,8 +80,7 @@ class Data1D(object):
             else:
                 self.x_err = np.zeros_like(self.x, dtype=float)
 
-    @property
-    def npoints(self):
+    def __len__(self):
         """
         the number of points in the dataset.
         """
@@ -178,7 +188,7 @@ class Data1D(object):
         # go through and stitch them together.
         scale = 1.
         dscale = 0.
-        if requires_splice and self.npoints > 1:
+        if requires_splice and len(self) > 1:
             scale, dscale, overlap_points = (
                 get_scaling_in_overlap(qq,
                                        rr,
