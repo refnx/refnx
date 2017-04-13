@@ -45,7 +45,7 @@ class ReflectDataset(Data1D):
         data : tuple of np.ndarray
             Specify the Q, R, dR, dQ data to construct the dataset from.
         """
-        super(ReflectDataset, self).__init__(data=data)
+        super(ReflectDataset, self).__init__(data=data, kwds)
         self.datafilenumber = list()
         self.sld_profile = None
 
