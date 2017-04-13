@@ -69,8 +69,7 @@ class Data1D(object):
             else:
                 self.x_err = np.zeros_like(self.x, dtype=float)
 
-    @property
-    def npoints(self):
+    def __len__(self):
         """
         the number of points in the dataset.
         """
@@ -178,7 +177,7 @@ class Data1D(object):
         # go through and stitch them together.
         scale = 1.
         dscale = 0.
-        if requires_splice and self.npoints > 1:
+        if requires_splice and len(self) > 1:
             scale, dscale, overlap_points = (
                 get_scaling_in_overlap(qq,
                                        rr,

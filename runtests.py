@@ -86,7 +86,7 @@ def main(argv):
 
     if not args.no_build:
         cwd = os.getcwd()
-        os.makedirs(test_dir)
+        os.makedirs(test_dir, exist_ok=True)
         os.chdir(test_dir)
 
         dst_dir, site_dir = build_project(args)
