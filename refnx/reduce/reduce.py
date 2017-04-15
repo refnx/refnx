@@ -6,7 +6,7 @@ from time import gmtime, strftime
 
 import numpy as np
 from refnx.reduce.platypusnexus import (PlatypusNexus, number_datafile,
-                                        Y_PIXEL_SPACING)
+                                        Y_PIXEL_SPACING, basename_datafile)
 from refnx.util import ErrorProp as EP
 import refnx.util.general as general
 from .parabolic_motion import (parabola_line_intersection_point,
@@ -79,8 +79,10 @@ class ReducePlatypus(object):
 
         if isinstance(direct, PlatypusNexus):
             self.direct_beam = direct
-        else:
+        elif type(direct) is str:
             direct = os.path.join(self.data_folder, direct)
+            self.direct_beam = PlatypusNexus(direct)
+        else:
             self.direct_beam = PlatypusNexus(direct)
 
         if reflect is not None:
@@ -127,6 +129,8 @@ class ReducePlatypus(object):
                 Specular Reflectivity, shape (N, T)
             - 'ydata_sd' : np.ndarray
                 Uncertainty in specular reflectivity (SD), shape (N, T)
+            - 'omega' : np.ndarray
+                Angle of incidence, shape (N, T)
             - 'm_ref' : np.ndarray
                 Offspecular reflectivity map, shape (N, T, Y)
             - 'm_ref_sd' : np.ndarray
@@ -137,8 +141,10 @@ class ReducePlatypus(object):
                 Qy for offspecular map, shape (N, T, Y)
             - 'n_spectra' : int
                 number of reflectivity spectra
-            - 'datafile_number': int
+            - 'datafile_number' : int
                 run number for the reflected beam
+            - 'fname' : list
+                the saved filenames
 
         N corresponds to the number of spectra
         T corresponds to the number of Q (wavelength) bins
@@ -155,8 +161,10 @@ class ReducePlatypus(object):
         # get the reflected beam spectrum
         if isinstance(reflect, PlatypusNexus):
             self.reflected_beam = reflect
-        else:
+        elif type(reflect) is str:
             reflect = os.path.join(self.data_folder, reflect)
+            self.reflected_beam = PlatypusNexus(reflect)
+        else:
             self.reflected_beam = PlatypusNexus(reflect)
 
         self.reflected_beam.process(**keywords)
@@ -411,6 +419,7 @@ class ReducePlatypus(object):
         reduction['xdata_sd'] = self.xdata_sd = xdata_sd
         reduction['ydata'] = self.ydata = ydata
         reduction['ydata_sd'] = self.ydata_sd = ydata_sd
+        reduction['omega'] = omega_corrected
         reduction['m_ref'] = self.m_ref = m_ref
         reduction['m_ref_sd'] = self.m_ref_sd = m_ref_sd
         reduction['qz'] = self.m_qz = qz
@@ -422,14 +431,19 @@ class ReducePlatypus(object):
 
         fnames = []
         if self.save:
+            datafilename = self.reflected_beam.datafilename
+            datafilename = os.path.basename(datafilename.split('.nx.hdf')[0])
+
             for i in range(n_spectra):
                 data_tup = self.data(scanpoint=i)
                 dataset = ReflectDataset(data_tup)
-                fname = 'PLP{0:07d}_{1}.dat'.format(self.datafile_number, i)
+
+                fname = '{0}_{1}.dat'.format(datafilename, i)
                 fnames.append(fname)
                 with open(fname, 'wb') as f:
                     dataset.save(f)
-                fname = 'PLP{0:07d}_{1}.xml'.format(self.datafile_number, i)
+
+                fname = '{0}_{1}.xml'.format(datafilename, i)
                 with open(fname, 'wb') as f:
                     dataset.save_xml(f,
                                      start_time=reduction['start_time'][i])
@@ -506,11 +520,17 @@ def reduce_stitch(reflect_list, direct_list, norm_file_num=None,
 
     fname = None
     if save:
-        fname = 'c_PLP{0:07d}.dat'.format(reflect_list[0])
-        with open(fname, 'wb') as f:
+        # this will give us <fname>.nx.hdf
+        # if reflect_list was an integer you'll get PLP0000708.nx.hdf
+        fname = number_datafile(reflect_list[0])
+        # now chop off .nx.hdf extension
+        fname = basename_datafile(fname)
+
+        fname_dat = 'c_{0}.dat'.format(fname)
+        with open(fname_dat, 'wb') as f:
             combined_dataset.save(f)
-        fname = 'c_PLP{0:07d}.xml'.format(reflect_list[0])
-        with open(fname, 'wb') as f:
+        fname_xml = 'c_{0}.xml'.format(fname)
+        with open(fname_xml, 'wb') as f:
             combined_dataset.save_xml(f)
 
     return combined_dataset, fname

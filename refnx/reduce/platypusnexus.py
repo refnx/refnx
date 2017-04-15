@@ -255,11 +255,49 @@ class Catalogue(object):
         return master, slave, speeds[0] / 60., phases[slave - 1]
 
 
+def basename_datafile(path):
+    """
+    Given a NeXUS path return the basename minus the file extension.
+    Parameters
+    ----------
+    path : str
+
+    Returns
+    -------
+    basename : str
+
+    Examples
+    --------
+    >>> basename_datafile('a/b/c.nx.hdf')
+    'c'
+    """
+    basename = os.path.basename(path)
+    return basename.split('.nx.hdf')[0]
+
+
 def number_datafile(run_number):
     """
-    From a run number figure out what the file name is.
+    Given a run number figure out what the file name is.
+    Given a file name, return the filename with the .nx.hdf extension
+
+    Parameters
+    ----------
+    run_number : int or str
+
+    Returns
+    -------
+    file_name : str
     """
-    return 'PLP{0:07d}.nx.hdf'.format(int(abs(run_number)))
+    try:
+        num = abs(int(run_number))
+        # you got given a run number
+        return 'PLP{0:07d}.nx.hdf'.format(num)
+    except ValueError:
+        # you may have been given full filename
+        if run_number.endswith('.nx.hdf'):
+            return run_number
+        else:
+            return run_number + '.nx.hdf'
 
 
 def datafile_number(fname):
@@ -312,7 +350,8 @@ class PlatypusNexus(object):
                 background=True, direct=False, omega=None, twotheta=None,
                 rebin_percent=1., wavelength_bins=None, normalise=True,
                 integrate=-1, eventmode=None, event_folder=None, peak_pos=None,
-                background_mask=None, normalise_bins=True, **kwds):
+                background_mask=None, normalise_bins=True,
+                manual_beam_find=None, **kwds):
         r"""
         Processes the ProcessNexus object to produce a time of flight spectrum.
         The processed spectrum is stored in the `processed_spectrum` attribute.
@@ -374,8 +413,15 @@ class PlatypusNexus(object):
             `event_folder is None` then the eventmode data is assumed to reside
             in the same directory as the NeXUS file. If event_folder is a
             string, then the string specifies the path to the eventmode data.
-        peak_pos : None or (float, float)
-            Specifies the peak position and peak standard deviation to use.
+        peak_pos : -1, None, or (float, float)
+            Options for fining specular peak position and peak standard
+            deviation.
+
+                -1             - use `manual_beam_find`.
+                None           - use the automatic beam finder, falling back to
+                                 `manual_beam_find` if it's provided.
+                (float, float) - specify the peak and peak standard deviation.
+
         background_mask : array_like
             An array of bool that specifies which y-pixels to use for
             background subtraction.  Should be the same length as the number of
@@ -385,6 +431,16 @@ class PlatypusNexus(object):
             Divides the intensity in each wavelength bin by the width of the
             bin. This allows one to compare spectra even if they were processed
             with different rebin percentages.
+        manual_beam_find : callable, optional
+            A function which allows the location of the specular ridge to be
+            determined. Has the signature `f(detector, detector_err)` where
+            `detector` and `detector_err` is the detector image and its
+            uncertainty. `detector` and `detector_err` have shape (n, t, y)
+            where `n` is the number of detector images, `t` is the number of
+            time of flight bins and `y` is the number of y pixels. The function
+            should return a tuple, `(centre, centre_sd)`. Each of these should
+            be arrays of shape `(n, )` and contain the beam centre and standard
+            deviation of peak width.
 
         Notes
         -----
@@ -583,15 +639,24 @@ class PlatypusNexus(object):
                                          lo_wavelength,
                                          hi_wavelength)
             detector, detector_sd, m_gravcorrcoefs = output
-            beam_centre, beam_sd = find_specular_ridge(detector, detector_sd)
-            # beam_centre = m_gravcorrcoefs
-        else:
-            beam_centre, beam_sd = find_specular_ridge(detector, detector_sd)
 
-        # you want to specify the specular ridge on the averaged detector image
-        if peak_pos is not None:
+        # where is the specular ridge?
+        if peak_pos == -1:
+            beam_centre, beam_sd = manual_beam_find(detector, detector_sd)
+        elif peak_pos is None:
+            # use the auto finder
+            beam_centre, beam_sd = find_specular_ridge(
+                detector,
+                detector_sd,
+                manual_beam_find=manual_beam_find)
+        else:
+            # the specular ridge has been specified
             beam_centre = np.ones(n_spectra) * peak_pos[0]
             beam_sd = np.ones(n_spectra) * peak_pos[1]
+
+        if np.size(beam_centre) != n_spectra:
+            raise RuntimeError('The number of beam centres should be equal'
+                               'to the number of detector images.')
 
         '''
         Rebinning in lambda for all detector
@@ -1032,6 +1097,12 @@ class PlatypusNexus(object):
             name
         scanpoint : int
             Which scanpoint to write
+
+        Returns
+        -------
+        processed : bool
+            If the file hasn't been processed then the `processed is False` and
+            vice versa
         """
         if self.processed_spectrum is None:
             return False
@@ -1250,10 +1321,9 @@ def background_subtract_line(profile, profile_sd, background_mask):
 
 
 def find_specular_ridge(detector, detector_sd, starting_offset=50,
-                        tol=0.01):
+                        tol=0.01, manual_beam_find=None):
     """
-    Find the specular ridges in a detector(n, t, y) plot. Assumes that the
-    specular ridge **does not** change position.
+    Find the specular ridges in a detector(n, t, y) plot.
 
     Parameters
     ----------
@@ -1263,11 +1333,21 @@ def find_specular_ridge(detector, detector_sd, starting_offset=50,
         standard deviations of detector array
     tol : float
         specifies threshold of fractional change for beam centre to be found
+    manual_beam_find : callable, optional
+        A function which allows the location of the specular ridge to be
+        determined, IFF the autodetection of specular ridge fails.
+        Has the signature `f(detector, detector_sd)`. `detector` and
+        `detector_sd` have shape (n, t, y) where `n` is the number of detector
+        images, `t` is the number of time of flight bins and `y` is the number
+        of y pixels. The function should return a tuple, `(centre, centre_sd)`.
+        Each of these should be arrays of shape `(n, )` and contain the beam
+        centre and standard deviation of peak width.
 
     Returns
     -------
-    centre, SD:
-        peak centres and standard deviations of peak width
+    centre, SD: np.ndarrays
+        peak centres and standard deviations of peak width,
+        `np.size(centre) == n`
     """
     beam_centre = np.zeros(np.size(detector, 0))
     beam_sd = np.zeros(np.size(detector, 0))
@@ -1316,6 +1396,9 @@ def find_specular_ridge(detector, detector_sd, starting_offset=50,
         if not converged:
             warnings.warn('specular ridge search did not work properly'
                           ' using last known centre', RuntimeWarning)
+            if manual_beam_find is not None:
+                last_centre, last_sd = manual_beam_find(detector[j],
+                                                        detector_sd[j])
 
         beam_centre[j] = last_centre
         beam_sd[j] = np.abs(last_sd)
@@ -1496,6 +1579,8 @@ def accumulate_HDF_files(files):
 
 
 def _check_HDF_file(h5data):
+    # If a file is an HDF5 file, then return the filename.
+    # otherwise return False
     if type(h5data) == h5py.File:
         return h5data.filename
     else:
