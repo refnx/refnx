@@ -288,7 +288,7 @@ def number_datafile(run_number):
     Returns
     -------
     file_name : str
-    
+
     Examples
     --------
     >>> number_datafile(708)
@@ -311,12 +311,12 @@ def number_datafile(run_number):
 def datafile_number(fname):
     """
     From a filename figure out what the run number was
-    
+
     Parameters
     ----------
     fname : str
         The filename to be processed
-       
+
     Returns
     -------
     run_number : int

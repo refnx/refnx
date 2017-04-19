@@ -12,10 +12,14 @@ class SlimWindow(QtWidgets.QMainWindow):
     """
     SLIM is an application for reducing neutron reflectometry data
     """
-    def __init__(self, parent=None):
+    def __init__(self, ui_loc, parent=None):
         super(SlimWindow, self).__init__(parent)
-        self.ui = uic.loadUi('ui/slim.ui', self)
-        self.reduction_options_dialog = uic.loadUi('ui/reduction_options.ui')
+        self.ui_loc = ui_loc
+
+        self.ui = uic.loadUi(os.path.join(ui_loc, 'slim.ui'), self)
+
+        self.reduction_options_dialog = uic.loadUi(
+            os.path.join(ui_loc, 'reduction_options.ui'))
 
         # reduction state contains all the file numbers to be reduced
         # and all the reduction options information. You could pickle this file
@@ -76,7 +80,7 @@ class SlimWindow(QtWidgets.QMainWindow):
         # if you're doing event mode you need to know how long
         # each time slice is
         if self._reduction_state.streamed_reduction:
-            dialog = uic.loadUi('ui/event.ui')
+            dialog = uic.loadUi(os.path.join(self.ui_loc, 'event.ui'))
             ok = dialog.exec_()
             if not ok:
                 return

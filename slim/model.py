@@ -71,14 +71,14 @@ class ReductionState(object):
         if self.output_directory:
             os.chdir(self.output_directory)
 
-        def full_path(fname):
-            f = os.path.join(self.data_directory, fname)
-            return f
-
         # if no data directory was specified then assume it's the cwd
         data_directory = self.data_directory
         if not data_directory:
             data_directory = './'
+
+        def full_path(fname):
+            f = os.path.join(data_directory, fname)
+            return f
 
         # if the streamed directory isn't mentioned then assume it's the same
         # as the data directory
@@ -100,10 +100,10 @@ class ReductionState(object):
 
         # sets up time slices for event reduction
         if self.streamed_reduction:
-           eventmode = np.arange(self.stream_start,
-                                 self.stream_end,
-                                 self.stream_duration)
-           eventmode = np.r_[eventmode, self.stream_end]
+            eventmode = np.arange(self.stream_start,
+                                  self.stream_end,
+                                  self.stream_duration)
+            eventmode = np.r_[eventmode, self.stream_end]
         else:
             eventmode = None
 
@@ -157,7 +157,7 @@ class ReductionState(object):
                 logging.info(
                     'Reduced {} vs {}, scale={}, angle={}'.format(
                         reflect, direct, val['scale'],
-                        reduced['omega'][0,0]))
+                        reduced['omega'][0, 0]))
 
                 if combined_dataset is None:
                     combined_dataset = ReflectDataset()
@@ -172,14 +172,14 @@ class ReductionState(object):
                                           requires_splice=True,
                                           trim_trailing=True)
 
-            # after you've finished reducing write a combined file.
-            with open(fname_dat, 'wb') as f:
-                combined_dataset.save(f)
-            with open(fname_xml, 'wb') as f:
-                combined_dataset.save_xml(f)
-            logging.info(
-                'Written combined files: {} and {}'.format(
-                    fname_dat, fname_xml))
+                # after you've finished reducing write a combined file.
+                with open(fname_dat, 'wb') as f:
+                    combined_dataset.save(f)
+                with open(fname_xml, 'wb') as f:
+                    combined_dataset.save_xml(f)
+                logging.info(
+                    'Written combined files: {} and {}'.format(
+                        fname_dat, fname_xml))
 
         logging.info('\nFinished reduction run'
                      '-------------------------------------------------------')
@@ -286,18 +286,18 @@ class ReductionTableModel(QtCore.QAbstractTableModel):
                 except ValueError:
                     save_value = 1
             else:
+                # you're editing reflect/direct beam names
                 try:
-                    if not value:
-                        return False
                     save_value = int(value)
                     save_value = number_datafile(save_value)
                 except ValueError:
-                    root, ext = os.path.splitext(value)
-                    if ext == '.nx.hdf':
-                        save_value = value
+                    if value:
+                        if value.endswith('.nx.hdf'):
+                            save_value = value
+                        else:
+                            save_value = value + '.nx.hdf'
                     else:
-                        save_value = value + '.nx.hdf'
-
+                        save_value = ''
             entry[attr_name] = save_value
 
         self.dataChanged.emit(index, index)
