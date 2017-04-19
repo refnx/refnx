@@ -1,0 +1,304 @@
+import os.path
+import os
+import logging
+
+from PyQt5 import QtCore
+import numpy as np
+
+from refnx._lib import preserve_cwd
+from refnx.dataset import ReflectDataset
+from refnx.reduce import (number_datafile, ReducePlatypus, basename_datafile,
+                          PlatypusNexus)
+
+
+reducer_entry = [('use', False), ('scale', 1.), ('reflect-1', ''),
+                 ('reflect-2', ''), ('reflect-3', ''), ('direct-1', ''),
+                 ('direct-2', ''), ('direct-3', ''), ('flood', '')]
+default_reducer_entry = {re[0]: re[1] for re in reducer_entry}
+
+
+class ReductionState(object):
+    """
+    Reduces multiple reflectometry datafiles. Attributes control how the
+    reduction proceeds.
+    """
+    def __init__(self, manual_beam_finder=None):
+        super(ReductionState, self).__init__()
+
+        # Each entry specifies the scale factor, whether the file is used for
+        # reduction and the reflected and direct beam runs
+        self.reduction_entries = {}
+
+        self.default_reduction_options = {
+            'low_wavelength': (2.5, float),
+            'high_wavelength': (19, float),
+            'rebin_percent': (2., float),
+            'expected_centre': (123., float),
+            'manual_beam_find': (False, bool),
+            'background_subtraction': (True, bool),
+            'monitor_normalisation': (True, bool),
+            'save_offspecular': (True, bool),
+            'save_spectrum': (True, bool),
+            'streamed_reduction': (False, bool)}
+
+        # the time slices for streamed reduction
+        self.stream_start = 0
+        self.stream_end = 3600
+        self.stream_duration = 30
+
+        # where the data, streamed data and output files are located
+        self.data_directory = ''
+        self.streamed_directory = ''
+        self.output_directory = ''
+
+        self.manual_beam_finder = manual_beam_finder
+
+        for attr, val in self.default_reduction_options.items():
+            setattr(self, attr, val[0])
+
+        self.peak_pos = (90, 5)
+
+        self.save_state_path = None
+
+    @preserve_cwd
+    def reducer(self):
+        """
+        Reduce all the entries in the reduction_entries
+        """
+
+        # refnx.reduce.reduce needs you to be in the directory where you're
+        # going to write files to
+        if self.output_directory:
+            os.chdir(self.output_directory)
+
+        # if no data directory was specified then assume it's the cwd
+        data_directory = self.data_directory
+        if not data_directory:
+            data_directory = './'
+
+        def full_path(fname):
+            f = os.path.join(data_directory, fname)
+            return f
+
+        # if the streamed directory isn't mentioned then assume it's the same
+        # as the data directory
+        streamed_directory = self.streamed_directory
+        if not os.path.isdir(streamed_directory):
+            self.streamed_directory = data_directory
+
+        logging.info('-------------------------------------------------------'
+                     '\nStarting reduction run')
+        logging.info(
+            'data_folder={data_directory}, trim_trailing=True, '
+            'lo_wavelength={low_wavelength}, '
+            'hi_wavelength={high_wavelength}, '
+            'rebin_percent={rebin_percent}, '
+            'normalise={monitor_normalisation}, '
+            'background={background_subtraction} '
+            'eventmode={streamed_reduction} '
+            'event_folder={streamed_directory}'.format(**self.__dict__))
+
+        # sets up time slices for event reduction
+        if self.streamed_reduction:
+            eventmode = np.arange(self.stream_start,
+                                  self.stream_end,
+                                  self.stream_duration)
+            eventmode = np.r_[eventmode, self.stream_end]
+        else:
+            eventmode = None
+
+        # are you manual beamfinding?
+        peak_pos = None
+        if (self.manual_beam_find and
+                self.manual_beam_finder is not None):
+            peak_pos = -1
+
+        for row, val in self.reduction_entries.items():
+            if not val['use']:
+                continue
+
+            flood = None
+            if val['flood']:
+                flood = val['flood']
+
+            combined_dataset = None
+
+            # process entries one by one
+            for ref, db in zip(['reflect-1', 'reflect-2', 'reflect-3'],
+                               ['direct-1', 'direct-2', 'direct-3']):
+                reflect = val[ref]
+                direct = val[db]
+
+                # if the file doesn't exist there's no point continuing
+                if ((not os.path.isfile(full_path(reflect))) or
+                        (not os.path.isfile(full_path(direct)))):
+                    continue
+
+                # TODO implement manual beamfinding
+                # which of the nspectra to reduce (or all)
+                ref_pn = PlatypusNexus(reflect)
+                reducer = ReducePlatypus(
+                    direct,
+                    data_folder=data_directory)
+
+                reduced = reducer(
+                    ref_pn, scale=val['scale'],
+                    norm_file_num=flood,
+                    lo_wavelength=self.low_wavelength,
+                    hi_wavelength=self.high_wavelength,
+                    rebin_percent=self.rebin_percent,
+                    normalise=self.monitor_normalisation,
+                    background=self.background_subtraction,
+                    manual_beam_find=self.manual_beam_finder,
+                    peak_pos=peak_pos,
+                    eventmode=eventmode,
+                    event_folder=streamed_directory)
+
+                logging.info(
+                    'Reduced {} vs {}, scale={}, angle={}'.format(
+                        reflect, direct, val['scale'],
+                        reduced['omega'][0, 0]))
+
+                if combined_dataset is None:
+                    combined_dataset = ReflectDataset()
+
+                    fname = basename_datafile(reflect)
+                    fname_dat = os.path.join(self.output_directory,
+                                             'c_{0}.dat'.format(fname))
+                    fname_xml = os.path.join(self.output_directory,
+                                             'c_{0}.xml'.format(fname))
+
+                combined_dataset.add_data(reducer.data(),
+                                          requires_splice=True,
+                                          trim_trailing=True)
+
+                # after you've finished reducing write a combined file.
+                with open(fname_dat, 'wb') as f:
+                    combined_dataset.save(f)
+                with open(fname_xml, 'wb') as f:
+                    combined_dataset.save_xml(f)
+                logging.info(
+                    'Written combined files: {} and {}'.format(
+                        fname_dat, fname_xml))
+
+        logging.info('\nFinished reduction run'
+                     '-------------------------------------------------------')
+
+
+class ReductionTableModel(QtCore.QAbstractTableModel):
+    '''
+        a model for displaying in a QtGui.QTableView
+    '''
+    def __init__(self, reduction_state, parent=None):
+        super(ReductionTableModel, self).__init__(parent)
+        self._reduction_state = reduction_state
+
+    @property
+    def reduction_state(self):
+        return self._reduction_state()
+
+    def rowCount(self, parent=QtCore.QModelIndex()):
+        return 200
+
+    def columnCount(self, parent=QtCore.QModelIndex()):
+        return len(reducer_entry)
+
+    def headerData(self, section, orientation, role=QtCore.Qt.DisplayRole):
+        """ Set the headers to be displayed. """
+        if role != QtCore.Qt.DisplayRole:
+            return None
+
+        if orientation == QtCore.Qt.Vertical:
+            return None
+
+        if orientation == QtCore.Qt.Horizontal:
+            return reducer_entry[section][0]
+
+        return None
+
+    def flags(self, index):
+        # row = index.row()
+        col = index.column()
+        if not col:
+            return (QtCore.Qt.ItemIsUserCheckable |
+                    QtCore.Qt.ItemIsEnabled)
+
+        return (QtCore.Qt.ItemIsEditable |
+                QtCore.Qt.ItemIsEnabled |
+                QtCore.Qt.ItemIsSelectable)
+
+    def data(self, index, role=QtCore.Qt.DisplayRole):
+        if not index.isValid():
+            return False
+
+        row = index.row()
+        col = index.column()
+
+        state = self.reduction_state
+        attr_name = reducer_entry[col][0]
+
+        if row in state.reduction_entries:
+            entry = state.reduction_entries[row]
+        else:
+            entry = default_reducer_entry
+
+        value = entry[attr_name]
+
+        if role == QtCore.Qt.CheckStateRole:
+            if not col and value:
+                return QtCore.Qt.Checked
+            elif not col:
+                return QtCore.Qt.Unchecked
+
+        if role == QtCore.Qt.DisplayRole and col:
+            if attr_name == 'scale':
+                return str(float(value))
+            else:
+                return value
+
+    def setData(self, index, value, role=QtCore.Qt.EditRole):
+        row = index.row()
+        col = index.column()
+
+        if not index.isValid():
+            return False
+
+        state = self.reduction_state
+        attr_name = reducer_entry[col][0]
+
+        if row in state.reduction_entries:
+            entry = state.reduction_entries[row]
+        else:
+            entry = {re[0]: re[1] for re in reducer_entry}
+            state.reduction_entries[row] = entry
+
+        if role == QtCore.Qt.CheckStateRole and col == 0:
+            entry['use'] = (value == QtCore.Qt.Checked)
+
+        if role == QtCore.Qt.EditRole:
+            if col == 0:
+                save_value = False
+                if value == QtCore.Qt.Checked:
+                    save_value = True
+            elif col == 1:
+                try:
+                    save_value = float(value)
+                except ValueError:
+                    save_value = 1
+            else:
+                # you're editing reflect/direct beam names
+                try:
+                    save_value = int(value)
+                    save_value = number_datafile(save_value)
+                except ValueError:
+                    if value:
+                        if value.endswith('.nx.hdf'):
+                            save_value = value
+                        else:
+                            save_value = value + '.nx.hdf'
+                    else:
+                        save_value = ''
+            entry[attr_name] = save_value
+
+        self.dataChanged.emit(index, index)
+        return True

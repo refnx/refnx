@@ -2,13 +2,14 @@ import unittest
 import os
 
 import refnx.reduce.platypusnexus as plp
-from refnx.reduce import ReducePlatypus, PlatypusNexus
+from refnx.reduce import ReducePlatypus, PlatypusNexus, basename_datafile
+from refnx.reduce.peak_utils import gauss
+from refnx._lib import TemporaryDirectory
+
 import numpy as np
 from numpy.testing import (assert_almost_equal, assert_, assert_equal,
                            assert_array_less, assert_allclose)
-from refnx.reduce.peak_utils import gauss
 import h5py
-from refnx._lib import TemporaryDirectory
 
 
 class TestPlatypusNexus(unittest.TestCase):
@@ -226,6 +227,29 @@ class TestPlatypusNexus(unittest.TestCase):
         reduced2 = reducer.reduce(os.path.join(self.path, 'PLP0000708.nx.hdf'))
 
         assert_(np.all(reduced['ydata_sd'] < reduced2['ydata_sd']))
+
+    def test_manual_beam_find(self):
+        # you can specify a function that finds where the specular ridge is.
+        def manual_beam_find(detector, detector_sd):
+            beam_centre = np.zeros(len(detector))
+            beam_sd = np.zeros(len(detector))
+            beam_centre += 50
+            beam_sd += 5
+            return beam_centre, beam_sd
+
+        # the manual beam find is only mandatory when peak_pos == -1.
+        self.f113.process(manual_beam_find=manual_beam_find,
+                          peak_pos=-1)
+        assert_equal(self.f113.processed_spectrum['m_beampos'][0],
+                     50)
+
+    def test_basename_datafile(self):
+        # check that the right basename is returned
+        pth = 'a/b/c.nx.hdf'
+        assert_(basename_datafile(pth) == 'c')
+
+        pth = 'c.nx.hdf'
+        assert_(basename_datafile(pth) == 'c')
 
 
 if __name__ == '__main__':

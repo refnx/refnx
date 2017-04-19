@@ -3,8 +3,27 @@ from __future__ import print_function
 import warnings as _warnings
 import os as _os
 import sys as _sys
-
+import functools
 from tempfile import mkdtemp
+
+
+def preserve_cwd(function):
+    """
+    Ensures that the original working directory is kept when exiting a function
+
+    Parameters
+    ----------
+    function : callable
+
+    """
+    @functools.wraps(function)
+    def decorator(*args, **kwargs):
+        cwd = _os.getcwd()
+        try:
+            return function(*args, **kwargs)
+        finally:
+            _os.chdir(cwd)
+    return decorator
 
 
 class TemporaryDirectory(object):

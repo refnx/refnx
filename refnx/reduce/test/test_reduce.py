@@ -3,7 +3,7 @@ import os
 import os.path
 
 from refnx.reduce import reduce_stitch, ReducePlatypus
-from numpy.testing import (assert_equal, assert_allclose)
+from numpy.testing import (assert_equal, assert_allclose, assert_)
 import xml.etree.ElementTree as ET
 from refnx._lib import TemporaryDirectory
 
@@ -39,6 +39,11 @@ class TestReduce(unittest.TestCase):
 
         # try reduction with the __call__ method
         a('PLP0000708.nx.hdf', data_folder=self.path, rebin_percent=4)
+
+        # this should also have saved a couple of files in the current
+        # directory
+        assert_(os.path.isfile('./PLP0000708_0.dat'))
+        assert_(os.path.isfile('./PLP0000708_0.xml'))
 
         # try writing offspecular data
         a.write_offspecular('offspec.xml', 0)
