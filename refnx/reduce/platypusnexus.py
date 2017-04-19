@@ -255,12 +255,12 @@ class Catalogue(object):
         return master, slave, speeds[0] / 60., phases[slave - 1]
 
 
-def basename_datafile(path):
+def basename_datafile(pth):
     """
     Given a NeXUS path return the basename minus the file extension.
     Parameters
     ----------
-    path : str
+    pth : str
 
     Returns
     -------
@@ -271,7 +271,8 @@ def basename_datafile(path):
     >>> basename_datafile('a/b/c.nx.hdf')
     'c'
     """
-    basename = os.path.basename(path)
+
+    basename = os.path.basename(pth)
     return basename.split('.nx.hdf')[0]
 
 
@@ -287,6 +288,13 @@ def number_datafile(run_number):
     Returns
     -------
     file_name : str
+    
+    Examples
+    --------
+    >>> number_datafile(708)
+    'PLP0000708.nx.hdf
+    >>> number_datafile('PLP0000708.nx.hdf')
+    'PLP0000708.nx.hdf'
     """
     try:
         num = abs(int(run_number))
@@ -303,7 +311,22 @@ def number_datafile(run_number):
 def datafile_number(fname):
     """
     From a filename figure out what the run number was
+    
+    Parameters
+    ----------
+    fname : str
+        The filename to be processed
+       
+    Returns
+    -------
+    run_number : int
+        The run number
+    Examples
+    --------
+    >>> datafile_number('PLP0000708.nx.hdf')
+    708
     """
+
     regex = re.compile(".*PLP([0-9]{7}).nx.hdf")
     _fname = os.path.basename(fname)
     r = regex.search(_fname)

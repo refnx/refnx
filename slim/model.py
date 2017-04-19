@@ -18,9 +18,15 @@ default_reducer_entry = {re[0]: re[1] for re in reducer_entry}
 
 
 class ReductionState(object):
+    """
+    Reduces multiple reflectometry datafiles. Attributes control how the
+    reduction proceeds.
+    """
     def __init__(self, manual_beam_finder=None):
         super(ReductionState, self).__init__()
 
+        # Each entry specifies the scale factor, whether the file is used for
+        # reduction and the reflected and direct beam runs
         self.reduction_entries = {}
 
         self.default_reduction_options = {
@@ -35,10 +41,12 @@ class ReductionState(object):
             'save_spectrum': (True, bool),
             'streamed_reduction': (False, bool)}
 
+        # the time slices for streamed reduction
         self.stream_start = 0
         self.stream_end = 3600
         self.stream_duration = 30
 
+        # where the data, streamed data and output files are located
         self.data_directory = ''
         self.streamed_directory = ''
         self.output_directory = ''
