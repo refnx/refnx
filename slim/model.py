@@ -1,3 +1,4 @@
+from __future__ import division
 import os.path
 import os
 import logging
@@ -61,9 +62,15 @@ class ReductionState(object):
         self.save_state_path = None
 
     @preserve_cwd
-    def reducer(self):
+    def reducer(self, callback=None):
         """
-        Reduce all the entries in the reduction_entries
+        Reduce all the entries in reduction_entries
+
+        Parameters
+        ----------
+        callback : callable
+            Function, `f(percent_finished)` that is called with the current
+            percentage progress of the reduction
         """
 
         # refnx.reduce.reduce needs you to be in the directory where you're
@@ -113,6 +120,7 @@ class ReductionState(object):
                 self.manual_beam_finder is not None):
             peak_pos = -1
 
+        idx = 0
         for row, val in self.reduction_entries.items():
             if not val['use']:
                 continue
@@ -172,6 +180,7 @@ class ReductionState(object):
                                           requires_splice=True,
                                           trim_trailing=True)
 
+            if combined_dataset is not None:
                 # after you've finished reducing write a combined file.
                 with open(fname_dat, 'wb') as f:
                     combined_dataset.save(f)
@@ -180,6 +189,13 @@ class ReductionState(object):
                 logging.info(
                     'Written combined files: {} and {}'.format(
                         fname_dat, fname_xml))
+
+            # can be used to create a progress bar
+            idx += 1
+            if callback is not None:
+                ok = callback(100 * idx / len(self.reduction_entries))
+                if not ok:
+                    break
 
         logging.info('\nFinished reduction run'
                      '-------------------------------------------------------')

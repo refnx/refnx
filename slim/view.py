@@ -88,8 +88,22 @@ class SlimWindow(QtWidgets.QMainWindow):
             self._reduction_state.stream_end = dialog.stop.value()
             self._reduction_state.stream_duration = dialog.duration.value()
 
+        # a progress dialog to show that reduction is occurring
+        progress = QtWidgets.QProgressDialog("Reducing files...",
+                                             "Cancel", 0, 100, self)
+        progress.setWindowModality(QtCore.Qt.WindowModal)
+        progress.setValue(0)
+
+        def callback(percent):
+            progress.setValue(percent)
+            if progress.wasCanceled():
+                return False
+            return True
+
         # the ReductionState object does the reduction
-        self._reduction_state.reducer()
+        self._reduction_state.reducer(callback=callback)
+
+        progress.setValue(100)
 
     @pyqtSlot()
     def on_reducer_variables_clicked(self):
