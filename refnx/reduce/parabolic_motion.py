@@ -99,7 +99,7 @@ def find_trajectory(flight_length, theta, speed):
     v = speed
     g = constants.g
 
-    num0 = (v ** 2 + np.sqrt(v ** 4 - g * (g * x ** 2 + 2 * y * v ** 2)))
+    # num0 = (v ** 2 + np.sqrt(v ** 4 - g * (g * x ** 2 + 2 * y * v ** 2)))
     num1 = (v ** 2 - np.sqrt(v ** 4 - g * (g * x ** 2 + 2 * y * v ** 2)))
     # there are two trajectories that could hit the target
     # we only need one branch.
