@@ -154,6 +154,14 @@ class PlatypusReduce(object):
         -----
         All the values returned from this method are also contained as instance
         attributes for this object.
+        
+        Examples
+        --------
+        
+        >>> from refnx.reduce import PlatypusReduce
+        >>> # set up with a direct beam
+        >>> reducer = PlatypusReduce('PLP0000711.nx.hdf')
+        >>> reduction = reducer.reduce('PLP0000708.nx.hdf', rebin_percent=3.)
         """
         keywords = kwds.copy()
         keywords['direct'] = False
