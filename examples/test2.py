@@ -61,5 +61,4 @@ for fit in fitted_parameters:
 fitter = reflect.ReflectivityFitFunction(xdata, ydata, parameters, edata=dydata,
                                     fcn_kws = {'dqvals': dxdata})
 
-
-%timeit fitter.model(parameters)
+fitter.model(parameters)
