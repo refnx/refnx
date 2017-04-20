@@ -154,10 +154,10 @@ class PlatypusReduce(object):
         -----
         All the values returned from this method are also contained as instance
         attributes for this object.
-        
+
         Examples
         --------
-        
+
         >>> from refnx.reduce import PlatypusReduce
         >>> # set up with a direct beam
         >>> reducer = PlatypusReduce('PLP0000711.nx.hdf')
@@ -541,7 +541,7 @@ def reduce_stitch(reflect_list, direct_list, norm_file_num=None,
         with open(fname_xml, 'wb') as f:
             combined_dataset.save_xml(f)
 
-    return combined_dataset, fname
+    return combined_dataset, fname_dat
 
 
 if __name__ == "__main__":
