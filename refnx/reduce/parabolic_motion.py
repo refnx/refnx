@@ -2,7 +2,6 @@ from __future__ import division
 import numpy as np
 from numpy.polynomial import Polynomial
 from scipy import constants
-from scipy.optimize import newton
 
 
 @np.vectorize
@@ -86,13 +85,28 @@ def find_trajectory(flight_length, theta, speed):
     theta_rad = np.radians(theta)
     vertical_deflection_vertex = np.tan(theta_rad) * flight_length
 
-    # now find trajectory that will put object through defined point
-    def traj(trajectory):
-        return (vertical_deflection_vertex -
-                y_deflection(trajectory, speed, flight_length))
+    # # now find trajectory that will put object through defined point
+    # def traj(trajectory):
+    #     return (vertical_deflection_vertex -
+    #             y_deflection(trajectory, speed, flight_length))
+    #
+    # trajectory = newton(traj, 0)
+    # return trajectory
 
-    trajectory = newton(traj, 0)
-    return trajectory
+    # https://en.wikipedia.org/wiki/Trajectory_of_a_projectile
+    x = flight_length
+    y = vertical_deflection_vertex
+    v = speed
+    g = constants.g
+
+    num0 = (v ** 2 + np.sqrt(v ** 4 - g * (g * x ** 2 + 2 * y * v ** 2)))
+    num1 = (v ** 2 - np.sqrt(v ** 4 - g * (g * x ** 2 + 2 * y * v ** 2)))
+    # there are two trajectories that could hit the target
+    # we only need one branch.
+    alpha1 = np.arctan2(num0, g * x)
+    alpha2 = np.arctan2(num1, g * x)
+
+    return np.degrees(alpha2)
 
 
 def parabola(initial_trajectory, speed):
