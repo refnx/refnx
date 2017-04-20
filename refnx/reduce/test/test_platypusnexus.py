@@ -2,7 +2,7 @@ import unittest
 import os
 
 import refnx.reduce.platypusnexus as plp
-from refnx.reduce import ReducePlatypus, PlatypusNexus, basename_datafile
+from refnx.reduce import PlatypusReduce, PlatypusNexus, basename_datafile
 from refnx.reduce.peak_utils import gauss
 from refnx._lib import TemporaryDirectory
 
@@ -217,7 +217,7 @@ class TestPlatypusNexus(unittest.TestCase):
         fadd.process()
 
         # it should also be reduceable
-        reducer = ReducePlatypus(os.path.join(self.path,
+        reducer = PlatypusReduce(os.path.join(self.path,
                                               'PLP0000711.nx.hdf'))
         reduced = reducer.reduce(os.path.join(os.getcwd(),
                                               'ADD_PLP0000708.nx.hdf'))

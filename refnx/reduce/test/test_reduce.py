@@ -2,7 +2,7 @@ import unittest
 import os
 import os.path
 
-from refnx.reduce import reduce_stitch, ReducePlatypus
+from refnx.reduce import reduce_stitch, PlatypusReduce
 from numpy.testing import (assert_equal, assert_allclose, assert_)
 import xml.etree.ElementTree as ET
 from refnx._lib import TemporaryDirectory
@@ -31,7 +31,7 @@ class TestReduce(unittest.TestCase):
 
     def test_reduction_method(self):
         # a quick smoke test to check that the reduction can occur
-        a = ReducePlatypus('PLP0000711.nx.hdf', data_folder=self.path,
+        a = PlatypusReduce('PLP0000711.nx.hdf', data_folder=self.path,
                            rebin_percent=4)
 
         # try reduction with the reduce method
@@ -51,7 +51,7 @@ class TestReduce(unittest.TestCase):
     def test_event_reduction(self):
         # check that eventmode reduction can occur, and that there are the
         # correct number of datasets produced.
-        a = ReducePlatypus(
+        a = PlatypusReduce(
             os.path.join(self.path, 'PLP0011613.nx.hdf'),
             reflect=os.path.join(self.path, 'PLP0011641.nx.hdf'),
             integrate=0, rebin_percent=2,
@@ -72,7 +72,7 @@ class TestReduce(unittest.TestCase):
         # assert_(t == '2012-01-20T22:05:32')
 
         # what happens if you have too many frame bins
-        a = ReducePlatypus(
+        a = PlatypusReduce(
             os.path.join(self.path, 'PLP0011613.nx.hdf'),
             reflect=os.path.join(self.path, 'PLP0011641.nx.hdf'),
             integrate=0, rebin_percent=2,

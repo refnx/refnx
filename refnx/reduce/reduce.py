@@ -35,7 +35,7 @@ spin="UNPOLARISED" dim="$_numpointsz:$_numpointsy">
 </REFroot>"""
 
 
-class ReducePlatypus(object):
+class PlatypusReduce(object):
     """
     Reduces Platypus reflectometer data to give the specular reflectivity.
     Offspecular data maps are also produced.
@@ -507,7 +507,7 @@ def reduce_stitch(reflect_list, direct_list, norm_file_num=None,
         direct_datafile = os.path.join(data_folder,
                                        number_datafile(val[1]))
 
-        reduced = ReducePlatypus(direct_datafile,
+        reduced = PlatypusReduce(direct_datafile,
                                  reflect=reflect_datafile,
                                  save=save,
                                  **kwds)

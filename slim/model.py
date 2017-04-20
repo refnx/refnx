@@ -8,7 +8,7 @@ import numpy as np
 
 from refnx._lib import preserve_cwd
 from refnx.dataset import ReflectDataset
-from refnx.reduce import (number_datafile, ReducePlatypus, basename_datafile,
+from refnx.reduce import (number_datafile, PlatypusReduce, basename_datafile,
                           PlatypusNexus)
 
 
@@ -145,7 +145,7 @@ class ReductionState(object):
                 # TODO implement manual beamfinding
                 # which of the nspectra to reduce (or all)
                 ref_pn = PlatypusNexus(reflect)
-                reducer = ReducePlatypus(
+                reducer = PlatypusReduce(
                     direct,
                     data_folder=data_directory)
 
