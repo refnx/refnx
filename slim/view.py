@@ -130,24 +130,51 @@ class SlimWindow(QtWidgets.QMainWindow):
 
     @pyqtSlot()
     def on_change_data_directory_clicked(self):
-        dir = QtWidgets.QFileDialog.getExistingDirectory(self)
-        if dir:
-            self.ui.data_directory.setText(dir)
-            self._reduction_state.data_directory = dir
+        directory = QtWidgets.QFileDialog.getExistingDirectory(self)
+        if directory:
+            self.ui.data_directory.setText(directory)
+            self._reduction_state.data_directory = directory
+
+    @pyqtSlot()
+    def on_data_directory_editingFinished(self):
+        directory = self.ui.data_directory.text()
+        if os.path.isdir(directory):
+            self._reduction_state.data_directory = directory
+        else:
+            self.ui.data_directory.setText(
+                self._reduction_state.data_directory)
 
     @pyqtSlot()
     def on_change_streamed_directory_clicked(self):
-        dir = QtWidgets.QFileDialog.getExistingDirectory(self)
-        if dir:
-            self.ui.streamed_directory.setText(dir)
-            self._reduction_state.streamed_directory = dir
+        directory = QtWidgets.QFileDialog.getExistingDirectory(self)
+        if directory:
+            self.ui.streamed_directory.setText(directory)
+            self._reduction_state.streamed_directory = directory
+
+    @pyqtSlot()
+    def on_streamed_directory_editingFinished(self):
+        directory = self.ui.streamed_directory.text()
+        if os.path.isdir(directory):
+            self._reduction_state.streamed_directory = directory
+        else:
+            self.ui.streamed_directory.setText(
+                self._reduction_state.streamed_directory)
 
     @pyqtSlot()
     def on_change_output_directory_clicked(self):
-        dir = QtWidgets.QFileDialog.getExistingDirectory(self)
-        if dir:
-            self.ui.output_directory.setText(dir)
-            self._reduction_state.output_directory = dir
+        directory = QtWidgets.QFileDialog.getExistingDirectory(self)
+        if directory:
+            self.ui.output_directory.setText(directory)
+            self._reduction_state.output_directory = directory
+
+    @pyqtSlot()
+    def on_output_directory_editingFinished(self):
+        directory = self.ui.output_directory.text()
+        if os.path.isdir(directory):
+            self._reduction_state.output_directory = directory
+        else:
+            self.output_directory.setText(
+                self._reduction_state.output_directory)
 
     @pyqtSlot()
     def on_actionSave_triggered(self):
