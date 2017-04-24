@@ -7,19 +7,18 @@ matrix:
         - os: linux
           env: PY=2.7
         - os: linux
-          env: PY=3.4
-        - os: linux
           env: PY=3.5
+        - os: linux
+          env: PY=3.6
         - os: osx
           language: generic
           env: PY=2.7
         - os: osx
           language: generic
-          env: PY=3.4
+          env: PY=3.5
         - os: osx
           language: generic
-          env: PY=3.5
-
+          env: PY=3.6
 addons:
     apt:
         packages:
