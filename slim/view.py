@@ -6,6 +6,7 @@ import logging
 from PyQt5 import QtCore, QtWidgets, uic
 from PyQt5.QtCore import pyqtSlot
 from model import ReductionTableModel, ReductionState
+from manual_beam_finder import ManualBeamFinder
 
 
 class SlimWindow(QtWidgets.QMainWindow):
@@ -21,10 +22,14 @@ class SlimWindow(QtWidgets.QMainWindow):
         self.reduction_options_dialog = uic.loadUi(
             os.path.join(ui_loc, 'reduction_options.ui'))
 
+        # the manual beam finder instance
+        self.manual_beam_finder = ManualBeamFinder(ui_loc)
+
         # reduction state contains all the file numbers to be reduced
         # and all the reduction options information. You could pickle this file
         # to save the state of the program
-        self._reduction_state = ReductionState()
+        self._reduction_state = ReductionState(
+            manual_beam_finder=self.manual_beam_finder)
 
         self.ReductionTable = ReductionTableModel(self.reduction_state,
                                                   parent=self)
@@ -70,6 +75,9 @@ class SlimWindow(QtWidgets.QMainWindow):
                                              QtCore.QModelIndex())
 
         self._reduction_state = state
+
+        # just use default manual beam finder dialog
+        self._reduction_state.manual_beam_finder = self.manual_beam_finder
 
     @pyqtSlot()
     def on_reduce_clicked(self):
