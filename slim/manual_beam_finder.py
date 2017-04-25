@@ -23,7 +23,7 @@ matplotlib.use('Qt5Agg')
 
 class ManualBeamFinder(QtWidgets.QDialog):
     """
-    Manual specular beam finding dialogue 
+    Manual specular beam finding dialogue
     """
     def __init__(self, ui_loc=''):
         """
@@ -64,14 +64,14 @@ class ManualBeamFinder(QtWidgets.QDialog):
     def __call__(self, detector, detector_err):
         """
         Start the manual beam find
-        
+
         Parameters
         ----------
         detector : np.ndarray
             detector image
         detector_err: np.ndarray
             uncertainties (sd) associated with detector image
-            
+
         Returns
         -------
         beam_centre, beam_sd : float, float
