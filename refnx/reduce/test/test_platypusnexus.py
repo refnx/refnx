@@ -1,9 +1,12 @@
 import unittest
 import os
+import numbers
 
 import refnx.reduce.platypusnexus as plp
 from refnx.reduce import PlatypusReduce, PlatypusNexus, basename_datafile
 from refnx.reduce.peak_utils import gauss
+from refnx.reduce.platypusnexus import (fore_back_region, EXTENT_MULT,
+                                        PIXEL_OFFSET)
 from refnx._lib import TemporaryDirectory
 
 import numpy as np
@@ -79,7 +82,7 @@ class TestPlatypusNexus(unittest.TestCase):
         detector_sd = np.sqrt(detector)
         output = plp.find_specular_ridge(detector[np.newaxis, :],
                                          detector_sd[np.newaxis, :])
-        assert_(len(output) == 2)
+        assert_(len(output) == 5)
         assert_almost_equal(output[0][0], 100)
 
     def test_background_subtract(self):
@@ -235,13 +238,49 @@ class TestPlatypusNexus(unittest.TestCase):
             beam_sd = np.zeros(len(detector))
             beam_centre += 50
             beam_sd += 5
-            return beam_centre, beam_sd
+            return beam_centre, beam_sd, np.array([40]), np.array([60]), [[]]
 
         # the manual beam find is only mandatory when peak_pos == -1.
         self.f113.process(manual_beam_find=manual_beam_find,
                           peak_pos=-1)
-        assert_equal(self.f113.processed_spectrum['m_beampos'][0],
-                     50)
+        assert_equal(self.f113.processed_spectrum['m_beampos'][0], 50)
+
+        # manual beam finding also specifies the lower and upper pixel of the
+        # foreground
+        assert_equal(self.f113.processed_spectrum['lopx'][0], 40)
+        assert_equal(self.f113.processed_spectrum['hipx'][0], 60)
+
+    def test_fore_back_region(self):
+        # calculation of foreground and background regions is done correctly
+        centres = np.array([100., 90.])
+        sd = np.array([5., 11.5])
+        lopx, hipx, background_pixels = fore_back_region(centres, sd)
+
+        assert_(len(lopx) == 2)
+        assert_(len(hipx) == 2)
+        assert_(len(background_pixels) == 2)
+        assert_(isinstance(lopx[0], numbers.Integral))
+        assert_(isinstance(hipx[0], numbers.Integral))
+
+        calc_lower = np.floor(centres - sd * EXTENT_MULT)
+        assert_equal(lopx, calc_lower)
+        calc_higher = np.ceil(centres + sd * EXTENT_MULT)
+        assert_equal(hipx, calc_higher)
+
+        y1 = np.atleast_1d(
+            np.round(lopx - PIXEL_OFFSET).astype('int'))
+        y0 = np.atleast_1d(
+            np.round(lopx - PIXEL_OFFSET - EXTENT_MULT * sd).astype('int'))
+
+        y2 = np.atleast_1d(
+            np.round(hipx + PIXEL_OFFSET).astype('int'))
+        y3 = np.atleast_1d(
+            np.round(hipx + PIXEL_OFFSET + EXTENT_MULT * sd).astype('int'))
+
+        bp = np.r_[np.arange(y0[0], y1[0] + 1),
+                   np.arange(y2[0], y3[0] + 1)]
+
+        assert_equal(bp, background_pixels[0])
 
     def test_basename_datafile(self):
         # check that the right basename is returned

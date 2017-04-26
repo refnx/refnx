@@ -461,9 +461,14 @@ class PlatypusNexus(object):
             uncertainty. `detector` and `detector_err` have shape (n, t, y)
             where `n` is the number of detector images, `t` is the number of
             time of flight bins and `y` is the number of y pixels. The function
-            should return a tuple, `(centre, centre_sd)`. Each of these should
-            be arrays of shape `(n, )` and contain the beam centre and standard
-            deviation of peak width.
+            should return a tuple,
+            `(centre, centre_sd, lopx, hipx, background_pixels)`. `centre`,
+            `centre_sd`, `lopx`, `hipx` should be arrays of shape `(n, )`,
+            specifying the beam centre, beam width (standard deviation), lowest
+            pixel of foreground region, highest pixel of foreground region.
+            `background_pixels` is a list of length `n`. Each of the entries
+            should contain arrays of pixel numbers that specify the background
+            region for each of the detector images.
 
         Notes
         -----
@@ -665,17 +670,33 @@ class PlatypusNexus(object):
 
         # where is the specular ridge?
         if peak_pos == -1:
-            beam_centre, beam_sd = manual_beam_find(detector, detector_sd)
+            # you always want to find the beam manually
+            ret = manual_beam_find(detector, detector_sd)
+            beam_centre, beam_sd, lopx, hipx, bp = ret
+
+            full_backgnd_mask = np.zeros_like(detector, dtype=bool)
+            for i, v in enumerate(bp):
+                full_backgnd_mask[i, :, v] = True
+
         elif peak_pos is None:
-            # use the auto finder
-            beam_centre, beam_sd = find_specular_ridge(
-                detector,
-                detector_sd,
-                manual_beam_find=manual_beam_find)
+            # use the auto finder, falling back to manual_beam_find
+            ret = find_specular_ridge(detector,
+                                      detector_sd,
+                                      manual_beam_find=manual_beam_find)
+            beam_centre, beam_sd, lopx, hipx, full_backgnd_mask = ret
         else:
             # the specular ridge has been specified
             beam_centre = np.ones(n_spectra) * peak_pos[0]
             beam_sd = np.ones(n_spectra) * peak_pos[1]
+            lopx, hipx, bp = fore_back_region(beam_centre,
+                                              beam_sd)
+
+            full_backgnd_mask = np.zeros_like(detector, dtype=bool)
+            for i, v in enumerate(bp):
+                full_backgnd_mask[i, :, v] = True
+
+        lopx = lopx.astype(int)
+        hipx = hipx.astype(int)
 
         if np.size(beam_centre) != n_spectra:
             raise RuntimeError('The number of beam centres should be equal'
@@ -747,10 +768,6 @@ class PlatypusNexus(object):
         m_spec_tof = (0.001 * flight_distance[:, np.newaxis] /
                       general.wavelength_velocity(m_lambda))
 
-        # we want to integrate over the following pixel region
-        lopx = np.floor(beam_centre - beam_sd * EXTENT_MULT).astype('int')
-        hipx = np.ceil(beam_centre + beam_sd * EXTENT_MULT).astype('int')
-
         m_spec = np.zeros((n_spectra, np.size(detector, 1)))
         m_spec_sd = np.zeros_like(m_spec)
 
@@ -766,19 +783,6 @@ class PlatypusNexus(object):
                 full_backgnd_mask = np.repeat(backgnd_mask[np.newaxis, :],
                                               n_spectra,
                                               axis=0)
-            else:
-                # there may be different background regions for each spectrum
-                # in the file
-                y1 = np.round(lopx - PIXEL_OFFSET).astype('int')
-                y0 = np.round(y1 - (EXTENT_MULT * beam_sd)).astype('int')
-
-                y2 = np.round(hipx + PIXEL_OFFSET).astype('int')
-                y3 = np.round(y2 + (EXTENT_MULT * beam_sd)).astype('int')
-
-                full_backgnd_mask = np.zeros_like(detector, dtype='bool')
-                for i in range(n_spectra):
-                    full_backgnd_mask[i, :, y0[i]: y1[i]] = True
-                    full_backgnd_mask[i, :, y2[i] + 1: y3[i] + 1] = True
 
             # TODO: Correlated Uncertainties?
             detector, detector_sd = background_subtract(detector,
@@ -1286,11 +1290,21 @@ def background_subtract_line(profile, profile_sd, background_mask):
     background_mask : array_like
         array of bool that specifies which Y pixels to use for background
         subtraction.
+
+    Returns
+    -------
+    profile_subt, profile_subt_err : np.ndarray, np.ndarray
+        Background subtracted profile and its uncertainty
     """
 
     # which values to use as a background region
     mask = np.array(background_mask).astype('bool')
     x_vals = np.where(mask)[0]
+
+    if np.size(x_vals) < 2:
+        # can't do a background subtraction if you have less than 2 points in
+        # the background
+        return profile, profile_sd
 
     try:
         y_vals = profile[x_vals]
@@ -1362,18 +1376,34 @@ def find_specular_ridge(detector, detector_sd, starting_offset=50,
         Has the signature `f(detector, detector_sd)`. `detector` and
         `detector_sd` have shape (n, t, y) where `n` is the number of detector
         images, `t` is the number of time of flight bins and `y` is the number
-        of y pixels. The function should return a tuple, `(centre, centre_sd)`.
-        Each of these should be arrays of shape `(n, )` and contain the beam
-        centre and standard deviation of peak width.
+        of y pixels. The function should return a tuple,
+        `(centre, centre_sd, lopx, hipx, background_pixels)`. `centre`,
+        `centre_sd`, `lopx`, `hipx` should be arrays of shape `(n, )`,
+        specifying the beam centre, beam width (standard deviation), lowest
+        pixel of foreground region, highest pixel of foreground region.
+        `background_pixels` is a list of length `n`. Each of the entries
+        should contain arrays of pixel numbers that specify the background
+        region for each of the detector images.
 
     Returns
     -------
-    centre, SD: np.ndarrays
-        peak centres and standard deviations of peak width,
-        `np.size(centre) == n`
+    centre, SD, lopx, hipx, background_mask : np.ndarrays
+        peak centre, standard deviation of peak width, lowest pixel to be
+        included from background region, highest pixel to be included from
+        background region, array specifying points to be used for background
+        subtraction
+        `np.size(centre) == n`.
     """
     beam_centre = np.zeros(np.size(detector, 0))
-    beam_sd = np.zeros(np.size(detector, 0))
+    beam_sd = np.zeros_like(beam_centre)
+
+    # lopx and hipx specify the foreground region to integrate over
+    lopx = np.zeros_like(beam_centre, dtype=int)
+    hipx = np.zeros_like(beam_centre, dtype=int)
+
+    # background mask specifies which pixels are background
+    background_mask = np.zeros_like(detector, dtype=bool)
+
     search_increment = 50
 
     starting_offset = abs(starting_offset)
@@ -1381,6 +1411,7 @@ def find_specular_ridge(detector, detector_sd, starting_offset=50,
     n_increments = ((np.size(detector, 1) - starting_offset) //
                     search_increment)
 
+    # we want to integrate over the following pixel region
     for j in range(np.size(detector, 0)):
         last_centre = -1.
         last_sd = -1.
@@ -1399,7 +1430,6 @@ def find_specular_ridge(detector, detector_sd, starting_offset=50,
 
             # find the centroid and gauss peak in the last sections of the TOF
             # plot
-
             try:
                 centroid, gauss_peak = ut.peak_finder(y_cross,
                                                       sigma=y_cross_sd)
@@ -1420,13 +1450,69 @@ def find_specular_ridge(detector, detector_sd, starting_offset=50,
             warnings.warn('specular ridge search did not work properly'
                           ' using last known centre', RuntimeWarning)
             if manual_beam_find is not None:
-                last_centre, last_sd = manual_beam_find(detector[j],
-                                                        detector_sd[j])
+                ret = manual_beam_find(detector[j], detector_sd[j])
+                beam_centre[j], beam_sd[j], lopx[j], hipx[j], bp = ret
+                background_mask[j, :, bp[0]] = True
+
+                # don't assign to beam_centre, etc, at the end of this loop
+                continue
 
         beam_centre[j] = last_centre
         beam_sd[j] = np.abs(last_sd)
+        lp, hp, bp = fore_back_region(beam_centre[j], beam_sd[j])
+        lopx[j] = lp
+        hipx[j] = hp
+        background_mask[j, :, bp[0]] = True
 
-    return beam_centre, beam_sd
+    return beam_centre, beam_sd, lopx, hipx, background_mask
+
+
+def fore_back_region(beam_centre, beam_sd):
+    """
+    Calculates the fore and background regions based on the beam centre and
+    width
+
+    Parameters
+    ----------
+    beam_centre : float
+        beam_centre
+    beam_sd : float
+        beam width (standard deviation)
+
+    Returns
+    -------
+    lopx, hipx, background_pixels: float, float, list
+        Lowest pixel of foreground region
+        Highest pixel of foreground region
+        Pixels that are in the background region
+        Each of these should have `len(lopx) == len(beam_centre)`
+    """
+    _b_centre = np.array(beam_centre)
+    _b_sd = np.array(beam_sd)
+
+    lopx = np.floor(_b_centre - _b_sd * EXTENT_MULT).astype('int')
+    hipx = np.ceil(_b_centre + _b_sd * EXTENT_MULT).astype('int')
+
+    background_pixels = []
+
+    # limit of background regions
+    # from refnx.reduce.platypusnexus
+    y1 = np.atleast_1d(
+        np.round(lopx - PIXEL_OFFSET).astype('int'))
+    y0 = np.atleast_1d(
+        np.round(lopx - PIXEL_OFFSET - (EXTENT_MULT * _b_sd)).astype('int'))
+
+    y2 = np.atleast_1d(
+        np.round(hipx + PIXEL_OFFSET).astype('int'))
+    y3 = np.atleast_1d(
+        np.round(hipx + PIXEL_OFFSET + (EXTENT_MULT * _b_sd)).astype('int'))
+
+    # now generate background pixels
+    for i in range(np.size(y0)):
+        background_pixels.append(np.r_[np.arange(y0[i], y1[i] + 1),
+                                       np.arange(y2[i], y3[i] + 1)])
+
+    return lopx, hipx, background_pixels
 
 
 def correct_for_gravity(detector, detector_sd, lamda, coll_distance,

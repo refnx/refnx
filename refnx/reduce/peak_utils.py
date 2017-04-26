@@ -128,6 +128,7 @@ def peak_finder(y, x=None, sigma=None):
         popt = gauss_fit(p0, x, y)
     except RuntimeError:
         # if we can't find a centre return the centroid
+        popt = p0
         popt[2:4] = expected_centre, expected_centre
 
     return np.array([expected_centre, expected_SD]), popt[2:4]
