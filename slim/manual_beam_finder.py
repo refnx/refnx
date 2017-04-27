@@ -72,15 +72,27 @@ class ManualBeamFinder(QtWidgets.QDialog):
         Parameters
         ----------
         detector : np.ndarray
-            detector image
+            detector image. Shape `(N, T, Y)` or `(T, Y)`. If N > 1 then only
+            the first image is processed
         detector_err: np.ndarray
             uncertainties (sd) associated with detector image
 
         Returns
         -------
-        beam_centre, beam_sd : float, float
-            Beam centre and standard deviation
+        beam_centre, beam_sd, lopx, hipx, background_pixels :
+            np.ndarray, np.ndarray, np.ndarray, np.ndarray, list of np.ndarray
+
+            Beam centre, standard deviation, lowest pixel in foreground region,
+            highest pixel in foreground region, each of the entries in
+            `background_pixels` is an array specifying pixels that are in the
+            background region.
         """
+        # assume that the ndim is 2 or 3.
+        # only process the first detector image (N = 0).
+        if detector.ndim > 2:
+            self.detector = detector[0]
+            self.detector_err = detector_err[0]
+
         self.detector = detector
         self.detector_err = detector_err
 
@@ -340,7 +352,7 @@ class DetectorImage(FigureCanvas):
         self.axes.clear()
 
         # want the first colour to be white
-        disp = np.copy(detector[0])
+        disp = np.copy(detector)
         disp[disp == 0.0] = np.nan
 
         self.axes.imshow(disp.T,
