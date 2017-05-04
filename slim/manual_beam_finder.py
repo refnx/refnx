@@ -521,7 +521,7 @@ class Cross_Section(FigureCanvas):
             new_loc = int(round(loc + dx))
 
             # TODO make sure lopx and high px cant cross
-            # TODO recalc backgrounds and beam centre after button release
+            # TODO recalc backgrounds and beam centre after plot_button release
             # TODO make sure background can't cross foreground
             # TODO connect Manual_beam_finder object to listen to changes
             # (on release)
