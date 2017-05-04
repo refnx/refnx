@@ -1,0 +1,110 @@
+
+from PyQt5.QtWidgets import QDialog, QPushButton, QVBoxLayout
+from PyQt5 import QtWidgets
+from PyQt5.QtCore import pyqtSlot
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
+from matplotlib.figure import Figure
+
+import numpy as np
+from refnx.dataset import ReflectDataset
+
+
+class SlimPlotWindow(QDialog):
+    def __init__(self, parent=None):
+        super(SlimPlotWindow, self).__init__(parent)
+
+        # a figure instance to plot on
+        self.figure = Figure()
+
+        # this is the Canvas Widget that displays the `figure`
+        # it takes the `figure` instance as a parameter to __init__
+        self.canvas = FigureCanvas(self.figure)
+
+        # this is the Navigation widget
+        # it takes the Canvas widget and a parent
+        self.toolbar = NavigationToolbar(self.canvas, self)
+
+        # Just some plot_button connected to `plot` method
+        self.plot_button = QPushButton('Plot')
+        self.plot_button.clicked.connect(self.plot)
+
+        self.refresh_button = QPushButton('Refresh')
+        self.refresh_button.clicked.connect(self.refresh)
+
+        # set the layout
+        layout = QVBoxLayout()
+        layout.addWidget(self.toolbar)
+        layout.addWidget(self.canvas)
+        layout.addWidget(self.plot_button)
+        layout.addWidget(self.refresh_button)
+        self.setLayout(layout)
+
+        self.files_displayed = {}
+        self.data_directory = '~/'
+
+    def refresh(self):
+        # refresh a dataset (may have been re-reduced)
+        for k, v in self.files_displayed.items():
+            dataset = v[0]
+            line = v[1]
+            dataset.refresh()
+            self.adjustErrbarxy(line, *dataset.data[0:3])
+        self.canvas.draw()
+
+    @pyqtSlot(str)
+    def data_directory_changed(self, directory):
+        self.data_directory = directory
+
+    def plot(self, files_to_display=False):
+        if not files_to_display:
+            files = QtWidgets.QFileDialog.getOpenFileNames(
+                self,
+                "Select reflectometry data files to plot",
+                directory=self.data_directory,
+                filter='Reflectometry files (*.xml)')
+            files_to_display = files[0]
+
+        if not files_to_display:
+            # could've cancelled the file dialogue
+            return
+
+        # instead of ax.hold(False)
+        self.figure.clear()
+
+        # create an axis
+        ax = self.figure.add_subplot(111)
+
+        displayed = {}
+
+        # load each file and display it
+        for file in files_to_display:
+            dataset = ReflectDataset(file)
+
+            # plot data
+            line = ax.errorbar(*dataset.data[0:3], label=dataset.name)
+
+            displayed[dataset.name] = (dataset, line)
+
+        # add legend and plot log-lin
+        ax.legend()
+        ax.set_yscale('log')
+
+        self.files_displayed = displayed
+
+        # refresh canvas
+        self.canvas.draw()
+
+    def adjustErrbarxy(self, errobj, x, y, y_error):
+        """for adjusting error bar plot with updated data"""
+
+        # caplines and barsy have len > 1 if xerrors are displayed
+        ln, caplines, barsy = errobj
+        x_base = x
+        y_base = y
+
+        yerr_top = y_base + y_error
+        yerr_bot = y_base - y_error
+
+        new_segments_y = [np.array([[x, yt], [x,yb]]) for x, yt, yb in zip(x_base, yerr_top, yerr_bot)]
+        barsy[0].set_segments(new_segments_y)

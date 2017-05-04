@@ -7,6 +7,7 @@ from PyQt5 import QtCore, QtWidgets, uic
 from PyQt5.QtCore import pyqtSlot
 from model import ReductionTableModel, ReductionState
 from manual_beam_finder import ManualBeamFinder
+from plot import SlimPlotWindow
 
 
 class SlimWindow(QtWidgets.QMainWindow):
@@ -34,6 +35,10 @@ class SlimWindow(QtWidgets.QMainWindow):
         self.ReductionTable = ReductionTableModel(self.reduction_state,
                                                   parent=self)
         self.ui.file_list.setModel(self.ReductionTable)
+
+        # a plot window for displaying datasets
+        self._plot = SlimPlotWindow(self)
+        self.output_directory.textChanged.connect(self._plot.data_directory_changed)
 
     def reduction_state(self):
         return self._reduction_state
@@ -82,7 +87,7 @@ class SlimWindow(QtWidgets.QMainWindow):
     @pyqtSlot()
     def on_reduce_clicked(self):
         """
-        Performs a reduction in response to the reduce button being clicked
+        Performs a reduction in response to the reduce plot_button being clicked
         """
 
         # if you're doing event mode you need to know how long
@@ -231,3 +236,7 @@ class SlimWindow(QtWidgets.QMainWindow):
                         self.set_state(state)
                 except pickle.UnpicklingError:
                     pass
+
+    @pyqtSlot()
+    def on_plot_clicked(self):
+        self._plot.show()

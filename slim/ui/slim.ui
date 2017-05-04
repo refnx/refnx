@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>992</width>
-    <height>644</height>
+    <width>879</width>
+    <height>602</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -29,35 +29,35 @@
       </property>
      </widget>
     </item>
-    <item row="0" column="1" colspan="2">
+    <item row="0" column="1">
      <widget class="QLineEdit" name="data_directory">
       <property name="enabled">
        <bool>true</bool>
       </property>
      </widget>
     </item>
-    <item row="0" column="3">
+    <item row="0" column="2">
      <widget class="QPushButton" name="change_data_directory">
       <property name="text">
        <string>change</string>
       </property>
      </widget>
     </item>
-    <item row="1" column="0" colspan="2">
+    <item row="1" column="0">
      <widget class="QLabel" name="label_3">
       <property name="text">
        <string>streamed data directory</string>
       </property>
      </widget>
     </item>
-    <item row="1" column="2">
+    <item row="1" column="1">
      <widget class="QLineEdit" name="streamed_directory">
       <property name="enabled">
        <bool>true</bool>
       </property>
      </widget>
     </item>
-    <item row="1" column="3">
+    <item row="1" column="2">
      <widget class="QPushButton" name="change_streamed_directory">
       <property name="text">
        <string>change</string>
@@ -71,34 +71,31 @@
       </property>
      </widget>
     </item>
-    <item row="2" column="1" colspan="2">
+    <item row="2" column="1">
      <widget class="QLineEdit" name="output_directory">
       <property name="enabled">
        <bool>true</bool>
       </property>
      </widget>
     </item>
-    <item row="2" column="3">
+    <item row="2" column="2">
      <widget class="QPushButton" name="change_output_directory">
       <property name="text">
        <string>change</string>
       </property>
      </widget>
     </item>
-    <item row="3" column="0" colspan="4">
+    <item row="3" column="0" colspan="3">
      <widget class="QPushButton" name="reducer_variables">
       <property name="text">
        <string>reducer options</string>
       </property>
      </widget>
     </item>
-    <item row="4" column="0" colspan="4">
+    <item row="4" column="0" colspan="3">
      <widget class="QTableView" name="file_list">
       <property name="verticalScrollBarPolicy">
        <enum>Qt::ScrollBarAlwaysOn</enum>
-      </property>
-      <property name="sizeAdjustPolicy">
-       <enum>QAbstractScrollArea::AdjustToContents</enum>
       </property>
       <attribute name="horizontalHeaderCascadingSectionResizes">
        <bool>true</bool>
@@ -111,12 +108,12 @@
       </attribute>
      </widget>
     </item>
-    <item row="5" column="0" colspan="4">
+    <item row="5" column="0" colspan="3">
      <widget class="QPushButton" name="reduce">
       <property name="minimumSize">
        <size>
         <width>0</width>
-        <height>60</height>
+        <height>40</height>
        </size>
       </property>
       <property name="palette">
@@ -157,7 +154,57 @@
        </palette>
       </property>
       <property name="text">
-       <string>reduce</string>
+       <string>Reduce</string>
+      </property>
+     </widget>
+    </item>
+    <item row="6" column="0" colspan="3">
+     <widget class="QPushButton" name="plot">
+      <property name="minimumSize">
+       <size>
+        <width>0</width>
+        <height>40</height>
+       </size>
+      </property>
+      <property name="palette">
+       <palette>
+        <active>
+         <colorrole role="Button">
+          <brush brushstyle="SolidPattern">
+           <color alpha="255">
+            <red>255</red>
+            <green>80</green>
+            <blue>88</blue>
+           </color>
+          </brush>
+         </colorrole>
+        </active>
+        <inactive>
+         <colorrole role="Button">
+          <brush brushstyle="SolidPattern">
+           <color alpha="255">
+            <red>255</red>
+            <green>80</green>
+            <blue>88</blue>
+           </color>
+          </brush>
+         </colorrole>
+        </inactive>
+        <disabled>
+         <colorrole role="Button">
+          <brush brushstyle="SolidPattern">
+           <color alpha="255">
+            <red>255</red>
+            <green>80</green>
+            <blue>88</blue>
+           </color>
+          </brush>
+         </colorrole>
+        </disabled>
+       </palette>
+      </property>
+      <property name="text">
+       <string>Plot</string>
       </property>
      </widget>
     </item>
@@ -168,7 +215,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>992</width>
+     <width>879</width>
      <height>22</height>
     </rect>
    </property>
@@ -200,6 +247,11 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+L</string>
+   </property>
+  </action>
+  <action name="actionPlot">
+   <property name="text">
+    <string>plot</string>
    </property>
   </action>
  </widget>
