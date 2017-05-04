@@ -1,5 +1,6 @@
+import sys
 
-from PyQt5.QtWidgets import QDialog, QPushButton, QVBoxLayout
+from PyQt5.QtWidgets import QDialog, QPushButton, QVBoxLayout, QApplication
 from PyQt5 import QtWidgets
 from PyQt5.QtCore import pyqtSlot
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
@@ -54,15 +55,25 @@ class SlimPlotWindow(QDialog):
 
     @pyqtSlot(str)
     def data_directory_changed(self, directory):
+        """
+        This receives a signal from the main slim window to notify
+        when the data directory was changed
+        """
         self.data_directory = directory
 
     def plot(self, files_to_display=False):
+        """
+        Parameters
+        ----------
+        files_to_display : sequence of str
+            filenames to display in the plot window
+        """
         if not files_to_display:
             files = QtWidgets.QFileDialog.getOpenFileNames(
                 self,
                 "Select reflectometry data files to plot",
                 directory=self.data_directory,
-                filter='Reflectometry files (*.xml)')
+                filter='Reflectometry files (*.xml *.dat)')
             files_to_display = files[0]
 
         if not files_to_display:
@@ -108,3 +119,10 @@ class SlimPlotWindow(QDialog):
 
         new_segments_y = [np.array([[x, yt], [x,yb]]) for x, yt, yb in zip(x_base, yerr_top, yerr_bot)]
         barsy[0].set_segments(new_segments_y)
+
+
+if __name__ == '__main__':
+    app = QApplication(sys.argv)
+    ex = SlimPlotWindow()
+    ex.show()
+    sys.exit(app.exec_())
