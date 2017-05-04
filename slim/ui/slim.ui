@@ -97,9 +97,6 @@
       <property name="verticalScrollBarPolicy">
        <enum>Qt::ScrollBarAlwaysOn</enum>
       </property>
-      <property name="sizeAdjustPolicy">
-       <enum>QAbstractScrollArea::AdjustToContents</enum>
-      </property>
       <attribute name="horizontalHeaderCascadingSectionResizes">
        <bool>true</bool>
       </attribute>
@@ -157,7 +154,7 @@
        </palette>
       </property>
       <property name="text">
-       <string>reduce</string>
+       <string>Reduce</string>
       </property>
      </widget>
     </item>
@@ -207,7 +204,7 @@
        </palette>
       </property>
       <property name="text">
-       <string>plot</string>
+       <string>Plot</string>
       </property>
      </widget>
     </item>
