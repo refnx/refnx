@@ -61,8 +61,11 @@ class TestReflectDataset(unittest.TestCase):
 
     def test_load_dat_with_header(self):
         # check that the file load works with a header
-        ReflectDataset(os.path.join(path, 'c_PLP0000708_header.dat'))
-        ReflectDataset(os.path.join(path, 'c_PLP0000708_header2.dat'))
+        a = ReflectDataset(os.path.join(path, 'c_PLP0000708.dat'))
+        b = ReflectDataset(os.path.join(path, 'c_PLP0000708_header.dat'))
+        c = ReflectDataset(os.path.join(path, 'c_PLP0000708_header2.dat'))
+        assert_equal(len(a), len(b))
+        assert_equal(len(a), len(c))
 
     def test_construction(self):
         # test we can construct a dataset directly from a file.
