@@ -3,8 +3,10 @@ A basic representation of a 1D dataset
 """
 from __future__ import division
 
-import numpy as np
 import os.path
+import re
+
+import numpy as np
 
 from refnx.util.nsplice import get_scaling_in_overlap
 
@@ -242,7 +244,31 @@ class Data1D(object):
         f : file-handle or string
             File to load the dataset from.
         """
-        self.data = np.loadtxt(f, unpack=True)
+        # see if there are header rows
+        close_file = False
+        try:
+            g = open(f, 'rb')
+            close_file = True
+        except TypeError:
+            # if you're already a file then you'll get a type error
+            g = f
+        finally:
+            header_lines = 0
+            for i, line in enumerate(g):
+                try:
+                    nums = [float(tok) for tok in
+                            re.split('\s|,', line.decode('utf-8'))
+                            if len(tok)]
+                    if len(nums) >= 2:
+                        header_lines = i
+                        break
+                except ValueError:
+                    continue
+            if close_file:
+                g.close()
+
+        self.data = np.loadtxt(f, unpack=True, skiprows=header_lines)
+
         if hasattr(f, 'read'):
             fname = f.name
         else:
