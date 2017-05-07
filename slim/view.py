@@ -104,7 +104,9 @@ class SlimWindow(QtWidgets.QMainWindow):
         # a progress dialog to show that reduction is occurring
         progress = QtWidgets.QProgressDialog("Reducing files...",
                                              "Cancel", 0, 100, self)
-        progress.setWindowModality(QtCore.Qt.WindowModal)
+        progress.setWindowModality(QtCore.Qt.ApplicationModal)
+        progress.show()
+        progress.raise_()
         progress.setValue(0)
 
         def callback(percent):
