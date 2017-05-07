@@ -121,6 +121,9 @@ class ReductionState(object):
             peak_pos = -1
 
         idx = 0
+
+        cached_direct_beams = {}
+
         for row, val in self.reduction_entries.items():
             if not val['use']:
                 continue
@@ -142,12 +145,15 @@ class ReductionState(object):
                         (not os.path.isfile(full_path(direct)))):
                     continue
 
-                # TODO implement manual beamfinding
                 # which of the nspectra to reduce (or all)
                 ref_pn = PlatypusNexus(reflect)
-                reducer = PlatypusReduce(
-                    direct,
-                    data_folder=data_directory)
+
+                if direct not in cached_direct_beams:
+                    cached_direct_beams[direct] = PlatypusReduce(
+                        direct,
+                        data_folder=data_directory)
+
+                reducer = cached_direct_beams[direct]
 
                 reduced = reducer(
                     ref_pn, scale=val['scale'],

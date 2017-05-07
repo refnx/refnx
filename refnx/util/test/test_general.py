@@ -5,7 +5,7 @@ import refnx.util.general as general
 import refnx
 import numpy as np
 import os
-from numpy.testing import assert_almost_equal
+from numpy.testing import assert_almost_equal, assert_
 
 
 def test_version():
@@ -37,6 +37,20 @@ class TestGeneral(unittest.TestCase):
     def test_angle(self):
         angle = general.angle(0.1096567037, 2.)
         assert_almost_equal(angle, 1.)
+
+    def test_dict_compare(self):
+        c = {'f': np.arange(10)}
+        d = {'f': np.arange(10)}
+
+        assert_(general._dict_compare(c, d))
+
+        d = {'f': np.arange(11)}
+        assert_(not general._dict_compare(c, d))
+
+        d = {'f': 2}
+        assert_(not general._dict_compare(c, d))
+
+        assert_(general._dict_compare({'a': 1}, {'a': 1}))
 
 
 if __name__ == '__main__':

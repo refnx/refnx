@@ -660,3 +660,41 @@ def slit_optimiser(footprint,
         print('_____________________________________________')
 
     return d1, d2
+
+
+def _dict_compare(d1, d2):
+    """
+    Rudimentary check to see if two dict are the same. This won't do recursive
+    checking (e.g. if items in d1 or d2 are dicts)
+
+    Parameters
+    ----------
+    d1 : dict
+    d2 : dict
+
+    Returns
+    -------
+    truth : bool
+        Are two dicts the same
+    """
+    if len(d1) != len(d2):
+        return False
+
+    d1_keys = set(d1.keys())
+    d2_keys = set(d2.keys())
+    intersect_keys = d1_keys.intersection(d2_keys)
+    if len(intersect_keys) != len(d1):
+        return False
+
+    for o in intersect_keys:
+        if (isinstance(d1[o], np.ndarray) and
+                isinstance(d2[o], np.ndarray)):
+            # both numpy arrays
+            if not np.array_equal(d1[o], d2[o]):
+                return False
+            continue
+
+        if not isinstance(d1[o], d2[o].__class__) or d1[o] != d2[o]:
+            return False
+
+    return True

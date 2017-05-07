@@ -13,7 +13,7 @@ import numpy as np
 import h5py
 from . import peak_utils as ut
 import refnx.util.general as general
-from refnx.util.general import resolution_double_chopper
+from refnx.util.general import resolution_double_chopper, _dict_compare
 import refnx.util.ErrorProp as EP
 from . import parabolic_motion as pm
 from . import event, rebin
@@ -353,13 +353,18 @@ class PlatypusNexus(object):
         """
         Initialises the PlatypusNexus object.
         """
-        if type(h5data) == h5py.File:
+        if type(h5data) is h5py.File:
             self.cat = Catalogue(h5data)
         else:
             with h5py.File(h5data, 'r') as h5data:
                 self.cat = Catalogue(h5data)
 
         self.processed_spectrum = dict()
+
+        # _arguments is a dict that contains all the parameters used to call
+        # `process`. If the arguments don't change then you shouldn't need to
+        # call process again, thereby saving time.
+        self._arguments = {}
 
     def __getattr__(self, item):
         if item in self.__dict__:
@@ -368,6 +373,25 @@ class PlatypusNexus(object):
             return self.processed_spectrum[item]
         else:
             raise AttributeError
+
+    def __short_circuit_process(self, _arguments):
+        """
+        Returns the truth that two sets of arguments from successive calls to
+        the `process` method are the same.
+
+        Parameters
+        ----------
+        _arguments : dict
+            arguments passed to the `process` method
+
+        Returns
+        -------
+        val : bool
+            Truth that __arguments is the same as self.__arguments
+        """
+        _arguments.pop('self', None)
+
+        return _dict_compare(_arguments, self._arguments)
 
     def process(self, h5norm=None, lo_wavelength=2.5, hi_wavelength=19.,
                 background=True, direct=False, omega=None, twotheta=None,
@@ -437,7 +461,7 @@ class PlatypusNexus(object):
             in the same directory as the NeXUS file. If event_folder is a
             string, then the string specifies the path to the eventmode data.
         peak_pos : -1, None, or (float, float)
-            Options for fining specular peak position and peak standard
+            Options for finding specular peak position and peak standard
             deviation.
 
                 -1             - use `manual_beam_find`.
@@ -502,6 +526,21 @@ class PlatypusNexus(object):
             Arrays containing the wavelength, specular intensity as a function
             of wavelength, standard deviation of specular intensity
         """
+
+        # it can be advantageous to save processing time if the arguments
+        # haven't changed
+        _arguments = locals().copy()
+        _arguments.pop('_arguments', None)
+        _arguments.pop('self', None)
+        # if you've already processed, then you may not need to process again
+        if (self.processed_spectrum and
+                self.__short_circuit_process(_arguments)):
+            return (self.processed_spectrum['m_lambda'],
+                    self.processed_spectrum['m_spec'],
+                    self.processed_spectrum['m_spec_sd'])
+        else:
+            self._arguments = _arguments
+
         cat = self.cat
 
         scanpoint = 0

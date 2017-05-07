@@ -163,10 +163,20 @@ class PlatypusReduce(object):
         >>> reducer = PlatypusReduce('PLP0000711.nx.hdf')
         >>> reduction = reducer.reduce('PLP0000708.nx.hdf', rebin_percent=3.)
         """
-        keywords = kwds.copy()
-        keywords['direct'] = False
+        reflect_keywords = kwds.copy()
+        direct_keywords = kwds.copy()
+
+        # get the direct beam spectrum
+        direct_keywords['direct'] = True
+        direct_keywords['integrate'] = -1
+
+        if 'eventmode' in direct_keywords:
+            direct_keywords.pop('eventmode')
+
+        self.direct_beam.process(**direct_keywords)
 
         # get the reflected beam spectrum
+        reflect_keywords['direct'] = False
         if isinstance(reflect, PlatypusNexus):
             self.reflected_beam = reflect
         elif type(reflect) is str:
@@ -175,19 +185,11 @@ class PlatypusReduce(object):
         else:
             self.reflected_beam = PlatypusNexus(reflect)
 
-        self.reflected_beam.process(**keywords)
+        # Got to use the same wavelength bins as the direct spectrum.
+        # done this way around to save processing direct beam over and over
+        reflect_keywords['wavelength_bins'] = self.direct_beam.m_lambda_hist[0]
 
-        # get the direct beam spectrum
-        keywords['direct'] = True
-        keywords['integrate'] = -1
-
-        if 'eventmode' in keywords:
-            keywords.pop('eventmode')
-
-        # got to use the same wavelength bins as the reflected spectrum.
-        keywords['wavelength_bins'] = self.reflected_beam.m_lambda_hist[0]
-
-        self.direct_beam.process(**keywords)
+        self.reflected_beam.process(**reflect_keywords)
 
         self.save = save
         reduction = self._reduce_single_angle(scale)
