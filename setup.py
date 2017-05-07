@@ -21,7 +21,7 @@ if idx >= 0:
 MAJOR = 0
 MINOR = 0
 MICRO = 7
-ISRELEASED = True
+ISRELEASED = False
 VERSION = '%d.%d.%d' % (MAJOR, MINOR, MICRO)
 
 
