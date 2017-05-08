@@ -20,7 +20,7 @@ if idx >= 0:
 # versioning
 MAJOR = 0
 MINOR = 0
-MICRO = 7
+MICRO = 9
 ISRELEASED = False
 VERSION = '%d.%d.%d' % (MAJOR, MINOR, MICRO)
 
