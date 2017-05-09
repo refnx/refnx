@@ -15,20 +15,24 @@ else:
 
 class TestEvent(unittest.TestCase):
 
-    def setUp(self):
-        path = os.path.dirname(__file__)
-        self.path = path
-        self.event_file_path = os.path.join(path,
-                                            'DAQ_2012-01-19T15-45-52',
-                                            'DATASET_0',
-                                            'EOS.bin')
+    @classmethod
+    def setUpClass(cls):
+        path = os.path.dirname(os.path.realpath(__file__))
+        cls.event_file_path = os.path.join(path,
+                                           'DAQ_2012-01-19T15-45-52',
+                                           'DATASET_0',
+                                           'EOS.bin')
 
-        with open(self.event_file_path, 'rb') as f:
+        with open(cls.event_file_path, 'rb') as f:
             event_list, fpos = event._events(f)
 
-        self.event_list = event_list
-        self.fpos = fpos
-        self.f, self.t, self.y, self.x = event_list
+        cls.event_list = event_list
+        cls.fpos = fpos
+        cls.f, cls.t, cls.y, cls.x = event_list
+
+    def setUp(self):
+        path = os.path.dirname(os.path.realpath(__file__))
+        self.path = path
 
     def test_num_events(self):
         assert_equal(1056618, self.x.size)

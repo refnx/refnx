@@ -18,7 +18,7 @@ import h5py
 class TestPlatypusNexus(unittest.TestCase):
 
     def setUp(self):
-        path = os.path.dirname(__file__)
+        path = os.path.dirname(os.path.realpath(__file__))
         self.path = path
 
         self.f113 = PlatypusNexus(os.path.join(self.path,
