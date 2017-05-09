@@ -6,7 +6,7 @@ import refnx.reduce.xray as xray
 class TestXray(unittest.TestCase):
 
     def setUp(self):
-        path = os.path.dirname(__file__)
+        path = os.path.dirname(os.path.realpath(__file__))
         self.path = path
 
         return 0

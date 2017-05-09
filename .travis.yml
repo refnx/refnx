@@ -22,10 +22,6 @@ matrix:
 addons:
     apt:
         packages:
-            - libatlas-dev
-            - libatlas-base-dev
-            - liblapack-dev
-            - gfortran
             - libhdf5-serial-dev
 
 before_install:
@@ -44,10 +40,13 @@ before_install:
     # Useful for debugging any issues with conda
     - conda info -a
 
-    - conda install --yes python=$PY numpy scipy nose h5py cython pandas xlrd flake8
+    - conda create --yes -n conda-refnx python=$PY
+    - source activate conda-refnx
+    - conda install --yes numpy scipy nose h5py cython pandas xlrd flake8
+    - pip install emcee uncertainties lmfit
+
     # gradually expand flake8 to all of codebase
     - flake8 --ignore=F401 refnx
-    - pip install emcee uncertainties lmfit
 
 
 install:
