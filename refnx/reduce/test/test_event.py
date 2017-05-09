@@ -19,9 +19,9 @@ class TestEvent(unittest.TestCase):
     def setUpClass(cls):
         path = os.path.dirname(os.path.realpath(__file__))
         cls.event_file_path = os.path.join(path,
-                                       'DAQ_2012-01-19T15-45-52',
-                                       'DATASET_0',
-                                       'EOS.bin')
+                                           'DAQ_2012-01-19T15-45-52',
+                                           'DATASET_0',
+                                           'EOS.bin')
 
         with open(cls.event_file_path, 'rb') as f:
             event_list, fpos = event._events(f)
