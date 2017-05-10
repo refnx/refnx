@@ -89,12 +89,12 @@ class ManualBeamFinder(QtWidgets.QDialog):
         """
         # assume that the ndim is 2 or 3.
         # only process the first detector image (N = 0).
+        self.detector = detector
+        self.detector_err = detector_err
+        
         if detector.ndim > 2:
             self.detector = detector[0]
             self.detector_err = detector_err[0]
-
-        self.detector = detector
-        self.detector_err = detector_err
 
         self.recalculate_graphs()
 
