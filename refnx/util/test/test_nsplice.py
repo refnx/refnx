@@ -57,6 +57,7 @@ class TestNSplice(unittest.TestCase):
                                                                 self.drv1)
         assert_(not np.isfinite(scale))
         assert_(not np.isfinite(dscale))
+        assert_equal(np.size(overlap, 0), 0)
 
     def test_nsplice_notsorted(self):
         # test splicing of two datasets if there's no sorting

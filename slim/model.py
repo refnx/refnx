@@ -155,18 +155,24 @@ class ReductionState(object):
 
                 reducer = cached_direct_beams[direct]
 
-                reduced = reducer(
-                    ref_pn, scale=val['scale'],
-                    norm_file_num=flood,
-                    lo_wavelength=self.low_wavelength,
-                    hi_wavelength=self.high_wavelength,
-                    rebin_percent=self.rebin_percent,
-                    normalise=self.monitor_normalisation,
-                    background=self.background_subtraction,
-                    manual_beam_find=self.manual_beam_finder,
-                    peak_pos=peak_pos,
-                    eventmode=eventmode,
-                    event_folder=streamed_directory)
+                try:
+                    reduced = reducer(
+                        ref_pn, scale=val['scale'],
+                        norm_file_num=flood,
+                        lo_wavelength=self.low_wavelength,
+                        hi_wavelength=self.high_wavelength,
+                        rebin_percent=self.rebin_percent,
+                        normalise=self.monitor_normalisation,
+                        background=self.background_subtraction,
+                        manual_beam_find=self.manual_beam_finder,
+                        peak_pos=peak_pos,
+                        eventmode=eventmode,
+                        event_folder=streamed_directory)
+                except Exception as e:
+                    # typical Exception would be ValueError for non overlapping
+                    # angles
+                    logging.info(e)
+                    continue
 
                 logging.info(
                     'Reduced {} vs {}, scale={}, angle={}'.format(
@@ -182,9 +188,14 @@ class ReductionState(object):
                     fname_xml = os.path.join(self.output_directory,
                                              'c_{0}.xml'.format(fname))
 
-                combined_dataset.add_data(reducer.data(),
-                                          requires_splice=True,
-                                          trim_trailing=True)
+                try:
+                    combined_dataset.add_data(reducer.data(),
+                                              requires_splice=True,
+                                              trim_trailing=True)
+                except ValueError as e:
+                    # datasets don't overlap
+                    logging.info(e)
+                    continue
 
             if combined_dataset is not None:
                 # after you've finished reducing write a combined file.
