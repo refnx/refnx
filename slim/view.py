@@ -38,7 +38,8 @@ class SlimWindow(QtWidgets.QMainWindow):
 
         # a plot window for displaying datasets
         self._plot = SlimPlotWindow(self)
-        self.output_directory.textChanged.connect(self._plot.data_directory_changed)
+        self.output_directory.textChanged.connect(
+            self._plot.data_directory_changed)
 
     def reduction_state(self):
         return self._reduction_state
@@ -87,7 +88,8 @@ class SlimWindow(QtWidgets.QMainWindow):
     @pyqtSlot()
     def on_reduce_clicked(self):
         """
-        Performs a reduction in response to the reduce plot_button being clicked
+        Performs a reduction in response to the reduce plot_button being
+        clicked
         """
 
         # if you're doing event mode you need to know how long

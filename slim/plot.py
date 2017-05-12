@@ -3,8 +3,10 @@ import sys
 from PyQt5.QtWidgets import QDialog, QPushButton, QVBoxLayout, QApplication
 from PyQt5 import QtWidgets
 from PyQt5.QtCore import pyqtSlot
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
+from matplotlib.backends.backend_qt5agg import (FigureCanvasQTAgg as
+                                                FigureCanvas)
+from matplotlib.backends.backend_qt5agg import (NavigationToolbar2QT as
+                                                NavigationToolbar)
 from matplotlib.figure import Figure
 
 import numpy as np
@@ -21,6 +23,7 @@ class SlimPlotWindow(QDialog):
         # this is the Canvas Widget that displays the `figure`
         # it takes the `figure` instance as a parameter to __init__
         self.canvas = FigureCanvas(self.figure)
+        self.ax = None
 
         # this is the Navigation widget
         # it takes the Canvas widget and a parent
@@ -51,6 +54,13 @@ class SlimPlotWindow(QDialog):
             line = v[1]
             dataset.refresh()
             self.adjustErrbarxy(line, *dataset.data[0:3])
+
+        if self.ax is not None:
+            # recompute the ax.dataLim
+            self.ax.relim()
+            # update ax.viewLim using the new dataLim
+            self.ax.autoscale_view()
+
         self.canvas.draw()
 
     @pyqtSlot(str)
@@ -84,7 +94,7 @@ class SlimPlotWindow(QDialog):
         self.figure.clear()
 
         # create an axis
-        ax = self.figure.add_subplot(111)
+        self.ax = self.figure.add_subplot(111)
 
         displayed = {}
 
@@ -93,13 +103,13 @@ class SlimPlotWindow(QDialog):
             dataset = ReflectDataset(file)
 
             # plot data
-            line = ax.errorbar(*dataset.data[0:3], label=dataset.name)
+            line = self.ax.errorbar(*dataset.data[0:3], label=dataset.name)
 
             displayed[dataset.name] = (dataset, line)
 
         # add legend and plot log-lin
-        ax.legend()
-        ax.set_yscale('log')
+        self.ax.legend()
+        self.ax.set_yscale('log')
 
         self.files_displayed = displayed
 
@@ -117,8 +127,10 @@ class SlimPlotWindow(QDialog):
         yerr_top = y_base + y_error
         yerr_bot = y_base - y_error
 
-        new_segments_y = [np.array([[x, yt], [x,yb]]) for x, yt, yb in zip(x_base, yerr_top, yerr_bot)]
+        new_segments_y = [np.array([[x, yt], [x, yb]]) for
+                          x, yt, yb in zip(x_base, yerr_top, yerr_bot)]
         barsy[0].set_segments(new_segments_y)
+        ln.set_data(x, y)
 
 
 if __name__ == '__main__':

@@ -91,7 +91,7 @@ class ManualBeamFinder(QtWidgets.QDialog):
         # only process the first detector image (N = 0).
         self.detector = detector
         self.detector_err = detector_err
-        
+
         if detector.ndim > 2:
             self.detector = detector[0]
             self.detector_err = detector_err[0]
