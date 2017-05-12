@@ -163,6 +163,11 @@ class Data1D(object):
             the existing data that are in the overlap region? This might be
             done because the datapoints in the `data_tuple` you are adding have
             have lower `y_err` than the preceding data.
+
+        Notes
+        -----
+        Raises `ValueError` if there are no points in the overlap region and
+        `requires_splice` was True
         """
         xdata, ydata, ydata_sd, xdata_sd = self.data
 
@@ -198,6 +203,11 @@ class Data1D(object):
                                        axdata,
                                        aydata,
                                        aydata_sd))
+
+            if ((not np.isfinite(scale)) or (not np.isfinite(dscale)) or
+                    (not np.size(overlap_points, 0))):
+                raise ValueError("No points in overlap region")
+
         if not trim_trailing:
             overlap_points[:] = False
 

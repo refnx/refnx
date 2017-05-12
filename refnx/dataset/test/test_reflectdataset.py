@@ -3,7 +3,7 @@ import unittest
 
 from refnx.dataset import ReflectDataset, Data1D
 import numpy as np
-from numpy.testing import assert_equal, assert_
+from numpy.testing import assert_equal, assert_, assert_raises
 from refnx._lib import TemporaryDirectory
 
 path = os.path.dirname(os.path.abspath(__file__))
@@ -146,6 +146,19 @@ class TestReflectDataset(unittest.TestCase):
         # test iadd of datasets
         data += data2
         assert_(len(data) == 13)
+
+    def test_add_non_overlapping(self):
+        # check that splicing of non-overlapping datasets raises ValueError
+        x1 = np.linspace(0, 10, 11)
+        y1 = 2 * x1
+        data = Data1D((x1, y1))
+
+        x2 = np.linspace(11, 20, 10)
+        y2 = 2 * x2 + 2
+        assert_raises(ValueError,
+                      data.add_data,
+                      (x2, y2),
+                      requires_splice=True)
 
     def test_save_xml(self):
         self.data.save_xml('test.xml')
