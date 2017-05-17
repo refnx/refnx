@@ -146,7 +146,7 @@ class ReductionState(object):
                     continue
 
                 # which of the nspectra to reduce (or all)
-                ref_pn = PlatypusNexus(reflect)
+                ref_pn = PlatypusNexus(full_path(reflect))
 
                 if direct not in cached_direct_beams:
                     cached_direct_beams[direct] = PlatypusReduce(
