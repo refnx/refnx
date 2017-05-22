@@ -61,6 +61,11 @@ class ReductionState(object):
 
         self.save_state_path = None
 
+    def __getstate__(self):
+        d = self.__dict__
+        d.pop('manual_beam_finder')
+        return d
+
     @preserve_cwd
     def reducer(self, callback=None):
         """
