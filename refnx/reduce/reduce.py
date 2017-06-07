@@ -427,8 +427,8 @@ class PlatypusReduce(object):
         reduction = {}
         reduction['xdata'] = self.xdata = xdata
         reduction['xdata_sd'] = self.xdata_sd = xdata_sd
-        reduction['ydata'] = self.ydata = ydata
-        reduction['ydata_sd'] = self.ydata_sd = ydata_sd
+        reduction['ydata'] = self.ydata = ydata / scale
+        reduction['ydata_sd'] = self.ydata_sd = ydata_sd / scale
         reduction['omega'] = omega_corrected
         reduction['m_ref'] = self.m_ref = m_ref
         reduction['m_ref_sd'] = self.m_ref_sd = m_ref_sd
