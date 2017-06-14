@@ -63,7 +63,8 @@ class ReductionState(object):
 
     def __getstate__(self):
         d = self.__dict__
-        d.pop('manual_beam_finder')
+        if 'manual_beam_finder' in d:
+            d.pop('manual_beam_finder')
         return d
 
     @preserve_cwd
