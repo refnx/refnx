@@ -2,6 +2,7 @@ from __future__ import division
 import os.path
 import os
 import logging
+from copy import copy
 
 from PyQt5 import QtCore
 import numpy as np
@@ -63,9 +64,9 @@ class ReductionState(object):
 
     def __getstate__(self):
         d = self.__dict__
-        if 'manual_beam_finder' in d:
-            d.pop('manual_beam_finder')
-        return d
+        e = copy(d)
+        e.pop('manual_beam_finder')
+        return e
 
     @preserve_cwd
     def reducer(self, callback=None):

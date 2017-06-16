@@ -238,9 +238,9 @@ class SlimWindow(QtWidgets.QMainWindow):
                     if isinstance(state, ReductionState):
                         state.save_state_path = fpath[0]
                         self.set_state(state)
-                # except pickle.UnpicklingError:
-                except Exception as e:
-                    logging.info(e)
+                # problem unpickling, or file had zero size.
+                except(pickle.UnpicklingError, EOFError) as e:
+                    logging.info
 
     @pyqtSlot()
     def on_plot_clicked(self):
