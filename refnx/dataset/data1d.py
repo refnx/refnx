@@ -61,8 +61,8 @@ class Data1D(object):
         self.metadata = kwds
         self.x = np.zeros(0)
         self.y = np.zeros(0)
-        self.y_err = np.zeros(0)
-        self.x_err = np.zeros(0)
+        self.y_err = None
+        self.x_err = None
         self.weighted = False
 
         # if it's a file then open and load the file.
@@ -74,13 +74,9 @@ class Data1D(object):
             if len(data) > 2:
                 self.y_err = np.array(data[2], dtype=float)
                 self.weighted = True
-            else:
-                self.y_err = np.ones_like(self.y, dtype=float)
 
             if len(data) > 3:
                 self.x_err = np.array(data[3], dtype=float)
-            else:
-                self.x_err = np.zeros_like(self.x, dtype=float)
 
     def __len__(self):
         """
@@ -121,16 +117,16 @@ class Data1D(object):
         self.x = np.array(data_tuple[0], dtype=float)
         self.y = np.array(data_tuple[1], dtype=float)
         self.weighted = False
-        if len(data_tuple) > 2:
+        self.y_err = None
+        self.x_err = None
+
+        if len(data_tuple) > 2 and data_tuple[2] is not None:
             self.y_err = np.array(data_tuple[2], dtype=float)
             self.weighted = True
-        else:
-            self.y_err = np.ones_like(self.y, dtype=float)
 
-        if len(data_tuple) > 3:
+        if len(data_tuple) > 3 and data_tuple[3] is not None:
             self.x_err = np.array(data_tuple[3], dtype=float)
-        else:
-            self.x_err = np.zeros_like(self.x, dtype=float)
+
         self.sort()
 
     def scale(self, scalefactor=1.):
@@ -169,40 +165,48 @@ class Data1D(object):
         Raises `ValueError` if there are no points in the overlap region and
         `requires_splice` was True
         """
-        xdata, ydata, ydata_sd, xdata_sd = self.data
+        x, y, y_err, x_err = self.data
 
-        axdata, aydata = data_tuple[0:2]
+        # dataset has no points, can just initialise with the tuple
+        if not len(self):
+            self.data = data_tuple
+            return
+
+        ax, ay = data_tuple[0:2]
+
+        # if ((len(data_tuple) > 2 and self.y_err is None) or
+        #         (len(data_tuple) == 2 and self.y_err is not None)):
+        #     raise ValueError("Both the existing Data1D and the data you're"
+        #                      " trying to add need to have y_err")
+        #
+        # if ((len(data_tuple) > 3 and self.x_err is None) or
+        #         (len(data_tuple) == 3 and self.x_err is not None)):
+        #     raise ValueError("Both the existing Data1D and the data you're"
+        #                      " trying to add need to have x_err")
+
+        ay_err = None
+        ax_err = None
 
         if len(data_tuple) > 2:
-            aydata_sd = np.array(data_tuple[2], dtype=float)
-        else:
-            aydata_sd = np.ones_like(aydata)
-            self.weighted = False
+            ay_err = np.array(data_tuple[2], dtype=float)
 
         if len(data_tuple) > 3:
-            axdata_sd = np.array(data_tuple[3], dtype=float)
-        else:
-            axdata_sd = np.zeros(np.size(axdata))
-
-        qq = np.r_[xdata]
-        rr = np.r_[ydata]
-        dr = np.r_[ydata_sd]
-        dq = np.r_[xdata_sd]
+            ax_err = np.array(data_tuple[3], dtype=float)
 
         # which values in the first dataset overlap with the second
-        overlap_points = np.zeros_like(qq, 'bool')
+        overlap_points = np.zeros_like(x, 'bool')
 
         # go through and stitch them together.
         scale = 1.
         dscale = 0.
         if requires_splice and len(self) > 1:
             scale, dscale, overlap_points = (
-                get_scaling_in_overlap(qq,
-                                       rr,
-                                       dr,
-                                       axdata,
-                                       aydata,
-                                       aydata_sd))
+                get_scaling_in_overlap(x,
+                                       y,
+                                       y_err,
+                                       ax,
+                                       ay,
+                                       ay_err))
 
             if ((not np.isfinite(scale)) or (not np.isfinite(dscale)) or
                     (not np.size(overlap_points, 0))):
@@ -211,11 +215,24 @@ class Data1D(object):
         if not trim_trailing:
             overlap_points[:] = False
 
-        qq = np.r_[qq[~overlap_points], axdata]
-        dq = np.r_[dq[~overlap_points], axdata_sd]
+        qq = np.r_[x[~overlap_points], ax]
+        rr = np.r_[y[~overlap_points], ay * scale]
 
-        rr = np.r_[rr[~overlap_points], aydata * scale]
-        dr = np.r_[dr[~overlap_points], aydata_sd * scale]
+        try:
+            dr = np.r_[y_err[~overlap_points], ay_err * scale]
+        except TypeError:
+            if (ay_err is not None) or (y_err is not None):
+                raise ValueError("Both the existing Data1D and the data you're"
+                                 " trying to add need to have y_err")
+            dr = None
+
+        try:
+            dq = np.r_[x_err[~overlap_points], ax_err]
+        except:
+            if (ax_err is not None) or (x_err is not None):
+                raise ValueError("Both the existing Data1D and the data you're"
+                                 " trying to add need to have x_err")
+            dq = None
 
         self.data = (qq, rr, dr, dq)
         self.sort()
@@ -227,8 +244,10 @@ class Data1D(object):
         sorted = np.argsort(self.x)
         self.x = self.x[sorted]
         self.y = self.y[sorted]
-        self.y_err = self.y_err[sorted]
-        self.x_err = self.x_err[sorted]
+        if self.y_err is not None:
+            self.y_err = self.y_err[sorted]
+        if self.x_err is not None:
+            self.x_err = self.x_err[sorted]
 
     def save(self, f):
         """

@@ -100,7 +100,10 @@ class TestFitter(unittest.TestCase):
         res = self.f.fit('nelder')
 
         def costfun(params, generative, y, e):
-            return np.sum((y - generative / e) ** 2)
+            resid = y - generative
+            if e is not None:
+                resid /= e
+            return np.sum(resid ** 2)
 
         g = CurveFitter(gauss,
                         (self.xdata, self.ydata),

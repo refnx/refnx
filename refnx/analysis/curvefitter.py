@@ -845,7 +845,15 @@ class GlobalFitter(CurveFitter):
         self.params = p
         xdata = [fitter.dataset.x for fitter in fitters]
         ydata = [fitter.dataset.y for fitter in fitters]
-        edata = [fitter.dataset.y_err for fitter in fitters]
+        edata = []
+        weighted = True
+        for fitter in fitters:
+            y_err = fitter.dataset.y_err
+            if y_err is not None:
+                edata.append(y_err)
+            else:
+                weighted = False
+                edata.append(np.ones_like(fitter.dataset.y))
 
         original_params = [fitter.params for fitter in fitters]
         original_userargs = [fitter.userargs for fitter in fitters]
@@ -865,6 +873,10 @@ class GlobalFitter(CurveFitter):
                                            self.params,
                                            callback=callback,
                                            kws=min_kwds)
+        self.dataset.weighted = weighted
+        if not self.is_weighted:
+            self.scale_covar = not self.is_weighted
+            self.dataset.y_err = None
 
     def model(self, params=None):
         """
@@ -940,7 +952,8 @@ class _parallel_residuals_calculator(object):
                                 **userkws)
 
         resid -= self.y
-        resid /= self.e
+        if self.e is not None:
+            resid /= self.e
 
         if self.mask is not None:
             resid_ma = ma.array(resid, mask=self.mask)
@@ -969,10 +982,12 @@ class _parallel_likelihood_calculator(object):
                                **userkws)
         else:
             resid -= self.y
-            resid /= self.e
+            if self.e is not None:
+                resid /= self.e
             resid *= resid
 
-            resid += np.log(2 * np.pi * self.e ** 2)
+            if self.e is not None:
+                resid += np.log(2 * np.pi * self.e ** 2)
 
             if self.mask is not None:
                 resid_ma = ma.array(resid, mask=self.mask)
