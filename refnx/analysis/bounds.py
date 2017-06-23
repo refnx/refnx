@@ -22,7 +22,7 @@ class Bounds(object):
         """
         raise NotImplementedError
 
-    def rvs(self, size=1):
+    def rvs(self, size=1, random_state=None):
         raise NotImplementedError
 
 
@@ -50,18 +50,22 @@ class PDF(Bounds):
         distribution. If it isn't then it returns a *random* value that is
         within the support.
         """
-        retval = val
-        if not np.isfinite(self.lnprob(val)):
-            retval = self.rv.rvs(random_state=self._random_state)
-        return retval
+        _val = np.asfarray(val)
+        val = np.where(np.isfinite(self.lnprob(_val)),
+                       _val,
+                       self.rv.rvs(_val.size))
 
-    def rvs(self, size=1):
-        return self.rv.rvs(size=size)
+        return val
+
+    def rvs(self, size=1, random_state=None):
+        if random_state is None:
+            random_state = self._random_state
+        return self.rv.rvs(size=size, random_state=random_state)
 
 
 class Interval(Bounds):
-    def __init__(self, lb=-np.inf, ub=np.inf):
-        super(Interval, self).__init__()
+    def __init__(self, lb=-np.inf, ub=np.inf, seed=None):
+        super(Interval, self).__init__(seed=seed)
         if lb is None:
             lb = -np.inf
         if ub is None:
@@ -97,6 +101,8 @@ class Interval(Bounds):
 
     @lb.setter
     def lb(self, val):
+        if val is None:
+            val = -np.inf
         self._set_bounds(val, self._ub)
 
     @property
@@ -105,19 +111,22 @@ class Interval(Bounds):
 
     @ub.setter
     def ub(self, val):
+        if val is None:
+            val = np.inf
         self._set_bounds(self._lb, val)
 
     def lnprob(self, val):
         """
         Calculate the log-likelihood probability of a value with the bounds
         """
-        if self._lb < val < self._ub:
-            if self._closed_bounds:
-                return np.log(1./(self._ub - self._lb))
-            else:
-                return 0
+        _val = np.asfarray(val)
+        valid = np.logical_and(self._lb <= _val, _val <= self._ub)
+
+        if self._closed_bounds:
+            prob = np.where(valid, np.log(1 / (self._ub - self._lb)), -np.inf)
         else:
-            return -np.inf
+            prob = np.where(valid, 0, -np.inf)
+        return prob
 
     def valid(self, val):
         """
@@ -125,16 +134,21 @@ class Interval(Bounds):
         distribution. If it isn't then it returns a value that is within the
         support.
         """
-        if val < self._lb:
-            return self._lb
-        elif val > self._ub:
-            return self._ub
-        else:
-            return val
-
-    def rvs(self, size=1):
+        _val = np.asfarray(val)
         if self._closed_bounds:
-            self.rv.rvs(size=size)
+            val = np.where(np.isfinite(self.lnprob(_val)),
+                           _val,
+                           self.rvs(_val.size))
+        else:
+            val = np.clip(_val, self._lb, self._ub)
+
+        return val
+
+    def rvs(self, size=1, random_state=None):
+        if self._closed_bounds:
+            if random_state is None:
+                random_state = self._random_state
+            return self.rv.rvs(size=size, random_state=random_state)
         else:
             raise RuntimeError("Can't ask for a random variate from a"
                                " semi-closed interval")
