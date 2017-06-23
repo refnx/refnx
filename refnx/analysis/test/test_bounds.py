@@ -34,7 +34,7 @@ class TestBounds(unittest.TestCase):
 
         # if val is outside closed range then rvs is used
         vals = interval.valid(np.linspace(990, 1005, 100))
-        assert_(np.max(vals) <=1002)
+        assert_(np.max(vals) <= 1002)
         assert_(np.min(vals) >= 1000)
         assert_(np.isfinite(interval.lnprob(vals)).all())
 
@@ -75,6 +75,7 @@ class TestBounds(unittest.TestCase):
         bounds = Interval()
         pkl = pickle.dumps(bounds)
         pickle.loads(pkl)
+
 
 if __name__ == '__main__':
     unittest.main()
