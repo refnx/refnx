@@ -62,6 +62,11 @@ class PDF(Bounds):
 class Interval(Bounds):
     def __init__(self, lb=-np.inf, ub=np.inf):
         super(Interval, self).__init__()
+        if lb is None:
+            lb = -np.inf
+        if ub is None:
+            ub = np.inf
+
         self._lb = lb
         self._ub = ub
         self.rv = None
