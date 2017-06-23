@@ -131,8 +131,8 @@ def flatten(l):
                 not isinstance(el, (str, bytes))):
             # 2.7 has no yield from
             # yield from flatten(el)
-            for elel in el:
-                yield flatten(elel)
+            for elel in flatten(el):
+                yield elel
         else:
             yield el
 
