@@ -53,7 +53,7 @@ class PDF(Bounds):
         _val = np.asfarray(val)
         val = np.where(np.isfinite(self.lnprob(_val)),
                        _val,
-                       self.rv.rvs(_val.size))
+                       self.rv.rvs(size=_val.shape))
 
         return val
 
@@ -138,7 +138,7 @@ class Interval(Bounds):
         if self._closed_bounds:
             val = np.where(np.isfinite(self.lnprob(_val)),
                            _val,
-                           self.rvs(_val.size))
+                           self.rvs(size=_val.shape))
         else:
             val = np.clip(_val, self._lb, self._ub)
 
