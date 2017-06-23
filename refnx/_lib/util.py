@@ -127,8 +127,12 @@ def flatten(l):
         yields flattened sequences from l
     """
     for el in l:
-        if isinstance(el, collections.Iterable) and not isinstance(el, (str, bytes)):
-            yield from flatten(el)
+        if (isinstance(el, collections.Iterable) and
+                not isinstance(el, (str, bytes))):
+            # 2.7 has no yield from
+            # yield from flatten(el)
+            for elel in el:
+                yield flatten(elel)
         else:
             yield el
 
@@ -158,7 +162,7 @@ def unique(l):
 def possibly_open_file(f, mode='wb'):
     """
     Context manager for files.
-    
+
     Parameters
     ----------
     f : file-like or str
