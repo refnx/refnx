@@ -111,10 +111,11 @@ class Interval(Bounds):
         """
         Calculate the log-likelihood probability of a value with the bounds
         """
-        if self._closed_bounds:
-            return self.rv.logpdf(val)
-        elif self._lb < val < self._ub:
-            return 0
+        if self._lb < val < self._ub:
+            if self._closed_bounds:
+                return np.log(1./(self._ub - self._lb))
+            else:
+                return 0
         else:
             return -np.inf
 
