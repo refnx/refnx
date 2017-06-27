@@ -1,1044 +1,409 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Sun Dec 21 15:37:29 2014
-
-@author: Andrew Nelson
-"""
-from __future__ import print_function
-import re
 from functools import partial
-import abc
-import warnings
-from lmfit import Minimizer, Parameters
+from collections import namedtuple
+import sys
+import time
+
 import numpy as np
-import numpy.ma as ma
-from refnx.dataset import Data1D, ReflectDataset
+import emcee as emcee
+from scipy._lib._util import check_random_state
+from scipy.optimize import minimize, differential_evolution, least_squares
+
+from refnx.analysis import Objective, Interval, PDF, is_parameter
+from refnx._lib import flatten
+from refnx._lib import unique as f_unique
+
+MCMCResult = namedtuple('MCMCResult', ['name', 'param', 'stderr', 'chain',
+                                       'median'])
 
 
-_MACHEPS = np.finfo(np.float64).eps
-
-
-def to_parameters(p0, varies=None, bounds=None, names=None, expr=None):
+class CurveFitter(object):
     """
-    Utility function to convert sequences into a
-    :class:`lmfit.parameter.Parameters` instance
-
-    Parameters
-    ----------
-    p0 : np.ndarray
-        numpy array containing parameter values.
-    varies : bool sequence, optional
-        Specifies whether a parameter is being held or varied.
-    bounds : sequence, optional
-        Tuple of (min, max) pairs specifying the lower and upper bounds for
-        each parameter
-    names : str sequence, optional
-        Name of each parameter
-    expr : str sequence, optional
-        Constraints for each parameter
-
-    Returns
-    -------
-    p : lmfit.Parameters instance
+    Analyse a curvefitting system (with MCMC sampling)
     """
-    if varies is None:
-        _varies = [True] * p0.size
-    else:
-        _varies = list(varies)
-
-    if names is None:
-        names = ['p%d' % i for i in range(p0.size)]
-
-    if bounds is not None:
-        lowlim = []
-        hilim = []
-        for bound in bounds:
-            lowlim.append(bound[0])
-            hilim.append(bound[1])
-    else:
-        lowlim = [None] * p0.size
-        hilim = [None] * p0.size
-
-    if expr is None:
-        expr = [None] * p0.size
-
-    _p0 = np.copy(p0)
-
-    p = Parameters()
-    # go through and add the parameters
-    for i in range(p0.size):
-        # if the limits are finite and equal, then you shouldn't be fitting
-        # the parameter. So fix the parameter and set the upper limit to be
-        # slightly larger (otherwise you'll get an error when setting the
-        # Parameter up)
-        if (lowlim[i] is not None and hilim[i] is not None and
-            np.isfinite(lowlim[i]) and np.isfinite(hilim[i]) and
-                (lowlim[i] == hilim[i])):
-
-            hilim[i] += 1
-            _p0[i] = lowlim[i]
-            _varies[i] = False
-
-        p.add(names[i], value=_p0[i], min=lowlim[i], max=hilim[i],
-              vary=_varies[i], expr=expr[i])
-
-    return p
-
-
-def varys(params):
-    """
-    A convenience function that takes an lmfit.Parameters instance and finds
-    out which ones vary
-
-    Parameters
-    ----------
-    params : lmfit.Parameters
-
-    Returns
-    -------
-    varys: bool, sequence
-        Which parameters are varying
-    """
-    return [params[par].vary for par in params]
-
-
-def exprs(params):
-    """
-    A convenience function that takes an lmfit.Parameters instance and returns
-    the the constraint expressions
-
-    Parameters
-    ----------
-    params : lmfit.Parameters
-
-    Returns
-    -------
-    exprs : list of str
-
-    """
-    expr = [params[par].expr for par in params]
-    return expr
-
-
-def values(params):
-    """
-    A convenience function that takes an lmfit.Parameters instance and returns
-    the values
-    """
-    return np.array(params)
-
-
-def names(params):
-    return list(params.keys())
-
-
-def bounds(params):
-    return [(params[par].min, params[par].max) for par in params]
-
-
-def clear_bounds(params):
-    for par in params:
-        params[par].min = -np.inf
-        params[par].max = np.inf
-
-
-def fitfunc(f):
-    """
-    A decorator that can be used to say if something is a fitfunc.
-    """
-    f.fitfuncwraps = True
-    return f
-
-
-class FitFunction(object):
-    """
-    An abstract FitFunction class.
-    """
-    def __init__(self):
-        pass
-
-    def __call__(self, x, params, *args, **kws):
+    def __init__(self, objective, nwalkers=200, **mcmc_kws):
         """
-        Calculate the FitFunction
+        Parameters
+        ----------
+        objective : Objective
+            The :class:`playtime.objective.Objective` to be analysed.
+        nwalkers : int
+            How many walkers you would like the sampler to have. Must be an
+            even number. The more walkers the better.
+        mcmc_kws : dict
+            Keywords used to create the :class:`emcee.EnsembleSampler` object.
         """
-        return self.model(x, params, *args, **kws)
+        self.objective = objective
+        self._varying_parameters = objective.varying_parameters()
+        self.nvary = len(self._varying_parameters)
+        if not self.nvary:
+            raise ValueError("No parameters are being fitted")
 
-    @abc.abstractmethod
-    def model(self, x, params, *args, **kws):
+        self.mcmc_kws = {}
+        if mcmc_kws is not None:
+            self.mcmc_kws.update(mcmc_kws)
+
+        self._nwalkers = nwalkers
+        obj_func = partial(objective.lnprob)
+        self.sampler = emcee.EnsembleSampler(nwalkers,
+                                             self.nvary,
+                                             obj_func,
+                                             **self.mcmc_kws)
+        self._lastpos = None
+
+    def initialise(self, pos='covar'):
         """
-        Calculate the predictive model for the fit.
-        Override this method in your own fitfunction.
+        Initialise the emcee walkers.
 
         Parameters
         ----------
-        x : array-like
-            The independent variable for the fit
-        params : lmfit.Parameters
-            The model parameters
+        pos : str or np.ndarray
+            Method for initialising the emcee walkers. One of:
 
-        Returns
-        -------
-        predictive : np.ndarray
-            The predictive model for the fitfunction.
+            - 'covar', use the estimated covariance of the system.
+            - 'jitter', add a small amount of gaussian noise to each parameter
+            - 'prior', sample random locations from the prior
+            - pos, an array that specifies a snapshot of the walkers. Has shape
+                `(nwalkers, ndim)`.
+        """
+        self.sampler.reset()
+        if pos == 'covar':
+            p0 = np.array(self._varying_parameters)
+            nwalkers = self._nwalkers
+            cov = self.objective.covar()
+            self._lastpos = emcee.utils.sample_ellipsoid(p0,
+                                                         cov,
+                                                         size=nwalkers)
+        elif (isinstance(pos, np.ndarray) and
+              pos.shape == (self._nwalkers,
+                            self.nvary)):
+            self._lastpos = pos
+        elif pos == 'jitter':
+            var_arr = np.array(self._varying_parameters)
+            pos = 1 + np.random.randn(self._nwalkers,
+                                      self.nvary) * 1.e-4
+            pos *= var_arr
+            self._lastpos = pos
+        elif pos == 'prior':
+            # TODO, random from prior
+            raise NotImplementedError("prior initialisation of MCMC chain not "
+                                      "implemented yet")
+        else:
+            raise RuntimeError("Didn't initialise CurveFitter with any known"
+                               " method.")
+
+        # now validate initialisation, ensuring all init pos have finite lnprob
+        for i, param in enumerate(self._varying_parameters):
+            self._lastpos[..., i] = param.valid(self._lastpos[..., i])
+
+    def sample(self, steps, nburn=0, nthin=1, random_state=None, f=None,
+               callback=None, verbose=True):
+        """
+        Performs sampling from the objective.
+
+        Parameters
+        ----------
+        steps : int
+            Iterate the sampler by a number of steps
+        nburn : int, optional
+            discard this many steps from the chain
+        nthin : int, optional
+            only accept every `nthin` samples from the chain
+        random_state : int or `np.random.RandomState`, optional
+            If `random_state` is an int, a new `np.random.RandomState` instance
+            is used, seeded with `random_state`.
+            If `random_state` is already a `np.random.RandomState` instance,
+            then that `np.random.RandomState` instance is used. Specify
+            `random_state` for repeatable sampling
+        f : file-like or str
+            File to incrementally save chain progress to
+        callback : callable
+            callback function to be called at each iteration step
+        verbose : bool, optional
+            Gives updates on the sampling progress
 
         Notes
         -----
-        `args` and `kws` can be used to fully specify the fit function.
-        Normally you would supply these via when the **FitFunction** object is
-        constructed.
+        Please see :class:`emcee.EnsembleSampler` for its detailed behaviour.
+        For example, the chain is contained in `CurveFitter.sampler.chain` and
+        has shape `(nwalkers, iterations, ndim)`. `nsteps` should be greater
+        than `nburn`.
         """
-        raise RuntimeError("You can't use the abstract base FitFunction in a"
-                           " real fit")
+        if self._lastpos is None:
+            self.initialise()
 
-    @staticmethod
-    def parameter_names(nparams=0):
+        start_time = time.time()
+
+        def _callback_wrapper(pos, lnprob, steps_completed):
+            if verbose:
+                steps_completed += 1
+                width = 50
+                step_rate = (time.time() - start_time) / steps_completed
+                time_remaining = divmod(step_rate * (steps - steps_completed),
+                                        60)
+                mins, secs = int(time_remaining[0]), int(time_remaining[1])
+                n = int((width + 1) * float(steps_completed) / steps)
+                template = ("\rSampling progress: [{0}{1}] "
+                            "time remaining = {2} m:{3} s")
+                sys.stdout.write(template.format('#' * n,
+                                                 ' ' * (width - n),
+                                                 mins,
+                                                 secs))
+            if callback is not None:
+                callback(pos, lnprob)
+            if f is not None:
+                np.save(f, self.sampler.chain)
+
+        rstate0 = check_random_state(random_state).get_state()
+        for i, result in enumerate(self.sampler.sample(self._lastpos,
+                                                       iterations=steps,
+                                                       rstate0=rstate0)):
+            pos, lnprob = result[0:2]
+            _callback_wrapper(pos, lnprob, i)
+
+        self._lastpos = result[0]
+
+        # finish off the progress bar
+        if verbose:
+            sys.stdout.write("\n")
+
+        # sets parameter value and stderr
+        return self.process_chain(nburn=nburn, nthin=nthin)
+
+    def fit(self, method='L-BFGS-B', **kws):
         """
-        Provides a set of names for constructing an
-        :class:`lmfit.parameter.Parameters` instance
+        Obtain the maximum log-likelihood estimate (mode) of the objective. For
+        a least-squares objective this would correspond to lowest chi2.
 
         Parameters
         ----------
-        nparams: int, optional
-            >= 0 - provide a set of names with length `nparams`
-        Returns
-        -------
-        names: list
-            names for the lmfit.Parameters instance
-        """
-        name = list()
-        if nparams > 0:
-            name = ['p%d' % i for i in range(nparams)]
-        return name
-
-
-class CurveFitter(Minimizer):
-    r"""
-    A curvefitting class that extends :class:`lmfit:Minimizer.Minimizer`
-
-    Parameters
-    ----------
-
-    fitfunc : callable
-        Function calculating the generative model for the fit.  Should have
-        the signature: ``fitfunc(x, params, *fcn_args, **fcn_kws)``. You
-        can also supply a :class:`FitFunction` instance.
-    data : sequence, :class:`refnx.dataset.Data1D` instance, str or
-           file-like object
-        A sequence containing the data to be analysed.
-        If `data` is a sequence then:
-
-            * data[0] - the independent variable (x-data)
-
-            * data[1] - the dependent (observed) variable (y-data)
-
-            * data[2] - measured uncertainty in the dependent variable,
-                expressed as a standard deviation.
-
-        Only data[0] and data[1] are required, data[2] is optional. If data[2]
-        is not specified then the measured uncertainty is set to unity.
-
-        `data` can also be a :class:`refnx.dataset.Data1D` instance containing
-         the data. If `data` is a string, or file-like object then the string
-         or file-like object refers to a file containing the data. The data
-         will be loaded through the :class:`refnx.dataset.Data1D` constructor.
-    params : :class:`lmfit.parameter.Parameters` instance
-        Specifies the parameter set for the fit
-    mask : np.ndarray, optional
-        A boolean array with the same shape as `y`.  If `mask is True`
-        then that point is excluded from the residuals calculation.
-    fcn_args : tuple, optional
-        Extra parameters required to fully specify fitfunc.
-    fcn_kws : dict, optional
-        Extra keyword parameters needed to fully specify fitfunc.
-    kws : dict, optional
-        Keywords passed to the minimizer.
-    callback : callable, optional
-        A function called at each minimization step. Has the signature:
-        ``callback(params, iter, resid, *args, **kwds)``
-    costfun : callable, optional
-        specifies your own cost function to minimize. Has the signature:
-        ``costfun(pars, generative, y, e, *fcn_args, **fcn_kws)`` where `pars`
-        is a `lmfit.Parameters` instance, `generative` is an array returned by
-        `fitfunc`, and `y` and `e` correspond to the `data[1]` and
-        `data[2]` arrays. `costfun` should return a single value. See Notes for
-        further details.
-    lnpost : callable, optional
-        specifies your own log-posterior probablility function. This is only
-        relevant applies to the `emcee` method. Has the signature:
-        ``lnpost(pars, generative, y, e, *fcn_args, **fcn_kws)`` where `pars`
-        is a `lmfit.Parameters` instance, `generative` is an array returned by
-        `fitfunc`, and `y` and `e` correspond to the `data[1]` and
-        `data[2]` arrays. `lnpost` should return a single float value. See
-        :meth:`CurveFitter.emcee` for further details.
-
-    Notes
-    -----
-    The default cost function for CurveFitter is:
-
-    .. math::
-        \chi^2=\sum \left(\frac{\mathrm{data[1]} -
-                    \mathrm{fitfunc}}{\mathrm{data[2]}}\right)^2
-
-    This user defined cost function can be used to specify other cost
-    functions for `differential_evolution`, `leastsq`, `least_squares`.
-
-    .. _lmfit.Minimizer:
-        http://lmfit.github.io/lmfit-py/fitting.html#module-Minimizer
-    """
-
-    def __init__(self, fitfunc, data, params, mask=None,
-                 fcn_args=(), fcn_kws=None, kws=None, callback=None,
-                 costfun=None, lnpost=None):
-        self.fitfunc = fitfunc
-        self.costfun = costfun
-        self.lnpost = lnpost
-
-        userkws = {}
-        if fcn_kws is not None:
-            userkws = fcn_kws
-
-        # bind the data to this object
-        if isinstance(data, Data1D):
-            self.dataset = data
-        else:
-            self.dataset = ReflectDataset(data)
-
-        if mask is not None:
-            if self.dataset.y.shape != mask.shape:
-                raise ValueError('mask shape should be same as data')
-
-            self.mask = mask
-        else:
-            self.mask = None
-
-        # have uncertainties have been supplied for each of the data points?
-        self.scale_covar = not self.is_weighted
-
-        min_kwds = {}
-        if kws is not None:
-            min_kwds = kws
-
-        # setup the residual calculator
-        self._update_resid()
-
-        super(CurveFitter, self).__init__(self._resid,
-                                          params,
-                                          iter_cb=callback,
-                                          scale_covar=self.scale_covar,
-                                          fcn_args=fcn_args,
-                                          fcn_kws=userkws,
-                                          **min_kwds)
-
-    def _update_resid(self):
-        """
-        Updates the _resid attribute, which is a function that
-        evaluates the residuals and model for the system. This
-        method exists because people could update the data after
-        creation of the CurveFitter object.
-        """
-        self._resid = (
-            _parallel_residuals_calculator(self.fitfunc,
-                                           data_tuple=(self.dataset.x,
-                                                       self.dataset.y,
-                                                       self.dataset.y_err),
-                                           mask=self.mask,
-                                           costfun=self.costfun))
-
-        self.userfcn = self._resid
-
-    @property
-    def data(self):
-        """
-        The unmasked data, and the mask
-
-        Returns
-        -------
-        (x, y, e, mask) : data tuple
-        """
-        return (self.dataset.x,
-                self.dataset.y,
-                self.dataset.y_err,
-                self.mask)
-
-    @data.setter
-    def data(self, data):
-        self.dataset = ReflectDataset(data)
-        self.scale_covar = self.dataset.weighted
-
-    def residuals(self, params=None):
-        """
-        Calculate the difference between the data and the model. Also known as
-        the objective function. This is a convenience method. Over-riding it
-        will not change a fit.
-
-        :math:`residuals = (fitfunc - y) / edata`
-
-        Parameters
-        ----------
-        params : lmfit.Parameters instance
-            Specifies the entire parameter set
-
-        Returns
-        -------
-        residuals : np.ndarray
-            The difference between the data and the model.
-
-        Note
-        ----
-        This method should only return the points that are not masked.
-        """
-        if params is None:
-            params = self.params
-
-        params.update_constraints()
-        self._update_resid()
-        return self._resid(params, *self.userargs, **self.userkws)
-
-    def model(self, params=None):
-        """
-        Calculates the model. This is a convenience method. Over-riding it will
-        not change a fit.
-
-        Parameters
-        ----------
-        params : lmfit.Parameters instance
-            Specifies the entire parameter set
-
-        Returns
-        -------
-        model : array_like
-            The model.
-        """
-        if params is None:
-            params = self.params
-
-        params.update_constraints()
-
-        return self.fitfunc(self.dataset.x, params,
-                            *self.userargs, **self.userkws)
-
-    def fit(self, method='leastsq', params=None, **kws):
-        """
-        Fits the dataset.
-
-        Parameters
-        -----------
-        method : str, optional
-            Name of the fitting method to use.
-            One of:
-
-            - 'leastsq'                -    Levenberg-Marquardt (default)
-            - 'nelder'                 -    Nelder-Mead
-            - 'lbfgsb'                 -    L-BFGS-B
-            - 'powell'                 -    Powell
-            - 'cg'                     -    Conjugate-Gradient
-            - 'newton'                 -    Newton-CG
-            - 'cobyla'                 -    Cobyla
-            - 'tnc'                    -    Truncate Newton
-            - 'trust-ncg'              -    Trust Newton-CGn
-            - 'dogleg'                 -    Dogleg
-            - 'slsqp'                  -    Sequential Linear Squares
-                                            Programming
-            - 'differential_evolution' -    differential evolution
-
-        params : Parameters, optional
-            parameters to use as starting values
-
-        Returns
-        --------
-        result : lmfit.MinimizerResult
-            Result object.
-        """
-        self._update_resid()
-        result = self.minimize(method=method, params=params, **kws)
-        self.params = result.params
-        return result
-
-    def emcee(self, params=None, steps=1000, nwalkers=100, burn=0, thin=1,
-              ntemps=1, pos=None, reuse_sampler=False, workers=1, seed=None):
-        r"""
-        Bayesian sampling of the posterior distribution for the parameters
-        using the `emcee` Markov Chain Monte Carlo package. By default the
-        method assumes that the prior is Uniform. To implement non-uniform
-        priors use the `lnpost` kwd when constructing the CurveFitter. You
-        need to have `emcee` installed to use this method.
-
-        Parameters
-        ----------
-
-        params : lmfit.Parameters, optional
-            Parameters to use as starting point. If this is not specified
-            then the Parameters used to initialise the CurveFitter object are
-            used.
-        steps : int, optional
-            How many samples you would like to draw from the posterior
-            distribution for each of the walkers?
-        nwalkers : int, optional
-            Should be set so :math:`nwalkers >> nvarys`, where `nvarys` are
-            the number of parameters being varied during the fit.
-            "Walkers are the members of the ensemble. They are almost like
-            separate Metropolis-Hastings chains but, of course, the proposal
-            distribution for a given walker depends on the positions of all
-            the other walkers in the ensemble." - from the `emcee` webpage.
-        burn : int, optional
-            Discard this many samples from the start of the sampling regime.
-        thin : int, optional
-            Only accept 1 in every `thin` samples.
-        ntemps : int, optional
-            If `ntemps > 1` perform a Parallel Tempering.
-        pos : np.ndarray, optional
-            Specify the initial positions for the sampler.  If `ntemps == 1`
-            then `pos.shape` should be `(nwalkers, nvarys)`. Otherwise,
-            `(ntemps, nwalkers, nvarys)`. You can also initialise using a
-            previous chain that had the same `ntemps`, `nwalkers` and
-            `nvarys`. Note that `nvarys` may be one larger than you expect it
-            to be if your `userfcn` returns an array and `is_weighted is
-            False`.
-        reuse_sampler : bool, optional
-            If you have already run `emcee` on a given `Minimizer` object then
-            it possesses an internal ``sampler`` attribute. You can continue to
-            draw from the same sampler (retaining the chain history) if you set
-            this option to `True`. Otherwise a new sampler is created. The
-            `nwalkers`, `ntemps`, `pos`, and `params` keywords are ignored with
-            this option.
-            **Important**: the Parameters used to create the sampler must not
-            change in-between calls to `emcee`. Alteration of Parameters
-            would include changed ``min``, ``max``, ``vary`` and ``expr``
-            attributes. This may happen, for example, if you use an altered
-            Parameters object and call the `minimize` method in-between calls
-            to `emcee`.
-        workers : Pool-like or int, optional
-            For parallelization of sampling.  It can be any Pool-like object
-            with a map method that follows the same calling sequence as the
-            built-in `map` function. If int is given as the argument, then a
-            multiprocessing-based pool is spawned internally with the
-            corresponding number of parallel processes. 'mpi4py'-based
-            parallelization and 'joblib'-based parallelization pools can also
-            be used here. **Note**: because of multiprocessing overhead it may
-            only be worth parallelising if the objective function is expensive
-            to calculate, or if there are a large number of objective
-            evaluations per step (`ntemps * nwalkers * nvarys`).
-        seed : int or `np.random.RandomState`, optional
-            If `seed` is an int, a new `np.random.RandomState` instance is
-            used, seeded with `seed`.
-            If `seed` is already a `np.random.RandomState` instance, then that
-            `np.random.RandomState` instance is used.
-            Specify `seed` for repeatable minimizations.
-
-        Returns
-        -------
-        result: MinimizerResult
-            MinimizerResult object containing updated params, statistics,
-            etc. The `MinimizerResult` also contains the ``chain``,
-            ``flatchain`` and ``lnprob`` attributes. The ``chain``
-            and ``flatchain`` attributes contain the samples and have the shape
-            `(nwalkers, (steps - burn) // thin, nvarys)` or
-            `(ntemps, nwalkers, (steps - burn) // thin, nvarys)`,
-            depending on whether Parallel tempering was used or not.
-            `nvarys` is the number of parameters that are allowed to vary.
-            The ``flatchain`` attribute is a `pandas.DataFrame` of the
-            flattened chain, `chain.reshape(-1, nvarys)`. To access flattened
-            chain values for a particular parameter use
-            `result.flatchain[parname]`. The ``lnprob`` attribute contains the
-            log probability for each sample in ``chain``. The sample with the
-            highest probability corresponds to the maximum likelihood estimate.
-
-        Notes
-        -----
-
-        This method samples the posterior distribution of the parameters using
-        Markov Chain Monte Carlo.  To do so it needs to calculate the
-        log-posterior probability of the model parameters, `F`, given the data,
-        `D`, :math:`\ln p(F_{true} | D)`. This 'posterior probability' is
-        calculated as:
-
-        .. math::
-
-            \ln p(F_{true} | D) \propto \ln p(D | F_{true}) + \ln p(F_{true})
-
-        where :math:`\ln p(D | F_{true})` is the 'log-likelihood' and
-        :math:`\ln p(F_{true})` is the 'log-prior'. The default log-prior
-        encodes prior information already known about the model. This method
-        assumes that the log-prior probability is `-np.inf` (impossible) if the
-        one of the parameters is outside its limits. The log-prior probability
-        term is zero if all the parameters are inside their bounds (known as a
-        uniform prior). The default log-likelihood function is given by [1]_:
-
-        .. math::
-
-            \ln p(D|F_{true}) = -\frac{1}{2}\sum_n
-                \left[\frac{\left(g_n(F_{true}) -
-                   D_n \right)^2}{s_n^2}+\ln (2\pi s_n^2)\right]
-
-        The first summand in the square brackets represents the residual for a
-        given datapoint (:math:`g` being the generative model) . This term
-        represents :math:`\chi^2` when summed over all datapoints.
-
-        It is also possible to calculate your own log-posterior probability, by
-        constructing the CurveFitter object with a `lnpost` function. This
-        will allow you to use non-uniform priors, etc. The `lnpost` function
-        has the signature:
-        ``lnpost(pars, generative, y, e, *fcn_args, **fcn_kws)``. You should
-        return a single float from this `lnpost` function
-
-        References
-        ----------
-        .. [1] http://dan.iel.fm/emcee/current/user/line/
-
-        """
-
-        self._update_resid()
-
-        try:
-            if self.is_weighted or self.lnpost is not None:
-                # get the proper log-likelihood if you have
-                # uncertainties
-                data_tuple = (self.dataset.x,
-                              self.dataset.y,
-                              self.dataset.y_err)
-                self._resid = (
-                    _parallel_likelihood_calculator(self.fitfunc,
-                                                    data_tuple=data_tuple,
-                                                    mask=self.mask,
-                                                    lnpost=self.lnpost))
-                self.userfcn = self._resid
-            else:
-                pass
-
-            result = (
-                super(CurveFitter, self).emcee(params=params, steps=steps,
-                                               nwalkers=nwalkers,
-                                               burn=burn,
-                                               thin=thin, ntemps=ntemps,
-                                               pos=pos,
-                                               reuse_sampler=reuse_sampler,
-                                               workers=workers,
-                                               float_behavior='posterior',
-                                               is_weighted=self.is_weighted,
-                                               seed=seed))
-        finally:
-            self._update_resid()
-
-        self.params = result.params
-        return result
-
-    @property
-    def is_weighted(self):
-        """
-        Returns the truth that the fit is weighted by measurement uncertainties
-        """
-        return self.dataset.weighted
-
-    def _resample_mc(self, samples, method='differential_evolution',
-                     params=None):
-        """
-        Monte Carlo Resampling. Refits synthesised data `samples` times. Each
-        synthesised dataset is created from the original dataset by adding
-        Gaussian based on the size of the datapoint:
-        ``synth = y + e * np.random.randn(y.size)``
-        The parameters from each of these fits should be distributed in a way
-        that is related to their statistical uncertainty.
-
-        Parameters
-        ----------
-        samples : int
-            Number of synthesis/refit cycles.
         method : str
-            Minimisation method. See the `fit` method for other options.
-        params : lmfit.Parameters, optional
-            Parameters to use as starting point. If this is not specified
-            then the Parameters used to initialise the CurveFitter object are
-            used.
+            which method to use for the optimisation. One of:
+
+            - `'least_squares'`: `scipy.optimize.least_squares`.
+            - `'L-BFGS-B'`: L-BFGS-B
+            - `'differential_evolution'`: differential evolution
+
+            You can also choose many of the minimizers from
+            ``scipy.optimize.minimize``.
+        kws : dict
+            Additional arguments are passed to the underlying minimization
+            method.
 
         Returns
         -------
-        result : lmfit.MinimizerResult
-            Result object.
+        result, covar : OptimizeResult, np.ndarray
+            `result.x` contains the best fit parameters
+            `result.covar` is the covariance matrix for the fit.
+            `result.stderr` is the uncertainties on each of the fit parameters.
 
         Notes
         -----
-        This method is currently semi-private and may disappear in future
-        releases. The uncertainties are estimated as half of the 15.87, 84.13
-        percentiles. The parameter value is estimated as the 50 th percentile.
-        The `result` instance also contains the `mc` attribute which is an
-        array the contains the result of each sample. This array has shape
-        `(samples, len(result.var_names))` (i.e. only the varying parameters
-        are given).
+          If the `objective` supplies a `residuals` method then `least_squares`
+        can be used. Otherwise the `nll` method of the `objective` is
+        minimised. Use this method just before a sampling run.
+          If `self.objective.parameters` is a `Parameters` instance, then each
+        of the varying parameters has its value updated by the fit, and each
+        `Parameter` has a `stderr` attribute which represents the uncertainty
+        on the fit parameter.
         """
-        # data does
-        if self.scale_covar:
-            raise ValueError("To MC resample the data has to have errorbars")
+        _varying_parameters = self.objective.varying_parameters()
+        init_pars = np.array(_varying_parameters)
 
-        x, y, e, m = self.data
+        _min_kws = {}
+        _min_kws.update(kws)
+        _bounds = bounds_list(self.objective.varying_parameters())
+        _min_kws['bounds'] = _bounds
 
-        tparams = params
-        output = self.prepare_fit(params=tparams)
-        params = output.params
+        # least_squares Trust Region Reflective by default
+        if method == 'least_squares':
+            b = np.array(_bounds)
+            _min_kws['bounds'] = (b[..., 0], b[..., 1])
+            res = least_squares(self.objective.residuals,
+                                init_pars,
+                                **_min_kws)
+        # differential_evolution requires lower and upper bounds
+        elif method == 'differential_evolution':
+            res = differential_evolution(self.objective.nll,
+                                         **_min_kws)
+        else:
+            # otherwise stick it to minimizer. Default being L-BFGS-B
+            _min_kws['method'] = method
+            _min_kws['bounds'] = _bounds
+            res = minimize(self.objective.nll, init_pars, **_min_kws)
 
-        try:
-            mc = np.zeros((samples, len(output.var_names)))
-            for idx in range(samples):
-                # synthesize a dataset
-                ne = y + e * np.random.randn(y.size)
-                self.dataset.y = ne
+        if res.success:
+            self.objective.setp(res.x)
 
-                # update the _resid attribute
-                self._update_resid()
+            # Covariance from numdifftools seems to be pretty reliable
+            covar = self.objective.covar()
+            errors = np.sqrt(np.diag(covar))
+            res['covar'] = covar
+            res['stderr'] = errors
 
-                # do a fit
-                res = self.fit(method=method, params=params)
+            # check if the parameters are all Parameter instances.
+            flat_params = list(f_unique(flatten(
+                self.objective.parameters)))
+            if np.all([is_parameter(param) for param in flat_params]):
+                # zero out all the old parameter stderrs
+                for param in flat_params:
+                    param.stderr = None
+                    param.chain = None
 
-                # append values from fit
-                for idx2, var_name in enumerate(output.var_names):
-                    mc[idx, idx2] = res.params[var_name].value
-        finally:
-            self.dataset.y = y
+                for i, param in enumerate(_varying_parameters):
+                    param.stderr = errors[i]
 
-        quantiles = np.percentile(mc, [15.87, 50, 84.13], axis=0)
+            # need to touch up the output as numdifftools doesn't leave
+            # parameters as it found them
+            self.objective.setp(res.x)
 
-        for i, var_name in enumerate(output.var_names):
-            std_l, median, std_u = quantiles[:, i]
-            params[var_name].value = median
-            params[var_name].stderr = 0.5 * (std_u - std_l)
-            params[var_name].correl = {}
+        return res
 
-        params.update_constraints()
-
-        # work out correlation coefficients
-        corrcoefs = np.corrcoef(mc.T)
-
-        for i, var_name in enumerate(output.var_names):
-            for j, var_name2 in enumerate(output.var_names):
-                if i != j:
-                    output.params[var_name].correl[var_name2] = corrcoefs[i, j]
-
-        output.mc = mc
-        output.errorbars = True
-        output.nvarys = len(output.var_names)
-
-        return output
-
-
-class GlobalFitter(CurveFitter):
-    """
-    Simultaneous curvefitting of multiple datasets
-
-    fitters : sequence of :class:`refnx.analysis.curvefitter.CurveFitter`
-        instances
-        Contains all the fitters and fitfunctions for the global fit.
-    constraints : str sequence, optional
-        Of the type 'dN:param_name = constraint'. Sets a constraint
-        expression for the parameter `param_name` in dataset N. The
-        constraint 'd2:scale = 2 * d0:back' constrains the `scale`
-        parameter in dataset 2 to be twice the `back` parameter in
-        dataset 0.
-        **Important** For a parameter (`d2:scale` in this example) to be
-        constrained by this mechanism it must not have any pre-existing
-        constraints within its individual fitter. If there are pre-existing
-        constraints then those are honoured, and constraints specified here are
-        ignored.
-    kws : dict, optional
-        Extra minimization keywords to be passed to the minimizer of choice.
-    callback : callable, optional
-        Function called at each step of the minimization. Has the signature
-        ``callback(params, iter, resid)``
-    """
-    def __init__(self, fitters, constraints=(), kws=None,
-                 callback=None):
-
-        min_kwds = {}
-        if kws is not None:
-            min_kwds = kws
-
-        for fitter in fitters:
-            if not isinstance(fitter, CurveFitter):
-                raise ValueError('All items in curve_fitter_list must be '
-                                 'instances of CurveFitter')
-
-        self.fitters = fitters
-
-        # new_param_reference.keys() will be the parameter names for the
-        # composite fitting problem. new_param_reference.values() are the
-        # (i, original_name) of the individual Parameter(s) from the individual
-        # fitting problem, where i is the index of the fitter it's in.
-        self.new_param_reference = dict()
-        p = Parameters()
-        for i, fitter in enumerate(self.fitters):
-            # add all the parameters for a given dataset
-            # the parameters are all given new names:
-            # abc -> abc_d0
-            # parameter `abc` in dataset 0 becomes abc_d0
-            new_names = {}
-            for old_name, param in fitter.params.items():
-                new_name = old_name + '_d%d' % i
-                new_names[new_name] = old_name
-
-                self.new_param_reference[new_name] = (i, param.name)
-
-                p.add(new_name,
-                      value=param.value,
-                      vary=param.vary,
-                      min=param.min,
-                      max=param.max,
-                      expr=param.expr)
-
-            # if there are any expressions they have to be updated
-            # iterate through all the parameters in the dataset
-            old_names = dict((v, k) for k, v in new_names.items())
-            for param in fitter.params.values():
-                expr = param.expr
-                new_name = old_names[param.name]
-                # if it's got an expression you'll have to update it
-                if expr is not None:
-                    # see if any of the old names are in there.
-                    for old_name in old_names:
-                        regex = re.compile('(%s)' % old_name)
-                        if regex.search(expr):
-                            new_expr_name = old_names[old_name]
-                            new_expr = expr.replace(old_name, new_expr_name)
-                            p[new_name].expr = new_expr
-
-        # now set constraints/linkages up. They're specified as
-        # dN:param_name = constraint
-        dp_string = 'd([0-9]+):([0-9a-zA-Z_]+)'
-        parameter_regex = re.compile(dp_string + '\s*=\s*(.*)')
-        constraint_regex = re.compile(dp_string)
-
-        for constraint in constraints:
-            r = parameter_regex.search(constraint)
-
-            if r is not None:
-                groups = r.groups()
-                dataset_num = int(groups[0])
-                param_name = groups[1]
-                const = groups[2]
-
-                # see if this parameter is in the list of parameters
-                par_to_be_constrained = param_name + ('_d%d' % dataset_num)
-                if par_to_be_constrained not in p:
-                    continue
-
-                # if it already has a constraint / expr don't override it
-                if p[par_to_be_constrained].expr is not None:
-                    warning_msg = ("%s already has a constraint within its"
-                                   " individual fitter. The %s constraint"
-                                   "is ignored."
-                                   % (par_to_be_constrained, constraint))
-                    warnings.warn(warning_msg, UserWarning)
-                    continue
-
-                # now search for fitters mentioned in constraint
-                d_mentioned = constraint_regex.findall(const)
-                for d in d_mentioned:
-                    new_name = d[1] + ('_d%d' % int(d[0]))
-                    # see if the dataset mentioned is actually a parameter
-                    if new_name in self.new_param_reference:
-                        # if it is, then rename it.
-                        const = const.replace('d' + d[0] + ':' + d[1],
-                                              new_name)
-                    else:
-                        const = None
-                        break
-
-                p[par_to_be_constrained].expr = const
-
-        self.params = p
-        xdata = [fitter.dataset.x for fitter in fitters]
-        ydata = [fitter.dataset.y for fitter in fitters]
-        edata = []
-        weighted = True
-        for fitter in fitters:
-            y_err = fitter.dataset.y_err
-            if y_err is not None:
-                edata.append(y_err)
-            else:
-                weighted = False
-                edata.append(np.ones_like(fitter.dataset.y))
-
-        original_params = [fitter.params for fitter in fitters]
-        original_userargs = [fitter.userargs for fitter in fitters]
-        original_kws = [fitter.userkws for fitter in fitters]
-
-        self._fitfunc = partial(_parallel_global_fitfunc,
-                                fitfuncs=[fitter.fitfunc for
-                                          fitter in fitters],
-                                new_param_reference=self.new_param_reference,
-                                original_params=original_params,
-                                original_userargs=original_userargs,
-                                original_kws=original_kws)
-
-        super(GlobalFitter, self).__init__(self._fitfunc,
-                                           (xdata, np.hstack(ydata),
-                                            np.hstack(edata)),
-                                           self.params,
-                                           callback=callback,
-                                           kws=min_kwds)
-        self.dataset.weighted = weighted
-        if not self.is_weighted:
-            self.scale_covar = not self.is_weighted
-            self.dataset.y_err = None
-
-    def model(self, params=None):
+    def process_chain(self, nburn=0, nthin=1, flatchain=False):
         """
-        Calculates the model. This method is provided for convenience purposes
-        and is not used during a fit.
+        Process the chain produced by the sampler.
 
         Parameters
         ----------
-        params: lmfit.Parameters
-            Specifies the entire parameter set, across all the datasets
+        nburn : int, optional
+            discard this many steps from the chain
+        nthin : int, optional
+            only accept every `nthin` samples from the chain
+        flatchain : bool, optional
+            collapse the walkers down into a single dimension.
 
         Returns
         -------
-        model : np.ndarray
-            The model.
+        [(param, stderr, chain)] : list
+            List of (param, stderr, chain) tuples.
+            If `isinstance(objective.parameters, Parameters)` then `param` is a
+            `Parameter` instance. `param.value`, `param.stderr` and
+            `param.chain` will contain the median, stderr and chain samples,
+            respectively. Otherwise `param` will be a float representing the
+            median of the chain samples.
+            `stderr` is the half width of the [15.87, 84.13] spread (similar to
+            standard deviation) and `chain` is an array containing the MCMC
+            samples for that parameter.
+
+        Notes
+        -----
+        One can call `process_chain` many times, the chain associated with this
+        object is unaltered. The chain is stored in the
+        `CurveFitter.sampler.chain` attribute and has shape
+        `(nwalkers, iterations, nvary)`. The burned and thinned chain is
+        created via: `chain[:, nburn::nthin]`. If `flatten is True` then
+        `chain[:, nburn::nthin].reshape(-1, nvary) is returned. It also has the
+        effect of setting the parameter stderr's.
         """
-        if params is None:
-            params = self.params
+        chain = self.sampler.chain[:, nburn::nthin, :]
+        _flatchain = chain.reshape((-1, self.nvary))
+        if flatchain:
+            chain = _flatchain
 
-        params.update_constraints()
-        return self._fitfunc(self.dataset.x, params=params)
+        flat_params = list(f_unique(flatten(self.objective.parameters)))
 
-    def residuals(self, params=None):
-        """
-        Calculate the difference between the data and the model. Also known as
-        the objective function.  This is a convenience method. Over-riding it
-        does not change the fitting process.
-        residuals = (fitfunc - y) / edata
+        # set the stderr of each of the Parameters
+        l = []
+        if np.all([is_parameter(param) for param in flat_params]):
+            # zero out all the old parameter stderrs
+            for param in flat_params:
+                param.stderr = None
+                param.chain = None
 
-        Parameters
-        ----------
-        params: lmfit.Parameters
-            Specifies the entire parameter set
+            # do the error calcn for the varying parameters and set the chain
+            quantiles = np.percentile(_flatchain, [15.87, 50, 84.13], axis=0)
+            for i, param in enumerate(self._varying_parameters):
+                std_l, median, std_u = quantiles[:, i]
+                param.value = median
+                param.stderr = 0.5 * (std_u - std_l)
 
-        Returns
-        -------
-        residuals : np.ndarray
-            The difference between the data and the model.
-        """
-        if params is None:
-            params = self.params
+                # copy in the chain
+                param.chain = np.copy(chain[..., i])
+                res = MCMCResult(name=param.name, param=param,
+                                 median=param.value, stderr=param.stderr,
+                                 chain=param.chain)
+                l.append(res)
 
-        params.update_constraints()
-        return super(GlobalFitter, self).residuals(params)
+            fitted_values = np.array(self._varying_parameters)
 
-    def distribute_params(self, params):
-        """
-        Convenience function for re-distributing global parameter values
-        back into each of the original `CurveFitter.params` attributes.
-        """
-        for name, param in params.items():
-            fitter_i, orig_name = self.new_param_reference[name]
-            self.original_params[fitter_i][orig_name].value = param._getval()
+            # give each constrained param a chain (to be reshaped later)
+            # but only if it depends on varying parameters
+            # TODO add a test for this...
+            constrained_params = [param for param in flat_params
+                                  if param.constraint is not None]
 
+            # figure out all the "master" parameters
+            relevant_depends = []
+            for constrain_param in constrained_params:
+                depends = set(flatten(constrain_param.dependencies))
+                rdepends = depends.intersection(set(self._varying_parameters))
+                relevant_depends.append(rdepends)
 
-class _parallel_residuals_calculator(object):
-    """
-    Objective function calculating the residuals for a curvefit. This is a
-    separate object and not a method in CurveFitter to allow for
-    multiprocessing.
-    """
-    def __init__(self, fitfunc, data_tuple=None, mask=None, costfun=None):
-        self.x, self.y, self.e = data_tuple
-        self.fitfunc = fitfunc
-        self.mask = mask
-        self.costfun = costfun
+            # don't need duplicates
+            relevant_depends = set(relevant_depends)
 
-    def __call__(self, params, *userargs, **userkws):
-        resid = self.fitfunc(self.x, params, *userargs, **userkws)
+            for constrain_param in constrained_params:
+                depends = set(flatten(constrain_param.dependencies))
+                if depends.intersection(relevant_depends):
+                    constrain_param.chain = np.zeros_like(
+                        relevant_depends[0].chain)
 
-        if self.costfun is not None:
-            return self.costfun(params, resid, self.y, self.e, *userargs,
-                                **userkws)
+                    for index, _ in np.ndenumerate(constrain_param.chain):
+                        for rdepend in relevant_depends:
+                            rdepend.value = rdepend.chain[index]
 
-        resid -= self.y
-        if self.e is not None:
-            resid /= self.e
+                        constrain_param.chain[index] = constrain_param.value
 
-        if self.mask is not None:
-            resid_ma = ma.array(resid, mask=self.mask)
-            return resid_ma[~resid_ma.mask].data
+                    quantiles = np.percentile(constrain_param.chain,
+                                              [15.87, 50, 84.13])
+
+                    std_l, median, std_u = quantiles[:, i]
+                    constrain_param.value = median
+                    constrain_param.stderr = 0.5 * (std_u - std_l)
+
+            # now reset fitted parameter values (they would've been changed by
+            # constraints calculations
+            self.objective.setp(fitted_values)
         else:
-            return resid
+            for i in range(self.nvary):
+                c = np.copy(chain[..., i])
+                median, stderr = uncertainty_from_chain(c)
+                res = MCMCResult(name='', param=median,
+                                 median=median, stderr=stderr,
+                                 chain=c)
+                l.append(res)
+
+        return l
 
 
-class _parallel_likelihood_calculator(object):
+def uncertainty_from_chain(chain):
     """
-    Function calculating the log-likelihood for a curvefit. This is a
-    separate function and not a method in CurveFitter to allow for
-    multiprocessing.
+    Calculates the median and uncertainty of MC samples.
+
+    Parameters
+    ----------
+    chain : array-like
+
+    Returns
+    -------
+    median, stderr : float, float
+        `median` of the chain samples. `stderr` is half the width of the
+        [15.87, 84.13] spread.
     """
-    def __init__(self, fitfunc, data_tuple=None, mask=None, lnpost=None):
-        self.x, self.y, self.e = data_tuple
-        self.fitfunc = fitfunc
-        self.mask = mask
-        self.lnpost = lnpost
-
-    def __call__(self, params, *userargs, **userkws):
-        resid = self.fitfunc(self.x, params, *userargs, **userkws)
-
-        if self.lnpost is not None:
-            return self.lnpost(params, resid, self.y, self.e, *userargs,
-                               **userkws)
-        else:
-            resid -= self.y
-            if self.e is not None:
-                resid /= self.e
-            resid *= resid
-
-            if self.e is not None:
-                resid += np.log(2 * np.pi * self.e ** 2)
-
-            if self.mask is not None:
-                resid_ma = ma.array(resid, mask=self.mask)
-                return -0.5 * np.sum(resid_ma[~resid_ma.mask].data)
-            else:
-                return -0.5 * np.sum(resid)
+    flatchain = chain.flatten()
+    std_l, median, std_u = np.percentile(flatchain, [15.87, 50, 84.13])
+    return median, 0.5 * (std_u - std_l)
 
 
-def _parallel_global_fitfunc(x, params, fitfuncs=None,
-                             new_param_reference=None, original_params=None,
-                             original_userargs=None, original_kws=None):
+def bounds_list(parameters):
     """
-    Fit function calculating a predictive model for a curvefit. This is a
-    separate function and not a method in CurveFitter to allow for
-    multiprocessing.
+    Return (interval) bounds for all varying parameters
     """
-    # distribute params
-    for name, param in params.items():
-        fitter_i, original_name = new_param_reference[name]
-        original_params[fitter_i][original_name].value = param._getval()
+    bounds = []
+    for param in parameters:
+        if (hasattr(param, 'bounds') and
+                isinstance(param.bounds, Interval)):
+            bnd = param.bounds
+            bounds.append((bnd.lb, bnd.ub))
+        # TODO could also do any truncated PDF
 
-    model = np.zeros(0, dtype='float64')
-
-    for i, fitfunc in enumerate(fitfuncs):
-        model_i = fitfuncs[i](x[i],
-                              original_params[i],
-                              *original_userargs[i],
-                              **original_kws[i])
-        model = np.append(model,
-                          model_i)
-    return model
-
-
-if __name__ == '__main__':
-    from lmfit import fit_report
-
-    def gauss(x, params, *args):
-        """Calculates a Gaussian model"""
-        p = values(params)
-        return p[0] + p[1] * np.exp(-((x - p[2]) / p[3])**2)
-
-    xdata = np.linspace(-4, 4, 100)
-    p0 = np.array([0., 1., 0., 1.])
-    lbounds = [(-1., 1.), (0., 2.), (-3., 3.), (0.001, 2.)]
-
-    temp_pars = to_parameters(p0, bounds=lbounds)
-    pars = to_parameters(p0 + 0.2, bounds=lbounds)
-
-    ydata = gauss(xdata, temp_pars) + 0.1 * np.random.random(xdata.size)
-
-    f = CurveFitter(gauss, (xdata, ydata), pars)
-    f.fit()
-
-    print(fit_report(f.params))
+    return bounds

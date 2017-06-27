@@ -1,18 +1,21 @@
 import unittest
 import os.path
 import os
+import pickle
 
-import refnx.analysis.reflect as reflect
 try:
     import refnx.analysis._creflect as _creflect
     HAVE_CREFLECT = True
 except ImportError:
     HAVE_CREFLECT = False
+
 import refnx.analysis._reflect as _reflect
-import refnx.analysis.curvefitter as curvefitter
-from refnx.analysis.curvefitter import CurveFitter, values
-from refnx.analysis.reflect import ReflectivityFitFunction as RFF
-from refnx.analysis.reflect import AnalyticalReflectivityFunction as ARF
+from .structure import SLD, Slab
+from .reflect_model import ReflectModel
+from .objective import Transform, Objective
+from .curvefitter import CurveFitter
+from .parameter import Parameter
+from .model import Model
 
 import numpy as np
 from numpy.testing import (assert_almost_equal, assert_equal, assert_,
@@ -29,16 +32,13 @@ TEST_C_REFLECT = HAVE_CREFLECT or REQUIRE_C
 class TestReflect(unittest.TestCase):
 
     def setUp(self):
-        self.coefs = np.zeros(12)
-        self.coefs[0] = 1.
-        self.coefs[1] = 1.
-        self.coefs[4] = 2.07
-        self.coefs[7] = 3
-        self.coefs[8] = 100
-        self.coefs[9] = 3.47
-        self.coefs[11] = 2
+        sio2 = SLD(3.47, name='SiO2')
+        air = SLD(0, name='air')
+        si = SLD(2.07, name='Si')
+        d2o = SLD(6.36, name='D2O')
+        polymer = SLD(1, name='polymer')
 
-        self.layer_format = reflect.coefs_to_layer(self.coefs)
+        self.structure = air | sio2(100, 2) | si(0, 3)
 
         theoretical = np.loadtxt(os.path.join(path, 'theoretical.txt'))
         qvals, rvals = np.hsplit(theoretical, 2)
@@ -46,84 +46,75 @@ class TestReflect(unittest.TestCase):
         self.rvals = rvals.flatten()
 
         # e361 is an older dataset, but well characterised
-        self.coefs361 = np.zeros(16)
-        self.coefs361[0] = 2
-        self.coefs361[1] = 1.
-        self.coefs361[2] = 2.07
-        self.coefs361[4] = 6.36
-        self.coefs361[6] = 2e-5
-        self.coefs361[7] = 3
-        self.coefs361[8] = 10
-        self.coefs361[9] = 3.47
-        self.coefs361[11] = 4
-        self.coefs361[12] = 200
-        self.coefs361[13] = 1
-        self.coefs361[15] = 3
-        lowlim = np.zeros(16)
-        lowlim[1] = 0.1
-        lowlim[4] = 6.2
-        hilim = 2 * self.coefs361
+        self.structure361 = si | sio2(10, 4) | polymer(200, 3) | d2o(0, 3)
+        self.model361 = ReflectModel(self.structure361, bkg=2e-5)
 
-        bounds = list(zip(lowlim, hilim))
+        self.model361.scale.vary = True
+        self.model361.bkg.vary = True
+        self.model361.scale.range(0.1, 2)
+        self.model361.bkg.range(0, 5e-5)
+
+        # d2o
+        self.structure361[-1].sld.real.vary = True
+        self.structure361[-1].sld.real.range(6, 6.36)
+
+        self.structure361[1].thick.vary = True
+        self.structure361[1].thick.range(5, 20)
+
+        self.structure361[2].thick.vary = True
+        self.structure361[2].thick.range(100, 220)
+
+        self.structure361[2].sld.real.vary = True
+        self.structure361[2].sld.real.range(0.2, 1.5)
+
         e361 = np.loadtxt(os.path.join(path, 'e361r.txt'))
         self.qvals361, self.rvals361, self.evals361 = np.hsplit(e361, 3)
-        np.seterr(invalid='raise')
-
-        self.params361 = curvefitter.to_parameters(self.coefs361,
-                                                   bounds=bounds,
-                                                   varies=[False] * 16)
-        fit = [1, 4, 6, 8, 12, 13]
-        for p in fit:
-            self.params361['p%d' % p].vary = True
 
     def test_abeles(self):
         # test reflectivity calculation with values generated from Motofit
-        calc = reflect.reflectivity(self.qvals, self.coefs)
-
+        calc = self.structure.reflectivity(self.qvals)
         assert_almost_equal(calc, self.rvals)
-
-    def test_format_conversion(self):
-        coefs = reflect.layer_to_coefs(self.layer_format)
-        assert_equal(coefs, self.coefs)
 
     def test_c_abeles(self):
         if TEST_C_REFLECT:
             # test reflectivity calculation with values generated from Motofit
-            calc = _creflect.abeles(self.qvals, self.layer_format)
+            calc = _creflect.abeles(self.qvals, self.structure.slabs[..., :4])
             assert_almost_equal(calc, self.rvals)
 
             # test for non-contiguous Q values
             tempq = self.qvals[0::5]
             assert_(tempq.flags['C_CONTIGUOUS'] is False)
-            calc = _creflect.abeles(tempq, self.layer_format)
+            calc = _creflect.abeles(tempq, self.structure.slabs[..., :4])
             assert_almost_equal(calc, self.rvals[0::5])
 
     def test_py_abeles(self):
         # test reflectivity calculation with values generated from Motofit
-        calc = _reflect.abeles(self.qvals, self.layer_format)
+        calc = _reflect.abeles(self.qvals, self.structure.slabs[..., :4])
         assert_almost_equal(calc, self.rvals)
 
     def test_compare_c_py_abeles(self):
         # test python and c are equivalent
         # but not the same file
+        s = self.structure.slabs[..., :4]
+
         if not TEST_C_REFLECT:
             return
         assert_(_reflect.__file__ != _creflect.__file__)
 
-        calc1 = _reflect.abeles(self.qvals, self.layer_format)
-        calc2 = _creflect.abeles(self.qvals, self.layer_format)
+        calc1 = _reflect.abeles(self.qvals, s)
+        calc2 = _creflect.abeles(self.qvals, s)
         assert_almost_equal(calc1, calc2)
-        calc1 = _reflect.abeles(self.qvals, self.layer_format, scale=2.)
-        calc2 = _creflect.abeles(self.qvals, self.layer_format, scale=2.)
+        calc1 = _reflect.abeles(self.qvals, s, scale=2.)
+        calc2 = _creflect.abeles(self.qvals, s, scale=2.)
         assert_almost_equal(calc1, calc2)
-        calc1 = _reflect.abeles(self.qvals, self.layer_format, scale=0.5,
+        calc1 = _reflect.abeles(self.qvals, s, scale=0.5,
                                 bkg=0.1)
         # workers = 1 is a non-threaded implementation
-        calc2 = _creflect.abeles(self.qvals, self.layer_format, scale=0.5,
+        calc2 = _creflect.abeles(self.qvals, s, scale=0.5,
                                  bkg=0.1, workers=1)
         # workers = 2 forces the calculation to go through multithreaded calcn,
         # even on single core processor
-        calc3 = _creflect.abeles(self.qvals, self.layer_format, scale=0.5,
+        calc3 = _creflect.abeles(self.qvals, s, scale=0.5,
                                  bkg=0.1, workers=2)
         assert_almost_equal(calc1, calc2)
         assert_almost_equal(calc1, calc3)
@@ -179,65 +170,68 @@ class TestReflect(unittest.TestCase):
         # c reflectivity should be able to deal with multidimensional input
         if not TEST_C_REFLECT:
             return
+        s = self.structure.slabs[..., :4]
+
         reshaped_q = np.reshape(self.qvals, (2, 250))
         reshaped_r = self.rvals.reshape(2, 250)
-        calc = _creflect.abeles(reshaped_q, self.layer_format)
+        calc = _creflect.abeles(reshaped_q, s)
         assert_equal(reshaped_r.shape, calc.shape)
         assert_almost_equal(reshaped_r, calc, 15)
 
     def test_abeles_reshape(self):
         # reflectivity should be able to deal with multidimensional input
+        s = self.structure.slabs[..., :4]
+
         reshaped_q = np.reshape(self.qvals, (2, 250))
         reshaped_r = self.rvals.reshape(2, 250)
-        calc = _reflect.abeles(reshaped_q, self.layer_format)
+        calc = _reflect.abeles(reshaped_q, s)
         assert_equal(reshaped_r.shape, calc.shape)
         assert_almost_equal(reshaped_r, calc, 15)
 
     def test_reflectivity_model(self):
         # test reflectivity calculation with values generated from Motofit
-        params = curvefitter.to_parameters(self.coefs)
-
-        fitfunc = reflect.ReflectivityFitFunction(dq=0.)
-        model = fitfunc.model(self.qvals, params)
-
+        rff = ReflectModel(self.structure, dq=0)
+        model = rff.model(self.qvals)
         assert_almost_equal(model, self.rvals)
 
     def test_reflectivity_fit(self):
         # a smoke test to make sure the reflectivity fit proceeds
-        fitfunc = reflect.ReflectivityFitFunction()
-        transform = reflect.Transform('logY')
-        yt, et = transform.transform(self.qvals361,
-                                     self.rvals361,
-                                     self.evals361)
-        kws = {'transform': transform.transform}
-        fitter2 = CurveFitter(fitfunc,
-                              (self.qvals361, yt, et),
-                              self.params361,
-                              fcn_kws=kws,
-                              kws={'seed': 2})
-        fitter2.fit('differential_evolution')
+        transform = Transform('logY').transform
+        model = self.model361
+        objective = Objective(model,
+                              (self.qvals361, self.rvals361, self.evals361),
+                              transform=transform)
+        fitter = CurveFitter(objective)
+        with np.errstate(invalid='raise'):
+            fitter.fit('differential_evolution')
+
+    def test_model_pickle(self):
+        model = self.model361
+        model.dq = 5.
+        pkl = pickle.dumps(model)
+        unpkl = pickle.loads(pkl)
+        assert_(isinstance(unpkl, ReflectModel))
+        for param in unpkl.parameters.flattened():
+            try:
+                assert_(isinstance(param, Parameter))
+            except AssertionError:
+                raise AssertionError(type(param))
 
     def test_reflectivity_emcee(self):
-        transform = reflect.Transform('logY')
-        yt, et = transform.transform(self.qvals361,
-                                     self.rvals361,
-                                     self.evals361)
+        transform = Transform('logY').transform
+        model = self.model361
+        model.dq = 5.
+        objective = Objective(model,
+                              (self.qvals361, self.rvals361, self.evals361),
+                              transform=transform)
+        fitter = CurveFitter(objective, threads=4)
+        res = fitter.fit('differential_evolution')
+        res_mcmc = fitter.sample(steps=50, nburn=20, nthin=10, random_state=1)
 
-        kws = {'transform': transform.transform}
-        fitfunc = RFF(transform=transform.transform, dq=5.)
-
-        fitter = CurveFitter(fitfunc,
-                             (self.qvals361, yt, et),
-                             self.params361,
-                             fcn_kws=kws)
-        res = fitter.fit()
-        res_em = fitter.emcee(steps=10, seed=1)
-        assert_allclose(values(res.params), values(res_em.params), rtol=1e-2)
-        # for par in res.params:
-        #     if res.params[par].vary:
-        #         err = res.params[par].stderr
-        #         em_err = res_em.params[par].stderr
-        #         assert_allclose(err, em_err, rtol=0.1)
+        mcmc_val = [mcmc_result.median for mcmc_result in res_mcmc]
+        assert_allclose(mcmc_val, res.x, rtol=0.05)
+        # mcmc_stderr = [mcmc_result.stderr for mcmc_result in res_mcmc]
+        # assert_allclose(mcmc_stderr[1:], res.stderr[1:], rtol=0.25)
 
     def test_smearedabeles(self):
         # test smeared reflectivity calculation with values generated from
@@ -249,22 +243,10 @@ class TestReflect(unittest.TestCase):
         values in Motofit was 13.
         Do the same here
         '''
-        calc = reflect.reflectivity(qvals.flatten(), self.coefs,
-                                    **{'dqvals': dqvals.flatten(),
-                                       'quad_order': 13})
+        rff = ReflectModel(self.structure, quad_order=13)
+        calc = rff.model(qvals.flatten(), x_err=dqvals.flatten())
 
         assert_almost_equal(rvals.flatten(), calc)
-
-    def test_constant_smearing(self):
-        # check that constant dq/q smearing is the same as point by point
-        dqvals = 0.05 * self.qvals
-        calc = reflect.reflectivity(self.qvals, self.coefs,
-                                    **{'dqvals': dqvals,
-                                       'quad_order': 'ultimate'})
-        calc2 = reflect.reflectivity(self.qvals, self.coefs,
-                                     **{'dqvals': 5.})
-
-        assert_allclose(calc, calc2, rtol=0.011)
 
     def test_smearedabeles_reshape(self):
         # test smeared reflectivity calculation with values generated from
@@ -279,71 +261,32 @@ class TestReflect(unittest.TestCase):
         reshaped_q = np.reshape(qvals, (2, 250))
         reshaped_r = np.reshape(rvals, (2, 250))
         reshaped_dq = np.reshape(dqvals, (2, 250))
-        calc = reflect.reflectivity(reshaped_q, self.coefs,
-                                    **{'dqvals': reshaped_dq,
-                                       'quad_order': 13})
 
-        assert_almost_equal(calc, reshaped_r, 15)
+        rff = ReflectModel(self.structure, quad_order=13)
+        calc = rff.model(reshaped_q, x_err=reshaped_dq)
 
-    def test_smeared_reflectivity_fitter(self):
-        # test smeared reflectivity calculation with values generated from
-        # Motofit (quadrature precsion order = 13)
-        theoretical = np.loadtxt(os.path.join(path, 'smeared_theoretical.txt'))
-        qvals, rvals, dqvals = np.hsplit(theoretical, 3)
+        assert_almost_equal(calc, reshaped_r)
 
-        '''
-        the order of the quadrature precision used to create these smeared
-        values in Motofit was 13.
-        Do the same here
-        '''
-        params = curvefitter.to_parameters(self.coefs)
-        fitfunc = RFF(quad_order=13)
-        fitter = CurveFitter(fitfunc,
-                             (qvals, rvals),
-                             params,
-                             fcn_kws={'dqvals': dqvals})
+    def test_constant_smearing(self):
+        # check that constant dq/q smearing is the same as point by point
+        dqvals = 0.05 * self.qvals
+        rff = ReflectModel(self.structure, quad_order='ultimate')
+        calc = rff.model(self.qvals, x_err=dqvals)
 
-        model = fitter.model(params)
+        rff.dq = 5.
+        calc2 = rff.model(self.qvals)
 
-        assert_almost_equal(model, rvals)
+        assert_allclose(calc, calc2, rtol=0.011)
 
     def test_sld_profile(self):
         # test SLD profile with SLD profile from Motofit.
         np.seterr(invalid='raise')
         profile = np.loadtxt(os.path.join(path, 'sld_theoretical_R.txt'))
         z, rho = np.split(profile, 2)
-        myrho = reflect.sld_profile(z.flatten(), self.coefs)
+
+        rff = ReflectModel(self.structure)
+        z, myrho = rff.structure.sld_profile(z.flatten())
         assert_almost_equal(myrho, rho.flatten())
-
-    def test_parameter_names(self):
-        names = ['nlayers', 'scale', 'SLDfront', 'iSLDfront', 'SLDback',
-                 'iSLDback', 'bkg', 'sigma_back']
-
-        names += ['thick1', 'SLD1', 'iSLD1', 'sigma1']
-
-        names2 = reflect.ReflectivityFitFunction.parameter_names(12)
-        assert_(names == names2)
-
-
-class AnalyticTestFunction(ARF):
-    def to_slab(self, params):
-        return [1, 1., 0, 0, 2.07, 0, 0, 3, 100, 3.47, 0, 2]
-
-
-class TestAnalyticalProfile(unittest.TestCase):
-    def setUp(self):
-        self.arf = AnalyticTestFunction(dq=0)
-
-        theoretical = np.loadtxt(os.path.join(path, 'theoretical.txt'))
-        qvals, rvals = np.hsplit(theoretical, 2)
-        self.qvals = qvals.flatten()
-        self.rvals = rvals.flatten()
-
-    def test_ARF_model(self):
-        # simple smoke test to see if we can calculate reflectivity using
-        # the analytical model setup
-        rvals = self.arf.model(self.qvals, [2])
-        assert_allclose(rvals, self.rvals)
 
 
 if __name__ == '__main__':

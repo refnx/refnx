@@ -100,7 +100,7 @@ install:
     - cmd: conda config --set show_channel_urls true
     - cmd: conda update --yes --quiet conda
     - cmd: conda install --yes --quiet obvious-ci
-    - cmd: conda install --yes --quiet numpy toolchain scipy lmfit emcee h5py xlrd pandas uncertainties cython nose
+    - cmd: conda install --yes --quiet numpy toolchain scipy emcee h5py xlrd pandas uncertainties cython nose
 
 build_script:
     # Build the compiled extension

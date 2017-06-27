@@ -1,9 +1,11 @@
 import os
 import numpy as np
 from numpy import exp, sin, cos, arctan, array, pi
-from numpy.testing import assert_allclose
-from lmfit import Parameters
-from refnx.analysis import CurveFitter, values
+from numpy.testing import assert_allclose, assert_
+from .curvefitter import CurveFitter
+from .objective import Objective, Transform
+from .parameter import Parameter, Parameters
+from .model import Model
 
 thisdir, thisfile = os.path.split(__file__)
 NIST_DIR = os.path.join(thisdir, 'NIST_STRD')
@@ -17,10 +19,7 @@ def ndig(a, b):
 
 
 def read_params(params):
-    if isinstance(params, Parameters):
-        return [par.value for par in params.values()]
-    else:
-        return params
+    return np.array(params)
 
 
 def Bennett5(x, b):
@@ -144,36 +143,36 @@ def Thurber(x, b):
 
 
 #  Model name        fcn,    #fitting params, dim of x
-Models = {'Bennett5': (Bennett5, 3, 1),
-          'BoxBOD': (BoxBOD, 2, 1),
-          'Chwirut1': (Chwirut, 3, 1),
-          'Chwirut2': (Chwirut, 3, 1),
-          'DanWood': (DanWood, 2, 1),
-          'ENSO': (ENSO, 9, 1),
-          'Eckerle4': (Eckerle4, 3, 1),
-          'Gauss1': (Gauss, 8, 1),
-          'Gauss2': (Gauss, 8, 1),
-          'Gauss3': (Gauss, 8, 1),
-          'Hahn1': (Hahn1, 7, 1),
-          'Kirby2': (Kirby, 5, 1),
-          'Lanczos1': (Lanczos, 6, 1),
-          'Lanczos2': (Lanczos, 6, 1),
-          'Lanczos3': (Lanczos, 6, 1),
-          'MGH09': (MGH09, 4, 1),
-          'MGH10': (MGH10, 3, 1),
-          'MGH17': (MGH17, 5, 1),
-          'Misra1a': (Misra1a, 2, 1),
-          'Misra1b': (Misra1b, 2, 1),
-          'Misra1c': (Misra1c, 2, 1),
-          'Misra1d': (Misra1d, 2, 1),
-          'Nelson': (Nelson, 3, 2),
-          'Rat42': (Rat42, 3, 1),
-          'Rat43': (Rat43, 4, 1),
-          'Roszman1': (Roszman1, 4, 1),
-          'Thurber': (Thurber, 7, 1)}
+NIST_Models = {'Bennett5': (Bennett5, 3, 1),
+               'BoxBOD': (BoxBOD, 2, 1),
+               'Chwirut1': (Chwirut, 3, 1),
+               'Chwirut2': (Chwirut, 3, 1),
+               'DanWood': (DanWood, 2, 1),
+               'ENSO': (ENSO, 9, 1),
+               'Eckerle4': (Eckerle4, 3, 1),
+               'Gauss1': (Gauss, 8, 1),
+               'Gauss2': (Gauss, 8, 1),
+               'Gauss3': (Gauss, 8, 1),
+               'Hahn1': (Hahn1, 7, 1),
+               'Kirby2': (Kirby, 5, 1),
+               'Lanczos1': (Lanczos, 6, 1),
+               'Lanczos2': (Lanczos, 6, 1),
+               'Lanczos3': (Lanczos, 6, 1),
+               'MGH09': (MGH09, 4, 1),
+               'MGH10': (MGH10, 3, 1),
+               'MGH17': (MGH17, 5, 1),
+               'Misra1a': (Misra1a, 2, 1),
+               'Misra1b': (Misra1b, 2, 1),
+               'Misra1c': (Misra1c, 2, 1),
+               'Misra1d': (Misra1d, 2, 1),
+               'Nelson': (Nelson, 3, 2),
+               'Rat42': (Rat42, 3, 1),
+               'Rat43': (Rat43, 4, 1),
+               'Roszman1': (Roszman1, 4, 1),
+               'Thurber': (Thurber, 7, 1)}
 
 
-def NIST_runner(dataset, method='leastsq', chi_atol=1e-5,
+def NIST_runner(dataset, method='least_squares', chi_atol=1e-5,
                 val_rtol=1e-2, err_rtol=0.01):
     NIST_dataset = ReadNistData(dataset)
     x, y = (NIST_dataset['x'], NIST_dataset['y'])
@@ -183,21 +182,22 @@ def NIST_runner(dataset, method='leastsq', chi_atol=1e-5,
 
     params = NIST_dataset['start']
 
-    fitfunc = Models[dataset][0]
-    fitter = CurveFitter(fitfunc, (x, y), params)
-    result = fitter.fit(method, params)
+    fitfunc = NIST_Models[dataset][0]
+    model = Model(params, fitfunc)
+    objective = Objective(model, (x, y))
+    fitter = CurveFitter(objective)
+    result = fitter.fit(method=method)
 
-    assert_allclose(result.chisqr, NIST_dataset['sum_squares'], atol=chi_atol)
+    assert_allclose(objective.chisqr(),
+                    NIST_dataset['sum_squares'],
+                    atol=chi_atol)
 
-    thisval = values(result.params)
     certval = NIST_dataset['cert_values']
-    assert_allclose(thisval, certval, rtol=val_rtol)
+    assert_allclose(result.x, certval, rtol=val_rtol)
 
-    if result.errorbars:
-        thiserr = np.array([result.params[par].stderr for
-                            par in result.params])
+    if 'stderr' in result:
         certerr = NIST_dataset['cert_stderr']
-        assert_allclose(thiserr, certerr, rtol=err_rtol)
+        assert_allclose(result.stderr, certerr, rtol=err_rtol)
 
 
 def ReadNistData(dataset, start='start2'):
@@ -260,8 +260,8 @@ def ReadNistData(dataset, start='start2'):
             pval = start2[i]
         elif start == 'start1':
             pval = start1[i]
-
-        params.add(pname, value=pval)
+        p = Parameter(pval, name=pname, vary=True)
+        params.append(p)
 
     out = {'y': y, 'x': x, 'nparams': nparams, 'ndata': ndata,
            'nfree': nfree, 'start': params, 'sum_squares': sum_squares,
