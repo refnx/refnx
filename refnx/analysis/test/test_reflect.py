@@ -226,7 +226,8 @@ class TestReflect(unittest.TestCase):
                               transform=transform)
         fitter = CurveFitter(objective, threads=4)
         res = fitter.fit('differential_evolution')
-        res_mcmc = fitter.sample(steps=50, nburn=20, nthin=10, random_state=1)
+        res_mcmc = fitter.sample(steps=50, nburn=20, nthin=10,
+                                 random_state=1, verbose=False)
 
         mcmc_val = [mcmc_result.median for mcmc_result in res_mcmc]
         assert_allclose(mcmc_val, res.x, rtol=0.05)

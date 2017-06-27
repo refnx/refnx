@@ -87,11 +87,11 @@ class TestCurveFitter(unittest.TestCase):
         assert_almost_equal(self.p[1].value, self.p[0].value * -0.203)
 
     def test_mcmc(self):
-        self.mcfitter.sample(steps=50, nburn=0, nthin=1)
+        self.mcfitter.sample(steps=50, nburn=0, nthin=1, verbose=False)
 
         # should be able to multithread
         mcfitter = CurveFitter(self.objective, threads=2)
-        mcfitter.sample(steps=50, nburn=0, nthin=1)
+        mcfitter.sample(steps=50, nburn=0, nthin=1, verbose=False)
 
     def test_fit_smoke(self):
         # smoke tests to check that fit runs
@@ -187,7 +187,7 @@ class TestFitterGauss(unittest.TestCase):
         assert_allclose(uncertainties, self.best_weighted_errors, rtol=0.01)
 
         # compare samples to best_weighted_errors
-        f.sample(steps=150, nburn=40, nthin=20, random_state=1)
+        f.sample(steps=150, nburn=40, nthin=20, random_state=1, verbose=False)
         uncertainties = [param.stderr for param in self.params]
         assert_allclose(uncertainties, self.best_weighted_errors, rtol=0.15)
 
