@@ -1,6 +1,7 @@
 import numpy.testing
 
-from refnx._lib.util import TemporaryDirectory, preserve_cwd, flatten, unique
+from refnx._lib.util import (TemporaryDirectory, preserve_cwd, flatten, unique,
+                             possibly_open_file)
 
 test = numpy.testing.Tester().test
 
