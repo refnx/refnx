@@ -1,14 +1,14 @@
 import unittest
 import pickle
 
-from .parameter import Parameter, Parameters, is_parameters, is_parameter
-from refnx.analysis import Interval, PDF
-from .model import Model
-
 import numpy as np
 from numpy.testing import (assert_almost_equal, assert_equal, assert_,
                            assert_allclose, assert_raises)
-from scipy.stats import norm, truncnorm, uniform
+from scipy.stats import norm, uniform
+
+
+from refnx.analysis import (Interval, PDF, Parameter, Parameters,
+                            is_parameters)
 
 
 class TestParameter(unittest.TestCase):

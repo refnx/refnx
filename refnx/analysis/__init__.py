@@ -7,12 +7,6 @@ from .model import Model, fitfunc
 from .structure import Slab, Structure, SLD
 from .reflect_model import reflectivity, ReflectModel
 
-try:
-    from refnx.analysis._creflect import abeles
-except ImportError:
-    print('WARNING, Using slow reflectivity calculation')
-    from refnx.analysis._reflect import abeles
-
 
 import numpy.testing
 test = numpy.testing.Tester().test

@@ -1,11 +1,11 @@
 import os
+
 import numpy as np
 from numpy import exp, sin, cos, arctan, array, pi
 from numpy.testing import assert_allclose, assert_
-from .curvefitter import CurveFitter
-from .objective import Objective, Transform
-from .parameter import Parameter, Parameters
-from .model import Model
+
+from refnx.analysis import (CurveFitter, Objective, Parameter, Parameters,
+                            Model)
 
 thisdir, thisfile = os.path.split(__file__)
 NIST_DIR = os.path.join(thisdir, 'NIST_STRD')

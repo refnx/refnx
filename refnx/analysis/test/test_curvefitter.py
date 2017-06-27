@@ -7,12 +7,10 @@ import numpy as np
 from numpy.testing import (assert_, assert_almost_equal, assert_equal,
                            assert_allclose)
 
-from .curvefitter import CurveFitter
-from .parameter import Parameter, Parameters
-from .model import Model
-from .objective import Objective, BaseObjective
+from refnx.analysis import (CurveFitter, Parameter, Parameters, Model,
+                            Objective)
 from refnx.dataset import Data1D
-from .NISTModels import NIST_runner, NIST_Models
+from refnx.analysis.test.NISTModels import NIST_runner, NIST_Models
 
 
 path = os.path.dirname(os.path.abspath(__file__))

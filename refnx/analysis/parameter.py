@@ -296,7 +296,7 @@ class BaseParameter(object):
         for _dep in self._deps:
             if isinstance(_dep, Parameter):
                 l.append(_dep)
-            if isinstance(_dep, _UnaryOp) or isinstance(_dep, _BinaryOp):
+            if isinstance(_dep, (_UnaryOp, _BinaryOp)):
                 l.append(_dep.dependencies())
         return l
 

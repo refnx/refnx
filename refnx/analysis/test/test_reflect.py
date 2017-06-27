@@ -10,12 +10,8 @@ except ImportError:
     HAVE_CREFLECT = False
 
 import refnx.analysis._reflect as _reflect
-from .structure import SLD, Slab
-from .reflect_model import ReflectModel
-from .objective import Transform, Objective
-from .curvefitter import CurveFitter
-from .parameter import Parameter
-from .model import Model
+from refnx.analysis import (SLD, Slab, ReflectModel, Transform, Objective,
+                            CurveFitter, Parameter, Model)
 
 import numpy as np
 from numpy.testing import (assert_almost_equal, assert_equal, assert_,

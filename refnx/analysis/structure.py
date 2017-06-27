@@ -3,12 +3,12 @@ from collections import UserList
 import numpy as np
 from scipy.special import erf
 
-# try:
-#     from refnx.analysis import _creflect as refcalc
-# except ImportError:
-#     print('WARNING, Using slow reflectivity calculation')
-#     from refnx.analysis import _reflect as refcalc
-from refnx.analysis import Parameters, Parameter, abeles
+try:
+    from refnx.analysis import _creflect as refcalc
+except ImportError:
+    print('WARNING, Using slow reflectivity calculation')
+    from refnx.analysis import _reflect as refcalc
+from refnx.analysis import Parameters, Parameter
 
 
 class Structure(UserList):
@@ -115,7 +115,7 @@ class Structure(UserList):
             ``_reflect``. If `workers == 0` then all available processors are
             used.
         """
-        return abeles(q, self.slabs[..., :4], workers=workers)
+        return refcalc.abeles(q, self.slabs[..., :4], workers=workers)
 
     def sld_profile(self, z=None):
         """

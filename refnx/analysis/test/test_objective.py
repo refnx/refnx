@@ -10,9 +10,7 @@ from scipy.optimize import minimize
 import numpy as np
 from numpy.testing import (assert_almost_equal, assert_equal, assert_)
 
-from .parameter import Parameter, Parameters
-from .model import Model
-from .objective import Objective, BaseObjective
+from refnx.analysis import (Parameter, Model, Objective, BaseObjective)
 from refnx.dataset import Data1D
 
 

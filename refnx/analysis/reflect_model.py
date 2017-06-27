@@ -8,13 +8,12 @@ import numpy as np
 import scipy
 from scipy.interpolate import InterpolatedUnivariateSpline
 
-# try:
-#     from refnx.analysis import _creflect as refcalc
-# except ImportError:
-#     print('WARNING, Using slow reflectivity calculation')
-#     from refnx.analysis import _reflect as refcalc
-from refnx.analysis import (Parameters, Parameter, abeles,
-                            possibly_create_parameter)
+try:
+    from refnx.analysis import _creflect as refcalc
+except ImportError:
+    print('WARNING, Using slow reflectivity calculation')
+    from refnx.analysis import _reflect as refcalc
+from refnx.analysis import (Parameters, Parameter, possibly_create_parameter)
 
 
 # some definitions for resolution smearing
@@ -244,7 +243,7 @@ def reflectivity(q, slabs, scale=1., bkg=0., dq=5., quad_order=17,
     """
     # constant dq/q smearing
     if isinstance(dq, numbers.Real) and float(dq) == 0:
-        return abeles(q, slabs, scale=scale, bkg=bkg, workers=workers)
+        return refcalc.abeles(q, slabs, scale=scale, bkg=bkg, workers=workers)
     elif isinstance(dq, numbers.Real):
         dq = float(dq)
         return (scale *
@@ -285,11 +284,11 @@ def reflectivity(q, slabs, scale=1., bkg=0., dq=5., quad_order=17,
         # TODO may not work yet.
         qvals_for_res = dq[..., 0]
         # work out the reflectivity at the kernel evaluation points
-        smeared_rvals = abeles(qvals_for_res,
-                               slabs,
-                               scale=scale,
-                               bkg=bkg,
-                               workers=workers)
+        smeared_rvals = refcalc.abeles(qvals_for_res,
+                                       slabs,
+                                       scale=scale,
+                                       bkg=bkg,
+                                       workers=workers)
 
         # multiply by probability
         smeared_rvals *= dq[..., 1]
@@ -355,7 +354,7 @@ def _smearkernel(x, w, q, dq, workers):
     prefactor = 1 / np.sqrt(2 * np.pi)
     gauss = prefactor * np.exp(-0.5 * x * x)
     localq = q + x * dq / _FWHM
-    return abeles(localq, w, workers=workers) * gauss
+    return refcalc.abeles(localq, w, workers=workers) * gauss
 
 
 def _smeared_abeles_adaptive(qvals, w, dqvals, workers=0):
@@ -446,9 +445,9 @@ def _smeared_abeles_fixed(qvals, w, dqvals, quad_order=17, workers=0):
 
     qvals_for_res = ((np.atleast_2d(abscissa) *
                      (vb - va) + vb + va) / 2.)
-    smeared_rvals = abeles(qvals_for_res.flatten(),
-                           w,
-                           workers=workers)
+    smeared_rvals = refcalc.abeles(qvals_for_res.flatten(),
+                                   w,
+                                   workers=workers)
 
     smeared_rvals = np.reshape(smeared_rvals,
                                (qvals.size, abscissa.size))
@@ -480,7 +479,7 @@ def _smeared_abeles_constant(q, w, resolution, workers=True):
     """
 
     if resolution < 0.5:
-        return abeles(q, w, workers=workers)
+        return refcalc.abeles(q, w, workers=workers)
 
     resolution /= 100
     gaussnum = 51
@@ -505,7 +504,7 @@ def _smeared_abeles_constant(q, w, resolution, workers=True):
     gauss_x = np.linspace(-1.7 * resolution, 1.7 * resolution, gaussnum)
     gauss_y = gauss(gauss_x, resolution / _FWHM)
 
-    rvals = abeles(xlin, w, workers=workers)
+    rvals = refcalc.abeles(xlin, w, workers=workers)
     smeared_rvals = np.convolve(rvals, gauss_y, mode='same')
     interpolator = InterpolatedUnivariateSpline(xlin, smeared_rvals)
 
