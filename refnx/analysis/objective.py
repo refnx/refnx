@@ -406,6 +406,10 @@ class Objective(BaseObjective):
         if len(_pvals) == 1:
             jac = jac.T
 
+        # need to create this because GlobalObjective does not have
+        # access to all the datapoints being fitted.
+        n_datapoints = np.size(jac, 0)
+
         # covar = J.T x J.
         # not sure why this is preferred over Hessian
         covar = np.linalg.inv(np.matmul(jac.T, jac))
@@ -418,7 +422,7 @@ class Objective(BaseObjective):
         # scale by reduced chi2 if experimental uncertainties weren't used.
         if not (self.use_weights and self.weighted):
             scale = (self.chisqr() /
-                     (self.data.y.size - len(self.varying_parameters())))
+                     (n_datapoints - len(self.varying_parameters())))
 
         return covar * scale
 
@@ -436,14 +440,25 @@ class GlobalObjective(Objective):
         objectives : list of Objective objects
         """
         self.objectives = objectives
-        use_weights = []
         weighted = []
+        use_weights = []
         for objective in objectives:
-            use_weights.append(objective.use_weights)
             weighted.append(objective.data.weighted)
-        # TODO warn that weighting may not work if everything isn't weighted.
-        self.use_weights = np.array(use_weights, dtype=bool).all()
-        self.weighted = np.array(weighted, dtype=bool).all()
+            use_weights.append(objective.use_weights)
+        self._weighted = np.array(weighted, dtype=bool).all()
+        self._use_weights = np.array(use_weights, dtype=bool).any()
+        if self._use_weights and not self._weighted:
+            raise ValueError("One of the GlobalObjective.objectives wants to "
+                             "use_weights, but not all the individual "
+                             "objectives supplied weights")
+
+    @property
+    def use_weights(self):
+        return self._use_weights
+
+    @property
+    def weighted(self):
+        return self._weighted
 
     @property
     def npoints(self):

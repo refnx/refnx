@@ -431,6 +431,10 @@ class Parameter(BaseParameter):
             self._bounds = bounds
         elif bounds is None:
             self._bounds = Interval()
+        elif hasattr(bounds, '__len__') and len(bounds) == 2:
+            self.range(*bounds)
+        else:
+            raise ValueError("Can't set bounds with the value provided.")
 
     def valid(self, val):
         return self.bounds.valid(val)
@@ -467,6 +471,19 @@ class Parameter(BaseParameter):
         for _dep in flatten(_expr.dependencies()):
             self._deps.append(_dep)
         self._vary = False
+
+    def setp(self, value=None, vary=None, bounds=None, constraint=None):
+        """
+        Set several attributes of the parameter at once
+        """
+        if value is not None:
+            self.value = value
+        if vary is not None:
+            self.vary = vary
+        if bounds is not None:
+            self.bounds = bounds
+        if constraint is not None:
+            self.constraint = constraint
 
 
 class _BinaryOp(BaseParameter):

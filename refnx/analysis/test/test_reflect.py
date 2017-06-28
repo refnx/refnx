@@ -12,6 +12,7 @@ except ImportError:
 import refnx.analysis._reflect as _reflect
 from refnx.analysis import (SLD, Slab, ReflectModel, Transform, Objective,
                             CurveFitter, Parameter, Model)
+from refnx.dataset import ReflectDataset
 
 import numpy as np
 from numpy.testing import (assert_almost_equal, assert_equal, assert_,
@@ -284,6 +285,48 @@ class TestReflect(unittest.TestCase):
         rff = ReflectModel(self.structure)
         z, myrho = rff.structure.sld_profile(z.flatten())
         assert_almost_equal(myrho, rho.flatten())
+
+    def test_modelvals_degenerate_layers(self):
+        # try fitting dataset with a deposited layer split into two degenerate
+        # layers
+        fname = os.path.join(path, 'c_PLP0011859_q.txt')
+        dataset = ReflectDataset(fname)
+
+        sio2 = SLD(3.47, name='SiO2')
+        si = SLD(2.07, name='Si')
+        d2o = SLD(6.36, name='D2O')
+        polymer = SLD(2., name='polymer')
+
+        sio2_l = sio2(30, 3)
+        polymer_l = polymer(125, 3)
+
+        structure = (si | sio2_l | polymer_l | polymer_l | d2o(0, 3))
+
+        polymer_l.thick.setp(value=125, vary=True, bounds=(0, 250))
+        polymer_l.rough.setp(value=4, vary=True, bounds=(0, 8))
+        structure[-1].rough.setp(vary=True, bounds=(0, 6))
+        sio2_l.rough.setp(value=3.16, vary=True, bounds=(0, 8))
+
+        model = ReflectModel(structure, bkg=2e-6)
+        objective = Objective(model,
+                              dataset,
+                              use_weights=False,
+                              transform=Transform('logY'))
+
+        model.scale.setp(vary=True, bounds=(0, 2))
+        model.bkg.setp(vary=True, bounds=(0, 8e-6))
+
+        slabs = structure.slabs
+        assert_equal(slabs[2, 0:2], slabs[3, 0:2])
+        assert_equal(slabs[2, 3], slabs[3, 3])
+        assert_equal(slabs[1, 3], sio2_l.rough.value)
+
+        f = CurveFitter(objective)
+        f.fit(method='differential_evolution', seed=1)
+
+        slabs = structure.slabs
+        assert_equal(slabs[2, 0:2], slabs[3, 0:2])
+        assert_equal(slabs[2, 3], slabs[3, 3])
 
 
 if __name__ == '__main__':

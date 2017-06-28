@@ -8,7 +8,7 @@ try:
 except ImportError:
     print('WARNING, Using slow reflectivity calculation')
     from refnx.analysis import _reflect as refcalc
-from refnx.analysis import Parameters, Parameter
+from refnx.analysis import Parameters, Parameter, possibly_create_parameter
 
 
 class Structure(UserList):
@@ -309,13 +309,16 @@ class Slab(Component):
 
     def __init__(self, thick, sld, rough, name='', solvent=0):
         super(Slab, self).__init__()
-        self.thick = Parameter(thick, name='%s - thick' % name)
+        self.thick = possibly_create_parameter(thick,
+                                               name='%s - thick' % name)
         if isinstance(sld, SLD):
             self.sld = sld
         else:
             self.sld = SLD(sld)
-        self.rough = Parameter(rough, name='%s - rough' % name)
-        self.solvent = Parameter(solvent, name='%s - solvent' % name)
+        self.rough = possibly_create_parameter(rough,
+                                      name='%s - rough' % name)
+        self.solvent = possibly_create_parameter(solvent,
+                                      name='%s - solvent' % name)
         self.name = name
 
         p = Parameters(name=self.name)

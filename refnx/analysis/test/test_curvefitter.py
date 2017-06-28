@@ -201,7 +201,6 @@ class TestFitterGauss(unittest.TestCase):
 
         # compare objective._covar to the best_unweighted_errors
         uncertainties = np.array([param.stderr for param in self.params])
-        print(uncertainties / np.array(self.best_unweighted_errors))
         assert_almost_equal(uncertainties, self.best_unweighted_errors, 3)
 
         # the samples won't compare to the covariance matrix...
