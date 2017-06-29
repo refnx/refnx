@@ -1,6 +1,6 @@
 import operator
 from types import MethodType
-from collections import UserList
+from six.moves import UserList
 
 
 import numpy as np

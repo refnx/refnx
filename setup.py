@@ -119,7 +119,7 @@ info = {
         'packages': packages,
         'include_package_data': True,
         'setup_requires': ['numpy'],
-        'install_requires': ['numpy', 'scipy', 'emcee',
+        'install_requires': ['numpy', 'scipy', 'emcee', 'six',
                              'uncertainties', 'pandas', 'numdifftools']
         }
 
