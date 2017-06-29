@@ -264,11 +264,11 @@ class SLD(object):
             Units (10**-6 Angstrom**-2)
         name : str, optional
             Name of material.
-            
+
         Notes
         -----
         An SLD object can be used to create a Slab:
-        
+
         >>> # an SLD object representing Silicon Dioxide
         >>> sio2 = SLD(3.47, name='SiO2')
         >>> # create a Slab of SiO2 20 A in thickness, with a 3 A roughness
