@@ -4,10 +4,10 @@ import numpy as np
 from scipy.special import erf
 
 try:
-    from refnx.analysis import _creflect as refcalc
+    from refnx.reflect import _creflect as refcalc
 except ImportError:
     print('WARNING, Using slow reflectivity calculation')
-    from refnx.analysis import _reflect as refcalc
+    from refnx.reflect import _reflect as refcalc
 from refnx.analysis import Parameters, Parameter, possibly_create_parameter
 
 
@@ -316,9 +316,9 @@ class Slab(Component):
         else:
             self.sld = SLD(sld)
         self.rough = possibly_create_parameter(rough,
-                                      name='%s - rough' % name)
+                                               name='%s - rough' % name)
         self.solvent = possibly_create_parameter(solvent,
-                                      name='%s - solvent' % name)
+                                                 name='%s - solvent' % name)
         self.name = name
 
         p = Parameters(name=self.name)

@@ -5,7 +5,8 @@ import numpy as np
 from numpy.testing import (assert_almost_equal, assert_equal, assert_,
                            assert_allclose, assert_raises)
 
-from refnx.analysis import (ReflectModel, SLD, Slab, Structure, Parameter)
+from refnx.reflect import (SLD, Structure)
+from refnx.analysis import Parameter
 
 
 class TestStructure(unittest.TestCase):

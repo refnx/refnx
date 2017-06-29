@@ -4,14 +4,15 @@ import os
 import pickle
 
 try:
-    import refnx.analysis._creflect as _creflect
+    import refnx.reflect._creflect as _creflect
     HAVE_CREFLECT = True
 except ImportError:
     HAVE_CREFLECT = False
 
-import refnx.analysis._reflect as _reflect
-from refnx.analysis import (SLD, Slab, ReflectModel, Transform, Objective,
+import refnx.reflect._reflect as _reflect
+from refnx.analysis import (Transform, Objective,
                             CurveFitter, Parameter, Model)
+from refnx.reflect import (SLD, Slab, ReflectModel)
 from refnx.dataset import ReflectDataset
 
 import numpy as np

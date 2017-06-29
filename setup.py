@@ -153,7 +153,7 @@ def setup_package():
 
             # creflect extension module
             _creflect = Extension(
-                                  name='refnx.analysis._creflect',
+                                  name='refnx.reflect._creflect',
                                   sources=['src/_creflect.pyx',
                                            'src/refcalc.cpp'],
                                   include_dirs=[numpy_include],

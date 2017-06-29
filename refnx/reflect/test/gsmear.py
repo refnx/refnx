@@ -2,7 +2,7 @@ from __future__ import division
 import numpy as np
 from scipy.signal import fftconvolve
 from scipy.interpolate import interp1d
-from refnx.analysis import reflectivity
+from refnx.reflect import reflectivity
 
 
 def res(qq, layer, resolution=5):

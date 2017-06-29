@@ -9,10 +9,10 @@ import scipy
 from scipy.interpolate import InterpolatedUnivariateSpline
 
 try:
-    from refnx.analysis import _creflect as refcalc
+    from refnx.reflect import _creflect as refcalc
 except ImportError:
     print('WARNING, Using slow reflectivity calculation')
-    from refnx.analysis import _reflect as refcalc
+    from refnx.reflect import _reflect as refcalc
 from refnx.analysis import (Parameters, Parameter, possibly_create_parameter)
 
 
@@ -297,6 +297,7 @@ def reflectivity(q, slabs, scale=1., bkg=0., dq=5., quad_order=17,
         return scipy.integrate.simps(smeared_rvals, x=dq[..., 0])
 
     return None
+
 
 def _memoize_gl(f):
     """

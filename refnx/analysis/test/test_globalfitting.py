@@ -1,12 +1,16 @@
+"""
+Test co-refinement of datasets by fitting 3 neutron reflectivity datasets. The
+overall construction of the models can be done in a few different ways.
+"""
 import os.path
 import unittest
 
 import numpy as np
 from numpy.testing import assert_, assert_equal, assert_almost_equal
 
-from refnx.analysis import (CurveFitter, Parameter, Slab, SLD, ReflectModel,
-                            Objective, GlobalObjective, Transform)
+from refnx.analysis import (CurveFitter, Objective, GlobalObjective, Transform)
 from refnx.dataset import ReflectDataset
+from refnx.reflect import (Slab, SLD, ReflectModel)
 
 SEED = 1
 

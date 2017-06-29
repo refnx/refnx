@@ -7,6 +7,7 @@ Subpackages
 .. toctree::
 
     refnx.analysis
+    refnx.reflect
     refnx.dataset
     refnx.reduce
     refnx.util

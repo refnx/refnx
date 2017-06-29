@@ -55,7 +55,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'refnx'
-copyright = '2015, Andrew Nelson'
+copyright = '2015-2017, Andrew Nelson'
 author = 'Andrew Nelson'
 
 # The version info for the project you're documenting, acts as replacement for

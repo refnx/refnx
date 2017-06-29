@@ -4,9 +4,6 @@ from .parameter import (Parameter, Parameters, is_parameters, is_parameter,
 from .objective import Objective, BaseObjective, GlobalObjective, Transform
 from .curvefitter import CurveFitter, MCMCResult
 from .model import Model, fitfunc
-from .structure import Slab, Structure, SLD
-from .reflect_model import reflectivity, ReflectModel
-
 
 import numpy.testing
 test = numpy.testing.Tester().test
