@@ -1,4 +1,8 @@
-import inspect
+try:
+    from inspect import getfullargspec as _getargspec
+except ImportError:
+    # on 2.7
+    from inspect import getargspec as _getargspec
 
 
 def fitfunc(f):
@@ -61,7 +65,7 @@ class Model(object):
     def fitfunc(self, fitfunc):
         self._fitfunc = fitfunc
         self._fitfunc_has_xerr = False
-        if 'x_err' in inspect.getfullargspec(fitfunc).args:
+        if 'x_err' in _getargspec(fitfunc).args:
             self._fitfunc_has_xerr = True
 
     @property
