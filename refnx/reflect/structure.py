@@ -234,6 +234,16 @@ class Structure(UserList):
         return p
 
     def lnprob(self):
+        """
+        log-probability for the interfacial structure. Note that if a given
+        component is present more than once in a Structure then it's log-prob
+        will be counted twice.
+
+        Returns
+        -------
+        lnprob : float
+            log-prior for the Structure.
+        """
         lnprob = 0
         for component in self.components:
             lnprob += component.lnprob()
@@ -246,6 +256,24 @@ class SLD(object):
     Object representing freely varying SLD of a material
     """
     def __init__(self, value, name=''):
+        """
+        Parameters
+        ----------
+        value : float or complex
+            Scattering length density of a material.
+            Units (10**-6 Angstrom**-2)
+        name : str, optional
+            Name of material.
+            
+        Notes
+        -----
+        An SLD object can be used to create a Slab:
+        
+        >>> # an SLD object representing Silicon Dioxide
+        >>> sio2 = SLD(3.47, name='SiO2')
+        >>> # create a Slab of SiO2 20 A in thickness, with a 3 A roughness
+        >>> sio2_layer = SLD(20, 3)
+        """
         self.name = name
         if isinstance(value, complex):
             self.real = Parameter(value.real, name='%s - sld' % name)
