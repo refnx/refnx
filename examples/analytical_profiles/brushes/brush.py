@@ -7,7 +7,6 @@ import numpy as np
 from refnx.analysis import AnalyticalReflectivityFunction, Transform
 from scipy.integrate import simps, trapz
 from numpy.testing import assert_, assert_almost_equal, assert_allclose
-from lmfit import Parameter, Parameters
 from scipy.interpolate import Akima1DInterpolator, InterpolatedUnivariateSpline
 
 

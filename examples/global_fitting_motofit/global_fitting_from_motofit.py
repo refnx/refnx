@@ -20,7 +20,6 @@ import numpy as np
 from refnx.analysis import (CurveFitter, ReflectivityFitFunction, GlobalFitter,
                             to_parameters, Transform, values, names)
 from refnx.dataset import ReflectDataset
-from lmfit.printfuncs import fit_report
 
 
 def global_fitter_setup(global_pilot_file, dqvals=5.0):

@@ -3,7 +3,7 @@ dependencies:
     - sudo apt-get install libatlas-dev libatlas-base-dev liblapack-dev gfortran libhdf5-serial-dev
     - pip install -q cython
     - pip install -q numpy
-    - pip install -q nose lmfit emcee scipy xlrd h5py pandas uncertainties
+    - pip install -q nose emcee scipy xlrd h5py pandas uncertainties
 
 machine:
   python:

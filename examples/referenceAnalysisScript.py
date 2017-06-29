@@ -2,7 +2,6 @@ from __future__ import print_function, division
 from refnx.dataset.reflectdataset import ReflectDataset
 import refnx.analysis.reflect as reflect
 import refnx.analysis.curvefitter as curvefitter
-from lmfit.printfuncs import fit_report
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib
