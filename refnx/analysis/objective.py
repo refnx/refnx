@@ -126,9 +126,21 @@ class BaseObjective(object):
         return lnprob
 
     def varying_parameters(self):
+        """
+        Returns
+        -------
+        varying_parameters : np.ndarray
+            The parameters varying in this objective function.
+        """
         return self.parameters
 
     def covar(self):
+        """
+        Returns
+        -------
+        covar : np.ndarray
+            The covariance matrix for the fitting system
+        """
         _pvals = np.array(self.varying_parameters())
 
         step = nd.MaxStepGenerator(base_step=None, scale=3)
@@ -188,13 +200,32 @@ class Objective(BaseObjective):
 
     @property
     def weighted(self):
+        """
+        Returns
+        -------
+        weighted : bool
+            Does the data have weights (`data.y_err`)?
+        """
         return self.data.weighted
 
     @property
     def npoints(self):
+        """
+        Returns
+        -------
+        npoints : int
+            The number of points in the dataset.
+        """
         return self.data.y.size
 
     def varying_parameters(self):
+        """
+        Returns
+        -------
+        varying_parameters : Parameters
+            A Parameters instance containing the varying Parameter objects
+            that are allowed to vary during the fit.
+        """
         # create and return a Parameters object because it has the
         # __array__ method, which allows one to quickly get numerical values.
         p = Parameters()
@@ -224,6 +255,19 @@ class Objective(BaseObjective):
                     return y, 1, model
 
     def residuals(self, pvals=None):
+        """
+        Calculates the residuals for a given fitting system.
+        
+        Parameters
+        ----------
+        pvals : np.ndarray
+            Parameter values for evaluation
+
+        Returns
+        -------
+        residuals : np.ndarray
+            Residuals, `(data.y - model) / y_err`.
+        """
         self.setp(pvals)
 
         model = self.model(self.data.x, x_err=self.data.x_err)
@@ -234,6 +278,19 @@ class Objective(BaseObjective):
         return (y - model) / y_err
 
     def chisqr(self, pvals=None):
+        """
+        Calculates the chi-squared value for a given fitting system.
+
+        Parameters
+        ----------
+        pvals : np.ndarray
+            Parameter values for evaluation
+
+        Returns
+        -------
+        chisqr : np.ndarray
+            Chi-squared value, `np.sum(residuals**2)`.
+        """
         # TODO reduced chisqr? include z-scores for parameters? DOF?
         self.setp(pvals)
 
@@ -241,6 +298,14 @@ class Objective(BaseObjective):
 
     @property
     def parameters(self):
+        """
+        All the Parameters contained in the fitting system.
+
+        Returns
+        -------
+        parameters : Parameters
+            Parameters instance containing all the Parameter(s)    
+        """
         if is_parameter(self.lnsigma):
             return self.lnsigma | self.model.parameters
         else:
@@ -561,6 +626,14 @@ class Transform(object):
                 YX**2 transform
             - None
                 No transform is made
+    
+    Notes
+    -----
+    You ask for a transform to be carried out by calling the Transform object
+    directly.
+
+    >>> t = Transform('logY')
+    >>> y, e = t(x, y, y_err)
     """
     def __init__(self, form):
         types = [None, 'lin', 'logY', 'YX4', 'YX2']
@@ -573,9 +646,9 @@ class Transform(object):
                              " 'logY', 'YX4', 'YX2']")
 
     def __call__(self, x, y, y_err=None):
-        return self.transform(x, y, y_err=y_err)
+        return self.__transform(x, y, y_err=y_err)
 
-    def transform(self, x, y, y_err=None):
+    def __transform(self, x, y, y_err=None):
         r"""
         Transform the data passed in
 

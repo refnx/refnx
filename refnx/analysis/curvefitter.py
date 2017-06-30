@@ -18,6 +18,29 @@ MCMCResult = namedtuple('MCMCResult', ['name', 'param', 'stderr', 'chain',
                                        'median'])
 
 
+def _objective_lnprob(theta, userargs=()):
+    """
+    Calculates the log-posterior probability.
+
+    Parameters
+    ----------
+    theta : sequence
+        Float parameter values (only those being varied)
+    userargs : tuple, optional
+        Extra positional arguments required for user objective function
+
+    Returns
+    -------
+    lnprob : float
+        Log posterior probability
+
+    """
+    # need to use this function because PY27 can't pickle a partial on
+    # an object method
+    objective = userargs
+    return objective.lnprob(theta)
+
+
 class CurveFitter(object):
     """
     Analyse a curvefitting system (with MCMC sampling)
@@ -44,11 +67,12 @@ class CurveFitter(object):
         if mcmc_kws is not None:
             self.mcmc_kws.update(mcmc_kws)
 
+        self.mcmc_kws['args'] = (objective,)
+
         self._nwalkers = nwalkers
-        obj_func = partial(objective.lnprob)
         self.sampler = emcee.EnsembleSampler(nwalkers,
                                              self.nvary,
-                                             obj_func,
+                                             _objective_lnprob,
                                              **self.mcmc_kws)
         self._lastpos = None
 

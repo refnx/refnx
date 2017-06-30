@@ -1,3 +1,4 @@
+from __future__ import division
 from six.moves import UserList
 
 import numpy as np

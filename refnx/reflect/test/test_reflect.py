@@ -194,11 +194,10 @@ class TestReflect(unittest.TestCase):
 
     def test_reflectivity_fit(self):
         # a smoke test to make sure the reflectivity fit proceeds
-        transform = Transform('logY').transform
         model = self.model361
         objective = Objective(model,
                               (self.qvals361, self.rvals361, self.evals361),
-                              transform=transform)
+                              transform=Transform('logY'))
         fitter = CurveFitter(objective)
         with np.errstate(invalid='raise'):
             fitter.fit('differential_evolution')
@@ -216,13 +215,13 @@ class TestReflect(unittest.TestCase):
                 raise AssertionError(type(param))
 
     def test_reflectivity_emcee(self):
-        transform = Transform('logY').transform
         model = self.model361
         model.dq = 5.
         objective = Objective(model,
                               (self.qvals361, self.rvals361, self.evals361),
-                              transform=transform)
+                              transform=Transform('logY'))
         fitter = CurveFitter(objective, threads=4)
+
         res = fitter.fit('differential_evolution')
         res_mcmc = fitter.sample(steps=50, nburn=20, nthin=10,
                                  random_state=1, verbose=False)

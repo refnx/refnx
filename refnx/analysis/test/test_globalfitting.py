@@ -2,11 +2,13 @@
 Test co-refinement of datasets by fitting 3 neutron reflectivity datasets. The
 overall construction of the models can be done in a few different ways.
 """
+from __future__ import print_function, division
 import os.path
 import unittest
 
 import numpy as np
-from numpy.testing import assert_, assert_equal, assert_almost_equal
+from numpy.testing import (assert_, assert_equal, assert_almost_equal,
+                           assert_allclose)
 
 from refnx.analysis import (CurveFitter, Objective, GlobalObjective, Transform)
 from refnx.dataset import ReflectDataset
@@ -140,7 +142,11 @@ class TestGlobalFitting(unittest.TestCase):
         res365 = objective365.residuals()
         res366 = objective366.residuals()
         res_global = global_objective.residuals()
-        assert_equal(res_global, np.r_[res361, res365, res366])
+        assert_allclose(res_global[0:len(res361)], res361, rtol=1e-5)
+        assert_allclose(res_global[len(res361):len(res361) + len(res365)],
+                        res365, rtol=1e-5)
+        assert_allclose(res_global[len(res361) + len(res365):],
+                        res366, rtol=1e-5)
 
 
 if __name__ == '__main__':

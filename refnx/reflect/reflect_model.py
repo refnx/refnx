@@ -82,6 +82,16 @@ class ReflectModel(object):
 
     @property
     def dq(self):
+        """
+        Returns
+        -------
+        dq : Parameter
+            If `dq.value == 0` then no resolution smearing is employed.
+            If `dq.value > 0`, then a constant dQ/Q resolution smearing is
+            employed.  For 5% resolution smearing supply 5. However, if
+            `x_err` is supplied to the `model` method, then that overrides any
+            setting reported here.
+        """
         return self._dq
 
     @dq.setter
@@ -90,6 +100,13 @@ class ReflectModel(object):
 
     @property
     def scale(self):
+        """
+        Returns
+        -------
+        scale : Parameter
+            scale factor. All model values are multiplied by this value before
+            the background is added.
+        """
         return self._scale
 
     @scale.setter
@@ -98,6 +115,12 @@ class ReflectModel(object):
 
     @property
     def bkg(self):
+        """
+        Returns
+        -------
+        bkg : Parameter
+            linear background added to all model values.
+        """
         return self._bkg
 
     @bkg.setter
@@ -149,6 +172,12 @@ class ReflectModel(object):
 
     @property
     def structure(self):
+        """
+        Returns
+        -------
+        structure : Structure
+            Structure objects describe the interface of a reflectometry sample.
+        """
         return self._structure
 
     @structure.setter
@@ -163,11 +192,10 @@ class ReflectModel(object):
     @property
     def parameters(self):
         """
-        The Parameters associated with this model.
-
         Returns
         -------
         parameters : `Parameters`
+            The Parameters associated with this model.
         """
         self.structure = self._structure
         return self._parameters

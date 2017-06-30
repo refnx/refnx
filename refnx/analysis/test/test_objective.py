@@ -10,7 +10,8 @@ from scipy.optimize import minimize
 import numpy as np
 from numpy.testing import (assert_almost_equal, assert_equal, assert_)
 
-from refnx.analysis import (Parameter, Model, Objective, BaseObjective)
+from refnx.analysis import (Parameter, Model, Objective, BaseObjective,
+                            Transform)
 from refnx.dataset import Data1D
 
 
@@ -136,6 +137,11 @@ class TestObjective(unittest.TestCase):
     def test_objective_pickle(self):
         # can you pickle the objective function?
         pkl = pickle.dumps(self.objective)
+        pickle.loads(pkl)
+
+    def test_transform_pickle(self):
+        # can you pickle the Transform object?
+        pkl = pickle.dumps(Transform('logY'))
         pickle.loads(pkl)
 
     def test_base_emcee(self):
