@@ -27,11 +27,12 @@ class TestStructure(unittest.TestCase):
 
         # slabs have solvent penetration
         self.s[1] = SLD(3.47 + 1j, name='sio2')(100, 5)
-        self.s[1].solvent.value = 90.
+        self.s[1].vfsolv.value = 0.9
         sld = 6.36 * 0.9 + 0.1 * 3.47
         sldi = 1 * 0.1
-        assert_equal(self.s.slabs, np.array([[0, 0, 0, 0, 0],
-                                             [100, sld, sldi, 5, 90],
+        print(self.s.slabs)
+        assert_almost_equal(self.s.slabs, np.array([[0, 0, 0, 0, 0],
+                                             [100, sld, sldi, 5, 0.9],
                                              [0, 6.36, 0, 4, 0]]))
 
     def test_pickle(self):

@@ -94,7 +94,7 @@ class TestGlobalFitting(unittest.TestCase):
         structure361[1].thick.setp(vary=True, bounds=(0, 20))
         structure361[2].thick.setp(value=200., bounds=(200., 250.), vary=True)
         structure361[2].sld.real.setp(vary=True, bounds=(0, 2))
-        structure361[2].solvent.setp(value=5., bounds=(0., 100.), vary=True)
+        structure361[2].vfsolv.setp(value=5., bounds=(0., 100.), vary=True)
 
         model361 = ReflectModel(structure361, bkg=2e-5)
         model365 = ReflectModel(structure365, bkg=2e-5)

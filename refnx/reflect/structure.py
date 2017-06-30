@@ -63,7 +63,8 @@ class Structure(UserList):
             slab[N, 1] - overall SLD.real of layer N (material AND solvent)
             slab[N, 2] - overall SLD.imag of layer N (material AND solvent)
             slab[N, 3] - roughness between layer N and N-1
-            slab[N, 4] - solvent percentage in layer N
+            slab[N, 4] - volume fraction of solvent in layer N.
+                         (1 - solvent_volfrac = material_volfrac)
         """
         if not len(self):
             return None
@@ -94,10 +95,10 @@ class Structure(UserList):
                 solvent_imag = slabs[0, 2]
 
             # overall SLD is a weighted average
-            slabs[1:-1, 1] = slabs[1:-1, 1] * (100 - slabs[1:-1, 4]) / 100
-            slabs[1:-1, 2] = slabs[1:-1, 2] * (100 - slabs[1:-1, 4]) / 100
-            slabs[1:-1, 1] += solvent_real * slabs[1:-1, 4] / 100
-            slabs[1:-1, 2] += solvent_imag * slabs[1:-1, 4] / 100
+            slabs[1:-1, 1] = slabs[1:-1, 1] * (1 - slabs[1:-1, 4])
+            slabs[1:-1, 2] = slabs[1:-1, 2] * (1 - slabs[1:-1, 4])
+            slabs[1:-1, 1] += solvent_real * slabs[1:-1, 4]
+            slabs[1:-1, 2] += solvent_imag * slabs[1:-1, 4]
 
         return slabs
 
@@ -336,7 +337,21 @@ class Slab(Component):
     A slab component has uniform SLD over its thickness.
     """
 
-    def __init__(self, thick, sld, rough, name='', solvent=0):
+    def __init__(self, thick, sld, rough, name='', vfsolv=0):
+        """
+        Parameters
+        ----------
+        thick : Parameter or float
+            thickness of slab (Angstrom)
+        sld : SLD instance, complex, or float
+            (complex) SLD of film (/1e-6 Angstrom**2)
+        rough : float
+            roughness on top of this slab (Angstrom)
+        name : str
+            Name of this slab
+        vfsolv : Parameter or float
+            Volume fraction of solvent [0, 1]
+        """
         super(Slab, self).__init__()
         self.thick = possibly_create_parameter(thick,
                                                name='%s - thick' % name)
@@ -346,13 +361,13 @@ class Slab(Component):
             self.sld = SLD(sld)
         self.rough = possibly_create_parameter(rough,
                                                name='%s - rough' % name)
-        self.solvent = possibly_create_parameter(solvent,
-                                                 name='%s - solvent' % name)
+        self.vfsolv = possibly_create_parameter(vfsolv,
+                                                name='%s - volfrac solvent' % name)
         self.name = name
 
         p = Parameters(name=self.name)
         p.extend([self.thick, self.sld.real, self.sld.imag,
-                  self.rough, self.solvent])
+                  self.rough, self.vfsolv])
 
         self._parameters = p
 
@@ -366,7 +381,7 @@ class Slab(Component):
                                        self.sld.real.value,
                                        self.sld.imag.value,
                                        self.rough.value,
-                                       self.solvent.value]))
+                                       self.vfsolv.value]))
 
 
 class CompositeComponent(Component):
