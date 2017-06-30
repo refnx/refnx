@@ -244,5 +244,6 @@ class TestObjective(unittest.TestCase):
         # assert_almost_equal(uncertainties3, uncertainties)
         # assert(False)
 
+
 if __name__ == '__main__':
     unittest.main()

@@ -459,14 +459,28 @@ class Objective(BaseObjective):
         # hess = nd.Hessian(self.chisqr)(_pvals)
         step = nd.MaxStepGenerator(base_step=None, scale=3)
 
-        # # scale values to unity
-        # def residuals_scaler(vals):
-        #     return self.residuals(_pvals * vals)
+        # if the initial attempt with unscaled values fails, than fallover
+        # to situation where we scale the parameters to 1. The initial attempt
+        # could fail, for example, if the data is scaled with a log10
+        # transform. If the nd.MaxStepGenerator makes some points negative then
+        # the transform will complain because it's trying to take the log of a
+        # negative number. By scaling the pvals to 1 in the Jacobian
+        # calculation we can get around this because the stepper won't make any
+        # of the parameter values change sign (step too small).
+        used_residuals_scaler = False
 
-        jac = nd.Jacobian(self.residuals,
-                          step=step)(_pvals)
-        # jac = nd.Jacobian(residuals_scaler,
-        #                   step=step)(np.ones_like(_pvals))
+        try:
+            with np.errstate(invalid='raise'):
+                jac = nd.Jacobian(self.residuals,
+                                  step=step)(_pvals)
+        except FloatingPointError:
+            # scale values to unity
+            def residuals_scaler(vals):
+                return self.residuals(_pvals * vals)
+
+            jac = nd.Jacobian(residuals_scaler,
+                              step=step)(np.ones_like(_pvals))
+            used_residuals_scaler = True
 
         if len(_pvals) == 1:
             jac = jac.T
@@ -478,8 +492,10 @@ class Objective(BaseObjective):
         # covar = J.T x J.
         # not sure why this is preferred over Hessian
         covar = np.linalg.inv(np.matmul(jac.T, jac))
-        # unwind the scaling.
-        # covar *= _pvals ** 2
+
+        if used_residuals_scaler:
+            # unwind the scaling.
+            covar *= _pvals ** 2
 
         self.setp(_pvals)
         scale = 1.
