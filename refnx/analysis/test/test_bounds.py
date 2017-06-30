@@ -25,6 +25,8 @@ class TestBounds(unittest.TestCase):
 
         interval.lb = -1000
         assert_equal(interval.lnprob(-1001), -np.inf)
+        assert_equal(interval.lb, -1000)
+        assert_equal(interval.ub, 1000)
         assert_equal(interval.lnprob(0), np.log(1 / 2000.))
 
         # try and set lb higher than ub

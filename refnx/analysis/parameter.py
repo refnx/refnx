@@ -1,3 +1,5 @@
+from __future__ import division
+
 import operator
 from types import MethodType
 from six.moves import UserList

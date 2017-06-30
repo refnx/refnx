@@ -1,3 +1,5 @@
+from __future__ import division
+
 from functools import partial
 from collections import namedtuple
 import sys

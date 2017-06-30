@@ -1,3 +1,5 @@
+from __future__ import division
+
 from scipy.stats import rv_continuous, uniform
 from scipy.stats._distn_infrastructure import rv_frozen
 from scipy._lib._util import check_random_state

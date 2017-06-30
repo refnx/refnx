@@ -1,3 +1,5 @@
+from __future__ import division
+
 try:
     from inspect import getfullargspec as _getargspec
 except ImportError:
