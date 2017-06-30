@@ -257,7 +257,7 @@ class Objective(BaseObjective):
     def residuals(self, pvals=None):
         """
         Calculates the residuals for a given fitting system.
-        
+
         Parameters
         ----------
         pvals : np.ndarray
@@ -304,7 +304,7 @@ class Objective(BaseObjective):
         Returns
         -------
         parameters : Parameters
-            Parameters instance containing all the Parameter(s)    
+            Parameters instance containing all the Parameter(s)
         """
         if is_parameter(self.lnsigma):
             return self.lnsigma | self.model.parameters
@@ -626,7 +626,7 @@ class Transform(object):
                 YX**2 transform
             - None
                 No transform is made
-    
+
     Notes
     -----
     You ask for a transform to be carried out by calling the Transform object
