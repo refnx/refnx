@@ -4,6 +4,7 @@ from http://dan.iel.fm/emcee/current/user/line/
 """
 import unittest
 import pickle
+import os
 
 import emcee
 from scipy.optimize import minimize
@@ -12,7 +13,11 @@ from numpy.testing import (assert_almost_equal, assert_equal, assert_)
 
 from refnx.analysis import (Parameter, Model, Objective, BaseObjective,
                             Transform)
-from refnx.dataset import Data1D
+from refnx.dataset import Data1D, ReflectDataset
+from refnx.util import ErrorProp as EP
+
+
+CURDIR = os.path.dirname(os.path.abspath(__file__))
 
 
 def line(x, params, *args, **kwds):
@@ -144,6 +149,21 @@ class TestObjective(unittest.TestCase):
         pkl = pickle.dumps(Transform('logY'))
         pickle.loads(pkl)
 
+    def test_transform(self):
+        fname = os.path.join(CURDIR, 'c_PLP0011859_q.txt')
+        data = ReflectDataset(fname)
+        t = Transform('logY')
+
+        yt, et = t(data.x, data.y, y_err=data.y_err)
+        assert_equal(yt, np.log10(data.y))
+
+        yt, _ = t(data.x, data.y, y_err=None)
+        assert_equal(yt, np.log10(data.y))
+
+        EPy, EPe = EP.EPlog10(data.y, data.y_err)
+        assert_equal(yt, EPy)
+        assert_equal(et, EPe)
+
     def test_base_emcee(self):
         # check that the base objective works against the emcee example.
         def lnprior(theta, x, y, yerr):
@@ -223,3 +243,6 @@ class TestObjective(unittest.TestCase):
         # uncertainties3 = np.sqrt(np.diag(covar3))
         # assert_almost_equal(uncertainties3, uncertainties)
         # assert(False)
+
+if __name__ == '__main__':
+    unittest.main()
