@@ -3,8 +3,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib
 
-from refnx.dataset.reflectdataset import ReflectDataset
-from refnx.analysis import ReflectModel, CurveFitter, SLD, Objective, Transform
+from refnx.dataset import ReflectDataset
+from refnx.analysis import CurveFitter, Objective, Transform
+from refnx.reflect import ReflectModel, SLD
 
 matplotlib.pyplot.rcParams['figure.figsize'] = (10.0, 10.0)
 matplotlib.pyplot.rcParams['figure.dpi'] = 600
@@ -12,7 +13,7 @@ matplotlib.pyplot.rcParams['figure.dpi'] = 600
 
 DATASET_NAME = 'c_PLP0011859_q.txt'
 
-#load the data
+# load the data
 data = ReflectDataset(DATASET_NAME)
 
 si = SLD(2.07, name='Si')
@@ -38,7 +39,7 @@ objective = Objective(model, data, transform=Transform('logY'),
 # create the fit instance
 fitter = CurveFitter(objective)
 
-#do the fit
+# do the fit
 fitter.fit(method='differential_evolution')
 
 print('-------------------------------------------------------------------')
