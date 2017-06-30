@@ -13,13 +13,35 @@ from refnx.analysis import (Bounds, Parameter, Parameters,
 class Spline(Component):
     def __init__(self, extent, phi, dz, name=''):
         self.name = name
-        self.extent = possibly_create_parameter(extent,
-            name='%s - spline extent' % name)
+        self.extent = (
+            possibly_create_parameter(extent,
+                                      name='%s - spline extent' % name))
+
+        self.dz = Parameters(name='dz')
+        for z in dz:
+            p = Parameter(z)
+            p.range(0, 1)
+            self.dz.append(p)
+
+        self.phi = Parameters(name='phi')
+        for v in phi:
+            p = Parameter(v)
+            p.range(0, 1)
+            self.phi.append(p)
+
+        if len(self.phi) != len(self.dz):
+            raise ValueError("dz and phi must have same number of entries")
+
+    def __call__(self, z):
+        # calculate spline value at z
+        pass
 
     @property
     def parameters(self):
         p = Parameters(name=self.name)
         p.append(self.extent)
+        p.append(self.dz)
+        p.append(self.phi)
         return p
 
 
