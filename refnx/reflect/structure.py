@@ -361,8 +361,9 @@ class Slab(Component):
             self.sld = SLD(sld)
         self.rough = possibly_create_parameter(rough,
                                                name='%s - rough' % name)
-        self.vfsolv = possibly_create_parameter(vfsolv,
-                                                name='%s - volfrac solvent' % name)
+        self.vfsolv = (
+            possibly_create_parameter(vfsolv,
+                                      name='%s - volfrac solvent' % name))
         self.name = name
 
         p = Parameters(name=self.name)
