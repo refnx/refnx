@@ -100,16 +100,17 @@ install:
     - cmd: conda config --set show_channel_urls true
     - cmd: conda update --yes --quiet conda
     - cmd: conda install --yes --quiet obvious-ci
-    - cmd: conda install --yes --quiet numpy toolchain scipy lmfit emcee h5py xlrd pandas uncertainties cython nose
+    - cmd: conda install --yes --quiet numpy toolchain scipy emcee h5py xlrd pandas uncertainties cython nose six pytest
+    - cmd: pip install numdifftools
 
 build_script:
     # Build the compiled extension
-    - "%CMD_IN_ENV% python setup.py build"
+    - "%CMD_IN_ENV% python setup.py install"
 
 test_script:
     # Run the project tests
     - cmd: set "REQUIRE_C=1"
-    - "%CMD_IN_ENV% python runtests.py"
+    - "%CMD_IN_ENV% pytest"
 
 after_test:
     # If tests are successful, create binary packages for the project.

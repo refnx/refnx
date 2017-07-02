@@ -5,6 +5,8 @@ import os as _os
 import sys as _sys
 import functools
 from tempfile import mkdtemp
+import collections
+from contextlib import contextmanager
 
 
 def preserve_cwd(function):
@@ -108,3 +110,82 @@ class TemporaryDirectory(object):
             self._rmdir(path)
         except OSError:
             pass
+
+
+def flatten(l):
+    """
+    Flatten a nested sequence.
+
+    Parameters
+    ----------
+    l : sequence
+        The sequence to flatten
+
+    Returns
+    -------
+    el : generator
+        yields flattened sequences from l
+    """
+    for el in l:
+        if (isinstance(el, collections.Iterable) and
+                not isinstance(el, (str, bytes))):
+            # 2.7 has no yield from
+            # yield from flatten(el)
+            for elel in flatten(el):
+                yield elel
+        else:
+            yield el
+
+
+def unique(l):
+    """
+    List of unique values in sequence (by object id). Ordering is preserved
+
+    Parameters
+    ----------
+    l : sequence
+
+    Returns
+    -------
+    p : generator
+        yields unique values from l
+    """
+    ids = []
+    for el in l:
+        id_el = id(el)
+        if id_el not in ids:
+            ids.append(id_el)
+            yield el
+
+
+@contextmanager
+def possibly_open_file(f, mode='wb'):
+    """
+    Context manager for files.
+
+    Parameters
+    ----------
+    f : file-like or str
+        If `f` is a file, then yield the file. If `f` is a str then open the
+        file and yield the newly opened file.
+        On leaving this context manager the file is closed, if it was opened
+        by this context manager (i.e. `f` was a string).
+    mode : str, optional
+        mode is an optional string that specifies the mode in which the file
+        is opened.
+
+    Yields
+    ------
+    g : file-like
+        On leaving the context manager the file is closed, if it was opened by
+        this context manager.
+    """
+    close_file = False
+    if hasattr(f, 'read') and hasattr(f, 'write'):
+        g = f
+    else:
+        g = open(f, mode)
+        close_file = True
+    yield g
+    if close_file:
+        g.close()

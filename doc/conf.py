@@ -55,7 +55,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'refnx'
-copyright = '2015, Andrew Nelson'
+copyright = '2015-2017, Andrew Nelson'
 author = 'Andrew Nelson'
 
 # The version info for the project you're documenting, acts as replacement for
@@ -71,12 +71,10 @@ release = refnx.__version__
 intersphinx_mapping = {'py': ('http://docs.python.org/3', None),
                        'numpy': ('http://docs.scipy.org/doc/numpy/', None),
                        'scipy': ('http://docs.scipy.org/doc/scipy/reference/', None),
-                       'lmfit': ('http://lmfit.github.io/lmfit-py/', None),
                        }
 extlinks = {
     'scipydoc' : ('http://docs.scipy.org/doc/scipy/reference/generated/%s.html', ''),
     'numpydoc' : ('http://docs.scipy.org/doc/numpy/reference/generated/numpy.%s.html', ''),
-    'lmfitdoc' : ('http://lmfit.github.io/lmfit-py/%s.html', ''),
     }
 
 numpydoc_show_class_members = False

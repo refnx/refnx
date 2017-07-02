@@ -1,84 +1,59 @@
 from __future__ import print_function, division
-from refnx.dataset.reflectdataset import ReflectDataset
-import refnx.analysis.reflect as reflect
-import refnx.analysis.curvefitter as curvefitter
-from lmfit.printfuncs import fit_report
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib
+
+from refnx.dataset import ReflectDataset
+from refnx.analysis import CurveFitter, Objective, Transform
+from refnx.reflect import ReflectModel, SLD
+
 matplotlib.pyplot.rcParams['figure.figsize'] = (10.0, 10.0)
 matplotlib.pyplot.rcParams['figure.dpi'] = 600
 
 
 DATASET_NAME = 'c_PLP0011859_q.txt'
-USE_DIFFERENTIAL_EVOLUTION = True
 
-#load the data
+# load the data
 data = ReflectDataset(DATASET_NAME)
 
-# create an array to hold the parameters, also create limits
-layers = np.array([[0,   2.07, 0, 0],     # fronting medium
-                   [30,  3.47, 0, 3],     # 1st layer
-                   [250, 2.00, 0, 3],     # 2nd layer
-                   [0,   6.36, 0, 3]])     # backing medium
+si = SLD(2.07, name='Si')
+sio2 = SLD(3.47, name='SiO2')
+film = SLD(2, name='film')
+d2o = SLD(6.36, name='d2o')
 
-lowlim = np.array([[0,   2.07, 0, 0],     # fronting medium
-                   [15,  3.47, 0, 1],     # 1st layer
-                   [200, 0.10, 0, 1],     # 2nd layer
-                   [0,   6.36, 0, 1]])     # backing medium
+structure = si | sio2(30, 3) | film(250, 3) | d2o(0, 3)
+structure[1].thick.setp(vary=True, bounds=(15., 50.))
+structure[1].rough.setp(vary=True, bounds=(1., 6.))
+structure[2].thick.setp(vary=True, bounds=(200, 300))
+structure[2].sld.real.setp(vary=True, bounds=(0.1, 3))
+structure[2].rough.setp(vary=True, bounds=(1, 6))
 
-hilim = np.array([[0,   2.07, 0, 0],     # fronting medium
-                  [50,  3.47, 0, 6],     # 1st layer
-                  [300, 3.00, 0, 6],     # 2nd layer
-                  [0,   6.36, 0, 6]])     # backing medium
+model = ReflectModel(structure, bkg=9e-6, scale=1.)
+model.bkg.setp(vary=True, bounds=(1e-8, 1e-5))
+model.scale.setp(vary=True, bounds=(0.9, 1.1))
 
-# create a linear array of the parameters
-# coefs[1] is the scale factor
-# coefs[6] is the background
-# these will both be 1 and 0 respectively to start off with
-coefs = reflect.layer_to_coefs(layers, scale=1.0, bkg=3e-6)
-lowlim = reflect.layer_to_coefs(lowlim, scale=0.9, bkg=0)
-hilim = reflect.layer_to_coefs(hilim, scale=11, bkg=9e-6)
-
-bounds = zip(lowlim, hilim)
-
-# create a parameter instance
-parameters = curvefitter.to_parameters(coefs, bounds=bounds, varies=[False] * 16)
-
-# which parameters do you want to allow to vary
-fitted_parameters = np.array([1, 6, 7, 8, 11, 12, 13, 15])
-for fit in fitted_parameters:
-    parameters['p%d' % fit].vary = True
-
-# use resolution smearing and fit on a logR scale (transform the data as well)
-t = reflect.Transform('logY').transform
-ydata, dydata = t(xdata, ydata, dydata)
-kwds = {'dqvals': dxdata, 'transform': t}
+# fit on a logR scale, but use weighting
+objective = Objective(model, data, transform=Transform('logY'),
+                      use_weights=True)
 
 # create the fit instance
-fitter = reflect.ReflectivityFitFunction(parameters, xdata, ydata, edata=dydata,
-                                    kwds=kwds)
+fitter = CurveFitter(objective)
 
-#do the fit
-if USE_DIFFERENTIAL_EVOLUTION:
-    fitter.fit(method='differential_evolution')
-
-fitter.fit()
+# do the fit
+fitter.fit(method='differential_evolution')
 
 print('-------------------------------------------------------------------')
 print(DATASET_NAME)
-print(fit_report(fitter))
+# print(fit_report(fitter))
 
 fig = plt.figure()
 ax = fig.add_subplot(2, 1, 1)
-ax.scatter(xdata, ydata, label=DATASET_NAME)
-ax.plot(xdata, fitter.model(parameters), label='fit')
-plt.ylim(min(np.min(ydata), np.min(fitter.model(parameters))),
-         max(np.max(ydata), np.max(fitter.model(parameters))))
-plt.xlim(np.min(xdata), np.max(xdata))
+ax.scatter(data.x, data.y, label=DATASET_NAME)
+ax.semilogy()
+ax.plot(data.x, model.model(data.x, x_err=data.x_err), label='fit')
 plt.xlabel('Q')
 plt.ylabel('logR')
 plt.legend()
 ax2 = fig.add_subplot(2, 1, 2)
-z, rho_z = fitter.sld_profile(parameters)
+z, rho_z = structure.sld_profile()
 ax2.plot(z, rho_z)

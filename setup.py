@@ -119,8 +119,8 @@ info = {
         'packages': packages,
         'include_package_data': True,
         'setup_requires': ['numpy'],
-        'install_requires': ['numpy', 'scipy', 'lmfit', 'emcee',
-                             'uncertainties', 'pandas']
+        'install_requires': ['numpy', 'scipy', 'emcee', 'six',
+                             'uncertainties', 'pandas', 'numdifftools']
         }
 
 ####################################################################
@@ -153,7 +153,7 @@ def setup_package():
 
             # creflect extension module
             _creflect = Extension(
-                                  name='refnx.analysis._creflect',
+                                  name='refnx.reflect._creflect',
                                   sources=['src/_creflect.pyx',
                                            'src/refcalc.cpp'],
                                   include_dirs=[numpy_include],

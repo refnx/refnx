@@ -1,4 +1,5 @@
-from __future__ import division
+from __future__ import division, absolute_import
+
 import string
 from copy import deepcopy
 import os.path
@@ -9,8 +10,8 @@ from refnx.reduce.platypusnexus import (PlatypusNexus, number_datafile,
                                         Y_PIXEL_SPACING, basename_datafile)
 from refnx.util import ErrorProp as EP
 import refnx.util.general as general
-from .parabolic_motion import (parabola_line_intersection_point,
-                               find_trajectory)
+from refnx.reduce.parabolic_motion import (parabola_line_intersection_point,
+                                           find_trajectory)
 from refnx.dataset import ReflectDataset
 
 

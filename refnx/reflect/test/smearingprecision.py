@@ -1,4 +1,4 @@
-import refnx.analysis.reflect as reflect
+import refnx.reflect.reflect_model as reflect
 import numpy as np
 from time import time
 

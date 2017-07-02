@@ -1,4 +1,4 @@
-from __future__ import division
+from __future__ import division, absolute_import
 from multiprocessing import cpu_count
 import numpy as np
 
