@@ -2,7 +2,7 @@ from __future__ import division
 import os.path
 import numpy as np
 
-from scipy.interpolate import Akima1DInterpolator, InterpolatedUnivariateSpline
+from scipy.interpolate import PchipInterpolator as Pchip
 from scipy.integrate import simps, trapz
 
 from refnx.reflect import ReflectModel, Structure, Component, SLD, Slab
@@ -11,37 +11,50 @@ from refnx.analysis import (Bounds, Parameter, Parameters,
 
 
 class Spline(Component):
-    def __init__(self, extent, phi, dz, name=''):
+    def __init__(self, extent, vs, dz, left, right, name='',
+                 interpolator=Pchip, zgrad=True):
         self.name = name
+        self.left = left
+        self.right = right
+
         self.extent = (
             possibly_create_parameter(extent,
                                       name='%s - spline extent' % name))
 
-        self.dz = Parameters(name='dz')
-        for z in dz:
-            p = Parameter(z)
+        self.dz = Parameters(name='dz - spline')
+        for i, z in enumerate(dz):
+            p = possibly_create_parameter(
+                z,
+                name='%s - spline dz[%d]' % (name, i))
             p.range(0, 1)
             self.dz.append(p)
 
-        self.phi = Parameters(name='phi')
-        for v in phi:
-            p = Parameter(v)
-            p.range(0, 1)
-            self.phi.append(p)
+        self.vs = Parameters(name='vs - spline')
+        for i, v in vs:
+            p = possibly_create_parameter(
+                v,
+                name='%s - spline vs[%d]' % (name, i))
+            self.vs.append(p)
 
-        if len(self.phi) != len(self.dz):
-            raise ValueError("dz and phi must have same number of entries")
+        if len(self.vs) != len(self.dz):
+            raise ValueError("dz and vs must have same number of entries")
+
+        self.zgrad = zgrad
+        self.interpolator = interpolator
 
     def __call__(self, z):
         # calculate spline value at z
-        pass
+        zeds = np.array(self.dz)
+        vs = np.array(self.vs)
+        if self.zgrad:
+            zeds = np.r_[-zeds[0], 0, zeds, 1, zeds[-1]]
+
+        return self.interpolator(zeds, vs)(z / float(self.extent))
 
     @property
     def parameters(self):
         p = Parameters(name=self.name)
-        p.append(self.extent)
-        p.append(self.dz)
-        p.append(self.phi)
+        p.extend([self.extent, self.dz, self.phi, self.left, self.right])
         return p
 
 

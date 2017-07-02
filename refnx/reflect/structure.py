@@ -88,18 +88,37 @@ class Structure(UserList):
 
         if len(self) > 2:
             if self.solvent == 'backing':
-                solvent_real = slabs[-1, 1]
-                solvent_imag = slabs[-1, 2]
+                solvent_slab = slabs[-1]
             if self.solvent == 'fronting':
-                solvent_real = slabs[0, 1]
-                solvent_imag = slabs[0, 2]
+                solvent_slab = slabs[0]
 
             # overall SLD is a weighted average
-            slabs[1:-1, 1] = slabs[1:-1, 1] * (1 - slabs[1:-1, 4])
-            slabs[1:-1, 2] = slabs[1:-1, 2] * (1 - slabs[1:-1, 4])
-            slabs[1:-1, 1] += solvent_real * slabs[1:-1, 4]
-            slabs[1:-1, 2] += solvent_imag * slabs[1:-1, 4]
+            slabs[1:-1] = self.overall_sld(slabs[1:-1], solvent_slab)
 
+        return slabs
+
+    @staticmethod
+    def overall_sld(slabs, solvent_slab):
+        """
+        Performs a volume fraction weighted average of the material SLD in a
+        layer and the solvent in a layer.
+
+        Parameters
+        ----------
+        slabs : np.ndarray
+            Slab representation of the layers to be averaged.
+        solvent_slab: np.ndarray
+            Slab representation of the solvent layer
+
+        Returns
+        -------
+        averaged_slabs : np.ndarray
+            the averaged slabs.
+        """
+        slabs[..., 1] = slabs[..., 1] * (1 - slabs[..., 4])
+        slabs[..., 2] = slabs[..., 2] * (1 - slabs[..., 4])
+        slabs[..., 1] += solvent_slab[..., 1] * slabs[..., 4]
+        slabs[..., 2] += solvent_slab[..., 2] * slabs[..., 4]
         return slabs
 
     def reflectivity(self, q, workers=0):
