@@ -42,7 +42,7 @@ before_install:
 
     - conda create --yes -n conda-refnx python=$PY
     - source activate conda-refnx
-    - conda install --yes numpy scipy nose h5py cython pandas xlrd flake8 six
+    - conda install --yes numpy scipy nose h5py cython pandas xlrd flake8 six pytest
     - pip install emcee uncertainties numdifftools
 
     # gradually expand flake8 to all of codebase
@@ -55,7 +55,7 @@ install:
 script:
     # definitely want to test the _creflect module on travis.
     - export REQUIRE_C=1
-    - python runtests.py
+    - pytest
 
 notifications:
     # Perhaps we should have status emails sent to the mailing list, but

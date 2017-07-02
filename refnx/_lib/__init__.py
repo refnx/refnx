@@ -1,3 +1,5 @@
+from __future__ import division, absolute_import
+
 import numpy.testing
 
 from refnx._lib.util import (TemporaryDirectory, preserve_cwd, flatten, unique,

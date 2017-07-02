@@ -1,4 +1,4 @@
-from __future__ import division
+from __future__ import division, absolute_import
 import io
 import os
 import os.path
@@ -11,12 +11,13 @@ import warnings
 
 import numpy as np
 import h5py
-from . import peak_utils as ut
+from refnx.reduce.peak_utils import peak_finder, centroid
 import refnx.util.general as general
 from refnx.util.general import resolution_double_chopper, _dict_compare
 import refnx.util.ErrorProp as EP
-from . import parabolic_motion as pm
-from . import event, rebin
+from refnx.reduce.parabolic_motion import find_trajectory, y_deflection
+from refnx.reduce.event import events, process_event_stream
+from refnx.reduce.rebin import rebin, rebin_along_axis
 from scipy.optimize import leastsq, curve_fit
 from scipy.stats import t
 import pandas as pd
@@ -770,10 +771,10 @@ class PlatypusNexus(object):
         output_sd = []
         for idx in range(n_spectra):
             # TODO: Correlated Uncertainties?
-            plane, plane_sd = rebin.rebin_along_axis(detector[idx],
-                                                     m_lambda_hist[idx],
-                                                     rebinning,
-                                                     y1_sd=detector_sd[idx])
+            plane, plane_sd = rebin_along_axis(detector[idx],
+                                               m_lambda_hist[idx],
+                                               rebinning,
+                                               y1_sd=detector_sd[idx])
             output.append(plane)
             output_sd.append(plane_sd)
 
@@ -1132,15 +1133,15 @@ class PlatypusNexus(object):
 
         with io.open(stream_filename, 'rb') as f:
             last_frame = int(frame_bins[-1] * frequency)
-            events, end_of_last_event = event.events(f,
-                                                     max_frames=last_frame)
+            loaded_events, end_of_last_event = events(f,
+                                                      max_frames=last_frame)
 
-        output = event.process_event_stream(events,
-                                            np.asfarray(frame_bins) *
-                                            frequency,
-                                            t_bins,
-                                            y_bins,
-                                            x_bins)
+        output = process_event_stream(loaded_events,
+                                      np.asfarray(frame_bins) *
+                                      frequency,
+                                      t_bins,
+                                      y_bins,
+                                      x_bins)
 
         detector, new_frame_bins = output
 
@@ -1470,8 +1471,8 @@ def find_specular_ridge(detector, detector_sd, starting_offset=50,
             # find the centroid and gauss peak in the last sections of the TOF
             # plot
             try:
-                centroid, gauss_peak = ut.peak_finder(y_cross,
-                                                      sigma=y_cross_sd)
+                centroid, gauss_peak = peak_finder(y_cross,
+                                                   sigma=y_cross_sd)
             except RuntimeError:
                 continue
 
@@ -1602,21 +1603,21 @@ def correct_for_gravity(detector, detector_sd, lamda, coll_distance,
 
     for spec in range(np.size(detector, 0)):
         neutron_speeds = general.wavelength_velocity(lamda[spec])
-        trajectories = pm.find_trajectory(coll_distance / 1000.,
-                                          theta,
-                                          neutron_speeds)
+        trajectories = find_trajectory(coll_distance / 1000.,
+                                       theta,
+                                       neutron_speeds)
         travel_distance = (coll_distance + sample_det[spec]) / 1000.
 
         # centres(t,)
         # TODO, don't use centroids, use Gaussian peak
-        centroids = np.apply_along_axis(ut.centroid, 1, detector[spec])
+        centroids = np.apply_along_axis(centroid, 1, detector[spec])
         lopx = np.searchsorted(lamda[spec], lo_wavelength)
         hipx = np.searchsorted(lamda[spec], hi_wavelength)
 
         def f(tru_centre):
-            deflections = pm.y_deflection(trajectories[lopx: hipx],
-                                          neutron_speeds[lopx: hipx],
-                                          travel_distance)
+            deflections = y_deflection(trajectories[lopx: hipx],
+                                       neutron_speeds[lopx: hipx],
+                                       travel_distance)
 
             model = 1000. * deflections / Y_PIXEL_SPACING + tru_centre
             diff = model - centroids[lopx: hipx, 0]
@@ -1628,17 +1629,17 @@ def correct_for_gravity(detector, detector_sd, lamda, coll_distance,
         res = leastsq(f, x0)
         m_gravcorrcoefs[spec] = res[0][0]
 
-        total_deflection = 1000. * pm.y_deflection(trajectories,
-                                                   neutron_speeds,
-                                                   travel_distance)
+        total_deflection = 1000. * y_deflection(trajectories,
+                                                neutron_speeds,
+                                                travel_distance)
         total_deflection /= Y_PIXEL_SPACING
 
         x_rebin = x_init.T + total_deflection[:, np.newaxis]
         for wavelength in range(np.size(detector, axis=1)):
-            output = rebin.rebin(x_init,
-                                 detector[spec, wavelength],
-                                 x_rebin[wavelength],
-                                 y1_sd=detector_sd[spec, wavelength])
+            output = rebin(x_init,
+                           detector[spec, wavelength],
+                           x_rebin[wavelength],
+                           y1_sd=detector_sd[spec, wavelength])
 
             corrected_data[spec, wavelength] = output[0]
             corrected_data_sd[spec, wavelength] = output[1]

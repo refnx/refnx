@@ -44,6 +44,7 @@ import time
 import imp
 from argparse import ArgumentParser, REMAINDER
 
+
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__)))
 
 def main(argv):
@@ -149,6 +150,7 @@ def main(argv):
             from numpy.testing import Tester
             return Tester(tests[0]).test(*a, **kw)
     else:
+        print(PROJECT_MODULE)
         __import__(PROJECT_MODULE)
         test = sys.modules[PROJECT_MODULE].test
 
