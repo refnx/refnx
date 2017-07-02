@@ -100,7 +100,8 @@ install:
     - cmd: conda config --set show_channel_urls true
     - cmd: conda update --yes --quiet conda
     - cmd: conda install --yes --quiet obvious-ci
-    - cmd: conda install --yes --quiet numpy toolchain scipy emcee h5py xlrd pandas uncertainties cython nose numdifftools six
+    - cmd: conda install --yes --quiet numpy toolchain scipy emcee h5py xlrd pandas uncertainties cython nose six
+    - cmd: pip install numdifftools
 
 build_script:
     # Build the compiled extension
