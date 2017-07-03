@@ -13,6 +13,10 @@ from refnx.analysis import Parameters, Parameter, possibly_create_parameter
 
 
 class Structure(UserList):
+    """
+    Represents the interfacial Structure of a reflectometry sample. Successive
+    Components are added to the Structure to construct the interface.
+    """
     def __init__(self, name='', solvent='backing'):
         super(Structure, self).__init__()
         self._name = name
