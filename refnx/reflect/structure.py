@@ -81,8 +81,10 @@ class Structure(UserList):
         for component in self.components:
             additional_slabs = component.slabs
             new_slabs = len(additional_slabs)
+
             if new_slabs > len(slabs) - i:
-                slabs = np.resize(slabs, (len(slabs) + growth_size, 5))
+                new_rows = len(slabs) + max(growth_size, new_slabs)
+                slabs = np.resize(slabs, (new_rows, 5))
                 slabs[i:] = 0
 
             slabs[i:i + new_slabs] = additional_slabs
