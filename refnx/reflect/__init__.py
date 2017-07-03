@@ -2,6 +2,7 @@ from __future__ import division, absolute_import
 
 from refnx.reflect.reflect_model import ReflectModel, reflectivity
 from refnx.reflect.structure import Structure, SLD, Slab, Component
+from refnx.reflect.spline import Spline
 
 import numpy.testing
 test = numpy.testing.Tester().test

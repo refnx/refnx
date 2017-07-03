@@ -5,7 +5,7 @@ import numpy as np
 from numpy.testing import (assert_almost_equal, assert_equal, assert_,
                            assert_allclose, assert_raises)
 
-from refnx.reflect import (SLD, Structure)
+from refnx.reflect import (SLD, Structure, Spline, Slab)
 from refnx.analysis import Parameter
 
 
@@ -53,3 +53,37 @@ class TestStructure(unittest.TestCase):
     def test_reflectivity(self):
         q = np.geomspace(0.005, 0.3, 200)
         self.s.reflectivity(q)
+
+    def test_slab_addition(self):
+        # The slabs property for the main Structure component constructs
+        # the overall slabs by concatenating Component slabs. It preallocates
+        # memory to prevent repeated memory allocations. THis checks that the
+        # slab concatenation is correct.
+
+        si = SLD(2.07)
+        sio2 = SLD(3.47)
+        polymer = SLD(1.5)
+        d2o = SLD(6.36)
+        d2o_layer = d2o(0, 3)
+        polymer_layer = polymer(20, 3)
+        a = Spline(400, [4, 5.9],
+                   [0.2, .4], polymer_layer, d2o_layer, d2o_layer, zgrad=True)
+        film = si | sio2(10, 3) | polymer_layer | a | d2o_layer
+        film.sld_profile()
+
+        # the growth size is 100. Try and make 200 layers and check they were
+        # allocated correctly
+        structure = si(0, 0)
+        for i in range(200):
+            p = SLD(i)(i, i)
+            structure |= p
+
+        structure |= d2o(0, 3)
+
+        slabs = structure.slabs
+        assert_equal(slabs[1:-1, 0], np.arange(200))
+        assert_equal(slabs[1:-1, 1], np.arange(200))
+        assert_equal(slabs[1:-1, 3], np.arange(200))
+        assert_equal(slabs[-1, 1], 6.36)
+        assert_equal(slabs[0, 1], 2.07)
+        assert_equal(len(slabs), 202)

@@ -10,53 +10,6 @@ from refnx.analysis import (Bounds, Parameter, Parameters,
                             possibly_create_parameter)
 
 
-class Spline(Component):
-    def __init__(self, extent, vs, dz, left, right, name='',
-                 interpolator=Pchip, zgrad=True):
-        self.name = name
-        self.left = left
-        self.right = right
-
-        self.extent = (
-            possibly_create_parameter(extent,
-                                      name='%s - spline extent' % name))
-
-        self.dz = Parameters(name='dz - spline')
-        for i, z in enumerate(dz):
-            p = possibly_create_parameter(
-                z,
-                name='%s - spline dz[%d]' % (name, i))
-            p.range(0, 1)
-            self.dz.append(p)
-
-        self.vs = Parameters(name='vs - spline')
-        for i, v in vs:
-            p = possibly_create_parameter(
-                v,
-                name='%s - spline vs[%d]' % (name, i))
-            self.vs.append(p)
-
-        if len(self.vs) != len(self.dz):
-            raise ValueError("dz and vs must have same number of entries")
-
-        self.zgrad = zgrad
-        self.interpolator = interpolator
-
-    def __call__(self, z):
-        # calculate spline value at z
-        zeds = np.array(self.dz)
-        vs = np.array(self.vs)
-        if self.zgrad:
-            zeds = np.r_[-zeds[0], 0, zeds, 1, zeds[-1]]
-
-        return self.interpolator(zeds, vs)(z / float(self.extent))
-
-    @property
-    def parameters(self):
-        p = Parameters(name=self.name)
-        p.extend([self.extent, self.dz, self.phi, self.left, self.right])
-        return p
-
 
 class Freeform_VFP(Component):
     """

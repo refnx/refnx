@@ -13,6 +13,10 @@ from refnx.analysis import Parameters, Parameter, possibly_create_parameter
 
 
 class Structure(UserList):
+    """
+    Represents the interfacial Structure of a reflectometry sample. Successive
+    Components are added to the Structure to construct the interface.
+    """
     def __init__(self, name='', solvent='backing'):
         super(Structure, self).__init__()
         self._name = name
@@ -77,8 +81,10 @@ class Structure(UserList):
         for component in self.components:
             additional_slabs = component.slabs
             new_slabs = len(additional_slabs)
+
             if new_slabs > len(slabs) - i:
-                slabs = np.resize(slabs, (len(slabs) + growth_size, 5))
+                new_rows = len(slabs) + max(growth_size, new_slabs)
+                slabs = np.resize(slabs, (new_rows, 5))
                 slabs[i:] = 0
 
             slabs[i:i + new_slabs] = additional_slabs
