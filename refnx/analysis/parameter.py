@@ -75,14 +75,13 @@ class Parameters(UserList):
 
     def __repr__(self):
         s = list()
-        s.append("{:_>80}".format('\n'))
-        s.append("Parameters: {0: ^15}\n".format(repr(self.name)))
+        s.append("{:_>80}".format(''))
+        s.append("Parameters: {0: ^15}".format(repr(self.name)))
 
         for el in self._pprint():
             s.append(el)
 
-        s.append("{:_>80}".format('\n'))
-        return ''.join(list(flatten(s)))
+        return '\n'.join(list(flatten(s)))
 
     def _pprint(self):
         for el in self.data:
@@ -90,7 +89,6 @@ class Parameters(UserList):
                 yield repr(el)
             else:
                 yield repr(el)
-                yield '\n'
 
     def __contains__(self, item):
         return id(item) in [id(p) for p in f_unique(flatten(self.data))]
