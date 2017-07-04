@@ -187,7 +187,7 @@ class TestParameters(unittest.TestCase):
         # concatenation of Parameters
         # Parameters with Parameter
         c = self.m | self.b
-        assert_equal(len(c), 2)
+        assert_equal(len(c), 3)
         assert_equal(len(c.flattened()), 3)
         assert_(c.flattened()[1] is self.b)
         assert_(c.flattened()[2] is self.b)
