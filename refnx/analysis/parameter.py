@@ -74,17 +74,20 @@ class Parameters(UserList):
             self.data[i] = v
 
     def __repr__(self):
-        s = []
+        s = list()
+        s.append("{:_>80}".format('\n'))
+        s.append("Parameters: {0: ^15}\n".format(repr(self.name)))
+
         for el in self._pprint():
-            s.append("{:_>80}".format('\n'))
-            s.append("Parameters: {0: ^15}\n".format(repr(self.name)))
             s.append(el)
+
+        s.append("{:_>80}".format('\n'))
         return ''.join(list(flatten(s)))
 
     def _pprint(self):
         for el in self.data:
             if is_parameters(el):
-                yield (list(el._pprint()))
+                yield repr(el)
             else:
                 yield repr(el)
                 yield '\n'
@@ -113,10 +116,9 @@ class Parameters(UserList):
         if not (is_parameter(other) or is_parameters(other)):
             raise ValueError("Can only concatenate a Parameter with another"
                              " Parameter or Parameters instance")
-        p = Parameters(name=self.name)
-        p.append(self)
-        p.append(other)
-        return p
+
+        self.append(other)
+        return self
 
     def lnprob(self):
         # lnprob for all the parameters
