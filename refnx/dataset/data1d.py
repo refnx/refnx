@@ -57,6 +57,7 @@ class Data1D(object):
     """
     def __init__(self, data=None, **kwds):
         self.filename = None
+        self.name = None
 
         self.metadata = kwds
         self.x = np.zeros(0)

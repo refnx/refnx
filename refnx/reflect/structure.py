@@ -256,7 +256,7 @@ class Structure(UserList):
     @property
     def parameters(self):
         # return self._parameters
-        p = Parameters(name=self.name)
+        p = Parameters(name='Structure - {0}'.format(self.name))
         p.extend([component.parameters for component in self.components])
         return p
 

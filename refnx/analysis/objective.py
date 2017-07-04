@@ -198,6 +198,24 @@ class Objective(BaseObjective):
         self.use_weights = use_weights
         self.transform = transform
 
+    def __repr__(self):
+        s = ["{:_>80}".format('')]
+        s.append('Objective - {0}'.format(id(self)))
+
+        # dataset name
+        if self.data.name is None:
+            s.append('Dataset = {0}'.format(repr(self.data)))
+        else:
+            s.append('Dataset = {0}'.format(self.data.name))
+
+        s.append('datapoints = {0}'.format(self.npoints))
+        s.append('chi2 = {0}'.format(self.chisqr()))
+        s.append('Weighted = {0}'.format(self.weighted))
+        s.append('Transform = {0}'.format(self.transform))
+        s.append(repr(self.parameters))
+
+        return '\n'.join(s)
+
     @property
     def weighted(self):
         """
@@ -532,6 +550,14 @@ class GlobalObjective(Objective):
             raise ValueError("One of the GlobalObjective.objectives wants to "
                              "use_weights, but not all the individual "
                              "objectives supplied weights")
+
+    def __repr__(self):
+        s = ["{:_>80}".format('\n')]
+        s.append(['--Global Objective--'])
+        for obj in self.objectives:
+            s.append(repr(obj))
+            s.append('\n')
+        return '\n'.join(s)
 
     @property
     def use_weights(self):
