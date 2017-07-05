@@ -103,17 +103,28 @@ class CurveFitter(object):
               pos.shape == (self._nwalkers,
                             self.nvary)):
             self._lastpos = pos
+
         elif pos == 'jitter':
             var_arr = np.array(self._varying_parameters)
             pos = 1 + np.random.randn(self._nwalkers,
                                       self.nvary) * 1.e-4
             pos *= var_arr
             self._lastpos = pos
+
         elif pos == 'prior':
             arr = np.zeros((self._nwalkers, self.nvary))
+
             for i, param in enumerate(self._varying_parameters):
-                arr[:, i] = param.bounds.rvs(size=self._nwalkers)
+                # bounds are not a closed interval, just jitter it.
+                if (isinstance(param.bounds, Interval) and
+                        not param.bounds._closed_bounds):
+                    vals = ((1 + np.random.randn(self._nwalkers) * 1.e-1) *
+                            param.value)
+                    arr[:, i] = vals
+                else:
+                    arr[:, i] = param.bounds.rvs(size=self._nwalkers)
             self._lastpos = arr
+
         else:
             raise RuntimeError("Didn't initialise CurveFitter with any known"
                                " method.")

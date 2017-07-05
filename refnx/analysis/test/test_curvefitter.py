@@ -43,8 +43,8 @@ class TestCurveFitter(unittest.TestCase):
 
         self.data = Data1D(data=(x, y, y_err))
 
-        self.p = Parameter(self.b_ls, 'b', vary=True)
-        self.p |= Parameter(self.m_ls, 'm', vary=True)
+        self.p = Parameter(self.b_ls, 'b', vary=True, bounds=(-100, 100))
+        self.p |= Parameter(self.m_ls, 'm', vary=True, bounds=(-100, 100))
 
         self.model = Model(self.p, fitfunc=line)
         self.objective = Objective(self.model, self.data)
@@ -74,7 +74,7 @@ class TestCurveFitter(unittest.TestCase):
         self.p[1].constraint = -0.203 * self.p[0]
         assert_equal(self.p[1].value, self.p[0].value * -0.203)
         res = self.mcfitter.fit()
-
+        print(res)
         assert_(res.success)
         assert_equal(len(self.objective.varying_parameters()), 1)
 
@@ -90,6 +90,14 @@ class TestCurveFitter(unittest.TestCase):
         # should be able to multithread
         mcfitter = CurveFitter(self.objective, threads=2)
         mcfitter.sample(steps=50, nburn=0, nthin=1, verbose=False)
+
+    def test_mcmc_init(self):
+        # smoke test for sampler initialisation
+        # TODO check that the initialisation worked.
+        mcfitter = CurveFitter(self.objective)
+        mcfitter.initialise('covar')
+        mcfitter.initialise('prior')
+        mcfitter.initialise('jitter')
 
     def test_fit_smoke(self):
         # smoke tests to check that fit runs
