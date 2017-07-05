@@ -376,17 +376,17 @@ void reflectMT(int numcoefs,
                int npoints,
                double *yP,
                const double *xP,
-               int workers){
+               int threads){
 /*
 choose between the mode of calculation, depending on whether pthreads or omp.h
 is present for parallelisation.
 */
 #if defined HAVE_PTHREAD_H
-    AbelesCalc_Imag(numcoefs, coefP, npoints, yP, xP, workers);
+    AbelesCalc_Imag(numcoefs, coefP, npoints, yP, xP, threads);
 #elif defined _OPENMP
-    AbelesCalc_ImagAll(numcoefs, coefP, npoints, yP, xP, workers);
+    AbelesCalc_ImagAll(numcoefs, coefP, npoints, yP, xP, threads);
 #elif defined _WIN32
-    AbelesCalc_Imag(numcoefs, coefP, npoints, yP, xP, workers);
+    AbelesCalc_Imag(numcoefs, coefP, npoints, yP, xP, threads);
 #else
     AbelesCalc_ImagAll(numcoefs, coefP, npoints, yP, xP, 0);
 #endif

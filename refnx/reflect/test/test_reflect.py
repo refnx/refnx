@@ -107,13 +107,13 @@ class TestReflect(unittest.TestCase):
         assert_almost_equal(calc1, calc2)
         calc1 = _reflect.abeles(self.qvals, s, scale=0.5,
                                 bkg=0.1)
-        # workers = 1 is a non-threaded implementation
+        # threads = 1 is a non-threaded implementation
         calc2 = _creflect.abeles(self.qvals, s, scale=0.5,
-                                 bkg=0.1, workers=1)
-        # workers = 2 forces the calculation to go through multithreaded calcn,
+                                 bkg=0.1, threads=1)
+        # threads = 2 forces the calculation to go through multithreaded calcn,
         # even on single core processor
         calc3 = _creflect.abeles(self.qvals, s, scale=0.5,
-                                 bkg=0.1, workers=2)
+                                 bkg=0.1, threads=2)
         assert_almost_equal(calc1, calc2)
         assert_almost_equal(calc1, calc3)
 
@@ -132,11 +132,11 @@ class TestReflect(unittest.TestCase):
 
         x = np.linspace(0.01, 0.2, 1000000)
         pstart = time.time()
-        _creflect.abeles(x, coefs, workers=0)
+        _creflect.abeles(x, coefs, threads=0)
         pfinish = time.time()
 
         sstart = time.time()
-        _creflect.abeles(x, coefs, workers=1)
+        _creflect.abeles(x, coefs, threads=1)
         sfinish = time.time()
         print(sfinish - sstart, pfinish - pstart)
         assert_(0.7 * (sfinish - sstart) > (pfinish - pstart))

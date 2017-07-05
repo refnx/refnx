@@ -2,7 +2,7 @@ from __future__ import division, print_function
 import numpy as np
 
 
-def abeles(q, layers, scale=1., bkg=0, workers=0):
+def abeles(q, layers, scale=1., bkg=0, threads=0):
     """
     Abeles matrix formalism for calculating reflectivity from a stratified
     medium.
@@ -29,7 +29,7 @@ def abeles(q, layers, scale=1., bkg=0, workers=0):
         Multiply all reflectivities by this value.
     bkg: float
         Linear background to be added to all reflectivities
-    workers: int, optional
+    threads: int, optional
         <THIS OPTION IS CURRENTLY IGNORED>
 
     Returns

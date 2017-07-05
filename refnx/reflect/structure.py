@@ -127,7 +127,7 @@ class Structure(UserList):
         slabs[..., 2] += solvent_slab[..., 2] * slabs[..., 4]
         return slabs
 
-    def reflectivity(self, q, workers=0):
+    def reflectivity(self, q, threads=0):
         """
         Calculate theoretical reflectivity of this structure
 
@@ -135,14 +135,14 @@ class Structure(UserList):
         ----------
         q : array-like
             Q values for evaluation
-        workers : int, optional
+        threads : int, optional
             Specifies the number of threads for parallel calculation. This
             option is only applicable if you are using the ``_creflect``
             module. The option is ignored if using the pure python calculator,
-            ``_reflect``. If `workers == 0` then all available processors are
+            ``_reflect``. If `threads == 0` then all available processors are
             used.
         """
-        return refcalc.abeles(q, self.slabs[..., :4], workers=workers)
+        return refcalc.abeles(q, self.slabs[..., :4], threads=threads)
 
     def sld_profile(self, z=None):
         """

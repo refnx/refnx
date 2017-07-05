@@ -10,7 +10,7 @@ cdef extern from "refcalc.h":
     void reflect(int numcoefs, const double *coefP, int npoints, double *yP,
                  const double *xP)
     void reflectMT(int numcoefs, const double *coefP, int npoints, double *yP,
-                   const double *xP, int workers)
+                   const double *xP, int threads)
 
 DTYPE = np.float64
 ctypedef np.float64_t DTYPE_t
@@ -24,7 +24,7 @@ NCPU = cpu_count()
 @cython.cdivision(False)
 def abeles(np.ndarray x,
            np.ndarray[DTYPE_t, ndim=2] w,
-           double scale=1.0, double bkg=0., int workers=0):
+           double scale=1.0, double bkg=0., int threads=0):
     if w.shape[1] != 4 or w.shape[0] < 2:
         raise ValueError("Parameters for _creflect must have shape (>2, 4)")
     if (w.dtype != np.float64 or x.dtype != np.float64):
@@ -48,11 +48,11 @@ def abeles(np.ndarray x,
     if nlayers:
         coefs[8:] = w.flatten()[4: -4]
 
-    workers = workers or NCPU
+    threads = threads or NCPU
 
-    if workers > 1:
+    if threads > 1:
         reflectMT(4*nlayers + 8, <const double*>coefs.data, npoints,
-                  <double*>y.data, <const double*>xtemp.data, workers)
+                  <double*>y.data, <const double*>xtemp.data, threads)
     else:
         reflect(4*nlayers + 8, <const double*>coefs.data, npoints,
                 <double*>y.data, <const double*>xtemp.data)
