@@ -525,6 +525,26 @@ class Objective(BaseObjective):
 
         return covar * scale
 
+    def pgen(self, n_gen=1000):
+        """
+        Generate random parameter vectors from the MCMC samples.
+        The objective state is not altered.
+        """
+        saved_par_state = np.array(self.parameters)
+        chains = np.array([np.ravel(param.chain) for param
+                           in self.varying_parameters()
+                           if param.chain is not None])
+
+        if len(chains) != len(self.varying_parameters()) or len(chains) == 0:
+            raise ValueError("You need to perform sampling on all the varying"
+                             "parameters first")
+
+        samples = np.arange(np.size(chains, 1))
+        choices = np.random.choice(samples, size=(n_gen,), replace=False)
+
+        for choice in choices:
+            yield chains[..., choice]
+
 
 class GlobalObjective(Objective):
     """
