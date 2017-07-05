@@ -527,10 +527,19 @@ class Objective(BaseObjective):
 
     def pgen(self, n_gen=1000):
         """
-        Generate random parameter vectors from the MCMC samples.
+        Yield random parameter vectors from the MCMC samples.
         The objective state is not altered.
+
+        Parameters
+        ----------
+        n_gen : int, optional
+            the number of samples
+
+        Yields
+        ------
+        pvec : np.ndarray
+            A randomly chose parameter vector
         """
-        saved_par_state = np.array(self.parameters)
         chains = np.array([np.ravel(param.chain) for param
                            in self.varying_parameters()
                            if param.chain is not None])
