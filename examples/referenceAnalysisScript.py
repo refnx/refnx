@@ -40,11 +40,10 @@ objective = Objective(model, data, transform=Transform('logY'),
 fitter = CurveFitter(objective)
 
 # do the fit
-fitter.fit(method='differential_evolution')
+res = fitter.fit(method='differential_evolution')
 
-print('-------------------------------------------------------------------')
-print(DATASET_NAME)
-# print(fit_report(fitter))
+# see the fit results
+print(objective)
 
 fig = plt.figure()
 ax = fig.add_subplot(2, 1, 1)
