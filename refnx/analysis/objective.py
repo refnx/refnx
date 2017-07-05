@@ -582,7 +582,7 @@ class GlobalObjective(Objective):
 
     def __repr__(self):
         s = ["{:_>80}".format('\n')]
-        s.append(['--Global Objective--'])
+        s.append('--Global Objective--')
         for obj in self.objectives:
             s.append(repr(obj))
             s.append('\n')

@@ -148,6 +148,8 @@ class TestGlobalFitting(unittest.TestCase):
         assert_allclose(res_global[len(res361) + len(res365):],
                         res366, rtol=1e-5)
 
+        s = repr(global_objective)
+
 
 if __name__ == '__main__':
     unittest.main()
