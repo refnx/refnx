@@ -74,7 +74,7 @@ class TestCurveFitter(unittest.TestCase):
         self.p[1].constraint = -0.203 * self.p[0]
         assert_equal(self.p[1].value, self.p[0].value * -0.203)
         res = self.mcfitter.fit()
-        print(res)
+
         assert_(res.success)
         assert_equal(len(self.objective.varying_parameters()), 1)
 
