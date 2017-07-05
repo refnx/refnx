@@ -110,9 +110,10 @@ class CurveFitter(object):
             pos *= var_arr
             self._lastpos = pos
         elif pos == 'prior':
-            # TODO, random from prior
-            raise NotImplementedError("prior initialisation of MCMC chain not "
-                                      "implemented yet")
+            arr = np.zeros((self._nwalkers, self.nvary))
+            for i, param in enumerate(self._varying_parameters):
+                arr[:, i] = param.bounds.rvs(size=self._nwalkers)
+            self._lastpos = arr
         else:
             raise RuntimeError("Didn't initialise CurveFitter with any known"
                                " method.")
