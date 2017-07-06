@@ -369,10 +369,12 @@ class CurveFitter(object):
             constrained_params = [param for param in flat_params
                                   if param.constraint is not None]
 
-            # figure out all the "master" parameters
+            # figure out all the "master" parameters for the constrained
+            # parameters
             relevant_depends = []
             for constrain_param in constrained_params:
                 depends = set(flatten(constrain_param.dependencies))
+                # we only need the dependencies that are varying parameters
                 rdepends = depends.intersection(set(self._varying_parameters))
                 relevant_depends.append(rdepends)
 
@@ -381,6 +383,8 @@ class CurveFitter(object):
 
             for constrain_param in constrained_params:
                 depends = set(flatten(constrain_param.dependencies))
+                # to be given a chain the constrained parameter has to depend
+                # on a varying parameter
                 if depends.intersection(relevant_depends):
                     constrain_param.chain = np.zeros_like(
                         relevant_depends[0].chain)
@@ -394,7 +398,7 @@ class CurveFitter(object):
                     quantiles = np.percentile(constrain_param.chain,
                                               [15.87, 50, 84.13])
 
-                    std_l, median, std_u = quantiles[:, i]
+                    std_l, median, std_u = quantiles
                     constrain_param.value = median
                     constrain_param.stderr = 0.5 * (std_u - std_l)
 
