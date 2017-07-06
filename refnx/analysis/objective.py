@@ -272,6 +272,22 @@ class Objective(BaseObjective):
                 else:
                     return y, 1, model
 
+    def generative(self, pvals=None):
+        """
+        Calculate the generative function associated with the model
+
+        Parameters
+        ----------
+        pvals : np.ndarray
+            Parameter values for evaluation
+
+        Returns
+        -------
+        model : np.ndarray
+        """
+        self.setp(pvals)
+        return self.model(self.data.x, x_err=self.data.x_err)
+
     def residuals(self, pvals=None):
         """
         Calculates the residuals for a given fitting system.
@@ -527,8 +543,8 @@ class Objective(BaseObjective):
 
     def pgen(self, n_gen=1000):
         """
-        Yield random parameter vectors from the MCMC samples.
-        The objective state is not altered.
+        Yield random parameter vectors (only those varying) from the MCMC
+        samples. The objective state is not altered.
 
         Parameters
         ----------
@@ -538,7 +554,7 @@ class Objective(BaseObjective):
         Yields
         ------
         pvec : np.ndarray
-            A randomly chose parameter vector
+            A randomly chosen parameter vector
         """
         chains = np.array([np.ravel(param.chain) for param
                            in self.varying_parameters()
