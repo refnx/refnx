@@ -31,11 +31,12 @@ class Bounds(object):
 class PDF(Bounds):
     def __init__(self, rv, seed=None):
         super(PDF, self).__init__(seed=seed)
-        if isinstance(rv, rv_continuous) or isinstance(rv, rv_frozen):
+        # we'll accept any object so long as it has logpdf and rvs methods
+        if hasattr(rv, 'logpdf') and hasattr(rv, 'rvs'):
             self.rv = rv
         else:
-            raise ValueError("You must give PDF a scipy.stats.rv_continuous"
-                             " instance")
+            raise ValueError("You must initialise PDF with an object that has"
+                             " logpdf and rvs methods")
 
     def __repr__(self):
         return repr(self.rv)

@@ -78,6 +78,25 @@ class TestBounds(unittest.TestCase):
         pkl = pickle.dumps(bounds)
         pickle.loads(pkl)
 
+    def test_user_pdf(self):
+        pdf = UserPDF()
+        bounds = PDF(pdf)
+
+        assert_equal(bounds.valid(1.), 1)
+        bounds.rvs(1)
+        assert_equal(bounds.lnprob(1.), 0)
+
+
+class UserPDF(object):
+    def __init__(self):
+        pass
+
+    def logpdf(self, v):
+        return 0.
+
+    def rvs(self, size=1, random_state=None):
+        return np.random.random(size)
+
 
 if __name__ == '__main__':
     unittest.main()
