@@ -1,6 +1,12 @@
 # Auto detect text files and perform LF normalization
 *.py text=auto eol=lf
+*.pyx text=auto eol=lf
 *.cpp text=auto eol=lf
+*.h text=auto eol=lf
+*.rst text=auto eol=lf
+*.txt text=auto eol=lf
+*.yml text=auto eol=lf
+
 
 # Force git to look at some files as binary
 *.png binary
