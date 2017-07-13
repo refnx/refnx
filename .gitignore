@@ -11,6 +11,11 @@ src/_cevent.c
 src/_creflect.c
 src/_creflect.cpp
 build.log
+doc/_build/
+t.txt
+t
+.cache/
+refnx/version.py
 
 # testing artifacts
 PLP*dat
