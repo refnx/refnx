@@ -48,13 +48,15 @@ class Spline(Component):
         This spline component only generates the real part of the SLD (thereby
         assuming that the imaginary part is negligible).
         The sequence dz are the lateral offsets of the knots normalised to a
-        unit interval [0, 1]. This means the cumulative sum must be less than
-        one, `np.cumsum(dz)[-1] <= 1`. The reason for using lateral offsets is
+        unit interval [0, 1]. The reason for using lateral offsets is
         so that the knots are monotonically increasing in location. When each
-        dz offset is turned into a Parameter it is given a minimum of 0.
+        dz offset is turned into a Parameter it is given bounds in [0, 1].
         Thus with an extent of 500, and dz = [0.1, 0.2, 0.2], the knots will be
-        at [0, 50, 150, 250, 500]. There are two extra knots for the start and
-        end of the interval (disregarding the `zgrad` control knots).
+        at [0, 50, 150, 250, 500]. Notice that there are two extra knots for
+        the start and end of the interval (disregarding the `zgrad` control
+        knots). If ``np.sum(dz) > 1``, then the knot spacings are normalised to
+        1. e.g. dz of [0.1, 0.2, 0.9] would result in knots (in the normalised
+        interval) of [0, 0.0833, 0.25, 1, 1].
         If `vs` is monotonic then the output spline will be monotonic. If `vs`
         is not monotonic then there may be regions of the spline larger or
         smaller than `left` or `right`.
@@ -96,6 +98,11 @@ class Spline(Component):
     def __call__(self, z):
         # calculate spline value at z
         zeds = np.cumsum(self.dz)
+
+        # if dz's sum to more than 1, then normalise to unit interval.
+        if np.sum(self.dz) > 1:
+            zeds /= np.sum(self.dz)
+
         vs = np.array(self.vs)
 
         left_sld = Structure.overall_sld(
