@@ -88,8 +88,8 @@ class TestCurveFitter(unittest.TestCase):
         self.mcfitter.sample(steps=50, nburn=0, nthin=1, verbose=False)
 
         # should be able to multithread
-        mcfitter = CurveFitter(self.objective, threads=2)
-        mcfitter.sample(steps=50, nburn=0, nthin=1, verbose=False)
+        mcfitter = CurveFitter(self.objective)
+        mcfitter.sample(steps=50, nburn=0, nthin=1, verbose=False, pool=2)
 
     def test_mcmc_init(self):
         # smoke test for sampler initialisation

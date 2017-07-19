@@ -8,6 +8,8 @@ from tempfile import mkdtemp
 import collections
 from contextlib import contextmanager
 
+from emcee.interruptible_pool import InterruptiblePool
+
 
 def preserve_cwd(function):
     """
@@ -188,4 +190,50 @@ def possibly_open_file(f, mode='wb'):
         close_file = True
     yield g
     if close_file:
+        g.close()
+
+
+@contextmanager
+def possibly_create_pool(pool):
+    """
+    Context manager for multiprocessing.
+
+    Parameters
+    ----------
+    pool : int or map-like object
+        If `pool` is an `int` then it specifies the number of threads to
+        use for parallelization. If `pool == 1`, then no parallel
+        processing is used.
+        If pool is an object with a map method that follows the same
+        calling sequence as the built-in map function, then this pool is
+        used for parallelisation.
+
+    Yields
+    ------
+    g : pool-like object
+        On leaving the context manager the pool is closed, if it was opened by
+        this context manager.
+    """
+    close_pool = False
+
+    # the user supplied a pool, don't close it
+    if hasattr(pool, 'map'):
+        g = pool
+    else:
+        # user supplies a number
+        if pool == 0:
+            # use as many processors as possible
+            g = InterruptiblePool()
+        elif pool > 0:
+            # only use the number of processors requested
+            g = InterruptiblePool(processes=int(pool))
+        else:
+            raise ValueError("you need to supply an integer for creating a "
+                             "pool")
+
+        close_pool = True
+
+    yield g
+
+    if close_pool:
         g.close()
