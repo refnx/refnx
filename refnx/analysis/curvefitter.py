@@ -12,7 +12,7 @@ from scipy.optimize import minimize, differential_evolution, least_squares
 
 from refnx.analysis import Objective, Interval, PDF, is_parameter
 from refnx._lib import flatten
-from refnx._lib import unique as f_unique
+from refnx._lib import unique as f_unique, possibly_create_pool
 
 MCMCResult = namedtuple('MCMCResult', ['name', 'param', 'stderr', 'chain',
                                        'median'])
@@ -56,6 +56,13 @@ class CurveFitter(object):
             even number. The more walkers the better.
         mcmc_kws : dict
             Keywords used to create the :class:`emcee.EnsembleSampler` object.
+
+        Notes
+        -----
+        See the documentation at http://dan.iel.fm/emcee/current/api/ for
+        further details on what keywords are permitted. The `pool` and
+        `threads` keywords are ignored here. Specification of parallel
+        threading is done with the `pool` argument in the `sample` method.
         """
         self.objective = objective
         self._varying_parameters = objective.varying_parameters()
@@ -68,6 +75,11 @@ class CurveFitter(object):
             self.mcmc_kws.update(mcmc_kws)
 
         self.mcmc_kws['args'] = (objective,)
+
+        if 'pool' in self.mcmc_kws:
+            self.mcmc_kws.pop('pool')
+        if 'threads' in self.mcmc_kws:
+            self.mcmc_kws.pop('threads')
 
         self._nwalkers = nwalkers
         self.sampler = emcee.EnsembleSampler(nwalkers,
@@ -134,7 +146,7 @@ class CurveFitter(object):
             self._lastpos[..., i] = param.valid(self._lastpos[..., i])
 
     def sample(self, steps, nburn=0, nthin=1, random_state=None, f=None,
-               callback=None, verbose=True):
+               callback=None, verbose=True, pool=0):
         """
         Performs sampling from the objective.
 
@@ -158,6 +170,12 @@ class CurveFitter(object):
             callback function to be called at each iteration step
         verbose : bool, optional
             Gives updates on the sampling progress
+        pool : int or map-like object, optional
+            If `pool` is an `int` then it specifies the number of threads to
+            use for parallelization. If `pool == 0`, then all CPU's are used.
+            If pool is an object with a map method that follows the same
+            calling sequence as the built-in map function, then this pool is
+            used for parallelisation.
 
         Notes
         -----
@@ -171,6 +189,7 @@ class CurveFitter(object):
 
         start_time = time.time()
 
+        # for saving progress to file, and printing progress to stdout.
         def _callback_wrapper(pos, lnprob, steps_completed):
             if verbose:
                 steps_completed += 1
@@ -192,12 +211,33 @@ class CurveFitter(object):
                 np.save(f, self.sampler.chain)
 
         rstate0 = check_random_state(random_state).get_state()
-        for i, result in enumerate(self.sampler.sample(self._lastpos,
-                                                       iterations=steps,
-                                                       rstate0=rstate0)):
-            pos, lnprob = result[0:2]
-            _callback_wrapper(pos, lnprob, i)
 
+        # remove chains from each of the parameters because they slow down
+        # pickling but only if they are parameter objects.
+        flat_params = f_unique(flatten(self.objective.parameters))
+        flat_params = [param for param in flat_params if is_parameter(param)]
+        # zero out all the old parameter stderrs
+        for param in flat_params:
+            param.stderr = None
+            param.chain = None
+
+        # using context manager means we kill off zombie pool objects
+        # but does mean that the pool has to be specified each time.
+        with possibly_create_pool(pool) as g:
+            # if you're not creating more than 1 thread, then don't bother with
+            # a pool.
+            if pool == 1:
+                self.sampler.pool = None
+            else:
+                self.sampler.pool = g
+
+            for i, result in enumerate(self.sampler.sample(self._lastpos,
+                                                           iterations=steps,
+                                                           rstate0=rstate0)):
+                pos, lnprob = result[0:2]
+                _callback_wrapper(pos, lnprob, i)
+
+        self.sampler.pool = None
         self._lastpos = result[0]
 
         # finish off the progress bar
