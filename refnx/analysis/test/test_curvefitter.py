@@ -4,6 +4,7 @@ import unittest
 import os.path
 
 import numpy as np
+import emcee
 from numpy.testing import (assert_, assert_almost_equal, assert_equal,
                            assert_allclose)
 
@@ -87,17 +88,52 @@ class TestCurveFitter(unittest.TestCase):
     def test_mcmc(self):
         self.mcfitter.sample(steps=50, nburn=0, nthin=1, verbose=False)
 
+        # we're not doing Parallel Tempering here.
+        assert_(self.mcfitter._ntemps == -1)
+        assert_(isinstance(self.mcfitter.sampler, emcee.EnsembleSampler))
+
         # should be able to multithread
-        mcfitter = CurveFitter(self.objective)
-        mcfitter.sample(steps=50, nburn=0, nthin=1, verbose=False, pool=2)
+        mcfitter = CurveFitter(self.objective, nwalkers=50)
+        res = mcfitter.sample(steps=60, nburn=10, nthin=2, verbose=False, pool=2)
+
+        # check that we're thinning and burning properly
+        assert_equal(mcfitter.sampler.chain.shape, (50, 60, 2))
+        assert_equal(mcfitter._lastpos, mcfitter.sampler.chain[:, -1, :])
+        assert_equal(mcfitter.sampler.chain[:, 10::2, 0], res[0].chain)
+        assert_equal(mcfitter.sampler.chain[:, 10::2, 1], res[1].chain)
+        assert_equal(res[0].chain.shape, (50, 25))
+
+    def test_mcmc_pt(self):
+        # smoke test for parallel tempering
+        mcfitter = CurveFitter(self.objective, ntemps=10, nwalkers=50)
+        assert_(isinstance(mcfitter.sampler, emcee.PTSampler))
+        assert_equal(mcfitter.sampler.ntemps, 10)
+
+        res = mcfitter.sample(steps=60, nburn=10, nthin=2, verbose=False, pool=0)
+        assert_equal(mcfitter.sampler.chain.shape, (10, 50, 60, 2))
+        assert_equal(res[0].chain.shape, (50, 25))
+        assert_equal(mcfitter.sampler.chain[0, :, 10::2, 0], res[0].chain)
+        assert_equal(mcfitter.sampler.chain[0, :, 10::2, 1], res[1].chain)
 
     def test_mcmc_init(self):
         # smoke test for sampler initialisation
         # TODO check that the initialisation worked.
-        mcfitter = CurveFitter(self.objective)
+        mcfitter = CurveFitter(self.objective, nwalkers=100)
         mcfitter.initialise('covar')
+        assert_equal(mcfitter._lastpos.shape, (100, 2))
         mcfitter.initialise('prior')
+        assert_equal(mcfitter._lastpos.shape, (100, 2))
         mcfitter.initialise('jitter')
+        assert_equal(mcfitter._lastpos.shape, (100, 2))
+
+        # initialise for Parallel tempering
+        mcfitter = CurveFitter(self.objective, ntemps=20, nwalkers=100)
+        mcfitter.initialise('covar')
+        assert_equal(mcfitter._lastpos.shape, (20, 100, 2))
+        mcfitter.initialise('prior')
+        assert_equal(mcfitter._lastpos.shape, (20, 100, 2))
+        mcfitter.initialise('jitter')
+        assert_equal(mcfitter._lastpos.shape, (20, 100, 2))
 
     def test_fit_smoke(self):
         # smoke tests to check that fit runs
