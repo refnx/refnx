@@ -94,7 +94,8 @@ class TestCurveFitter(unittest.TestCase):
 
         # should be able to multithread
         mcfitter = CurveFitter(self.objective, nwalkers=50)
-        res = mcfitter.sample(steps=60, nburn=10, nthin=2, verbose=False, pool=2)
+        res = mcfitter.sample(steps=60, nburn=10, nthin=2, verbose=False,
+                              pool=2)
 
         # check that we're thinning and burning properly
         assert_equal(mcfitter.sampler.chain.shape, (50, 60, 2))
@@ -109,7 +110,8 @@ class TestCurveFitter(unittest.TestCase):
         assert_(isinstance(mcfitter.sampler, emcee.PTSampler))
         assert_equal(mcfitter.sampler.ntemps, 10)
 
-        res = mcfitter.sample(steps=60, nburn=10, nthin=2, verbose=False, pool=0)
+        res = mcfitter.sample(steps=60, nburn=10, nthin=2, verbose=False,
+                              pool=0)
         assert_equal(mcfitter.sampler.chain.shape, (10, 50, 60, 2))
         assert_equal(res[0].chain.shape, (50, 25))
         assert_equal(mcfitter.sampler.chain[0, :, 10::2, 0], res[0].chain)
