@@ -52,13 +52,23 @@ class PDF(Bounds):
         Checks whether a parameter value is within the support of the
         distribution. If it isn't then it returns a *random* value that is
         within the support.
+
+        Parameters
+        ----------
+        val : array-like
+            values to examine
+
+        Returns
+        -------
+        valid : array-like
+            values within the support
         """
         _val = np.asfarray(val)
-        val = np.where(np.isfinite(self.lnprob(_val)),
-                       _val,
-                       self.rv.rvs(size=_val.shape))
+        valid = np.where(np.isfinite(self.lnprob(_val)),
+                         _val,
+                         self.rv.rvs(size=_val.shape))
 
-        return val
+        return valid
 
     def rvs(self, size=1, random_state=None):
         if random_state is None:
@@ -134,18 +144,41 @@ class Interval(Bounds):
     def valid(self, val):
         """
         Checks whether a parameter value is within the support of the
-        distribution. If it isn't then it returns a value that is within the
+        Interval. If it isn't then it returns a value that is within the
         support.
+        If the Interval is closed (i.e. lower and upper bounds are both
+        specified) then invalid values will be corrected by random samples
+        taken between the lower and upper bounds.
+        If the interval is semi-open, only one of the bounds being
+        specified, then invalid values will be corrected by the value being
+        reflected by the same distance from the relevant limit.
+
+        Parameters
+        ----------
+        val : array-like
+            values to examine
+
+        Returns
+        -------
+        valid : array-like
+            values within the support
+
+        Examples
+        --------
+        >>> b = Interval(0, 10)
+        >>> b.valid(11.5)
+        8.5
         """
         _val = np.asfarray(val)
         if self._closed_bounds:
-            val = np.where(np.isfinite(self.lnprob(_val)),
-                           _val,
-                           self.rvs(size=_val.shape))
+            valid = np.where(np.isfinite(self.lnprob(_val)),
+                             _val,
+                             self.rvs(size=_val.shape))
         else:
-            val = np.clip(_val, self._lb, self._ub)
+            valid = np.where(_val < self._ub, _val, 2 * self._ub - _val)
+            valid = np.where(valid > self._lb, valid, 2 * self._lb - valid)
 
-        return val
+        return valid
 
     def rvs(self, size=1, random_state=None):
         if self._closed_bounds:
