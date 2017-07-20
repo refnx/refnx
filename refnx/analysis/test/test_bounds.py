@@ -4,7 +4,7 @@ import pickle
 from refnx.analysis import Interval, PDF
 
 import numpy as np
-from numpy.testing import (assert_equal, assert_)
+from numpy.testing import (assert_equal, assert_, assert_almost_equal)
 from scipy.stats import norm, truncnorm
 
 
@@ -23,6 +23,7 @@ class TestBounds(unittest.TestCase):
         assert_equal(interval.lnprob(0), 0)
         assert_equal(interval.lnprob(1001), -np.inf)
 
+        # fully closed interval
         interval.lb = -1000
         assert_equal(interval.lnprob(-1001), -np.inf)
         assert_equal(interval.lb, -1000)
@@ -40,16 +41,21 @@ class TestBounds(unittest.TestCase):
         assert_(np.min(vals) >= 1000)
         assert_(np.isfinite(interval.lnprob(vals)).all())
 
-        # if it's in a open range then val is clipped to lb
+        # if bounds are semi-open then val is reflected from lb
         interval.ub = None
-        vals = interval.valid(np.linspace(990, 1005, 100))
-        assert_(np.min(vals) == 1000)
+        interval.lb = 1002
+        x = np.linspace(990, 1001, 10)
+        vals = interval.valid(x)
+        assert_almost_equal(vals, 2 * interval.lb - x)
+        assert_equal(interval.valid(1003), 1003)
 
-        # if it's in a open range then val is clipped to ub
-        interval.ub = 1002
+        # if bounds are semi-open then val is reflected from ub
         interval.lb = None
-        vals = interval.valid(np.linspace(990, 1005, 100))
-        assert_(np.max(vals) == 1002)
+        interval.ub = 1002
+        x = np.linspace(1003, 1005, 10)
+        vals = interval.valid(x)
+        assert_almost_equal(vals, 2 * interval.ub - x)
+        assert_equal(interval.valid(1001), 1001)
 
     def test_pdf(self):
         pdf = PDF(norm)
