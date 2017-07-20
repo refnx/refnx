@@ -41,28 +41,86 @@ def _objective_lnprob(theta, userargs=()):
     return objective.lnprob(theta)
 
 
+def _objective_lnlike(theta, userargs=()):
+    """
+    Calculates the log-likelihood probability.
+
+    Parameters
+    ----------
+    theta : sequence
+        Float parameter values (only those being varied)
+    userargs : tuple, optional
+        Extra positional arguments required for user objective function
+
+    Returns
+    -------
+    lnlike : float
+        Log likelihood probability
+
+    """
+    # need to use this function because PY27 can't pickle a partial on
+    # an object method
+    objective = userargs
+    return objective.lnlike(theta)
+
+
+def _objective_lnprior(theta, userargs=()):
+    """
+    Calculates the log-prior probability.
+
+    Parameters
+    ----------
+    theta : sequence
+        Float parameter values (only those being varied)
+    userargs : tuple, optional
+        Extra positional arguments required for user objective function
+
+    Returns
+    -------
+    lnprior : float
+        Log prior probability
+
+    """
+    # need to use this function because PY27 can't pickle a partial on
+    # an object method
+    objective = userargs
+    return objective.lnprior(theta)
+
+
 class CurveFitter(object):
     """
     Analyse a curvefitting system (with MCMC sampling)
     """
-    def __init__(self, objective, nwalkers=200, **mcmc_kws):
+    def __init__(self, objective, nwalkers=200, ntemps=-1, **mcmc_kws):
         """
         Parameters
         ----------
         objective : Objective
             The :class:`playtime.objective.Objective` to be analysed.
-        nwalkers : int
+        nwalkers : int, optional
             How many walkers you would like the sampler to have. Must be an
             even number. The more walkers the better.
+        ntemps : int or None, optional
+            If `ntemps == -1`, then an :class:`emcee.EnsembleSampler` is used
+            during the `sample` method.
+            Otherwise, or if `ntemps is None` then parallel tempering is
+            used with a :class:`emcee.PTSampler` object during the `sample`
+            method, with `ntemps` specifing the number of temperatures. Can be
+            `None`, in which case the `Tmax` keyword argument sets the maximum
+            temperature. Parallel Tempering is useful if you expect your
+            posterior distribution to be multi-modal.
+
         mcmc_kws : dict
-            Keywords used to create the :class:`emcee.EnsembleSampler` object.
+            Keywords used to create the :class:`emcee.EnsembleSampler` or
+            :class:`emcee.PTSampler` objects.
 
         Notes
         -----
         See the documentation at http://dan.iel.fm/emcee/current/api/ for
-        further details on what keywords are permitted. The `pool` and
-        `threads` keywords are ignored here. Specification of parallel
-        threading is done with the `pool` argument in the `sample` method.
+        further details on what keywords are permitted, and for further
+        information on Parallel Tempering. The `pool` and `threads` keywords
+        are ignored here. Specification of parallel threading is done with the
+        `pool` argument in the `sample` method.
         """
         self.objective = objective
         self._varying_parameters = objective.varying_parameters()
@@ -74,18 +132,33 @@ class CurveFitter(object):
         if mcmc_kws is not None:
             self.mcmc_kws.update(mcmc_kws)
 
-        self.mcmc_kws['args'] = (objective,)
-
         if 'pool' in self.mcmc_kws:
             self.mcmc_kws.pop('pool')
         if 'threads' in self.mcmc_kws:
             self.mcmc_kws.pop('threads')
 
         self._nwalkers = nwalkers
-        self.sampler = emcee.EnsembleSampler(nwalkers,
-                                             self.nvary,
-                                             _objective_lnprob,
-                                             **self.mcmc_kws)
+        self._ntemps = ntemps
+
+        if ntemps == -1:
+            self.mcmc_kws['args'] = (objective,)
+            self.sampler = emcee.EnsembleSampler(nwalkers,
+                                                 self.nvary,
+                                                 _objective_lnprob,
+                                                 **self.mcmc_kws)
+        # Parallel Tempering was requested.
+        else:
+            self.mcmc_kws['loglargs'] = (objective,)
+            self.mcmc_kws['logpargs'] = (objective,)
+            self.sampler = emcee.PTSampler(ntemps, nwalkers, self.nvary,
+                                           _objective_lnlike,
+                                           _objective_lnprior,
+                                           **self.mcmc_kws)
+            # construction of the PTSampler creates an ntemps attribute.
+            # If it was constructed with ntemps = None, then ntemps will
+            # be an integer.
+            self._ntemps = self.sampler.ntemps
+
         self._lastpos = None
 
     def initialise(self, pos='covar'):
@@ -101,45 +174,76 @@ class CurveFitter(object):
             - 'jitter', add a small amount of gaussian noise to each parameter
             - 'prior', sample random locations from the prior
             - pos, an array that specifies a snapshot of the walkers. Has shape
-                `(nwalkers, ndim)`.
+                `(nwalkers, ndim)`, or `(ntemps, nwalkers, ndim)` if parallel
+                 tempering is employed
         """
         self.sampler.reset()
+        nwalkers = self._nwalkers
+        nvary = self.nvary
+
+        # account for parallel tempering
+        _ntemps = self._ntemps
+
+        # If you're not doing parallel tempering, temporarily set the number of
+        # temperatures to be created to 1, thereby producing initial positions
+        # of (1, nwalkers, nvary), this first dimension should be removed at
+        # the end of the method
+        if self._ntemps == -1:
+            _ntemps = 1
+
+        # position is to be created from covariance matrix
         if pos == 'covar':
             p0 = np.array(self._varying_parameters)
-            nwalkers = self._nwalkers
             cov = self.objective.covar()
-            self._lastpos = emcee.utils.sample_ellipsoid(p0,
-                                                         cov,
-                                                         size=nwalkers)
-        elif (isinstance(pos, np.ndarray) and
-              pos.shape == (self._nwalkers,
-                            self.nvary)):
-            self._lastpos = pos
+            self._lastpos = emcee.utils.sample_ellipsoid(
+                p0,
+                cov,
+                size=(_ntemps, nwalkers))
 
+        # position is specified with array (no parallel tempering)
+        elif (isinstance(pos, np.ndarray) and
+              self._ntemps == -1 and
+              pos.shape == (nwalkers, nvary)):
+            self._lastpos = np.copy(pos)
+
+        # position is specified with array (with parallel tempering)
+        elif (isinstance(pos, np.ndarray) and
+              self._ntemps > -1 and
+              pos.shape == (_ntemps, nwalkers, nvary)):
+            self._lastpos = np.copy(pos)
+
+        # position is specified by jittering the parameters with gaussian noise
         elif pos == 'jitter':
             var_arr = np.array(self._varying_parameters)
-            pos = 1 + np.random.randn(self._nwalkers,
-                                      self.nvary) * 1.e-4
+            pos = 1 + np.random.randn(_ntemps,
+                                      nwalkers,
+                                      nvary) * 1.e-4
             pos *= var_arr
             self._lastpos = pos
 
+        # use the prior to initialise position
         elif pos == 'prior':
-            arr = np.zeros((self._nwalkers, self.nvary))
+            arr = np.zeros((_ntemps, nwalkers, nvary))
 
             for i, param in enumerate(self._varying_parameters):
                 # bounds are not a closed interval, just jitter it.
                 if (isinstance(param.bounds, Interval) and
                         not param.bounds._closed_bounds):
-                    vals = ((1 + np.random.randn(self._nwalkers) * 1.e-1) *
+                    vals = ((1 + np.random.randn(_ntemps, nwalkers) * 1.e-1) *
                             param.value)
-                    arr[:, i] = vals
+                    arr[..., i] = vals
                 else:
-                    arr[:, i] = param.bounds.rvs(size=self._nwalkers)
+                    arr[..., i] = param.bounds.rvs(size=(_ntemps, nwalkers))
             self._lastpos = arr
 
         else:
-            raise RuntimeError("Didn't initialise CurveFitter with any known"
-                               " method.")
+            raise RuntimeError("Didn't use any know method for "
+                               "CurveFitter.initialise")
+
+        # if you're not doing parallel tempering then remove the first
+        # dimension
+        if self._ntemps == -1:
+            self._lastpos = self._lastpos[0]
 
         # now validate initialisation, ensuring all init pos have finite lnprob
         for i, param in enumerate(self._varying_parameters):
@@ -210,7 +314,11 @@ class CurveFitter(object):
             if f is not None:
                 np.save(f, self.sampler.chain)
 
+        # set the random state of the sampler
+        # normally one could give this as an argument to the sample method
+        # but PTSampler didn't historically accept that...
         rstate0 = check_random_state(random_state).get_state()
+        self.sampler.random_state = rstate0
 
         # remove chains from each of the parameters because they slow down
         # pickling but only if they are parameter objects.
@@ -232,8 +340,7 @@ class CurveFitter(object):
                 self.sampler.pool = g
 
             for i, result in enumerate(self.sampler.sample(self._lastpos,
-                                                           iterations=steps,
-                                                           rstate0=rstate0)):
+                                                           iterations=steps)):
                 pos, lnprob = result[0:2]
                 _callback_wrapper(pos, lnprob, i)
 
@@ -343,7 +450,7 @@ class CurveFitter(object):
         Parameters
         ----------
         nburn : int, optional
-            discard this many steps from the chain
+            discard this many steps from the start of the chain
         nthin : int, optional
             only accept every `nthin` samples from the chain
         flatchain : bool, optional
@@ -364,15 +471,26 @@ class CurveFitter(object):
 
         Notes
         -----
-        One can call `process_chain` many times, the chain associated with this
-        object is unaltered. The chain is stored in the
+        One can call `process_chain` many times, the chain associated with the
+        CurveFitter object is unaltered. The chain is stored in the
         `CurveFitter.sampler.chain` attribute and has shape
-        `(nwalkers, iterations, nvary)`. The burned and thinned chain is
-        created via: `chain[:, nburn::nthin]`. If `flatten is True` then
-        `chain[:, nburn::nthin].reshape(-1, nvary) is returned. It also has the
-        effect of setting the parameter stderr's.
+        `(nwalkers, iterations, nvary)` (ntemps == -1) or
+        `(ntemps, nwalkers, iterations, nvary)` (ntemps != -1) if parallel
+        tempering was employed.
+        The burned and thinned chain is created via:
+        `chain[..., nburn::nthin]`.
+        Note, if parallel tempering is employed, then only the first row
+        of the parallel tempering chain is processed and returned as it
+        corresponds to the (lowest energy) target distribution.
+        If `flatten is True` then the burned/thinned chain is reshaped and
+        `arr.reshape(-1, nvary)` is returned. This method also has the effect
+        of setting the parameter stderr's.
         """
-        chain = self.sampler.chain[:, nburn::nthin, :]
+        chain = self.sampler.chain[..., nburn::nthin, :]
+        if self._ntemps != -1:
+            # PTSampler, we require the target distribution in the first row.
+            chain = chain[0]
+
         _flatchain = chain.reshape((-1, self.nvary))
         if flatchain:
             chain = _flatchain
@@ -445,6 +563,9 @@ class CurveFitter(object):
             # now reset fitted parameter values (they would've been changed by
             # constraints calculations
             self.objective.setp(fitted_values)
+
+        # the parameter set are not Parameter objects, an array was probably
+        # being used with BaseObjective.
         else:
             for i in range(self.nvary):
                 c = np.copy(chain[..., i])
