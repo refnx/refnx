@@ -252,7 +252,7 @@ class CurveFitter(object):
     def acf(self, nburn=0, nthin=1):
         """
         Calculate the autocorrelation function
-        
+
         Returns
         -------
         acfs : np.ndarray
