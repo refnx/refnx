@@ -249,6 +249,37 @@ class CurveFitter(object):
         for i, param in enumerate(self._varying_parameters):
             self._lastpos[..., i] = param.valid(self._lastpos[..., i])
 
+    def acf(self, nburn=0, nthin=1):
+        """
+        Calculate the autocorrelation function
+        
+        Returns
+        -------
+        acfs : np.ndarray
+            The autocorrelation function, acfs.shape=(lags, nvary)
+        """
+        chain = np.copy(self.sampler.chain)
+        if self._ntemps != -1:
+            chain = chain[0]
+
+        chain = chain[:, nburn::nthin, :]
+
+        # (walkers, iterations, vary) -> (vary, walkers, iterations)
+        chain = np.transpose(chain, (2, 0, 1))
+        shape = list(chain.shape)
+        shape.pop(-1)
+
+        acfs = np.zeros_like(chain)
+
+        # iterate over each parameter/walker
+        for index in np.ndindex(*shape):
+            s = emcee.autocorr.function(chain[index])
+            acfs[index] = s
+
+        # now average over walkers
+        acfs = np.mean(acfs, axis=1)
+        return np.transpose(acfs)
+
     def sample(self, steps, nburn=0, nthin=1, random_state=None, f=None,
                callback=None, verbose=True, pool=0):
         """

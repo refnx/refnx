@@ -94,15 +94,19 @@ class TestCurveFitter(unittest.TestCase):
 
         # should be able to multithread
         mcfitter = CurveFitter(self.objective, nwalkers=50)
-        res = mcfitter.sample(steps=60, nburn=10, nthin=2, verbose=False,
+        res = mcfitter.sample(steps=65, nburn=10, nthin=2, verbose=False,
                               pool=2)
 
+        # check that the autocorrelation function at least runs
+        acfs = mcfitter.acf(nburn=10, nthin=2)
+        assert_equal(acfs.shape[-1], mcfitter.nvary)
+
         # check that we're thinning and burning properly
-        assert_equal(mcfitter.sampler.chain.shape, (50, 60, 2))
+        assert_equal(mcfitter.sampler.chain.shape, (50, 65, 2))
         assert_equal(mcfitter._lastpos, mcfitter.sampler.chain[:, -1, :])
         assert_equal(mcfitter.sampler.chain[:, 10::2, 0], res[0].chain)
         assert_equal(mcfitter.sampler.chain[:, 10::2, 1], res[1].chain)
-        assert_equal(res[0].chain.shape, (50, 25))
+        assert_equal(res[0].chain.shape, (50, 28))
 
     def test_mcmc_pt(self):
         # smoke test for parallel tempering
