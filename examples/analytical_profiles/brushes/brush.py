@@ -27,11 +27,14 @@ class FreeformVFP(Component):
         else:
             self.polymer_sld = SLD(polymer_sld)
 
+        # left and right slabs are other areas where the same polymer can
+        # reside
         self.left_slabs = [slab for slab in left_slabs if
                            isinstance(slab, Slab)]
         self.right_slabs = [slab for slab in right_slabs if
                             isinstance(slab, Slab)]
 
+        # the solvating material
         self.solvent_slab = solvent
         self.microslab_max_thickness = microslab_max_thickness
 
@@ -39,6 +42,7 @@ class FreeformVFP(Component):
             possibly_create_parameter(extent,
                                       name='%s - spline extent' % name))
 
+        # dz are the spatial spacings of the spline knots
         self.dz = Parameters(name='dz - spline')
         for i, z in enumerate(dz):
             p = possibly_create_parameter(
@@ -47,6 +51,7 @@ class FreeformVFP(Component):
             p.range(0, 1)
             self.dz.append(p)
 
+        # vf are the volume fraction values of each of the spline knots
         self.vf = Parameters(name='vf - spline')
         for i, v in enumerate(vf):
             p = possibly_create_parameter(
@@ -67,7 +72,9 @@ class FreeformVFP(Component):
             self.gamma = Parameter(0, 'gamma')
 
     def __call__(self, z):
-        # calculate spline value at z
+        """
+        Calculates the volume fraction profile of the spline
+        """
         zeds = np.cumsum(self.dz)
 
         # if dz's sum to more than 1, then normalise to unit interval.
@@ -76,24 +83,32 @@ class FreeformVFP(Component):
 
         vf = np.array(self.vf)
 
+        # use the volume fraction of the last left_slab as the initial vf of
+        # the spline
         if len(self.left_slabs):
             left_end = 1 - self.left_slabs[-1].vfsolv.value
         else:
             left_end = vf[0]
 
+        # in contrast use a vf = 0 for the last vf of
+        # the spline, unless right_slabs is specified
         if len(self.right_slabs):
             right_end = 1 - self.right_slabs[0].vfsolv.value
         else:
-            right_end = vf[-1]
+            right_end = 0
 
+        # do you require zero gradient at either end of the spline?
         if self.zgrad:
             zeds = np.r_[-1.1, 0, zeds, 1, 2.1]
             vf = np.r_[left_end, left_end, vf, right_end, right_end]
         else:
             zeds = np.r_[0, zeds, 1]
             vf = np.r_[left_end, vf, right_end]
-        print(zeds, vf)
-        return self.interpolator(zeds, vf)(z / float(self.extent))
+        # print(zeds, vf)
+
+        # TODO make vfp zero for z > self.extent
+        vfp = self.interpolator(zeds, vf)(z / float(self.extent))
+        return vfp
 
     def moment(self, moment=1):
         """
@@ -142,9 +157,11 @@ class FreeformVFP(Component):
         area = np.sum(areas)
 
         for slab in self.left_slabs:
-            area += slab[0, 0] * (1 - slab[0, 4])
+            _slabs = slab.slabs
+            area += _slabs[0, 0] * (1 - _slabs[0, 4])
         for slab in self.right_slabs:
-            area += slab[0, 0] * (1 - slab[0, 4])
+            _slabs = slab.slabs
+            area += _slabs[0, 0] * (1 - _slabs[0, 4])
 
         return area
 
