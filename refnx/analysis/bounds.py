@@ -136,6 +136,7 @@ class Interval(Bounds):
         valid = np.logical_and(self._lb <= _val, _val <= self._ub)
 
         if self._closed_bounds:
+            # TODO special case where lb==ub==val?
             prob = np.where(valid, np.log(1 / (self._ub - self._lb)), -np.inf)
         else:
             prob = np.where(valid, 0, -np.inf)

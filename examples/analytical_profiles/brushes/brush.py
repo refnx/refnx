@@ -10,18 +10,105 @@ from refnx.analysis import (Bounds, Parameter, Parameters,
                             possibly_create_parameter)
 
 
-
-class Freeform_VFP(Component):
+class FreeformVFP(Component):
     """
     """
-    def __init__(self, polymer_SLD, spline, slabs=None, gamma=None):
+    def __init__(self, extent, vf, dz, polymer_sld, solvent, name='',
+                 gamma=None, left_slabs=(), right_slabs=(),
+                 interpolator=Pchip, zgrad=True, microslab_max_thickness=2):
         """
         Parameters
         ----------
         """
-        super(Component, self).__init__()
-        self.gamma = gamma
-        self.pre_slabs
+        self.name = name
+
+        if isinstance(polymer_sld, SLD):
+            self.polymer_sld = polymer_sld
+        else:
+            self.polymer_sld = SLD(polymer_sld)
+
+        # left and right slabs are other areas where the same polymer can
+        # reside
+        self.left_slabs = [slab for slab in left_slabs if
+                           isinstance(slab, Slab)]
+        self.right_slabs = [slab for slab in right_slabs if
+                            isinstance(slab, Slab)]
+
+        # the solvating material
+        self.solvent_slab = solvent
+        self.microslab_max_thickness = microslab_max_thickness
+
+        self.extent = (
+            possibly_create_parameter(extent,
+                                      name='%s - spline extent' % name))
+
+        # dz are the spatial spacings of the spline knots
+        self.dz = Parameters(name='dz - spline')
+        for i, z in enumerate(dz):
+            p = possibly_create_parameter(
+                z,
+                name='%s - spline dz[%d]' % (name, i))
+            p.range(0, 1)
+            self.dz.append(p)
+
+        # vf are the volume fraction values of each of the spline knots
+        self.vf = Parameters(name='vf - spline')
+        for i, v in enumerate(vf):
+            p = possibly_create_parameter(
+                v,
+                name='%s - spline vf[%d]' % (name, i))
+            p.range(0, 1)
+            self.vf.append(p)
+
+        if len(self.vf) != len(self.dz):
+            raise ValueError("dz and vs must have same number of entries")
+
+        self.zgrad = zgrad
+        self.interpolator = interpolator
+
+        if gamma is not None:
+            self.gamma = possibly_create_parameter(gamma, 'gamma')
+        else:
+            self.gamma = Parameter(0, 'gamma')
+
+    def __call__(self, z):
+        """
+        Calculates the volume fraction profile of the spline
+        """
+        zeds = np.cumsum(self.dz)
+
+        # if dz's sum to more than 1, then normalise to unit interval.
+        if np.sum(self.dz) > 1:
+            zeds /= np.sum(self.dz)
+
+        vf = np.array(self.vf)
+
+        # use the volume fraction of the last left_slab as the initial vf of
+        # the spline
+        if len(self.left_slabs):
+            left_end = 1 - self.left_slabs[-1].vfsolv.value
+        else:
+            left_end = vf[0]
+
+        # in contrast use a vf = 0 for the last vf of
+        # the spline, unless right_slabs is specified
+        if len(self.right_slabs):
+            right_end = 1 - self.right_slabs[0].vfsolv.value
+        else:
+            right_end = 0
+
+        # do you require zero gradient at either end of the spline?
+        if self.zgrad:
+            zeds = np.r_[-1.1, 0, zeds, 1, 2.1]
+            vf = np.r_[left_end, left_end, vf, right_end, right_end]
+        else:
+            zeds = np.r_[0, zeds, 1]
+            vf = np.r_[left_end, vf, right_end]
+        # print(zeds, vf)
+
+        # TODO make vfp zero for z > self.extent
+        vfp = self.interpolator(zeds, vf)(z / float(self.extent))
+        return vfp
 
     def moment(self, moment=1):
         """
@@ -47,15 +134,15 @@ class Freeform_VFP(Component):
     @property
     def parameters(self):
         p = Parameters(name=self.name)
-        p.extend([component.parameters for component in self.components])
+        p.extend([self.extent, self.dz, self.vf, self.solvent_slab,
+                  self.polymer_sld, self.gamma])
+        p.extend([slab.parameters for slab in self.left_slabs])
+        p.extend([slab.parameters for slab in self.right_slabs])
         return p
 
     def lnprob(self):
         # log-probability for area under profile
-        if isinstance(self.gamma, Bounds):
-            return self.gamma.lnprob(self.profile_area())
-        else:
-            return 0
+        return self.gamma.lnprob(self.profile_area())
 
     def profile_area(self):
         """
@@ -67,8 +154,30 @@ class Freeform_VFP(Component):
         """
         slabs = self.slabs
         areas = self.slabs[..., 0] * (1 - slabs[..., 4])
-        return np.sum(areas)
+        area = np.sum(areas)
+
+        for slab in self.left_slabs:
+            _slabs = slab.slabs
+            area += _slabs[0, 0] * (1 - _slabs[0, 4])
+        for slab in self.right_slabs:
+            _slabs = slab.slabs
+            area += _slabs[0, 0] * (1 - _slabs[0, 4])
+
+        return area
 
     @property
     def slabs(self):
-        pass
+        num_slabs = np.ceil(float(self.extent) / self.microslab_max_thickness)
+        slab_thick = float(self.extent / num_slabs)
+        slabs = np.zeros((int(num_slabs), 5))
+        slabs[:, 0] = slab_thick
+
+        # give each slab a miniscule roughness
+        slabs[:, 3] = 0.5
+
+        dist = np.cumsum(slabs[..., 0]) - 0.5 * slab_thick
+        slabs[:, 1] = self.polymer_sld.real.value
+        slabs[:, 2] = self.polymer_sld.imag.value
+        slabs[:, 4] = 1 - self(dist)
+
+        return slabs
