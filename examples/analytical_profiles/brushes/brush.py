@@ -27,6 +27,11 @@ class FreeformVFP(Component):
         else:
             self.polymer_sld = SLD(polymer_sld)
 
+        if isinstance(solvent, SLD):
+            self.solvent = solvent
+        else:
+            self.solvent = SLD(solvent)
+
         # left and right slabs are other areas where the same polymer can
         # reside
         self.left_slabs = [slab for slab in left_slabs if
@@ -34,8 +39,6 @@ class FreeformVFP(Component):
         self.right_slabs = [slab for slab in right_slabs if
                             isinstance(slab, Slab)]
 
-        # the solvating material
-        self.solvent_slab = solvent
         self.microslab_max_thickness = microslab_max_thickness
 
         self.extent = (
@@ -134,8 +137,8 @@ class FreeformVFP(Component):
     @property
     def parameters(self):
         p = Parameters(name=self.name)
-        p.extend([self.extent, self.dz, self.vf, self.solvent_slab,
-                  self.polymer_sld, self.gamma])
+        p.extend([self.extent, self.dz, self.vf, self.solvent.parameters,
+                  self.polymer_sld.parameters, self.gamma])
         p.extend([slab.parameters for slab in self.left_slabs])
         p.extend([slab.parameters for slab in self.right_slabs])
         return p

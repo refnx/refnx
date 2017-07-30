@@ -325,6 +325,7 @@ class SLD(object):
 
     @property
     def parameters(self):
+        self._parameters.name = self.name
         return self._parameters
         # p = Parameters(name=self.name)
         # p.extend([self.real, self.imag])
@@ -399,6 +400,7 @@ class Slab(Component):
 
     @property
     def parameters(self):
+        self._parameters.name = self.name
         return self._parameters
 
     @property
