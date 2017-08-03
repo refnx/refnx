@@ -149,3 +149,77 @@ def parse_xrdml_file(f):
     d['wavelength'] = wavelength
 
     return d
+
+
+def process_offspec(f):
+    """
+    Process a 2D XRDML file and return qy, qz, intensity, dintensity
+
+    Parameters
+    ----------
+    f: str or file-like
+
+    Returns
+    -------
+    qy, qz, intensity, dintensity
+    """
+
+    x = et.parse(f)
+    root = x.getroot()
+    ns = {'xrdml': 'http://www.xrdml.com/XRDMeasurement/1.0'}
+    query = {'intensities': './/xrdml:intensities',
+             'twotheta_start': './/xrdml:positions[@axis=\'2Theta\']'
+                               '/xrdml:startPosition',
+             'twotheta_end': './/xrdml:positions[@axis=\'2Theta\']'
+                             '/xrdml:endPosition',
+             'omega_start': './/xrdml:positions[@axis=\'Omega\']'
+                            '/xrdml:startPosition',
+             'omega_end': './/xrdml:positions[@axis=\'Omega\']'
+                          '/xrdml:endPosition',
+             'cnt_time': './/xrdml:commonCountingTime',
+             'kAlpha1': './/xrdml:kAlpha1',
+             'kAlpha2': './/xrdml:kAlpha2',
+             'ratio': './/xrdml:ratioKAlpha2KAlpha1'}
+
+    res = {key: root.findall(value, ns) for key, value in query.items()}
+
+    kAlpha1 = float(res['kAlpha1'][0].text)
+    kAlpha2 = float(res['kAlpha2'][0].text)
+    ratio = float(res['ratio'][0].text)
+    wavelength = (kAlpha1 + ratio * kAlpha2) / (1 + ratio)
+
+    intensity = [np.fromstring(ints.text, sep=' ') for
+                 ints in res['intensities']]
+    twotheta_starts = np.array([np.fromstring(ints.text, sep=' ') for
+                                ints in res['twotheta_start']])
+    twotheta_ends = np.array([np.fromstring(ints.text, sep=' ') for
+                              ints in res['twotheta_end']])
+    omega_starts = np.array([np.fromstring(ints.text, sep=' ') for
+                             ints in res['omega_start']])
+    omega_ends = np.array([np.fromstring(ints.text, sep=' ') for
+                           ints in res['omega_end']])
+    cnt_time = np.array([np.fromstring(ints.text, sep=' ') for
+                         ints in res['cnt_time']])
+
+    intensity = np.array(intensity)
+    dintensity = np.sqrt(intensity) / cnt_time
+    intensity /= cnt_time
+
+    omegas = []
+    two_thetas = []
+
+    for i in range(len(intensity)):
+        omega = np.linspace(omega_starts[i],
+                            omega_ends[i],
+                            np.size(intensity, 1))
+        omegas.append(omega)
+        two_theta = np.linspace(twotheta_starts[i],
+                                twotheta_ends[i],
+                                np.size(intensity, 1))
+        two_thetas.append(two_theta)
+
+    omega = np.array(omegas)
+    twotheta = np.array(two_thetas)
+    qx, qy, qz = general.q2(omega, twotheta, 0, wavelength)
+
+    return qy, qz, intensity, dintensity
