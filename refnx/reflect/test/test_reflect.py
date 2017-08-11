@@ -164,6 +164,19 @@ class TestReflect(unittest.TestCase):
         calc2 = _creflect.abeles(self.qvals, layer2, scale=0.99, bkg=1e-8)
         assert_almost_equal(calc1, calc2)
 
+    def test_reverse(self):
+        # check that the structure reversal works.
+        sio2 = SLD(3.47, name='SiO2')
+        air = SLD(0, name='air')
+        si = SLD(2.07, name='Si')
+        structure = si | sio2(100, 3) | air(0, 2)
+        structure.reversed = True
+
+        assert_equal(structure.slabs, self.structure.slabs)
+
+        calc = structure.reflectivity(self.qvals)
+        assert_almost_equal(calc, self.rvals)
+
     def test_c_abeles_reshape(self):
         # c reflectivity should be able to deal with multidimensional input
         if not TEST_C_REFLECT:
