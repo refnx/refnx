@@ -17,7 +17,7 @@ class Structure(UserList):
     Represents the interfacial Structure of a reflectometry sample. Successive
     Components are added to the Structure to construct the interface.
     """
-    def __init__(self, name='', solvent='backing', reversed=False):
+    def __init__(self, name='', solvent='backing', reverse_structure=False):
         """
         Represents the interfacial Structure of a reflectometry sample.
         Successive Components are added to the Structure to construct the
@@ -33,18 +33,19 @@ class Structure(UserList):
             for neutron reflectometry, with solvation by the material in
             Structure[-1]. X-ray reflectometry would typically be solvated by
             the 'fronting' material in Structure[0].
-        reversed : bool
-            If `Structure.reversed` is `True` then the slab representation
-            produced by `Structure.slabs` is reversed. The sld profile and
-            calculated reflectivity will correspond to this reversed structure.
+        reverse_structure : bool
+            If `Structure.reverse_structure` is `True` then the slab
+            representation produced by `Structure.slabs` is reversed. The sld
+            profile and calculated reflectivity will correspond to this
+            reversed structure.
 
         Notes
         -----
-        If `Structure.reversed is True` then the slab representation order is
-        reversed. The slab order is reversed before the solvation calculation
-        is done. I.e. if `Structure.solvent == 'backing'` and
-        `Structure.reversed is True` then the material that solvates the system
-        is the component in `Structure[0]`, which corresponds to
+        If `Structure.reverse_structure is True` then the slab representation
+        order is reversed. The slab order is reversed before the solvation
+        calculation is done. I.e. if `Structure.solvent == 'backing'` and
+        `Structure.reverse_structure is True` then the material that solvates
+        the system is the component in `Structure[0]`, which corresponds to
         `Structure.slab[-1]`.
         """
         super(Structure, self).__init__()
@@ -54,7 +55,7 @@ class Structure(UserList):
                              " medium")
 
         self.solvent = solvent
-        self._reversed = bool(reversed)
+        self._reverse_structure = bool(reverse_structure)
         # self._parameters = Parameters(name=name)
 
     def __copy__(self):
@@ -85,12 +86,12 @@ class Structure(UserList):
         self._name = name
 
     @property
-    def reversed(self):
-        return bool(self._reversed)
+    def reverse_structure(self):
+        return bool(self._reverse_structure)
 
-    @reversed.setter
-    def reversed(self, reversed):
-        self._reversed = reversed
+    @reverse_structure.setter
+    def reverse_structure(self, reverse_structure):
+        self._reverse_structure = reverse_structure
 
     @property
     def slabs(self):
@@ -140,7 +141,7 @@ class Structure(UserList):
         slabs = slabs[:i]
 
         # if the slab representation needs to be reversed.
-        if self.reversed:
+        if self.reverse_structure:
             roughnesses = slabs[1:, 3]
             slabs = np.flipud(slabs)
             slabs[1:, 3] = roughnesses[::-1]

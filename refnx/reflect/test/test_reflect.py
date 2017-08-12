@@ -170,7 +170,7 @@ class TestReflect(unittest.TestCase):
         air = SLD(0, name='air')
         si = SLD(2.07, name='Si')
         structure = si | sio2(100, 3) | air(0, 2)
-        structure.reversed = True
+        structure.reverse_structure = True
 
         assert_equal(structure.slabs, self.structure.slabs)
 
