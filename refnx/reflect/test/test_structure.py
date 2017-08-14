@@ -6,6 +6,7 @@ from numpy.testing import (assert_almost_equal, assert_equal, assert_,
                            assert_allclose, assert_raises)
 
 from refnx.reflect import (SLD, Structure, Spline, Slab)
+from refnx.reflect.structure import _profile_slicer
 from refnx.analysis import Parameter
 
 
@@ -53,6 +54,15 @@ class TestStructure(unittest.TestCase):
     def test_reflectivity(self):
         q = np.geomspace(0.005, 0.3, 200)
         self.s.reflectivity(q)
+
+    def test_sld_slicer(self):
+        q = np.geomspace(0.005, 0.3, 200)
+
+        reflectivity = self.s.reflectivity(q)
+        z, sld = self.s.sld_profile()
+        round_trip_structure = _profile_slicer(z, sld)
+        round_trip_reflectivity = round_trip_structure.reflectivity(q)
+        assert_allclose(round_trip_reflectivity, reflectivity, rtol=0.003)
 
     def test_slab_addition(self):
         # The slabs property for the main Structure component constructs
