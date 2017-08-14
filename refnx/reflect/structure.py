@@ -3,6 +3,7 @@ from six.moves import UserList
 
 import numpy as np
 from scipy.special import erf
+from scipy.interpolate import interp1d
 
 try:
     from refnx.reflect import _creflect as refcalc
@@ -189,7 +190,7 @@ class Structure(UserList):
         Parameters
         ----------
         q : array-like
-            Q values for evaluation
+            Q values (Angstrom**-1) for evaluation
         threads : int, optional
             Specifies the number of threads for parallel calculation. This
             option is only applicable if you are using the ``_creflect``
@@ -473,3 +474,71 @@ class CompositeComponent(Component):
     """
     def __init__(self, components):
         pass
+
+
+def _profile_slicer(z, sld_profile, slice_size=None):
+    """
+    Converts a scattering length density profile into a Structure by
+    approximating with Slabs.
+
+    Parameters
+    ----------
+    z : array-like
+        Distance (Angstrom) through the interface at which the SLD profile is
+        given.
+    sld_profile : array-like
+        Scattering length density (10**-6 Angstrom**-2) at a given distance
+        through the interface. Both the real and imaginary terms of the SLD can
+        be provided - either by making `sld_profile` a complex array, by
+        supplying an array with two columns (representing the real and
+        imaginary parts).
+    slice_size : None, float, optional
+        if `slice_size is None` then `np.min(np.ediff1d(z))/4` is used to
+        determine the rough size of the created slabs. Otherwise
+        `float(slice_size)` is used.
+
+    Returns
+    -------
+    structure : Structure
+        A Structure representation of the sld profile
+
+    Notes
+    -----
+    `sld_profile` is quadratically interpolated to obtain equally spaced
+    points. In testing the round trip structure->sld_profile->structure the
+    maximum relative difference in reflectivity profiles from the original and
+    final structures is on the order of fractions of a percent, with the
+    largest difference around the critical edge.
+    """
+    sld = np.asfarray(sld_profile, dtype=complex)
+    if len(sld.shape) > 1 and sld.shape[1] == 2:
+        sld[:, 0].imag = sld[:, 1].real
+        sld = sld[:, 0]
+
+    real_interp = interp1d(z, sld.real, kind='quadratic')
+    imag_interp = interp1d(z, sld.imag, kind='quadratic')
+
+    if slice_size is None:
+        slice_size = np.min(np.ediff1d(z)) / 4
+    else:
+        slice_size = float(slice_size)
+
+    # figure out the z values to calculate the slabs at
+    z_min, z_max = np.min(z), np.max(z)
+    n_steps = np.ceil((z_max - z_min) / slice_size)
+    zeds = np.linspace(z_min, z_max, int(n_steps) + 1)
+
+    # this is the true thickness of the slab
+    slice_size = np.ediff1d(zeds)[0]
+    zeds -= slice_size / 2
+    zeds = zeds[1:]
+
+    reals = real_interp(zeds)
+    imags = imag_interp(zeds)
+
+    slabs = [Slab(slice_size, complex(real, imag), 0) for
+             real, imag in zip(reals, imags)]
+    structure = Structure(name='sliced sld profile')
+    structure.extend(slabs)
+
+    return structure
