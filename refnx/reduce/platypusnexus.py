@@ -1287,11 +1287,14 @@ def create_detector_norm(h5norm, x_min, x_max):
     x_high = np.searchsorted(x_bin, x_max, sorter=np.argsort(x_bin))
     x_high = np.argsort(x_bin)[x_high]
 
+    if(x_low > x_high):
+        x_low, x_high = x_high, x_low
+
     norm = np.sum(detector, axis=(0, 1),
                   dtype='float64')
 
     # By this point you have norm[y][x]
-    norm = norm[:, x_low: x_high + 1]
+    norm = norm[:, x_low: x_high]
     norm = np.sum(norm, axis=1)
 
     mean = np.mean(norm)
