@@ -137,7 +137,7 @@ class ReductionState(object):
 
             flood = None
             if val['flood']:
-                flood = val['flood']
+                flood = full_path(val['flood'])
 
             combined_dataset = None
 
@@ -165,7 +165,7 @@ class ReductionState(object):
                 try:
                     reduced = reducer(
                         ref_pn, scale=val['scale'],
-                        norm_file_num=flood,
+                        h5norm=flood,
                         lo_wavelength=self.low_wavelength,
                         hi_wavelength=self.high_wavelength,
                         rebin_percent=self.rebin_percent,
