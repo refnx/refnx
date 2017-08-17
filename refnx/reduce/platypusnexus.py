@@ -8,9 +8,14 @@ import shutil
 from time import gmtime, strftime
 import string
 import warnings
+from contextlib import contextmanager
 
+from scipy.optimize import leastsq, curve_fit
+from scipy.stats import t
+import pandas as pd
 import numpy as np
 import h5py
+
 from refnx.reduce.peak_utils import peak_finder, centroid
 import refnx.util.general as general
 from refnx.util.general import resolution_double_chopper, _dict_compare
@@ -18,9 +23,6 @@ import refnx.util.ErrorProp as EP
 from refnx.reduce.parabolic_motion import find_trajectory, y_deflection
 from refnx.reduce.event import events, process_event_stream
 from refnx.reduce.rebin import rebin, rebin_along_axis
-from scipy.optimize import leastsq, curve_fit
-from scipy.stats import t
-import pandas as pd
 
 
 # detector y pixel spacing in mm per pixel
@@ -354,11 +356,8 @@ class PlatypusNexus(object):
         """
         Initialises the PlatypusNexus object.
         """
-        if type(h5data) is h5py.File:
-            self.cat = Catalogue(h5data)
-        else:
-            with h5py.File(h5data, 'r') as h5data:
-                self.cat = Catalogue(h5data)
+        with _possibly_open_hdf_file(h5data, 'r') as f:
+            self.cat = Catalogue(f)
 
         self.processed_spectrum = dict()
 
@@ -407,8 +406,9 @@ class PlatypusNexus(object):
 
         Parameters
         ----------
-        h5norm : HDF5 NeXus file
-            The hdf5 file containing the floodfield data.
+        h5norm : str or HDF5 NeXus file
+            If a str then `h5norm` is a path to the floodfield data, otherwise
+            it is a hdf5 file handle containing the floodfield data.
         lo_wavelength : float
             The low wavelength cutoff for the rebinned data (A).
         hi_wavelength : float
@@ -595,12 +595,14 @@ class PlatypusNexus(object):
         bm1_counts_sd = np.sqrt(bm1_counts)
 
         # detector normalisation with a water file
-        if h5norm:
-            x_bins = cat.x_bins[scanpoint]
-            # shape (y,)
-            detector_norm, detector_norm_sd = create_detector_norm(h5norm,
-                                                                   x_bins[0],
-                                                                   x_bins[1])
+        if h5norm is not None:
+            x_bins = cat.x_bins
+
+            with _possibly_open_hdf_file(h5norm, 'r') as f:
+                # shape (y,)
+                detector_norm, detector_norm_sd = create_detector_norm(
+                    f, x_bins[0], x_bins[1])
+
             # detector has shape (N, T, Y), shape of detector_norm should
             # broadcast to (1, 1, y)
             # TODO: Correlated Uncertainties?
@@ -890,7 +892,10 @@ class PlatypusNexus(object):
         d['datafile_number'] = cat.datafile_number
 
         if h5norm is not None:
-            d['normfilename'] = h5norm.filename
+            if type(h5norm) == h5py.File:
+                d['normfilename'] = h5norm.filename
+            else:
+                d['normfilename'] = h5norm
         d['m_topandtail'] = detector
         d['m_topandtail_sd'] = detector_sd
         d['n_spectra'] = n_spectra
@@ -1262,10 +1267,10 @@ def create_detector_norm(h5norm, x_min, x_max):
     ----------
     h5norm : hdf5 file
         Containing a flood field run (water)
-    x_min : int
-        Minimum x pixel to use
-    x_max : int
-        Maximum x pixel to use
+    x_min : float, int
+        Minimum x location to use
+    x_max : float, int
+        Maximum x location to use
 
     Returns
     -------
@@ -1274,11 +1279,22 @@ def create_detector_norm(h5norm, x_min, x_max):
     """
     # sum over N and T
     detector = h5norm['entry1/data/hmm']
+    x_bin = h5norm['entry1/data/x_bin']
+
+    # find out what pixels to use
+    x_low = np.searchsorted(x_bin, x_min, sorter=np.argsort(x_bin))
+    x_low = np.argsort(x_bin)[x_low]
+    x_high = np.searchsorted(x_bin, x_max, sorter=np.argsort(x_bin))
+    x_high = np.argsort(x_bin)[x_high]
+
+    if(x_low > x_high):
+        x_low, x_high = x_high, x_low
+
     norm = np.sum(detector, axis=(0, 1),
                   dtype='float64')
 
     # By this point you have norm[y][x]
-    norm = norm[:, x_min: x_max + 1]
+    norm = norm[:, x_low: x_high]
     norm = np.sum(norm, axis=1)
 
     mean = np.mean(norm)
@@ -1738,6 +1754,39 @@ def _check_HDF_file(h5data):
                 return h5data.filename
 
     return False
+
+
+@contextmanager
+def _possibly_open_hdf_file(f, mode='r'):
+    """
+    Context manager for hdf5 files.
+
+    Parameters
+    ----------
+    f : file-like or str
+        If `f` is a file, then yield the file. If `f` is a str then open the
+        file and yield the newly opened file.
+        On leaving this context manager the file is closed, if it was opened
+        by this context manager (i.e. `f` was a string).
+    mode : str, optional
+        mode is an optional string that specifies the mode in which the file
+        is opened.
+
+    Yields
+    ------
+    g : file-like
+        On leaving the context manager the file is closed, if it was opened by
+        this context manager.
+    """
+    close_file = False
+    if type(f) == h5py.File:
+        g = f
+    else:
+        g = h5py.File(f, mode)
+        close_file = True
+    yield g
+    if close_file:
+        g.close()
 
 
 if __name__ == "__main__":

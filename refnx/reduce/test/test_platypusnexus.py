@@ -2,17 +2,17 @@ import unittest
 import os
 import numbers
 
-import refnx.reduce.platypusnexus as plp
-from refnx.reduce import PlatypusReduce, PlatypusNexus, basename_datafile
-from refnx.reduce.peak_utils import gauss
-from refnx.reduce.platypusnexus import (fore_back_region, EXTENT_MULT,
-                                        PIXEL_OFFSET)
-from refnx._lib import TemporaryDirectory
-
 import numpy as np
 from numpy.testing import (assert_almost_equal, assert_, assert_equal,
                            assert_array_less, assert_allclose)
 import h5py
+
+import refnx.reduce.platypusnexus as plp
+from refnx.reduce import PlatypusReduce, PlatypusNexus, basename_datafile
+from refnx.reduce.peak_utils import gauss
+from refnx.reduce.platypusnexus import (fore_back_region, EXTENT_MULT,
+                                        PIXEL_OFFSET, create_detector_norm)
+from refnx._lib import TemporaryDirectory
 
 
 class TestPlatypusNexus(unittest.TestCase):
@@ -289,6 +289,26 @@ class TestPlatypusNexus(unittest.TestCase):
 
         pth = 'c.nx.hdf'
         assert_(basename_datafile(pth) == 'c')
+
+    def test_floodfield_correction(self):
+        # check that flood field calculation works
+        # the values were worked out by hand on a randomly
+        # generated array
+        test_norm = np.array([1.12290503, 1.23743017, 0.8603352,
+                              0.70111732, 1.07821229])
+        test_norm_sd = np.array([0.05600541, 0.05879208, 0.04902215,
+                                 0.04425413, 0.05487956])
+
+        fname = os.path.join(self.path, 'flood.h5')
+        with h5py.File(fname, 'r') as f:
+            norm, norm_sd = create_detector_norm(f, 3.5, -3.5)
+
+            assert_almost_equal(norm, test_norm, 6)
+            assert_almost_equal(norm_sd, test_norm_sd, 6)
+
+            norm, norm_sd = create_detector_norm(f, -3.5, 3.5)
+            assert_almost_equal(norm, test_norm, 6)
+            assert_almost_equal(norm_sd, test_norm_sd, 6)
 
 
 if __name__ == '__main__':
