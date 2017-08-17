@@ -11,6 +11,7 @@ except ImportError:
     import xml.etree.ElementTree as ET
 import os.path
 from refnx.dataset import Data1D
+from refnx._lib import possibly_open_file
 
 
 _template_ref_xml = """<?xml version="1.0"?>
@@ -45,17 +46,18 @@ class ReflectDataset(Data1D):
         Parameters
         ----------
         data : str, file-like or tuple of np.ndarray, optional
-            `data` can be a string or file-like object referring to a File to load
-            the dataset from.
-    
-            Alternatively it is a tuple containing the data from which the dataset
-            will be constructed. The tuple should have between 2 and 4 members.
-    
+            `data` can be a string or file-like object referring to a File to
+            load the dataset from.
+
+            Alternatively it is a tuple containing the data from which the
+            dataset will be constructed. The tuple should have between 2 and 4
+            members.
+
                 - data[0] - Q
                 - data[1] - R
                 - data[2] - dR
                 - data[3] - dQ
-    
+
             `data` must be at least two long, `Q` and `R`.
             If the tuple is at least 3 long then the third member is `dR`.
             If the tuple is 4 long then the fourth member is `dQ`.
@@ -91,19 +93,11 @@ class ReflectDataset(Data1D):
 
         thefile = s.safe_substitute(self.__dict__)
 
-        auto_fh = None
-        g = f
-        if not hasattr(f, 'write'):
-            auto_fh = open(f, 'wb')
-            g = auto_fh
+        with possibly_open_file(f, 'wb') as g:
+            if 'b' in g.mode:
+                thefile = thefile.encode('utf-8')
 
-        if 'b' in g.mode:
-            thefile = thefile.encode('utf-8')
-
-        g.write(thefile)
-
-        if auto_fh is not None:
-            auto_fh.close()
+            g.write(thefile)
 
     def load(self, f):
         """

@@ -9,6 +9,7 @@ import re
 import numpy as np
 
 from refnx.util.nsplice import get_scaling_in_overlap
+from refnx._lib import possibly_open_file
 
 
 class Data1D(object):
@@ -275,14 +276,7 @@ class Data1D(object):
             File to load the dataset from.
         """
         # see if there are header rows
-        close_file = False
-        try:
-            g = open(f, 'rb')
-            close_file = True
-        except TypeError:
-            # if you're already a file then you'll get a type error
-            g = f
-        finally:
+        with possibly_open_file(f, 'rb') as g:
             header_lines = 0
             for i, line in enumerate(g):
                 try:
@@ -294,8 +288,6 @@ class Data1D(object):
                         break
                 except ValueError:
                     continue
-            if close_file:
-                g.close()
 
         self.data = np.loadtxt(f, unpack=True, skiprows=header_lines)
 
