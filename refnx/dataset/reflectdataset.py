@@ -44,8 +44,22 @@ class ReflectDataset(Data1D):
 
         Parameters
         ----------
-        data : tuple of np.ndarray
-            Specify the Q, R, dR, dQ data to construct the dataset from.
+        data : str, file-like or tuple of np.ndarray, optional
+            `data` can be a string or file-like object referring to a File to load
+            the dataset from.
+    
+            Alternatively it is a tuple containing the data from which the dataset
+            will be constructed. The tuple should have between 2 and 4 members.
+    
+                - data[0] - Q
+                - data[1] - R
+                - data[2] - dR
+                - data[3] - dQ
+    
+            `data` must be at least two long, `Q` and `R`.
+            If the tuple is at least 3 long then the third member is `dR`.
+            If the tuple is 4 long then the fourth member is `dQ`.
+            All arrays must have the same shape.
         """
         super(ReflectDataset, self).__init__(data=data, **kwds)
         self.datafilenumber = list()
