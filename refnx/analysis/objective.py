@@ -401,6 +401,12 @@ class Objective(BaseObjective):
         self.setp(pvals)
 
         lnprior = np.sum(param.lnprob() for param in self.varying_parameters())
+
+        # shortcircuit - don't ask model for it's lnprior term if the
+        # parameters are impossible
+        if not np.isfinite(lnprior):
+            return -np.inf
+
         lnprior += self.model.lnprob()
 
         return lnprior
