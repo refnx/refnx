@@ -1,7 +1,7 @@
 from __future__ import division, print_function
 
 import numpy as np
-import numdifftools as nd
+from scipy.optimize._numdiff import approx_derivative
 
 from refnx.util import ErrorProp as EP
 from refnx._lib import flatten
@@ -141,6 +141,8 @@ class BaseObjective(object):
         covar : np.ndarray
             The covariance matrix for the fitting system
         """
+        import numdifftools as nd
+
         _pvals = np.array(self.varying_parameters())
 
         step = nd.MaxStepGenerator(base_step=None, scale=3)
@@ -495,7 +497,6 @@ class Objective(BaseObjective):
         _pvals = np.array(self.varying_parameters())
 
         # hess = nd.Hessian(self.chisqr)(_pvals)
-        step = nd.MaxStepGenerator(base_step=None, scale=3)
 
         # if the initial attempt with unscaled values fails, than fallover
         # to situation where we scale the parameters to 1. The initial attempt
@@ -507,18 +508,15 @@ class Objective(BaseObjective):
         # of the parameter values change sign (step too small).
         used_residuals_scaler = False
 
+        def residuals_scaler(vals):
+            return self.residuals(_pvals * vals)
+
         try:
             with np.errstate(invalid='raise'):
-                jac = nd.Jacobian(self.residuals,
-                                  step=step)(_pvals)
-        except FloatingPointError:
-            # scale values to unity
-            def residuals_scaler(vals):
-                return self.residuals(_pvals * vals)
-
-            jac = nd.Jacobian(residuals_scaler,
-                              step=step)(np.ones_like(_pvals))
+                jac = approx_derivative(residuals_scaler, np.ones_like(_pvals))
             used_residuals_scaler = True
+        except FloatingPointError:
+            jac = approx_derivative(self.residuals, _pvals)
 
         if len(_pvals) == 1:
             jac = jac.T
