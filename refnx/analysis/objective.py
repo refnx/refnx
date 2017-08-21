@@ -509,7 +509,7 @@ class Objective(BaseObjective):
         used_residuals_scaler = False
 
         def residuals_scaler(vals):
-            return self.residuals(_pvals * vals)
+            return np.squeeze(self.residuals(_pvals * vals))
 
         try:
             with np.errstate(invalid='raise'):
