@@ -450,7 +450,7 @@ class CurveFitter(object):
         if res.success:
             self.objective.setp(res.x)
 
-            # Covariance from numdifftools seems to be pretty reliable
+            # Covariance matrix estimation
             covar = self.objective.covar()
             errors = np.sqrt(np.diag(covar))
             res['covar'] = covar
@@ -468,8 +468,8 @@ class CurveFitter(object):
                 for i, param in enumerate(_varying_parameters):
                     param.stderr = errors[i]
 
-            # need to touch up the output as numdifftools doesn't leave
-            # parameters as it found them
+            # need to touch up the output to check we leave
+            # parameters as we found them
             self.objective.setp(res.x)
 
         return res

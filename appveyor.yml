@@ -101,7 +101,6 @@ install:
     - cmd: conda update --yes --quiet conda
     - cmd: conda install --yes --quiet obvious-ci
     - cmd: conda install --yes --quiet numpy toolchain scipy emcee h5py xlrd pandas uncertainties cython nose six pytest
-    - cmd: pip install numdifftools
 
 build_script:
     # Build the compiled extension

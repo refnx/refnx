@@ -4,7 +4,7 @@ import numpy as np
 from scipy.optimize._numdiff import approx_derivative
 
 from refnx.util import ErrorProp as EP
-from refnx._lib import flatten
+from refnx._lib import flatten, approx_hess2
 from refnx._lib import unique as f_unique
 from refnx.dataset import Data1D
 from refnx.analysis import (is_parameter, Parameter, possibly_create_parameter,
@@ -141,14 +141,8 @@ class BaseObjective(object):
         covar : np.ndarray
             The covariance matrix for the fitting system
         """
-        import numdifftools as nd
-
         _pvals = np.array(self.varying_parameters())
-
-        step = nd.MaxStepGenerator(base_step=None, scale=3)
-        hess = nd.Hessian(self.nll, step_ratio=None,
-                          step=step)(_pvals)
-
+        hess = approx_hess2(_pvals, self.nll)
         covar = np.linalg.inv(hess)
         self.setp(_pvals)
         return covar
