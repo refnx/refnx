@@ -3,7 +3,7 @@ import pickle
 
 import numpy as np
 from numpy.testing import (assert_almost_equal, assert_equal, assert_,
-                           assert_allclose, assert_raises)
+                           assert_allclose)
 from scipy.stats import norm, uniform
 
 
@@ -28,7 +28,8 @@ class TestParameter(unittest.TestCase):
 
         # you can't set a constraint on a parameter with an expression that
         # already involves the parameter
-        with assert_raises(ValueError):
+        from pytest import raises
+        with raises(ValueError):
             x.constraint = y
 
         # try a negative value
@@ -40,7 +41,7 @@ class TestParameter(unittest.TestCase):
         z.constraint = x + y
         assert_equal(z.value, -3)
         # check that nested circular constraints aren't allowed
-        with assert_raises(ValueError):
+        with raises(ValueError):
             x.constraint = z
 
         # absolute value constraint
@@ -156,7 +157,8 @@ class TestParameters(unittest.TestCase):
 
         # can't set an entry by name, if there isn't an existing name in this
         # Parameters instance.
-        with assert_raises(ValueError):
+        from pytest import raises
+        with raises(ValueError):
             self.m['abc'] = c
 
     def test_parameters(self):

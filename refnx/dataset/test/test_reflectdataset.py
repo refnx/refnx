@@ -3,7 +3,7 @@ import unittest
 
 from refnx.dataset import ReflectDataset, Data1D
 import numpy as np
-from numpy.testing import assert_equal, assert_, assert_raises
+from numpy.testing import assert_equal, assert_
 from refnx._lib import TemporaryDirectory
 
 path = os.path.dirname(os.path.abspath(__file__))
@@ -155,10 +155,10 @@ class TestReflectDataset(unittest.TestCase):
 
         x2 = np.linspace(11, 20, 10)
         y2 = 2 * x2 + 2
-        assert_raises(ValueError,
-                      data.add_data,
-                      (x2, y2),
-                      requires_splice=True)
+
+        from pytest import raises
+        with raises(ValueError):
+            data.add_data((x2, y2), requires_splice=True)
 
     def test_save_xml(self):
         self.data.save_xml('test.xml')
