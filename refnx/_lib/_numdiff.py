@@ -1,5 +1,3 @@
-from __future__ import division, print_function
-
 """numerical differentiation function, gradient, Jacobian, and Hessian
 Author : josef-pkt
 License : BSD
@@ -10,12 +8,10 @@ without dependencies.
 * Jacobian should be faster than numdifftools because it doesn't use loop over
   observations.
 * numerical precision will vary and depend on the choice of stepsizes
-"""
 
+VENDORED Aug2017
 """
-vendored Aug17. 
-"""
-
+from __future__ import division, print_function
 import numpy as np
 
 
