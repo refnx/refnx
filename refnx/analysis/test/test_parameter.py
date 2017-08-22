@@ -1,4 +1,3 @@
-import unittest
 import pickle
 
 import numpy as np
@@ -6,14 +5,13 @@ from numpy.testing import (assert_almost_equal, assert_equal, assert_,
                            assert_allclose)
 from scipy.stats import norm, uniform
 
-
 from refnx.analysis import (Interval, PDF, Parameter, Parameters,
                             is_parameters)
 
 
-class TestParameter(unittest.TestCase):
+class TestParameter(object):
 
-    def setUp(self):
+    def setup_method(self):
         pass
 
     def test_parameter(self):
@@ -133,9 +131,9 @@ class TestParameter(unittest.TestCase):
         assert_equal(len(d.flattened()), 3)
 
 
-class TestParameters(unittest.TestCase):
+class TestParameters(object):
 
-    def setUp(self):
+    def setup_method(self):
         self.a = Parameter(1, name='a')
         self.b = Parameter(2, name='b')
         self.m = Parameters()
@@ -215,7 +213,3 @@ class TestParameters(unittest.TestCase):
         assert_equal(len(c), 1)
         assert_equal(len(c.flattened()), 2)
         assert_(c.flattened()[1] is self.b)
-
-
-if __name__ == '__main__':
-    unittest.main()

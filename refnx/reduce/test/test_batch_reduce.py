@@ -1,15 +1,16 @@
-import unittest
 import os.path
 import os
-from refnx.reduce import BatchReducer
 
+from numpy.testing import assert_equal, assert_
+
+from refnx.reduce import BatchReducer
 # also get access to file-scope variables
 import refnx.reduce.batchreduction
 from refnx._lib import TemporaryDirectory
 
 
-class TestReduce(unittest.TestCase):
-    def setUp(self):
+class TestReduce(object):
+    def setup_method(self):
         path = os.path.dirname(__file__)
         self.path = path
 
@@ -18,7 +19,7 @@ class TestReduce(unittest.TestCase):
         os.chdir(self.tmpdir.name)
         return 0
 
-    def tearDown(self):
+    def teardown_method(self):
         os.chdir(self.cwd)
         self.tmpdir.cleanup()
 
@@ -40,7 +41,7 @@ class TestReduce(unittest.TestCase):
         b.reduce(show=False)
 
 
-class TestReductionCache(unittest.TestCase):
+class TestReductionCache(object):
 
     entries = [
         # row, ds, name, fname, entry
@@ -53,7 +54,7 @@ class TestReductionCache(unittest.TestCase):
         [7, None, "Sample D", "d.dat", (51, 52, 53)],
     ]
 
-    def setUp(self):
+    def setup_method(self):
         self.cache = refnx.reduce.batchreduction.ReductionCache()
 
         # populate the cache with some fake data to test selector methods
@@ -67,56 +68,55 @@ class TestReductionCache(unittest.TestCase):
         self.cache.add(*entry, **kwargs)
 
     def test_add(self):
-        self.assertEqual(len(self.cache), 6)
+        assert_equal(len(self.cache), 6)
 
         # test adding with update=True
         new_entry = self.entries[-1]
         new_entry[2] = 'Sample D2'
         self._addentry(self.entries[-1], update=True)
-        self.assertEqual(len(self.cache), 6)
-        self.assertEqual(self.cache.row(7).name, 'Sample D2')
+        assert_equal(len(self.cache), 6)
+        assert_equal(self.cache.row(7).name, 'Sample D2')
 
         # test adding with update=True
         new_entry[2] = 'Sample D3'
         self._addentry(self.entries[-1], update=False)
         # the old entry is still in the list
-        self.assertEqual(len(self.cache), 7)
-        self.assertTrue(self.cache.name('Sample D2'))
+        assert_equal(len(self.cache), 7)
+        assert_(self.cache.name('Sample D2'))
         # but the new entry should be visible searching by-row
-        self.assertEqual(self.cache.row(7).name, 'Sample D3')
+        assert_equal(self.cache.row(7).name, 'Sample D3')
 
     def test_run(self):
-        self.assertEqual(self.cache.run(21).entry['refl2'], 22)
-        self.assertEqual(self.cache.run(42).name, "Sample A2")
+        assert_equal(self.cache.run(21).entry['refl2'], 22)
+        assert_equal(self.cache.run(42).name, "Sample A2")
 
     def test_runs(self):
-        self.assertEqual(len(self.cache.runs((2, 12))), 2)
+        assert_equal(len(self.cache.runs((2, 12))), 2)
 
     def test_row(self):
-        self.assertEqual(self.cache.row(5).name, 'Sample A1')
-        with self.assertRaises(KeyError):
+        from pytest import raises
+        assert_equal(self.cache.row(5).name, 'Sample A1')
+        with raises(KeyError):
             self.cache.row(4)
-        with self.assertRaises(KeyError):
+        with raises(KeyError):
             self.cache.row(8)
 
     def test_rows(self):
-        self.assertEqual(len(self.cache.rows((2, 5))), 2)
-        self.assertEqual(len(self.cache.rows((2, 4))), 1)
+        assert_equal(len(self.cache.rows((2, 5))), 2)
+        assert_equal(len(self.cache.rows((2, 4))), 1)
 
     def test_name(self):
-        self.assertEqual(self.cache.name('Sample C').fname, 'c.dat')
-        with self.assertRaises(KeyError):
+        from pytest import raises
+
+        assert_equal(self.cache.name('Sample C').fname, 'c.dat')
+        with raises(KeyError):
             self.cache.name('No such sample')
 
     def test_name_startswith(self):
-        self.assertEqual(len(self.cache.name_startswith('Sample A')), 3)
+        assert_equal(len(self.cache.name_startswith('Sample A')), 3)
 
     def test_name_search(self):
-        self.assertEqual(len(self.cache.name_search('^Sample A')), 3)
-        self.assertEqual(len(self.cache.name_search('A')), 3)
-        self.assertEqual(len(self.cache.name_search(r'A\d')), 2)
-        self.assertEqual(len(self.cache.name_search('no such sample')), 0)
-
-
-if __name__ == '__main__':
-    unittest.main()
+        assert_equal(len(self.cache.name_search('^Sample A')), 3)
+        assert_equal(len(self.cache.name_search('A')), 3)
+        assert_equal(len(self.cache.name_search(r'A\d')), 2)
+        assert_equal(len(self.cache.name_search('no such sample')), 0)

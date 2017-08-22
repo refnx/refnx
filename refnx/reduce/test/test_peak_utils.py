@@ -1,11 +1,10 @@
-import unittest
 import numpy as np
 from numpy.testing import (assert_almost_equal, assert_equal)
 import refnx.reduce.peak_utils as peak_utils
 
 
-class TestPeakUtils(unittest.TestCase):
-    def setUp(self):
+class TestPeakUtils(object):
+    def setup_method(self):
         pass
 
     def test_peak_finder(self):
@@ -45,6 +44,3 @@ class TestPeakUtils(unittest.TestCase):
         median, sd = peak_utils.median(y, dx=9.)
         assert_equal(median, 4.5)
 
-
-if __name__ == '__main__':
-    unittest.main()

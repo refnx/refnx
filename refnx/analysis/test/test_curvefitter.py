@@ -1,6 +1,5 @@
 from __future__ import division, print_function
 
-import unittest
 import os.path
 
 import numpy as np
@@ -14,17 +13,14 @@ from refnx.dataset import Data1D
 from NISTModels import NIST_runner, NIST_Models
 
 
-path = os.path.dirname(os.path.abspath(__file__))
-
-
 def line(x, params, *args, **kwds):
     p_arr = np.array(params)
     return p_arr[0] + x * p_arr[1]
 
 
-class TestCurveFitter(unittest.TestCase):
+class TestCurveFitter(object):
 
-    def setUp(self):
+    def setup_method(self):
         # Reproducible results!
         np.random.seed(123)
 
@@ -176,12 +172,14 @@ def gauss(x, p0):
     return p[0] + p[1] * np.exp(-((x - p[2]) / p[3])**2)
 
 
-class TestFitterGauss(unittest.TestCase):
+class TestFitterGauss(object):
     # Test CurveFitter with a noisy gaussian, weighted and unweighted, to see
     # if the parameters and uncertainties come out correct
 
-    def setUp(self):
-        theoretical = np.loadtxt(os.path.join(path, 'gauss_data.txt'))
+    def setup_method(self):
+        self.path = os.path.dirname(os.path.abspath(__file__))
+
+        theoretical = np.loadtxt(os.path.join(self.path, 'gauss_data.txt'))
         xvals, yvals, evals = np.hsplit(theoretical, 3)
         xvals = xvals.flatten()
         yvals = yvals.flatten()

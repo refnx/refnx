@@ -1,4 +1,3 @@
-import unittest
 import pickle
 
 import numpy as np
@@ -10,9 +9,9 @@ from refnx.reflect.structure import _profile_slicer
 from refnx.analysis import Parameter
 
 
-class TestStructure(unittest.TestCase):
+class TestStructure(object):
 
-    def setUp(self):
+    def setup_method(self):
         self.air = SLD(0, name='air')
         self.sio2 = SLD(3.47, name='sio2')
         self.d2o = SLD(6.36, name='d2o')

@@ -1,4 +1,3 @@
-import unittest
 import os
 import numbers
 
@@ -15,22 +14,21 @@ from refnx.reduce.platypusnexus import (fore_back_region, EXTENT_MULT,
 from refnx._lib import TemporaryDirectory
 
 
-class TestPlatypusNexus(unittest.TestCase):
+class TestPlatypusNexus(object):
 
-    def setUp(self):
-        path = os.path.dirname(os.path.realpath(__file__))
-        self.path = path
+    def setup_method(self):
+        self.pth = os.path.dirname(os.path.abspath(__file__))
 
-        self.f113 = PlatypusNexus(os.path.join(self.path,
+        self.f113 = PlatypusNexus(os.path.join(self.pth,
                                                'PLP0011613.nx.hdf'))
-        self.f641 = PlatypusNexus(os.path.join(self.path,
+        self.f641 = PlatypusNexus(os.path.join(self.pth,
                                                'PLP0011641.nx.hdf'))
         self.cwd = os.getcwd()
         self.tmpdir = TemporaryDirectory()
         os.chdir(self.tmpdir.name)
         return 0
 
-    def tearDown(self):
+    def teardown_method(self):
         os.chdir(self.cwd)
         self.tmpdir.cleanup()
 
@@ -70,7 +68,7 @@ class TestPlatypusNexus(unittest.TestCase):
                                                            yvals_sd,
                                                            mask)
 
-        verified_data = np.load(os.path.join(self.path,
+        verified_data = np.load(os.path.join(self.pth,
                                              'background_subtract.npy'))
 
         assert_almost_equal(verified_data, np.c_[profile, profile_sd])
@@ -114,7 +112,7 @@ class TestPlatypusNexus(unittest.TestCase):
 
         # each of the (N, T) entries should have the same background subtracted
         # entries
-        verified_data = np.load(os.path.join(self.path,
+        verified_data = np.load(os.path.join(self.pth,
                                              'background_subtract.npy'))
 
         it = np.nditer(detector, flags=['multi_index'])
@@ -140,7 +138,7 @@ class TestPlatypusNexus(unittest.TestCase):
         # When you use event mode processing, make sure the right amount of
         # spectra are created
         self.f113.process(eventmode=[0, 900, 1800], integrate=0,
-                          event_folder=self.path)
+                          event_folder=self.pth)
 
     def test_multiple_acquisitions(self):
         """
@@ -184,14 +182,14 @@ class TestPlatypusNexus(unittest.TestCase):
 
     def test_accumulate_files(self):
         fnames = ['PLP0000708.nx.hdf', 'PLP0000709.nx.hdf']
-        pths = [os.path.join(self.path, fname) for fname in fnames]
+        pths = [os.path.join(self.pth, fname) for fname in fnames]
         plp.accumulate_HDF_files(pths)
         f8, f9, fadd = None, None, None
 
         try:
-            f8 = h5py.File(os.path.join(self.path,
+            f8 = h5py.File(os.path.join(self.pth,
                                         'PLP0000708.nx.hdf'), 'r')
-            f9 = h5py.File(os.path.join(self.path,
+            f9 = h5py.File(os.path.join(self.pth,
                                         'PLP0000709.nx.hdf'), 'r')
             fadd = h5py.File(os.path.join(os.getcwd(),
                                           'ADD_PLP0000708.nx.hdf'), 'r')
@@ -211,7 +209,7 @@ class TestPlatypusNexus(unittest.TestCase):
     def test_accumulate_files_reduce(self):
         # test by adding a file to itself. Should have smaller stats
         fnames = ['PLP0000708.nx.hdf', 'PLP0000708.nx.hdf']
-        pths = [os.path.join(self.path, fname) for fname in fnames]
+        pths = [os.path.join(self.pth, fname) for fname in fnames]
         plp.accumulate_HDF_files(pths)
 
         # it should be processable
@@ -220,14 +218,14 @@ class TestPlatypusNexus(unittest.TestCase):
         fadd.process()
 
         # it should also be reduceable
-        reducer = PlatypusReduce(os.path.join(self.path,
+        reducer = PlatypusReduce(os.path.join(self.pth,
                                               'PLP0000711.nx.hdf'))
         reduced = reducer.reduce(os.path.join(os.getcwd(),
                                               'ADD_PLP0000708.nx.hdf'))
         assert_('ydata' in reduced)
 
         # the error bars should be smaller
-        reduced2 = reducer.reduce(os.path.join(self.path, 'PLP0000708.nx.hdf'))
+        reduced2 = reducer.reduce(os.path.join(self.pth, 'PLP0000708.nx.hdf'))
 
         assert_(np.all(reduced['ydata_sd'] < reduced2['ydata_sd']))
 
@@ -299,7 +297,7 @@ class TestPlatypusNexus(unittest.TestCase):
         test_norm_sd = np.array([0.05600541, 0.05879208, 0.04902215,
                                  0.04425413, 0.05487956])
 
-        fname = os.path.join(self.path, 'flood.h5')
+        fname = os.path.join(self.pth, 'flood.h5')
         with h5py.File(fname, 'r') as f:
             norm, norm_sd = create_detector_norm(f, 3.5, -3.5)
 
@@ -309,7 +307,3 @@ class TestPlatypusNexus(unittest.TestCase):
             norm, norm_sd = create_detector_norm(f, -3.5, 3.5)
             assert_almost_equal(norm, test_norm, 6)
             assert_almost_equal(norm_sd, test_norm_sd, 6)
-
-
-if __name__ == '__main__':
-    unittest.main()

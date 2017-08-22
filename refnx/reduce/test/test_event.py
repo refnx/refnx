@@ -1,4 +1,3 @@
-import unittest
 import os
 import numpy as np
 from numpy.testing import assert_equal
@@ -13,10 +12,10 @@ else:
     HAVE_CEVENTS = True
 
 
-class TestEvent(unittest.TestCase):
+class TestEvent(object):
 
     @classmethod
-    def setUpClass(cls):
+    def setup_class(cls):
         path = os.path.dirname(os.path.realpath(__file__))
         cls.event_file_path = os.path.join(path,
                                            'DAQ_2012-01-19T15-45-52',
@@ -30,7 +29,7 @@ class TestEvent(unittest.TestCase):
         cls.fpos = fpos
         cls.f, cls.t, cls.y, cls.x = event_list
 
-    def setUp(self):
+    def setup_method(self):
         path = os.path.dirname(os.path.realpath(__file__))
         self.path = path
 
@@ -117,7 +116,3 @@ class TestEvent(unittest.TestCase):
             assert_equal(self.f, f)
             assert_equal(self.y, y)
             assert_equal(self.x, x)
-
-
-if __name__ == '__main__':
-    unittest.main()

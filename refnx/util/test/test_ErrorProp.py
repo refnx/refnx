@@ -1,17 +1,15 @@
 from __future__ import division
 
-import unittest
 import refnx.util.ErrorProp as EP
 import numpy as np
 import os
 from numpy.testing import assert_equal, assert_array_almost_equal
 
 
-class TestErrorProp(unittest.TestCase):
+class TestErrorProp(object):
 
-    def setUp(self):
-        path = os.path.dirname(__file__)
-        self.path = path
+    def setup_method(self):
+        pass
 
     def test_add(self):
         c, dc = EP.EPadd(1.1, 0.5, 1.1, 0.5)
@@ -79,7 +77,3 @@ class TestErrorProp(unittest.TestCase):
         c, dc = EP.EPtan(1.1, 0.5)
         assert_array_almost_equal(1.9647596572486525, c)
         assert_array_almost_equal(2.430140255375921, dc)
-
-
-if __name__ == '__main__':
-    unittest.main()
