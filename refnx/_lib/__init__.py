@@ -4,6 +4,7 @@ import numpy.testing
 
 from refnx._lib.util import (TemporaryDirectory, preserve_cwd, flatten, unique,
                              possibly_open_file, possibly_create_pool)
+from refnx._lib._numdiff import approx_hess2
 
 test = numpy.testing.Tester().test
 

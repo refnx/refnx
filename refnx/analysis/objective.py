@@ -1,10 +1,10 @@
 from __future__ import division, print_function
 
 import numpy as np
-import numdifftools as nd
+from scipy.optimize._numdiff import approx_derivative
 
 from refnx.util import ErrorProp as EP
-from refnx._lib import flatten
+from refnx._lib import flatten, approx_hess2
 from refnx._lib import unique as f_unique
 from refnx.dataset import Data1D
 from refnx.analysis import (is_parameter, Parameter, possibly_create_parameter,
@@ -142,11 +142,7 @@ class BaseObjective(object):
             The covariance matrix for the fitting system
         """
         _pvals = np.array(self.varying_parameters())
-
-        step = nd.MaxStepGenerator(base_step=None, scale=3)
-        hess = nd.Hessian(self.nll, step_ratio=None,
-                          step=step)(_pvals)
-
+        hess = approx_hess2(_pvals, self.nll)
         covar = np.linalg.inv(hess)
         self.setp(_pvals)
         return covar
@@ -402,8 +398,6 @@ class Objective(BaseObjective):
 
         lnprior = np.sum(param.lnprob() for param in self.varying_parameters())
 
-        # shortcircuit - don't ask model for it's lnprior term if the
-        # parameters are impossible
         if not np.isfinite(lnprior):
             return -np.inf
 
@@ -497,7 +491,6 @@ class Objective(BaseObjective):
         _pvals = np.array(self.varying_parameters())
 
         # hess = nd.Hessian(self.chisqr)(_pvals)
-        step = nd.MaxStepGenerator(base_step=None, scale=3)
 
         # if the initial attempt with unscaled values fails, than fallover
         # to situation where we scale the parameters to 1. The initial attempt
@@ -509,18 +502,15 @@ class Objective(BaseObjective):
         # of the parameter values change sign (step too small).
         used_residuals_scaler = False
 
+        def residuals_scaler(vals):
+            return np.squeeze(self.residuals(_pvals * vals))
+
         try:
             with np.errstate(invalid='raise'):
-                jac = nd.Jacobian(self.residuals,
-                                  step=step)(_pvals)
-        except FloatingPointError:
-            # scale values to unity
-            def residuals_scaler(vals):
-                return self.residuals(_pvals * vals)
-
-            jac = nd.Jacobian(residuals_scaler,
-                              step=step)(np.ones_like(_pvals))
+                jac = approx_derivative(residuals_scaler, np.ones_like(_pvals))
             used_residuals_scaler = True
+        except FloatingPointError:
+            jac = approx_derivative(self.residuals, _pvals)
 
         if len(_pvals) == 1:
             jac = jac.T

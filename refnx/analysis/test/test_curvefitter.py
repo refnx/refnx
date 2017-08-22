@@ -235,7 +235,9 @@ class TestFitterGauss(unittest.TestCase):
         assert_allclose(uncertainties, self.best_weighted_errors, rtol=0.01)
 
         # compare samples to best_weighted_errors
-        f.sample(steps=150, nburn=40, nthin=20, random_state=1, verbose=False)
+        np.random.seed(1)
+        f.initialise('jitter')
+        f.sample(steps=200, nburn=100, nthin=20, random_state=1, verbose=False)
         uncertainties = [param.stderr for param in self.params]
         assert_allclose(uncertainties, self.best_weighted_errors, rtol=0.15)
 
