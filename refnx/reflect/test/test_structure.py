@@ -51,11 +51,11 @@ class TestStructure(object):
         assert_equal(max(z), 100)
 
     def test_reflectivity(self):
-        q = np.geomspace(0.005, 0.3, 200)
+        q = np.linspace(0.005, 0.3, 200)
         self.s.reflectivity(q)
 
     def test_sld_slicer(self):
-        q = np.geomspace(0.005, 0.3, 200)
+        q = np.linspace(0.005, 0.3, 200)
 
         reflectivity = self.s.reflectivity(q)
         z, sld = self.s.sld_profile()
