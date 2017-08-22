@@ -60,7 +60,7 @@ def main(argv):
                         help="Run doctests in module")
     parser.add_argument("--mode", "-m", default="fast",
                         help="'fast', 'full', or something that could be "
-                             "passed to nosetests -A [default: fast]")
+                             "passed to pytest -A [default: fast]")
     parser.add_argument("--submodule", "-s", default=None,
                         help="Submodule whose tests to run (cluster, constants, ...)")
     parser.add_argument("--pythonpath", "-p", default=None,
@@ -86,7 +86,7 @@ def main(argv):
                               "Note that you need to commit your changes first!"
                              ))
     parser.add_argument("args", metavar="ARGS", default=[], nargs=REMAINDER,
-                        help="Arguments to pass to Nose, Python or shell")
+                        help="Arguments to pass to pytest, Python or shell")
     args = parser.parse_args(argv)
 
     if args.bench_compare:
