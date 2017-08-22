@@ -1,4 +1,3 @@
-import unittest
 import pickle
 
 from refnx.analysis import Interval, PDF
@@ -8,9 +7,9 @@ from numpy.testing import (assert_equal, assert_, assert_almost_equal)
 from scipy.stats import norm, truncnorm
 
 
-class TestBounds(unittest.TestCase):
+class TestBounds(object):
 
-    def setUp(self):
+    def setup_method(self):
         pass
 
     def test_interval(self):
@@ -102,7 +101,3 @@ class UserPDF(object):
 
     def rvs(self, size=1, random_state=None):
         return np.random.random(size)
-
-
-if __name__ == '__main__':
-    unittest.main()

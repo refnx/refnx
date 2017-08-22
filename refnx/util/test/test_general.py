@@ -1,6 +1,5 @@
 from __future__ import division
 
-import unittest
 import refnx.util.general as general
 import refnx
 import numpy as np
@@ -13,10 +12,9 @@ def test_version():
     refnx.__version__
 
 
-class TestGeneral(unittest.TestCase):
-    def setUp(self):
-        path = os.path.dirname(__file__)
-        self.path = path
+class TestGeneral(object):
+    def setup_method(self):
+        self.pth = os.path.dirname(os.path.abspath(__file__))
 
     def test_q(self):
         q = general.q(1., 2.)
@@ -51,7 +49,3 @@ class TestGeneral(unittest.TestCase):
         assert_(not general._dict_compare(c, d))
 
         assert_(general._dict_compare({'a': 1}, {'a': 1}))
-
-
-if __name__ == '__main__':
-    unittest.main()

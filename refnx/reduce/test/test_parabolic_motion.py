@@ -1,13 +1,12 @@
 import numpy as np
-import unittest
 from numpy.testing import (assert_almost_equal, assert_)
 from scipy import constants
 import refnx.reduce.parabolic_motion as pm
 
 
-class TestParabolicMotion(unittest.TestCase):
+class TestParabolicMotion(object):
 
-    def setUp(self):
+    def setup_method(self):
         pass
 
     def test_y_deflection(self):
@@ -57,7 +56,3 @@ class TestParabolicMotion(unittest.TestCase):
                                       -0.033550291159381511,
                                       0.0011947938059390722,
                                       -0.6299889176505941]))
-
-
-if __name__ == '__main__':
-    unittest.main()

@@ -11,4 +11,7 @@ from numpy.testing import Tester
 
 __all__ = ['test']
 
-test = Tester().test
+from refnx._lib._testutils import PytestTester
+
+test = PytestTester(__name__)
+del PytestTester

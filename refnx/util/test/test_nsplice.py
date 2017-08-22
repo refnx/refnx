@@ -1,4 +1,3 @@
-import unittest
 import os.path
 
 import numpy as np
@@ -7,19 +6,19 @@ import refnx.util.nsplice as nsplice
 
 __author__ = 'anz'
 
-path = os.path.dirname(os.path.abspath(__file__))
 
+class TestNSplice(object):
 
-class TestNSplice(unittest.TestCase):
+    def setup_method(self):
+        self.path = os.path.dirname(os.path.abspath(__file__))
 
-    def setUp(self):
-        fname0 = os.path.join(path, 'PLP0000708.dat')
+        fname0 = os.path.join(self.path, 'PLP0000708.dat')
         self.qv0, self.rv0, self.drv0 = np.loadtxt(fname0,
                                                    usecols=(0, 1, 2),
                                                    unpack=True,
                                                    skiprows=1)
 
-        fname1 = os.path.join(path, 'PLP0000709.dat')
+        fname1 = os.path.join(self.path, 'PLP0000709.dat')
         self.qv1, self.rv1, self.drv1 = np.loadtxt(fname1,
                                                    usecols=(0, 1, 2),
                                                    unpack=True,
@@ -88,7 +87,3 @@ class TestNSplice(unittest.TestCase):
 
         assert_almost_equal(scale, 0.5)
         assert_equal(np.count_nonzero(overlap), 4)
-
-
-if __name__ == '__main__':
-    unittest.main()

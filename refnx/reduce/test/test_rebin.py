@@ -3,15 +3,14 @@ Testing rebin histogram values.
 """
 
 import numpy as np
-import unittest
 from numpy.random import uniform
 from numpy.testing import (assert_allclose, assert_equal)
 import uncertainties.unumpy as unp
 import refnx.reduce.rebin as rebin
 
 
-class TestRebin(unittest.TestCase):
-    def setUp(self):
+class TestRebin(object):
+    def setup_method(self):
         pass
 
     # -----------------------------------------------------------------------#
@@ -238,7 +237,3 @@ class TestRebin(unittest.TestCase):
                         [[25.5, 27.]]])
 
         assert_equal(res, output)
-
-
-if __name__ == '__main__':
-    unittest.main()

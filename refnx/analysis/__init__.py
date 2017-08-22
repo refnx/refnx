@@ -6,7 +6,11 @@ from refnx.analysis.objective import (Objective, BaseObjective,
 from refnx.analysis.curvefitter import CurveFitter, MCMCResult
 from refnx.analysis.model import Model, fitfunc
 
-import numpy.testing
-test = numpy.testing.Tester().test
 
 __all__ = [s for s in dir() if not s.startswith('_')]
+
+
+from refnx._lib._testutils import PytestTester
+
+test = PytestTester(__name__)
+del PytestTester

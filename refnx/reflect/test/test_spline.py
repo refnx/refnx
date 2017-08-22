@@ -1,12 +1,11 @@
-import unittest
 import numpy as np
 from numpy.testing import assert_allclose, assert_equal, assert_almost_equal
 from refnx.reflect import SLD, Slab, Structure, Spline
 
 
-class TestReflect(unittest.TestCase):
+class TestReflect(object):
 
-    def setUp(self):
+    def setup_method(self):
         self.left = SLD(1.5)(10, 3)
         self.right = SLD(2.5)(10, 3)
         self.solvent = SLD(10)(0, 3)

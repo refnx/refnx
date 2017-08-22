@@ -1,4 +1,3 @@
-import unittest
 import pickle
 
 import numpy as np
@@ -21,9 +20,9 @@ def line3(x, params, x_err=None):
     pass
 
 
-class TestModel(unittest.TestCase):
+class TestModel(object):
 
-    def setUp(self):
+    def setup_method(self):
         pass
 
     def test_evaluation(self):

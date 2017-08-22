@@ -5,7 +5,7 @@ refnx is a python package for analysis of neutron and X-ray reflectometry data. 
 --------------
 # Installation
 
-*refnx* has been tested on Python 2.7, 3.4, 3.5 and 3.6. It requires the *numpy, scipy, cython, pandas, emcee, numdifftools* packages to work. Additional features require the *nose, h5py, xlrd, uncertainties* packages. To build the bleeding edge code you will need to have access to a C-compiler to build a couple of Python extensions. C-compilers should be installed on Linux. On OSX you will need to install Xcode and the command line tools. On Windows you will need to install the correct [Visual Studio compiler][Visual-studio-compiler] for your Python version.
+*refnx* has been tested on Python 2.7, 3.4, 3.5 and 3.6. It requires the *numpy, scipy, cython, pandas, emcee* packages to work. Additional features require the *pytest, h5py, xlrd, uncertainties* packages. To build the bleeding edge code you will need to have access to a C-compiler to build a couple of Python extensions. C-compilers should be installed on Linux. On OSX you will need to install Xcode and the command line tools. On Windows you will need to install the correct [Visual Studio compiler][Visual-studio-compiler] for your Python version.
   
 ## Installation into a *conda* environment
 
@@ -15,7 +15,7 @@ Perhaps the easiest way to create a scientific computing environment is to use t
  
   1) In a shell window create a conda environment and install the dependencies. The **-n** flag indicates that the environment is called *refnx*.
   
-  ```conda create -n refnx python=3.6 numpy scipy cython pandas h5py xlrd nose pytest```
+  ```conda create -n refnx python=3.6 numpy scipy cython pandas h5py xlrd pytest```
   2) Activate the environment that we're going to be working in:
   
   ```
@@ -26,7 +26,7 @@ Perhaps the easiest way to create a scientific computing environment is to use t
   activate refnx
   ```
   3) Install the remaining dependencies:
-  ```pip install emcee uncertainties numdifftools```
+  ```pip install emcee uncertainties```
  
 ### Installing into a conda environment from source
 

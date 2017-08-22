@@ -1,19 +1,17 @@
-import unittest
 import pickle
 
 import numpy as np
 from numpy.testing import (assert_almost_equal, assert_equal, assert_,
-                           assert_allclose, assert_raises)
+                           assert_allclose)
 from scipy.stats import norm, uniform
-
 
 from refnx.analysis import (Interval, PDF, Parameter, Parameters,
                             is_parameters)
 
 
-class TestParameter(unittest.TestCase):
+class TestParameter(object):
 
-    def setUp(self):
+    def setup_method(self):
         pass
 
     def test_parameter(self):
@@ -28,7 +26,8 @@ class TestParameter(unittest.TestCase):
 
         # you can't set a constraint on a parameter with an expression that
         # already involves the parameter
-        with assert_raises(ValueError):
+        from pytest import raises
+        with raises(ValueError):
             x.constraint = y
 
         # try a negative value
@@ -40,7 +39,7 @@ class TestParameter(unittest.TestCase):
         z.constraint = x + y
         assert_equal(z.value, -3)
         # check that nested circular constraints aren't allowed
-        with assert_raises(ValueError):
+        with raises(ValueError):
             x.constraint = z
 
         # absolute value constraint
@@ -132,9 +131,9 @@ class TestParameter(unittest.TestCase):
         assert_equal(len(d.flattened()), 3)
 
 
-class TestParameters(unittest.TestCase):
+class TestParameters(object):
 
-    def setUp(self):
+    def setup_method(self):
         self.a = Parameter(1, name='a')
         self.b = Parameter(2, name='b')
         self.m = Parameters()
@@ -156,7 +155,8 @@ class TestParameters(unittest.TestCase):
 
         # can't set an entry by name, if there isn't an existing name in this
         # Parameters instance.
-        with assert_raises(ValueError):
+        from pytest import raises
+        with raises(ValueError):
             self.m['abc'] = c
 
     def test_parameters(self):
@@ -213,7 +213,3 @@ class TestParameters(unittest.TestCase):
         assert_equal(len(c), 1)
         assert_equal(len(c.flattened()), 2)
         assert_(c.flattened()[1] is self.b)
-
-
-if __name__ == '__main__':
-    unittest.main()

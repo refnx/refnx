@@ -1,4 +1,3 @@
-import unittest
 import os.path
 import os
 import pickle
@@ -20,16 +19,16 @@ from numpy.testing import (assert_almost_equal, assert_equal, assert_,
                            assert_allclose)
 
 
-path = os.path.dirname(os.path.abspath(__file__))
-
 # if REQUIRE_C is specified then definitely test C plugins
 REQUIRE_C = os.environ.get('REQUIRE_C', 0)
 TEST_C_REFLECT = HAVE_CREFLECT or REQUIRE_C
 
 
-class TestReflect(unittest.TestCase):
+class TestReflect(object):
 
-    def setUp(self):
+    def setup_method(self):
+        self.pth = os.path.dirname(os.path.abspath(__file__))
+
         sio2 = SLD(3.47, name='SiO2')
         air = SLD(0, name='air')
         si = SLD(2.07, name='Si')
@@ -38,7 +37,7 @@ class TestReflect(unittest.TestCase):
 
         self.structure = air | sio2(100, 2) | si(0, 3)
 
-        theoretical = np.loadtxt(os.path.join(path, 'theoretical.txt'))
+        theoretical = np.loadtxt(os.path.join(self.pth, 'theoretical.txt'))
         qvals, rvals = np.hsplit(theoretical, 2)
         self.qvals = qvals.flatten()
         self.rvals = rvals.flatten()
@@ -65,7 +64,7 @@ class TestReflect(unittest.TestCase):
         self.structure361[2].sld.real.vary = True
         self.structure361[2].sld.real.range(0.2, 1.5)
 
-        e361 = np.loadtxt(os.path.join(path, 'e361r.txt'))
+        e361 = np.loadtxt(os.path.join(self.pth, 'e361r.txt'))
         self.qvals361, self.rvals361, self.evals361 = np.hsplit(e361, 3)
 
     def test_abeles(self):
@@ -247,7 +246,8 @@ class TestReflect(unittest.TestCase):
     def test_smearedabeles(self):
         # test smeared reflectivity calculation with values generated from
         # Motofit (quadrature precsion order = 13)
-        theoretical = np.loadtxt(os.path.join(path, 'smeared_theoretical.txt'))
+        theoretical = np.loadtxt(os.path.join(self.pth,
+                                              'smeared_theoretical.txt'))
         qvals, rvals, dqvals = np.hsplit(theoretical, 3)
         '''
         the order of the quadrature precision used to create these smeared
@@ -262,7 +262,8 @@ class TestReflect(unittest.TestCase):
     def test_smearedabeles_reshape(self):
         # test smeared reflectivity calculation with values generated from
         # Motofit (quadrature precsion order = 13)
-        theoretical = np.loadtxt(os.path.join(path, 'smeared_theoretical.txt'))
+        theoretical = np.loadtxt(os.path.join(self.pth,
+                                              'smeared_theoretical.txt'))
         qvals, rvals, dqvals = np.hsplit(theoretical, 3)
         '''
         the order of the quadrature precision used to create these smeared
@@ -292,7 +293,7 @@ class TestReflect(unittest.TestCase):
     def test_sld_profile(self):
         # test SLD profile with SLD profile from Motofit.
         np.seterr(invalid='raise')
-        profile = np.loadtxt(os.path.join(path, 'sld_theoretical_R.txt'))
+        profile = np.loadtxt(os.path.join(self.pth, 'sld_theoretical_R.txt'))
         z, rho = np.split(profile, 2)
 
         rff = ReflectModel(self.structure)
@@ -302,7 +303,7 @@ class TestReflect(unittest.TestCase):
     def test_modelvals_degenerate_layers(self):
         # try fitting dataset with a deposited layer split into two degenerate
         # layers
-        fname = os.path.join(path, 'c_PLP0011859_q.txt')
+        fname = os.path.join(self.pth, 'c_PLP0011859_q.txt')
         dataset = ReflectDataset(fname)
 
         sio2 = SLD(3.47, name='SiO2')
@@ -340,7 +341,3 @@ class TestReflect(unittest.TestCase):
         slabs = structure.slabs
         assert_equal(slabs[2, 0:2], slabs[3, 0:2])
         assert_equal(slabs[2, 3], slabs[3, 3])
-
-
-if __name__ == '__main__':
-    unittest.main()

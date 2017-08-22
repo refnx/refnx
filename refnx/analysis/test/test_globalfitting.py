@@ -4,7 +4,6 @@ overall construction of the models can be done in a few different ways.
 """
 from __future__ import print_function, division
 import os.path
-import unittest
 
 import numpy as np
 from numpy.testing import (assert_, assert_equal, assert_almost_equal,
@@ -16,12 +15,12 @@ from refnx.reflect import (Slab, SLD, ReflectModel)
 
 SEED = 1
 
-CURDIR = os.path.dirname(os.path.abspath(__file__))
 
+class TestGlobalFitting(object):
 
-class TestGlobalFitting(unittest.TestCase):
+    def setup_method(self):
+        self.pth = os.path.dirname(os.path.abspath(__file__))
 
-    def setUp(self):
         self.si = SLD(2.07, name='Si')
         self.sio2 = SLD(3.47, name='SiO2')
         self.d2o = SLD(6.36, name='d2o')
@@ -35,7 +34,7 @@ class TestGlobalFitting(unittest.TestCase):
         self.structure = (self.si | self.sio2_l | self.polymer_l |
                           self.d2o(0, 3))
 
-        fname = os.path.join(CURDIR, 'c_PLP0011859_q.txt')
+        fname = os.path.join(self.pth, 'c_PLP0011859_q.txt')
 
         self.dataset = ReflectDataset(fname)
         self.model = ReflectModel(self.structure, bkg=2e-7)
@@ -73,9 +72,9 @@ class TestGlobalFitting(unittest.TestCase):
 
     def test_multipledataset_corefinement(self):
         # test corefinement of three datasets
-        data361 = ReflectDataset(os.path.join(CURDIR, 'e361r.txt'))
-        data365 = ReflectDataset(os.path.join(CURDIR, 'e365r.txt'))
-        data366 = ReflectDataset(os.path.join(CURDIR, 'e366r.txt'))
+        data361 = ReflectDataset(os.path.join(self.pth, 'e361r.txt'))
+        data365 = ReflectDataset(os.path.join(self.pth, 'e365r.txt'))
+        data366 = ReflectDataset(os.path.join(self.pth, 'e366r.txt'))
 
         si = SLD(2.07, name='Si')
         sio2 = SLD(3.47, name='SiO2')
@@ -149,7 +148,3 @@ class TestGlobalFitting(unittest.TestCase):
                         res366, rtol=1e-5)
 
         repr(global_objective)
-
-
-if __name__ == '__main__':
-    unittest.main()

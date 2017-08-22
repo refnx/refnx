@@ -1,44 +1,43 @@
-import unittest
 import os
 import os.path
+import pytest
 
-from refnx.reduce import reduce_stitch, PlatypusReduce
 from numpy.testing import (assert_equal, assert_allclose, assert_)
 import xml.etree.ElementTree as ET
-from refnx._lib import TemporaryDirectory
+
+from refnx.reduce import reduce_stitch, PlatypusReduce
 
 
-class TestReduce(unittest.TestCase):
+class TestReduce(object):
 
-    def setUp(self):
-        path = os.path.dirname(os.path.realpath(__file__))
-        self.path = path
+    @pytest.fixture(autouse=True)
+    def setup_method(self, tmpdir):
+        self.pth = os.path.dirname(os.path.abspath(__file__))
 
         self.cwd = os.getcwd()
-        self.tmpdir = TemporaryDirectory()
-        os.chdir(self.tmpdir.name)
+        self.tmpdir = tmpdir.strpath
+        os.chdir(self.tmpdir)
         return 0
 
-    def tearDown(self):
+    def teardown_method(self):
         os.chdir(self.cwd)
-        self.tmpdir.cleanup()
 
     def test_smoke(self):
         # a quick smoke test to check that the reduction can occur
         a, fname = reduce_stitch([708, 709, 710], [711, 711, 711],
-                                 data_folder=self.path, rebin_percent=2)
+                                 data_folder=self.pth, rebin_percent=2)
         a.save('test1.dat')
 
     def test_reduction_method(self):
         # a quick smoke test to check that the reduction can occur
-        a = PlatypusReduce('PLP0000711.nx.hdf', data_folder=self.path,
+        a = PlatypusReduce('PLP0000711.nx.hdf', data_folder=self.pth,
                            rebin_percent=4)
 
         # try reduction with the reduce method
-        a.reduce('PLP0000708.nx.hdf', data_folder=self.path, rebin_percent=4)
+        a.reduce('PLP0000708.nx.hdf', data_folder=self.pth, rebin_percent=4)
 
         # try reduction with the __call__ method
-        a('PLP0000708.nx.hdf', data_folder=self.path, rebin_percent=4)
+        a('PLP0000708.nx.hdf', data_folder=self.pth, rebin_percent=4)
 
         # this should also have saved a couple of files in the current
         # directory
@@ -52,8 +51,8 @@ class TestReduce(unittest.TestCase):
         # check that eventmode reduction can occur, and that there are the
         # correct number of datasets produced.
         a = PlatypusReduce(
-            os.path.join(self.path, 'PLP0011613.nx.hdf'),
-            reflect=os.path.join(self.path, 'PLP0011641.nx.hdf'),
+            os.path.join(self.pth, 'PLP0011613.nx.hdf'),
+            reflect=os.path.join(self.pth, 'PLP0011641.nx.hdf'),
             integrate=0, rebin_percent=2,
             eventmode=[0, 900, 1800])
         assert_equal(a.ydata.shape[0], 2)
@@ -73,12 +72,8 @@ class TestReduce(unittest.TestCase):
 
         # what happens if you have too many frame bins
         a = PlatypusReduce(
-            os.path.join(self.path, 'PLP0011613.nx.hdf'),
-            reflect=os.path.join(self.path, 'PLP0011641.nx.hdf'),
+            os.path.join(self.pth, 'PLP0011613.nx.hdf'),
+            reflect=os.path.join(self.pth, 'PLP0011641.nx.hdf'),
             integrate=0, rebin_percent=2,
             eventmode=[0, 25200, 27000, 30000])
         assert_equal(a.ydata.shape[0], 1)
-
-
-if __name__ == '__main__':
-    unittest.main()

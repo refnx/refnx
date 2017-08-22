@@ -2,7 +2,6 @@
 This module tests the objective function by comparing it to the line example
 from http://dan.iel.fm/emcee/current/user/line/
 """
-import unittest
 import pickle
 import os
 
@@ -17,17 +16,14 @@ from refnx.dataset import Data1D, ReflectDataset
 from refnx.util import ErrorProp as EP
 
 
-CURDIR = os.path.dirname(os.path.abspath(__file__))
-
-
 def line(x, params, *args, **kwds):
     p_arr = np.array(params)
     return p_arr[0] + x * p_arr[1]
 
 
-class TestObjective(unittest.TestCase):
+class TestObjective(object):
 
-    def setUp(self):
+    def setup_method(self):
         # Choose the "true" parameters.
 
         # Reproducible results!
@@ -150,7 +146,9 @@ class TestObjective(unittest.TestCase):
         pickle.loads(pkl)
 
     def test_transform(self):
-        fname = os.path.join(CURDIR, 'c_PLP0011859_q.txt')
+        pth = os.path.dirname(os.path.abspath(__file__))
+
+        fname = os.path.join(pth, 'c_PLP0011859_q.txt')
         data = ReflectDataset(fname)
         t = Transform('logY')
 
@@ -243,7 +241,3 @@ class TestObjective(unittest.TestCase):
         # uncertainties3 = np.sqrt(np.diag(covar3))
         # assert_almost_equal(uncertainties3, uncertainties)
         # assert(False)
-
-
-if __name__ == '__main__':
-    unittest.main()
