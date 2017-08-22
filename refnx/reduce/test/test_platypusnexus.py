@@ -1,6 +1,7 @@
 import os
 import numbers
 
+import pytest
 import numpy as np
 from numpy.testing import (assert_almost_equal, assert_, assert_equal,
                            assert_array_less, assert_allclose)
@@ -11,12 +12,12 @@ from refnx.reduce import PlatypusReduce, PlatypusNexus, basename_datafile
 from refnx.reduce.peak_utils import gauss
 from refnx.reduce.platypusnexus import (fore_back_region, EXTENT_MULT,
                                         PIXEL_OFFSET, create_detector_norm)
-from refnx._lib import TemporaryDirectory
 
 
 class TestPlatypusNexus(object):
 
-    def setup_method(self):
+    @pytest.fixture(autouse=True)
+    def setup_method(self, tmpdir):
         self.pth = os.path.dirname(os.path.abspath(__file__))
 
         self.f113 = PlatypusNexus(os.path.join(self.pth,
@@ -24,13 +25,13 @@ class TestPlatypusNexus(object):
         self.f641 = PlatypusNexus(os.path.join(self.pth,
                                                'PLP0011641.nx.hdf'))
         self.cwd = os.getcwd()
-        self.tmpdir = TemporaryDirectory()
-        os.chdir(self.tmpdir.name)
+
+        self.tmpdir = tmpdir.strpath
+        os.chdir(self.tmpdir)
         return 0
 
     def teardown_method(self):
         os.chdir(self.cwd)
-        self.tmpdir.cleanup()
 
     def test_chod(self):
         flight_length = self.f113.chod()
@@ -169,15 +170,11 @@ class TestPlatypusNexus(object):
         self.f113.process()
 
         # can save the spectra by supplying a filename
-        self.f113.write_spectrum_xml('test.xml')
-        self.f113.write_spectrum_dat('test.dat')
+        self.f113.write_spectrum_xml(os.path.join(self.tmpdir, 'test.xml'))
+        self.f113.write_spectrum_dat(os.path.join(self.tmpdir, 'test.dat'))
 
         # can save by supplying file handle:
-        with open('test.xml', 'wb') as f:
-            self.f113.write_spectrum_xml(f)
-
-        # can save by supplying file handle:
-        with open('test.dat', 'wb') as f:
+        with open(os.path.join(self.tmpdir, 'test.xml'), 'wb') as f:
             self.f113.write_spectrum_xml(f)
 
     def test_accumulate_files(self):
@@ -191,7 +188,7 @@ class TestPlatypusNexus(object):
                                         'PLP0000708.nx.hdf'), 'r')
             f9 = h5py.File(os.path.join(self.pth,
                                         'PLP0000709.nx.hdf'), 'r')
-            fadd = h5py.File(os.path.join(os.getcwd(),
+            fadd = h5py.File(os.path.join(self.tmpdir,
                                           'ADD_PLP0000708.nx.hdf'), 'r')
 
             f8d = f8['entry1/data/hmm'][0]

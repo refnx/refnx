@@ -246,7 +246,8 @@ class TestReflect(object):
     def test_smearedabeles(self):
         # test smeared reflectivity calculation with values generated from
         # Motofit (quadrature precsion order = 13)
-        theoretical = np.loadtxt(os.path.join(self.pth, 'smeared_theoretical.txt'))
+        theoretical = np.loadtxt(os.path.join(self.pth,
+                                              'smeared_theoretical.txt'))
         qvals, rvals, dqvals = np.hsplit(theoretical, 3)
         '''
         the order of the quadrature precision used to create these smeared
@@ -261,7 +262,8 @@ class TestReflect(object):
     def test_smearedabeles_reshape(self):
         # test smeared reflectivity calculation with values generated from
         # Motofit (quadrature precsion order = 13)
-        theoretical = np.loadtxt(os.path.join(self.pth, 'smeared_theoretical.txt'))
+        theoretical = np.loadtxt(os.path.join(self.pth,
+                                              'smeared_theoretical.txt'))
         qvals, rvals, dqvals = np.hsplit(theoretical, 3)
         '''
         the order of the quadrature precision used to create these smeared
@@ -339,4 +341,3 @@ class TestReflect(object):
         slabs = structure.slabs
         assert_equal(slabs[2, 0:2], slabs[3, 0:2])
         assert_equal(slabs[2, 3], slabs[3, 3])
-

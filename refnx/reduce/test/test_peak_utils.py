@@ -43,4 +43,3 @@ class TestPeakUtils(object):
         y = np.ones(2)
         median, sd = peak_utils.median(y, dx=9.)
         assert_equal(median, 4.5)
-

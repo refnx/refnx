@@ -1,14 +1,16 @@
 import os.path
 
+import pytest
+
 from refnx.dataset import ReflectDataset, Data1D
 import numpy as np
 from numpy.testing import assert_equal, assert_
-from refnx._lib import TemporaryDirectory
 
 
 class TestReflectDataset(object):
 
-    def setup_method(self):
+    @pytest.fixture(autouse=True)
+    def setup_method(self, tmpdir):
         self.pth = os.path.dirname(os.path.abspath(__file__))
 
         data = ReflectDataset()
@@ -21,8 +23,8 @@ class TestReflectDataset(object):
         self.data = data
 
         self.cwd = os.getcwd()
-        self.tmpdir = TemporaryDirectory()
-        os.chdir(self.tmpdir.name)
+        self.tmpdir = tmpdir.strpath
+        os.chdir(self.tmpdir)
 
     def teardown_method(self):
         os.chdir(self.cwd)

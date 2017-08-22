@@ -1,25 +1,26 @@
 import os
 import os.path
+import pytest
 
-from refnx.reduce import reduce_stitch, PlatypusReduce
 from numpy.testing import (assert_equal, assert_allclose, assert_)
 import xml.etree.ElementTree as ET
-from refnx._lib import TemporaryDirectory
+
+from refnx.reduce import reduce_stitch, PlatypusReduce
 
 
 class TestReduce(object):
 
-    def setup_method(self):
+    @pytest.fixture(autouse=True)
+    def setup_method(self, tmpdir):
         self.pth = os.path.dirname(os.path.abspath(__file__))
 
         self.cwd = os.getcwd()
-        self.tmpdir = TemporaryDirectory()
-        os.chdir(self.tmpdir.name)
+        self.tmpdir = tmpdir.strpath
+        os.chdir(self.tmpdir)
         return 0
 
     def teardown_method(self):
         os.chdir(self.cwd)
-        self.tmpdir.cleanup()
 
     def test_smoke(self):
         # a quick smoke test to check that the reduction can occur

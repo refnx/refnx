@@ -2,26 +2,28 @@ import os.path
 import os
 
 from numpy.testing import assert_equal, assert_
+import pytest
 
 from refnx.reduce import BatchReducer
 # also get access to file-scope variables
 import refnx.reduce.batchreduction
-from refnx._lib import TemporaryDirectory
 
 
 class TestReduce(object):
-    def setup_method(self):
+
+    @pytest.fixture(autouse=True)
+    def setup_method(self, tmpdir):
         path = os.path.dirname(__file__)
         self.path = path
 
         self.cwd = os.getcwd()
-        self.tmpdir = TemporaryDirectory()
-        os.chdir(self.tmpdir.name)
+
+        self.tmpdir = tmpdir.strpath
+        os.chdir(self.tmpdir)
         return 0
 
     def teardown_method(self):
         os.chdir(self.cwd)
-        self.tmpdir.cleanup()
 
     def test_batch_reduce(self):
         filename = os.path.join(self.path, "test_batch_reduction.xls")
