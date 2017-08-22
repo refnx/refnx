@@ -15,8 +15,10 @@ from refnx.util.general import (div, q, q2, qcrit, double_chopper_frequency,
                                 wavelength_velocity, wavelength_energy,
                                 actual_footprint)
 
-import numpy.testing
-test = numpy.testing.Tester().test
+from refnx._lib._testutils import PytestTester
+
+test = PytestTester(__name__)
+del PytestTester
 
 
 __all__ = [s for s in dir() if not s.startswith('_')]

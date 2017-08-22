@@ -125,34 +125,16 @@ def main(argv):
 
     if args.build_only:
         sys.exit(0)
-    elif args.submodule:
-        modname = PROJECT_MODULE + '.' + args.submodule
-        try:
-            __import__(modname)
-            test = sys.modules[modname].test
-        except (ImportError, KeyError, AttributeError) as e:
-            print("Cannot run tests for %s (%s)" % (modname, e))
-            sys.exit(2)
-    elif args.tests:
-        def fix_test_path(x):
-            # fix up test path
-            p = x.split(':')
-            p[0] = os.path.relpath(os.path.abspath(p[0]),
-                                   test_dir)
-            return ':'.join(p)
-
-        tests = [fix_test_path(x) for x in args.tests]
-
-        def test(*a, **kw):
-            extra_argv = kw.pop('extra_argv', ())
-            extra_argv = extra_argv + tests[1:]
-            kw['extra_argv'] = extra_argv
-            from numpy.testing import Tester
-            return Tester(tests[0]).test(*a, **kw)
     else:
-        print(PROJECT_MODULE)
         __import__(PROJECT_MODULE)
         test = sys.modules[PROJECT_MODULE].test
+
+    if args.submodule:
+        tests = [PROJECT_MODULE + "." + args.submodule]
+    elif args.tests:
+        tests = args.tests
+    else:
+        tests = None
 
     # Run the tests under build/test
     try:
