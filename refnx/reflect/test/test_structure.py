@@ -55,13 +55,13 @@ class TestStructure(object):
         self.s.reflectivity(q)
 
     def test_sld_slicer(self):
-        q = np.linspace(0.005, 0.3, 200)
+        q = np.linspace(0.005, 0.2, 100)
 
         reflectivity = self.s.reflectivity(q)
-        z, sld = self.s.sld_profile()
-        round_trip_structure = _profile_slicer(z, sld)
+        z, sld = self.s.sld_profile(z=np.linspace(-150, 250, 1000))
+        round_trip_structure = _profile_slicer(z, sld, slice_size=0.1)
         round_trip_reflectivity = round_trip_structure.reflectivity(q)
-        assert_allclose(round_trip_reflectivity, reflectivity, rtol=0.003)
+        assert_allclose(round_trip_reflectivity, reflectivity, rtol=0.004)
 
     def test_slab_addition(self):
         # The slabs property for the main Structure component constructs
