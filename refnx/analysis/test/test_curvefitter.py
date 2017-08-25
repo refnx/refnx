@@ -82,7 +82,7 @@ class TestCurveFitter(object):
         assert_almost_equal(self.p[1].value, self.p[0].value * -0.203)
 
     def test_mcmc(self):
-        self.mcfitter.sample(steps=50, nburn=0, nthin=1, verbose=False)
+        self.mcfitter.sample(steps=50, nthin=1, verbose=False)
 
         # we're not doing Parallel Tempering here.
         assert_(self.mcfitter._ntemps == -1)
@@ -90,19 +90,16 @@ class TestCurveFitter(object):
 
         # should be able to multithread
         mcfitter = CurveFitter(self.objective, nwalkers=50)
-        res = mcfitter.sample(steps=65, nburn=10, nthin=2, verbose=False,
-                              pool=2)
+        res = mcfitter.sample(steps=66, nthin=2, verbose=False, pool=2)
 
         # check that the autocorrelation function at least runs
-        acfs = mcfitter.acf(nburn=10, nthin=2)
+        acfs = mcfitter.acf(nburn=10)
         assert_equal(acfs.shape[-1], mcfitter.nvary)
 
-        # check that we're thinning and burning properly
-        assert_equal(mcfitter.sampler.chain.shape, (50, 65, 2))
-        assert_equal(mcfitter._lastpos, mcfitter.sampler.chain[:, -1, :])
-        assert_equal(mcfitter.sampler.chain[:, 10::2, 0], res[0].chain)
-        assert_equal(mcfitter.sampler.chain[:, 10::2, 1], res[1].chain)
-        assert_equal(res[0].chain.shape, (50, 28))
+        # check that we're thinning properly
+        assert_equal(mcfitter.sampler.chain.shape, (50, 33, 2))
+        # assert_equal(mcfitter._lastpos, mcfitter.sampler.chain[:, -1, :])
+        assert_equal(res[0].chain.shape, (50, 33))
 
     def test_mcmc_pt(self):
         # smoke test for parallel tempering
@@ -110,12 +107,11 @@ class TestCurveFitter(object):
         assert_(isinstance(mcfitter.sampler, emcee.PTSampler))
         assert_equal(mcfitter.sampler.ntemps, 10)
 
-        res = mcfitter.sample(steps=60, nburn=10, nthin=2, verbose=False,
-                              pool=0)
-        assert_equal(mcfitter.sampler.chain.shape, (10, 50, 60, 2))
-        assert_equal(res[0].chain.shape, (50, 25))
-        assert_equal(mcfitter.sampler.chain[0, :, 10::2, 0], res[0].chain)
-        assert_equal(mcfitter.sampler.chain[0, :, 10::2, 1], res[1].chain)
+        res = mcfitter.sample(steps=60, nthin=2, verbose=False, pool=0)
+        assert_equal(mcfitter.sampler.chain.shape, (10, 50, 30, 2))
+        assert_equal(res[0].chain.shape, (50, 30))
+        assert_equal(mcfitter.sampler.chain[0, :, :, 0], res[0].chain)
+        assert_equal(mcfitter.sampler.chain[0, :, :, 1], res[1].chain)
 
     def test_mcmc_init(self):
         # smoke test for sampler initialisation
@@ -235,7 +231,8 @@ class TestFitterGauss(object):
         # compare samples to best_weighted_errors
         np.random.seed(1)
         f.initialise('jitter')
-        f.sample(steps=200, nburn=100, nthin=20, random_state=1, verbose=False)
+        f.sample(steps=200, random_state=1, verbose=False)
+        f.process_chain(nburn=100, nthin=20)
         uncertainties = [param.stderr for param in self.params]
         assert_allclose(uncertainties, self.best_weighted_errors, rtol=0.15)
 

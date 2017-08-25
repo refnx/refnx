@@ -280,8 +280,8 @@ class CurveFitter(object):
         acfs = np.mean(acfs, axis=1)
         return np.transpose(acfs)
 
-    def sample(self, steps, nburn=0, nthin=1, random_state=None, f=None,
-               callback=None, verbose=True, pool=0):
+    def sample(self, steps, nthin=1, random_state=None, f=None, callback=None,
+               verbose=True, pool=0):
         """
         Performs sampling from the objective.
 
@@ -289,10 +289,9 @@ class CurveFitter(object):
         ----------
         steps : int
             Iterate the sampler by a number of steps
-        nburn : int, optional
-            discard this many steps from the chain
         nthin : int, optional
-            only accept every `nthin` samples from the chain
+            only store every `nthin` samples from the chain. `nthin` should be
+            a divisor of `steps`.
         random_state : int or `np.random.RandomState`, optional
             If `random_state` is an int, a new `np.random.RandomState` instance
             is used, seeded with `random_state`.
@@ -316,8 +315,18 @@ class CurveFitter(object):
         -----
         Please see :class:`emcee.EnsembleSampler` for its detailed behaviour.
         For example, the chain is contained in `CurveFitter.sampler.chain` and
-        has shape `(nwalkers, iterations, ndim)`. `nsteps` should be greater
-        than `nburn`.
+        has shape `(nwalkers, iterations, ndim)`. If you wish to 'burn' a
+        number of samples to start with then use the following pattern:
+        
+        >>> # we'll burn the first 500
+        >>> fitter.sample(500)
+        >>> # after you've run those, then discard them by resetting the
+        >>> # sampler.
+        >>> fitter.sampler.reset()
+        >>> # Now do a production run only saving 1 in every 50 samples
+        >>> fitter.sample(2000, nthin=50)
+        
+        One can also burn and thin in `Curvefitter.process_chain`.
         """
         if self._lastpos is None:
             self.initialise()
@@ -371,19 +380,20 @@ class CurveFitter(object):
                 self.sampler.pool = g
 
             for i, result in enumerate(self.sampler.sample(self._lastpos,
-                                                           iterations=steps)):
-                pos, lnprob = result[0:2]
-                _callback_wrapper(pos, lnprob, i)
+                                                           iterations=steps,
+                                                           thin=nthin)):
+                self._lastpos, lnprob = result[0:2]
+                _callback_wrapper(self._lastpos, lnprob, i)
 
         self.sampler.pool = None
-        self._lastpos = result[0]
+        # self._lastpos = result[0]
 
         # finish off the progress bar
         if verbose:
             sys.stdout.write("\n")
 
         # sets parameter value and stderr
-        return self.process_chain(nburn=nburn, nthin=nthin)
+        return self.process_chain()
 
     def fit(self, method='L-BFGS-B', **kws):
         """
