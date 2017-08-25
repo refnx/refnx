@@ -537,22 +537,26 @@ class Objective(BaseObjective):
 
         return covar * scale
 
-    def pgen(self, n_gen=1000):
+    def pgen(self, ngen=1000, nburn=0, nthin=1):
         """
         Yield random parameter vectors (only those varying) from the MCMC
         samples. The objective state is not altered.
 
         Parameters
         ----------
-        n_gen : int, optional
+        ngen : int, optional
             the number of samples
+        nburn : int, optional
+            discard this many steps from the start of the chain
+        nthin : int, optional
+            only accept every `nthin` samples from the chain
 
         Yields
         ------
         pvec : np.ndarray
             A randomly chosen parameter vector
         """
-        chains = np.array([np.ravel(param.chain) for param
+        chains = np.array([np.ravel(param.chain[..., nburn::nthin]) for param
                            in self.varying_parameters()
                            if param.chain is not None])
 
@@ -561,7 +565,8 @@ class Objective(BaseObjective):
                              "parameters first")
 
         samples = np.arange(np.size(chains, 1))
-        choices = np.random.choice(samples, size=(n_gen,), replace=False)
+
+        choices = np.random.choice(samples, size=(ngen,), replace=False)
 
         for choice in choices:
             yield chains[..., choice]
