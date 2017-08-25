@@ -317,7 +317,7 @@ class CurveFitter(object):
         For example, the chain is contained in `CurveFitter.sampler.chain` and
         has shape `(nwalkers, iterations, ndim)`. If you wish to 'burn' a
         number of samples to start with then use the following pattern:
-        
+
         >>> # we'll burn the first 500
         >>> fitter.sample(500)
         >>> # after you've run those, then discard them by resetting the
@@ -325,7 +325,7 @@ class CurveFitter(object):
         >>> fitter.sampler.reset()
         >>> # Now do a production run only saving 1 in every 50 samples
         >>> fitter.sample(2000, nthin=50)
-        
+
         One can also burn and thin in `Curvefitter.process_chain`.
         """
         if self._lastpos is None:
