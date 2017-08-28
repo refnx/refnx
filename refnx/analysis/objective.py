@@ -571,6 +571,39 @@ class Objective(BaseObjective):
         for choice in choices:
             yield chains[..., choice]
 
+    def plot(self, pvals=None):
+        """
+        Plot the data/model
+
+        Parameters
+        ----------
+        pvals : np.ndarray, optional
+            Numeric values for the Parameter's that are varying
+
+        Returns
+        -------
+        fig, ax
+        """
+        import matplotlib.pyplot as plt
+
+        self.setp(pvals)
+
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+
+        y, y_err, model = self._data_transform(model=self.generative())
+
+        # add the data (in a transformed fashion
+        if self.data.y_err is not None:
+            ax.errorbar(self.data.x, y, y_err, color='r')
+        else:
+            ax.scatter(self.data.x, y, color='r')
+
+        # add the fit
+        ax.plot(self.data.x, model)
+
+        return fig, ax
+
 
 class GlobalObjective(Objective):
     """
