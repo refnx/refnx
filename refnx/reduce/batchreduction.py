@@ -283,7 +283,7 @@ class ReductionCache(list):
 
     def _repr_html_(self):
         df = self._summary_dataframe()
-        return "<b>Summary of reduced data</b>" + df._repr_html_()
+        return "<b>Summary of reduced data</b>" + df.fillna("")._repr_html_()
 
     def __str__(self):
         df = self._summary_dataframe()
@@ -383,7 +383,18 @@ class BatchReducer:
 
     def load_runs(self):
         cols = 'A:I'
-        all_runs = pd.read_excel(self.filename, parse_cols=cols)
+        all_runs = pd.read_excel(
+            self.filename,
+            parse_cols=cols,
+            converters={
+                'refl1': int,
+                'refl2': int,
+                'refl3': int,
+                'dir1': int,
+                'dir2': int,
+                'dir3': int,
+            },
+        )
 
         # Add the row number in the spreadsheet as an extra column
         # row numbers for the runs will start at 2 not 0
@@ -445,7 +456,7 @@ class BatchReducer:
 
         if show:
             if _have_ipython:
-                IPython.display.display(all_runs[mask])
+                IPython.display.display(all_runs[mask].fillna(""))
             else:
                 print(all_runs[mask])
 
