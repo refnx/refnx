@@ -364,17 +364,17 @@ class BatchReducer:
             sys.stdout.flush()   # keep progress updated
 
         if not runs:
-            warnings.warn("Row %d (%s) has no reflection runs" %
+            warnings.warn("Row %d (%s) has no reflection runs. Skipped." %
                           (entry['source'], entry['name']))
             return None, None
         if not directs:
-            warnings.warn("Row %d (%s) has no direct beam runs" %
+            warnings.warn("Row %d (%s) has no direct beam runs. Skipped." %
                           (entry['source'], entry['name']))
             return None, None
 
-        if len(runs) != len(directs):
+        if len(runs) > len(directs):
             warnings.warn("Row %d (%s) has differing numbers of"
-                          " direct & refln runs" %
+                          " direct & reflection runs. Skipped." %
                           (entry['source'], entry['name']))
             return None, None
 
