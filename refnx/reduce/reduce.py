@@ -463,8 +463,9 @@ class PlatypusReduce(object):
         return deepcopy(reduction)
 
 
-def reduce_stitch(reflect_list, direct_list, norm_file_num=None,
-                  data_folder=None, trim_trailing=True, save=True, **kwds):
+def reduce_stitch(reflect_list, direct_list, background_list=None,
+                  norm_file_num=None, data_folder=None, trim_trailing=True,
+                  save=True, **kwds):
     """
     Reduces a list of reflected beam run numbers and a list of corresponding
     direct beam run numbers from the Platypus reflectometer. If there are
@@ -477,6 +478,9 @@ def reduce_stitch(reflect_list, direct_list, norm_file_num=None,
         708 corresponds to the file PLP0000708.nx.hdf.
     direct_list : list
         Direct beam run numbers, e.g. `[711, 711, 711]`
+    background_list : list, optional
+        List of `bool` to control whether background subtraction is used
+        for each reduction, e.g. `[False, True, True]`
     norm_file_num : int, optional
         The run number for the water flood field correction.
     data_folder : str, optional
@@ -500,8 +504,11 @@ def reduce_stitch(reflect_list, direct_list, norm_file_num=None,
     """
     scale = kwds.get('scale', 1.)
 
+    if not background_list:
+        background_list = [True] * len(reflect_list)
+
     # now reduce all the files.
-    zipped = zip(reflect_list, direct_list)
+    zipped = zip(reflect_list, direct_list, background_list)
 
     combined_dataset = ReflectDataset()
 
@@ -521,6 +528,7 @@ def reduce_stitch(reflect_list, direct_list, norm_file_num=None,
         reduced = PlatypusReduce(direct_datafile,
                                  reflect=reflect_datafile,
                                  save=save,
+                                 background=val[2],
                                  **kwds)
         if not index:
             reduced.scale(scale)
