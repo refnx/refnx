@@ -330,7 +330,8 @@ class BatchReducer:
 
         reduce name scale refl1 refl2 refl3 dir1 dir2 dir3
 
-    Only rows where the value of the `reduce` column is 1 will be processed.
+    Only rows where the value of the `reduce` column is 1 and where the sample
+    name is set will be processed.
     """
 
     def __init__(self, filename, data_folder=None, verbose=True,
