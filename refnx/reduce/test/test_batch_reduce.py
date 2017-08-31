@@ -1,5 +1,7 @@
 import os.path
 import os
+import pandas
+import tempfile
 
 from numpy.testing import assert_equal, assert_
 import pytest
@@ -27,7 +29,8 @@ class TestReduce(object):
 
     def test_batch_reduce(self):
         filename = os.path.join(self.path, "test_batch_reduction.xls")
-        b = BatchReducer(filename, data_folder=self.path, verbose=False)
+        b = BatchReducer(filename, data_folder=self.path, verbose=False,
+                         persistent=False)
 
         b.reduce(show=False)
 
@@ -35,11 +38,13 @@ class TestReduce(object):
         filename = os.path.join(self.path, "test_batch_reduction.xls")
 
         refnx.reduce.batchreduction._have_ipython = False
-        b = BatchReducer(filename, data_folder=self.path, verbose=False)
+        b = BatchReducer(filename, data_folder=self.path, verbose=False,
+                         persistent=False)
         b.reduce(show=False)
 
         refnx.reduce.batchreduction._have_ipython = True
-        b = BatchReducer(filename, data_folder=self.path, verbose=False)
+        b = BatchReducer(filename, data_folder=self.path, verbose=False,
+                         persistent=False)
         b.reduce(show=False)
 
 
@@ -57,17 +62,20 @@ class TestReductionCache(object):
     ]
 
     def setup_method(self):
-        self.cache = refnx.reduce.batchreduction.ReductionCache()
+        self.cache = refnx.reduce.batchreduction.ReductionCache(
+            persistent=False)
 
         # populate the cache with some fake data to test selector methods
         for line in self.entries:
             self._addentry(line)
 
-    def _addentry(self, line, **kwargs):
-        runs = dict(zip(['refl1', 'refl2', 'refl3'], line[4]))
+    def _addentry(self, line, dest=None, **kwargs):
+        runs = pandas.Series(dict(zip(['refl1', 'refl2', 'refl3'], line[4])))
         entry = line[:]
         entry[4] = runs
-        self.cache.add(*entry, **kwargs)
+        if dest is None:
+            dest = self.cache
+        dest.add(*entry, **kwargs)
 
     def test_add(self):
         assert_equal(len(self.cache), 6)
@@ -122,3 +130,46 @@ class TestReductionCache(object):
         assert_equal(len(self.cache.name_search('A')), 3)
         assert_equal(len(self.cache.name_search(r'A\d')), 2)
         assert_equal(len(self.cache.name_search('no such sample')), 0)
+
+    def test_str(self):
+        # smoke test the __str__ method
+        assert str(self.cache) != ''
+
+    def test_persistence(self, tmpdir):
+        # test persistence of cache in a local file
+
+        # presence of this file would indicate a failure of
+        # the previous persistent=False
+        assert not os.path.exists(self.cache._default_persistent_cache)
+
+        # make a new cache that has persistence with a default name
+        cache = refnx.reduce.batchreduction.ReductionCache(persistent=True)
+        self._addentry(self.entries[0], dest=cache)
+        assert_equal(len(cache), 1)
+        assert cache._cache_filename() == self.cache._default_persistent_cache
+        assert os.path.exists(cache._cache_filename())
+
+        # check that the persistent cache has has been dropped
+        cache.drop_cache()
+        assert not os.path.exists(cache._cache_filename())
+
+        # check that the cache filename can be set
+        cachename = tmpdir.mkdir('test').join('redn-test.pickle').strpath
+
+        # make a new cache that has persistence with specified filename
+        cache = refnx.reduce.batchreduction.ReductionCache(
+            persistent=cachename)
+
+        assert cache._cache_filename() == cachename
+
+        self._addentry(self.entries[0], dest=cache)
+        assert_equal(len(cache), 1)
+
+        # check that the persistent cache has been written
+        assert os.path.exists(cache._cache_filename())
+        assert os.path.getsize(cache._cache_filename()) > 0
+
+        # check that the persistent cache is loaded again
+        cache2 = refnx.reduce.batchreduction.ReductionCache(
+            persistent=cachename)
+        assert_equal(len(cache2), 1)
