@@ -545,7 +545,8 @@ class Objective(BaseObjective):
         Parameters
         ----------
         ngen : int, optional
-            the number of samples
+            the number of samples to yield. The actual number of samples
+            yielded is `min(ngen, chain.size)`
         nburn : int, optional
             discard this many steps from the start of the chain
         nthin : int, optional
@@ -566,7 +567,9 @@ class Objective(BaseObjective):
 
         samples = np.arange(np.size(chains, 1))
 
-        choices = np.random.choice(samples, size=(ngen,), replace=False)
+        choices = np.random.choice(samples,
+                                   size=(min(ngen, samples.size),),
+                                   replace=False)
 
         for choice in choices:
             yield chains[..., choice]
