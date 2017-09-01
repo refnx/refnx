@@ -191,26 +191,26 @@ class CurveFitter(object):
         if self._ntemps == -1:
             _ntemps = 1
 
-        # position is to be created from covariance matrix
-        if pos == 'covar':
-            p0 = np.array(self._varying_parameters)
-            cov = self.objective.covar()
-            self._lastpos = emcee.utils.sample_ellipsoid(
-                p0,
-                cov,
-                size=(_ntemps, nwalkers))
-
         # position is specified with array (no parallel tempering)
-        elif (isinstance(pos, np.ndarray) and
+        if (isinstance(pos, np.ndarray) and
               self._ntemps == -1 and
               pos.shape == (nwalkers, nvary)):
-            self._lastpos = np.copy(pos)
+            init_walkers = np.copy(pos)
 
         # position is specified with array (with parallel tempering)
         elif (isinstance(pos, np.ndarray) and
               self._ntemps > -1 and
               pos.shape == (_ntemps, nwalkers, nvary)):
-            self._lastpos = np.copy(pos)
+            init_walkers = np.copy(pos)
+
+        # position is to be created from covariance matrix
+        elif pos == 'covar':
+            p0 = np.array(self._varying_parameters)
+            cov = self.objective.covar()
+            init_walkers = emcee.utils.sample_ellipsoid(
+                p0,
+                cov,
+                size=(_ntemps, nwalkers))
 
         # position is specified by jittering the parameters with gaussian noise
         elif pos == 'jitter':
@@ -219,7 +219,7 @@ class CurveFitter(object):
                                       nwalkers,
                                       nvary) * 1.e-4
             pos *= var_arr
-            self._lastpos = pos
+            init_walkers = pos
 
         # use the prior to initialise position
         elif pos == 'prior':
@@ -234,20 +234,23 @@ class CurveFitter(object):
                     arr[..., i] = vals
                 else:
                     arr[..., i] = param.bounds.rvs(size=(_ntemps, nwalkers))
-            self._lastpos = arr
+
+            init_walkers = arr
 
         else:
-            raise RuntimeError("Didn't use any know method for "
+            raise RuntimeError("Didn't use any known method for "
                                "CurveFitter.initialise")
 
         # if you're not doing parallel tempering then remove the first
         # dimension
         if self._ntemps == -1:
-            self._lastpos = self._lastpos[0]
+            init_walkers = init_walkers[0]
 
         # now validate initialisation, ensuring all init pos have finite lnprob
         for i, param in enumerate(self._varying_parameters):
-            self._lastpos[..., i] = param.valid(self._lastpos[..., i])
+            init_walkers[..., i] = param.valid(init_walkers[..., i])
+
+        self._lastpos = init_walkers
 
     def acf(self, nburn=0, nthin=1):
         """
