@@ -193,8 +193,8 @@ class CurveFitter(object):
 
         # position is specified with array (no parallel tempering)
         if (isinstance(pos, np.ndarray) and
-              self._ntemps == -1 and
-              pos.shape == (nwalkers, nvary)):
+                self._ntemps == -1 and
+                pos.shape == (nwalkers, nvary)):
             init_walkers = np.copy(pos)
 
         # position is specified with array (with parallel tempering)

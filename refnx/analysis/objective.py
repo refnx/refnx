@@ -567,7 +567,9 @@ class Objective(BaseObjective):
 
         samples = np.arange(np.size(chains, 1))
 
-        choices = np.random.choice(samples, size=(min(ngen, samples.size),), replace=False)
+        choices = np.random.choice(samples,
+                                   size=(min(ngen, samples.size),),
+                                   replace=False)
 
         for choice in choices:
             yield chains[..., choice]
