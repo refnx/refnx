@@ -184,3 +184,49 @@ class FreeformVFP(Component):
         slabs[:, 4] = 1 - self(dist)
 
         return slabs
+
+    def profile(self):
+        """
+        Calculates the volume fraction profile
+
+        Returns
+        -------
+        z, vfp : np.ndarray
+            Distance from the interface, volume fraction profile
+        """
+        s = Structure()
+        s |= SLD(0)
+
+        m = SLD(1.)
+
+        for i, slab in enumerate(vfp.left_slabs):
+            layer = m(slab.thick.value, slab.rough.value)
+            if not i:
+                layer.rough.value = 0
+            layer.vfsolv.value = slab.vfsolv.value
+            s |= layer
+
+        polymer_slabs = vfp.slabs
+
+        for i in range(np.size(polymer_slabs, 0)):
+            layer = m(polymer_slabs[i, 0], polymer_slabs[i, 3])
+            layer.vfsolv.value = polymer_slabs[i, -1]
+            s |= layer
+
+        for i, slab in enumerate(vfp.right_slabs):
+            layer = m(slab.thick.value, slab.rough.value)
+            layer.vfsolv.value = 1 - slab.vfsolv.value
+            s |= layer
+
+        s |= SLD(0, 0)
+
+        # now calculate the VFP.
+        total_thickness = np.sum(s.slabs[:, 0])
+        zed = np.linspace(0, total_thickness, total_thickness + 1)
+        # SLD profile puts a very small roughness on the interfaces with zero
+        # roughness.
+        zed[0] = 0.01
+        z, s = s.sld_profile(z=zed)
+        s[0] = s[1]
+
+        return z, s
