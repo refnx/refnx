@@ -3,7 +3,7 @@ import os.path
 import numpy as np
 
 from scipy.interpolate import PchipInterpolator as Pchip
-from scipy.integrate import simps, trapz
+from scipy.integrate import simps
 
 from refnx.reflect import ReflectModel, Structure, Component, SLD, Slab
 from refnx.analysis import (Bounds, Parameter, Parameters,
@@ -127,12 +127,11 @@ class FreeformVFP(Component):
         moment : float
             n'th moment
         """
-        # points, profile = self.vol_fraction(params)
-        # profile *= points**moment
-        # val = simps(profile, points)
-        # area = self.vfp_area(params)
-        # return val / area
-        pass
+        zed, profile = self.profile()
+        profile *= zed**moment
+        val = simps(profile, zed)
+        area = self.profile_area()
+        return val / area
 
     @property
     def parameters(self):
