@@ -198,21 +198,21 @@ class FreeformVFP(Component):
 
         m = SLD(1.)
 
-        for i, slab in enumerate(vfp.left_slabs):
+        for i, slab in enumerate(self.left_slabs):
             layer = m(slab.thick.value, slab.rough.value)
             if not i:
                 layer.rough.value = 0
             layer.vfsolv.value = slab.vfsolv.value
             s |= layer
 
-        polymer_slabs = vfp.slabs
+        polymer_slabs = self.slabs
 
         for i in range(np.size(polymer_slabs, 0)):
             layer = m(polymer_slabs[i, 0], polymer_slabs[i, 3])
             layer.vfsolv.value = polymer_slabs[i, -1]
             s |= layer
 
-        for i, slab in enumerate(vfp.right_slabs):
+        for i, slab in enumerate(self.right_slabs):
             layer = m(slab.thick.value, slab.rough.value)
             layer.vfsolv.value = 1 - slab.vfsolv.value
             s |= layer
