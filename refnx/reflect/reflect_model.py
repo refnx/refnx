@@ -27,7 +27,7 @@ class ReflectModel(object):
         """
         Parameters
         ----------
-        structure : playtime.structure.Structure
+        structure : refnx.reflect.Structure
             The interfacial structure
         scale : float or Parameter, optional
             scale factor. All model values are multiplied by this value before

@@ -28,7 +28,7 @@ class Data1D(object):
             - data[0] - x
             - data[1] - y
             - data[2] - uncertainties on y, y_err
-            - data[3] - uncertainties of x, x_err
+            - data[3] - uncertainties on x, x_err
 
         `data` must be at least two long, `x` and `y`.
         If the tuple is at least 3 long then the third member is `y_err`.

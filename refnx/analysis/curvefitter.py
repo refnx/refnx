@@ -96,7 +96,7 @@ class CurveFitter(object):
         Parameters
         ----------
         objective : Objective
-            The :class:`playtime.objective.Objective` to be analysed.
+            The :class:`refnx.analysis.Objective` to be analysed.
         nwalkers : int, optional
             How many walkers you would like the sampler to have. Must be an
             even number. The more walkers the better.

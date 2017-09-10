@@ -151,7 +151,7 @@ class BaseObjective(object):
 class Objective(BaseObjective):
     """
     Objective function for using with curvefitters such as
-    `playtime.curvefitter.CurveFitter`
+    `refnx.analysis.curvefitter.CurveFitter`
     """
 
     def __init__(self, model, data, lnsigma=0, use_weights=True,
@@ -159,9 +159,9 @@ class Objective(BaseObjective):
         """
         Parameters
         ----------
-        model : playtime.model.Model
+        model : refnx.analysis.Model
             the generative model function. One can also provide an object that
-            inherits `playtime.model.Model`.
+            inherits `refnx.analysis.Model`.
         data : refnx.dataset.Data1D
             data to be analysed.
         lnsigma : float or Parameter, optional
@@ -611,7 +611,7 @@ class Objective(BaseObjective):
 class GlobalObjective(Objective):
     """
     Global Objective function for simultaneous fitting with
-    `playtime.curvefitter.CurveFitter`
+    `refnx.analysis.CurveFitter`
     """
 
     def __init__(self, objectives):
