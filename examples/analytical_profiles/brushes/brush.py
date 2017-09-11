@@ -9,6 +9,8 @@ from refnx.reflect import ReflectModel, Structure, Component, SLD, Slab
 from refnx.analysis import (Bounds, Parameter, Parameters,
                             possibly_create_parameter)
 
+EPS = np.finfo(float).eps
+
 
 class FreeformVFP(Component):
     """
@@ -81,8 +83,11 @@ class FreeformVFP(Component):
         zeds = np.cumsum(self.dz)
 
         # if dz's sum to more than 1, then normalise to unit interval.
+        # clipped to 0 and 1 because we pad on the LHS, RHS later
+        # and we need the array to be monotonically increasing
         if np.sum(self.dz) > 1:
             zeds /= np.sum(self.dz)
+            zeds = np.clip(zeds, 0, 1)
 
         vf = np.array(self.vf)
 
@@ -102,10 +107,10 @@ class FreeformVFP(Component):
 
         # do you require zero gradient at either end of the spline?
         if self.zgrad:
-            zeds = np.r_[-1.1, 0, zeds, 1, 2.1]
+            zeds = np.r_[-1.1, 0 - EPS, zeds, 1 + EPS, 2.1]
             vf = np.r_[left_end, left_end, vf, right_end, right_end]
         else:
-            zeds = np.r_[0, zeds, 1]
+            zeds = np.r_[0 - EPS, zeds, 1 + EPS]
             vf = np.r_[left_end, vf, right_end]
         # print(zeds, vf)
 
@@ -184,7 +189,7 @@ class FreeformVFP(Component):
 
         return slabs
 
-    def profile(self):
+    def profile(self, extra=False):
         """
         Calculates the volume fraction profile
 
@@ -206,6 +211,7 @@ class FreeformVFP(Component):
             s |= layer
 
         polymer_slabs = self.slabs
+        offset = np.sum(s.slabs[:, 0])
 
         for i in range(np.size(polymer_slabs, 0)):
             layer = m(polymer_slabs[i, 0], polymer_slabs[i, 3])
@@ -228,4 +234,15 @@ class FreeformVFP(Component):
         z, s = s.sld_profile(z=zed)
         s[0] = s[1]
 
-        return z, s
+        # perhaps you'd like to plot the knot locations
+        zeds = np.cumsum(self.dz)
+        if np.sum(self.dz) > 1:
+            zeds /= np.sum(self.dz)
+            zeds = np.clip(zeds, 0, 1)
+
+        zed_knots = zeds * float(self.extent) + offset
+
+        if extra:
+            return z, s, zed_knots, np.array(self.vf)
+        else:
+            return z, s
