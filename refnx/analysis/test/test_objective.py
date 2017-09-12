@@ -192,6 +192,9 @@ class TestObjective(object):
         # Find the maximum likelihood value.
         result = minimize(bo.nll, theta)
 
+        # for repeatable sampling
+        np.random.seed(1)
+
         ndim, nwalkers = 3, 100
         pos = [result["x"] + 1e-4 * np.random.randn(ndim) for
                i in range(nwalkers)]
@@ -205,17 +208,17 @@ class TestObjective(object):
         m_mc, b_mc, f_mc = map(lambda v: (v[1], v[2] - v[1], v[1] - v[0]),
                                zip(*np.percentile(samples, [16, 50, 84],
                                                   axis=0)))
-        assert_almost_equal(m_mc, (-1.006610168076133,
-                                   0.076119420801836424,
-                                   0.077341488854482332))
+        assert_almost_equal(m_mc, (-1.0071664,
+                                   0.0809444,
+                                   0.0784894))
 
-        assert_almost_equal(b_mc, (4.5416267081353094,
-                                   0.35581750201588402,
-                                   0.34489351756496678))
+        assert_almost_equal(b_mc, (4.5428107,
+                                   0.3549174,
+                                   0.3673304))
 
-        assert_almost_equal(f_mc, (0.46264188436968745,
-                                   0.078955744624578661,
-                                   0.061168332596617969))
+        assert_almost_equal(f_mc, (0.4610898,
+                                   0.0823304,
+                                   0.0640812))
 
         # # smoke test for covariance matrix
         bo.parameters = np.array(result['x'])
