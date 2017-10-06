@@ -396,7 +396,8 @@ class PlatypusNexus(object):
     def process(self, h5norm=None, lo_wavelength=2.5, hi_wavelength=19.,
                 background=True, direct=False, omega=None, twotheta=None,
                 rebin_percent=1., wavelength_bins=None, normalise=True,
-                integrate=-1, eventmode=None, event_folder=None, peak_pos=None,
+                integrate=-1, eventmode=None, event_folder=None,
+                peak_pos=None, peak_pos_tol=0.01,
                 background_mask=None, normalise_bins=True,
                 manual_beam_find=None, **kwds):
         r"""
@@ -469,7 +470,10 @@ class PlatypusNexus(object):
                 None           - use the automatic beam finder, falling back to
                                  `manual_beam_find` if it's provided.
                 (float, float) - specify the peak and peak standard deviation.
-
+        peak_pos_tol : float
+            Convergence tolerance for the beam position and width to be
+            accepted from successive beam-finder calculations; see the
+            `tol` parameter in the `find_specular_ridge` function.
         background_mask : array_like
             An array of bool that specifies which y-pixels to use for
             background subtraction.  Should be the same length as the number of
@@ -724,6 +728,7 @@ class PlatypusNexus(object):
             # use the auto finder, falling back to manual_beam_find
             ret = find_specular_ridge(detector,
                                       detector_sd,
+                                      tol=peak_pos_tol,
                                       manual_beam_find=manual_beam_find)
             beam_centre, beam_sd, lopx, hipx, full_backgnd_mask = ret
         else:
