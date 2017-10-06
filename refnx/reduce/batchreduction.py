@@ -136,6 +136,28 @@ class ReductionCache(list):
             self.write_cache()
         return data
 
+    def delete_rows(self, row_numbers):
+        """ Delete a row from the reduction cache
+
+        Parameters
+        ----------
+        row_numbers: list of int
+            row numbers (from the reduction spreadsheet) that should be
+            deleted from the cache
+        """
+
+        for row in row_numbers:
+            if row not in self.row_cache:
+                print("Not deleting unknown row %s" % row)
+                continue
+
+            self[self.row_cache[row]] = None
+            del self.row_cache[row]
+            print("Deleted row %s" % row)
+
+        if self.persistent:
+            self.write_cache()
+
     def run(self, run_number):
         """ select a single data set by run number
 
@@ -174,7 +196,8 @@ class ReductionCache(list):
         row_numbers : iterable
             row numbers to find
         """
-        return [entry for entry in self if entry.row in row_numbers]
+        return [entry for entry in self
+                if entry is not None and entry.row in row_numbers]
 
     def name(self, name):
         """ select a single data set by sample name
@@ -194,7 +217,8 @@ class ReductionCache(list):
         name : str
             fragment that must be at the start of the sample name
         """
-        matches = [entry for entry in self if entry.name.startswith(name)]
+        matches = [entry for entry in self
+                   if entry is not None and entry.name.startswith(name)]
         return matches
 
     def name_search(self, search):
@@ -223,7 +247,8 @@ class ReductionCache(list):
             name_re = re.compile(search)
         else:
             name_re = search
-        matches = [entry for entry in self if name_re.search(entry.name)]
+        matches = [entry for entry in self
+                   if entry is not None and name_re.search(entry.name)]
         return matches
 
     def summary(self):
@@ -242,7 +267,8 @@ class ReductionCache(list):
         """
         df = pd.DataFrame(columns=self[0].entry.axes)
         for i, entry in enumerate(self):
-            df.loc[i] = entry.entry
+            if entry is not None:
+                df.loc[i] = entry.entry
         return df
 
     def write_cache(self, filename=None):
