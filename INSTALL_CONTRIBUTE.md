@@ -9,7 +9,7 @@ Monte Carlo to obtain posterior distributions for curvefitting problems.
 
 *refnx* has been tested on Python 2.7, 3.4, 3.5 and 3.6. It requires the *numpy,
 scipy, cython, pandas, emcee* packages to work. Additional features require the
-*pytest, h5py, xlrd, uncertainties, ptemcee* packages. To build the bleeding edge
+*pytest, h5py, xlrd, uncertainties, ptemcee, yaml* packages. To build the bleeding edge
 code you will need to have access to a C-compiler to build a couple of Python
 extensions. C-compilers should be installed on Linux. On OSX you will need to
 install Xcode and the command line tools. On Windows you will need to install

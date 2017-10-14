@@ -7,12 +7,14 @@ Batch reduction of reflectometry data based on a spreadsheet
 from __future__ import print_function, division
 
 import collections
+import io
 import numpy as np
 import os.path
 import pandas as pd
 import pickle
 import re
 import sys
+import yaml
 import warnings
 
 try:
@@ -360,16 +362,17 @@ class BatchReducer:
     name is set will be processed.
     """
 
-    def __init__(self, filename, data_folder=None, verbose=True,
-                 persistent=True, **kwds):
+    def __init__(self, filename=None, data_folder=None, verbose=True,
+                 persistent=True, configfile=None, **kwds):
         """
         Create a batch reducer using metadata from a spreadsheet
 
         Parameters
         ----------
-        filename : str
+        filename : str, optional
             The filename of the spreadsheet to be used. Must be readable by
-            `pandas.read_excel` (`.xls` and `.xlsx` files).
+            `pandas.read_excel` (`.xls` and `.xlsx` files). If not specified,
+            it must be included in the config file.
         data_folder : str, None
             Filesystem path for the raw data files. If `data_folder is None`
             then the current working directory is used.
@@ -378,16 +381,38 @@ class BatchReducer:
         persistent : bool, optional
             Reduction cache should be stored on disk to allow the reducer to
             be restarted without having to rereduce the data.
+        configfile : string, optional
+            Filename of a YAML config file that can be loaded into a
+            `BatchReducerConfiguration`. Config options will be passed onto
+            the `refnx.reduce.reduce_stitch` call.
         kwds : dict, optional
             Options passed directly to `refnx.reduce.reduce_stitch`. Look at
             that docstring for complete specification of options.
         """
-        self.cache = ReductionCache(persistent)
-        self.filename = filename
+        if configfile:
+            self.config = BatchReducerConfiguration.from_yaml_file(configfile)
+        else:
+            self.config = BatchReducerConfiguration()
 
-        self.data_folder = os.getcwd()
+        self.cache = ReductionCache(persistent)
+
+        if filename:
+            self.filename = filename
+        elif 'sheet' in self.config:
+            self.filename = self.config['sheet']
+        else:
+            raise ValueError("The filename must either be in the config file "
+                             "or specified")
+        if configfile:
+            self.filename = os.path.join(os.path.dirname(configfile),
+                                         self.filename)
+
         if data_folder is not None:
             self.data_folder = data_folder
+        elif 'data_folder' in self.config:
+            self.data_folder = self.config['data_folder']
+        else:
+            self.data_folder = os.getcwd()
 
         self.kwds = kwds
         self.kwds['data_folder'] = self.data_folder
@@ -428,12 +453,21 @@ class BatchReducer:
                           (entry['source'], entry['name']))
             return None, None
 
-        ds, fname = reduce_stitch(runs, directs, **self.kwds)
+        options = self.kwds.copy()
+        confname = entry.get('config')
+        if not confname or confname not in self.config:
+            # use the default config
+            options.update(self.config.default)
+        else:
+            # load the requested config
+            options.update(self.config[confname])
+
+        ds, fname = reduce_stitch(runs, directs, **options)
 
         return ds, fname
 
     def load_runs(self):
-        cols = 'A:I'
+        cols = 'A:J'
         all_runs = pd.read_excel(
             self.filename,
             usecols=cols,
@@ -556,3 +590,52 @@ def run_list(entry, mode='refl'):
 
     # valid = [int(r) for r in l if not np.isnan(r)]
     return [int(v) for v in valid]
+
+
+class BatchReducerConfiguration(dict):
+    """ Configuration for the batch reducer
+
+    Example:
+
+    config = BatchReducerConfiguration.from_yaml_file('batchreducer.yml')
+    """
+    def __init__(self, yml=None):
+        """ create set of configurations from a yaml object"""
+        self.config = None
+        self.default_name = 'default'
+        self[self.default_name] = {}
+
+        if yml is not None:
+            self._import(yml)
+
+    @property
+    def default(self):
+        """ return the default configuration """
+        return self[self.default_name]
+
+    def _import(self, configs):
+        self.update(configs)
+        self._import_reducer_configs(configs['reducer-configs'])
+
+    def _import_reducer_configs(self, configs):
+        def _name(conf):
+            return list(conf.keys())[0]
+
+        self.default_name = _name(configs[0])
+
+        for config in configs:
+            name = _name(config)
+            self[name] = config[name]
+
+    @classmethod
+    def from_yaml_string(cls, string):
+        """ create a BatchReducerConfiguration from a YAML string """
+        conf = yaml.safe_load(io.StringIO(string))
+        return cls(conf)
+
+    @classmethod
+    def from_yaml_file(cls, filename):
+        """ create a BatchReducerConfiguration from a YAML file """
+        with open(filename) as fh:
+            conf = yaml.safe_load(fh)
+        return cls(conf)
