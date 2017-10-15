@@ -356,7 +356,7 @@ class SLD(object):
 
         >>> # an SLD object representing Silicon Dioxide
         >>> sio2 = SLD(3.47, name='SiO2')
-        >>> # create a Slab of SiO2 20 A in thickness, with a 3 A roughness
+        >>> # create a Slab of SiO2 20 A in thickness, with a 3 A roughness
         >>> sio2_layer = SLD(20, 3)
         """
         self.name = name
