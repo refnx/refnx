@@ -530,6 +530,8 @@ def reduce_stitch(reflect_list, direct_list, norm_file_num=None,
                                   trim_trailing=trim_trailing)
 
     fname = None
+    fname_dat = None
+
     if save:
         # this will give us <fname>.nx.hdf
         # if reflect_list was an integer you'll get PLP0000708.nx.hdf
