@@ -543,6 +543,8 @@ def reduce_stitch(reflect_list, direct_list, norm_file_num=None,
         fname_xml = 'c_{0}.xml'.format(fname)
         with open(fname_xml, 'wb') as f:
             combined_dataset.save_xml(f)
+    else:
+        fname_dat = None
 
     return combined_dataset, fname_dat
 
