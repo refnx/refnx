@@ -12,7 +12,8 @@ from scipy.optimize import minimize, differential_evolution, least_squares
 
 from refnx.analysis import Objective, Interval, PDF, is_parameter
 from refnx._lib import flatten
-from refnx._lib import unique as f_unique, possibly_create_pool
+from refnx._lib import (unique as f_unique, possibly_create_pool,
+                        possibly_open_file)
 
 MCMCResult = namedtuple('MCMCResult', ['name', 'param', 'stderr', 'chain',
                                        'median'])
@@ -302,7 +303,10 @@ class CurveFitter(object):
             then that `np.random.RandomState` instance is used. Specify
             `random_state` for repeatable sampling
         f : file-like or str
-            File to incrementally save chain progress to
+            File to incrementally save chain progress to. Each row in the file
+            is a flattened array of size `(nwalkers, ndim)` or
+            `(ntemps, nwalkers, ndim)`. There should be `steps` rows in the
+            file.
         callback : callable
             callback function to be called at each iteration step
         verbose : bool, optional
@@ -336,6 +340,15 @@ class CurveFitter(object):
 
         start_time = time.time()
 
+        # make sure the checkpoint file exists
+        if f is not None:
+            with possibly_open_file(f, 'w') as g:
+                # write the shape of each step of the chain
+                g.write('# ')
+                shape = self._lastpos.shape
+                g.write(', '.join(map(str, shape)))
+                g.write('\n')
+
         # for saving progress to file, and printing progress to stdout.
         def _callback_wrapper(pos, lnprob, steps_completed):
             if verbose:
@@ -355,7 +368,10 @@ class CurveFitter(object):
             if callback is not None:
                 callback(pos, lnprob)
             if f is not None:
-                np.save(f, self.sampler.chain)
+                with possibly_open_file(f, 'a') as g:
+                    # (nwalkers, dim) or (ntemps, nwalkers, dim)
+                    g.write('\n')
+                    g.write(' '.join(map(str, pos.ravel())))
 
         # set the random state of the sampler
         # normally one could give this as an argument to the sample method
