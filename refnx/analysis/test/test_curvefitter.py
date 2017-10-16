@@ -246,6 +246,8 @@ class TestFitterGauss(object):
         # test that the checkpoint worked
         check_array = np.loadtxt(checkpoint)
         assert_equal(check_array.shape, (200, f._nwalkers * f.nvary))
+        assert_allclose(check_array.reshape(200, f._nwalkers, f.nvary),
+                        f.sampler.chain)
 
     def test_best_unweighted(self):
         self.objective.use_weights = False
