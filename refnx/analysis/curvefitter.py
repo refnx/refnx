@@ -338,12 +338,13 @@ class CurveFitter(object):
         start_time = time.time()
 
         # make sure the checkpoint file exists
-        with possibly_open_file(f, 'w') as g:
-            # write the shape of each step of the chain
-            g.write('# ')
-            shape = self._lastpos.shape
-            g.write(', '.join(map(str, shape)))
-            g.write('\n')
+        if f is not None:
+            with possibly_open_file(f, 'w') as g:
+                # write the shape of each step of the chain
+                g.write('# ')
+                shape = self._lastpos.shape
+                g.write(', '.join(map(str, shape)))
+                g.write('\n')
 
         # for saving progress to file, and printing progress to stdout.
         def _callback_wrapper(pos, lnprob, steps_completed):
