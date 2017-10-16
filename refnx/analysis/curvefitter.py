@@ -303,7 +303,10 @@ class CurveFitter(object):
             then that `np.random.RandomState` instance is used. Specify
             `random_state` for repeatable sampling
         f : file-like or str
-            File to incrementally save chain progress to
+            File to incrementally save chain progress to. Each row in the file
+            is a flattened array of size `(nwalkers, ndim)` or
+            `(ntemps, nwalkers, ndim)`. There should be `steps` rows in the
+            file.
         callback : callable
             callback function to be called at each iteration step
         verbose : bool, optional

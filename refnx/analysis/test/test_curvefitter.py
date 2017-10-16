@@ -238,15 +238,15 @@ class TestFitterGauss(object):
         # compare samples to best_weighted_errors
         np.random.seed(1)
         f.initialise('jitter')
-        f.sample(steps=200, random_state=1, verbose=False, f=checkpoint)
+        f.sample(steps=201, random_state=1, verbose=False, f=checkpoint)
         f.process_chain(nburn=100, nthin=20)
         uncertainties = [param.stderr for param in self.params]
         assert_allclose(uncertainties, self.best_weighted_errors, rtol=0.15)
 
         # test that the checkpoint worked
         check_array = np.loadtxt(checkpoint)
-        assert_equal(check_array.shape, (200, f._nwalkers * f.nvary))
-        assert_allclose(check_array.reshape(200, f._nwalkers, f.nvary),
+        check_array = check_array.reshape(201, f._nwalkers, f.nvary)
+        assert_allclose(np.swapaxes(check_array, 0, 1),
                         f.sampler.chain)
 
     def test_best_unweighted(self):
