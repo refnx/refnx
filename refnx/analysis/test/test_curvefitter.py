@@ -124,6 +124,16 @@ class TestCurveFitter(object):
         assert_equal(mcfitter._lastpos.shape, (100, 2))
         mcfitter.initialise('jitter')
         assert_equal(mcfitter._lastpos.shape, (100, 2))
+        # initialise with last position
+        mcfitter.sample(steps=1)
+        chain = mcfitter.sampler.chain
+        mcfitter.initialise(pos=chain[..., -1, :])
+        assert_equal(mcfitter._lastpos.shape, (100, 2))
+        # initialise with chain
+        mcfitter.sample(steps=2)
+        chain = mcfitter.sampler.chain
+        mcfitter.initialise(pos=chain)
+        assert_equal(mcfitter._lastpos, chain[:, -1, :])
 
         # initialise for Parallel tempering
         mcfitter = CurveFitter(self.objective, ntemps=20, nwalkers=100)
@@ -133,6 +143,16 @@ class TestCurveFitter(object):
         assert_equal(mcfitter._lastpos.shape, (20, 100, 2))
         mcfitter.initialise('jitter')
         assert_equal(mcfitter._lastpos.shape, (20, 100, 2))
+        # initialise with last position
+        mcfitter.sample(steps=1)
+        chain = mcfitter.sampler.chain
+        mcfitter.initialise(pos=chain[..., -1, :])
+        assert_equal(mcfitter._lastpos.shape, (20, 100, 2))
+        # initialise with chain
+        mcfitter.sample(steps=2)
+        chain = mcfitter.sampler.chain
+        mcfitter.initialise(pos=np.copy(chain))
+        assert_equal(mcfitter._lastpos, chain[:, :, -1, :])
 
     def test_fit_smoke(self):
         # smoke tests to check that fit runs
@@ -248,6 +268,10 @@ class TestFitterGauss(object):
         check_array = check_array.reshape(201, f._nwalkers, f.nvary)
         assert_allclose(np.swapaxes(check_array, 0, 1),
                         f.sampler.chain)
+
+        # test loading the checkpoint
+        chain = CurveFitter.load_chain(checkpoint)
+        assert_equal(chain.shape, (f._nwalkers, 201, f.nvary))
 
     def test_best_unweighted(self):
         self.objective.use_weights = False

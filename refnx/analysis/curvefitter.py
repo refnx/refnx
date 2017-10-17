@@ -4,6 +4,7 @@ from functools import partial
 from collections import namedtuple
 import sys
 import time
+import re
 
 import numpy as np
 import emcee as emcee
@@ -162,6 +163,37 @@ class CurveFitter(object):
 
         self._lastpos = None
 
+    @staticmethod
+    def load_chain(f):
+        """
+        Loads a chain from disk. Does not change the state of a CurveFitter
+        object.
+
+        Parameters
+        ----------
+        f : str or file-like
+            File containing the chain.
+
+        Returns
+        -------
+        chain : array
+            The loaded chain - `(nwalkers, nsteps, ndim)` or
+            `(ntemps, nwalkers, nsteps, ndim)`
+        """
+        chain = np.loadtxt(f)
+
+        with possibly_open_file(f, 'r') as g:
+            # read header
+            header = g.readline()
+            match = re.match("#\s+(\d+),\s+(\d+)", header)
+            if match is not None:
+                walkers, ndim = map(int, match.groups())
+            else:
+                raise ValueError("Couldn't read header line of chain file")
+
+            chain = np.reshape(chain, (-1, walkers, ndim))
+            return np.swapaxes(chain, 0, -2)
+
     def initialise(self, pos='covar'):
         """
         Initialise the emcee walkers.
@@ -176,9 +208,9 @@ class CurveFitter(object):
             - 'prior', sample random locations from the prior
             - pos, an array that specifies a snapshot of the walkers. Has shape
                 `(nwalkers, ndim)`, or `(ntemps, nwalkers, ndim)` if parallel
-                 tempering is employed
+                 tempering is employed. You can also provide a previously
+                 created chain.
         """
-        self.sampler.reset()
         nwalkers = self._nwalkers
         nvary = self.nvary
 
@@ -196,13 +228,18 @@ class CurveFitter(object):
         if (isinstance(pos, np.ndarray) and
                 self._ntemps == -1 and
                 pos.shape == (nwalkers, nvary)):
-            init_walkers = np.copy(pos)
+            init_walkers = np.copy(pos)[np.newaxis]
 
         # position is specified with array (with parallel tempering)
         elif (isinstance(pos, np.ndarray) and
               self._ntemps > -1 and
               pos.shape == (_ntemps, nwalkers, nvary)):
             init_walkers = np.copy(pos)
+
+        # position is specified with existing chain
+        elif isinstance(pos, np.ndarray):
+            self.initialise_with_chain(pos)
+            return
 
         # position is to be created from covariance matrix
         elif pos == 'covar':
@@ -252,6 +289,37 @@ class CurveFitter(object):
             init_walkers[..., i] = param.valid(init_walkers[..., i])
 
         self._lastpos = init_walkers
+
+        # finally reset the sampler to reset the chain
+        # you have to do this at the end, not at the start because resetting
+        # makes self.sampler.chain == None and the PTsampler creation doesn't
+        # work
+        self.sampler.reset()
+
+    def initialise_with_chain(self, chain):
+        """
+        Initialise sampler with a pre-existing chain
+
+        Parameters
+        ----------
+        chain : array
+            Array of size `(ntemps, nwalkers, steps, ndim)` or
+            `(nwalkers, steps, ndim)`, containing a chain from a previous
+            sampling run.
+        """
+        # we should be left with (nwalkers, ndim) or (ntemp, nwalkers, ndim)
+        existing_chain_shape = list(self.sampler.chain.shape)
+        existing_chain_shape.pop(-2)
+
+        chain_shape = list(chain.shape)
+        chain_shape.pop(-2)
+
+        # if the shapes are the same, then we can initialise
+        if existing_chain_shape == chain_shape:
+            self.initialise(pos=chain[..., -1, :])
+        else:
+            raise ValueError("You tried to initialise with a chain, but it was"
+                             " the wrong shape")
 
     def acf(self, nburn=0, nthin=1):
         """
@@ -340,17 +408,8 @@ class CurveFitter(object):
 
         start_time = time.time()
 
-        # make sure the checkpoint file exists
-        if f is not None:
-            with possibly_open_file(f, 'w') as g:
-                # write the shape of each step of the chain
-                g.write('# ')
-                shape = self._lastpos.shape
-                g.write(', '.join(map(str, shape)))
-                g.write('\n')
-
         # for saving progress to file, and printing progress to stdout.
-        def _callback_wrapper(pos, lnprob, steps_completed):
+        def _callback_wrapper(pos, lnprob, steps_completed, h=None):
             if verbose:
                 steps_completed += 1
                 width = 50
@@ -367,11 +426,10 @@ class CurveFitter(object):
                                                  secs))
             if callback is not None:
                 callback(pos, lnprob)
-            if f is not None:
-                with possibly_open_file(f, 'a') as g:
-                    # (nwalkers, dim) or (ntemps, nwalkers, dim)
-                    g.write('\n')
-                    g.write(' '.join(map(str, pos.ravel())))
+            if h is not None:
+                # (nwalkers, dim) or (ntemps, nwalkers, dim)
+                h.write(' '.join(map(str, pos.ravel())))
+                h.write('\n')
 
         # set the random state of the sampler
         # normally one could give this as an argument to the sample method
@@ -388,9 +446,18 @@ class CurveFitter(object):
             param.stderr = None
             param.chain = None
 
+        # make sure the checkpoint file exists
+        if f is not None:
+            with possibly_open_file(f, 'w') as h:
+                # write the shape of each step of the chain
+                h.write('# ')
+                shape = self._lastpos.shape
+                h.write(', '.join(map(str, shape)))
+                h.write('\n')
+
         # using context manager means we kill off zombie pool objects
         # but does mean that the pool has to be specified each time.
-        with possibly_create_pool(pool) as g:
+        with possibly_create_pool(pool) as g, possibly_open_file(f, 'a') as h:
             # if you're not creating more than 1 thread, then don't bother with
             # a pool.
             if pool == 1:
@@ -402,7 +469,7 @@ class CurveFitter(object):
                                                            iterations=steps,
                                                            thin=nthin)):
                 self._lastpos, lnprob = result[0:2]
-                _callback_wrapper(self._lastpos, lnprob, i)
+                _callback_wrapper(self._lastpos, lnprob, i, h=h)
 
         self.sampler.pool = None
         # self._lastpos = result[0]

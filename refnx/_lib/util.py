@@ -183,7 +183,7 @@ def possibly_open_file(f, mode='wb'):
         this context manager.
     """
     close_file = False
-    if hasattr(f, 'read') and hasattr(f, 'write'):
+    if (hasattr(f, 'read') and hasattr(f, 'write')) or f is None:
         g = f
     else:
         g = open(f, mode)
