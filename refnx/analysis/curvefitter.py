@@ -585,7 +585,7 @@ def load_chain(f):
 
 def process_chain(objective, chain, nburn=0, nthin=1, flatchain=False):
     """
-    Process the chain produced by the sampler.
+    Process the chain produced by a sampler for a given Objective
 
     Parameters
     ----------
@@ -615,20 +615,17 @@ def process_chain(objective, chain, nburn=0, nthin=1, flatchain=False):
 
     Notes
     -----
-    One can call `process_chain` many times, the chain associated with the
-    CurveFitter object is unaltered. The chain is stored in the
-    `CurveFitter.sampler.chain` attribute and has shape
-    `(nwalkers, iterations, nvary)` (ntemps == -1) or
-    `(ntemps, nwalkers, iterations, nvary)` (ntemps != -1) if parallel
-    tempering was employed.
+    The chain should have the shape `(nwalkers, iterations, nvary)` or
+    `(ntemps, nwalkers, iterations, nvary)` if parallel tempering was
+    employed.
     The burned and thinned chain is created via:
-    `chain[..., nburn::nthin]`.
+    `chain[..., nburn::nthin, :]`.
     Note, if parallel tempering is employed, then only the first row
     of the parallel tempering chain is processed and returned as it
     corresponds to the (lowest energy) target distribution.
     If `flatten is True` then the burned/thinned chain is reshaped and
-    `arr.reshape(-1, nvary)` is returned. This method also has the effect
-    of setting the parameter stderr's.
+    `arr.reshape(-1, nvary)` is returned.
+    This function has the effect of setting the parameter stderr's.
     """
     chain = chain[..., nburn::nthin, :]
     shape = chain.shape
