@@ -166,7 +166,8 @@ class CurveFitter(object):
     @staticmethod
     def load_chain(f):
         """
-        Loads a chain from disc
+        Loads a chain from disk. Does not change the state of a CurveFitter
+        object.
 
         Parameters
         ----------
@@ -207,9 +208,9 @@ class CurveFitter(object):
             - 'prior', sample random locations from the prior
             - pos, an array that specifies a snapshot of the walkers. Has shape
                 `(nwalkers, ndim)`, or `(ntemps, nwalkers, ndim)` if parallel
-                 tempering is employed
+                 tempering is employed. You can also provide a previously
+                 created chain.
         """
-        self.sampler.reset()
         nwalkers = self._nwalkers
         nvary = self.nvary
 
@@ -227,13 +228,18 @@ class CurveFitter(object):
         if (isinstance(pos, np.ndarray) and
                 self._ntemps == -1 and
                 pos.shape == (nwalkers, nvary)):
-            init_walkers = np.copy(pos)
+            init_walkers = np.copy(pos)[np.newaxis]
 
         # position is specified with array (with parallel tempering)
         elif (isinstance(pos, np.ndarray) and
               self._ntemps > -1 and
               pos.shape == (_ntemps, nwalkers, nvary)):
             init_walkers = np.copy(pos)
+
+        # position is specified with existing chain
+        elif isinstance(pos, np.ndarray):
+            self.initialise_with_chain(pos)
+            return
 
         # position is to be created from covariance matrix
         elif pos == 'covar':
@@ -283,6 +289,37 @@ class CurveFitter(object):
             init_walkers[..., i] = param.valid(init_walkers[..., i])
 
         self._lastpos = init_walkers
+
+        # finally reset the sampler to reset the chain
+        # you have to do this at the end, not at the start because resetting
+        # makes self.sampler.chain == None and the PTsampler creation doesn't
+        # work
+        self.sampler.reset()
+
+    def initialise_with_chain(self, chain):
+        """
+        Initialise sampler with a pre-existing chain
+
+        Parameters
+        ----------
+        chain : array
+            Array of size `(ntemps, nwalkers, steps, ndim)` or
+            `(nwalkers, steps, ndim)`, containing a chain from a previous
+            sampling run.
+        """
+        # we should be left with (nwalkers, ndim) or (ntemp, nwalkers, ndim)
+        existing_chain_shape = list(self.sampler.chain.shape)
+        existing_chain_shape.pop(-2)
+
+        chain_shape = list(chain.shape)
+        chain_shape.pop(-2)
+
+        # if the shapes are the same, then we can initialise
+        if existing_chain_shape == chain_shape:
+            self.initialise(pos=chain[..., -1, :])
+        else:
+            raise ValueError("You tried to initialise with a chain, but it was"
+                             " the wrong shape")
 
     def acf(self, nburn=0, nthin=1):
         """
