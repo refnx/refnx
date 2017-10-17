@@ -249,6 +249,10 @@ class TestFitterGauss(object):
         assert_allclose(np.swapaxes(check_array, 0, 1),
                         f.sampler.chain)
 
+        # test loading the checkpoint
+        chain = CurveFitter.load_chain(checkpoint)
+        assert_equal(chain.shape, (f._nwalkers, 201, f.nvary))
+
     def test_best_unweighted(self):
         self.objective.use_weights = False
         f = CurveFitter(self.objective, threads=1)

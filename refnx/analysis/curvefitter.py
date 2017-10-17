@@ -4,6 +4,7 @@ from functools import partial
 from collections import namedtuple
 import sys
 import time
+import re
 
 import numpy as np
 import emcee as emcee
@@ -161,6 +162,36 @@ class CurveFitter(object):
             self._ntemps = self.sampler.ntemps
 
         self._lastpos = None
+
+    @staticmethod
+    def load_chain(f):
+        """
+        Loads a chain from disc
+
+        Parameters
+        ----------
+        f : str or file-like
+            File containing the chain.
+
+        Returns
+        -------
+        chain : array
+            The loaded chain - `(nwalkers, nsteps, ndim)` or
+            `(ntemps, nwalkers, nsteps, ndim)`
+        """
+        chain = np.loadtxt(f)
+
+        with possibly_open_file(f, 'r') as g:
+            # read header
+            header = g.readline()
+            match = re.match("#\s+(\d+),\s+(\d+)", header)
+            if match is not None:
+                walkers, ndim = map(int, match.groups())
+            else:
+                raise ValueError("Couldn't read header line of chain file")
+
+            chain = np.reshape(chain, (-1, walkers, ndim))
+            return np.swapaxes(chain, 0, -2)
 
     def initialise(self, pos='covar'):
         """
@@ -340,17 +371,8 @@ class CurveFitter(object):
 
         start_time = time.time()
 
-        # make sure the checkpoint file exists
-        if f is not None:
-            with possibly_open_file(f, 'w') as g:
-                # write the shape of each step of the chain
-                g.write('# ')
-                shape = self._lastpos.shape
-                g.write(', '.join(map(str, shape)))
-                g.write('\n')
-
         # for saving progress to file, and printing progress to stdout.
-        def _callback_wrapper(pos, lnprob, steps_completed):
+        def _callback_wrapper(pos, lnprob, steps_completed, h=None):
             if verbose:
                 steps_completed += 1
                 width = 50
@@ -367,11 +389,10 @@ class CurveFitter(object):
                                                  secs))
             if callback is not None:
                 callback(pos, lnprob)
-            if f is not None:
-                with possibly_open_file(f, 'a') as g:
-                    # (nwalkers, dim) or (ntemps, nwalkers, dim)
-                    g.write('\n')
-                    g.write(' '.join(map(str, pos.ravel())))
+            if h is not None:
+                # (nwalkers, dim) or (ntemps, nwalkers, dim)
+                h.write(' '.join(map(str, pos.ravel())))
+                h.write('\n')
 
         # set the random state of the sampler
         # normally one could give this as an argument to the sample method
@@ -388,9 +409,18 @@ class CurveFitter(object):
             param.stderr = None
             param.chain = None
 
+        # make sure the checkpoint file exists
+        if f is not None:
+            with possibly_open_file(f, 'w') as h:
+                # write the shape of each step of the chain
+                h.write('# ')
+                shape = self._lastpos.shape
+                h.write(', '.join(map(str, shape)))
+                h.write('\n')
+
         # using context manager means we kill off zombie pool objects
         # but does mean that the pool has to be specified each time.
-        with possibly_create_pool(pool) as g:
+        with possibly_create_pool(pool) as g, possibly_open_file(f, 'a') as h:
             # if you're not creating more than 1 thread, then don't bother with
             # a pool.
             if pool == 1:
@@ -402,7 +432,7 @@ class CurveFitter(object):
                                                            iterations=steps,
                                                            thin=nthin)):
                 self._lastpos, lnprob = result[0:2]
-                _callback_wrapper(self._lastpos, lnprob, i)
+                _callback_wrapper(self._lastpos, lnprob, i, h=h)
 
         self.sampler.pool = None
         # self._lastpos = result[0]
