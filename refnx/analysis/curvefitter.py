@@ -163,37 +163,6 @@ class CurveFitter(object):
 
         self._lastpos = None
 
-    @staticmethod
-    def load_chain(f):
-        """
-        Loads a chain from disk. Does not change the state of a CurveFitter
-        object.
-
-        Parameters
-        ----------
-        f : str or file-like
-            File containing the chain.
-
-        Returns
-        -------
-        chain : array
-            The loaded chain - `(nwalkers, nsteps, ndim)` or
-            `(ntemps, nwalkers, nsteps, ndim)`
-        """
-        chain = np.loadtxt(f)
-
-        with possibly_open_file(f, 'r') as g:
-            # read header
-            header = g.readline()
-            match = re.match("#\s+(\d+),\s+(\d+)", header)
-            if match is not None:
-                walkers, ndim = map(int, match.groups())
-            else:
-                raise ValueError("Couldn't read header line of chain file")
-
-            chain = np.reshape(chain, (-1, walkers, ndim))
-            return np.swapaxes(chain, 0, -2)
-
     def initialise(self, pos='covar'):
         """
         Initialise the emcee walkers.
@@ -320,6 +289,18 @@ class CurveFitter(object):
         else:
             raise ValueError("You tried to initialise with a chain, but it was"
                              " the wrong shape")
+
+    @property
+    def chain(self):
+        """
+        MCMC chain belonging to CurveFitter.sampler
+
+        Returns
+        -------
+        chain : array
+            The MCMC chain belonging to CurveFitter.sampler
+        """
+        return self.sampler.chain
 
     def acf(self, nburn=0, nthin=1):
         """
@@ -479,7 +460,7 @@ class CurveFitter(object):
             sys.stdout.write("\n")
 
         # sets parameter value and stderr
-        return self.process_chain()
+        return process_chain(self.objective, self.sampler.chain)
 
     def fit(self, method='L-BFGS-B', **kws):
         """
@@ -570,139 +551,185 @@ class CurveFitter(object):
 
         return res
 
-    def process_chain(self, nburn=0, nthin=1, flatchain=False):
-        """
-        Process the chain produced by the sampler.
 
-        Parameters
-        ----------
-        nburn : int, optional
-            discard this many steps from the start of the chain
-        nthin : int, optional
-            only accept every `nthin` samples from the chain
-        flatchain : bool, optional
-            collapse the walkers down into a single dimension.
+def load_chain(f):
+    """
+    Loads a chain from disk. Does not change the state of a CurveFitter
+    object.
 
-        Returns
-        -------
-        [(param, stderr, chain)] : list
-            List of (param, stderr, chain) tuples.
-            If `isinstance(objective.parameters, Parameters)` then `param` is a
-            `Parameter` instance. `param.value`, `param.stderr` and
-            `param.chain` will contain the median, stderr and chain samples,
-            respectively. Otherwise `param` will be a float representing the
-            median of the chain samples.
-            `stderr` is the half width of the [15.87, 84.13] spread (similar to
-            standard deviation) and `chain` is an array containing the MCMC
-            samples for that parameter.
+    Parameters
+    ----------
+    f : str or file-like
+        File containing the chain.
 
-        Notes
-        -----
-        One can call `process_chain` many times, the chain associated with the
-        CurveFitter object is unaltered. The chain is stored in the
-        `CurveFitter.sampler.chain` attribute and has shape
-        `(nwalkers, iterations, nvary)` (ntemps == -1) or
-        `(ntemps, nwalkers, iterations, nvary)` (ntemps != -1) if parallel
-        tempering was employed.
-        The burned and thinned chain is created via:
-        `chain[..., nburn::nthin]`.
-        Note, if parallel tempering is employed, then only the first row
-        of the parallel tempering chain is processed and returned as it
-        corresponds to the (lowest energy) target distribution.
-        If `flatten is True` then the burned/thinned chain is reshaped and
-        `arr.reshape(-1, nvary)` is returned. This method also has the effect
-        of setting the parameter stderr's.
-        """
-        chain = self.sampler.chain[..., nburn::nthin, :]
-        if self._ntemps != -1:
-            # PTSampler, we require the target distribution in the first row.
-            chain = chain[0]
+    Returns
+    -------
+    chain : array
+        The loaded chain - `(nwalkers, nsteps, ndim)` or
+        `(ntemps, nwalkers, nsteps, ndim)`
+    """
+    chain = np.loadtxt(f)
 
-        _flatchain = chain.reshape((-1, self.nvary))
-        if flatchain:
-            chain = _flatchain
-
-        flat_params = list(f_unique(flatten(self.objective.parameters)))
-
-        # set the stderr of each of the Parameters
-        l = []
-        if np.all([is_parameter(param) for param in flat_params]):
-            # zero out all the old parameter stderrs
-            for param in flat_params:
-                param.stderr = None
-                param.chain = None
-
-            # do the error calcn for the varying parameters and set the chain
-            quantiles = np.percentile(_flatchain, [15.87, 50, 84.13], axis=0)
-            for i, param in enumerate(self._varying_parameters):
-                std_l, median, std_u = quantiles[:, i]
-                param.value = median
-                param.stderr = 0.5 * (std_u - std_l)
-
-                # copy in the chain
-                param.chain = np.copy(chain[..., i])
-                res = MCMCResult(name=param.name, param=param,
-                                 median=param.value, stderr=param.stderr,
-                                 chain=param.chain)
-                l.append(res)
-
-            fitted_values = np.array(self._varying_parameters)
-
-            # give each constrained param a chain (to be reshaped later)
-            # but only if it depends on varying parameters
-            # TODO add a test for this...
-            constrained_params = [param for param in flat_params
-                                  if param.constraint is not None]
-
-            # figure out all the "master" parameters for the constrained
-            # parameters
-            relevant_depends = []
-            for constrain_param in constrained_params:
-                depends = set(flatten(constrain_param.dependencies))
-                # we only need the dependencies that are varying parameters
-                rdepends = depends.intersection(set(self._varying_parameters))
-                relevant_depends.append(rdepends)
-
-            # don't need duplicates
-            relevant_depends = set(relevant_depends)
-
-            for constrain_param in constrained_params:
-                depends = set(flatten(constrain_param.dependencies))
-                # to be given a chain the constrained parameter has to depend
-                # on a varying parameter
-                if depends.intersection(relevant_depends):
-                    constrain_param.chain = np.zeros_like(
-                        relevant_depends[0].chain)
-
-                    for index, _ in np.ndenumerate(constrain_param.chain):
-                        for rdepend in relevant_depends:
-                            rdepend.value = rdepend.chain[index]
-
-                        constrain_param.chain[index] = constrain_param.value
-
-                    quantiles = np.percentile(constrain_param.chain,
-                                              [15.87, 50, 84.13])
-
-                    std_l, median, std_u = quantiles
-                    constrain_param.value = median
-                    constrain_param.stderr = 0.5 * (std_u - std_l)
-
-            # now reset fitted parameter values (they would've been changed by
-            # constraints calculations
-            self.objective.setp(fitted_values)
-
-        # the parameter set are not Parameter objects, an array was probably
-        # being used with BaseObjective.
+    with possibly_open_file(f, 'r') as g:
+        # read header
+        header = g.readline()
+        match = re.match("#\s+(\d+),\s+(\d+)", header)
+        if match is not None:
+            walkers, ndim = map(int, match.groups())
         else:
-            for i in range(self.nvary):
-                c = np.copy(chain[..., i])
-                median, stderr = uncertainty_from_chain(c)
-                res = MCMCResult(name='', param=median,
-                                 median=median, stderr=stderr,
-                                 chain=c)
-                l.append(res)
+            raise ValueError("Couldn't read header line of chain file")
 
-        return l
+        chain = np.reshape(chain, (-1, walkers, ndim))
+        return np.swapaxes(chain, 0, -2)
+
+
+def process_chain(objective, chain, nburn=0, nthin=1, flatchain=False):
+    """
+    Process the chain produced by the sampler.
+
+    Parameters
+    ----------
+    objective : refnx.analysis.Objective
+        The Objective function that the Posterior was sampled for
+    chain : array
+        The MCMC chain
+    nburn : int, optional
+        discard this many steps from the start of the chain
+    nthin : int, optional
+        only accept every `nthin` samples from the chain
+    flatchain : bool, optional
+        collapse the walkers down into a single dimension.
+
+    Returns
+    -------
+    [(param, stderr, chain)] : list
+        List of (param, stderr, chain) tuples.
+        If `isinstance(objective.parameters, Parameters)` then `param` is a
+        `Parameter` instance. `param.value`, `param.stderr` and
+        `param.chain` will contain the median, stderr and chain samples,
+        respectively. Otherwise `param` will be a float representing the
+        median of the chain samples.
+        `stderr` is the half width of the [15.87, 84.13] spread (similar to
+        standard deviation) and `chain` is an array containing the MCMC
+        samples for that parameter.
+
+    Notes
+    -----
+    One can call `process_chain` many times, the chain associated with the
+    CurveFitter object is unaltered. The chain is stored in the
+    `CurveFitter.sampler.chain` attribute and has shape
+    `(nwalkers, iterations, nvary)` (ntemps == -1) or
+    `(ntemps, nwalkers, iterations, nvary)` (ntemps != -1) if parallel
+    tempering was employed.
+    The burned and thinned chain is created via:
+    `chain[..., nburn::nthin]`.
+    Note, if parallel tempering is employed, then only the first row
+    of the parallel tempering chain is processed and returned as it
+    corresponds to the (lowest energy) target distribution.
+    If `flatten is True` then the burned/thinned chain is reshaped and
+    `arr.reshape(-1, nvary)` is returned. This method also has the effect
+    of setting the parameter stderr's.
+    """
+    chain = chain[..., nburn::nthin, :]
+    shape = chain.shape
+    nvary = shape[-1]
+    if len(shape) == 4:
+        # nwalkers = shape[1]
+        ntemps = shape[0]
+    elif len(shape) == 3:
+        # nwalkers = shape[0]
+        ntemps = -1
+
+    if ntemps != -1:
+        # PTSampler, we require the target distribution in the first row.
+        chain = chain[0]
+
+    _flatchain = chain.reshape((-1, nvary))
+    if flatchain:
+        chain = _flatchain
+
+    flat_params = list(f_unique(flatten(objective.parameters)))
+    varying_parameters = objective.varying_parameters()
+
+    # set the stderr of each of the Parameters
+    l = []
+    if np.all([is_parameter(param) for param in flat_params]):
+        # zero out all the old parameter stderrs
+        for param in flat_params:
+            param.stderr = None
+            param.chain = None
+
+        # do the error calcn for the varying parameters and set the chain
+        quantiles = np.percentile(_flatchain, [15.87, 50, 84.13], axis=0)
+        for i, param in enumerate(varying_parameters):
+            std_l, median, std_u = quantiles[:, i]
+            param.value = median
+            param.stderr = 0.5 * (std_u - std_l)
+
+            # copy in the chain
+            param.chain = np.copy(chain[..., i])
+            res = MCMCResult(name=param.name, param=param,
+                             median=param.value, stderr=param.stderr,
+                             chain=param.chain)
+            l.append(res)
+
+        fitted_values = np.array(varying_parameters)
+
+        # give each constrained param a chain (to be reshaped later)
+        # but only if it depends on varying parameters
+        # TODO add a test for this...
+        constrained_params = [param for param in flat_params
+                              if param.constraint is not None]
+
+        # figure out all the "master" parameters for the constrained
+        # parameters
+        relevant_depends = []
+        for constrain_param in constrained_params:
+            depends = set(flatten(constrain_param.dependencies))
+            # we only need the dependencies that are varying parameters
+            rdepends = depends.intersection(set(varying_parameters))
+            relevant_depends.append(rdepends)
+
+        # don't need duplicates
+        relevant_depends = set(relevant_depends)
+
+        for constrain_param in constrained_params:
+            depends = set(flatten(constrain_param.dependencies))
+            # to be given a chain the constrained parameter has to depend
+            # on a varying parameter
+            if depends.intersection(relevant_depends):
+                constrain_param.chain = np.zeros_like(
+                    relevant_depends[0].chain)
+
+                for index, _ in np.ndenumerate(constrain_param.chain):
+                    for rdepend in relevant_depends:
+                        rdepend.value = rdepend.chain[index]
+
+                    constrain_param.chain[index] = constrain_param.value
+
+                quantiles = np.percentile(constrain_param.chain,
+                                          [15.87, 50, 84.13])
+
+                std_l, median, std_u = quantiles
+                constrain_param.value = median
+                constrain_param.stderr = 0.5 * (std_u - std_l)
+
+        # now reset fitted parameter values (they would've been changed by
+        # constraints calculations
+        objective.setp(fitted_values)
+
+    # the parameter set are not Parameter objects, an array was probably
+    # being used with BaseObjective.
+    else:
+        for i in range(nvary):
+            c = np.copy(chain[..., i])
+            median, stderr = uncertainty_from_chain(c)
+            res = MCMCResult(name='', param=median,
+                             median=median, stderr=stderr,
+                             chain=c)
+            l.append(res)
+
+    return l
 
 
 def uncertainty_from_chain(chain):

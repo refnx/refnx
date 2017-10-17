@@ -9,7 +9,7 @@ from numpy.testing import (assert_, assert_almost_equal, assert_equal,
                            assert_allclose)
 
 from refnx.analysis import (CurveFitter, Parameter, Parameters, Model,
-                            Objective)
+                            Objective, process_chain, load_chain)
 from refnx.dataset import Data1D
 from NISTModels import NIST_runner, NIST_Models
 
@@ -259,7 +259,7 @@ class TestFitterGauss(object):
         np.random.seed(1)
         f.initialise('jitter')
         f.sample(steps=201, random_state=1, verbose=False, f=checkpoint)
-        f.process_chain(nburn=100, nthin=20)
+        process_chain(self.objective, f.chain, nburn=100, nthin=20)
         uncertainties = [param.stderr for param in self.params]
         assert_allclose(uncertainties, self.best_weighted_errors, rtol=0.15)
 
@@ -270,7 +270,7 @@ class TestFitterGauss(object):
                         f.sampler.chain)
 
         # test loading the checkpoint
-        chain = CurveFitter.load_chain(checkpoint)
+        chain = load_chain(checkpoint)
         assert_equal(chain.shape, (f._nwalkers, 201, f.nvary))
 
     def test_best_unweighted(self):
