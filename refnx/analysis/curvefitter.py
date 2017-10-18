@@ -7,7 +7,13 @@ import time
 import re
 
 import numpy as np
+
 import emcee as emcee
+try:
+    from ptemcee.sampler import Sampler as PTSampler
+except ImportError:
+    from emcee import PTSampler as PTSampler
+
 from scipy._lib._util import check_random_state
 from scipy.optimize import minimize, differential_evolution, least_squares
 
@@ -150,12 +156,17 @@ class CurveFitter(object):
                                                  **self.mcmc_kws)
         # Parallel Tempering was requested.
         else:
-            self.mcmc_kws['loglargs'] = (objective,)
-            self.mcmc_kws['logpargs'] = (objective,)
-            self.sampler = emcee.PTSampler(ntemps, nwalkers, self.nvary,
-                                           _objective_lnlike,
-                                           _objective_lnprior,
-                                           **self.mcmc_kws)
+            sig = {'loglargs': (objective,),
+                   'logpargs': (objective,),
+                   'ntemps': ntemps,
+                   'nwalkers': nwalkers,
+                   'dim': self.nvary,
+                   'logl': _objective_lnlike,
+                   'logp': _objective_lnprior
+                   }
+            sig.update(self.mcmc_kws)
+            self.sampler = PTSampler(**sig)
+
             # construction of the PTSampler creates an ntemps attribute.
             # If it was constructed with ntemps = None, then ntemps will
             # be an integer.

@@ -105,7 +105,6 @@ class TestCurveFitter(object):
     def test_mcmc_pt(self):
         # smoke test for parallel tempering
         mcfitter = CurveFitter(self.objective, ntemps=10, nwalkers=50)
-        assert_(isinstance(mcfitter.sampler, emcee.PTSampler))
         assert_equal(mcfitter.sampler.ntemps, 10)
 
         res = mcfitter.sample(steps=60, nthin=2, verbose=False, pool=0)
