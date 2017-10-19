@@ -5,8 +5,17 @@ from collections import namedtuple
 import sys
 import time
 import re
+import warnings
 
 import numpy as np
+
+from scipy._lib._util import check_random_state
+from scipy.optimize import minimize, differential_evolution, least_squares
+
+from refnx.analysis import Objective, Interval, PDF, is_parameter
+from refnx._lib import flatten
+from refnx._lib import (unique as f_unique, possibly_create_pool,
+                        possibly_open_file)
 
 import emcee as emcee
 # PTSampler has been forked into a separate package. Try both places
@@ -19,16 +28,9 @@ except ImportError:
         from ptemcee.sampler import Sampler as PTSampler
         HAVE_PTSAMPLER = True
     except ImportError:
-        pass
+        warnings.warn("PTSampler (parallel tempering) is not be available,"
+                      " please install the ptemcee package", ImportWarning)
 
-
-from scipy._lib._util import check_random_state
-from scipy.optimize import minimize, differential_evolution, least_squares
-
-from refnx.analysis import Objective, Interval, PDF, is_parameter
-from refnx._lib import flatten
-from refnx._lib import (unique as f_unique, possibly_create_pool,
-                        possibly_open_file)
 
 MCMCResult = namedtuple('MCMCResult', ['name', 'param', 'stderr', 'chain',
                                        'median'])
@@ -814,7 +816,7 @@ def _function_1d(x):
     n = _next_pow_two(len(x))
 
     # Compute the FFT and then (from that) the auto-correlation function
-    f = np.fft.fft(x - np.mean(x), n=2*n)
+    f = np.fft.fft(x - np.mean(x), n=2 * n)
     acf = np.fft.ifft(f * np.conjugate(f))[:len(x)].real
     acf /= acf[0]
     return acf
