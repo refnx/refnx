@@ -20,7 +20,8 @@ class Structure(UserList):
     Represents the interfacial Structure of a reflectometry sample. Successive
     Components are added to the Structure to construct the interface.
     """
-    def __init__(self, name='', solvent='backing', reverse_structure=False):
+    def __init__(self, name='', solvent='backing', reverse_structure=False,
+                 contract=0):
         """
         Represents the interfacial Structure of a reflectometry sample.
         Successive Components are added to the Structure to construct the
@@ -41,6 +42,12 @@ class Structure(UserList):
             representation produced by `Structure.slabs` is reversed. The sld
             profile and calculated reflectivity will correspond to this
             reversed structure.
+        contract : float
+            If contract > 0 then an attempt to contract/shrink the slab
+            representation is made. This can improve calculation time of
+            certain reflectivity profiles. Use larger values for coarser
+            profiles (and vice versa). A typical starting value to try might
+            be 1.0.
 
         Notes
         -----
@@ -59,6 +66,7 @@ class Structure(UserList):
 
         self.solvent = solvent
         self._reverse_structure = bool(reverse_structure)
+        self.contract = contract
         # self._parameters = Parameters(name=name)
 
     def __copy__(self):
@@ -159,7 +167,10 @@ class Structure(UserList):
             # overall SLD is a weighted average
             slabs[1:-1] = self.overall_sld(slabs[1:-1], solvent_slab)
 
-        return slabs
+        if self.contract > 0:
+            return contract_by_area(slabs, self.contract)
+        else:
+            return slabs
 
     @staticmethod
     def overall_sld(slabs, solvent_slab):
@@ -544,3 +555,75 @@ def _profile_slicer(z, sld_profile, slice_size=None):
     structure.extend(slabs)
 
     return structure
+
+
+def contract_by_area(slabs, dA=0.5):
+    """
+    Shrinks a slab representation to a more manageable number of layers
+    """
+    newslabs = np.copy(slabs)
+    d = newslabs[:, 0]
+    rho = newslabs[:, 1]
+    irho = newslabs[:, 2]
+    sigma = newslabs[:, 3]
+    vfsolv = newslabs[:, 4]
+
+    n = np.size(d, 0)
+    i = newi = 1  # Skip the substrate
+
+    while i < n:
+        # Get ready for the next layer
+        # Accumulation of the first row happens in the inner loop
+        dz = rhoarea = irhoarea = vfsolvarea = 0.
+        rholo = rhohi = rho[i]
+        irholo = irhohi = irho[i]
+
+        # Accumulate slices into layer
+        while True:
+            assert(i < n)
+            # Accumulate next slice
+            dz += d[i]
+            rhoarea += d[i] * rho[i]
+            irhoarea += d[i] * irho[i]
+            vfsolvarea += d[i] * vfsolv[i]
+
+            i += 1
+            # If no more slices or sigma != 0, break immediately
+            if i == n or sigma[i - 1] != 0.:
+                break
+
+            # If next slice won't fit, break
+            if rho[i] < rholo:
+                rholo = rho[i]
+            if rho[i] > rhohi:
+                rhohi = rho[i]
+            if (rhohi - rholo) * (dz + d[i]) > dA:
+                break
+
+            if irho[i] < irholo:
+                irholo = irho[i]
+            if irho[i] > irhohi:
+                irhohi = irho[i]
+            if (irhohi - irholo) * (dz + d[i]) > dA:
+                break
+
+        # Save the layer
+        assert newi < n
+        d[newi] = dz
+        if i == n:
+            # printf("contract: adding final sld at %d\n",newi)
+            # Last layer uses surface values
+            rho[newi] = rho[n - 1]
+            irho[newi] = irho[n - 1]
+            sigma[newi] = sigma[n - 1]
+            vfsolv[newi] = vfsolv[n - 1]
+        else:
+            # Middle layers uses average values
+            rho[newi] = rhoarea / dz
+            irho[newi] = irhoarea / dz
+            sigma[newi] = sigma[i - 1]
+            vfsolv[newi] = vfsolvarea / dz
+        # First layer uses substrate values
+        newi += 1
+
+    return newslabs[:newi]
