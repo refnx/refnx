@@ -28,7 +28,7 @@ except ImportError:
         from ptemcee.sampler import Sampler as PTSampler
         HAVE_PTSAMPLER = True
     except ImportError:
-        warnings.warn("PTSampler (parallel tempering) is not be available,"
+        warnings.warn("PTSampler (parallel tempering) is not available,"
                       " please install the ptemcee package", ImportWarning)
 
 
