@@ -44,8 +44,7 @@ class Structure(UserList):
             reversed structure.
         contract : float
             If contract > 0 then an attempt to contract/shrink the slab
-            representation is made. This can improve calculation time of
-            certain reflectivity profiles. Use larger values for coarser
+            representation is made. Use larger values for coarser
             profiles (and vice versa). A typical starting value to try might
             be 1.0.
 
@@ -57,6 +56,11 @@ class Structure(UserList):
         `Structure.reverse_structure is True` then the material that solvates
         the system is the component in `Structure[0]`, which corresponds to
         `Structure.slab[-1]`.
+        The profile contraction specified by the `contract` keyword can improve
+        calculation time for Structures created with microslicing (such as
+        analytical profiles). If you use this option it is recommended to check
+        the reflectivity signal with and without contraction to ensure they are
+        comparable.
         """
         super(Structure, self).__init__()
         self._name = name
@@ -557,6 +561,8 @@ def _profile_slicer(z, sld_profile, slice_size=None):
     return structure
 
 
+# The following slab contraction code was translated from C code in
+# the refl1d project.
 def contract_by_area(slabs, dA=0.5):
     """
     Shrinks a slab representation to a more manageable number of layers
