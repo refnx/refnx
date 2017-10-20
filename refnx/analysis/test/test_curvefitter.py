@@ -10,6 +10,7 @@ from numpy.testing import (assert_, assert_almost_equal, assert_equal,
 
 from refnx.analysis import (CurveFitter, Parameter, Parameters, Model,
                             Objective, process_chain, load_chain)
+from refnx.analysis.curvefitter import _HAVE_PTSAMPLER
 from refnx.dataset import Data1D
 from NISTModels import NIST_runner, NIST_Models
 
@@ -103,9 +104,11 @@ class TestCurveFitter(object):
         assert_equal(res[0].chain.shape, (50, 33))
 
     def test_mcmc_pt(self):
+        if not _HAVE_PTSAMPLER:
+            return
+
         # smoke test for parallel tempering
         mcfitter = CurveFitter(self.objective, ntemps=10, nwalkers=50)
-        assert_(isinstance(mcfitter.sampler, emcee.PTSampler))
         assert_equal(mcfitter.sampler.ntemps, 10)
 
         res = mcfitter.sample(steps=60, nthin=2, verbose=False, pool=0)
@@ -135,6 +138,8 @@ class TestCurveFitter(object):
         mcfitter.initialise(pos=chain)
         assert_equal(mcfitter._lastpos, chain[:, -1, :])
 
+        if not _HAVE_PTSAMPLER:
+            return
         # initialise for Parallel tempering
         mcfitter = CurveFitter(self.objective, ntemps=20, nwalkers=100)
         mcfitter.initialise('covar')

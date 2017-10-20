@@ -5,9 +5,10 @@ from collections import namedtuple
 import sys
 import time
 import re
+import warnings
 
 import numpy as np
-import emcee as emcee
+
 from scipy._lib._util import check_random_state
 from scipy.optimize import minimize, differential_evolution, least_squares
 
@@ -15,6 +16,21 @@ from refnx.analysis import Objective, Interval, PDF, is_parameter
 from refnx._lib import flatten
 from refnx._lib import (unique as f_unique, possibly_create_pool,
                         possibly_open_file)
+
+import emcee as emcee
+# PTSampler has been forked into a separate package. Try both places
+_HAVE_PTSAMPLER = False
+try:
+    from emcee import PTSampler as PTSampler
+    _HAVE_PTSAMPLER = True
+except ImportError:
+    try:
+        from ptemcee.sampler import Sampler as PTSampler
+        _HAVE_PTSAMPLER = True
+    except ImportError:
+        warnings.warn("PTSampler (parallel tempering) is not available,"
+                      " please install the ptemcee package", ImportWarning)
+
 
 MCMCResult = namedtuple('MCMCResult', ['name', 'param', 'stderr', 'chain',
                                        'median'])
@@ -111,7 +127,6 @@ class CurveFitter(object):
             `None`, in which case the `Tmax` keyword argument sets the maximum
             temperature. Parallel Tempering is useful if you expect your
             posterior distribution to be multi-modal.
-
         mcmc_kws : dict
             Keywords used to create the :class:`emcee.EnsembleSampler` or
             :class:`emcee.PTSampler` objects.
@@ -119,10 +134,13 @@ class CurveFitter(object):
         Notes
         -----
         See the documentation at http://dan.iel.fm/emcee/current/api/ for
-        further details on what keywords are permitted, and for further
-        information on Parallel Tempering. The `pool` and `threads` keywords
-        are ignored here. Specification of parallel threading is done with the
-        `pool` argument in the `sample` method.
+        further details on what keywords are permitted. The `pool` and
+        `threads` keywords are ignored here. Specification of parallel
+        threading is done with the `pool` argument in the `sample` method.
+        Parallel tempering has been forked into a separate python package,
+        :package:`ptemcee`, and may not be present in more recent versions
+        of :package:`emcee`. To use parallel tempering you may need to
+        install the :package:`ptemcee` package.
         """
         self.objective = objective
         self._varying_parameters = objective.varying_parameters()
@@ -150,12 +168,21 @@ class CurveFitter(object):
                                                  **self.mcmc_kws)
         # Parallel Tempering was requested.
         else:
-            self.mcmc_kws['loglargs'] = (objective,)
-            self.mcmc_kws['logpargs'] = (objective,)
-            self.sampler = emcee.PTSampler(ntemps, nwalkers, self.nvary,
-                                           _objective_lnlike,
-                                           _objective_lnprior,
-                                           **self.mcmc_kws)
+            if not _HAVE_PTSAMPLER:
+                raise RuntimeError("You need to install the 'ptemcee' package"
+                                   " to use parallel tempering")
+
+            sig = {'loglargs': (objective,),
+                   'logpargs': (objective,),
+                   'ntemps': ntemps,
+                   'nwalkers': nwalkers,
+                   'dim': self.nvary,
+                   'logl': _objective_lnlike,
+                   'logp': _objective_lnprior
+                   }
+            sig.update(self.mcmc_kws)
+            self.sampler = PTSampler(**sig)
+
             # construction of the PTSampler creates an ntemps attribute.
             # If it was constructed with ntemps = None, then ntemps will
             # be an integer.
@@ -326,7 +353,7 @@ class CurveFitter(object):
 
         # iterate over each parameter/walker
         for index in np.ndindex(*shape):
-            s = emcee.autocorr.function(chain[index])
+            s = _function_1d(chain[index])
             acfs[index] = s
 
         # now average over walkers
@@ -761,3 +788,35 @@ def bounds_list(parameters):
         # TODO could also do any truncated PDF
 
     return bounds
+
+
+# Following code is for autocorrelation analysis of chains and is taken from
+# emcee.autocorr
+def _next_pow_two(n):
+    """Returns the next power of two greater than or equal to `n`"""
+    i = 1
+    while i < n:
+        i = i << 1
+    return i
+
+
+def _function_1d(x):
+    """Estimate the normalized autocorrelation function of a 1-D series
+
+    Args:
+        x: The series as a 1-D numpy array.
+
+    Returns:
+        array: The autocorrelation function of the time series.
+
+    """
+    x = np.atleast_1d(x)
+    if len(x.shape) != 1:
+        raise ValueError("invalid dimensions for 1D autocorrelation function")
+    n = _next_pow_two(len(x))
+
+    # Compute the FFT and then (from that) the auto-correlation function
+    f = np.fft.fft(x - np.mean(x), n=2 * n)
+    acf = np.fft.ifft(f * np.conjugate(f))[:len(x)].real
+    acf /= acf[0]
+    return acf

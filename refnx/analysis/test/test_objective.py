@@ -8,7 +8,8 @@ import os
 import emcee
 from scipy.optimize import minimize
 import numpy as np
-from numpy.testing import (assert_almost_equal, assert_equal, assert_)
+from numpy.testing import (assert_almost_equal, assert_equal, assert_,
+                           assert_allclose)
 
 from refnx.analysis import (Parameter, Model, Objective, BaseObjective,
                             Transform)
@@ -200,25 +201,28 @@ class TestObjective(object):
                i in range(nwalkers)]
 
         sampler = emcee.EnsembleSampler(nwalkers, ndim, bo.lnprob)
-        sampler.run_mcmc(pos, 500, rstate0=np.random.get_state())
+        sampler.run_mcmc(pos, 800, rstate0=np.random.get_state())
 
-        burnin = 50
+        burnin = 200
         samples = sampler.chain[:, burnin:, :].reshape((-1, ndim))
         samples[:, 2] = np.exp(samples[:, 2])
         m_mc, b_mc, f_mc = map(lambda v: (v[1], v[2] - v[1], v[1] - v[0]),
                                zip(*np.percentile(samples, [16, 50, 84],
                                                   axis=0)))
-        assert_almost_equal(m_mc, (-1.0071664,
-                                   0.0809444,
-                                   0.0784894))
+        assert_allclose(m_mc, (-1.0071664,
+                               0.0809444,
+                               0.0784894),
+                        rtol=0.04)
 
-        assert_almost_equal(b_mc, (4.5428107,
-                                   0.3549174,
-                                   0.3673304))
+        assert_allclose(b_mc, (4.5428107,
+                               0.3549174,
+                               0.3673304),
+                        rtol=0.04)
 
-        assert_almost_equal(f_mc, (0.4610898,
-                                   0.0823304,
-                                   0.0640812))
+        assert_allclose(f_mc, (0.4610898,
+                               0.0823304,
+                               0.0640812),
+                        rtol=0.06)
 
         # # smoke test for covariance matrix
         bo.parameters = np.array(result['x'])
