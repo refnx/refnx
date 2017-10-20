@@ -19,14 +19,14 @@ from refnx._lib import (unique as f_unique, possibly_create_pool,
 
 import emcee as emcee
 # PTSampler has been forked into a separate package. Try both places
-HAVE_PTSAMPLER = False
+_HAVE_PTSAMPLER = False
 try:
     from emcee import PTSampler as PTSampler
-    HAVE_PTSAMPLER = True
+    _HAVE_PTSAMPLER = True
 except ImportError:
     try:
         from ptemcee.sampler import Sampler as PTSampler
-        HAVE_PTSAMPLER = True
+        _HAVE_PTSAMPLER = True
     except ImportError:
         warnings.warn("PTSampler (parallel tempering) is not available,"
                       " please install the ptemcee package", ImportWarning)
@@ -168,7 +168,7 @@ class CurveFitter(object):
                                                  **self.mcmc_kws)
         # Parallel Tempering was requested.
         else:
-            if not HAVE_PTSAMPLER:
+            if not _HAVE_PTSAMPLER:
                 raise RuntimeError("You need to install the 'ptemcee' package"
                                    " to use parallel tempering")
 

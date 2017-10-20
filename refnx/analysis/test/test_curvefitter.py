@@ -9,8 +9,8 @@ from numpy.testing import (assert_, assert_almost_equal, assert_equal,
                            assert_allclose)
 
 from refnx.analysis import (CurveFitter, Parameter, Parameters, Model,
-                            Objective, process_chain, load_chain,
-                            HAVE_PTSAMPLER)
+                            Objective, process_chain, load_chain)
+from refnx.analysis.curvefitter import _HAVE_PTSAMPLER
 from refnx.dataset import Data1D
 from NISTModels import NIST_runner, NIST_Models
 
@@ -104,7 +104,7 @@ class TestCurveFitter(object):
         assert_equal(res[0].chain.shape, (50, 33))
 
     def test_mcmc_pt(self):
-        if not HAVE_PTSAMPLER:
+        if not _HAVE_PTSAMPLER:
             return
 
         # smoke test for parallel tempering
@@ -138,7 +138,7 @@ class TestCurveFitter(object):
         mcfitter.initialise(pos=chain)
         assert_equal(mcfitter._lastpos, chain[:, -1, :])
 
-        if not HAVE_PTSAMPLER:
+        if not _HAVE_PTSAMPLER:
             return
         # initialise for Parallel tempering
         mcfitter = CurveFitter(self.objective, ntemps=20, nwalkers=100)

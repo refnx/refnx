@@ -4,7 +4,7 @@ from refnx.analysis.parameter import (Parameter, Parameters, is_parameters,
 from refnx.analysis.objective import (Objective, BaseObjective,
                                       GlobalObjective, Transform)
 from refnx.analysis.curvefitter import (CurveFitter, MCMCResult, process_chain,
-                                        load_chain, HAVE_PTSAMPLER)
+                                        load_chain)
 from refnx.analysis.model import Model, fitfunc
 
 
