@@ -172,7 +172,7 @@ class Structure(UserList):
             slabs[1:-1] = self.overall_sld(slabs[1:-1], solvent_slab)
 
         if self.contract > 0:
-            return contract_by_area(slabs, self.contract)
+            return _contract_by_area(slabs, self.contract)
         else:
             return slabs
 
@@ -563,11 +563,41 @@ def _profile_slicer(z, sld_profile, slice_size=None):
 
 # The following slab contraction code was translated from C code in
 # the refl1d project.
-def contract_by_area(slabs, dA=0.5):
+def _contract_by_area(slabs, dA=0.5):
     """
-    Shrinks a slab representation to a more manageable number of layers
+    Shrinks a slab representation to a reduced number of layers. This can
+    reduced calculation times.
+
+    Parameters
+    ----------
+    slabs : array
+        Has shape (N, 5).
+
+            slab[N, 0] - thickness of layer N
+            slab[N, 1] - overall SLD.real of layer N (material AND solvent)
+            slab[N, 2] - overall SLD.imag of layer N (material AND solvent)
+            slab[N, 3] - roughness between layer N and N-1
+            slab[N, 4] - volume fraction of solvent in layer N.
+                         (1 - solvent_volfrac = material_volfrac)
+
+    dA : float
+        Larger values coarsen the profile to a greater extent, and vice versa.
+
+    Returns
+    -------
+    contract_slab : array
+        Contracted slab representation.
+
+    Notes
+    -----
+    The reflectivity profiles from both contracted and uncontracted profiles
+    should be compared to check for accuracy.
     """
-    newslabs = np.copy(slabs)
+
+    # In refl1d the first slab is the substrate, the orded is reversed here.
+    # In the following code the slabs are traversed from the backing towards
+    # the fronting.
+    newslabs = np.copy(slabs)[::-1]
     d = newslabs[:, 0]
     rho = newslabs[:, 1]
     irho = newslabs[:, 2]
@@ -586,7 +616,6 @@ def contract_by_area(slabs, dA=0.5):
 
         # Accumulate slices into layer
         while True:
-            assert(i < n)
             # Accumulate next slice
             dz += d[i]
             rhoarea += d[i] * rho[i]
@@ -614,14 +643,12 @@ def contract_by_area(slabs, dA=0.5):
                 break
 
         # Save the layer
-        assert newi < n
         d[newi] = dz
         if i == n:
             # printf("contract: adding final sld at %d\n",newi)
             # Last layer uses surface values
             rho[newi] = rho[n - 1]
             irho[newi] = irho[n - 1]
-            sigma[newi] = sigma[n - 1]
             vfsolv[newi] = vfsolv[n - 1]
         else:
             # Middle layers uses average values
@@ -632,4 +659,4 @@ def contract_by_area(slabs, dA=0.5):
         # First layer uses substrate values
         newi += 1
 
-    return newslabs[:newi]
+    return newslabs[:newi][::-1]
