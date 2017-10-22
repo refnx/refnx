@@ -96,3 +96,21 @@ class TestStructure(object):
         assert_equal(slabs[-1, 1], 6.36)
         assert_equal(slabs[0, 1], 2.07)
         assert_equal(len(slabs), 202)
+
+    def test_contraction(self):
+        q = np.linspace(0.005, 0.2, 100)
+
+        self.s.contract = 0
+        reflectivity = self.s.reflectivity(q)
+
+        self.s.contract = 0.5
+        assert_allclose(self.s.reflectivity(q),
+                        reflectivity)
+
+        z, sld = self.s.sld_profile(z=np.linspace(-150, 250, 1000))
+        slice_structure = _profile_slicer(z, sld, slice_size=0.05)
+        slice_structure.contract = 0.02
+        slice_reflectivity = slice_structure.reflectivity(q)
+        assert_allclose(slice_reflectivity,
+                        reflectivity,
+                        rtol=5e-3)

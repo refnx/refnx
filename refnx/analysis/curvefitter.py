@@ -108,6 +108,35 @@ def _objective_lnprior(theta, userargs=()):
 class CurveFitter(object):
     """
     Analyse a curvefitting system (with MCMC sampling)
+
+    Parameters
+    ----------
+    objective : Objective
+        The :class:`refnx.analysis.Objective` to be analysed.
+    nwalkers : int, optional
+        How many walkers you would like the sampler to have. Must be an
+        even number. The more walkers the better.
+    ntemps : int or None, optional
+        If `ntemps == -1`, then an :class:`emcee.EnsembleSampler` is used
+        during the `sample` method.
+        Otherwise, or if `ntemps is None` then parallel tempering is
+        used with a :class:`emcee.PTSampler` object during the `sample`
+        method, with `ntemps` specifing the number of temperatures. Can be
+        `None`, in which case the `Tmax` keyword argument sets the maximum
+        temperature. Parallel Tempering is useful if you expect your
+        posterior distribution to be multi-modal.
+
+    mcmc_kws : dict
+        Keywords used to create the :class:`emcee.EnsembleSampler` or
+        :class:`emcee.PTSampler` objects.
+
+    Notes
+    -----
+    See the documentation at http://dan.iel.fm/emcee/current/api/ for
+    further details on what keywords are permitted, and for further
+    information on Parallel Tempering. The `pool` and `threads` keywords
+    are ignored here. Specification of parallel threading is done with the
+    `pool` argument in the `sample` method.
     """
     def __init__(self, objective, nwalkers=200, ntemps=-1, **mcmc_kws):
         """
