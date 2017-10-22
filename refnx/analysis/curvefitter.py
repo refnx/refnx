@@ -454,11 +454,17 @@ class CurveFitter(object):
                 time_remaining = divmod(step_rate * (steps - steps_completed),
                                         60)
                 mins, secs = int(time_remaining[0]), int(time_remaining[1])
+                emins, esecs = divmod((time.time() - start_time), 60)
                 n = int((width + 1) * float(steps_completed) / steps)
-                template = ("\rSampling progress: [{0}{1}] "
-                            "time remaining = {2} m:{3} s")
+                template = ("\r[{0}{1}] "
+                            "{2}/{3}, "
+                            "Time: {4} m:{5} s / {6} m:{7} s")
                 sys.stdout.write(template.format('#' * n,
                                                  ' ' * (width - n),
+                                                 steps_completed,
+                                                 steps,
+                                                 int(emins),
+                                                 int(esecs),
                                                  mins,
                                                  secs))
             if callback is not None:
