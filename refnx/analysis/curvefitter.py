@@ -658,7 +658,7 @@ def load_chain(f):
         for i, l in enumerate(g):
             if i == np.size(chain, 0):
                 chain = chain_grow(chain)
-            chain[i] = np.fromstring(l, dtype=float, count=chain_size, sep=',')
+            chain[i] = np.fromstring(l, dtype=float, count=chain_size, sep=' ')
 
         # trim chain to the number of lines loaded
         chain = chain[0: i + 1]
