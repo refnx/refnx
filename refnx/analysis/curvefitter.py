@@ -630,19 +630,46 @@ def load_chain(f):
         The loaded chain - `(nwalkers, nsteps, ndim)` or
         `(ntemps, nwalkers, nsteps, ndim)`
     """
-    chain = np.loadtxt(f)
-
     with possibly_open_file(f, 'r') as g:
         # read header
         header = g.readline()
-        match = re.match("#\s+(\d+),\s+(\d+)", header)
-        if match is not None:
-            walkers, ndim = map(int, match.groups())
+        expr = re.compile('(\d+)')
+        matches = expr.findall(header)
+        if matches:
+            if len(matches) == 3:
+                ntemps, nwalkers, ndim = map(int, matches)
+                chain_size = ntemps * nwalkers * ndim
+            elif len(matches) == 2:
+                ntemps = None
+                nwalkers, ndim = map(int, matches)
+                chain_size = nwalkers * ndim
         else:
             raise ValueError("Couldn't read header line of chain file")
 
-        chain = np.reshape(chain, (-1, walkers, ndim))
-        return np.swapaxes(chain, 0, -2)
+        # make an array that's the appropriate size
+        chain = np.empty((100, chain_size), dtype=float)
+
+        # expand memory as we go.
+        def chain_grow(chain):
+            new = np.empty((100, chain_size), dtype=float)
+            chain = np.concatenate((chain, new), axis=0)
+            return chain
+
+        for i, l in enumerate(g):
+            if i == np.size(chain, 0):
+                chain = chain_grow(chain)
+            chain[i] = np.fromstring(l, dtype=float, count=chain_size, sep=' ')
+
+        # trim chain to the number of lines loaded
+        chain = chain[0: i + 1]
+
+        if ntemps is not None:
+            chain = np.reshape(chain, (-1, ntemps, nwalkers, ndim))
+        else:
+            chain = np.reshape(chain, (-1, nwalkers, ndim))
+        chain = np.swapaxes(chain, 0, -2)
+
+        return chain
 
 
 def process_chain(objective, chain, nburn=0, nthin=1, flatchain=False):

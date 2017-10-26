@@ -276,7 +276,7 @@ class TestFitterGauss(object):
 
         # test loading the checkpoint
         chain = load_chain(checkpoint)
-        assert_equal(chain.shape, (f._nwalkers, 201, f.nvary))
+        assert_allclose(chain, f.chain)
 
     def test_best_unweighted(self):
         self.objective.use_weights = False
