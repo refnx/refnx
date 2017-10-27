@@ -792,7 +792,6 @@ def process_chain(objective, chain, nburn=0, nthin=1, flatchain=False):
                              median=median, stderr=stderr,
                              chain=c)
             l.append(res)
-
     return l
 
 
