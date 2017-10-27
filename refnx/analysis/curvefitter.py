@@ -665,9 +665,11 @@ def load_chain(f):
 
         if ntemps is not None:
             chain = np.reshape(chain, (-1, ntemps, nwalkers, ndim))
+            chain = np.swapaxes(chain, 0, 2)
+            chain = np.swapaxes(chain, 0, 1)
         else:
             chain = np.reshape(chain, (-1, nwalkers, ndim))
-        chain = np.swapaxes(chain, 0, -2)
+            chain = np.swapaxes(chain, 0, 1)
 
         return chain
 
