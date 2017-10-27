@@ -17,7 +17,7 @@ class FreeformVFP(Component):
     """
     def __init__(self, extent, vf, dz, polymer_sld, solvent, name='',
                  gamma=None, left_slabs=(), right_slabs=(),
-                 interpolator=Pchip, zgrad=True, microslab_max_thickness=2):
+                 interpolator=Pchip, zgrad=True, microslab_max_thickness=1):
         """
         Parameters
         ----------
@@ -179,8 +179,8 @@ class FreeformVFP(Component):
         slabs = np.zeros((int(num_slabs), 5))
         slabs[:, 0] = slab_thick
 
-        # give each slab a miniscule roughness
-        slabs[:, 3] = 0.5
+        # give last slab a miniscule roughness so it doesn't get contracted
+        slabs[-1:, 3] = 0.5
 
         dist = np.cumsum(slabs[..., 0]) - 0.5 * slab_thick
         slabs[:, 1] = self.polymer_sld.real.value

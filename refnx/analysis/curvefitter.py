@@ -4,15 +4,33 @@ from functools import partial
 from collections import namedtuple
 import sys
 import time
+import re
+import warnings
 
 import numpy as np
-import emcee as emcee
+
 from scipy._lib._util import check_random_state
 from scipy.optimize import minimize, differential_evolution, least_squares
 
 from refnx.analysis import Objective, Interval, PDF, is_parameter
 from refnx._lib import flatten
-from refnx._lib import unique as f_unique, possibly_create_pool
+from refnx._lib import (unique as f_unique, possibly_create_pool,
+                        possibly_open_file)
+
+import emcee as emcee
+# PTSampler has been forked into a separate package. Try both places
+_HAVE_PTSAMPLER = False
+try:
+    from emcee import PTSampler as PTSampler
+    _HAVE_PTSAMPLER = True
+except ImportError:
+    try:
+        from ptemcee.sampler import Sampler as PTSampler
+        _HAVE_PTSAMPLER = True
+    except ImportError:
+        warnings.warn("PTSampler (parallel tempering) is not available,"
+                      " please install the ptemcee package", ImportWarning)
+
 
 MCMCResult = namedtuple('MCMCResult', ['name', 'param', 'stderr', 'chain',
                                        'median'])
@@ -90,6 +108,35 @@ def _objective_lnprior(theta, userargs=()):
 class CurveFitter(object):
     """
     Analyse a curvefitting system (with MCMC sampling)
+
+    Parameters
+    ----------
+    objective : Objective
+        The :class:`refnx.analysis.Objective` to be analysed.
+    nwalkers : int, optional
+        How many walkers you would like the sampler to have. Must be an
+        even number. The more walkers the better.
+    ntemps : int or None, optional
+        If `ntemps == -1`, then an :class:`emcee.EnsembleSampler` is used
+        during the `sample` method.
+        Otherwise, or if `ntemps is None` then parallel tempering is
+        used with a :class:`emcee.PTSampler` object during the `sample`
+        method, with `ntemps` specifing the number of temperatures. Can be
+        `None`, in which case the `Tmax` keyword argument sets the maximum
+        temperature. Parallel Tempering is useful if you expect your
+        posterior distribution to be multi-modal.
+
+    mcmc_kws : dict
+        Keywords used to create the :class:`emcee.EnsembleSampler` or
+        :class:`emcee.PTSampler` objects.
+
+    Notes
+    -----
+    See the documentation at http://dan.iel.fm/emcee/current/api/ for
+    further details on what keywords are permitted, and for further
+    information on Parallel Tempering. The `pool` and `threads` keywords
+    are ignored here. Specification of parallel threading is done with the
+    `pool` argument in the `sample` method.
     """
     def __init__(self, objective, nwalkers=200, ntemps=-1, **mcmc_kws):
         """
@@ -109,7 +156,6 @@ class CurveFitter(object):
             `None`, in which case the `Tmax` keyword argument sets the maximum
             temperature. Parallel Tempering is useful if you expect your
             posterior distribution to be multi-modal.
-
         mcmc_kws : dict
             Keywords used to create the :class:`emcee.EnsembleSampler` or
             :class:`emcee.PTSampler` objects.
@@ -117,10 +163,13 @@ class CurveFitter(object):
         Notes
         -----
         See the documentation at http://dan.iel.fm/emcee/current/api/ for
-        further details on what keywords are permitted, and for further
-        information on Parallel Tempering. The `pool` and `threads` keywords
-        are ignored here. Specification of parallel threading is done with the
-        `pool` argument in the `sample` method.
+        further details on what keywords are permitted. The `pool` and
+        `threads` keywords are ignored here. Specification of parallel
+        threading is done with the `pool` argument in the `sample` method.
+        Parallel tempering has been forked into a separate python package,
+        :package:`ptemcee`, and may not be present in more recent versions
+        of :package:`emcee`. To use parallel tempering you may need to
+        install the :package:`ptemcee` package.
         """
         self.objective = objective
         self._varying_parameters = objective.varying_parameters()
@@ -148,12 +197,21 @@ class CurveFitter(object):
                                                  **self.mcmc_kws)
         # Parallel Tempering was requested.
         else:
-            self.mcmc_kws['loglargs'] = (objective,)
-            self.mcmc_kws['logpargs'] = (objective,)
-            self.sampler = emcee.PTSampler(ntemps, nwalkers, self.nvary,
-                                           _objective_lnlike,
-                                           _objective_lnprior,
-                                           **self.mcmc_kws)
+            if not _HAVE_PTSAMPLER:
+                raise RuntimeError("You need to install the 'ptemcee' package"
+                                   " to use parallel tempering")
+
+            sig = {'loglargs': (objective,),
+                   'logpargs': (objective,),
+                   'ntemps': ntemps,
+                   'nwalkers': nwalkers,
+                   'dim': self.nvary,
+                   'logl': _objective_lnlike,
+                   'logp': _objective_lnprior
+                   }
+            sig.update(self.mcmc_kws)
+            self.sampler = PTSampler(**sig)
+
             # construction of the PTSampler creates an ntemps attribute.
             # If it was constructed with ntemps = None, then ntemps will
             # be an integer.
@@ -175,9 +233,9 @@ class CurveFitter(object):
             - 'prior', sample random locations from the prior
             - pos, an array that specifies a snapshot of the walkers. Has shape
                 `(nwalkers, ndim)`, or `(ntemps, nwalkers, ndim)` if parallel
-                 tempering is employed
+                 tempering is employed. You can also provide a previously
+                 created chain.
         """
-        self.sampler.reset()
         nwalkers = self._nwalkers
         nvary = self.nvary
 
@@ -195,13 +253,18 @@ class CurveFitter(object):
         if (isinstance(pos, np.ndarray) and
                 self._ntemps == -1 and
                 pos.shape == (nwalkers, nvary)):
-            init_walkers = np.copy(pos)
+            init_walkers = np.copy(pos)[np.newaxis]
 
         # position is specified with array (with parallel tempering)
         elif (isinstance(pos, np.ndarray) and
               self._ntemps > -1 and
               pos.shape == (_ntemps, nwalkers, nvary)):
             init_walkers = np.copy(pos)
+
+        # position is specified with existing chain
+        elif isinstance(pos, np.ndarray):
+            self.initialise_with_chain(pos)
+            return
 
         # position is to be created from covariance matrix
         elif pos == 'covar':
@@ -252,6 +315,49 @@ class CurveFitter(object):
 
         self._lastpos = init_walkers
 
+        # finally reset the sampler to reset the chain
+        # you have to do this at the end, not at the start because resetting
+        # makes self.sampler.chain == None and the PTsampler creation doesn't
+        # work
+        self.sampler.reset()
+
+    def initialise_with_chain(self, chain):
+        """
+        Initialise sampler with a pre-existing chain
+
+        Parameters
+        ----------
+        chain : array
+            Array of size `(ntemps, nwalkers, steps, ndim)` or
+            `(nwalkers, steps, ndim)`, containing a chain from a previous
+            sampling run.
+        """
+        # we should be left with (nwalkers, ndim) or (ntemp, nwalkers, ndim)
+        existing_chain_shape = list(self.sampler.chain.shape)
+        existing_chain_shape.pop(-2)
+
+        chain_shape = list(chain.shape)
+        chain_shape.pop(-2)
+
+        # if the shapes are the same, then we can initialise
+        if existing_chain_shape == chain_shape:
+            self.initialise(pos=chain[..., -1, :])
+        else:
+            raise ValueError("You tried to initialise with a chain, but it was"
+                             " the wrong shape")
+
+    @property
+    def chain(self):
+        """
+        MCMC chain belonging to CurveFitter.sampler
+
+        Returns
+        -------
+        chain : array
+            The MCMC chain belonging to CurveFitter.sampler
+        """
+        return self.sampler.chain
+
     def acf(self, nburn=0, nthin=1):
         """
         Calculate the autocorrelation function
@@ -276,7 +382,7 @@ class CurveFitter(object):
 
         # iterate over each parameter/walker
         for index in np.ndindex(*shape):
-            s = emcee.autocorr.function(chain[index])
+            s = _function_1d(chain[index])
             acfs[index] = s
 
         # now average over walkers
@@ -302,7 +408,10 @@ class CurveFitter(object):
             then that `np.random.RandomState` instance is used. Specify
             `random_state` for repeatable sampling
         f : file-like or str
-            File to incrementally save chain progress to
+            File to incrementally save chain progress to. Each row in the file
+            is a flattened array of size `(nwalkers, ndim)` or
+            `(ntemps, nwalkers, ndim)`. There should be `steps` rows in the
+            file.
         callback : callable
             callback function to be called at each iteration step
         verbose : bool, optional
@@ -337,7 +446,7 @@ class CurveFitter(object):
         start_time = time.time()
 
         # for saving progress to file, and printing progress to stdout.
-        def _callback_wrapper(pos, lnprob, steps_completed):
+        def _callback_wrapper(pos, lnprob, steps_completed, h=None):
             if verbose:
                 steps_completed += 1
                 width = 50
@@ -345,17 +454,25 @@ class CurveFitter(object):
                 time_remaining = divmod(step_rate * (steps - steps_completed),
                                         60)
                 mins, secs = int(time_remaining[0]), int(time_remaining[1])
+                emins, esecs = divmod((time.time() - start_time), 60)
                 n = int((width + 1) * float(steps_completed) / steps)
-                template = ("\rSampling progress: [{0}{1}] "
-                            "time remaining = {2} m:{3} s")
+                template = ("\r[{0}{1}] "
+                            "{2}/{3}, "
+                            "Time: {4} m:{5} s / {6} m:{7} s")
                 sys.stdout.write(template.format('#' * n,
                                                  ' ' * (width - n),
+                                                 steps_completed,
+                                                 steps,
+                                                 int(emins),
+                                                 int(esecs),
                                                  mins,
                                                  secs))
             if callback is not None:
                 callback(pos, lnprob)
-            if f is not None:
-                np.save(f, self.sampler.chain)
+            if h is not None:
+                # (nwalkers, dim) or (ntemps, nwalkers, dim)
+                h.write(' '.join(map(str, pos.ravel())))
+                h.write('\n')
 
         # set the random state of the sampler
         # normally one could give this as an argument to the sample method
@@ -372,9 +489,18 @@ class CurveFitter(object):
             param.stderr = None
             param.chain = None
 
+        # make sure the checkpoint file exists
+        if f is not None:
+            with possibly_open_file(f, 'w') as h:
+                # write the shape of each step of the chain
+                h.write('# ')
+                shape = self._lastpos.shape
+                h.write(', '.join(map(str, shape)))
+                h.write('\n')
+
         # using context manager means we kill off zombie pool objects
         # but does mean that the pool has to be specified each time.
-        with possibly_create_pool(pool) as g:
+        with possibly_create_pool(pool) as g, possibly_open_file(f, 'a') as h:
             # if you're not creating more than 1 thread, then don't bother with
             # a pool.
             if pool == 1:
@@ -386,7 +512,7 @@ class CurveFitter(object):
                                                            iterations=steps,
                                                            thin=nthin)):
                 self._lastpos, lnprob = result[0:2]
-                _callback_wrapper(self._lastpos, lnprob, i)
+                _callback_wrapper(self._lastpos, lnprob, i, h=h)
 
         self.sampler.pool = None
         # self._lastpos = result[0]
@@ -396,7 +522,7 @@ class CurveFitter(object):
             sys.stdout.write("\n")
 
         # sets parameter value and stderr
-        return self.process_chain()
+        return process_chain(self.objective, self.sampler.chain)
 
     def fit(self, method='L-BFGS-B', **kws):
         """
@@ -487,139 +613,187 @@ class CurveFitter(object):
 
         return res
 
-    def process_chain(self, nburn=0, nthin=1, flatchain=False):
-        """
-        Process the chain produced by the sampler.
 
-        Parameters
-        ----------
-        nburn : int, optional
-            discard this many steps from the start of the chain
-        nthin : int, optional
-            only accept every `nthin` samples from the chain
-        flatchain : bool, optional
-            collapse the walkers down into a single dimension.
+def load_chain(f):
+    """
+    Loads a chain from disk. Does not change the state of a CurveFitter
+    object.
 
-        Returns
-        -------
-        [(param, stderr, chain)] : list
-            List of (param, stderr, chain) tuples.
-            If `isinstance(objective.parameters, Parameters)` then `param` is a
-            `Parameter` instance. `param.value`, `param.stderr` and
-            `param.chain` will contain the median, stderr and chain samples,
-            respectively. Otherwise `param` will be a float representing the
-            median of the chain samples.
-            `stderr` is the half width of the [15.87, 84.13] spread (similar to
-            standard deviation) and `chain` is an array containing the MCMC
-            samples for that parameter.
+    Parameters
+    ----------
+    f : str or file-like
+        File containing the chain.
 
-        Notes
-        -----
-        One can call `process_chain` many times, the chain associated with the
-        CurveFitter object is unaltered. The chain is stored in the
-        `CurveFitter.sampler.chain` attribute and has shape
-        `(nwalkers, iterations, nvary)` (ntemps == -1) or
-        `(ntemps, nwalkers, iterations, nvary)` (ntemps != -1) if parallel
-        tempering was employed.
-        The burned and thinned chain is created via:
-        `chain[..., nburn::nthin]`.
-        Note, if parallel tempering is employed, then only the first row
-        of the parallel tempering chain is processed and returned as it
-        corresponds to the (lowest energy) target distribution.
-        If `flatten is True` then the burned/thinned chain is reshaped and
-        `arr.reshape(-1, nvary)` is returned. This method also has the effect
-        of setting the parameter stderr's.
-        """
-        chain = self.sampler.chain[..., nburn::nthin, :]
-        if self._ntemps != -1:
-            # PTSampler, we require the target distribution in the first row.
-            chain = chain[0]
+    Returns
+    -------
+    chain : array
+        The loaded chain - `(nwalkers, nsteps, ndim)` or
+        `(ntemps, nwalkers, nsteps, ndim)`
+    """
+    chain = np.loadtxt(f)
 
-        _flatchain = chain.reshape((-1, self.nvary))
-        if flatchain:
-            chain = _flatchain
+    with possibly_open_file(f, 'r') as g:
+        # read header
+        header = g.readline()
+        match = re.match("#\s+(\d+),\s+(\d+)", header)
+        if match is not None:
+            walkers, ndim = map(int, match.groups())
+        else:
+            raise ValueError("Couldn't read header line of chain file")
 
-        flat_params = list(f_unique(flatten(self.objective.parameters)))
+        chain = np.reshape(chain, (-1, walkers, ndim))
+        return np.swapaxes(chain, 0, -2)
 
-        # set the stderr of each of the Parameters
-        l = []
-        if np.all([is_parameter(param) for param in flat_params]):
-            # zero out all the old parameter stderrs
-            for param in flat_params:
-                param.stderr = None
-                param.chain = None
 
-            # do the error calcn for the varying parameters and set the chain
-            quantiles = np.percentile(_flatchain, [15.87, 50, 84.13], axis=0)
-            for i, param in enumerate(self._varying_parameters):
-                std_l, median, std_u = quantiles[:, i]
-                param.value = median
-                param.stderr = 0.5 * (std_u - std_l)
+def process_chain(objective, chain, nburn=0, nthin=1, flatchain=False):
+    """
+    Process the chain produced by a sampler for a given Objective
 
-                # copy in the chain
-                param.chain = np.copy(chain[..., i])
-                res = MCMCResult(name=param.name, param=param,
-                                 median=param.value, stderr=param.stderr,
-                                 chain=param.chain)
-                l.append(res)
+    Parameters
+    ----------
+    objective : refnx.analysis.Objective
+        The Objective function that the Posterior was sampled for
+    chain : array
+        The MCMC chain
+    nburn : int, optional
+        discard this many steps from the start of the chain
+    nthin : int, optional
+        only accept every `nthin` samples from the chain
+    flatchain : bool, optional
+        collapse the walkers down into a single dimension.
 
-            fitted_values = np.array(self._varying_parameters)
+    Returns
+    -------
+    [(param, stderr, chain)] : list
+        List of (param, stderr, chain) tuples.
+        If `isinstance(objective.parameters, Parameters)` then `param` is a
+        `Parameter` instance. `param.value`, `param.stderr` and
+        `param.chain` will contain the median, stderr and chain samples,
+        respectively. Otherwise `param` will be a float representing the
+        median of the chain samples.
+        `stderr` is the half width of the [15.87, 84.13] spread (similar to
+        standard deviation) and `chain` is an array containing the MCMC
+        samples for that parameter.
 
-            # give each constrained param a chain (to be reshaped later)
-            # but only if it depends on varying parameters
-            # TODO add a test for this...
-            constrained_params = [param for param in flat_params
-                                  if param.constraint is not None]
+    Notes
+    -----
+    The chain should have the shape `(nwalkers, iterations, nvary)` or
+    `(ntemps, nwalkers, iterations, nvary)` if parallel tempering was
+    employed.
+    The burned and thinned chain is created via:
+    `chain[..., nburn::nthin, :]`.
+    Note, if parallel tempering is employed, then only the first row
+    of the parallel tempering chain is processed and returned as it
+    corresponds to the (lowest energy) target distribution.
+    If `flatten is True` then the burned/thinned chain is reshaped and
+    `arr.reshape(-1, nvary)` is returned.
+    This function has the effect of setting the parameter stderr's.
+    """
+    chain = chain[..., nburn::nthin, :]
+    shape = chain.shape
+    nvary = shape[-1]
+    if len(shape) == 4:
+        # nwalkers = shape[1]
+        ntemps = shape[0]
+    elif len(shape) == 3:
+        # nwalkers = shape[0]
+        ntemps = -1
 
-            # figure out all the "master" parameters for the constrained
-            # parameters
-            relevant_depends = []
-            for constrain_param in constrained_params:
-                depends = set(flatten(constrain_param.dependencies))
-                # we only need the dependencies that are varying parameters
-                rdepends = depends.intersection(set(self._varying_parameters))
+    if ntemps != -1:
+        # PTSampler, we require the target distribution in the first row.
+        chain = chain[0]
+
+    _flatchain = chain.reshape((-1, nvary))
+    if flatchain:
+        chain = _flatchain
+
+    flat_params = list(f_unique(flatten(objective.parameters)))
+    varying_parameters = objective.varying_parameters()
+
+    # set the stderr of each of the Parameters
+    l = []
+    if np.all([is_parameter(param) for param in flat_params]):
+        # zero out all the old parameter stderrs
+        for param in flat_params:
+            param.stderr = None
+            param.chain = None
+
+        # do the error calcn for the varying parameters and set the chain
+        quantiles = np.percentile(_flatchain, [15.87, 50, 84.13], axis=0)
+        for i, param in enumerate(varying_parameters):
+            std_l, median, std_u = quantiles[:, i]
+            param.value = median
+            param.stderr = 0.5 * (std_u - std_l)
+
+            # copy in the chain
+            param.chain = np.copy(chain[..., i])
+            res = MCMCResult(name=param.name, param=param,
+                             median=param.value, stderr=param.stderr,
+                             chain=param.chain)
+            l.append(res)
+
+        fitted_values = np.array(varying_parameters)
+
+        # give each constrained param a chain (to be reshaped later)
+        # but only if it depends on varying parameters
+        # TODO add a test for this...
+        constrained_params = [param for param in flat_params
+                              if param.constraint is not None]
+
+        # figure out all the "master" parameters for the constrained
+        # parameters
+        relevant_depends = []
+        for constrain_param in constrained_params:
+            depends = set(flatten(constrain_param.dependencies()))
+            # we only need the dependencies that are varying parameters
+            rdepends = depends.intersection(set(varying_parameters))
+            if rdepends:
                 relevant_depends.append(rdepends)
 
-            # don't need duplicates
+        # don't need duplicates
+        if not constrained_params:
             relevant_depends = set(relevant_depends)
-
-            for constrain_param in constrained_params:
-                depends = set(flatten(constrain_param.dependencies))
-                # to be given a chain the constrained parameter has to depend
-                # on a varying parameter
-                if depends.intersection(relevant_depends):
-                    constrain_param.chain = np.zeros_like(
-                        relevant_depends[0].chain)
-
-                    for index, _ in np.ndenumerate(constrain_param.chain):
-                        for rdepend in relevant_depends:
-                            rdepend.value = rdepend.chain[index]
-
-                        constrain_param.chain[index] = constrain_param.value
-
-                    quantiles = np.percentile(constrain_param.chain,
-                                              [15.87, 50, 84.13])
-
-                    std_l, median, std_u = quantiles
-                    constrain_param.value = median
-                    constrain_param.stderr = 0.5 * (std_u - std_l)
-
-            # now reset fitted parameter values (they would've been changed by
-            # constraints calculations
-            self.objective.setp(fitted_values)
-
-        # the parameter set are not Parameter objects, an array was probably
-        # being used with BaseObjective.
         else:
-            for i in range(self.nvary):
-                c = np.copy(chain[..., i])
-                median, stderr = uncertainty_from_chain(c)
-                res = MCMCResult(name='', param=median,
-                                 median=median, stderr=stderr,
-                                 chain=c)
-                l.append(res)
+            relevant_depends = set.union(*map(set, relevant_depends))
 
-        return l
+        for constrain_param in constrained_params:
+            depends = set(flatten(constrain_param.dependencies()))
+            # to be given a chain the constrained parameter has to depend
+            # on a varying parameter
+            if depends.intersection(relevant_depends):
+                relevant_depends_list = list(relevant_depends)
+                constrain_param.chain = np.zeros_like(
+                    relevant_depends_list[0].chain)
+
+                for index, _ in np.ndenumerate(constrain_param.chain):
+                    for rdepend in relevant_depends:
+                        rdepend.value = rdepend.chain[index]
+
+                    constrain_param.chain[index] = constrain_param.value
+
+                quantiles = np.percentile(constrain_param.chain,
+                                          [15.87, 50, 84.13])
+
+                std_l, median, std_u = quantiles
+                constrain_param.value = median
+                constrain_param.stderr = 0.5 * (std_u - std_l)
+
+        # now reset fitted parameter values (they would've been changed by
+        # constraints calculations
+        objective.setp(fitted_values)
+
+    # the parameter set are not Parameter objects, an array was probably
+    # being used with BaseObjective.
+    else:
+        for i in range(nvary):
+            c = np.copy(chain[..., i])
+            median, stderr = uncertainty_from_chain(c)
+            res = MCMCResult(name='', param=median,
+                             median=median, stderr=stderr,
+                             chain=c)
+            l.append(res)
+
+    return l
 
 
 def uncertainty_from_chain(chain):
@@ -654,3 +828,35 @@ def bounds_list(parameters):
         # TODO could also do any truncated PDF
 
     return bounds
+
+
+# Following code is for autocorrelation analysis of chains and is taken from
+# emcee.autocorr
+def _next_pow_two(n):
+    """Returns the next power of two greater than or equal to `n`"""
+    i = 1
+    while i < n:
+        i = i << 1
+    return i
+
+
+def _function_1d(x):
+    """Estimate the normalized autocorrelation function of a 1-D series
+
+    Args:
+        x: The series as a 1-D numpy array.
+
+    Returns:
+        array: The autocorrelation function of the time series.
+
+    """
+    x = np.atleast_1d(x)
+    if len(x.shape) != 1:
+        raise ValueError("invalid dimensions for 1D autocorrelation function")
+    n = _next_pow_two(len(x))
+
+    # Compute the FFT and then (from that) the auto-correlation function
+    f = np.fft.fft(x - np.mean(x), n=2 * n)
+    acf = np.fft.ifft(f * np.conjugate(f))[:len(x)].real
+    acf /= acf[0]
+    return acf

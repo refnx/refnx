@@ -135,7 +135,7 @@ class ReductionCache(list):
         run_numbers : iterable
             run numbers to find
         """
-        return [self.run_cache[r] for r in run_numbers]
+        return [self[self.run_cache[r]] for r in run_numbers]
 
     def row(self, row_number):
         """ select a single data set by spreadsheet row number

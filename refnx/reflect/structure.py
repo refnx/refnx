@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 from __future__ import division
 from six.moves import UserList
 
@@ -18,7 +20,8 @@ class Structure(UserList):
     Represents the interfacial Structure of a reflectometry sample. Successive
     Components are added to the Structure to construct the interface.
     """
-    def __init__(self, name='', solvent='backing', reverse_structure=False):
+    def __init__(self, name='', solvent='backing', reverse_structure=False,
+                 contract=0):
         """
         Represents the interfacial Structure of a reflectometry sample.
         Successive Components are added to the Structure to construct the
@@ -39,6 +42,11 @@ class Structure(UserList):
             representation produced by `Structure.slabs` is reversed. The sld
             profile and calculated reflectivity will correspond to this
             reversed structure.
+        contract : float
+            If contract > 0 then an attempt to contract/shrink the slab
+            representation is made. Use larger values for coarser
+            profiles (and vice versa). A typical starting value to try might
+            be 1.0.
 
         Notes
         -----
@@ -48,6 +56,11 @@ class Structure(UserList):
         `Structure.reverse_structure is True` then the material that solvates
         the system is the component in `Structure[0]`, which corresponds to
         `Structure.slab[-1]`.
+        The profile contraction specified by the `contract` keyword can improve
+        calculation time for Structures created with microslicing (such as
+        analytical profiles). If you use this option it is recommended to check
+        the reflectivity signal with and without contraction to ensure they are
+        comparable.
         """
         super(Structure, self).__init__()
         self._name = name
@@ -57,6 +70,7 @@ class Structure(UserList):
 
         self.solvent = solvent
         self._reverse_structure = bool(reverse_structure)
+        self.contract = contract
         # self._parameters = Parameters(name=name)
 
     def __copy__(self):
@@ -157,7 +171,10 @@ class Structure(UserList):
             # overall SLD is a weighted average
             slabs[1:-1] = self.overall_sld(slabs[1:-1], solvent_slab)
 
-        return slabs
+        if self.contract > 0:
+            return _contract_by_area(slabs, self.contract)
+        else:
+            return slabs
 
     @staticmethod
     def overall_sld(slabs, solvent_slab):
@@ -354,7 +371,7 @@ class SLD(object):
 
         >>> # an SLD object representing Silicon Dioxide
         >>> sio2 = SLD(3.47, name='SiO2')
-        >>> # create a Slab of SiO2 20 A in thickness, with a 3 A roughness
+        >>> # create a Slab of SiO2 20 A in thickness, with a 3 A roughness
         >>> sio2_layer = SLD(20, 3)
         """
         self.name = name
@@ -542,3 +559,104 @@ def _profile_slicer(z, sld_profile, slice_size=None):
     structure.extend(slabs)
 
     return structure
+
+
+# The following slab contraction code was translated from C code in
+# the refl1d project.
+def _contract_by_area(slabs, dA=0.5):
+    """
+    Shrinks a slab representation to a reduced number of layers. This can
+    reduced calculation times.
+
+    Parameters
+    ----------
+    slabs : array
+        Has shape (N, 5).
+
+            slab[N, 0] - thickness of layer N
+            slab[N, 1] - overall SLD.real of layer N (material AND solvent)
+            slab[N, 2] - overall SLD.imag of layer N (material AND solvent)
+            slab[N, 3] - roughness between layer N and N-1
+            slab[N, 4] - volume fraction of solvent in layer N.
+                         (1 - solvent_volfrac = material_volfrac)
+
+    dA : float
+        Larger values coarsen the profile to a greater extent, and vice versa.
+
+    Returns
+    -------
+    contract_slab : array
+        Contracted slab representation.
+
+    Notes
+    -----
+    The reflectivity profiles from both contracted and uncontracted profiles
+    should be compared to check for accuracy.
+    """
+
+    # In refl1d the first slab is the substrate, the orded is reversed here.
+    # In the following code the slabs are traversed from the backing towards
+    # the fronting.
+    newslabs = np.copy(slabs)[::-1]
+    d = newslabs[:, 0]
+    rho = newslabs[:, 1]
+    irho = newslabs[:, 2]
+    sigma = newslabs[:, 3]
+    vfsolv = newslabs[:, 4]
+
+    n = np.size(d, 0)
+    i = newi = 1  # Skip the substrate
+
+    while i < n:
+        # Get ready for the next layer
+        # Accumulation of the first row happens in the inner loop
+        dz = rhoarea = irhoarea = vfsolvarea = 0.
+        rholo = rhohi = rho[i]
+        irholo = irhohi = irho[i]
+
+        # Accumulate slices into layer
+        while True:
+            # Accumulate next slice
+            dz += d[i]
+            rhoarea += d[i] * rho[i]
+            irhoarea += d[i] * irho[i]
+            vfsolvarea += d[i] * vfsolv[i]
+
+            i += 1
+            # If no more slices or sigma != 0, break immediately
+            if i == n or sigma[i - 1] != 0.:
+                break
+
+            # If next slice won't fit, break
+            if rho[i] < rholo:
+                rholo = rho[i]
+            if rho[i] > rhohi:
+                rhohi = rho[i]
+            if (rhohi - rholo) * (dz + d[i]) > dA:
+                break
+
+            if irho[i] < irholo:
+                irholo = irho[i]
+            if irho[i] > irhohi:
+                irhohi = irho[i]
+            if (irhohi - irholo) * (dz + d[i]) > dA:
+                break
+
+        # Save the layer
+        d[newi] = dz
+        if i == n:
+            # printf("contract: adding final sld at %d\n",newi)
+            # Last layer uses surface values
+            rho[newi] = rho[n - 1]
+            irho[newi] = irho[n - 1]
+            vfsolv[newi] = vfsolv[n - 1]
+        else:
+            # Middle layers uses average values
+            rho[newi] = rhoarea / dz
+            irho[newi] = irhoarea / dz
+            sigma[newi] = sigma[i - 1]
+            vfsolv[newi] = vfsolvarea / dz
+        # First layer uses substrate values
+        newi += 1
+
+    return newslabs[:newi][::-1]

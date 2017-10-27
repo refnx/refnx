@@ -94,6 +94,8 @@ class TestReductionCache(object):
 
     def test_runs(self):
         assert_equal(len(self.cache.runs((2, 12))), 2)
+        assert_(type(self.cache.runs([2])[0])
+                is refnx.reduce.batchreduction.ReductionEntry)
 
     def test_row(self):
         from pytest import raises
