@@ -6,6 +6,7 @@ import sys
 import time
 import re
 import warnings
+import array
 
 import numpy as np
 
@@ -647,28 +648,22 @@ def load_chain(f):
             raise ValueError("Couldn't read header line of chain file")
 
         # make an array that's the appropriate size
-        chain = np.empty((100, chain_size), dtype=float)
+        read_arr = array.array("d")
 
-        # expand memory as we go.
-        def chain_grow(chain):
-            new = np.empty((100, chain_size), dtype=float)
-            chain = np.concatenate((chain, new), axis=0)
-            return chain
+        for i, l in enumerate(g, 1):
+            read_arr.extend(np.fromstring(l,
+                                          dtype=float,
+                                          count=chain_size,
+                                          sep=' '))
 
-        for i, l in enumerate(g):
-            if i == np.size(chain, 0):
-                chain = chain_grow(chain)
-            chain[i] = np.fromstring(l, dtype=float, count=chain_size, sep=' ')
-
-        # trim chain to the number of lines loaded
-        chain = chain[0: i + 1]
+        chain = np.frombuffer(read_arr, dtype=np.float, count=len(read_arr))
 
         if ntemps is not None:
-            chain = np.reshape(chain, (-1, ntemps, nwalkers, ndim))
+            chain = np.reshape(chain, (i, ntemps, nwalkers, ndim))
             chain = np.swapaxes(chain, 0, 2)
             chain = np.swapaxes(chain, 0, 1)
         else:
-            chain = np.reshape(chain, (-1, nwalkers, ndim))
+            chain = np.reshape(chain, (i, nwalkers, ndim))
             chain = np.swapaxes(chain, 0, 1)
 
         return chain
