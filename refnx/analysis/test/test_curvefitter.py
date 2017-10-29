@@ -189,6 +189,45 @@ class TestCurveFitter(object):
                 raise
 
 
+class TestCurveFitterConstrained(object):
+
+    def setup_method(self):
+        # Reproducible results!
+        np.random.seed(123)
+
+        self.m_true = -0.9594
+        self.b_true = 4.294
+        self.f_true = 0.534
+        self.m_ls = -1.1040757010910947
+        self.b_ls = 5.4405552502319505
+
+        # Generate some synthetic data from the model.
+        N = 50
+        x = np.sort(10 * np.random.rand(N))
+        y_err = 0.1 + 0.5 * np.random.rand(N)
+        y = self.m_true * x + self.b_true
+        y += np.abs(self.f_true * y) * np.random.randn(N)
+        y += y_err * np.random.randn(N)
+
+        self.data = Data1D(data=(x, y, y_err))
+
+        parameter_b = Parameter(self.b_ls, 'b')
+        parameter_m = Parameter(self.m_ls, 'm', vary=True, bounds=(-100, 100))
+
+        parameter_b.constraint = parameter_m.value * 0.5
+        parameter_m.setp(vary=True, bounds=(-100, 100))
+
+        self.p = parameter_b | parameter_m
+
+        self.model = Model(self.p, fitfunc=line)
+        self.objective = Objective(self.model, self.data)
+        assert_(len(self.objective.varying_parameters()) == 1)
+
+        self.mcfitter = CurveFitter(self.objective)
+
+        self.mcfitter.sample(50)
+
+
 def gauss(x, p0):
     p = np.array(p0)
     return p[0] + p[1] * np.exp(-((x - p[2]) / p[3])**2)

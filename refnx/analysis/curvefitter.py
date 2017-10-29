@@ -631,19 +631,14 @@ def load_chain(f):
         The loaded chain - `(nwalkers, nsteps, ndim)` or
         `(ntemps, nwalkers, nsteps, ndim)`
     """
+    chain = np.loadtxt(f)
+
     with possibly_open_file(f, 'r') as g:
         # read header
         header = g.readline()
-        expr = re.compile('(\d+)')
-        matches = expr.findall(header)
-        if matches:
-            if len(matches) == 3:
-                ntemps, nwalkers, ndim = map(int, matches)
-                chain_size = ntemps * nwalkers * ndim
-            elif len(matches) == 2:
-                ntemps = None
-                nwalkers, ndim = map(int, matches)
-                chain_size = nwalkers * ndim
+        match = re.match("#\s+(\d+),\s+(\d+)", header)
+        if match is not None:
+            walkers, ndim = map(int, match.groups())
         else:
             raise ValueError("Couldn't read header line of chain file")
 
@@ -768,21 +763,26 @@ def process_chain(objective, chain, nburn=0, nthin=1, flatchain=False):
         # parameters
         relevant_depends = []
         for constrain_param in constrained_params:
-            depends = set(flatten(constrain_param.dependencies))
+            depends = set(flatten(constrain_param.dependencies()))
             # we only need the dependencies that are varying parameters
             rdepends = depends.intersection(set(varying_parameters))
-            relevant_depends.append(rdepends)
+            if rdepends:
+                relevant_depends.append(rdepends)
 
         # don't need duplicates
-        relevant_depends = set(relevant_depends)
+        if not constrained_params:
+            relevant_depends = set(relevant_depends)
+        else:
+            relevant_depends = set.union(*map(set, relevant_depends))
 
         for constrain_param in constrained_params:
-            depends = set(flatten(constrain_param.dependencies))
+            depends = set(flatten(constrain_param.dependencies()))
             # to be given a chain the constrained parameter has to depend
             # on a varying parameter
             if depends.intersection(relevant_depends):
+                relevant_depends_list = list(relevant_depends)
                 constrain_param.chain = np.zeros_like(
-                    relevant_depends[0].chain)
+                    relevant_depends_list[0].chain)
 
                 for index, _ in np.ndenumerate(constrain_param.chain):
                     for rdepend in relevant_depends:
@@ -811,7 +811,6 @@ def process_chain(objective, chain, nburn=0, nthin=1, flatchain=False):
                              median=median, stderr=stderr,
                              chain=c)
             l.append(res)
-
     return l
 
 

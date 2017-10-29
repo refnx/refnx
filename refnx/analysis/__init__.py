@@ -7,11 +7,10 @@ from refnx.analysis.curvefitter import (CurveFitter, MCMCResult, process_chain,
                                         load_chain)
 from refnx.analysis.model import Model, fitfunc
 
+from refnx._lib._testutils import PytestTester
 
 __all__ = [s for s in dir() if not s.startswith('_')]
 
-
-from refnx._lib._testutils import PytestTester
 
 test = PytestTester(__name__)
 del PytestTester

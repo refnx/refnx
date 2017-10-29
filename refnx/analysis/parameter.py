@@ -231,6 +231,13 @@ class BaseParameter(object):
         self.stderr = None
         self.chain = None
 
+    def __hash__(self):
+        a = '{0}/{1}/{2}/{3}/{4}/{5}/{6}'.format(self._vary, self.name,
+                                                 self._value, self._bounds,
+                                                 self._deps, self.stderr,
+                                                 self.chain)
+        return hash(a)
+
     def __getstate__(self):
         # the mathematical ops aren't unpickleable, so lets pop them. They'll
         # be reinstated when the constructor is called anyway.
