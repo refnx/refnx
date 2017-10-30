@@ -14,9 +14,8 @@ from scipy._lib._util import check_random_state
 from scipy.optimize import minimize, differential_evolution, least_squares
 
 from refnx.analysis import Objective, Interval, PDF, is_parameter
-from refnx._lib import flatten
 from refnx._lib import (unique as f_unique, possibly_create_pool,
-                        possibly_open_file)
+                        possibly_open_file, flatten)
 
 import emcee as emcee
 # PTSampler has been forked into a separate package. Try both places
@@ -759,43 +758,29 @@ def process_chain(objective, chain, nburn=0, nthin=1, flatchain=False):
         fitted_values = np.array(varying_parameters)
 
         # give each constrained param a chain (to be reshaped later)
-        # but only if it depends on varying parameters
-        # TODO add a test for this...
         constrained_params = [param for param in flat_params
                               if param.constraint is not None]
 
-        # figure out all the "master" parameters for the constrained
-        # parameters
-        relevant_depends = []
         for constrain_param in constrained_params:
-            depends = set(flatten(constrain_param.dependencies))
-            # we only need the dependencies that are varying parameters
-            rdepends = depends.intersection(set(varying_parameters))
-            relevant_depends.append(rdepends)
+            constrain_param.chain = np.empty(chain.shape[:-1], float)
 
-        # don't need duplicates
-        relevant_depends = set(relevant_depends)
+        # now iterate through the varying parameters, set the values, thereby
+        # setting the constraint value
+        for index in np.ndindex(chain.shape[:-1]):
+            # iterate over parameter vectors
+            pvals = chain[index]
+            objective.setp(pvals)
+
+            for constrain_param in constrained_params:
+                constrain_param.chain[index] = constrain_param.value
 
         for constrain_param in constrained_params:
-            depends = set(flatten(constrain_param.dependencies))
-            # to be given a chain the constrained parameter has to depend
-            # on a varying parameter
-            if depends.intersection(relevant_depends):
-                constrain_param.chain = np.zeros_like(
-                    relevant_depends[0].chain)
+            quantiles = np.percentile(constrain_param.chain,
+                                      [15.87, 50, 84.13])
 
-                for index, _ in np.ndenumerate(constrain_param.chain):
-                    for rdepend in relevant_depends:
-                        rdepend.value = rdepend.chain[index]
-
-                    constrain_param.chain[index] = constrain_param.value
-
-                quantiles = np.percentile(constrain_param.chain,
-                                          [15.87, 50, 84.13])
-
-                std_l, median, std_u = quantiles
-                constrain_param.value = median
-                constrain_param.stderr = 0.5 * (std_u - std_l)
+            std_l, median, std_u = quantiles
+            constrain_param.value = median
+            constrain_param.stderr = 0.5 * (std_u - std_l)
 
         # now reset fitted parameter values (they would've been changed by
         # constraints calculations

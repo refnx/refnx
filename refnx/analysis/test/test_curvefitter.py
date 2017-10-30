@@ -83,6 +83,18 @@ class TestCurveFitter(object):
         assert_almost_equal(self.p[0].value, res.x[0])
         assert_almost_equal(self.p[1].value, self.p[0].value * -0.203)
 
+        # check that constraints work during sampling
+        # the CurveFitter has to be set up again if you change how the
+        # parameters are being fitted.
+        mcfitter = CurveFitter(self.objective)
+        assert_(mcfitter.nvary == 1)
+        mcfitter.sample(5)
+        assert_equal(self.p[1].value, self.p[0].value * -0.203)
+        # the constrained parameters should have a chain
+        assert_(self.p[0].chain is not None)
+        assert_(self.p[1].chain is not None)
+        assert_allclose(self.p[1].chain, self.p[0].chain * -0.203)
+
     def test_mcmc(self):
         self.mcfitter.sample(steps=50, nthin=1, verbose=False)
 

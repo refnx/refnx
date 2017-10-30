@@ -512,8 +512,8 @@ class Objective(BaseObjective):
         except FloatingPointError:
             jac = approx_derivative(self.residuals, _pvals)
 
-        if len(_pvals) == 1:
-            jac = jac.T
+        # if len(_pvals) == 1:
+        #     jac = jac.T
 
         # need to create this because GlobalObjective does not have
         # access to all the datapoints being fitted.
