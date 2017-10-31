@@ -16,6 +16,7 @@ from scipy.optimize import minimize, differential_evolution, least_squares
 from refnx.analysis import Objective, Interval, PDF, is_parameter
 from refnx._lib import (unique as f_unique, possibly_create_pool,
                         possibly_open_file, flatten)
+from refnx._lib.util import getargspec
 
 import emcee as emcee
 # PTSampler has been forked into a separate package. Try both places
@@ -30,7 +31,10 @@ except ImportError:
     except ImportError:
         warnings.warn("PTSampler (parallel tempering) is not available,"
                       " please install the ptemcee package", ImportWarning)
-
+try:
+    import tqdm as tqdm
+except ImportError:
+    tqdm = None
 
 MCMCResult = namedtuple('MCMCResult', ['name', 'param', 'stderr', 'chain',
                                        'median'])
@@ -440,15 +444,33 @@ class CurveFitter(object):
 
         One can also burn and thin in `Curvefitter.process_chain`.
         """
+        if steps % nthin:
+            steps = steps - steps % nthin
+            print("Warning - setting steps to be multiple of nthin")
+
         if self._lastpos is None:
             self.initialise()
 
         start_time = time.time()
 
+        # record how many iterations have already been run on sampler
+        try:
+            init_iterations = np.size(self.chain, -2)
+        except (AttributeError, IndexError):
+            init_iterations = 0
+
+        def step_progress():
+            try:
+                iter = np.size(self.sampler.chain, -2) - init_iterations
+            except (AttributeError, IndexError):
+                iter = 0
+            return iter * nthin
+
         # for saving progress to file, and printing progress to stdout.
-        def _callback_wrapper(pos, lnprob, steps_completed, h=None):
+        def _callback_wrapper(pos, lnprob, h=None):
+            steps_completed = step_progress()
+
             if verbose:
-                steps_completed += 1
                 width = 50
                 step_rate = (time.time() - start_time) / steps_completed
                 time_remaining = divmod(step_rate * (steps - steps_completed),
@@ -469,7 +491,7 @@ class CurveFitter(object):
                                                  secs))
             if callback is not None:
                 callback(pos, lnprob)
-            if h is not None:
+            if (h is not None) and (steps_completed % nthin == 0):
                 # (nwalkers, dim) or (ntemps, nwalkers, dim)
                 h.write(' '.join(map(str, pos.ravel())))
                 h.write('\n')
@@ -508,14 +530,24 @@ class CurveFitter(object):
             else:
                 self.sampler.pool = g
 
-            for i, result in enumerate(self.sampler.sample(self._lastpos,
-                                                           iterations=steps,
-                                                           thin=nthin)):
+            kwargs = {'iterations': steps,
+                      'thin': nthin}
+
+            # new emcee has progress keyword. If that's present
+            # then we may be able to use tqdm progress bar.
+            # if not, then we'll just use our own.
+            if ('progress' in getargspec(self.sampler.sample).args and
+                    verbose and
+                    tqdm is not None):
+                kwargs['progress'] = True
+                verbose = False
+
+            for result in self.sampler.sample(self._lastpos,
+                                              **kwargs):
                 self._lastpos, lnprob = result[0:2]
-                _callback_wrapper(self._lastpos, lnprob, i, h=h)
+                _callback_wrapper(self._lastpos, lnprob, h=h)
 
         self.sampler.pool = None
-        # self._lastpos = result[0]
 
         # finish off the progress bar
         if verbose:

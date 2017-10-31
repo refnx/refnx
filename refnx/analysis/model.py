@@ -1,10 +1,6 @@
 from __future__ import division
 
-try:
-    from inspect import getfullargspec as _getargspec
-except ImportError:
-    # on 2.7
-    from inspect import getargspec as _getargspec
+from refnx._lib.util import getargspec
 
 
 def fitfunc(f):
@@ -138,7 +134,7 @@ class Model(object):
     def fitfunc(self, fitfunc):
         self._fitfunc = fitfunc
         self._fitfunc_has_xerr = False
-        if 'x_err' in _getargspec(fitfunc).args:
+        if 'x_err' in getargspec(fitfunc).args:
             self._fitfunc_has_xerr = True
 
     @property
