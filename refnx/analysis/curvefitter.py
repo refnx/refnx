@@ -455,12 +455,18 @@ class CurveFitter(object):
 
         # record how many iterations have already been run on sampler
         try:
-            init_iterations = np.size(self.chain, -2)
+            if hasattr(self.sampler, 'iterations'):
+                init_iterations = self.sampler.iterations
+            else:
+                init_iterations = np.size(self.chain, -2)
         except (AttributeError, IndexError):
             init_iterations = 0
 
         def step_progress():
             try:
+                if hasattr(self.sampler, 'iterations'):
+                    return self.sampler.iterations - init_iterations
+                # using old emcee
                 iter = np.size(self.sampler.chain, -2) - init_iterations
             except (AttributeError, IndexError):
                 iter = 0
