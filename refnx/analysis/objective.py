@@ -704,7 +704,9 @@ class GlobalObjective(Objective):
         lnprior = 0.
         for objective in self.objectives:
             lnprior += objective.lnprior()
-            lnprior += objective.model.lnprob()
+            # shortcut if one of the priors is impossible
+            if not np.isfinite(lnprior):
+                return -np.inf
 
         return lnprior
 
