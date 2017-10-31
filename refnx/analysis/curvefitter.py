@@ -457,6 +457,8 @@ class CurveFitter(object):
         try:
             if hasattr(self.sampler, 'iterations'):
                 init_iterations = self.sampler.iterations
+            elif hasattr(self.sampler, 'time'):
+                init_iterations = self.sampler.time
             else:
                 init_iterations = np.size(self.chain, -2)
         except (AttributeError, IndexError):
@@ -464,9 +466,12 @@ class CurveFitter(object):
 
         def step_progress():
             try:
-                if hasattr(self.sampler, 'iterations'):
-                    return self.sampler.iterations - init_iterations
                 # using old emcee
+                if hasattr(self.sampler, 'iterations'):
+                    return self.sampler.iterations
+                elif hasattr(self.sampler, 'time'):
+                    return self.sampler.time
+
                 iter = np.size(self.sampler.chain, -2) - init_iterations
             except (AttributeError, IndexError):
                 iter = 0
