@@ -290,6 +290,12 @@ class TestFitterGauss(object):
         chain = load_chain(checkpoint)
         assert_allclose(chain, f.chain)
 
+        f.initialise('jitter')
+        f.sample(steps=9, nthin=4, f=checkpoint)
+        assert_equal(2, f.chain.shape[-2])
+        chain = load_chain(checkpoint)
+        assert_allclose(chain, f.chain)
+
     def test_best_unweighted(self):
         self.objective.use_weights = False
         f = CurveFitter(self.objective, threads=1)
