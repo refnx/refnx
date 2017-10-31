@@ -7,6 +7,12 @@ import functools
 from tempfile import mkdtemp
 import collections
 from contextlib import contextmanager
+try:
+    from inspect import getfullargspec as _getargspecf
+except ImportError:
+    # on 2.7
+    from inspect import getargspec as _getargspecf
+
 
 from emcee.interruptible_pool import InterruptiblePool
 
@@ -237,3 +243,7 @@ def possibly_create_pool(pool):
 
     if close_pool:
         g.close()
+
+
+def getargspec(f):
+    return _getargspecf(f)
