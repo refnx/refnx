@@ -13,9 +13,12 @@ else:
     USE_CYTHON = True
 
 packages = find_packages()
-idx = packages.index('motofit')
-if idx >= 0:
-    packages.pop(idx)
+try:
+    idx = packages.index('motofit')
+    if idx >= 0:
+        packages.pop(idx)
+except ValueError:
+    pass
 
 # versioning
 MAJOR = 0
