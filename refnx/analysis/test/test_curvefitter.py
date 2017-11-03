@@ -265,6 +265,10 @@ class TestFitterGauss(object):
         assert_almost_equal(self.objective.chisqr(),
                             self.best_weighted_chisqr, 5)
 
+        # compare the residuals
+        res = (self.data.y - self.model(self.data.x)) / self.data.y_err
+        assert_equal(self.objective.residuals(), res)
+
         # compare objective._covar to the best_weighted_errors
         uncertainties = [param.stderr for param in self.params]
         assert_allclose(uncertainties, self.best_weighted_errors, rtol=0.01)
@@ -308,6 +312,10 @@ class TestFitterGauss(object):
         assert_almost_equal(self.objective.chisqr(),
                             self.best_unweighted_chisqr)
         assert_almost_equal(output, self.best_unweighted, 5)
+
+        # compare the residuals
+        res = self.data.y - self.model(self.data.x)
+        assert_equal(self.objective.residuals(), res)
 
         # compare objective._covar to the best_unweighted_errors
         uncertainties = np.array([param.stderr for param in self.params])

@@ -262,11 +262,12 @@ class Objective(BaseObjective):
         else:
             if model is not None:
                 model, _ = self.transform(x, model)
-                y, y_err = self.transform(x, y, y_err)
-                if weight:
-                    return y, y_err, model
-                else:
-                    return y, 1, model
+
+            y, y_err = self.transform(x, y, y_err)
+            if weight:
+                return y, y_err, model
+            else:
+                return y, 1, model
 
     def generative(self, pvals=None):
         """
