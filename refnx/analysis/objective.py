@@ -596,8 +596,8 @@ class Objective(BaseObjective):
 
         y, y_err, model = self._data_transform(model=self.generative())
 
-        # add the data (in a transformed fashion
-        if self.data.y_err is not None:
+        # add the data (in a transformed fashion)
+        if self.data.y_err is not None and self.use_weights:
             ax.errorbar(self.data.x, y, y_err, color='r')
         else:
             ax.scatter(self.data.x, y, color='r')
