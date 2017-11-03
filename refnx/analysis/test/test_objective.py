@@ -133,8 +133,14 @@ class TestObjective(object):
                             1231.1096772954229)
 
     def test_residuals(self):
+        # weighted
         assert_almost_equal(self.objective.residuals(),
                             (self.data.y - self.mod) / self.data.y_err)
+
+        # unweighted
+        objective = Objective(self.model, self.data, use_weights=False)
+        assert_almost_equal(objective.residuals(),
+                            self.data.y - self.mod)
 
     def test_objective_pickle(self):
         # can you pickle the objective function?
