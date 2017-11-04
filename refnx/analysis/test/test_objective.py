@@ -133,12 +133,22 @@ class TestObjective(object):
                             1231.1096772954229)
 
     def test_residuals(self):
-        # weighted
+        # weighted, with and without transform
         assert_almost_equal(self.objective.residuals(),
                             (self.data.y - self.mod) / self.data.y_err)
 
-        # unweighted
+        objective = Objective(self.model, self.data,
+                              transform=Transform('lin'))
+        assert_almost_equal(objective.residuals(),
+                            (self.data.y - self.mod) / self.data.y_err)
+
+        # unweighted, with and without transform
         objective = Objective(self.model, self.data, use_weights=False)
+        assert_almost_equal(objective.residuals(),
+                            self.data.y - self.mod)
+
+        objective = Objective(self.model, self.data, use_weights=False,
+                              transform=Transform('lin'))
         assert_almost_equal(objective.residuals(),
                             self.data.y - self.mod)
 
