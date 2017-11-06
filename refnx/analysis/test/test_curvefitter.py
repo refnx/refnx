@@ -184,7 +184,8 @@ class TestCurveFitter(object):
         # need full bounds for differential_evolution
         self.p[0].range(3, 7)
         self.p[1].range(-2, 0)
-        res2 = self.mcfitter.fit(method='differential_evolution', seed=1)
+        res2 = self.mcfitter.fit(method='differential_evolution', seed=1,
+                                 popsize=10, maxiter=100)
         assert_almost_equal(res2.x, [self.b_ls, self.m_ls], 6)
 
         # check that the res object has covar and stderr
@@ -257,8 +258,8 @@ class TestFitterGauss(object):
         assert_equal(len(self.objective.varying_parameters()), 4)
         self.objective.setp(self.p0)
 
-        f = CurveFitter(self.objective, threads=4)
-        res = f.fit()
+        f = CurveFitter(self.objective, nwalkers=100)
+        res = f.fit('least_squares')
 
         output = res.x
         assert_almost_equal(output, self.best_weighted, 3)
@@ -278,15 +279,16 @@ class TestFitterGauss(object):
 
         # compare samples to best_weighted_errors
         np.random.seed(1)
-        f.initialise('jitter')
-        f.sample(steps=201, random_state=1, verbose=False, f=checkpoint)
-        process_chain(self.objective, f.chain, nburn=100, nthin=20)
+        f.sample(steps=101, random_state=1, verbose=False, f=checkpoint)
+        process_chain(self.objective, f.chain, nburn=50, nthin=10)
         uncertainties = [param.stderr for param in self.params]
-        assert_allclose(uncertainties, self.best_weighted_errors, rtol=0.15)
+        # assert_allclose(np.array(self.objective.parameters),
+        #                 self.best_weighted, rtol=0.02)
+        assert_allclose(uncertainties, self.best_weighted_errors, rtol=0.2)
 
         # test that the checkpoint worked
         check_array = np.loadtxt(checkpoint)
-        check_array = check_array.reshape(201, f._nwalkers, f.nvary)
+        check_array = check_array.reshape(101, f._nwalkers, f.nvary)
         assert_allclose(np.swapaxes(check_array, 0, 1),
                         f.sampler.chain)
 
@@ -305,7 +307,7 @@ class TestFitterGauss(object):
 
     def test_best_unweighted(self):
         self.objective.use_weights = False
-        f = CurveFitter(self.objective, threads=1)
+        f = CurveFitter(self.objective, nwalkers=100)
         res = f.fit()
 
         output = res.x

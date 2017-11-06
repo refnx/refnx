@@ -50,7 +50,9 @@ class TestGlobalFitting(object):
         assert_equal(residuals.size, len(self.dataset))
 
     def test_globalfitting(self):
-        # can the global fitting run?
+        # smoke test for can the global fitting run?
+        # also tests that global fitting gives same output as
+        # normal fitting (for a single dataset)
         self.model.scale.setp(vary=True, bounds=(0, 2))
         self.model.bkg.setp(vary=True, bounds=(0, 8e-6))
         self.structure[-1].rough.setp(vary=True, bounds=(0, 6))
@@ -61,10 +63,10 @@ class TestGlobalFitting(object):
         self.objective.transform = Transform('logY')
 
         g = CurveFitter(self.global_objective)
-        res_g = g.fit(method='differential_evolution', seed=1)
+        res_g = g.fit(method='differential_evolution', seed=1, maxiter=10)
 
         f = CurveFitter(self.objective)
-        res_f = f.fit(method='differential_evolution', seed=1)
+        res_f = f.fit(method='differential_evolution', seed=1, maxiter=10)
 
         # individual and global should give the same fit. Because we use DE
         # there is no dependence on starting point, so long as we set a seed.
@@ -117,7 +119,7 @@ class TestGlobalFitting(object):
         global_objective.setp(np.array([1e-5, 10, 212, 1, 10, 1e-5, 1e-5]))
 
         f = CurveFitter(global_objective)
-        f.fit(method='differential_evolution', seed=1)
+        f.fit()
 
         indiv_chisqr = np.sum(objective.chisqr() for objective
                               in global_objective.objectives)
