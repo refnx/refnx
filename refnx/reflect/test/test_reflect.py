@@ -64,8 +64,10 @@ class TestReflect(object):
         self.structure361[2].sld.real.vary = True
         self.structure361[2].sld.real.range(0.2, 1.5)
 
-        e361 = np.loadtxt(os.path.join(self.pth, 'e361r.txt'))
-        self.qvals361, self.rvals361, self.evals361 = np.hsplit(e361, 3)
+        e361 = ReflectDataset(os.path.join(self.pth, 'e361r.txt'))
+        self.qvals361, self.rvals361, self.evals361 = (e361.x,
+                                                       e361.y,
+                                                       e361.y_err)
 
     def test_abeles(self):
         # test reflectivity calculation with values generated from Motofit
@@ -232,9 +234,13 @@ class TestReflect(object):
         objective = Objective(model,
                               (self.qvals361, self.rvals361, self.evals361),
                               transform=Transform('logY'))
-        fitter = CurveFitter(objective, threads=4)
+        fitter = CurveFitter(objective, nwalkers=100)
 
-        res = fitter.fit('differential_evolution')
+        print(objective.residuals().shape)
+        assert_(len(objective.generative().shape) == 1)
+        assert_(len(objective.residuals().shape) == 1)
+
+        res = fitter.fit('least_squares')
         res_mcmc = fitter.sample(steps=50, nthin=10, random_state=1,
                                  verbose=False)
 

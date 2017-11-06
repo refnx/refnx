@@ -23,7 +23,10 @@ class TestEvent(object):
                                            'EOS.bin')
 
         with open(cls.event_file_path, 'rb') as f:
-            event_list, fpos = event._events(f)
+            if HAVE_CEVENTS:
+                event_list, fpos = _cevent._cevents(f)
+            else:
+                event_list, fpos = event._events(f)
 
         cls.event_list = event_list
         cls.fpos = fpos
@@ -38,11 +41,26 @@ class TestEvent(object):
 
     def test_max_frames(self):
         # test reading only a certain number of frames
-        with open(self.event_file_path, 'rb') as f:
-            event_list, fpos = event._events(f, max_frames=10)
+        # also use this test to compare pure python read of events
+        with open(self.event_file_path, 'rb') as g:
+            event_list, fpos = event._events(g, max_frames=10)
+
         f, t, y, x = event_list
         max_f = np.max(f)
         assert_equal(9, max_f)
+
+        if HAVE_CEVENTS:
+            with open(self.event_file_path, 'rb') as g:
+                event_list, fpos = _cevent._cevents(g, max_frames=10)
+                cyf, cyt, cyy, cyx = event_list
+
+            max_f = np.max(cyf)
+            assert_equal(9, max_f)
+
+            assert_equal(cyf, f)
+            assert_equal(cyt, t)
+            assert_equal(cyy, y)
+            assert_equal(cyx, x)
 
     def test_event_same_as_detector(self):
         # the detector file should be the same as the event file
@@ -102,17 +120,3 @@ class TestEvent(object):
                                                      y_bins,
                                                      x_bins)
         assert_equal(np.size(detector, 0), 1)
-
-    def test_cevents(self):
-        # check that the cython cevents reader also reads the event file
-        # accurately.
-        if HAVE_CEVENTS:
-            with open(self.event_file_path, 'rb') as f:
-                event_list, fpos = _cevent._cevents(f)
-
-            f, t, y, x = event_list
-
-            assert_equal(self.t, t)
-            assert_equal(self.f, f)
-            assert_equal(self.y, y)
-            assert_equal(self.x, x)
