@@ -465,7 +465,7 @@ class CurveFitter(object):
         if self._lastpos is None:
             self.initialise()
 
-        pt_iterations = 0
+        self.__pt_iterations = 0
         if isinstance(self.sampler, PTSampler):
             steps *= nthin
 
@@ -478,8 +478,8 @@ class CurveFitter(object):
                 # if you're parallel tempering, then you only
                 # want to save every nthin
                 if isinstance(self.sampler, PTSampler):
-                    pt_iterations += 1
-                    if pt_iterations % nthin:
+                    self.__pt_iterations += 1
+                    if self.__pt_iterations % nthin:
                         return None
 
                 h.write(' '.join(map(str, pos.ravel())))
