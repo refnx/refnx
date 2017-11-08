@@ -306,7 +306,7 @@ class Objective(BaseObjective):
 
         y, y_err, model = self._data_transform(model)
 
-        return (y - model) / y_err
+        return np.squeeze((y - model) / y_err)
 
     def chisqr(self, pvals=None):
         """
