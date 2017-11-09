@@ -67,16 +67,17 @@ class TestEvent(object):
         orig_file = PlatypusNexus(os.path.join(self.path,
                                                'PLP0011613.nx.hdf'))
         orig_det = orig_file.cat.detector
+        frames = [np.arange(0, 23999)]
         event_det, fb = event.process_event_stream(self.event_list,
-                                                   [0, 23998],
+                                                   frames,
                                                    orig_file.cat.t_bins,
                                                    orig_file.cat.y_bins,
                                                    orig_file.cat.x_bins)
         assert_equal(event_det, orig_det)
 
         # PlatypusNexus.process_event_stream should be the same as well
-        fb, det, bm = orig_file.process_event_stream(frame_bins=[])
-        assert_equal(event_det, orig_det)
+        fc, det, bm = orig_file.process_event_stream(frame_bins=[])
+        assert_equal(det, orig_det)
 
     def test_open_with_path(self):
         # give the event reader a file path
@@ -102,9 +103,10 @@ class TestEvent(object):
         x_bins = np.array([60.5, -60.5])
         y_bins = np.linspace(110.5, -110.5, 222)
         t_bins = np.linspace(0, 50000, 1001)
-        f_bins = np.linspace(0, 24000, 7)
+
+        frames = event.framebins_to_frames(np.linspace(0, 24000, 7))
         detector, fbins = event.process_event_stream(self.event_list,
-                                                     f_bins,
+                                                     frames,
                                                      t_bins,
                                                      y_bins,
                                                      x_bins)
@@ -112,11 +114,11 @@ class TestEvent(object):
         assert_equal(detector[1, 383, 97, 0], 64)
         assert_equal(detector[4, 377, 98, 0], 57)
 
-        # now see what happens if we go too far with the frame_bins
-        f_bins = [0, 24000, 30000]
-        detector, fbins = event.process_event_stream(self.event_list,
-                                                     f_bins,
-                                                     t_bins,
-                                                     y_bins,
-                                                     x_bins)
-        assert_equal(np.size(detector, 0), 1)
+        # # now see what happens if we go too far with the frame_bins
+        # frames = event.framebins_to_frames([0, 24000, 30000])
+        # detector, fbins = event.process_event_stream(self.event_list,
+        #                                              frames,
+        #                                              t_bins,
+        #                                              y_bins,
+        #                                              x_bins)
+        # assert_equal(np.size(detector, 0), 1)

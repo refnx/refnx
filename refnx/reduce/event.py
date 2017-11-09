@@ -11,46 +11,45 @@ except ImportError:
     pass
 
 
-def process_event_stream(events, frame_bins, t_bins, y_bins, x_bins):
+def process_event_stream(events, frames, t_bins, y_bins, x_bins):
     """
-    Processes the event mode dataset into a histogram.
+    Processes the event mode dataset into a histogrammed detector image.
 
     Parameters
     ----------
     events : tuple(np.ndarray, np.ndarray, np.ndarray, np.ndarray)
         the 4-tuple of events (F, T, Y, X)
-    frame_bins : array_like
-        specifies the frame bins required in the image.
+    frames : sequence of array-like
+        each array in the sequence specifies which frames should be included
     t_bins : array_like
         specifies the time bins required in the image
     y_bins : array_like
         specifies the y bins required in the image
     x_bins : array_like
         specifies the x bins required in the image
-
     Returns
     -------
-    detector, frame_bins : np.ndarray, np.ndarray
-        The new detector image and the amended frame bins.
+    detector, frame_count : np.ndarray, np.ndarray
+        The new detector images and the number of frames within each image.
+        `detector` has shape
+        `(len(frames), len(t_bins) - 1, len(y_bins) - 1, len(x_bins) - 1)`.
+        `frame_count` says how many frames went into making each frame in the
+        detector image
 
     Notes
     -----
-    The frame bins that are supplied to this function are truncated to 0 and
-    the maximum frame bin in the events. Thus, if
-    frame_bins = [-20, -10, 5, 10, 20, 30] and the maximum frame bin is 25 then
-    the amended frame_bins is calculated as [0, 5, 10, 20, 25], i.e. 4 bins are
-    returned instead of 5.
+    Every entry in `frames` is clipped to 0 and the maximum frame number in the
+    events. Thus, if
+    frames = [[-2, -1, 0, 1, 2, 3]], and the maximum frame number is 2, then only
+    the 0, 1, 2 frames are included.
     """
     max_frame = max(events[0])
-    frame_bins = np.sort(frame_bins)
 
-    # truncate the limits of frame bins
-    frame_bins = np.unique(np.clip(frame_bins, 0, max_frame))
+    t_events = np.asarray(events).T
 
     localxbins = np.array(x_bins)
     localybins = np.array(y_bins)
     localtbins = np.sort(np.array(t_bins))
-    localframe_bins = np.array(frame_bins)
     reversed_x, reversed_y = False, False
 
     if localxbins[0] > localxbins[-1]:
@@ -61,17 +60,53 @@ def process_event_stream(events, frame_bins, t_bins, y_bins, x_bins):
         localybins = localybins[::-1]
         reversed_y = True
 
-    detector, edge = np.histogramdd(events, bins=(localframe_bins,
-                                                  localtbins,
-                                                  localybins,
-                                                  localxbins))
+    # create an (N, T, Y, X) detector image
+    detector = np.zeros((len(frames),
+                         len(t_bins) - 1,
+                         len(y_bins) - 1,
+                         len(x_bins) - 1),
+                        dtype=np.uint64)
+    frame_count = np.zeros(len(frames))
+
+    for i, frame in enumerate(frames):
+        frame_numbers = np.unique(np.clip(np.asarray(frame), 0, max_frame))
+        frame_count[i] = frame_numbers.size
+
+        # filter out the frames for which we have neutrons
+        frame_numbers = list(set(frame_numbers).intersection(t_events[:, 0]))
+        frame_numbers.sort()
+
+        # get the frame indexes
+        idxs = [np.where(t_events[:, 0] == j)[0] for j in frame_numbers]
+        if not idxs:
+            continue
+
+        idxs = np.concatenate(idxs)
+
+        filtered_events = t_events[idxs]
+
+        detector[i], edge = np.histogramdd(filtered_events[:, 1:],
+                                           bins=(localtbins,
+                                                 localybins,
+                                                 localxbins))
     if reversed_x:
         detector = detector[:, :, :, ::-1]
 
     if reversed_y:
         detector = detector[:, :, ::-1, :]
 
-    return detector, localframe_bins
+    return detector, frame_count
+
+
+def framebins_to_frames(frame_bins):
+    t_frame_bins = np.asarray(frame_bins)
+
+    frames = []
+    for idx in range(t_frame_bins.size - 1):
+        frames.append(np.arange(t_frame_bins[idx],
+                                t_frame_bins[idx + 1], dtype=np.uint64))
+
+    return frames
 
 
 def events(f, end_last_event=127, max_frames=np.inf):

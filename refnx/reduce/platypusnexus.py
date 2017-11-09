@@ -21,7 +21,8 @@ import refnx.util.general as general
 from refnx.util.general import resolution_double_chopper, _dict_compare
 import refnx.util.ErrorProp as EP
 from refnx.reduce.parabolic_motion import find_trajectory, y_deflection
-from refnx.reduce.event import events, process_event_stream
+from refnx.reduce.event import (events, process_event_stream,
+                                framebins_to_frames)
 from refnx.reduce.rebin import rebin, rebin_along_axis
 
 
@@ -566,12 +567,13 @@ class PlatypusNexus(object):
             output = self.process_event_stream(scanpoint=scanpoint,
                                                frame_bins=eventmode,
                                                event_folder=event_folder)
-            frame_bins, detector, bm1_counts = output
+            frame_count, detector, bm1_counts = output
 
             start_time = np.zeros(np.size(detector, 0))
             if cat.start_time is not None:
                 start_time += cat.start_time[scanpoint]
-                start_time += frame_bins[:-1]
+                start_time[1:] += (np.cumsum(frame_count)[:-1]
+                                   / cat.frequency[scanpoint])
         else:
             # we don't want detector streaming
             detector = cat.detector
@@ -1077,13 +1079,6 @@ class PlatypusNexus(object):
 
         Parameters
         ----------
-        frame_bins : array_like, optional
-            specifies the frame bins required in the image. If
-            framebins = [5, 10, 120] you will get 2 images.  The first starts
-            at 5s and finishes at 10s. The second starts at 10s and finishes
-            at 120s. If frame_bins has zero length, e.g. [], then a single
-            interval consisting of the entire acquisition time is used:
-            [0, acquisition_time].
         t_bins : array_like, optional
             specifies the time bins required in the image
         x_bins : array_like, optional
@@ -1097,10 +1092,17 @@ class PlatypusNexus(object):
             `event_folder is None` then the eventmode data is assumed to reside
             in the same directory as the NeXUS file. If event_folder is a
             string, then the string specifies the path to the eventmode data.
+        frame_bins : array_like, optional
+            specifies the frame bins required in the image. If
+            frame_bins = [5, 10, 120] you will get 2 images.  The first starts
+            at 5s and finishes at 10s. The second starts at 10s and finishes
+            at 120s. If frame_bins has zero length, e.g. [], then a single
+            interval consisting of the entire acquisition time is used:
+            [0, acquisition_time].
 
         Returns
         -------
-        frame_bins, detector, bm1_counts
+        frame_count, detector, bm1_counts : np.ndarray, np.ndarray, np.ndarray
 
         Create a new detector image based on the t_bins, x_bins, y_bins and
         frame_bins you supply to the method (these should all be lists/numpy
@@ -1109,10 +1111,11 @@ class PlatypusNexus(object):
         would essentially return the same detector image as the nexus file.
         However, you can specify the frame_bins list to generate detector
         images based on subdivided periods of the total acquisition.
-        For example if framebins = [5, 10, 120] you will get 2 images.  The
+        For example if frame_bins = [5, 10, 120] you will get 2 images.  The
         first starts at 5s and finishes at 10s. The second starts at 10s
         and finishes at 120s. The frame_bins are clipped to the total
         acquisition time if necessary.
+        `frame_count` is how many frames went into making each detector image.
         """
         cat = self.cat
 
@@ -1146,21 +1149,22 @@ class PlatypusNexus(object):
             loaded_events, end_of_last_event = events(f,
                                                       max_frames=last_frame)
 
+        # convert frame_bins to list of filter frames
+        frames = framebins_to_frames(np.asfarray(frame_bins) *
+                                      frequency)
+
         output = process_event_stream(loaded_events,
-                                      np.asfarray(frame_bins) *
-                                      frequency,
+                                      frames,
                                       t_bins,
                                       y_bins,
                                       x_bins)
 
-        detector, new_frame_bins = output
+        detector, frame_count = output
 
-        new_frame_bins /= frequency
+        bm1_counts = (frame_count * bm1_counts_for_scanpoint
+                      / total_acquisition_time / frequency)
 
-        bm1_counts = new_frame_bins[1:] - new_frame_bins[:-1]
-        bm1_counts *= (bm1_counts_for_scanpoint / total_acquisition_time)
-
-        return new_frame_bins, detector, bm1_counts
+        return frame_count, detector, bm1_counts
 
     def write_spectrum_dat(self, f, scanpoint=0):
         """
