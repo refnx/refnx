@@ -72,16 +72,29 @@ def process_event_stream(events, frames, t_bins, y_bins, x_bins):
         frame_numbers = np.unique(np.clip(np.asarray(frame), 0, max_frame))
         frame_count[i] = frame_numbers.size
 
-        # filter out the frames for which we have neutrons
-        frame_numbers = list(set(frame_numbers).intersection(t_events[:, 0]))
-        frame_numbers.sort()
+        frames_with_events = set(frame_numbers).intersection(t_events[:, 0])
 
-        # get the frame indexes
-        idxs = [np.where(t_events[:, 0] == j)[0] for j in frame_numbers]
-        if not idxs:
-            continue
+        if (np.ediff1d(frame_numbers) == 1).all():
+            # special case for all contiguous frames
+            # this is required otherwise "normal timeslicing"
+            # takes forever
+            # find first frame
+            first = np.where(t_events[:, 0] == min(frames_with_events))[0][0]
+            last = np.where(t_events[:, 0] == max(frames_with_events))[0][-1]
+            idxs = np.arange(first, last + 1)
+        else:
+            # not contiguous frames
+            # filter out the frames for which we have neutrons
+            frame_numbers = list(frames_with_events)
+            frame_numbers.sort()
 
-        idxs = np.concatenate(idxs)
+            # get the frame indexes
+            idxs = [np.where(t_events[:, 0] == j)[0] for j in frame_numbers]
+
+            if not idxs:
+                continue
+
+            idxs = np.concatenate(idxs)
 
         filtered_events = t_events[idxs]
 
