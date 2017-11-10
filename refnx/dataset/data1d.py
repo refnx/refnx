@@ -222,7 +222,7 @@ class Data1D(object):
 
         try:
             dr = np.r_[y_err[~overlap_points], ay_err * scale]
-        except TypeError:
+        except (TypeError, ValueError):
             if (ay_err is not None) or (y_err is not None):
                 raise ValueError("Both the existing Data1D and the data you're"
                                  " trying to add need to have y_err")
@@ -230,7 +230,7 @@ class Data1D(object):
 
         try:
             dq = np.r_[x_err[~overlap_points], ax_err]
-        except:
+        except (TypeError, ValueError):
             if (ax_err is not None) or (x_err is not None):
                 raise ValueError("Both the existing Data1D and the data you're"
                                  " trying to add need to have x_err")
