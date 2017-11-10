@@ -40,8 +40,8 @@ def process_event_stream(events, frames, t_bins, y_bins, x_bins):
     -----
     Every entry in `frames` is clipped to 0 and the maximum frame number in the
     events. Thus, if
-    frames = [[-2, -1, 0, 1, 2, 3]], and the maximum frame number is 2, then only
-    the 0, 1, 2 frames are included.
+    frames = [[-2, -1, 0, 1, 2, 3]], and the maximum frame number is 2, then
+    only the 0, 1, 2 frames are included.
     """
     max_frame = max(events[0])
 

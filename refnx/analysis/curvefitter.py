@@ -777,7 +777,7 @@ def process_chain(objective, chain, nburn=0, nthin=1, flatchain=False):
     varying_parameters = objective.varying_parameters()
 
     # set the stderr of each of the Parameters
-    l = []
+    result_list = []
     if np.all([is_parameter(param) for param in flat_params]):
         # zero out all the old parameter stderrs
         for param in flat_params:
@@ -796,7 +796,7 @@ def process_chain(objective, chain, nburn=0, nthin=1, flatchain=False):
             res = MCMCResult(name=param.name, param=param,
                              median=param.value, stderr=param.stderr,
                              chain=param.chain)
-            l.append(res)
+            result_list.append(res)
 
         fitted_values = np.array(varying_parameters)
 
@@ -838,9 +838,9 @@ def process_chain(objective, chain, nburn=0, nthin=1, flatchain=False):
             res = MCMCResult(name='', param=median,
                              median=median, stderr=stderr,
                              chain=c)
-            l.append(res)
+            result_list.append(res)
 
-    return l
+    return result_list
 
 
 def uncertainty_from_chain(chain):

@@ -45,9 +45,9 @@ spectrum_template = """<?xml version="1.0"?>
  spin="UNPOLARISED" dim="$n_spectra">
 <Run filename="$runnumber"/>
 <R uncertainty="dR">$r</R>
-<lambda uncertainty="dlambda" units="1/A">$l</lambda>
+<lambda uncertainty="dlambda" units="1/A">$lmda</lambda>
 <dR type="SD">$dr</dR>
-<dlambda type="_FWHM" units="1/A">$dl</dlambda>
+<dlambda type="_FWHM" units="1/A">$dlmda</dlambda>
 </REFdata>
 </REFentry>
 </REFroot>"""
@@ -594,8 +594,8 @@ class PlatypusNexus(object):
             start_time = np.zeros(np.size(detector, 0))
             if cat.start_time is not None:
                 start_time += cat.start_time[scanpoint]
-                start_time[1:] += (np.cumsum(frame_count)[:-1]
-                                   / cat.frequency[scanpoint])
+                start_time[1:] += (np.cumsum(frame_count)[:-1] /
+                                   cat.frequency[scanpoint])
         else:
             # we don't want detector streaming
             detector = cat.detector
@@ -1194,7 +1194,7 @@ class PlatypusNexus(object):
 
         # convert frame_bins to list of filter frames
         frames = framebins_to_frames(np.asfarray(frame_bins) *
-                                      frequency)
+                                     frequency)
 
         if event_filter is not None:
             output = event_filter(loaded_events, t_bins, y_bins, x_bins)
@@ -1207,8 +1207,9 @@ class PlatypusNexus(object):
 
         detector, frame_count = output
 
-        bm1_counts = (frame_count * bm1_counts_for_scanpoint
-                      / total_acquisition_time / frequency)
+        bm1_counts = (frame_count * bm1_counts_for_scanpoint /
+                      total_acquisition_time /
+                      frequency)
 
         return detector, frame_count, bm1_counts
 
@@ -1274,16 +1275,16 @@ class PlatypusNexus(object):
         sorted = np.argsort(self.m_lambda[0])
 
         r = m_spec[:, sorted]
-        l = m_lambda[:, sorted]
-        dl = m_lambda_fwhm[:, sorted]
+        lmda = m_lambda[:, sorted]
+        dlmda = m_lambda_fwhm[:, sorted]
         dr = m_spec_sd[:, sorted]
         d['n_spectra'] = self.processed_spectrum['n_spectra']
         d['runnumber'] = 'PLP{:07d}'.format(self.cat.datafile_number)
 
         d['r'] = repr(r[scanpoint].tolist()).strip(',[]')
         d['dr'] = repr(dr[scanpoint].tolist()).strip(',[]')
-        d['l'] = repr(l[scanpoint].tolist()).strip(',[]')
-        d['dl'] = repr(dl[scanpoint].tolist()).strip(',[]')
+        d['lmda'] = repr(lmda[scanpoint].tolist()).strip(',[]')
+        d['dlmda'] = repr(dlmda[scanpoint].tolist()).strip(',[]')
         thefile = s.safe_substitute(d)
 
         g = f

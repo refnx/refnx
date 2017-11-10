@@ -294,13 +294,13 @@ class BaseParameter(object):
         self._value = v
 
     def dependencies(self):
-        l = []
+        dep_list = []
         for _dep in self._deps:
             if isinstance(_dep, Parameter):
-                l.append(_dep)
+                dep_list.append(_dep)
             if isinstance(_dep, (_UnaryOp, _BinaryOp)):
-                l.append(_dep.dependencies())
-        return l
+                dep_list.append(_dep.dependencies())
+        return dep_list
 
     def __repr__(self):
         """Returns printable representation of a Parameter object."""

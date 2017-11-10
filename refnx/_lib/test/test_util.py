@@ -9,6 +9,6 @@ class TestUtil(object):
         pass
 
     def test_flatten(self):
-        l = [1, 2, [3, 4, 5], 6, 7]
-        t = list(flatten(l))
+        test_list = [1, 2, [3, 4, 5], 6, 7]
+        t = list(flatten(test_list))
         assert_equal(t, [1, 2, 3, 4, 5, 6, 7])
