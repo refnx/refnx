@@ -400,7 +400,7 @@ class PlatypusNexus(object):
                 integrate=-1, eventmode=None, event_folder=None,
                 peak_pos=None, peak_pos_tol=0.01,
                 background_mask=None, normalise_bins=True,
-                manual_beam_find=None, **kwds):
+                manual_beam_find=None, event_filter=None, **kwds):
         r"""
         Processes the ProcessNexus object to produce a time of flight spectrum.
         The processed spectrum is stored in the `processed_spectrum` attribute.
@@ -440,8 +440,8 @@ class PlatypusNexus(object):
               the spectrum is integrated over all the scanpoints.
             - integrate >= 0
               the individual spectra are calculated individually.
-              If `eventmode is not None` then integrate specifies which
-              scanpoint to examine.
+              If `eventmode is not None`, or `event_filter is not None` then
+              integrate specifies which scanpoint to examine.
 
         eventmode : None or array_like
             If eventmode is `None` then the integrated detector image is used.
@@ -457,7 +457,8 @@ class PlatypusNexus(object):
             identical results, because the eventmode method adjusts the total
             acquisition time and beam monitor counts to the frame number of the
             last event detected (which may be quite different if the count rate
-            is very low).
+            is very low). This parameter is disregarded if `event_filter` is
+            provided.
         event_folder : None or str
             Specifies the path for the eventmode data. If
             `event_folder is None` then the eventmode data is assumed to reside
@@ -499,6 +500,26 @@ class PlatypusNexus(object):
             `background_pixels` is a list of length `n`. Each of the entries
             should contain arrays of pixel numbers that specify the background
             region for each of the detector images.
+        event_filter : callable, optional
+            A function, that processes the event stream, returning a `detector`
+            array, and a `frame_count` array. `detector` has shape
+            `(N, T, Y, X)`, where `N` is the number of detector images, `T` is
+            the number of time bins (`len(t_bins)`), etc. `frame_count` has
+            shape `(N,)` and contains the number of frames for each of the
+            detector images. The frame_count is used to determine what fraction
+            of the overall monitor counts should be ascribed to each detector
+            image (by dividing by the total number of frames). The function has
+            signature:
+
+            detector, frame_count = event_filter(loaded_events,
+                                                 t_bins=None,
+                                                 y_bins=None,
+                                                 x_bins=None)
+            `loaded_events` is a 4-tuple of numpy arrays:
+            `(f_events, t_events, y_events, x_events)`, where `f_events`
+            contains the frame number for each neutron, landing at position
+            `x_events, y_events` on the detector, with time-of-flight
+            `t_events`.
 
         Notes
         -----
@@ -559,15 +580,16 @@ class PlatypusNexus(object):
 
         # This section controls how multiple detector images are handled.
         # We want event streaming.
-        if eventmode is not None:
+        if eventmode is not None or event_filter is not None:
             scanpoint = integrate
             if integrate == -1:
                 scanpoint = 0
 
             output = self.process_event_stream(scanpoint=scanpoint,
                                                frame_bins=eventmode,
-                                               event_folder=event_folder)
-            frame_count, detector, bm1_counts = output
+                                               event_folder=event_folder,
+                                               event_filter=event_filter)
+            detector, frame_count, bm1_counts = output
 
             start_time = np.zeros(np.size(detector, 0))
             if cat.start_time is not None:
@@ -1071,7 +1093,8 @@ class PlatypusNexus(object):
         return chod, d_cx
 
     def process_event_stream(self, t_bins=None, x_bins=None, y_bins=None,
-                             frame_bins=None, scanpoint=0, event_folder=None):
+                             frame_bins=None, scanpoint=0, event_folder=None,
+                             event_filter=None):
         """
         Processes the event mode dataset for the NeXUS file. Assumes that
         there is a event mode directory in the same directory as the NeXUS
@@ -1098,11 +1121,31 @@ class PlatypusNexus(object):
             at 5s and finishes at 10s. The second starts at 10s and finishes
             at 120s. If frame_bins has zero length, e.g. [], then a single
             interval consisting of the entire acquisition time is used:
-            [0, acquisition_time].
+            [0, acquisition_time]. If `event_filter` is provided then this
+            parameter is ignored.
+        event_filter : callable, optional
+            A function, that processes the event stream, returning a `detector`
+            array, and a `frame_count` array. `detector` has shape
+            `(N, T, Y, X)`, where `N` is the number of detector images, `T` is
+            the number of time bins (`len(t_bins)`), etc. `frame_count` has
+            shape `(N,)` and contains the number of frames for each of the
+            detector images. The frame_count is used to determine what fraction
+            of the overall monitor counts should be ascribed to each detector
+            image. The function has signature:
+
+            detector, frame_count = event_filter(loaded_events,
+                                                 t_bins=None,
+                                                 y_bins=None,
+                                                 x_bins=None)
+            `loaded_events` is a 4-tuple of numpy arrays:
+            `(f_events, t_events, y_events, x_events)`, where `f_events`
+            contains the frame number for each neutron, landing at position
+            `x_events, y_events` on the detector, with time-of-flight
+            `t_events`.
 
         Returns
         -------
-        frame_count, detector, bm1_counts : np.ndarray, np.ndarray, np.ndarray
+        detector, frame_count, bm1_counts : np.ndarray, np.ndarray, np.ndarray
 
         Create a new detector image based on the t_bins, x_bins, y_bins and
         frame_bins you supply to the method (these should all be lists/numpy
@@ -1153,18 +1196,21 @@ class PlatypusNexus(object):
         frames = framebins_to_frames(np.asfarray(frame_bins) *
                                       frequency)
 
-        output = process_event_stream(loaded_events,
-                                      frames,
-                                      t_bins,
-                                      y_bins,
-                                      x_bins)
+        if event_filter is not None:
+            output = event_filter(loaded_events, t_bins, y_bins, x_bins)
+        else:
+            output = process_event_stream(loaded_events,
+                                          frames,
+                                          t_bins,
+                                          y_bins,
+                                          x_bins)
 
         detector, frame_count = output
 
         bm1_counts = (frame_count * bm1_counts_for_scanpoint
                       / total_acquisition_time / frequency)
 
-        return frame_count, detector, bm1_counts
+        return detector, frame_count, bm1_counts
 
     def write_spectrum_dat(self, f, scanpoint=0):
         """

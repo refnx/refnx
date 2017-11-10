@@ -112,6 +112,9 @@ def process_event_stream(events, frames, t_bins, y_bins, x_bins):
 
 
 def framebins_to_frames(frame_bins):
+    if frame_bins is None:
+        return None
+
     t_frame_bins = np.asarray(frame_bins)
 
     frames = []

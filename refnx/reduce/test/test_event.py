@@ -76,7 +76,7 @@ class TestEvent(object):
         assert_equal(event_det, orig_det)
 
         # PlatypusNexus.process_event_stream should be the same as well
-        fc, det, bm = orig_file.process_event_stream(frame_bins=[])
+        det, fc, bm = orig_file.process_event_stream(frame_bins=[])
         assert_equal(det, orig_det)
 
     def test_open_with_path(self):
