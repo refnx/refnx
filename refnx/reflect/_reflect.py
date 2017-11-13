@@ -2,6 +2,16 @@ from __future__ import division, print_function
 import numpy as np
 
 
+"""
+import numpy as np
+q = np.linspace(0.01, 0.5, 1000)
+w = np.array([[0, 2.07, 0, 0],
+              [100, 3.47, 0, 3],
+              [500, -0.5, 0.00001, 3],
+              [0, 6.36, 0, 3]])
+"""
+
+
 def abeles(q, layers, scale=1., bkg=0, threads=0):
     """
     Abeles matrix formalism for calculating reflectivity from a stratified
