@@ -90,13 +90,14 @@ class FreeformVFP(Component):
         -------
         interpolator : scipy.interpolate.Interpolator
         """
-        zeds = np.cumsum(self.dz)
+        dz = np.array(self.dz)
+        zeds = np.cumsum(dz)
 
         # if dz's sum to more than 1, then normalise to unit interval.
         # clipped to 0 and 1 because we pad on the LHS, RHS later
         # and we need the array to be monotonically increasing
-        if np.sum(self.dz) > 1:
-            zeds /= np.sum(self.dz)
+        if zeds[-1] > 1:
+            zeds /= zeds[-1]
             zeds = np.clip(zeds, 0, 1)
 
         vf = np.array(self.vf)
@@ -117,11 +118,15 @@ class FreeformVFP(Component):
 
         # do you require zero gradient at either end of the spline?
         if self.zgrad:
-            zeds = np.r_[-1.1, 0 - EPS, zeds, 1 + EPS, 2.1]
-            vf = np.r_[left_end, left_end, vf, right_end, right_end]
+            zeds = np.concatenate([[-1.1, 0 - EPS],
+                                   zeds,
+                                   [1 + EPS, 2.1]])
+            vf = np.concatenate([[left_end, left_end],
+                                 vf,
+                                 [right_end, right_end]])
         else:
-            zeds = np.r_[0 - EPS, zeds, 1 + EPS]
-            vf = np.r_[left_end, vf, right_end]
+            zeds = np.concatenate([[0 - EPS], zeds, [1 + EPS]])
+            vf = np.concatenate([[left_end], vf, [right_end]])
 
         # cache the interpolator
         cache_zeds = self.__cached_interpolator['zeds']
