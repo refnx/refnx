@@ -1,5 +1,6 @@
 from __future__ import division
 import os.path
+from collections import namedtuple
 import numpy as np
 
 from scipy.interpolate import PchipInterpolator as Pchip
@@ -76,9 +77,18 @@ class FreeformVFP(Component):
         else:
             self.gamma = Parameter(0, 'gamma')
 
-    def __call__(self, z):
+        self.__cached_interpolator = {'zeds': np.array([]),
+                                      'vf': np.array([]),
+                                      'interp': None,
+                                      'extent': -1}
+
+    def _vfp_interpolator(self):
         """
-        Calculates the volume fraction profile of the spline
+        The spline based volume fraction profile interpolator
+
+        Returns
+        -------
+        interpolator : scipy.interpolate.Interpolator
         """
         zeds = np.cumsum(self.dz)
 
@@ -112,10 +122,43 @@ class FreeformVFP(Component):
         else:
             zeds = np.r_[0 - EPS, zeds, 1 + EPS]
             vf = np.r_[left_end, vf, right_end]
-        # print(zeds, vf)
+
+        # cache the interpolator
+        cache_zeds = self.__cached_interpolator['zeds']
+        cache_vf = self.__cached_interpolator['vf']
+        cache_extent = self.__cached_interpolator['extent']
+
+        # you don't need to recreate the interpolator
+        if (np.array_equal(zeds, cache_zeds) and
+                np.array_equal(vf, cache_vf) and
+                np.equal(self.extent, cache_extent)):
+            return self.__cached_interpolator['interp']
+        else:
+            self.__cached_interpolator['zeds'] = zeds
+            self.__cached_interpolator['vf'] = vf
+            self.__cached_interpolator['extent'] = float(self.extent)
 
         # TODO make vfp zero for z > self.extent
-        vfp = self.interpolator(zeds, vf)(z / float(self.extent))
+        interpolator = self.interpolator(zeds, vf)
+        self.__cached_interpolator['interp'] = interpolator
+        return interpolator
+
+    def __call__(self, z):
+        """
+        Calculates the volume fraction profile of the spline
+
+        Parameters
+        ----------
+        z : float
+            Distance along vfp
+
+        Returns
+        -------
+        vfp : float
+            Volume fraction
+        """
+        interpolator = self._vfp_interpolator()
+        vfp = interpolator(z / float(self.extent))
         return vfp
 
     def moment(self, moment=1):
@@ -159,9 +202,8 @@ class FreeformVFP(Component):
         -------
         area: integrated area of volume fraction profile
         """
-        slabs = self.slabs
-        areas = self.slabs[..., 0] * (1 - slabs[..., 4])
-        area = np.sum(areas)
+        interpolator = self._vfp_interpolator()
+        area = interpolator.integrate(0, 1) * float(self.extent)
 
         for slab in self.left_slabs:
             _slabs = slab.slabs
