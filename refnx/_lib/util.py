@@ -145,25 +145,26 @@ def flatten(l):
             yield el
 
 
-def unique(l):
+def unique(seq, idfun=id):
     """
     List of unique values in sequence (by object id). Ordering is preserved
 
     Parameters
     ----------
-    l : sequence
+    seq : sequence
+    idfun : callable
 
     Returns
     -------
     p : generator
         yields unique values from l
     """
-    ids = []
-    for el in l:
-        id_el = id(el)
-        if id_el not in ids:
-            ids.append(id_el)
-            yield el
+    seen = {}
+    for item in seq:
+        marker = idfun(item)
+        if marker not in seen:
+            seen[marker] = 1
+            yield item
 
 
 @contextmanager

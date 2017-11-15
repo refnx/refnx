@@ -241,7 +241,7 @@ class TestReflect(object):
         assert_(len(objective.residuals().shape) == 1)
 
         res = fitter.fit('least_squares')
-        res_mcmc = fitter.sample(steps=50, nthin=10, random_state=1,
+        res_mcmc = fitter.sample(steps=5, nthin=10, random_state=1,
                                  verbose=False)
 
         mcmc_val = [mcmc_result.median for mcmc_result in res_mcmc]
