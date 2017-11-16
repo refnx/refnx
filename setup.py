@@ -178,6 +178,16 @@ def setup_package():
                                 )
             ext_modules.append(_cevent)
 
+            _cutil = Extension(
+                               name='refnx._lib._cutil',
+                               sources=['src/_cutil.pyx'],
+                               include_dirs=[numpy_include],
+                               language='c',
+                               # libraries=
+                               # extra_compile_args = "...".split(),
+                               )
+            ext_modules.append(_cutil)
+
             info['cmdclass'] = {'build_ext': build_ext}
             info['ext_modules'] = ext_modules
             info['zip_safe'] = False
