@@ -10,6 +10,7 @@ refnx.egg-info/
 src/_cevent.c
 src/_creflect.c
 src/_creflect.cpp
+src/_cutil.c
 build.log
 doc/_build/
 t.txt
