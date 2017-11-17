@@ -15,7 +15,7 @@ class Spline(Component):
     """
 
     def __init__(self, extent, vs, dz, left, right, solvent, name='',
-                 interpolator=Pchip, zgrad=True, microslab_max_thickness=2):
+                 interpolator=Pchip, zgrad=True, microslab_max_thickness=1):
         """
         Parameters
         ----------
@@ -65,9 +65,9 @@ class Spline(Component):
         microslab is `microslab_max_thickness`.
         """
         self.name = name
-        self.left_Slab = left
-        self.right_Slab = right
-        self.solvent_Slab = solvent
+        self.left_slab = left
+        self.right_slab = right
+        self.solvent_slab = solvent
         self.microslab_max_thickness = microslab_max_thickness
 
         self.extent = (
@@ -95,45 +95,87 @@ class Spline(Component):
         self.zgrad = zgrad
         self.interpolator = interpolator
 
-    def __call__(self, z):
-        # calculate spline value at z
-        zeds = np.cumsum(self.dz)
+        self.__cached_interpolator = {'zeds': np.array([]),
+                                      'vs': np.array([]),
+                                      'interp': None,
+                                      'extent': -1}
+
+    def _interpolator(self):
+        dz = np.array(self.dz)
+        zeds = np.cumsum(dz)
 
         # if dz's sum to more than 1, then normalise to unit interval.
-        if np.sum(self.dz) > 1:
-            zeds /= np.sum(self.dz)
+        if zeds[-1] > 1:
+            zeds /= zeds[-1]
+            zeds = np.clip(zeds, 0, 1)
 
         vs = np.array(self.vs)
 
         left_sld = Structure.overall_sld(
-            np.atleast_2d(self.left_Slab.slabs[-1]),
-            self.solvent_Slab.slabs)[..., 1]
+            np.atleast_2d(self.left_slab.slabs[-1]),
+            self.solvent_slab.slabs)[..., 1]
 
         right_sld = Structure.overall_sld(
-            np.atleast_2d(self.right_Slab.slabs[0]),
-            self.solvent_Slab.slabs)[..., 1]
+            np.atleast_2d(self.right_slab.slabs[0]),
+            self.solvent_slab.slabs)[..., 1]
 
         if self.zgrad:
-            zeds = np.r_[-1.1, 0, zeds, 1, 2.1]
-            vs = np.r_[left_sld, left_sld, vs, right_sld, right_sld]
+            zeds = np.concatenate([[-1.1, 0], zeds, [1, 2.1]])
+            print(left_sld.shape, right_sld.shape)
+            vs = np.concatenate([left_sld, left_sld, vs, right_sld, right_sld])
         else:
-            zeds = np.r_[0, zeds, 1]
-            vs = np.r_[left_sld, vs, right_sld]
-        return self.interpolator(zeds, vs)(z / float(self.extent))
+            zeds = np.concatenate([[0], zeds, [1]])
+            vs = np.concatenate([left_sld, vs, right_sld])
+
+        # cache the interpolator
+        cache_zeds = self.__cached_interpolator['zeds']
+        cache_vs = self.__cached_interpolator['vs']
+        cache_extent = self.__cached_interpolator['extent']
+
+        # you don't need to recreate the interpolator
+        if (np.array_equal(zeds, cache_zeds) and
+                np.array_equal(vs, cache_vs) and
+                np.equal(self.extent, cache_extent)):
+            return self.__cached_interpolator['interp']
+        else:
+            self.__cached_interpolator['zeds'] = zeds
+            self.__cached_interpolator['vs'] = vs
+            self.__cached_interpolator['extent'] = float(self.extent)
+
+        # TODO make vfp zero for z > self.extent
+        interpolator = self.interpolator(zeds, vs)
+        self.__cached_interpolator['interp'] = interpolator
+        return interpolator
+
+    def __call__(self, z):
+        """
+        Calculates the spline value at z
+
+        Parameters
+        ----------
+        z : float
+            Distance along spline
+
+        Returns
+        -------
+        sld : float
+            Real part of SLD
+        """
+        interpolator = self._interpolator()
+        vs = interpolator(z / float(self.extent))
+        return vs
 
     @property
     def parameters(self):
         p = Parameters(name=self.name)
         p.extend([self.extent, self.dz, self.vs,
-                  self.left_Slab,
-                  self.right_Slab,
-                  self.solvent_Slab])
+                  self.left_slab.parameters,
+                  self.right_slab.parameters,
+                  self.solvent_slab.parameters])
         return p
 
     def lnprob(self):
-        zeds = np.cumsum(self.dz)
-        if zeds[-1] > 1:
-            return -np.inf
+        return 0
 
     @property
     def slabs(self):
@@ -142,8 +184,8 @@ class Spline(Component):
         slabs = np.zeros((int(num_slabs), 5))
         slabs[:, 0] = slab_thick
 
-        # give each slab a miniscule roughness
-        slabs[:, 3] = 0.5
+        # give last slab a miniscule roughness so it doesn't get contracted
+        slabs[-1:, 3] = 0.5
 
         dist = np.cumsum(slabs[..., 0]) - 0.5 * slab_thick
         slabs[:, 1] = self(dist)
