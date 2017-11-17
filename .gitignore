@@ -17,6 +17,7 @@ t.txt
 t
 .cache/
 refnx/version.py
+benchmarks/.asv
 
 # testing artifacts
 PLP*dat
