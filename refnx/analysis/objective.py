@@ -435,6 +435,10 @@ class Objective(BaseObjective):
 
         lnlike += ((y - model) / y_err)**2
 
+        # nans play havoc
+        if np.isnan(lnlike).any():
+            raise RuntimeError("Objective.lnlike encountered a NaN")
+
         return -0.5 * np.sum(lnlike)
 
     def nll(self, pvals=None):
