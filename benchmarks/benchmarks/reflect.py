@@ -69,7 +69,6 @@ class Reflect(Benchmark):
                               e361)
         self.fitter = CurveFitter(objective, nwalkers=200)
         self.repeat = 4
-        self.number=3
 
     def time_reflect_emcee(self):
         self.fitter.sample(steps=100, random_state=1, verbose=False)
