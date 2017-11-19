@@ -33,6 +33,9 @@ class Abeles(Benchmark):
 
 
 class Reflect(Benchmark):
+    timeout = 120.
+    repeat = 2
+
     def setup(self):
         pth = os.path.dirname(os.path.abspath(refnx.reflect.__file__))
         e361 = RD(os.path.join(pth, 'test', 'e361r.txt'))
@@ -68,7 +71,7 @@ class Reflect(Benchmark):
         objective = Objective(model361,
                               e361)
         self.fitter = CurveFitter(objective, nwalkers=200)
-        self.repeat = 4
+        self.fitter.initialise('jitter')
 
     def time_reflect_emcee(self):
-        self.fitter.sample(steps=100, random_state=1, verbose=False)
+        self.fitter.sampler.run_mcmc(self.fitter._lastpos, 100)
