@@ -120,11 +120,10 @@ class Spline(Component):
             self.solvent_slab.slabs)[..., 1]
 
         if self.zgrad:
-            zeds = np.concatenate([[-1.1, 0], zeds, [1, 2.1]])
-            print(left_sld.shape, right_sld.shape)
+            zeds = np.concatenate([[-1.1, 0 - EPS], zeds, [1 + EPS, 2.1]])
             vs = np.concatenate([left_sld, left_sld, vs, right_sld, right_sld])
         else:
-            zeds = np.concatenate([[0], zeds, [1]])
+            zeds = np.concatenate([[0 - EPS], zeds, [1 + EPS]])
             vs = np.concatenate([left_sld, vs, right_sld])
 
         # cache the interpolator
