@@ -8,6 +8,9 @@ from refnx.analysis import (Parameter, Parameters,
                             possibly_create_parameter)
 
 
+EPS = np.finfo(float).eps
+
+
 class Spline(Component):
     """
     Freeform modelling of the real part of an SLD profile using spline
