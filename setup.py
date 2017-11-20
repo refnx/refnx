@@ -124,7 +124,7 @@ info = {
         'packages': packages,
         'include_package_data': True,
         'setup_requires': ['numpy'],
-        'install_requires': ['numpy', 'scipy', 'emcee', 'six',
+        'install_requires': ['numpy', 'scipy', 'emcee>=3', 'six',
                              'uncertainties', 'pandas']
         }
 
