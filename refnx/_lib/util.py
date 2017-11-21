@@ -237,8 +237,8 @@ class possibly_create_pool(object):
         Yields
         ------
         g : pool-like object
-            On leaving the context manager the pool is closed, if it was opened by
-            this context manager.
+            On leaving the context manager the pool is closed, if it was opened
+            by this context manager.
         """
         self.pool = pool
         self._created_pool = None
@@ -257,8 +257,8 @@ class possibly_create_pool(object):
                 # only use the number of processors requested
                 g = InterruptiblePool(processes=int(self.pool))
             else:
-                raise ValueError("you need to supply an integer for creating a "
-                                 "pool")
+                raise ValueError("you need to supply an integer for creating a"
+                                 " pool")
 
             self._created_pool = g
             return g
