@@ -5,12 +5,42 @@ import numpy as np
 
 from scipy.interpolate import PchipInterpolator as Pchip
 from scipy.integrate import simps
+from scipy.stats import truncnorm
 
 from refnx.reflect import ReflectModel, Structure, Component, SLD, Slab
 from refnx.analysis import (Bounds, Parameter, Parameters,
                             possibly_create_parameter)
 
 EPS = np.finfo(float).eps
+
+
+class SoftTruncPDF(object):
+    """
+    Gaussian distribution with soft truncation
+    """
+    def __init__(self, mean, sd, lhs=None, rhs=None):
+        self.a, self.b = -np.inf, np.inf
+        self.lhs = -np.inf
+        self.rhs = np.inf
+        if lhs is not None:
+            self.lhs = lhs
+            self.a = (lhs - mean) / sd
+        if rhs is not None:
+            self.rhs = rhs
+            self.b = (rhs - mean) / sd
+
+        self._pdf = truncnorm(self.a, self.b, mean, sd)
+
+    def logpdf(self, val):
+        prob = self._pdf.logpdf(val)
+        if val < self.lhs:
+            return (val - self.lhs) * 10000
+        if val > self.rhs:
+            return (self.rhs - val) * 10000
+        return prob
+
+    def rvs(self, size=1):
+        return self._pdf.rvs(size)
 
 
 class FreeformVFP(Component):
