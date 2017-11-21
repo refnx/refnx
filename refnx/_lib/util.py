@@ -200,50 +200,72 @@ def possibly_open_file(f, mode='wb'):
         g.close()
 
 
-@contextmanager
-def possibly_create_pool(pool):
+class possibly_create_pool(object):
     """
-    Context manager for multiprocessing.
+     Context manager for multiprocessing.
 
-    Parameters
-    ----------
-    pool : int or map-like object
-        If `pool` is an `int` then it specifies the number of threads to
-        use for parallelization. If `pool == 1`, then no parallel
-        processing is used.
-        If pool is an object with a map method that follows the same
-        calling sequence as the built-in map function, then this pool is
-        used for parallelisation.
+     Parameters
+     ----------
+     pool : int or map-like object
+         If `pool` is an `int` then it specifies the number of threads to
+         use for parallelization. If `pool == 1`, then no parallel
+         processing is used.
+         If pool is an object with a map method that follows the same
+         calling sequence as the built-in map function, then this pool is
+         used for parallelisation.
 
-    Yields
-    ------
-    g : pool-like object
-        On leaving the context manager the pool is closed, if it was opened by
-        this context manager.
-    """
-    close_pool = False
+     Yields
+     ------
+     g : pool-like object
+         On leaving the context manager the pool is closed, if it was opened by
+         this context manager.
+     """
+    def __init__(self, pool):
+        """
+        Context manager for multiprocessing.
 
-    # the user supplied a pool, don't close it
-    if hasattr(pool, 'map'):
-        g = pool
-    else:
-        # user supplies a number
-        if pool == 0:
-            # use as many processors as possible
-            g = InterruptiblePool()
-        elif pool > 0:
-            # only use the number of processors requested
-            g = InterruptiblePool(processes=int(pool))
+        Parameters
+        ----------
+        pool : int or map-like object
+            If `pool` is an `int` then it specifies the number of threads to
+            use for parallelization. If `pool == 1`, then no parallel
+            processing is used.
+            If pool is an object with a map method that follows the same
+            calling sequence as the built-in map function, then this pool is
+            used for parallelisation.
+
+        Yields
+        ------
+        g : pool-like object
+            On leaving the context manager the pool is closed, if it was opened
+            by this context manager.
+        """
+        self.pool = pool
+        self._created_pool = None
+
+    def __enter__(self):
+        if hasattr(self.pool, 'map'):
+            return self.pool
         else:
-            raise ValueError("you need to supply an integer for creating a "
-                             "pool")
+            # user supplies a number
+            if self.pool == 0:
+                # use as many processors as possible
+                g = InterruptiblePool()
+            elif self.pool == 1:
+                return map
+            elif self.pool > 1:
+                # only use the number of processors requested
+                g = InterruptiblePool(processes=int(self.pool))
+            else:
+                raise ValueError("you need to supply an integer for creating a"
+                                 " pool")
 
-        close_pool = True
+            self._created_pool = g
+            return g
 
-    yield g
-
-    if close_pool:
-        g.close()
+    def __exit__(self, *args):
+        if self._created_pool is not None:
+            self._created_pool.close()
 
 
 def getargspec(f):
