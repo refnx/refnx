@@ -48,10 +48,40 @@ class FreeformVFP(Component):
     """
     def __init__(self, extent, vf, dz, polymer_sld, solvent, name='',
                  gamma=None, left_slabs=(), right_slabs=(),
-                 interpolator=Pchip, zgrad=True, microslab_max_thickness=1):
+                 interpolator=Pchip, zgrad=True, monotonic=False,
+                 microslab_max_thickness=1):
         """
         Parameters
         ----------
+        extent : Parameter or float
+            The total extent of the spline region
+        vf: sequence of Parameter or float
+            Volume fraction at each of the spline knots
+        dz : sequence of Parameter or float
+            Separation of successive knots, expressed as a fraction of
+            `extent`.
+        polymer_sld : SLD or float
+            SLD of polymer
+        solvent : SLD or float
+            SLD of solvent
+        name : str
+            Name of component
+        gamma : Parameter
+            The dry adsorbed amount of polymer
+        left_slabs : sequence of Slab
+            Polymer Slabs to the left of the spline
+        right_slabs : sequence of Slab
+            Polymer Slabs to the right of the spline
+        interpolator : scipy interpolator
+            The interpolator for the spline
+        zgrad : bool, optional
+            Set to `True` to force the gradient of the volume fraction to zero
+            at each end of the spline.
+        monotonic : bool, optional
+            Set to `True` to make the spline monotonically decreasing. This is
+            accomplished by adding an enormous penalty to `lnprob`.
+        microslab_max_thickness : float
+            Thickness of microslicing of spline for reflectivity calculation.
         """
         self.name = name
 
@@ -99,6 +129,7 @@ class FreeformVFP(Component):
         if len(self.vf) != len(self.dz):
             raise ValueError("dz and vs must have same number of entries")
 
+        self.monotonic = monotonic
         self.zgrad = zgrad
         self.interpolator = interpolator
 
@@ -226,8 +257,13 @@ class FreeformVFP(Component):
         return p
 
     def lnprob(self):
+        lnprob = 0
+        if self.monotonic and (np.ediff1d(self.vf) > 0).any():
+            lnprob -= 1e250
+
         # log-probability for area under profile
-        return self.gamma.lnprob(self.profile_area())
+        lnprob += self.gamma.lnprob(self.profile_area())
+        return lnprob
 
     def profile_area(self):
         """
