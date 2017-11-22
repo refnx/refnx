@@ -14,6 +14,24 @@ from refnx.analysis import (Bounds, Parameter, Parameters,
 EPS = np.finfo(float).eps
 
 
+def _is_monotonic(arr):
+    """
+    Is an array monotonic?
+
+    Returns
+    -------
+    monotonic, direction : bool, int
+        If the array is monotonic then monotonic is True, with `direction`
+        indicating whether it's decreasing (-1), or increasing (1)
+    """
+    diff = np.ediff1d(arr)
+    if not ((diff > 0).all() or (diff < 0).all()):
+        return False, 0
+    if (diff > 0).all():
+        return True, 1
+    return True, -1
+
+
 class SoftTruncPDF(object):
     """
     Gaussian distribution with soft truncation
@@ -48,7 +66,7 @@ class FreeformVFP(Component):
     """
     def __init__(self, extent, vf, dz, polymer_sld, solvent, name='',
                  gamma=None, left_slabs=(), right_slabs=(),
-                 interpolator=Pchip, zgrad=True, monotonic=False,
+                 interpolator=Pchip, zgrad=True, monotonic_penalty=0,
                  microslab_max_thickness=1):
         """
         Parameters
@@ -77,9 +95,17 @@ class FreeformVFP(Component):
         zgrad : bool, optional
             Set to `True` to force the gradient of the volume fraction to zero
             at each end of the spline.
-        monotonic : bool, optional
-            Set to `True` to make the spline monotonically decreasing. This is
-            accomplished by adding an enormous penalty to `lnprob`.
+        monotonic_penalty : number, optional
+            The penalty added to the log-probability to penalise non-monotonic
+            spline knots.
+            Set to a very large number (e.g. 1e250) to enforce a monotonically
+            decreasing volume fraction spline.
+            Set to a very negative number (e.g. -1e250) to enforce a
+            monotonically increasing volume fraction spline.
+            Set to zero (default) to apply no penalty.
+            Note - the absolute value of `monotonic_penalty` is subtracted from
+            the overall log-probability, the sign is only used to determine the
+            direction that is requested.
         microslab_max_thickness : float
             Thickness of microslicing of spline for reflectivity calculation.
         """
@@ -129,7 +155,7 @@ class FreeformVFP(Component):
         if len(self.vf) != len(self.dz):
             raise ValueError("dz and vs must have same number of entries")
 
-        self.monotonic = monotonic
+        self.monotonic_penalty = monotonic_penalty
         self.zgrad = zgrad
         self.interpolator = interpolator
 
@@ -258,8 +284,21 @@ class FreeformVFP(Component):
 
     def lnprob(self):
         lnprob = 0
-        if self.monotonic and (np.ediff1d(self.vf) > 0).any():
-            lnprob -= 1e250
+        # you're trying to enforce monotonicity
+        if self.monotonic_penalty:
+            monotonic, direction = _is_monotonic(self.vf)
+            if not monotonic:
+                # you're not monotonic so you have to have the penalty
+                # anyway
+                lnprob -= np.abs(self.monotonic_penalty)
+            else:
+                # you are monotonic, but might be in the wrong direction
+                if self.monotonic_penalty > 0 and direction > 0:
+                    # positive penalty means you want decreasing
+                    lnprob -= np.abs(self.monotonic_penalty)
+                elif self.monotonic_penalty < 0 and direction < 0:
+                    # negative penalty means you want increasing
+                    lnprob -= np.abs(self.monotonic_penalty)
 
         # log-probability for area under profile
         lnprob += self.gamma.lnprob(self.profile_area())
