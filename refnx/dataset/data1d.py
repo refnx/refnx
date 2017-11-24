@@ -55,6 +55,7 @@ class Data1D(object):
         Whether the y data has uncertainties
     metadata : dict
         Information that should be retained with the dataset.
+
     """
     def __init__(self, data=None, **kwds):
         self.filename = None
@@ -83,6 +84,7 @@ class Data1D(object):
     def __len__(self):
         """
         the number of points in the dataset.
+
         """
         return self.y.size
 
@@ -90,6 +92,7 @@ class Data1D(object):
     def data(self):
         """
         4-tuple containing the (x, y, y_err, x_err) data
+
         """
         return self.x, self.y, self.y_err, self.x_err
 
@@ -98,6 +101,7 @@ class Data1D(object):
         """
         4-tuple containing the (x, y, y_err, x_err) datapoints that are
         finite.
+
         """
         finite_loc = np.where(np.isfinite(self.y))
         return (self.x[finite_loc],
@@ -115,6 +119,7 @@ class Data1D(object):
         data_tuple : tuple
             2 to 4 member tuple containing the (x, y, y_err, x_err) data to
             specify the dataset. `y_err` and `x_err` are optional.
+
         """
         self.x = np.array(data_tuple[0], dtype=float)
         self.y = np.array(data_tuple[1], dtype=float)
@@ -139,6 +144,7 @@ class Data1D(object):
         ----------
         scalefactor : float
             The scalefactor to divide by.
+
         """
         self.y /= scalefactor
         self.y_err /= scalefactor
@@ -165,7 +171,8 @@ class Data1D(object):
         Notes
         -----
         Raises `ValueError` if there are no points in the overlap region and
-        `requires_splice` was True
+        `requires_splice` was True.
+
         """
         x, y, y_err, x_err = self.data
 
@@ -259,6 +266,7 @@ class Data1D(object):
         ----------
         f : file-handle or string
             File to save the dataset to.
+
         """
         np.savetxt(
             f, np.column_stack((self.x,
@@ -274,6 +282,7 @@ class Data1D(object):
         ----------
         f : file-handle or string
             File to load the dataset from.
+
         """
         # see if there are header rows
         with possibly_open_file(f, 'rb') as g:
@@ -302,6 +311,7 @@ class Data1D(object):
     def refresh(self):
         """
         Refreshes a previously loaded dataset.
+
         """
         if self.filename is not None:
             with open(self.filename) as f:
@@ -311,6 +321,7 @@ class Data1D(object):
         """
         Adds two datasets together. Splices the data and trims data in the
         overlap region.
+
         """
         ret = Data1D(self.data)
         ret.add_data(other.data, requires_splice=True, trim_trailing=True)
@@ -320,6 +331,7 @@ class Data1D(object):
         """
         radd of two datasets. Splices the data and trims data in the
         overlap region.
+
         """
         self.add_data(other.data, requires_splice=True, trim_trailing=True)
         return self
@@ -328,6 +340,7 @@ class Data1D(object):
         """
         iadd of two datasets. Splices the data and trims data in the
         overlap region.
+
         """
         self.add_data(other.data, requires_splice=True, trim_trailing=True)
         return self

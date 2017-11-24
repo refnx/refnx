@@ -28,8 +28,9 @@ from scipy.interpolate import UnivariateSpline, RectBivariateSpline
 
 
 class BoundedUnivariateSpline(UnivariateSpline):
-    """
+    r"""
     1D spline that returns a constant for x outside the specified domain.
+
     """
     def __init__(self, x, y, fill_value=0.0, **kwargs):
         self.bnds = [x[0], x[-1]]
@@ -66,11 +67,11 @@ class BoundedUnivariateSpline(UnivariateSpline):
 
 
 class BoundedRectBivariateSpline(RectBivariateSpline):
-    """
+    r"""
     2D spline that returns a constant for x outside the specified domain.
 
-    Input
-    -----
+    Parameters
+    ----------
         x : array_like
             bin edges in x direction, length m+1
         y : array_like

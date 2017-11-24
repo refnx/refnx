@@ -115,7 +115,7 @@ class CurveFitter(object):
 
     Parameters
     ----------
-    objective : Objective
+    objective : refnx.analysis.Objective
         The :class:`refnx.analysis.Objective` to be analysed.
     nwalkers : int, optional
         How many walkers you would like the sampler to have. Must be an
@@ -146,7 +146,7 @@ class CurveFitter(object):
         """
         Parameters
         ----------
-        objective : Objective
+        objective : refnx.analysis.Objective
             The :class:`refnx.analysis.Objective` to be analysed.
         nwalkers : int, optional
             How many walkers you would like the sampler to have. Must be an
@@ -596,13 +596,14 @@ class CurveFitter(object):
 
         Notes
         -----
-          If the `objective` supplies a `residuals` method then `least_squares`
+        If the `objective` supplies a `residuals` method then `least_squares`
         can be used. Otherwise the `nll` method of the `objective` is
         minimised. Use this method just before a sampling run.
-          If `self.objective.parameters` is a `Parameters` instance, then each
+        If `self.objective.parameters` is a `Parameters` instance, then each
         of the varying parameters has its value updated by the fit, and each
         `Parameter` has a `stderr` attribute which represents the uncertainty
         on the fit parameter.
+
         """
         _varying_parameters = self.objective.varying_parameters()
         init_pars = np.array(_varying_parameters)

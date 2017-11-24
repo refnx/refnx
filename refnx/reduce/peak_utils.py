@@ -42,7 +42,8 @@ def centroid(y, x=None, dx=1.):
 
 
 def median(y, x=None, dx=1.):
-    '''Computes the median for the specified data.
+    r"""
+    Computes the median of the specified data.
 
     Parameters
     ----------
@@ -52,9 +53,10 @@ def median(y, x=None, dx=1.):
         The points at which y is sampled.
     Returns
     -------
-    (median, sd)
+    (median, sd) : float, float
         Centroid and standard deviation of the data.
-    '''
+
+    """
     yt = np.asfarray(y)
 
     if x is None:
