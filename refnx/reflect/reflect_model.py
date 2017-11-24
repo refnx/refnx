@@ -22,46 +22,49 @@ _INTLIMIT = 3.5
 
 
 class ReflectModel(object):
+    r"""
+    Parameters
+    ----------
+    structure : refnx.reflect.Structure
+        The interfacial structure.
+    scale : float or refnx.analysis.Parameter, optional
+        scale factor. All model values are multiplied by this value before
+        the background is added. This is turned into a Parameter during the
+        construction of this object.
+    bkg : float or refnx.analysis.Parameter, optional
+        linear background added to all model values. This is turned into
+        a Parameter during the construction of this object.
+    name : str, optional
+        Name of the Model
+    dq : float or refnx.analysis.Parameter, optional
+
+        - `dq == 0` then no resolution smearing is employed.
+        - `dq` is a float or refnx.analysis.Parameter
+           a constant dQ/Q resolution smearing is employed.  For 5% resolution
+           smearing supply 5.
+
+        However, if `x_err` is supplied to the `model` method, then that
+        overrides any setting given here. This value is turned into
+        a Parameter during the construction of this object.
+    threads: int, optional
+        Specifies the number of threads for parallel calculation. This
+        option is only applicable if you are using the ``_creflect``
+        module. The option is ignored if using the pure python calculator,
+        ``_reflect``. If `threads == 0` then all available processors are
+        used.
+    quad_order: int, optional
+        the order of the Gaussian quadrature polynomial for doing the
+        resolution smearing. default = 17. Don't choose less than 13. If
+        quad_order == 'ultimate' then adaptive quadrature is used. Adaptive
+        quadrature will always work, but takes a _long_ time (2 or 3 orders
+        of magnitude longer). Fixed quadrature will always take a lot less
+        time. BUT it won't necessarily work across all samples. For
+        example, 13 points may be fine for a thin layer, but will be
+        atrocious at describing a multilayer with bragg peaks.
+
+    """
     def __init__(self, structure, scale=1, bkg=1e-7, name='', dq=5.,
                  threads=0, quad_order=17):
-        r"""
-        Parameters
-        ----------
-        structure : refnx.reflect.Structure
-            The interfacial structure.
-        scale : float or refnx.analysis.Parameter, optional
-            scale factor. All model values are multiplied by this value before
-            the background is added. This is turned into a Parameter during the
-            construction of this object.
-        bkg : float or refnx.analysis.Parameter, optional
-            linear background added to all model values. This is turned into
-            a Parameter during the construction of this object.
-        name : str, optional
-            Name of the Model
-        dq : float or refnx.analysis.Parameter, optional
-            If `dq == 0` then no resolution smearing is employed.
-            If `dq` is a float or Parameter, then a constant dQ/Q resolution
-            smearing is employed.  For 5% resolution smearing supply 5.
-            However, if `x_err` is supplied to the `model` method, then that
-            overrides any setting given here. This value is turned into
-            a Parameter during the construction of this object.
-        threads: int, optional
-            Specifies the number of threads for parallel calculation. This
-            option is only applicable if you are using the ``_creflect``
-            module. The option is ignored if using the pure python calculator,
-            ``_reflect``. If `threads == 0` then all available processors are
-            used.
-        quad_order: int, optional
-            the order of the Gaussian quadrature polynomial for doing the
-            resolution smearing. default = 17. Don't choose less than 13. If
-            quad_order == 'ultimate' then adaptive quadrature is used. Adaptive
-            quadrature will always work, but takes a _long_ time (2 or 3 orders
-            of magnitude longer). Fixed quadrature will always take a lot less
-            time. BUT it won't necessarily work across all samples. For
-            example, 13 points may be fine for a thin layer, but will be
-            atrocious at describing a multilayer with bragg peaks.
-
-        """
         self.name = name
         self._parameters = None
         self.threads = threads

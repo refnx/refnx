@@ -65,8 +65,13 @@ class Structure(UserList):
             raise ValueError("solvent must either be the fronting or backing"
                              " medium")
 
+        #: **str** specifies whether `backing` or `fronting` semi-infinite
+        #: medium is used to solvate components.
         self.solvent = solvent
         self._reverse_structure = bool(reverse_structure)
+        #: **float** if contract > 0 then an attempt to contract/shrink the
+        #: slab representation is made. Use larger values for coarser profiles
+        #: (and vice versa). A typical starting value to try might be 1.0.
         self.contract = contract
         # self._parameters = Parameters(name=name)
 
@@ -99,6 +104,11 @@ class Structure(UserList):
 
     @property
     def reverse_structure(self):
+        """
+        **bool**  if `True` then the slab representation produced by
+        :meth:`Structure.slabs` is reversed. The sld profile and calculated
+        reflectivity will correspond to this reversed structure.
+        """
         return bool(self._reverse_structure)
 
     @reverse_structure.setter
@@ -327,7 +337,11 @@ class Structure(UserList):
 
     @property
     def parameters(self):
-        # return self._parameters
+        r"""
+        :class:`refnx.analysis.Parameters`, all the parameters associated with
+        this structure.
+
+        """
         p = Parameters(name='Structure - {0}'.format(self.name))
         p.extend([component.parameters for component in self.components])
         return p
