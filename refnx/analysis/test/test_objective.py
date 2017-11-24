@@ -171,16 +171,19 @@ class TestObjective(object):
         pickle.loads(pkl)
 
         # check the ForkingPickler as well.
-        pkl = ForkingPickler.dumps(self.objective)
-        pickle.loads(pkl)
+        if hasattr(ForkingPickler, 'dumps'):
+            pkl = ForkingPickler.dumps(self.objective)
+            pickle.loads(pkl)
 
         # can you pickle with an extra function present?
         self.objective.lnprob_extra = lnprob_extra
         pkl = pickle.dumps(self.objective)
         pickle.loads(pkl)
 
-        pkl = ForkingPickler.dumps(self.objective)
-        pickle.loads(pkl)
+        # check the ForkingPickler as well.
+        if hasattr(ForkingPickler, 'dumps'):
+            pkl = ForkingPickler.dumps(self.objective)
+            pickle.loads(pkl)
 
     def test_transform_pickle(self):
         # can you pickle the Transform object?
