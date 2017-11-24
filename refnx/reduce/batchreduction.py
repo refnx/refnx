@@ -332,7 +332,7 @@ class BatchReducer:
             display a summary table of the rows that were reduced
         """
         cols = 'A:I'
-        all_runs = pd.read_excel(self.filename, parse_cols=cols)
+        all_runs = pd.read_excel(self.filename, usecols=cols)
 
         # Add the row number in the spreadsheet as an extra column
         # row numbers for the runs will start at 2 not 0
