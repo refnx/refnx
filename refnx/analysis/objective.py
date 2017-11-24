@@ -151,11 +151,44 @@ class BaseObjective(object):
 class Objective(BaseObjective):
     """
     Objective function for using with curvefitters such as
-    `refnx.analysis.curvefitter.CurveFitter`
+    `refnx.analysis.curvefitter.CurveFitter`.
+
+    Parameters
+    ----------
+    model : refnx.analysis.Model
+        the generative model function. One can also provide an object that
+        inherits `refnx.analysis.Model`.
+    data : refnx.dataset.Data1D
+        data to be analysed.
+    lnsigma : float or Parameter, optional
+        the experimental uncertainty (`data.y_err`) is multiplied by
+        `exp(lnsigma)`. Used when the experimental uncertainty is
+        underestimated.
+    use_weights : bool
+        use experimental uncertainty in calculation of residuals and
+        lnlike, if available. If this is set to False, then you should also
+        set `self.lnsigma.vary = False`, it will have no effect on the fit.
+    transform : callable, optional
+        the model, data and data uncertainty are transformed by this
+        function before calculating the likelihood/residuals. Has the
+        signature `transform(data.x, y, y_err=None)`, returning the tuple
+        `transformed_y, transformed_y_err`.
+    lnprob_extra : callable, optional
+        user specifiable log-probability term. This contribution is in
+        addition to the log-prior term of the `model` parameters, and
+        `model.lnprob`, as well as the log-likelihood of the `data`. Has
+        signature:
+        `lnprob_extra(model, data)`. The `model` will already possess
+        updated parameters. Beware of including the same log-probability
+        terms more than once.
+
+    Notes
+    -----
+    For parallelisation `lnprob_extra` needs to be picklable.
     """
 
     def __init__(self, model, data, lnsigma=0, use_weights=True,
-                 transform=None):
+                 transform=None, lnprob_extra=None):
         """
         Parameters
         ----------
@@ -177,6 +210,19 @@ class Objective(BaseObjective):
             function before calculating the likelihood/residuals. Has the
             signature `transform(data.x, y, y_err=None)`, returning the tuple
             `transformed_y, transformed_y_err`.
+        lnprob_extra : callable, optional
+            user specifiable log-probability term. This contribution is in
+            addition to the log-prior term of the `model` parameters, and
+            `model.lnprob`, as well as the log-likelihood of the `data`. Has
+            signature:
+            `lnprob_extra(model, data)`. The `model` will already possess
+            updated parameters. Beware of including the same log-probability
+            terms more than once.
+
+        Notes
+        -----
+        For parallelisation `lnprob_extra` needs to be picklable.
+
         """
         # lnsigma is a parameter for underestimated errors
         self.model = model
@@ -193,6 +239,7 @@ class Objective(BaseObjective):
 
         self.use_weights = use_weights
         self.transform = transform
+        self.lnprob_extra = lnprob_extra
 
     def __repr__(self):
         s = ["{:_>80}".format('')]
@@ -391,9 +438,20 @@ class Objective(BaseObjective):
 
         Notes
         -----
-        The model attribute can also add extra terms to the log-prior if
-        needed, but it should not include any contributions from
-        `Objective.parameters` otherwise they'll be counted twice.
+        The log-prior is calculated as;
+
+        .. code-block:: python
+
+        lnprior = np.sum(param.lnprob() for param in self.varying_parameters())
+        lnprior += self.model.lnprob()
+        lnprior += self.lnprob_extra(self.model, self.data)
+
+        The major components of the log-prior probability are from the varying
+        parameters and the Model used to construct the Objective. The
+        `self.model.lnprob` should not include any contributions from
+        `self.model.parameters` otherwise they'll be counted more than once.
+        The same argument applies to the user specifiable `lnprob_extra`
+        function.
         """
         self.setp(pvals)
 
@@ -403,6 +461,12 @@ class Objective(BaseObjective):
             return -np.inf
 
         lnprior += self.model.lnprob()
+
+        if not np.isfinite(lnprior):
+            return -np.inf
+
+        if self.lnprob_extra is not None:
+            lnprior += self.lnprob_extra(self.model, self.data)
 
         return lnprior
 
@@ -419,6 +483,15 @@ class Objective(BaseObjective):
         -------
         lnlike : float
             log-likelihood probability
+
+        Notes
+        -----
+        The log-likelihood is calculated as:
+
+        .. code-block:: python
+
+        lnlike = -0.5 * np.sum((y - model / y_err)**2 + np.log(y_err**2))
+
         """
         self.setp(pvals)
 

@@ -53,24 +53,26 @@ class TestGlobalFitting(object):
         # smoke test for can the global fitting run?
         # also tests that global fitting gives same output as
         # normal fitting (for a single dataset)
-        self.model.scale.setp(vary=True, bounds=(0, 2))
-        self.model.bkg.setp(vary=True, bounds=(0, 8e-6))
-        self.structure[-1].rough.setp(vary=True, bounds=(0, 6))
-        self.sio2_l.thick.setp(vary=True, bounds=(0, 80))
-        self.polymer_l.thick.setp(bounds=(0, 400), vary=True)
-        self.polymer_l.sld.real.setp(vary=True, bounds=(0, 4))
+        self.model.scale.setp(vary=True, bounds=(0.1, 2))
+        self.model.bkg.setp(vary=True, bounds=(1e-10, 8e-6))
+        self.structure[-1].rough.setp(vary=True, bounds=(0.2, 6))
+        self.sio2_l.thick.setp(vary=True, bounds=(0.2, 80))
+        self.polymer_l.thick.setp(bounds=(0.01, 400), vary=True)
+        self.polymer_l.sld.real.setp(vary=True, bounds=(0.01, 4))
 
         self.objective.transform = Transform('logY')
 
-        g = CurveFitter(self.global_objective)
-        res_g = g.fit(method='differential_evolution', seed=1, maxiter=10)
+        with np.errstate(invalid='raise'):
+            g = CurveFitter(self.global_objective)
+            res_g = g.fit(method='differential_evolution', seed=1, maxiter=10)
 
-        f = CurveFitter(self.objective)
-        res_f = f.fit(method='differential_evolution', seed=1, maxiter=10)
+            f = CurveFitter(self.objective)
+            res_f = f.fit(method='differential_evolution', seed=1, maxiter=10)
 
-        # individual and global should give the same fit. Because we use DE
-        # there is no dependence on starting point, so long as we set a seed.
-        assert_almost_equal(res_g.x, res_f.x)
+            # individual and global should give the same fit. Because we use DE
+            # there is no dependence on starting point, so long as we set a
+            # seed.
+            assert_almost_equal(res_g.x, res_f.x)
 
     def test_multipledataset_corefinement(self):
         # test corefinement of three datasets

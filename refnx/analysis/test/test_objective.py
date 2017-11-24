@@ -3,6 +3,7 @@ This module tests the objective function by comparing it to the line example
 from http://dan.iel.fm/emcee/current/user/line/
 """
 import pickle
+from multiprocessing.reduction import ForkingPickler
 import os
 
 import emcee
@@ -20,6 +21,10 @@ from refnx.util import ErrorProp as EP
 def line(x, params, *args, **kwds):
     p_arr = np.array(params)
     return p_arr[0] + x * p_arr[1]
+
+
+def lnprob_extra(model, data):
+    return 1.
 
 
 class TestObjective(object):
@@ -152,9 +157,29 @@ class TestObjective(object):
         assert_almost_equal(objective.residuals(),
                             self.data.y - self.mod)
 
+    def test_lnprob_extra(self):
+        self.objective.lnprob_extra = lnprob_extra
+
+        # repeat lnprior test
+        self.objective.lnsigma = 0
+        self.p[0].range(0, 10)
+        assert_almost_equal(self.objective.lnprior(), np.log(0.1) + 1)
+
     def test_objective_pickle(self):
         # can you pickle the objective function?
         pkl = pickle.dumps(self.objective)
+        pickle.loads(pkl)
+
+        # check the ForkingPickler as well.
+        pkl = ForkingPickler.dumps(self.objective)
+        pickle.loads(pkl)
+
+        # can you pickle with an extra function present?
+        self.objective.lnprob_extra = lnprob_extra
+        pkl = pickle.dumps(self.objective)
+        pickle.loads(pkl)
+
+        pkl = ForkingPickler.dumps(self.objective)
         pickle.loads(pkl)
 
     def test_transform_pickle(self):
