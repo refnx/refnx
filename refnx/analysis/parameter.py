@@ -341,12 +341,13 @@ def possibly_create_parameter(value, name=''):
     a Parameter instance.
 
     Parameters
-    ---------
-    value : float or Parameter
+    ----------
+    value : float or refnx.analysis.Parameter
 
     Returns
     -------
-    parameter : Parameter
+    parameter : refnx.analysis.Parameter
+
     """
     if is_parameter(value):
         return value

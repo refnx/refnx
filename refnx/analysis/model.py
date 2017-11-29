@@ -6,6 +6,7 @@ from refnx._lib.util import getargspec
 def fitfunc(f):
     """
     A decorator that can be used to say if something is a fitfunc.
+
     """
     f.fitfuncwraps = True
     return f
@@ -36,6 +37,7 @@ class Model(object):
     -----
     It is not necessary to supply `fitfunc` to create a `Model` *iff* you are
     inheriting `Model` and are also overriding `Model.model`.
+
     """
     def __init__(self, parameters, fitfunc=None, fcn_args=(), fcn_kwds=None):
         self._parameters = parameters
@@ -72,6 +74,7 @@ class Model(object):
         The interpretation of `x`, `p`, and `x_err` is up to the `fitfunc`
         supplied during construction of this object (or the overridden `model`
         method of this object).
+
         """
         return self.model(x, p=p, x_err=x_err)
 
@@ -98,6 +101,7 @@ class Model(object):
         The interpretation of `x`, `p`, and `x_err` is up to the `fitfunc`
         supplied during construction of this object (or the overridden `model`
         method of this object).
+
         """
         # self.fitfunc or this method has to understand the structure of
         # self.params.
@@ -121,9 +125,12 @@ class Model(object):
                                " the constructor")
 
     def lnprob(self):
-        # the model can add additional terms to it's log-probability. However,
-        # it should _not_ include lnprob from any of the parameters. That is
-        # calculated by objective.lnprior.
+        r"""
+        The model can add additional terms to it's log-probability. However,
+        it should _not_ include lnprob from any of the parameters. That is
+        calculated by objective.lnprior.
+
+        """
         return 0
 
     @property

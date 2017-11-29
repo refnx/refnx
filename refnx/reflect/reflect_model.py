@@ -22,45 +22,49 @@ _INTLIMIT = 3.5
 
 
 class ReflectModel(object):
+    r"""
+    Parameters
+    ----------
+    structure : refnx.reflect.Structure
+        The interfacial structure.
+    scale : float or refnx.analysis.Parameter, optional
+        scale factor. All model values are multiplied by this value before
+        the background is added. This is turned into a Parameter during the
+        construction of this object.
+    bkg : float or refnx.analysis.Parameter, optional
+        linear background added to all model values. This is turned into
+        a Parameter during the construction of this object.
+    name : str, optional
+        Name of the Model
+    dq : float or refnx.analysis.Parameter, optional
+
+        - `dq == 0` then no resolution smearing is employed.
+        - `dq` is a float or refnx.analysis.Parameter
+           a constant dQ/Q resolution smearing is employed.  For 5% resolution
+           smearing supply 5.
+
+        However, if `x_err` is supplied to the `model` method, then that
+        overrides any setting given here. This value is turned into
+        a Parameter during the construction of this object.
+    threads: int, optional
+        Specifies the number of threads for parallel calculation. This
+        option is only applicable if you are using the ``_creflect``
+        module. The option is ignored if using the pure python calculator,
+        ``_reflect``. If `threads == 0` then all available processors are
+        used.
+    quad_order: int, optional
+        the order of the Gaussian quadrature polynomial for doing the
+        resolution smearing. default = 17. Don't choose less than 13. If
+        quad_order == 'ultimate' then adaptive quadrature is used. Adaptive
+        quadrature will always work, but takes a _long_ time (2 or 3 orders
+        of magnitude longer). Fixed quadrature will always take a lot less
+        time. BUT it won't necessarily work across all samples. For
+        example, 13 points may be fine for a thin layer, but will be
+        atrocious at describing a multilayer with bragg peaks.
+
+    """
     def __init__(self, structure, scale=1, bkg=1e-7, name='', dq=5.,
                  threads=0, quad_order=17):
-        """
-        Parameters
-        ----------
-        structure : refnx.reflect.Structure
-            The interfacial structure
-        scale : float or Parameter, optional
-            scale factor. All model values are multiplied by this value before
-            the background is added. This is turned into a Parameter during the
-            construction of this object.
-        bkg : float or Parameter, optional
-            linear background added to all model values. This is turned into
-            a Parameter during the construction of this object.
-        name : str, optional
-            Name of the Model
-        dq : float or Parameter, optional
-            If `dq == 0` then no resolution smearing is employed.
-            If `dq` is a float or Parameter, then a constant dQ/Q resolution
-            smearing is employed.  For 5% resolution smearing supply 5.
-            However, if `x_err` is supplied to the `model` method, then that
-            overrides any setting given here. This value is turned into
-            a Parameter during the construction of this object.
-        threads: int, optional
-            Specifies the number of threads for parallel calculation. This
-            option is only applicable if you are using the ``_creflect``
-            module. The option is ignored if using the pure python calculator,
-            ``_reflect``. If `threads == 0` then all available processors are
-            used.
-        quad_order: int, optional
-            the order of the Gaussian quadrature polynomial for doing the
-            resolution smearing. default = 17. Don't choose less than 13. If
-            quad_order == 'ultimate' then adaptive quadrature is used. Adaptive
-            quadrature will always work, but takes a _long_ time (2 or 3 orders
-            of magnitude longer). Fixed quadrature will always take a lot less
-            time. BUT it won't necessarily work across all samples. For
-            example, 13 points may be fine for a thin layer, but will be
-            atrocious at describing a multilayer with bragg peaks.
-        """
         self.name = name
         self._parameters = None
         self.threads = threads
@@ -82,15 +86,17 @@ class ReflectModel(object):
 
     @property
     def dq(self):
-        """
-        Returns
-        -------
-        dq : Parameter
-            If `dq.value == 0` then no resolution smearing is employed.
-            If `dq.value > 0`, then a constant dQ/Q resolution smearing is
-            employed.  For 5% resolution smearing supply 5. However, if
-            `x_err` is supplied to the `model` method, then that overrides any
-            setting reported here.
+        r"""
+        :class:`refnx.analysis.Parameter`
+
+            - `dq.value == 0`
+               no resolution smearing is employed.
+            - `dq.value > 0`
+               a constant dQ/Q resolution smearing is employed.  For 5%
+               resolution smearing supply 5. However, if `x_err` is supplied to
+               the `model` method, then that overrides any setting reported
+               here.
+
         """
         return self._dq
 
@@ -100,12 +106,10 @@ class ReflectModel(object):
 
     @property
     def scale(self):
-        """
-        Returns
-        -------
-        scale : Parameter
-            scale factor. All model values are multiplied by this value before
-            the background is added.
+        r"""
+        :class:`refnx.analysis.Parameter` - all model values are multiplied by
+        this value before the background is added.
+
         """
         return self._scale
 
@@ -115,11 +119,10 @@ class ReflectModel(object):
 
     @property
     def bkg(self):
-        """
-        Returns
-        -------
-        bkg : Parameter
-            linear background added to all model values.
+        r"""
+        :class:`refnx.analysis.Parameter` - linear background added to all
+        model values.
+
         """
         return self._bkg
 
@@ -128,14 +131,14 @@ class ReflectModel(object):
         self._bkg.value = value
 
     def model(self, x, p=None, x_err=None):
-        """
+        r"""
         Calculate the reflectivity of this model
 
         Parameters
         ----------
         x : float or np.ndarray
             q values for the calculation.
-        p : Parameters instance, optional
+        p : refnx.analysis.Parameter, optional
             parameters required to calculate the model
         x_err : np.ndarray
             dq resolution smearing values for the dataset being considered.
@@ -143,6 +146,7 @@ class ReflectModel(object):
         Returns
         -------
         reflectivity : np.ndarray
+
         """
         if p is not None:
             self.parameters.pvals = np.array(p)
@@ -158,7 +162,7 @@ class ReflectModel(object):
                             quad_order=self.quad_order)
 
     def lnprob(self):
-        """
+        r"""
         Additional log-probability terms for the reflectivity model. Do not
         include log-probability terms for model parameters, these are
         automatically calculated elsewhere.
@@ -167,16 +171,16 @@ class ReflectModel(object):
         -------
         lnprob : float
             log-probability of structure.
+
         """
         return self.structure.lnprob()
 
     @property
     def structure(self):
-        """
-        Returns
-        -------
-        structure : Structure
-            Structure objects describe the interface of a reflectometry sample.
+        r"""
+        :class:`refnx.reflect.Structure` - object describing the interface of
+        a reflectometry sample.
+
         """
         return self._structure
 
@@ -191,11 +195,10 @@ class ReflectModel(object):
 
     @property
     def parameters(self):
-        """
-        Returns
-        -------
-        parameters : `Parameters`
-            The Parameters associated with this model.
+        r"""
+        :class:`refnx.analysis.Parameters` - parameters associated with this
+        model.
+
         """
         self.structure = self._structure
         return self._parameters
@@ -217,21 +220,33 @@ def reflectivity(q, slabs, scale=1., bkg=0., dq=5., quad_order=17,
         coefficients required for the calculation, has shape (2 + N, 4),
         where N is the number of layers
 
-        slabs[0, 0] - ignored
-        slabs[N, 0] - thickness of layer N
-        slabs[N+1, 0] - ignored
+        - slabs[0, 0]
+           ignored
+        - slabs[N, 0]
+           thickness of layer N
+        - slabs[N+1, 0]
+           ignored
 
-        slabs[0, 1] - SLD_real of fronting (/1e-6 Angstrom**-2)
-        slabs[N, 1] - SLD_real of layer N (/1e-6 Angstrom**-2)
-        slabs[-1, 1] - SLD_real of backing (/1e-6 Angstrom**-2)
+        - slabs[0, 1]
+           SLD_real of fronting (/1e-6 Angstrom**-2)
+        - slabs[N, 1]
+           SLD_real of layer N (/1e-6 Angstrom**-2)
+        - slabs[-1, 1]
+           SLD_real of backing (/1e-6 Angstrom**-2)
 
-        slabs[0, 2] - SLD_imag of fronting (/1e-6 Angstrom**-2)
-        slabs[N, 2] - iSLD_imag of layer N (/1e-6 Angstrom**-2)
-        slabs[-1, 2] - iSLD_imag of backing (/1e-6 Angstrom**-2)
+        - slabs[0, 2]
+           SLD_imag of fronting (/1e-6 Angstrom**-2)
+        - slabs[N, 2]
+           iSLD_imag of layer N (/1e-6 Angstrom**-2)
+        - slabs[-1, 2]
+           iSLD_imag of backing (/1e-6 Angstrom**-2)
 
-        slabs[0, 3] - ignored
-        slabs[N, 3] - roughness between layer N-1/N
-        slabs[-1, 3] - roughness between backing and layer N
+        - slabs[0, 3]
+           ignored
+        - slabs[N, 3]
+           roughness between layer N-1/N
+        - slabs[-1, 3]
+           roughness between backing and layer N
 
     scale : float
         scale factor. All model values are multiplied by this value before
@@ -239,20 +254,21 @@ def reflectivity(q, slabs, scale=1., bkg=0., dq=5., quad_order=17,
     bkg : float
         linear background added to all model values.
     dq : float or np.ndarray, optional
-        If `dq == 0` then no resolution smearing is employed.
-        If dq is a float, then a constant dQ/Q resolution smearing is
-        employed.  For 5% resolution smearing supply 5.
-        If `dq` is the same shape as q, then the array contains the
-        FWHM of a Gaussian approximated resolution kernel. Point by point
-        resolution smearing is employed.  Use this option if dQ/Q varies
-        across your dataset.
-        If `dq.ndim == q.ndim + 2` and
-        `q.shape == dq[..., -3].shape` then an individual resolution
-        kernel is applied to each measurement point.  This resolution
-        kernel is a probability distribution function (PDF). `dqvals` will
-        have the shape (qvals.shape, M, 2).  There are `M` points in the
-        kernel. `dq[..., 0]` holds the q values for the kernel,
-        `dq[..., 1]` gives the corresponding probability.
+        - `dq == 0`
+           no resolution smearing is employed.
+        - `dq` is a float
+           a constant dQ/Q resolution smearing is employed.  For 5% resolution
+           smearing supply 5.
+        - `dq` is the same shape as q
+           the array contains the FWHM of a Gaussian approximated resolution
+           kernel. Point by point resolution smearing is employed.  Use this
+           option if dQ/Q varies across your dataset.
+        - `dq.ndim == q.ndim + 2` and `q.shape == dq[..., -3].shape`
+           an individual resolution kernel is applied to each measurement
+           point. This resolution kernel is a probability distribution function
+           (PDF). `dqvals` will have the shape (qvals.shape, M, 2).  There are
+           `M` points in the kernel. `dq[..., 0]` holds the q values for the
+           kernel, `dq[..., 1]` gives the corresponding probability.
     quad_order: int, optional
         the order of the Gaussian quadrature polynomial for doing the
         resolution smearing. default = 17. Don't choose less than 13. If
@@ -268,6 +284,7 @@ def reflectivity(q, slabs, scale=1., bkg=0., dq=5., quad_order=17,
         module. The option is ignored if using the pure python calculator,
         ``_reflect``. If `threads == 0` then all available processors are
         used.
+
     """
     # constant dq/q smearing
     if isinstance(dq, numbers.Real) and float(dq) == 0:

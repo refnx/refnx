@@ -36,7 +36,7 @@ extensions = [
     'sphinx.ext.mathjax',
     'sphinx.ext.viewcode',
     'sphinx.ext.autosummary',
-    'numpydoc'
+    'sphinx.ext.napoleon'
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -69,8 +69,9 @@ version = re.sub(r'\.dev-.*$', r'.dev', refnx.__version__)
 release = refnx.__version__
 
 intersphinx_mapping = {'py': ('http://docs.python.org/3', None),
-                       'numpy': ('http://docs.scipy.org/doc/numpy/', None),
-                       'scipy': ('http://docs.scipy.org/doc/scipy/reference/', None),
+                       'numpy': ('https://docs.scipy.org/doc/numpy/', None),
+                       'scipy': ('https://docs.scipy.org/doc/scipy/reference/', None),
+                       'matplotlib': ('http://matplotlib.org/', None),
                        }
 extlinks = {
     'scipydoc' : ('http://docs.scipy.org/doc/scipy/reference/generated/%s.html', ''),

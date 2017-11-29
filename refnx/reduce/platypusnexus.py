@@ -325,10 +325,12 @@ def datafile_number(fname):
     -------
     run_number : int
         The run number
+
     Examples
     --------
     >>> datafile_number('PLP0000708.nx.hdf')
     708
+
     """
 
     regex = re.compile(".*PLP([0-9]{7}).nx.hdf")
@@ -435,13 +437,14 @@ class PlatypusNexus(object):
         normalise : bool
             Normalise by the monitor counts.
         integrate : int
+            Specifies which scanpoints to use.
 
-            - integrate == -1
-              the spectrum is integrated over all the scanpoints.
-            - integrate >= 0
-              the individual spectra are calculated individually.
-              If `eventmode is not None`, or `event_filter is not None` then
-              integrate specifies which scanpoint to examine.
+             - integrate == -1
+               the spectrum is integrated over all the scanpoints.
+             - integrate >= 0
+               the individual spectra are calculated individually.
+               If `eventmode is not None`, or `event_filter is not None` then
+               integrate specifies which scanpoint to examine.
 
         eventmode : None or array_like
             If eventmode is `None` then the integrated detector image is used.
@@ -453,7 +456,7 @@ class PlatypusNexus(object):
             If eventmode has zero length (e.g. []), then a single time interval
             for the entire acquisition is used, [0, acquisition_time].  This
             would source the image from the eventmode file, rather than the
-            NeXUS file. Note: the two approaches will probably not give
+            NeXUS file. The two approaches will probably not give
             identical results, because the eventmode method adjusts the total
             acquisition time and beam monitor counts to the frame number of the
             last event detected (which may be quite different if the count rate
@@ -468,10 +471,14 @@ class PlatypusNexus(object):
             Options for finding specular peak position and peak standard
             deviation.
 
-                -1             - use `manual_beam_find`.
-                None           - use the automatic beam finder, falling back to
-                                 `manual_beam_find` if it's provided.
-                (float, float) - specify the peak and peak standard deviation.
+            - \-1
+               use `manual_beam_find`.
+            - None
+               use the automatic beam finder, falling back to
+               `manual_beam_find` if it's provided.
+            - (float, float)
+               specify the peak and peak standard deviation.
+
         peak_pos_tol : float
             Convergence tolerance for the beam position and width to be
             accepted from successive beam-finder calculations; see the
@@ -515,6 +522,7 @@ class PlatypusNexus(object):
                                                  t_bins=None,
                                                  y_bins=None,
                                                  x_bins=None)
+
             `loaded_events` is a 4-tuple of numpy arrays:
             `(f_events, t_events, y_events, x_events)`, where `f_events`
             contains the frame number for each neutron, landing at position
@@ -552,6 +560,7 @@ class PlatypusNexus(object):
         m_lambda, m_spec, m_spec_sd: np.ndarray
             Arrays containing the wavelength, specular intensity as a function
             of wavelength, standard deviation of specular intensity
+
         """
 
         # it can be advantageous to save processing time if the arguments
@@ -1137,6 +1146,7 @@ class PlatypusNexus(object):
                                                  t_bins=None,
                                                  y_bins=None,
                                                  x_bins=None)
+
             `loaded_events` is a 4-tuple of numpy arrays:
             `(f_events, t_events, y_events, x_events)`, where `f_events`
             contains the frame number for each neutron, landing at position
@@ -1159,6 +1169,7 @@ class PlatypusNexus(object):
         and finishes at 120s. The frame_bins are clipped to the total
         acquisition time if necessary.
         `frame_count` is how many frames went into making each detector image.
+
         """
         cat = self.cat
 

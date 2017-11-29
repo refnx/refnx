@@ -17,59 +17,61 @@ from refnx.analysis import Parameters, Parameter, possibly_create_parameter
 
 class Structure(UserList):
     """
-    Represents the interfacial Structure of a reflectometry sample. Successive
-    Components are added to the Structure to construct the interface.
+    Represents the interfacial Structure of a reflectometry sample.
+    Successive Components are added to the Structure to construct the
+    interface.
+
+    Parameters
+    ----------
+    name : str
+        Name of this structure
+    solvent : str
+        Specifies whether the 'backing' or 'fronting' semi-infinite medium
+        is used to solvate components. You would typically use 'backing'
+        for neutron reflectometry, with solvation by the material in
+        Structure[-1]. X-ray reflectometry would typically be solvated by
+        the 'fronting' material in Structure[0].
+    reverse_structure : bool
+        If `Structure.reverse_structure` is `True` then the slab
+        representation produced by `Structure.slabs` is reversed. The sld
+        profile and calculated reflectivity will correspond to this
+        reversed structure.
+    contract : float
+        If contract > 0 then an attempt to contract/shrink the slab
+        representation is made. Use larger values for coarser
+        profiles (and vice versa). A typical starting value to try might
+        be 1.0.
+
+    Notes
+    -----
+    If `Structure.reverse_structure is True` then the slab representation
+    order is reversed. The slab order is reversed before the solvation
+    calculation is done. I.e. if `Structure.solvent == 'backing'` and
+    `Structure.reverse_structure is True` then the material that solvates
+    the system is the component in `Structure[0]`, which corresponds to
+    `Structure.slab[-1]`.
+    The profile contraction specified by the `contract` keyword can improve
+    calculation time for Structures created with microslicing (such as
+    analytical profiles). If you use this option it is recommended to check
+    the reflectivity signal with and without contraction to ensure they are
+    comparable.
+
     """
     def __init__(self, name='', solvent='backing', reverse_structure=False,
                  contract=0):
-        """
-        Represents the interfacial Structure of a reflectometry sample.
-        Successive Components are added to the Structure to construct the
-        interface.
-
-        Parameters
-        ----------
-        name : str
-            Name of this structure
-        solvent : str
-            Specifies whether the 'backing' or 'fronting' semi-infinite medium
-            is used to solvate components. You would typically use 'backing'
-            for neutron reflectometry, with solvation by the material in
-            Structure[-1]. X-ray reflectometry would typically be solvated by
-            the 'fronting' material in Structure[0].
-        reverse_structure : bool
-            If `Structure.reverse_structure` is `True` then the slab
-            representation produced by `Structure.slabs` is reversed. The sld
-            profile and calculated reflectivity will correspond to this
-            reversed structure.
-        contract : float
-            If contract > 0 then an attempt to contract/shrink the slab
-            representation is made. Use larger values for coarser
-            profiles (and vice versa). A typical starting value to try might
-            be 1.0.
-
-        Notes
-        -----
-        If `Structure.reverse_structure is True` then the slab representation
-        order is reversed. The slab order is reversed before the solvation
-        calculation is done. I.e. if `Structure.solvent == 'backing'` and
-        `Structure.reverse_structure is True` then the material that solvates
-        the system is the component in `Structure[0]`, which corresponds to
-        `Structure.slab[-1]`.
-        The profile contraction specified by the `contract` keyword can improve
-        calculation time for Structures created with microslicing (such as
-        analytical profiles). If you use this option it is recommended to check
-        the reflectivity signal with and without contraction to ensure they are
-        comparable.
-        """
         super(Structure, self).__init__()
         self._name = name
         if solvent not in ['backing', 'fronting']:
             raise ValueError("solvent must either be the fronting or backing"
                              " medium")
 
+        #: **str** specifies whether `backing` or `fronting` semi-infinite
+        #: medium is used to solvate components.
         self.solvent = solvent
         self._reverse_structure = bool(reverse_structure)
+        #: **float** if contract > 0 then an attempt to contract/shrink the
+        #: slab representation is made. Use larger values for coarser profiles
+        #: (and vice versa). A typical starting value to try might be 1.0.
         self.contract = contract
         # self._parameters = Parameters(name=name)
 
@@ -102,6 +104,11 @@ class Structure(UserList):
 
     @property
     def reverse_structure(self):
+        """
+        **bool**  if `True` then the slab representation produced by
+        :meth:`Structure.slabs` is reversed. The sld profile and calculated
+        reflectivity will correspond to this reversed structure.
+        """
         return bool(self._reverse_structure)
 
     @reverse_structure.setter
@@ -110,19 +117,20 @@ class Structure(UserList):
 
     @property
     def slabs(self):
-        """
-        Slab representation of this structure.
+        r"""
+        :class:`np.ndarray` - slab representation of this structure.
+        Has shape (N, 5).
 
-        Returns
-        -------
-        slabs : np.ndarray
-            Has shape (N, 5).
-            slab[N, 0] - thickness of layer N
-            slab[N, 1] - overall SLD.real of layer N (material AND solvent)
-            slab[N, 2] - overall SLD.imag of layer N (material AND solvent)
-            slab[N, 3] - roughness between layer N and N-1
-            slab[N, 4] - volume fraction of solvent in layer N.
-                         (1 - solvent_volfrac = material_volfrac)
+        - slab[N, 0]
+           thickness of layer N
+        - slab[N, 1]
+           overall SLD.real of layer N (material AND solvent)
+        - slab[N, 2]
+           overall SLD.imag of layer N (material AND solvent)
+        - slab[N, 3]
+           roughness between layer N and N-1
+        - slab[N, 4]
+           volume fraction of solvent in layer N.
 
         Notes
         -----
@@ -132,6 +140,7 @@ class Structure(UserList):
         `Structure.reversed is True` then the material that solvates the system
         is the component in `Structure[0]`, which corresponds to
         `Structure.slab[-1]`.
+
         """
         if not len(self):
             return None
@@ -328,7 +337,11 @@ class Structure(UserList):
 
     @property
     def parameters(self):
-        # return self._parameters
+        r"""
+        :class:`refnx.analysis.Parameters`, all the parameters associated with
+        this structure.
+
+        """
         p = Parameters(name='Structure - {0}'.format(self.name))
         p.extend([component.parameters for component in self.components])
         return p
@@ -354,26 +367,26 @@ class Structure(UserList):
 class SLD(object):
     """
     Object representing freely varying SLD of a material
+
+    Parameters
+    ----------
+    value : float or complex
+        Scattering length density of a material.
+        Units (10**-6 Angstrom**-2)
+    name : str, optional
+        Name of material.
+
+    Notes
+    -----
+    An SLD object can be used to create a Slab:
+
+    >>> # an SLD object representing Silicon Dioxide
+    >>> sio2 = SLD(3.47, name='SiO2')
+    >>> # create a Slab of SiO2 20 A in thickness, with a 3 A roughness
+    >>> sio2_layer = SLD(20, 3)
+
     """
     def __init__(self, value, name=''):
-        """
-        Parameters
-        ----------
-        value : float or complex
-            Scattering length density of a material.
-            Units (10**-6 Angstrom**-2)
-        name : str, optional
-            Name of material.
-
-        Notes
-        -----
-        An SLD object can be used to create a Slab:
-
-        >>> # an SLD object representing Silicon Dioxide
-        >>> sio2 = SLD(3.47, name='SiO2')
-        >>> # create a Slab of SiO2 20 A in thickness, with a 3 A roughness
-        >>> sio2_layer = SLD(20, 3)
-        """
         self.name = name
         if isinstance(value, complex):
             self.real = Parameter(value.real, name='%s - sld' % name)
@@ -398,6 +411,10 @@ class SLD(object):
 
     @property
     def parameters(self):
+        """
+        :class:`refnx.analysis.Parameters` associated with this component
+
+        """
         self._parameters.name = self.name
         return self._parameters
         # p = Parameters(name=self.name)
@@ -419,11 +436,20 @@ class Component(object):
 
     @property
     def parameters(self):
+        """
+        :class:`refnx.analysis.Parameters` associated with this component
+
+        """
         raise NotImplementedError("A component should override the parameters "
                                   "property")
 
     @property
     def slabs(self):
+        """
+        The slab representation of this component
+
+        """
+
         raise NotImplementedError("A component should override the slabs "
                                   "property")
 
@@ -434,23 +460,23 @@ class Component(object):
 class Slab(Component):
     """
     A slab component has uniform SLD over its thickness.
+
+    Parameters
+    ----------
+    thick : refnx.analysis.Parameter or float
+        thickness of slab (Angstrom)
+    sld : refnx.reflect.SLD, complex, or float
+        (complex) SLD of film (/1e-6 Angstrom**2)
+    rough : float
+        roughness on top of this slab (Angstrom)
+    name : str
+        Name of this slab
+    vfsolv : refnx.analysis.Parameter or float
+        Volume fraction of solvent [0, 1]
+
     """
 
     def __init__(self, thick, sld, rough, name='', vfsolv=0):
-        """
-        Parameters
-        ----------
-        thick : Parameter or float
-            thickness of slab (Angstrom)
-        sld : SLD instance, complex, or float
-            (complex) SLD of film (/1e-6 Angstrom**2)
-        rough : float
-            roughness on top of this slab (Angstrom)
-        name : str
-            Name of this slab
-        vfsolv : Parameter or float
-            Volume fraction of solvent [0, 1]
-        """
         super(Slab, self).__init__()
         self.thick = possibly_create_parameter(thick,
                                                name='%s - thick' % name)
@@ -473,11 +499,18 @@ class Slab(Component):
 
     @property
     def parameters(self):
+        """
+        :class:`refnx.analysis.Parameters` associated with this component
+
+        """
         self._parameters.name = self.name
         return self._parameters
 
     @property
     def slabs(self):
+        """
+        slab representation of this component. See :class:`Structure.slabs`
+        """
         return np.atleast_2d(np.array([self.thick.value,
                                        self.sld.real.value,
                                        self.sld.imag.value,

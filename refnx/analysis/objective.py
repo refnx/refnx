@@ -31,6 +31,7 @@ class BaseObjective(object):
         ----------
         pvals : np.ndarray
             Array containing the values to be tested.
+
         """
         self.parameters[:] = pvals
 
@@ -47,6 +48,7 @@ class BaseObjective(object):
         -------
         nll : float
             negative log-likelihood
+
         """
         vals = self.parameters
         if pvals is not None:
@@ -67,6 +69,7 @@ class BaseObjective(object):
         -------
         lnprior : float
             log-prior probability
+
         """
         vals = self.parameters
         if pvals is not None:
@@ -89,6 +92,7 @@ class BaseObjective(object):
         -------
         lnlike : float
             log-likelihood probability.
+
         """
         vals = self.parameters
         if pvals is not None:
@@ -114,6 +118,7 @@ class BaseObjective(object):
         -----
         The log probability is the sum is the sum of the log-prior and
         log-likelihood probabilities. Does not set the parameter attribute.
+
         """
         vals = self.parameters
         if pvals is not None:
@@ -131,6 +136,7 @@ class BaseObjective(object):
         -------
         varying_parameters : np.ndarray
             The parameters varying in this objective function.
+
         """
         return self.parameters
 
@@ -140,6 +146,7 @@ class BaseObjective(object):
         -------
         covar : np.ndarray
             The covariance matrix for the fitting system
+
         """
         _pvals = np.array(self.varying_parameters())
         hess = approx_hess2(_pvals, self.nll)
@@ -151,33 +158,45 @@ class BaseObjective(object):
 class Objective(BaseObjective):
     """
     Objective function for using with curvefitters such as
-    `refnx.analysis.curvefitter.CurveFitter`
+    `refnx.analysis.curvefitter.CurveFitter`.
+
+    Parameters
+    ----------
+    model : refnx.analysis.Model
+        the generative model function. One can also provide an object that
+        inherits `refnx.analysis.Model`.
+    data : refnx.dataset.Data1D
+        data to be analysed.
+    lnsigma : float or refnx.analysis.Parameter, optional
+        the experimental uncertainty (`data.y_err`) is multiplied by
+        `exp(lnsigma)`. Used when the experimental uncertainty is
+        underestimated.
+    use_weights : bool
+        use experimental uncertainty in calculation of residuals and
+        lnlike, if available. If this is set to False, then you should also
+        set `self.lnsigma.vary = False`, it will have no effect on the fit.
+    transform : callable, optional
+        the model, data and data uncertainty are transformed by this
+        function before calculating the likelihood/residuals. Has the
+        signature `transform(data.x, y, y_err=None)`, returning the tuple
+        (`transformed_y, transformed_y_err`).
+    lnprob_extra : callable, optional
+        user specifiable log-probability term. This contribution is in
+        addition to the log-prior term of the `model` parameters, and
+        `model.lnprob`, as well as the log-likelihood of the `data`. Has
+        signature:
+        `lnprob_extra(model, data)`. The `model` will already possess
+        updated parameters. Beware of including the same log-probability
+        terms more than once.
+
+    Notes
+    -----
+    For parallelisation `lnprob_extra` needs to be picklable.
+
     """
 
     def __init__(self, model, data, lnsigma=0, use_weights=True,
-                 transform=None):
-        """
-        Parameters
-        ----------
-        model : refnx.analysis.Model
-            the generative model function. One can also provide an object that
-            inherits `refnx.analysis.Model`.
-        data : refnx.dataset.Data1D
-            data to be analysed.
-        lnsigma : float or Parameter, optional
-            the experimental uncertainty (`data.y_err`) is multiplied by
-            `exp(lnsigma)`. Used when the experimental uncertainty is
-            underestimated.
-        use_weights : bool
-            use experimental uncertainty in calculation of residuals and
-            lnlike, if available. If this is set to False, then you should also
-            set `self.lnsigma.vary = False`, it will have no effect on the fit.
-        transform : callable, optional
-            the model, data and data uncertainty are transformed by this
-            function before calculating the likelihood/residuals. Has the
-            signature `transform(data.x, y, y_err=None)`, returning the tuple
-            `transformed_y, transformed_y_err`.
-        """
+                 transform=None, lnprob_extra=None):
         # lnsigma is a parameter for underestimated errors
         self.model = model
         # should be a Data1D instance
@@ -193,6 +212,7 @@ class Objective(BaseObjective):
 
         self.use_weights = use_weights
         self.transform = transform
+        self.lnprob_extra = lnprob_extra
 
     def __repr__(self):
         s = ["{:_>80}".format('')]
@@ -215,20 +235,15 @@ class Objective(BaseObjective):
     @property
     def weighted(self):
         """
-        Returns
-        -------
-        weighted : bool
-            Does the data have weights (`data.y_err`)?
+        **bool** does the data have weights (`data.y_err`)?
         """
         return self.data.weighted
 
     @property
     def npoints(self):
         """
-        Returns
-        -------
-        npoints : int
-            The number of points in the dataset.
+        **int** the number of points in the dataset.
+
         """
         return self.data.y.size
 
@@ -236,9 +251,9 @@ class Objective(BaseObjective):
         """
         Returns
         -------
-        varying_parameters : Parameters
-            A Parameters instance containing the varying Parameter objects
-            that are allowed to vary during the fit.
+        varying_parameters : refnx.analysis.Parameters
+            The varying Parameter objects allowed to vary during the fit.
+
         """
         # create and return a Parameters object because it has the
         # __array__ method, which allows one to quickly get numerical values.
@@ -271,12 +286,13 @@ class Objective(BaseObjective):
 
     def generative(self, pvals=None):
         """
-        Calculate the generative function associated with the model
+        Calculate the generative (dependent variable) function associated with
+        the model.
 
         Parameters
         ----------
-        pvals : np.ndarray
-            Parameter values for evaluation
+        pvals : array-like or refnx.analysis.Parameters
+            values for the varying or entire set of parameters
 
         Returns
         -------
@@ -291,13 +307,14 @@ class Objective(BaseObjective):
 
         Parameters
         ----------
-        pvals : np.ndarray
-            Parameter values for evaluation
+        pvals : array-like or refnx.analysis.Parameters
+            values for the varying or entire set of parameters
 
         Returns
         -------
         residuals : np.ndarray
             Residuals, `(data.y - model) / y_err`.
+
         """
         self.setp(pvals)
 
@@ -314,13 +331,14 @@ class Objective(BaseObjective):
 
         Parameters
         ----------
-        pvals : np.ndarray
-            Parameter values for evaluation
+        pvals : array-like or refnx.analysis.Parameters
+            values for the varying or entire set of parameters
 
         Returns
         -------
         chisqr : np.ndarray
             Chi-squared value, `np.sum(residuals**2)`.
+
         """
         # TODO reduced chisqr? include z-scores for parameters? DOF?
         self.setp(pvals)
@@ -330,12 +348,9 @@ class Objective(BaseObjective):
     @property
     def parameters(self):
         """
-        All the Parameters contained in the fitting system.
+        :class:`refnx.analysis.Parameters`, all the Parameters contained in the
+        fitting system.
 
-        Returns
-        -------
-        parameters : Parameters
-            Parameters instance containing all the Parameter(s)
         """
         if is_parameter(self.lnsigma):
             return self.lnsigma | self.model.parameters
@@ -348,8 +363,9 @@ class Objective(BaseObjective):
 
         Parameters
         ----------
-        pvals : np.ndarray
-            Array containing the values to be tested.
+        pvals : array-like or refnx.analysis.Parameters
+            values for the varying or entire set of parameters
+
         """
         if pvals is None:
             return
@@ -381,8 +397,8 @@ class Objective(BaseObjective):
 
         Parameters
         ----------
-        pvals : np.ndarray, optional
-            Numeric values for the Parameter's that are varying
+        pvals : array-like or refnx.analysis.Parameters
+            values for the varying or entire set of parameters
 
         Returns
         -------
@@ -391,9 +407,22 @@ class Objective(BaseObjective):
 
         Notes
         -----
-        The model attribute can also add extra terms to the log-prior if
-        needed, but it should not include any contributions from
-        `Objective.parameters` otherwise they'll be counted twice.
+        The log-prior is calculated as:
+
+        .. code-block:: python
+
+            lnprior = np.sum(param.lnprob() for param in
+                             self.varying_parameters())
+            lnprior += self.model.lnprob()
+            lnprior += self.lnprob_extra(self.model, self.data)
+
+        The major components of the log-prior probability are from the varying
+        parameters and the Model used to construct the Objective.
+        `self.model.lnprob` should not include any contributions from
+        `self.model.parameters` otherwise they'll be counted more than once.
+        The same argument applies to the user specifiable `lnprob_extra`
+        function.
+
         """
         self.setp(pvals)
 
@@ -404,6 +433,12 @@ class Objective(BaseObjective):
 
         lnprior += self.model.lnprob()
 
+        if not np.isfinite(lnprior):
+            return -np.inf
+
+        if self.lnprob_extra is not None:
+            lnprior += self.lnprob_extra(self.model, self.data)
+
         return lnprior
 
     def lnlike(self, pvals=None):
@@ -412,13 +447,22 @@ class Objective(BaseObjective):
 
         Parameters
         ----------
-        pvals : np.ndarray, optional
-            Numeric values for the Parameter's that are varying
+        pvals : array-like or refnx.analysis.Parameters
+            values for the varying or entire set of parameters
 
         Returns
         -------
         lnlike : float
             log-likelihood probability
+
+        Notes
+        -----
+        The log-likelihood is calculated as:
+
+        .. code-block:: python
+
+            lnlike = -0.5 * np.sum((y - model / y_err)**2 + np.log(y_err**2))
+
         """
         self.setp(pvals)
 
@@ -447,13 +491,14 @@ class Objective(BaseObjective):
 
         Parameters
         ----------
-        pvals : np.ndarray
-            Array containing the values to be tested.
+        pvals : array-like or refnx.analysis.Parameters
+            values for the varying or entire set of parameters
 
         Returns
         -------
         nll : float
             negative log-likelihood
+
         """
         self.setp(pvals)
         return -self.lnlike()
@@ -464,8 +509,8 @@ class Objective(BaseObjective):
 
         Parameters
         ----------
-        pvals : np.ndarray, optional
-            Numeric values for the Parameter's that are varying
+        pvals : array-like or refnx.analysis.Parameters
+            values for the varying or entire set of parameters
 
         Returns
         -------
@@ -477,6 +522,7 @@ class Objective(BaseObjective):
         The overall log-probability is the sum of the log-prior and
         log-likelihood. The log-likelihood is not calculated if the log-prior
         is impossible (`lnprior == -np.inf`).
+
         """
         self.setp(pvals)
         lnprob = self.lnprior()
@@ -492,6 +538,12 @@ class Objective(BaseObjective):
     def covar(self):
         """
         Estimates the covariance matrix of the curvefitting system.
+
+        Returns
+        -------
+        covar : np.ndarray
+            Covariance matrix
+
         """
         _pvals = np.array(self.varying_parameters())
 
@@ -561,6 +613,7 @@ class Objective(BaseObjective):
         ------
         pvec : np.ndarray
             A randomly chosen parameter vector
+
         """
         chains = np.array([np.ravel(param.chain[..., nburn::nthin]) for param
                            in self.varying_parameters()
@@ -581,7 +634,7 @@ class Objective(BaseObjective):
 
     def plot(self, pvals=None):
         """
-        Plot the data/model
+        Plot the data/model.
 
         Parameters
         ----------
@@ -590,7 +643,9 @@ class Objective(BaseObjective):
 
         Returns
         -------
-        fig, ax
+        fig, ax : :class:`matplotlib.Figure`, :class:`matplotlib.Axes`
+            `matplotlib` figure and axes objects.
+
         """
         import matplotlib.pyplot as plt
 
@@ -617,14 +672,15 @@ class GlobalObjective(Objective):
     """
     Global Objective function for simultaneous fitting with
     `refnx.analysis.CurveFitter`
+
+    Parameters
+    ----------
+    objectives : list
+        list of :class:`refnx.analysis.Objective` objects
+
     """
 
     def __init__(self, objectives):
-        """
-        Parameters
-        ----------
-        objectives : list of Objective objects
-        """
         self.objectives = objectives
         weighted = []
         use_weights = []
@@ -648,22 +704,46 @@ class GlobalObjective(Objective):
 
     @property
     def use_weights(self):
+        """
+        **bool** is data weighting being used for all the objectives?
+        """
         return self._use_weights
 
     @property
     def weighted(self):
+        """
+        **bool** do all the datasets have y_err?
+
+        """
         return self._weighted
 
     @property
     def npoints(self):
+        """
+        **int** number of data points in all the objectives.
+
+        """
         npoints = 0
         for objective in self.objectives:
             npoints += objective.npoints
         return npoints
 
     def residuals(self, pvals=None):
-        # residuals in a globalfitting context are just the individual
-        # objective.residuals concatenated.
+        """
+        Concatenated residuals for each of the
+        :meth:`refnx.analysis.Objective.residuals`.
+
+        Parameters
+        ----------
+        pvals : array-like or refnx.analysis.Parameters
+            values for the varying or entire set of parameters
+
+        Returns
+        -------
+        residuals : np.ndarray
+            Concatenated :meth:`refnx.analysis.Objective.residuals`
+
+        """
         self.setp(pvals)
 
         residuals = []
@@ -675,6 +755,10 @@ class GlobalObjective(Objective):
 
     @property
     def parameters(self):
+        """
+        :class:`refnx.analysis.Parameters` associated with all the objectives.
+
+        """
         # TODO this is probably going to be slow.
         # cache and update strategy?
         p = Parameters(name='global fitting parameters')
@@ -690,19 +774,14 @@ class GlobalObjective(Objective):
 
         Parameters
         ----------
-        pvals : np.ndarray, optional
-            Numeric values for the Parameter's that are varying
+        pvals : array-like or refnx.analysis.Parameters, optional
+            values for the varying or entire set of parameters
 
         Returns
         -------
         lnprior : float
             log-prior probability
 
-        Notes
-        -----
-        The model attribute can also add extra terms to the log-prior if
-        needed, but it should not include any contributions from
-        `Objective.parameters` otherwise they'll be counted twice.
         """
         self.setp(pvals)
 
@@ -721,13 +800,14 @@ class GlobalObjective(Objective):
 
         Parameters
         ----------
-        pvals : np.ndarray, optional
-            Numeric values for the Parameter's that are varying
+        pvals : array-like or refnx.analysis.Parameters
+            values for the varying or entire set of parameters
 
         Returns
         -------
         lnlike : float
             log-likelihood probability
+
         """
         self.setp(pvals)
         lnlike = 0.
