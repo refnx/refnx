@@ -10,6 +10,7 @@ import collections
 import numpy as np
 import os.path
 import pandas as pd
+import pickle
 import re
 import sys
 import warnings
@@ -66,14 +67,29 @@ class ReductionCache(list):
     >>> data.name_startswith('W')
     >>> plot_data_sets(data.name_search('^W')
     """
-    def __init__(self):
+
+    _default_persistent_cache = "_reduction_cache.pickle"
+
+    def __init__(self, persistent=True):
         """
         Create a new reduction cache
+
+        Parameters
+        ----------
+        persistent : bool or str, optional
+            Reduction cache should be stored on disk to allow the reducer to
+            be restarted without having to rereduce the data. If a str is
+            given, it is used as the filename for the persistent cache,
+            otherwise, a default value is used.
         """
         super(ReductionCache, self).__init__()
         self.name_cache = {}
         self.run_cache = {}
         self.row_cache = {}
+        self.persistent = persistent
+
+        if self.persistent:
+            self.load_cache()
 
     def add(self, row, ds, name, fname, entry, update=True):
         """
@@ -115,7 +131,32 @@ class ReductionCache(list):
         runs = run_list(entry)
         for run in runs:
             self.run_cache[run] = idx
+
+        if self.persistent:
+            self.write_cache()
         return data
+
+    def delete_rows(self, row_numbers):
+        """ Delete a row from the reduction cache
+
+        Parameters
+        ----------
+        row_numbers: list of int
+            row numbers (from the reduction spreadsheet) that should be
+            deleted from the cache
+        """
+
+        for row in row_numbers:
+            if row not in self.row_cache:
+                print("Not deleting unknown row %s" % row)
+                continue
+
+            self[self.row_cache[row]] = None
+            del self.row_cache[row]
+            print("Deleted row %s" % row)
+
+        if self.persistent:
+            self.write_cache()
 
     def run(self, run_number):
         """ select a single data set by run number
@@ -155,7 +196,8 @@ class ReductionCache(list):
         row_numbers : iterable
             row numbers to find
         """
-        return [entry for entry in self if entry.row in row_numbers]
+        return [entry for entry in self
+                if entry is not None and entry.row in row_numbers]
 
     def name(self, name):
         """ select a single data set by sample name
@@ -175,7 +217,8 @@ class ReductionCache(list):
         name : str
             fragment that must be at the start of the sample name
         """
-        matches = [entry for entry in self if entry.name.startswith(name)]
+        matches = [entry for entry in self
+                   if entry is not None and entry.name.startswith(name)]
         return matches
 
     def name_search(self, search):
@@ -204,7 +247,8 @@ class ReductionCache(list):
             name_re = re.compile(search)
         else:
             name_re = search
-        matches = [entry for entry in self if name_re.search(entry.name)]
+        matches = [entry for entry in self
+                   if entry is not None and name_re.search(entry.name)]
         return matches
 
     def summary(self):
@@ -223,12 +267,73 @@ class ReductionCache(list):
         """
         df = pd.DataFrame(columns=self[0].entry.axes)
         for i, entry in enumerate(self):
-            df.loc[i] = entry.entry
+            if entry is not None:
+                df.loc[i] = entry.entry
         return df
+
+    def write_cache(self, filename=None):
+        """ write a persistent cache of reduced data to disk
+
+        Parameters
+        ----------
+        filename : str, optional
+            filename to which the cache should be written; if not specified
+            or `None`, the default filename is used.
+        """
+        with open(self._cache_filename(filename), 'wb') as fh:
+            pickle.dump(self, fh)
+
+    def drop_cache(self, filename=None):
+        """ delete the persistent cache of reduced data from disk
+
+        Parameters
+        ----------
+        filename : str, optional
+            filename of the cache to be deleted; if not specified or `None`,
+            the default filename is used.
+        """
+        os.remove(self._cache_filename(filename))
+
+    def load_cache(self, filename=None):
+        """ load a persistent cache of reduced data from disk
+
+        Parameters
+        ----------
+        filename : str, optional
+            filename from which the cache should be loaded; if not specified
+            or `None`, the default filename is used.
+        """
+        try:
+            if not os.path.getsize(self._cache_filename(filename)):
+                print("On-disk cache empty")
+                return
+
+            with open(self._cache_filename(filename), 'rb') as fh:
+                cached = pickle.load(fh)
+            self.name_cache = cached.name_cache
+            self.run_cache = cached.run_cache
+            self.row_cache = cached.row_cache
+            self.extend(cached)
+            print("On-disk cache loaded")
+        except OSError:  # (FileNotFoundError is Python 3 only)
+            print("On-disk cache not found")
+
+    def _cache_filename(self, filename=None):
+        """ return the filename for the persistent cache if it is in use """
+        if not self.persistent:
+            return None
+
+        if filename is not None:
+            return filename
+
+        if self.persistent is not True:
+            return self.persistent
+
+        return self._default_persistent_cache
 
     def _repr_html_(self):
         df = self._summary_dataframe()
-        return "<b>Summary of reduced data</b>" + df._repr_html_()
+        return "<b>Summary of reduced data</b>" + df.fillna("")._repr_html_()
 
     def __str__(self):
         df = self._summary_dataframe()
@@ -251,10 +356,12 @@ class BatchReducer:
 
         reduce name scale refl1 refl2 refl3 dir1 dir2 dir3
 
-    Only rows where the value of the `reduce` column is 1 will be processed.
+    Only rows where the value of the `reduce` column is 1 and where the sample
+    name is set will be processed.
     """
 
-    def __init__(self, filename, data_folder=None, verbose=True, **kwds):
+    def __init__(self, filename, data_folder=None, verbose=True,
+                 persistent=True, **kwds):
         """
         Create a batch reducer using metadata from a spreadsheet
 
@@ -268,11 +375,14 @@ class BatchReducer:
             then the current working directory is used.
         verbose : bool, optional
             Prints status information during batch reduction.
+        persistent : bool, optional
+            Reduction cache should be stored on disk to allow the reducer to
+            be restarted without having to rereduce the data.
         kwds : dict, optional
             Options passed directly to `refnx.reduce.reduce_stitch`. Look at
             that docstring for complete specification of options.
         """
-        self.cache = ReductionCache()
+        self.cache = ReductionCache(persistent)
         self.filename = filename
 
         self.data_folder = os.getcwd()
@@ -304,23 +414,52 @@ class BatchReducer:
             sys.stdout.flush()   # keep progress updated
 
         if not runs:
-            warnings.warn("Row %d (%s) has no reflection runs" %
+            warnings.warn("Row %d (%s) has no reflection runs. Skipped." %
                           (entry['source'], entry['name']))
             return None, None
         if not directs:
-            warnings.warn("Row %d (%s) has no direct beam runs" %
+            warnings.warn("Row %d (%s) has no direct beam runs. Skipped." %
                           (entry['source'], entry['name']))
             return None, None
 
-        if len(runs) != len(directs):
+        if len(runs) > len(directs):
             warnings.warn("Row %d (%s) has differing numbers of"
-                          " direct & refln runs" %
+                          " direct & reflection runs. Skipped." %
                           (entry['source'], entry['name']))
             return None, None
 
         ds, fname = reduce_stitch(runs, directs, **self.kwds)
 
         return ds, fname
+
+    def load_runs(self):
+        cols = 'A:I'
+        all_runs = pd.read_excel(
+            self.filename,
+            usecols=cols,
+            converters={
+                'refl1': int,
+                'refl2': int,
+                'refl3': int,
+                'dir1': int,
+                'dir2': int,
+                'dir3': int,
+            },
+        )
+
+        # Add the row number in the spreadsheet as an extra column
+        # row numbers for the runs will start at 2 not 0
+        all_runs.insert(0, 'source', all_runs.index + 2)
+
+        # add in some extra columns to indicate successful reduction
+        all_runs['reduced'] = np.zeros(len(all_runs))
+        all_runs['filename'] = np.zeros(len(all_runs))
+        return all_runs
+
+    def select_runs(self, all_runs):
+        # skip samples not marked for reduction or with no sample name
+        mask = (all_runs.reduce == 1) & (~ all_runs.name.isnull())
+        return mask
 
     def reduce(self, show=True):
         """
@@ -331,27 +470,17 @@ class BatchReducer:
         show : bool (optional, default=True)
             display a summary table of the rows that were reduced
         """
-        cols = 'A:I'
-        all_runs = pd.read_excel(self.filename, usecols=cols)
-
-        # Add the row number in the spreadsheet as an extra column
-        # row numbers for the runs will start at 2 not 0
-        all_runs.insert(0, 'source', all_runs.index + 2)
-
-        # add in some extra columns to indicate successful reduction
-        all_runs['reduced'] = np.zeros(len(all_runs))
-        all_runs['filename'] = np.zeros(len(all_runs))
-        mask = all_runs.reduce == 1
+        all_runs = self.load_runs()
+        mask = self.select_runs(all_runs)
         rows = all_runs[mask].index
 
         # iterate through the rows that were marked for reduction
         for idx in rows:
-            # ensure that the name is a string (will be NaN if blank in sheet)
             name = str(all_runs.loc[idx, 'name'])
 
             try:
                 ds, fname = self._reduce_row(all_runs.loc[idx])
-            except OSError as e:
+            except IOError as e:
                 # data file not found (normally)
                 reduction_ok = str(e)
                 warnings.warn("Run %s: %s" % (name, str(e)))
@@ -378,7 +507,7 @@ class BatchReducer:
 
         if show:
             if _have_ipython:
-                IPython.display.display(all_runs[mask])
+                IPython.display.display(all_runs[mask].fillna(""))
             else:
                 print(all_runs[mask])
 
