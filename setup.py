@@ -3,12 +3,14 @@
 from setuptools import setup, Extension, find_packages
 import os
 import subprocess
-
+import warnings
 
 try:
     from Cython.Distutils import build_ext
 except ImportError:
     USE_CYTHON = False
+    warnings.warn(
+        "Cython was not found. Slow reflectivity calculations will be used.")
 else:
     USE_CYTHON = True
 
