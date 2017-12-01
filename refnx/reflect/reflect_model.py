@@ -558,3 +558,214 @@ def _smeared_abeles_constant(q, w, resolution, threads=True):
     # smeared_output *= np.sum(gauss_y)
     smeared_output *= gauss_x[1] - gauss_x[0]
     return smeared_output
+
+
+class MixedReflectModel(object):
+    r"""
+    Calculates an incoherent average of reflectivities from a sequence of
+    structures. Such a situation may occur if a sample is not uniform over its
+    illuminated area.
+
+    Parameters
+    ----------
+    structures : sequence of refnx.reflect.Structure
+        The interfacial structures to incoherently average
+    scales : None, sequence of float or refnx.analysis.Parameter, optional
+        scale factors. The reflectivities calculated from each of the
+        structures are multiplied by their respective scale factor during
+        overall summation. These values are turned into Parameters during the
+        construction of this object.
+        You must supply a scale factor for each of the structures. If `scales`
+        is `None`, then default scale factors are used:
+        `[1 / len(structures)] * len(structures)`. It is a good idea to set the
+        lower bound of each scale factor to zero (not done by default).
+    bkg : float or refnx.analysis.Parameter, optional
+        linear background added to the overall reflectivity. This is turned
+        into a Parameter during the construction of this object.
+    name : str, optional
+        Name of the mixed Model
+    dq : float or refnx.analysis.Parameter, optional
+
+        - `dq == 0` then no resolution smearing is employed.
+        - `dq` is a float or refnx.analysis.Parameter
+           a constant dQ/Q resolution smearing is employed.  For 5% resolution
+           smearing supply 5.
+
+        However, if `x_err` is supplied to the `model` method, then that
+        overrides any setting given here. This value is turned into
+        a Parameter during the construction of this object.
+    threads: int, optional
+        Specifies the number of threads for parallel calculation. This
+        option is only applicable if you are using the ``_creflect``
+        module. The option is ignored if using the pure python calculator,
+        ``_reflect``. If `threads == 0` then all available processors are
+        used.
+    quad_order: int, optional
+        the order of the Gaussian quadrature polynomial for doing the
+        resolution smearing. default = 17. Don't choose less than 13. If
+        quad_order == 'ultimate' then adaptive quadrature is used. Adaptive
+        quadrature will always work, but takes a _long_ time (2 or 3 orders
+        of magnitude longer). Fixed quadrature will always take a lot less
+        time. BUT it won't necessarily work across all samples. For
+        example, 13 points may be fine for a thin layer, but will be
+        atrocious at describing a multilayer with bragg peaks.
+
+    """
+    def __init__(self, structures, scales=None, bkg=1e-7, name='', dq=5.,
+                 threads=0, quad_order=17):
+        self.name = name
+        self._parameters = None
+        self.threads = threads
+        self.quad_order = quad_order
+
+        # all reflectometry models need a scale factor and background. Set
+        # them all to 1 by default.
+        pscales = Parameters('scale factors')
+
+        if scales is not None and len(structures) == len(scales):
+            tscales = scales
+        elif scales is not None and len(structures) != len(scales):
+            raise ValueError("You need to supply scale factor for each"
+                             " structure")
+        else:
+            tscales = [1 / len(structures)] * len(structures)
+
+        for scale in tscales:
+            pscales.append(possibly_create_parameter(scale, name='scale'))
+
+        self._scales = pscales
+        self._bkg = possibly_create_parameter(bkg, name='bkg')
+
+        # we can optimize the resolution (but this is always overridden by
+        # x_err if supplied. There is therefore possibly no dependence on it.
+        self._dq = possibly_create_parameter(dq, name='dq - resolution')
+
+        self._structures = structures
+
+    def __call__(self, x, p=None, x_err=None):
+        return self.model(x, p=p, x_err=x_err)
+
+    @property
+    def dq(self):
+        r"""
+        :class:`refnx.analysis.Parameter`
+
+            - `dq.value == 0`
+               no resolution smearing is employed.
+            - `dq.value > 0`
+               a constant dQ/Q resolution smearing is employed.  For 5%
+               resolution smearing supply 5. However, if `x_err` is supplied to
+               the `model` method, then that overrides any setting reported
+               here.
+
+        """
+        return self._dq
+
+    @dq.setter
+    def dq(self, value):
+        self._dq.value = value
+
+    @property
+    def scales(self):
+        r"""
+        :class:`refnx.analysis.Parameter` - all model values are multiplied by
+        this value before the background is added.
+
+        """
+        return self._scales
+
+    @property
+    def bkg(self):
+        r"""
+        :class:`refnx.analysis.Parameter` - linear background added to all
+        model values.
+
+        """
+        return self._bkg
+
+    @bkg.setter
+    def bkg(self, value):
+        self._bkg.value = value
+
+    def model(self, x, p=None, x_err=None):
+        r"""
+        Calculate the reflectivity of this model
+
+        Parameters
+        ----------
+        x : float or np.ndarray
+            q values for the calculation.
+        p : refnx.analysis.Parameter, optional
+            parameters required to calculate the model
+        x_err : np.ndarray
+            dq resolution smearing values for the dataset being considered.
+
+        Returns
+        -------
+        reflectivity : np.ndarray
+
+        """
+        if p is not None:
+            self.parameters.pvals = np.array(p)
+        if x_err is None:
+            # fallback to what this object was constructed with
+            x_err = float(self.dq)
+
+        scales = np.array(self.scales)
+
+        y = np.zeros_like(x)
+
+        for scale, structure in zip(scales, self.structures):
+            y += reflectivity(x,
+                              structure.slabs[..., :4],
+                              scale=scale,
+                              dq=x_err,
+                              threads=self.threads,
+                              quad_order=self.quad_order)
+
+        return y + self.bkg.value
+
+    def lnprob(self):
+        r"""
+        Additional log-probability terms for the reflectivity model. Do not
+        include log-probability terms for model parameters, these are
+        automatically calculated elsewhere.
+
+        Returns
+        -------
+        lnprob : float
+            log-probability of structure.
+
+        """
+        lnprob = 0
+        for structure in self._structures:
+            lnprob += structure.lnprob()
+
+        return lnprob
+
+    @property
+    def structures(self):
+        r"""
+        :class:`refnx.reflect.Structure` - object describing the interface of
+        a reflectometry sample.
+
+        """
+        return self._structures
+
+    @property
+    def parameters(self):
+        r"""
+        :class:`refnx.analysis.Parameters` - parameters associated with this
+        model.
+
+        """
+        p = Parameters(name='instrument parameters')
+        p.extend([self.scales, self.bkg, self.dq])
+
+        self._parameters = Parameters(name=self.name)
+        self._parameters.append([p])
+
+        for structure in self._structures:
+            self._parameters.append(structure.parameters)
+
+        return self._parameters
