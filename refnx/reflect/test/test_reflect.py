@@ -11,7 +11,7 @@ except ImportError:
 import refnx.reflect._reflect as _reflect
 from refnx.analysis import (Transform, Objective,
                             CurveFitter, Parameter, Model)
-from refnx.reflect import (SLD, Slab, ReflectModel)
+from refnx.reflect import (SLD, Slab, ReflectModel, MixedReflectModel)
 from refnx.dataset import ReflectDataset
 
 import numpy as np
@@ -347,3 +347,24 @@ class TestReflect(object):
         slabs = structure.slabs
         assert_equal(slabs[2, 0:2], slabs[3, 0:2])
         assert_equal(slabs[2, 3], slabs[3, 3])
+
+    def test_mixed_model(self):
+        # test for MixedReflectModel
+        air = SLD(0, name='air')
+        sio2 = SLD(3.47, name='SiO2')
+        si = SLD(2.07, name='Si')
+
+        structure1 = air | sio2(100, 2) | si(0, 3)
+        structure2 = air | sio2(50, 3) | si(0, 5)
+
+        # this is out theoretical calculation
+        mixed_model_y = 0.4 * structure1.reflectivity(self.qvals)
+        mixed_model_y += 0.6 * structure2.reflectivity(self.qvals)
+
+        mixed_model = MixedReflectModel([structure1, structure2], [0.4, 0.6],
+                                        bkg=0, dq=0)
+
+        assert_equal(mixed_model.scales, np.array([0.4, 0.6]))
+        assert_(mixed_model.dq.value == 0)
+
+        assert_equal(mixed_model_y, mixed_model(self.qvals))
