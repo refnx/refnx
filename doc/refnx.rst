@@ -1,5 +1,5 @@
-refnx package
-=============
+refnx - Neutron and X-ray reflectometry analysis in Python
+==========================================================
 
 Subpackages
 -----------
