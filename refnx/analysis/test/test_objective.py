@@ -200,6 +200,35 @@ class TestObjective(object):
         assert_equal(yt, EPy)
         assert_equal(et, EPe)
 
+    def test_lnsigma(self):
+        # check that lnsigma works correctly
+        def lnprior(theta, x, y, yerr):
+            m, b, lnf = theta
+            if -5.0 < m < 0.5 and 0.0 < b < 10.0 and -10.0 < lnf < 1.0:
+                return 0.0
+            return -np.inf
+
+        def lnlike(theta, x, y, yerr):
+            m, b, lnf = theta
+            model = m * x + b
+            inv_sigma2 = 1.0 / (yerr ** 2 + model ** 2 * np.exp(2 * lnf))
+            print(inv_sigma2)
+            return -0.5 * (np.sum((y - model) ** 2 * inv_sigma2 -
+                                  np.log(inv_sigma2)))
+
+        x, y, yerr, _ = self.data.data
+
+        theta = [self.m_true, self.b_true, np.log(self.f_true)]
+        bo = BaseObjective(theta, lnlike, lnprior=lnprior,
+                           fcn_args=(x, y, yerr))
+
+        lnsigma = Parameter(np.log(self.f_true), 'lnsigma', bounds=(-10, 1),
+                            vary=True)
+        self.objective.setp(np.array([self.b_true, self.m_true]))
+        self.objective.lnsigma = lnsigma
+
+        assert_allclose(self.objective.lnlike(), bo.lnlike())
+
     def test_base_emcee(self):
         # check that the base objective works against the emcee example.
         def lnprior(theta, x, y, yerr):
