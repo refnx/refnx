@@ -12,12 +12,6 @@ matrix:
           env: PY=3.6
         - os: osx
           language: generic
-          env: PY=2.7
-        - os: osx
-          language: generic
-          env: PY=3.5
-        - os: osx
-          language: generic
           env: PY=3.6
 addons:
     apt:
