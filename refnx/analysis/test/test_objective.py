@@ -53,15 +53,12 @@ class TestObjective(object):
 
         self.p = Parameter(self.b_ls, 'b') | Parameter(self.m_ls, 'm')
         self.model = Model(self.p, fitfunc=line)
-        self.objective = Objective(self.model, self.data,
-                                   lnsigma=Parameter(0, 'lnsigma', vary=True))
+        self.objective = Objective(self.model, self.data)
 
-        # want b and m and lnsigma to vary
+        # want b and m
         self.p[0].vary = True
         self.p[1].vary = True
-        self.objective.lnsigma.vary = True
 
-        assert_equal(self.objective.lnsigma.value, 0)
         mod = np.array([4.78166609, 4.42364699, 4.16404064, 3.50343504,
                         3.4257084, 2.93594347, 2.92035638, 2.67533842,
                         2.28136038, 2.19772983, 1.99295496, 1.93748334,
@@ -99,23 +96,20 @@ class TestObjective(object):
     def test_setp(self):
         # check that we can set parameters
         self.p[0].vary = False
-        self.objective.lnsigma.vary = False
 
         assert_(len(self.objective.varying_parameters()) == 1)
         self.objective.setp(np.array([1.23]))
         assert_equal(self.p[1].value, 1.23)
-        self.objective.setp(np.array([0, 1.234, 1.23]))
+        self.objective.setp(np.array([1.234, 1.23]))
         assert_equal(np.array(self.p), [1.234, 1.23])
 
     def test_pvals(self):
         assert_equal(self.objective.parameters.pvals,
-                     [0, self.b_ls, self.m_ls])
-        self.objective.parameters.pvals = [0, 1, 2]
-        assert_equal(self.objective.parameters.pvals, [0, 1, 2.])
+                     [self.b_ls, self.m_ls])
+        self.objective.parameters.pvals = [1, 2]
+        assert_equal(self.objective.parameters.pvals, [1, 2.])
 
     def test_lnprior(self):
-        self.objective.lnsigma = 0
-
         self.p[0].range(0, 10)
         assert_almost_equal(self.objective.lnprior(), np.log(0.1))
 
@@ -161,7 +155,6 @@ class TestObjective(object):
         self.objective.lnprob_extra = lnprob_extra
 
         # repeat lnprior test
-        self.objective.lnsigma = 0
         self.p[0].range(0, 10)
         assert_almost_equal(self.objective.lnprior(), np.log(0.1) + 1)
 
@@ -285,9 +278,8 @@ class TestObjective(object):
         var_arr = result['x'][:]
         var_arr[0], var_arr[1], var_arr[2] = var_arr[2], var_arr[1], var_arr[0]
 
-        assert_(self.objective.data.weighted)
-        self.objective.parameters.pvals = var_arr
-
+        # assert_(self.objective.data.weighted)
+        # self.objective.parameters.pvals = var_arr
         # covar3 = self.objective.covar()
         # uncertainties3 = np.sqrt(np.diag(covar3))
         # assert_almost_equal(uncertainties3, uncertainties)
