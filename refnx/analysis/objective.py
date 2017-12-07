@@ -168,9 +168,13 @@ class Objective(BaseObjective):
     data : refnx.dataset.Data1D
         data to be analysed.
     lnsigma : float or refnx.analysis.Parameter, optional
-        the experimental uncertainty (`data.y_err`) is multiplied by
-        `exp(lnsigma)`. Used when the experimental uncertainty is
-        underestimated.
+        Used if the  experimental uncertainty (`data.y_err`) underestimated by
+        a constant fractional amount. The experimental uncertainty is modified
+        as:
+
+        `s_n**2 = y_err**2 + exp(lnsigma * 2) * model**2`
+
+        See `Objective.lnlike` for more details.
     use_weights : bool
         use experimental uncertainty in calculation of residuals and
         lnlike, if available. If this is set to False, then you should also
@@ -195,9 +199,8 @@ class Objective(BaseObjective):
 
     """
 
-    def __init__(self, model, data, lnsigma=0, use_weights=True,
+    def __init__(self, model, data, lnsigma=None, use_weights=True,
                  transform=None, lnprob_extra=None):
-        # lnsigma is a parameter for underestimated errors
         self.model = model
         # should be a Data1D instance
         if isinstance(data, Data1D):
@@ -205,10 +208,9 @@ class Objective(BaseObjective):
         else:
             self.data = Data1D(data=data)
 
-        if is_parameter(lnsigma):
-            self.lnsigma = lnsigma
-        else:
-            self.lnsigma = lnsigma
+        self.lnsigma = lnsigma
+        if lnsigma is not None:
+            self.lnsigma = possibly_create_parameter(lnsigma, 'lnsigma')
 
         self.use_weights = use_weights
         self.transform = transform
@@ -267,10 +269,9 @@ class Objective(BaseObjective):
         y = self.data.y
         weight = self.use_weights and self.data.weighted
 
+        y_err = 1.
         if weight:
-            y_err = self.data.y_err * np.exp(float(self.lnsigma))
-        else:
-            y_err = 1.
+            y_err = self.data.y_err
 
         if self.transform is None:
             return y, y_err, model
@@ -323,7 +324,13 @@ class Objective(BaseObjective):
 
         y, y_err, model = self._data_transform(model)
 
-        return np.squeeze((y - model) / y_err)
+        if self.lnsigma is not None:
+            s_n = np.sqrt(y_err * y_err +
+                          np.exp(2 * float(self.lnsigma)) * model * model)
+        else:
+            s_n = y_err
+
+        return np.squeeze((y - model) / s_n)
 
     def chisqr(self, pvals=None):
         """
@@ -461,7 +468,13 @@ class Objective(BaseObjective):
 
         .. code-block:: python
 
-            lnlike = -0.5 * np.sum((y - model / y_err)**2 + np.log(y_err**2))
+            lnlike = -0.5 * np.sum((y - model / s_n)**2 + np.log(s_n**2))
+
+        where
+
+        .. code-block:: python
+
+            s_n**2 = y_err**2 + exp(2 * lnsigma) * model**2
 
         """
         self.setp(pvals)
@@ -472,12 +485,18 @@ class Objective(BaseObjective):
 
         y, y_err, model = self._data_transform(model)
 
+        if self.lnsigma is not None:
+            var_y = (y_err * y_err +
+                     np.exp(2 * float(self.lnsigma)) * model * model)
+        else:
+            var_y = y_err ** 2
+        print(var_y)
         # TODO do something sensible if data isn't weighted
         if self.use_weights and self.data.weighted:
             # ignoring 2 * pi constant
-            lnlike += np.log(y_err**2)
+            lnlike += np.log(var_y)
 
-        lnlike += ((y - model) / y_err)**2
+        lnlike += (y - model)**2 / var_y
 
         # nans play havoc
         if np.isnan(lnlike).any():
