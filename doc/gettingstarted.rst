@@ -121,7 +121,7 @@ installed)
 
 
 Fitting a data to a user defined model
-----------------------------------------
+=======================================
 
 Here we demonstrate a fit to a user defined model. This line example is taken
 from the `emcee documentation`_ and the reader is referred to that link for
@@ -162,7 +162,7 @@ Then we need to set up a generative model.
 
     def line(x, params, *args, **kwds):
         p_arr = np.array(params)
-        return p_arr['b'] + x * p_arr['m']
+        return p_arr[0] + x * p_arr[1]
 
     # the model needs parameters
     p = Parameter(1, 'b', vary=True, bounds=(0, 10))
@@ -199,28 +199,55 @@ Finally a CurveFitter.
 .. parsed-literal::
 
     ________________________________________________________________________________
-    Objective - 4476430040
-    Dataset = <refnx.dataset.data1d.Data1D object at 0x10a5b4ac8>
+    Objective - 111850645096
+    Dataset = <refnx.dataset.data1d.Data1D object at 0x10796ef60>
     datapoints = 50
-    chi2 = 168.52086981764432
+    chi2 = 45.03473215559118
     Weighted = True
     Transform = None
     ________________________________________________________________________________
     Parameters:      None
-    <Parameter:     'lnf'     value=   0.994307     +/- 0.0067, bounds=[-10, 1]>
+    <Parameter:     'lnf'     value=   -0.769326    +/- 0.156, bounds=[-10, 1]>
     ________________________________________________________________________________
     Parameters:      None
-    <Parameter:      'b'      value=    5.44162     +/- 0.247, bounds=[0, 10]>
-    <Parameter:      'm'      value=   -1.10454     +/- 0.0438, bounds=[-5, 0.5]>
+    <Parameter:      'b'      value=    4.5473      +/- 0.36 , bounds=[0, 10]>
+    <Parameter:      'm'      value=   -1.00738     +/- 0.0788, bounds=[-5, 0.5]>
+
+Here's the data. The true model is shown, along with the model from the median
+of the MCMC parameters, 500 samples from the MCMC chain, and the linear least
+squares fit. Note how close the median MCMC estimated model is to the 'true'
+behaviour. See how far off the linear least squares fit is, if you don't take
+into account the underestimated error bars.
+
+.. code:: python
+
+    # get the least squares fit
+    A = np.vstack((np.ones_like(x), x)).T
+    C = np.diag(yerr * yerr)
+    cov = np.linalg.inv(np.dot(A.T, np.linalg.solve(C, A)))
+    b_ls, m_ls = np.dot(cov, np.dot(A.T, np.linalg.solve(C, y)))
+
+    import matplotlib.pyplot as plt
+    xl = np.array([0, 10])
+
+    for lnf, b, m in objective.pgen(500):
+        plt.plot(xl, m*xl+b, color="k", alpha=0.01)
+    plt.plot(xl, model(xl), color='blue', label=('MCMC median'))
+    plt.plot(xl, model(xl, [b_ls, m_ls]), color='green', label=('linear least squares'))
+    plt.plot(xl, m_true*xl+b_true, color="r", lw=2, alpha=1.0, label='True model')
+    plt.errorbar(x, y, yerr=yerr, fmt=".k", label='data')
+    plt.legend()
+
+.. image:: _images/line_fit.png
 
 Here's a corner plot of the results
 
 .. code:: python
 
     import corner
-    labels = ['b, 'm', 'log(f)']
+    labels = ['b', 'm', 'log(f)']
     fig = corner.corner(fitter.sampler.flatchain,
                         labels=labels,
                         truths=[np.log(f_true), b_true, m_true]);
 
-
+.. image:: _images/corner_line.png

@@ -490,7 +490,7 @@ class Objective(BaseObjective):
                      np.exp(2 * float(self.lnsigma)) * model * model)
         else:
             var_y = y_err ** 2
-        print(var_y)
+
         # TODO do something sensible if data isn't weighted
         if self.use_weights and self.data.weighted:
             # ignoring 2 * pi constant
