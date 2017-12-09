@@ -123,6 +123,7 @@ installed)
 Fitting a data to a user defined model
 =======================================
 
+
 Here we demonstrate a fit to a user defined model. This line example is taken
 from the `emcee documentation`_ and the reader is referred to that link for
 more detailed explanation. The errorbars are underestimated, and the modelling
