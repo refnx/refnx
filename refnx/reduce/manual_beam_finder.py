@@ -29,7 +29,8 @@ class ManualBeamFinder(QtWidgets.QDialog):
         """
         super(ManualBeamFinder, self).__init__()
         path = os.path.dirname(os.path.realpath(__file__))
-        self.dialog = uic.loadUi(os.path.join(path, 'ui', 'manual_beam.ui'), self)
+        self.dialog = uic.loadUi(os.path.join(path, 'ui', 'manual_beam.ui'),
+                                 self)
 
         # values for spinboxes
         self._true_centre = 121.
