@@ -1,5 +1,4 @@
 from __future__ import division
-import logging
 import os.path
 
 
@@ -25,11 +24,12 @@ class ManualBeamFinder(QtWidgets.QDialog):
     """
     Manual specular beam finding dialogue
     """
-    def __init__(self, ui_loc=''):
+    def __init__(self):
         """
         """
         super(ManualBeamFinder, self).__init__()
-        self.dialog = uic.loadUi(os.path.join(ui_loc, 'manual_beam.ui'), self)
+        path = os.path.dirname(os.path.realpath(__file__))
+        self.dialog = uic.loadUi(os.path.join(path, 'ui', 'manual_beam.ui'), self)
 
         # values for spinboxes
         self._true_centre = 121.
@@ -361,7 +361,7 @@ class DetectorImage(FigureCanvas):
                          vmin=-1 / np.max(detector))
         # display a rectangle that shows where we're looking for beam
         patch_x = np.size(disp, 0) - pixels_to_include
-        patch_y = max(0, integrate_position - integrate_width/2)
+        patch_y = max(0, integrate_position - integrate_width / 2)
         width = min(integrate_width, np.size(disp, 1) - patch_y)
         rect = patches.Rectangle((patch_x, patch_y),
                                  pixels_to_include,
