@@ -10,6 +10,8 @@ try:
 except ImportError:
     pass
 
+ii32 = np.iinfo(np.int32)
+
 
 def process_event_stream(events, frames, t_bins, y_bins, x_bins):
     """
@@ -125,7 +127,7 @@ def framebins_to_frames(frame_bins):
     return frames
 
 
-def events(f, end_last_event=127, max_frames=np.inf):
+def events(f, end_last_event=127, max_frames=None):
     """
     Unpacks event data from packedbinary format for the ANSTO Platypus
     instrument
@@ -139,8 +141,9 @@ def events(f, end_last_event=127, max_frames=np.inf):
     end_last_event : uint
         The reading of event data starts from `end_last_event + 1`. The default
         of 127 corresponds to a file header that is 128 bytes long.
-    max_frames : int
-        Stop reading the event file when have read this many frames.
+    max_frames : None, int
+        Stop reading the event file when have read this many frames. If `None`
+        then read all frames
 
     Returns
     -------
@@ -158,7 +161,7 @@ def events(f, end_last_event=127, max_frames=np.inf):
                        max_frames=max_frames)
 
 
-def _events(f, end_last_event=127, max_frames=np.inf):
+def _events(f, end_last_event=127, max_frames=None):
     """
     Unpacks event data from packedbinary format for the ANSTO Platypus
     instrument
@@ -172,8 +175,9 @@ def _events(f, end_last_event=127, max_frames=np.inf):
     end_last_event : uint
         The reading of event data starts from `end_last_event + 1`. The default
         of 127 corresponds to a file header that is 128 bytes long.
-    max_frames : int
-        Stop reading the event file when have read this many frames.
+    max_frames : None, int
+        Stop reading the event file when have read this many frames. If `None`
+        then read all frames.
 
     Returns
     -------
@@ -183,6 +187,9 @@ def _events(f, end_last_event=127, max_frames=np.inf):
         successful event read from the file. Use this value to extract more
         events from the same file at a future date.
     """
+    if max_frames is None:
+        max_frames = ii32.max
+
     fi = f
     auto_f = None
     if not hasattr(fi, 'read'):

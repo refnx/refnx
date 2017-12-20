@@ -10,8 +10,8 @@ ii32 = np.iinfo(np.int32)
 
 @cython.cdivision(False)
 def _cevents(f,
-           int end_last_event=127,
-           int max_frames = ii32.max):
+             int end_last_event=127,
+             max_frames=None):
     """
     Unpacks event data from packedbinary format for the ANSTO Platypus
     instrument
@@ -25,7 +25,7 @@ def _cevents(f,
     end_last_event : uint
         The reading of event data starts from `end_last_event + 1`. The default
         of 127 corresponds to a file header that is 128 bytes long.
-    max_frames : int
+    max_frames : None, int
         Stop reading the event file when have read this many frames.
 
     Returns
@@ -36,6 +36,10 @@ def _cevents(f,
         successful event read from the file. Use this value to extract more
         events from the same file at a future date.
     """
+    if max_frames is None:
+        max_frames = ii32.max
+    max_frames = int(max_frames)
+
     fi = f
     auto_f = None
     if not hasattr(fi, 'read'):
