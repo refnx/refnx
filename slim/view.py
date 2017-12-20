@@ -6,7 +6,7 @@ import logging
 from PyQt5 import QtCore, QtWidgets, uic
 from PyQt5.QtCore import pyqtSlot
 from model import ReductionTableModel, ReductionState
-from manual_beam_finder import ManualBeamFinder
+from refnx.reduce.manual_beam_finder import ManualBeamFinder
 from plot import SlimPlotWindow
 
 
@@ -24,7 +24,7 @@ class SlimWindow(QtWidgets.QMainWindow):
             os.path.join(ui_loc, 'reduction_options.ui'))
 
         # the manual beam finder instance
-        self.manual_beam_finder = ManualBeamFinder(ui_loc)
+        self.manual_beam_finder = ManualBeamFinder()
 
         # reduction state contains all the file numbers to be reduced
         # and all the reduction options information. You could pickle this file
