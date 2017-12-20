@@ -2,6 +2,7 @@ import os
 import numpy as np
 from numpy.testing import assert_equal
 import refnx.reduce.event as event
+from refnx.reduce.event import events
 from refnx.reduce import PlatypusNexus
 
 try:
@@ -35,6 +36,10 @@ class TestEvent(object):
     def setup_method(self):
         path = os.path.dirname(os.path.realpath(__file__))
         self.path = path
+
+    def test_events_smoke(self):
+        # check that the event.events function works
+        events(self.event_file_path)
 
     def test_num_events(self):
         assert_equal(1056618, self.x.size)
