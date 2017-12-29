@@ -55,11 +55,11 @@ class TestReduce(object):
             reflect=os.path.join(self.pth, 'PLP0011641.nx.hdf'),
             integrate=0, rebin_percent=2,
             eventmode=[0, 900, 1800])
-        assert_equal(a.ydata.shape[0], 2)
+        assert_equal(a.y.shape[0], 2)
 
         # check that the resolutions are pretty much the same
-        assert_allclose(a.xdata_sd[0] / a.xdata[0],
-                        a.xdata_sd[1] / a.xdata[1],
+        assert_allclose(a.x_err[0] / a.x[0],
+                        a.x_err[1] / a.x[1],
                         atol=0.001)
 
         # check that the (right?) timestamps are written into the datafile

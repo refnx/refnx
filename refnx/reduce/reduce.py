@@ -122,19 +122,19 @@ class PlatypusReduce(object):
         reduction : dict
             Contains the following entries:
 
-            - 'xdata' : np.ndarray
+            - 'x' : np.ndarray
                 Q values, shape (N, T).
-            - 'xdata_sd' : np.ndarray
+            - 'x_err' : np.ndarray
                 Uncertainty in Q values (FWHM), shape (N, T).
-            - 'ydata' : np.ndarray
+            - 'y' : np.ndarray
                 Specular Reflectivity, shape (N, T)
-            - 'ydata_sd' : np.ndarray
+            - 'y_err' : np.ndarray
                 Uncertainty in specular reflectivity (SD), shape (N, T)
             - 'omega' : np.ndarray
                 Angle of incidence, shape (N, T)
             - 'm_ref' : np.ndarray
                 Offspecular reflectivity map, shape (N, T, Y)
-            - 'm_ref_sd' : np.ndarray
+            - 'm_ref_err' : np.ndarray
                 uncertainty in offspecular reflectivity, shape (N, T, Y)
             - 'm_qz' : np.ndarray
                 Qz for offspecular map, shape (N, T, Y)
@@ -211,10 +211,10 @@ class PlatypusReduce(object):
         (Q, R, dR, dQ): np.ndarray tuple
             dR is standard deviation, dQ is FWHM
         """
-        return (self.xdata[scanpoint],
-                self.ydata[scanpoint],
-                self.ydata_sd[scanpoint],
-                self.xdata_sd[scanpoint])
+        return (self.x[scanpoint],
+                self.y[scanpoint],
+                self.y_err[scanpoint],
+                self.x_err[scanpoint])
 
     def data2d(self, scanpoint=0):
         """
@@ -234,7 +234,7 @@ class PlatypusReduce(object):
         return (self.m_qz[scanpoint],
                 self.m_qy[scanpoint],
                 self.m_ref[scanpoint],
-                self.m_ref_sd[scanpoint])
+                self.m_ref_err[scanpoint])
 
     def scale(self, scale):
         """
@@ -246,9 +246,9 @@ class PlatypusReduce(object):
             Divides the reflectivity values by a constant amount
         """
         self.m_ref /= scale
-        self.m_ref_sd /= scale
-        self.ydata /= scale
-        self.ydata_sd /= scale
+        self.m_ref_err /= scale
+        self.y /= scale
+        self.y_err /= scale
 
     def write_offspecular(self, f, scanpoint=0):
         d = dict()
@@ -262,7 +262,7 @@ class PlatypusReduce(object):
         # filename = 'off_PLP{:07d}_{:d}.xml'.format(self._rnumber, index)
         d['_r'] = repr(self.m_ref[scanpoint].tolist()).strip(',[]')
         d['_qz'] = repr(self.m_qz[scanpoint].tolist()).strip(',[]')
-        d['_dr'] = repr(self.m_ref_sd[scanpoint].tolist()).strip(',[]')
+        d['_dr'] = repr(self.m_ref_err[scanpoint].tolist()).strip(',[]')
         d['_qy'] = repr(self.m_qy[scanpoint].tolist()).strip(',[]')
 
         thefile = s.safe_substitute(d)
@@ -426,13 +426,13 @@ class PlatypusReduce(object):
                                 wavelengths[:, :, np.newaxis])
 
         reduction = {}
-        reduction['xdata'] = self.xdata = xdata
-        reduction['xdata_sd'] = self.xdata_sd = xdata_sd
-        reduction['ydata'] = self.ydata = ydata / scale
-        reduction['ydata_sd'] = self.ydata_sd = ydata_sd / scale
+        reduction['x'] = self.x = xdata
+        reduction['x_err'] = self.x_err = xdata_sd
+        reduction['y'] = self.y = ydata / scale
+        reduction['y_err'] = self.y_err = ydata_sd / scale
         reduction['omega'] = omega_corrected
         reduction['m_ref'] = self.m_ref = m_ref
-        reduction['m_ref_sd'] = self.m_ref_sd = m_ref_sd
+        reduction['m_ref_err'] = self.m_ref_err = m_ref_sd
         reduction['qz'] = self.m_qz = qz
         reduction['qy'] = self.m_qy = qy
         reduction['nspectra'] = self.n_spectra = n_spectra
