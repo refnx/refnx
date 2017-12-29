@@ -219,12 +219,12 @@ class TestPlatypusNexus(object):
                                               'PLP0000711.nx.hdf'))
         reduced = reducer.reduce(os.path.join(os.getcwd(),
                                               'ADD_PLP0000708.nx.hdf'))
-        assert_('ydata' in reduced)
+        assert_('y' in reduced)
 
         # the error bars should be smaller
         reduced2 = reducer.reduce(os.path.join(self.pth, 'PLP0000708.nx.hdf'))
 
-        assert_(np.all(reduced['ydata_sd'] < reduced2['ydata_sd']))
+        assert_(np.all(reduced['y_err'] < reduced2['y_err']))
 
     def test_manual_beam_find(self):
         # you can specify a function that finds where the specular ridge is.

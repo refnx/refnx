@@ -83,24 +83,20 @@ install:
     # Remove cygwin (and therefore the git that comes with it).
     - cmd: rmdir C:\cygwin /s /q
 
-    # Use the pre-installed Miniconda for the desired arch
-    #
-    # However, it is really old. So, we need to update some
-    # things before we proceed. That seems to require it being
-    # on the path. So, we temporarily put conda on the path
-    # so that we can update it. Then we remove it so that
-    # we can do a proper activation.
-    - cmd: set "OLDPATH=%PATH%"
-    - cmd: set "PATH=%CONDA_INSTALL_LOCN%\\Scripts;%CONDA_INSTALL_LOCN%\\Library\\bin;%PATH%"
-    - cmd: conda update --yes --quiet conda python
-    - cmd: set "PATH=%OLDPATH%"
+    # Add path, activate `conda` and update conda.
     - cmd: call %CONDA_INSTALL_LOCN%\Scripts\activate.bat
+    - cmd: set PYTHONUNBUFFERED=1
 
-    - cmd: conda config --add channels conda-forge
-    - cmd: conda config --set show_channel_urls true
-    - cmd: conda update --yes --quiet conda
-    - cmd: conda install --yes --quiet obvious-ci
-    - cmd: conda install --yes --quiet numpy toolchain scipy emcee h5py xlrd pandas uncertainties cython six pytest
+    # Add our channels.
+    - cmd: conda.exe config --set show_channel_urls true
+    - cmd: conda.exe config --remove channels defaults
+    - cmd: conda.exe config --add channels defaults
+    - cmd: conda.exe config --add channels conda-forge
+    - cmd: conda.exe update --yes --quiet conda
+
+    # Configure the VM.
+    - cmd: call conda.exe install -n root --yes --quiet obvious-ci
+    - cmd: call conda.exe install -n root --yes --quiet numpy scipy h5py xlrd pandas cython six pytest toolchain emcee uncertainties
 
 build_script:
     # Build the compiled extension
