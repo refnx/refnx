@@ -119,6 +119,17 @@ class TestEvent(object):
         assert_equal(detector[1, 383, 97, 0], 64)
         assert_equal(detector[4, 377, 98, 0], 57)
 
+        x_bins = np.array([210.5, -210.5])
+        y_bins = np.linspace(110.5, -110.5, 222)
+        t_bins = np.linspace(0, 50000, 1001)
+        frames = [[6, 10]]
+        detector, fbins = event.process_event_stream(self.event_list,
+                                                     frames,
+                                                     t_bins,
+                                                     y_bins,
+                                                     x_bins)
+        assert_equal(np.sum(detector.ravel()), 167)
+
         # # now see what happens if we go too far with the frame_bins
         # frames = event.framebins_to_frames([0, 24000, 30000])
         # detector, fbins = event.process_event_stream(self.event_list,
