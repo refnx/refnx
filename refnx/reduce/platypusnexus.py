@@ -714,7 +714,7 @@ class PlatypusNexus(object):
 
             detpositions[idx] = cat.dy[scanpoint]
 
-            if eventmode is not None:
+            if eventmode is not None or event_filter is not None:
                 m_spec_tof_hist[:] = TOF - toffset
                 flight_distance[:] = flight_distance[0]
                 detpositions[:] = detpositions[0]
@@ -780,7 +780,7 @@ class PlatypusNexus(object):
 
         if np.size(beam_centre) != n_spectra:
             raise RuntimeError('The number of beam centres should be equal'
-                               'to the number of detector images.')
+                               ' to the number of detector images.')
 
         '''
         Rebinning in lambda for all detector

@@ -174,6 +174,9 @@ class PlatypusReduce(object):
         if 'eventmode' in direct_keywords:
             direct_keywords.pop('eventmode')
 
+        if 'event_filter' in direct_keywords:
+            direct_keywords.pop('event_filter')
+
         self.direct_beam.process(**direct_keywords)
 
         # get the reflected beam spectrum

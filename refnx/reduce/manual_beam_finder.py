@@ -14,7 +14,7 @@ from matplotlib import patches
 from matplotlib.backends.backend_qt5agg import (NavigationToolbar2QT
                                                 as NavigationToolbar)
 
-from refnx.reduce.peak_utils import peak_finder
+from refnx.reduce.peak_utils import peak_finder, centroid
 from refnx.reduce.platypusnexus import fore_back_region, PIXEL_OFFSET
 
 # matplotlib.use('Qt5Agg')
@@ -92,10 +92,18 @@ class ManualBeamFinder(QtWidgets.QDialog):
         # only process the first detector image (N = 0).
         self.detector = detector
         self.detector_err = detector_err
+        n_images = 1
 
         if detector.ndim > 2:
             self.detector = detector[0]
             self.detector_err = detector_err[0]
+            n_images = np.size(detector, 0)
+
+        # guess peak centre from centroid.
+        xs = np.sum(self.detector, axis=0)
+        self._integrate_position, _ = centroid(xs)
+        self.integrate_position.setValue(self._integrate_position)
+        self.integrate_width.setValue(self._integrate_width)
 
         self.recalculate_graphs()
 
@@ -106,11 +114,12 @@ class ManualBeamFinder(QtWidgets.QDialog):
         background_pixels = np.r_[np.arange(self._low_bkg, y1 + 1),
                                   np.arange(y2, self._high_bkg + 1)]
 
-        return (np.array([self._true_centre]),
-                np.array([self._true_sd]),
-                np.array([self._low_px]),
-                np.array([self._high_px]),
-                [background_pixels])
+
+        return (np.ones((n_images,)) * self._true_centre,
+                np.ones((n_images,)) * self._true_sd,
+                np.ones((n_images,)) * self._low_px,
+                np.ones((n_images,)) * self._high_px,
+                [background_pixels for i in range(n_images)])
 
     def recalculate_graphs(self):
         """
