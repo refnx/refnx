@@ -114,7 +114,6 @@ class ManualBeamFinder(QtWidgets.QDialog):
         background_pixels = np.r_[np.arange(self._low_bkg, y1 + 1),
                                   np.arange(y2, self._high_bkg + 1)]
 
-
         return (np.ones((n_images,)) * self._true_centre,
                 np.ones((n_images,)) * self._true_sd,
                 np.ones((n_images,)) * self._low_px,
