@@ -74,6 +74,9 @@ class TestParameter(object):
         assert_equal(x.bounds.ub, np.inf)
         assert_equal(x.lnprob(), 0)
 
+        x.setp(bounds=norm(0, 1))
+        assert_almost_equal(x.lnprob(1), norm.logpdf(1, 0, 1))
+
     def test_range(self):
         x = Parameter(0.)
         x.range(-1, 1.)

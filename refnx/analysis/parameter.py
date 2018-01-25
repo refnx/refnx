@@ -437,7 +437,8 @@ class Parameter(BaseParameter):
         elif hasattr(bounds, '__len__') and len(bounds) == 2:
             self.range(*bounds)
         else:
-            raise ValueError("Can't set bounds with the value provided.")
+            rv = PDF(bounds)
+            self._bounds = rv
 
     def valid(self, val):
         return self.bounds.valid(val)
