@@ -4,7 +4,7 @@ from __future__ import division
 from six.moves import UserList
 
 import numpy as np
-from scipy.special import erf
+from scipy.stats import norm
 from scipy.interpolate import interp1d
 
 try:
@@ -240,7 +240,7 @@ class Structure(UserList):
         Returns
         -------
         sld : float
-            Scattering length density / 1e-6 $\AA^-2$
+            Scattering length density / 1e-6 Angstrom**-2
 
         Notes
         -----
@@ -254,61 +254,7 @@ class Structure(UserList):
             raise ValueError("Structure requires fronting and backing"
                              " Slabs in order to calculate.")
 
-        nlayers = np.size(slabs, 0) - 2
-
-        if z is None:
-            if not nlayers:
-                zstart = -5 - 4 * np.fabs(slabs[-1, 3])
-                zend = 5 + 4 * np.fabs(slabs[-1, 3])
-            else:
-                zstart = -5 - 4 * np.fabs(slabs[1, 3])
-                sum_thick = np.sum(np.fabs(slabs[1:-1, 0]))
-                zend = 5 + sum_thick + 4 * np.fabs(slabs[-1, 3])
-
-            z = np.linspace(zstart, zend, num=500)
-
-        def sld_z(zed):
-            sld = np.zeros_like(zed)
-
-            dist = 0
-            thick = 0
-            for ii in range(nlayers + 1):
-                if ii == 0:
-                    if nlayers:
-                        deltarho = -slabs[0, 1] + slabs[1, 1]
-                        thick = 0
-                        sigma = np.fabs(slabs[1, 3])
-                    else:
-                        sigma = np.fabs(slabs[-1, 3])
-                        deltarho = -slabs[0, 1] + slabs[-1, 1]
-                elif ii == nlayers:
-                    sld1 = slabs[ii, 1]
-                    deltarho = -sld1 + slabs[-1, 1]
-                    thick = np.fabs(slabs[ii, 0])
-                    sigma = np.fabs(slabs[-1, 3])
-                else:
-                    sld1 = slabs[ii, 1]
-                    sld2 = slabs[ii + 1, 1]
-                    deltarho = -sld1 + sld2
-                    thick = np.fabs(slabs[ii, 0])
-                    sigma = np.fabs(slabs[ii + 1, 3])
-
-                dist += thick
-
-                # if sigma=0 then the computer goes haywire (division by zero),
-                # so say it's vanishingly small
-                if sigma == 0:
-                    sigma += 1e-3
-
-                # summ += deltarho * (norm.cdf((zed - dist)/sigma))
-                sld += (deltarho *
-                        (0.5 +
-                         0.5 *
-                         erf((zed - dist) / (sigma * np.sqrt(2.)))))
-
-            return sld
-
-        return z, sld_z(z) + slabs[0, 1]
+        return sld_profile(slabs, z)
 
     def __ior__(self, other):
         # self |= other
@@ -592,6 +538,62 @@ def _profile_slicer(z, sld_profile, slice_size=None):
     structure.extend(slabs)
 
     return structure
+
+
+def sld_profile(slabs, z=None):
+    """
+    Calculates an SLD profile, as a function of distance through the
+    interface.
+
+    Parameters
+    ----------
+    z : float
+        Interfacial distance (Angstrom) measured from interface between the
+        fronting medium and the first layer.
+
+    Returns
+    -------
+    sld : float
+        Scattering length density / 1e-6 Angstrom**-2
+
+    Notes
+    -----
+    This can be called in vectorised fashion.
+    """
+    nlayers = np.size(slabs, 0) - 2
+
+    # work on a copy of the input array
+    layers = np.copy(slabs)
+    layers[:, 0] = np.fabs(slabs[:, 0])
+    layers[:, 3] = np.fabs(slabs[:, 3])
+    # bounding layers should have zero thickness
+    layers[0, 0] = layers[-1, 0] = 0
+
+    # distance of each interface from the fronting interface
+    dist = np.cumsum(layers[:-1, 0])
+
+    # workout how much space the SLD profile should encompass
+    # (if z array not provided)
+    if z is None:
+        zstart = -5 - 4 * np.fabs(slabs[1, 3])
+        zend = 5 + dist[-1] + 4 * layers[-1, 3]
+        zed = np.linspace(zstart, zend, num=500)
+    else:
+        zed = np.asfarray(z)
+
+    # the output array
+    sld = np.ones_like(zed, dtype=float) * layers[0, 1]
+
+    # work out the step in SLD at an interface
+    delta_rho = layers[1:, 1] - layers[:-1, 1]
+    # the roughness of each step
+    sigma = np.clip(layers[1:, 3], 1e-3, None)
+
+    # accumulate the SLD of each step.
+    for i in range(nlayers + 1):
+        sld += delta_rho[i] * norm.cdf(zed, scale=sigma[i], loc=dist[i])
+
+    return zed, sld
 
 
 # The following slab contraction code was translated from C code in
