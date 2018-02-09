@@ -165,3 +165,24 @@ class TestReflectDataset(object):
         self.data.save_xml('test.xml')
         with open('test.xml', 'wb') as f:
             self.data.save_xml(f)
+
+    def test_data_setter(self):
+        # check that setting a Data1D's data from a tuple works correctly
+        # this is the approach used in Data1D.synthesise.
+        new_dataset = Data1D()
+        new_dataset.data = self.data.data
+        assert_equal(new_dataset.y_err, self.data.y_err)
+        assert_equal(new_dataset.x_err, self.data.x_err)
+        assert_equal(new_dataset.y, self.data.y)
+        assert_equal(new_dataset.x, self.data.x)
+        assert_equal(new_dataset.weighted, self.data.weighted)
+
+    def test_synthesise(self):
+        # add gaussian noise to a Data1D.y
+        new_dataset = self.data.synthesise()
+
+        # y-array should not be the same, so don't test that
+        assert_equal(new_dataset.y_err, self.data.y_err)
+        assert_equal(new_dataset.x_err, self.data.x_err)
+        assert_equal(new_dataset.x, self.data.x)
+        assert_equal(new_dataset.weighted, self.data.weighted)

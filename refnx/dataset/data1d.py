@@ -344,3 +344,28 @@ class Data1D(object):
         """
         self.add_data(other.data, requires_splice=True, trim_trailing=True)
         return self
+
+    def synthesise(self):
+        """
+        Synthesise a new dataset by adding Gaussian noise onto each of the
+        datapoints of the existing data.
+
+        Returns
+        -------
+        dataset : Data1D
+            A new synthesised dataset
+        """
+        if self.y_err is None:
+            raise RuntimeError("Can't synthesise new dataset without y_err"
+                               "uncertainties")
+
+        shape = self.y_err.shape
+        gnoise = np.random.randn(*shape)
+
+        new_y = self.y + gnoise * self.y
+
+        dataset = Data1D()
+        dataset.data = self.data
+        dataset.y = new_y
+
+        return dataset
