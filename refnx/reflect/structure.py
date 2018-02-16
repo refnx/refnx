@@ -170,9 +170,8 @@ class Structure(UserList):
             slabs = np.flipud(slabs)
             slabs[1:, 3] = roughnesses[::-1]
             slabs[0, 3] = 0.
-
         if len(self) > 2:
-            if self.solvent == 'top-bottom':
+            if self.solvent == 'top/bottom':
                 top_solvent_slab = slabs[0]
                 bottom_solvent_slab = slabs[-1]
                 slabs[1] = self.overall_sld(slabs[1], top_solvent_slab)
