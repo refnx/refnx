@@ -451,7 +451,10 @@ class FreeformVFPgamma(Component):
     Notes
     -----
     The total extent of the spline region is calculated such that the total
-    profile area is the same as `gamma`.
+    profile area is the same as `gamma`. The log-probability of this model
+    is -np.inf if the extent of the spline region is less than, or equal to,
+    zero. This can happen if the integrated `left_slabs` area is larger than
+    gamma.
     """
 
     def __init__(self, gamma, vf, dz, polymer_sld, solvent, name='',
@@ -461,7 +464,7 @@ class FreeformVFPgamma(Component):
         self.name = name
 
         self.gamma = (
-            possibly_create_parameter(extent,
+            possibly_create_parameter(gamma,
                                       name='%s - adsorbed amount' % name))
 
         if isinstance(polymer_sld, SLD):
@@ -590,11 +593,18 @@ class FreeformVFPgamma(Component):
             Volume fraction
         """
         interpolator = self._vfp_interpolator()
-        if extent is not None:
-            vfp = interpolator(z / extent)
-        else:
-            vfp = interpolator(z / self.extent)
-        return vfp
+
+        if extent is None:
+            extent = self.extent
+
+        if extent < 0:
+            raise RuntimeError("Spline extent is negative because interior"
+                               " layers have too much area.")
+
+        if extent == 0:
+            return interpolator(0)
+
+        return interpolator(z / extent)
 
     def moment(self, moment=1):
         """
@@ -643,6 +653,11 @@ class FreeformVFPgamma(Component):
                     # negative penalty means you want increasing
                     lnprob -= np.abs(self.monotonic_penalty)
 
+        # you should be using a slab model because the spline extent is
+        # negligible.
+        if self.extent <= 0:
+            return -np.inf
+
         return lnprob
 
     @property
@@ -658,6 +673,9 @@ class FreeformVFPgamma(Component):
             _slabs = slab.slabs
             required_spline_area -= _slabs[0, 0] * (1 - _slabs[0, 4])
 
+        if required_spline_area <= 0:
+            return 0.
+
         interpolator = self._vfp_interpolator()
         area = interpolator.integrate(0, 1)
 
@@ -672,11 +690,27 @@ class FreeformVFPgamma(Component):
         -------
         area: integrated area of volume fraction profile
         """
-        return float(self.gamma)
+        area = 0
+        extent = self.extent
+        if extent > 0:
+            interpolator = self._vfp_interpolator()
+            area += interpolator.integrate(0, 1) * extent
+
+        for slab in self.left_slabs:
+            _slabs = slab.slabs
+            area += _slabs[0, 0] * (1 - _slabs[0, 4])
+        for slab in self.right_slabs:
+            _slabs = slab.slabs
+            area += _slabs[0, 0] * (1 - _slabs[0, 4])
+
+        return area
 
     @property
     def slabs(self):
         extent = self.extent
+        if extent <= 0:
+            return None
+
         num_slabs = np.ceil(extent / self.microslab_max_thickness)
         slab_thick = extent / num_slabs
         slabs = np.zeros((int(num_slabs), 5))
@@ -716,10 +750,11 @@ class FreeformVFPgamma(Component):
         polymer_slabs = self.slabs
         offset = np.sum(s.slabs[:, 0])
 
-        for i in range(np.size(polymer_slabs, 0)):
-            layer = m(polymer_slabs[i, 0], polymer_slabs[i, 3])
-            layer.vfsolv.value = polymer_slabs[i, -1]
-            s |= layer
+        if polymer_slabs is not None:
+            for i in range(np.size(polymer_slabs, 0)):
+                layer = m(polymer_slabs[i, 0], polymer_slabs[i, 3])
+                layer.vfsolv.value = polymer_slabs[i, -1]
+                s |= layer
 
         for i, slab in enumerate(self.right_slabs):
             layer = m(slab.thick.value, slab.rough.value)
