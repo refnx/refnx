@@ -293,7 +293,7 @@ class FreeformVFPextent(Component):
             
             # if left slab has a lower vf than first spline then profile is
             # not monotonic
-            if self.vf[0] > (1-self.left_slabs[-1].vfsolv):
+            if self.vf[0] > (1 - self.left_slabs[-1].vfsolv):
                 monotonic = False
                 
             if not monotonic:
@@ -646,6 +646,12 @@ class FreeformVFPgamma(Component):
         # you're trying to enforce monotonicity
         if self.monotonic_penalty:
             monotonic, direction = _is_monotonic(self.vf)
+
+            # if left slab has a lower vf than first spline then profile is
+            # not monotonic
+            if self.vf[0] > (1 - self.left_slabs[-1].vfsolv):
+                monotonic = False
+
             if not monotonic:
                 # you're not monotonic so you have to have the penalty
                 # anyway
