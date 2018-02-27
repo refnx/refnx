@@ -25,7 +25,7 @@ def _is_monotonic(arr):
         indicating whether it's decreasing (-1), or increasing (1)
     """
     diff = np.ediff1d(arr)
-    if not ((diff > 0).all() or (diff < 0).all()):
+    if not ((diff >= 0).all() or (diff <= 0).all()):
         return False, 0
     if (diff > 0).all():
         return True, 1
@@ -287,6 +287,12 @@ class FreeformVFP(Component):
         # you're trying to enforce monotonicity
         if self.monotonic_penalty:
             monotonic, direction = _is_monotonic(self.vf)
+            
+            # if left slab has a lower vf than first spline then profile is
+            # not monotonic
+            if self.vf[0] > (1-self.left_slabs[-1].vfsolv):
+                monotonic = False
+                
             if not monotonic:
                 # you're not monotonic so you have to have the penalty
                 # anyway
