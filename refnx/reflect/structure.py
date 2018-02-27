@@ -152,6 +152,9 @@ class Structure(UserList):
         i = 0
         for component in self.components:
             additional_slabs = component.slabs
+            if additional_slabs is None:
+                continue
+
             new_slabs = len(additional_slabs)
 
             if new_slabs > len(slabs) - i:
@@ -394,6 +397,7 @@ class Component(object):
         """
         The slab representation of this component
 
+        If a Component returns None, then it doesn't have any slabs
         """
 
         raise NotImplementedError("A component should override the slabs "
