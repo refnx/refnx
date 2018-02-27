@@ -173,15 +173,20 @@ class Structure(UserList):
             slabs = np.flipud(slabs)
             slabs[1:, 3] = roughnesses[::-1]
             slabs[0, 3] = 0.
-
         if len(self) > 2:
-            if self.solvent == 'backing':
-                solvent_slab = slabs[-1]
-            if self.solvent == 'fronting':
-                solvent_slab = slabs[0]
+            if self.solvent == 'top/bottom':
+                top_solvent_slab = slabs[0]
+                bottom_solvent_slab = slabs[-1]
+                slabs[1] = self.overall_sld(slabs[1], top_solvent_slab)
+                slabs[-2] = self.overall_sld(slabs[-2], bottom_solvent_slab)
+            else:
+                if self.solvent == 'backing':
+                    solvent_slab = slabs[-1]
+                if self.solvent == 'fronting':
+                    solvent_slab = slabs[0]
 
-            # overall SLD is a weighted average
-            slabs[1:-1] = self.overall_sld(slabs[1:-1], solvent_slab)
+                # overall SLD is a weighted average
+                slabs[1:-1] = self.overall_sld(slabs[1:-1], solvent_slab)
 
         if self.contract > 0:
             return _contract_by_area(slabs, self.contract)
