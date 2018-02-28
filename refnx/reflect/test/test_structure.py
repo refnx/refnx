@@ -26,6 +26,7 @@ class TestStructure(object):
                                              [0, 6.36, 0, 4, 0]]))
 
         # slabs have solvent penetration
+        self.s.solvent = self.d2o
         self.s[1] = SLD(3.47 + 1j, name='sio2')(100, 5)
         self.s[1].vfsolv.value = 0.9
         sld = 6.36 * 0.9 + 0.1 * 3.47
@@ -66,7 +67,7 @@ class TestStructure(object):
     def test_slab_addition(self):
         # The slabs property for the main Structure component constructs
         # the overall slabs by concatenating Component slabs. It preallocates
-        # memory to prevent repeated memory allocations. THis checks that the
+        # memory to prevent repeated memory allocations. This checks that the
         # slab concatenation is correct.
 
         si = SLD(2.07)
@@ -76,7 +77,7 @@ class TestStructure(object):
         d2o_layer = d2o(0, 3)
         polymer_layer = polymer(20, 3)
         a = Spline(400, [4, 5.9],
-                   [0.2, .4], polymer_layer, d2o_layer, d2o_layer, zgrad=True)
+                   [0.2, .4], polymer_layer, d2o_layer, d2o, zgrad=True)
         film = si | sio2(10, 3) | polymer_layer | a | d2o_layer
         film.sld_profile()
 

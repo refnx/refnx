@@ -105,6 +105,12 @@ class FreeformVFPextent(Component):
         direction that is requested.
     microslab_max_thickness : float
         Thickness of microslicing of spline for reflectivity calculation.
+
+    Notes
+    -----
+    When this component is part of a ``reflect.Structure``, then the
+    ``Structure.solvent`` attribute needs to be set, in order for solvation
+    of the brush to occur.
     """
 
     def __init__(self, extent, vf, dz, polymer_sld, solvent, name='',
@@ -456,6 +462,9 @@ class FreeformVFPgamma(Component):
 
     Notes
     -----
+    When this component is part of a ``reflect.Structure``, then the
+    ``Structure.solvent`` attribute needs to be set, in order for solvation
+    of the brush to occur.
     The total extent of the spline region is calculated such that the total
     profile area is the same as `gamma`. The log-probability of this model
     is -np.inf if the extent of the spline region is less than, or equal to,

@@ -32,8 +32,8 @@ class Spline(Component):
             The Component to the left of this Spline region.
         right : refnx.reflect.Component
             The Component to the right of this Spline region.
-        solvent : refnx.reflect.Slab
-            A Slab instance representing the solvent
+        solvent : refnx.reflect.SLD
+            An SLD instance representing the solvent
         name : str
             Name of component
         interpolator : scipy.interpolate Univariate Interpolator, optional
@@ -70,7 +70,7 @@ class Spline(Component):
         self.name = name
         self.left_slab = left
         self.right_slab = right
-        self.solvent_slab = solvent
+        self.solvent = solvent
         self.microslab_max_thickness = microslab_max_thickness
 
         self.extent = (
@@ -116,11 +116,11 @@ class Spline(Component):
 
         left_sld = Structure.overall_sld(
             np.atleast_2d(self.left_slab.slabs[-1]),
-            self.solvent_slab.slabs)[..., 1]
+            self.solvent)[..., 1]
 
         right_sld = Structure.overall_sld(
             np.atleast_2d(self.right_slab.slabs[0]),
-            self.solvent_slab.slabs)[..., 1]
+            self.solvent)[..., 1]
 
         if self.zgrad:
             zeds = np.concatenate([[-1.1, 0 - EPS], zeds, [1 + EPS, 2.1]])
@@ -173,7 +173,7 @@ class Spline(Component):
         p.extend([self.extent, self.dz, self.vs,
                   self.left_slab.parameters,
                   self.right_slab.parameters,
-                  self.solvent_slab.parameters])
+                  self.solvent.parameters])
         return p
 
     def lnprob(self):

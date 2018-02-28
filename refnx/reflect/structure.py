@@ -25,12 +25,11 @@ class Structure(UserList):
     ----------
     name : str
         Name of this structure
-    solvent : str
-        Specifies whether the 'backing' or 'fronting' semi-infinite medium
-        is used to solvate components. You would typically use 'backing'
-        for neutron reflectometry, with solvation by the material in
-        Structure[-1]. X-ray reflectometry would typically be solvated by
-        the 'fronting' material in Structure[0].
+    solvent : SLD
+        Specifies the scattering length density used for solvation. If no
+        solvent is specified then the SLD of the solvent is assumed to be
+        the SLD of `Structure[-1].slabs[-1]` (after any possible slab order
+        reveral).
     reverse_structure : bool
         If `Structure.reverse_structure` is `True` then the slab
         representation produced by `Structure.slabs` is reversed. The sld
@@ -45,11 +44,11 @@ class Structure(UserList):
     Notes
     -----
     If `Structure.reverse_structure is True` then the slab representation
-    order is reversed. The slab order is reversed before the solvation
-    calculation is done. I.e. if `Structure.solvent == 'backing'` and
-    `Structure.reverse_structure is True` then the material that solvates
-    the system is the component in `Structure[0]`, which corresponds to
-    `Structure.slab[-1]`.
+    order is reversed.
+    If no solvent is specified then the volume fraction of solvent in each of
+    the Components is *assumed* to be the SLD of `Structure[-1].slabs[-1]`.
+    after any possible slab order reversal. This slab corresponds to the
+    SLD of the semi-infinite backing medium.
     The profile contraction specified by the `contract` keyword can improve
     calculation time for Structures created with microslicing (such as
     analytical profiles). If you use this option it is recommended to check
@@ -57,17 +56,15 @@ class Structure(UserList):
     comparable.
 
     """
-    def __init__(self, name='', solvent='backing', reverse_structure=False,
+    def __init__(self, name='', solvent=None, reverse_structure=False,
                  contract=0):
         super(Structure, self).__init__()
         self._name = name
-        if solvent not in ['backing', 'fronting']:
-            raise ValueError("solvent must either be the fronting or backing"
-                             " medium")
 
-        #: **str** specifies whether `backing` or `fronting` semi-infinite
-        #: medium is used to solvate components.
         self.solvent = solvent
+        if solvent is not None:
+            self.solvent = SLD(solvent)
+
         self._reverse_structure = bool(reverse_structure)
         #: **float** if contract > 0 then an attempt to contract/shrink the
         #: slab representation is made. Use larger values for coarser profiles
@@ -175,13 +172,12 @@ class Structure(UserList):
             slabs[0, 3] = 0.
 
         if len(self) > 2:
-            if self.solvent == 'backing':
-                solvent_slab = slabs[-1]
-            if self.solvent == 'fronting':
-                solvent_slab = slabs[0]
-
             # overall SLD is a weighted average
-            slabs[1:-1] = self.overall_sld(slabs[1:-1], solvent_slab)
+            solvent = self.solvent
+            if self.solvent is None:
+                solvent = complex(slabs[-1, 1], slabs[-1, 2])
+
+            slabs[1:-1] = self.overall_sld(slabs[1:-1], solvent)
 
         if self.contract > 0:
             return _contract_by_area(slabs, self.contract)
@@ -189,7 +185,7 @@ class Structure(UserList):
             return slabs
 
     @staticmethod
-    def overall_sld(slabs, solvent_slab):
+    def overall_sld(slabs, solvent):
         """
         Performs a volume fraction weighted average of the material SLD in a
         layer and the solvent in a layer.
@@ -198,18 +194,22 @@ class Structure(UserList):
         ----------
         slabs : np.ndarray
             Slab representation of the layers to be averaged.
-        solvent_slab: np.ndarray
-            Slab representation of the solvent layer
+        solvent : complex or reflect.SLD
+            SLD of solvating material.
 
         Returns
         -------
         averaged_slabs : np.ndarray
             the averaged slabs.
         """
+        solv = solvent
+        if isinstance(solvent, SLD):
+            solv = complex(solvent.real.value, solvent.imag.value)
+
         slabs[..., 1] = slabs[..., 1] * (1 - slabs[..., 4])
         slabs[..., 2] = slabs[..., 2] * (1 - slabs[..., 4])
-        slabs[..., 1] += solvent_slab[..., 1] * slabs[..., 4]
-        slabs[..., 2] += solvent_slab[..., 2] * slabs[..., 4]
+        slabs[..., 1] += solv.real * slabs[..., 4]
+        slabs[..., 2] += solv.imag * slabs[..., 4]
         return slabs
 
     def reflectivity(self, q, threads=0):
@@ -293,6 +293,8 @@ class Structure(UserList):
         """
         p = Parameters(name='Structure - {0}'.format(self.name))
         p.extend([component.parameters for component in self.components])
+        if self.solvent is not None:
+            p.append(self.solvent.parameters)
         return p
 
     def lnprob(self):
