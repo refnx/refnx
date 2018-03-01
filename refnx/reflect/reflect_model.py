@@ -631,7 +631,8 @@ class MixedReflectModel(object):
             tscales = [1 / len(structures)] * len(structures)
 
         for scale in tscales:
-            pscales.append(possibly_create_parameter(scale, name='scale'))
+            p_scale = possibly_create_parameter(scale, name='scale')
+            pscales.append(p_scale)
 
         self._scales = pscales
         self._bkg = possibly_create_parameter(bkg, name='bkg')
@@ -764,8 +765,6 @@ class MixedReflectModel(object):
 
         self._parameters = Parameters(name=self.name)
         self._parameters.append([p])
-
-        for structure in self._structures:
-            self._parameters.append(structure.parameters)
-
+        self._parameters.extend([structure.parameters for structure
+                                 in self._structures])
         return self._parameters

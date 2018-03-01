@@ -206,6 +206,42 @@ class TestReflect(object):
         model = rff.model(self.qvals)
         assert_almost_equal(model, self.rvals)
 
+    def test_mixed_reflectivity_model(self):
+        # test that mixed area model works ok.
+
+        # should be same as data generated from Motofit
+        sio2 = SLD(3.47, name='SiO2')
+        air = SLD(0, name='air')
+        si = SLD(2.07, name='Si')
+
+        s1 = air | sio2(100, 2) | si(0, 3)
+        s2 = air | sio2(100, 2) | si(0, 3)
+
+        mixed_model = MixedReflectModel([s1, s2], [0.4, 0.3], dq=0)
+        assert_almost_equal(mixed_model(self.qvals), self.rvals * 0.7)
+
+        # now try out the mixed model compared to sum of individual models
+        # with smearing, but no background.
+        s1 = air | sio2(100, 2) | si(0, 2)
+        s2 = air | sio2(50, 3) | si(0, 1)
+
+        mixed_model = MixedReflectModel([s1, s2], [0.4, 0.3], dq=5, bkg=0)
+        indiv1 = ReflectModel(s1, bkg=0)
+        indiv2 = ReflectModel(s2, bkg=0)
+
+        assert_almost_equal(mixed_model(self.qvals),
+                            (0.4 * indiv1(self.qvals) +
+                             0.3 * indiv2(self.qvals)))
+
+        # now try out the mixed model compared to sum of individual models
+        # with smearing, and background.
+
+        mixed_model.bkg.value = 1e-7
+        assert_almost_equal(mixed_model(self.qvals),
+                            (0.4 * indiv1(self.qvals) +
+                             0.3 * indiv2(self.qvals) +
+                             1e-7))
+
     def test_reflectivity_fit(self):
         # a smoke test to make sure the reflectivity fit proceeds
         model = self.model361
