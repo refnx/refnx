@@ -11,7 +11,7 @@ class TestReflect(object):
     def setup_method(self):
         self.left = SLD(1.5)(10, 3)
         self.right = SLD(2.5)(10, 3)
-        self.solvent = SLD(10)(0, 3)
+        self.solvent = SLD(10)
 
     def test_spline_smoke(self):
         # smoke test to make Spline at least gives us something
@@ -53,7 +53,7 @@ class TestReflect(object):
         # check that the spline responds if it's a vfsolve that changes
         self.left.vfsolv.value = 0.5
         assert_almost_equal(Structure.overall_sld(self.left.slabs,
-                                                  self.solvent.slabs)[0, 1],
+                                                  self.solvent)[0, 1],
                             6.)
         assert_almost_equal(a(0), 6.)
 
