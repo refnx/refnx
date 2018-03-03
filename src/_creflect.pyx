@@ -21,8 +21,8 @@ NCPU = cpu_count()
 
 
 @cython.boundscheck(False)
-@cython.cdivision(False)
-def abeles(np.ndarray x,
+@cython.cdivision(True)
+cpdef np.ndarray abeles(np.ndarray x,
            np.ndarray[DTYPE_t, ndim=2] w,
            double scale=1.0, double bkg=0., int threads=0):
     if w.shape[1] != 4 or w.shape[0] < 2:
@@ -62,7 +62,7 @@ def abeles(np.ndarray x,
 """
 # Slower than the python version!
 @cython.boundscheck(False)
-@cython.cdivision(False)
+@cython.cdivision(True)
 def reflect(np.ndarray[DTYPE_t, ndim=1] x,
              np.ndarray[DTYPE_t, ndim=2] w,
              double scale=1.0, double bkg=0.):
