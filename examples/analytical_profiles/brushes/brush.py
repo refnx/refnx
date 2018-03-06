@@ -77,8 +77,6 @@ class FreeformVFPextent(Component):
         `extent`.
     polymer_sld : SLD or float
         SLD of polymer
-    solvent : SLD or float
-        SLD of solvent
     name : str
         Name of component
     gamma : Parameter
@@ -106,14 +104,9 @@ class FreeformVFPextent(Component):
     microslab_max_thickness : float
         Thickness of microslicing of spline for reflectivity calculation.
 
-    Notes
-    -----
-    When this component is part of a ``reflect.Structure``, then the
-    ``Structure.solvent`` attribute needs to be set, in order for solvation
-    of the brush to occur.
     """
 
-    def __init__(self, extent, vf, dz, polymer_sld, solvent, name='',
+    def __init__(self, extent, vf, dz, polymer_sld, name='',
                  gamma=None, left_slabs=(), right_slabs=(),
                  interpolator=Pchip, zgrad=True, monotonic_penalty=0,
                  microslab_max_thickness=1):
@@ -124,11 +117,6 @@ class FreeformVFPextent(Component):
             self.polymer_sld = polymer_sld
         else:
             self.polymer_sld = SLD(polymer_sld)
-
-        if isinstance(solvent, SLD):
-            self.solvent = solvent
-        else:
-            self.solvent = SLD(solvent)
 
         # left and right slabs are other areas where the same polymer can
         # reside
@@ -285,7 +273,7 @@ class FreeformVFPextent(Component):
     @property
     def parameters(self):
         p = Parameters(name=self.name)
-        p.extend([self.extent, self.dz, self.vf, self.solvent.parameters,
+        p.extend([self.extent, self.dz, self.vf,
                   self.polymer_sld.parameters, self.gamma])
         p.extend([slab.parameters for slab in self.left_slabs])
         p.extend([slab.parameters for slab in self.right_slabs])
@@ -433,8 +421,6 @@ class FreeformVFPgamma(Component):
         the total extent.
     polymer_sld : SLD or float
         SLD of polymer
-    solvent : SLD or float
-        SLD of solvent
     name : str
         Name of component
     left_slabs : sequence of Slab
@@ -462,9 +448,6 @@ class FreeformVFPgamma(Component):
 
     Notes
     -----
-    When this component is part of a ``reflect.Structure``, then the
-    ``Structure.solvent`` attribute needs to be set, in order for solvation
-    of the brush to occur.
     The total extent of the spline region is calculated such that the total
     profile area is the same as `gamma`. The log-probability of this model
     is -np.inf if the extent of the spline region is less than, or equal to,
@@ -472,7 +455,7 @@ class FreeformVFPgamma(Component):
     gamma.
     """
 
-    def __init__(self, gamma, vf, dz, polymer_sld, solvent, name='',
+    def __init__(self, gamma, vf, dz, polymer_sld, name='',
                  left_slabs=(), right_slabs=(),
                  interpolator=Pchip, zgrad=True, monotonic_penalty=0,
                  microslab_max_thickness=1):
@@ -486,11 +469,6 @@ class FreeformVFPgamma(Component):
             self.polymer_sld = polymer_sld
         else:
             self.polymer_sld = SLD(polymer_sld)
-
-        if isinstance(solvent, SLD):
-            self.solvent = solvent
-        else:
-            self.solvent = SLD(solvent)
 
         # left and right slabs are other areas where the same polymer can
         # reside
@@ -644,7 +622,7 @@ class FreeformVFPgamma(Component):
     @property
     def parameters(self):
         p = Parameters(name=self.name)
-        p.extend([self.gamma, self.dz, self.vf, self.solvent.parameters,
+        p.extend([self.gamma, self.dz, self.vf,
                   self.polymer_sld.parameters])
         p.extend([slab.parameters for slab in self.left_slabs])
         p.extend([slab.parameters for slab in self.right_slabs])
