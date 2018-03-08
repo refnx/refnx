@@ -217,12 +217,13 @@ class TestPlatypusNexus(object):
         # it should also be reduceable
         reducer = PlatypusReduce(os.path.join(self.pth,
                                               'PLP0000711.nx.hdf'))
-        reduced = reducer.reduce(os.path.join(os.getcwd(),
-                                              'ADD_PLP0000708.nx.hdf'))
+        datasets, reduced = reducer.reduce(os.path.join(os.getcwd(),
+                                           'ADD_PLP0000708.nx.hdf'))
         assert_('y' in reduced)
 
         # the error bars should be smaller
-        reduced2 = reducer.reduce(os.path.join(self.pth, 'PLP0000708.nx.hdf'))
+        datasets2, reduced2 = reducer.reduce(os.path.join(self.pth,
+                                                          'PLP0000708.nx.hdf'))
 
         assert_(np.all(reduced['y_err'] < reduced2['y_err']))
 
