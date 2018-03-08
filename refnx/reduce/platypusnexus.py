@@ -53,7 +53,7 @@ spectrum_template = """<?xml version="1.0"?>
 </REFroot>"""
 
 
-def catalogue(start, stop, path=None):
+def catalogue(start, stop, data_folder=None):
     """
     Extract interesting information from Platypus NeXUS files.
 
@@ -63,7 +63,7 @@ def catalogue(start, stop, path=None):
         start cataloguing from this run number.
     stop : int
         stop cataloguing at this run number
-    path : str, optional
+    data_folder : str, optional
         path specifying location of NeXUS files
 
     Returns
@@ -77,12 +77,12 @@ def catalogue(start, stop, path=None):
     run_number = []
     d = {key: [] for key in info}
 
-    if path is None:
-        path = '.'
+    if data_folder is None:
+        data_folder = '.'
 
     for i in range(start, stop + 1):
         try:
-            pn = PlatypusNexus(os.path.join(path, number_datafile(i)))
+            pn = PlatypusNexus(os.path.join(data_folder, number_datafile(i)))
         except OSError:
             continue
 

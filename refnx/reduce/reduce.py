@@ -70,6 +70,15 @@ class PlatypusReduce(object):
     Returns
     -------
     None
+
+    Examples
+    --------
+
+    >>> from refnx.reduce import PlatypusReduce
+    >>> datasets, reduced = PlatypusReduce('PLP0000711.nx.hdf',
+    ...                                    reflect='PLP0000711.nx.hdf',
+    ...                                    rebin_percent=2)
+
     """
 
     def __init__(self, direct, reflect=None, data_folder=None, scale=1.,
@@ -119,6 +128,10 @@ class PlatypusReduce(object):
 
         Returns
         -------
+        datasets, reduction : tuple
+
+        datasets : sequence of ReflectDataset
+
         reduction : dict
             Contains the following entries:
 
@@ -162,7 +175,9 @@ class PlatypusReduce(object):
         >>> from refnx.reduce import PlatypusReduce
         >>> # set up with a direct beam
         >>> reducer = PlatypusReduce('PLP0000711.nx.hdf')
-        >>> reduction = reducer.reduce('PLP0000708.nx.hdf', rebin_percent=3.)
+        >>> datasets, reduction = reducer.reduce('PLP0000708.nx.hdf',
+        ...                                      rebin_percent=3.)
+
         """
         reflect_keywords = kwds.copy()
         direct_keywords = kwds.copy()
@@ -196,8 +211,8 @@ class PlatypusReduce(object):
         self.reflected_beam.process(**reflect_keywords)
 
         self.save = save
-        reduction = self._reduce_single_angle(scale)
-        return reduction
+        dataset, reduction = self._reduce_single_angle(scale)
+        return dataset, reduction
 
     def data(self, scanpoint=0):
         """
@@ -445,14 +460,16 @@ class PlatypusReduce(object):
             self.reflected_beam.datafile_number)
 
         fnames = []
+        datasets = []
+        datafilename = self.reflected_beam.datafilename
+        datafilename = os.path.basename(datafilename.split('.nx.hdf')[0])
+
+        for i in range(n_spectra):
+            data_tup = self.data(scanpoint=i)
+            datasets.append(ReflectDataset(data_tup))
+
         if self.save:
-            datafilename = self.reflected_beam.datafilename
-            datafilename = os.path.basename(datafilename.split('.nx.hdf')[0])
-
-            for i in range(n_spectra):
-                data_tup = self.data(scanpoint=i)
-                dataset = ReflectDataset(data_tup)
-
+            for dataset in datasets:
                 fname = '{0}_{1}.dat'.format(datafilename, i)
                 fnames.append(fname)
                 with open(fname, 'wb') as f:
@@ -464,7 +481,7 @@ class PlatypusReduce(object):
                                      start_time=reduction['start_time'][i])
 
         reduction['fname'] = fnames
-        return deepcopy(reduction)
+        return datasets, deepcopy(reduction)
 
 
 def reduce_stitch(reflect_list, direct_list, background_list=None,
