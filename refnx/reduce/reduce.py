@@ -78,7 +78,7 @@ class PlatypusReduce(object):
     >>> datasets, reduced = PlatypusReduce('PLP0000711.nx.hdf',
     ...                                    reflect='PLP0000711.nx.hdf',
     ...                                    rebin_percent=2)
-    
+
     """
 
     def __init__(self, direct, reflect=None, data_folder=None, scale=1.,
@@ -175,7 +175,9 @@ class PlatypusReduce(object):
         >>> from refnx.reduce import PlatypusReduce
         >>> # set up with a direct beam
         >>> reducer = PlatypusReduce('PLP0000711.nx.hdf')
-        >>> datasets, reduction = reducer.reduce('PLP0000708.nx.hdf', rebin_percent=3.)
+        >>> datasets, reduction = reducer.reduce('PLP0000708.nx.hdf',
+        ...                                      rebin_percent=3.)
+
         """
         reflect_keywords = kwds.copy()
         direct_keywords = kwds.copy()
