@@ -24,6 +24,7 @@ from refnx.reduce.parabolic_motion import find_trajectory, y_deflection
 from refnx.reduce.event import (events, process_event_stream,
                                 framebins_to_frames)
 from refnx.reduce.rebin import rebin, rebin_along_axis
+from refnx._lib import possibly_open_file
 
 
 # detector y pixel spacing in mm per pixel
@@ -280,7 +281,7 @@ def basename_datafile(pth):
     return basename.split('.nx.hdf')[0]
 
 
-def number_datafile(run_number):
+def number_datafile(run_number, prefix='PLP'):
     """
     Given a run number figure out what the file name is.
     Given a file name, return the filename with the .nx.hdf extension
@@ -289,6 +290,9 @@ def number_datafile(run_number):
     ----------
     run_number : int or str
 
+    prefix : str, optional
+        The instrument prefix. Only used if `run_number` is an int
+
     Returns
     -------
     file_name : str
@@ -296,14 +300,16 @@ def number_datafile(run_number):
     Examples
     --------
     >>> number_datafile(708)
-    'PLP0000708.nx.hdf
+    'PLP0000708.nx.hdf'
+    >>> number_datafile(708, prefix='QKK')
+    'QKK0000708.nx.hdf'
     >>> number_datafile('PLP0000708.nx.hdf')
     'PLP0000708.nx.hdf'
     """
     try:
         num = abs(int(run_number))
         # you got given a run number
-        return 'PLP{0:07d}.nx.hdf'.format(num)
+        return '{0}{1:07d}.nx.hdf'.format(prefix, num)
     except ValueError:
         # you may have been given full filename
         if run_number.endswith('.nx.hdf'):
@@ -343,22 +349,8 @@ def datafile_number(fname):
     return None
 
 
-class PlatypusNexus(object):
-    """
-    Processes Platypus NeXus files to produce an intensity vs wavelength
-    spectrum
-
-    Parameters
-    ----------
-    h5data : HDF5 NeXus file or str
-        An HDF5 NeXus file for Platypus, or a `str` containing the path
-        to one
-    """
-
-    def __init__(self, h5data):
-        """
-        Initialises the PlatypusNexus object.
-        """
+class ReflectNexus(object):
+    def __init__(self, h5data, prefix):
         with _possibly_open_hdf_file(h5data, 'r') as f:
             self.cat = Catalogue(f)
 
@@ -369,6 +361,8 @@ class PlatypusNexus(object):
         # call process again, thereby saving time.
         self._arguments = {}
 
+        self.prefix = prefix
+
     def __getattr__(self, item):
         if item in self.__dict__:
             return self.__dict__[item]
@@ -377,7 +371,7 @@ class PlatypusNexus(object):
         else:
             raise AttributeError
 
-    def __short_circuit_process(self, _arguments):
+    def _short_circuit_process(self, _arguments):
         """
         Returns the truth that two sets of arguments from successive calls to
         the `process` method are the same.
@@ -395,6 +389,115 @@ class PlatypusNexus(object):
         _arguments.pop('self', None)
 
         return _dict_compare(_arguments, self._arguments)
+
+    def write_spectrum_dat(self, f, scanpoint=0):
+        """
+        This method writes a dat representation of the corrected spectrum to
+        file.
+
+        Parameters
+        ----------
+        f : file-like or str
+            The file to write the spectrum to, or a str that specifies the file
+            name
+        scanpoint : int
+            Which scanpoint to write
+
+        Returns
+        -------
+        processed : bool
+            If the file hasn't been processed then the `processed is False` and
+            vice versa
+        """
+        if self.processed_spectrum is None:
+            return False
+
+        m_lambda = self.processed_spectrum['m_lambda'][scanpoint]
+        m_spec = self.processed_spectrum['m_spec'][scanpoint]
+        m_spec_sd = self.processed_spectrum['m_spec_sd'][scanpoint]
+        m_lambda_fwhm = self.processed_spectrum['m_lambda_fwhm'][scanpoint]
+
+        stacked_data = np.c_[m_lambda, m_spec, m_spec_sd, m_lambda_fwhm]
+        np.savetxt(f, stacked_data, delimiter='\t')
+
+        return True
+
+    def write_spectrum_xml(self, f, scanpoint=0):
+        """
+        This method writes an XML representation of the corrected spectrum to
+        file.
+
+        Parameters
+        ----------
+        f : file-like or str
+            The file to write the spectrum to, or a str that specifies the file
+            name
+        scanpoint : int
+            Which scanpoint to write
+        """
+        if self.processed_spectrum is None:
+            return
+
+        s = string.Template(spectrum_template)
+        d = dict()
+        d['title'] = self.cat.sample_name
+        d['time'] = strftime("%a, %d %b %Y %H:%M:%S +0000", gmtime())
+
+        m_lambda = self.processed_spectrum['m_lambda']
+        m_spec = self.processed_spectrum['m_spec']
+        m_spec_sd = self.processed_spectrum['m_spec_sd']
+        m_lambda_fwhm = self.processed_spectrum['m_lambda_fwhm']
+
+        # sort the data
+        sorted = np.argsort(self.m_lambda[0])
+
+        r = m_spec[:, sorted]
+        lmda = m_lambda[:, sorted]
+        dlmda = m_lambda_fwhm[:, sorted]
+        dr = m_spec_sd[:, sorted]
+        d['n_spectra'] = self.processed_spectrum['n_spectra']
+        d['runnumber'] = 'PLP{:07d}'.format(self.cat.datafile_number)
+
+        d['r'] = repr(r[scanpoint].tolist()).strip(',[]')
+        d['dr'] = repr(dr[scanpoint].tolist()).strip(',[]')
+        d['lmda'] = repr(lmda[scanpoint].tolist()).strip(',[]')
+        d['dlmda'] = repr(dlmda[scanpoint].tolist()).strip(',[]')
+        thefile = s.safe_substitute(d)
+
+        with possibly_open_file(f, 'wb') as g:
+            if 'b' in g.mode:
+                thefile = thefile.encode('utf-8')
+
+            g.write(thefile)
+            g.truncate()
+
+        return True
+
+    @property
+    def spectrum(self):
+        return (self.processed_spectrum['m_lambda'],
+                self.processed_spectrum['m_spec'],
+                self.processed_spectrum['m_spec_sd'],
+                self.processed_spectrum['m_lambda_fwhm'])
+
+
+class PlatypusNexus(ReflectNexus):
+    """
+    Processes Platypus NeXus files to produce an intensity vs wavelength
+    spectrum
+
+    Parameters
+    ----------
+    h5data : HDF5 NeXus file or str
+        An HDF5 NeXus file for Platypus, or a `str` containing the path
+        to one
+    """
+
+    def __init__(self, h5data):
+        """
+        Initialises the PlatypusNexus object.
+        """
+        super(PlatypusNexus, self).__init__(h5data, 'PLP')
 
     def process(self, h5norm=None, lo_wavelength=2.5, hi_wavelength=19.,
                 background=True, direct=False, omega=None, twotheta=None,
@@ -570,7 +673,7 @@ class PlatypusNexus(object):
         _arguments.pop('self', None)
         # if you've already processed, then you may not need to process again
         if (self.processed_spectrum and
-                self.__short_circuit_process(_arguments)):
+                self._short_circuit_process(_arguments)):
             return (self.processed_spectrum['m_lambda'],
                     self.processed_spectrum['m_spec'],
                     self.processed_spectrum['m_spec_sd'])
@@ -1223,105 +1326,6 @@ class PlatypusNexus(object):
                       frequency)
 
         return detector, frame_count, bm1_counts
-
-    def write_spectrum_dat(self, f, scanpoint=0):
-        """
-        This method writes a dat representation of the corrected spectrum to
-        file.
-
-        Parameters
-        ----------
-        f : file-like or str
-            The file to write the spectrum to, or a str that specifies the file
-            name
-        scanpoint : int
-            Which scanpoint to write
-
-        Returns
-        -------
-        processed : bool
-            If the file hasn't been processed then the `processed is False` and
-            vice versa
-        """
-        if self.processed_spectrum is None:
-            return False
-
-        m_lambda = self.processed_spectrum['m_lambda'][scanpoint]
-        m_spec = self.processed_spectrum['m_spec'][scanpoint]
-        m_spec_sd = self.processed_spectrum['m_spec_sd'][scanpoint]
-        m_lambda_fwhm = self.processed_spectrum['m_lambda_fwhm'][scanpoint]
-
-        stacked_data = np.c_[m_lambda, m_spec, m_spec_sd, m_lambda_fwhm]
-        np.savetxt(f, stacked_data, delimiter='\t')
-
-        return True
-
-    def write_spectrum_xml(self, f, scanpoint=0):
-        """
-        This method writes an XML representation of the corrected spectrum to
-        file.
-
-        Parameters
-        ----------
-        f : file-like or str
-            The file to write the spectrum to, or a str that specifies the file
-            name
-        scanpoint : int
-            Which scanpoint to write
-        """
-        if self.processed_spectrum is None:
-            return
-
-        s = string.Template(spectrum_template)
-        d = dict()
-        d['title'] = self.cat.sample_name
-        d['time'] = strftime("%a, %d %b %Y %H:%M:%S +0000", gmtime())
-
-        m_lambda = self.processed_spectrum['m_lambda']
-        m_spec = self.processed_spectrum['m_spec']
-        m_spec_sd = self.processed_spectrum['m_spec_sd']
-        m_lambda_fwhm = self.processed_spectrum['m_lambda_fwhm']
-
-        # sort the data
-        sorted = np.argsort(self.m_lambda[0])
-
-        r = m_spec[:, sorted]
-        lmda = m_lambda[:, sorted]
-        dlmda = m_lambda_fwhm[:, sorted]
-        dr = m_spec_sd[:, sorted]
-        d['n_spectra'] = self.processed_spectrum['n_spectra']
-        d['runnumber'] = 'PLP{:07d}'.format(self.cat.datafile_number)
-
-        d['r'] = repr(r[scanpoint].tolist()).strip(',[]')
-        d['dr'] = repr(dr[scanpoint].tolist()).strip(',[]')
-        d['lmda'] = repr(lmda[scanpoint].tolist()).strip(',[]')
-        d['dlmda'] = repr(dlmda[scanpoint].tolist()).strip(',[]')
-        thefile = s.safe_substitute(d)
-
-        g = f
-        auto_fh = None
-
-        if not hasattr(f, 'write'):
-            auto_fh = open(f, 'wb')
-            g = auto_fh
-
-        if 'b' in g.mode:
-            thefile = thefile.encode('utf-8')
-
-        g.write(thefile)
-        g.truncate()
-
-        if auto_fh is not None:
-            auto_fh.close()
-
-        return True
-
-    @property
-    def spectrum(self):
-        return (self.processed_spectrum['m_lambda'],
-                self.processed_spectrum['m_spec'],
-                self.processed_spectrum['m_spec_sd'],
-                self.processed_spectrum['m_lambda_fwhm'])
 
 
 def create_detector_norm(h5norm, x_min, x_max):
