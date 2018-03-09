@@ -6,13 +6,15 @@ import os.path
 from time import gmtime, strftime
 
 import numpy as np
-from refnx.reduce.platypusnexus import (PlatypusNexus, number_datafile,
+from refnx.reduce.platypusnexus import (PlatypusNexus, ReflectNexus,
+                                        number_datafile,
                                         Y_PIXEL_SPACING, basename_datafile)
 from refnx.util import ErrorProp as EP
 import refnx.util.general as general
 from refnx.reduce.parabolic_motion import (parabola_line_intersection_point,
                                            find_trajectory)
 from refnx.dataset import ReflectDataset
+from refnx._lib import possibly_open_file
 
 
 _template_ref_xml = """<?xml version="1.0"?>
@@ -36,67 +38,27 @@ spin="UNPOLARISED" dim="$_numpointsz:$_numpointsy">
 </REFroot>"""
 
 
-class PlatypusReduce(object):
-    """
-    Reduces Platypus reflectometer data to give the specular reflectivity.
-    Offspecular data maps are also produced.
+class ReflectReduce(object):
+    def __init__(self, direct, prefix, data_folder=None):
 
-    Parameters
-    ----------
-    direct : string, hdf5 file-handle or PlatypusNexus object
-        A string containing the path to the direct beam hdf5 file,
-        the hdf5 file itself, or a PlatypusNexus object.
-    reflect : string, hdf5 file-handle or PlatypusNexus object, optional
-        A string containing the path to the specularly reflected hdf5 file,
-        the hdf5 file itself, or a PlatypusNexus object.
-    data_folder : str, optional
-        Where is the raw data stored?
-    scale : float, optional
-        Divide all specular reflectivity values by this number.
-    save : bool, optional
-        If `True` then the reduced dataset is saved to the current
-        directory, with a name os.path.basename(reflect)
-    kwds : dict, optional
-        Options passed directly to `refnx.reduce.platypusnexus.process`,
-        for processing of individual spectra. Look at that method docstring
-        for specification of options.
-
-    Notes
-    -----
-    If `reflect` was specified during construction a reduction will be
-    done. See ``reduce`` for attributes available from this object on
-    completion of reduction.
-
-    Returns
-    -------
-    None
-
-    Examples
-    --------
-
-    >>> from refnx.reduce import PlatypusReduce
-    >>> datasets, reduced = PlatypusReduce('PLP0000711.nx.hdf',
-    ...                                    reflect='PLP0000711.nx.hdf',
-    ...                                    rebin_percent=2)
-
-    """
-
-    def __init__(self, direct, reflect=None, data_folder=None, scale=1.,
-                 save=True, **kwds):
         self.data_folder = os.path.curdir
         if data_folder is not None:
             self.data_folder = data_folder
 
-        if isinstance(direct, PlatypusNexus):
+        if prefix == 'PLP':
+            self.reflect_klass = PlatypusNexus
+        else:
+            raise ValueError("Instrument prefix not known. Must be one of"
+                             " ['PLP']")
+        if isinstance(direct, ReflectNexus):
             self.direct_beam = direct
         elif type(direct) is str:
             direct = os.path.join(self.data_folder, direct)
-            self.direct_beam = PlatypusNexus(direct)
+            self.direct_beam = self.reflect_klass(direct)
         else:
-            self.direct_beam = PlatypusNexus(direct)
+            self.direct_beam = self.reflect_klass(direct)
 
-        if reflect is not None:
-            self.reduce(reflect, save=save, scale=scale, **kwds)
+        self.prefix = prefix
 
     def __call__(self, reflect, scale=1, save=True, **kwds):
         return self.reduce(reflect, scale=scale, save=save, **kwds)
@@ -196,13 +158,13 @@ class PlatypusReduce(object):
 
         # get the reflected beam spectrum
         reflect_keywords['direct'] = False
-        if isinstance(reflect, PlatypusNexus):
+        if isinstance(reflect, ReflectNexus):
             self.reflected_beam = reflect
         elif type(reflect) is str:
             reflect = os.path.join(self.data_folder, reflect)
-            self.reflected_beam = PlatypusNexus(reflect)
+            self.reflected_beam = self.reflect_klass(reflect)
         else:
-            self.reflected_beam = PlatypusNexus(reflect)
+            self.reflected_beam = self.reflect_klass(reflect)
 
         # Got to use the same wavelength bins as the direct spectrum.
         # done this way around to save processing direct beam over and over
@@ -285,16 +247,42 @@ class PlatypusReduce(object):
 
         thefile = s.safe_substitute(d)
 
-        g = f
-        if not hasattr(f, 'read'):
-            own_fh = open(f, 'w')
-            g = own_fh
+        with possibly_open_file(f, 'wb') as g:
+            if 'b' in g.mode:
+                thefile = thefile.encode('utf-8')
 
-        try:
             g.write(thefile)
             g.truncate()
-        finally:
-            g.close()
+
+
+class PlatypusReduce(ReflectReduce):
+    """
+    Reduces Platypus reflectometer data to give the specular reflectivity.
+    Offspecular data maps are also produced.
+
+    Parameters
+    ----------
+    direct : string, hdf5 file-handle or PlatypusNexus object
+        A string containing the path to the direct beam hdf5 file,
+        the hdf5 file itself, or a PlatypusNexus object.
+    data_folder : str, optional
+        Where is the raw data stored?
+
+    Examples
+    --------
+
+    >>> from refnx.reduce import PlatypusReduce
+    >>> reducer = PlatypusReduce('PLP0000711.nx.hdf')
+    >>> datasets, reduced = reducer.reduce('PLP0000711.nx.hdf',
+    ...                                    rebin_percent=2)
+
+    """
+
+    def __init__(self, direct, data_folder=None, scale=1.,
+                 save=True, **kwds):
+
+        super(PlatypusReduce, self).__init__(direct, 'PLP',
+                                             data_folder=data_folder)
 
     def _reduce_single_angle(self, scale=1):
         """
@@ -485,8 +473,8 @@ class PlatypusReduce(object):
 
 
 def reduce_stitch(reflect_list, direct_list, background_list=None,
-                  norm_file_num=None, data_folder=None, trim_trailing=True,
-                  save=True, **kwds):
+                  norm_file_num=None, data_folder=None, prefix='PLP',
+                  trim_trailing=True, save=True, **kwds):
     """
     Reduces a list of reflected beam run numbers and a list of corresponding
     direct beam run numbers from the Platypus reflectometer. If there are
@@ -501,11 +489,14 @@ def reduce_stitch(reflect_list, direct_list, background_list=None,
         Direct beam run numbers, e.g. `[711, 711, 711]`
     background_list : list, optional
         List of `bool` to control whether background subtraction is used
-        for each reduction, e.g. `[False, True, True]`
+        for each reduction, e.g. `[False, True, True]`. The default is to do
+        a background subtraction on all runs.
     norm_file_num : int, optional
         The run number for the water flood field correction.
     data_folder : str, optional
         Where is the raw data stored?
+    prefix : str, optional
+        The instrument filename prefix.
     trim_trailing : bool, optional
         When datasets are spliced together do you want to remove points in the
         overlap region from the preceding dataset?
@@ -522,8 +513,29 @@ def reduce_stitch(reflect_list, direct_list, background_list=None,
     combined_dataset, reduced_filename : refnx.dataset.ReflectDataset, str
         The combined dataset and the file name of the reduced data, if it was
         saved. If it wasn't saved `reduced_filename` is `None`.
+
+    Notes
+    -----
+    If `background` is in the supplied `kwds` it is ignored.
+    The `prefix` is used to specify the run numbers to a filename.
+    For example a run number of 10, and a prefix of `PLP` resolves to a
+    NeXus filename of 'PLP0000010.nx.hdf'.
+
+    Examples
+    --------
+
+    >>> from refnx.reduce import reduce_stitch
+    >>> dataset, fname = reduce_stitch([708, 709, 710],
+    ...                                [711, 711, 711],
+    ...                                 rebin_percent=2)
+
     """
+
     scale = kwds.get('scale', 1.)
+
+    kwds_copy = {}
+    kwds_copy.update(kwds)
+    kwds_copy.pop('background', None)
 
     if not background_list:
         background_list = [True] * len(reflect_list)
@@ -537,34 +549,37 @@ def reduce_stitch(reflect_list, direct_list, background_list=None,
         data_folder = os.getcwd()
 
     if norm_file_num:
-        norm_datafile = number_datafile(norm_file_num)
+        norm_datafile = number_datafile(norm_file_num, prefix=prefix)
         kwds['h5norm'] = norm_datafile
+
+    if prefix == 'PLP':
+        reducer_klass = PlatypusReduce
+    else:
+        raise ValueError("Incorrect prefix specified")
 
     for index, val in enumerate(zipped):
         reflect_datafile = os.path.join(data_folder,
-                                        number_datafile(val[0]))
+                                        number_datafile(val[0], prefix=prefix))
         direct_datafile = os.path.join(data_folder,
-                                       number_datafile(val[1]))
+                                       number_datafile(val[1], prefix=prefix))
 
-        reduced = PlatypusReduce(direct_datafile,
-                                 reflect=reflect_datafile,
-                                 save=save,
-                                 background=val[2],
-                                 **kwds)
+        reducer = reducer_klass(direct_datafile)
+        datasets, fnames = reducer.reduce(reflect_datafile, save=save,
+                                          background=val[2], **kwds_copy)
+
         if not index:
-            reduced.scale(scale)
+            datasets[0].scale(scale)
 
-        combined_dataset.add_data(reduced.data(),
+        combined_dataset.add_data(datasets[0].data,
                                   requires_splice=True,
                                   trim_trailing=trim_trailing)
 
-    fname = None
     fname_dat = None
 
     if save:
         # this will give us <fname>.nx.hdf
         # if reflect_list was an integer you'll get PLP0000708.nx.hdf
-        fname = number_datafile(reflect_list[0])
+        fname = number_datafile(reflect_list[0], prefix=prefix)
         # now chop off .nx.hdf extension
         fname = basename_datafile(fname)
 

@@ -30,8 +30,7 @@ class TestReduce(object):
 
     def test_reduction_method(self):
         # a quick smoke test to check that the reduction can occur
-        a = PlatypusReduce('PLP0000711.nx.hdf', data_folder=self.pth,
-                           rebin_percent=4)
+        a = PlatypusReduce('PLP0000711.nx.hdf', data_folder=self.pth)
 
         # try reduction with the reduce method
         a.reduce('PLP0000708.nx.hdf', data_folder=self.pth, rebin_percent=4)
@@ -51,10 +50,11 @@ class TestReduce(object):
         # check that eventmode reduction can occur, and that there are the
         # correct number of datasets produced.
         a = PlatypusReduce(
-            os.path.join(self.pth, 'PLP0011613.nx.hdf'),
-            reflect=os.path.join(self.pth, 'PLP0011641.nx.hdf'),
-            integrate=0, rebin_percent=2,
-            eventmode=[0, 900, 1800])
+            os.path.join(self.pth, 'PLP0011613.nx.hdf'))
+
+        a.reduce(os.path.join(self.pth, 'PLP0011641.nx.hdf'),
+                 integrate=0, rebin_percent=2, eventmode=[0, 900, 1800])
+
         assert_equal(a.y.shape[0], 2)
 
         # check that the resolutions are pretty much the same
