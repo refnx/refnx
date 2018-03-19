@@ -6,7 +6,6 @@ import pickle
 from multiprocessing.reduction import ForkingPickler
 import os
 
-import emcee
 from scipy.optimize import minimize
 import numpy as np
 from numpy.testing import (assert_almost_equal, assert_equal, assert_,
@@ -16,6 +15,7 @@ from refnx.analysis import (Parameter, Model, Objective, BaseObjective,
                             Transform)
 from refnx.dataset import Data1D, ReflectDataset
 from refnx.util import ErrorProp as EP
+from refnx._lib import emcee
 
 
 def line(x, params, *args, **kwds):

@@ -3,7 +3,6 @@ from __future__ import division, print_function
 import os.path
 
 import numpy as np
-import emcee
 import pytest
 from numpy.testing import (assert_, assert_almost_equal, assert_equal,
                            assert_allclose)
@@ -12,6 +11,8 @@ from refnx.analysis import (CurveFitter, Parameter, Parameters, Model,
                             Objective, process_chain, load_chain)
 from refnx.analysis.curvefitter import _HAVE_PTSAMPLER
 from refnx.dataset import Data1D
+from refnx._lib import emcee
+
 from NISTModels import NIST_runner, NIST_Models
 
 
@@ -104,16 +105,16 @@ class TestCurveFitter(object):
 
         # should be able to multithread
         mcfitter = CurveFitter(self.objective, nwalkers=50)
-        res = mcfitter.sample(steps=66, nthin=2, verbose=False, pool=2)
+        res = mcfitter.sample(steps=33, nthin=2, verbose=False, pool=2)
 
         # check that the autocorrelation function at least runs
         acfs = mcfitter.acf(nburn=10)
         assert_equal(acfs.shape[-1], mcfitter.nvary)
 
-        # check that we're thinning properly
-        assert_equal(mcfitter.sampler.chain.shape, (50, 33, 2))
-        # assert_equal(mcfitter._lastpos, mcfitter.sampler.chain[:, -1, :])
-        assert_equal(res[0].chain.shape, (50, 33))
+        # check chain shape
+        assert_equal(mcfitter.chain.shape, (33, 50, 2))
+        # assert_equal(mcfitter._lastpos, mcfitter.chain[:, -1, :])
+        assert_equal(res[0].chain.shape, (33, 50))
 
     def test_mcmc_pt(self):
         if not _HAVE_PTSAMPLER:
@@ -123,11 +124,11 @@ class TestCurveFitter(object):
         mcfitter = CurveFitter(self.objective, ntemps=10, nwalkers=50)
         assert_equal(mcfitter.sampler.ntemps, 10)
 
-        res = mcfitter.sample(steps=60, nthin=2, verbose=False, pool=0)
-        assert_equal(mcfitter.sampler.chain.shape, (10, 50, 30, 2))
-        assert_equal(res[0].chain.shape, (50, 30))
-        assert_equal(mcfitter.sampler.chain[0, :, :, 0], res[0].chain)
-        assert_equal(mcfitter.sampler.chain[0, :, :, 1], res[1].chain)
+        res = mcfitter.sample(steps=30, nthin=2, verbose=False, pool=0)
+        assert_equal(mcfitter.chain.shape, (30, 10, 50, 2))
+        assert_equal(res[0].chain.shape, (30, 50))
+        assert_equal(mcfitter.chain[:, 0, :, 0], res[0].chain)
+        assert_equal(mcfitter.chain[:, 0, :, 1], res[1].chain)
 
     def test_mcmc_init(self):
         # smoke test for sampler initialisation
@@ -141,14 +142,14 @@ class TestCurveFitter(object):
         assert_equal(mcfitter._lastpos.shape, (100, 2))
         # initialise with last position
         mcfitter.sample(steps=1)
-        chain = mcfitter.sampler.chain
-        mcfitter.initialise(pos=chain[..., -1, :])
+        chain = mcfitter.chain
+        mcfitter.initialise(pos=chain[-1])
         assert_equal(mcfitter._lastpos.shape, (100, 2))
         # initialise with chain
         mcfitter.sample(steps=2)
-        chain = mcfitter.sampler.chain
+        chain = mcfitter.chain
         mcfitter.initialise(pos=chain)
-        assert_equal(mcfitter._lastpos, chain[:, -1, :])
+        assert_equal(mcfitter._lastpos, chain[-1])
 
         if not _HAVE_PTSAMPLER:
             return
@@ -162,14 +163,14 @@ class TestCurveFitter(object):
         assert_equal(mcfitter._lastpos.shape, (20, 100, 2))
         # initialise with last position
         mcfitter.sample(steps=1)
-        chain = mcfitter.sampler.chain
-        mcfitter.initialise(pos=chain[..., -1, :])
+        chain = mcfitter.chain
+        mcfitter.initialise(pos=chain[-1])
         assert_equal(mcfitter._lastpos.shape, (20, 100, 2))
         # initialise with chain
         mcfitter.sample(steps=2)
-        chain = mcfitter.sampler.chain
+        chain = mcfitter.chain
         mcfitter.initialise(pos=np.copy(chain))
-        assert_equal(mcfitter._lastpos, chain[:, :, -1, :])
+        assert_equal(mcfitter._lastpos, chain[-1])
 
     def test_fit_smoke(self):
         # smoke tests to check that fit runs
@@ -289,16 +290,15 @@ class TestFitterGauss(object):
         # test that the checkpoint worked
         check_array = np.loadtxt(checkpoint)
         check_array = check_array.reshape(101, f._nwalkers, f.nvary)
-        assert_allclose(np.swapaxes(check_array, 0, 1),
-                        f.sampler.chain)
+        assert_allclose(check_array, f.chain)
 
         # test loading the checkpoint
         chain = load_chain(checkpoint)
         assert_allclose(chain, f.chain)
 
         f.initialise('jitter')
-        f.sample(steps=9, nthin=4, f=checkpoint, verbose=False)
-        assert_equal(2, f.chain.shape[-2])
+        f.sample(steps=2, nthin=4, f=checkpoint, verbose=False)
+        assert_equal(f.chain.shape[0], 2)
 
         # the following test won't work because of emcee/gh226.
         # chain = load_chain(checkpoint)

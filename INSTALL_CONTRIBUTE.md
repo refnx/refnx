@@ -1,12 +1,24 @@
 # refnx - Installation and Development Instructions
 
-refnx is a python package for analysis of neutron and X-ray reflectometry data. It can also be used as a generalised curvefitting tool. It uses Markov Chain Monte Carlo to obtain posterior distributions for curvefitting problems.
+refnx is a python package for analysis of neutron and X-ray reflectometry data.
+It can also be used as a generalised curvefitting tool. It uses Markov Chain
+Monte Carlo to obtain posterior distributions for curvefitting problems.
 
 --------------
 # Installation
 
-*refnx* has been tested on Python 2.7, 3.4, 3.5 and 3.6. It requires the *numpy, scipy, cython, pandas, emcee* packages to work. Additional features require the *pytest, h5py, xlrd, uncertainties, ptemcee* packages. To build the bleeding edge code you will need to have access to a C-compiler to build a couple of Python extensions. C-compilers should be installed on Linux. On OSX you will need to install Xcode and the command line tools. On Windows you will need to install the correct [Visual Studio compiler][Visual-studio-compiler] for your Python version.
-  
+*refnx* has been tested on Python 2.7, 3.4, 3.5 and 3.6. It requires the *numpy,
+scipy, cython, pandas, emcee* packages to work. Additional features require the
+*pytest, h5py, xlrd, uncertainties, ptemcee* packages. To build the bleeding edge
+code you will need to have access to a C-compiler to build a couple of Python
+extensions. C-compilers should be installed on Linux. On OSX you will need to
+install Xcode and the command line tools. On Windows you will need to install
+the correct [Visual Studio compiler][Visual-studio-compiler] for your Python version.
+
+In the current version of *refnx* the *emcee* package is vendored by *refnx*. That
+is, *refnx* possesses it's own private copy of the package, and there is no need to
+install the *emcee* package separately.
+
 ## Installation into a *conda* environment
 
 Perhaps the easiest way to create a scientific computing environment is to use the [miniconda][miniconda] package manager. Once *conda* has been installed the first step is to create a *conda* environment.
@@ -26,7 +38,7 @@ Perhaps the easiest way to create a scientific computing environment is to use t
   activate refnx
   ```
   3) Install the remaining dependencies:
-  ```pip install emcee uncertainties ptemcee```
+  ```pip install uncertainties ptemcee```
  
 ### Installing into a conda environment from source
 

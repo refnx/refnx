@@ -14,7 +14,7 @@ except ImportError:
     from inspect import getargspec as _getargspecf
 
 
-from emcee.interruptible_pool import InterruptiblePool
+from refnx._lib.emcee.interruptible_pool import InterruptiblePool
 
 
 def preserve_cwd(function):

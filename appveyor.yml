@@ -96,7 +96,7 @@ install:
 
     # Configure the VM.
     - cmd: call conda.exe install -n root --yes --quiet obvious-ci
-    - cmd: call conda.exe install -n root --yes --quiet numpy scipy h5py xlrd pandas cython six pytest toolchain emcee uncertainties
+    - cmd: call conda.exe install -n root --yes --quiet numpy scipy h5py xlrd pandas cython six pytest toolchain uncertainties
 
 build_script:
     # Build the compiled extension

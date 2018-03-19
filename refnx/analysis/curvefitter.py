@@ -18,23 +18,18 @@ from refnx._lib import (unique as f_unique, possibly_create_pool,
                         possibly_open_file, flatten)
 from refnx._lib.util import getargspec
 
-import emcee as emcee
+from refnx._lib import emcee
+
 # PTSampler has been forked into a separate package. Try both places
 _HAVE_PTSAMPLER = False
+PTSampler = type(None)
+
 try:
-    from emcee import PTSampler as PTSampler
+    from ptemcee.sampler import Sampler as PTSampler
     _HAVE_PTSAMPLER = True
 except ImportError:
-    try:
-        from ptemcee.sampler import Sampler as PTSampler
-        _HAVE_PTSAMPLER = True
-    except ImportError:
-        warnings.warn("PTSampler (parallel tempering) is not available,"
-                      " please install the ptemcee package", ImportWarning)
-try:
-    import tqdm as tqdm
-except ImportError:
-    tqdm = None
+    warnings.warn("PTSampler (parallel tempering) is not available,"
+                  " please install the ptemcee package", ImportWarning)
 
 MCMCResult = namedtuple('MCMCResult', ['name', 'param', 'stderr', 'chain',
                                        'median'])
@@ -124,7 +119,7 @@ class CurveFitter(object):
         If `ntemps == -1`, then an :class:`emcee.EnsembleSampler` is used
         during the `sample` method.
         Otherwise, or if `ntemps is None` then parallel tempering is
-        used with a :class:`emcee.PTSampler` object during the `sample`
+        used with a :class:`ptemcee.sampler.Sampler` object during the `sample`
         method, with `ntemps` specifing the number of temperatures. Can be
         `None`, in which case the `Tmax` keyword argument sets the maximum
         temperature. Parallel Tempering is useful if you expect your
@@ -132,7 +127,7 @@ class CurveFitter(object):
 
     mcmc_kws : dict
         Keywords used to create the :class:`emcee.EnsembleSampler` or
-        :class:`emcee.PTSampler` objects.
+        :class:`ptemcee.sampler.Sampler` objects.
 
     Notes
     -----
@@ -155,25 +150,23 @@ class CurveFitter(object):
             If `ntemps == -1`, then an :class:`emcee.EnsembleSampler` is used
             during the `sample` method.
             Otherwise, or if `ntemps is None` then parallel tempering is
-            used with a :class:`emcee.PTSampler` object during the `sample`
-            method, with `ntemps` specifing the number of temperatures. Can be
-            `None`, in which case the `Tmax` keyword argument sets the maximum
-            temperature. Parallel Tempering is useful if you expect your
-            posterior distribution to be multi-modal.
+            used with a :class:`ptemcee.sampler.Sampler` object during the
+            `sample` method, with `ntemps` specifing the number of
+            temperatures. Can be `None`, in which case the `Tmax` keyword
+            argument sets the maximum temperature. Parallel Tempering is
+            useful if you expect your posterior distribution to be multi-modal.
         mcmc_kws : dict
             Keywords used to create the :class:`emcee.EnsembleSampler` or
-            :class:`emcee.PTSampler` objects.
+            :class:`ptemcee.sampler.PTSampler` objects.
 
         Notes
         -----
         See the documentation at http://dan.iel.fm/emcee/current/api/ for
         further details on what keywords are permitted. The `pool` and
-        `threads` keywords are ignored here. Specification of parallel
-        threading is done with the `pool` argument in the `sample` method.
-        Parallel tempering has been forked into a separate python package,
-        :package:`ptemcee`, and may not be present in more recent versions
-        of :package:`emcee`. To use parallel tempering you may need to
-        install the :package:`ptemcee` package.
+        keyword is ignored here. Specification of parallel threading is done
+        with the `pool` argument in the `sample` method.
+        To use parallel tempering you will need to install the
+        :package:`ptemcee` package.
         """
         self.objective = objective
         self._varying_parameters = objective.varying_parameters()
@@ -332,20 +325,17 @@ class CurveFitter(object):
         Parameters
         ----------
         chain : array
-            Array of size `(ntemps, nwalkers, steps, ndim)` or
-            `(nwalkers, steps, ndim)`, containing a chain from a previous
+            Array of size `(steps, ntemps, nwalkers, ndim)` or
+            `(steps, nwalkers, ndim)`, containing a chain from a previous
             sampling run.
         """
         # we should be left with (nwalkers, ndim) or (ntemp, nwalkers, ndim)
-        existing_chain_shape = list(self.sampler.chain.shape)
-        existing_chain_shape.pop(-2)
-
-        chain_shape = list(chain.shape)
-        chain_shape.pop(-2)
+        existing_chain_shape = self.chain.shape[1:]
+        chain_shape = chain.shape[1:]
 
         # if the shapes are the same, then we can initialise
         if existing_chain_shape == chain_shape:
-            self.initialise(pos=chain[..., -1, :])
+            self.initialise(pos=chain[-1])
         else:
             raise ValueError("You tried to initialise with a chain, but it was"
                              " the wrong shape")
@@ -358,9 +348,33 @@ class CurveFitter(object):
         Returns
         -------
         chain : array
-            The MCMC chain belonging to CurveFitter.sampler
+            The MCMC chain with shape `(steps, nwalkers, ndim)` or
+            `(steps, ntemps, nwalkers, ndim)`.
+
+        Notes
+        -----
+        The chain returned here has swapped axes compared to the
+        `PTSampler.chain` and `EnsembleSampler.chain` attributes
         """
-        return self.sampler.chain
+        if isinstance(self.sampler, PTSampler):
+            return np.transpose(self.sampler.chain, axes=(2, 0, 1, 3))
+
+        return self.sampler.get_chain()
+
+    @property
+    def lnprob(self):
+        """
+        Log-probability for each of the entries in self.chain
+
+        Returns
+        -------
+        lnprob : array
+
+        """
+        if isinstance(self.sampler, PTSampler):
+            return np.transpose(self.sampler.logprobability, axes=(2, 0, 1))
+
+        return self.sampler.get_log_prob()
 
     def acf(self, nburn=0, nthin=1):
         """
@@ -371,22 +385,21 @@ class CurveFitter(object):
         acfs : np.ndarray
             The autocorrelation function, acfs.shape=(lags, nvary)
         """
-        chain = np.copy(self.sampler.chain)
+        lchain = self.chain
         if self._ntemps != -1:
-            chain = chain[0]
+            lchain = lchain[:, 0]
 
-        chain = chain[:, nburn::nthin, :]
-
+        lchain = lchain[nburn::nthin]
+        # iterations, walkers, vary
         # (walkers, iterations, vary) -> (vary, walkers, iterations)
-        chain = np.transpose(chain, (2, 0, 1))
-        shape = list(chain.shape)
-        shape.pop(-1)
+        lchain = np.swapaxes(lchain, 0, 2)
+        shape = lchain.shape[:-1]
 
-        acfs = np.zeros_like(chain)
+        acfs = np.zeros_like(lchain)
 
         # iterate over each parameter/walker
         for index in np.ndindex(*shape):
-            s = _function_1d(chain[index])
+            s = _function_1d(lchain[index])
             acfs[index] = s
 
         # now average over walkers
@@ -401,10 +414,10 @@ class CurveFitter(object):
         Parameters
         ----------
         steps : int
-            Iterate the sampler by a number of steps
+            Collect `steps` samples into the chain. The sampler will run a
+            total of `steps * nthin` moves.
         nthin : int, optional
-            only store every `nthin` samples from the chain. `nthin` should be
-            a divisor of `steps`.
+            Each chain sample is separated by `nthin` iterations.
         random_state : int or `np.random.RandomState`, optional
             If `random_state` is an int, a new `np.random.RandomState` instance
             is used, seeded with `random_state`.
@@ -414,7 +427,7 @@ class CurveFitter(object):
         f : file-like or str
             File to incrementally save chain progress to. Each row in the file
             is a flattened array of size `(nwalkers, ndim)` or
-            `(ntemps, nwalkers, ndim)`. There should be `steps` rows in the
+            `(ntemps, nwalkers, ndim)`. There are `steps` rows in the
             file.
         callback : callable
             callback function to be called at each iteration step
@@ -430,80 +443,38 @@ class CurveFitter(object):
         Notes
         -----
         Please see :class:`emcee.EnsembleSampler` for its detailed behaviour.
-        For example, the chain is contained in `CurveFitter.sampler.chain` and
-        has shape `(nwalkers, iterations, ndim)`. If you wish to 'burn' a
-        number of samples to start with then use the following pattern:
 
-        >>> # we'll burn the first 500
+        >>> # we'll burn the first 500 steps
         >>> fitter.sample(500)
         >>> # after you've run those, then discard them by resetting the
         >>> # sampler.
         >>> fitter.sampler.reset()
-        >>> # Now do a production run only saving 1 in every 50 samples
-        >>> fitter.sample(2000, nthin=50)
+        >>> # Now collect 40 steps, each step separated by 50 sampler
+        >>> # generations.
+        >>> fitter.sample(40, nthin=50)
 
         One can also burn and thin in `Curvefitter.process_chain`.
         """
-        if steps % nthin:
-            steps = steps - steps % nthin
-            print("Warning - setting steps to be multiple of nthin")
-
         if self._lastpos is None:
             self.initialise()
 
-        start_time = time.time()
+        self.__pt_iterations = 0
+        if isinstance(self.sampler, PTSampler):
+            steps *= nthin
 
-        # record how many iterations have already been run on sampler
-        try:
-            if hasattr(self.sampler, 'iterations'):
-                init_iterations = self.sampler.iterations
-            elif hasattr(self.sampler, 'time'):
-                init_iterations = self.sampler.time
-            else:
-                init_iterations = np.size(self.chain, -2)
-        except (AttributeError, IndexError):
-            init_iterations = 0
-
-        def step_progress():
-            try:
-                # using old emcee
-                if hasattr(self.sampler, 'iterations'):
-                    return self.sampler.iterations
-                elif hasattr(self.sampler, 'time'):
-                    return self.sampler.time
-
-                iter = np.size(self.sampler.chain, -2) - init_iterations
-            except (AttributeError, IndexError):
-                iter = 0
-            return iter * nthin
-
-        # for saving progress to file, and printing progress to stdout.
+        # for saving progress to file
         def _callback_wrapper(pos, lnprob, h=None):
-            steps_completed = step_progress()
-
-            if verbose:
-                width = 50
-                step_rate = (time.time() - start_time) / steps_completed
-                time_remaining = divmod(step_rate * (steps - steps_completed),
-                                        60)
-                mins, secs = int(time_remaining[0]), int(time_remaining[1])
-                emins, esecs = divmod((time.time() - start_time), 60)
-                n = int((width + 1) * float(steps_completed) / steps)
-                template = ("\r[{0}{1}] "
-                            "{2}/{3}, "
-                            "Time: {4} m:{5} s / {6} m:{7} s")
-                sys.stdout.write(template.format('#' * n,
-                                                 ' ' * (width - n),
-                                                 steps_completed,
-                                                 steps,
-                                                 int(emins),
-                                                 int(esecs),
-                                                 mins,
-                                                 secs))
             if callback is not None:
                 callback(pos, lnprob)
-            if (h is not None) and (steps_completed % nthin == 0):
-                # (nwalkers, dim) or (ntemps, nwalkers, dim)
+
+            if h is not None:
+                # if you're parallel tempering, then you only
+                # want to save every nthin
+                if isinstance(self.sampler, PTSampler):
+                    self.__pt_iterations += 1
+                    if self.__pt_iterations % nthin:
+                        return None
+
                 h.write(' '.join(map(str, pos.ravel())))
                 h.write('\n')
 
@@ -544,14 +515,15 @@ class CurveFitter(object):
             kwargs = {'iterations': steps,
                       'thin': nthin}
 
-            # new emcee has progress keyword. If that's present
-            # then we may be able to use tqdm progress bar.
-            # if not, then we'll just use our own.
-            if ('progress' in getargspec(self.sampler.sample).args and
-                    verbose and
-                    tqdm is not None):
+            # new emcee arguments
+            sampler_args = getargspec(self.sampler.sample).args
+            if 'progress' in sampler_args and verbose:
                 kwargs['progress'] = True
                 verbose = False
+
+            if 'thin_by' in sampler_args:
+                kwargs['thin_by'] = nthin
+                kwargs.pop('thin', 0)
 
             for result in self.sampler.sample(self._lastpos,
                                               **kwargs):
@@ -565,7 +537,7 @@ class CurveFitter(object):
             sys.stdout.write("\n")
 
         # sets parameter value and stderr
-        return process_chain(self.objective, self.sampler.chain)
+        return process_chain(self.objective, self.chain)
 
     def fit(self, method='L-BFGS-B', **kws):
         """
@@ -671,8 +643,8 @@ def load_chain(f):
     Returns
     -------
     chain : array
-        The loaded chain - `(nwalkers, nsteps, ndim)` or
-        `(ntemps, nwalkers, nsteps, ndim)`
+        The loaded chain - `(nsteps, nwalkers, ndim)` or
+        `(nsteps, ntemps, nwalkers, ndim)`
     """
     with possibly_open_file(f, 'r') as g:
         # read header
@@ -703,11 +675,8 @@ def load_chain(f):
 
         if ntemps is not None:
             chain = np.reshape(chain, (i, ntemps, nwalkers, ndim))
-            chain = np.swapaxes(chain, 0, 2)
-            chain = np.swapaxes(chain, 0, 1)
         else:
             chain = np.reshape(chain, (i, nwalkers, ndim))
-            chain = np.swapaxes(chain, 0, 1)
 
         return chain
 
@@ -744,31 +713,31 @@ def process_chain(objective, chain, nburn=0, nthin=1, flatchain=False):
 
     Notes
     -----
-    The chain should have the shape `(nwalkers, iterations, nvary)` or
-    `(ntemps, nwalkers, iterations, nvary)` if parallel tempering was
+    The chain should have the shape `(iterations, nwalkers, nvary)` or
+    `(iterations, ntemps, nwalkers, nvary)` if parallel tempering was
     employed.
     The burned and thinned chain is created via:
-    `chain[..., nburn::nthin, :]`.
-    Note, if parallel tempering is employed, then only the first row
+    `chain[nburn::nthin]`.
+    Note, if parallel tempering is employed, then only the lowest temperature
     of the parallel tempering chain is processed and returned as it
     corresponds to the (lowest energy) target distribution.
     If `flatten is True` then the burned/thinned chain is reshaped and
     `arr.reshape(-1, nvary)` is returned.
     This function has the effect of setting the parameter stderr's.
     """
-    chain = chain[..., nburn::nthin, :]
+    chain = chain[nburn::nthin]
     shape = chain.shape
     nvary = shape[-1]
+
+    # nwalkers = shape[1]
     if len(shape) == 4:
-        # nwalkers = shape[1]
-        ntemps = shape[0]
+        ntemps = shape[1]
     elif len(shape) == 3:
-        # nwalkers = shape[0]
         ntemps = -1
 
     if ntemps != -1:
         # PTSampler, we require the target distribution in the first row.
-        chain = chain[0]
+        chain = chain[:, 0]
 
     _flatchain = chain.reshape((-1, nvary))
     if flatchain:
