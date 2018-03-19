@@ -18,25 +18,18 @@ from refnx._lib import (unique as f_unique, possibly_create_pool,
                         possibly_open_file, flatten)
 from refnx._lib.util import getargspec
 
-import emcee as emcee
+from refnx._lib import emcee
+
 # PTSampler has been forked into a separate package. Try both places
 _HAVE_PTSAMPLER = False
-try:
-    from emcee import PTSampler as PTSampler
-    _HAVE_PTSAMPLER = True
-except ImportError:
-    try:
-        from ptemcee.sampler import Sampler as PTSampler
-        _HAVE_PTSAMPLER = True
-    except ImportError:
-        warnings.warn("PTSampler (parallel tempering) is not available,"
-                      " please install the ptemcee package", ImportWarning)
-        PTSampler = None
+PTSampler = type(None)
 
 try:
-    import tqdm as tqdm
+    from ptemcee.sampler import Sampler as PTSampler
+    _HAVE_PTSAMPLER = True
 except ImportError:
-    tqdm = None
+    warnings.warn("PTSampler (parallel tempering) is not available,"
+                  " please install the ptemcee package", ImportWarning)
 
 MCMCResult = namedtuple('MCMCResult', ['name', 'param', 'stderr', 'chain',
                                        'median'])
@@ -126,7 +119,7 @@ class CurveFitter(object):
         If `ntemps == -1`, then an :class:`emcee.EnsembleSampler` is used
         during the `sample` method.
         Otherwise, or if `ntemps is None` then parallel tempering is
-        used with a :class:`emcee.PTSampler` object during the `sample`
+        used with a :class:`ptemcee.sampler.Sampler` object during the `sample`
         method, with `ntemps` specifing the number of temperatures. Can be
         `None`, in which case the `Tmax` keyword argument sets the maximum
         temperature. Parallel Tempering is useful if you expect your
@@ -134,7 +127,7 @@ class CurveFitter(object):
 
     mcmc_kws : dict
         Keywords used to create the :class:`emcee.EnsembleSampler` or
-        :class:`emcee.PTSampler` objects.
+        :class:`ptemcee.sampler.Sampler` objects.
 
     Notes
     -----
@@ -157,14 +150,14 @@ class CurveFitter(object):
             If `ntemps == -1`, then an :class:`emcee.EnsembleSampler` is used
             during the `sample` method.
             Otherwise, or if `ntemps is None` then parallel tempering is
-            used with a :class:`emcee.PTSampler` object during the `sample`
-            method, with `ntemps` specifing the number of temperatures. Can be
-            `None`, in which case the `Tmax` keyword argument sets the maximum
-            temperature. Parallel Tempering is useful if you expect your
-            posterior distribution to be multi-modal.
+            used with a :class:`ptemcee.sampler.Sampler` object during the
+            `sample` method, with `ntemps` specifing the number of
+            temperatures. Can be `None`, in which case the `Tmax` keyword
+            argument sets the maximum temperature. Parallel Tempering is
+            useful if you expect your posterior distribution to be multi-modal.
         mcmc_kws : dict
             Keywords used to create the :class:`emcee.EnsembleSampler` or
-            :class:`emcee.PTSampler` objects.
+            :class:`ptemcee.sampler.PTSampler` objects.
 
         Notes
         -----
@@ -524,7 +517,7 @@ class CurveFitter(object):
 
             # new emcee arguments
             sampler_args = getargspec(self.sampler.sample).args
-            if 'progress' in sampler_args and verbose and tqdm is not None:
+            if 'progress' in sampler_args and verbose:
                 kwargs['progress'] = True
                 verbose = False
 

@@ -3,7 +3,6 @@ from __future__ import division, print_function
 import os.path
 
 import numpy as np
-import emcee
 import pytest
 from numpy.testing import (assert_, assert_almost_equal, assert_equal,
                            assert_allclose)
@@ -12,6 +11,8 @@ from refnx.analysis import (CurveFitter, Parameter, Parameters, Model,
                             Objective, process_chain, load_chain)
 from refnx.analysis.curvefitter import _HAVE_PTSAMPLER
 from refnx.dataset import Data1D
+from refnx._lib import emcee
+
 from NISTModels import NIST_runner, NIST_Models
 
 
