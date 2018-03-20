@@ -38,7 +38,7 @@ class ReductionEntry(ReductionEntryTuple):
         self.ds.scale(scale_factor)
         if write:
             with open(self.fname, 'w') as w:
-                self.ds.save_xml(w)
+                self.ds.save(w)
 
 
 class ReductionCache(list):
