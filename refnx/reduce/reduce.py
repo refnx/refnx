@@ -457,7 +457,7 @@ class PlatypusReduce(ReflectReduce):
             datasets.append(ReflectDataset(data_tup))
 
         if self.save:
-            for dataset in datasets:
+            for i, dataset in enumerate(datasets):
                 fname = '{0}_{1}.dat'.format(datafilename, i)
                 fnames.append(fname)
                 with open(fname, 'wb') as f:
