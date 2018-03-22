@@ -57,6 +57,10 @@ class TestReduce(object):
 
         assert_equal(a.y.shape[0], 2)
 
+        # check that two datasets are written out.
+        assert_(os.path.isfile('PLP0011641_0.dat'))
+        assert_(os.path.isfile('PLP0011641_1.dat'))
+
         # check that the resolutions are pretty much the same
         assert_allclose(a.x_err[0] / a.x[0],
                         a.x_err[1] / a.x[1],
