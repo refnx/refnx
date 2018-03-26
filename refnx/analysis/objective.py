@@ -13,7 +13,9 @@ from refnx.analysis import (is_parameter, Parameter, possibly_create_parameter,
 
 class BaseObjective(object):
     """Don't necessarily have to use Parameters, could use np.array"""
-    def __init__(self, p, lnlike, lnprior=None, fcn_args=(), fcn_kwds=None):
+    def __init__(self, p, lnlike, lnprior=None, fcn_args=(), fcn_kwds=None,
+                 name=None):
+        self.name = name
         self.parameters = p
         self.nvary = len(p)
         self._lnlike = lnlike
@@ -192,6 +194,8 @@ class Objective(BaseObjective):
         `lnprob_extra(model, data)`. The `model` will already possess
         updated parameters. Beware of including the same log-probability
         terms more than once.
+    name : str
+        Name for the objective.
 
     Notes
     -----
@@ -200,7 +204,7 @@ class Objective(BaseObjective):
     """
 
     def __init__(self, model, data, lnsigma=None, use_weights=True,
-                 transform=None, lnprob_extra=None):
+                 transform=None, lnprob_extra=None, name=None):
         self.model = model
         # should be a Data1D instance
         if isinstance(data, Data1D):
@@ -215,10 +219,13 @@ class Objective(BaseObjective):
         self.use_weights = use_weights
         self.transform = transform
         self.lnprob_extra = lnprob_extra
+        self.name = name
+        if name is None:
+            self.name = id(self)
 
     def __repr__(self):
         s = ["{:_>80}".format('')]
-        s.append('Objective - {0}'.format(id(self)))
+        s.append('Objective - {0}'.format(self.name))
 
         # dataset name
         if self.data.name is None:
