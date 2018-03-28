@@ -272,7 +272,6 @@ class TestReflect(object):
                               transform=Transform('logY'))
         fitter = CurveFitter(objective, nwalkers=100)
 
-        print(objective.residuals().shape)
         assert_(len(objective.generative().shape) == 1)
         assert_(len(objective.residuals().shape) == 1)
 

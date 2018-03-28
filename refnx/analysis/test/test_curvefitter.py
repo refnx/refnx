@@ -260,7 +260,7 @@ class TestFitterGauss(object):
         self.objective.setp(self.p0)
 
         f = CurveFitter(self.objective, nwalkers=100)
-        res = f.fit('least_squares')
+        res = f.fit('least_squares', jac='3-point')
 
         output = res.x
         assert_almost_equal(output, self.best_weighted, 3)
@@ -271,9 +271,9 @@ class TestFitterGauss(object):
         res = (self.data.y - self.model(self.data.x)) / self.data.y_err
         assert_equal(self.objective.residuals(), res)
 
-        # compare objective._covar to the best_weighted_errors
+        # compare objective.covar to the best_weighted_errors
         uncertainties = [param.stderr for param in self.params]
-        assert_allclose(uncertainties, self.best_weighted_errors, rtol=0.01)
+        assert_allclose(uncertainties, self.best_weighted_errors, rtol=0.005)
 
         # we're also going to try the checkpointing here.
         checkpoint = os.path.join(self.tmpdir, 'checkpoint.txt')
@@ -283,9 +283,7 @@ class TestFitterGauss(object):
         f.sample(steps=101, random_state=1, verbose=False, f=checkpoint)
         process_chain(self.objective, f.chain, nburn=50, nthin=10)
         uncertainties = [param.stderr for param in self.params]
-        # assert_allclose(np.array(self.objective.parameters),
-        #                 self.best_weighted, rtol=0.02)
-        assert_allclose(uncertainties, self.best_weighted_errors, rtol=0.2)
+        assert_allclose(uncertainties, self.best_weighted_errors, rtol=0.07)
 
         # test that the checkpoint worked
         check_array = np.loadtxt(checkpoint)
