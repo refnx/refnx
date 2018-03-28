@@ -7,6 +7,7 @@ from multiprocessing.reduction import ForkingPickler
 import os
 
 import numpy as np
+from numpy.linalg import LinAlgError
 from scipy.optimize import minimize, least_squares
 from scipy.optimize._numdiff import approx_derivative
 from numpy.testing import (assert_almost_equal, assert_equal, assert_,
@@ -376,3 +377,12 @@ class TestObjective(object):
         _pvals = np.array(res.x)
         covar_objective = objective.covar()
         assert_allclose(covar_objective, covar_least_squares)
+
+        # now see what happens with a parameter that has no effect on residuals
+        param = Parameter(1.234, name='dummy')
+        param.vary = True
+        params.append(param)
+
+        from pytest import raises
+        with raises(LinAlgError):
+            objective.covar()

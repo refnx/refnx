@@ -1,6 +1,7 @@
 from __future__ import division, print_function
 
 import numpy as np
+from numpy.linalg import LinAlgError
 from scipy.optimize._numdiff import approx_derivative
 
 from refnx.util import ErrorProp as EP
@@ -579,6 +580,12 @@ class Objective(BaseObjective):
             return np.squeeze(self.residuals(_pvals * vals))
 
         try:
+            # we should be able to calculate a Jacobian for a parameter whose
+            # value is zero. However, the scaling approach won't work.
+            # This will force Jacobian calculation by unscaled parameters
+            if np.any(_pvals == 0):
+                raise FloatingPointError()
+
             with np.errstate(invalid='raise'):
                 jac = approx_derivative(residuals_scaler, np.ones_like(_pvals))
             used_residuals_scaler = True
@@ -595,7 +602,13 @@ class Objective(BaseObjective):
 
         # covar = J.T x J.
         # not sure why this is preferred over Hessian
-        covar = np.linalg.inv(np.matmul(jac.T, jac))
+        try:
+            covar = np.linalg.inv(np.matmul(jac.T, jac))
+        except LinAlgError:
+            raise LinAlgError("Singular matrix error when inverting Hessian."
+                              " One or more of the Parameters has no effect on"
+                              " Objective.residuals, please consider fixing"
+                              " them.")
 
         if used_residuals_scaler:
             # unwind the scaling.
