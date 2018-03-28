@@ -573,16 +573,6 @@ class Objective(BaseObjective):
         """
         _pvals = np.array(self.varying_parameters())
 
-        # hess = nd.Hessian(self.chisqr)(_pvals)
-
-        # if the initial attempt with unscaled values fails, than fallover
-        # to situation where we scale the parameters to 1. The initial attempt
-        # could fail, for example, if the data is scaled with a log10
-        # transform. If the nd.MaxStepGenerator makes some points negative then
-        # the transform will complain because it's trying to take the log of a
-        # negative number. By scaling the pvals to 1 in the Jacobian
-        # calculation we can get around this because the stepper won't make any
-        # of the parameter values change sign (step too small).
         used_residuals_scaler = False
 
         def residuals_scaler(vals):
@@ -594,9 +584,10 @@ class Objective(BaseObjective):
             used_residuals_scaler = True
         except FloatingPointError:
             jac = approx_derivative(self.residuals, _pvals)
-
-        # if len(_pvals) == 1:
-        #     jac = jac.T
+        finally:
+            # using approx_derivative changes the state of the objective
+            # parameters have to make sure they're set at the end
+            self.setp(_pvals)
 
         # need to create this because GlobalObjective does not have
         # access to all the datapoints being fitted.
@@ -608,11 +599,9 @@ class Objective(BaseObjective):
 
         if used_residuals_scaler:
             # unwind the scaling.
-            covar *= _pvals ** 2
+            covar = covar * np.atleast_2d(_pvals) * np.atleast_2d(_pvals).T
 
-        self.setp(_pvals)
         scale = 1.
-
         # scale by reduced chi2 if experimental uncertainties weren't used.
         if not (self.use_weights and self.weighted):
             scale = (self.chisqr() /

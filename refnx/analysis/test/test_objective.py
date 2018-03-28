@@ -6,13 +6,14 @@ import pickle
 from multiprocessing.reduction import ForkingPickler
 import os
 
-from scipy.optimize import minimize
 import numpy as np
+from scipy.optimize import minimize, least_squares
+from scipy.optimize._numdiff import approx_derivative
 from numpy.testing import (assert_almost_equal, assert_equal, assert_,
                            assert_allclose)
 
 from refnx.analysis import (Parameter, Model, Objective, BaseObjective,
-                            Transform)
+                            Transform, Parameters)
 from refnx.dataset import Data1D, ReflectDataset
 from refnx.util import ErrorProp as EP
 from refnx._lib import emcee
@@ -21,6 +22,11 @@ from refnx._lib import emcee
 def line(x, params, *args, **kwds):
     p_arr = np.array(params)
     return p_arr[0] + x * p_arr[1]
+
+
+def gauss(x, p0):
+    p = np.array(p0)
+    return p[0] + p[1] * np.exp(-((x - p[2]) / p[3])**2)
 
 
 def lnprob_extra(model, data):
@@ -313,3 +319,60 @@ class TestObjective(object):
         # uncertainties3 = np.sqrt(np.diag(covar3))
         # assert_almost_equal(uncertainties3, uncertainties)
         # assert(False)
+
+    def test_covar(self):
+        # checks objective.covar against optimize.least_squares covariance.
+        path = os.path.dirname(os.path.abspath(__file__))
+
+        theoretical = np.loadtxt(os.path.join(path, 'gauss_data.txt'))
+        xvals, yvals, evals = np.hsplit(theoretical, 3)
+        xvals = xvals.flatten()
+        yvals = yvals.flatten()
+        evals = evals.flatten()
+
+        p0 = np.array([0.1, 20., 0.1, 0.1])
+        names = ['bkg', 'A', 'x0', 'width']
+        bounds = [(-1, 1), (0, 30), (-5., 5.), (0.001, 2)]
+
+        params = Parameters(name="gauss_params")
+        for p, name, bound in zip(p0, names, bounds):
+            param = Parameter(p, name=name)
+            param.range(*bound)
+            param.vary = True
+            params.append(param)
+
+        model = Model(params, fitfunc=gauss)
+        data = Data1D((xvals, yvals, evals))
+        objective = Objective(model, data)
+
+        # first calculate least_squares jac/hess/covariance matrices
+        res = least_squares(objective.residuals, np.array(params),
+                            jac='3-point')
+
+        hess_least_squares = np.matmul(res.jac.T, res.jac)
+        covar_least_squares = np.linalg.inv(hess_least_squares)
+
+        # now calculate corresponding matrices by hand, to see if the approach
+        # concurs with least_squares
+        objective.setp(res.x)
+        _pvals = np.array(res.x)
+
+        def residuals_scaler(vals):
+            return np.squeeze(objective.residuals(_pvals * vals))
+
+        with np.errstate(invalid='raise'):
+            jac = approx_derivative(residuals_scaler, np.ones_like(_pvals))
+
+        hess = np.matmul(jac.T, jac)
+        covar = np.linalg.inv(hess)
+
+        covar = covar * np.atleast_2d(_pvals) * np.atleast_2d(_pvals).T
+
+        assert_allclose(covar, covar_least_squares)
+
+        # check that objective.covar corresponds to the least_squares
+        # covariance matrix
+        objective.setp(res.x)
+        _pvals = np.array(res.x)
+        covar_objective = objective.covar()
+        assert_allclose(covar_objective, covar_least_squares)
