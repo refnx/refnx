@@ -361,9 +361,7 @@ class TestObjective(object):
         def residuals_scaler(vals):
             return np.squeeze(objective.residuals(_pvals * vals))
 
-        with np.errstate(invalid='raise'):
-            jac = approx_derivative(residuals_scaler, np.ones_like(_pvals))
-
+        jac = approx_derivative(residuals_scaler, np.ones_like(_pvals))
         hess = np.matmul(jac.T, jac)
         covar = np.linalg.inv(hess)
 

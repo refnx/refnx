@@ -600,19 +600,30 @@ class Objective(BaseObjective):
         # access to all the datapoints being fitted.
         n_datapoints = np.size(jac, 0)
 
-        # covar = J.T x J.
-        # not sure why this is preferred over Hessian
-        try:
-            covar = np.linalg.inv(np.matmul(jac.T, jac))
-        except LinAlgError:
-            raise LinAlgError("Singular matrix error when inverting Hessian."
-                              " One or more of the Parameters has no effect on"
-                              " Objective.residuals, please consider fixing"
-                              " them.")
+        # covar = J.T x J
+
+        # from scipy.optimize.minpack.py
+        # eliminates singular parameters
+        _, s, VT = np.linalg.svd(jac, full_matrices=False)
+        threshold = np.finfo(float).eps * max(jac.shape) * s[0]
+        s = s[s > threshold]
+        VT = VT[:s.size]
+        covar = np.dot(VT.T / s ** 2, VT)
 
         if used_residuals_scaler:
             # unwind the scaling.
             covar = covar * np.atleast_2d(_pvals) * np.atleast_2d(_pvals).T
+
+        pvar = np.diagonal(covar).copy()
+        psingular = np.where(pvar == 0)[0]
+
+        if len(psingular) > 0:
+            var_params = self.varying_parameters()
+            singular_params = [var_params[ps] for ps in psingular]
+
+            raise LinAlgError("The following Parameters have no effect on"
+                              " Objective.residuals, please consider fixing"
+                              " them.\n" + repr(singular_params))
 
         scale = 1.
         # scale by reduced chi2 if experimental uncertainties weren't used.

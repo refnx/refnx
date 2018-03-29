@@ -173,7 +173,7 @@ NIST_Models = {'Bennett5': (Bennett5, 3, 1),
 
 
 def NIST_runner(dataset, method='least_squares', chi_atol=1e-5,
-                val_rtol=1e-2, err_rtol=0.01):
+                val_rtol=1e-2, err_rtol=5e-3):
     NIST_dataset = ReadNistData(dataset)
     x, y = (NIST_dataset['x'], NIST_dataset['y'])
 
