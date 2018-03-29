@@ -615,7 +615,7 @@ class Objective(BaseObjective):
             covar = covar * np.atleast_2d(_pvals) * np.atleast_2d(_pvals).T
 
         pvar = np.diagonal(covar).copy()
-        psingular = np.where(pvar==0)[0]
+        psingular = np.where(pvar == 0)[0]
 
         if len(psingular) > 0:
             var_params = self.varying_parameters()
