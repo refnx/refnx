@@ -376,7 +376,7 @@ class SLD(object):
 class Component(object):
 
     def __init__(self):
-        pass
+        self.name = ''
 
     def __or__(self, other):
         # c = self | other
