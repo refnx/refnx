@@ -36,7 +36,7 @@ before_install:
 
     - conda create --yes -n conda-refnx python=$PY
     - source activate conda-refnx
-    - conda install --yes numpy scipy h5py cython pandas xlrd flake8 six pytest
+    - conda install --yes numpy scipy h5py cython pandas xlrd flake8 six pytest pyyaml
     - pip install uncertainties ptemcee
 
     # gradually expand flake8 to all of codebase
