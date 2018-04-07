@@ -50,7 +50,7 @@ Perhaps the easiest way to create a scientific computing environment is to use t
   ```
   2) Run the tests, they should all work.
   ```
-  python runtests.py
+  python setup.py test
   ```
 
 ### Installing into a conda environment from a released version
@@ -110,7 +110,7 @@ The git repository is automatically on the master branch to start with. However,
   ```
   2) Once you're happy with the changes you've made you should check that the tests still work:
   ```
-  python runtests.py
+  python setup.py test
   ```
   3) Now commit the changes. You'll have to supply a commit message that outlines the changes you made. The commit message should follow the [numpy guidelines][numpy-contib]
   ```

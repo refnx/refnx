@@ -1,8 +1,10 @@
 #! /usr/bin/env python
 # System imports
 from setuptools import setup, Extension, find_packages
+from setuptools.command.test import test as TestCommand
 import os
 import subprocess
+import sys
 import warnings
 
 try:
@@ -100,6 +102,21 @@ if not release:
         a.close()
 
 
+class PyTest(TestCommand):
+    user_options = [('pytest-args=', 'a', "Arguments to pass to pytest")]
+
+    def initialize_options(self):
+        TestCommand.initialize_options(self)
+        self.pytest_args = 'refnx'
+
+    def run_tests(self):
+        import shlex
+        import pytest
+        print("Running tests with pytest")
+        errno = pytest.main(shlex.split(self.pytest_args))
+        sys.exit(errno)
+
+
 # refnx setup
 info = {
         'name': 'refnx',
@@ -125,7 +142,9 @@ info = {
         'include_package_data': True,
         'setup_requires': ['numpy'],
         'install_requires': ['numpy', 'scipy', 'six',
-                             'uncertainties', 'pandas']
+                             'uncertainties', 'pandas'],
+        'tests_require': ['pytest'],
+        'cmdclass': {'test': PyTest},
         }
 
 ####################################################################
@@ -190,7 +209,7 @@ def setup_package():
                                )
             ext_modules.append(_cutil)
 
-            info['cmdclass'] = {'build_ext': build_ext}
+            info['cmdclass'].update({'build_ext': build_ext})
             info['ext_modules'] = ext_modules
             info['zip_safe'] = False
 
