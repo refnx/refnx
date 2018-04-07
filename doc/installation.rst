@@ -70,7 +70,7 @@ package from within the refnx git repository (see later in this document).
 
     ::
 
-     python runtests.py
+     python setup.py test
 
 Installing into a conda environment from a released version
 ===========================================================
