@@ -433,7 +433,7 @@ class BatchReducer:
         return ds, fname
 
     def load_runs(self):
-        cols = 'A:I'
+        cols = range(10)
         all_runs = pd.read_excel(
             self.filename,
             usecols=cols,
