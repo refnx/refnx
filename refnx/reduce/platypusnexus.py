@@ -1330,8 +1330,8 @@ class PlatypusNexus(ReflectNexus):
 
 def create_detector_norm(h5norm, x_min, x_max):
     """
-    Produces a detector normalisation array for Platypus.
-    Here we average over N, T and X to provide  a relative efficiency for each
+    Produces a detector normalisation array for a neutron detector.
+    Here we average over N, T and X to provide a relative efficiency for each
     y wire.
 
     Parameters
@@ -1484,7 +1484,7 @@ def background_subtract_line(profile, profile_sd, background_mask):
     return EP.EPsub(profile, profile_sd, bkgd, bkgd_sd)
 
 
-def find_specular_ridge(detector, detector_sd, starting_offset=50,
+def find_specular_ridge(detector, detector_sd, search_increment=50,
                         tol=0.01, manual_beam_find=None):
     """
     Find the specular ridges in a detector(n, t, y) plot.
@@ -1495,6 +1495,8 @@ def find_specular_ridge(detector, detector_sd, starting_offset=50,
         detector array
     detector_sd : array_like
         standard deviations of detector array
+    search_increment : int
+        specifies the search increment for the location process.
     tol : float
         specifies threshold of fractional change for beam centre to be found
     manual_beam_find : callable, optional
@@ -1520,6 +1522,16 @@ def find_specular_ridge(detector, detector_sd, starting_offset=50,
         background region, array specifying points to be used for background
         subtraction
         `np.size(centre) == n`.
+
+    Notes
+    -----
+    The search for the beam centre proceeds by taking the last
+    `search_increment` time bins, summing over the time axis and finding
+    the beam centre and width along the y-axis. It then repeats the process
+    with the last `2 * search_increment` time bins. This process is repeated
+    until the relative change in beam centre and width is lower than `tol`.
+    This process is designed to locate the specular ridge, even in the
+    presence of incoherent scattering.
     """
     beam_centre = np.zeros(np.size(detector, 0))
     beam_sd = np.zeros_like(beam_centre)
@@ -1533,9 +1545,9 @@ def find_specular_ridge(detector, detector_sd, starting_offset=50,
 
     search_increment = 50
 
-    starting_offset = abs(starting_offset)
+    search_increment = abs(search_increment)
 
-    n_increments = ((np.size(detector, 1) - starting_offset) //
+    n_increments = ((np.size(detector, 1) - search_increment) //
                     search_increment)
 
     # we want to integrate over the following pixel region
@@ -1545,7 +1557,7 @@ def find_specular_ridge(detector, detector_sd, starting_offset=50,
         converged = False
 
         for i in range(n_increments):
-            how_many = -starting_offset - search_increment * i
+            how_many = -search_increment - search_increment * i
 
             det_subset = detector[j, -1: how_many: -1]
             det_sd_subset = detector_sd[j, -1: how_many: -1]
