@@ -503,7 +503,7 @@ class PlatypusNexus(ReflectNexus):
                 background=True, direct=False, omega=None, twotheta=None,
                 rebin_percent=1., wavelength_bins=None, normalise=True,
                 integrate=-1, eventmode=None, event_folder=None,
-                peak_pos=None, peak_pos_tol=0.01,
+                peak_pos=None, peak_pos_tol=0.005,
                 background_mask=None, normalise_bins=True,
                 manual_beam_find=None, event_filter=None, **kwds):
         r"""
@@ -768,11 +768,12 @@ class PlatypusNexus(ReflectNexus):
 
         # The angular divergence of the instrument
         domega = np.zeros(n_spectra, dtype='float64')
+        estimated_beam_width = np.zeros(n_spectra, dtype='float64')
 
         phase_angle = np.zeros(n_spectra, dtype='float64')
 
         # process each of the spectra taken in the detector image
-        originalscanpoint = scanpoint
+        original_scanpoint = scanpoint
         for idx in range(n_spectra):
             freq = cat.frequency[scanpoint]
 
@@ -781,6 +782,14 @@ class PlatypusNexus(ReflectNexus):
                                       cat.ss3vg[scanpoint],
                                       (cat.slit3_distance[0] -
                                        cat.slit2_distance[0]))[0]
+
+            # estimated beam width - Eqn. 9 in deHaan.
+            ebw = 0.5 * (cat.ss3vg[scanpoint] + cat.ss3vg[scanpoint])
+            ebw /= (cat.slit3_distance[0] - cat.slit2_distance[0])
+            ebw *= cat.dy[idx]
+            ebw += cat.ss3vg[scanpoint] / 2
+            # double for range and convert to pixels
+            estimated_beam_width[idx] = 2 * ebw / Y_PIXEL_SPACING
 
             """
             work out the total flight length
@@ -822,13 +831,14 @@ class PlatypusNexus(ReflectNexus):
                 flight_distance[:] = flight_distance[0]
                 detpositions[:] = detpositions[0]
                 domega[:] = domega[0]
+                estimated_beam_width[:] = estimated_beam_width[0]
                 d_cx[:] = d_cx[0]
                 phase_angle[:] = phase_angle[0]
                 break
             else:
                 scanpoint += 1
 
-        scanpoint = originalscanpoint
+        scanpoint = original_scanpoint
 
         # convert TOF to lambda
         # m_spec_tof_hist (n, t) and chod is (n,)
@@ -880,6 +890,16 @@ class PlatypusNexus(ReflectNexus):
 
         lopx = lopx.astype(int)
         hipx = hipx.astype(int)
+
+        # Warning if the beam appears to be much broader than the divergence
+        # would predict. The use of 30% tolerance is a guess.
+        # The use of 7 extra pixels is to allow for a little bit of detector
+        # resolution, etc.
+        if (((hipx - lopx + 1) / (estimated_beam_width + 7)) > 1.3).any():
+            warnings.warn("The foreground width (%d) *may* be overestimated"
+                          " compared to the divergence of the beam (%d). "
+                          " Consider checking with manual beam finder." %
+                          (hipx - lopx + 1, estimated_beam_width + 6))
 
         if np.size(beam_centre) != n_spectra:
             raise RuntimeError('The number of beam centres should be equal'
@@ -1016,7 +1036,7 @@ class PlatypusNexus(ReflectNexus):
                                       z0=d_cx[:, np.newaxis] / 1000.,
                                       freq=cat.frequency[:, np.newaxis],
                                       L=flight_distance[:, np.newaxis] / 1000.,
-                                      H=cat.ss2vg[originalscanpoint] / 1000.,
+                                      H=cat.ss2vg[original_scanpoint] / 1000.,
                                       xsi=phase_angle[:, np.newaxis],
                                       tau_da=tau_da))
 
@@ -1543,8 +1563,6 @@ def find_specular_ridge(detector, detector_sd, search_increment=50,
     # background mask specifies which pixels are background
     background_mask = np.zeros_like(detector, dtype=bool)
 
-    search_increment = 50
-
     search_increment = abs(search_increment)
 
     n_increments = ((np.size(detector, 1) - search_increment) //
@@ -1555,12 +1573,10 @@ def find_specular_ridge(detector, detector_sd, search_increment=50,
         last_centre = -1.
         last_sd = -1.
         converged = False
-
         for i in range(n_increments):
-            how_many = -search_increment - search_increment * i
-
-            det_subset = detector[j, -1: how_many: -1]
-            det_sd_subset = detector_sd[j, -1: how_many: -1]
+            how_many = -search_increment * (1 + i)
+            det_subset = detector[j, how_many:]
+            det_sd_subset = detector_sd[j, how_many:]
 
             # Uncertainties code takes a while to run
             # total_y = np.sum(det_subset, axis=0)
@@ -1601,7 +1617,21 @@ def find_specular_ridge(detector, detector_sd, search_increment=50,
         lp, hp, bp = fore_back_region(beam_centre[j], beam_sd[j])
         lopx[j] = lp
         hipx[j] = hp
-        background_mask[j, :, bp[0]] = True
+
+        # bp are the background pixels. Clip to the range of the detector
+        bp = np.clip(bp[0], 0, np.size(detector, 2) - 1)
+        bp = np.unique(bp)
+        background_mask[j, :, bp] = True
+
+    # the foreground region needs to be totally contained within the
+    # detector
+    if (lopx < 0).any():
+        raise ValueError("The foreground region for one of the detector"
+                         " images extends below pixel 0.")
+    if (hipx > np.size(detector, 2) - 1).any():
+        raise ValueError("The foreground region for one of the detector"
+                         " images extends above the largest detector"
+                         " pixel.")
 
     return beam_centre, beam_sd, lopx, hipx, background_mask
 
