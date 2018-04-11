@@ -895,8 +895,7 @@ class PlatypusNexus(ReflectNexus):
         # would predict. The use of 30% tolerance is a guess.
         # The use of 7 extra pixels is to allow for a little bit of detector
         # resolution, etc.
-        if (((hipx - lopx + 1) / (estimated_beam_width + 7)) >
-            1.3).any():
+        if (((hipx - lopx + 1) / (estimated_beam_width + 7)) > 1.3).any():
             warnings.warn("The foreground width (%d) *may* be overestimated"
                           " compared to the divergence of the beam (%d). "
                           " Consider checking with manual beam finder." %
