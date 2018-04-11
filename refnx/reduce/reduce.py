@@ -360,24 +360,29 @@ class PlatypusReduce(ReflectReduce):
             omega_corrected *= upside_down[:, np.newaxis]
 
         elif mode in ['SB', 'DB']:
+            # the angle of incidence is half the two theta of the reflected
+            # beam
             omega = np.arctan(total_z_deflection /
                               self.reflected_beam.detector_y) / 2.
 
+            # work out two theta for each of the detector pixels
             m_twotheta += np.arange(n_ypixels * 1.)[np.newaxis, np.newaxis, :]
-            m_twotheta -= self.direct_beam.m_beampos[:, :, np.newaxis]
-            # m_theta *= Y_PIXEL_SPACING
+            m_twotheta -= self.direct_beam.m_beampos[:, np.newaxis, np.newaxis]
             m_twotheta += detector_z_difference
             m_twotheta -= (
                 self.reflected_beam.detector_y[:, np.newaxis, np.newaxis] *
-                np.tan(omega[:, :, np.newaxis]))
+                np.tan(omega[:, np.newaxis, np.newaxis]))
 
             m_twotheta /= (
                 self.reflected_beam.detector_y[:, np.newaxis, np.newaxis])
             m_twotheta = np.arctan(m_twotheta)
-            m_twotheta += omega[:, :, np.newaxis]
+            m_twotheta += omega[:, np.newaxis, np.newaxis]
 
             # still in radians at this point
-            omega_corrected = np.degrees(omega)
+            # add an extra dimension, because omega_corrected needs to be the
+            # angle of incidence for each wavelength. I.e. should be
+            # broadcastable to (N, T)
+            omega_corrected = np.degrees(omega)[:, np.newaxis]
             m_twotheta = np.degrees(m_twotheta)
 
         '''
