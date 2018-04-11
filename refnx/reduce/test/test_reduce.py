@@ -52,13 +52,10 @@ class TestReduce(object):
         a1 = PlatypusReduce('PLP0038417.nx.hdf', data_folder=self.pth)
 
         # try reduction with the reduce method
-        d0, r0 = a0.reduce('PLP0038420.nx.hdf', data_folder=self.pth, rebin_percent=4)
-        d1, r1 = a1.reduce('PLP0038421.nx.hdf', data_folder=self.pth, rebin_percent=4)
-
-        # # this should also have saved a couple of files in the current
-        # # directory
-        # assert_(os.path.isfile('./PLP0000708_0.dat'))
-        # assert_(os.path.isfile('./PLP0000708_0.xml'))
+        d0, r0 = a0.reduce('PLP0038420.nx.hdf', data_folder=self.pth,
+                           rebin_percent=4)
+        d1, r1 = a1.reduce('PLP0038421.nx.hdf', data_folder=self.pth,
+                           rebin_percent=4)
 
     def test_event_reduction(self):
         # check that eventmode reduction can occur, and that there are the
