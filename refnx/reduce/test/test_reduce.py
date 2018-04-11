@@ -46,6 +46,17 @@ class TestReduce(object):
         # try writing offspecular data
         a.write_offspecular('offspec.xml', 0)
 
+    def test_free_liquids(self):
+        # smoke test for free liquids
+        a0 = PlatypusReduce('PLP0038418.nx.hdf', data_folder=self.pth)
+        a1 = PlatypusReduce('PLP0038417.nx.hdf', data_folder=self.pth)
+
+        # try reduction with the reduce method
+        d0, r0 = a0.reduce('PLP0038420.nx.hdf', data_folder=self.pth,
+                           rebin_percent=4)
+        d1, r1 = a1.reduce('PLP0038421.nx.hdf', data_folder=self.pth,
+                           rebin_percent=4)
+
     def test_event_reduction(self):
         # check that eventmode reduction can occur, and that there are the
         # correct number of datasets produced.
