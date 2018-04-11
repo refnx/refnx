@@ -1543,8 +1543,6 @@ def find_specular_ridge(detector, detector_sd, search_increment=50,
     # background mask specifies which pixels are background
     background_mask = np.zeros_like(detector, dtype=bool)
 
-    search_increment = 50
-
     search_increment = abs(search_increment)
 
     n_increments = ((np.size(detector, 1) - search_increment) //
@@ -1601,7 +1599,21 @@ def find_specular_ridge(detector, detector_sd, search_increment=50,
         lp, hp, bp = fore_back_region(beam_centre[j], beam_sd[j])
         lopx[j] = lp
         hipx[j] = hp
-        background_mask[j, :, bp[0]] = True
+
+        # bp are the background pixels. Clip to the range of the detector
+        bp = np.clip(bp[0], 0, np.size(detector, 2) - 1)
+        bp = np.unique(bp)
+        background_mask[j, :, bp] = True
+
+    # the foreground region needs to be totally contained within the
+    # detector
+    if (lopx < 0).any():
+        raise ValueError("The foreground region for one of the detector"
+                         " images extends below pixel 0.")
+    if (hipx > np.size(detector, 2) - 1).any():
+        raise ValueError("The foreground region for one of the detector"
+                         " images extends above the largest detector"
+                         " pixel.")
 
     return beam_centre, beam_sd, lopx, hipx, background_mask
 
