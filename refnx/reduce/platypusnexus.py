@@ -896,10 +896,11 @@ class PlatypusNexus(ReflectNexus):
         # The use of 7 extra pixels is to allow for a little bit of detector
         # resolution, etc.
         if (((hipx - lopx + 1) / (estimated_beam_width + 7)) > 1.3).any():
-            warnings.warn("The foreground width (%d) *may* be overestimated"
-                          " compared to the divergence of the beam (%d). "
+            warnings.warn("The foreground width (%s) *may* be overestimated"
+                          " compared to the divergence of the beam (%s). "
                           " Consider checking with manual beam finder." %
-                          (hipx - lopx + 1, estimated_beam_width + 6))
+                          (str(hipx - lopx + 1),
+                           str(estimated_beam_width + 6)))
 
         if np.size(beam_centre) != n_spectra:
             raise RuntimeError('The number of beam centres should be equal'
