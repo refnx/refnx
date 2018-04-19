@@ -783,13 +783,17 @@ class PlatypusNexus(ReflectNexus):
                                       (cat.slit3_distance[0] -
                                        cat.slit2_distance[0]))[0]
 
-            # estimated beam width - Eqn. 9 in deHaan.
-            ebw = 0.5 * (cat.ss3vg[scanpoint] + cat.ss3vg[scanpoint])
-            ebw /= (cat.slit3_distance[0] - cat.slit2_distance[0])
-            ebw *= cat.dy[idx]
-            ebw += cat.ss3vg[scanpoint] / 2
-            # double for range and convert to pixels
-            estimated_beam_width[idx] = 2 * ebw / Y_PIXEL_SPACING
+            # estimated beam width at detector- Eqn. 9 in deHaan.
+            L23 = cat.slit3_distance[idx] - cat.slit2_distance[0]
+            L3det = (cat.dy[idx] +
+                     cat.sample_distance[0] - cat.slit3_distance[idx])
+            ebw = general.height_of_beam_after_dx(cat.ss2vg[scanpoint],
+                                                  cat.ss3vg[scanpoint],
+                                                  L23,
+                                                  L3det)
+            umb, penumb = ebw
+            # convert to pixels
+            estimated_beam_width[idx] = penumb / Y_PIXEL_SPACING
 
             """
             work out the total flight length
@@ -892,10 +896,10 @@ class PlatypusNexus(ReflectNexus):
         hipx = hipx.astype(int)
 
         # Warning if the beam appears to be much broader than the divergence
-        # would predict. The use of 30% tolerance is a guess.
+        # would predict. The use of 20% tolerance is a guess.
         # The use of 7 extra pixels is to allow for a little bit of detector
         # resolution, etc.
-        if (((hipx - lopx + 1) / (estimated_beam_width + 7)) > 1.3).any():
+        if (((hipx - lopx + 1) / (estimated_beam_width + 7)) > 1.2).any():
             warnings.warn("The foreground width (%s) *may* be overestimated"
                           " compared to the divergence of the beam (%s). "
                           " Consider checking with manual beam finder." %

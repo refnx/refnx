@@ -521,7 +521,8 @@ def beamfrackernel(kernelx, kernely, length, angle):
 
 def height_of_beam_after_dx(d1, d2, L12, distance):
     """
-    Calculate the widths of beam a given distance away from a collimation slit.
+    Calculate the total widths of beam a given distance away from a collimation
+    slit.
 
     if distance >= 0, then it's taken to be the distance after d2.
     if distance < 0, then it's taken to be the distance before d1.
@@ -544,7 +545,7 @@ def height_of_beam_after_dx(d1, d2, L12, distance):
     Returns
     -------
     (umbra, penumbra): float, float
-        height of umbra and penumbra
+        full width of umbra and penumbra
 
     """
 
