@@ -783,13 +783,26 @@ class PlatypusNexus(ReflectNexus):
                                       (cat.slit3_distance[0] -
                                        cat.slit2_distance[0]))[0]
 
-            # estimated beam width - Eqn. 9 in deHaan.
-            ebw = 0.5 * (cat.ss3vg[scanpoint] + cat.ss3vg[scanpoint])
-            ebw /= (cat.slit3_distance[0] - cat.slit2_distance[0])
-            ebw *= cat.dy[idx]
-            ebw += cat.ss3vg[scanpoint] / 2
-            # double for range and convert to pixels
-            estimated_beam_width[idx] = 2 * ebw / Y_PIXEL_SPACING
+            """
+            estimated beam width in pixels at detector
+            """
+            L23 = cat.slit3_distance[idx] - cat.slit2_distance[0]
+            L3det = (cat.dy[idx] +
+                     cat.sample_distance[0] - cat.slit3_distance[idx])
+            ebw = general.height_of_beam_after_dx(cat.ss2vg[scanpoint],
+                                                  cat.ss3vg[scanpoint],
+                                                  L23,
+                                                  L3det)
+            umb, penumb = ebw
+            # convolve in detector resolution (~2.2 mm?)
+            # first convert to beam sd, convolve in detector, and expand sd
+            # back to total foreground width
+            # use average of umb and penumb, the calc assumes a rectangular
+            # distribution
+            penumb = (np.sqrt((0.289 * 0.5 * (umb + penumb))**2. + 2.2**2) *
+                      EXTENT_MULT * 2)
+            # we need it in pixels
+            estimated_beam_width[idx] = penumb / Y_PIXEL_SPACING
 
             """
             work out the total flight length
@@ -892,15 +905,14 @@ class PlatypusNexus(ReflectNexus):
         hipx = hipx.astype(int)
 
         # Warning if the beam appears to be much broader than the divergence
-        # would predict. The use of 30% tolerance is a guess.
-        # The use of 7 extra pixels is to allow for a little bit of detector
-        # resolution, etc.
-        if (((hipx - lopx + 1) / (estimated_beam_width + 7)) > 1.3).any():
-            warnings.warn("The foreground width (%s) *may* be overestimated"
-                          " compared to the divergence of the beam (%s). "
+        # would predict. The use of 30% tolerance is a guess. This might happen
+        # if the beam finder includes incoherent background region by mistake.
+        if not np.allclose(estimated_beam_width, hipx - lopx + 1, rtol=0.3):
+            warnings.warn("The foreground width (%s) estimate"
+                          " does not match the divergence of the beam (%s)."
                           " Consider checking with manual beam finder." %
                           (str(hipx - lopx + 1),
-                           str(estimated_beam_width + 6)))
+                           str(estimated_beam_width)))
 
         if np.size(beam_centre) != n_spectra:
             raise RuntimeError('The number of beam centres should be equal'
@@ -1065,6 +1077,7 @@ class PlatypusNexus(ReflectNexus):
         d['m_spec'] = m_spec
         d['m_spec_sd'] = m_spec_sd
         d['m_beampos'] = beam_centre
+        d['m_beampos_sd'] = beam_sd
         d['m_lambda'] = m_lambda
         d['m_lambda_fwhm'] = m_lambda_fwhm
         d['m_lambda_hist'] = m_lambda_hist
