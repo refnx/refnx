@@ -1069,6 +1069,7 @@ class PlatypusNexus(ReflectNexus):
         d['m_spec'] = m_spec
         d['m_spec_sd'] = m_spec_sd
         d['m_beampos'] = beam_centre
+        d['m_beampos_sd'] = beam_sd
         d['m_lambda'] = m_lambda
         d['m_lambda_fwhm'] = m_lambda_fwhm
         d['m_lambda_hist'] = m_lambda_hist
