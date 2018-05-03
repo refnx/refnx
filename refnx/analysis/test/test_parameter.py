@@ -77,6 +77,12 @@ class TestParameter(object):
         x.setp(bounds=norm(0, 1))
         assert_almost_equal(x.lnprob(1), norm.logpdf(1, 0, 1))
 
+        # all created parameters were mistakenly being given the same
+        # default bounds instance!
+        x = Parameter(4)
+        y = Parameter(5)
+        assert_(id(x.bounds) != id(y.bounds))
+
     def test_range(self):
         x = Parameter(0.)
         x.range(-1, 1.)
