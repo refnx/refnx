@@ -356,7 +356,7 @@ def possibly_create_parameter(value, name=''):
 
 
 class Parameter(BaseParameter):
-    def __init__(self, value=0., name=None, bounds=Interval(), vary=False,
+    def __init__(self, value=0., name=None, bounds=None, vary=False,
                  constraint=None):
         """
         Parameters
@@ -376,7 +376,9 @@ class Parameter(BaseParameter):
 
         # set bounds before setting value because the value may not be valid
         # for the bounds
-        self.bounds = bounds
+        self._bounds = Interval()
+        if bounds is not None:
+            self.bounds = bounds
 
         self.value = value
         self._vary = vary
