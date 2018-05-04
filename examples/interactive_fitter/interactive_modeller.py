@@ -1,6 +1,6 @@
 import numpy as np
 import ipywidgets as widgets
-from IPython.display import (DisplayHandle, clear_output)
+from IPython.display import (DisplayHandle)
 import time
 import traitlets
 from traitlets import HasTraits
@@ -76,9 +76,11 @@ class ReflectModelView(HasTraits):
                                              description='dq/q', step=0.1,
                                              min=0, max=20.)
         self.c_dq = widgets.Checkbox(value=reflect_model.dq.vary)
-        self.dq_low_limit = widgets.BoundedFloatText(value=p.bounds.lb, min=0, max=20,
+        self.dq_low_limit = widgets.BoundedFloatText(value=p.bounds.lb,
+                                                     min=0, max=20,
                                                      step=0.1)
-        self.dq_hi_limit = widgets.BoundedFloatText(value=p.bounds.ub, min=0, max=20,
+        self.dq_hi_limit = widgets.BoundedFloatText(value=p.bounds.ub,
+                                                    min=0, max=20,
                                                     step=0.1)
 
         self.c_scale.style.description_width = '0px'
@@ -100,7 +102,8 @@ class ReflectModelView(HasTraits):
             widget.observe(self.model_limits_changed, names=['value'])
 
         # button to create default limits
-        self.default_limits_button = widgets.Button(description='Set default limits')
+        self.default_limits_button = widgets.Button(
+            description='Set default limits')
         self.default_limits_button.on_click(self.default_limits)
 
         # widgets for easy model change
@@ -137,14 +140,16 @@ class ReflectModelView(HasTraits):
                 if loc == 0:
                     par.value = wids[0].value
 
-                    # this captures when the user starts modifying a different parameter
+                    # this captures when the user starts modifying a different
+                    # parameter
                     self.possibly_change_slider(change['owner'])
 
                     self.view_changed = time.time()
                     break
                 elif loc == 1:
                     par.vary = wids[1].value
-                    # need to rebuild the limit widgets, achieved by redrawing box
+                    # need to rebuild the limit widgets, achieved by redrawing
+                    # box
                     self.view_redraw = time.time()
                     break
                 else:
@@ -194,8 +199,10 @@ class ReflectModelView(HasTraits):
             self.model_slider_link = widgets.link(
                 (self.last_selected_param, 'value'),
                 (self.model_slider, 'value'))
-            self.model_slider_max.value = max(0, 2. * self.last_selected_param.value)
-            self.model_slider_min.value = min(0, 2. * self.last_selected_param.value)
+            self.model_slider_max.value = max(
+                0, 2. * self.last_selected_param.value)
+            self.model_slider_min.value = min(
+                0, 2. * self.last_selected_param.value)
 
     def change_layers(self, change):
         self.ok_button = widgets.Button(description="OK")
@@ -483,10 +490,11 @@ class SlabView(HasTraits):
                                   self.rough_hi_limit)
 
     def refresh(self):
-        # if the underlying slab parameters have changed, then the widgets need to be updated.
+        # if the underlying slab parameters have changed, then the widgets need
+        # to be updated.
         d = self.param_widgets_link
 
-        ids = {id(p):p for p in flatten(self.slab.parameters) if id(p) in d}
+        ids = {id(p): p for p in flatten(self.slab.parameters) if id(p) in d}
         for idx, par in ids.items():
             widgets = d[idx]
             widgets[0].value = par.value
@@ -561,7 +569,6 @@ class Motofit(HasTraits):
         # an output area for messages.
         self.output = widgets.Textarea()
         self.output.layout = widgets.Layout(width='100%', height='200px')
-
 
         self.display_box = widgets.VBox()
 
@@ -665,7 +672,7 @@ class Motofit(HasTraits):
         def callback(xk, convergence):
             self.chisqr.value = self.objective.chisqr(xk)
 
-        res = self.curvefitter.fit('differential_evolution', callback=callback)
+        self.curvefitter.fit('differential_evolution', callback=callback)
 
         # place before set_model, because a redraw is required to stop the
         # output from getting too long.
