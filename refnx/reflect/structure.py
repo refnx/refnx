@@ -29,7 +29,7 @@ class Structure(UserList):
         Specifies the scattering length density used for solvation. If no
         solvent is specified then the SLD of the solvent is assumed to be
         the SLD of `Structure[-1].slabs[-1]` (after any possible slab order
-        reveral).
+        reversal).
     reverse_structure : bool
         If `Structure.reverse_structure` is `True` then the slab
         representation produced by `Structure.slabs` is reversed. The sld
@@ -80,6 +80,19 @@ class Structure(UserList):
     def __setitem__(self, i, v):
         self.data[i] = v
         # self.update()
+
+    def __repr__(self):
+        s = list()
+        s.append('{:_>80}'.format(''))
+        s.append('Structure: {0: ^15}'.format(repr(self.name)))
+        s.append('solvent: {0}'.format(repr(self.solvent)))
+        s.append('reverse structure: {0}'.format(repr(self.reverse_structure)))
+        s.append('contract: {0}\n'.format(repr(self.contract)))
+
+        for component in self:
+            s.append(repr(component))
+
+        return '\n'.join(s)
 
     def append(self, item):
         if isinstance(item, SLD):
@@ -352,6 +365,10 @@ class SLD(object):
         self._parameters = Parameters(name=name)
         self._parameters.extend([self.real, self.imag])
 
+    def __repr__(self):
+        sld = complex(self.real.value, self.imag.value)
+        return 'SLD = {0} x10**-6 Å**-2'.format(sld)
+
     def __call__(self, thick=0, rough=0):
         return Slab(thick, self, rough, name=self.name)
 
@@ -448,6 +465,15 @@ class Slab(Component):
                   self.rough, self.vfsolv])
 
         self._parameters = p
+
+    def __repr__(self):
+        # sld = repr(self.sld)
+        #
+        # s = 'Slab: {0}\n    thick = {1} Å, {2}, rough = {3} Å,
+        #      \u03D5_solv = {4}'
+        # t = s.format(self.name, self.thick.value, sld, self.rough.value,
+        #              self.vfsolv.value)
+        return repr(self.parameters)
 
     @property
     def parameters(self):
@@ -631,11 +657,11 @@ def _contract_by_area(slabs, dA=0.5):
 
     Notes
     -----
-    The reflectivity profiles from both contracted and uncontracted profiles
+    The reflectivity profiles from both contracted and un-contracted profiles
     should be compared to check for accuracy.
     """
 
-    # In refl1d the first slab is the substrate, the orded is reversed here.
+    # In refl1d the first slab is the substrate, the order is reversed here.
     # In the following code the slabs are traversed from the backing towards
     # the fronting.
     newslabs = np.copy(slabs)[::-1]
