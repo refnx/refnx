@@ -469,7 +469,8 @@ class Slab(Component):
     def __repr__(self):
         # sld = repr(self.sld)
         #
-        # s = 'Slab: {0}\n    thick = {1} Å, {2}, rough = {3} Å, \u03D5_solv = {4}'
+        # s = 'Slab: {0}\n    thick = {1} Å, {2}, rough = {3} Å,
+        #      \u03D5_solv = {4}'
         # t = s.format(self.name, self.thick.value, sld, self.rough.value,
         #              self.vfsolv.value)
         return repr(self.parameters)
