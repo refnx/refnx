@@ -1,6 +1,5 @@
 import numpy as np
 import ipywidgets as widgets
-from IPython.display import (DisplayHandle)
 import time
 import traitlets
 from traitlets import HasTraits
@@ -603,9 +602,6 @@ class Motofit(HasTraits):
     code: str
         A Python code fragment capable of fitting the data
     """
-
-    # id for the output instance
-    display_id = traitlets.Instance(klass=DisplayHandle, args=())
 
     def __init__(self):
         # attributes for the graph
