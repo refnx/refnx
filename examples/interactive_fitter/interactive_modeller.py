@@ -13,6 +13,26 @@ from refnx._lib import flatten
 
 
 class ReflectModelView(HasTraits):
+    """
+    An ipywidgets viewport of a `refnx.reflect.ReflectModel`.
+
+    Parameters
+    ----------
+    reflect_model: refnx.reflect.ReflectModel
+
+    Notes
+    -----
+    Use the `model_box` property to view/modify the ReflectModel parameters.
+    Use the `limits_box` property to view the limits for the varying
+    parameters.
+    Observe the `view_changed` traitlet to determine when widget values are
+    changed.
+    Observe the `view_redraw` traitlet to determine when a complete redraw
+    of the view is required (because the number of widgets has changed for
+    example).
+
+    """
+
     # traitlet to say when params were last altered
     view_changed = traitlets.Float(time.time())
 
@@ -37,7 +57,8 @@ class ReflectModelView(HasTraits):
 
         # got to listen to all the slab views
         for slab_view in slab_views:
-            slab_view.observe(self.slab_params_changed, names=['view_changed'])
+            slab_view.observe(self._on_slab_params_modified,
+                              names=['view_changed'])
 
         # if you'd like to change the number of layers
         self.w_layers = widgets.BoundedIntText(
@@ -46,7 +67,7 @@ class ReflectModelView(HasTraits):
             style={'description_width': '120px'},
             continuous_update=False)
 
-        self.w_layers.observe(self.change_layers, names=['value'])
+        self.w_layers.observe(self._on_change_layers, names=['value'])
 
         # where you're going to add/remove layers
         self._varying_layers = False
@@ -87,19 +108,20 @@ class ReflectModelView(HasTraits):
         self.c_bkg.style.description_width = '0px'
         self.c_dq.style.description_width = '0px'
         self.do_fit_button = widgets.Button(description='Do Fit')
+        self.to_code_button = widgets.Button(description='To code')
 
-        self.widget_list = [self.w_scale, self.c_scale, self.w_bkg,
-                            self.c_bkg, self.w_dq, self.c_dq]
+        widget_list = [self.w_scale, self.c_scale, self.w_bkg,
+                       self.c_bkg, self.w_dq, self.c_dq]
 
-        self.limits_widgets_list = [self.scale_low_limit, self.scale_hi_limit,
-                                    self.bkg_low_limit, self.bkg_hi_limit,
-                                    self.dq_low_limit, self.dq_hi_limit]
+        limits_widgets_list = [self.scale_low_limit, self.scale_hi_limit,
+                               self.bkg_low_limit, self.bkg_hi_limit,
+                               self.dq_low_limit, self.dq_hi_limit]
 
-        for widget in self.widget_list:
-            widget.observe(self.model_params_changed, names=['value'])
+        for widget in widget_list:
+            widget.observe(self._on_model_params_modified, names=['value'])
 
-        for widget in self.limits_widgets_list:
-            widget.observe(self.model_limits_changed, names=['value'])
+        for widget in limits_widgets_list:
+            widget.observe(self._on_model_limits_modified, names=['value'])
 
         # button to create default limits
         self.default_limits_button = widgets.Button(
@@ -114,21 +136,18 @@ class ReflectModelView(HasTraits):
         self.model_slider_min.layout = widgets.Layout(width='10%')
         self.model_slider_max = widgets.FloatText()
         self.model_slider_max.layout = widgets.Layout(width='10%')
-        self.model_slider_max.observe(self.change_slider_limits,
+        self.model_slider_max.observe(self._on_slider_limits_modified,
                                       names=['value'])
-        self.model_slider_min.observe(self.change_slider_limits,
+        self.model_slider_min.observe(self._on_slider_limits_modified,
                                       names=['value'])
         self.last_selected_param = None
 
-        self.link_param_widgets()
+        self._link_param_widgets()
 
-    def change_slider_limits(self, change):
-        self.model_slider.max = self.model_slider_max.value
-        self.model_slider.min = self.model_slider_min.value
-        self.model_slider.step = (self.model_slider.max -
-                                  self.model_slider.min) / 1000.
-
-    def model_params_changed(self, change):
+    def _on_model_params_modified(self, change):
+        """
+        Called when ReflectModel parameters are varied.
+        """
         d = self.param_widgets_link
 
         for par in [self.model.scale, self.model.bkg, self.model.dq]:
@@ -142,7 +161,7 @@ class ReflectModelView(HasTraits):
 
                     # this captures when the user starts modifying a different
                     # parameter
-                    self.possibly_change_slider(change['owner'])
+                    self._possibly_link_slider(change['owner'])
 
                     self.view_changed = time.time()
                     break
@@ -156,9 +175,13 @@ class ReflectModelView(HasTraits):
                     return
 
         # this captures when the user starts modifying a different parameter
-        self.possibly_change_slider(change['owner'])
+        self._possibly_link_slider(change['owner'])
 
-    def model_limits_changed(self, change):
+    def _on_model_limits_modified(self, change):
+        """
+        When a limit widget is changed, update corresponding limits in the
+        underlying ReflectModel.
+        """
         d = self.param_widgets_link
         for par in [self.model.scale, self.model.bkg, self.model.dq]:
             idx = id(par)
@@ -174,6 +197,9 @@ class ReflectModelView(HasTraits):
                     break
 
     def default_limits(self, change):
+        """
+        Makes default limits for the parameters being varied
+        """
         varying_parameters = self.model.parameters.varying_parameters()
 
         for par in varying_parameters:
@@ -182,16 +208,23 @@ class ReflectModelView(HasTraits):
 
         self.refresh()
 
-    def slab_params_changed(self, change):
+    def _on_slab_params_modified(self, change):
+        """
+        Called when slab parameters are varied.
+        """
         # this captures when the user starts modifying a different parameter
-        self.possibly_change_slider(change['owner'].param_being_varied)
+        self._possibly_link_slider(change['owner'].param_being_varied)
         if isinstance(change['owner'].param_being_varied, widgets.Checkbox):
             # need to rebuild the limit widgets, achieved by redrawing box
             self.view_redraw = time.time()
         else:
             self.view_changed = time.time()
 
-    def possibly_change_slider(self, change_owner):
+    def _possibly_link_slider(self, change_owner):
+        """
+        When a ReflectModel value is changed link a slider widget to the
+        parameter that is being varied.
+        """
         if (change_owner is not self.last_selected_param):
             self.last_selected_param = change_owner
             if self.model_slider_link is not None:
@@ -204,36 +237,49 @@ class ReflectModelView(HasTraits):
             self.model_slider_min.value = min(
                 0, 2. * self.last_selected_param.value)
 
-    def change_layers(self, change):
+    def _on_slider_limits_modified(self, change):
+        """
+        Callback when adjusting the min, max widgets for the main slider
+        widget.
+        """
+        self.model_slider.max = self.model_slider_max.value
+        self.model_slider.min = self.model_slider_min.value
+        self.model_slider.step = (self.model_slider.max -
+                                  self.model_slider.min) / 1000.
+
+    def _on_change_layers(self, change):
         self.ok_button = widgets.Button(description="OK")
         if change['new'] > change['old']:
             description = 'Insert before which layer?'
             min_loc = 1
             max_loc = len(self.model.structure) - 2 + 1
-            self.ok_button.on_click(self.increase_layers)
+            self.ok_button.on_click(self._increase_layers)
         elif change['new'] < change['old']:
             min_loc = 1
             max_loc = (len(self.model.structure) - 2 -
                        (change['old'] - change['new']) + 1)
             description = 'Remove from which layer?'
-            self.ok_button.on_click(self.decrease_layers)
+            self.ok_button.on_click(self._decrease_layers)
         else:
             return
         self._varying_layers = True
         self.w_layers.disabled = True
         self.do_fit_button.disabled = True
+        self.to_code_button.disabled = True
+
         self._location = widgets.BoundedIntText(
             value=min_loc,
             description=description,
             min=min_loc, max=max_loc,
             style={'description_width': 'initial'})
         self.cancel_button = widgets.Button(description="Cancel")
-        self.cancel_button.on_click(self.cancel_layers)
+        self.cancel_button.on_click(self._cancel_layers)
         self.view_redraw = time.time()
 
-    def increase_layers(self, b):
+    def _increase_layers(self, b):
         self.w_layers.disabled = False
         self.do_fit_button.disabled = False
+        self.to_code_button.disabled = False
 
         how_many = self.w_layers.value - (len(self.model.structure) - 2)
         loc = self._location.value
@@ -248,15 +294,16 @@ class ReflectModelView(HasTraits):
             slab_view = SlabView(slab)
             self.model.structure.insert(loc, slab)
             self.structure_view.slab_views.insert(loc, slab_view)
-            slab_view.observe(self.slab_params_changed)
+            slab_view.observe(self._on_slab_params_modified)
 
         rename_params(self.model.structure)
         self._varying_layers = False
         self.view_redraw = time.time()
 
-    def decrease_layers(self, b):
+    def _decrease_layers(self, b):
         self.w_layers.disabled = False
         self.do_fit_button.disabled = False
+        self.to_code_button.disabled = False
 
         loc = self._location.value
         how_many = len(self.model.structure) - 2 - self.w_layers.value
@@ -269,7 +316,11 @@ class ReflectModelView(HasTraits):
         self._varying_layers = False
         self.view_redraw = time.time()
 
-    def link_param_widgets(self):
+    def _link_param_widgets(self):
+        """
+        Creates a dictionary of {parameter: (associated_widgets_tuple)}.
+        """
+
         # link parameters to widgets (value, checkbox,
         #                             upperlim, lowerlim)
         self.param_widgets_link = {}
@@ -283,18 +334,22 @@ class ReflectModelView(HasTraits):
         d[id(model.dq)] = (self.w_dq, self.c_dq,
                            self.dq_low_limit, self.dq_hi_limit)
 
-    def cancel_layers(self, b):
+    def _cancel_layers(self, b):
         # disable the change layers widget to prevent recursion
-        self.w_layers.unobserve(self.change_layers, names='value')
+        self.w_layers.unobserve(self._on_change_layers, names='value')
         self.w_layers.value = len(self.model.structure) - 2
-        self.w_layers.observe(self.change_layers, names='value')
+        self.w_layers.observe(self._on_change_layers, names='value')
         self.w_layers.disabled = False
         self.do_fit_button.disabled = False
+        self.to_code_button.disabled = False
 
         self._varying_layers = False
         self.view_redraw = time.time()
 
     def refresh(self):
+        """
+        Updates the widget values from the underlying `ReflectModel`.
+        """
         for par in [self.model.scale, self.model.bkg, self.model.dq]:
             wid = self.param_widgets_link[id(par)]
             wid[0].value = par.value
@@ -309,6 +364,9 @@ class ReflectModelView(HasTraits):
 
     @property
     def model_box(self):
+        """
+        `ipywidgets.Vbox` displaying model relevant widgets.
+        """
         output = [self.w_layers,
                   widgets.HBox([self.w_scale, self.c_scale,
                                 self.w_dq, self.c_dq]),
@@ -323,7 +381,7 @@ class ReflectModelView(HasTraits):
                                         self.ok_button,
                                         self.cancel_button]))
 
-        output.append(self.do_fit_button)
+        output.append(widgets.HBox([self.do_fit_button, self.to_code_button]))
 
         return widgets.VBox(output)
 
@@ -376,6 +434,21 @@ class StructureView(object):
 
 
 class SlabView(HasTraits):
+    """
+    An ipywidgets viewport of a `refnx.reflect.Slab`.
+
+    Parameters
+    ----------
+    slab: refnx.reflect.Slab
+
+    Notes
+    -----
+    An ipywidgets viewport of a `refnx.reflect.Slab`.
+    Use the `box` property to view/modify the `Slab` parameters.
+    Observe the `view_changed` traitlet to determine when widget values are
+    changed.
+    """
+
     # traitlet to say when params were last altered
     view_changed = traitlets.Float(time.time())
 
@@ -413,25 +486,25 @@ class SlabView(HasTraits):
         self.rough_hi_limit = widgets.FloatText(value=p.bounds.ub,
                                                 step=0.01)
 
-        self.widget_list = [self.w_thick, self.c_thick, self.w_sld,
-                            self.c_sld, self.w_isld, self.c_isld,
-                            self.w_rough, self.c_rough]
-        self.limits_list = [self.thick_low_limit, self.thick_hi_limit,
-                            self.sld_low_limit, self.sld_hi_limit,
-                            self.isld_low_limit, self.isld_hi_limit,
-                            self.rough_low_limit, self.rough_hi_limit]
+        self._widget_list = [self.w_thick, self.c_thick, self.w_sld,
+                             self.c_sld, self.w_isld, self.c_isld,
+                             self.w_rough, self.c_rough]
+        self._limits_list = [self.thick_low_limit, self.thick_hi_limit,
+                             self.sld_low_limit, self.sld_hi_limit,
+                             self.isld_low_limit, self.isld_hi_limit,
+                             self.rough_low_limit, self.rough_hi_limit]
 
-        for widget in self.widget_list:
+        for widget in self._widget_list:
             widget.style.description_width = '0px'
-            widget.observe(self.handle_slab_params_change, names='value')
+            widget.observe(self._on_slab_params_modified, names='value')
         self.w_thick.style.description_width = '50px'
 
-        for widget in self.limits_list:
-            widget.observe(self.handle_slab_limits_change, names='value')
+        for widget in self._limits_list:
+            widget.observe(self._on_slab_limits_modified, names='value')
 
-        self.link_param_widgets()
+        self._link_param_widgets()
 
-    def handle_slab_params_change(self, change):
+    def _on_slab_params_modified(self, change):
         d = self.param_widgets_link
         slab = self.slab
 
@@ -449,7 +522,7 @@ class SlabView(HasTraits):
         self.param_being_varied = change['owner']
         self.view_changed = time.time()
 
-    def handle_slab_limits_change(self, change):
+    def _on_slab_limits_modified(self, change):
         slab = self.slab
         d = self.param_widgets_link
 
@@ -466,7 +539,10 @@ class SlabView(HasTraits):
                 else:
                     return
 
-    def link_param_widgets(self):
+    def _link_param_widgets(self):
+        """
+        Creates a dictionary of {parameter: (associated_widgets_tuple)}.
+        """
         # link parameters to widgets (value, checkbox,
         #                             upperlim, lowerlim)
         d = self.param_widgets_link
@@ -490,8 +566,9 @@ class SlabView(HasTraits):
                                   self.rough_hi_limit)
 
     def refresh(self):
-        # if the underlying slab parameters have changed, then the widgets need
-        # to be updated.
+        """
+        Updates the widget values from the underlying `Slab` parameters.
+        """
         d = self.param_widgets_link
 
         ids = {id(p): p for p in flatten(self.slab.parameters) if id(p) in d}
@@ -504,17 +581,33 @@ class SlabView(HasTraits):
 
     @property
     def box(self):
-        return widgets.HBox(self.widget_list)
+        return widgets.HBox(self._widget_list)
 
 
 class Motofit(HasTraits):
+    """
+    An interactive modeller (Jupyter/ipywidgets based) for Neutron and X-ray
+    reflectometry data
+
+    Attributes
+    ----------
+    dataset: refnx.reflect.Data1D
+        The dataset associated with the modeller
+    model: refnx.reflect.ReflectModel
+        Calculates a theoretical model, from an interfacial structure
+        (`model.Structure`).
+    objective: refnx.analysis.Objective
+        The Objective that allows one to compare the model against the data.
+    curvefitter: refnx.analysis.CurveFitter
+        Fits data based on the objective.
+    code: str
+        A Python code fragment capable of fitting the data
+    """
+
     # id for the output instance
     display_id = traitlets.Instance(klass=DisplayHandle, args=())
 
     def __init__(self):
-
-        self.tab = widgets.Tab()
-
         # attributes for the graph
         # for the graph
         self.qmin = 0.001
@@ -523,11 +616,13 @@ class Motofit(HasTraits):
         self.fig = None
         self.ax_data = None
         self.ax_sld = None
+        self.theoretical_plot = None
+        self.theoretical_plot_sld = None
 
         # attributes for a user dataset
         self.dataset = None
         self.objective = None
-        self.curvefitter = None
+        self._curvefitter = None
         self.data_plot = None
         self.data_plot_sld = None
 
@@ -557,22 +652,31 @@ class Motofit(HasTraits):
             slab.sld.imag.bounds = (0, 2 * slab.sld.imag.value)
             slab.rough.bounds = (0, 2 * slab.rough.value)
 
-        self.model_view = ReflectModelView(self.model)
-        self.model_view.observe(self.update_model, names=['view_changed'])
-        self.model_view.observe(self.redraw, names=['view_redraw'])
-        self.model_view.do_fit_button.on_click(self.do_fit)
+        # the main GUI widget
+        self.display_box = widgets.VBox()
 
+        self.tab = widgets.Tab()
         self.tab.set_title(0, 'Model')
         self.tab.set_title(1, 'Limits')
-        self.tab.observe(self.tab_changed, names='selected_index')
+        self.tab.observe(self._on_tab_changed, names='selected_index')
 
         # an output area for messages.
         self.output = widgets.Textarea()
         self.output.layout = widgets.Layout(width='100%', height='200px')
 
-        self.display_box = widgets.VBox()
+        self.model_view = None
+        self.set_model(self.model)
 
     def set_model(self, reflect_model):
+        """
+        Change the `refnx.reflect.ReflectModel` associated with the `Motofit`
+        instance.
+
+        Parameters
+        ----------
+        reflect_model: refnx.reflect.ReflectModel
+
+        """
         if self.model_view is not None:
             self.model_view.unobserve_all()
 
@@ -581,12 +685,21 @@ class Motofit(HasTraits):
         self.model_view.observe(self.update_model, names=['view_changed'])
         self.model_view.observe(self.redraw, names=['view_redraw'])
         self.model_view.do_fit_button.on_click(self.do_fit)
+        self.model_view.to_code_button.on_click(self.to_code)
 
         self.update_analysis_objects()
 
         self.redraw(None)
 
     def update_model(self, change):
+        """
+        Updates the plots when the parameters change
+
+        Parameters
+        ----------
+        change
+
+        """
         q = np.linspace(self.qmin, self.qmax, self.qpnt)
         theoretical = self.model.model(q)
         sld_profile = self.model.structure.sld_profile()
@@ -608,9 +721,17 @@ class Motofit(HasTraits):
         self.objective = Objective(self.model, self.dataset)
 
     def __call__(self, data=None):
+        """
+        Display the `Motofit` GUI in a Jupyter notebook cell.
+
+        Parameters
+        ----------
+        data: refnx.dataset.Data1D
+            The dataset to associate with the `Motofit` instance.
+        """
         # the theoretical model
         # display the main graph
-        self.fig = plt.figure(figsize=(9, 5))
+        self.fig = plt.figure(figsize=(9, 4))
         self.ax_data = self.fig.add_subplot(121)
         self.ax_sld = self.fig.add_subplot(122)
         self.fig.tight_layout()
@@ -629,6 +750,13 @@ class Motofit(HasTraits):
         return self.display_box
 
     def load_data(self, data):
+        """
+        Load a dataset into the `Motofit` instance.
+        Parameters
+        ----------
+        data: refnx.dataset.Data1D
+
+        """
         self.dataset = ReflectDataset(data)
         self.dataset_name.value = self.dataset.name
 
@@ -656,18 +784,39 @@ class Motofit(HasTraits):
             self.fig.canvas.draw()
 
     def redraw(self, change):
+        """
+        Redraw the Jupyter GUI associated with the `Motofit` instance.
+        """
         self.update_display_box(self.display_box)
         self.update_model(None)
 
-    def do_fit(self, change):
+    @property
+    def curvefitter(self):
+        if self.objective is not None:
+            self._curvefitter = CurveFitter(self.objective)
+            return self._curvefitter
+        else:
+            return None
+
+    def do_fit(self, change=None):
+        """
+        Ask the Motofit object to perform a fit (differential evolution).
+
+        Parameters
+        ----------
+        change
+
+        Notes
+        -----
+        After performing the fit the Jupyter display is updated.
+
+        """
         if self.dataset is None:
             return
 
         if not self.model.parameters.varying_parameters():
             self.output.value = "No parameters are being varied"
             return
-
-        self.curvefitter = CurveFitter(self.objective)
 
         def callback(xk, convergence):
             self.chisqr.value = self.objective.chisqr(xk)
@@ -683,11 +832,24 @@ class Motofit(HasTraits):
         # self.model_view.refresh()
         self.set_model(self.model)
 
-    def tab_changed(self, change):
+    def to_code(self, change=None):
+        self.output.value = self.code
+
+    @property
+    def code(self):
+        """
+        Executable Python code fragment for the GUI model.
+        """
+        self.update_analysis_objects()
+        return to_code(self.objective)
+
+    def _on_tab_changed(self, change):
         pass
 
     def update_display_box(self, box):
-
+        """
+        Redraw the Jupyter GUI associated with the `Motofit` instance
+        """
         vbox_widgets = []
 
         if self.dataset is not None:
@@ -712,3 +874,98 @@ def rename_params(structure):
     structure[-1].sld.real.name = 'sld - backing'
     structure[-1].sld.imag.name = 'isld - backing'
     structure[-1].rough.name = 'rough - backing'
+
+
+def to_code(objective):
+    """
+    Create executable Python code fragment that corresponds to the model in the
+    GUI.
+
+    Parameters
+    ----------
+    objective: refnx.analysis.Objective
+
+    Returns
+    -------
+    code: str
+        Python code that can construct a reflectometry fitting system
+
+    """
+    header = """import numpy as np
+import refnx
+from refnx.analysis import Objective, CurveFitter
+from refnx.reflect import SLD, Slab, ReflectModel, Structure
+from refnx.dataset import ReflectDataset
+
+print(refnx.version.version)
+    """
+
+    code = [header]
+
+    # the dataset
+    code.append("data = ReflectDataset(\"{0}\")".format(
+        objective.data.filename))
+
+    # make some SLD's and slabs
+    slds = ['\n# set up the SLD objects for each layer']
+    slabs = ['\n# set up the Slab objects for each layer']
+    limits = []
+
+    structure = 'structure = '
+    for i, slab in enumerate(objective.model.structure):
+        sld = slab.sld
+        lims = [(sld.real, 'sld{0}.real'),
+                (sld.imag, 'sld{0}.imag'),
+                (slab.thick, 'slab{0}.thick'),
+                (slab.rough, 'slab{0}.rough')]
+
+        slds.append("sld{0} = SLD(complex({1}, {2}), name=\'{3}\')".format(
+            i, sld.real.value, sld.imag.value, slab.name))
+
+        slabs.append("slab{0} = Slab({1}, sld{0}, {2}, name=\'{3}\')".format(
+            i, slab.thick.value, slab.rough.value, slab.name))
+
+        for p, temp in lims:
+            if p.vary:
+                limits.append((temp + '.setp(vary=True, bounds=({1}, {2}))')
+                              .format(i, p.bounds.lb, p.bounds.ub))
+
+        if not i:
+            structure += 'slab{0}'.format(i)
+        else:
+            structure += ' | slab{0}'.format(i)
+
+    code.extend(slds)
+    code.extend(slabs)
+
+    code.append("\n# set up the limits for SLD's and Slabs")
+    code.extend(limits)
+
+    code.append('\n# set up the Structure object from the Slabs')
+    code.append(structure)
+
+    model = objective.model
+    code.append('\n# make the reflectometry model')
+    code.append('model = ReflectModel(structure, scale={0}, bkg={1}, dq={2})'
+                .format(model.scale.value,
+                        model.bkg.value,
+                        model.dq.value))
+
+    lims = [(model.scale, 'model.scale'),
+            (model.bkg, 'model.bkg'),
+            (model.dq, 'model.dq')]
+
+    for p, temp in lims:
+        if p.vary:
+            code.append((temp + '.setp(vary=True, bounds=({0}, {1}))')
+                        .format(p.bounds.lb, p.bounds.ub))
+
+    code.append('\n# make the objective')
+    code.append('objective = Objective(model, data)')
+
+    code.append('\n# make the curvefitter')
+    code.append('fitter = CurveFitter(objective)')
+    code.append("fitter.fit('differential_evolution')")
+    code.append('print(objective)')
+
+    return '\n'.join(code)
