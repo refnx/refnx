@@ -585,8 +585,30 @@ class SlabView(HasTraits):
 
 class Motofit(HasTraits):
     """
-    An interactive modeller (Jupyter/ipywidgets based) for Neutron and X-ray
-    reflectometry data
+    An interactive slab modeller (Jupyter/ipywidgets based) for Neutron and
+    X-ray reflectometry data.
+
+    The interactive modeller is designed to be used in a Jupyter notebook.
+
+    Usage
+    -----
+
+    >>> %matplotlib notebook
+    >>> from refnx.reflect import Motofit
+    >>> # create an instance of the modeller
+    >>> app = Motofit()
+    >>> # display it in the notebook by calling the object with a datafile.
+    >>> app('dataset1.txt')
+    >>> # lets fit a different dataset
+    >>> app2 = Motofit()
+    >>> app2('dataset2.txt')
+
+    The `Motofit` instance has several useful attributes that can be used in
+    other cells. For example, one can access the `objective` and `curvefitter`
+    attributes for more advanced fitting functionality than is available in the
+    GUI. A `code` attribute can be used to retrieve a Python code fragment that
+    can be used as a basis for developing more complicated models, such as
+    interparameter constraints, global fitting, etc.
 
     Attributes
     ----------
@@ -600,7 +622,7 @@ class Motofit(HasTraits):
     curvefitter: refnx.analysis.CurveFitter
         Fits data based on the objective.
     code: str
-        A Python code fragment capable of fitting the data
+        A Python code fragment capable of fitting the data.
     """
 
     def __init__(self):
