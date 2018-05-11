@@ -36,7 +36,13 @@ class ReflectModelView(HasTraits):
     view_changed = traitlets.Float(time.time())
 
     # traitlet to ask when a redraw of the GUI is requested.
+    # e.g. the number of layers has changed, or there are a
+    # different number of fitted parameters requiring
+    # different limit widgets.
     view_redraw = traitlets.Float(time.time())
+
+    # number of varying parameters in the model
+    num_varying = traitlets.Int(0)
 
     def __init__(self, reflect_model):
         super(ReflectModelView, self).__init__()
@@ -69,6 +75,8 @@ class ReflectModelView(HasTraits):
         self.w_layers.observe(self._on_change_layers, names=['value'])
 
         # where you're going to add/remove layers
+        # varying layers is a flag to say if you're currently in the process
+        # of adding/removing layers
         self._varying_layers = False
         self._location = None
         self.ok_button = None
@@ -141,6 +149,8 @@ class ReflectModelView(HasTraits):
                                       names=['value'])
         self.last_selected_param = None
 
+        self.num_varying = len(self.model.parameters.varying_parameters())
+
         self._link_param_widgets()
 
     def _on_model_params_modified(self, change):
@@ -165,9 +175,15 @@ class ReflectModelView(HasTraits):
                     self.view_changed = time.time()
                     break
                 elif loc == 1:
+                    # you are changing the number of varying parameters
                     par.vary = wids[1].value
+
                     # need to rebuild the limit widgets, achieved by redrawing
                     # box
+                    # set the number of varying parameters
+                    self.num_varying = (
+                        len(self.model.parameters.varying_parameters()))
+
                     self.view_redraw = time.time()
                     break
                 else:
@@ -214,6 +230,11 @@ class ReflectModelView(HasTraits):
         # this captures when the user starts modifying a different parameter
         self._possibly_link_slider(change['owner'].param_being_varied)
         if isinstance(change['owner'].param_being_varied, widgets.Checkbox):
+            # you are changing the number of fitted parameters
+
+            # set the number of varying parameters
+            self.num_varying = len(self.model.parameters.varying_parameters())
+
             # need to rebuild the limit widgets, achieved by redrawing box
             self.view_redraw = time.time()
         else:
@@ -297,6 +318,10 @@ class ReflectModelView(HasTraits):
 
         rename_params(self.model.structure)
         self._varying_layers = False
+
+        # set the number of varying parameters
+        self.num_varying = len(self.model.parameters.varying_parameters())
+
         self.view_redraw = time.time()
 
     def _decrease_layers(self, b):
@@ -313,6 +338,10 @@ class ReflectModelView(HasTraits):
 
         rename_params(self.model.structure)
         self._varying_layers = False
+
+        # set the number of varying parameters
+        self.num_varying = len(self.model.parameters.varying_parameters())
+
         self.view_redraw = time.time()
 
     def _link_param_widgets(self):
@@ -583,7 +612,7 @@ class SlabView(HasTraits):
         return widgets.HBox(self._widget_list)
 
 
-class Motofit(HasTraits):
+class Motofit(object):
     """
     An interactive slab modeller (Jupyter/ipywidgets based) for Neutron and
     X-ray reflectometry data.
@@ -593,7 +622,12 @@ class Motofit(HasTraits):
     Usage
     -----
 
-    >>> %matplotlib notebook
+    >>> # specify that plots are in a separate graph window
+    >>> %matplotlib qt
+
+    >>> # alternately if you want the graph to be embedded in the notebook use
+    >>> # %matplotlib notebook
+
     >>> from refnx.reflect import Motofit
     >>> # create an instance of the modeller
     >>> app = Motofit()
@@ -620,7 +654,9 @@ class Motofit(HasTraits):
     objective: refnx.analysis.Objective
         The Objective that allows one to compare the model against the data.
     curvefitter: refnx.analysis.CurveFitter
-        Fits data based on the objective.
+        Object for fitting the data based on the objective.
+    fig: matplotlib.Figure
+        Graph displaying the data.
     code: str
         A Python code fragment capable of fitting the data.
     """
@@ -628,7 +664,7 @@ class Motofit(HasTraits):
     def __init__(self):
         # attributes for the graph
         # for the graph
-        self.qmin = 0.001
+        self.qmin = 0.005
         self.qmax = 0.5
         self.qpnt = 1000
         self.fig = None
@@ -698,14 +734,22 @@ class Motofit(HasTraits):
         if self.model_view is not None:
             self.model_view.unobserve_all()
 
+        # figure out if the reflect_model is a different instance
+        if reflect_model is not self.model:
+            self.update_analysis_objects()
+
         self.model = reflect_model
         self.model_view = ReflectModelView(self.model)
         self.model_view.observe(self.update_model, names=['view_changed'])
         self.model_view.observe(self.redraw, names=['view_redraw'])
+
+        # observe when the number of varying parameters changed. This
+        # invalidates a curvefitter, and a new one has to be produced.
+        self.model_view.observe(self._on_num_varying_changed,
+                                names=['num_varying'])
+
         self.model_view.do_fit_button.on_click(self.do_fit)
         self.model_view.to_code_button.on_click(self.to_code)
-
-        self.update_analysis_objects()
 
         self.redraw(None)
 
@@ -735,8 +779,15 @@ class Motofit(HasTraits):
         if self.dataset is not None:
             self.chisqr.value = self.objective.chisqr()
 
+    def _on_num_varying_changed(self, change):
+        # observe when the number of varying parameters changed. This
+        # invalidates a curvefitter, and a new one has to be produced.
+        if change['new'] != change['old']:
+            self._curvefitter = None
+
     def update_analysis_objects(self):
         self.objective = Objective(self.model, self.dataset)
+        self._curvefitter = None
 
     def __call__(self, data=None):
         """
@@ -778,6 +829,7 @@ class Motofit(HasTraits):
         self.dataset = ReflectDataset(data)
         self.dataset_name.value = self.dataset.name
 
+        # loading a dataset changes the objective and curvefitter
         self.update_analysis_objects()
 
         self.qmin = np.min(self.dataset.x)
@@ -810,11 +862,10 @@ class Motofit(HasTraits):
 
     @property
     def curvefitter(self):
-        if self.objective is not None:
+        if self.objective is not None and self._curvefitter is None:
             self._curvefitter = CurveFitter(self.objective)
-            return self._curvefitter
-        else:
-            return None
+
+        return self._curvefitter
 
     def do_fit(self, change=None):
         """
@@ -858,7 +909,9 @@ class Motofit(HasTraits):
         """
         Executable Python code fragment for the GUI model.
         """
-        self.update_analysis_objects()
+        if self.objective is None:
+            self.update_analysis_objects()
+
         return to_code(self.objective)
 
     def _on_tab_changed(self, change):
