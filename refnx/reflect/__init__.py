@@ -14,7 +14,14 @@ try:
     import IPython as _ipython
     from refnx.reflect._interactive_modeller import Motofit
 except ImportError:
-    pass
+    class Motofit():
+        def __init__(self):
+            raise RuntimeError("To run Motofit you need to install"
+                               "IPython, ipywidgets, traitlets,"
+                               " matplotlib")
+
+        def __call__(self, dummy):
+            pass
 
 
 test = PytestTester(__name__)
