@@ -1,6 +1,8 @@
 import numpy as np
 import ipywidgets as widgets
 import time
+import datetime
+import pickle
 import traitlets
 from traitlets import HasTraits
 import matplotlib.pyplot as plt
@@ -8,7 +10,7 @@ import matplotlib.pyplot as plt
 from refnx.reflect import Slab, ReflectModel
 from refnx.dataset import ReflectDataset
 from refnx.analysis import Objective, CurveFitter
-from refnx._lib import flatten
+from refnx._lib import flatten, possibly_open_file
 
 
 class ReflectModelView(HasTraits):
@@ -720,6 +722,37 @@ class Motofit(object):
 
         self.model_view = None
         self.set_model(self.model)
+
+    def save_model(self, f=None):
+        """
+        Serialise a model to file.
+
+        Parameters
+        ----------
+        f: file like or str
+            File to save model to.
+        """
+        if f is None:
+            f = 'model_' + datetime.datetime.now().isoformat() + '.pkl'
+            if self.dataset is not None:
+                f = 'model_' + self.dataset.name + '.pkl'
+
+        with possibly_open_file(f) as g:
+            pickle.dump(self.model, g)
+
+    def load_model(self, f):
+        """
+        Load a serialised model.
+
+        Parameters
+        ----------
+        f: file like or str
+            File to load model from.
+        """
+        with possibly_open_file(f) as g:
+            reflect_model = pickle.load(g)
+            self.set_model(reflect_model)
+        self.output.value = repr(self.objective)
 
     def set_model(self, reflect_model):
         """
