@@ -267,7 +267,7 @@ class ReflectModelView(HasTraits):
         self.model_slider.max = self.model_slider_max.value
         self.model_slider.min = self.model_slider_min.value
         self.model_slider.step = (self.model_slider.max -
-                                  self.model_slider.min) / 1000.
+                                  self.model_slider.min) / 200.
 
     def _on_change_layers(self, change):
         self.ok_button = widgets.Button(description="OK")
@@ -788,11 +788,14 @@ class Motofit(object):
         if self.model_view is not None:
             self.model_view.unobserve_all()
 
-        # figure out if the reflect_model is a different instance
+        # figure out if the reflect_model is a different instance. If it is
+        # then the objective has to be updated.
         if model is not self.model:
+            self.model = model
             self._update_analysis_objects()
 
         self.model = model
+
         self.model_view = ReflectModelView(self.model)
         self.model_view.observe(self.update_model, names=['view_changed'])
         self.model_view.observe(self.redraw, names=['view_redraw'])
@@ -900,12 +903,16 @@ class Motofit(object):
     def load_data(self, data):
         """
         Load a dataset into the `Motofit` instance.
+
         Parameters
         ----------
-        data: refnx.dataset.Data1D
-
+        data: refnx.dataset.Data1D, or str, or file-like
         """
-        self.dataset = ReflectDataset(data)
+        if isinstance(data, ReflectDataset):
+            self.dataset = data
+        else:
+            self.dataset = ReflectDataset(data)
+
         self.dataset_name.value = self.dataset.name
 
         # loading a dataset changes the objective and curvefitter
