@@ -13,11 +13,12 @@ try:
     import matplotlib as _matplotlib
     import IPython as _ipython
     from refnx.reflect._interactive_modeller import Motofit
-except ImportError:
+except ImportError as e:
+
     class Motofit():
         def __init__(self):
             raise RuntimeError("To run Motofit you need to install"
-                               "IPython, ipywidgets, traitlets,"
+                               " IPython, ipywidgets, traitlets,"
                                " matplotlib")
 
         def __call__(self, dummy):
