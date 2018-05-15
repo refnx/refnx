@@ -10,6 +10,7 @@ from refnx.dataset import ReflectDataset
 from numpy.testing import (assert_almost_equal, assert_equal, assert_,
                            assert_allclose)
 
+
 class Test__InteractiveModeller(object):
 
     def setup_method(self):
@@ -58,7 +59,8 @@ class Test__InteractiveModeller(object):
         self.app(self.e361, model=self.model361)
 
     def test_run_app(self):
-        # figure out it some of the parameters are the same as you set them with
+        # figure out it some of the parameters are the same as you set them
+        # with
         slab_views = self.app.model_view.structure_view.slab_views
 
         for slab_view, slab in zip(slab_views, self.structure361):
