@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 
 from refnx.reflect import Slab, ReflectModel
 from refnx.dataset import ReflectDataset
-from refnx.analysis import Objective, CurveFitter
+from refnx.analysis import Objective, CurveFitter, Transform
 from refnx._lib import flatten, possibly_open_file
 
 
@@ -661,6 +661,17 @@ class Motofit(object):
         Graph displaying the data.
     code: str
         A Python code fragment capable of fitting the data.
+
+    Methods
+    -------
+    __call__ - display the GUI in a Jupyter cell
+    save_model - save the current model to a pickle file
+    load_model - load a pickle file and set it as the current file
+    set_model - use an existing `refnx.reflect.ReflectModel` to set the GUI
+                model
+    load_data - load a dataset
+    do_fit - do a fit
+    redraw - Update the notebook cell containing the GUI
     """
 
     def __init__(self):
@@ -714,18 +725,28 @@ class Motofit(object):
         self.tab = widgets.Tab()
         self.tab.set_title(0, 'Model')
         self.tab.set_title(1, 'Limits')
+        self.tab.set_title(2, 'Options')
         self.tab.observe(self._on_tab_changed, names='selected_index')
 
         # an output area for messages.
         self.output = widgets.Textarea()
         self.output.layout = widgets.Layout(width='100%', height='200px')
 
+        # options tab
+        self.plot_type = widgets.Dropdown(options=['lin', 'logY',
+                                                   'YX4', 'YX2'],
+                                          value='lin',
+                                          description='Plot Type:',
+                                          disabled=False)
+        self.plot_type.observe(self._on_plot_type_changed, names='value')
+        self.transform = Transform('lin')
+
         self.model_view = None
         self.set_model(self.model)
 
     def save_model(self, f=None):
         """
-        Serialise a model to file.
+        Serialise a model to a pickle file.
 
         Parameters
         ----------
@@ -747,31 +768,31 @@ class Motofit(object):
         Parameters
         ----------
         f: file like or str
-            File to load model from.
+            pickle file to load model from.
         """
         with possibly_open_file(f) as g:
             reflect_model = pickle.load(g)
             self.set_model(reflect_model)
         self.output.value = repr(self.objective)
 
-    def set_model(self, reflect_model):
+    def set_model(self, model):
         """
         Change the `refnx.reflect.ReflectModel` associated with the `Motofit`
         instance.
 
         Parameters
         ----------
-        reflect_model: refnx.reflect.ReflectModel
+        model: refnx.reflect.ReflectModel
 
         """
         if self.model_view is not None:
             self.model_view.unobserve_all()
 
         # figure out if the reflect_model is a different instance
-        if reflect_model is not self.model:
-            self.update_analysis_objects()
+        if model is not self.model:
+            self._update_analysis_objects()
 
-        self.model = reflect_model
+        self.model = model
         self.model_view = ReflectModelView(self.model)
         self.model_view.observe(self.update_model, names=['view_changed'])
         self.model_view.observe(self.redraw, names=['view_redraw'])
@@ -782,7 +803,7 @@ class Motofit(object):
                                 names=['num_varying'])
 
         self.model_view.do_fit_button.on_click(self.do_fit)
-        self.model_view.to_code_button.on_click(self.to_code)
+        self.model_view.to_code_button.on_click(self._to_code)
 
         self.redraw(None)
 
@@ -797,11 +818,13 @@ class Motofit(object):
         """
         q = np.linspace(self.qmin, self.qmax, self.qpnt)
         theoretical = self.model.model(q)
+        yt, _ = self.transform(q, theoretical)
+
         sld_profile = self.model.structure.sld_profile()
         z, sld = sld_profile
         if self.theoretical_plot is not None:
             self.theoretical_plot.set_xdata(q)
-            self.theoretical_plot.set_ydata(theoretical)
+            self.theoretical_plot.set_ydata(yt)
 
             self.theoretical_plot_sld.set_xdata(z)
             self.theoretical_plot_sld.set_ydata(sld)
@@ -810,6 +833,12 @@ class Motofit(object):
             self.fig.canvas.draw()
 
         if self.dataset is not None:
+            yt, _ = self.transform(self.dataset.x,
+                                   self.dataset.y)
+
+            self.data_plot.set_xdata(self.dataset.x)
+            self.data_plot.set_ydata(yt)
+
             self.chisqr.value = self.objective.chisqr()
 
     def _on_num_varying_changed(self, change):
@@ -818,11 +847,12 @@ class Motofit(object):
         if change['new'] != change['old']:
             self._curvefitter = None
 
-    def update_analysis_objects(self):
-        self.objective = Objective(self.model, self.dataset)
+    def _update_analysis_objects(self):
+        self.objective = Objective(self.model, self.dataset,
+                                   transform=self.transform)
         self._curvefitter = None
 
-    def __call__(self, data=None):
+    def __call__(self, data=None, model=None):
         """
         Display the `Motofit` GUI in a Jupyter notebook cell.
 
@@ -830,6 +860,12 @@ class Motofit(object):
         ----------
         data: refnx.dataset.Data1D
             The dataset to associate with the `Motofit` instance.
+
+        model: refnx.reflect.ReflectModel or str or file-like
+            A model to associate with the data.
+            If `model` is a `str` or `file`-like then the `load_model` method
+            will be used to try and load the model from file. This assumes that
+            the file is a pickle of a `ReflectModel`
         """
         # the theoretical model
         # display the main graph
@@ -839,7 +875,10 @@ class Motofit(object):
         self.fig.tight_layout()
 
         q = np.linspace(self.qmin, self.qmax, self.qpnt)
-        self.theoretical_plot = self.ax_data.plot(q, self.model.model(q))[0]
+        theoretical = self.model.model(q)
+        yt, _ = self.transform(q, theoretical)
+
+        self.theoretical_plot = self.ax_data.plot(q, yt)[0]
         self.ax_data.set_yscale('log')
 
         z, sld = self.model.structure.sld_profile()
@@ -848,7 +887,14 @@ class Motofit(object):
         if data is not None:
             self.load_data(data)
 
-        self.update_display_box(self.display_box)
+        if isinstance(model, ReflectModel):
+            self.set_model(model)
+            return self.display_box
+        elif model is not None:
+            self.load_model(model)
+            return self.display_box
+
+        self.redraw(None)
         return self.display_box
 
     def load_data(self, data):
@@ -863,20 +909,23 @@ class Motofit(object):
         self.dataset_name.value = self.dataset.name
 
         # loading a dataset changes the objective and curvefitter
-        self.update_analysis_objects()
+        self._update_analysis_objects()
 
         self.qmin = np.min(self.dataset.x)
         self.qmax = np.max(self.dataset.x)
         if self.fig is not None:
+            yt, et = self.transform(self.dataset.x,
+                                    self.dataset.y)
+
             if self.data_plot is None:
                 self.data_plot, = self.ax_data.plot(self.dataset.x,
-                                                    self.dataset.y,
+                                                    yt,
                                                     label=self.dataset.name,
                                                     ms=4,
                                                     marker='o', ls='')
             else:
                 self.data_plot.set_xdata(self.dataset.x)
-                self.data_plot.set_ydata(self.dataset.y)
+                self.data_plot.set_ydata(yt)
 
             # calculate theoretical model over same range as data
             # use redraw over update_model because it ensures chi2 widget gets
@@ -890,7 +939,7 @@ class Motofit(object):
         """
         Redraw the Jupyter GUI associated with the `Motofit` instance.
         """
-        self.update_display_box(self.display_box)
+        self._update_display_box(self.display_box)
         self.update_model(None)
 
     @property
@@ -934,7 +983,7 @@ class Motofit(object):
         # self.model_view.refresh()
         self.set_model(self.model)
 
-    def to_code(self, change=None):
+    def _to_code(self, change=None):
         self.output.value = self.code
 
     @property
@@ -943,14 +992,39 @@ class Motofit(object):
         Executable Python code fragment for the GUI model.
         """
         if self.objective is None:
-            self.update_analysis_objects()
+            self._update_analysis_objects()
 
         return to_code(self.objective)
 
     def _on_tab_changed(self, change):
         pass
 
-    def update_display_box(self, box):
+    def _on_plot_type_changed(self, change):
+        """
+        User would like to plot and fit as logR/linR/RQ4/RQ2, etc
+        """
+        self.transform = Transform(change['new'])
+        if self.objective is not None:
+            self.objective.transform = self.transform
+
+        self.update_model(None)
+
+        # probably have to change LHS axis of the data plot when
+        # going between different plot types.
+        if change['new'] == 'logY':
+            self.ax_data.set_yscale('linear')
+        else:
+            self.ax_data.set_yscale('log')
+
+        self.ax_data.relim()
+        self.ax_data.autoscale_view()
+        self.fig.canvas.draw()
+
+    @property
+    def _options_box(self):
+        return widgets.HBox([self.plot_type])
+
+    def _update_display_box(self, box):
         """
         Redraw the Jupyter GUI associated with the `Motofit` instance
         """
@@ -960,7 +1034,9 @@ class Motofit(object):
             vbox_widgets.append(widgets.HBox([self.dataset_name, self.chisqr]))
 
         self.tab.children = [self.model_view.model_box,
-                             self.model_view.limits_box]
+                             self.model_view.limits_box,
+                             self._options_box]
+
         vbox_widgets.append(self.tab)
         vbox_widgets.append(self.output)
         box.children = tuple(vbox_widgets)
