@@ -739,6 +739,12 @@ class Motofit(object):
                                           description='Plot Type:',
                                           disabled=False)
         self.plot_type.observe(self._on_plot_type_changed, names='value')
+        self.use_weights = widgets.RadioButtons(
+            options=['Yes', 'No'],
+            value='Yes',
+            description='use dataset weights?',
+            style={'description_width': 'initial'})
+        self.use_weights.observe(self._on_use_weights_changed, names='value')
         self.transform = Transform('lin')
 
         self.model_view = None
@@ -851,8 +857,10 @@ class Motofit(object):
             self._curvefitter = None
 
     def _update_analysis_objects(self):
+        use_weights = self.use_weights.value == 'Yes'
         self.objective = Objective(self.model, self.dataset,
-                                   transform=self.transform)
+                                   transform=self.transform,
+                                   use_weights=use_weights)
         self._curvefitter = None
 
     def __call__(self, data=None, model=None):
@@ -1027,9 +1035,13 @@ class Motofit(object):
         self.ax_data.autoscale_view()
         self.fig.canvas.draw()
 
+    def _on_use_weights_changed(self, change):
+        self._update_analysis_objects()
+        self.update_model(None)
+
     @property
     def _options_box(self):
-        return widgets.HBox([self.plot_type])
+        return widgets.VBox([self.plot_type, self.use_weights])
 
     def _update_display_box(self, box):
         """
