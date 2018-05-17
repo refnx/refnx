@@ -304,7 +304,7 @@ class TestFitterGauss(object):
         # assert_allclose(chain, f.chain)
 
     def test_best_unweighted(self):
-        self.objective.use_weights = False
+        self.objective.weighted = False
         f = CurveFitter(self.objective, nwalkers=100)
         res = f.fit()
 
