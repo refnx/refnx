@@ -217,7 +217,7 @@ class Objective(BaseObjective):
         if lnsigma is not None:
             self.lnsigma = possibly_create_parameter(lnsigma, 'lnsigma')
 
-        self.use_weights = use_weights
+        self.__use_weights = use_weights
         self.transform = transform
         self.lnprob_extra = lnprob_extra
         self.name = name
@@ -245,9 +245,14 @@ class Objective(BaseObjective):
     @property
     def weighted(self):
         """
-        **bool** does the data have weights (`data.y_err`)?
+        **bool** Does the data have weights (`data.y_err`), and is the
+        objective using them?
         """
-        return self.data.weighted
+        return self.data.weighted and self.__use_weights
+
+    @weighted.setter
+    def weighted(self, use_weights):
+        self.__use_weights = bool(use_weights)
 
     @property
     def npoints(self):
@@ -275,10 +280,9 @@ class Objective(BaseObjective):
     def _data_transform(self, model=None):
         x = self.data.x
         y = self.data.y
-        weight = self.use_weights and self.data.weighted
 
         y_err = 1.
-        if weight:
+        if self.weighted:
             y_err = self.data.y_err
 
         if self.transform is None:
@@ -288,7 +292,7 @@ class Objective(BaseObjective):
                 model, _ = self.transform(x, model)
 
             y, y_err = self.transform(x, y, y_err)
-            if weight:
+            if self.weighted:
                 return y, y_err, model
             else:
                 return y, 1, model
@@ -500,7 +504,7 @@ class Objective(BaseObjective):
             var_y = y_err ** 2
 
         # TODO do something sensible if data isn't weighted
-        if self.use_weights and self.data.weighted:
+        if self.weighted:
             # ignoring 2 * pi constant
             lnlike += np.log(var_y)
 
@@ -627,7 +631,7 @@ class Objective(BaseObjective):
 
         scale = 1.
         # scale by reduced chi2 if experimental uncertainties weren't used.
-        if not (self.use_weights and self.weighted):
+        if not (self.weighted):
             scale = (self.chisqr() /
                      (n_datapoints - len(self.varying_parameters())))
 
@@ -696,7 +700,7 @@ class Objective(BaseObjective):
         y, y_err, model = self._data_transform(model=self.generative())
 
         # add the data (in a transformed fashion)
-        if self.data.y_err is not None and self.use_weights:
+        if self.weighted:
             ax.errorbar(self.data.x, y, y_err, color='r')
         else:
             ax.scatter(self.data.x, y, color='r')
@@ -721,17 +725,13 @@ class GlobalObjective(Objective):
 
     def __init__(self, objectives):
         self.objectives = objectives
-        weighted = []
-        use_weights = []
-        for objective in objectives:
-            weighted.append(objective.data.weighted)
-            use_weights.append(objective.use_weights)
-        self._weighted = np.array(weighted, dtype=bool).all()
-        self._use_weights = np.array(use_weights, dtype=bool).any()
-        if self._use_weights and not self._weighted:
-            raise ValueError("One of the GlobalObjective.objectives wants to "
-                             "use_weights, but not all the individual "
-                             "objectives supplied weights")
+        weighted = [objective.weighted for objective in objectives]
+
+        self._weighted = np.array(weighted, dtype=bool)
+
+        if len(np.unique(self._weighted)) > 1:
+            raise ValueError("All the objectives must be either weighted or"
+                             " unweighted, you cannot have a mixture.")
 
     def __repr__(self):
         s = ["{:_>80}".format('\n')]
@@ -742,19 +742,12 @@ class GlobalObjective(Objective):
         return '\n'.join(s)
 
     @property
-    def use_weights(self):
-        """
-        **bool** is data weighting being used for all the objectives?
-        """
-        return self._use_weights
-
-    @property
     def weighted(self):
         """
-        **bool** do all the datasets have y_err?
-
+        **bool** do all the datasets have y_err, and are all the objectives
+        wanting to use weights?
         """
-        return self._weighted
+        return self._weighted.all()
 
     @property
     def npoints(self):
