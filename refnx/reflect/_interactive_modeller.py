@@ -1,11 +1,14 @@
 import numpy as np
-import ipywidgets as widgets
 import time
 import datetime
 import pickle
+import warnings
+
+import ipywidgets as widgets
 import traitlets
 from traitlets import HasTraits
 import matplotlib.pyplot as plt
+import matplotlib.gridspec as gridspec
 
 from refnx.reflect import Slab, ReflectModel
 from refnx.dataset import ReflectDataset
@@ -681,8 +684,17 @@ class Motofit(object):
         self.qmax = 0.5
         self.qpnt = 1000
         self.fig = None
+
         self.ax_data = None
+        self.ax_residual = None
         self.ax_sld = None
+        # gridspecs specify how the plots are laid out. Gridspec1 is when the
+        # residuals plot is displayed. Gridspec2 is when it's not visible
+        self._gridspec1 = gridspec.GridSpec(2, 2,
+                                            height_ratios=[5, 1],
+                                            width_ratios=[1, 1], hspace=0.01)
+        self._gridspec2 = gridspec.GridSpec(1, 2)
+
         self.theoretical_plot = None
         self.theoretical_plot_sld = None
 
@@ -691,6 +703,7 @@ class Motofit(object):
         self.objective = None
         self._curvefitter = None
         self.data_plot = None
+        self.residuals_plot = None
         self.data_plot_sld = None
 
         self.dataset_name = widgets.Text(description='dataset:')
@@ -746,6 +759,11 @@ class Motofit(object):
             style={'description_width': 'initial'})
         self.use_weights.observe(self._on_use_weights_changed, names='value')
         self.transform = Transform('lin')
+        self.display_residuals = widgets.Checkbox(
+            value=False,
+            description='Display residuals')
+        self.display_residuals.observe(self._on_display_residuals_changed,
+                                       names='value')
 
         self.model_view = None
         self.set_model(self.model)
@@ -825,6 +843,9 @@ class Motofit(object):
         change
 
         """
+        if not self.fig:
+            return
+
         q = np.linspace(self.qmin, self.qmax, self.qpnt)
         theoretical = self.model.model(q)
         yt, _ = self.transform(q, theoretical)
@@ -839,16 +860,19 @@ class Motofit(object):
             self.theoretical_plot_sld.set_ydata(sld)
             self.ax_sld.relim()
             self.ax_sld.autoscale_view()
-            self.fig.canvas.draw()
 
         if self.dataset is not None:
-            yt, _ = self.transform(self.dataset.x,
-                                   self.dataset.y)
+            # if there's a dataset loaded then residuals_plot
+            # should exist
+            residuals = self.objective.residuals()
+            self.chisqr.value = np.sum(residuals**2)
 
-            self.data_plot.set_xdata(self.dataset.x)
-            self.data_plot.set_ydata(yt)
+            self.residuals_plot.set_xdata(self.dataset.x)
+            self.residuals_plot.set_ydata(residuals)
+            self.ax_residual.relim()
+            self.ax_residual.autoscale_view()
 
-            self.chisqr.value = self.objective.chisqr()
+        self.fig.canvas.draw()
 
     def _on_num_varying_changed(self, change):
         # observe when the number of varying parameters changed. This
@@ -881,9 +905,34 @@ class Motofit(object):
         # the theoretical model
         # display the main graph
         self.fig = plt.figure(figsize=(9, 4))
-        self.ax_data = self.fig.add_subplot(121)
-        self.ax_sld = self.fig.add_subplot(122)
-        self.fig.tight_layout()
+
+        # grid specs depending on whether the residuals are displayed
+        if self.display_residuals.value:
+            d_gs = self._gridspec1[0, 0]
+            sld_gs = self._gridspec1[:, 1]
+        else:
+            d_gs = self._gridspec2[0, 0]
+            sld_gs = self._gridspec2[0, 1]
+
+        self.ax_data = self.fig.add_subplot(d_gs)
+        self.ax_data.set_xlabel('$Q/\AA^{-1}$')
+        self.ax_data.set_ylabel('Reflectivity')
+
+        self.ax_data.grid(True, color='b', linestyle='--', linewidth=0.1)
+
+        self.ax_sld = self.fig.add_subplot(sld_gs)
+        self.ax_sld.set_ylabel('$\\rho/10^{-6}\AA^{-2}$')
+        self.ax_sld.set_xlabel('$z/\AA$')
+
+        self.ax_residual = self.fig.add_subplot(self._gridspec1[1, 0],
+                                                sharex=self.ax_data)
+        self.ax_residual.set_xlabel('$Q/\AA^{-1}$')
+        self.ax_residual.grid(True, color='b', linestyle='--', linewidth=0.1)
+        self.ax_residual.set_visible(self.display_residuals.value)
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            self.fig.tight_layout()
 
         q = np.linspace(self.qmin, self.qmax, self.qpnt)
         theoretical = self.model.model(q)
@@ -895,6 +944,12 @@ class Motofit(object):
         z, sld = self.model.structure.sld_profile()
         self.theoretical_plot_sld = self.ax_sld.plot(z, sld)[0]
 
+        # the figure has been reset, so remove ref to the data_plot,
+        # residual_plot
+        self.data_plot = None
+        self.residuals_plot = None
+
+        self.dataset = None
         if data is not None:
             self.load_data(data)
 
@@ -938,6 +993,12 @@ class Motofit(object):
                                                     label=self.dataset.name,
                                                     ms=4,
                                                     marker='o', ls='')
+                self.data_plot.set_label(self.dataset.name)
+                self.ax_data.legend()
+
+                # no need to calculate residuals here, that'll be updated in
+                # the redraw method
+                self.residuals_plot, = self.ax_residual.plot(self.dataset.x)
             else:
                 self.data_plot.set_xdata(self.dataset.x)
                 self.data_plot.set_ydata(yt)
@@ -948,6 +1009,8 @@ class Motofit(object):
             self.redraw(None)
             self.ax_data.relim()
             self.ax_data.autoscale_view()
+            self.ax_residual.relim()
+            self.ax_residual.autoscale_view()
             self.fig.canvas.draw()
 
     def redraw(self, change):
@@ -1022,6 +1085,13 @@ class Motofit(object):
         if self.objective is not None:
             self.objective.transform = self.transform
 
+        if self.dataset is not None:
+            yt, _ = self.transform(self.dataset.x,
+                                   self.dataset.y)
+
+            self.data_plot.set_xdata(self.dataset.x)
+            self.data_plot.set_ydata(yt)
+
         self.update_model(None)
 
         # probably have to change LHS axis of the data plot when
@@ -1039,9 +1109,27 @@ class Motofit(object):
         self._update_analysis_objects()
         self.update_model(None)
 
+    def _on_display_residuals_changed(self, change):
+        if change['new']:
+            self.ax_residual.set_visible(True)
+            self.ax_data.set_position(
+                self._gridspec1[0, 0].get_position(self.fig))
+            self.ax_sld.set_position(
+                self._gridspec1[:, 1].get_position(self.fig))
+            plt.setp(self.ax_data.get_xticklabels(), visible=False)
+        else:
+            self.ax_residual.set_visible(False)
+            self.ax_data.set_position(
+                self._gridspec2[:, 0].get_position(self.fig))
+            self.ax_sld.set_position(
+                self._gridspec2[:, 1].get_position(self.fig))
+            plt.setp(self.ax_data.get_xticklabels(), visible=True)
+
     @property
     def _options_box(self):
-        return widgets.VBox([self.plot_type, self.use_weights])
+        return widgets.VBox([self.plot_type,
+                             self.use_weights,
+                             self.display_residuals])
 
     def _update_display_box(self, box):
         """
