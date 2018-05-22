@@ -47,9 +47,11 @@ def abeles(q, layers, scale=1., bkg=0, threads=0):
     Reflectivity: np.ndarray
         Calculated reflectivity values for each q value.
     """
-    qvals = np.asfarray(q).ravel()
+    qvals = np.asfarray(q)
+    flatq = qvals.ravel()
+
     nlayers = layers.shape[0] - 2
-    npnts = qvals.size
+    npnts = flatq.size
 
     kn = np.zeros((npnts, nlayers + 2), np.complex128)
 
@@ -59,7 +61,7 @@ def abeles(q, layers, scale=1., bkg=0, threads=0):
 
     # kn is a 2D array. Rows are Q points, columns are kn in a layer.
     # calculate wavevector in each layer, for each Q point.
-    kn[:] = np.sqrt(qvals[:, np.newaxis] ** 2. / 4. - 4. * np.pi * sld)
+    kn[:] = np.sqrt(flatq[:, np.newaxis] ** 2. / 4. - 4. * np.pi * sld)
 
     # initialise matrix total
     mrtot00 = 1
@@ -99,7 +101,7 @@ def abeles(q, layers, scale=1., bkg=0, threads=0):
     reflectivity = (mrtot01 * np.conj(mrtot01)) / (mrtot00 * np.conj(mrtot00))
     reflectivity *= scale
     reflectivity += bkg
-    return np.real(np.reshape(reflectivity, q.shape))
+    return np.real(np.reshape(reflectivity, qvals.shape))
 
 
 if __name__ == '__main__':
