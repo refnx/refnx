@@ -266,9 +266,9 @@ def reflectivity(q, slabs, scale=1., bkg=0., dq=5., quad_order=17,
         - `dq.ndim == q.ndim + 2` and `q.shape == dq[..., -3].shape`
            an individual resolution kernel is applied to each measurement
            point. This resolution kernel is a probability distribution function
-           (PDF). `dqvals` will have the shape (qvals.shape, M, 2).  There are
-           `M` points in the kernel. `dq[..., 0]` holds the q values for the
-           kernel, `dq[..., 1]` gives the corresponding probability.
+           (PDF). `dqvals` will have the shape (qvals.shape, 2, M).  There are
+           `M` points in the kernel. `dq[:, 0, :]` holds the q values for the
+           kernel, `dq[:, 1, :]` gives the corresponding probability.
     quad_order: int, optional
         the order of the Gaussian quadrature polynomial for doing the
         resolution smearing. default = 17. Don't choose less than 13. If
@@ -297,6 +297,7 @@ def reflectivity(q, slabs, scale=1., bkg=0., dq=5., quad_order=17,
                                          dq,
                                          threads=threads)) + bkg
 
+    # point by point resolution smearing (each q point has different dq/q)
     if isinstance(dq, np.ndarray) and dq.size == q.size:
         dqvals_flat = dq.flatten()
         qvals_flat = q.flatten()
@@ -326,20 +327,19 @@ def reflectivity(q, slabs, scale=1., bkg=0., dq=5., quad_order=17,
           dq.ndim == q.ndim + 2 and
           dq.shape[0: q.ndim] == q.shape):
 
-        # TODO may not work yet.
-        qvals_for_res = dq[..., 0]
+        qvals_for_res = dq[:, 0, :]
         # work out the reflectivity at the kernel evaluation points
         smeared_rvals = refcalc.abeles(qvals_for_res,
                                        slabs,
-                                       scale=scale,
-                                       bkg=bkg,
                                        threads=threads)
 
         # multiply by probability
-        smeared_rvals *= dq[..., 1]
+        smeared_rvals *= dq[:, 1, :]
 
         # now do simpson integration
-        return scipy.integrate.simps(smeared_rvals, x=dq[..., 0])
+        rvals = scipy.integrate.simps(smeared_rvals, x=dq[:, 0, :])
+
+        return scale * rvals + bkg
 
     return None
 
@@ -378,7 +378,8 @@ def gauss_legendre(n):
 
 def _smearkernel(x, w, q, dq, threads):
     """
-    Kernel for adaptive Gaussian quadrature integration
+    Adaptive Gaussian quadrature integration
+
     Parameters
     ----------
     x : float
@@ -407,6 +408,7 @@ def _smeared_abeles_adaptive(qvals, w, dqvals, threads=0):
     """
     Resolution smearing that uses adaptive Gaussian quadrature integration
     for the convolution.
+
     Parameters
     ----------
     qvals : array-like
@@ -448,6 +450,7 @@ def _smeared_abeles_fixed(qvals, w, dqvals, quad_order=17, threads=0):
     """
     Resolution smearing that uses fixed order Gaussian quadrature integration
     for the convolution.
+
     Parameters
     ----------
     qvals : array-like
@@ -466,11 +469,17 @@ def _smeared_abeles_fixed(qvals, w, dqvals, quad_order=17, threads=0):
         module. The option is ignored if using the pure python calculator,
         ``_reflect``. If `threads == 0` then all available processors are
         used.
+
     Returns
     -------
     reflectivity : np.ndarray
         The smeared reflectivity
     """
+
+    # The fixed order quadrature does not use scipy.integrate.fixed_quad.
+    # That library function does one point at a time, whereas in this function
+    # the integration is vectorised
+
     # get the gauss-legendre weights and abscissae
     abscissa, weights = gauss_legendre(quad_order)
 
@@ -491,7 +500,7 @@ def _smeared_abeles_fixed(qvals, w, dqvals, quad_order=17, threads=0):
 
     qvals_for_res = ((np.atleast_2d(abscissa) *
                      (vb - va) + vb + va) / 2.)
-    smeared_rvals = refcalc.abeles(qvals_for_res.flatten(),
+    smeared_rvals = refcalc.abeles(qvals_for_res,
                                    w,
                                    threads=threads)
 
@@ -504,7 +513,8 @@ def _smeared_abeles_fixed(qvals, w, dqvals, quad_order=17, threads=0):
 
 def _smeared_abeles_constant(q, w, resolution, threads=True):
     """
-    A kernel for fast and constant dQ/Q smearing
+    Fast resolution smearing for constant dQ/Q.
+
     Parameters
     ----------
     q: np.ndarray
@@ -555,7 +565,6 @@ def _smeared_abeles_constant(q, w, resolution, threads=True):
     interpolator = InterpolatedUnivariateSpline(xlin, smeared_rvals)
 
     smeared_output = interpolator(q)
-    # smeared_output *= np.sum(gauss_y)
     smeared_output *= gauss_x[1] - gauss_x[0]
     return smeared_output
 
