@@ -1,6 +1,6 @@
 #!/usr/bin/python
 """
-Resolution kernel for a conventional double disc chopper system
+Full resolution kernel for a conventional double disc chopper system
 """
 from __future__ import division
 import numpy as np
@@ -255,25 +255,74 @@ def pq_wavelength(p_wavelength, theta0, wavelength0, Q, spectrum=None):
 
 def resolution_kernel(p_theta, p_wavelength, theta0, wavelength0,
                       npnts=1001, spectrum=None):
-    mean_q = general.q(theta0, wavelength0)
-    max_q = general.q(theta0 + p_theta.width,
-                      wavelength0 - p_wavelength.width(wavelength0))
+    """
+    Creates a full resolution kernel based on angular and wavelength components
+
+    Parameters
+    ----------
+    p_theta: P_Theta
+        Angular component
+    p_wavelength: P_Wavelength
+        Wavelength components
+    theta0: array-like
+        Nominal angle of incidence, degrees
+    wavelength0: array-like
+        Nominal wavelength, Angstrom
+    npnts: float
+        number of points in the resolution kernel
+    spectrum: None or callable
+        Function, spectrum(wavelength) that specifies the intensity of
+        the neutron spectrum at a given wavelength
+
+    Returns
+    -------
+    kernel: np.ndarray
+        Full resolution kernel. Has shape `(N, 2, npnts)` where `N` is the
+        number of points in theta0/wavelength0.
+        kernel[:, 0, :] and kernel[:, 1, :] correspond to `Q` and `PDF(Q)` for
+        each of the data points in the first dimension.
+    """
+    theta0_arr = np.asfarray(theta0).ravel()
+    wavelength0_arr = np.asfarray(wavelength0).ravel()
+    qpnts = max(theta0_arr.size, wavelength0_arr.size)
+    arr = [np.array(a) for a in np.broadcast_arrays(theta0_arr,
+                                                    wavelength0_arr)]
+    theta0_arr = arr[0]
+    wavelength0_arr = arr[1]
+
+    mean_q = general.q(theta0_arr, wavelength0_arr)
+    max_q = general.q(theta0_arr + p_theta.width,
+                      wavelength0_arr - p_wavelength.width(wavelength0_arr))
     width = max_q - mean_q
-    Q = np.linspace(mean_q - width, mean_q + width, npnts)
 
-    pqt = pq_theta(p_theta, theta0, wavelength0, Q)
-    pqb = pq_wavelength(p_wavelength.burst, theta0, wavelength0, Q, spectrum)
-    pqc = pq_wavelength(p_wavelength.crossing, theta0, wavelength0, Q,
-                        spectrum)
-    pqda = pq_wavelength(p_wavelength.da, theta0, wavelength0, Q, spectrum)
+    kernel = np.zeros((qpnts, 2, npnts))
 
-    spacing = np.diff(Q)[0]
+    for i in range(qpnts):
+        Q = np.linspace(mean_q[i] - width[i], mean_q[i] + width[i], npnts)
+        kernel[i, 0, :] = Q
 
-    kernel = np.convolve(pqt, pqb, 'same')
-    kernel = np.convolve(kernel, pqc, 'same')
-    kernel = np.convolve(kernel, pqda, 'same')
-    kernel *= spacing ** 3.
+        # angular component
+        pqt = pq_theta(p_theta, theta0_arr[i], wavelength0_arr[i], Q)
 
-    # ensure that it's normalised. Generally for lots and lots of points the
-    # normalisation approaches 1 anyway, but that takes computational time.
-    return Q, kernel / integrate.simps(kernel, Q)
+        # burst time component
+        pqb = pq_wavelength(p_wavelength.burst, theta0_arr[i],
+                            wavelength0_arr[i], Q, spectrum)
+
+        # crossing time component
+        pqc = pq_wavelength(p_wavelength.crossing, theta0_arr[i],
+                            wavelength0_arr[i], Q, spectrum)
+
+        # rebinning component
+        pqda = pq_wavelength(p_wavelength.da, theta0_arr[i],
+                             wavelength0_arr[i], Q, spectrum)
+
+        spacing = np.diff(Q)[0]
+
+        p = np.convolve(pqt, pqb, 'same')
+        p = np.convolve(p, pqc, 'same')
+        p = np.convolve(p, pqda, 'same')
+        p *= spacing ** 3.
+
+        kernel[i, 1, :] = p / integrate.simps(p, Q)
+
+    return kernel
