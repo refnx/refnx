@@ -9,6 +9,7 @@ import traitlets
 from traitlets import HasTraits
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
+from IPython.display import display, clear_output
 
 from refnx.reflect import Slab, ReflectModel
 from refnx.dataset import ReflectDataset
@@ -742,8 +743,7 @@ class Motofit(object):
         self.tab.observe(self._on_tab_changed, names='selected_index')
 
         # an output area for messages.
-        self.output = widgets.Textarea()
-        self.output.layout = widgets.Layout(width='100%', height='200px')
+        self.output = widgets.Output()
 
         # options tab
         self.plot_type = widgets.Dropdown(options=['lin', 'logY',
@@ -797,7 +797,9 @@ class Motofit(object):
         with possibly_open_file(f) as g:
             reflect_model = pickle.load(g)
             self.set_model(reflect_model)
-        self.output.value = repr(self.objective)
+        with self.output:
+            clear_output()
+            print(repr(self.objective))
 
     def set_model(self, model):
         """
@@ -1044,7 +1046,9 @@ class Motofit(object):
             return
 
         if not self.model.parameters.varying_parameters():
-            self.output.value = "No parameters are being varied"
+            with self.output:
+                clear_output()
+                print("No parameters are being varied")
             return
 
         def callback(xk, convergence):
@@ -1052,17 +1056,19 @@ class Motofit(object):
 
         self.curvefitter.fit('differential_evolution', callback=callback)
 
-        # place before set_model, because a redraw is required to stop the
-        # output from getting too long.
-        self.output.value = repr(self.objective)
-
         # need to update the widgets as the model will be updated.
         # this also redraws GUI.
         # self.model_view.refresh()
         self.set_model(self.model)
 
+        with self.output:
+            clear_output()
+            print(repr(self.objective))
+
     def _to_code(self, change=None):
-        self.output.value = self.code
+        with self.output:
+            clear_output()
+            print(self.code)
 
     @property
     def code(self):
