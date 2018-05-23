@@ -2,6 +2,11 @@ import os.path
 import os
 import pickle
 
+import numpy as np
+from numpy.testing import (assert_almost_equal, assert_equal, assert_,
+                           assert_allclose)
+import scipy.stats as stats
+
 try:
     import refnx.reflect._creflect as _creflect
     HAVE_CREFLECT = True
@@ -11,12 +16,9 @@ except ImportError:
 import refnx.reflect._reflect as _reflect
 from refnx.analysis import (Transform, Objective,
                             CurveFitter, Parameter, Model)
-from refnx.reflect import (SLD, Slab, ReflectModel, MixedReflectModel)
+from refnx.reflect import (SLD, Slab, ReflectModel, MixedReflectModel,
+                           reflectivity)
 from refnx.dataset import ReflectDataset
-
-import numpy as np
-from numpy.testing import (assert_almost_equal, assert_equal, assert_,
-                           assert_allclose)
 
 
 # if REQUIRE_C is specified then definitely test C plugins
@@ -330,6 +332,30 @@ class TestReflect(object):
         calc2 = rff.model(self.qvals)
 
         assert_allclose(calc, calc2, rtol=0.011)
+
+    def test_resolution_kernel(self):
+        # check that resolution kernel works, use constant dq/q of 5% as
+        # comparison
+        slabs = self.structure361.slabs[:, :4]
+        npnts = 1000
+        q = np.linspace(0.005, 0.3, npnts)
+
+        # use constant dq/q for comparison
+        const_R = reflectivity(q, slabs, scale=1.01, bkg=1e-6, dq=0.05 * q,
+                               quad_order=101, threads=0)
+
+        # lets create a kernel.
+        kernel = np.zeros((npnts, 2, 501), float)
+        sd = 0.05 * q / (2 * np.sqrt(2 * np.log(2)))
+        for i in range(npnts):
+            kernel[i, 0, :] = np.linspace(q[i] - 3.5 * sd[i],
+                                          q[i] + 3.5 * sd[i], 501)
+            kernel[i, 1, :] = stats.norm.pdf(kernel[i, 0, :],
+                                             loc=q[i], scale=sd[i])
+
+        kernel_R = reflectivity(q, slabs, scale=1.01, bkg=1e-6, dq=kernel)
+
+        assert_allclose(kernel_R, const_R, rtol=0.002)
 
     def test_sld_profile(self):
         # test SLD profile with SLD profile from Motofit.
