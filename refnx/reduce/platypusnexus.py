@@ -20,7 +20,8 @@ from refnx.reduce.peak_utils import peak_finder, centroid
 import refnx.util.general as general
 from refnx.util.general import resolution_double_chopper, _dict_compare
 import refnx.util.ErrorProp as EP
-from refnx.reduce.parabolic_motion import find_trajectory, y_deflection
+from refnx.reduce.parabolic_motion import (find_trajectory, y_deflection,
+                                           parabola)
 from refnx.reduce.event import (events, process_event_stream,
                                 framebins_to_frames)
 from refnx.reduce.rebin import rebin, rebin_along_axis
@@ -818,7 +819,7 @@ class PlatypusNexus(ReflectNexus):
             output = self.chod(omega, twotheta, scanpoint=scanpoint)
             flight_distance[idx], d_cx[idx] = output
 
-            # calculate phase openings
+            # calculate nominal phase openings
             output = self.phase_angle(scanpoint)
             phase_angle[scanpoint], master_opening = output
 
@@ -830,17 +831,20 @@ class PlatypusNexus(ReflectNexus):
             time offset has to be relocated slightly, as time0 is not at the
             trailing edge.
             """
-            poff = cat.chopper1_phase_offset[0]
-            poffset = 1.e6 * poff / (2. * 360. * freq)
-            toffset = (poffset +
-                       1.e6 * master_opening / 2 / (2 * np.pi) / freq -
-                       1.e6 * phase_angle[scanpoint] / (360 * 2 * freq))
-            m_spec_tof_hist[idx] -= toffset
+            t_offset = self._platypus_time_offset(cat.chopper1_phase_offset[0],
+                                                  master_opening,
+                                                  freq,
+                                                  phase_angle[scanpoint],
+                                                  d_cx[0],
+                                                  flight_distance[idx],
+                                                  m_spec_tof_hist[idx])
+
+            m_spec_tof_hist[idx] -= t_offset
 
             detpositions[idx] = cat.dy[scanpoint]
 
             if eventmode is not None or event_filter is not None:
-                m_spec_tof_hist[:] = TOF - toffset
+                m_spec_tof_hist[:] = TOF - t_offset
                 flight_distance[:] = flight_distance[0]
                 detpositions[:] = detpositions[0]
                 domega[:] = domega[0]
@@ -859,7 +863,7 @@ class PlatypusNexus(ReflectNexus):
             1.e3 * flight_distance[:, np.newaxis] / m_spec_tof_hist)
 
         m_lambda = 0.5 * (m_lambda_hist[:, 1:] + m_lambda_hist[:, :-1])
-        TOF -= toffset
+        TOF -= t_offset
 
         # gravity correction if direct beam
         if direct:
@@ -1092,6 +1096,51 @@ class PlatypusNexus(ReflectNexus):
 
         self.processed_spectrum = d
         return m_lambda, m_spec, m_spec_sd
+
+    def _platypus_time_offset(self, master_phase_offset, master_opening,
+                              freq, phase_angle, z0, flight_distance,
+                              tof_hist):
+        """
+        Timing offsets for Platypus chopper system, includes a gravity
+        correction for phase angle
+        """
+        # calculate initial time offset
+        p_offset = 1.e6 * master_phase_offset / (2. * 360. * freq)
+        t_offset = (p_offset +
+                    1.e6 * master_opening / 2 / (2 * np.pi) / freq -
+                    1.e6 * phase_angle / (360 * 2 * freq))
+
+        ###########################################
+        # now make a gravity correction to t_offset
+        # work out velocities for each bin edge
+        velocities = 1.e3 * flight_distance / (tof_hist - t_offset)
+
+        angles = find_trajectory(self.cat.collimation_distance / 1000.,
+                                 0,
+                                 velocities)
+
+        # work out distance from 1st coll slit to middle of chopper pair
+        # TODO ASSUMES CHOPPER 1 IS MASTER, FIX SO IT COULD BE ANY MASTER
+        d_c1 = -self.cat.slit2_distance
+        d_slave = d_c1 + z0
+
+        corr_t_offset = np.zeros_like(tof_hist)
+        corr_t_offset += master_opening / 2 / (2 * np.pi) / freq
+
+        for i, (velocity, angle) in enumerate(zip(velocities, angles)):
+            parab = parabola(angle, velocity)
+            h_c1 = parab(d_c1 / 1000.) * 1000.
+            h_slave = parab(d_slave / 1000.) * 1000.
+            angle_corr = np.degrees(np.arctan((h_slave - h_c1) /
+                                              DISCRADIUS))
+            master_corr = -np.degrees(np.arctan(h_c1 / DISCRADIUS))
+            corr_t_offset[i] += ((master_phase_offset - master_corr) /
+                                 (2. * 360. * freq))
+            corr_t_offset[i] -= ((phase_angle + angle_corr) /
+                                 (360 * 2 * freq))
+        corr_t_offset *= 1e6
+
+        return corr_t_offset
 
     def phase_angle(self, scanpoint=0):
         """

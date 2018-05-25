@@ -344,6 +344,8 @@ class PlatypusReduce(ReflectReduce):
             # correct the angle of incidence with a wavelength dependent
             # elevation.
             omega_corrected = omega_nom[:, np.newaxis] - elevation
+            print(omega_nom, elevation)
+            assert(False)
 
             m_twotheta += np.arange(n_ypixels * 1.)[np.newaxis, np.newaxis, :]
             m_twotheta -= self.direct_beam.m_beampos[:, np.newaxis, np.newaxis]
