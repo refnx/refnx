@@ -1146,7 +1146,6 @@ class PlatypusNexus(ReflectNexus):
             corr_t_offset[i] -= ((phase_angle + angle_corr) /
                                  (360 * 2 * freq))
         corr_t_offset *= 1e6
-        print (t_offset, corr_t_offset, angle_corr, master_corr)
 
         return corr_t_offset
 
