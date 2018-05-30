@@ -1131,14 +1131,22 @@ class PlatypusNexus(ReflectNexus):
             parab = parabola(angle, velocity)
             h_c1 = parab(d_c1 / 1000.) * 1000.
             h_slave = parab(d_slave / 1000.) * 1000.
+            # angle_corr comes about because the parabolic nature of long
+            # wavelength neutrons creates an apparent phase opening
             angle_corr = np.degrees(np.arctan((h_slave - h_c1) /
                                               DISCRADIUS))
+            # master_corr comes about because the beam for long wavelength
+            # neutrons is lower than the optical axis, so it takes a little
+            # longer for the beam to start travelling through chopper system.
+            # as such you need to decrease their tof by increasing the
+            # t_offset
             master_corr = -np.degrees(np.arctan(h_c1 / DISCRADIUS))
-            corr_t_offset[i] += ((master_phase_offset - master_corr) /
+            corr_t_offset[i] += ((master_phase_offset + master_corr) /
                                  (2. * 360. * freq))
             corr_t_offset[i] -= ((phase_angle + angle_corr) /
                                  (360 * 2 * freq))
         corr_t_offset *= 1e6
+        print (t_offset, corr_t_offset, angle_corr, master_corr)
 
         return corr_t_offset
 
