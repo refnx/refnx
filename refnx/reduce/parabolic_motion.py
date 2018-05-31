@@ -1,7 +1,7 @@
 from __future__ import division
 import numpy as np
 from numpy.polynomial import Polynomial
-from scipy import constants
+from scipy import constants, integrate
 
 
 @np.vectorize
@@ -197,3 +197,28 @@ def parabola_line_intersection_point(flight_length, theta, initial_trajectory,
     elev = elevation(initial_trajectory, speed, flight_length)
 
     return intersection_x, intersection_y, x_prime, elev
+
+
+def arc_length(p, a, b):
+    """
+    Calculates the arc length of a Polynomial
+
+    Parameters
+    ----------
+    p: np.polynomial.Polynomial
+    a: float
+        Lower limit of arc
+    b: float
+        Upper limit of arc
+
+    Returns
+    -------
+    length: float
+        arc length of polynomial
+    """
+    p_prime = p.deriv()
+
+    def kernel(x):
+        return np.sqrt(1 + p_prime(x) ** 2)
+
+    return integrate.quad(kernel, a, b)[0]

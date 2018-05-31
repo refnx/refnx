@@ -56,3 +56,9 @@ class TestParabolicMotion(object):
                                       -0.033550291159381511,
                                       0.0011947938059390722,
                                       -0.6299889176505941]))
+
+    def test_arc_length(self):
+        p = np.polynomial.Polynomial([0, 0, 1])
+        length = pm.arc_length(p, 0, 1)
+
+        assert_almost_equal(length, 1.4789428575445973)
