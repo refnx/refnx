@@ -72,7 +72,7 @@ class HDFBackend(Backend):
             g.attrs["ndim"] = ndim
             g.attrs["has_blobs"] = False
             g.attrs["iteration"] = 0
-            g.create_dataset("accepted", data=np.zeros(nwalkers, dtype=int))
+            g.create_dataset("accepted", data=np.zeros(nwalkers))
             g.create_dataset("chain",
                              (0, nwalkers, ndim),
                              maxshape=(None, nwalkers, ndim),
@@ -102,7 +102,7 @@ class HDFBackend(Backend):
             if name == "blobs" and not g.attrs["has_blobs"]:
                 return None
 
-            v = g[name][discard + thin - 1:self.iteration:thin]
+            v = g[name][discard+thin-1:self.iteration:thin]
             if flat:
                 s = list(v.shape[1:])
                 s[0] = np.prod(v.shape[:2])
@@ -163,32 +163,28 @@ class HDFBackend(Backend):
                     g["blobs"].resize(ntot, axis=0)
                 g.attrs["has_blobs"] = True
 
-    def save_step(self, coords, log_prob, blobs, accepted, random_state):
-        """Save a step to the file
+    def save_step(self, state, accepted):
+        """Save a step to the backend
 
         Args:
-            coords (ndarray): The coordinates of the walkers in the ensemble.
-            log_prob (ndarray): The log probability for each walker.
-            blobs (ndarray or None): The blobs for each walker or ``None`` if
-                there are no blobs.
+        state (State): The :class:`State` of the ensemble.
             accepted (ndarray): An array of boolean flags indicating whether
                 or not the proposal for each walker was accepted.
-            random_state: The current state of the random number generator.
 
         """
-        self._check(coords, log_prob, blobs, accepted)
+        self._check(state, accepted)
 
         with self.open("a") as f:
             g = f[self.name]
             iteration = g.attrs["iteration"]
 
-            g["chain"][iteration, :, :] = coords
-            g["log_prob"][iteration, :] = log_prob
-            if blobs is not None:
-                g["blobs"][iteration, :] = blobs
+            g["chain"][iteration, :, :] = state.coords
+            g["log_prob"][iteration, :] = state.log_prob
+            if state.blobs is not None:
+                g["blobs"][iteration, :] = state.blobs
             g["accepted"][:] += accepted
 
-            for i, v in enumerate(random_state):
+            for i, v in enumerate(state.random_state):
                 g.attrs["random_state_{0}".format(i)] = v
 
             g.attrs["iteration"] = iteration + 1
