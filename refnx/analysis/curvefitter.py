@@ -484,7 +484,7 @@ class CurveFitter(object):
             rstate0 = check_random_state(random_state).get_state()
             self._state.random_state = rstate0
             if isinstance(self.sampler, PTSampler):
-                self.sampler.random_state = rstate0
+                self.sampler._random = rstate0
 
         # remove chains from each of the parameters because they slow down
         # pickling but only if they are parameter objects.
@@ -535,7 +535,7 @@ class CurveFitter(object):
                                                   **kwargs):
                     self._state = State(result[0],
                                         log_prob=result[1] + result[2],
-                                        random_state=self.sampler.random_state)
+                                        random_state=self.sampler._random)
                     _callback_wrapper(self._state, h=h)
             else:
                 for state in self.sampler.sample(self._state,
