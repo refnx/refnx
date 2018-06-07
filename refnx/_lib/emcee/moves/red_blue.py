@@ -83,7 +83,7 @@ class RedBlueMove(Move):
             # Get the two halves of the ensemble.
             sets = [state.coords[inds == j] for j in range(self.nsplits)]
             s = sets[split]
-            c = sets[:split] + sets[split+1:]
+            c = sets[:split] + sets[split + 1:]
 
             # Get the move-specific proposal.
             q, factors = self.get_proposal(s, c, model.random)

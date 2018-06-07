@@ -47,7 +47,7 @@ class Backend(object):
         if name == "blobs" and not self.has_blobs():
             return None
 
-        v = getattr(self, name)[discard+thin-1:self.iteration:thin]
+        v = getattr(self, name)[discard + thin - 1:self.iteration:thin]
         if flat:
             s = list(v.shape[1:])
             s[0] = np.prod(v.shape[:2])
@@ -112,12 +112,12 @@ class Backend(object):
                                  "'store == True' before accessing the "
                                  "results")
         it = self.iteration
-        blobs = self.get_blobs(discard=it-1)
+        blobs = self.get_blobs(discard=it - 1)
         if blobs is not None:
             blobs = blobs[0]
         return State(
-            self.get_chain(discard=it-1)[0],
-            log_prob=self.get_log_prob(discard=it-1)[0],
+            self.get_chain(discard=it - 1)[0],
+            log_prob=self.get_log_prob(discard=it - 1)[0],
             blobs=blobs,
             random_state=self.random_state,
         )

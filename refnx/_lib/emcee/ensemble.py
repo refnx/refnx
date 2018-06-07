@@ -153,7 +153,7 @@ class EnsembleSampler(object):
         """
         try:
             self._random.set_state(state)
-        except:
+        except Exception as e:
             pass
 
     @property
@@ -484,7 +484,7 @@ class _FunctionWrapper(object):
     def __call__(self, x):
         try:
             return self.f(x, *self.args, **self.kwargs)
-        except:  # pragma: no cover
+        except Exception as e:  # pragma: no cover
             import traceback
             print("emcee: Exception while calling your likelihood function:")
             print("  params:", x)

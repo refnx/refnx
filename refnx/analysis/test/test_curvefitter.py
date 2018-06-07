@@ -135,42 +135,42 @@ class TestCurveFitter(object):
         # TODO check that the initialisation worked.
         mcfitter = CurveFitter(self.objective, nwalkers=100)
         mcfitter.initialise('covar')
-        assert_equal(mcfitter._lastpos.shape, (100, 2))
+        assert_equal(mcfitter._state.coords.shape, (100, 2))
         mcfitter.initialise('prior')
-        assert_equal(mcfitter._lastpos.shape, (100, 2))
+        assert_equal(mcfitter._state.coords.shape, (100, 2))
         mcfitter.initialise('jitter')
-        assert_equal(mcfitter._lastpos.shape, (100, 2))
+        assert_equal(mcfitter._state.coords.shape, (100, 2))
         # initialise with last position
         mcfitter.sample(steps=1)
         chain = mcfitter.chain
         mcfitter.initialise(pos=chain[-1])
-        assert_equal(mcfitter._lastpos.shape, (100, 2))
+        assert_equal(mcfitter._state.coords.shape, (100, 2))
         # initialise with chain
         mcfitter.sample(steps=2)
         chain = mcfitter.chain
         mcfitter.initialise(pos=chain)
-        assert_equal(mcfitter._lastpos, chain[-1])
+        assert_equal(mcfitter._state.coords, chain[-1])
 
         if not _HAVE_PTSAMPLER:
             return
         # initialise for Parallel tempering
         mcfitter = CurveFitter(self.objective, ntemps=20, nwalkers=100)
         mcfitter.initialise('covar')
-        assert_equal(mcfitter._lastpos.shape, (20, 100, 2))
+        assert_equal(mcfitter._state.coords.shape, (20, 100, 2))
         mcfitter.initialise('prior')
-        assert_equal(mcfitter._lastpos.shape, (20, 100, 2))
+        assert_equal(mcfitter._state.coords.shape, (20, 100, 2))
         mcfitter.initialise('jitter')
-        assert_equal(mcfitter._lastpos.shape, (20, 100, 2))
+        assert_equal(mcfitter._state.coords.shape, (20, 100, 2))
         # initialise with last position
         mcfitter.sample(steps=1)
         chain = mcfitter.chain
         mcfitter.initialise(pos=chain[-1])
-        assert_equal(mcfitter._lastpos.shape, (20, 100, 2))
+        assert_equal(mcfitter._state.coords.shape, (20, 100, 2))
         # initialise with chain
         mcfitter.sample(steps=2)
         chain = mcfitter.chain
         mcfitter.initialise(pos=np.copy(chain))
-        assert_equal(mcfitter._lastpos, chain[-1])
+        assert_equal(mcfitter._state.coords, chain[-1])
 
     def test_fit_smoke(self):
         # smoke tests to check that fit runs

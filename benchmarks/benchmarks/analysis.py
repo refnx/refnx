@@ -46,4 +46,4 @@ class curvefitter(Benchmark):
     def time_sampler(self):
         # to get an idea of how fast the actual sampling is.
         # i.e. the overhead of objective.lnprob, objective.lnprior, etc
-        self.mcfitter.sampler.run_mcmc(self.mcfitter._lastpos, 100)
+        self.mcfitter.sampler.run_mcmc(self.mcfitter._state, 100)
