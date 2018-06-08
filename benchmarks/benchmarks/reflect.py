@@ -74,4 +74,4 @@ class Reflect(Benchmark):
         self.fitter.initialise('jitter')
 
     def time_reflect_emcee(self):
-        self.fitter.sampler.run_mcmc(self.fitter._lastpos, 100)
+        self.fitter.sampler.run_mcmc(self.fitter._state, 100)

@@ -17,6 +17,7 @@ from refnx._lib import (unique as f_unique, possibly_create_pool,
 from refnx._lib.util import getargspec
 
 from refnx._lib import emcee
+from refnx._lib.emcee.state import State
 
 # PTSampler has been forked into a separate package. Try both places
 _HAVE_PTSAMPLER = False
@@ -212,7 +213,7 @@ class CurveFitter(object):
             # be an integer.
             self._ntemps = self.sampler.ntemps
 
-        self._lastpos = None
+        self._state = None
 
     def initialise(self, pos='covar'):
         """
@@ -308,7 +309,7 @@ class CurveFitter(object):
         for i, param in enumerate(self._varying_parameters):
             init_walkers[..., i] = param.valid(init_walkers[..., i])
 
-        self._lastpos = init_walkers
+        self._state = State(init_walkers)
 
         # finally reset the sampler to reset the chain
         # you have to do this at the end, not at the start because resetting
@@ -453,7 +454,7 @@ class CurveFitter(object):
 
         One can also burn and thin in `Curvefitter.process_chain`.
         """
-        if self._lastpos is None:
+        if self._state is None:
             self.initialise()
 
         self.__pt_iterations = 0
@@ -461,9 +462,9 @@ class CurveFitter(object):
             steps *= nthin
 
         # for saving progress to file
-        def _callback_wrapper(pos, lnprob, h=None):
+        def _callback_wrapper(state, h=None):
             if callback is not None:
-                callback(pos, lnprob)
+                callback(state.coords, state.log_prob)
 
             if h is not None:
                 # if you're parallel tempering, then you only
@@ -473,14 +474,17 @@ class CurveFitter(object):
                     if self.__pt_iterations % nthin:
                         return None
 
-                h.write(' '.join(map(str, pos.ravel())))
+                h.write(' '.join(map(str, state.coords.ravel())))
                 h.write('\n')
 
         # set the random state of the sampler
         # normally one could give this as an argument to the sample method
         # but PTSampler didn't historically accept that...
-        rstate0 = check_random_state(random_state).get_state()
-        self.sampler.random_state = rstate0
+        if random_state is not None:
+            rstate0 = check_random_state(random_state).get_state()
+            self._state.random_state = rstate0
+            if isinstance(self.sampler, PTSampler):
+                self.sampler._random = rstate0
 
         # remove chains from each of the parameters because they slow down
         # pickling but only if they are parameter objects.
@@ -496,7 +500,7 @@ class CurveFitter(object):
             with possibly_open_file(f, 'w') as h:
                 # write the shape of each step of the chain
                 h.write('# ')
-                shape = self._lastpos.shape
+                shape = self._state.coords.shape
                 h.write(', '.join(map(str, shape)))
                 h.write('\n')
 
@@ -510,6 +514,7 @@ class CurveFitter(object):
             else:
                 self.sampler.pool = g
 
+            # these kwargs are provided to the sampler.sample method
             kwargs = {'iterations': steps,
                       'thin': nthin}
 
@@ -523,10 +528,20 @@ class CurveFitter(object):
                 kwargs['thin_by'] = nthin
                 kwargs.pop('thin', 0)
 
-            for result in self.sampler.sample(self._lastpos,
-                                              **kwargs):
-                self._lastpos, lnprob = result[0:2]
-                _callback_wrapper(self._lastpos, lnprob, h=h)
+            # ptemcee returns coords, lnprob
+            # emcee returns a State object
+            if isinstance(self.sampler, PTSampler):
+                for result in self.sampler.sample(self._state.coords,
+                                                  **kwargs):
+                    self._state = State(result[0],
+                                        log_prob=result[1] + result[2],
+                                        random_state=self.sampler._random)
+                    _callback_wrapper(self._state, h=h)
+            else:
+                for state in self.sampler.sample(self._state,
+                                                 **kwargs):
+                    self._state = state
+                    _callback_wrapper(state, h=h)
 
         self.sampler.pool = None
 

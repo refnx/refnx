@@ -40,7 +40,7 @@ before_install:
     - pip install uncertainties ptemcee
 
     # gradually expand flake8 to all of codebase
-    - flake8 --ignore=F401 refnx
+    - flake8 --ignore=F401,E722 refnx
 
 script:
     # definitely want to test the _creflect module on travis.
