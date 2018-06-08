@@ -504,7 +504,7 @@ class PlatypusNexus(ReflectNexus):
                 background=True, direct=False, omega=None, twotheta=None,
                 rebin_percent=1., wavelength_bins=None, normalise=True,
                 integrate=-1, eventmode=None, event_folder=None,
-                peak_pos=None, peak_pos_tol=0.005,
+                peak_pos=None, peak_pos_tol=0.0025,
                 background_mask=None, normalise_bins=True,
                 manual_beam_find=None, event_filter=None, **kwds):
         r"""
@@ -1575,7 +1575,7 @@ def background_subtract_line(profile, profile_sd, background_mask):
 
 
 def find_specular_ridge(detector, detector_sd, search_increment=50,
-                        tol=0.01, manual_beam_find=None):
+                        tol=0.002, manual_beam_find=None):
     """
     Find the specular ridges in a detector(n, t, y) plot.
 
