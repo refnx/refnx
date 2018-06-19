@@ -992,7 +992,8 @@ class Motofit(object):
                                                     yt,
                                                     label=self.dataset.name,
                                                     ms=2,
-                                                    marker='o', ls='', zorder=1)
+                                                    marker='o', ls='',
+                                                    zorder=1)
                 self.data_plot.set_label(self.dataset.name)
                 self.ax_data.legend()
 
@@ -1080,7 +1081,7 @@ class Motofit(object):
         self._print(repr(self.objective))
 
     def _to_code(self, change=None):
-        self_print(self.code)
+        self._print(self.code)
 
     @property
     def code(self):
