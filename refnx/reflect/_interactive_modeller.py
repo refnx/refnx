@@ -797,9 +797,7 @@ class Motofit(object):
         with possibly_open_file(f) as g:
             reflect_model = pickle.load(g)
             self.set_model(reflect_model)
-        with self.output:
-            clear_output()
-            print(repr(self.objective))
+        self._print(repr(self.objective))
 
     def set_model(self, model):
         """
@@ -940,7 +938,7 @@ class Motofit(object):
         theoretical = self.model.model(q)
         yt, _ = self.transform(q, theoretical)
 
-        self.theoretical_plot = self.ax_data.plot(q, yt)[0]
+        self.theoretical_plot = self.ax_data.plot(q, yt, zorder=2)[0]
         self.ax_data.set_yscale('log')
 
         z, sld = self.model.structure.sld_profile()
@@ -993,8 +991,9 @@ class Motofit(object):
                 self.data_plot, = self.ax_data.plot(self.dataset.x,
                                                     yt,
                                                     label=self.dataset.name,
-                                                    ms=4,
-                                                    marker='o', ls='')
+                                                    ms=2,
+                                                    marker='o', ls='',
+                                                    zorder=1)
                 self.data_plot.set_label(self.dataset.name)
                 self.ax_data.legend()
 
@@ -1029,6 +1028,14 @@ class Motofit(object):
 
         return self._curvefitter
 
+    def _print(self, string):
+        """
+        Print to the output widget
+        """
+        with self.output:
+            clear_output()
+            print(string)
+
     def do_fit(self, change=None):
         """
         Ask the Motofit object to perform a fit (differential evolution).
@@ -1046,9 +1053,19 @@ class Motofit(object):
             return
 
         if not self.model.parameters.varying_parameters():
-            with self.output:
-                clear_output()
-                print("No parameters are being varied")
+            self._print("No parameters are being varied")
+            return
+
+        try:
+            lnprior = self.objective.lnprior()
+            if not np.isfinite(lnprior):
+                self._print("One of your parameter values lies outside its"
+                            " bounds. Please adjust the value, or the bounds.")
+            return
+        except ZeroDivisionError:
+            self._print("One parameter has equal lower and upper bounds."
+                        " Either alter the bounds, or don't let that"
+                        " parameter vary.")
             return
 
         def callback(xk, convergence):
@@ -1061,14 +1078,10 @@ class Motofit(object):
         # self.model_view.refresh()
         self.set_model(self.model)
 
-        with self.output:
-            clear_output()
-            print(repr(self.objective))
+        self._print(repr(self.objective))
 
     def _to_code(self, change=None):
-        with self.output:
-            clear_output()
-            print(self.code)
+        self._print(self.code)
 
     @property
     def code(self):
@@ -1212,7 +1225,7 @@ print(refnx.version.version)
                 (slab.thick, 'slab{0}.thick'),
                 (slab.rough, 'slab{0}.rough')]
 
-        slds.append("sld{0} = SLD(complex({1}, {2}), name=\'{3}\')".format(
+        slds.append("sld{0} = SLD({1} + {2}j, name=\'{3}\')".format(
             i, sld.real.value, sld.imag.value, slab.name))
 
         slabs.append("slab{0} = Slab({1}, sld{0}, {2}, name=\'{3}\')".format(
