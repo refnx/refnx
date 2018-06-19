@@ -1225,7 +1225,7 @@ print(refnx.version.version)
                 (slab.thick, 'slab{0}.thick'),
                 (slab.rough, 'slab{0}.rough')]
 
-        slds.append("sld{0} = SLD(complex({1}, {2}), name=\'{3}\')".format(
+        slds.append("sld{0} = SLD({1} + {2}j, name=\'{3}\')".format(
             i, sld.real.value, sld.imag.value, slab.name))
 
         slabs.append("slab{0} = Slab({1}, sld{0}, {2}, name=\'{3}\')".format(
