@@ -68,40 +68,44 @@ def q(angle, wavelength):
 
 def q2(omega, twotheta, phi, wavelength):
     """
-    convert angles and wavelength (lambda) to Q vector.
+    Convert angles and wavelength (lambda) to Q vector.
+    All angles are in degrees.
 
     Parameters
     ----------
     omega: float
-        angle of incidence of beam (in xy plane)
+        angle of incidence of beam (with respect to xy plane).
     twotheta: float
-        angle between direct beam and projected reflected beam onto yz plane
+        angle between direct beam and the projection of the reflected beam onto
+        xz plane.
     phi: float
-        angle between reflected beam and yz plane.
+        azimuthal angle between reflected beam and xz plane.
     wavelength: float
 
     Returns
     -------
     Qx, Qy, Qz : float, float, float
-        Momentum transfer in A**-1.
+        Momentum transfer.
 
     Notes
     -----
-    coordinate system:
-    y - along beam direction (in small angle approximation)
-    x - transverse to beam direction, in plane of sample
-    z - normal to sample plane.
-    the xy plane is equivalent to the sample plane.
+    All angles are assumed to be in degrees.
 
-    TODO: check
+    coordinate system:
+        The beam is incident in the xz plane.
+    x - along beam direction (in small angle approximation)
+    y - transverse to beam direction, in plane of sample
+    z - normal to sample plane.
+
+    The xy plane is equivalent to the sample plane.
     """
     omega = np.radians(omega)
     twotheta = np.radians(twotheta)
     phi = np.radians(phi)
 
-    qx = 2 * np.pi / wavelength * np.cos(twotheta - omega) * np.sin(phi)
-    qy = (2 * np.pi / wavelength * (np.cos(twotheta - omega) * np.cos(phi) -
+    qx = (2 * np.pi / wavelength * (np.cos(twotheta - omega) * np.cos(phi) -
           np.cos(omega)))
+    qy = 2 * np.pi / wavelength * np.cos(twotheta - omega) * np.sin(phi)
     qz = 2 * np.pi / wavelength * (np.sin(twotheta - omega) + np.sin(omega))
 
     return qx, qy, qz

@@ -25,14 +25,14 @@ _template_ref_xml = """<?xml version="1.0"?>
 <REFsample>
 <ID>$sample</ID>
 </REFsample>
-<REFdata axes="Qz:Qy" rank="2" type="POINT" \
+<REFdata axes="Qz:Qx" rank="2" type="POINT" \
 spin="UNPOLARISED" dim="$_numpointsz:$_numpointsy">
 <Run filename="$_rnumber" preset="" size="">
 </Run>
 <R uncertainty="dR">$_r</R>
 <Qz uncertainty="dQz" units="1/A">$_qz</Qz>
 <dR type="SD">$_dr</dR>
-<Qy type="_FWHM" units="1/A">$_qy</Qy>
+<Qx type="_FWHM" units="1/A">$_qx</Qx>
 </REFdata>
 </REFentry>
 </REFroot>"""
@@ -113,8 +113,8 @@ class ReflectReduce(object):
                 uncertainty in offspecular reflectivity, shape (N, T, Y)
             - 'm_qz' : np.ndarray
                 Qz for offspecular map, shape (N, T, Y)
-            - 'm_qy' : np.ndarray
-                Qy for offspecular map, shape (N, T, Y)
+            - 'm_qx' : np.ndarray
+                Qx for offspecular map, shape (N, T, Y)
             - 'n_spectra' : int
                 number of reflectivity spectra
             - 'datafile_number' : int
@@ -208,11 +208,11 @@ class ReflectReduce(object):
 
         Returns
         -------
-        (Qz, Qy, R, dR): np.ndarrays
+        (Qz, Qx, R, dR): np.ndarrays
         """
 
         return (self.m_qz[scanpoint],
-                self.m_qy[scanpoint],
+                self.m_qx[scanpoint],
                 self.m_ref[scanpoint],
                 self.m_ref_err[scanpoint])
 
@@ -243,7 +243,7 @@ class ReflectReduce(object):
         d['_r'] = repr(self.m_ref[scanpoint].tolist()).strip(',[]')
         d['_qz'] = repr(self.m_qz[scanpoint].tolist()).strip(',[]')
         d['_dr'] = repr(self.m_ref_err[scanpoint].tolist()).strip(',[]')
-        d['_qy'] = repr(self.m_qy[scanpoint].tolist()).strip(',[]')
+        d['_qx'] = repr(self.m_qx[scanpoint].tolist()).strip(',[]')
 
         thefile = s.safe_substitute(d)
 
@@ -446,7 +446,7 @@ class PlatypusReduce(ReflectReduce):
         reduction['m_ref'] = self.m_ref = m_ref
         reduction['m_ref_err'] = self.m_ref_err = m_ref_sd
         reduction['qz'] = self.m_qz = qz
-        reduction['qy'] = self.m_qy = qy
+        reduction['qx'] = self.m_qx = qx
         reduction['nspectra'] = self.n_spectra = n_spectra
         reduction['start_time'] = self.reflected_beam.start_time
         reduction['datafile_number'] = self.datafile_number = (
