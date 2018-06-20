@@ -153,7 +153,7 @@ def parse_xrdml_file(f):
 
 def process_offspec(f):
     """
-    Process a 2D XRDML file and return qy, qz, intensity, dintensity
+    Process a 2D XRDML file and return qx, qz, intensity, dintensity
 
     Parameters
     ----------
@@ -161,7 +161,7 @@ def process_offspec(f):
 
     Returns
     -------
-    qy, qz, intensity, dintensity
+    qx, qz, intensity, dintensity
     """
 
     x = et.parse(f)
@@ -222,4 +222,4 @@ def process_offspec(f):
     twotheta = np.array(two_thetas)
     qx, qy, qz = general.q2(omega, twotheta, 0, wavelength)
 
-    return qy, qz, intensity, dintensity
+    return qx, qz, intensity, dintensity
