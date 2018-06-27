@@ -1061,7 +1061,7 @@ class Motofit(object):
             if not np.isfinite(lnprior):
                 self._print("One of your parameter values lies outside its"
                             " bounds. Please adjust the value, or the bounds.")
-            return
+                return
         except ZeroDivisionError:
             self._print("One parameter has equal lower and upper bounds."
                         " Either alter the bounds, or don't let that"
