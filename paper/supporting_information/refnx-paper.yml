@@ -1,0 +1,25 @@
+name: refnx-paper
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - cython
+  - scipy=1.1.0
+  - numpy=1.14.3
+  - refnx=0.1.0
+  - pandas
+  - h5py
+  - Jupyter
+  - matplotlib
+  - ipywidgets
+  - tqdm
+  - corner
+  - six
+  - traitlets
+  - python=3.6.6
+  - pytest
+  - xlrd
+  - uncertainties
+  - pip
+  - pip:
+    - ptemcee
