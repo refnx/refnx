@@ -710,6 +710,27 @@ class Objective(BaseObjective):
 
         return fig, ax
 
+    def corner(self, **kwds):
+        """
+        Corner plot of the chains belonging to the Parameters.
+        Requires the `corner` package.
+
+        Parameters
+        ----------
+        kwds: dict
+            passed directly to the `corner.corner` function
+
+        Returns
+        -------
+        fig : :class:`matplotlib.Figure` object.
+        """
+        import corner
+        var_pars = self.varying_parameters()
+        chain = np.array([par.chain for par in var_pars])
+        labels = [par.name for par in var_pars]
+        chain = chain.reshape(len(chain), -1).T
+        return corner.corner(chain, labels=labels, **kwds)
+
 
 class GlobalObjective(Objective):
     """

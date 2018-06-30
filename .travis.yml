@@ -37,7 +37,7 @@ before_install:
     - conda create --yes -n conda-refnx python=$PY
     - source activate conda-refnx
     - conda install --yes numpy scipy h5py cython pandas xlrd flake8 six pytest ipywidgets IPython matplotlib traitlets
-    - pip install uncertainties ptemcee
+    - pip install uncertainties ptemcee corner
 
     # gradually expand flake8 to all of codebase
     - flake8 --ignore=F401,E722 refnx
