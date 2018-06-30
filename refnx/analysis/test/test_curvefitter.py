@@ -99,6 +99,9 @@ class TestCurveFitter(object):
     def test_mcmc(self):
         self.mcfitter.sample(steps=50, nthin=1, verbose=False)
 
+        # smoke test for corner plot
+        self.mcfitter.objective.corner()
+
         # we're not doing Parallel Tempering here.
         assert_(self.mcfitter._ntemps == -1)
         assert_(isinstance(self.mcfitter.sampler, emcee.EnsembleSampler))
