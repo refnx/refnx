@@ -168,10 +168,8 @@ class CurveFitter(object):
         :package:`ptemcee` package.
         """
         self.objective = objective
-        self._varying_parameters = objective.varying_parameters()
-        self.nvary = len(self._varying_parameters)
-        if not self.nvary:
-            raise ValueError("No parameters are being fitted")
+        self._varying_parameters = []
+        self.__var_id = []
 
         self.mcmc_kws = {}
         if mcmc_kws is not None:
@@ -184,10 +182,28 @@ class CurveFitter(object):
 
         self._nwalkers = nwalkers
         self._ntemps = ntemps
+        self.make_sampler()
+        self._state = None
 
-        if ntemps == -1:
-            self.mcmc_kws['args'] = (objective,)
-            self.sampler = emcee.EnsembleSampler(nwalkers,
+    @property
+    def nvary(self):
+        return len(self._varying_parameters)
+
+    def make_sampler(self):
+        """
+        Make the samplers for the Objective.
+
+        Use this method if the number of varying parameters changes.
+        """
+        self._varying_parameters = self.objective.varying_parameters()
+        self.__var_id = [id(obj) for obj in self._varying_parameters]
+
+        if not self.nvary:
+            raise ValueError("No parameters are being fitted")
+
+        if self._ntemps == -1:
+            self.mcmc_kws['args'] = (self.objective,)
+            self.sampler = emcee.EnsembleSampler(self._nwalkers,
                                                  self.nvary,
                                                  _objective_lnprob,
                                                  **self.mcmc_kws)
@@ -197,10 +213,10 @@ class CurveFitter(object):
                 raise RuntimeError("You need to install the 'ptemcee' package"
                                    " to use parallel tempering")
 
-            sig = {'loglargs': (objective,),
-                   'logpargs': (objective,),
-                   'ntemps': ntemps,
-                   'nwalkers': nwalkers,
+            sig = {'loglargs': (self.objective,),
+                   'logpargs': (self.objective,),
+                   'ntemps': self._ntemps,
+                   'nwalkers': self._nwalkers,
                    'dim': self.nvary,
                    'logl': _objective_lnlike,
                    'logp': _objective_lnprior
@@ -214,6 +230,19 @@ class CurveFitter(object):
             self._ntemps = self.sampler.ntemps
 
         self._state = None
+
+    def _check_vars_unchanged(self):
+        """
+        Keep track of whether the varying parameters have changed after
+        construction of CurveFitter object.
+
+        """
+        var_ids = [id(obj) for obj in self.objective.varying_parameters()]
+        if not(np.array_equal(var_ids, self.__var_id)):
+            raise RuntimeError("The Objective.varying_parameters() have"
+                               " changed since the CurveFitter was created."
+                               " To keep on using the CurveFitter call"
+                               " the CurveFitter.make_samplers() method.")
 
     def initialise(self, pos='covar'):
         """
@@ -375,6 +404,14 @@ class CurveFitter(object):
 
         return self.sampler.get_log_prob()
 
+    def reset(self):
+        """
+        Reset the sampled chain.
+
+        Typically used on a sampler after a burn-in period.
+        """
+        self.sampler.reset()
+
     def acf(self, nburn=0, nthin=1):
         """
         Calculate the autocorrelation function
@@ -454,6 +491,8 @@ class CurveFitter(object):
 
         One can also burn and thin in `Curvefitter.process_chain`.
         """
+        self._check_vars_unchanged()
+
         if self._state is None:
             self.initialise()
 
