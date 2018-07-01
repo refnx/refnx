@@ -5,10 +5,6 @@ language: python
 matrix:
     include:
         - os: linux
-          env: PY=2.7
-        - os: linux
-          env: PY=3.5
-        - os: linux
           env: PY=3.6
         - os: osx
           language: generic

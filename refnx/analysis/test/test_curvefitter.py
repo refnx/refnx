@@ -99,6 +99,8 @@ class TestCurveFitter(object):
     def test_mcmc(self):
         self.mcfitter.sample(steps=50, nthin=1, verbose=False)
 
+        assert_equal(self.mcfitter.nvary, 2)
+
         # smoke test for corner plot
         self.mcfitter.objective.corner()
 
@@ -118,6 +120,17 @@ class TestCurveFitter(object):
         assert_equal(mcfitter.chain.shape, (33, 50, 2))
         # assert_equal(mcfitter._lastpos, mcfitter.chain[:, -1, :])
         assert_equal(res[0].chain.shape, (33, 50))
+
+        # if the number of parameters changes there should be an Exception
+        # raised
+        from pytest import raises
+        with raises(RuntimeError):
+            self.p[0].vary = False
+            self.mcfitter.sample(1)
+
+        # can fix by making the sampler again
+        self.mcfitter.make_sampler()
+        self.mcfitter.sample(1)
 
     def test_mcmc_pt(self):
         if not _HAVE_PTSAMPLER:
