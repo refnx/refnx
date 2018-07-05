@@ -192,11 +192,11 @@ class LipidLeaflet(Component):
     def lnprob(self):
         # penalise unphysical volume fractions.
         volfrac_h = self.vm_heads.value / (self.apm.value *
-                                         self.thickness_heads.value)
+                                           self.thickness_heads.value)
 
         # tail region
         volfrac_t = self.vm_tails.value / (self.apm.value *
-                                         self.thickness_tails.value)
+                                           self.thickness_tails.value)
 
         if volfrac_h > 1 or volfrac_t > 1:
             return -np.inf
