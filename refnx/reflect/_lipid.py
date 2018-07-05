@@ -1,15 +1,16 @@
 """
-Various Analytic profiles for studying lipid membranes at an interface
+Component for studying lipid membranes at an interface
 """
 
 import numpy as np
 from refnx.reflect import Component, SLD, ReflectModel, Structure
 from refnx.analysis import possibly_create_parameter, Parameters, Parameter
-from numpy.testing import assert_
 
 
-class SurfMono(Component):
+class LipidLeaflet(Component):
     """
+    Describes a lipid leaflet Component at an interface
+
     Parameters
     ----------
     APM: float or Parameter
@@ -49,7 +50,6 @@ class SurfMono(Component):
     10**6 Angstrom**-2.
     """
 
-    # TODO: roughness of interfaces
     # TODO: use SLD of head instead of b_heads, vm_heads?
     def __init__(self, apm, b_heads, vm_heads, thickness_heads,
                  b_tails, vm_tails, thickness_tails, rough_head_tail,
@@ -79,7 +79,7 @@ class SurfMono(Component):
         name: str, optional
             The name for the component
         """
-        super(SurfMono, self).__init__()
+        super(LipidLeaflet, self).__init__()
         self.apm = possibly_create_parameter(apm,
                                              '%s - area_per_molecule' % name)
 
@@ -158,7 +158,6 @@ class SurfMono(Component):
         layers[1, 2] = float(self.b_tails_imag) / float(self.vm_tails) * 1.e6
 
         # roughnesses
-        # give each layer an arbitrary 2 A roughness.
         layers[0, 3] = float(self.rough_preceding_mono)
         layers[1, 3] = float(self.rough_head_tail)
 
@@ -193,15 +192,13 @@ class SurfMono(Component):
     def lnprob(self):
         # penalise unphysical volume fractions.
         volfrac_h = self.vm_heads.value / (self.apm.value *
-                                         self.thickness_heads.value)
+                                           self.thickness_heads.value)
 
         # tail region
         volfrac_t = self.vm_tails.value / (self.apm.value *
-                                         self.thickness_tails.value)
+                                           self.thickness_tails.value)
 
         if volfrac_h > 1 or volfrac_t > 1:
             return -np.inf
 
         return 0
-
-
