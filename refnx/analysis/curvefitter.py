@@ -831,21 +831,22 @@ def process_chain(objective, chain, nburn=0, nthin=1, flatchain=False):
 
         # now iterate through the varying parameters, set the values, thereby
         # setting the constraint value
-        for index in np.ndindex(chain.shape[:-1]):
-            # iterate over parameter vectors
-            pvals = chain[index]
-            objective.setp(pvals)
+        if len(constrained_params):
+            for index in np.ndindex(chain.shape[:-1]):
+                # iterate over parameter vectors
+                pvals = chain[index]
+                objective.setp(pvals)
+
+                for constrain_param in constrained_params:
+                    constrain_param.chain[index] = constrain_param.value
 
             for constrain_param in constrained_params:
-                constrain_param.chain[index] = constrain_param.value
+                quantiles = np.percentile(constrain_param.chain,
+                                          [15.87, 50, 84.13])
 
-        for constrain_param in constrained_params:
-            quantiles = np.percentile(constrain_param.chain,
-                                      [15.87, 50, 84.13])
-
-            std_l, median, std_u = quantiles
-            constrain_param.value = median
-            constrain_param.stderr = 0.5 * (std_u - std_l)
+                std_l, median, std_u = quantiles
+                constrain_param.value = median
+                constrain_param.stderr = 0.5 * (std_u - std_l)
 
         # now reset fitted parameter values (they would've been changed by
         # constraints calculations
