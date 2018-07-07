@@ -701,9 +701,9 @@ class Objective(BaseObjective):
 
         # add the data (in a transformed fashion)
         if self.weighted:
-            ax.errorbar(self.data.x, y, y_err, color='r')
+            ax.errorbar(self.data.x, y, y_err, color='r', label=self.data.name)
         else:
-            ax.scatter(self.data.x, y, color='r')
+            ax.scatter(self.data.x, y, color='r', label=self.data.name)
 
         # add the fit
         ax.plot(self.data.x, model)
@@ -869,6 +869,38 @@ class GlobalObjective(Objective):
             lnlike += objective.lnlike()
 
         return lnlike
+
+    def plot(self):
+        """
+        Plot the data/model for all the objectives in the GlobalObjective
+
+        Returns
+        -------
+        fig, ax : :class:`matplotlib.Figure`, :class:`matplotlib.Axes`
+            `matplotlib` figure and axes objects.
+
+        """
+        import matplotlib.pyplot as plt
+
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+
+        for objective in self.objectives:
+            y, y_err, model = objective._data_transform(
+                model=objective.generative())
+
+            # add the data (in a transformed fashion)
+            if objective.weighted:
+                ax.errorbar(objective.data.x, y, y_err,
+                            label=objective.data.name)
+            else:
+                ax.scatter(objective.data.x, y,
+                           label=objective.data.name)
+
+            # add the fit
+            ax.plot(objective.data.x, model, color='r')
+
+        return fig, ax
 
 
 class Transform(object):
