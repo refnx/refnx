@@ -724,7 +724,7 @@ class Objective(BaseObjective):
             self.setp(saved_params)
 
         # add the fit
-        ax.plot(self.data.x, model, color='blue')
+        ax.plot(self.data.x, model, color='blue', zorder=20)
 
         return fig, ax
 
@@ -916,7 +916,7 @@ class GlobalObjective(Objective):
                            label=objective.data.name)
 
             # add the fit
-            ax.plot(objective.data.x, model, color='r')
+            ax.plot(objective.data.x, model, color='r', zorder=20)
 
         return fig, ax
 
