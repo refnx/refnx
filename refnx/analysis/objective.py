@@ -894,11 +894,11 @@ class GlobalObjective(Objective):
                 ax.errorbar(objective.data.x, y, y_err,
                             label=objective.data.name)
             else:
-                ax.scatter(objective.data.x, y, color='r',
+                ax.scatter(objective.data.x, y,
                            label=objective.data.name)
 
             # add the fit
-            ax.plot(objective.data.x, model)
+            ax.plot(objective.data.x, model, color='r')
 
         return fig, ax
 
