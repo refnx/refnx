@@ -365,6 +365,10 @@ class Parameter(BaseParameter):
             Name of the parameter.
         value : float, optional
             Numerical Parameter value.
+        bounds: `refnx.analysis.Bounds`, tuple, optional
+            Sets the bounds for the parameter. Either supply a
+            `refnx.analysis.Bounds` object (or one of its subclasses),
+            or a `(lower_bound, upper_bound)` tuple.
         vary : bool, optional
             Whether the Parameter is fixed during a fit.
         constraint : expression, optional
