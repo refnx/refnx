@@ -675,7 +675,7 @@ class Objective(BaseObjective):
         for choice in choices:
             yield chains[..., choice]
 
-    def plot(self, pvals=None):
+    def plot(self, pvals=None, samples=0):
         """
         Plot the data/model.
 
@@ -683,6 +683,9 @@ class Objective(BaseObjective):
         ----------
         pvals : np.ndarray, optional
             Numeric values for the Parameter's that are varying
+        samples: number
+            If the objective has been sampled, how many samples you wish to
+            plot on the graph.
 
         Returns
         -------
@@ -706,7 +709,22 @@ class Objective(BaseObjective):
             ax.scatter(self.data.x, y, color='r', label=self.data.name)
 
         # add the fit
-        ax.plot(self.data.x, model)
+        ax.plot(self.data.x, model, color='blue')
+
+        if samples > 0:
+            saved_params = np.array(self.parameters)
+            # Get a number of chains, chosen randomly, set the objective,
+            # and plot the model.
+            for pvec in self.pgen(ngen=samples):
+                y, y_err, model = self._data_transform(
+                    model=self.generative(pvec))
+
+                ax.plot(self.data.x,
+                        model,
+                        color="k", alpha=0.01)
+
+            # put back saved_params
+            self.setp(saved_params)
 
         return fig, ax
 
