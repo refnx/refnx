@@ -708,9 +708,6 @@ class Objective(BaseObjective):
         else:
             ax.scatter(self.data.x, y, color='r', label=self.data.name)
 
-        # add the fit
-        ax.plot(self.data.x, model, color='blue')
-
         if samples > 0:
             saved_params = np.array(self.parameters)
             # Get a number of chains, chosen randomly, set the objective,
@@ -725,6 +722,9 @@ class Objective(BaseObjective):
 
             # put back saved_params
             self.setp(saved_params)
+
+        # add the fit
+        ax.plot(self.data.x, model, color='blue')
 
         return fig, ax
 
