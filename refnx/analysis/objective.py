@@ -704,9 +704,12 @@ class Objective(BaseObjective):
 
         # add the data (in a transformed fashion)
         if self.weighted:
-            ax.errorbar(self.data.x, y, y_err, color='r', label=self.data.name)
+            ax.errorbar(self.data.x, y, y_err, color='blue',
+                        label=self.data.name,
+                        marker='o', ms=3, lw=0, elinewidth=2)
         else:
-            ax.scatter(self.data.x, y, color='r', label=self.data.name)
+            ax.scatter(self.data.x, y, color='blue',
+                       ms=3, label=self.data.name)
 
         if samples > 0:
             saved_params = np.array(self.parameters)
@@ -724,7 +727,7 @@ class Objective(BaseObjective):
             self.setp(saved_params)
 
         # add the fit
-        ax.plot(self.data.x, model, color='blue', zorder=20)
+        ax.plot(self.data.x, model, color='red', zorder=20)
 
         return fig, ax
 
@@ -910,13 +913,14 @@ class GlobalObjective(Objective):
             # add the data (in a transformed fashion)
             if objective.weighted:
                 ax.errorbar(objective.data.x, y, y_err,
-                            label=objective.data.name)
+                            label=objective.data.name,
+                            ms=3, lw=0, elinewidth=2, marker='o')
             else:
                 ax.scatter(objective.data.x, y,
                            label=objective.data.name)
 
             # add the fit
-            ax.plot(objective.data.x, model, color='r', zorder=20)
+            ax.plot(objective.data.x, model, color='r', lw=1.5, zorder=20)
 
         return fig, ax
 
