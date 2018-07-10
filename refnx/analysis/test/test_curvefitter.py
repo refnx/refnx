@@ -1,6 +1,7 @@
 from __future__ import division, print_function
 
 import os.path
+import pickle
 
 import numpy as np
 import pytest
@@ -270,6 +271,13 @@ class TestFitterGauss(object):
         self.data = Data1D((xvals, yvals, evals))
         self.objective = Objective(self.model, self.data)
         return 0
+
+    def test_pickle(self):
+        # tests if a CurveFitter can be pickled/unpickled.
+        f = CurveFitter(self.objective)
+        pkl = pickle.dumps(f)
+        g = pickle.loads(pkl)
+        g._check_vars_unchanged()
 
     def test_best_weighted(self):
         assert_equal(len(self.objective.varying_parameters()), 4)
