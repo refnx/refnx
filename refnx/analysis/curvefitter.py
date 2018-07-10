@@ -185,6 +185,10 @@ class CurveFitter(object):
         self.make_sampler()
         self._state = None
 
+    def __setstate__(self, state):
+        self.__dict__.update(state)
+        self.__var_id = [id(obj) for obj in self.objective.varying_parameters()]
+
     @property
     def nvary(self):
         return len(self._varying_parameters)
