@@ -46,7 +46,7 @@ install:
     - cmd: set PYTHONUNBUFFERED=1
 
     # create conda environment
-    - cmd: call conda.exe create --yes -n test python=PYTHON_VERSION
+    - cmd: call conda.exe create --yes -n test python=%PYTHON_VERSION%
 
     # Add our channels.
     - cmd: conda.exe config --set show_channel_urls true
