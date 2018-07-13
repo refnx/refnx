@@ -45,16 +45,16 @@ install:
     - cmd: call %CONDA_INSTALL_LOCN%\Scripts\activate.bat
     - cmd: set PYTHONUNBUFFERED=1
 
-    # create conda environment
-    - cmd: call conda.exe create --yes -n test python=%PYTHON_VERSION%
-    - cmd: call %CONDA_INSTALL_LOCN%\Scripts\activate.bat test
-
     # Add our channels.
     - cmd: conda.exe config --set show_channel_urls true
     - cmd: conda.exe config --remove channels defaults
     - cmd: conda.exe config --add channels defaults
     - cmd: conda.exe config --add channels conda-forge
     - cmd: conda.exe update --yes --quiet conda
+
+    # create conda environment
+    - cmd: call conda.exe create --yes -n test python=%PYTHON_VERSION%
+    - cmd: call %CONDA_INSTALL_LOCN%\Scripts\activate.bat test
 
     # Configure the VM.
     - cmd: call conda.exe install -n test --yes --quiet obvious-ci
