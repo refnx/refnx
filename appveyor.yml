@@ -11,65 +11,20 @@ environment:
   matrix:
     # Note: Because we have to separate the py2 and py3 components due to compiler version, we have a race condition for non-python packages.
     # Not sure how to resolve this, but maybe we should be tracking the VS version in the build string anyway?
-#    - TARGET_ARCH: x86
-#      CONDA_NPY: 111
-#      CONDA_PY: 27
-#      CONDA_INSTALL_LOCN: C:\\Miniconda
-
-#    - TARGET_ARCH: x64
-#      CONDA_NPY: 111
-#      CONDA_PY: 27
-#      CONDA_INSTALL_LOCN: C:\\Miniconda-x64
-
-#    - TARGET_ARCH: x86
-#      CONDA_NPY: 112
-#      CONDA_PY: 27
-#      CONDA_INSTALL_LOCN: C:\\Miniconda
-
     - TARGET_ARCH: x64
       CONDA_NPY: 113
       CONDA_PY: 27
       CONDA_INSTALL_LOCN: C:\\Miniconda-x64
 
-#    - TARGET_ARCH: x86
-#      CONDA_NPY: 111
-#      CONDA_PY: 35
-#      CONDA_INSTALL_LOCN: C:\\Miniconda35
-
-#    - TARGET_ARCH: x64
-#      CONDA_NPY: 111
-#      CONDA_PY: 35
-#      CONDA_INSTALL_LOCN: C:\\Miniconda35-x64
-
-#    - TARGET_ARCH: x86
-#      CONDA_NPY: 112
-#      CONDA_PY: 35
-#      CONDA_INSTALL_LOCN: C:\\Miniconda35
-
     - TARGET_ARCH: x86
       CONDA_NPY: 114
-      CONDA_PY: 36
-      CONDA_INSTALL_LOCN: C:\\Miniconda36-x64
-
-#    - TARGET_ARCH: x86
-#      CONDA_NPY: 111
-#      CONDA_PY: 36
-#      CONDA_INSTALL_LOCN: C:\\Miniconda36
-
-#    - TARGET_ARCH: x64
-#      CONDA_NPY: 111
-#      CONDA_PY: 36
-#      CONDA_INSTALL_LOCN: C:\\Miniconda36-x64
-
-#    - TARGET_ARCH: x86
-#      CONDA_NPY: 112
-#      CONDA_PY: 36
-#      CONDA_INSTALL_LOCN: C:\\Miniconda36
+      CONDA_PY: 37
+      CONDA_INSTALL_LOCN: C:\\Miniconda37-x64
 
     - TARGET_ARCH: x64
       CONDA_NPY: 114
-      CONDA_PY: 36
-      CONDA_INSTALL_LOCN: C:\\Miniconda36-x64
+      CONDA_PY: 37
+      CONDA_INSTALL_LOCN: C:\\Miniconda37-x64
 
 # We always use a 64-bit machine, but can build x86 distributions
 # with the TARGET_ARCH variable (which is used by CMD_IN_ENV).
