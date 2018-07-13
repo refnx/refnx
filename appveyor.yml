@@ -47,6 +47,7 @@ install:
 
     # create conda environment
     - cmd: call conda.exe create --yes -n test python=%PYTHON_VERSION%
+    - cmd: call conda.exe activate test
 
     # Add our channels.
     - cmd: conda.exe config --set show_channel_urls true
