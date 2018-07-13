@@ -42,7 +42,7 @@ install:
     - cmd: rmdir C:\cygwin /s /q
 
     # create conda environment
-    - cmd: call conda.exe create -n test python=PYTHON_VERSION
+    - cmd: call conda.exe create --yes -n test python=PYTHON_VERSION
 
     # Add path, activate `conda` and update conda.
     - cmd: call %CONDA_INSTALL_LOCN%\Scripts\activate.bat test
