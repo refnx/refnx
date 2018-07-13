@@ -41,12 +41,12 @@ install:
     # Remove cygwin (and therefore the git that comes with it).
     - cmd: rmdir C:\cygwin /s /q
 
+    # Add path, activate `conda` and update conda.
+    - cmd: call %CONDA_INSTALL_LOCN%\Scripts\activate.bat
+    - cmd: set PYTHONUNBUFFERED=1
+
     # create conda environment
     - cmd: call conda.exe create --yes -n test python=PYTHON_VERSION
-
-    # Add path, activate `conda` and update conda.
-    - cmd: call %CONDA_INSTALL_LOCN%\Scripts\activate.bat test
-    - cmd: set PYTHONUNBUFFERED=1
 
     # Add our channels.
     - cmd: conda.exe config --set show_channel_urls true
