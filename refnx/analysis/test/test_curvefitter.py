@@ -133,6 +133,25 @@ class TestCurveFitter(object):
         self.mcfitter.make_sampler()
         self.mcfitter.sample(1)
 
+    def test_random_seed(self):
+        # check that MCMC is reproducible
+        self.mcfitter.sample(steps=2)
+
+        # get a starting pos
+        starting_pos = self.mcfitter._state.coords
+
+        self.mcfitter.reset()
+        self.mcfitter.initialise(pos=starting_pos)
+        self.mcfitter.sample(3, random_state=1, pool=1)
+        chain1 = np.copy(self.mcfitter.chain)
+
+        self.mcfitter.reset()
+        self.mcfitter.initialise(pos=starting_pos)
+        self.mcfitter.sample(3, random_state=1, pool=1)
+        chain2 = np.copy(self.mcfitter.chain)
+
+        assert_equal(chain1, chain2)
+
     def test_mcmc_pt(self):
         if not _HAVE_PTSAMPLER:
             return
