@@ -147,7 +147,8 @@ def flatten(l):
 
 def unique(seq, idfun=id):
     """
-    List of unique values in sequence (by object id). Ordering is preserved
+    List of unique values in sequence (by object id, not by value).
+    Ordering is preserved.
 
     Parameters
     ----------
@@ -158,6 +159,12 @@ def unique(seq, idfun=id):
     -------
     p : generator
         yields unique values from l
+
+    Notes
+    -----
+    Because this function works on object id (by default), it won't work
+    for looking at the number of unique values in a numpy array - all
+    the entries have different object id's.
     """
     seen = {}
     for item in seq:
