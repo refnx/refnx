@@ -8,7 +8,7 @@ from refnx.analysis import possibly_create_parameter, Parameters, Parameter
 
 
 class LipidLeaflet(Component):
-    """
+    r"""
     Describes a lipid leaflet Component at an interface
 
     Parameters
@@ -34,6 +34,18 @@ class LipidLeaflet(Component):
         the roughness between the preceding component and the heads, if
         `reverse_monolayer is True` then this is the roughness between the
         preceding component and the tails.
+    head_solvent: None, float, complex, SLD
+        Solvent for the head region. If `None`, then solvation will be
+        performed by the parent `Structure`, using the `Structure.solvent`
+        attribute. Other options are coerced to an `SLD` object using
+        `SLD(float | complex)`. A float/complex argument is the SLD of the
+        solvent (10**-6 Angstrom**-2).
+    tail_solvent: None, float, complex, SLD
+        Solvent for the tail region. If `None`, then solvation will be
+        performed by the parent `Structure`, using the `Structure.solvent`
+        attribute. Other options are coerced to an `SLD` object using
+        `SLD(float | complex)`. A float/complex argument is the SLD of the
+        solvent (10**-6 Angstrom**-2).
     reverse_monolayer: bool, optional
         The default is to have heads closer to the fronting medium and
         tails closer to the backing medium. If `reverse_monolayer is True`
@@ -53,7 +65,8 @@ class LipidLeaflet(Component):
     # TODO: use SLD of head instead of b_heads, vm_heads?
     def __init__(self, apm, b_heads, vm_heads, thickness_heads,
                  b_tails, vm_tails, thickness_tails, rough_head_tail,
-                 rough_preceding_mono, reverse_monolayer=False, name=''):
+                 rough_preceding_mono, head_solvent=None, tail_solvent=None,
+                 reverse_monolayer=False, name=''):
         """
         Parameters
         ----------
@@ -71,6 +84,24 @@ class LipidLeaflet(Component):
             Molecular volume of tail group (Angstrom**3)
         thickness_tails: float or Parameter
             Thickness of head group region (Angstrom)
+        rough_preceding_mono: float or Parameter
+            Roughness between preceding component (in the fronting direction)
+            and the monolayer (Angstrom). If `reverse_monolayer is False` then
+            this is the roughness between the preceding component and the
+            heads, if `reverse_monolayer is True` then this is the roughness
+            between the preceding component and the tails.
+        head_solvent: None, float, complex, SLD
+            Solvent for the head region. If `None`, then solvation will be
+            performed by the parent `Structure`, using the `Structure.solvent`
+            attribute. Other options are coerced to an `SLD` object using
+            `SLD(float | complex)`. A float/complex argument is the SLD of the
+            solvent (10**-6 Angstrom**-2).
+        tail_solvent: None, float, complex, SLD
+            Solvent for the tail region. If `None`, then solvation will be
+            performed by the parent `Structure`, using the `Structure.solvent`
+            attribute. Other options are coerced to an `SLD` object using
+            `SLD(float | complex)`. A float/complex argument is the SLD of the
+            solvent (10**-6 Angstrom**-2).
         reverse_monolayer: bool, optional
             The default is to have heads closer to the fronting medium and
             tails closer to the backing medium. If `reverse_monolayer is True`
@@ -133,6 +164,13 @@ class LipidLeaflet(Component):
         self.rough_preceding_mono = possibly_create_parameter(
             rough_preceding_mono,
             name='%s - rough_fronting_mono' % name)
+
+        self.head_solvent = self.tail_solvent = None
+        if head_solvent is not None:
+            self.head_solvent = SLD(head_solvent)
+        if tail_solvent is not None:
+            self.tail_solvent = SLD(tail_solvent)
+
         self.reverse_monolayer = reverse_monolayer
         self.name = name
 
@@ -166,11 +204,20 @@ class LipidLeaflet(Component):
         volfrac = self.vm_heads.value / (self.apm.value *
                                          self.thickness_heads.value)
         layers[0, 4] = 1 - volfrac
+        if self.head_solvent is not None:
+            # we do the solvation here, not in Structure.slabs
+            layers[0] = Structure.overall_sld(layers[0], self.head_solvent)
+            layers[0, 4] = 0
 
         # tail region
         volfrac = self.vm_tails.value / (self.apm.value *
                                          self.thickness_tails.value)
+
         layers[1, 4] = 1 - volfrac
+        if self.tail_solvent is not None:
+            # we do the solvation here, not in Structure.slabs
+            layers[1] = Structure.overall_sld(layers[1], self.tail_solvent)
+            layers[1, 4] = 0
 
         if self.reverse_monolayer:
             layers = np.flipud(layers)
@@ -187,6 +234,11 @@ class LipidLeaflet(Component):
                   self.b_tails_real, self.b_tails_imag, self.vm_tails,
                   self.thickness_tails, self.rough_head_tail,
                   self.rough_preceding_mono])
+        if self.head_solvent is not None:
+            p.append(self.head_solvent.parameters)
+        if self.tail_solvent is not None:
+            p.append(self.tail_solvent.parameters)
+
         return p
 
     def lnprob(self):
