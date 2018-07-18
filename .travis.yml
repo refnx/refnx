@@ -5,10 +5,10 @@ language: python
 matrix:
     include:
         - os: linux
-          env: PY=3.6
+          env: PY=3.7
         - os: osx
           language: generic
-          env: PY=3.6
+          env: PY=3.7
 addons:
     apt:
         packages:
