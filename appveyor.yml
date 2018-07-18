@@ -59,8 +59,8 @@ install:
 
     # Configure the VM.
 #    - cmd: call conda.exe install --yes --quiet obvious-ci
-    - cmd: call conda.exe install --yes --quiet numpy scipy h5py xlrd pandas cython six pytest traitlets matplotlib ipywidgets IPython
-    - pip install corner uncertainties
+    - cmd: call conda.exe install --yes --quiet numpy scipy h5py cython
+    - pip install corner uncertainties xlrd pandas six pytest traitlets matplotlib ipywidgets IPython
 
 build_script:
     # Build the compiled extension
