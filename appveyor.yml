@@ -13,18 +13,21 @@ environment:
     # Not sure how to resolve this, but maybe we should be tracking the VS version in the build string anyway?
     - TARGET_ARCH: x64
       CONDA_NPY: 114
-      CONDA_PY: 36
+      CONDA_PY: 37
+      PYTHON_VERSION: 3.7
+      CONDA_INSTALL_LOCN: C:\\Miniconda36-x64
+      
+    - TARGET_ARCH: x86
+      CONDA_NPY: 114
+      CONDA_PY: 37
+      PYTHON_VERSION: 3.7
       CONDA_INSTALL_LOCN: C:\\Miniconda36-x64
 
     - TARGET_ARCH: x64
       CONDA_NPY: 113
       CONDA_PY: 27
+      PYTHON_VERSION: 2.7
       CONDA_INSTALL_LOCN: C:\\Miniconda-x64
-
-    - TARGET_ARCH: x86
-      CONDA_NPY: 114
-      CONDA_PY: 36
-      CONDA_INSTALL_LOCN: C:\\Miniconda36-x64
 
 # We always use a 64-bit machine, but can build x86 distributions
 # with the TARGET_ARCH variable (which is used by CMD_IN_ENV).
@@ -44,27 +47,29 @@ install:
 
     # Add our channels.
     - cmd: conda.exe config --set show_channel_urls true
-    - cmd: conda.exe config --remove channels defaults
-    - cmd: conda.exe config --add channels defaults
-    - cmd: conda.exe config --add channels conda-forge
     - cmd: conda.exe update --yes --quiet conda
 
+    # create conda environment
+    - cmd: call conda.exe create --yes -n test python=%PYTHON_VERSION%
+    - cmd: call %CONDA_INSTALL_LOCN%\Scripts\activate.bat test
+    - cmd: call conda.exe info --envs
+
     # Configure the VM.
-    - cmd: call conda.exe install -n root --yes --quiet obvious-ci
-    - cmd: call conda.exe install -n root --yes --quiet numpy scipy h5py xlrd pandas cython six pytest toolchain traitlets matplotlib ipywidgets IPython uncertainties corner
+    - cmd: call conda.exe install --yes --quiet numpy scipy h5py cython six traitlets ipywidgets xlrd pandas pytest
+    - pip install corner uncertainties matplotlib IPython
 
 build_script:
     # Build the compiled extension
-    - "%CMD_IN_ENV% python setup.py install"
+    - python setup.py install
 
 test_script:
     # Run the project tests
     - cmd: set "REQUIRE_C=1"
-    - "%CMD_IN_ENV% pytest"
+    - pytest
 
 after_test:
     # If tests are successful, create binary packages for the project.
-    - "%CMD_IN_ENV% python setup.py bdist_wheel"
+    - python setup.py bdist_wheel
     - ps: "ls dist"
 
 artifacts:
