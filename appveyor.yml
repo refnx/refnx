@@ -47,14 +47,15 @@ install:
 
     # Add our channels.
     - cmd: conda.exe config --set show_channel_urls true
-    - cmd: conda.exe config --remove channels defaults
-    - cmd: conda.exe config --add channels defaults
-    - cmd: conda.exe config --add channels conda-forge
+#    - cmd: conda.exe config --remove channels defaults
+#    - cmd: conda.exe config --add channels defaults
+#    - cmd: conda.exe config --add channels conda-forge
     - cmd: conda.exe update --yes --quiet conda
 
     # create conda environment
     - cmd: call conda.exe create --yes -n test python=%PYTHON_VERSION%
     - cmd: call %CONDA_INSTALL_LOCN%\Scripts\activate.bat test
+    - cmd: call conda.exe info --envs
 
     # Configure the VM.
     - cmd: call conda.exe install --yes --quiet obvious-ci
