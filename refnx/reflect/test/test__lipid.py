@@ -1,3 +1,5 @@
+from __future__ import division
+
 import numpy as np
 from numpy.testing import (assert_almost_equal, assert_equal, assert_,
                            assert_allclose, assert_raises)
@@ -10,12 +12,12 @@ from refnx.analysis import Parameter
 class TestLipidLeaflet(object):
     def setup_method(self):
         self.b_h = 6.01e-4
-        self.V_h = 319
+        self.V_h = 319.
         self.b_t = -2.92e-4
-        self.V_t = 782
-        self.APM = 60
-        self.thick_h = 9
-        self.thick_t = 14
+        self.V_t = 782.
+        self.APM = 60.
+        self.thick_h = 9.
+        self.thick_t = 14.
         self.leaflet = LipidLeaflet(self.APM,
                                     self.b_h, self.V_h, self.thick_h,
                                     self.b_t, self.V_t, self.thick_t,
@@ -29,7 +31,6 @@ class TestLipidLeaflet(object):
     def test_slabs(self):
         # check that slab calculation from parameters is correct
         slabs = self.leaflet.slabs
-
         theoretical = np.array([[self.thick_h, self.rho_h, 0, 3,
                                  self.phi_solv_h],
                                 [self.thick_t, self.rho_t, 0, 2,
