@@ -93,6 +93,46 @@ class TestReflect(object):
         calc = _reflect.abeles(self.qvals, self.structure.slabs[..., :4])
         assert_almost_equal(calc, self.rvals)
 
+    def test_first_principles(self):
+        # Test a first principles reflectivity calculation, rather than
+        # relying on a previous calculation from Motofit code.
+        # Here we only examine Fresnel reflectivity from an infinitely
+        # sharp interface, we do not examine a rough surface. This is
+        # tested by profile slicing in test_structure.
+        def kn(q, sld_layer, sld_fronting):
+            # wave vector in a given layer
+            kvec = np.zeros_like(q, np.complex128)
+            sld = complex(sld_layer - sld_fronting) * 1.e-6
+            kvec[:] = np.sqrt(q[:] ** 2. / 4. -
+                              4. * np.pi * sld)
+            return kvec
+
+        q = np.linspace(0.001, 1.0, 1001)
+
+        # Is the fresnel reflectivity correct?
+        sld1 = 2.07
+        sld2 = 6.36
+
+        # first principles calcn
+        kf = kn(q, sld1, sld1)
+        kb = kn(q, sld2, sld1)
+        reflectance = (kf - kb) / (kf + kb)
+        reflectivity = reflectance * np.conj(reflectance)
+
+        # now from refnx code
+        struct = SLD(sld1)(0, 0) | SLD(sld2)(0, 0)
+        assert_allclose(struct.reflectivity(q), reflectivity, rtol=1e-14)
+
+        # reverse the direction
+        kf = kn(q, sld2, sld2)
+        kb = kn(q, sld1, sld2)
+        reflectance = (kf - kb) / (kf + kb)
+        reflectivity = reflectance * np.conj(reflectance)
+
+        # now from refnx code
+        struct = SLD(sld2)(0, 0) | SLD(sld1)(0, 0)
+        assert_allclose(struct.reflectivity(q), reflectivity, rtol=1e-14)
+
     def test_compare_c_py_abeles(self):
         # test python and c are equivalent
         # but not the same file
