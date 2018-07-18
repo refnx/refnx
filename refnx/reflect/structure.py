@@ -134,9 +134,9 @@ class Structure(UserList):
         - slab[N, 0]
            thickness of layer N
         - slab[N, 1]
-           overall SLD.real of layer N (material AND solvent)
+           *overall* SLD.real of layer N (material AND solvent)
         - slab[N, 2]
-           overall SLD.imag of layer N (material AND solvent)
+           *overall* SLD.imag of layer N (material AND solvent)
         - slab[N, 3]
            roughness between layer N and N-1
         - slab[N, 4]
