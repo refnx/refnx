@@ -47,9 +47,9 @@ install:
 
     # Add our channels.
     - cmd: conda.exe config --set show_channel_urls true
-    - cmd: conda.exe config --remove channels defaults
-    - cmd: conda.exe config --add channels defaults
-    - cmd: conda.exe config --add channels conda-forge
+#    - cmd: conda.exe config --remove channels defaults
+#    - cmd: conda.exe config --add channels defaults
+#    - cmd: conda.exe config --add channels conda-forge
     - cmd: conda.exe update --yes --quiet conda
 
     # create conda environment
@@ -68,11 +68,11 @@ build_script:
 test_script:
     # Run the project tests
     - cmd: set "REQUIRE_C=1"
-    - "%CMD_IN_ENV% pytest"
+    - pytest
 
 after_test:
     # If tests are successful, create binary packages for the project.
-    - "%CMD_IN_ENV% python setup.py bdist_wheel"
+    - python setup.py bdist_wheel
     - ps: "ls dist"
 
 artifacts:
