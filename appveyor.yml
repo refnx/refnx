@@ -58,12 +58,12 @@ install:
     - cmd: call conda.exe info --envs
 
     # Configure the VM.
-    - cmd: call conda.exe install --yes --quiet obvious-ci
+#    - cmd: call conda.exe install --yes --quiet obvious-ci
     - cmd: call conda.exe install --yes --quiet numpy scipy h5py xlrd pandas cython six pytest toolchain traitlets matplotlib ipywidgets IPython uncertainties corner
 
 build_script:
     # Build the compiled extension
-    - "%CMD_IN_ENV% python setup.py install"
+    - python setup.py install"
 
 test_script:
     # Run the project tests
