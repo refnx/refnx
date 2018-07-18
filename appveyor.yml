@@ -57,7 +57,7 @@ install:
     - cmd: call %CONDA_INSTALL_LOCN%\Scripts\activate.bat test
 
     # Configure the VM.
-#    - cmd: call conda.exe install -n test --yes --quiet obvious-ci
+    - cmd: call conda.exe install --yes --quiet obvious-ci
     - cmd: call conda.exe install --yes --quiet numpy scipy h5py xlrd pandas cython six pytest toolchain traitlets matplotlib ipywidgets IPython uncertainties corner
 
 build_script:
