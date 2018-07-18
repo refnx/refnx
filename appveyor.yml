@@ -11,13 +11,13 @@ environment:
   matrix:
     # Note: Because we have to separate the py2 and py3 components due to compiler version, we have a race condition for non-python packages.
     # Not sure how to resolve this, but maybe we should be tracking the VS version in the build string anyway?
-    - TARGET_ARCH: x86
+    - TARGET_ARCH: x64
       CONDA_NPY: 114
       CONDA_PY: 37
       PYTHON_VERSION: 3.7
       CONDA_INSTALL_LOCN: C:\\Miniconda36-x64
-
-    - TARGET_ARCH: x64
+      
+    - TARGET_ARCH: x86
       CONDA_NPY: 114
       CONDA_PY: 37
       PYTHON_VERSION: 3.7

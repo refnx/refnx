@@ -36,7 +36,8 @@ before_install:
     - pip install uncertainties ptemcee corner
 
     # gradually expand flake8 to all of codebase
-    - flake8 --ignore=F401,E722 refnx
+    # added W504 July18 because it starts to raise error in 3.7
+    - flake8 --ignore=F401,E722,W504 refnx
 
 script:
     # definitely want to test the _creflect module on travis.
