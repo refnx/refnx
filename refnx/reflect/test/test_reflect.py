@@ -195,6 +195,11 @@ class TestReflect(object):
         calc2 = _creflect.abeles(self.qvals, layer0, scale=0.99, bkg=1e-8)
         assert_almost_equal(calc1, calc2)
 
+        # test a negative background
+        calc1 = _reflect.abeles(self.qvals, layer0, scale=0.99, bkg=-5e-7)
+        calc2 = _creflect.abeles(self.qvals, layer0, scale=0.99, bkg=-5e-7)
+        assert_almost_equal(calc1, calc2)
+
     def test_compare_c_py_abeles2(self):
         # test two layer system
         if not TEST_C_REFLECT:

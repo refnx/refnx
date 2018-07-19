@@ -165,7 +165,7 @@ void AbelesCalc_ImagAll(int numcoefs,
             num = compnorm(MRtotal[1][0]);
             den = compnorm(MRtotal[0][0]);
             answer = (num / den);
-            answer = (answer * scale) + fabs(bkg);
+            answer = (answer * scale) + bkg;
 
             yP[j] = answer;
         }
