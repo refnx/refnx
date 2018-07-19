@@ -144,7 +144,7 @@ info = {
         'install_requires': ['numpy', 'scipy', 'six',
                              'uncertainties', 'pandas'],
         'extras_require': {'all': ['IPython', 'ipywidgets', 'traitlets',
-                                   'matplotlib', 'xlrd', 'h5py']},
+                                   'matplotlib', 'xlrd', 'h5py', 'tqdm']},
         'tests_require': ['pytest'],
         'cmdclass': {'test': PyTest},
         }
