@@ -79,7 +79,8 @@ def abeles(q, layers, scale=1., bkg=0, threads=0):
 
         # work out characteristic matrix of layer
         mi00 = np.exp(k * 1j * np.fabs(layers[idx - 1, 0])) if idx - 1 else 1
-        mi11 = np.exp(k * -1j * np.fabs(layers[idx - 1, 0])) if idx - 1 else 1
+        # mi11 = np.exp(k * -1j * np.fabs(layers[idx - 1, 0])) if idx - 1 else 1
+        mi11 = 1 / mi00 if idx - 1 else 1
 
         mi10 = rj * mi00
         mi01 = rj * mi11
