@@ -234,7 +234,6 @@ class ReflectModelView(HasTraits):
         Called when slab parameters are varied.
         """
         # this captures when the user starts modifying a different parameter
-        self._possibly_link_slider(change['owner'].param_being_varied)
         if isinstance(change['owner'].param_being_varied, widgets.Checkbox):
             # you are changing the number of fitted parameters
 
@@ -244,6 +243,7 @@ class ReflectModelView(HasTraits):
             # need to rebuild the limit widgets, achieved by redrawing box
             self.view_redraw = time.time()
         else:
+            self._possibly_link_slider(change['owner'].param_being_varied)
             self.view_changed = time.time()
 
     def _possibly_link_slider(self, change_owner):
@@ -489,11 +489,13 @@ class SlabView(HasTraits):
     def __init__(self, slab):
         self.slab = slab
         self.param_widgets_link = {}
+        self.widgets_param_link = {}
 
         self.param_being_varied = None
 
         p = slab.thick
         self.w_thick = widgets.FloatText(value=p.value, step=1)
+        self.widgets_param_link[self.w_thick] = p
         self.c_thick = widgets.Checkbox(value=p.vary)
         self.thick_low_limit = widgets.FloatText(value=p.bounds.lb, step=1)
         self.thick_hi_limit = widgets.FloatText(value=p.bounds.ub,
@@ -501,6 +503,7 @@ class SlabView(HasTraits):
 
         p = slab.sld.real
         self.w_sld = widgets.FloatText(value=p.value, step=0.01)
+        self.widgets_param_link[self.w_sld] = p
         self.c_sld = widgets.Checkbox(value=p.vary)
         self.sld_low_limit = widgets.FloatText(value=p.bounds.lb,
                                                step=0.01)
@@ -508,6 +511,7 @@ class SlabView(HasTraits):
                                               step=0.01)
         p = slab.sld.imag
         self.w_isld = widgets.FloatText(value=p.value, step=0.01)
+        self.widgets_param_link[self.w_isld] = p
         self.c_isld = widgets.Checkbox(value=p.vary)
         self.isld_low_limit = widgets.FloatText(value=p.bounds.lb, step=0.01)
         self.isld_hi_limit = widgets.FloatText(value=p.bounds.ub,
@@ -515,6 +519,7 @@ class SlabView(HasTraits):
 
         p = slab.rough
         self.w_rough = widgets.FloatText(value=p, step=1)
+        self.widgets_param_link[self.w_rough] = p
         self.c_rough = widgets.Checkbox(value=p.vary)
         self.rough_low_limit = widgets.FloatText(p.bounds.lb, step=0.01)
         self.rough_hi_limit = widgets.FloatText(value=p.bounds.ub,
@@ -528,32 +533,38 @@ class SlabView(HasTraits):
                              self.isld_low_limit, self.isld_hi_limit,
                              self.rough_low_limit, self.rough_hi_limit]
 
-        for widget in self._widget_list:
+        # link widgets to observers
+        for widget in [self.w_thick, self.w_sld, self.w_isld, self.w_rough]:
             widget.style.description_width = '0px'
-            widget.observe(self._on_slab_params_modified, names='value')
+            widget.observe(self._on_slab_values_modified, names='value')
         self.w_thick.style.description_width = '50px'
+
+        for widget in [self.c_thick, self.c_sld, self.c_isld, self.c_rough]:
+            widget.style.description_width = '0px'
+            widget.observe(self._on_slab_varies_modified, names='value')
 
         for widget in self._limits_list:
             widget.observe(self._on_slab_limits_modified, names='value')
 
         self._link_param_widgets()
 
-    def _on_slab_params_modified(self, change):
+    def _on_slab_values_modified(self, change):
+        d = self.widgets_param_link
+        d[change['owner']].value = change['owner'].value
+
+        self.param_being_varied = change['owner']
+        self.view_changed = time.time()
+
+    def _on_slab_varies_modified(self, change):
         d = self.param_widgets_link
         slab = self.slab
 
         for par in flatten(slab.parameters):
             if id(par) in d and change['owner'] in d[id(par)]:
                 wids = d[id(par)]
-                loc = wids.index(change['owner'])
-                if loc == 0:
-                    par.value = wids[0].value
-                    break
-                elif loc == 1:
-                    par.vary = wids[1].value
-                    break
+                par.vary = wids[1].value
+                break
 
-        self.param_being_varied = change['owner']
         self.view_changed = time.time()
 
     def _on_slab_limits_modified(self, change):
@@ -853,11 +864,9 @@ class Motofit(object):
         sld_profile = self.model.structure.sld_profile()
         z, sld = sld_profile
         if self.theoretical_plot is not None:
-            self.theoretical_plot.set_xdata(q)
-            self.theoretical_plot.set_ydata(yt)
+            self.theoretical_plot.set_data(q, yt)
 
-            self.theoretical_plot_sld.set_xdata(z)
-            self.theoretical_plot_sld.set_ydata(sld)
+            self.theoretical_plot_sld.set_data(z, sld)
             self.ax_sld.relim()
             self.ax_sld.autoscale_view()
 
@@ -867,8 +876,7 @@ class Motofit(object):
             residuals = self.objective.residuals()
             self.chisqr.value = np.sum(residuals**2)
 
-            self.residuals_plot.set_xdata(self.dataset.x)
-            self.residuals_plot.set_ydata(residuals)
+            self.residuals_plot.set_data(self.dataset.x, residuals)
             self.ax_residual.relim()
             self.ax_residual.autoscale_view()
 
