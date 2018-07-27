@@ -675,9 +675,11 @@ class Objective(BaseObjective):
         for choice in choices:
             yield chains[..., choice]
 
-    def plot(self, pvals=None, samples=0):
+    def plot(self, pvals=None, samples=0, parameter=None):
         """
         Plot the data/model.
+
+        Requires matplotlib be installed.
 
         Parameters
         ----------
@@ -686,6 +688,9 @@ class Objective(BaseObjective):
         samples: number
             If the objective has been sampled, how many samples you wish to
             plot on the graph.
+        parameter: refnx.analysis.Parameter
+            Creates an interactive plot for the Parameter in Jupyter. Requires
+            ipywidgets be installed.
 
         Returns
         -------
@@ -727,9 +732,22 @@ class Objective(BaseObjective):
             self.setp(saved_params)
 
         # add the fit
-        ax.plot(self.data.x, model, color='red', zorder=20)
+        generative_plot = ax.plot(self.data.x, model, color='red', zorder=20)
 
-        return fig, ax
+        if parameter is None:
+            return fig, ax
+
+        # this is if you would like to have an interactive plot in a Jupyter
+        # notebook
+        def f(val):
+            if parameter is not None:
+                parameter.value = float(val)
+            y, y_err, model = self._data_transform(model=self.generative())
+            generative_plot[0].set_data(self.data.x, model)
+            fig.canvas.draw()
+
+        import ipywidgets
+        return fig, ax, ipywidgets.interact(f, val=float(parameter))
 
     def corner(self, **kwds):
         """
