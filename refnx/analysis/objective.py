@@ -690,7 +690,7 @@ class Objective(BaseObjective):
             plot on the graph.
         parameter: refnx.analysis.Parameter
             Creates an interactive plot for the Parameter in Jupyter. Requires
-            ipywidgets be installed.
+            ipywidgets be installed. Use with %matplotlib notebook/qt.
 
         Returns
         -------
@@ -737,8 +737,7 @@ class Objective(BaseObjective):
         if parameter is None:
             return fig, ax
 
-        # this is if you would like to have an interactive plot in a Jupyter
-        # notebook
+        # create an interactive plot in a Jupyter notebook.
         def f(val):
             if parameter is not None:
                 parameter.value = float(val)
@@ -909,9 +908,16 @@ class GlobalObjective(Objective):
 
         return lnlike
 
-    def plot(self):
+    def plot(self, parameter=None):
         """
-        Plot the data/model for all the objectives in the GlobalObjective
+        Plot the data/model for all the objectives in the GlobalObjective.
+        Matplotlib must be installed to use this method.
+
+        Parameters
+        ----------
+        parameter: refnx.analysis.Parameter
+            Creates an interactive plot for the Parameter in Jupyter. Requires
+            ipywidgets be installed. Use with %matplotlib notebook/qt.
 
         Returns
         -------
@@ -923,6 +929,7 @@ class GlobalObjective(Objective):
 
         fig = plt.figure()
         ax = fig.add_subplot(111)
+        generative_plots = []
 
         for objective in self.objectives:
             y, y_err, model = objective._data_transform(
@@ -938,7 +945,26 @@ class GlobalObjective(Objective):
                            label=objective.data.name)
 
             # add the fit
-            ax.plot(objective.data.x, model, color='r', lw=1.5, zorder=20)
+            generative_plots.append(
+                ax.plot(objective.data.x, model, color='r',
+                        lw=1.5, zorder=20)[0])
+
+        if parameter is None:
+            return fig, ax
+
+        # create an interactive plot in a Jupyter notebook.
+        def f(val):
+            if parameter is not None:
+                parameter.value = float(val)
+            for i, objective in enumerate(self.objectives):
+                y, y_err, model = objective._data_transform(
+                    model=objective.generative())
+
+                generative_plots[i].set_data(objective.data.x, model)
+            fig.canvas.draw()
+
+        import ipywidgets
+        return fig, ax, ipywidgets.interact(f, val=float(parameter))
 
         return fig, ax
 
