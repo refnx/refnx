@@ -69,7 +69,6 @@ def q(angle, wavelength):
 def q2(omega, twotheta, phi, wavelength):
     """
     Convert angles and wavelength (lambda) to Q vector.
-    All angles are in degrees.
 
     Parameters
     ----------
@@ -92,7 +91,7 @@ def q2(omega, twotheta, phi, wavelength):
     All angles are assumed to be in degrees.
 
     coordinate system:
-        The beam is incident in the xz plane.
+    The beam is incident in the xz plane.
     x - along beam direction (in small angle approximation)
     y - transverse to beam direction, in plane of sample
     z - normal to sample plane.

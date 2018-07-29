@@ -352,7 +352,7 @@ class Data1D(object):
 
         Returns
         -------
-        dataset : Data1D
+        dataset : refnx.dataset.Data1D
             A new synthesised dataset
         """
         if self.y_err is None:

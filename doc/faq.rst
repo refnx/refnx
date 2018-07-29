@@ -18,4 +18,6 @@ If you find a bug in the code or documentation, use `GitHub Issues`_.
 How should I cite refnx?
 ===========================
 
-See http://doi.org/10.5281/zenodo.1042169
+A paper is currently in development, and will be linked here as soon as it's
+accepted. In the meantime please cite using
+http://doi.org/10.5281/zenodo.1042169.

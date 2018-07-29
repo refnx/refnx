@@ -8,14 +8,14 @@ Installation
 .. _miniconda: https://conda.io/miniconda.html
 .. _github: https://github.com/refnx/refnx
 
-*refnx* has been tested on Python 2.7, 3.4, 3.5 and 3.6. It requires the
-*numpy, scipy, cython, pandas, emcee* packages to work. Additional features
-require the *pytest, h5py, xlrd, uncertainties, ptemcee, matplotlib*
-packages. To build the bleeding edge code you will need to have access to a
-C-compiler to build a couple of Python extensions. C-compilers should be
-installed on Linux. On OSX you will need to install Xcode and the command
-line tools. On Windows you will need to install the correct
-`Visual Studio compiler`_ for your Python version.
+*refnx* has been tested on Python 2.7, 3.5, 3.6 and 3.7. It requires the
+*numpy, scipy, cython, pandas* packages to work. Additional features
+require the *pytest, h5py, xlrd, uncertainties, ptemcee, matplotlib, Jupyter,*
+*ipywidgets, traitlets, tqdm* packages. To build the bleeding edge
+code you will need to have access to a C-compiler to build a couple of Python
+extensions. C-compilers should be installed on Linux. On OSX you will need to
+install Xcode and the command line tools. On Windows you will need to install
+the correct `Visual Studio compiler`_ for your Python version.
 
 
 Installation into a *conda* environment
@@ -34,7 +34,7 @@ Creating a conda environment
 
     ::
 
-     conda create -n refnx python=3.6 numpy scipy cython pandas h5py xlrd pytest
+     conda create -n refnx python=3.7 numpy scipy cython pandas h5py xlrd pytest
 
 2. Activate the environment that we're going to be working in:
 
@@ -50,7 +50,7 @@ Creating a conda environment
 
     ::
 
-     pip install emcee uncertainties ptemcee
+     pip install uncertainties ptemcee
 
 Installing from source
 =======================
@@ -63,8 +63,7 @@ package from within the refnx git repository (see later in this document).
 
     ::
 
-     python setup.py build
-     python setup.py install
+     pip install .
 
 2. Run the tests, they should all work.
 
@@ -75,7 +74,7 @@ package from within the refnx git repository (see later in this document).
 Installing into a conda environment from a released version
 ===========================================================
 
-1. There are pre-built versions on *conda-forge*, but they're not necessarily at the bleeding edge:
+1. There are pre-built versions on *conda-forge*:
 
    ::
 

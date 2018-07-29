@@ -36,7 +36,9 @@ extensions = [
     'sphinx.ext.mathjax',
     'sphinx.ext.viewcode',
     'sphinx.ext.autosummary',
-    'sphinx.ext.napoleon'
+    'sphinx.ext.napoleon',
+    'nbsphinx',
+    'jupyter_sphinx.embed_widgets'
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -68,14 +70,14 @@ version = re.sub(r'\.dev-.*$', r'.dev', refnx.__version__)
 # The full version, including alpha/beta/rc tags.
 release = refnx.__version__
 
-intersphinx_mapping = {'py': ('http://docs.python.org/3', None),
+intersphinx_mapping = {'py': ('https://docs.python.org/3', None),
                        'numpy': ('https://docs.scipy.org/doc/numpy/', None),
                        'scipy': ('https://docs.scipy.org/doc/scipy/reference/', None),
-                       'matplotlib': ('http://matplotlib.org/', None),
+                       'matplotlib': ('https://matplotlib.org/', None),
                        }
 extlinks = {
-    'scipydoc' : ('http://docs.scipy.org/doc/scipy/reference/generated/%s.html', ''),
-    'numpydoc' : ('http://docs.scipy.org/doc/numpy/reference/generated/numpy.%s.html', ''),
+    'scipydoc' : ('https://docs.scipy.org/doc/scipy/reference/generated/%s.html', ''),
+    'numpydoc' : ('https://docs.scipy.org/doc/numpy/reference/generated/numpy.%s.html', ''),
     }
 
 numpydoc_show_class_members = False
@@ -95,7 +97,7 @@ language = None
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
-exclude_patterns = ['_build']
+exclude_patterns = ['_build', '**.ipynb_checkpoints']
 
 # The reST default role (used for this markup: `text`) to use for all
 # documents.
@@ -129,7 +131,7 @@ todo_include_todos = False
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-html_theme = 'alabaster'
+html_theme = 'sphinx_rtd_theme'
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
@@ -153,7 +155,7 @@ html_theme = 'alabaster'
 # The name of an image file (within the static path) to use as favicon of the
 # docs.  This file should be a Windows icon file (.ico) being 16x16 or 32x32
 # pixels large.
-#html_favicon = None
+html_favicon = '_images/scattering.png'
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
@@ -307,3 +309,8 @@ texinfo_documents = [
 
 # Example configuration for intersphinx: refer to the Python standard library.
 #intersphinx_mapping = {'https://docs.python.org/': None}
+
+# -------------------------- nbsphinx options--------------------------------
+
+# time out when evaluating notebooks
+nbsphinx_timeout = 1800

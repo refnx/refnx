@@ -636,9 +636,6 @@ class Motofit(object):
 
     The interactive modeller is designed to be used in a Jupyter notebook.
 
-    Usage
-    -----
-
     >>> # specify that plots are in a separate graph window
     >>> %matplotlib qt
 

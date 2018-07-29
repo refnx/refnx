@@ -4,22 +4,6 @@ refnx.reflect package
 Submodules
 ----------
 
-refnx.reflect.reflect_model module
-----------------------------------
-
-.. automodule:: refnx.reflect.reflect_model
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-refnx.reflect.structure module
-------------------------------
-
-.. automodule:: refnx.reflect.structure
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 Module contents
 ---------------
 
