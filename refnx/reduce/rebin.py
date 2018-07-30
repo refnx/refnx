@@ -87,10 +87,11 @@ def rebin_along_axis(y1, x1, x2, axis=0, y1_sd=None):
     while not it.finished:
         a = list(it.multi_index)
         a.insert(axis, slice(None))
-        # Using a non-tuple sequence for multidimensional indexing is deprecated;
-        # use `arr[tuple(seq)]` instead of `arr[seq]`. In the future this will be
-        # interpreted as an array index, `arr[np.array(seq)]`, which will result
-        # either in an error or a different result.
+        # Using a non-tuple sequence for multidimensional indexing is
+        # deprecated; use `arr[tuple(seq)]` instead of `arr[seq]`. In the
+        # future this will be interpreted as an array index,
+        # `arr[np.array(seq)]`, which will result either in an error or a
+        # different result.
         b = tuple(a)
         if y1_sd is not None:
             rebinned, rebinned_sd = rebin(x1,
