@@ -16,21 +16,27 @@ class Bounds(object):
 
     def lnprob(self, value):
         """
-        Calculate the log-likelihood probability of a value with the bounds
+        Calculate the log-prior probability of a value with the probability
+        distribution.
+
+        Parameters
+        ----------
+        val : float or np.ndarray
+            variates to calculate the log-probability for
+
+        Returns
+        -------
+        arr : float or np.ndarray
+            The log-probabilty corresponding to each of the variates
+
         """
         raise NotImplementedError
 
-    def valid(self, value):
+    def valid(self, val):
         """
         Checks whether a parameter value is within the support of the
         distribution. If it isn't then it returns a value that is within the
         support.
-        """
-        raise NotImplementedError
-
-    def rvs(self, size=1, random_state=None):
-        """
-        Generate random variates from the probability distribution.
 
         Parameters
         ----------
@@ -41,6 +47,25 @@ class Bounds(object):
         -------
         valid : array-like
             valid values within the support
+
+        """
+        raise NotImplementedError
+
+    def rvs(self, size=1, random_state=None):
+        """
+        Generate random variates from the probability distribution.
+
+        Parameters
+        ----------
+        size : int or tuple
+            Specifies the number, or array shape, of random variates to return.
+        random_state : None, int, float or np.random.RandomState
+            For reproducible sampling
+
+        Returns
+        -------
+        arr : array-like
+            Random variates from within the probability distribution.
 
         """
         raise NotImplementedError
@@ -58,6 +83,18 @@ class PDF(Bounds):
         methods.
     seed : int, float or np.random.RandomState
         Seed for random variates
+
+    Examples
+    --------
+
+    >>> import scipy.stats as stats
+    >>> from refnx.analysis import Parameter, PDF
+    >>> p = Parameter(0.5)
+    >>> # use a normal distribution for prior, mean=5 and sd=1.
+    >>> p.bounds = PDF(stats.norm(5, 1)
+    >>> p.lnprob(), stats.norm.logpdf(0.5, 5, 1)
+    (-11.043938533204672, -11.043938533204672)
+
     """
     def __init__(self, rv, seed=None):
         super(PDF, self).__init__(seed=seed)
@@ -73,7 +110,7 @@ class PDF(Bounds):
 
     def lnprob(self, val):
         """
-        Calculate the log-likelihood probability of a value with the
+        Calculate the log-prior probability of a value with the probability
         distribution.
 
         Parameters
@@ -85,6 +122,7 @@ class PDF(Bounds):
         -------
         arr : float or np.ndarray
             The log-probabilty corresponding to each of the variates
+
         """
         return self.rv.logpdf(val)
 
@@ -146,6 +184,24 @@ class Interval(Bounds):
         The upper bound
     seed : None, int, float or np.random.RandomState
         For reproducible sampling
+
+    Examples
+    --------
+
+    >>> from refnx.analysis import Parameter, Interval
+    >>> p = Parameter(1)
+    >>> # closed interval
+    >>> p.bounds = Interval(0, 10)
+    >>> p.lnprob([5, -1])
+    array([-2.30258509,        -inf])
+
+    A semi-closed interval will still prevent the fitter from accessing
+    impossible locations.
+
+    >>> p.bounds = Interval(lb=-10)
+    >>> p.lnprob([5, -1])
+    array([0., 0.])
+
     """
     def __init__(self, lb=-np.inf, ub=np.inf, seed=None):
         super(Interval, self).__init__(seed=seed)

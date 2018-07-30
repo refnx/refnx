@@ -135,6 +135,9 @@ class Model(object):
 
     @property
     def fitfunc(self):
+        """
+        The fit-function associated with the model
+        """
         return self._fitfunc
 
     @fitfunc.setter
@@ -146,6 +149,9 @@ class Model(object):
 
     @property
     def parameters(self):
+        r"""
+        The refnx.analysis.Parameters set associated with the model.
+        """
         # override this if model adds more parameters than just
         # self._parameters
         return self._parameters

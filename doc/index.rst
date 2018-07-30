@@ -39,6 +39,7 @@ in participating in this project please use the `refnx github repository`_.
     getting_started.ipynb
     reflectometry_global.ipynb
     gui.ipynb
+    lipid.ipynb
     faq
     modules
 
