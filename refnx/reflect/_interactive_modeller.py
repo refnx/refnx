@@ -660,30 +660,20 @@ class Motofit(object):
 
     Attributes
     ----------
-    dataset: refnx.reflect.Data1D
+    dataset: :class:`refnx.dataset.Data1D`
         The dataset associated with the modeller
-    model: refnx.reflect.ReflectModel
+    model: :class:`refnx.reflect.ReflectModel`
         Calculates a theoretical model, from an interfacial structure
         (`model.Structure`).
-    objective: refnx.analysis.Objective
+    objective: :class:`refnx.analysis.Objective`
         The Objective that allows one to compare the model against the data.
-    curvefitter: refnx.analysis.CurveFitter
+    curvefitter: :class:`refnx.analysis.CurveFitter`
         Object for fitting the data based on the objective.
-    fig: matplotlib.Figure
+    fig: :class:`matplotlib.Figure`
         Graph displaying the data.
     code: str
         A Python code fragment capable of fitting the data.
 
-    Methods
-    -------
-    __call__ - display the GUI in a Jupyter cell
-    save_model - save the current model to a pickle file
-    load_model - load a pickle file and set it as the current file
-    set_model - use an existing `refnx.reflect.ReflectModel` to set the GUI
-                model
-    load_data - load a dataset
-    do_fit - do a fit
-    redraw - Update the notebook cell containing the GUI
     """
 
     def __init__(self):

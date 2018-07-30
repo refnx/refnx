@@ -7,6 +7,10 @@ import numpy as np
 
 
 class Bounds(object):
+    """
+    A base class that describes the probability distribution for a parameter
+
+    """
     def __init__(self, seed=None):
         self._random_state = check_random_state(seed)
 
@@ -29,6 +33,18 @@ class Bounds(object):
 
 
 class PDF(Bounds):
+    """
+    A class that describes the probability distribution for a parameter.
+
+    Parameters
+    ----------
+    rv : :class:`scipy.stats.rv_continuous` or Object
+        A continuous probability distribution. If `rv` is not an
+        `rv_continuous`, then it must implement the `logpdf` and `rvs`
+        methods.
+    seed : int, float or np.random.RandomState
+        Seed for random variates
+    """
     def __init__(self, rv, seed=None):
         super(PDF, self).__init__(seed=seed)
         # we'll accept any object so long as it has logpdf and rvs methods
@@ -43,7 +59,18 @@ class PDF(Bounds):
 
     def lnprob(self, val):
         """
-        Calculate the log-likelihood probability of a value with the bounds
+        Calculate the log-likelihood probability of a value with the
+        distribution.
+
+        Parameters
+        ----------
+        val : float or np.ndarray
+            variate to calculate the log-probability for
+
+        Returns
+        -------
+        arr : float or np.ndarray
+            The log-probabilty corresponding to each of the variates
         """
         return self.rv.logpdf(val)
 
@@ -61,7 +88,7 @@ class PDF(Bounds):
         Returns
         -------
         valid : array-like
-            values within the support
+            valid values within the support
         """
         _val = np.asfarray(val)
         valid = np.where(np.isfinite(self.lnprob(_val)),
@@ -71,12 +98,41 @@ class PDF(Bounds):
         return valid
 
     def rvs(self, size=1, random_state=None):
+        """
+        Generate random variates from the probability distribution.
+
+        Parameters
+        ----------
+        size : int or tuple
+            Specifies the number, or array shape, of random variates to return.
+        random_state : None, int, float or np.random.RandomState
+            For reproducible sampling
+
+        Returns
+        -------
+        arr : array-like
+            Random variates from within the probability distribution.
+
+        """
         if random_state is None:
             random_state = self._random_state
         return self.rv.rvs(size=size, random_state=random_state)
 
 
 class Interval(Bounds):
+    r"""
+    Describes a uniform probability distribution. May be open, semi-open,
+    or closed.
+
+    Parameters
+    ----------
+    lb : float
+        The lower bound
+    ub : float
+        The upper bound
+    seed : None, int, float or np.random.RandomState
+        For reproducible sampling
+    """
     def __init__(self, lb=-np.inf, ub=np.inf, seed=None):
         super(Interval, self).__init__(seed=seed)
         if lb is None:
@@ -110,6 +166,9 @@ class Interval(Bounds):
 
     @property
     def lb(self):
+        """
+        Lower bound of uniform distribution
+        """
         return self._lb
 
     @lb.setter
@@ -120,6 +179,9 @@ class Interval(Bounds):
 
     @property
     def ub(self):
+        """
+        Upper bound of uniform distribution
+        """
         return self._ub
 
     @ub.setter
@@ -129,9 +191,6 @@ class Interval(Bounds):
         self._set_bounds(self._lb, val)
 
     def lnprob(self, val):
-        """
-        Calculate the log-likelihood probability of a value with the bounds
-        """
         _val = np.asfarray(val)
         valid = np.logical_and(self._lb <= _val, _val <= self._ub)
 

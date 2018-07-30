@@ -32,8 +32,8 @@ class ReflectModel(object):
         the background is added. This is turned into a Parameter during the
         construction of this object.
     bkg : float or refnx.analysis.Parameter, optional
-        linear background added to all model values. This is turned into
-        a Parameter during the construction of this object.
+        Q-independent constant background added to all model values. This is
+        turned into a Parameter during the construction of this object.
     name : str, optional
         Name of the Model
     dq : float or refnx.analysis.Parameter, optional
@@ -82,6 +82,23 @@ class ReflectModel(object):
         self.structure = structure
 
     def __call__(self, x, p=None, x_err=None):
+        r"""
+        Calculate the generative model
+
+        Parameters
+        ----------
+        x : float or np.ndarray
+            q values for the calculation.
+        p : refnx.analysis.Parameters, optional
+            parameters required to calculate the model
+        x_err : np.ndarray
+            dq resolution smearing values for the dataset being considered.
+
+        Returns
+        -------
+        reflectivity : np.ndarray
+            Calculated reflectivity
+        """
         return self.model(x, p=p, x_err=x_err)
 
     @property
@@ -138,7 +155,7 @@ class ReflectModel(object):
         ----------
         x : float or np.ndarray
             q values for the calculation.
-        p : refnx.analysis.Parameter, optional
+        p : refnx.analysis.Parameters, optional
             parameters required to calculate the model
         x_err : np.ndarray
             dq resolution smearing values for the dataset being considered.
@@ -146,6 +163,7 @@ class ReflectModel(object):
         Returns
         -------
         reflectivity : np.ndarray
+            Calculated reflectivity
 
         """
         if p is not None:
@@ -165,7 +183,7 @@ class ReflectModel(object):
         r"""
         Additional log-probability terms for the reflectivity model. Do not
         include log-probability terms for model parameters, these are
-        automatically calculated elsewhere.
+        automatically included elsewhere.
 
         Returns
         -------
@@ -252,7 +270,7 @@ def reflectivity(q, slabs, scale=1., bkg=0., dq=5., quad_order=17,
         scale factor. All model values are multiplied by this value before
         the background is added
     bkg : float
-        linear background added to all model values.
+        Q-independent constant background added to all model values.
     dq : float or np.ndarray, optional
         - `dq == 0`
            no resolution smearing is employed.
@@ -653,6 +671,24 @@ class MixedReflectModel(object):
         self._structures = structures
 
     def __call__(self, x, p=None, x_err=None):
+        r"""
+        Calculate the generative model
+
+        Parameters
+        ----------
+        x : float or np.ndarray
+            q values for the calculation.
+        p : refnx.analysis.Parameters, optional
+            parameters required to calculate the model
+        x_err : np.ndarray
+            dq resolution smearing values for the dataset being considered.
+
+        Returns
+        -------
+        reflectivity : np.ndarray
+            Calculated reflectivity
+
+        """
         return self.model(x, p=p, x_err=x_err)
 
     @property
@@ -678,9 +714,8 @@ class MixedReflectModel(object):
     @property
     def scales(self):
         r"""
-        :class:`refnx.analysis.Parameter` - all model values are multiplied by
-        this value before the background is added.
-
+        :class:`refnx.analysis.Parameter` - the reflectivity from each of the
+        structures are multiplied by these values to account for patchiness.
         """
         return self._scales
 
@@ -756,8 +791,8 @@ class MixedReflectModel(object):
     @property
     def structures(self):
         r"""
-        :class:`refnx.reflect.Structure` - object describing the interface of
-        a reflectometry sample.
+        list of :class:`refnx.reflect.Structure` that describe the patchiness
+        of the surface.
 
         """
         return self._structures

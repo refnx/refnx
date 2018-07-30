@@ -177,10 +177,7 @@ class LipidLeaflet(Component):
     @property
     def slabs(self):
         """
-        Returns
-        -------
-        slab_model: np.ndarray
-            Slab representation of monolayer
+        Slab representation of monolayer, as an array
         """
         layers = np.zeros((2, 5))
 

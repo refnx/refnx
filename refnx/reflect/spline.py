@@ -15,58 +15,57 @@ class Spline(Component):
     """
     Freeform modelling of the real part of an SLD profile using spline
     interpolation.
+
+    Parameters
+    ----------
+    extent : float or Parameter
+        Total extent of spline region
+    vs : Sequence of float/Parameter
+        the real part of the SLD values of each of the knots.
+    dz : Sequence of float/Parameter
+        the lateral offset between successive knots.
+    left : refnx.reflect.Component
+        The Component to the left of this Spline region.
+    right : refnx.reflect.Component
+        The Component to the right of this Spline region.
+    solvent : refnx.reflect.SLD
+        An SLD instance representing the solvent
+    name : str
+        Name of component
+    interpolator : scipy.interpolate Univariate Interpolator, optional
+        Which scipy.interpolate Univariate Interpolator to use.
+    zgrad : bool, optional
+        If true then extra control knots are placed outside this spline
+        with the same SLD as the materials on the left and right. With a
+        monotonic interpolator this guarantees that the gradient is zero
+        at either end of the interval.
+    microslab_max_thickness : float
+        Maximum size of the microslabs approximating the spline.
+
+    Notes
+    -----
+    This spline component only generates the real part of the SLD (thereby
+    assuming that the imaginary part is negligible).
+    The sequence dz are the lateral offsets of the knots normalised to a
+    unit interval [0, 1]. The reason for using lateral offsets is
+    so that the knots are monotonically increasing in location. When each
+    dz offset is turned into a Parameter it is given bounds in [0, 1].
+    Thus with an extent of 500, and dz = [0.1, 0.2, 0.2], the knots will be
+    at [0, 50, 150, 250, 500]. Notice that there are two extra knots for
+    the start and end of the interval (disregarding the `zgrad` control
+    knots). If ``np.sum(dz) > 1``, then the knot spacings are normalised to
+    1. e.g. dz of [0.1, 0.2, 0.9] would result in knots (in the normalised
+    interval) of [0, 0.0833, 0.25, 1, 1].
+    If `vs` is monotonic then the output spline will be monotonic. If `vs`
+    is not monotonic then there may be regions of the spline larger or
+    smaller than `left` or `right`.
+    The slab representation of this component are approximated using a
+    'microslab' representation of spline. The max thickness of each
+    microslab is `microslab_max_thickness`.
     """
 
     def __init__(self, extent, vs, dz, left, right, solvent, name='',
                  interpolator=Pchip, zgrad=True, microslab_max_thickness=1):
-        """
-        Parameters
-        ----------
-        extent : float or Parameter
-            Total extent of spline region
-        vs : Sequence of float/Parameter
-            the real part of the SLD values of each of the knots.
-        dz : Sequence of float/Parameter
-            the lateral offset between successive knots.
-        left : refnx.reflect.Component
-            The Component to the left of this Spline region.
-        right : refnx.reflect.Component
-            The Component to the right of this Spline region.
-        solvent : refnx.reflect.SLD
-            An SLD instance representing the solvent
-        name : str
-            Name of component
-        interpolator : scipy.interpolate Univariate Interpolator, optional
-            Which scipy.interpolate Univariate Interpolator to use.
-        zgrad : bool, optional
-            If true then extra control knots are placed outside this spline
-            with the same SLD as the materials on the left and right. With a
-            monotonic interpolator this guarantees that the gradient is zero
-            at either end of the interval.
-        microslab_max_thickness : float
-            Maximum size of the microslabs approximating the spline.
-
-        Notes
-        -----
-        This spline component only generates the real part of the SLD (thereby
-        assuming that the imaginary part is negligible).
-        The sequence dz are the lateral offsets of the knots normalised to a
-        unit interval [0, 1]. The reason for using lateral offsets is
-        so that the knots are monotonically increasing in location. When each
-        dz offset is turned into a Parameter it is given bounds in [0, 1].
-        Thus with an extent of 500, and dz = [0.1, 0.2, 0.2], the knots will be
-        at [0, 50, 150, 250, 500]. Notice that there are two extra knots for
-        the start and end of the interval (disregarding the `zgrad` control
-        knots). If ``np.sum(dz) > 1``, then the knot spacings are normalised to
-        1. e.g. dz of [0.1, 0.2, 0.9] would result in knots (in the normalised
-        interval) of [0, 0.0833, 0.25, 1, 1].
-        If `vs` is monotonic then the output spline will be monotonic. If `vs`
-        is not monotonic then there may be regions of the spline larger or
-        smaller than `left` or `right`.
-        The slab representation of this component are approximated using a
-        'microslab' representation of spline. The max thickness of each
-        microslab is `microslab_max_thickness`.
-        """
         self.name = name
         self.left_slab = left
         self.right_slab = right
