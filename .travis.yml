@@ -45,6 +45,7 @@ script:
     - export REQUIRE_C=1
     - export MPLBACKEND=agg
     - python setup.py test
+    - pip install .
     - sphinx-build -b html doc doc/html
 
 notifications:
