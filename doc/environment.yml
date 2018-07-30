@@ -1,0 +1,24 @@
+channels:
+  - conda-forge
+dependencies:
+  - python==3.7
+  - sphinx
+  - pandoc
+  - nbconvert
+  - ipywidgets
+  - numpy
+  - cython
+  - jupyter
+  - scipy
+  - matplotlib
+  - pytest
+  - xlrd
+  - h5py
+  - numpydoc
+  - pandas
+  - pip:
+    - nbsphinx
+    - jupyter-sphinx
+    - sphinx_rtd_theme
+    - tqdm
+    - six

@@ -25,7 +25,7 @@ class Structure(UserList):
     ----------
     name : str
         Name of this structure
-    solvent : SLD
+    solvent : refnx.reflect.SLD
         Specifies the scattering length density used for solvation. If no
         solvent is specified then the SLD of the solvent is assumed to be
         the SLD of `Structure[-1].slabs[-1]` (after any possible slab order
@@ -46,9 +46,10 @@ class Structure(UserList):
     If `Structure.reverse_structure is True` then the slab representation
     order is reversed.
     If no solvent is specified then the volume fraction of solvent in each of
-    the Components is *assumed* to be the SLD of `Structure[-1].slabs[-1]`.
-    after any possible slab order reversal. This slab corresponds to the
-    SLD of the semi-infinite backing medium.
+    the Components is *assumed* to be the scattering length density of
+    `Structure[-1].slabs[-1]` after any possible slab order reversal. This
+    slab corresponds to the scattering length density of the semi-infinite
+    backing medium.
     The profile contraction specified by the `contract` keyword can improve
     calculation time for Structures created with microslicing (such as
     analytical profiles). If you use this option it is recommended to check

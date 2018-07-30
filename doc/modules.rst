@@ -1,5 +1,5 @@
-refnx
-=====
+API reference
+=============
 
 .. toctree::
    :maxdepth: 4

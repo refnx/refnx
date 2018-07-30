@@ -13,34 +13,34 @@ class LipidLeaflet(Component):
 
     Parameters
     ----------
-    APM: float or Parameter
-    b_heads: float, Parameter or complex
+    APM: float or refnx.analysis.Parameter
+    b_heads: float, refnx.analysis.Parameter or complex
         Sum of coherent scattering lengths of head group (Angstrom)
-    vm_heads: float or Parameter
+    vm_heads: float or refnx.analysis.Parameter
         Molecular volume of head group (Angstrom**2)
-    thickness_heads: float or Parameter
+    thickness_heads: float or refnx.analysis.Parameter
         Thickness of head group region (Angstrom)
-    b_tails: float, Parameter or complex
+    b_tails: float, refnx.analysis.Parameter or complex
         Sum of coherent scattering lengths of tail group (Angstrom)
-    vm_tails: float or Parameter
+    vm_tails: float or refnx.analysis.Parameter
         Molecular volume of tail group (Angstrom**2)
-    thickness_tails: float or Parameter
+    thickness_tails: float or refnx.analysis.Parameter
         Thickness of head group region (Angstrom)
-    rough_head_tail: float or Parameter
+    rough_head_tail: float or refnx.analysis.Parameter
         Roughness of head-tail group (Angstrom)
-    rough_preceding_mono: float or Parameter
+    rough_preceding_mono: float or refnx.analysis.Parameter
         Roughness between preceding component (in the fronting direction) and
         the monolayer (Angstrom). If `reverse_monolayer is False` then this is
         the roughness between the preceding component and the heads, if
         `reverse_monolayer is True` then this is the roughness between the
         preceding component and the tails.
-    head_solvent: None, float, complex, SLD
+    head_solvent: None, float, complex, refnx.reflect.SLD
         Solvent for the head region. If `None`, then solvation will be
         performed by the parent `Structure`, using the `Structure.solvent`
         attribute. Other options are coerced to an `SLD` object using
         `SLD(float | complex)`. A float/complex argument is the SLD of the
         solvent (10**-6 Angstrom**-2).
-    tail_solvent: None, float, complex, SLD
+    tail_solvent: None, float, complex, refnx.reflect.SLD
         Solvent for the tail region. If `None`, then solvation will be
         performed by the parent `Structure`, using the `Structure.solvent`
         attribute. Other options are coerced to an `SLD` object using

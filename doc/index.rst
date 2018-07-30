@@ -29,19 +29,19 @@ about the system (such as adsorbed amount).
 Co-refinement of multiple contrast datasets is straightforward, with sharing of
 joint parameters across each model.
 
-The refnx package is free software, using a BSD licence. The
-software and this document are works in progress.  If you are interested in
-participating in this effort please use the `refnx github repository`_.
+The refnx package is free software, using a BSD licence. If you are interested
+in participating in this project please use the `refnx github repository`_.
 
 .. toctree::
-   :maxdepth: 2
+    :maxdepth: 2
 
-   installation
-   gettingstarted
-   faq
-
+    installation
+    getting_started.ipynb
+    reflectometry_global.ipynb
+    gui.ipynb
+    faq
+    modules
 
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
-
