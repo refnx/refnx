@@ -29,6 +29,20 @@ class Bounds(object):
         raise NotImplementedError
 
     def rvs(self, size=1, random_state=None):
+        """
+        Generate random variates from the probability distribution.
+
+        Parameters
+        ----------
+        val : array-like
+            values to examine
+
+        Returns
+        -------
+        valid : array-like
+            valid values within the support
+
+        """
         raise NotImplementedError
 
 

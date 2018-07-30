@@ -397,12 +397,7 @@ class CurveFitter(object):
     @property
     def lnprob(self):
         """
-        Log-probability for each of the entries in self.chain
-
-        Returns
-        -------
-        lnprob : array
-
+        Log-probability for each of the entries in `self.chain`
         """
         if isinstance(self.sampler, PTSampler):
             return np.transpose(self.sampler.logprobability, axes=(2, 0, 1))

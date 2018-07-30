@@ -303,6 +303,17 @@ def reflectivity(q, slabs, scale=1., bkg=0., dq=5., quad_order=17,
         ``_reflect``. If `threads == 0` then all available processors are
         used.
 
+    Example
+    -------
+
+    >>> from refnx.reflect import reflectivity
+    >>> q = np.linspace(0.01, 0.5, 1000)
+    >>> slabs = np.array([[0, 2.07, 0, 0],
+    ...                   [100, 3.47, 0, 3],
+    ...                   [500, -0.5, 0.00001, 3],
+    ...                   [0, 6.36, 0, 3]])
+    >>> print(reflectivity(q, slabs))
+
     """
     # constant dq/q smearing
     if isinstance(dq, numbers.Real) and float(dq) == 0:
