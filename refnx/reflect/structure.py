@@ -56,6 +56,20 @@ class Structure(UserList):
     the reflectivity signal with and without contraction to ensure they are
     comparable.
 
+    Example
+    -------
+
+    >>> from refnx.reflect import SLD
+    >>> # make the materials
+    >>> air = SLD(0, 0)
+    >>> # overall SLD of polymer is (1.0 + 0.001j) x 10**-6 A**-2
+    >>> polymer = SLD(1.0 + 0.0001j)
+    >>> si = SLD(2.07)
+    >>> # Make the structure, s, from slabs.
+    >>> # The polymer slab has a thickness of 200 A and a air/polymer roughness
+    >>> # of 4 A.
+    >>> s = air(0, 0) | polymer(200, 4) | si(0, 3)
+
     """
     def __init__(self, name='', solvent=None, reverse_structure=False,
                  contract=0):
@@ -96,6 +110,14 @@ class Structure(UserList):
         return '\n'.join(s)
 
     def append(self, item):
+        """
+        Append a :class:`Component` to the Structure.
+
+        Parameters
+        ----------
+        item: refnx.reflect.Component
+            The component to be added.
+        """
         if isinstance(item, SLD):
             self.append(item())
             return
@@ -274,6 +296,14 @@ class Structure(UserList):
         return sld_profile(slabs, z)
 
     def __ior__(self, other):
+        """
+        Build a structure by `IOR`'ing Structures/Components/SLDs.
+
+        Parameters
+        ----------
+        other: :class:`Structure`, :class:`Component`, :class:`SLD`
+            The object to add to the structure.
+        """
         # self |= other
         if isinstance(other, Component):
             self.append(other)
@@ -288,6 +318,14 @@ class Structure(UserList):
         return self
 
     def __or__(self, other):
+        """
+        Build a structure by `OR`'ing Structures/Components/SLDs.
+
+        Parameters
+        ----------
+        other: :class:`Structure`, :class:`Component`, :class:`SLD`
+            The object to add to the structure.
+        """
         # c = self | other
         p = Structure()
         p |= self
@@ -296,6 +334,9 @@ class Structure(UserList):
 
     @property
     def components(self):
+        """
+        The list of components in the sample.
+        """
         return self.data
 
     @property
@@ -371,6 +412,21 @@ class SLD(object):
         return 'SLD = {0} x10**-6 Å**-2'.format(sld)
 
     def __call__(self, thick=0, rough=0):
+        """
+        Create a :class:`Slab`.
+
+        Parameters
+        ----------
+        thick: refnx.analysis.Parameter or float
+            Thickness of slab in Angstrom
+        rough: refnx.analysis.Parameter or float
+            Roughness of slab in Angstrom
+
+        Returns
+        -------
+        slab : refnx.reflect.Slab
+            The newly made Slab.
+        """
         return Slab(thick, self, rough, name=self.name)
 
     def __or__(self, other):
@@ -392,11 +448,27 @@ class SLD(object):
 
 
 class Component(object):
+    """
+    A base class for describing the structure of a subset of an interface.
 
+    """
     def __init__(self):
         self.name = ''
 
     def __or__(self, other):
+        """
+        OR'ing components can create a :class:`Structure`.
+
+        Parameters
+        ----------
+        other: refnx.reflect.Structure`, refnx.reflect.Component
+            Combines with this component to make a Structure
+
+        Returns
+        -------
+        s: refnx.reflect.Structure
+            The created Structure
+        """
         # c = self | other
         p = Structure()
         p |= self
@@ -417,13 +489,23 @@ class Component(object):
         """
         The slab representation of this component
 
-        If a Component returns None, then it doesn't have any slabs
+        If a Component returns None, then it doesn't have any slabs.
         """
 
         raise NotImplementedError("A component should override the slabs "
                                   "property")
 
     def lnprob(self):
+        """
+        The log-probability that this Component adds to the total log-prior
+        term. Do not include log-probability terms for the actual parameters,
+        these are automatically included elsewhere.
+
+        Returns
+        -------
+        lnprob : float
+            Log-probability
+        """
         return 0
 
 
