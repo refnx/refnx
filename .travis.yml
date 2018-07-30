@@ -33,7 +33,8 @@ before_install:
     - conda create --yes -n conda-refnx python=$PY
     - source activate conda-refnx
     - conda install --yes numpy scipy h5py cython pandas xlrd flake8 six pytest ipywidgets IPython matplotlib traitlets
-    - pip install uncertainties ptemcee corner
+    - conda install --yes numpydoc sphinx jupyter pandoc nbconvert
+    - pip install uncertainties ptemcee corner nbsphinx jupyter-sphinx sphinx_rtd_theme tqdm
 
     # gradually expand flake8 to all of codebase
     # added W504 July18 because it starts to raise error in 3.7
@@ -44,6 +45,8 @@ script:
     - export REQUIRE_C=1
     - export MPLBACKEND=agg
     - python setup.py test
+    - pip install .
+    - sphinx-build -b html doc doc/html
 
 notifications:
     # Perhaps we should have status emails sent to the mailing list, but
