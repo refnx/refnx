@@ -18,7 +18,6 @@ General release instructions
 - source activate dev2
 - python setup.py bdist_wheel
 - twine upload dist/*
-- go into documents directory, "make html". Then copy html directory to refnx.github.io directory
 
 Go into windows
 - update git repository
