@@ -247,6 +247,7 @@ class Objective(BaseObjective):
         """
         **bool** Does the data have weights (`data.y_err`), and is the
         objective using them?
+
         """
         return self.data.weighted and self.__use_weights
 
@@ -310,6 +311,7 @@ class Objective(BaseObjective):
         Returns
         -------
         model : np.ndarray
+
         """
         self.setp(pvals)
         return self.model(self.data.x, x_err=self.data.x_err)
@@ -378,7 +380,7 @@ class Objective(BaseObjective):
 
     def setp(self, pvals):
         """
-        Set the parameters from pvals
+        Set the parameters from pvals.
 
         Parameters
         ----------
@@ -751,7 +753,7 @@ class Objective(BaseObjective):
     def corner(self, **kwds):
         """
         Corner plot of the chains belonging to the Parameters.
-        Requires the `corner` package.
+        Requires the `corner` and `matplotlib` packages.
 
         Parameters
         ----------
@@ -805,6 +807,7 @@ class GlobalObjective(Objective):
         """
         **bool** do all the datasets have y_err, and are all the objectives
         wanting to use weights?
+
         """
         return self._weighted.all()
 
@@ -971,7 +974,7 @@ class GlobalObjective(Objective):
 
 class Transform(object):
     r"""
-    Mathematical transforms of numeric data
+    Mathematical transforms of numeric data.
 
     Parameters
     ----------
@@ -994,8 +997,16 @@ class Transform(object):
     You ask for a transform to be carried out by calling the Transform object
     directly.
 
+    >>> x = np.linspace(0.01, 0.1, 11)
+    >>> y = np.linspace(100, 1000, 11)
+    >>> y_err = np.sqrt(y)
     >>> t = Transform('logY')
-    >>> y, e = t(x, y, y_err)
+    >>> ty, te = t(x, y, y_err)
+    >>> ty
+    array([2.        , 2.2787536 , 2.44715803, 2.56820172, 2.66275783,
+           2.74036269, 2.80617997, 2.86332286, 2.91381385, 2.95904139,
+           3.        ])
+
     """
     def __init__(self, form):
         types = [None, 'lin', 'logY', 'YX4', 'YX2']
@@ -1008,6 +1019,36 @@ class Transform(object):
                              " 'logY', 'YX4', 'YX2']")
 
     def __call__(self, x, y, y_err=None):
+        """
+        Calculate the transformed data
+
+        Parameters
+        ----------
+        x : array-like
+            x-values
+        y : array-like
+            y-values
+        y_err : array-like
+            Uncertainties in `y` (standard deviation)
+
+        Returns
+        -------
+        yt, et : tuple
+            The transformed data
+
+        Examples
+        --------
+        >>> x = np.linspace(0.01, 0.1, 11)
+        >>> y = np.linspace(100, 1000, 11)
+        >>> y_err = np.sqrt(y)
+        >>> t = Transform('logY')
+        >>> ty, te = t(x, y, y_err)
+        >>> ty
+        array([2.        , 2.2787536 , 2.44715803, 2.56820172, 2.66275783,
+               2.74036269, 2.80617997, 2.86332286, 2.91381385, 2.95904139,
+               3.        ])
+
+        """
         return self.__transform(x, y, y_err=y_err)
 
     def __transform(self, x, y, y_err=None):
