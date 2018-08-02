@@ -565,6 +565,7 @@ class SlabView(HasTraits):
                 par.vary = wids[1].value
                 break
 
+        self.param_being_varied = change['owner']
         self.view_changed = time.time()
 
     def _on_slab_limits_modified(self, change):
