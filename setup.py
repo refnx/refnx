@@ -27,8 +27,8 @@ except ValueError:
 # versioning
 MAJOR = 0
 MINOR = 0
-MICRO = 17
-ISRELEASED = True
+MICRO = 18
+ISRELEASED = False
 VERSION = '%d.%d.%d' % (MAJOR, MINOR, MICRO)
 
 
