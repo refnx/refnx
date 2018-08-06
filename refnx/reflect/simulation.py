@@ -53,7 +53,8 @@ class Simulation:
         self.read_lgt()
         if verbose:
             print('LGT file read.')
-        self.av_layers = np.zeros((int(self.u.dimensions[2]/layer_thickness) -
+        self.av_layers = np.zeros((int(self.u.dimensions[2] /
+                                       layer_thickness) -
                                    cut_off, 5))
         self.layers = np.zeros((self.av_layers.shape[0],
                                 self.av_layers.shape[1],
@@ -96,8 +97,8 @@ class Simulation:
                 i = 1
                 if self.xray:
                     i *= 2.817940
-                self.scatlens[line_list[0]] = [float(line_list[1])*i,
-                                               float(line_list[2])*i]
+                self.scatlens[line_list[0]] = [float(line_list[1]) * i,
+                                               float(line_list[2]) * i]
             file.close()
         else:
             raise ValueError("No lgtfile has been defined.")
@@ -114,8 +115,8 @@ class Simulation:
         k = 0
         for ts in u.trajectory:
             for atom in range(0, len(u.atoms)):
-                if u.atoms[atom].position[2] < self.layers.shape[0] * \
-                                                self.layers[0, 0, k]:
+                analysis_layers = self.layers.shape[0] * self.layers[0, 0, k]
+                if u.atoms[atom].position[2] < analysis_layers:
                     bin_choose = int(u.atoms[atom].position[2] /
                                      self.layers[0, 0, k])
                     self.layers[bin_choose, 1, k] += \
