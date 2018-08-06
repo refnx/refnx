@@ -279,8 +279,8 @@ class FreeformVFPextent(Component):
         p.extend([slab.parameters for slab in self.right_slabs])
         return p
 
-    def lnprob(self):
-        lnprob = 0
+    def logp(self):
+        logp = 0
         # you're trying to enforce monotonicity
         if self.monotonic_penalty:
             monotonic, direction = _is_monotonic(self.vf)
@@ -293,19 +293,19 @@ class FreeformVFPextent(Component):
             if not monotonic:
                 # you're not monotonic so you have to have the penalty
                 # anyway
-                lnprob -= np.abs(self.monotonic_penalty)
+                logp -= np.abs(self.monotonic_penalty)
             else:
                 # you are monotonic, but might be in the wrong direction
                 if self.monotonic_penalty > 0 and direction > 0:
                     # positive penalty means you want decreasing
-                    lnprob -= np.abs(self.monotonic_penalty)
+                    logp -= np.abs(self.monotonic_penalty)
                 elif self.monotonic_penalty < 0 and direction < 0:
                     # negative penalty means you want increasing
-                    lnprob -= np.abs(self.monotonic_penalty)
+                    logp -= np.abs(self.monotonic_penalty)
 
         # log-probability for area under profile
-        lnprob += self.gamma.lnprob(self.profile_area())
-        return lnprob
+        logp += self.gamma.logp(self.profile_area())
+        return logp
 
     def profile_area(self):
         """
@@ -628,8 +628,8 @@ class FreeformVFPgamma(Component):
         p.extend([slab.parameters for slab in self.right_slabs])
         return p
 
-    def lnprob(self):
-        lnprob = 0
+    def logp(self):
+        logp = 0
         # you're trying to enforce monotonicity
         if self.monotonic_penalty:
             monotonic, direction = _is_monotonic(self.vf)
@@ -642,22 +642,22 @@ class FreeformVFPgamma(Component):
             if not monotonic:
                 # you're not monotonic so you have to have the penalty
                 # anyway
-                lnprob -= np.abs(self.monotonic_penalty)
+                logp -= np.abs(self.monotonic_penalty)
             else:
                 # you are monotonic, but might be in the wrong direction
                 if self.monotonic_penalty > 0 and direction > 0:
                     # positive penalty means you want decreasing
-                    lnprob -= np.abs(self.monotonic_penalty)
+                    logp -= np.abs(self.monotonic_penalty)
                 elif self.monotonic_penalty < 0 and direction < 0:
                     # negative penalty means you want increasing
-                    lnprob -= np.abs(self.monotonic_penalty)
+                    logp -= np.abs(self.monotonic_penalty)
 
         # you should be using a slab model because the spline extent is
         # negligible.
         if self.extent <= 0:
             return -np.inf
 
-        return lnprob
+        return logp
 
     @property
     def extent(self):
