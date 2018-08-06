@@ -5,6 +5,8 @@ from refnx.reflect.reflect_model import (ReflectModel, reflectivity,
 from refnx.reflect.structure import (Structure, SLD, Slab, Component,
                                      sld_profile)
 from refnx.reflect.spline import Spline
+from refnx.reflect.simulation import Simulation
+
 from refnx.reflect._lipid import LipidLeaflet
 from refnx._lib._testutils import PytestTester
 
