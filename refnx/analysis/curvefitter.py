@@ -34,7 +34,7 @@ MCMCResult = namedtuple('MCMCResult', ['name', 'param', 'stderr', 'chain',
                                        'median'])
 
 
-def _objective_lnprob(theta, userargs=()):
+def _objective_logpost(theta, userargs=()):
     """
     Calculates the log-posterior probability.
 
@@ -47,17 +47,17 @@ def _objective_lnprob(theta, userargs=()):
 
     Returns
     -------
-    lnprob : float
+    logpost : float
         Log posterior probability
 
     """
     # need to use this function because PY27 can't pickle a partial on
     # an object method
     objective = userargs
-    return objective.lnprob(theta)
+    return objective.logpost(theta)
 
 
-def _objective_lnlike(theta, userargs=()):
+def _objective_logl(theta, userargs=()):
     """
     Calculates the log-likelihood probability.
 
@@ -77,10 +77,10 @@ def _objective_lnlike(theta, userargs=()):
     # need to use this function because PY27 can't pickle a partial on
     # an object method
     objective = userargs
-    return objective.lnlike(theta)
+    return objective.logl(theta)
 
 
-def _objective_lnprior(theta, userargs=()):
+def _objective_logp(theta, userargs=()):
     """
     Calculates the log-prior probability.
 
@@ -93,14 +93,14 @@ def _objective_lnprior(theta, userargs=()):
 
     Returns
     -------
-    lnprior : float
+    logp : float
         Log prior probability
 
     """
     # need to use this function because PY27 can't pickle a partial on
     # an object method
     objective = userargs
-    return objective.lnprior(theta)
+    return objective.logp(theta)
 
 
 class CurveFitter(object):
@@ -210,7 +210,7 @@ class CurveFitter(object):
             self.mcmc_kws['args'] = (self.objective,)
             self.sampler = emcee.EnsembleSampler(self._nwalkers,
                                                  self.nvary,
-                                                 _objective_lnprob,
+                                                 _objective_logpost,
                                                  **self.mcmc_kws)
         # Parallel Tempering was requested.
         else:
@@ -223,8 +223,8 @@ class CurveFitter(object):
                    'ntemps': self._ntemps,
                    'nwalkers': self._nwalkers,
                    'dim': self.nvary,
-                   'logl': _objective_lnlike,
-                   'logp': _objective_lnprior
+                   'logl': _objective_logl,
+                   'logp': _objective_logp
                    }
             sig.update(self.mcmc_kws)
             self.sampler = PTSampler(**sig)
@@ -339,7 +339,8 @@ class CurveFitter(object):
         if self._ntemps == -1:
             init_walkers = init_walkers[0]
 
-        # now validate initialisation, ensuring all init pos have finite lnprob
+        # now validate initialisation, ensuring all init pos have finite
+        # logpost
         for i, param in enumerate(self._varying_parameters):
             init_walkers[..., i] = param.valid(init_walkers[..., i])
 
@@ -395,7 +396,7 @@ class CurveFitter(object):
         return self.sampler.get_chain()
 
     @property
-    def lnprob(self):
+    def logpost(self):
         """
         Log-probability for each of the entries in `self.chain`
         """
@@ -567,7 +568,7 @@ class CurveFitter(object):
                 kwargs['thin_by'] = nthin
                 kwargs.pop('thin', 0)
 
-            # ptemcee returns coords, lnprob
+            # ptemcee returns coords, logpost
             # emcee returns a State object
             if isinstance(self.sampler, PTSampler):
                 for result in self.sampler.sample(self._state.coords,

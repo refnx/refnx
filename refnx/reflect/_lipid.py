@@ -238,7 +238,7 @@ class LipidLeaflet(Component):
 
         return p
 
-    def lnprob(self):
+    def logp(self):
         # penalise unphysical volume fractions.
         volfrac_h = self.vm_heads.value / (self.apm.value *
                                            self.thickness_heads.value)

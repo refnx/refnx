@@ -30,7 +30,7 @@ def gauss(x, p0):
     return p[0] + p[1] * np.exp(-((x - p[2]) / p[3])**2)
 
 
-def lnprob_extra(model, data):
+def logp_extra(model, data):
     return 1.
 
 
@@ -116,23 +116,23 @@ class TestObjective(object):
         self.objective.parameters.pvals = [1, 2]
         assert_equal(self.objective.parameters.pvals, [1, 2.])
 
-    def test_lnprior(self):
+    def test_logp(self):
         self.p[0].range(0, 10)
-        assert_almost_equal(self.objective.lnprior(), np.log(0.1))
+        assert_almost_equal(self.objective.logp(), np.log(0.1))
 
-        # lnprior should set parameters
-        self.objective.lnprior([8, 2])
+        # logp should set parameters
+        self.objective.logp([8, 2])
         assert_equal(np.array(self.objective.parameters), [8, 2])
 
         # if we supply a value outside the range it should return -inf
-        assert_equal(self.objective.lnprior([-1, 2]), -np.inf)
+        assert_equal(self.objective.logp([-1, 2]), -np.inf)
 
-    def test_lnprob(self):
+    def test_logpost(self):
         # http://dan.iel.fm/emcee/current/user/line/
-        assert_almost_equal(self.objective.lnprior(), 0)
+        assert_almost_equal(self.objective.logp(), 0)
         # the uncertainties are underestimated in this example...
-        assert_almost_equal(self.objective.lnlike(), -559.01078135444595)
-        assert_almost_equal(self.objective.lnprob(), -559.01078135444595)
+        assert_almost_equal(self.objective.logl(), -559.01078135444595)
+        assert_almost_equal(self.objective.logpost(), -559.01078135444595)
 
     def test_chisqr(self):
         assert_almost_equal(self.objective.chisqr(),
@@ -158,12 +158,12 @@ class TestObjective(object):
         assert_almost_equal(objective.residuals(),
                             self.data.y - self.mod)
 
-    def test_lnprob_extra(self):
-        self.objective.lnprob_extra = lnprob_extra
+    def test_logp_extra(self):
+        self.objective.logp_extra = logp_extra
 
-        # repeat lnprior test
+        # repeat logp test
         self.p[0].range(0, 10)
-        assert_almost_equal(self.objective.lnprior(), np.log(0.1) + 1)
+        assert_almost_equal(self.objective.logp(), np.log(0.1) + 1)
 
     def test_objective_pickle(self):
         # can you pickle the objective function?
@@ -176,7 +176,7 @@ class TestObjective(object):
             pickle.loads(pkl)
 
         # can you pickle with an extra function present?
-        self.objective.lnprob_extra = lnprob_extra
+        self.objective.logp_extra = logp_extra
         pkl = pickle.dumps(self.objective)
         pickle.loads(pkl)
 
@@ -209,13 +209,13 @@ class TestObjective(object):
 
     def test_lnsigma(self):
         # check that lnsigma works correctly
-        def lnprior(theta, x, y, yerr):
+        def logp(theta, x, y, yerr):
             m, b, lnf = theta
             if -5.0 < m < 0.5 and 0.0 < b < 10.0 and -10.0 < lnf < 1.0:
                 return 0.0
             return -np.inf
 
-        def lnlike(theta, x, y, yerr):
+        def logl(theta, x, y, yerr):
             m, b, lnf = theta
             model = m * x + b
             inv_sigma2 = 1.0 / (yerr ** 2 + model ** 2 * np.exp(2 * lnf))
@@ -226,7 +226,7 @@ class TestObjective(object):
         x, y, yerr, _ = self.data.data
 
         theta = [self.m_true, self.b_true, np.log(self.f_true)]
-        bo = BaseObjective(theta, lnlike, lnprior=lnprior,
+        bo = BaseObjective(theta, logl, logp=logp,
                            fcn_args=(x, y, yerr))
 
         lnsigma = Parameter(np.log(self.f_true), 'lnsigma', bounds=(-10, 1),
@@ -234,17 +234,17 @@ class TestObjective(object):
         self.objective.setp(np.array([self.b_true, self.m_true]))
         self.objective.lnsigma = lnsigma
 
-        assert_allclose(self.objective.lnlike(), bo.lnlike())
+        assert_allclose(self.objective.logl(), bo.logl())
 
     def test_base_emcee(self):
         # check that the base objective works against the emcee example.
-        def lnprior(theta, x, y, yerr):
+        def logp(theta, x, y, yerr):
             m, b, lnf = theta
             if -5.0 < m < 0.5 and 0.0 < b < 10.0 and -10.0 < lnf < 1.0:
                 return 0.0
             return -np.inf
 
-        def lnlike(theta, x, y, yerr):
+        def logl(theta, x, y, yerr):
             m, b, lnf = theta
             model = m * x + b
             inv_sigma2 = 1.0 / (yerr ** 2 + model ** 2 * np.exp(2 * lnf))
@@ -254,13 +254,13 @@ class TestObjective(object):
         x, y, yerr, _ = self.data.data
 
         theta = [self.m_true, self.b_true, np.log(self.f_true)]
-        bo = BaseObjective(theta, lnlike, lnprior=lnprior,
+        bo = BaseObjective(theta, logl, logp=logp,
                            fcn_args=(x, y, yerr))
 
-        # test that the wrapper gives the same lnlike as the direct function
-        assert_almost_equal(bo.lnlike(theta),
-                            lnlike(theta, x, y, yerr))
-        assert_almost_equal(bo.lnlike(theta), -bo.nll(theta))
+        # test that the wrapper gives the same logl as the direct function
+        assert_almost_equal(bo.logl(theta),
+                            logl(theta, x, y, yerr))
+        assert_almost_equal(bo.logl(theta), -bo.nll(theta))
         assert_almost_equal(bo.nll(theta), 12.8885352412)
 
         # Find the maximum likelihood value.
@@ -273,7 +273,7 @@ class TestObjective(object):
         pos = [result["x"] + 1e-4 * np.random.randn(ndim) for
                i in range(nwalkers)]
 
-        sampler = emcee.EnsembleSampler(nwalkers, ndim, bo.lnprob)
+        sampler = emcee.EnsembleSampler(nwalkers, ndim, bo.logpost)
         sampler.run_mcmc(pos, 800, rstate0=np.random.get_state())
 
         burnin = 200

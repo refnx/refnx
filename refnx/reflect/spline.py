@@ -175,7 +175,7 @@ class Spline(Component):
                   self.solvent.parameters])
         return p
 
-    def lnprob(self):
+    def logp(self):
         return 0
 
     @property

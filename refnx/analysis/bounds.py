@@ -14,7 +14,7 @@ class Bounds(object):
     def __init__(self, seed=None):
         self._random_state = check_random_state(seed)
 
-    def lnprob(self, value):
+    def logp(self, value):
         """
         Calculate the log-prior probability of a value with the probability
         distribution.
@@ -92,7 +92,7 @@ class PDF(Bounds):
     >>> p = Parameter(0.5)
     >>> # use a normal distribution for prior, mean=5 and sd=1.
     >>> p.bounds = PDF(stats.norm(5, 1)
-    >>> p.lnprob(), stats.norm.logpdf(0.5, 5, 1)
+    >>> p.logp(), stats.norm.logpdf(0.5, 5, 1)
     (-11.043938533204672, -11.043938533204672)
 
     """
@@ -108,7 +108,7 @@ class PDF(Bounds):
     def __repr__(self):
         return repr(self.rv)
 
-    def lnprob(self, val):
+    def logp(self, val):
         """
         Calculate the log-prior probability of a value with the probability
         distribution.
@@ -143,7 +143,7 @@ class PDF(Bounds):
             valid values within the support
         """
         _val = np.asfarray(val)
-        valid = np.where(np.isfinite(self.lnprob(_val)),
+        valid = np.where(np.isfinite(self.logp(_val)),
                          _val,
                          self.rv.rvs(size=_val.shape))
 
@@ -192,14 +192,14 @@ class Interval(Bounds):
     >>> p = Parameter(1)
     >>> # closed interval
     >>> p.bounds = Interval(0, 10)
-    >>> p.lnprob([5, -1])
+    >>> p.logp([5, -1])
     array([-2.30258509,        -inf])
 
     A semi-closed interval will still prevent the fitter from accessing
     impossible locations.
 
     >>> p.bounds = Interval(lb=-10)
-    >>> p.lnprob([5, -1])
+    >>> p.logp([5, -1])
     array([0., 0.])
 
     """
@@ -260,7 +260,7 @@ class Interval(Bounds):
             val = np.inf
         self._set_bounds(self._lb, val)
 
-    def lnprob(self, val):
+    def logp(self, val):
         _val = np.asfarray(val)
         valid = np.logical_and(self._lb <= _val, _val <= self._ub)
 
@@ -301,7 +301,7 @@ class Interval(Bounds):
         """
         _val = np.asfarray(val)
         if self._closed_bounds:
-            valid = np.where(np.isfinite(self.lnprob(_val)),
+            valid = np.where(np.isfinite(self.logp(_val)),
                              _val,
                              self.rvs(size=_val.shape))
         else:

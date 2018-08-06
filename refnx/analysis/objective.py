@@ -14,13 +14,13 @@ from refnx.analysis import (is_parameter, Parameter, possibly_create_parameter,
 
 class BaseObjective(object):
     """Don't necessarily have to use Parameters, could use np.array"""
-    def __init__(self, p, lnlike, lnprior=None, fcn_args=(), fcn_kwds=None,
+    def __init__(self, p, logl, logp=None, fcn_args=(), fcn_kwds=None,
                  name=None):
         self.name = name
         self.parameters = p
         self.nvary = len(p)
-        self._lnlike = lnlike
-        self._lnprior = lnprior
+        self._logl = logl
+        self._logp = logp
         self.fcn_args = fcn_args
         self.fcn_kwds = {}
         if fcn_kwds is not None:
@@ -57,9 +57,9 @@ class BaseObjective(object):
         if pvals is not None:
             vals = pvals
 
-        return -self.lnlike(vals)
+        return -self.logl(vals)
 
-    def lnprior(self, pvals=None):
+    def logp(self, pvals=None):
         """
         Log-prior probability function
 
@@ -70,7 +70,7 @@ class BaseObjective(object):
 
         Returns
         -------
-        lnprior : float
+        logp : float
             log-prior probability
 
         """
@@ -78,11 +78,11 @@ class BaseObjective(object):
         if pvals is not None:
             vals = pvals
 
-        if callable(self._lnprior):
-            return self._lnprior(vals, *self.fcn_args, **self.fcn_kwds)
+        if callable(self._logp):
+            return self._logp(vals, *self.fcn_args, **self.fcn_kwds)
         return 0
 
-    def lnlike(self, pvals=None):
+    def logl(self, pvals=None):
         """
         Log-likelihood probability function
 
@@ -93,7 +93,7 @@ class BaseObjective(object):
 
         Returns
         -------
-        lnlike : float
+        logl : float
             log-likelihood probability.
 
         """
@@ -101,11 +101,11 @@ class BaseObjective(object):
         if pvals is not None:
             vals = pvals
 
-        return self._lnlike(vals, *self.fcn_args, **self.fcn_kwds)
+        return self._logl(vals, *self.fcn_args, **self.fcn_kwds)
 
-    def lnprob(self, pvals=None):
+    def logpost(self, pvals=None):
         """
-        Log-probability function
+        Log-posterior probability function
 
         Parameters
         ----------
@@ -114,7 +114,7 @@ class BaseObjective(object):
 
         Returns
         -------
-        lnprob : float
+        logpost : float
             log-probability.
 
         Notes
@@ -127,11 +127,11 @@ class BaseObjective(object):
         if pvals is not None:
             vals = pvals
 
-        lnprob = self.lnprior(vals)
-        if not np.isfinite(lnprob):
+            logpost = self.logp(vals)
+        if not np.isfinite(logpost):
             return -np.inf
-        lnprob += self.lnlike(vals)
-        return lnprob
+        logpost += self.logl(vals)
+        return logpost
 
     def varying_parameters(self):
         """
@@ -177,22 +177,22 @@ class Objective(BaseObjective):
 
         `s_n**2 = y_err**2 + exp(lnsigma * 2) * model**2`
 
-        See `Objective.lnlike` for more details.
+        See `Objective.logl` for more details.
     use_weights : bool
         use experimental uncertainty in calculation of residuals and
-        lnlike, if available. If this is set to False, then you should also
+        logl, if available. If this is set to False, then you should also
         set `self.lnsigma.vary = False`, it will have no effect on the fit.
     transform : callable, optional
         the model, data and data uncertainty are transformed by this
         function before calculating the likelihood/residuals. Has the
         signature `transform(data.x, y, y_err=None)`, returning the tuple
         (`transformed_y, transformed_y_err`).
-    lnprob_extra : callable, optional
+    logp_extra : callable, optional
         user specifiable log-probability term. This contribution is in
         addition to the log-prior term of the `model` parameters, and
-        `model.lnprob`, as well as the log-likelihood of the `data`. Has
+        `model.logp`, as well as the log-likelihood of the `data`. Has
         signature:
-        `lnprob_extra(model, data)`. The `model` will already possess
+        `logp_extra(model, data)`. The `model` will already possess
         updated parameters. Beware of including the same log-probability
         terms more than once.
     name : str
@@ -200,12 +200,12 @@ class Objective(BaseObjective):
 
     Notes
     -----
-    For parallelisation `lnprob_extra` needs to be picklable.
+    For parallelisation `logp_extra` needs to be picklable.
 
     """
 
     def __init__(self, model, data, lnsigma=None, use_weights=True,
-                 transform=None, lnprob_extra=None, name=None):
+                 transform=None, logp_extra=None, name=None):
         self.model = model
         # should be a Data1D instance
         if isinstance(data, Data1D):
@@ -219,7 +219,7 @@ class Objective(BaseObjective):
 
         self.__use_weights = use_weights
         self.transform = transform
-        self.lnprob_extra = lnprob_extra
+        self.logp_extra = logp_extra
         self.name = name
         if name is None:
             self.name = id(self)
@@ -412,7 +412,7 @@ class Objective(BaseObjective):
                          ' the full number of parameters, or only the varying'
                          ' parameters.')
 
-    def lnprior(self, pvals=None):
+    def logp(self, pvals=None):
         """
         Calculate the log-prior of the system
 
@@ -423,7 +423,7 @@ class Objective(BaseObjective):
 
         Returns
         -------
-        lnprior : float
+        logp : float
             log-prior probability
 
         Notes
@@ -432,37 +432,37 @@ class Objective(BaseObjective):
 
         .. code-block:: python
 
-            lnprior = np.sum(param.lnprob() for param in
+            logp = np.sum(param.logp() for param in
                              self.varying_parameters())
-            lnprior += self.model.lnprob()
-            lnprior += self.lnprob_extra(self.model, self.data)
+            logp += self.model.logp()
+            logp += self.logp_extra(self.model, self.data)
 
         The major components of the log-prior probability are from the varying
         parameters and the Model used to construct the Objective.
-        `self.model.lnprob` should not include any contributions from
+        `self.model.logp` should not include any contributions from
         `self.model.parameters` otherwise they'll be counted more than once.
-        The same argument applies to the user specifiable `lnprob_extra`
+        The same argument applies to the user specifiable `logp_extra`
         function.
 
         """
         self.setp(pvals)
 
-        lnprior = np.sum(param.lnprob() for param in self.varying_parameters())
+        logp = np.sum(param.logp() for param in self.varying_parameters())
 
-        if not np.isfinite(lnprior):
+        if not np.isfinite(logp):
             return -np.inf
 
-        lnprior += self.model.lnprob()
+        logp += self.model.logp()
 
-        if not np.isfinite(lnprior):
+        if not np.isfinite(logp):
             return -np.inf
 
-        if self.lnprob_extra is not None:
-            lnprior += self.lnprob_extra(self.model, self.data)
+        if self.logp_extra is not None:
+            logp += self.logp_extra(self.model, self.data)
 
-        return lnprior
+        return logp
 
-    def lnlike(self, pvals=None):
+    def logl(self, pvals=None):
         """
         Calculate the log-likelhood of the system
 
@@ -473,7 +473,7 @@ class Objective(BaseObjective):
 
         Returns
         -------
-        lnlike : float
+        logl : float
             log-likelihood probability
 
         Notes
@@ -482,7 +482,7 @@ class Objective(BaseObjective):
 
         .. code-block:: python
 
-            lnlike = -0.5 * np.sum((y - model / s_n)**2 + np.log(s_n**2))
+            logl = -0.5 * np.sum((y - model / s_n)**2 + np.log(s_n**2))
 
         where
 
@@ -495,7 +495,7 @@ class Objective(BaseObjective):
 
         model = self.model(self.data.x, x_err=self.data.x_err)
 
-        lnlike = 0.
+        logl = 0.
 
         y, y_err, model = self._data_transform(model)
 
@@ -508,15 +508,15 @@ class Objective(BaseObjective):
         # TODO do something sensible if data isn't weighted
         if self.weighted:
             # ignoring 2 * pi constant
-            lnlike += np.log(var_y)
+            logl += np.log(var_y)
 
-        lnlike += (y - model)**2 / var_y
+        logl += (y - model)**2 / var_y
 
         # nans play havoc
-        if np.isnan(lnlike).any():
-            raise RuntimeError("Objective.lnlike encountered a NaN")
+        if np.isnan(logl).any():
+            raise RuntimeError("Objective.logl encountered a NaN")
 
-        return -0.5 * np.sum(lnlike)
+        return -0.5 * np.sum(logl)
 
     def nll(self, pvals=None):
         """
@@ -534,9 +534,9 @@ class Objective(BaseObjective):
 
         """
         self.setp(pvals)
-        return -self.lnlike()
+        return -self.logl()
 
-    def lnprob(self, pvals=None):
+    def logpost(self, pvals=None):
         """
         Calculate the log-probability of the curvefitting system
 
@@ -547,26 +547,26 @@ class Objective(BaseObjective):
 
         Returns
         -------
-        lnprob : float
+        logpost : float
             log-probability
 
         Notes
         -----
         The overall log-probability is the sum of the log-prior and
         log-likelihood. The log-likelihood is not calculated if the log-prior
-        is impossible (`lnprior == -np.inf`).
+        is impossible (`logp == -np.inf`).
 
         """
         self.setp(pvals)
-        lnprob = self.lnprior()
+        logpost = self.logp()
 
         # only calculate the probability if the parameters have finite
         # log-prior
-        if not np.isfinite(lnprob):
+        if not np.isfinite(logpost):
             return -np.inf
 
-        lnprob += self.lnlike()
-        return lnprob
+        logpost += self.logl()
+        return logpost
 
     def covar(self):
         """
@@ -862,7 +862,7 @@ class GlobalObjective(Objective):
 
         return p
 
-    def lnprior(self, pvals=None):
+    def logp(self, pvals=None):
         """
         Calculate the log-prior of the system
 
@@ -873,22 +873,22 @@ class GlobalObjective(Objective):
 
         Returns
         -------
-        lnprior : float
+        logp : float
             log-prior probability
 
         """
         self.setp(pvals)
 
-        lnprior = 0.
+        logp = 0.
         for objective in self.objectives:
-            lnprior += objective.lnprior()
+            logp += objective.logp()
             # shortcut if one of the priors is impossible
-            if not np.isfinite(lnprior):
+            if not np.isfinite(logp):
                 return -np.inf
 
-        return lnprior
+        return logp
 
-    def lnlike(self, pvals=None):
+    def logl(self, pvals=None):
         """
         Calculate the log-likelhood of the system
 
@@ -899,17 +899,17 @@ class GlobalObjective(Objective):
 
         Returns
         -------
-        lnlike : float
+        logl : float
             log-likelihood probability
 
         """
         self.setp(pvals)
-        lnlike = 0.
+        logl = 0.
 
         for objective in self.objectives:
-            lnlike += objective.lnlike()
+            logl += objective.logl()
 
-        return lnlike
+        return logl
 
     def plot(self, parameter=None):
         """

@@ -352,7 +352,7 @@ class Structure(UserList):
             p.append(self.solvent.parameters)
         return p
 
-    def lnprob(self):
+    def logp(self):
         """
         log-probability for the interfacial structure. Note that if a given
         component is present more than once in a Structure then it's log-prob
@@ -360,14 +360,14 @@ class Structure(UserList):
 
         Returns
         -------
-        lnprob : float
+        logp : float
             log-prior for the Structure.
         """
-        lnprob = 0
+        logp = 0
         for component in self.components:
-            lnprob += component.lnprob()
+            logp += component.logp()
 
-        return lnprob
+        return logp
 
 
 class SLD(object):
@@ -495,7 +495,7 @@ class Component(object):
         raise NotImplementedError("A component should override the slabs "
                                   "property")
 
-    def lnprob(self):
+    def logp(self):
         """
         The log-probability that this Component adds to the total log-prior
         term. Do not include log-probability terms for the actual parameters,
@@ -503,7 +503,7 @@ class Component(object):
 
         Returns
         -------
-        lnprob : float
+        logp : float
             Log-probability
         """
         return 0
