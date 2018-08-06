@@ -9,8 +9,7 @@ Monte Carlo to obtain posterior distributions for curvefitting problems.
 
 *refnx* has been tested on Python 2.7, 3.4, 3.5 and 3.6. It requires the *numpy,
 scipy, cython, pandas, emcee* packages to work. Additional features require the
-*pytest, h5py, xlrd, uncertainties, ptemcee, tqdm, matplotlib* packages. To build
-the bleeding edge code you will need to have access to a C-compiler to build a
+*pytest, h5py, xlrd, uncertainties, ptemcee, tqdm, matplotlib, MDAnalysis* packages. To build the bleeding edge code you will need to have access to a C-compiler to build a
 couple of Python extensions. C-compilers should be installed on Linux. On OSX you
 will need to install Xcode and the command line tools. On Windows you will need to
 install the correct [Visual Studio compiler][Visual-studio-compiler] for your
@@ -25,12 +24,12 @@ install the *emcee* package separately.
 Perhaps the easiest way to create a scientific computing environment is to use the [miniconda][miniconda] package manager. Once *conda* has been installed the first step is to create a *conda* environment.
 
 ### Creating a conda environment
- 
+
   1) In a shell window create a conda environment and install the dependencies. The **-n** flag indicates that the environment is called *refnx*.
-  
+
   ```conda create -n refnx python=3.7 numpy scipy cython pandas h5py xlrd pytest tqdm```
   2) Activate the environment that we're going to be working in:
-  
+
   ```
   # on OSX
   source activate refnx
@@ -40,7 +39,7 @@ Perhaps the easiest way to create a scientific computing environment is to use t
   ```
   3) Install the remaining dependencies:
   ```pip install uncertainties ptemcee```
- 
+
 ### Installing into a conda environment from source
 
  The latest source code can be obtained from either [PyPi][PyPi] or [Github][github-refnx]. You can also build the package from within the refnx git repository (see later in this document).
@@ -57,20 +56,20 @@ Perhaps the easiest way to create a scientific computing environment is to use t
 ### Installing into a conda environment from a released version
 
   1) There are pre-built versions on *conda-forge*, but they're not necessarily at the bleeding edge:
-  
+
   ```conda install -c conda-forge refnx```
   2) Start up a Python interpreter and make sure the tests run:
   ```
   >>> import refnx
   >>> refnx.test()
   ```
- 
+
 -----------------------
 ## Development Workflow
- 
+
 These instructions outline the workflow for contributing to refnx development. The refnx community welcomes all contributions that will improve the package. The following instructions are based on use of a command line *git* client. *Git* is a distributed version control program. An example of [how to contribute to the numpy project][numpy-contrib] is a useful reference.
 
-### Setting up a local git repository 
+### Setting up a local git repository
   1) Create an account on [github](https://github.com/).
   2) On the [refnx github][github-refnx] page fork the *refnx* repository to your own github account. Forking means that now you have your own personal repository of the *refnx* code.
   3) Now we will make a local copy of your personal repository on your local machine:
@@ -88,7 +87,7 @@ These instructions outline the workflow for contributing to refnx development. T
   ```
 
 ### Keeping your local and remote repositories up to date
-The main *refnx* repository may be a lot more advanced than your fork, or your local copy, of the git repository. 
+The main *refnx* repository may be a lot more advanced than your fork, or your local copy, of the git repository.
   1) To update your repositories you need to fetch the changes from the main *refnx* repository:
   ```
   git fetch upstream
