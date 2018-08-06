@@ -392,7 +392,7 @@ class Parameter(BaseParameter):
 
     def logp(self, pval=None):
         """
-        Calculate the log-likelihood probability of the parameter
+        Calculate the log probability of the parameter
 
         Returns
         -------
