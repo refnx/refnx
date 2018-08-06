@@ -1089,3 +1089,76 @@ class Transform(object):
             return yt, None
         else:
             return yt, et
+
+
+class _pymc_objective_wrapper(object):
+    """
+    Wraps objective for pymc3
+
+    Parameters
+    ----------
+    objective: refnx.analysis.Objective
+    """
+    def __init__(self, objective):
+        self.objective = objective
+
+    def __name__(self):
+        return 'objective'
+
+    def __call__(self, *args):
+        vals = self.objective.generative(np.array(args))
+        return vals
+
+
+def pymc_objective(objective):
+    """
+    Creates a pymc3 model from an Objective. Will not be able to use the NUTS
+    sampler because gradients aren't evaluable.
+
+    Requires theano and pymc3 be installed. This is an experimental feature.
+
+    Parameters
+    ----------
+    objective: refnx.analysis.Objective
+
+    Returns
+    -------
+    model: pymc3.Model
+
+    Notes
+    -----
+    The varying parameters are renamed 'p0', 'p1', etc, as it's vital in pymc3
+    that all parameters have their own unique name.
+
+    """
+    import pymc3 as pm
+    import theano.tensor as T
+    from theano.compile.ops import as_op
+
+    basic_model = pm.Model()
+
+    wrapped_obj = _pymc_objective_wrapper(objective)
+
+    pars = objective.varying_parameters()
+    wrapped_pars = []
+    with basic_model:
+        # Priors for unknown model parameters
+        for i, par in enumerate(pars):
+            d = as_op(itypes=[T.dscalar], otypes=[T.dscalar])(par.bounds.logp)
+            p = pm.DensityDist('p%d' % i, d)
+
+            wrapped_pars.append(p)
+
+        # Expected value of outcome
+        v = as_op(itypes=[T.dscalar] * len(pars),
+                  otypes=[T.dvector])(wrapped_obj)
+
+        # Likelihood (sampling distribution) of observations
+        y_obs = pm.Normal('Y_obs', mu=v(*wrapped_pars),
+                          sd=objective.data.y_err,
+                          observed=objective.data.y)
+
+        if not y_obs:
+            return None
+
+    return basic_model
