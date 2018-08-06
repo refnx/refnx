@@ -13,21 +13,21 @@ class TestBounds(object):
         pass
 
     def test_interval(self):
-        # open interval should have lnprob of 0
+        # open interval should have logp of 0
         interval = Interval()
-        assert_equal(interval.lnprob(0), 0)
+        assert_equal(interval.logp(0), 0)
 
         # semi closed interval
         interval.ub = 1000
-        assert_equal(interval.lnprob(0), 0)
-        assert_equal(interval.lnprob(1001), -np.inf)
+        assert_equal(interval.logp(0), 0)
+        assert_equal(interval.logp(1001), -np.inf)
 
         # fully closed interval
         interval.lb = -1000
-        assert_equal(interval.lnprob(-1001), -np.inf)
+        assert_equal(interval.logp(-1001), -np.inf)
         assert_equal(interval.lb, -1000)
         assert_equal(interval.ub, 1000)
-        assert_equal(interval.lnprob(0), np.log(1 / 2000.))
+        assert_equal(interval.logp(0), np.log(1 / 2000.))
 
         # try and set lb higher than ub
         interval.lb = 1002
@@ -38,7 +38,7 @@ class TestBounds(object):
         vals = interval.valid(np.linspace(990, 1005, 100))
         assert_(np.max(vals) <= 1002)
         assert_(np.min(vals) >= 1000)
-        assert_(np.isfinite(interval.lnprob(vals)).all())
+        assert_(np.isfinite(interval.logp(vals)).all())
 
         # if bounds are semi-open then val is reflected from lb
         interval.ub = None
@@ -62,12 +62,12 @@ class TestBounds(object):
         # even if it's really far out it's still a valid value
         assert_equal(pdf.valid(1003), 1003)
         # logp
-        assert_equal(pdf.lnprob(0), norm.logpdf(0))
+        assert_equal(pdf.logp(0), norm.logpdf(0))
 
         # examine dist with finite support
         pdf = PDF(truncnorm(-1, 1), seed=1)
-        assert_equal(pdf.lnprob(-2), -np.inf)
-        assert_equal(pdf.lnprob(-0.5), truncnorm.logpdf(-0.5, -1, 1))
+        assert_equal(pdf.logp(-2), -np.inf)
+        assert_equal(pdf.logp(-0.5), truncnorm.logpdf(-0.5, -1, 1))
 
         # obtain a random value of a bounds instance
         vals = pdf.rvs(size=1000)
@@ -89,7 +89,7 @@ class TestBounds(object):
 
         assert_equal(bounds.valid(1.), 1)
         bounds.rvs(1)
-        assert_equal(bounds.lnprob(1.), 0)
+        assert_equal(bounds.logp(1.), 0)
 
 
 class UserPDF(object):

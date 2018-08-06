@@ -179,7 +179,7 @@ class ReflectModel(object):
                             threads=self.threads,
                             quad_order=self.quad_order)
 
-    def lnprob(self):
+    def logp(self):
         r"""
         Additional log-probability terms for the reflectivity model. Do not
         include log-probability terms for model parameters, these are
@@ -187,11 +187,11 @@ class ReflectModel(object):
 
         Returns
         -------
-        lnprob : float
+        logp : float
             log-probability of structure.
 
         """
-        return self.structure.lnprob()
+        return self.structure.logp()
 
     @property
     def structure(self):
@@ -781,7 +781,7 @@ class MixedReflectModel(object):
 
         return y + self.bkg.value
 
-    def lnprob(self):
+    def logp(self):
         r"""
         Additional log-probability terms for the reflectivity model. Do not
         include log-probability terms for model parameters, these are
@@ -789,15 +789,15 @@ class MixedReflectModel(object):
 
         Returns
         -------
-        lnprob : float
+        logp : float
             log-probability of structure.
 
         """
-        lnprob = 0
+        logp = 0
         for structure in self._structures:
-            lnprob += structure.lnprob()
+            logp += structure.logp()
 
-        return lnprob
+        return logp
 
     @property
     def structures(self):

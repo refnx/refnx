@@ -1053,8 +1053,8 @@ class Motofit(object):
             return
 
         try:
-            lnprior = self.objective.lnprior()
-            if not np.isfinite(lnprior):
+            logp = self.objective.logp()
+            if not np.isfinite(logp):
                 self._print("One of your parameter values lies outside its"
                             " bounds. Please adjust the value, or the bounds.")
                 return

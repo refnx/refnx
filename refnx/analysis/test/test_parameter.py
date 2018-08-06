@@ -66,16 +66,16 @@ class TestParameter(object):
 
     def test_parameter_bounds(self):
         x = Parameter(4, bounds=Interval(-4, 4))
-        assert_equal(x.lnprob(), uniform.logpdf(0, -4, 8))
+        assert_equal(x.logp(), uniform.logpdf(0, -4, 8))
 
         x.bounds = None
         assert_(isinstance(x._bounds, Interval))
         assert_equal(x.bounds.lb, -np.inf)
         assert_equal(x.bounds.ub, np.inf)
-        assert_equal(x.lnprob(), 0)
+        assert_equal(x.logp(), 0)
 
         x.setp(bounds=norm(0, 1))
-        assert_almost_equal(x.lnprob(1), norm.logpdf(1, 0, 1))
+        assert_almost_equal(x.logp(1), norm.logpdf(1, 0, 1))
 
         # all created parameters were mistakenly being given the same
         # default bounds instance!

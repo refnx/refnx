@@ -118,9 +118,9 @@ class Parameters(UserList):
         self.append(other)
         return self
 
-    def lnprob(self):
-        # lnprob for all the parameters
-        return np.sum([param.lnprob() for param in f_unique(flatten(self.data))
+    def logp(self):
+        # logp for all the parameters
+        return np.sum([param.logp() for param in f_unique(flatten(self.data))
                        if param.vary])
 
     def __array__(self):
@@ -264,7 +264,7 @@ class BaseParameter(object):
     def vary(self):
         return self._vary
 
-    def lnprob(self):
+    def logp(self):
         raise NotImplementedError("Subclass of BaseParameter should override"
                                   " this method")
 
@@ -390,14 +390,14 @@ class Parameter(BaseParameter):
         self._constraint = None
         self.constraint = constraint
 
-    def lnprob(self, pval=None):
+    def logp(self, pval=None):
         """
-        Calculate the log-likelihood probability of the parameter
+        Calculate the log probability of the parameter
 
         Returns
         -------
         prob : float
-            log-likelihood probability of the parameter
+            log probability of the parameter
         """
         if pval is not None:
             val = pval
@@ -405,7 +405,7 @@ class Parameter(BaseParameter):
             val = self.value
 
         if self.bounds is not None:
-            return self.bounds.lnprob(val)
+            return self.bounds.logp(val)
         else:
             return 0.
 

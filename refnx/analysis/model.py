@@ -124,11 +124,11 @@ class Model(object):
             raise RuntimeError("Overide Model.model() or provide a fitfunc to"
                                " the constructor")
 
-    def lnprob(self):
+    def logp(self):
         r"""
         The model can add additional terms to it's log-probability. However,
-        it should _not_ include lnprob from any of the parameters. That is
-        calculated by objective.lnprior.
+        it should _not_ include logp from any of the parameters. That is
+        calculated by objective.logp.
 
         """
         return 0
