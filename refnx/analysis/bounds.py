@@ -91,7 +91,7 @@ class PDF(Bounds):
     >>> from refnx.analysis import Parameter, PDF
     >>> p = Parameter(0.5)
     >>> # use a normal distribution for prior, mean=5 and sd=1.
-    >>> p.bounds = PDF(stats.norm(5, 1)
+    >>> p.bounds = PDF(stats.norm(5, 1))
     >>> p.logp(), stats.norm.logpdf(0.5, 5, 1)
     (-11.043938533204672, -11.043938533204672)
 
