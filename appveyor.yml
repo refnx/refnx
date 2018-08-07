@@ -55,8 +55,8 @@ install:
     - cmd: call conda.exe info --envs
 
     # Configure the VM.
-    - cmd: call conda.exe install --yes --quiet numpy scipy h5py cython six traitlets ipywidgets xlrd pandas pytest MDAnalysis
-    - pip install corner uncertainties matplotlib IPython 
+    - cmd: call conda.exe install --yes --quiet numpy scipy h5py cython six traitlets ipywidgets xlrd pandas pytest
+    - pip install corner uncertainties matplotlib IPython periodictable
 
 build_script:
     # Build the compiled extension
