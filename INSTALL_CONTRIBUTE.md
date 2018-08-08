@@ -7,13 +7,13 @@ Monte Carlo to obtain posterior distributions for curvefitting problems.
 --------------
 # Installation
 
-*refnx* has been tested on Python 2.7, 3.4, 3.5 and 3.6. It requires the *numpy,
+*refnx* has been tested on Python 2.7, 3.5, 3.6 and 3.7. It requires the *numpy,
 scipy, cython, pandas, emcee* packages to work. Additional features require the
-*pytest, h5py, xlrd, uncertainties, ptemcee, tqdm, matplotlib, biopython,
-periodictable* packages. To build the bleeding edge code you will need to have
-access to a C-compiler to build a couple of Python extensions. C-compilers
-should be installed on Linux. On OSX you will need to install Xcode and the
-command line tools. On Windows you will need to install the correct
+*pytest, h5py, xlrd, uncertainties, ptemcee, tqdm, matplotlib, pymc3, biopython,
+periodictable* packages. To build the bleeding edge code you will need to have 
+access to a C-compiler to build a couple of Python extensions. C-compilers should 
+be installed on Linux. On OSX you will need to install Xcode and the command line 
+tools. On Windows you will need to install the correct 
 [Visual Studio compiler][Visual-studio-compiler] for your Python version.
 
 In the current version of *refnx* the *emcee* package is vendored by *refnx*. That
@@ -22,7 +22,9 @@ install the *emcee* package separately.
 
 ## Installation into a *conda* environment
 
-Perhaps the easiest way to create a scientific computing environment is to use the [miniconda][miniconda] package manager. Once *conda* has been installed the first step is to create a *conda* environment.
+Perhaps the easiest way to create a scientific computing environment is to use the
+[miniconda][miniconda] package manager. Once *conda* has been installed the first
+step is to create a *conda* environment.
 
 ### Creating a conda environment
 
@@ -33,10 +35,10 @@ Perhaps the easiest way to create a scientific computing environment is to use t
 
   ```
   # on OSX
-  source activate refnx
+  conda activate refnx
 
   # on windows  
-  activate refnx
+  conda activate refnx
   ```
   3) Install the remaining dependencies:
   ```pip install uncertainties ptemcee```
@@ -67,8 +69,12 @@ Perhaps the easiest way to create a scientific computing environment is to use t
 
 -----------------------
 ## Development Workflow
-
-These instructions outline the workflow for contributing to refnx development. The refnx community welcomes all contributions that will improve the package. The following instructions are based on use of a command line *git* client. *Git* is a distributed version control program. An example of [how to contribute to the numpy project][numpy-contrib] is a useful reference.
+ 
+These instructions outline the workflow for contributing to refnx development.
+The refnx community welcomes all contributions that will improve the package.
+The following instructions are based on use of a command line *git* client.
+*Git* is a distributed version control program. An example of [how to contribute to the numpy project][numpy-contrib]
+is a useful reference.
 
 ### Setting up a local git repository
   1) Create an account on [github](https://github.com/).
@@ -103,7 +109,10 @@ The main *refnx* repository may be a lot more advanced than your fork, or your l
   ```
 
 ### Adding a feature
-The git repository is automatically on the master branch to start with. However, when developing features that you'd like to contribute to the *refnx* project you'll need to do it on a feature branch.
+The git repository is automatically on the master branch to start with. However,
+when developing features that you'd like to contribute to the *refnx* project
+you'll need to do it on a feature branch.
+
   1) Create a feature branch and check it out:
   ```
   git branch my_feature_name

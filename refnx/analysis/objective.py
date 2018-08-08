@@ -3,13 +3,14 @@ from __future__ import division, print_function
 import numpy as np
 from numpy.linalg import LinAlgError
 from scipy.optimize._numdiff import approx_derivative
+import scipy.stats as stats
 
 from refnx.util import ErrorProp as EP
 from refnx._lib import flatten, approx_hess2
 from refnx._lib import unique as f_unique
 from refnx.dataset import Data1D
 from refnx.analysis import (is_parameter, Parameter, possibly_create_parameter,
-                            is_parameters, Parameters)
+                            is_parameters, Parameters, Interval, PDF)
 
 
 class BaseObjective(object):
@@ -482,7 +483,8 @@ class Objective(BaseObjective):
 
         .. code-block:: python
 
-            logl = -0.5 * np.sum((y - model / s_n)**2 + np.log(s_n**2))
+            logl = -0.5 * np.sum(((y - model) / s_n)**2
+                                 + np.log(2 * pi * s_n**2))
 
         where
 
@@ -507,8 +509,7 @@ class Objective(BaseObjective):
 
         # TODO do something sensible if data isn't weighted
         if self.weighted:
-            # ignoring 2 * pi constant
-            logl += np.log(var_y)
+            logl += np.log(2 * np.pi * var_y)
 
         logl += (y - model)**2 / var_y
 
@@ -1098,15 +1099,28 @@ class _pymc_objective_wrapper(object):
     Parameters
     ----------
     objective: refnx.analysis.Objective
+
+    Notes
+    -----
+    This wrapper is required so that __call__ can receive a list of
+    pymc3 parameters and arrange them in a suitable form to dispatch to
+    the fitfunction.
     """
+
     def __init__(self, objective):
         self.objective = objective
+        self.func = objective.model.model
+        # get as close to using fitfunc as possible
+        if objective.model.fitfunc is not None:
+            self.func = objective.model.fitfunc
 
     def __name__(self):
         return 'objective'
 
     def __call__(self, *args):
-        vals = self.objective.generative(np.array(args))
+        vals = self.func(self.objective.data.x,
+                         np.array(args),
+                         x_err=self.objective.data.x_err)
         return vals
 
 
@@ -1144,21 +1158,94 @@ def pymc_objective(objective):
     with basic_model:
         # Priors for unknown model parameters
         for i, par in enumerate(pars):
-            d = as_op(itypes=[T.dscalar], otypes=[T.dscalar])(par.bounds.logp)
-            p = pm.DensityDist('p%d' % i, d)
-
+            name = 'p%d' % i
+            p = _to_pymc3_distribution(name, par)
             wrapped_pars.append(p)
 
         # Expected value of outcome
-        v = as_op(itypes=[T.dscalar] * len(pars),
-                  otypes=[T.dvector])(wrapped_obj)
+        try:
+            v = wrapped_obj(*wrapped_pars)
+        except Exception:
+            print("Falling back, theano autodiff won't work on function"
+                  " object")
+            o = as_op(itypes=[T.dscalar] * len(pars),
+                      otypes=[T.dvector])(wrapped_obj)
+            v = o(*wrapped_pars)
 
         # Likelihood (sampling distribution) of observations
-        y_obs = pm.Normal('Y_obs', mu=v(*wrapped_pars),
-                          sd=objective.data.y_err,
+        y_obs = pm.Normal('Y_obs', mu=v, sd=objective.data.y_err,
                           observed=objective.data.y)
 
         if not y_obs:
             return None
 
     return basic_model
+
+
+def _to_pymc3_distribution(name, par):
+    """
+    Create a pymc3 continuous distribution from a Bounds object.
+
+    Parameters
+    ----------
+    name : str
+        Name of parameter
+    par : refnx.analysis.Parameter
+        The parameter to wrap
+
+    Returns
+    -------
+    d : pymc3.Distribution
+        The pymc3 distribution
+
+    """
+    import pymc3 as pm
+    import theano.tensor as T
+    from theano.compile.ops import as_op
+
+    dist = par.bounds
+    # interval and both lb, ub are finite
+    if (isinstance(dist, Interval) and
+            np.isfinite([dist.lb, dist.ub]).all()):
+        return pm.Uniform(name, dist.lb, dist.ub)
+    # no bounds
+    elif (isinstance(dist, Interval) and
+          np.isneginf(dist.lb) and
+          np.isinf(dist.lb)):
+        return pm.Flat(name)
+    # half open uniform
+    elif isinstance(dist, Interval) and not np.isfinite(dist.lb):
+        return dist.ub - pm.HalfFlat(name)
+    # half open uniform
+    elif isinstance(dist, Interval) and not np.isfinite(dist.ub):
+        return dist.lb + pm.HalfFlat(name)
+
+    # it's a PDF
+    if isinstance(dist, PDF):
+        dist_gen = getattr(dist.rv, 'dist', None)
+
+        if isinstance(dist.rv, stats.rv_continuous):
+            dist_gen = dist.rv
+
+        if isinstance(dist_gen, type(stats.uniform)):
+            if hasattr(dist.rv, 'args'):
+                p = pm.Uniform(name, dist.rv.args[0],
+                               dist.rv.args[1] + dist.rv.args[0])
+            else:
+                p = pm.Uniform(name, 0, 1)
+            return p
+
+        # norm from scipy.stats
+        if isinstance(dist_gen, type(stats.norm)):
+            if hasattr(dist.rv, 'args'):
+                p = pm.Normal(name, mu=dist.rv.args[0], sd=dist.rv.args[1])
+            else:
+                p = pm.Normal(name, mu=0, sd=1)
+            return p
+
+    # not open, uniform, or normal, so fall back to DensityDist.
+    d = as_op(itypes=[T.dscalar], otypes=[T.dscalar])(dist.logp)
+    r = as_op(itypes=[T.dscalar], otypes=[T.dscalar])(dist.rvs)
+    p = pm.DensityDist(name, d, random=r)
+
+    return p
