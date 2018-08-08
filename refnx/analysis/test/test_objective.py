@@ -10,11 +10,13 @@ import numpy as np
 from numpy.linalg import LinAlgError
 from scipy.optimize import minimize, least_squares
 from scipy.optimize._numdiff import approx_derivative
+import scipy.stats as stats
+
 from numpy.testing import (assert_almost_equal, assert_equal, assert_,
                            assert_allclose)
 
 from refnx.analysis import (Parameter, Model, Objective, BaseObjective,
-                            Transform, Parameters)
+                            Transform, Parameters, PDF)
 from refnx.dataset import Data1D, ReflectDataset
 from refnx.util import ErrorProp as EP
 from refnx._lib import emcee
@@ -130,9 +132,14 @@ class TestObjective(object):
     def test_logpost(self):
         # http://dan.iel.fm/emcee/current/user/line/
         assert_almost_equal(self.objective.logp(), 0)
+
         # the uncertainties are underestimated in this example...
-        assert_almost_equal(self.objective.logl(), -559.01078135444595)
-        assert_almost_equal(self.objective.logpost(), -559.01078135444595)
+        # amendment factor because dfm emcee example does not include 2pi
+        amend = 0.5 * self.objective.npoints * np.log(2 * np.pi)
+        assert_almost_equal(self.objective.logl() + amend,
+                            -559.01078135444595)
+        assert_almost_equal(self.objective.logpost() + amend,
+                            -559.01078135444595)
 
     def test_chisqr(self):
         assert_almost_equal(self.objective.chisqr(),
@@ -208,7 +215,8 @@ class TestObjective(object):
         assert_equal(et, EPe)
 
     def test_lnsigma(self):
-        # check that lnsigma works correctly
+        # check that lnsigma works correctly, by using the emcee line fit
+        # example
         def logp(theta, x, y, yerr):
             m, b, lnf = theta
             if -5.0 < m < 0.5 and 0.0 < b < 10.0 and -10.0 < lnf < 1.0:
@@ -234,7 +242,10 @@ class TestObjective(object):
         self.objective.setp(np.array([self.b_true, self.m_true]))
         self.objective.lnsigma = lnsigma
 
-        assert_allclose(self.objective.logl(), bo.logl())
+        # amendment factor because dfm emcee example does not include 2pi
+        amend = 0.5 * self.objective.npoints * np.log(2 * np.pi)
+
+        assert_allclose(self.objective.logl() + amend, bo.logl())
 
     def test_base_emcee(self):
         # check that the base objective works against the emcee example.
@@ -384,3 +395,48 @@ class TestObjective(object):
         from pytest import raises
         with raises(LinAlgError):
             objective.covar()
+
+    def test_pymc3(self):
+        # test objective logl against pymc3
+
+        # don't run this test if pymc3 is not installed
+        try:
+            import pymc3 as pm
+        except ImportError:
+            return
+
+        logl = self.objective.logl()
+
+        from refnx.analysis import pymc_objective
+        from refnx.analysis.objective import _to_pymc3_distribution
+
+        mod = pymc_objective(self.objective)
+        with mod:
+            pymc_logl = mod.logp({'p0': self.p[0].value,
+                                  'p1': self.p[1].value})
+
+        assert_allclose(logl, pymc_logl)
+
+        # now check some of the distributions
+        with pm.Model() as basic_model:
+            p = Parameter(1, bounds=(1, 10))
+            d = _to_pymc3_distribution('a', p)
+            assert_almost_equal(d.distribution.logp(2).eval(), p.logp(2))
+            assert_(np.isneginf(d.distribution.logp(-1).eval()))
+
+            q = Parameter(1, bounds=PDF(stats.uniform(1, 9)))
+            d = _to_pymc3_distribution('b', q)
+            assert_almost_equal(d.distribution.logp(2).eval(), q.logp(2))
+            assert_(np.isneginf(d.distribution.logp(-1).eval()))
+
+            p = Parameter(1, bounds=PDF(stats.uniform))
+            d = _to_pymc3_distribution('c', p)
+            assert_almost_equal(d.distribution.logp(0.5).eval(), p.logp(0.5))
+
+            p = Parameter(1, bounds=PDF(stats.norm))
+            d = _to_pymc3_distribution('d', p)
+            assert_almost_equal(d.distribution.logp(2).eval(), p.logp(2))
+
+            p = Parameter(1, bounds=PDF(stats.norm(1, 10)))
+            d = _to_pymc3_distribution('e', p)
+            assert_almost_equal(d.distribution.logp(2).eval(), p.logp(2))

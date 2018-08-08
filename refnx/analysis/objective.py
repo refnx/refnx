@@ -483,7 +483,8 @@ class Objective(BaseObjective):
 
         .. code-block:: python
 
-            logl = -0.5 * np.sum((y - model / s_n)**2 + np.log(s_n**2))
+            logl = -0.5 * np.sum(((y - model) / s_n)**2
+                                 + np.log(2 * pi * s_n**2))
 
         where
 
@@ -508,8 +509,7 @@ class Objective(BaseObjective):
 
         # TODO do something sensible if data isn't weighted
         if self.weighted:
-            # ignoring 2 * pi constant
-            logl += np.log(var_y)
+            logl += np.log(2 * np.pi * var_y)
 
         logl += (y - model)**2 / var_y
 
@@ -1181,6 +1181,7 @@ def pymc_objective(objective):
 
     return basic_model
 
+
 def _to_pymc3_distribution(name, par):
     """
     Create a pymc3 continuous distribution from a Bounds object.
@@ -1206,36 +1207,45 @@ def _to_pymc3_distribution(name, par):
     # interval and both lb, ub are finite
     if (isinstance(dist, Interval)
             and np.isfinite([dist.lb, dist.ub]).all()):
-        p = pm.Uniform(name, dist.lb, dist.ub)
+        return pm.Uniform(name, dist.lb, dist.ub)
     # no bounds
     elif (isinstance(dist, Interval)
           and np.isneginf(dist.lb)
           and np.isinf(dist.lb)):
-        p = pm.Flat(name)
+        return pm.Flat(name)
     # half open uniform
     elif isinstance(dist, Interval) and not np.isfinite(dist.lb):
-        p = ub - pm.HalfFlat(name)
+        return dist.ub - pm.HalfFlat(name)
     # half open uniform
     elif isinstance(dist, Interval) and not np.isfinite(dist.ub):
-        p = lb + pm.HalfFlat(name)
-    # uniform from scipy.stats
-    elif (isinstance(dist, PDF)
-          and isinstance(dist.rv,
-                         tuple(type(obj)
-                               for obj in [stats.uniform,
-                                           stats.uniform(0, 1)]))):
-        p = pm.Uniform(name, dist.rv.args[0], dist.rv.args[1])
-    # norm from scipy.stats
-    elif (isinstance(dist, PDF)
-          and isinstance(dist.rv,
-                         tuple(type(obj)
-                               for obj in [stats.norm,
-                                           stats.norm(0, 1)]))):
-        p = pm.Normal(name, mu=dist.rv.args[0], sigma=dist.rv.args[1])
+        return dist.lb + pm.HalfFlat(name)
+
+    # it's a PDF
+    if isinstance(dist, PDF):
+        dist_gen = getattr(dist.rv, 'dist', None)
+
+        if isinstance(dist.rv, stats.rv_continuous):
+            dist_gen = dist.rv
+
+        if type(dist_gen) == type(stats.uniform):
+            if hasattr(dist.rv, 'args'):
+                p = pm.Uniform(name, dist.rv.args[0],
+                               dist.rv.args[1] + dist.rv.args[0])
+            else:
+                p = pm.Uniform(name, 0, 1)
+            return p
+
+        # norm from scipy.stats
+        if type(dist_gen) == type(stats.norm):
+            if hasattr(dist.rv, 'args'):
+                p = pm.Normal(name, mu=dist.rv.args[0], sd=dist.rv.args[1])
+            else:
+                p = pm.Normal(name, mu=0, sd=1)
+            return p
+
     # not open, uniform, or normal, so fall back to DensityDist.
-    else:
-        d = as_op(itypes=[T.dscalar], otypes=[T.dscalar])(dist.logp)
-        r = as_op(itypes=[T.dscalar], otypes=[T.dscalar])(dist.rvs)
-        p = pm.DensityDist(name, d, random=r)
+    d = as_op(itypes=[T.dscalar], otypes=[T.dscalar])(dist.logp)
+    r = as_op(itypes=[T.dscalar], otypes=[T.dscalar])(dist.rvs)
+    p = pm.DensityDist(name, d, random=r)
 
     return p

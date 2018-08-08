@@ -4,7 +4,7 @@ from refnx.analysis import Interval, PDF
 
 import numpy as np
 from numpy.testing import (assert_equal, assert_, assert_almost_equal)
-from scipy.stats import norm, truncnorm
+from scipy.stats import norm, truncnorm, uniform
 
 
 class TestBounds(object):
@@ -73,6 +73,11 @@ class TestBounds(object):
         vals = pdf.rvs(size=1000)
         assert_(np.min(vals) >= -1)
         assert_(np.min(vals) <= 1)
+
+        # test a uniform distribution
+        pdf = PDF(uniform(1, 9))
+        assert_equal(pdf.logp(2), np.log(1./9.))
+        assert_equal(pdf.logp(10.), np.log(1. / 9.))
 
     def test_pickle(self):
         bounds = PDF(norm(1., 2.))
