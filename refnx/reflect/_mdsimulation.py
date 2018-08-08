@@ -1,12 +1,16 @@
 from __future__ import print_function, division
 import numpy as np
 try:
-    import MDAnalysis as mda
+    from Bio.PDB import *
 except ImportError:
+    print('biopython must be installed to use MDSimulation')
     pass
 try:
     import periodictable as pt
 except ImportError:
+    print('periodictable must be installed to use automatically generate '
+          'scattering lengths, either install periodic table or use a .lgt '
+          'file.')
     pass
 from refnx.analysis import Parameters
 from refnx.reflect import structure, Component
@@ -20,9 +24,9 @@ class MDSimulation(Component):
 
     Parameters
     ----------
-    pdbfile: str or MDAnalysis.Universe
-        The path and name of the .pdb file or the MDAnalysis.Universe object
-        for which the reflectometry should be found.
+    pdbfile: str
+        The path and name of the .pdb file or for which the reflectometry
+        should be found.
     radiation: str
         Either 'neutron' or 'xray'. This is the type of radiation that was used
         in the experimental reflectometry measurements.
@@ -37,9 +41,6 @@ class MDSimulation(Component):
         imaginary_scattering_length respectively. If a lgtfile is not used the
         scattering lengths for the system will be determined based on the
         element type that is defined in the final column of the pdb file.
-    u: Universe or MDAnalysis.Universe
-        The is the object which contains the information read in from the
-        simulation trajectory.
     layer_thickness: float, optional
         The thickness of the layers that the simulation cell should be sliced
         into. This will depend on the size of the particles in the simulation,
@@ -62,13 +63,18 @@ class MDSimulation(Component):
     verbose: bool, optional
         True if you want to be notified when the pdb and lgt files have been
         read and when the sld profile is calculated.
+    structure: biopython.structure, attribute
+        The is the object which contains the information read in from the
+        simulation trajectory.
+    dimensions: float, array_like, attribute
+        An array of 3 floats containing the simulation cell dimensions.
     """
     def __init__(self, pdbfile, radiation='neutron', xray_energy=None,
                  lgtfile=None, layer_thickness=1, cut_off=5, flip=False,
                  roughness=0, verbose=False):
         self.pdbfile = pdbfile
         self.lgtfile = lgtfile
-        self.u = None
+        self.structure = None
         if radiation == 'neutron':
             self.neutron = True
         else:
@@ -80,22 +86,25 @@ class MDSimulation(Component):
                 self.neutron = False
                 self.xray_energy = xray_energy
         self.scatlens = {}
+        self.dimensions = [0, 0, 0]
         self.read_pdb()
-        if verbose:
+        self.verbose = verbose
+        if self.verbose:
             print('PDB file read.')
-        if lgtfile:
-            self.read_lgt()
-            if verbose:
-                print('LGT file read.')
-        self.av_layers = np.zeros((int(self.u.dimensions[2] /
+        self.read_lgt()
+        if self.verbose:
+            print('Scattering lengths found.')
+        self.av_layers = np.zeros((int(self.dimensions[2] /
                                        layer_thickness) + 1, 5))
         self.av_layers[:, 0] = layer_thickness
         self.av_layers[:, 3] = layer_thickness * roughness
-        self.layers = np.array([self.av_layers, ] * len(self.u.trajectory))
+        self.layers = np.array([self.av_layers, ] * len(self.structure))
         self.flip = flip
         self.cut_off = cut_off
+
+    def run(self):
         self._get_sld_profile()
-        if verbose:
+        if self.verbose:
             print('SLD profile determined.')
 
     def read_pdb(self):
@@ -103,15 +112,16 @@ class MDSimulation(Component):
 
         Parses the pdbfile.
         """
-        try:
-            import MDAnalysis as mda
-        except ImportError:
-            self.u = Universe(self.pdbfile)
-        else:
-            if isinstance(self.pdbfile, mda.Universe):
-                self.u = self.pdbfile
-            else:
-                self.u = mda.Universe(self.pdbfile)
+        parser = PDBParser()
+        self.structure = parser.get_structure('model', self.pdbfile)
+        file = open(self.pdbfile, 'r')
+        for line in file:
+            if line.startswith('CRYST1') and not np.any(self.dimensions):
+                line_list = line.split()
+                self.dimensions[0] = float(line_list[1])
+                self.dimensions[1] = float(line_list[2])
+                self.dimensions[2] = float(line_list[3])
+                break
 
     def read_lgt(self):
         """Parses .lgt.
@@ -126,7 +136,55 @@ class MDSimulation(Component):
                                                float(line_list[2])]
             file.close()
         else:
-            raise ValueError("No lgtfile has been defined.")
+            for atom in self.structure.get_atoms():
+                if atom.name not in self.scatlens:
+                    if self.neutron:
+                        scattering_length = pt.elements.symbol(
+                            atom.element).neutron.scattering()[0][0:2]
+                    else:
+                        scattering_length = pt.elements.symbol(
+                            atom.element).xray.sld(energy=self.xray_energy)
+                    self.scatlens[atom.name] = scattering_length
+
+    def set_atom_scattering(self, name, scattering_length):
+        """
+        Sets the scattering length of a particular atom.
+
+        Parameters
+        ----------
+        name: str
+            The atom type to be set.
+        scattering_length: float, array_like
+            The scattering length (real and imaginary) of the atom, in units of
+            10^{-6} Angstrom.
+        """
+        if len(scattering_length) != 2:
+            raise ValueError('The scattering length must be an array of '
+                             'length 2, corresponding to the real and '
+                             'imaginary scattering lengths.')
+        self.scatlens[name] = scattering_length
+
+    def set_residue_scattering(self, name, scattering_length):
+        """
+        Sets the scattering length of a particular residue.
+
+        Parameters
+        ----------
+        name: str
+            The residue to be set.
+        scattering_length: float, array_like
+            An array of shape [N, 2], where N is the number of atoms in the
+            residue. The scattering length (real and imaginary) for each of the
+            atoms in the residue, in units of 10^{-6} Angstrom.
+        """
+        for residue in self.structure.get_residues():
+            if residue.resname == name:
+                if len(residue) != len(scattering_length):
+                    raise ValueError('The scattering length must be an array '
+                                     'with shape [N, 2], where N is the number '
+                                     'of atoms in the residue.')
+                for k, atom in enumerate(residue.get_atoms()):
+                    self.scatlens[atom.name] = scattering_length[k]
 
     def _get_sld_profile(self):
         """Calculate SLD profile.
@@ -138,39 +196,33 @@ class MDSimulation(Component):
         of the layer. This is completed for each timestep and the average
         taken.
         """
-        u = self.u
+        structure = self.structure
         # loop through each timestep in the simulation trajectory
-        for k, ts in enumerate(u.trajectory):
-            if isinstance(ts[0], AtomClass):
-                atoms = ts
-            elif isinstance(u, mda.Universe):
-                atoms = u.atoms
+        for k, models in enumerate(structure):
             # loop across all atoms in the current timestep
-            for atom in range(0, len(atoms)):
+            for atom in models.get_atoms():
                 # assign scattering length based on atom type, if there is a
                 # lgtfile use this, if not use periodictable
                 if self.scatlens:
-                    scattering_length = self.scatlens[atoms[atom].name]
+                    scattering_length = self.scatlens[atom.name]
                 else:
-                    atom_type = self.u.atoms[atom].type
                     if self.neutron:
-                        scattering_length = pt.elements.symbol(
-                            atom_type).neutron.scattering()[0][0:2]
+                        scattering_length = pt.elemetns.symbol(
+                            atom.element).neutron.scattering()[0][0:2]
                     else:
                         scattering_length = pt.elements.symbol(
-                            atom_type).xray.sld(
-                                energy=self.xray_energy)
+                            atom.element).xray.sld(energy=self.xray_energy)
                 # with the system split into a series of layer, select the
                 # appropriate layer based on the atom's z coordinate
-                layer_choose = int(atoms[atom].position[2] /
+                layer_choose = int(atom.coord[2] /
                                    self.layers[k, 0, 0])
                 # add the real and imaginary scattering lengths to this layer
                 self.layers[k, layer_choose, 1] += scattering_length[0]
                 self.layers[k, layer_choose, 2] += scattering_length[1]
         # get a scattering length density
-        self.layers[:, :, 1] /= (u.dimensions[0] * u.dimensions[1] *
+        self.layers[:, :, 1] /= (self.dimensions[0] * self.dimensions[1] *
                                  self.layers[0, 0, 0])
-        self.layers[:, :, 2] /= (u.dimensions[0] * u.dimensions[1] *
+        self.layers[:, :, 2] /= (self.dimensions[0] * self.dimensions[1] *
                                  self.layers[0, 0, 0])
         if self.flip:
             self.layers = self.layers[:, ::-1, :]
@@ -214,69 +266,3 @@ class MDSimulation(Component):
         p = Parameters(name='traj: {}, lgt: {}'.format(self.pdbfile,
                                                        self.lgtfile))
         return p
-
-
-class Universe:
-    """
-    This is a custom class to emulate the parsing of simulations by MDAnalysis
-    such that the Simulation class will operate both with and without
-    MDAnalysis.
-
-    Parameters
-    ----------
-    pdbfile: str
-        The path and name of the .pdb file
-    trajectory: ndarray
-        An array of arrays of type AtomClass
-    dimensions: float, array_like
-        An array of length 3 giving the cell dimensions for the simulation.
-    """
-    def __init__(self, pdbfile):
-        self.pdbfile = pdbfile
-        self.trajectory = np.array([])
-        self.dimensions = np.zeros((3))
-        self.read_pdb()
-
-    def read_pdb(self):
-        file = open(self.pdbfile, 'r')
-        count_timesteps = 0
-        atoms = np.array([], dtype=AtomClass)
-        for line in file:
-            if line[0:6] == 'CRYST1' and not np.any(self.dimensions):
-                line_list = line.split()
-                self.dimensions[0] = line_list[1]
-                self.dimensions[1] = line_list[2]
-                self.dimensions[2] = line_list[3]
-            if line[0:6] == 'ATOM  ' or line[0:6] == 'HETATM':
-                atoms = np.append(atoms,
-                                  AtomClass(line[12:16].strip(),
-                                            [float(line[30:38]),
-                                             float(line[38:46]),
-                                             float(line[46:54])],
-                                            line[76:78]))
-            if line[0:6] == 'ENDMDL':
-                self.trajectory = np.append(self.trajectory, atoms)
-                atoms = np.array([], dtype=AtomClass)
-                count_timesteps += 1
-        self.trajectory = self.trajectory.reshape(count_timesteps,
-                                                  int(self.trajectory.size /
-                                                      count_timesteps))
-
-
-class AtomClass():
-    """
-    This is a custom class to emulate the parsing of atoms by MDAnalysis such
-    that the Simulation class will operate both with and without MDAnalysis.
-
-    Parameters
-    ----------
-    position: float, array_like
-        An array of length 3 containing information about the position of the
-        particle.
-    name: str
-        The atom type for the given particle.
-    """
-    def __init__(self, name, position, type):
-        self.position = position
-        self.name = name
-        self.type = type
