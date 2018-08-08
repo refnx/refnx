@@ -69,12 +69,26 @@ class MDSimulation(Component):
     dimensions: float, array_like, attribute
         An array of 3 floats containing the simulation cell dimensions.
     """
-    def __init__(self, pdbfile, radiation='neutron', xray_energy=None,
-                 lgtfile=None, layer_thickness=1, cut_off=5, flip=False,
+    def __init__(self, pdbfile, layer_thickness=1, cut_off=5, flip=False,
                  roughness=0, verbose=False):
         self.pdbfile = pdbfile
-        self.lgtfile = lgtfile
         self.structure = None
+        self.dimensions = [0, 0, 0]
+        self.read_pdb()
+        self.verbose = verbose
+        if self.verbose:
+            print('PDB file read.')
+        self.av_layers = np.zeros((int(self.dimensions[2] /
+                                       layer_thickness) + 1, 5))
+        self.av_layers[:, 0] = layer_thickness
+        self.av_layers[:, 3] = layer_thickness * roughness
+        self.layers = np.array([self.av_layers, ] * len(self.structure))
+        self.flip = flip
+        self.cut_off = cut_off
+
+    def assign_scattering_lengths(self, lgtfile=None, radiation='neutron',
+                                  xray_energy=None):
+        self.lgtfile = lgtfile
         if radiation == 'neutron':
             self.neutron = True
         else:
@@ -86,21 +100,9 @@ class MDSimulation(Component):
                 self.neutron = False
                 self.xray_energy = xray_energy
         self.scatlens = {}
-        self.dimensions = [0, 0, 0]
-        self.read_pdb()
-        self.verbose = verbose
-        if self.verbose:
-            print('PDB file read.')
         self.read_lgt()
         if self.verbose:
             print('Scattering lengths found.')
-        self.av_layers = np.zeros((int(self.dimensions[2] /
-                                       layer_thickness) + 1, 5))
-        self.av_layers[:, 0] = layer_thickness
-        self.av_layers[:, 3] = layer_thickness * roughness
-        self.layers = np.array([self.av_layers, ] * len(self.structure))
-        self.flip = flip
-        self.cut_off = cut_off
 
     def run(self):
         self._get_sld_profile()

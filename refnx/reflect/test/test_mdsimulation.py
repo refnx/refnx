@@ -13,7 +13,7 @@ class TestSimulation(object):
         pth = os.path.dirname(os.path.abspath(__file__))
         pdbfile = os.path.join(pth, 'mdsim_test.pdb')
         lgtfile = os.path.join(pth, 'mdsim_test.lgt')
-        sim = MDSimulation(pdbfile, lgtfile=lgtfile, flip=True)
+        sim = MDSimulation(pdbfile, flip=True)
         assert_equal(sim.layers.shape, [6, 16, 5])
         assert_equal(sim.av_layers.shape, [16, 5])
         assert_almost_equal(sim.layers[:, :, 0], np.ones((6, 16)))
@@ -26,7 +26,7 @@ class TestSimulation(object):
         pth = os.path.dirname(os.path.abspath(__file__))
         pdbfile = os.path.join(pth, 'mdsim_test.pdb')
         lgtfile = os.path.join(pth, 'mdsim_test.lgt')
-        sim = MDSimulation(pdbfile, lgtfile=lgtfile, flip=True)
+        sim = MDSimulation(pdbfile, flip=True)
         a = np.arange(0, 10, 2)
         assert_equal(len(sim.structure), 6)
         for models in sim.structure:
@@ -40,7 +40,8 @@ class TestSimulation(object):
         pth = os.path.dirname(os.path.abspath(__file__))
         pdbfile = os.path.join(pth, 'mdsim_test.pdb')
         lgtfile = os.path.join(pth, 'mdsim_test.lgt')
-        sim = MDSimulation(pdbfile, lgtfile=lgtfile, flip=True)
+        sim = MDSimulation(pdbfile, flip=True)
+        sim.assign_scattering_lengths(lgtfile=lgtfile)
         a = [26.659, 26.659, 26.659, 9.36, 19.998]
         b = np.zeros((5))
         c = ['C1', 'C2', 'C3', 'N4', 'C5']
@@ -51,7 +52,8 @@ class TestSimulation(object):
         pth = os.path.dirname(os.path.abspath(__file__))
         pdbfile = os.path.join(pth, 'mdsim_test.pdb')
         lgtfile = os.path.join(pth, 'mdsim_test.lgt')
-        sim = MDSimulation(pdbfile, lgtfile=lgtfile, flip=False)
+        sim = MDSimulation(pdbfile, flip=False)
+        sim.assign_scattering_lengths(lgtfile=lgtfile)
         assert_equal(sim.layers.shape, [6, 16, 5])
         assert_equal(sim.av_layers.shape, [16, 5])
         sim.run()
