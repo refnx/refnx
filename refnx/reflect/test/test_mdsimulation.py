@@ -36,7 +36,6 @@ class TestSimulation(object):
                 assert_almost_equal(atom.coord[2], a[k])
             assert_equal(k, 4)
 
-
     def test_read_lgt(self):
         pth = os.path.dirname(os.path.abspath(__file__))
         pdbfile = os.path.join(pth, 'mdsim_test.pdb')

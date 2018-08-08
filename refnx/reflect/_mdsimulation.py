@@ -1,7 +1,7 @@
 from __future__ import print_function, division
 import numpy as np
 try:
-    from Bio.PDB import *
+    from Bio.PDB import PDBParser
 except ImportError:
     print('biopython must be installed to use MDSimulation')
     pass
@@ -181,8 +181,8 @@ class MDSimulation(Component):
             if residue.resname == name:
                 if len(residue) != len(scattering_length):
                     raise ValueError('The scattering length must be an array '
-                                     'with shape [N, 2], where N is the number '
-                                     'of atoms in the residue.')
+                                     'with shape [N, 2], where N is the '
+                                     'number of atoms in the residue.')
                 for k, atom in enumerate(residue.get_atoms()):
                     self.scatlens[atom.name] = scattering_length[k]
 
