@@ -76,7 +76,7 @@ class TestBounds(object):
 
         # test a uniform distribution
         pdf = PDF(uniform(1, 9))
-        assert_equal(pdf.logp(2), np.log(1./9.))
+        assert_equal(pdf.logp(2), np.log(1. / 9.))
         assert_equal(pdf.logp(10.), np.log(1. / 9.))
 
     def test_pickle(self):

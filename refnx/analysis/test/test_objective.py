@@ -418,7 +418,7 @@ class TestObjective(object):
         assert_allclose(logl, pymc_logl)
 
         # now check some of the distributions
-        with pm.Model() as basic_model:
+        with pm.Model():
             p = Parameter(1, bounds=(1, 10))
             d = _to_pymc3_distribution('a', p)
             assert_almost_equal(d.distribution.logp(2).eval(), p.logp(2))

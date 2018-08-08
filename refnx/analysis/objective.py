@@ -1205,13 +1205,13 @@ def _to_pymc3_distribution(name, par):
 
     dist = par.bounds
     # interval and both lb, ub are finite
-    if (isinstance(dist, Interval)
-            and np.isfinite([dist.lb, dist.ub]).all()):
+    if (isinstance(dist, Interval) and
+            np.isfinite([dist.lb, dist.ub]).all()):
         return pm.Uniform(name, dist.lb, dist.ub)
     # no bounds
-    elif (isinstance(dist, Interval)
-          and np.isneginf(dist.lb)
-          and np.isinf(dist.lb)):
+    elif (isinstance(dist, Interval) and
+          np.isneginf(dist.lb) and
+          np.isinf(dist.lb)):
         return pm.Flat(name)
     # half open uniform
     elif isinstance(dist, Interval) and not np.isfinite(dist.lb):
@@ -1227,7 +1227,7 @@ def _to_pymc3_distribution(name, par):
         if isinstance(dist.rv, stats.rv_continuous):
             dist_gen = dist.rv
 
-        if type(dist_gen) == type(stats.uniform):
+        if isinstance(dist_gen, type(stats.uniform)):
             if hasattr(dist.rv, 'args'):
                 p = pm.Uniform(name, dist.rv.args[0],
                                dist.rv.args[1] + dist.rv.args[0])
@@ -1236,7 +1236,7 @@ def _to_pymc3_distribution(name, par):
             return p
 
         # norm from scipy.stats
-        if type(dist_gen) == type(stats.norm):
+        if isinstance(dist_gen, type(stats.norm)):
             if hasattr(dist.rv, 'args'):
                 p = pm.Normal(name, mu=dist.rv.args[0], sd=dist.rv.args[1])
             else:
