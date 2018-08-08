@@ -136,14 +136,24 @@ class MDSimulation(Component):
                                                float(line_list[2])]
             file.close()
         else:
+            import scipy.constants as const
+            cre = const.physical_constants['classical electron radius'][0]
             for atom in self.structure.get_atoms():
                 if atom.name not in self.scatlens:
+                    scattering_length = [0, 0]
                     if self.neutron:
-                        scattering_length = pt.elements.symbol(
-                            atom.element).neutron.scattering()[0][0:2]
+                        scattering_length[0] = pt.elements.symbol(
+                            atom.element).neutron.b_c
+                        if pt.elements.symbol(atom.element).neutron.b_c_i:
+                            inc = pt.elements.symbol(atom.name).neutron.b_c_i
+                        else:
+                            inc = 0
+                        scattering_length[1] = inc
                     else:
-                        scattering_length = pt.elements.symbol(
-                            atom.element).xray.sld(energy=self.xray_energy)
+                        scattering_length = np.mulitply(
+                            pt.elements.symbol(
+                                atom.element).xray.scattering_factors(
+                                    energy=12), cre)
                     self.scatlens[atom.name] = scattering_length
 
     def set_atom_scattering(self, name, scattering_length):
@@ -203,15 +213,7 @@ class MDSimulation(Component):
             for atom in models.get_atoms():
                 # assign scattering length based on atom type, if there is a
                 # lgtfile use this, if not use periodictable
-                if self.scatlens:
-                    scattering_length = self.scatlens[atom.name]
-                else:
-                    if self.neutron:
-                        scattering_length = pt.elemetns.symbol(
-                            atom.element).neutron.scattering()[0][0:2]
-                    else:
-                        scattering_length = pt.elements.symbol(
-                            atom.element).xray.sld(energy=self.xray_energy)
+                scattering_length = self.scatlens[atom.name]
                 # with the system split into a series of layer, select the
                 # appropriate layer based on the atom's z coordinate
                 layer_choose = int(atom.coord[2] /
