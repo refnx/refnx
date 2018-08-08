@@ -70,6 +70,9 @@ class ReflectModel(object):
         self.threads = threads
         self.quad_order = quad_order
 
+        # to make it more like a refnx.analysis.Model
+        self.fitfunc = None
+
         # all reflectometry models need a scale factor and background
         self._scale = possibly_create_parameter(scale, name='scale')
         self._bkg = possibly_create_parameter(bkg, name='bkg')
