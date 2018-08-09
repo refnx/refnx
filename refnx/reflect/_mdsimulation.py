@@ -147,7 +147,8 @@ class MDSimulation(Component):
                         scattering_length[0] = pt.elements.symbol(
                             atom.element).neutron.b_c
                         if pt.elements.symbol(atom.element).neutron.b_c_i:
-                            inc = pt.elements.symbol(atom.name).neutron.b_c_i
+                            inc = pt.elements.symbol(
+                                atom.element).neutron.b_c_i
                         else:
                             inc = 0
                         scattering_length[1] = inc
