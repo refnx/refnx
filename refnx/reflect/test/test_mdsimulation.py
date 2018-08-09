@@ -12,7 +12,6 @@ class TestSimulation(object):
     def test_init(self):
         pth = os.path.dirname(os.path.abspath(__file__))
         pdbfile = os.path.join(pth, 'mdsim_test.pdb')
-        lgtfile = os.path.join(pth, 'mdsim_test.lgt')
         sim = MDSimulation(pdbfile, flip=True)
         assert_equal(sim.layers.shape, [6, 16, 5])
         assert_equal(sim.av_layers.shape, [16, 5])
@@ -25,7 +24,6 @@ class TestSimulation(object):
     def test_read_pdb(self):
         pth = os.path.dirname(os.path.abspath(__file__))
         pdbfile = os.path.join(pth, 'mdsim_test.pdb')
-        lgtfile = os.path.join(pth, 'mdsim_test.lgt')
         sim = MDSimulation(pdbfile, flip=True)
         a = np.arange(0, 10, 2)
         assert_equal(len(sim.structure), 6)
