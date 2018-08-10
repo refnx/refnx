@@ -7,7 +7,6 @@ from numpy.testing import (assert_almost_equal, assert_equal)
 from refnx.reflect import MDSimulation
 
 
-
 class TestSimulation(object):
     def test_init_a(self):
         pth = os.path.dirname(os.path.abspath(__file__))

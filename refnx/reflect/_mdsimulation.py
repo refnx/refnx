@@ -65,7 +65,7 @@ class MDSimulation(Component):
         if self.verbose:
             print('PDB file read.')
         self.av_layers = np.zeros((int(np.floor(self.dimensions[2] /
-                                           layer_thickness)) + 1, 5))
+                                                layer_thickness)) + 1, 5))
         self.av_layers[:, 0] = layer_thickness
         self.av_layers[:, 3] = layer_thickness * roughness
         self.layers = np.array([self.av_layers, ] * len(self.structure))
@@ -101,8 +101,8 @@ class MDSimulation(Component):
             simulation trajectory, which defines the atom types to assign
             scattering lengths.
         scattering_lengths: float, array_like
-            An array of shape [N, 2], where N is the number of atom types in the
-            simulation trajectory, which defines the scattering lengths for
+            An array of shape [N, 2], where N is the number of atom types in
+            the simulation trajectory, which defines the scattering lengths for
             the given atom types.
         """
         self.scatlens = {}
@@ -111,9 +111,9 @@ class MDSimulation(Component):
                 for i in range(0, len(atom_types)):
                     self.scatlens[atom_types[i]] = scattering_lengths[i]
             else:
-                raise ValueError('The lengths of the atom types must be the same '
-                                 'as the lengths of the pairs of scattering '
-                                 'lengths.')
+                raise ValueError('The lengths of the atom types must be the '
+                                 'same as the lengths of the pairs of '
+                                 'scattering lengths.')
         elif lgtfile:
             self.lgtfile = lgtfile
             self.read_lgt()
