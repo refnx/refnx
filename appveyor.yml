@@ -13,19 +13,16 @@ environment:
     # Not sure how to resolve this, but maybe we should be tracking the VS version in the build string anyway?
     - TARGET_ARCH: x64
       CONDA_NPY: 114
-      CONDA_PY: 37
       PYTHON_VERSION: 3.7
       CONDA_INSTALL_LOCN: C:\\Miniconda36-x64
       
     - TARGET_ARCH: x86
       CONDA_NPY: 114
-      CONDA_PY: 37
       PYTHON_VERSION: 3.7
       CONDA_INSTALL_LOCN: C:\\Miniconda36-x64
 
     - TARGET_ARCH: x64
       CONDA_NPY: 113
-      CONDA_PY: 27
       PYTHON_VERSION: 2.7
       CONDA_INSTALL_LOCN: C:\\Miniconda-x64
 
@@ -33,6 +30,18 @@ environment:
 # with the TARGET_ARCH variable (which is used by CMD_IN_ENV).
 platform:
     - x64
+
+init:
+    - "ECHO %PYTHON% %PYTHON_VERSION% %PYTHON_ARCH%"
+    - "ECHO \"%APPVEYOR_SCHEDULED_BUILD%\""
+    # cancel build if newer one is submitted; complicated
+    # details for getting this to work are credited to JuliaLang
+    # developers
+    - ps: if ($env:APPVEYOR_PULL_REQUEST_NUMBER -and $env:APPVEYOR_BUILD_NUMBER -ne ((Invoke-RestMethod `
+        https://ci.appveyor.com/api/projects/$env:APPVEYOR_ACCOUNT_NAME/$env:APPVEYOR_PROJECT_SLUG/history?recordsNumber=50).builds | `
+        Where-Object pullRequestId -eq $env:APPVEYOR_PULL_REQUEST_NUMBER)[0].buildNumber) { `
+          raise "There are newer queued builds for this pull request, skipping build."
+        }
 
 install:
     # Set the CONDA_NPY, although it has no impact on the actual build. We need this because of a test within conda-build.
