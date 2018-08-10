@@ -27,20 +27,6 @@ class MDSimulation(Component):
     pdbfile: str
         The path and name of the .pdb file or for which the reflectometry
         should be found.
-    radiation: str
-        Either 'neutron' or 'xray'. This is the type of radiation that was used
-        in the experimental reflectometry measurements.
-    xray_energy: float, optional
-        Only required if the radiation is 'xray'. This is the energy of the
-        probing X-ray radiation, in units of kilo electron Volts
-    lgtfile: str, optional
-        The path and name of the .lgt file (if present), which contains the
-        scattering lengths of each of the atom type in the pdbfile. Currently
-        the .lgt file style that is supported is a 3 column space separated txt
-        file where the columns are atom_type, real_scattering_length, and
-        imaginary_scattering_length respectively. If a lgtfile is not used the
-        scattering lengths for the system will be determined based on the
-        element type that is defined in the final column of the pdb file.
     layer_thickness: float, optional
         The thickness of the layers that the simulation cell should be sliced
         into. This will depend on the size of the particles in the simulation,
@@ -78,8 +64,8 @@ class MDSimulation(Component):
         self.verbose = verbose
         if self.verbose:
             print('PDB file read.')
-        self.av_layers = np.zeros((int(self.dimensions[2] /
-                                       layer_thickness) + 1, 5))
+        self.av_layers = np.zeros((int(np.floor(self.dimensions[2] /
+                                           layer_thickness)) + 1, 5))
         self.av_layers[:, 0] = layer_thickness
         self.av_layers[:, 3] = layer_thickness * roughness
         self.layers = np.array([self.av_layers, ] * len(self.structure))
@@ -87,24 +73,69 @@ class MDSimulation(Component):
         self.cut_off = cut_off
 
     def assign_scattering_lengths(self, lgtfile=None, radiation='neutron',
-                                  xray_energy=None):
-        self.lgtfile = lgtfile
-        if radiation == 'neutron':
-            self.neutron = True
-        else:
-            if not xray_energy:
-                raise ValueError('If the probing radiation is the X-ray'
-                                 ' it is necessary to define an xray_energy'
-                                 ' (in keV).')
-            else:
-                self.neutron = False
-                self.xray_energy = xray_energy
+                                  xray_energy=None, atom_types=None,
+                                  scattering_lengths=None):
+        """
+        Assign the scattering lengths either from a .lgt file, a user defined
+        array or allow it to be determined from the elements listed in the
+        .pdb file.
+        Parameters
+        ----------
+        radiation: str, optional
+            Either 'neutron' or 'xray'. This is the type of radiation that was
+            used in the experimental reflectometry measurements.
+        xray_energy: float, optional
+            Only required if the radiation is 'xray'. This is the energy of the
+            probing X-ray radiation, in units of kilo electron Volts
+        lgtfile: str, optional
+            The path and name of the .lgt file (if present), which contains the
+            scattering lengths of each of the atom type in the pdbfile.
+            Currently the .lgt file style that is supported is a 3 column space
+            separated txt file where the columns are atom_type,
+            real_scattering_length, and imaginary_scattering_length
+            respectively. If a lgtfile is not used the scattering lengths for
+            the system will be determined based on the element type that is
+            defined in the final column of the pdb file.
+        atom_types: str, array_like
+            An array of length N, where N is the number of atom types in the
+            simulation trajectory, which defines the atom types to assign
+            scattering lengths.
+        scattering_lengths: float, array_like
+            An array of shape [N, 2], where N is the number of atom types in the
+            simulation trajectory, which defines the scattering lengths for
+            the given atom types.
+        """
         self.scatlens = {}
-        self.read_lgt()
+        if atom_types and scattering_lengths:
+            if len(atom_types) == len(scattering_lengths):
+                for i in range(0, len(atom_types)):
+                    self.scatlens[atom_types[i]] = scattering_lengths[i]
+            else:
+                raise ValueError('The lengths of the atom types must be the same '
+                                 'as the lengths of the pairs of scattering '
+                                 'lengths.')
+        elif lgtfile:
+            self.lgtfile = lgtfile
+            self.read_lgt()
+        else:
+            if radiation == 'neutron':
+                self.neutron = True
+            else:
+                if not xray_energy:
+                    raise ValueError('If the probing radiation is the X-ray'
+                                     ' it is necessary to define an '
+                                     'xray_energy (in keV).')
+                else:
+                    self.neutron = False
+                    self.xray_energy = xray_energy
+            self.get_lgts_from_pt()
         if self.verbose:
             print('Scattering lengths found.')
 
     def run(self):
+        """
+        Calculate the scattering profile from the simulation trajectory.
+        """
         self._get_sld_profile()
         if self.verbose:
             print('SLD profile determined.')
@@ -124,40 +155,44 @@ class MDSimulation(Component):
                 self.dimensions[1] = float(line_list[2])
                 self.dimensions[2] = float(line_list[3])
                 break
+        file.close()
 
     def read_lgt(self):
         """Parses .lgt.
 
         Parses the lgtfile.
         """
-        if self.lgtfile:
-            file = open(self.lgtfile, 'r')
-            for i, line in enumerate(file):
-                line_list = line.split()
-                self.scatlens[line_list[0]] = [float(line_list[1]),
-                                               float(line_list[2])]
-            file.close()
-        else:
-            import scipy.constants as const
-            cre = const.physical_constants['classical electron radius'][0]
-            for atom in self.structure.get_atoms():
-                if atom.name not in self.scatlens:
-                    scattering_length = [0, 0]
-                    if self.neutron:
-                        scattering_length[0] = pt.elements.symbol(
-                            atom.element).neutron.b_c
-                        if pt.elements.symbol(atom.element).neutron.b_c_i:
-                            inc = pt.elements.symbol(
-                                atom.element).neutron.b_c_i
-                        else:
-                            inc = 0
-                        scattering_length[1] = inc
+        file = open(self.lgtfile, 'r')
+        for i, line in enumerate(file):
+            line_list = line.split()
+            self.scatlens[line_list[0]] = [float(line_list[1]),
+                                           float(line_list[2])]
+        file.close()
+
+    def get_lgts_from_pt(self):
+        """
+        Determines the scattering length from the periodictable module.
+        """
+        import scipy.constants as const
+        cre = const.physical_constants['classical electron radius'][0] * 1e15
+        for atom in self.structure.get_atoms():
+            if atom.name not in self.scatlens:
+                scattering_length = [0, 0]
+                if self.neutron:
+                    scattering_length[0] = pt.elements.symbol(
+                        atom.element).neutron.b_c
+                    if pt.elements.symbol(atom.element).neutron.b_c_i:
+                        inc = pt.elements.symbol(
+                            atom.element).neutron.b_c_i
                     else:
-                        scattering_length = np.mulitply(
-                            pt.elements.symbol(
-                                atom.element).xray.scattering_factors(
-                                    energy=12), cre)
-                    self.scatlens[atom.name] = scattering_length
+                        inc = 0
+                    scattering_length[1] = inc
+                else:
+                    scattering_length = np.multiply(
+                        pt.elements.symbol(
+                            atom.element).xray.scattering_factors(
+                                energy=12), cre)
+                self.scatlens[atom.name] = scattering_length
 
     def set_atom_scattering(self, name, scattering_length):
         """
@@ -219,8 +254,8 @@ class MDSimulation(Component):
                 scattering_length = self.scatlens[atom.name]
                 # with the system split into a series of layer, select the
                 # appropriate layer based on the atom's z coordinate
-                layer_choose = int(atom.coord[2] /
-                                   self.layers[k, 0, 0])
+                layer_choose = int(np.floor(atom.coord[2] /
+                                            self.layers[k, 0, 0]))
                 # add the real and imaginary scattering lengths to this layer
                 self.layers[k, layer_choose, 1] += scattering_length[0]
                 self.layers[k, layer_choose, 2] += scattering_length[1]
@@ -234,9 +269,9 @@ class MDSimulation(Component):
         # cut off layers as requested from the end/bottom of the cell
         # the + 1 is to account for the + 1 on line 91
         layers_to_cut = int(self.cut_off / self.layers[0, 0, 0]) + 1
-        self.layers = self.layers[:, :-layers_to_cut, :]
+        layers_to_average = np.array(self.layers[:, :-layers_to_cut, :])
         # get the time-averaged scattering length density profile
-        self.av_layers = np.average(self.layers, axis=0)
+        self.av_layers = np.average(layers_to_average, axis=0)
 
     def sld_profile(self, z=None):
         """
@@ -268,6 +303,5 @@ class MDSimulation(Component):
 
     @property
     def parameters(self):
-        p = Parameters(name='traj: {}, lgt: {}'.format(self.pdbfile,
-                                                       self.lgtfile))
+        p = Parameters(name='traj: {}'.format(self.pdbfile))
         return p
