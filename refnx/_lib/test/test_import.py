@@ -2,6 +2,7 @@
 import refnx
 import numpy as np
 
+
 class TestUtil(object):
 
     def setup_method(self):
