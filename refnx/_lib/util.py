@@ -1,5 +1,6 @@
 from __future__ import print_function
 
+from multiprocessing import Pool
 import warnings as _warnings
 import os as _os
 import sys as _sys
@@ -12,9 +13,6 @@ try:
 except ImportError:
     # on 2.7
     from inspect import getargspec as _getargspecf
-
-
-from refnx._lib.emcee.interruptible_pool import InterruptiblePool
 
 
 def preserve_cwd(function):
@@ -207,72 +205,74 @@ def possibly_open_file(f, mode='wb'):
         g.close()
 
 
-class possibly_create_pool(object):
+class PoolWrapper(object):
     """
-     Context manager for multiprocessing.
+    Wrapper for working with objects that have map-like methods, such as
+    `multiprocessing.Pool`. Used for parallelisation.
 
-     Parameters
-     ----------
-     pool : int or map-like object
-         If `pool` is an `int` then it specifies the number of threads to
-         use for parallelization. If `pool == 1`, then no parallel
-         processing is used.
-         If pool is an object with a map method that follows the same
-         calling sequence as the built-in map function, then this pool is
-         used for parallelisation.
+    Parameters
+    ----------
+    pool : int or map-like object
+        If `pool` is an `int` then it specifies the number of threads to
+        use for parallelization. If `int(pool) in [0, 1]`, then no parallel
+        processing is used and the map builtin is used. If `pool == -1` then
+        the pool will utilise all available CPU.
+        If pool is an object with a map method that follows the same
+        calling sequence as the built-in map function, then this pool is
+        used for parallelisation.
+    """
+    def __init__(self, pool=-1):
+        self.pool = None
+        self._mapfunc = map
+        self._own_pool = False
 
-     Yields
-     ------
-     g : pool-like object
-         On leaving the context manager the pool is closed, if it was opened by
-         this context manager.
-     """
-    def __init__(self, pool):
-        """
-        Context manager for multiprocessing.
-
-        Parameters
-        ----------
-        pool : int or map-like object
-            If `pool` is an `int` then it specifies the number of threads to
-            use for parallelization. If `pool == 1`, then no parallel
-            processing is used.
-            If pool is an object with a map method that follows the same
-            calling sequence as the built-in map function, then this pool is
-            used for parallelisation.
-
-        Yields
-        ------
-        g : pool-like object
-            On leaving the context manager the pool is closed, if it was opened
-            by this context manager.
-        """
-        self.pool = pool
-        self._created_pool = None
-
-    def __enter__(self):
-        if hasattr(self.pool, 'map'):
-            return self.pool
+        if hasattr(pool, 'map'):
+            self.pool = pool
+            self._mapfunc = self.pool.map
         else:
             # user supplies a number
-            if self.pool == 0:
+            if int(pool) == -1:
                 # use as many processors as possible
-                g = InterruptiblePool()
-            elif self.pool == 1:
-                return map
-            elif self.pool > 1:
-                # only use the number of processors requested
-                g = InterruptiblePool(processes=int(self.pool))
+                self.pool = Pool()
+                self._mapfunc = self.pool.map
+                self._own_pool = True
+            elif int(pool) in [0, 1]:
+                pass
+            elif int(pool) > 1:
+                # use the number of processors requested
+                self.pool = Pool(processes=int(pool))
+                self._mapfunc = self.pool.map
+                self._own_pool = True
+
+    def __enter__(self):
+        return self
+
+    def __del__(self):
+        self.close()
+
+    def terminate(self):
+        if self._own_pool:
+            self.pool.terminate()
+
+    def join(self):
+        if self._own_pool:
+            self.pool.join()
+
+    def close(self):
+        if self._own_pool:
+            self.pool.close()
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        if self._own_pool:
+            if exc_type is None:
+                self.pool.close()
+                self.pool.join()
             else:
-                raise ValueError("you need to supply an integer for creating a"
-                                 " pool")
+                self.pool.terminate()
 
-            self._created_pool = g
-            return g
-
-    def __exit__(self, *args):
-        if self._created_pool is not None:
-            self._created_pool.close()
+    def map(self, func, iterable):
+        # only accept one iterable because that's all Pool.map accepts
+        return self._mapfunc(func, iterable)
 
 
 def getargspec(f):
