@@ -187,8 +187,8 @@ class EnsembleSampler(object):
 
         Args:
             initial_state (State or ndarray[nwalkers, ndim]): The initial
-                :class:`State` or positions of the walkers in the parameter
-                space.
+                :class:`State` or positions of the walkers in the
+                parameter space.
             iterations (Optional[int]): The number of steps to generate.
             tune (Optional[bool]): If ``True``, the parameters of some moves
                 will be automatically tuned.
@@ -201,9 +201,16 @@ class EnsembleSampler(object):
                 chain. If you are using another method to store the samples to
                 a file or if you don't need to analyze the samples after the
                 fact (for burn-in for example) set ``store`` to ``False``.
+            progress (Optional[bool or str]): If ``True``, a progress bar will
+                be shown as the sampler progresses. If a string, will select a
+                specific ``tqdm`` progress bar - most notable is
+                ``'notebook'``, which shows a progress bar suitable for
+                Jupyter notebooks.  If ``False``, no progress bar will be
+                shown.
 
-        Every ``thin_by`` steps, this generator yields the :class:`State` of
-        the ensemble.
+
+        Every ``thin_by`` steps, this generator yields the
+        :class:`State` of the ensemble.
 
         """
         # Interpret the input as a walker state and check the dimensions.
@@ -325,15 +332,17 @@ class EnsembleSampler(object):
         """
         if initial_state is None:
             if self._previous_state is None:
-                raise ValueError("Cannot have pos0=None if run_mcmc has never "
-                                 "been called.")
+                raise ValueError(
+                    "Cannot have `initial_state=None` if run_mcmc has never "
+                    "been called."
+                )
             initial_state = self._previous_state
 
         results = None
         for results in self.sample(initial_state, iterations=nsteps, **kwargs):
             pass
 
-        # Store so that the ``pos0=None`` case will work
+        # Store so that the ``initial_state=None`` case will work
         self._previous_state = results
 
         return results
@@ -397,7 +406,7 @@ class EnsembleSampler(object):
             if len(shape):
                 axes = np.arange(len(shape))[np.array(shape) == 1] + 1
                 if len(axes):
-                    blob = np.squeeze(blob, axes)
+                    blob = np.squeeze(blob, tuple(axes))
 
         # Check for log_prob returning NaN.
         if np.any(np.isnan(log_prob)):
