@@ -226,7 +226,7 @@ class ReflectModel(object):
 
 
 def reflectivity(q, slabs, scale=1., bkg=0., dq=5., quad_order=17,
-                 threads=0):
+                 threads=-1):
     r"""
     Abeles matrix formalism for calculating reflectivity from a stratified
     medium.
@@ -303,7 +303,7 @@ def reflectivity(q, slabs, scale=1., bkg=0., dq=5., quad_order=17,
         Specifies the number of threads for parallel calculation. This
         option is only applicable if you are using the ``_creflect``
         module. The option is ignored if using the pure python calculator,
-        ``_reflect``. If `threads == 0` then all available processors are
+        ``_reflect``. If `threads == -1` then all available processors are
         used.
 
     Example
@@ -436,7 +436,7 @@ def _smearkernel(x, w, q, dq, threads):
     return refcalc.abeles(localq, w, threads=threads) * gauss
 
 
-def _smeared_abeles_adaptive(qvals, w, dqvals, threads=0):
+def _smeared_abeles_adaptive(qvals, w, dqvals, threads=-1):
     """
     Resolution smearing that uses adaptive Gaussian quadrature integration
     for the convolution.
@@ -454,6 +454,7 @@ def _smeared_abeles_adaptive(qvals, w, dqvals, threads=0):
         Do you want to calculate in parallel? This option is only applicable if
         you are using the ``_creflect`` module. The option is ignored if using
         the pure python calculator, ``_reflect``.
+
     Returns
     -------
     reflectivity : np.ndarray
@@ -478,7 +479,7 @@ def _smeared_abeles_adaptive(qvals, w, dqvals, threads=0):
     return smeared_rvals
 
 
-def _smeared_abeles_fixed(qvals, w, dqvals, quad_order=17, threads=0):
+def _smeared_abeles_fixed(qvals, w, dqvals, quad_order=17, threads=-1):
     """
     Resolution smearing that uses fixed order Gaussian quadrature integration
     for the convolution.
@@ -499,7 +500,7 @@ def _smeared_abeles_fixed(qvals, w, dqvals, quad_order=17, threads=0):
         Specifies the number of threads for parallel calculation. This
         option is only applicable if you are using the ``_creflect``
         module. The option is ignored if using the pure python calculator,
-        ``_reflect``. If `threads == 0` then all available processors are
+        ``_reflect``. If `threads == -1` then all available processors are
         used.
 
     Returns
@@ -543,7 +544,7 @@ def _smeared_abeles_fixed(qvals, w, dqvals, quad_order=17, threads=0):
     return np.sum(smeared_rvals, 1) * _INTLIMIT
 
 
-def _smeared_abeles_constant(q, w, resolution, threads=True):
+def _smeared_abeles_constant(q, w, resolution, threads=-1):
     """
     Fast resolution smearing for constant dQ/Q.
 
@@ -639,7 +640,7 @@ class MixedReflectModel(object):
         Specifies the number of threads for parallel calculation. This
         option is only applicable if you are using the ``_creflect``
         module. The option is ignored if using the pure python calculator,
-        ``_reflect``. If `threads == 0` then all available processors are
+        ``_reflect``. If `threads == -1` then all available processors are
         used.
     quad_order: int, optional
         the order of the Gaussian quadrature polynomial for doing the
@@ -653,7 +654,7 @@ class MixedReflectModel(object):
 
     """
     def __init__(self, structures, scales=None, bkg=1e-7, name='', dq=5.,
-                 threads=0, quad_order=17):
+                 threads=-1, quad_order=17):
         self.name = name
         self._parameters = None
         self.threads = threads
