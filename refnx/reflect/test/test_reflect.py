@@ -387,7 +387,7 @@ class TestReflect(object):
 
         # use constant dq/q for comparison
         const_R = reflectivity(q, slabs, scale=1.01, bkg=1e-6, dq=0.05 * q,
-                               quad_order=101, threads=0)
+                               quad_order=101, threads=-1)
 
         # lets create a kernel.
         kernel = np.zeros((npnts, 2, 501), float)
