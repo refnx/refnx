@@ -27,8 +27,8 @@ except ValueError:
 # versioning
 MAJOR = 0
 MINOR = 1
-MICRO = 0
-ISRELEASED = True
+MICRO = 1
+ISRELEASED = False
 VERSION = '%d.%d.%d' % (MAJOR, MINOR, MICRO)
 
 
@@ -127,7 +127,7 @@ info = {
         'url': 'https://github.com/refnx/refnx',
         'platforms': ["Windows", "Linux", "Solaris", "Mac OS-X", "Unix"],
         'classifiers': [
-        'Development Status:: 4 - Beta',
+        'Development Status :: 4 - Beta',
         'Environment :: Console',
         'Intended Audience :: Science/Research',
         'License :: Public Domain',
