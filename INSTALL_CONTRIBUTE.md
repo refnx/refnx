@@ -122,16 +122,26 @@ you'll need to do it on a feature branch.
   ```
   python setup.py test
   ```
-  3) Now commit the changes. You'll have to supply a commit message that outlines the changes you made. The commit message should follow the [numpy guidelines][numpy-contib]
+  3) If the performance of what you've added/changed may be critical, then consider writing a benchmark. The benchmarks use
+  the *asv* package and are run as:
+  ```
+  cd benchmarks
+  pip install asv
+  asv run
+  asv publish
+  asv preview
+  ```
+  For an example benchmark look at one of the files in the *benchmarks* directory.
+  4) Now commit the changes. You'll have to supply a commit message that outlines the changes you made. The commit message should follow the [numpy guidelines][numpy-contib]
   ```
   git commit -a
   ```
-  4) Now you need to push those changes on the *my_feature_branch* branch to *your* fork of the refnx repository on github:
+  5) Now you need to push those changes on the *my_feature_branch* branch to *your* fork of the refnx repository on github:
   ```
   git push origin my_feature_branch
   ```
-  5) On the main [refnx][github-refnx] repository you should be able to create a pull request (PR). The PR says that you'd like the *refnx* project to include the changes you made.
-  6) Once the automated tests have passed, and the *refnx* maintainers are happy with the changes you've made then the PR is merged. You can then delete the feature branch on github, and delete your local feature branch:
+  6) On the main [refnx][github-refnx] repository you should be able to create a pull request (PR). The PR says that you'd like the *refnx* project to include the changes you made.
+  7) Once the automated tests have passed, and the *refnx* maintainers are happy with the changes you've made then the PR is merged. You can then delete the feature branch on github, and delete your local feature branch:
   ```
   git branch -D my_feature_branch
   ```
