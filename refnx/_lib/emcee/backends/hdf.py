@@ -65,7 +65,10 @@ class HDFBackend(Backend):
             ndim (int): The number of dimensions
 
         """
-        with self.open("w") as f:
+        with self.open("a") as f:
+            if self.name in f:
+                del f[self.name]
+
             g = f.create_group(self.name)
             g.attrs["version"] = __version__
             g.attrs["nwalkers"] = nwalkers
@@ -102,7 +105,7 @@ class HDFBackend(Backend):
             if name == "blobs" and not g.attrs["has_blobs"]:
                 return None
 
-            v = g[name][discard + thin - 1:self.iteration:thin]
+            v = g[name][discard+thin-1:self.iteration:thin]
             if flat:
                 s = list(v.shape[1:])
                 s[0] = np.prod(v.shape[:2])
@@ -167,7 +170,7 @@ class HDFBackend(Backend):
         """Save a step to the backend
 
         Args:
-        state (State): The :class:`State` of the ensemble.
+            state (State): The :class:`State` of the ensemble.
             accepted (ndarray): An array of boolean flags indicating whether
                 or not the proposal for each walker was accepted.
 
