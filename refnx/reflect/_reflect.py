@@ -109,129 +109,118 @@ def abeles(q, layers, scale=1., bkg=0, threads=0):
 """
 PNR calculation
 """
-def pmatrix(qu, qd, dspac):
-    M_p = np.zeros((4, 4), np.complex128)
-    # TODO: this is setting leading diagonal, use np.fill_diagonal
-    # TODO: reduce computation, there is symmetry in some of the operations.
-    M_p[0, 0] = np.exp(complex(0, -1) * qu * dspac)
-    M_p[1, 1] = np.exp(complex(0, 1) * qu * dspac)
-    M_p[2, 2] = np.exp(complex(0, -1) * qd * dspac)
-    M_p[3, 3] = np.exp(complex(0, 1) * qd * dspac)
+def pmatrix(kn_u, kn_d, thickness):
+    # equation 7 + 14 in Blundell and Bland
+    P = np.zeros((kn_u.size, 4, 4), np.complex128)
 
-    return M_p
+    p0 = np.exp(complex(0, 1) * kn_u * thickness)
+    p1 = np.exp(complex(0, 1) * kn_d * thickness)
 
+    P[:, 0, 0] = 1 / p0
+    P[:, 1, 1] = p0
+    P[:, 2, 2] = 1 / p1
+    P[:, 3, 3] = p1
 
-def dmatrix(qu, qd):
-    M_d = np.zeros((4, 4), np.complex128)
-
-    M_d[0][0] = 1
-    M_d[0][1] = 1
-    M_d[1][0] = qu
-    M_d[1][1] = -qu
-
-    M_d[2][2] = 1
-    M_d[2][3] = 1
-    M_d[3][2] = qd
-    M_d[3][3] = -qd
-
-    return M_d
+    return P
 
 
-def qcal(qq, nb):
-    # I think this is calculating kn_n
-    return np.sqrt(qq**2 - 4 * np.pi * nb)
+def dmatrix(kn_u, kn_d):
+    # equation 5 + 13 in Blundell and Bland
+    D = np.zeros((kn_u.size, 4, 4), np.complex128)
+
+    D[:, 0, 0] = 1
+    D[:, 0, 1] = 1
+    D[:, 1, 0] = kn_u
+    D[:, 1, 1] = -kn_u
+
+    D[:, 2, 2] = 1
+    D[:, 2, 3] = 1
+    D[:, 3, 2] = kn_d
+    D[:, 3, 3] = -kn_d
+
+    return D
 
 
-Function RRcalc(theta)
-variable theta
-make/o/d/c/n=(4,4) M_RR = 0
-theta/=2
-M_RR[0][0] = cos(theta)*cmplx(1,0)
-M_RR[1][1] = cos(theta)*cmplx(1,0)
+def rmatrix(theta):
+    # equation 15 in Blundell and Bland
+    R = np.zeros((4, 4), np.complex128)
 
-M_RR[0][2] = sin(theta)*cmplx(1,0)
-M_RR[1][3] = sin(theta)*cmplx(1,0)
+    cos_term = np.cos(theta / 2.) * complex(1, 0)
+    sin_term = np.sin(theta / 2.) * complex(1, 0)
 
-M_RR[2][0] = -sin(theta)*cmplx(1,0)
-M_RR[3][1] = -sin(theta)*cmplx(1,0)
+    R[0, 0] = cos_term
+    R[1, 1] = cos_term
 
-M_RR[2][2] = cos(theta)*cmplx(1,0)
-M_RR[3][3] = cos(theta)*cmplx(1,0)
+    R[0, 2] = sin_term
+    R[1, 3] = sin_term
 
-End
+    R[2, 0] = -sin_term
+    R[3, 1] = -sin_term
 
-Function pnr(w,xx)
-    Wave w,xx
-    //ww parameter wave, xx is the number of x points for calculation
-    //w[0] = number of layers
-    //w[1] = scale
-    //	[2] = sldupper
-    //	[3] = Bupper
-    //	[4] = thetaupper
-    //	[5] = sldlower
-    //	[6] = Blower
+    R[2, 2] = cos_term
+    R[3, 3] = cos_term
 
-    //	[ 4n+7] = d n
-    //	[ 4n+8] = sld n
-    //	[ 4n+9] = b n
-    //	[ 4n+10] = theta n
+    return R
 
-    make/o/d/n=(numpnts(xx),4) M_pnr
-    make/o/d/n=(4,4)/c M,MM,RR
 
-    variable nb_air=w[2]
-    variable nb_sub=w[5]
-    variable ii,jj
-    for(ii=0;ii<numpnts(xx);iI+=1)
-        variable qvac = xx[ii]*0.5
-        //   qvac(iq)=(qmin+float(iq)*qstep)*0.5
-        variable/c qair_u=qcal(qvac,nb_air+w[3])
-        variable/c qair_d=qcal(qvac,nb_air-w[3])
+def magsqr(z):
+   """
+   Return the magnitude squared of the real- or complex-valued input.
+   """
+   return np.abs(z)**2
 
-        variable/c qsub_u=qcal(qvac,(nb_sub+w[6]))
-        variable/c qsub_d=qcal(qvac,(nb_sub-w[6]))
-        MM = 0
-        MM[0][0] = cmplx(1,0)
-        MM[1][1] = cmplx(1,0)
-        MM[2][2] = cmplx(1,0)
-        MM[3][3] = cmplx(1,0)
 
-        for( jj=0;jj<w[0];jj+=1)
-            variable/c qu = qcal(qvac,w[4*jj+8]+w[4*jj+9])
-            variable/c qd = qcal(qvac,w[4*jj+8]-w[4*jj+9])
-            variable/c thetai
-            if(jj==0)
-                thetai = (w[4])*Pi/180
-            else
-                thetai = (w[4*jj+10])*Pi/180
-            endif
+def pnr(q, layers):
+    """
+    layers
+    [[thick_n, sld_n, isld_n, magsld_n, theta_n]]
 
-            RRcalc(thetai)
+    """
+    xx = np.asfarray(q).astype(np.complex128).ravel()
 
-            dmatrix(qu,qd)	//create M_d
-            pmatrix(qu,qd,w[4*jj+7])
+    thetas = np.radians(layers[:, 4])
+    thetas = np.diff(thetas)
 
-            Wave M_d,M_p,M_RR
-            MatrixOp/O MM = MM x M_d x M_p x (inv(M_d) x M_RR)
-        endfor
+    # nuclear SLD minus that of the superphase
+    sld = layers[:, 1] + 1j * layers[:, 2] - layers[0, 1] - 1j * layers[0, 2]
 
-        RRcalc(Pi/180*w[4])
+    # nuclear and magnetic
+    sldu = sld + layers[:, 3] - layers[0, 3]
+    sldd = sld - layers[:, 3] + layers[0, 3]
+    sldu *= 1e-6
+    sldd *= 1e-6
 
-        dmatrix(qair_u,qair_d)
-        Wave M_d,M_RR
+    # wavevector in each layer
+    kn_u = np.sqrt(0.25 * xx[:, np.newaxis]**2 - 4 * np.pi * sldu)
+    kn_d = np.sqrt(0.25 * xx[:, np.newaxis]**2 - 4 * np.pi * sldd)
 
-        MatrixOp/o M = (inv(M_d)) x M_RR x MM
-        dmatrix(qsub_u,qsub_d)
-        MatrixOp/o M = M x M_d
+    MM = np.zeros((xx.size, 4, 4), np.complex128)
+    MM[:] = np.identity(4, np.complex128)
 
-        M_pnr[ii][0] = magsqr((M[1][0]*M[2][2]-M[1][2]*M[2][0])/(M[0][0]*M[2][2]-M[0][2]*M[2][0]))//uu
-        M_pnr[ii][1] = magsqr((M[3][2]*M[0][0]-M[3][0]*M[0][2])/(M[0][0]*M[2][2]-M[0][2]*M[2][0]))//dd
-        M_pnr[ii][2] = magsqr((M[3][0]*M[2][2]-M[3][2]*M[2][0])/(M[0][0]*M[2][2]-M[0][2]*M[2][0]))//ud
-        M_pnr[ii][3] = magsqr((M[1][2]*M[0][0]-M[1][0]*M[0][2])/(M[0][0]*M[2][2]-M[0][2]*M[2][0]))//du
+    # iterate over layers
+    for jj in range(len(layers) - 2):
+        R = rmatrix(thetas[jj + 1])
+        D = dmatrix(kn_u[:, jj + 1], kn_d[:, jj + 1])
 
-    endfor
+        P = pmatrix(kn_u[:, jj + 1], kn_d[:, jj + 1], layers[jj + 1, 0])
+        MM = MM @ D @ P @ np.linalg.inv(D) @ R
 
-End
+    R = rmatrix(thetas[0])
+    D = dmatrix(kn_u[:, 0], kn_d[:, 0])
+
+    M = np.linalg.inv(D) @ R @ MM @ dmatrix(kn_u[:, -1], kn_d[:, -1])
+
+    # equation 16 in Blundell and Bland
+    den = (M[:, 0, 0] * M[:, 2, 2] - M[:, 0, 2] * M[:, 2, 0])
+    pp = magsqr((M[:, 1, 0] * M[:, 2, 2] - M[:, 1, 2] * M[:, 2, 0]) / den) # uu
+
+    mm = magsqr((M[:, 3, 2] * M[:, 0, 0] - M[:, 3, 0] * M[:, 0, 2]) / den) # dd
+
+    pm = magsqr((M[:, 3, 0] * M[:, 2, 2] - M[:, 3, 2] * M[:, 2, 0]) / den) # ud
+
+    mp = magsqr((M[:, 1, 2] * M[:, 0, 0] - M[:, 1, 0] * M[:, 0, 2]) / den) # du
+
+    return (pp, mm, pm, mp)
 
 
 if __name__ == '__main__':
