@@ -478,13 +478,16 @@ class TestReflect(object):
     def test_pnr(self):
         # test pnr calculation
         q = np.linspace(0.01, 0.3, 1001)
+
+        # use for spin channel PNR calculation
         players = np.array([[0, 0, 0, 0, 0],
                            [100, 3, 0, 1, 0],
                            [0, 4, 0, 0, 0]])
 
+        # use for NSF calculation with abeles
         pp_layers = np.array([[0, 0, 0, 0],
                               [100, 4., 0, 0],
-                           [0, 4, 0, 0]])
+                              [0, 4, 0, 0]])
 
         mm_layers = np.array([[0, 0, 0, 0],
                               [100, 2, 0, 0],

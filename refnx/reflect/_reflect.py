@@ -109,65 +109,82 @@ def abeles(q, layers, scale=1., bkg=0, threads=0):
 """
 PNR calculation
 """
+
+
 def pmatrix(kn_u, kn_d, thickness):
     # equation 7 + 14 in Blundell and Bland
-    P = np.zeros((kn_u.size, 4, 4), np.complex128)
+    p = np.zeros((kn_u.size, 4, 4), np.complex128)
 
     p0 = np.exp(complex(0, 1) * kn_u * thickness)
     p1 = np.exp(complex(0, 1) * kn_d * thickness)
 
-    P[:, 0, 0] = 1 / p0
-    P[:, 1, 1] = p0
-    P[:, 2, 2] = 1 / p1
-    P[:, 3, 3] = p1
+    p[:, 0, 0] = 1 / p0
+    p[:, 1, 1] = p0
+    p[:, 2, 2] = 1 / p1
+    p[:, 3, 3] = p1
 
-    return P
+    return p
 
 
 def dmatrix(kn_u, kn_d):
     # equation 5 + 13 in Blundell and Bland
-    D = np.zeros((kn_u.size, 4, 4), np.complex128)
+    d = np.zeros((kn_u.size, 4, 4), np.complex128)
+    d_inv = np.zeros_like(d)
 
-    D[:, 0, 0] = 1
-    D[:, 0, 1] = 1
-    D[:, 1, 0] = kn_u
-    D[:, 1, 1] = -kn_u
+    d[:, 0, 0] = 1
+    d[:, 0, 1] = 1
+    d[:, 1, 0] = kn_u
+    d[:, 1, 1] = -kn_u
 
-    D[:, 2, 2] = 1
-    D[:, 2, 3] = 1
-    D[:, 3, 2] = kn_d
-    D[:, 3, 3] = -kn_d
+    d[:, 2, 2] = 1
+    d[:, 2, 3] = 1
+    d[:, 3, 2] = kn_d
+    d[:, 3, 3] = -kn_d
 
-    return D
+    # an analytic matrix inverse saves time
+    inv_kn_u = 0.5 / kn_u
+    inv_kn_d = 0.5 / kn_d
+
+    d_inv[:, 0, 0] = 0.5
+    d_inv[:, 0, 1] = inv_kn_u
+    d_inv[:, 1, 0] = 0.5
+    d_inv[:, 1, 1] = -inv_kn_u
+
+    d_inv[:, 2, 2] = 0.5
+    d_inv[:, 2, 3] = inv_kn_d
+    d_inv[:, 3, 2] = 0.5
+    d_inv[:, 3, 3] = -inv_kn_d
+
+    return d, d_inv
 
 
 def rmatrix(theta):
     # equation 15 in Blundell and Bland
-    R = np.zeros((4, 4), np.complex128)
+    r = np.zeros((4, 4), np.complex128)
 
     cos_term = np.cos(theta / 2.) * complex(1, 0)
     sin_term = np.sin(theta / 2.) * complex(1, 0)
 
-    R[0, 0] = cos_term
-    R[1, 1] = cos_term
+    r[0, 0] = cos_term
+    r[1, 1] = cos_term
 
-    R[0, 2] = sin_term
-    R[1, 3] = sin_term
+    r[0, 2] = sin_term
+    r[1, 3] = sin_term
 
-    R[2, 0] = -sin_term
-    R[3, 1] = -sin_term
+    r[2, 0] = -sin_term
+    r[3, 1] = -sin_term
 
-    R[2, 2] = cos_term
-    R[3, 3] = cos_term
+    r[2, 2] = cos_term
+    r[3, 3] = cos_term
 
-    return R
+    return r
 
 
 def magsqr(z):
-   """
-   Return the magnitude squared of the real- or complex-valued input.
-   """
-   return np.abs(z)**2
+    """
+    Return the magnitude squared of the real- or complex-valued input.
+    """
+    return np.abs(z)**2
 
 
 def pnr(q, layers):
@@ -194,31 +211,36 @@ def pnr(q, layers):
     kn_u = np.sqrt(0.25 * xx[:, np.newaxis]**2 - 4 * np.pi * sldu)
     kn_d = np.sqrt(0.25 * xx[:, np.newaxis]**2 - 4 * np.pi * sldd)
 
-    MM = np.zeros((xx.size, 4, 4), np.complex128)
-    MM[:] = np.identity(4, np.complex128)
+    mm = np.zeros((xx.size, 4, 4), np.complex128)
+    mm[:] = np.identity(4, np.complex128)
 
     # iterate over layers
     for jj in range(len(layers) - 2):
-        R = rmatrix(thetas[jj + 1])
-        D = dmatrix(kn_u[:, jj + 1], kn_d[:, jj + 1])
+        d, d_inv = dmatrix(kn_u[:, jj + 1], kn_d[:, jj + 1])
+        p = pmatrix(kn_u[:, jj + 1], kn_d[:, jj + 1], layers[jj + 1, 0])
+        r = rmatrix(thetas[jj + 1])
 
-        P = pmatrix(kn_u[:, jj + 1], kn_d[:, jj + 1], layers[jj + 1, 0])
-        MM = MM @ D @ P @ np.linalg.inv(D) @ R
+        mm = mm @ d @ p @ d_inv @ r
 
-    R = rmatrix(thetas[0])
-    D = dmatrix(kn_u[:, 0], kn_d[:, 0])
+    _, d_inv = dmatrix(kn_u[:, 0], kn_d[:, 0])
+    d, _ = dmatrix(kn_u[:, -1], kn_d[:, -1])
+    r = rmatrix(thetas[0])
 
-    M = np.linalg.inv(D) @ R @ MM @ dmatrix(kn_u[:, -1], kn_d[:, -1])
+    M = d_inv @ r @ mm @ d
 
     # equation 16 in Blundell and Bland
     den = (M[:, 0, 0] * M[:, 2, 2] - M[:, 0, 2] * M[:, 2, 0])
-    pp = magsqr((M[:, 1, 0] * M[:, 2, 2] - M[:, 1, 2] * M[:, 2, 0]) / den) # uu
+    # uu
+    pp = magsqr((M[:, 1, 0] * M[:, 2, 2] - M[:, 1, 2] * M[:, 2, 0]) / den)
 
-    mm = magsqr((M[:, 3, 2] * M[:, 0, 0] - M[:, 3, 0] * M[:, 0, 2]) / den) # dd
+    # dd
+    mm = magsqr((M[:, 3, 2] * M[:, 0, 0] - M[:, 3, 0] * M[:, 0, 2]) / den)
 
-    pm = magsqr((M[:, 3, 0] * M[:, 2, 2] - M[:, 3, 2] * M[:, 2, 0]) / den) # ud
+    # ud
+    pm = magsqr((M[:, 3, 0] * M[:, 2, 2] - M[:, 3, 2] * M[:, 2, 0]) / den)
 
-    mp = magsqr((M[:, 1, 2] * M[:, 0, 0] - M[:, 1, 0] * M[:, 0, 2]) / den) # du
+    # du
+    mp = magsqr((M[:, 1, 2] * M[:, 0, 0] - M[:, 1, 0] * M[:, 0, 2]) / den)
 
     return (pp, mm, pm, mp)
 
