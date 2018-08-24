@@ -19,6 +19,10 @@ def abeles(q, layers, scale=1., bkg=0, threads=0):
 
     Parameters
     ----------
+    q: array_like
+        the q values required for the calculation.
+        Q = 4 * Pi / lambda * sin(omega).
+        Units = Angstrom**-1
     layers: np.ndarray
         coefficients required for the calculation, has shape (2 + N, 4),
         where N is the number of layers
@@ -31,10 +35,6 @@ def abeles(q, layers, scale=1., bkg=0, threads=0):
         layers[-1, 1] - SLD of backing (/1e-6 Angstrom**-2)
         layers[-1, 2] - iSLD of backing (/1e-6 Angstrom**-2)
         layers[-1, 3] - roughness between backing and last layer
-    q: array_like
-        the q values required for the calculation.
-        Q = 4 * Pi / lambda * sin(omega).
-        Units = Angstrom**-1
     scale: float
         Multiply all reflectivities by this value.
     bkg: float
@@ -107,11 +107,11 @@ def abeles(q, layers, scale=1., bkg=0, threads=0):
 
 
 """
-PNR calculation
+Polarised Neutron Reflectometry calculation
 """
 
 
-def pmatrix(kn_u, kn_d, thickness):
+def _pmatrix(kn_u, kn_d, thickness):
     # equation 7 + 14 in Blundell and Bland
     p = np.zeros((kn_u.size, 4, 4), np.complex128)
 
@@ -126,7 +126,7 @@ def pmatrix(kn_u, kn_d, thickness):
     return p
 
 
-def dmatrix(kn_u, kn_d):
+def _dmatrix(kn_u, kn_d):
     # equation 5 + 13 in Blundell and Bland
     d = np.zeros((kn_u.size, 4, 4), np.complex128)
     d_inv = np.zeros_like(d)
@@ -158,7 +158,7 @@ def dmatrix(kn_u, kn_d):
     return d, d_inv
 
 
-def rmatrix(theta):
+def _rmatrix(theta):
     # equation 15 in Blundell and Bland
     r = np.zeros((4, 4), np.complex128)
 
@@ -189,9 +189,40 @@ def magsqr(z):
 
 def pnr(q, layers):
     """
-    layers
-    [[thick_n, sld_n, isld_n, magsld_n, theta_n]]
+    Calculates Polarised Neutron Reflectivity of a series of slabs.
 
+    No interlayer roughness is taken into account.
+
+    Parameters
+    ----------
+    q: array_like
+        the q values required for the calculation.
+        Q = 4 * Pi / lambda * sin(omega).
+        Units = Angstrom**-1
+    layers: np.ndarray
+        coefficients required for the calculation, has shape (2 + N, 4),
+        where N is the number of layers
+        layers[0, 1] - SLD of fronting (/1e-6 Angstrom**-2)
+        layers[0, 2] - iSLD of fronting (/1e-6 Angstrom**-2)
+        layers[0, 3] - magSLD of fronting (/1e-6 Angstrom**-2)
+        layers[0, 3] - angle of magnetic moment w.r.t applied field (degrees)
+
+        layers[N, 0] - thickness of layer N
+        layers[N, 1] - SLD of layer N (/1e-6 Angstrom**-2)
+        layers[N, 2] - iSLD of layer N (/1e-6 Angstrom**-2)
+        layers[N, 3] - magSLD of layer N (/1e-6 Angstrom**-2)
+        layers[N, 4] - angle of magnetic moment w.r.t applied field (degrees)
+
+        layers[-1, 1] - SLD of backing (/1e-6 Angstrom**-2)
+        layers[-1, 2] - iSLD of backing (/1e-6 Angstrom**-2)
+        layers[-1, 3] - magSLD of backing (/1e-6 Angstrom**-2)
+        layers[-1, 3] - angle of magnetic moment w.r.t applied field (degrees)
+
+    Returns
+    -------
+    Reflectivity: tuple of np.ndarray
+        Calculated Polarised Neutron Reflectivity values for each q value.
+        (PP, MM, PM, MP)
     """
     xx = np.asfarray(q).astype(np.complex128).ravel()
 
@@ -216,15 +247,18 @@ def pnr(q, layers):
 
     # iterate over layers
     for jj in range(len(layers) - 2):
-        d, d_inv = dmatrix(kn_u[:, jj + 1], kn_d[:, jj + 1])
-        p = pmatrix(kn_u[:, jj + 1], kn_d[:, jj + 1], layers[jj + 1, 0])
-        r = rmatrix(thetas[jj + 1])
+        d, d_inv = _dmatrix(kn_u[:, jj + 1], kn_d[:, jj + 1])
+        p = _pmatrix(kn_u[:, jj + 1], kn_d[:, jj + 1], layers[jj + 1, 0])
+        r = _rmatrix(thetas[jj + 1])
 
         mm = mm @ d @ p @ d_inv @ r
 
-    _, d_inv = dmatrix(kn_u[:, 0], kn_d[:, 0])
-    d, _ = dmatrix(kn_u[:, -1], kn_d[:, -1])
-    r = rmatrix(thetas[0])
+    # d_inv for the first layer
+    _, d_inv = _dmatrix(kn_u[:, 0], kn_d[:, 0])
+
+    # d for the last layer
+    d, _ = _dmatrix(kn_u[:, -1], kn_d[:, -1])
+    r = _rmatrix(thetas[0])
 
     M = d_inv @ r @ mm @ d
 
