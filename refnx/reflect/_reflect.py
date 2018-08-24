@@ -216,7 +216,7 @@ def pnr(q, layers):
         layers[-1, 1] - SLD of backing (/1e-6 Angstrom**-2)
         layers[-1, 2] - iSLD of backing (/1e-6 Angstrom**-2)
         layers[-1, 3] - magSLD of backing (/1e-6 Angstrom**-2)
-        layers[-1, 3] - angle of magnetic moment w.r.t applied field (degrees)
+        layers[-1, 4] - angle of magnetic moment w.r.t applied field (degrees)
 
     Returns
     -------
