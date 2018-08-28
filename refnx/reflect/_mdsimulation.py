@@ -14,6 +14,7 @@ except ImportError:
     pass
 from refnx.analysis import Parameters
 from refnx.reflect import structure, Component
+from refnx._lib import possibly_open_file
 
 
 class MDSimulation(Component):
@@ -24,7 +25,7 @@ class MDSimulation(Component):
 
     Parameters
     ----------
-    pdbfile: str
+    pdbfile: str or file-like
         The path and name of the .pdb file or for which the reflectometry
         should be found.
     layer_thickness: float, optional
@@ -37,14 +38,16 @@ class MDSimulation(Component):
         simulation cell that should be ignored. This is to allow for the use of
         a vacuum gap in the simulation cell. This thickness can be determined
         by visualising the simulation or by running the box with a cut-off of 0
-        and investigating the SLD profile that is produced.
+        and investigating the SLD profile that is produced. N.B. This cut_off
+        occurs AFTER the flip (if this parameter is true).
     flip: bool, optional
         False if the system should be read as is, True if the simulation cell
-        should be rotated through the xy-plane. This expects the neutrons or
-        X-ray to be incident at the bottom of the simulation cell (where
-        z=0).
+        should be mirrored through the xy-plane. The neutrons or X-ray are
+        incident at the bottom of the simulation cell (where z=0), therefore
+        if the radiation should be incident at the top of the cell flip should
+        be true.
     roughness: float, optional
-        The fractional (of the layer thickness) roughness to be considered
+        The fraction (of the layer thickness) roughness to be considered
         between the layers in the simulation cell.
     verbose: bool, optional
         True if you want to be notified when the pdb and lgt files have been
@@ -58,9 +61,7 @@ class MDSimulation(Component):
     def __init__(self, pdbfile, layer_thickness=1, cut_off=5, flip=False,
                  roughness=0, verbose=False):
         self.pdbfile = pdbfile
-        self.structure = None
-        self.dimensions = [0, 0, 0]
-        self.read_pdb()
+        self.structure, self.dimensions = read_pdb(self.pdbfile)
         self.verbose = verbose
         if self.verbose:
             print('PDB file read.')
@@ -72,16 +73,21 @@ class MDSimulation(Component):
         self.flip = flip
         self.cut_off = cut_off
 
-    def assign_scattering_lengths(self, lgtfile=None, radiation='neutron',
+    def assign_scattering_lengths(self, radiation, lgtfile=None,
                                   xray_energy=None, atom_types=None,
                                   scattering_lengths=None):
         """
-        Assign the scattering lengths either from a .lgt file, a user defined
-        array or allow it to be determined from the elements listed in the
-        .pdb file.
+        If a series of atom_types and scattering_lengths are defined these will
+        be assigned appropriately (this takes precedence). Alternatively a .lgt
+        file can be used (see Notes). If neither of these are defined the best
+        effort will be made to define the scattering length for each atom in
+        the simulation based on the 'element' defined in the pdb file (the
+        final column in each row), the scattering_length is taken from the
+        periodictable library.
+
         Parameters
         ----------
-        radiation: str, optional
+        radiation: str
             Either 'neutron' or 'xray'. This is the type of radiation that was
             used in the experimental reflectometry measurements.
         xray_energy: float, optional
@@ -89,21 +95,29 @@ class MDSimulation(Component):
             probing X-ray radiation, in units of kilo electron Volts
         lgtfile: str, optional
             The path and name of the .lgt file (if present), which contains the
-            scattering lengths of each of the atom type in the pdbfile.
-            Currently the .lgt file style that is supported is a 3 column space
-            separated txt file where the columns are atom_type,
-            real_scattering_length, and imaginary_scattering_length
-            respectively. If a lgtfile is not used the scattering lengths for
-            the system will be determined based on the element type that is
-            defined in the final column of the pdb file.
-        atom_types: str, array_like
+            scattering lengths of each of the atom type in the pdbfile. This is
+            important for the reading in of scattering lengths that cannot be
+            assigned based on the atom, such as for coarse-grained forcefields.
+        atom_types: str, array_like, optional
             An array of length N, where N is the number of atom types in the
             simulation trajectory, which defines the atom types to assign
+            scattering lengths. These must have the same ordering as the
             scattering lengths.
-        scattering_lengths: float, array_like
+        scattering_lengths: float, array_like, optional
             An array of shape [N, 2], where N is the number of atom types in
             the simulation trajectory, which defines the scattering lengths for
-            the given atom types.
+            the given atom types (where the first column are the real
+            scattering lengths and the second column are the imaginary
+            scattering lengths).
+
+        Notes
+        -----
+        Currently the .lgt file style that is supported is a 3-column
+        space-separated txt file where the columns are atom_type,
+        real_scattering_length, and imaginary_scattering_length respectively.
+        If a lgtfile is not used the scattering lengths for the system will be
+        determined based on the element type that is defined in the final
+        column of the pdb file.
         """
         self.scatlens = {}
         if atom_types and scattering_lengths:
@@ -139,23 +153,6 @@ class MDSimulation(Component):
         self._get_sld_profile()
         if self.verbose:
             print('SLD profile determined.')
-
-    def read_pdb(self):
-        """Parse pdb file.
-
-        Parses the pdbfile.
-        """
-        parser = PDBParser()
-        self.structure = parser.get_structure('model', self.pdbfile)
-        file = open(self.pdbfile, 'r')
-        for line in file:
-            if line.startswith('CRYST1') and not np.any(self.dimensions):
-                line_list = line.split()
-                self.dimensions[0] = float(line_list[1])
-                self.dimensions[1] = float(line_list[2])
-                self.dimensions[2] = float(line_list[3])
-                break
-        file.close()
 
     def read_lgt(self):
         """Parses .lgt.
@@ -305,3 +302,37 @@ class MDSimulation(Component):
     def parameters(self):
         p = Parameters(name='traj: {}'.format(self.pdbfile))
         return p
+
+
+def read_pdb(pdbfile):
+    """Parse pdb file.
+
+    Parses the pdbfile.
+
+    Parameters
+    ----------
+    pdbfile: str or file-like
+        The path and name of the .pdb file or for which the reflectometry
+        should be found.
+
+    Returns
+    -------
+    structure: biopython.structure, attribute
+        The is the object which contains the information read in from the
+        simulation trajectory.
+    dimensions: float, array_like, attribute
+        An array of 3 floats containing the simulation cell dimensions.
+    """
+    parser = PDBParser()
+    structure = parser.get_structure('model', pdbfile)
+    dimensions = np.zeros(3)
+    with possibly_open_file(pdbfile, 'r') as f:
+        for line in f:
+            if line.startswith('CRYST1') and not np.any(dimensions):
+                line_list = line.split()
+                dimensions[0] = float(line_list[1])
+                dimensions[1] = float(line_list[2])
+                dimensions[2] = float(line_list[3])
+                break
+        f.close()
+    return structure, dimensions

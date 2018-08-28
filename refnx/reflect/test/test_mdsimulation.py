@@ -100,7 +100,7 @@ class TestSimulation(object):
         sim = MDSimulation(pdbfile, flip=True)
         a = [[26.659, 0], [26.659, 0], [26.659, 0], [9.36, 0], [19.998, 0]]
         c = ['C1', 'C2', 'C3', 'N4', 'C5']
-        sim.assign_scattering_lengths(atom_types=c,
+        sim.assign_scattering_lengths('neutron', atom_types=c,
                                       scattering_lengths=a)
         for i in range(0, len(c)):
             assert_almost_equal(sim.scatlens[c[i]], a[i])
@@ -112,7 +112,7 @@ class TestSimulation(object):
         a = [6.6484, 6.6484, 6.6484, 9.36, 6.6484]
         b = np.zeros_like((a))
         c = ['C1', 'C2', 'C3', 'N4', 'C5']
-        sim.assign_scattering_lengths()
+        sim.assign_scattering_lengths('neutron')
         for i in range(0, len(c)):
             assert_almost_equal(sim.scatlens[c[i]], [a[i], b[i]])
 
@@ -124,7 +124,7 @@ class TestSimulation(object):
         b = np.array([0.010924737, 0.010924737, 0.010924737, 0.0213729,
                       0.010924737])
         c = ['C1', 'C2', 'C3', 'N4', 'C5']
-        sim.assign_scattering_lengths(radiation='xray', xray_energy=12)
+        sim.assign_scattering_lengths('xray', xray_energy=12)
         for i in range(0, len(c)):
             assert_almost_equal(sim.scatlens[c[i]], [a[i], b[i]])
 
@@ -132,7 +132,7 @@ class TestSimulation(object):
         pth = os.path.dirname(os.path.abspath(__file__))
         pdbfile = os.path.join(pth, 'mdsim_test.pdb')
         sim = MDSimulation(pdbfile, flip=True)
-        sim.assign_scattering_lengths()
+        sim.assign_scattering_lengths('neutron')
         a = [6.6484, 1., 6.6484, 9.36, 6.6484]
         b = [0, 1., 0, 0, 0]
         c = ['C1', 'C2', 'C3', 'N4', 'C5']
@@ -144,7 +144,7 @@ class TestSimulation(object):
         pth = os.path.dirname(os.path.abspath(__file__))
         pdbfile = os.path.join(pth, 'mdsim_test.pdb')
         sim = MDSimulation(pdbfile, flip=True)
-        sim.assign_scattering_lengths()
+        sim.assign_scattering_lengths('neutron')
         a = [[1, 2], [3, 4], [5, 6], [7, 8], [9, 10]]
         c = ['C1', 'C2', 'C3', 'N4', 'C5']
         sim.set_residue_scattering('DSP', [[1, 2], [3, 4], [5, 6], [7, 8],
@@ -157,7 +157,7 @@ class TestSimulation(object):
         pdbfile = os.path.join(pth, 'mdsim_test.pdb')
         lgtfile = os.path.join(pth, 'mdsim_test.lgt')
         sim = MDSimulation(pdbfile, flip=True)
-        sim.assign_scattering_lengths(lgtfile=lgtfile)
+        sim.assign_scattering_lengths('neutron', lgtfile=lgtfile)
         a = [26.659, 26.659, 26.659, 9.36, 19.998]
         b = np.zeros((5))
         c = ['C1', 'C2', 'C3', 'N4', 'C5']
@@ -169,7 +169,7 @@ class TestSimulation(object):
         pdbfile = os.path.join(pth, 'mdsim_test.pdb')
         lgtfile = os.path.join(pth, 'mdsim_test.lgt')
         sim = MDSimulation(pdbfile, flip=False)
-        sim.assign_scattering_lengths(lgtfile=lgtfile)
+        sim.assign_scattering_lengths('neutron', lgtfile=lgtfile)
         assert_equal(sim.layers.shape, [6, 16, 5])
         assert_equal(sim.av_layers.shape, [16, 5])
         sim.run()
