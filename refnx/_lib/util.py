@@ -135,10 +135,7 @@ def flatten(l):
     for el in l:
         if (isinstance(el, collections.Iterable) and
                 not isinstance(el, (str, bytes))):
-            # 2.7 has no yield from
-            # yield from flatten(el)
-            for elel in flatten(el):
-                yield elel
+            yield from flatten(el)
         else:
             yield el
 

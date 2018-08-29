@@ -19,10 +19,7 @@ def c_flatten(seq):
     for el in seq:
         if (isinstance(el, collections.Iterable) and
                 not isinstance(el, (str, bytes))):
-            # 2.7 has no yield from
-            # yield from c_flatten(el)
-            for elel in c_flatten(el):
-                yield elel
+            yield from c_flatten(el)
         else:
             yield el
 
