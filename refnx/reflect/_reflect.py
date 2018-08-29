@@ -112,7 +112,23 @@ Polarised Neutron Reflectometry calculation
 
 
 def _pmatrix(kn_u, kn_d, thickness):
+    """
     # equation 7 + 14 in Blundell and Bland
+
+    Parameters
+    ----------
+    kn_u, kn_d: np.ndarray
+        wavevector for up and down within a given layer. Has shape (N,),
+        where N is the number of Q points.
+
+    thickness: float
+        Thickness of layer (Angstrom)
+
+    Returns
+    -------
+    p : np.ndarray
+        P matrix
+    """
     p = np.zeros((kn_u.size, 4, 4), np.complex128)
 
     p0 = np.exp(complex(0, 1) * kn_u * thickness)
@@ -127,7 +143,20 @@ def _pmatrix(kn_u, kn_d, thickness):
 
 
 def _dmatrix(kn_u, kn_d):
-    # equation 5 + 13 in Blundell and Bland
+    """
+    equation 5 + 13 in Blundell and Bland
+
+    Parameters
+    ----------
+    kn_u, kn_d: np.ndarray
+        wavevector for up and down within a given layer. Has shape (N,),
+        where N is the number of Q points.
+
+    Returns
+    -------
+    d, d_inv: np.ndarray
+        D matrix and its inverse
+    """
     d = np.zeros((kn_u.size, 4, 4), np.complex128)
     d_inv = np.zeros_like(d)
 
@@ -159,7 +188,19 @@ def _dmatrix(kn_u, kn_d):
 
 
 def _rmatrix(theta):
-    # equation 15 in Blundell and Bland
+    """
+    equation 15 in Blundell and Bland
+
+    Parameters
+    ----------
+    theta - float
+        Angle (degrees) of magnetic moment with respect to applied field.
+
+    Returns
+    -------
+    r : np.ndarray
+        R matrix.
+    """
     r = np.zeros((4, 4), np.complex128)
 
     cos_term = np.cos(theta / 2.) * complex(1, 0)
@@ -180,11 +221,21 @@ def _rmatrix(theta):
     return r
 
 
-def magsqr(z):
+def _magsqr(z):
     """
     Return the magnitude squared of the real- or complex-valued input.
+
+    Parameters
+    ----------
+    z - complex, or np.ndarray
+        complex argument
+
+    Returns
+    -------
+    magsqr - real or np.ndarray
+        Magnitude squared of the complex argument
     """
-    return np.abs(z)**2
+    return np.real(z * z.conj)
 
 
 def pnr(q, layers):
@@ -220,9 +271,15 @@ def pnr(q, layers):
 
     Returns
     -------
-    Reflectivity: tuple of np.ndarray
+    reflectivity: tuple of np.ndarray
         Calculated Polarised Neutron Reflectivity values for each q value.
         (PP, MM, PM, MP)
+
+    References
+    ----------
+    ..[1] S. J. Blundell, J. A. C. Bland, 'Polarized neutron reflection as a
+         probe of magnetic films and multilayers', Phys. Rev. B, (1992), 46,
+         3391.
     """
     xx = np.asfarray(q).astype(np.complex128).ravel()
 
@@ -265,16 +322,16 @@ def pnr(q, layers):
     # equation 16 in Blundell and Bland
     den = (M[:, 0, 0] * M[:, 2, 2] - M[:, 0, 2] * M[:, 2, 0])
     # uu
-    pp = magsqr((M[:, 1, 0] * M[:, 2, 2] - M[:, 1, 2] * M[:, 2, 0]) / den)
+    pp = _magsqr((M[:, 1, 0] * M[:, 2, 2] - M[:, 1, 2] * M[:, 2, 0]) / den)
 
     # dd
-    mm = magsqr((M[:, 3, 2] * M[:, 0, 0] - M[:, 3, 0] * M[:, 0, 2]) / den)
+    mm = _magsqr((M[:, 3, 2] * M[:, 0, 0] - M[:, 3, 0] * M[:, 0, 2]) / den)
 
     # ud
-    pm = magsqr((M[:, 3, 0] * M[:, 2, 2] - M[:, 3, 2] * M[:, 2, 0]) / den)
+    pm = _magsqr((M[:, 3, 0] * M[:, 2, 2] - M[:, 3, 2] * M[:, 2, 0]) / den)
 
     # du
-    mp = magsqr((M[:, 1, 2] * M[:, 0, 0] - M[:, 1, 0] * M[:, 0, 2]) / den)
+    mp = _magsqr((M[:, 1, 2] * M[:, 0, 0] - M[:, 1, 0] * M[:, 0, 2]) / den)
 
     return (pp, mm, pm, mp)
 
