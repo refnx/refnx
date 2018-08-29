@@ -235,7 +235,7 @@ def _magsqr(z):
     magsqr - real or np.ndarray
         Magnitude squared of the complex argument
     """
-    return np.real(z * z.conj)
+    return np.abs(z)**2
 
 
 def pnr(q, layers):
