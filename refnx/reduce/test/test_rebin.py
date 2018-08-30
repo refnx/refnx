@@ -31,7 +31,7 @@ class TestRebin(object):
         x_new = np.linspace(0., 1., n + 1)
 
         # some arbitrary distribution
-        y_old = 1. + np.sin(x_old[:-1] * np.pi) / np.ediff1d(x_old)
+        y_old = 1. + np.sin(x_old[:-1] * np.pi) / np.diff(x_old)
 
         # rebin
         y_new = rebin.rebin(x_old, y_old, x_new)
@@ -53,13 +53,13 @@ class TestRebin(object):
         x_new = np.linspace(-0.1, 1.2, n + 1)
 
         # some arbitrary distribution
-        y_old = 1. + np.sin(x_old[:-1] * np.pi) / np.ediff1d(x_old)
+        y_old = 1. + np.sin(x_old[:-1] * np.pi) / np.diff(x_old)
 
         # rebin
         y_new = rebin.rebin(x_old, y_old, x_new)
 
         # compute answer here to check rebin
-        y_old_ave = y_old / np.ediff1d(x_old)
+        y_old_ave = y_old / np.diff(x_old)
         y_new_here = [y_old_ave[0] * (x_new[1] - 0.),
                       y_old_ave[0] * (x_old[1] - x_new[1]) +
                       y_old_ave[1] * (x_new[2] - x_old[1]),
@@ -85,7 +85,7 @@ class TestRebin(object):
         x_new = np.linspace(-0.1, 1.2, n + 1)
 
         # some arbitrary distribution
-        y_old = 1. + np.sin(x_old[:-1] * np.pi) / np.ediff1d(x_old)
+        y_old = 1. + np.sin(x_old[:-1] * np.pi) / np.diff(x_old)
 
         # with uncertainties
         np.random.seed(1)
@@ -122,7 +122,7 @@ class TestRebin(object):
         x_new = np.linspace(-0.2, -0.0, n + 1)
 
         # some arbitrary distribution
-        y_old = 1. + np.sin(x_old[:-1] * np.pi) / np.ediff1d(x_old)
+        y_old = 1. + np.sin(x_old[:-1] * np.pi) / np.diff(x_old)
 
         # rebin
         y_new = rebin.rebin(x_old, y_old, x_new)
@@ -145,7 +145,7 @@ class TestRebin(object):
         x_new = np.linspace(1.2, 10., n + 1)
 
         # some arbitrary distribution
-        y_old = 1. + np.sin(x_old[:-1] * np.pi) / np.ediff1d(x_old)
+        y_old = 1. + np.sin(x_old[:-1] * np.pi) / np.diff(x_old)
 
         # rebin
         y_new = rebin.rebin(x_old, y_old, x_new)
@@ -168,13 +168,13 @@ class TestRebin(object):
         x_new = np.linspace(0.3, 0.65, n + 1)
 
         # some arbitrary distribution
-        y_old = 1. + np.sin(x_old[:-1] * np.pi) / np.ediff1d(x_old)
+        y_old = 1. + np.sin(x_old[:-1] * np.pi) / np.diff(x_old)
 
         # rebin
         y_new = rebin.rebin(x_old, y_old, x_new)
 
         # compute answer here to check rebin
-        y_old_ave = y_old / np.ediff1d(x_old)
+        y_old_ave = y_old / np.diff(x_old)
         y_new_here = (y_old_ave[1] * (x_old[2] - x_new[0]) +
                       y_old_ave[2] * (x_new[1] - x_old[2]))
 
@@ -195,7 +195,7 @@ class TestRebin(object):
         x_new = np.linspace(-0.1, 1.2, n + 1)
 
         # some arbitrary distribution
-        y_old = 1. + np.sin(x_old[:-1] * np.pi) / np.ediff1d(x_old)
+        y_old = 1. + np.sin(x_old[:-1] * np.pi) / np.diff(x_old)
 
         # with uncertainties
         y_old = unp.uarray(y_old, 0.1 * y_old * uniform((m,)))
@@ -207,7 +207,7 @@ class TestRebin(object):
                                       y1_sd=unp.std_devs(y_old))
 
         # compute answer here to check rebin
-        y_old_ave = y_old / np.ediff1d(x_old)
+        y_old_ave = y_old / np.diff(x_old)
         y_new_here = np.array(
             [y_old_ave[0] * (x_new[1] - 0.),
              y_old_ave[0] * (x_old[1] - x_new[1]) +

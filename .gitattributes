@@ -6,6 +6,7 @@
 *.rst text=auto eol=lf
 *.txt text=auto eol=lf
 *.yml text=auto eol=lf
+*.md text=auto eol=lf
 
 
 # Force git to look at some files as binary
