@@ -604,7 +604,7 @@ def _profile_slicer(z, sld_profile, slice_size=None):
         supplying an array with two columns (representing the real and
         imaginary parts).
     slice_size : None, float, optional
-        if `slice_size is None` then `np.min(np.ediff1d(z))/4` is used to
+        if `slice_size is None` then `np.min(np.diff(z))/4` is used to
         determine the rough size of the created slabs. Otherwise
         `float(slice_size)` is used.
 
@@ -630,7 +630,7 @@ def _profile_slicer(z, sld_profile, slice_size=None):
     imag_interp = interp1d(z, sld.imag, kind='quadratic')
 
     if slice_size is None:
-        slice_size = np.min(np.ediff1d(z)) / 4
+        slice_size = np.min(np.diff(z)) / 4
     else:
         slice_size = float(slice_size)
 
@@ -640,7 +640,7 @@ def _profile_slicer(z, sld_profile, slice_size=None):
     zeds = np.linspace(z_min, z_max, int(n_steps) + 1)
 
     # this is the true thickness of the slab
-    slice_size = np.ediff1d(zeds)[0]
+    slice_size = np.diff(zeds)[0]
     zeds -= slice_size / 2
     zeds = zeds[1:]
 
