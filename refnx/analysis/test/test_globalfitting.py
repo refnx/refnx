@@ -8,8 +8,11 @@ import os.path
 import numpy as np
 from numpy.testing import (assert_, assert_equal, assert_almost_equal,
                            assert_allclose)
+from scipy.optimize._differentialevolution import (DifferentialEvolutionSolver
+                                                   as DES)
 
 from refnx.analysis import (CurveFitter, Objective, GlobalObjective, Transform)
+from refnx.analysis.curvefitter import bounds_list
 from refnx.dataset import ReflectDataset
 from refnx.reflect import (Slab, SLD, ReflectModel)
 
@@ -66,7 +69,34 @@ class TestGlobalFitting(object):
         assert_allclose(self.global_objective.logpost(),
                         self.objective.logpost())
 
+        # test that the objectives give the same logpost
+        assert_allclose(self.global_objective.nll(),
+                        self.objective.nll())
+
         with np.errstate(invalid='raise'):
+            bounds_f = bounds_list(self.objective.varying_parameters())
+            with DES(self.objective.nll, bounds_f, seed=1) as f:
+                init_pop_f = np.copy(f.population)
+                scale_f = f.scale
+                init_energies_f = f._calculate_population_energies(init_pop_f)
+
+                assert_(f._updating == 'immediate')
+                res_f = np.copy(next(f)[0])
+
+            bounds_g = bounds_list(self.global_objective.varying_parameters())
+            with DES(self.global_objective.nll, bounds_g, seed=1) as g:
+                init_pop_g = np.copy(g.population)
+                scale_g = g.scale
+                init_energies_g = f._calculate_population_energies(init_pop_g)
+                assert_(g._updating == 'immediate')
+                res_g = np.copy(next(g)[0])
+
+            assert_allclose(scale_f, scale_g)
+            assert_allclose(bounds_f, bounds_g)
+            assert_allclose(init_pop_f, init_pop_g)
+            assert_allclose(init_energies_f, init_energies_g)
+            assert_allclose(res_f, res_g)
+
             g = CurveFitter(self.global_objective)
             res_g = g.fit(method='differential_evolution', seed=1, maxiter=10)
 
