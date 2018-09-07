@@ -62,6 +62,10 @@ class TestGlobalFitting(object):
 
         self.objective.transform = Transform('logY')
 
+        # test that the objectives give the same logpost
+        assert_allclose(self.global_objective.logpost(),
+                        self.objective.logpost())
+
         with np.errstate(invalid='raise'):
             g = CurveFitter(self.global_objective)
             res_g = g.fit(method='differential_evolution', seed=1, maxiter=10)
