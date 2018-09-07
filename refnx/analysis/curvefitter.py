@@ -34,75 +34,6 @@ MCMCResult = namedtuple('MCMCResult', ['name', 'param', 'stderr', 'chain',
                                        'median'])
 
 
-def _objective_logpost(theta, userargs=()):
-    """
-    Calculates the log-posterior probability.
-
-    Parameters
-    ----------
-    theta : sequence
-        Float parameter values (only those being varied)
-    userargs : tuple, optional
-        Extra positional arguments required for user objective function
-
-    Returns
-    -------
-    logpost : float
-        Log posterior probability
-
-    """
-    # need to use this function because PY27 can't pickle a partial on
-    # an object method
-    objective = userargs
-    return objective.logpost(theta)
-
-
-def _objective_logl(theta, userargs=()):
-    """
-    Calculates the log-likelihood probability.
-
-    Parameters
-    ----------
-    theta : sequence
-        Float parameter values (only those being varied)
-    userargs : tuple, optional
-        Extra positional arguments required for user objective function
-
-    Returns
-    -------
-    lnlike : float
-        Log likelihood probability
-
-    """
-    # need to use this function because PY27 can't pickle a partial on
-    # an object method
-    objective = userargs
-    return objective.logl(theta)
-
-
-def _objective_logp(theta, userargs=()):
-    """
-    Calculates the log-prior probability.
-
-    Parameters
-    ----------
-    theta : sequence
-        Float parameter values (only those being varied)
-    userargs : tuple, optional
-        Extra positional arguments required for user objective function
-
-    Returns
-    -------
-    logp : float
-        Log prior probability
-
-    """
-    # need to use this function because PY27 can't pickle a partial on
-    # an object method
-    objective = userargs
-    return objective.logp(theta)
-
-
 class CurveFitter(object):
     """
     Analyse a curvefitting system (with MCMC sampling)
@@ -207,10 +138,9 @@ class CurveFitter(object):
             raise ValueError("No parameters are being fitted")
 
         if self._ntemps == -1:
-            self.mcmc_kws['args'] = (self.objective,)
             self.sampler = emcee.EnsembleSampler(self._nwalkers,
                                                  self.nvary,
-                                                 _objective_logpost,
+                                                 self.objective.logpost,
                                                  **self.mcmc_kws)
         # Parallel Tempering was requested.
         else:
@@ -218,13 +148,11 @@ class CurveFitter(object):
                 raise RuntimeError("You need to install the 'ptemcee' package"
                                    " to use parallel tempering")
 
-            sig = {'loglargs': (self.objective,),
-                   'logpargs': (self.objective,),
-                   'ntemps': self._ntemps,
+            sig = {'ntemps': self._ntemps,
                    'nwalkers': self._nwalkers,
                    'dim': self.nvary,
-                   'logl': _objective_logl,
-                   'logp': _objective_logp
+                   'logl': self.objective.logl,
+                   'logp': self.objective.logp
                    }
             sig.update(self.mcmc_kws)
             self.sampler = PTSampler(**sig)
