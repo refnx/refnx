@@ -974,7 +974,7 @@ class PlatypusNexus(ReflectNexus):
         be compared.
         """
         if normalise_bins:
-            div = 1 / np.ediff1d(m_lambda_hist[0])[:, np.newaxis]
+            div = 1 / np.diff(m_lambda_hist[0])[:, np.newaxis]
             detector, detector_sd = EP.EPmulk(detector,
                                               detector_sd,
                                               div)

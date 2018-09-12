@@ -2,11 +2,10 @@
 
 from __future__ import print_function, absolute_import
 
-__version__ = "3.0.0.dev0"
+__version__ = "3.0rc1"
 __bibtex__ = """
 @article{emcee,
-   author = {{Foreman-Mackey}, D. and {Hogg}, D.~W. and {Lang}, D.
-              and {Goodman}, J.},
+   author = {{Foreman-Mackey}, D. and {Hogg}, D.~W. and {Lang}, D. and {Goodman}, J.},
     title = {emcee: The MCMC Hammer},
   journal = {PASP},
      year = 2013,
@@ -15,7 +14,7 @@ __bibtex__ = """
    eprint = {1202.3665},
       doi = {10.1086/670067}
 }
-"""
+"""  # NOQA
 
 try:
     __EMCEE_SETUP__
@@ -24,9 +23,10 @@ except NameError:
 
 if not __EMCEE_SETUP__:
     from .ensemble import EnsembleSampler
+    from .state import State
 
     from . import moves
     from . import autocorr
     from . import backends
 
-    __all__ = ["EnsembleSampler", "moves", "autocorr", "backends"]
+    __all__ = ["EnsembleSampler", "State", "moves", "autocorr", "backends"]

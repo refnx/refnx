@@ -12,7 +12,7 @@ from scipy._lib._util import check_random_state
 from scipy.optimize import minimize, differential_evolution, least_squares
 
 from refnx.analysis import Objective, Interval, PDF, is_parameter
-from refnx._lib import (unique as f_unique, possibly_create_pool,
+from refnx._lib import (unique as f_unique, PoolWrapper,
                         possibly_open_file, flatten)
 from refnx._lib.util import getargspec
 
@@ -32,75 +32,6 @@ except ImportError:
 
 MCMCResult = namedtuple('MCMCResult', ['name', 'param', 'stderr', 'chain',
                                        'median'])
-
-
-def _objective_logpost(theta, userargs=()):
-    """
-    Calculates the log-posterior probability.
-
-    Parameters
-    ----------
-    theta : sequence
-        Float parameter values (only those being varied)
-    userargs : tuple, optional
-        Extra positional arguments required for user objective function
-
-    Returns
-    -------
-    logpost : float
-        Log posterior probability
-
-    """
-    # need to use this function because PY27 can't pickle a partial on
-    # an object method
-    objective = userargs
-    return objective.logpost(theta)
-
-
-def _objective_logl(theta, userargs=()):
-    """
-    Calculates the log-likelihood probability.
-
-    Parameters
-    ----------
-    theta : sequence
-        Float parameter values (only those being varied)
-    userargs : tuple, optional
-        Extra positional arguments required for user objective function
-
-    Returns
-    -------
-    lnlike : float
-        Log likelihood probability
-
-    """
-    # need to use this function because PY27 can't pickle a partial on
-    # an object method
-    objective = userargs
-    return objective.logl(theta)
-
-
-def _objective_logp(theta, userargs=()):
-    """
-    Calculates the log-prior probability.
-
-    Parameters
-    ----------
-    theta : sequence
-        Float parameter values (only those being varied)
-    userargs : tuple, optional
-        Extra positional arguments required for user objective function
-
-    Returns
-    -------
-    logp : float
-        Log prior probability
-
-    """
-    # need to use this function because PY27 can't pickle a partial on
-    # an object method
-    objective = userargs
-    return objective.logp(theta)
 
 
 class CurveFitter(object):
@@ -207,10 +138,9 @@ class CurveFitter(object):
             raise ValueError("No parameters are being fitted")
 
         if self._ntemps == -1:
-            self.mcmc_kws['args'] = (self.objective,)
             self.sampler = emcee.EnsembleSampler(self._nwalkers,
                                                  self.nvary,
-                                                 _objective_logpost,
+                                                 self.objective.logpost,
                                                  **self.mcmc_kws)
         # Parallel Tempering was requested.
         else:
@@ -218,13 +148,11 @@ class CurveFitter(object):
                 raise RuntimeError("You need to install the 'ptemcee' package"
                                    " to use parallel tempering")
 
-            sig = {'loglargs': (self.objective,),
-                   'logpargs': (self.objective,),
-                   'ntemps': self._ntemps,
+            sig = {'ntemps': self._ntemps,
                    'nwalkers': self._nwalkers,
                    'dim': self.nvary,
-                   'logl': _objective_logl,
-                   'logp': _objective_logp
+                   'logl': self.objective.logl,
+                   'logp': self.objective.logp
                    }
             sig.update(self.mcmc_kws)
             self.sampler = PTSampler(**sig)
@@ -444,7 +372,7 @@ class CurveFitter(object):
         return np.transpose(acfs)
 
     def sample(self, steps, nthin=1, random_state=None, f=None, callback=None,
-               verbose=True, pool=0):
+               verbose=True, pool=-1):
         """
         Performs sampling from the objective.
 
@@ -472,7 +400,7 @@ class CurveFitter(object):
             Gives updates on the sampling progress
         pool : int or map-like object, optional
             If `pool` is an `int` then it specifies the number of threads to
-            use for parallelization. If `pool == 0`, then all CPU's are used.
+            use for parallelization. If `pool == -1`, then all CPU's are used.
             If pool is an object with a map method that follows the same
             calling sequence as the built-in map function, then this pool is
             used for parallelisation.
@@ -546,7 +474,7 @@ class CurveFitter(object):
 
         # using context manager means we kill off zombie pool objects
         # but does mean that the pool has to be specified each time.
-        with possibly_create_pool(pool) as g, possibly_open_file(f, 'a') as h:
+        with PoolWrapper(pool) as g, possibly_open_file(f, 'a') as h:
             # if you're not creating more than 1 thread, then don't bother with
             # a pool.
             if pool == 1:

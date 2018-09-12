@@ -193,7 +193,7 @@ def rebin(x1, y1, x2, y1_sd=None):
 
     # Divide y1 by bin widths.
     # This converts y-values from bin total to bin average over bin width.
-    x1_bin_widths = np.ediff1d(x1)
+    x1_bin_widths = np.diff(x1)
     y1_ave = y1 / x1_bin_widths
     y1_ave_sd = y1_sd_temp / x1_bin_widths
 
@@ -226,7 +226,7 @@ def rebin(x1, y1, x2, y1_sd=None):
             i_place[start_pos] == 0 and
             i_place[start_pos + 1] == x1.size):
         sub_edges = x1
-        sub_dx = np.ediff1d(sub_edges)
+        sub_dx = np.diff(sub_edges)
         sub_y_ave = y1_ave
         sub_y_ave_var = y1_ave_var
 
@@ -241,7 +241,7 @@ def rebin(x1, y1, x2, y1_sd=None):
         i_lo, i_hi = i_place[start_pos], i_place[start_pos + 1]
 
         sub_edges = np.hstack([x1[i_lo:i_hi], x2_hi])
-        sub_dx = np.ediff1d(sub_edges)
+        sub_dx = np.diff(sub_edges)
         sub_y_ave = y1_ave[i_lo: i_hi]
         sub_y_ave_var = y1_ave_var[i_lo:i_hi]
 
@@ -256,7 +256,7 @@ def rebin(x1, y1, x2, y1_sd=None):
         i_lo, i_hi = i_place[end_pos - 1], i_place[end_pos]
 
         sub_edges = np.hstack([x2_lo, x1[i_lo:i_hi]])
-        sub_dx = np.ediff1d(sub_edges)
+        sub_dx = np.diff(sub_edges)
         sub_y_ave = y1_ave[i_lo - 1:i_hi]
         sub_y_ave_var = y1_ave_var[i_lo - 1:i_hi]
 

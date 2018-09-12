@@ -8,6 +8,22 @@ import numpy as np
 
 
 class State(object):
+    """The state of the ensemble during an MCMC run
+
+    For backwards compatibility, this will unpack into ``coords, log_prob,
+    (blobs), random_state`` when iterated over (where ``blobs`` will only be
+    included if it exists and is not ``None``).
+
+    Args:
+        coords (ndarray[nwalkers, ndim]): The current positions of the walkers
+            in the parameter space.
+        log_prob (ndarray[nwalkers, ndim], Optional): Log posterior
+            probabilities for the  walkers at positions given by ``coords``.
+        blobs (Optional): The metadata “blobs” associated with the current
+            position. The value is only returned if lnpostfn returns blobs too.
+        random_state (Optional): The current state of the random number
+            generator.
+    """
 
     __slots__ = "coords", "log_prob", "blobs", "random_state"
 

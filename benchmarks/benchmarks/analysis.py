@@ -39,11 +39,19 @@ class curvefitter(Benchmark):
         p |= Parameter(m_ls, 'm', vary=True, bounds=(-100, 100))
 
         model = Model(p, fitfunc=line)
-        objective = Objective(model, data)
-        self.mcfitter = CurveFitter(objective)
+        self.objective = Objective(model, data)
+        self.mcfitter = CurveFitter(self.objective)
+        self.mcfitter_t = CurveFitter(self.objective, ntemps=20)
+
         self.mcfitter.initialise('prior')
+        self.mcfitter_t.initialise('prior')
 
     def time_sampler(self):
         # to get an idea of how fast the actual sampling is.
         # i.e. the overhead of objective.lnprob, objective.lnprior, etc
         self.mcfitter.sampler.run_mcmc(self.mcfitter._state, 100)
+
+    def time_sampler_pool(self):
+        # see how the multiprocessing in curvefitter performs
+        # automatically use all the cores available
+        self.mcfitter_t.sample(20, pool=-1)

@@ -1,0 +1,6 @@
+Details of changes made to refnx
+================================
+
+0.1.1
+-----
+- removal of Python 2.7 support

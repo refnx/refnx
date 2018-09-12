@@ -24,7 +24,7 @@ NCPU = cpu_count()
 @cython.cdivision(True)
 cpdef np.ndarray abeles(np.ndarray x,
            np.ndarray[DTYPE_t, ndim=2] w,
-           double scale=1.0, double bkg=0., int threads=0):
+           double scale=1.0, double bkg=0., int threads=-1):
     if w.shape[1] != 4 or w.shape[0] < 2:
         raise ValueError("Parameters for _creflect must have shape (>2, 4)")
     if (w.dtype != np.float64 or x.dtype != np.float64):
@@ -48,7 +48,10 @@ cpdef np.ndarray abeles(np.ndarray x,
     if nlayers:
         coefs[8:] = w.flatten()[4: -4]
 
-    threads = threads or NCPU
+    if threads == -1:
+        threads = NCPU
+    elif threads == 0:
+        threads = 1
 
     if threads > 1:
         reflectMT(4*nlayers + 8, <const double*>coefs.data, npoints,

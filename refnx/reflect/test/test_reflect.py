@@ -387,7 +387,7 @@ class TestReflect(object):
 
         # use constant dq/q for comparison
         const_R = reflectivity(q, slabs, scale=1.01, bkg=1e-6, dq=0.05 * q,
-                               quad_order=101, threads=0)
+                               quad_order=101, threads=-1)
 
         # lets create a kernel.
         kernel = np.zeros((npnts, 2, 501), float)
@@ -474,3 +474,29 @@ class TestReflect(object):
         assert_(mixed_model.dq.value == 0)
 
         assert_equal(mixed_model_y, mixed_model(self.qvals))
+
+    def test_pnr(self):
+        # test pnr calculation
+        q = np.linspace(0.01, 0.3, 1001)
+
+        # use for spin channel PNR calculation
+        players = np.array([[0, 0, 0, 0, 0],
+                           [100, 3, 0, 1, 0],
+                           [0, 4, 0, 0, 0]])
+
+        # use for NSF calculation with abeles
+        pp_layers = np.array([[0, 0, 0, 0],
+                              [100, 4., 0, 0],
+                              [0, 4, 0, 0]])
+
+        mm_layers = np.array([[0, 0, 0, 0],
+                              [100, 2, 0, 0],
+                              [0, 4, 0, 0]])
+
+        r = _reflect.pnr(q, players)
+
+        pp = _reflect.abeles(q, pp_layers)
+        mm = _reflect.abeles(q, mm_layers)
+
+        assert_allclose(r[0], pp)
+        assert_allclose(r[1], mm)

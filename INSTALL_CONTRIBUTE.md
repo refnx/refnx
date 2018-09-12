@@ -27,12 +27,12 @@ Perhaps the easiest way to create a scientific computing environment is to use t
 step is to create a *conda* environment.
 
 ### Creating a conda environment
-
+ 
   1) In a shell window create a conda environment and install the dependencies. The **-n** flag indicates that the environment is called *refnx*.
-
+  
   ```conda create -n refnx python=3.7 numpy scipy cython pandas h5py xlrd pytest tqdm```
   2) Activate the environment that we're going to be working in:
-
+  
   ```
   # on OSX
   conda activate refnx
@@ -42,7 +42,7 @@ step is to create a *conda* environment.
   ```
   3) Install the remaining dependencies:
   ```pip install uncertainties ptemcee```
-
+ 
 ### Installing into a conda environment from source
 
  The latest source code can be obtained from either [PyPi][PyPi] or [Github][github-refnx]. You can also build the package from within the refnx git repository (see later in this document).
@@ -59,14 +59,14 @@ step is to create a *conda* environment.
 ### Installing into a conda environment from a released version
 
   1) There are pre-built versions on *conda-forge*, but they're not necessarily at the bleeding edge:
-
+  
   ```conda install -c conda-forge refnx```
   2) Start up a Python interpreter and make sure the tests run:
   ```
   >>> import refnx
   >>> refnx.test()
   ```
-
+ 
 -----------------------
 ## Development Workflow
  
@@ -76,7 +76,7 @@ The following instructions are based on use of a command line *git* client.
 *Git* is a distributed version control program. An example of [how to contribute to the numpy project][numpy-contrib]
 is a useful reference.
 
-### Setting up a local git repository
+### Setting up a local git repository 
   1) Create an account on [github](https://github.com/).
   2) On the [refnx github][github-refnx] page fork the *refnx* repository to your own github account. Forking means that now you have your own personal repository of the *refnx* code.
   3) Now we will make a local copy of your personal repository on your local machine:
@@ -94,7 +94,7 @@ is a useful reference.
   ```
 
 ### Keeping your local and remote repositories up to date
-The main *refnx* repository may be a lot more advanced than your fork, or your local copy, of the git repository.
+The main *refnx* repository may be a lot more advanced than your fork, or your local copy, of the git repository. 
   1) To update your repositories you need to fetch the changes from the main *refnx* repository:
   ```
   git fetch upstream
@@ -122,16 +122,26 @@ you'll need to do it on a feature branch.
   ```
   python setup.py test
   ```
-  3) Now commit the changes. You'll have to supply a commit message that outlines the changes you made. The commit message should follow the [numpy guidelines][numpy-contib]
+  3) If the performance of what you've added/changed may be critical, then consider writing a benchmark. The benchmarks use
+  the *asv* package and are run as:
+  ```
+  cd benchmarks
+  pip install asv
+  asv run
+  asv publish
+  asv preview
+  ```
+  For an example benchmark look at one of the files in the *benchmarks* directory.
+  4) Now commit the changes. You'll have to supply a commit message that outlines the changes you made. The commit message should follow the [numpy guidelines][numpy-contib]
   ```
   git commit -a
   ```
-  4) Now you need to push those changes on the *my_feature_branch* branch to *your* fork of the refnx repository on github:
+  5) Now you need to push those changes on the *my_feature_branch* branch to *your* fork of the refnx repository on github:
   ```
   git push origin my_feature_branch
   ```
-  5) On the main [refnx][github-refnx] repository you should be able to create a pull request (PR). The PR says that you'd like the *refnx* project to include the changes you made.
-  6) Once the automated tests have passed, and the *refnx* maintainers are happy with the changes you've made then the PR is merged. You can then delete the feature branch on github, and delete your local feature branch:
+  6) On the main [refnx][github-refnx] repository you should be able to create a pull request (PR). The PR says that you'd like the *refnx* project to include the changes you made.
+  7) Once the automated tests have passed, and the *refnx* maintainers are happy with the changes you've made then the PR is merged. You can then delete the feature branch on github, and delete your local feature branch:
   ```
   git branch -D my_feature_branch
   ```

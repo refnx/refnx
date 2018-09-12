@@ -26,8 +26,8 @@ except ValueError:
 
 # versioning
 MAJOR = 0
-MINOR = 0
-MICRO = 18
+MINOR = 1
+MICRO = 1
 ISRELEASED = False
 VERSION = '%d.%d.%d' % (MAJOR, MINOR, MICRO)
 
@@ -127,12 +127,12 @@ info = {
         'url': 'https://github.com/refnx/refnx',
         'platforms': ["Windows", "Linux", "Solaris", "Mac OS-X", "Unix"],
         'classifiers': [
-        'Development Status :: 3 - Alpha',
+        'Development Status :: 4 - Beta',
         'Environment :: Console',
         'Intended Audience :: Science/Research',
         'License :: Public Domain',
         'Operating System :: OS Independent',
-        'Programming Language :: Python',
+        # 'Programming Language :: Python',
         'Programming Language :: Python :: 3',
         'Topic :: Scientific/Engineering',
         'Topic :: Scientific/Engineering :: Chemistry',
@@ -141,6 +141,7 @@ info = {
         'packages': packages,
         'include_package_data': True,
         'setup_requires': ['numpy'],
+        'python_requires': '>=3.5',
         'install_requires': ['numpy', 'scipy', 'six',
                              'uncertainties', 'pandas'],
         'extras_require': {'all': ['IPython', 'ipywidgets', 'traitlets',
