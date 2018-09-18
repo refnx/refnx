@@ -702,7 +702,7 @@ def load_chain(f):
     with possibly_open_file(f, 'r') as g:
         # read header
         header = g.readline()
-        expr = re.compile('(\d+)')
+        expr = re.compile("(\d+)")
         matches = expr.findall(header)
         if matches:
             if len(matches) == 3:

@@ -290,7 +290,7 @@ class Data1D(object):
             for i, line in enumerate(g):
                 try:
                     nums = [float(tok) for tok in
-                            re.split('\s|,', line.decode('utf-8'))
+                            re.split("\s|,", line.decode('utf-8'))
                             if len(tok)]
                     if len(nums) >= 2:
                         header_lines = i
