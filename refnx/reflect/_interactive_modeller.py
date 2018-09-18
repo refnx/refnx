@@ -911,18 +911,18 @@ class Motofit(object):
             sld_gs = self._gridspec2[0, 1]
 
         self.ax_data = self.fig.add_subplot(d_gs)
-        self.ax_data.set_xlabel(r"$Q/\AA^{-1}$")
+        self.ax_data.set_xlabel("$Q/\AA^{-1}$")
         self.ax_data.set_ylabel('Reflectivity')
 
         self.ax_data.grid(True, color='b', linestyle='--', linewidth=0.1)
 
         self.ax_sld = self.fig.add_subplot(sld_gs)
-        self.ax_sld.set_ylabel(r"$\\rho/10^{-6}\AA^{-2}$")
-        self.ax_sld.set_xlabel(r"$z/\AA$")
+        self.ax_sld.set_ylabel("$\\rho/10^{-6}\AA^{-2}$")
+        self.ax_sld.set_xlabel("$z/\AA$")
 
         self.ax_residual = self.fig.add_subplot(self._gridspec1[1, 0],
                                                 sharex=self.ax_data)
-        self.ax_residual.set_xlabel(r"$Q/\AA^{-1}$")
+        self.ax_residual.set_xlabel("$Q/\AA^{-1}$")
         self.ax_residual.grid(True, color='b', linestyle='--', linewidth=0.1)
         self.ax_residual.set_visible(self.display_residuals.value)
 
