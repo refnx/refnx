@@ -448,7 +448,7 @@ class Objective(BaseObjective):
         """
         self.setp(pvals)
 
-        logp = np.sum(param.logp() for param in self.varying_parameters())
+        logp = np.sum([param.logp() for param in self.varying_parameters()])
 
         if not np.isfinite(logp):
             return -np.inf
