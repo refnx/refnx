@@ -165,6 +165,15 @@ class TestObjective(object):
         assert_almost_equal(objective.residuals(),
                             self.data.y - self.mod)
 
+    def test_masked_dataset(self):
+        residuals = self.objective.residuals()
+
+        mask = np.full_like(self.objective.data.y, True, bool)
+        mask[1] = False
+        self.objective.data.mask = mask
+
+        assert_equal(self.objective.residuals().size, residuals.size - 1)
+
     def test_logp_extra(self):
         self.objective.logp_extra = logp_extra
 
