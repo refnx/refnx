@@ -56,7 +56,7 @@
         "Cython": [],
         "pytest": [],
         "six": [],
-        "pip+ptemcee": []
+        "pip+ptemcee": [],
     },
 
 

@@ -35,6 +35,10 @@ class Data1D(object):
         If the tuple is 4 long then the fourth member is `x_err`.
         All arrays must have the same shape.
 
+    mask : array-like
+        Specifies which data points are (un)masked. Must be broadcastable
+        to the y-data. `Data1D.mask = None` clears the mask.
+
     Attributes
     ----------
     data : tuple of np.ndarray
@@ -42,13 +46,15 @@ class Data1D(object):
     finite_data : tuple of np.ndarray
         Data points that are finite
     x : np.ndarray
-        x data
+        x data (possibly masked)
     y : np.ndarray
-        y data
+        y data (possibly masked)
     y_err : np.ndarray
-        uncertainties on the y data
+        uncertainties on the y data (possibly masked)
     x_err : np.ndarray
-        uncertainties on the x data
+        uncertainties on the x data (possibly masked)
+    mask : np.ndarray
+        mask
     filename : str or None
         The file the data was read from
     weighted : bool
@@ -57,36 +63,100 @@ class Data1D(object):
         Information that should be retained with the dataset.
 
     """
-    def __init__(self, data=None, **kwds):
+    def __init__(self, data=None, mask=None, **kwds):
         self.filename = None
         self.name = None
 
         self.metadata = kwds
-        self.x = np.zeros(0)
-        self.y = np.zeros(0)
-        self.y_err = None
-        self.x_err = None
+        self._x = np.zeros(0)
+        self._y = np.zeros(0)
+        self._y_err = None
+        self._x_err = None
         self.weighted = False
 
         # if it's a file then open and load the file.
         if hasattr(data, 'read') or type(data) is str:
             self.load(data)
         elif data is not None:
-            self.x = np.array(data[0], dtype=float)
-            self.y = np.array(data[1], dtype=float)
+            self._x = np.array(data[0], dtype=float)
+            self._y = np.array(data[1], dtype=float)
             if len(data) > 2:
-                self.y_err = np.array(data[2], dtype=float)
+                self._y_err = np.array(data[2], dtype=float)
                 self.weighted = True
 
             if len(data) > 3:
-                self.x_err = np.array(data[3], dtype=float)
+                self._x_err = np.array(data[3], dtype=float)
+
+        self._mask = None
+        if mask is not None:
+            self._mask = np.broadcast_to(mask, self._y.shape)
 
     def __len__(self):
         """
-        the number of points in the dataset.
+        the number of unmasked points in the dataset.
 
         """
         return self.y.size
+
+    @property
+    def x(self):
+        """
+        x
+        """
+        if self._x.size > 0:
+            return self._x[self.mask]
+        else:
+            return self._x
+
+    @property
+    def y(self):
+        """
+        y
+        """
+        if self._y.size > 0:
+            return self._y[self.mask]
+        else:
+            return self._y
+
+    @property
+    def x_err(self):
+        """
+        x_err
+        """
+        if self._x_err is not None:
+            return self._x_err[self.mask]
+        else:
+            return self._x_err
+
+    @property
+    def y_err(self):
+        """
+        y_err
+        """
+        if self._y_err is not None:
+            return self._y_err[self.mask]
+        else:
+            return self._y_err
+
+    @property
+    def mask(self):
+        """
+        mask
+        """
+        if self._mask is None:
+            self._mask = np.full_like(self._y, True, dtype=bool)
+
+        return self._mask
+
+    @mask.setter
+    def mask(self, mask):
+        """
+        mask
+        """
+        if mask is None:
+            mask = True
+
+        self._mask = np.broadcast_to(mask, self._y.shape).astype(bool)
 
     @property
     def data(self):
@@ -120,20 +190,25 @@ class Data1D(object):
             2 to 4 member tuple containing the (x, y, y_err, x_err) data to
             specify the dataset. `y_err` and `x_err` are optional.
 
+        Notes
+        -----
+        Clears the mask for the dataset, it will need to be reapplied.
+
         """
-        self.x = np.array(data_tuple[0], dtype=float)
-        self.y = np.array(data_tuple[1], dtype=float)
+        self._x = np.array(data_tuple[0], dtype=float)
+        self._y = np.array(data_tuple[1], dtype=float)
         self.weighted = False
-        self.y_err = None
-        self.x_err = None
+        self._y_err = None
+        self._x_err = None
 
         if len(data_tuple) > 2 and data_tuple[2] is not None:
-            self.y_err = np.array(data_tuple[2], dtype=float)
+            self._y_err = np.array(data_tuple[2], dtype=float)
             self.weighted = True
 
         if len(data_tuple) > 3 and data_tuple[3] is not None:
-            self.x_err = np.array(data_tuple[3], dtype=float)
+            self._x_err = np.array(data_tuple[3], dtype=float)
 
+        self._mask = None
         self.sort()
 
     def scale(self, scalefactor=1.):
@@ -146,12 +221,12 @@ class Data1D(object):
             The scalefactor to divide by.
 
         """
-        self.y /= scalefactor
-        self.y_err /= scalefactor
+        self._y /= scalefactor
+        self._y_err /= scalefactor
 
     def add_data(self, data_tuple, requires_splice=False, trim_trailing=True):
         """
-        Adds more data to the dataset
+        Adds more data to the dataset.
 
         Parameters
         ----------
@@ -171,7 +246,7 @@ class Data1D(object):
         Notes
         -----
         Raises `ValueError` if there are no points in the overlap region and
-        `requires_splice` was True.
+        `requires_splice` was True. The added data is not masked.
 
         """
         x, y, y_err, x_err = self.data
@@ -202,6 +277,8 @@ class Data1D(object):
         if len(data_tuple) > 3:
             ax_err = np.array(data_tuple[3], dtype=float)
 
+        mask2 = np.full_like(data_tuple[0], True, bool)
+
         # which values in the first dataset overlap with the second
         overlap_points = np.zeros_like(x, 'bool')
 
@@ -226,6 +303,7 @@ class Data1D(object):
 
         qq = np.r_[x[~overlap_points], ax]
         rr = np.r_[y[~overlap_points], ay * scale]
+        overall_mask = np.r_[self.mask[~overlap_points], mask2]
 
         try:
             dr = np.r_[y_err[~overlap_points], ay_err * scale]
@@ -244,6 +322,8 @@ class Data1D(object):
             dq = None
 
         self.data = (qq, rr, dr, dq)
+        self.mask = overall_mask
+
         self.sort()
 
     def sort(self):
@@ -251,12 +331,15 @@ class Data1D(object):
         Sorts the data in ascending order
         """
         sorted = np.argsort(self.x)
-        self.x = self.x[sorted]
-        self.y = self.y[sorted]
+        self._x = self.x[sorted]
+        self._y = self.y[sorted]
+
+        if self._mask is not None:
+            self._mask = self._mask[sorted]
         if self.y_err is not None:
-            self.y_err = self.y_err[sorted]
+            self._y_err = self.y_err[sorted]
         if self.x_err is not None:
-            self.x_err = self.x_err[sorted]
+            self._x_err = self.x_err[sorted]
 
     def save(self, f):
         """
@@ -269,10 +352,10 @@ class Data1D(object):
 
         """
         np.savetxt(
-            f, np.column_stack((self.x,
-                                self.y,
-                                self.y_err,
-                                self.x_err)))
+            f, np.column_stack((self._x,
+                                self._y,
+                                self._y_err,
+                                self._x_err)))
 
     def load(self, f):
         """
@@ -355,17 +438,17 @@ class Data1D(object):
         dataset : refnx.dataset.Data1D
             A new synthesised dataset
         """
-        if self.y_err is None:
+        if self._y_err is None:
             raise RuntimeError("Can't synthesise new dataset without y_err"
                                "uncertainties")
 
-        shape = self.y_err.shape
+        shape = self._y_err.shape
         gnoise = np.random.randn(*shape)
 
-        new_y = self.y + gnoise * self.y
+        new_y = self._y + gnoise * self._y
 
         dataset = Data1D()
         dataset.data = self.data
-        dataset.y = new_y
+        dataset._y = new_y
 
         return dataset
