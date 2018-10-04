@@ -118,6 +118,13 @@ class Data1D(object):
         else:
             return self._y
 
+    @x_err.setter
+    def x_err(self, x_err):
+        """
+        x_err
+        """
+        self._x_err = x_err
+
     @property
     def x_err(self):
         """
@@ -165,6 +172,14 @@ class Data1D(object):
 
         """
         return self.x, self.y, self.y_err, self.x_err
+
+    @property
+    def unmasked_data(self):
+        """
+        4-tuple containing unmasked (x, y, y_err, x_err) data
+
+        """
+        return self._x, self._y, self._y_err, self._x_err
 
     @property
     def finite_data(self):
