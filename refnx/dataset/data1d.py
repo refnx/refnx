@@ -118,13 +118,6 @@ class Data1D(object):
         else:
             return self._y
 
-    @x_err.setter
-    def x_err(self, x_err):
-        """
-        x_err
-        """
-        self._x_err = x_err
-
     @property
     def x_err(self):
         """
@@ -134,6 +127,13 @@ class Data1D(object):
             return self._x_err[self.mask]
         else:
             return self._x_err
+
+    @x_err.setter
+    def x_err(self, x_err):
+        """
+        x_err
+        """
+        self._x_err = x_err
 
     @property
     def y_err(self):
