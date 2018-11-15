@@ -7,7 +7,7 @@ jobs:
 
 - job: 'Test'
   pool:
-    vmImage: 'Ubuntu 16.04'
+    vmImage: 'vs2017-win2016'
   strategy:
     matrix:
       Python35:
@@ -24,7 +24,7 @@ jobs:
       versionSpec: '$(python.version)'
       architecture: 'x64'
 
-  - script: python -m pip install --upgrade pip && pip install -r requirements.txt
+  - script: python -m pip install --upgrade pip && pip install numpy scipy cython traitlets pandas h5py xlrd pytest tqdm corner matplotlib pymc3 ptemcee uncertainties
     displayName: 'Install dependencies'
 
   - script: |
@@ -38,16 +38,16 @@ jobs:
       testRunTitle: 'Python $(python.version)'
     condition: succeededOrFailed()
 
-- job: 'Publish'
-  dependsOn: 'Test'
-  pool:
-    vmImage: 'Ubuntu 16.04'
-
-  steps:
-  - task: UsePythonVersion@0
-    inputs:
-      versionSpec: '3.x'
-      architecture: 'x64'
-
-  - script: python setup.py sdist
-    displayName: 'Build sdist'
+#- job: 'Publish'
+#  dependsOn: 'Test'
+#  pool:
+#    vmImage: 'Ubuntu 16.04'
+#
+#  steps:
+#  - task: UsePythonVersion@0
+#    inputs:
+#      versionSpec: '3.x'
+#      architecture: 'x64'
+#
+#  - script: python setup.py sdist
+#    displayName: 'Build sdist'
