@@ -14,7 +14,7 @@ try:
     import matplotlib as _matplotlib
     import IPython as _ipython
     from refnx.reflect._interactive_modeller import Motofit
-except ImportError as e:
+except ImportError:
 
     class Motofit():
         def __init__(self):
