@@ -1,27 +1,31 @@
-import matplotlib.pyplot as plt
-from refnx.dataset import ReflectDataset
+from refnx.dataset import ReflectDataset, Data1D
 
 
-def ref_plot(datasets):
+def refplot(datasets):
     """
     Quickly plot a lot of datasets
 
     Parameters
     ----------
     datasets : iterable
-        strings or files identifying the datasets to plot
+        {str, file, Data1D} specifying the datasets to plot
 
     Returns
     -------
     fig : matplotlib.figure.Figure
         The figure. Use fig.show() to display
     """
+    import matplotlib.pyplot as plt
+
     fig = plt.figure()
     ax = fig.add_subplot(111)
 
     for dataset in datasets:
-        d = ReflectDataset()
-        d.load(dataset)
+        if isinstance(dataset, Data1D):
+            d = dataset
+        else:
+            d = ReflectDataset()
+            d.load(dataset)
         ax.plot(d.x, d.y)
 
     ax.autoscale(tight=True)
