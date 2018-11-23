@@ -1,4 +1,4 @@
-from refnx.dataset import ReflectDataset, Data1D
+import refnx
 
 
 def refplot(datasets):
@@ -21,10 +21,10 @@ def refplot(datasets):
     ax = fig.add_subplot(111)
 
     for dataset in datasets:
-        if isinstance(dataset, Data1D):
+        if isinstance(dataset, refnx.data.Data1D):
             d = dataset
         else:
-            d = ReflectDataset()
+            d = refnx.data.ReflectDataset()
             d.load(dataset)
         ax.plot(d.x, d.y)
 
