@@ -8,7 +8,7 @@ matrix:
           env: PY=3.7
         - os: osx
           language: generic
-          env: PY=3.7
+          env: PY=3.6
 addons:
     apt:
         packages:
