@@ -382,21 +382,56 @@ class Data1D(object):
             File to load the dataset from.
 
         """
-        # see if there are header rows
-        with possibly_open_file(f, 'rb') as g:
-            header_lines = 0
-            for i, line in enumerate(g):
-                try:
-                    nums = [float(tok) for tok in
-                            re.split(r"\s|,", line.decode('utf-8'))
-                            if len(tok)]
-                    if len(nums) >= 2:
-                        header_lines = i
-                        break
-                except ValueError:
-                    continue
+        # it would be nicer to simply use np.loadtxt, but this is an
+        # attempt to auto ignore header lines.
+        with possibly_open_file(f, 'r') as g:
+            lines = list(reversed(g.readlines()))
+            x = list()
+            y = list()
+            y_err = list()
+            x_err = list()
 
-        self.data = np.loadtxt(f, unpack=True, skiprows=header_lines)
+            # a marker for how many columns in the data there will be
+            numcols = 0
+            for i, line in enumerate(lines):
+                try:
+                    # parse a line for numerical tokens separated by whitespace
+                    # or comma
+                    nums = [float(tok) for tok in
+                            re.split(r"\s|,", line)
+                            if len(tok)]
+                    if len(nums) == 0:
+                        # might be trailing newlines at the end of the file,
+                        # just ignore those
+                        continue
+                    if not numcols:
+                        # figure out how many columns one has
+                        numcols = len(nums)
+                    elif len(nums) != numcols:
+                        # if the number of columns changes there's an issue
+                            break
+                    x.append(nums[0])
+                    y.append(nums[1])
+                    if len(nums) > 2:
+                        y_err.append(nums[2])
+                    if len(nums) > 3:
+                        x_err.append(nums[3])
+                except ValueError:
+                    # you should drop into this if you can't parse tokens into
+                    # a series of floats
+                    break
+
+        x.reverse()
+        y.reverse()
+        y_err.reverse()
+        x_err.reverse()
+
+        if numcols < 3:
+            y_err = None
+        if numcols < 4:
+            x_err = None
+
+        self.data = (x, y, y_err, x_err)
 
         if hasattr(f, 'read'):
             fname = f.name

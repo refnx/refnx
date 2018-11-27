@@ -68,6 +68,10 @@ class TestReflectDataset(object):
         assert_equal(len(a), len(b))
         assert_equal(len(a), len(c))
 
+    def test_GH236(self):
+        a = ReflectDataset(os.path.join(self.pth, 'c_PLP0033831.txt'))
+        assert_equal(len(a), 166)
+
     def test_construction(self):
         # test we can construct a dataset directly from a file.
         pth = os.path.join(self.pth, 'c_PLP0000708.xml')
