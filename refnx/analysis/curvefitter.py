@@ -228,10 +228,9 @@ class CurveFitter(object):
         elif pos == 'covar':
             p0 = np.array(self._varying_parameters)
             cov = self.objective.covar()
-            init_walkers = emcee.utils.sample_ellipsoid(
-                p0,
-                cov,
-                size=(_ntemps, nwalkers))
+            init_walkers = np.random.multivariate_normal(np.atleast_1d(p0),
+                                                 np.atleast_2d(cov),
+                                                 size=(_ntemps, nwalkers))
 
         # position is specified by jittering the parameters with gaussian noise
         elif pos == 'jitter':
