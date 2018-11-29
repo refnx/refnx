@@ -4,7 +4,11 @@ from __future__ import division, print_function
 
 __all__ = ["EnsembleSampler"]
 
-from collections import Iterable
+try:
+    from collections.abc import Iterable
+except ImportError:
+    # for py2.7, will be an Exception in 3.8
+    from collections import Iterable
 
 import numpy as np
 
@@ -214,7 +218,7 @@ class EnsembleSampler(object):
 
         """
         # Interpret the input as a walker state and check the dimensions.
-        state = State(initial_state)
+        state = State(initial_state, copy=True)
         if np.shape(state.coords) != (self.nwalkers, self.ndim):
             raise ValueError("incompatible input dimensions")
 

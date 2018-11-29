@@ -228,9 +228,9 @@ class CurveFitter(object):
         elif pos == 'covar':
             p0 = np.array(self._varying_parameters)
             cov = self.objective.covar()
-            init_walkers = emcee.utils.sample_ellipsoid(
-                p0,
-                cov,
+            init_walkers = np.random.multivariate_normal(
+                np.atleast_1d(p0),
+                np.atleast_2d(cov),
                 size=(_ntemps, nwalkers))
 
         # position is specified by jittering the parameters with gaussian noise
@@ -630,7 +630,7 @@ def load_chain(f):
     with possibly_open_file(f, 'r') as g:
         # read header
         header = g.readline()
-        expr = re.compile('(\d+)')
+        expr = re.compile(r"(\d+)")
         matches = expr.findall(header)
         if matches:
             if len(matches) == 3:

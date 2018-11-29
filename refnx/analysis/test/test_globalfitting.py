@@ -123,8 +123,8 @@ class TestGlobalFitting(object):
         f = CurveFitter(global_objective)
         f.fit()
 
-        indiv_chisqr = np.sum(objective.chisqr() for objective
-                              in global_objective.objectives)
+        indiv_chisqr = np.sum([objective.chisqr() for objective
+                               in global_objective.objectives])
 
         # the overall chi2 should be sum of individual chi2
         global_chisqr = global_objective.chisqr()

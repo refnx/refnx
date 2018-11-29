@@ -222,7 +222,7 @@ class ReductionCache(list):
         return matches
 
     def name_search(self, search):
-        """ select data sets by a regular expression on sample name
+        r""" select data sets by a regular expression on sample name
 
         The search pattern is a `regular expression`_ that is matched with
 
@@ -341,7 +341,7 @@ class ReductionCache(list):
 
 
 class BatchReducer:
-    """
+    r"""
     Batch reduction of reflectometry data based on spreadsheet metadata.
 
     Example

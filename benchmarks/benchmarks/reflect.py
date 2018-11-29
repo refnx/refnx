@@ -67,7 +67,7 @@ class Reflect(Benchmark):
         structure361[2].sld.real.vary = True
         structure361[2].sld.real.range(0.2, 1.5)
 
-        e361.x_err = None
+        # e361.x_err = None
         objective = Objective(model361,
                               e361)
         self.fitter = CurveFitter(objective, nwalkers=200)

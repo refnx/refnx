@@ -9,11 +9,11 @@ Monte Carlo to obtain posterior distributions for curvefitting problems.
 
 *refnx* has been tested on Python 2.7, 3.5, 3.6 and 3.7. It requires the *numpy,
 scipy, cython, pandas, emcee* packages to work. Additional features require the
-*pytest, h5py, xlrd, uncertainties, ptemcee, tqdm, matplotlib, pymc3, biopython,
-periodictable* packages. To build the bleeding edge code you will need to have 
-access to a C-compiler to build a couple of Python extensions. C-compilers should 
-be installed on Linux. On OSX you will need to install Xcode and the command line 
-tools. On Windows you will need to install the correct 
+*pytest, h5py, xlrd, uncertainties, ptemcee, tqdm, matplotlib, pymc3, thano,
+biopython, periodictable* packages. To build the bleeding edge code you will need 
+to have access to a C-compiler to build a couple of Python extensions.
+C-compilers should be installed on Linux. On OSX you will need to install Xcode 
+and the command line tools. On Windows you will need to install the correct 
 [Visual Studio compiler][Visual-studio-compiler] for your Python version.
 
 In the current version of *refnx* the *emcee* package is vendored by *refnx*. That
@@ -41,7 +41,7 @@ step is to create a *conda* environment.
   conda activate refnx
   ```
   3) Install the remaining dependencies:
-  ```pip install uncertainties ptemcee```
+  ```pip install ptemcee```
  
 ### Installing into a conda environment from source
 

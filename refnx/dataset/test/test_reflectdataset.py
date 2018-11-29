@@ -15,7 +15,7 @@ class TestReflectDataset(object):
 
         data = ReflectDataset()
 
-        x1 = np.linspace(0, 10, 5)
+        x1 = np.linspace(0, 10, 115)
         y1 = 2 * x1
         e1 = np.ones_like(x1)
         dx1 = np.ones_like(x1)
@@ -67,6 +67,10 @@ class TestReflectDataset(object):
         c = ReflectDataset(os.path.join(self.pth, 'c_PLP0000708_header2.dat'))
         assert_equal(len(a), len(b))
         assert_equal(len(a), len(c))
+
+    def test_GH236(self):
+        a = ReflectDataset(os.path.join(self.pth, 'c_PLP0033831.txt'))
+        assert_equal(len(a), 166)
 
     def test_construction(self):
         # test we can construct a dataset directly from a file.
@@ -186,3 +190,17 @@ class TestReflectDataset(object):
         assert_equal(new_dataset.x_err, self.data.x_err)
         assert_equal(new_dataset.x, self.data.x)
         assert_equal(new_dataset.weighted, self.data.weighted)
+
+    def test_mask(self):
+        # if you mask all points there should be none left
+        self.data.mask = np.full_like(self.data.y, False, bool)
+        assert_equal(len(self.data), 0)
+
+        # try masking a random selection
+        rando = np.random.randint(0, 2, self.data._y.size)
+        self.data.mask = rando
+        assert_equal(len(self.data), np.count_nonzero(rando))
+
+        # now clear
+        self.data.mask = None
+        assert_equal(len(self.data), self.data._y.size)

@@ -165,6 +165,15 @@ class TestObjective(object):
         assert_almost_equal(objective.residuals(),
                             self.data.y - self.mod)
 
+    def test_masked_dataset(self):
+        residuals = self.objective.residuals()
+
+        mask = np.full_like(self.objective.data.y, True, bool)
+        mask[1] = False
+        self.objective.data.mask = mask
+
+        assert_equal(self.objective.residuals().size, residuals.size - 1)
+
     def test_logp_extra(self):
         self.objective.logp_extra = logp_extra
 
@@ -285,10 +294,11 @@ class TestObjective(object):
                i in range(nwalkers)]
 
         sampler = emcee.EnsembleSampler(nwalkers, ndim, bo.logpost)
-        sampler.run_mcmc(pos, 800, rstate0=np.random.get_state())
+        state = emcee.State(pos, random_state=np.random.get_state())
+        sampler.run_mcmc(state, 800)
 
         burnin = 200
-        samples = sampler.chain[:, burnin:, :].reshape((-1, ndim))
+        samples = sampler.get_chain()[burnin:, :, :].reshape((-1, ndim))
         samples[:, 2] = np.exp(samples[:, 2])
         m_mc, b_mc, f_mc = map(lambda v: (v[1], v[2] - v[1], v[1] - v[0]),
                                zip(*np.percentile(samples, [16, 50, 84],
