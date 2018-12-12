@@ -31,6 +31,7 @@ step is to create a *conda* environment.
   1) In a shell window create a conda environment and install the dependencies. The **-n** flag indicates that the environment is called *refnx*.
   
   ```conda create -n refnx python=3.7 numpy scipy cython pandas h5py xlrd pytest tqdm```
+
   2) Activate the environment that we're going to be working in:
   
   ```

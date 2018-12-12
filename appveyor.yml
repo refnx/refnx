@@ -16,10 +16,10 @@ environment:
       PYTHON_VERSION: 3.7
       CONDA_INSTALL_LOCN: C:\\Miniconda36-x64
       
-    - TARGET_ARCH: x86
-      CONDA_NPY: 114
-      PYTHON_VERSION: 3.7
-      CONDA_INSTALL_LOCN: C:\\Miniconda36-x64
+#    - TARGET_ARCH: x86
+#      CONDA_NPY: 114
+#      PYTHON_VERSION: 3.7
+#      CONDA_INSTALL_LOCN: C:\\Miniconda36-x64
 
 #    - TARGET_ARCH: x64
 #      CONDA_NPY: 113
