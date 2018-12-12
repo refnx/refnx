@@ -15,8 +15,6 @@ General release instructions
 - git push refnx maintenance/<tagname>
 - source activate dev3
 - python setup.py bdist_wheel sdist
-- source activate dev2
-- python setup.py bdist_wheel
 - twine upload dist/*
 
 Go into windows
@@ -24,8 +22,6 @@ Go into windows
 - git checkout maintenance/<tagname>
 - git clean -xdf
 - activate dev3
-- python setup.py bdist_wheel
-- activate dev2
 - python setup.py bdist_wheel
 - twine upload dist/*
 
