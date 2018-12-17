@@ -1,8 +1,11 @@
-import numpy as np
 import time
 import datetime
 import pickle
 import warnings
+import glob
+import os
+
+import numpy as np
 
 import ipywidgets as widgets
 import traitlets
@@ -122,6 +125,8 @@ class ReflectModelView(HasTraits):
         self.c_dq.style.description_width = '0px'
         self.do_fit_button = widgets.Button(description='Do Fit')
         self.to_code_button = widgets.Button(description='To code')
+        self.save_model_button = widgets.Button(description='Save Model')
+        self.load_model_button = widgets.Button(description='Load Model')
 
         widget_list = [self.w_scale, self.c_scale, self.w_bkg,
                        self.c_bkg, self.w_dq, self.c_dq]
@@ -292,6 +297,8 @@ class ReflectModelView(HasTraits):
         self.w_layers.disabled = True
         self.do_fit_button.disabled = True
         self.to_code_button.disabled = True
+        self.save_model_button.disabled = True
+        self.load_model_button.disabled = True
 
         self._location = widgets.BoundedIntText(
             value=min_loc,
@@ -306,6 +313,8 @@ class ReflectModelView(HasTraits):
         self.w_layers.disabled = False
         self.do_fit_button.disabled = False
         self.to_code_button.disabled = False
+        self.save_model_button.disabled = False
+        self.load_model_button.disabled = False
 
         how_many = self.w_layers.value - (len(self.model.structure) - 2)
         loc = self._location.value
@@ -334,6 +343,8 @@ class ReflectModelView(HasTraits):
         self.w_layers.disabled = False
         self.do_fit_button.disabled = False
         self.to_code_button.disabled = False
+        self.save_model_button.disabled = False
+        self.load_model_button.disabled = False
 
         loc = self._location.value
         how_many = len(self.model.structure) - 2 - self.w_layers.value
@@ -376,6 +387,8 @@ class ReflectModelView(HasTraits):
         self.w_layers.disabled = False
         self.do_fit_button.disabled = False
         self.to_code_button.disabled = False
+        self.save_model_button.disabled = False
+        self.load_model_button.disabled = False
 
         self._varying_layers = False
         self.view_redraw = time.time()
@@ -415,7 +428,10 @@ class ReflectModelView(HasTraits):
                                         self.ok_button,
                                         self.cancel_button]))
 
-        output.append(widgets.HBox([self.do_fit_button, self.to_code_button]))
+        output.append(widgets.HBox([self.do_fit_button,
+                                    self.to_code_button,
+                                    self.save_model_button,
+                                    self.load_model_button]))
 
         return widgets.VBox(output)
 
@@ -767,13 +783,18 @@ class Motofit(object):
         self.model_view = None
         self.set_model(self.model)
 
-    def save_model(self, f=None):
+    def save_model(self, *args, f=None):
         """
         Serialise a model to a pickle file.
+        If `f` is not specified then the file name is constructed from the
+        current dataset name; if there is no current dataset then the filename
+        is constructed from the current time. These constructed filenames will
+        be in the current working directory, for a specific save location `f`
+        must be provided.
 
         Parameters
         ----------
-        f: file like or str
+        f: file like or str, optional
             File to save model to.
         """
         if f is None:
@@ -784,19 +805,42 @@ class Motofit(object):
         with possibly_open_file(f) as g:
             pickle.dump(self.model, g)
 
-    def load_model(self, f):
+    def load_model(self, *args, f=None):
         """
         Load a serialised model.
+        If `f` is not specified then an attempt will be made to find a model
+        corresponding to the current dataset name,
+        `'model_' + self.dataset.name + '.pkl'`. If there is no current
+        dataset then the most recent model will be loaded.
 
         Parameters
         ----------
-        f: file like or str
+        f: file like or str, optional
             pickle file to load model from.
         """
-        with possibly_open_file(f) as g:
-            reflect_model = pickle.load(g)
+        if f is None and self.dataset is not None:
+            # try and load the model corresponding to the current dataset
+            f = 'model_' + self.dataset.name + '.pkl'
+        elif f is None:
+            # load the most recent model file
+            files = list(filter(os.path.isfile, glob.glob("model_*.pkl")))
+            files.sort(key=lambda x: os.path.getmtime(x))
+            files.reverse()
+            if len(files):
+                f = files[0]
+
+        if f is None:
+            self._print("No model file is specified/available.")
+            return
+
+        try:
+            with possibly_open_file(f, 'rb') as g:
+                reflect_model = pickle.load(g)
             self.set_model(reflect_model)
-        self._print(repr(self.objective))
+        except (RuntimeError, FileNotFoundError) as exc:
+            # RuntimeError if the file isn't a ReflectModel
+            # FileNotFoundError if the specified file name wasn't found
+            self._print(repr(exc), repr(f))
 
     def set_model(self, model):
         """
@@ -808,6 +852,9 @@ class Motofit(object):
         model: refnx.reflect.ReflectModel
 
         """
+        if not isinstance(model, ReflectModel):
+            raise RuntimeError("`model` was not an instance of ReflectModel")
+
         if self.model_view is not None:
             self.model_view.unobserve_all()
 
@@ -830,6 +877,8 @@ class Motofit(object):
 
         self.model_view.do_fit_button.on_click(self.do_fit)
         self.model_view.to_code_button.on_click(self._to_code)
+        self.model_view.save_model_button.on_click(self.save_model)
+        self.model_view.load_model_button.on_click(self.load_model)
 
         self.redraw(None)
 
@@ -1032,7 +1081,7 @@ class Motofit(object):
             clear_output()
             print(string)
 
-    def do_fit(self, change=None):
+    def do_fit(self, *args):
         """
         Ask the Motofit object to perform a fit (differential evolution).
 
