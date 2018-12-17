@@ -10,3 +10,7 @@ Details of changes made to refnx
 - add `refnx.util.refplot` for quick plotting of reflectometry datasets
 - fixed various deprecation warnings
 - added the ability to mask (hide) points in a `refnx.dataset.Data1D` dataset
+
+0.1.2
+-----
+- added save/load model buttons in the interactive reflectometry modeller.
