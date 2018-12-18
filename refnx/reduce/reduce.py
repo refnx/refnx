@@ -278,8 +278,7 @@ class PlatypusReduce(ReflectReduce):
 
     """
 
-    def __init__(self, direct, data_folder=None, scale=1.,
-                 save=True, **kwds):
+    def __init__(self, direct, data_folder=None, **kwds):
 
         super(PlatypusReduce, self).__init__(direct, 'PLP',
                                              data_folder=data_folder)
