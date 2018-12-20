@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 from multiprocessing import Pool
 import warnings as _warnings
 import os as _os
@@ -8,11 +6,7 @@ import functools
 from tempfile import mkdtemp
 import collections
 from contextlib import contextmanager
-try:
-    from inspect import getfullargspec as _getargspecf
-except ImportError:
-    # on 2.7
-    from inspect import getargspec as _getargspecf
+from inspect import getfullargspec as _getargspecf
 
 
 def preserve_cwd(function):

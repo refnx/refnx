@@ -1,4 +1,3 @@
-from __future__ import division
 import numpy as np
 import refnx.util.general as general
 import refnx.util.ErrorProp as EP

@@ -1,4 +1,3 @@
-from __future__ import division
 import numpy as np
 from numpy.polynomial import Polynomial
 from scipy import constants, integrate

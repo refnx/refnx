@@ -1,5 +1,3 @@
-from __future__ import division, print_function
-
 import numpy as np
 from numpy.linalg import LinAlgError
 from scipy.optimize._numdiff import approx_derivative

@@ -1,3 +1,4 @@
+# cython: language_level=3, cdivision=False
 from __future__ import division, absolute_import
 import numpy as np
 

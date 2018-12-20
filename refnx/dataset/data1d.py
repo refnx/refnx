@@ -1,8 +1,6 @@
 """"
 A basic representation of a 1D dataset
 """
-from __future__ import division
-
 import os.path
 import re
 

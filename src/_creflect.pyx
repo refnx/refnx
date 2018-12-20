@@ -1,3 +1,4 @@
+# cython: language_level=3, boundscheck=False
 from __future__ import division, absolute_import
 from multiprocessing import cpu_count
 import numpy as np
