@@ -1,4 +1,3 @@
-from __future__ import division
 import numpy as np
 """
 A simple propagation of uncertainty module.

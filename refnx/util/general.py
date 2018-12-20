@@ -2,8 +2,6 @@
 """
 Functions for various calculations related to reflectometry
 """
-from __future__ import division
-
 import numpy as np
 from scipy import stats, integrate, constants, optimize
 

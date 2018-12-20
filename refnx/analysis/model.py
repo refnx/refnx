@@ -1,5 +1,3 @@
-from __future__ import division
-
 from refnx._lib.util import getargspec
 
 
