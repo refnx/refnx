@@ -32,7 +32,7 @@ before_install:
 
     - conda create --yes -n conda-refnx python=$PY
     - source activate conda-refnx
-    - conda install --yes numpy scipy h5py cython pandas xlrd flake8 six pytest ipywidgets IPython matplotlib traitlets
+    - conda install --yes numpy scipy h5py cython pandas xlrd flake8 pytest ipywidgets IPython matplotlib traitlets
     - conda install --yes numpydoc sphinx jupyter pandoc nbconvert
     - pip install uncertainties ptemcee corner nbsphinx jupyter-sphinx sphinx_rtd_theme tqdm
     - pip install git+https://github.com/pymc-devs/pymc3

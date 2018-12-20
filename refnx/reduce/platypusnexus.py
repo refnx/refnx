@@ -2,6 +2,7 @@ from __future__ import absolute_import
 import io
 import os
 import os.path
+import glob
 import argparse
 import re
 import shutil
@@ -82,14 +83,16 @@ def catalogue(start, stop, data_folder=None):
     if data_folder is None:
         data_folder = '.'
 
-    for i in range(start, stop + 1):
-        try:
-            pn = PlatypusNexus(os.path.join(data_folder, number_datafile(i)))
-        except OSError:
-            continue
+    files = glob.glob(os.path.join(data_folder, '*.nx.hdf'))
+    files.sort()
+    files = [file for file in files
+             if datafile_number(file) in range(start, stop + 1)]
+
+    for idx, file in enumerate(files):
+        pn = PlatypusNexus(file)
 
         cat = pn.cat.cat
-        run_number.append(i)
+        run_number.append(idx)
 
         for key, val in d.items():
             data = cat[key]
