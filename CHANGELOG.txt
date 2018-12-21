@@ -17,3 +17,4 @@ Details of changes made to refnx
 - removed `from __future__ import ...` statements as refnx is now solely Py3
 - added `cython: language_level=3` statements to cython code
 - marked cython extensions as c++ language
+- smarter (faster) cataloging of NeXUS files
