@@ -41,6 +41,7 @@ in participating in this project please use the `refnx github repository`_.
     gui.ipynb
     lipid.ipynb
     faq
+    testimonials
     modules
 
 * :ref:`genindex`
