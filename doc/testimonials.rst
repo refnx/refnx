@@ -3,6 +3,10 @@
 Testimonials
 ------------
 
+Please cite the *refnx* paper if you use it for data analysis in your own publications.
+Its full reference is:
+
+    "Nelson, A.R.J. & Prescott, S.W. (2019). J. Appl. Cryst. 52, https://doi.org/10.1107/S1600576718017296."
 
 Here is a *very* incomplete list of published scientific studies that have used ``refnx`` :
 
