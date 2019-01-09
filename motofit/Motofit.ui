@@ -565,6 +565,7 @@
     <property name="title">
      <string>Help</string>
     </property>
+    <addaction name="actiondocumentation"/>
    </widget>
    <widget class="QMenu" name="menuPlot_type">
     <property name="title">
@@ -877,7 +878,7 @@
             </size>
            </property>
            <property name="text">
-            <string>do</string>
+            <string>down</string>
            </property>
           </widget>
          </item>
@@ -1765,6 +1766,11 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+A</string>
+   </property>
+  </action>
+  <action name="actiondocumentation">
+   <property name="text">
+    <string>documentation</string>
    </property>
   </action>
  </widget>
