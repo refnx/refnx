@@ -1,7 +1,7 @@
 import os.path
 
 
-from PyQt5 import QtCore, QtWidgets, uic, QtGui
+from PyQt5 import QtCore, QtWidgets, uic
 from PyQt5.QtCore import pyqtSlot
 import numpy as np
 
@@ -21,7 +21,11 @@ from refnx.reduce.platypusnexus import fore_back_region, PIXEL_OFFSET
 
 class ManualBeamFinder(QtWidgets.QDialog):
     """
-    Manual specular beam finding dialogue
+    Manual specular beam finding dialogue.
+
+    If being created from a Jupyter notebook then the ipython magic
+    ``%gui qt`` should be used before creating an instance of this class.
+    Otherwise the ipython kernel will crash immediately.
     """
     def __init__(self):
         """
@@ -485,7 +489,9 @@ class Cross_Section(FigureCanvas):
         self.draw()
 
     def connect(self):
-        'connect to all the events we need'
+        """
+        connect to all the events we need
+        """
         self.cidpress = self.mpl_connect('button_press_event',
                                          self.on_press)
         self.cidrelease = self.mpl_connect('button_release_event',
