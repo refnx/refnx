@@ -8,10 +8,10 @@ Installation
 .. _miniconda: https://conda.io/miniconda.html
 .. _github: https://github.com/refnx/refnx
 
-*refnx* has been tested on Python 2.7, 3.5, 3.6 and 3.7. It requires the
-*numpy, scipy, cython, pandas* packages to work. Additional features
+*refnx* has been tested on Python 3.5, 3.6 and 3.7. It requires the
+*numpy, scipy, cython* packages to work. Additional features
 require the *pytest, h5py, xlrd, uncertainties, ptemcee, matplotlib, Jupyter,*
-*ipywidgets, traitlets, tqdm* packages. To build the bleeding edge
+*ipywidgets, traitlets, tqdm, pandas* packages. To build the bleeding edge
 code you will need to have access to a C-compiler to build a couple of Python
 extensions. C-compilers should be installed on Linux. On OSX you will need to
 install Xcode and the command line tools. On Windows you will need to install
