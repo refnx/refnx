@@ -40,10 +40,10 @@ import sys
 import time
 
 
-class MyMainWindow(QtGui.QMainWindow):
+class MotofitMainWindow(QtGui.QMainWindow):
 
     def __init__(self, parent=None):
-        super(MyMainWindow, self).__init__(parent)
+        super(MotofitMainWindow, self).__init__(parent)
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
 
