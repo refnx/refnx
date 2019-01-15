@@ -18,3 +18,6 @@ Details of changes made to refnx
 - added `cython: language_level=3` statements to cython code
 - marked cython extensions as c++ language
 - smarter (faster) cataloging of NeXUS files
+- removed pandas as a strict dependency, as it's only required for reduction,
+  not analysis
+- improved documentation of the ManualBeamFinder
