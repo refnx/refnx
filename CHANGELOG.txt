@@ -21,3 +21,4 @@ Details of changes made to refnx
 - removed pandas as a strict dependency, as it's only required for reduction,
   not analysis
 - improved documentation of the ManualBeamFinder
+- adding a pyqt based GUI (alpha state)
