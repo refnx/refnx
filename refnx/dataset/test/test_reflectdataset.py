@@ -45,6 +45,12 @@ class TestReflectDataset(object):
         assert_equal(len(dataset), 90)
         assert_equal(90, np.size(dataset.x))
 
+        # load dataset from XML, via string
+        dataset = ReflectDataset(os.path.join(self.pth, 'c_PLP0000708.xml'))
+
+        assert_equal(len(dataset), 90)
+        assert_equal(90, np.size(dataset.x))
+
         # load dataset from .dat, via file handle
         dataset1 = ReflectDataset()
         with open(os.path.join(self.pth, 'c_PLP0000708.dat')) as f:
@@ -71,6 +77,13 @@ class TestReflectDataset(object):
     def test_GH236(self):
         a = ReflectDataset(os.path.join(self.pth, 'c_PLP0033831.txt'))
         assert_equal(len(a), 166)
+
+    def test_loading_junk(self):
+        # if you can't load anything from a datafile then you should get a
+        # RuntimeError raised.
+        from pytest import raises
+        with raises(RuntimeError):
+            ReflectDataset(os.path.join(self.pth, '../__init__.py'))
 
     def test_construction(self):
         # test we can construct a dataset directly from a file.

@@ -424,6 +424,10 @@ class Data1D(object):
         y_err.reverse()
         x_err.reverse()
 
+        if len(x) == 0:
+            raise RuntimeError("Datafile didn't appear to contain any data (or"
+                               " was the wrong format)")
+
         if numcols < 3:
             y_err = None
         if numcols < 4:
