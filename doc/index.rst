@@ -36,6 +36,7 @@ in participating in this project please use the `refnx github repository`_.
     :maxdepth: 2
 
     installation
+    gui.rst
     getting_started.ipynb
     reflectometry_global.ipynb
     gui.ipynb

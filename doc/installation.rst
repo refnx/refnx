@@ -11,11 +11,11 @@ Installation
 *refnx* has been tested on Python 3.5, 3.6 and 3.7. It requires the
 *numpy, scipy, cython* packages to work. Additional features
 require the *pytest, h5py, xlrd, uncertainties, ptemcee, matplotlib, Jupyter,*
-*ipywidgets, traitlets, tqdm, pandas* packages. To build the bleeding edge
-code you will need to have access to a C-compiler to build a couple of Python
-extensions. C-compilers should be installed on Linux. On OSX you will need to
-install Xcode and the command line tools. On Windows you will need to install
-the correct `Visual Studio compiler`_ for your Python version.
+*ipywidgets, traitlets, tqdm, pandas, pyqt, periodictable* packages. To build
+the bleeding edge code you will need to have access to a C-compiler to build a
+couple of Python extensions. C-compilers should be installed on Linux. On OSX
+you will need to install Xcode and the command line tools. On Windows you will
+need to install the correct `Visual Studio compiler`_ for your Python version.
 
 
 Installation into a *conda* environment

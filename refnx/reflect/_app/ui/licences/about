@@ -1,0 +1,7 @@
+refnx - Neutron and X-ray reflectometry analyis in Python
+If you use this package to analyse data please cite:
+"Nelson, A.R.J. & Prescott, S.W. (2019). J. Appl. Cryst. 52, https://doi.org/10.1107/S1600576718017296.”
+(c) Andrew Nelson 2014-
+refnx is released under the BSD 3 clause licence
+
+When released as an standalone executable the executable is released under the GPL licence, including code from the following packages:

@@ -39,7 +39,7 @@ before_install:
 
     # gradually expand flake8 to all of codebase
     # added W504 July18 because it starts to raise error in 3.7
-    - flake8 --ignore=F401,W504 --exclude=refnx/_lib/emcee refnx
+    - flake8 --ignore=F401,W504 --exclude=refnx/_lib/emcee,refnx/reflect/_app refnx
 
 script:
     # definitely want to test the _creflect module on travis.
