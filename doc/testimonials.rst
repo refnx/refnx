@@ -10,6 +10,8 @@ Its full reference is:
 
 Here is a *very* incomplete list of published scientific studies that have used ``refnx`` :
 
+* `McCluskey, Grant, Smith, et al. (2019) 
+  <https://arxiv.org/abs/1901.05514>`_
 * `McCluskey, Sanchez-Fernandez, Edler, et al. (2018)
   <https://arxiv.org/abs/1810.07616>`_
 
