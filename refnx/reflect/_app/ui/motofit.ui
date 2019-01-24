@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>902</width>
-    <height>714</height>
+    <width>1044</width>
+    <height>900</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -501,6 +501,9 @@
        <attribute name="title">
         <string>reflectivity</string>
        </attribute>
+       <attribute name="toolTip">
+        <string>Plots of the reflectivity</string>
+       </attribute>
        <layout class="QGridLayout" name="gridLayout_5">
         <property name="leftMargin">
          <number>5</number>
@@ -523,6 +526,9 @@
        <attribute name="title">
         <string>sld</string>
        </attribute>
+       <attribute name="toolTip">
+        <string>Plots of the SLD profiles</string>
+       </attribute>
        <layout class="QGridLayout" name="gridLayout_4"/>
       </widget>
      </widget>
@@ -534,7 +540,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>902</width>
+     <width>1044</width>
      <height>22</height>
     </rect>
    </property>
@@ -643,6 +649,9 @@
      <pointsize>13</pointsize>
     </font>
    </property>
+   <property name="toolTip">
+    <string>Double click to separate/join the dock</string>
+   </property>
    <property name="features">
     <set>QDockWidget::DockWidgetFloatable|QDockWidget::DockWidgetMovable</set>
    </property>
@@ -657,7 +666,7 @@
    </attribute>
    <widget class="QWidget" name="dockWidgetContents">
     <layout class="QGridLayout" name="gridLayout">
-     <item row="0" column="0">
+     <item row="1" column="0">
       <widget class="QTabWidget" name="tabWidget">
        <property name="enabled">
         <bool>true</bool>
@@ -679,43 +688,77 @@
          <pointsize>14</pointsize>
         </font>
        </property>
+       <property name="toolTip">
+        <string/>
+       </property>
        <property name="currentIndex">
         <number>0</number>
        </property>
+       <property name="tabBarAutoHide">
+        <bool>true</bool>
+       </property>
        <widget class="QWidget" name="tab">
         <attribute name="title">
-         <string>Model</string>
+         <string>Data Tree</string>
         </attribute>
-        <layout class="QGridLayout" name="gridLayout_12">
-         <property name="leftMargin">
-          <number>22</number>
-         </property>
-         <property name="topMargin">
-          <number>2</number>
-         </property>
-         <property name="rightMargin">
-          <number>10</number>
-         </property>
-         <property name="bottomMargin">
-          <number>0</number>
-         </property>
-         <property name="verticalSpacing">
-          <number>-1</number>
-         </property>
-         <item row="3" column="0">
-          <widget class="QPushButton" name="pushButton_2">
-           <property name="maximumSize">
+        <attribute name="toolTip">
+         <string>Data and Model Trees</string>
+        </attribute>
+        <layout class="QGridLayout" name="gridLayout_2">
+         <item row="5" column="2">
+          <widget class="QPushButton" name="auto_limits_button">
+           <property name="minimumSize">
             <size>
-             <width>40</width>
-             <height>40</height>
+             <width>60</width>
+             <height>60</height>
             </size>
            </property>
+           <property name="maximumSize">
+            <size>
+             <width>70</width>
+             <height>70</height>
+            </size>
+           </property>
+           <property name="toolTip">
+            <string>Give varying parameters finite limits</string>
+           </property>
            <property name="text">
-            <string>up</string>
+            <string>Auto
+adjust
+limits</string>
            </property>
           </widget>
          </item>
-         <item row="1" column="0">
+         <item row="4" column="0">
+          <widget class="QPushButton" name="remove_layer">
+           <property name="maximumSize">
+            <size>
+             <width>40</width>
+             <height>60</height>
+            </size>
+           </property>
+           <property name="toolTip">
+            <string>Remove a layer, Cmd-</string>
+           </property>
+           <property name="text">
+            <string/>
+           </property>
+           <property name="icon">
+            <iconset>
+             <normaloff>:/icons/minus.png</normaloff>:/icons/minus.png</iconset>
+           </property>
+           <property name="iconSize">
+            <size>
+             <width>30</width>
+             <height>30</height>
+            </size>
+           </property>
+           <property name="shortcut">
+            <string>Ctrl+-</string>
+           </property>
+          </widget>
+         </item>
+         <item row="3" column="0">
           <widget class="QPushButton" name="add_layer">
            <property name="sizePolicy">
             <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
@@ -726,7 +769,7 @@
            <property name="minimumSize">
             <size>
              <width>40</width>
-             <height>40</height>
+             <height>60</height>
             </size>
            </property>
            <property name="maximumSize">
@@ -736,7 +779,7 @@
             </size>
            </property>
            <property name="toolTip">
-            <string>Insert a layer, Cmd-=</string>
+            <string>Insert a layer, Cmd=</string>
            </property>
            <property name="text">
             <string/>
@@ -756,43 +799,7 @@
            </property>
           </widget>
          </item>
-         <item row="1" column="1" rowspan="4">
-          <widget class="QTableView" name="layerModelView">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Expanding" vsizetype="MinimumExpanding">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="minimumSize">
-            <size>
-             <width>300</width>
-             <height>130</height>
-            </size>
-           </property>
-           <property name="font">
-            <font>
-             <pointsize>12</pointsize>
-            </font>
-           </property>
-           <property name="dragEnabled">
-            <bool>false</bool>
-           </property>
-           <property name="dragDropMode">
-            <enum>QAbstractItemView::DropOnly</enum>
-           </property>
-           <property name="defaultDropAction">
-            <enum>Qt::IgnoreAction</enum>
-           </property>
-           <property name="selectionBehavior">
-            <enum>QAbstractItemView::SelectItems</enum>
-           </property>
-           <attribute name="horizontalHeaderStretchLastSection">
-            <bool>true</bool>
-           </attribute>
-          </widget>
-         </item>
-         <item row="5" column="0" colspan="2">
+         <item row="9" column="0" colspan="4">
           <widget class="QSlider" name="paramsSlider">
            <property name="sizePolicy">
             <sizepolicy hsizetype="Expanding" vsizetype="Minimum">
@@ -803,7 +810,7 @@
            <property name="maximumSize">
             <size>
              <width>16777215</width>
-             <height>22</height>
+             <height>20</height>
             </size>
            </property>
            <property name="font">
@@ -840,404 +847,169 @@
            </property>
           </widget>
          </item>
-         <item row="2" column="0">
-          <widget class="QPushButton" name="remove_layer">
-           <property name="maximumSize">
+         <item row="0" column="1" rowspan="7">
+          <widget class="QTreeView" name="treeView">
+           <property name="minimumSize">
             <size>
-             <width>40</width>
-             <height>40</height>
+             <width>700</width>
+             <height>0</height>
             </size>
            </property>
-           <property name="toolTip">
-            <string>Remove a layer, Cmd-</string>
+           <property name="font">
+            <font>
+             <pointsize>14</pointsize>
+            </font>
            </property>
-           <property name="text">
-            <string/>
+           <property name="selectionMode">
+            <enum>QAbstractItemView::ExtendedSelection</enum>
            </property>
-           <property name="icon">
-            <iconset>
-             <normaloff>:/icons/minus.png</normaloff>:/icons/minus.png</iconset>
-           </property>
-           <property name="iconSize">
-            <size>
-             <width>30</width>
-             <height>30</height>
-            </size>
-           </property>
-           <property name="shortcut">
-            <string>Ctrl+-</string>
+           <property name="selectionBehavior">
+            <enum>QAbstractItemView::SelectRows</enum>
            </property>
           </widget>
          </item>
-         <item row="4" column="0">
-          <widget class="QPushButton" name="pushButton_4">
-           <property name="maximumSize">
-            <size>
-             <width>40</width>
-             <height>40</height>
-            </size>
-           </property>
+         <item row="6" column="2">
+          <widget class="QCheckBox" name="use_errors_checkbox">
            <property name="text">
-            <string>down</string>
+            <string>Use
+errors?</string>
+           </property>
+           <property name="checked">
+            <bool>true</bool>
+           </property>
+           <property name="tristate">
+            <bool>false</bool>
            </property>
           </widget>
          </item>
-         <item row="0" column="0" colspan="2">
-          <widget class="QWidget" name="widget" native="true">
+         <item row="1" column="3">
+          <widget class="QPushButton" name="do_fit_button">
            <property name="sizePolicy">
-            <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+            <sizepolicy hsizetype="Maximum" vsizetype="Expanding">
              <horstretch>0</horstretch>
              <verstretch>0</verstretch>
             </sizepolicy>
            </property>
            <property name="minimumSize">
             <size>
-             <width>0</width>
-             <height>80</height>
+             <width>50</width>
+             <height>50</height>
             </size>
            </property>
-           <property name="layoutDirection">
-            <enum>Qt::LeftToRight</enum>
+           <property name="maximumSize">
+            <size>
+             <width>100</width>
+             <height>16777215</height>
+            </size>
            </property>
-           <layout class="QGridLayout" name="gridLayout_2">
-            <item row="0" column="0" rowspan="3">
-             <widget class="QPushButton" name="do_fit_button">
-              <property name="sizePolicy">
-               <sizepolicy hsizetype="Minimum" vsizetype="MinimumExpanding">
-                <horstretch>0</horstretch>
-                <verstretch>0</verstretch>
-               </sizepolicy>
-              </property>
-              <property name="minimumSize">
-               <size>
-                <width>60</width>
-                <height>60</height>
-               </size>
-              </property>
-              <property name="maximumSize">
-               <size>
-                <width>70</width>
-                <height>70</height>
-               </size>
-              </property>
-              <property name="font">
-               <font>
-                <pointsize>14</pointsize>
-               </font>
-              </property>
-              <property name="toolTip">
-               <string>Do a fit, Cmd-F</string>
-              </property>
-              <property name="text">
-               <string/>
-              </property>
-              <property name="icon">
-               <iconset>
-                <normaloff>:/icons/go.jpeg</normaloff>:/icons/go.jpeg</iconset>
-              </property>
-              <property name="iconSize">
-               <size>
-                <width>50</width>
-                <height>50</height>
-               </size>
-              </property>
-              <property name="shortcut">
-               <string>Ctrl+F</string>
-              </property>
-             </widget>
-            </item>
-            <item row="0" column="1" rowspan="3">
-             <widget class="QTableView" name="baseModelView">
-              <property name="sizePolicy">
-               <sizepolicy hsizetype="Expanding" vsizetype="MinimumExpanding">
-                <horstretch>0</horstretch>
-                <verstretch>0</verstretch>
-               </sizepolicy>
-              </property>
-              <property name="minimumSize">
-               <size>
-                <width>300</width>
-                <height>55</height>
-               </size>
-              </property>
-              <property name="maximumSize">
-               <size>
-                <width>16777215</width>
-                <height>50</height>
-               </size>
-              </property>
-              <property name="font">
-               <font>
-                <pointsize>12</pointsize>
-                <weight>50</weight>
-                <bold>false</bold>
-               </font>
-              </property>
-              <property name="verticalScrollBarPolicy">
-               <enum>Qt::ScrollBarAlwaysOff</enum>
-              </property>
-              <property name="horizontalScrollBarPolicy">
-               <enum>Qt::ScrollBarAlwaysOff</enum>
-              </property>
-              <property name="autoScroll">
-               <bool>false</bool>
-              </property>
-              <property name="autoScrollMargin">
-               <number>0</number>
-              </property>
-              <attribute name="horizontalHeaderStretchLastSection">
-               <bool>true</bool>
-              </attribute>
-             </widget>
-            </item>
-            <item row="0" column="2">
-             <widget class="QDoubleSpinBox" name="chi2">
-              <property name="enabled">
-               <bool>false</bool>
-              </property>
-              <property name="sizePolicy">
-               <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
-                <horstretch>0</horstretch>
-                <verstretch>0</verstretch>
-               </sizepolicy>
-              </property>
-              <property name="minimumSize">
-               <size>
-                <width>120</width>
-                <height>24</height>
-               </size>
-              </property>
-              <property name="maximumSize">
-               <size>
-                <width>16777215</width>
-                <height>16777215</height>
-               </size>
-              </property>
-              <property name="font">
-               <font>
-                <pointsize>12</pointsize>
-               </font>
-              </property>
-              <property name="frame">
-               <bool>true</bool>
-              </property>
-              <property name="readOnly">
-               <bool>false</bool>
-              </property>
-              <property name="buttonSymbols">
-               <enum>QAbstractSpinBox::NoButtons</enum>
-              </property>
-              <property name="prefix">
-               <string>chi2: </string>
-              </property>
-              <property name="decimals">
-               <number>5</number>
-              </property>
-              <property name="maximum">
-               <double>1000000000.000000000000000</double>
-              </property>
-             </widget>
-            </item>
-            <item row="0" column="3">
-             <widget class="QDoubleSpinBox" name="res_SpinBox">
-              <property name="sizePolicy">
-               <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
-                <horstretch>0</horstretch>
-                <verstretch>0</verstretch>
-               </sizepolicy>
-              </property>
-              <property name="minimumSize">
-               <size>
-                <width>60</width>
-                <height>20</height>
-               </size>
-              </property>
-              <property name="maximumSize">
-               <size>
-                <width>120</width>
-                <height>16777215</height>
-               </size>
-              </property>
-              <property name="font">
-               <font>
-                <pointsize>12</pointsize>
-                <weight>50</weight>
-                <bold>false</bold>
-               </font>
-              </property>
-              <property name="wrapping">
-               <bool>false</bool>
-              </property>
-              <property name="frame">
-               <bool>true</bool>
-              </property>
-              <property name="readOnly">
-               <bool>false</bool>
-              </property>
-              <property name="buttonSymbols">
-               <enum>QAbstractSpinBox::UpDownArrows</enum>
-              </property>
-              <property name="prefix">
-               <string>dq/q(%) : </string>
-              </property>
-              <property name="decimals">
-               <number>1</number>
-              </property>
-              <property name="maximum">
-               <double>10.000000000000000</double>
-              </property>
-              <property name="singleStep">
-               <double>0.100000000000000</double>
-              </property>
-              <property name="value">
-               <double>5.000000000000000</double>
-              </property>
-             </widget>
-            </item>
-            <item row="1" column="2">
-             <widget class="QComboBox" name="dataset_comboBox">
-              <property name="sizePolicy">
-               <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-                <horstretch>0</horstretch>
-                <verstretch>0</verstretch>
-               </sizepolicy>
-              </property>
-              <property name="minimumSize">
-               <size>
-                <width>0</width>
-                <height>24</height>
-               </size>
-              </property>
-              <property name="font">
-               <font>
-                <pointsize>12</pointsize>
-                <weight>50</weight>
-                <bold>false</bold>
-               </font>
-              </property>
-              <property name="focusPolicy">
-               <enum>Qt::StrongFocus</enum>
-              </property>
-              <property name="toolTip">
-               <string>Select a dataset</string>
-              </property>
-              <property name="currentIndex">
-               <number>-1</number>
-              </property>
-             </widget>
-            </item>
-            <item row="1" column="3">
-             <widget class="QCheckBox" name="use_errors_checkbox">
-              <property name="sizePolicy">
-               <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-                <horstretch>0</horstretch>
-                <verstretch>0</verstretch>
-               </sizepolicy>
-              </property>
-              <property name="font">
-               <font>
-                <pointsize>13</pointsize>
-               </font>
-              </property>
-              <property name="text">
-               <string>Use errors?</string>
-              </property>
-             </widget>
-            </item>
-            <item row="2" column="2">
-             <widget class="QComboBox" name="model_comboBox">
-              <property name="sizePolicy">
-               <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-                <horstretch>0</horstretch>
-                <verstretch>0</verstretch>
-               </sizepolicy>
-              </property>
-              <property name="minimumSize">
-               <size>
-                <width>0</width>
-                <height>24</height>
-               </size>
-              </property>
-              <property name="font">
-               <font>
-                <pointsize>12</pointsize>
-               </font>
-              </property>
-              <property name="whatsThis">
-               <string/>
-              </property>
-             </widget>
-            </item>
-            <item row="2" column="3">
-             <widget class="QCheckBox" name="use_dqwave_checkbox">
-              <property name="font">
-               <font>
-                <pointsize>13</pointsize>
-               </font>
-              </property>
-              <property name="text">
-               <string>Use dq wave?</string>
-              </property>
-              <property name="checked">
-               <bool>true</bool>
-              </property>
-             </widget>
-            </item>
-           </layout>
+           <property name="toolTip">
+            <string>Do a fit. Cmd-F</string>
+           </property>
+           <property name="text">
+            <string/>
+           </property>
+           <property name="icon">
+            <iconset>
+             <normaloff>../icons/go.jpeg</normaloff>../icons/go.jpeg</iconset>
+           </property>
+           <property name="iconSize">
+            <size>
+             <width>60</width>
+             <height>60</height>
+            </size>
+           </property>
+           <property name="shortcut">
+            <string>Ctrl+F</string>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="3" rowspan="5">
+          <widget class="QListWidget" name="currently_fitting">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Minimum" vsizetype="Expanding">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="minimumSize">
+            <size>
+             <width>130</width>
+             <height>220</height>
+            </size>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>140</width>
+             <height>16777215</height>
+            </size>
+           </property>
+           <property name="font">
+            <font>
+             <pointsize>14</pointsize>
+            </font>
+           </property>
+           <property name="toolTip">
+            <string>List of datasets being fitted</string>
+           </property>
+          </widget>
+         </item>
+         <item row="4" column="2">
+          <widget class="QPushButton" name="remove_from_fit_button">
+           <property name="minimumSize">
+            <size>
+             <width>60</width>
+             <height>60</height>
+            </size>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>70</width>
+             <height>70</height>
+            </size>
+           </property>
+           <property name="toolTip">
+            <string>Remove dataset from those being fitted</string>
+           </property>
+           <property name="text">
+            <string>&lt;-</string>
+           </property>
+          </widget>
+         </item>
+         <item row="3" column="2">
+          <widget class="QPushButton" name="add_to_fit_button">
+           <property name="minimumSize">
+            <size>
+             <width>60</width>
+             <height>60</height>
+            </size>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>70</width>
+             <height>70</height>
+            </size>
+           </property>
+           <property name="toolTip">
+            <string>Add a dataset to those being fitted</string>
+           </property>
+           <property name="text">
+            <string>-&gt;</string>
+           </property>
           </widget>
          </item>
         </layout>
        </widget>
        <widget class="QWidget" name="tab_1">
         <attribute name="title">
-         <string>Limits</string>
-        </attribute>
-        <layout class="QGridLayout" name="gridLayout_7">
-         <item row="0" column="0">
-          <widget class="QTableView" name="limitsModelView"/>
-         </item>
-         <item row="0" column="2">
-          <widget class="QPushButton" name="auto_limits_button">
-           <property name="minimumSize">
-            <size>
-             <width>0</width>
-             <height>100</height>
-            </size>
-           </property>
-           <property name="text">
-            <string>Automatically
-adjust
-limits</string>
-           </property>
-          </widget>
-         </item>
-        </layout>
-       </widget>
-       <widget class="QWidget" name="tab_2">
-        <attribute name="title">
-         <string>Data</string>
-        </attribute>
-        <layout class="QGridLayout" name="gridLayout_6">
-         <item row="0" column="0">
-          <widget class="QTableView" name="data_options_tableView">
-           <attribute name="horizontalHeaderCascadingSectionResizes">
-            <bool>true</bool>
-           </attribute>
-           <attribute name="horizontalHeaderStretchLastSection">
-            <bool>true</bool>
-           </attribute>
-          </widget>
-         </item>
-        </layout>
-       </widget>
-       <widget class="QWidget" name="tab_3">
-        <attribute name="title">
          <string>Uncertainties</string>
         </attribute>
        </widget>
-       <widget class="QWidget" name="tab_4">
+       <widget class="QWidget" name="tab_2">
         <attribute name="title">
          <string>Console</string>
+        </attribute>
+        <attribute name="toolTip">
+         <string>Output from the modelling processes</string>
         </attribute>
         <layout class="QGridLayout" name="gridLayout_8">
          <item row="0" column="0">
@@ -1247,185 +1019,6 @@ limits</string>
              <pointsize>13</pointsize>
             </font>
            </property>
-          </widget>
-         </item>
-        </layout>
-       </widget>
-       <widget class="QWidget" name="tab_5">
-        <attribute name="title">
-         <string>Global fit</string>
-        </attribute>
-        <layout class="QGridLayout" name="gridLayout_9">
-         <item row="0" column="0">
-          <widget class="QTabWidget" name="tabWidget_2">
-           <property name="currentIndex">
-            <number>0</number>
-           </property>
-           <widget class="QWidget" name="tab_6">
-            <attribute name="title">
-             <string>datasets</string>
-            </attribute>
-            <layout class="QGridLayout" name="gridLayout_11">
-             <item row="1" column="2">
-              <widget class="QPushButton" name="pushButton_3">
-               <property name="sizePolicy">
-                <sizepolicy hsizetype="Minimum" vsizetype="Expanding">
-                 <horstretch>0</horstretch>
-                 <verstretch>0</verstretch>
-                </sizepolicy>
-               </property>
-               <property name="text">
-                <string>Remove dataset</string>
-               </property>
-              </widget>
-             </item>
-             <item row="0" column="2">
-              <widget class="QPushButton" name="addGFDataSet">
-               <property name="sizePolicy">
-                <sizepolicy hsizetype="Minimum" vsizetype="Expanding">
-                 <horstretch>0</horstretch>
-                 <verstretch>0</verstretch>
-                </sizepolicy>
-               </property>
-               <property name="text">
-                <string>Add dataset</string>
-               </property>
-              </widget>
-             </item>
-             <item row="0" column="0" rowspan="5">
-              <widget class="QTableView" name="globalfitting_DataView"/>
-             </item>
-             <item row="2" column="2">
-              <widget class="QPushButton" name="linkGFparam">
-               <property name="sizePolicy">
-                <sizepolicy hsizetype="Minimum" vsizetype="Expanding">
-                 <horstretch>0</horstretch>
-                 <verstretch>0</verstretch>
-                </sizepolicy>
-               </property>
-               <property name="text">
-                <string>Link selection</string>
-               </property>
-              </widget>
-             </item>
-             <item row="3" column="2">
-              <widget class="QPushButton" name="unlinkGFparam">
-               <property name="sizePolicy">
-                <sizepolicy hsizetype="Minimum" vsizetype="Expanding">
-                 <horstretch>0</horstretch>
-                 <verstretch>0</verstretch>
-                </sizepolicy>
-               </property>
-               <property name="text">
-                <string>Unlink selection</string>
-               </property>
-              </widget>
-             </item>
-            </layout>
-           </widget>
-           <widget class="QWidget" name="tab_7">
-            <attribute name="title">
-             <string>parameters</string>
-            </attribute>
-            <layout class="QGridLayout" name="gridLayout_10">
-             <property name="topMargin">
-              <number>12</number>
-             </property>
-             <property name="rightMargin">
-              <number>20</number>
-             </property>
-             <property name="bottomMargin">
-              <number>2</number>
-             </property>
-             <property name="verticalSpacing">
-              <number>2</number>
-             </property>
-             <item row="0" column="1">
-              <widget class="QPushButton" name="do_gf_fit">
-               <property name="minimumSize">
-                <size>
-                 <width>50</width>
-                 <height>70</height>
-                </size>
-               </property>
-               <property name="text">
-                <string/>
-               </property>
-               <property name="icon">
-                <iconset>
-                 <normaloff>:/icons/go.jpeg</normaloff>:/icons/go.jpeg</iconset>
-               </property>
-               <property name="iconSize">
-                <size>
-                 <width>70</width>
-                 <height>70</height>
-                </size>
-               </property>
-              </widget>
-             </item>
-             <item row="1" column="0">
-              <widget class="QSlider" name="globalParamsSlider">
-               <property name="maximumSize">
-                <size>
-                 <width>16777215</width>
-                 <height>40</height>
-                </size>
-               </property>
-               <property name="maximum">
-                <number>999</number>
-               </property>
-               <property name="value">
-                <number>499</number>
-               </property>
-               <property name="tracking">
-                <bool>true</bool>
-               </property>
-               <property name="orientation">
-                <enum>Qt::Horizontal</enum>
-               </property>
-              </widget>
-             </item>
-             <item row="0" column="0">
-              <widget class="QTableView" name="globalfitting_ParamsView">
-               <property name="font">
-                <font>
-                 <pointsize>12</pointsize>
-                </font>
-               </property>
-              </widget>
-             </item>
-             <item row="1" column="1">
-              <widget class="QDoubleSpinBox" name="chi2GF">
-               <property name="minimumSize">
-                <size>
-                 <width>130</width>
-                 <height>0</height>
-                </size>
-               </property>
-               <property name="font">
-                <font>
-                 <pointsize>12</pointsize>
-                </font>
-               </property>
-               <property name="readOnly">
-                <bool>true</bool>
-               </property>
-               <property name="buttonSymbols">
-                <enum>QAbstractSpinBox::NoButtons</enum>
-               </property>
-               <property name="prefix">
-                <string>chi2: </string>
-               </property>
-               <property name="maximum">
-                <double>1000000000.000000000000000</double>
-               </property>
-               <property name="value">
-                <double>999999999.000000000000000</double>
-               </property>
-              </widget>
-             </item>
-            </layout>
-           </widget>
           </widget>
          </item>
         </layout>
@@ -1689,33 +1282,7 @@ limits</string>
   </action>
  </widget>
  <tabstops>
-  <tabstop>tabWidget</tabstop>
-  <tabstop>baseModelView</tabstop>
-  <tabstop>layerModelView</tabstop>
-  <tabstop>add_layer</tabstop>
-  <tabstop>remove_layer</tabstop>
-  <tabstop>paramsSlider</tabstop>
-  <tabstop>chi2</tabstop>
-  <tabstop>dataset_comboBox</tabstop>
-  <tabstop>model_comboBox</tabstop>
-  <tabstop>res_SpinBox</tabstop>
-  <tabstop>use_errors_checkbox</tabstop>
-  <tabstop>use_dqwave_checkbox</tabstop>
-  <tabstop>do_fit_button</tabstop>
-  <tabstop>pushButton_2</tabstop>
-  <tabstop>pushButton_4</tabstop>
-  <tabstop>limitsModelView</tabstop>
-  <tabstop>data_options_tableView</tabstop>
   <tabstop>console_text_edit</tabstop>
-  <tabstop>pushButton_3</tabstop>
-  <tabstop>addGFDataSet</tabstop>
-  <tabstop>globalfitting_DataView</tabstop>
-  <tabstop>linkGFparam</tabstop>
-  <tabstop>unlinkGFparam</tabstop>
-  <tabstop>do_gf_fit</tabstop>
-  <tabstop>globalParamsSlider</tabstop>
-  <tabstop>globalfitting_ParamsView</tabstop>
-  <tabstop>chi2GF</tabstop>
  </tabstops>
  <resources>
   <include location="resources.qrc"/>
