@@ -42,6 +42,14 @@ class DataStore(object):
         sio2 = SLD(3.47, name='1')
         si = SLD(2.07, name='backing')
         structure = air(0, 0) | sio2(15, 3.) | si(0, 3.)
+
+        structure[1].name = 'slab'
+        structure[1].thick.name = 'thick'
+        structure[1].rough.name = 'rough'
+        structure[1].sld.real.name = 'sld'
+        structure[1].sld.imag.name = 'isld'
+        structure[1].vfsolv.name = 'vfsolv'
+
         model = ReflectModel(structure, name='theoretical')
         self.add(dataset)
         self['theoretical'].model = model

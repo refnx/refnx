@@ -732,6 +732,11 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         material = SLD(3.47)
         slab = material(15, 3)
         slab.name = 'slab'
+        slab.thick.name = 'thick'
+        slab.rough.name = 'rough'
+        slab.sld.real.name = 'sld'
+        slab.sld.imag.name = 'isld'
+        slab.vfsolv.name = 'vfsolv'
         structure.insert_component(idx + 1, slab)
 
     @QtCore.pyqtSlot()

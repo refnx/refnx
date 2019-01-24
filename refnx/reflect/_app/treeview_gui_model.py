@@ -188,6 +188,17 @@ class ComponentNode(Node):
             pn = ParNode(par, model, parent=self)
             self.appendChild(pn)
 
+    @property
+    def component(self):
+        return self._data
+
+    def flags(self, column):
+        flags = QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled
+        if column == 0:
+            flags |= QtCore.Qt.ItemIsEditable
+
+        return flags
+
     def data(self, column, role=QtCore.Qt.EditRole):
         if role == QtCore.Qt.CheckStateRole:
             return None
@@ -195,6 +206,17 @@ class ComponentNode(Node):
         if column > 0:
             return None
         return self._data.name
+
+    def setData(self, column, value, role=QtCore.Qt.EditRole):
+        if role == QtCore.Qt.CheckStateRole:
+            return False
+
+        if column:
+            return False
+
+        self.component.name = value
+        self._model.dataChanged.emit(self.index, self.index)
+        return True
 
 
 class StructureNode(Node):
