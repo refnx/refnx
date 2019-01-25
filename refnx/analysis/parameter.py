@@ -39,13 +39,12 @@ ops = {'sin': np.sin, 'cos': np.cos, 'tan': np.tan, 'arcsin': np.arcsin,
        'log10': np.log10, 'exp': np.exp, 'sqrt': np.sqrt, 'sum': np.sum}
 math_ops = {k: MAKE_UNARY(v) for k, v in ops.items()}
 
-binary=[operator.add, operator.sub, operator.mul, operator.truediv,
-        operator.floordiv, np.power, operator.pow,
-        operator.mod]
+binary = [operator.add, operator.sub, operator.mul, operator.truediv,
+          operator.floordiv, np.power, operator.pow,
+          operator.mod]
 
 unary = [operator.neg, operator.abs, np.sin, np.tan, np.cos, np.arcsin,
          np.arctan, np.arccos, np.log10, np.log, np.sqrt, np.exp]
-
 
 
 class Parameters(UserList):

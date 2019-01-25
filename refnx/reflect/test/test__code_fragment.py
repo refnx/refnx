@@ -46,7 +46,7 @@ class TestCodeFragment(object):
 
         objective = Objective(self.model361, e361)
         objective2 = eval(repr(objective))
-        assert_allclose(objective2.chisqr(),objective.chisqr())
+        assert_allclose(objective2.chisqr(), objective.chisqr())
 
         exec(repr(objective))
         exec(code_fragment(objective))

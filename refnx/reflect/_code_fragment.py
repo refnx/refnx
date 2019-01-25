@@ -20,7 +20,6 @@ def code_fragment(objective):
     code.append('import refnx')
     code.append('print(refnx.version.version)')
 
-
     if isinstance(objective, GlobalObjective):
         _objectives = [objective.objectives]
     elif isinstance(objective, Objective):
