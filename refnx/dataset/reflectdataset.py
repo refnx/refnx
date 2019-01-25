@@ -68,9 +68,9 @@ class ReflectDataset(Data1D):
     def __repr__(self):
         s = ("ReflectDataset(data={0}, mask={1})")
         if self.filename is not None:
-            return s.format(repr(self.filename), self._mask)
+            return s.format(repr(self.filename), repr(self._mask))
         else:
-            return s.format(repr(self.data), self._mask)
+            return s.format(repr(self.data), repr(self._mask))
 
     def save_xml(self, f, start_time=0):
         """
