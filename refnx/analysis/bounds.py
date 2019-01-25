@@ -104,7 +104,7 @@ class PDF(Bounds):
                              " logpdf and rvs methods")
 
     def __repr__(self):
-        return repr(self.rv)
+        return "PDF({0})".format(repr(self.rv))
 
     def logp(self, val):
         """
