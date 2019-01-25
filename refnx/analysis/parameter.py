@@ -39,6 +39,14 @@ ops = {'sin': np.sin, 'cos': np.cos, 'tan': np.tan, 'arcsin': np.arcsin,
        'log10': np.log10, 'exp': np.exp, 'sqrt': np.sqrt, 'sum': np.sum}
 math_ops = {k: MAKE_UNARY(v) for k, v in ops.items()}
 
+binary=[operator.add, operator.sub, operator.mul, operator.truediv,
+        operator.floordiv, np.power, operator.pow,
+        operator.mod]
+
+unary = [operator.neg, operator.abs, np.sin, np.tan, np.cos, np.arcsin,
+         np.arctan, np.arccos, np.log10, np.log, np.sqrt, np.exp]
+
+
 
 class Parameters(UserList):
     """
@@ -558,3 +566,49 @@ def is_parameter(x):
 def is_parameters(x):
     """Test for Parameter-ness."""
     return isinstance(x, Parameters)
+
+
+def _constraint_tree_helper(expr):
+    t = []
+    if isinstance(expr, Parameter):
+        return expr
+    if isinstance(expr, Constant):
+        return expr.value
+    if isinstance(expr, _BinaryOp):
+        t.append([_constraint_tree_helper(expr.op1),
+                  _constraint_tree_helper(expr.op2),
+                  expr.opn])
+    if isinstance(expr, _UnaryOp):
+        t.append([_constraint_tree_helper(expr.op1),
+                  expr.opn])
+    return t
+
+
+def constraint_tree(expr):
+    """
+    builds a mathematical tree of a constraint expression
+    this can be fed into build_constraint_from_tree to
+    reconstitute a constraint
+    """
+    return list(flatten(_constraint_tree_helper(expr)))
+
+
+def build_constraint_from_tree(tree):
+    """
+    A calculator for a constraint tree. It's essentially a reverse
+    Polish notation calculator.
+    """
+    v = []
+    for t in tree:
+        if callable(t):
+            if t in binary:
+                o1 = v.pop()
+                o2 = v.pop()
+                v.append(t(o1, o2))
+            elif t in unary:
+                o1 = v.pop()
+                v.append(t(o1))
+        else:
+            v.append(t)
+
+    return v[0]

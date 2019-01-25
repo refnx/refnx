@@ -7,6 +7,8 @@ from scipy.stats import norm, uniform
 
 from refnx.analysis import (Interval, PDF, Parameter, Parameters,
                             is_parameters)
+from refnx.analysis.parameter import (constraint_tree,
+                                      build_constraint_from_tree)
 
 
 class TestParameter(object):
@@ -149,6 +151,21 @@ class TestParameter(object):
         assert_equal(len(d), 2)
         # a, a, b
         assert_equal(len(d.flattened()), 3)
+
+    def test_constraint_analyser(self):
+        a = Parameter(1)
+        b = Parameter(2, constraint=a)
+        c = Parameter(2.)
+
+        d = Parameter(3, constraint=b + np.sin(a) + 2 * (a + b + c))
+        val = d.value
+
+        tree = constraint_tree(d.constraint)
+        new_constraint = build_constraint_from_tree(tree)
+        assert_allclose(new_constraint.value, val)
+
+        a.value = 10
+        assert_allclose(new_constraint.value, d.value)
 
 
 class TestParameters(object):

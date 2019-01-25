@@ -8,6 +8,8 @@ def code_fragment(objective):
     code = []
 
     code.append('import numpy as np')
+    code.append('from numpy import array')
+
     code.append("from refnx.analysis import Objective, GlobalObjective")
     code.append("from refnx.analysis import Parameter, Parameters, Interval")
     code.append("from refnx.dataset import ReflectDataset")
@@ -24,15 +26,14 @@ def code_fragment(objective):
     elif isinstance(objective, Objective):
         _objectives = [objective]
 
-    # start by creating the dataset
     if len(_objectives) == 1:
-        code.append('objective = {0}'.format(repr(o)))
+        code.append(objective_fragment(0, _objectives[0]))
     else:
         global_objective = []
-        global_objective.append('objective = GlobalObjective([')
+        global_objective.append('objective_0 = GlobalObjective([')
 
         for i, o in enumerate(_objectives):
-            code.append('objective_{0} = {1}'.format(i, repr(o)))
+            code.append(objective_fragment(i + 1, o))
             global_objective.append('objective_{0},'.format(i))
 
         global_objective.append('])')
@@ -40,3 +41,7 @@ def code_fragment(objective):
         code.append(''.join(global_objective))
 
     return '\n'.join(code)
+
+
+def objective_fragment(i, objective):
+    return 'objective_{0} = {1}'.format(i, repr(objective))
