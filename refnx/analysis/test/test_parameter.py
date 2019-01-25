@@ -157,7 +157,7 @@ class TestParameter(object):
         b = Parameter(2, constraint=a)
         c = Parameter(2.)
 
-        d = Parameter(3, constraint=b + np.sin(a) + 2 * (a + b + c))
+        d = Parameter(3, constraint=np.cos(b + np.sin(a) + 2 * (a + b + c)))
         val = d.value
 
         tree = constraint_tree(d.constraint)
