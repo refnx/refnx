@@ -103,6 +103,20 @@ class ReflectModel(object):
         """
         return self.model(x, p=p, x_err=x_err)
 
+    def __repr__(self):
+        s = ("ReflectModel({structure}, name={name}, scale={scale}, bkg={bkg},"
+             " dq={dq}, threads={threads}, quad_order={quad_order})")
+        d = {'structure': repr(self.structure),
+             'scale': repr(self.scale),
+             'bkg': repr(self.bkg),
+             'dq': repr(self.dq),
+             'threads': self.threads,
+             'quad_order': self.quad_order,
+             'name': "''"}
+        if self.name:
+            d['name'] = "'{0}'".format(self.name)
+        return s.format(**d)
+
     @property
     def dq(self):
         r"""

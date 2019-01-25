@@ -4,7 +4,7 @@ import os as _os
 import sys as _sys
 import functools
 from tempfile import mkdtemp
-import collections
+from collections.abc import Iterable
 from contextlib import contextmanager
 from inspect import getfullargspec as _getargspecf
 
@@ -127,7 +127,7 @@ def flatten(l):
         yields flattened sequences from l
     """
     for el in l:
-        if (isinstance(el, collections.Iterable) and
+        if (isinstance(el, Iterable) and
                 not isinstance(el, (str, bytes))):
             yield from flatten(el)
         else:

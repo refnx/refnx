@@ -50,6 +50,17 @@ class TestParameter(object):
         y.constraint = np.sin(x) + 2.
         assert_equal(y.value, 2. + np.sin(x.value))
 
+    def test_repr(self):
+        p = Parameter(value=5, name='pop', vary=True)
+        q = eval(repr(p))
+        assert(q.name == 'pop')
+        assert_allclose(q.value, p.value)
+
+        p.bounds.lb = -5
+        q = eval(repr(p))
+        assert_allclose(q.bounds.lb, -5)
+        assert_allclose(q.bounds.ub, np.inf)
+
     def test_func_attribute(self):
         # a Parameter object should have math function attributes
         a = Parameter(1)
@@ -156,6 +167,19 @@ class TestParameters(object):
         # or by index
         p = self.m[0]
         assert_(p is self.a)
+
+    def test_repr(self):
+        p = Parameter(value=5, vary=False, name='test')
+        g = Parameters(name='name')
+        f = Parameters()
+        f.append(p)
+        f.append(g)
+
+        q = eval(repr(f))
+        assert(q.name is None)
+        assert_equal(q[0].value, 5)
+        assert(q[0].vary is False)
+        assert(isinstance(q[1], Parameters))
 
     def test_set_by_name(self):
         c = Parameter(3.)

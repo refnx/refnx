@@ -44,9 +44,11 @@ class Parameters(UserList):
     """
     A collection of Parameters
     """
-    def __init__(self, name=None):
+    def __init__(self, name=None, data=None):
         super(Parameters, self).__init__()
         self.name = name
+        if data is not None:
+            self.data = data
 
     def __getitem__(self, i):
         if type(i) is str:
@@ -72,6 +74,15 @@ class Parameters(UserList):
             self.data[i] = v
 
     def __repr__(self):
+        s = 'Parameters(name={name}, data={data})'
+        d = {'name': self.name,
+             'data': self.data}
+
+        if self.name is not None:
+            d['name'] = "'{0}'".format(self.name)
+        return s.format(**d)
+
+    def __str__(self):
         s = list()
         s.append("{:_>80}".format(''))
         s.append("Parameters: {0: ^15}".format(repr(self.name)))
@@ -84,9 +95,9 @@ class Parameters(UserList):
     def _pprint(self):
         for el in self.data:
             if is_parameters(el):
-                yield repr(el)
+                yield str(el)
             else:
-                yield repr(el)
+                yield str(el)
 
     def __contains__(self, item):
         return id(item) in [id(p) for p in f_unique(flatten(self.data))]
@@ -300,9 +311,9 @@ class BaseParameter(object):
                 dep_list.append(_dep.dependencies())
         return dep_list
 
-    def __repr__(self):
+    def __str__(self):
         """Returns printable representation of a Parameter object."""
-        s = ("<Parameter:{name:^15}value={value:^15g}{fixed: ^10}{bounds}"
+        s = ("<Parameter:{name:^15s}value={value:g}{fixed: ^10}{bounds}"
              "{constraint}>")
 
         d = {'name': repr(self.name),
@@ -315,10 +326,29 @@ class BaseParameter(object):
         elif self.stderr is not None:
             d['fixed'] = " +/- {0:0.3g}".format(self.stderr)
 
-        d['bounds'] = ", bounds={0}".format(repr(self.bounds))
+        d['bounds'] = ", bounds={0}".format(str(self.bounds))
 
         if self.constraint is not None:
-            d['constraint'] = ", constraint={0}".format(repr(self.constraint))
+            d['constraint'] = repr(self.constraint)
+        return s.format(**d)
+
+    def __repr__(self):
+        # repr does not include stderr because that can't be used to
+        # create a Parameter
+        s = ("Parameter(value={value:g}, name={name}, vary={vary},"
+             " bounds={bounds}, constraint={constraint})")
+
+        d = {'name': repr(self.name),
+             'value': self.value,
+             'vary': self.vary,
+             'bounds': repr(self.bounds),
+             'constraint': None}
+
+        if self.name is not None:
+            d['name'] = "'%s'" % self.name
+
+        if self.constraint is not None:
+            d['constraint'] = repr(self.constraint)
         return s.format(**d)
 
 

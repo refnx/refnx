@@ -230,6 +230,15 @@ class Interval(Bounds):
             self._closed_bounds = False
 
     def __repr__(self):
+        lb, ub = self.lb, self.ub
+        if np.isneginf(self.lb):
+            lb = '-np.inf'
+        if np.isinf(self.ub):
+            ub = 'np.inf'
+
+        return 'Interval(lb={0}, ub={1})'.format(lb, ub)
+
+    def __str__(self):
         return '[{0}, {1}]'.format(self.lb, self.ub)
 
     @property

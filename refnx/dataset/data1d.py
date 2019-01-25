@@ -96,6 +96,13 @@ class Data1D(object):
         """
         return self.y.size
 
+    def __repr__(self):
+        s = ("Data1D(data={0}, mask={1})")
+        if self.filename is not None:
+            return s.format(self.filename, self._mask)
+        else:
+            return s.format(repr(self.data), self._mask)
+
     @property
     def x(self):
         """

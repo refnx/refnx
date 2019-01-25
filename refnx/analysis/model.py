@@ -49,6 +49,15 @@ class Model(object):
         if fcn_kwds is not None:
             self.fcn_kwds = fcn_kwds
 
+    def __repr__(self):
+        s = ("Model({parameters}, fitfunc={fitfunc}, fcn_args={fcn_args},"
+             " fcn_kwds={})")
+        d = {'parameters': repr(self._parameters),
+             'fitfunc': repr(self._fitfunc),
+             'fcn_args': repr(self.fcn_args),
+             'fcn_kwds': repr(self.fcn_kwds)}
+        return s.format(**d)
+
     def __call__(self, x, p=None, x_err=None):
         """
         Calculates a generative model(dependent variable), given parameters and

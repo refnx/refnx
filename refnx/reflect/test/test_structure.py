@@ -6,7 +6,7 @@ from numpy.testing import (assert_almost_equal, assert_equal, assert_,
 
 from refnx.reflect import (SLD, Structure, Spline, Slab)
 from refnx.reflect.structure import _profile_slicer
-from refnx.analysis import Parameter
+from refnx.analysis import Parameter, Interval, Parameters
 
 
 class TestStructure(object):
@@ -54,6 +54,49 @@ class TestStructure(object):
     def test_reflectivity(self):
         q = np.linspace(0.005, 0.3, 200)
         self.s.reflectivity(q)
+
+    def test_repr_sld(self):
+        p = SLD(5 + 1j, name='pop')
+        assert_equal(float(p.real), 5)
+        assert_equal(float(p.imag), 1)
+        print(repr(p))
+        q = eval(repr(p))
+        assert_equal(float(q.real), 5)
+        assert_equal(float(q.imag), 1)
+
+    def test_repr_slab(self):
+        p = SLD(5 + 1j)
+        t = p(10.5, 3.)
+        t.vfsolv = 0.1
+        q = eval(repr(t))
+        assert(isinstance(q, Slab))
+        assert_equal(float(q.thick), 10.5)
+        assert_equal(float(t.sld.real), 5)
+        assert_equal(float(t.sld.imag), 1)
+        assert_equal(float(q.vfsolv), 0.1)
+
+    def test_repr_structure(self):
+        p = SLD(5 + 1j)
+        t = p(10.5, 3.)
+        t.vfsolv = 0.1
+        s = t | t
+        q = eval(repr(s))
+        assert(isinstance(q, Structure))
+        assert_equal(float(q[0].thick), 10.5)
+        assert_equal(float(q[1].sld.real), 5)
+        assert_equal(float(q[1].sld.imag), 1)
+
+    def test_sld(self):
+        p = SLD(5 + 1j, name='pop')
+        assert_equal(float(p.real), 5)
+        assert_equal(float(p.imag), 1)
+        p = SLD(5)
+        assert_equal(float(p.real), 5)
+        q = Parameter(5)
+        r = Parameter(1)
+        p = SLD([q, r])
+        assert_equal(float(p.real), 5)
+        assert_equal(float(p.imag), 1)
 
     def test_sld_slicer(self):
         q = np.linspace(0.005, 0.2, 100)
