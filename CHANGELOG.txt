@@ -22,3 +22,4 @@ Details of changes made to refnx
   not analysis
 - improved documentation of the ManualBeamFinder
 - adding a pyqt based GUI (alpha state)
+- improved __repr__ of many classes
