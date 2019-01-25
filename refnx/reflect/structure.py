@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
-from six.moves import UserList
+from collections import UserList
+import numbers
 
 import numpy as np
 from scipy.stats import norm
@@ -70,8 +71,8 @@ class Structure(UserList):
     >>> s = air(0, 0) | polymer(200, 4) | si(0, 3)
 
     """
-    def __init__(self, name='', solvent=None, reverse_structure=False,
-                 contract=0):
+    def __init__(self, name='', components=None, solvent=None,
+                 reverse_structure=False, contract=0):
         super(Structure, self).__init__()
         self._name = name
 
@@ -86,6 +87,11 @@ class Structure(UserList):
         self.contract = contract
         # self._parameters = Parameters(name=name)
 
+        # if you provide a list of components to start with, then initialise
+        # the structure from that
+        if components is not None:
+            self.data = [c for c in components if isinstance(c, Component)]
+
     def __copy__(self):
         s = Structure(self.name, solvent=self.solvent)
         s.data = self.data.copy()
@@ -95,18 +101,32 @@ class Structure(UserList):
         self.data[i] = v
         # self.update()
 
-    def __repr__(self):
+    def __str__(self):
         s = list()
         s.append('{:_>80}'.format(''))
-        s.append('Structure: {0: ^15}'.format(repr(self.name)))
+        s.append('Structure: {0: ^15}'.format(str(self.name)))
         s.append('solvent: {0}'.format(repr(self.solvent)))
-        s.append('reverse structure: {0}'.format(repr(self.reverse_structure)))
-        s.append('contract: {0}\n'.format(repr(self.contract)))
+        s.append('reverse structure: {0}'.format(str(self.reverse_structure)))
+        s.append('contract: {0}\n'.format(str(self.contract)))
 
         for component in self:
-            s.append(repr(component))
+            s.append(str(component))
 
         return '\n'.join(s)
+
+    def __repr__(self):
+        s = ("Structure(name={name}, components={components},"
+             " solvent={solvent}, reverse_structure={reverse},"
+             " contract={contract})")
+
+        d = {'name': "''",
+             'components': repr(self.data),
+             'solvent': repr(self.solvent),
+             'reverse': self.reverse_structure,
+             'contract': self.contract}
+        if self.name:
+            d['name'] = "'{0}'".format(self.name)
+        return s.format(**d)
 
     def append(self, item):
         """
@@ -375,7 +395,7 @@ class SLD(object):
 
     Parameters
     ----------
-    value : float or complex
+    value : float, complex, Parameter, Parameters
         Scattering length density of a material.
         Units (10**-6 Angstrom**-2)
     name : str, optional
@@ -390,23 +410,45 @@ class SLD(object):
     >>> # create a Slab of SiO2 20 A in thickness, with a 3 A roughness
     >>> sio2_layer = SLD(20, 3)
 
+    The SLD object can also be made from a complex number, or from Parameters
+    >>> sio2 = SLD(3.47+0.01j)
+    >>> re = Parameter(3.47)
+    >>> im = Parameter(0.01)
+    >>> sio2 = SLD(re)
+    >>> sio2 = SLD([re, im])
     """
     def __init__(self, value, name=''):
         self.name = name
-        if isinstance(value, complex):
+
+        self.imag = Parameter(0, name='%s - isld' % name)
+        if isinstance(value, numbers.Real):
+            self.real = Parameter(value.real, name='%s - sld' % name)
+        elif isinstance(value, numbers.Complex):
             self.real = Parameter(value.real, name='%s - sld' % name)
             self.imag = Parameter(value.imag, name='%s - isld' % name)
         elif isinstance(value, SLD):
             self.real = value.real
             self.imag = value.imag
-        else:
-            self.real = Parameter(value, name='%s - sld' % name)
-            self.imag = Parameter(0, name='%s - isld' % name)
+        elif isinstance(value, Parameter):
+            self.real = value
+        elif (hasattr(value, '__len__') and isinstance(value[0], Parameter) and
+              isinstance(value[1], Parameter)):
+            self.real = value[0]
+            self.imag = value[1]
 
         self._parameters = Parameters(name=name)
         self._parameters.extend([self.real, self.imag])
 
     def __repr__(self):
+        s = 'SLD([{real}, {imag}], name={name})'
+        d = {'real': repr(self.real), 'imag': repr(self.imag),
+             'name': "''"}
+
+        if self.name:
+            d['name'] = "'{0}'".format(self.name)
+        return s.format(**d)
+
+    def __str__(self):
         sld = complex(self.real.value, self.imag.value)
         return 'SLD = {0} x10**-6 Å**-2'.format(sld)
 
@@ -549,13 +591,22 @@ class Slab(Component):
         self._parameters = p
 
     def __repr__(self):
+        s = 'Slab({thick}, {sld}, {rough}, name={name},vfsolv={vfsolv})'
+        d = {'thick': repr(self.thick), 'sld': repr(self.sld),
+             'rough': repr(self.rough),
+             'vfsolv': repr(self.vfsolv), 'name': "''"}
+        if self.name:
+            d['name'] = "'{0}'".format(self.name)
+        return s.format(**d)
+
+    def __str__(self):
         # sld = repr(self.sld)
         #
         # s = 'Slab: {0}\n    thick = {1} Å, {2}, rough = {3} Å,
         #      \u03D5_solv = {4}'
         # t = s.format(self.name, self.thick.value, sld, self.rough.value,
         #              self.vfsolv.value)
-        return repr(self.parameters)
+        return str(self.parameters)
 
     @property
     def parameters(self):

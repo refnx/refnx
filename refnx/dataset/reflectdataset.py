@@ -65,6 +65,13 @@ class ReflectDataset(Data1D):
         self.datafilenumber = list()
         self.sld_profile = None
 
+    def __repr__(self):
+        s = ("ReflectDataset(data={0}, mask={1})")
+        if self.filename is not None:
+            return s.format(repr(self.filename), self._mask)
+        else:
+            return s.format(repr(self.data), self._mask)
+
     def save_xml(self, f, start_time=0):
         """
         Saves the reflectivity data to an XML file.

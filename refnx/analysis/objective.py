@@ -223,7 +223,7 @@ class Objective(BaseObjective):
         if name is None:
             self.name = id(self)
 
-    def __repr__(self):
+    def __str__(self):
         s = ["{:_>80}".format('')]
         s.append('Objective - {0}'.format(self.name))
 
@@ -240,6 +240,20 @@ class Objective(BaseObjective):
         s.append(repr(self.parameters))
 
         return '\n'.join(s)
+
+    def __repr__(self):
+        s = ("Objective({model}, {data}, lnsigma={lnsigma},"
+             " use_weights={use_weights}, transform={transform},"
+             " logp_extra={logp_extra}, name={name})")
+        d = {'name': self.name,
+             'model': repr(self.model),
+             'data': repr(self.data),
+             'use_weights': self.__use_weights,
+             'transform': repr(self.transform),
+             'logp_extra': repr(self.logp_extra),
+             'lnsigma': repr(self.lnsigma)}
+
+        return s.format(**d)
 
     @property
     def weighted(self):
@@ -793,13 +807,16 @@ class GlobalObjective(Objective):
             raise ValueError("All the objectives must be either weighted or"
                              " unweighted, you cannot have a mixture.")
 
-    def __repr__(self):
+    def __str__(self):
         s = ["{:_>80}".format('\n')]
         s.append('--Global Objective--')
         for obj in self.objectives:
             s.append(repr(obj))
             s.append('\n')
         return '\n'.join(s)
+
+    def __repr__(self):
+        return "GlobalObjective({0})".format(repr(self.objectives))
 
     @property
     def weighted(self):
@@ -1016,6 +1033,9 @@ class Transform(object):
         else:
             raise ValueError("The form parameter must be one of [None, 'lin',"
                              " 'logY', 'YX4', 'YX2']")
+
+    def __repr__(self):
+        return "Transform({0})".format(repr(self.form))
 
     def __call__(self, x, y, y_err=None):
         """

@@ -15,8 +15,8 @@ except ImportError:
 
 import refnx.reflect._reflect as _reflect
 from refnx.analysis import (Transform, Objective,
-                            CurveFitter, Parameter, Model)
-from refnx.reflect import (SLD, Slab, ReflectModel, MixedReflectModel,
+                            CurveFitter, Parameter)
+from refnx.reflect import (SLD, ReflectModel, MixedReflectModel,
                            reflectivity)
 from refnx.dataset import ReflectDataset
 
@@ -500,3 +500,15 @@ class TestReflect(object):
 
         assert_allclose(r[0], pp)
         assert_allclose(r[1], mm)
+
+    def test_repr_reflect_model(self):
+        from refnx.reflect import Structure, Slab
+        from refnx.analysis import Interval
+        p = SLD(0.)
+        q = SLD(2.07)
+        s = p(0, 0) | q(0, 3)
+        model = ReflectModel(s, scale=0.99, bkg=1e-8, )
+        r = eval(repr(model))
+
+        x = np.linspace(0.005, 0.3, 1000)
+        assert_equal(r(x), model(x))

@@ -217,3 +217,15 @@ class TestReflectDataset(object):
         # now clear
         self.data.mask = None
         assert_equal(len(self.data), self.data._y.size)
+
+    def test_repr(self):
+        a = Data1D(os.path.join(self.pth, 'c_PLP0033831.txt'))
+        b = eval(repr(a))
+        assert_equal(len(a), 166)
+        assert_equal(len(b), 166)
+
+        # load dataset from XML, via string
+        a = ReflectDataset(os.path.join(self.pth, 'c_PLP0000708.xml'))
+        b = eval(repr(a))
+        assert_equal(len(b), len(a))
+        assert_equal(len(b), len(a))

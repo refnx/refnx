@@ -56,6 +56,16 @@ class TestBounds(object):
         assert_almost_equal(vals, 2 * interval.ub - x)
         assert_equal(interval.valid(1001), 1001)
 
+    def test_repr(self):
+        p = Interval(-5, 5)
+        q = eval(repr(p))
+        assert_equal(q.lb, p.lb)
+        assert_equal(q.ub, p.ub)
+        p = Interval()
+        q = eval(repr(p))
+        assert_equal(q.lb, p.lb)
+        assert_equal(q.ub, p.ub)
+
     def test_pdf(self):
         pdf = PDF(norm)
 
