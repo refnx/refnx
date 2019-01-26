@@ -75,6 +75,10 @@ class TestStructure(object):
         assert_equal(float(t.sld.imag), 1)
         assert_equal(float(q.vfsolv), 0.1)
 
+        t.name = 'pop'
+        q = eval(repr(t))
+        assert(t.name == q.name)
+
     def test_repr_structure(self):
         p = SLD(5 + 1j)
         t = p(10.5, 3.)
@@ -85,6 +89,10 @@ class TestStructure(object):
         assert_equal(float(q[0].thick), 10.5)
         assert_equal(float(q[1].sld.real), 5)
         assert_equal(float(q[1].sld.imag), 1)
+
+        s.name = 'pop'
+        q = eval(repr(s))
+        assert(s.name == q.name)
 
     def test_sld(self):
         p = SLD(5 + 1j, name='pop')

@@ -81,13 +81,7 @@ class Parameters(UserList):
             self.data[i] = v
 
     def __repr__(self):
-        s = 'Parameters(name={name}, data={data})'
-        d = {'name': self.name,
-             'data': self.data}
-
-        if self.name is not None:
-            d['name'] = "'{0}'".format(self.name)
-        return s.format(**d)
+        return f"Parameters({self.name!r}, data={self.data!r})"
 
     def __str__(self):
         s = list()
@@ -228,8 +222,6 @@ class BaseParameter(object):
     __le__ = MAKE_BINARY(operator.le)
     __ge__ = MAKE_BINARY(operator.ge)
     __gt__ = MAKE_BINARY(operator.gt)
-    __eq__ = MAKE_BINARY(operator.eq)
-    __ne__ = MAKE_BINARY(operator.ne)
     __neg__ = MAKE_UNARY(operator.neg)
 
     def __init__(self):
@@ -342,21 +334,10 @@ class BaseParameter(object):
     def __repr__(self):
         # repr does not include stderr because that can't be used to
         # create a Parameter
-        s = ("Parameter(value={value:g}, name={name}, vary={vary},"
-             " bounds={bounds}, constraint={constraint})")
-
-        d = {'name': repr(self.name),
-             'value': self.value,
-             'vary': self.vary,
-             'bounds': repr(self.bounds),
-             'constraint': None}
-
-        if self.name is not None:
-            d['name'] = "'%s'" % self.name
-
-        if self.constraint is not None:
-            d['constraint'] = repr(self.constraint)
-        return s.format(**d)
+        return (f"{self.__class__.__name__}(value={float(self)},"
+                f" name={self.name!r}, vary={self.vary!r},"
+                f" bounds={self.bounds!r},"
+                f" constraint={self.constraint!r})")
 
 
 class Constant(BaseParameter):
@@ -365,6 +346,9 @@ class Constant(BaseParameter):
         self.name = name
         self.value = value
         self._vary = False
+
+    def __repr__(self):
+        return (f"Constant(value={self.value}, name={self.name!r})")
 
     def _eval(self):
         return self._value
@@ -572,7 +556,7 @@ def _constraint_tree_helper(expr):
     if isinstance(expr, Parameter):
         return expr
     if isinstance(expr, Constant):
-        return expr.value
+        return expr
     if isinstance(expr, _BinaryOp):
         t.append([_constraint_tree_helper(expr.op1),
                   _constraint_tree_helper(expr.op2),
@@ -589,6 +573,10 @@ def constraint_tree(expr):
     this can be fed into build_constraint_from_tree to
     reconstitute a constraint
     """
+    if isinstance(expr, Parameter):
+        return [expr]
+    if isinstance(expr, Constant):
+        return [expr]
     return list(flatten(_constraint_tree_helper(expr)))
 
 

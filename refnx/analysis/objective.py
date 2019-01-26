@@ -242,18 +242,12 @@ class Objective(BaseObjective):
         return '\n'.join(s)
 
     def __repr__(self):
-        s = ("Objective({model}, {data}, lnsigma={lnsigma},"
-             " use_weights={use_weights}, transform={transform},"
-             " logp_extra={logp_extra}, name={name})")
-        d = {'name': self.name,
-             'model': repr(self.model),
-             'data': repr(self.data),
-             'use_weights': self.__use_weights,
-             'transform': repr(self.transform),
-             'logp_extra': repr(self.logp_extra),
-             'lnsigma': repr(self.lnsigma)}
-
-        return s.format(**d)
+        return (f"Objective({self.model!r}, {self.data!r},"
+                f" lnsigma={self.lnsigma!r},"
+                f" use_weights={self.__use_weights},"
+                f" transform={self.transform},"
+                f" logp_extra={self.logp_extra!r},"
+                f" name={self.name})")
 
     @property
     def weighted(self):

@@ -50,3 +50,8 @@ class TestCodeFragment(object):
 
         exec(repr(objective))
         exec(code_fragment(objective))
+
+        # artificially link the two thicknesses together
+        self.structure361[2].thick.constraint = 2 * self.structure361[1].thick
+        fragment = code_fragment(objective)
+        exec(fragment)

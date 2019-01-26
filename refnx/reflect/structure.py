@@ -115,18 +115,11 @@ class Structure(UserList):
         return '\n'.join(s)
 
     def __repr__(self):
-        s = ("Structure(name={name}, components={components},"
-             " solvent={solvent}, reverse_structure={reverse},"
-             " contract={contract})")
-
-        d = {'name': "''",
-             'components': repr(self.data),
-             'solvent': repr(self.solvent),
-             'reverse': self.reverse_structure,
-             'contract': self.contract}
-        if self.name:
-            d['name'] = "'{0}'".format(self.name)
-        return s.format(**d)
+        return (f"Structure(name={self.name!r},"
+                f" components={self.components!r},"
+                f" solvent={self.solvent!r},"
+                f" reverse_structure={self.reverse_structure},"
+                f" contract={self.contract})")
 
     def append(self, item):
         """
@@ -440,13 +433,7 @@ class SLD(object):
         self._parameters.extend([self.real, self.imag])
 
     def __repr__(self):
-        s = 'SLD([{real}, {imag}], name={name})'
-        d = {'real': repr(self.real), 'imag': repr(self.imag),
-             'name': "''"}
-
-        if self.name:
-            d['name'] = "'{0}'".format(self.name)
-        return s.format(**d)
+        return f"SLD([{self.real!r}, {self.imag!r}], name={self.name!r})"
 
     def __str__(self):
         sld = complex(self.real.value, self.imag.value)
@@ -591,13 +578,8 @@ class Slab(Component):
         self._parameters = p
 
     def __repr__(self):
-        s = 'Slab({thick}, {sld}, {rough}, name={name},vfsolv={vfsolv})'
-        d = {'thick': repr(self.thick), 'sld': repr(self.sld),
-             'rough': repr(self.rough),
-             'vfsolv': repr(self.vfsolv), 'name': "''"}
-        if self.name:
-            d['name'] = "'{0}'".format(self.name)
-        return s.format(**d)
+        return (f"Slab({self.thick!r}, {self.sld!r}, {self.rough!r},"
+                f" name={self.name!r}, vfsolv={self.vfsolv!r})")
 
     def __str__(self):
         # sld = repr(self.sld)
