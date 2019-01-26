@@ -16,10 +16,11 @@ def code_fragment(objective):
     code.append('import numpy as np')
     code.append('from numpy import array')
 
-    code.append("from refnx.analysis import Objective, GlobalObjective")
+    code.append("from refnx.analysis import Objective, GlobalObjective,"
+                " Transform")
     code.append("from refnx.analysis import Parameter, Parameters, Interval")
     code.append("from refnx.analysis.parameter import Constant,"
-                " build_constraint_from_tree")
+                " build_constraint_from_tree, _BinaryOp, _UnaryOp")
     code.append("from refnx.dataset import ReflectDataset")
 
     code.append('from refnx.reflect import Slab, SLD, Structure')
@@ -27,6 +28,7 @@ def code_fragment(objective):
     code.append('from refnx._lib import flatten')
 
     code.append('import refnx')
+    code.append(f"# Script created by refnx version: {refnx.version.version}")
     code.append('print(refnx.version.version)')
 
     if isinstance(objective, GlobalObjective):

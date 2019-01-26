@@ -247,7 +247,7 @@ class Objective(BaseObjective):
                 f" use_weights={self.__use_weights},"
                 f" transform={self.transform},"
                 f" logp_extra={self.logp_extra!r},"
-                f" name={self.name})")
+                f" name={self.name!r})")
 
     @property
     def weighted(self):

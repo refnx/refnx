@@ -562,6 +562,7 @@
     </property>
     <addaction name="actionSave_Model"/>
     <addaction name="actionLoad_Model"/>
+    <addaction name="actionExport_Code_Fragment"/>
     <addaction name="separator"/>
     <addaction name="actionTake_Snapshot"/>
     <addaction name="separator"/>
@@ -1278,6 +1279,14 @@ errors?</string>
   <action name="actionL_BFGS_B">
    <property name="text">
     <string>L-BFGS-B</string>
+   </property>
+  </action>
+  <action name="actionExport_Code_Fragment">
+   <property name="text">
+    <string>Export Code Fragment</string>
+   </property>
+   <property name="toolTip">
+    <string>Create a code fragment for fitting this model in an interpreter</string>
    </property>
   </action>
  </widget>

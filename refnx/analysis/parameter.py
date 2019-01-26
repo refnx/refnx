@@ -331,14 +331,6 @@ class BaseParameter(object):
             d['constraint'] = repr(self.constraint)
         return s.format(**d)
 
-    def __repr__(self):
-        # repr does not include stderr because that can't be used to
-        # create a Parameter
-        return (f"{self.__class__.__name__}(value={float(self)},"
-                f" name={self.name!r}, vary={self.vary!r},"
-                f" bounds={self.bounds!r},"
-                f" constraint={self.constraint!r})")
-
 
 class Constant(BaseParameter):
     def __init__(self, value=0., name=None):
@@ -408,6 +400,14 @@ class Parameter(BaseParameter):
 
         self._constraint = None
         self.constraint = constraint
+
+    def __repr__(self):
+        # repr does not include stderr because that can't be used to
+        # create a Parameter
+        return (f"{self.__class__.__name__}(value={float(self)},"
+                f" name={self.name!r}, vary={self.vary!r},"
+                f" bounds={self.bounds!r},"
+                f" constraint={self.constraint!r})")
 
     def logp(self, pval=None):
         """

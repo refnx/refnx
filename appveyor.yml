@@ -32,6 +32,7 @@ platform:
     - x64
 
 init:
+    - "ECHO %PYTHON_VERSION% %CONDA_INSTALL_LOCN%"
     - "ECHO %PYTHON% %PYTHON_VERSION% %PYTHON_ARCH%"
     - "ECHO \"%APPVEYOR_SCHEDULED_BUILD%\""
     # cancel build if newer one is submitted; complicated
@@ -44,6 +45,8 @@ init:
         }
 
 install:
+    - "set PATH=%CONDA_INSTALL_LOCN%;%CONDA_INSTALL_LOCN%\\Scripts;%PATH%"
+
     # Set the CONDA_NPY, although it has no impact on the actual build. We need this because of a test within conda-build.
     - cmd: set CONDA_NPY=19
 
@@ -51,20 +54,22 @@ install:
     - cmd: rmdir C:\cygwin /s /q
 
     # Add path, activate `conda` and update conda.
-    - cmd: call %CONDA_INSTALL_LOCN%\Scripts\activate.bat
+    - conda config --set always_yes yes --set changeps1 no
+#    - cmd: call %CONDA_INSTALL_LOCN%\Scripts\activate.bat
     - cmd: set PYTHONUNBUFFERED=1
 
     # Add our channels.
-    - cmd: conda.exe config --set show_channel_urls true
-    - cmd: conda.exe update --yes --quiet conda
+    - conda config --set show_channel_urls true
+    - conda update --yes --quiet conda
 
     # create conda environment
-    - cmd: call conda.exe create --yes -n test python=%PYTHON_VERSION%
-    - cmd: call %CONDA_INSTALL_LOCN%\Scripts\activate.bat test
-    - cmd: call conda.exe info --envs
+    - conda create --yes -n test python=%PYTHON_VERSION%
+    - conda info --envs
 
     # Configure the VM.
-    - cmd: call conda.exe install --yes --quiet numpy scipy h5py cython traitlets ipywidgets xlrd pandas pytest
+    - activate test
+    - conda install --yes --quiet numpy scipy h5py cython traitlets ipywidgets xlrd pandas pytest
+#    - cmd: call conda.exe install --yes --quiet numpy scipy h5py cython traitlets ipywidgets xlrd pandas pytest
     - pip install corner uncertainties matplotlib IPython
     - pip install git+https://github.com/pymc-devs/pymc3
 
