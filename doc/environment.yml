@@ -6,7 +6,7 @@ dependencies:
   - pandoc
   - nbconvert
   - ipywidgets
-  - numpy
+  - numpy==1.15.2
   - cython
   - jupyter
   - scipy
