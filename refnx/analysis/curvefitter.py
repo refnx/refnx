@@ -127,13 +127,10 @@ class CurveFitter(object):
         # attempt to get a minimum repr for a CurveFitter. However,
         # it has so much state when the sampling has been done, that
         # will be ignored.
-        s = ("CurveFitter({objective}, nwalkers={nwalkers}, "
-             "ntemps={ntemps}, {kwds})")
-        d = {'objective': repr(self.objective),
-             'nwalkers': self._nwalkers,
-             'ntemps': self._ntemps,
-             'kwds': repr(self.mcmc_kws)}
-        return s.format(**d)
+        return (f"CurveFitter({self.objective!r},"
+                f" nwalkers={self._nwalkers},"
+                f" ntemps={self._ntemps},"
+                f" {self.mcmc_kws!r})")
 
     def make_sampler(self):
         """

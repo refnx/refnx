@@ -63,6 +63,11 @@ class TestParameter(object):
         assert_allclose(q.bounds.lb, -5)
         assert_allclose(q.bounds.ub, np.inf)
 
+        p = Parameter(value=5, vary=True)
+        q = eval(repr(p))
+        assert_allclose(q.value, p.value)
+        assert_allclose(q.vary, p.vary)
+
     def test_func_attribute(self):
         # a Parameter object should have math function attributes
         a = Parameter(1)
@@ -166,6 +171,27 @@ class TestParameter(object):
 
         a.value = 10
         assert_allclose(new_constraint.value, d.value)
+
+        # inject constraint into parameter
+        e = Parameter(1)
+        e.constraint = new_constraint
+        a.value = 11
+        assert_allclose(e.value, d.value)
+
+        # check that it's possible to build a constraint tree from a single
+        # param
+        tree = constraint_tree(b.constraint)
+        new_constraint = build_constraint_from_tree(tree)
+        e = Parameter(1)
+        e.constraint = new_constraint
+        a.value = 0.1234
+        assert_allclose(e.value, a.value)
+
+        # check that it's possible to build a constraint tree from a single
+        # param
+        e = Parameter(1)
+        e.constraint = 2
+        assert_allclose(e.value, 2)
 
 
 class TestParameters(object):

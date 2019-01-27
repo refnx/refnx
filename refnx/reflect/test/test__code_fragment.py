@@ -1,13 +1,16 @@
 import os.path
+import operator
 
 import numpy as np
 from numpy import array
 from numpy.testing import assert_allclose
 
 from refnx.analysis import Objective, Parameter, Interval
+from refnx.analysis.parameter import build_constraint_from_tree, Constant
 from refnx.reflect._code_fragment import code_fragment
 from refnx.reflect import SLD, ReflectModel, Structure, Slab
 from refnx.dataset import ReflectDataset
+from refnx._lib import flatten
 
 
 class TestCodeFragment(object):
@@ -50,3 +53,14 @@ class TestCodeFragment(object):
 
         exec(repr(objective))
         exec(code_fragment(objective))
+
+        # artificially link the two thicknesses together
+        # check that we can reproduce the objective from the repr
+        self.structure361[2].thick.constraint = self.structure361[1].thick
+        fragment = code_fragment(objective)
+        fragment = fragment + '\nresult = objective_0.chisqr()'
+        d = {}
+        g = {}
+        exec(fragment, g, d)
+
+        assert_allclose(d['result'], objective.chisqr())

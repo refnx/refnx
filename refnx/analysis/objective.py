@@ -229,7 +229,7 @@ class Objective(BaseObjective):
 
         # dataset name
         if self.data.name is None:
-            s.append('Dataset = {0}'.format(repr(self.data)))
+            s.append('Dataset = {0}'.format(self.data))
         else:
             s.append('Dataset = {0}'.format(self.data.name))
 
@@ -237,23 +237,17 @@ class Objective(BaseObjective):
         s.append('chi2 = {0}'.format(self.chisqr()))
         s.append('Weighted = {0}'.format(self.weighted))
         s.append('Transform = {0}'.format(self.transform))
-        s.append(repr(self.parameters))
+        s.append(str(self.parameters))
 
         return '\n'.join(s)
 
     def __repr__(self):
-        s = ("Objective({model}, {data}, lnsigma={lnsigma},"
-             " use_weights={use_weights}, transform={transform},"
-             " logp_extra={logp_extra}, name={name})")
-        d = {'name': self.name,
-             'model': repr(self.model),
-             'data': repr(self.data),
-             'use_weights': self.__use_weights,
-             'transform': repr(self.transform),
-             'logp_extra': repr(self.logp_extra),
-             'lnsigma': repr(self.lnsigma)}
-
-        return s.format(**d)
+        return (f"Objective({self.model!r}, {self.data!r},"
+                f" lnsigma={self.lnsigma!r},"
+                f" use_weights={self.__use_weights},"
+                f" transform={self.transform},"
+                f" logp_extra={self.logp_extra!r},"
+                f" name={self.name!r})")
 
     @property
     def weighted(self):

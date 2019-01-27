@@ -104,7 +104,7 @@ class PDF(Bounds):
                              " logpdf and rvs methods")
 
     def __repr__(self):
-        return "PDF({0})".format(repr(self.rv))
+        return f"PDF({self.rv!r})"
 
     def logp(self, val):
         """
@@ -235,8 +235,7 @@ class Interval(Bounds):
             lb = '-np.inf'
         if np.isinf(self.ub):
             ub = 'np.inf'
-
-        return 'Interval(lb={0}, ub={1})'.format(lb, ub)
+        return f"Interval(lb={lb}, ub={ub})"
 
     def __str__(self):
         return '[{0}, {1}]'.format(self.lb, self.ub)

@@ -6,6 +6,8 @@ import pickle
 from multiprocessing.reduction import ForkingPickler
 import os
 
+import pytest
+
 import numpy as np
 from numpy.linalg import LinAlgError
 from scipy.optimize import minimize, least_squares
@@ -415,6 +417,7 @@ class TestObjective(object):
         with raises(LinAlgError):
             objective.covar()
 
+    @pytest.mark.xfail
     def test_pymc3(self):
         # test objective logl against pymc3
 

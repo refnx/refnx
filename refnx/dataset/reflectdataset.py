@@ -11,6 +11,7 @@ import os.path
 from refnx.dataset import Data1D
 from refnx._lib import possibly_open_file
 
+import numpy as np
 
 _template_ref_xml = """<?xml version="1.0"?>
 <REFroot xmlns="">
@@ -66,11 +67,16 @@ class ReflectDataset(Data1D):
         self.sld_profile = None
 
     def __repr__(self):
-        s = ("ReflectDataset(data={0}, mask={1})")
+        msk = self._mask
+        if np.all(self._mask):
+            msk = None
+
         if self.filename is not None:
-            return s.format(repr(self.filename), repr(self._mask))
+            return (f"ReflectDataset(data={self.filename!r},"
+                    f" mask={msk!r})")
         else:
-            return s.format(repr(self.data), repr(self._mask))
+            return (f"ReflectDataset(data={self.data!r},"
+                    f" mask={msk!r})")
 
     def save_xml(self, f, start_time=0):
         """

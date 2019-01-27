@@ -31,7 +31,8 @@ from .treeview_gui_model import (TreeModel, Node, DatasetNode, DataObjectNode,
 import refnx
 from refnx.analysis import (CurveFitter, Objective,
                             Transform, GlobalObjective)
-from refnx.reflect import SLD, Slab, ReflectModel
+from refnx.reflect import SLD, ReflectModel
+from refnx.reflect._code_fragment import code_fragment
 from refnx._lib import unique, flatten
 
 
@@ -185,6 +186,10 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         state['history'] = self.ui.console_text_edit.toPlainText()
         state['settings'] = self.settings
 
+        widget = self.ui.currently_fitting
+        state['currently_fitting'] = [widget.item(i).text() for i in
+                                      range(widget.count())]
+
         with open(os.path.join(experiment_file_name), 'wb') as f:
             pickle.dump(state, f, 0)
 
@@ -226,6 +231,12 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
             self.ui.console_text_edit.setPlainText(state['history'])
             self.settings = state['settings']
             self.settings.experiment_file_name = experiment_file_name
+
+            widget = self.ui.currently_fitting
+            for i in reversed(range(widget.count())):
+                widget.takeItem(i)
+            for name in state['currently_fitting']:
+                widget.addItem(name)
 
         except KeyError as e:
             print(type(e), e.message)
@@ -273,7 +284,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
             params[key] = self.settings[key]
 
     @QtCore.pyqtSlot()
-    def on_actionOpen_File_triggered(self):
+    def on_actionLoad_File_triggered(self):
         experimentFileName, ok = QtWidgets.QFileDialog.getOpenFileName(
             self,
             caption='Select Experiment File',
@@ -484,6 +495,32 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
             data_object = datastore[which_model]
             with open(modelFileName, 'wb') as f:
                 pickle.dump(data_object.model, f)
+
+    @QtCore.pyqtSlot()
+    def on_actionExport_Code_Fragment_triggered(self):
+        widget = self.ui.currently_fitting
+        rows = widget.count()
+        names_to_fit = [widget.item(i).text() for i in range(rows)]
+
+        if not names_to_fit:
+            return
+
+        # retrieve data_objects
+        datastore = self.treeModel.datastore
+        data_objects = [datastore[name] for name in names_to_fit]
+
+        objective = self.create_objective(data_objects)
+        code = code_fragment(objective)
+
+        suggested_name = os.path.join(os.getcwd(), 'code.py')
+        modelFileName, ok = QtWidgets.QFileDialog.getSaveFileName(
+            self,
+            'Save code fragment as:',
+            suggested_name)
+        if not ok:
+            return
+        with open(suggested_name, 'w') as f:
+            f.write(code)
 
     @QtCore.pyqtSlot()
     def on_actionDifferential_Evolution_triggered(self):
@@ -876,10 +913,8 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         data_objects = [datastore[name] for name in names_to_fit]
         self.do_a_fit_and_add_to_gui(data_objects)
 
-    def do_a_fit_and_add_to_gui(self, data_objects):
+    def create_objective(self, data_objects):
         # performs a global fit to the list of data_objects
-        alg = self.settings.fitting_algorithm
-
         t = Transform(self.settings.transformdata)
         useerrors = self.settings.useerrors
 
@@ -898,6 +933,13 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
             objective = objectives[0]
         else:
             objective = GlobalObjective(objectives)
+
+        return objective
+
+    def do_a_fit_and_add_to_gui(self, data_objects):
+        objective = self.create_objective(data_objects)
+
+        alg = self.settings.fitting_algorithm
 
         # figure out how many varying parameters
         vp = objective.varying_parameters()
@@ -918,7 +960,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
             try:
                 fitter.fit(method=methods[alg],
                            callback=progress.callback)
-                print(objective)
+                print(str(objective))
             except RuntimeError as e:
                 # user probably aborted the fit
                 # but it's still worth creating a fit curve, so don't return
@@ -1159,6 +1201,9 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
             new_model = deepcopy(source_model)
             new_model.name = don.data_object.name
             don.set_reflect_model(new_model)
+
+        do = [node.data_object for node in data_object_nodes]
+        self.update_gui_model(do)
 
     def modify_gui(self):
         """

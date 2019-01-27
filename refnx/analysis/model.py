@@ -50,13 +50,8 @@ class Model(object):
             self.fcn_kwds = fcn_kwds
 
     def __repr__(self):
-        s = ("Model({parameters}, fitfunc={fitfunc}, fcn_args={fcn_args},"
-             " fcn_kwds={})")
-        d = {'parameters': repr(self._parameters),
-             'fitfunc': repr(self._fitfunc),
-             'fcn_args': repr(self.fcn_args),
-             'fcn_kwds': repr(self.fcn_kwds)}
-        return s.format(**d)
+        return (f"Model({self.parameters!r}, fitfunc={self._fitfunc!r},"
+                f" fcn_args={self.fcn_args!r}, fcn_kwds={self.fcn_kwds!r})")
 
     def __call__(self, x, p=None, x_err=None):
         """
