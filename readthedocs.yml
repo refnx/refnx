@@ -2,4 +2,5 @@ conda:
   file: doc/environment.yml
 
 python:
-   pip_install: true
+#   pip_install: true
+   setup_py_install: true
