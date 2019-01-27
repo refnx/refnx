@@ -1,1 +1,0 @@
-c:\Python27\Scripts\cxfreeze qt\motofit.py --target-dir dist --base-name Win32GUI --include-modules atexit,PySide.QtNetwork,scipy.special._ufuncs,scipy.integrate,scipy.integrate.vode,scipy.special._ufuncs_cxx,scipy.integrate.lsoda,scipy.sparse.csgraph._validation,scipy.sparse.linalg.dsolve.umfpack
