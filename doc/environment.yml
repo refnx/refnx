@@ -6,7 +6,7 @@ dependencies:
   - pandoc
   - nbconvert
   - ipywidgets
-  - numpy==1.15.2
+#  - numpy==1.15.2
   - cython
   - jupyter
   - scipy
@@ -21,4 +21,4 @@ dependencies:
     - jupyter-sphinx
     - sphinx_rtd_theme
     - tqdm
-    - six
+    - corner
