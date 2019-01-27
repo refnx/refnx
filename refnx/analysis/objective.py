@@ -229,7 +229,7 @@ class Objective(BaseObjective):
 
         # dataset name
         if self.data.name is None:
-            s.append('Dataset = {0}'.format(repr(self.data)))
+            s.append('Dataset = {0}'.format(self.data))
         else:
             s.append('Dataset = {0}'.format(self.data.name))
 
@@ -237,7 +237,7 @@ class Objective(BaseObjective):
         s.append('chi2 = {0}'.format(self.chisqr()))
         s.append('Weighted = {0}'.format(self.weighted))
         s.append('Transform = {0}'.format(self.transform))
-        s.append(repr(self.parameters))
+        s.append(str(self.parameters))
 
         return '\n'.join(s)
 

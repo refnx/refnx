@@ -960,7 +960,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
             try:
                 fitter.fit(method=methods[alg],
                            callback=progress.callback)
-                print(objective)
+                print(str(objective))
             except RuntimeError as e:
                 # user probably aborted the fit
                 # but it's still worth creating a fit curve, so don't return
@@ -1201,6 +1201,9 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
             new_model = deepcopy(source_model)
             new_model.name = don.data_object.name
             don.set_reflect_model(new_model)
+
+        do = [node.data_object for node in data_object_nodes]
+        self.update_gui_model(do)
 
     def modify_gui(self):
         """
