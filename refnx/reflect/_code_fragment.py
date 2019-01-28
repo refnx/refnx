@@ -92,7 +92,7 @@ def _calculate_constraints(i, objective):
             if v in operators:
                 con_tree[j] = operators[v]
             elif v in all_pars:
-                con_tree[j] = f'parameters[{all_pars.index(v)}]'
+                con_tree[j] = 'parameters[{}]'.format(all_pars.index(v))
             else:
                 con_tree[j] = repr(v)
         s = ', '.join(con_tree)
