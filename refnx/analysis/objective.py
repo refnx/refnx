@@ -216,7 +216,7 @@ class Objective(BaseObjective):
         if lnsigma is not None:
             self.lnsigma = possibly_create_parameter(lnsigma, 'lnsigma')
 
-        self.__use_weights = use_weights
+        self._use_weights = use_weights
         self.transform = transform
         self.logp_extra = logp_extra
         self.name = name
@@ -242,12 +242,12 @@ class Objective(BaseObjective):
         return '\n'.join(s)
 
     def __repr__(self):
-        return (f"Objective({self.model!r}, {self.data!r},"
-                f" lnsigma={self.lnsigma!r},"
-                f" use_weights={self.__use_weights},"
-                f" transform={self.transform},"
-                f" logp_extra={self.logp_extra!r},"
-                f" name={self.name!r})")
+        return ("Objective({model!r}, {data!r},"
+                " lnsigma={lnsigma!r},"
+                " use_weights={_use_weights},"
+                " transform={transform!r},"
+                " logp_extra={logp_extra!r},"
+                " name={name!r})".format(**self.__dict__))
 
     @property
     def weighted(self):
@@ -256,11 +256,11 @@ class Objective(BaseObjective):
         objective using them?
 
         """
-        return self.data.weighted and self.__use_weights
+        return self.data.weighted and self._use_weights
 
     @weighted.setter
     def weighted(self, use_weights):
-        self.__use_weights = bool(use_weights)
+        self._use_weights = bool(use_weights)
 
     @property
     def npoints(self):

@@ -115,11 +115,11 @@ class Structure(UserList):
         return '\n'.join(s)
 
     def __repr__(self):
-        return (f"Structure(name={self.name!r},"
-                f" components={self.components!r},"
-                f" solvent={self.solvent!r},"
-                f" reverse_structure={self.reverse_structure},"
-                f" contract={self.contract})")
+        return ("Structure(name={_name!r},"
+                " components={data!r},"
+                " solvent={solvent!r},"
+                " reverse_structure={_reverse_structure},"
+                " contract={contract})".format(**self.__dict__))
 
     def append(self, item):
         """
@@ -415,7 +415,8 @@ class SLD(object):
         self._parameters.extend([self.real, self.imag])
 
     def __repr__(self):
-        return f"SLD([{self.real!r}, {self.imag!r}], name={self.name!r})"
+        return ("SLD([{real!r}, {imag!r}],"
+                " name={name!r})".format(**self.__dict__))
 
     def __str__(self):
         sld = complex(self.real.value, self.imag.value)
@@ -560,8 +561,8 @@ class Slab(Component):
         self._parameters = p
 
     def __repr__(self):
-        return (f"Slab({self.thick!r}, {self.sld!r}, {self.rough!r},"
-                f" name={self.name!r}, vfsolv={self.vfsolv!r})")
+        return ("Slab({thick!r}, {sld!r}, {rough!r},"
+                " name={name!r}, vfsolv={vfsolv!r})".format(**self.__dict__))
 
     def __str__(self):
         # sld = repr(self.sld)

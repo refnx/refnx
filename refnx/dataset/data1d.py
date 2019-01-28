@@ -101,12 +101,14 @@ class Data1D(object):
         if np.all(self._mask):
             msk = None
 
+        d = {'filename': self.filename, 'msk': msk,
+             'data': self.data}
         if self.filename is not None:
-            return (f"Data1D(data={self.filename!r},"
-                    f" mask={msk!r})")
+            return ("Data1D(data={filename!r},"
+                    " mask={msk!r})".format(**d))
         else:
-            return (f"Data1D(data={self.data!r},"
-                    f" mask={msk!r})")
+            return ("Data1D(data={data!r},"
+                    " mask={msk!r})".format(**d))
 
     @property
     def x(self):

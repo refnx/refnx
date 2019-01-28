@@ -28,7 +28,8 @@ def code_fragment(objective):
     code.append('from refnx._lib import flatten')
 
     code.append('import refnx')
-    code.append(f"# Script created by refnx version: {refnx.version.version}")
+    code.append("# Script created by refnx"
+                " version: {}".format(refnx.version.version))
     code.append('print(refnx.version.version)')
 
     if isinstance(objective, GlobalObjective):
@@ -82,8 +83,8 @@ def _calculate_constraints(i, objective):
     # now get parameters with constraints
     con_pars = [par for par in non_var_pars if par.constraint is not None]
 
-    constrain_strings = [f"parameters = list(flatten("
-                         f"objective_{i}.parameters))"]
+    constrain_strings = ["parameters = list(flatten("
+                         "objective_{}.parameters))".format(i)]
     for con_par in con_pars:
         idx = all_pars.index(con_par)
         con_tree = constraint_tree(con_par.constraint)
@@ -95,8 +96,8 @@ def _calculate_constraints(i, objective):
             else:
                 con_tree[j] = repr(v)
         s = ', '.join(con_tree)
-        constraint = f"build_constraint_from_tree([" + s + "])"
-        item = f"parameters[{idx}].constraint = {constraint}"
+        constraint = "build_constraint_from_tree([" + s + "])"
+        item = "parameters[{}].constraint = {}".format(idx, constraint)
 
         constrain_strings.append(item)
 

@@ -145,7 +145,7 @@ info = {
         'packages': packages,
         'include_package_data': True,
         'setup_requires': ['numpy'],
-        'python_requires': '>=3.6',
+        'python_requires': '>=3.5',
         'install_requires': ['numpy', 'scipy'],
         'extras_require': {'all': ['IPython', 'ipywidgets', 'traitlets',
                                    'matplotlib', 'xlrd', 'h5py', 'tqdm',
