@@ -44,6 +44,13 @@ def process_event_stream(events, frames, t_bins, y_bins, x_bins):
     events. Thus, if
     frames = [[-2, -1, 0, 1, 2, 3]], and the maximum frame number is 2, then
     only the 0, 1, 2 frames are included.
+
+    Examples
+    ---------
+    >>> from refnx.reduce.event import process_event_stream, events
+    >>> d = process_event_stream(e, [np.linspace(0, 2308585, 2308586)],
+    ...     [0, 40000], np.linspace(110.5, -110.5, 222),
+    ...     np.linspace(210.5, -210.5, 422))
     """
     max_frame = max(events[0])
 
