@@ -81,7 +81,7 @@ class Parameters(UserList):
             self.data[i] = v
 
     def __repr__(self):
-        return f"Parameters({self.name!r}, data={self.data!r})"
+        return "Parameters({name!r}, data={data!r})".format(**self.__dict__)
 
     def __str__(self):
         s = list()
@@ -340,7 +340,7 @@ class Constant(BaseParameter):
         self._vary = False
 
     def __repr__(self):
-        return (f"Constant(value={self.value}, name={self.name!r})")
+        return "Constant(value={value}, name={name!r})".format(**self.__dict__)
 
     def _eval(self):
         return self._value
@@ -404,10 +404,13 @@ class Parameter(BaseParameter):
     def __repr__(self):
         # repr does not include stderr because that can't be used to
         # create a Parameter
-        return (f"{self.__class__.__name__}(value={float(self)},"
-                f" name={self.name!r}, vary={self.vary!r},"
-                f" bounds={self.bounds!r},"
-                f" constraint={self.constraint!r})")
+        d = {'kls': self.__class__.__name__, 'value': float(self.value),
+             'name': self.name, 'vary': self.vary, 'bounds': self._bounds,
+             'constraint': self._constraint}
+        return ("{kls}(value={value},"
+                " name={name!r}, vary={vary!r},"
+                " bounds={bounds!r},"
+                " constraint={constraint!r})".format(**d))
 
     def logp(self, pval=None):
         """

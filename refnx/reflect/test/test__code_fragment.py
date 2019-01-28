@@ -5,7 +5,7 @@ import numpy as np
 from numpy import array
 from numpy.testing import assert_allclose
 
-from refnx.analysis import Objective, Parameter, Interval
+from refnx.analysis import Objective, Parameter, Interval, Transform
 from refnx.analysis.parameter import build_constraint_from_tree, Constant
 from refnx.reflect._code_fragment import code_fragment
 from refnx.reflect import SLD, ReflectModel, Structure, Slab
@@ -47,7 +47,7 @@ class TestCodeFragment(object):
         self.structure361[2].sld.real.vary = True
         self.structure361[2].sld.real.range(0.2, 1.5)
 
-        objective = Objective(self.model361, e361)
+        objective = Objective(self.model361, e361, transform=Transform('logY'))
         objective2 = eval(repr(objective))
         assert_allclose(objective2.chisqr(), objective.chisqr())
 
