@@ -218,6 +218,15 @@ class TestCurveFitter(object):
         res1 = self.mcfitter.fit(method='least_squares')
         assert_almost_equal(res1.x, [self.b_ls, self.m_ls], 6)
 
+        def callback(xk):
+            return
+
+        # least_squares doesn't accept a callback. As well as testing that
+        # least_squares works, it checks that providing a callback doesn't
+        # trip the fitter up.
+        res1 = self.mcfitter.fit(method='least_squares', callback=callback)
+        assert_almost_equal(res1.x, [self.b_ls, self.m_ls], 6)
+
         # need full bounds for differential_evolution
         self.p[0].range(3, 7)
         self.p[1].range(-2, 0)

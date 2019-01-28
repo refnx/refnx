@@ -805,12 +805,12 @@ class GlobalObjective(Objective):
         s = ["{:_>80}".format('\n')]
         s.append('--Global Objective--')
         for obj in self.objectives:
-            s.append(repr(obj))
+            s.append(str(obj))
             s.append('\n')
         return '\n'.join(s)
 
     def __repr__(self):
-        return "GlobalObjective({0})".format(repr(self.objectives))
+        return "GlobalObjective({0})".format(repr(str.objectives))
 
     @property
     def weighted(self):

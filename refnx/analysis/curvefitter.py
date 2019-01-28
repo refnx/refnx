@@ -577,6 +577,11 @@ class CurveFitter(object):
         if method == 'least_squares':
             b = np.array(_bounds)
             _min_kws['bounds'] = (b[..., 0], b[..., 1])
+
+            # least_squares doesn't have a callback
+            if 'callback' in _min_kws:
+                _min_kws.pop('callback')
+
             res = least_squares(self.objective.residuals,
                                 init_pars,
                                 **_min_kws)
