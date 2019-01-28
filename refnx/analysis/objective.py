@@ -810,7 +810,7 @@ class GlobalObjective(Objective):
         return '\n'.join(s)
 
     def __repr__(self):
-        return "GlobalObjective({0})".format(repr(str.objectives))
+        return "GlobalObjective({0})".format(repr(self.objectives))
 
     @property
     def weighted(self):
