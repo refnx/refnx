@@ -192,25 +192,8 @@ class Structure(UserList):
 
         # could possibly speed up by allocating a larger array, filling,
         # then trimming
-        growth_size = 100
-        slabs = np.zeros((growth_size, 5))
-        i = 0
-        for component in self.components:
-            additional_slabs = component.slabs
-            if additional_slabs is None:
-                continue
-
-            new_slabs = len(additional_slabs)
-
-            if new_slabs > len(slabs) - i:
-                new_rows = len(slabs) + max(growth_size, new_slabs)
-                slabs = np.resize(slabs, (new_rows, 5))
-                slabs[i:] = 0
-
-            slabs[i:i + new_slabs] = additional_slabs
-            i += new_slabs
-
-        slabs = slabs[:i]
+        slabs = np.concatenate([c.slabs for c in self.components if
+                                c.slabs is not None])
 
         # if the slab representation needs to be reversed.
         if self.reverse_structure:
@@ -254,8 +237,7 @@ class Structure(UserList):
         if isinstance(solvent, SLD):
             solv = complex(solvent.real.value, solvent.imag.value)
 
-        slabs[..., 1] = slabs[..., 1] * (1 - slabs[..., 4])
-        slabs[..., 2] = slabs[..., 2] * (1 - slabs[..., 4])
+        slabs[..., 1:3] *= (1 - slabs[..., 4])[..., np.newaxis]
         slabs[..., 1] += solv.real * slabs[..., 4]
         slabs[..., 2] += solv.imag * slabs[..., 4]
         return slabs
