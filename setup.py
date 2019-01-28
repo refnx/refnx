@@ -32,6 +32,10 @@ ISRELEASED = False
 VERSION = '%d.%d.%d' % (MAJOR, MINOR, MICRO)
 
 
+# are we on windows, darwin, etc?
+platform = sys.platform
+
+
 # Return the git revision as a string
 def git_version():
     def _minimal_ext_cmd(cmd):
@@ -213,6 +217,11 @@ def setup_package():
                                # extra_compile_args = "...".split(),
                                )
             ext_modules.append(_cutil)
+
+            # specify min deployment version for macOS
+            if platform == 'darwin':
+                for mod in ext_modules:
+                    mod.extra_compile_args.append('-mmacosx-version-min=10.9')
 
             info['cmdclass'].update({'build_ext': build_ext})
             info['ext_modules'] = ext_modules
