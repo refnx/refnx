@@ -805,7 +805,7 @@ class GlobalObjective(Objective):
         s = ["{:_>80}".format('\n')]
         s.append('--Global Objective--')
         for obj in self.objectives:
-            s.append(repr(obj))
+            s.append(str(obj))
             s.append('\n')
         return '\n'.join(s)
 

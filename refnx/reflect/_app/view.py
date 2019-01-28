@@ -956,10 +956,15 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
                    'L-BFGS-B': 'L-BFGS-B',
                    'MCMC': 'MCMC'}
 
+        # least squares doesnt have a callback
+        callback = progress.callback
+        if alg == 'LM':
+            callback = None
+
         if methods[alg] != 'MCMC':
             try:
                 fitter.fit(method=methods[alg],
-                           callback=progress.callback)
+                           callback=callback)
                 print(str(objective))
             except RuntimeError as e:
                 # user probably aborted the fit
@@ -994,11 +999,12 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
             for par in var_par_nodes:
                 # for some reason the view doesn't know how to display float64
                 # coerce to a float
-                par.parameter.stderr = float(par.parameter.stderr)
-                parent, row = par.parent(), par.row()
-                idx1 = self.treeModel.index(row, 1, parent.index)
-                idx2 = self.treeModel.index(row, 2, parent.index)
-                self.treeModel.dataChanged.emit(idx1, idx2)
+                if par.parameter.stderr is not None:
+                    par.parameter.stderr = float(par.parameter.stderr)
+                    parent, row = par.parent(), par.row()
+                    idx1 = self.treeModel.index(row, 1, parent.index)
+                    idx2 = self.treeModel.index(row, 2, parent.index)
+                    self.treeModel.dataChanged.emit(idx1, idx2)
 
         # re-enable the GUI updating whilst we change all the values
         self._hold_updating = False
@@ -1401,7 +1407,7 @@ class ProgressCallback(QtWidgets.QDialog):
             self.ui.timer.display(float(self.elapsed))
             self.last_time = new_time
 
-            text = 'Chi2 : %f' % self.objective.chisqr()
+            text = 'Chi2 : %f' % self.objective.chisqr(xk)
             self.ui.values.setPlainText(text)
             QtWidgets.QApplication.processEvents()
             if self.abort_flag:
