@@ -12,7 +12,7 @@ uiloc = (pjoin('..', '..', 'refnx', 'reflect', '_app', 'ui', '*.ui'),
 icons = (pjoin('..', '..', 'refnx', 'reflect', '_app', 'icons', '*.png'),
          pjoin('refnx', 'reflect', '_app', 'icons'))
 licences = (pjoin('..', '..', 'refnx', 'reflect', '_app', 'ui', 'licences', '*'),
-            pjoin('refnx', 'reflect', '_app', 'licences'))
+            pjoin('refnx', 'reflect', '_app', 'ui', 'licences'))
 
 a = Analysis(['motofit.py'],
              pathex=[os.getcwd()],
