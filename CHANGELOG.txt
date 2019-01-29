@@ -24,3 +24,6 @@ Details of changes made to refnx
 - adding a pyqt based GUI (alpha state)
 - improved __repr__ of many classes
 - Start the GUI via a 'refnx' console command, via a setup.py entry_point.
+
+0.1.3
+-----
