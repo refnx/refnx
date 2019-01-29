@@ -1,19 +1,25 @@
 # -*- mode: python ; coding: utf-8 -*-
-import os.path
+from os.path import join as pjoin
+import os
 import sys
+
 block_cipher = None
 
 
+pathex = pjoin('.', '')
+uiloc = (pjoin('..', '..', 'refnx', 'reflect', '_app', 'ui', '*.ui'),
+         pjoin('refnx', 'reflect', '_app', 'ui'))
+icons = (pjoin('..', '..', 'refnx', 'reflect', '_app', 'icons', '*.png'),
+         pjoin('refnx', 'reflect', '_app', 'icons'))
+licences = (pjoin('..', '..', 'refnx', 'reflect', '_app', 'ui', 'licences', '*'),
+            pjoin('refnx', 'reflect', '_app', 'licences'))
 
 a = Analysis(['motofit.py'],
-             pathex=['./'],
+             pathex=[os.getcwd()],
              binaries=[],
-             datas=[('../../refnx/reflect/_app/ui/*.ui',
-                     'refnx/reflect/_app/ui'),
-                    ('../../refnx/reflect/_app/icons/*.png',
-                     'refnx/reflect/_app/icons'),
-                    ('../../refnx/reflect/_app/ui/licences/*',
-                     'refnx/reflect/_app/ui/licences')],
+             datas=[uiloc,
+                    icons,
+                    licences],
              hiddenimports=['periodictable', 'refnx',
                             'refnx.analysis', 'refnx.dataset', 'refnx.reflect',
                             'refnx.reflect._app'],
@@ -23,7 +29,7 @@ a = Analysis(['motofit.py'],
              win_no_prefer_redirects=False,
              win_private_assemblies=False,
              cipher=block_cipher,
-             noarchive=True)
+             noarchive=False)
 pyz = PYZ(a.pure, a.zipped_data,
              cipher=block_cipher)
 
@@ -50,16 +56,17 @@ if sys.platform == 'darwin':
 # windows
 
 elif sys.platform in ['win32', 'cygwin']:
-    axe = EXE(pyz,
-              a.scripts,
-              a.binaries,
-              a.zipfiles,
-              a.datas,
-              name='motofit',
-              debug=False,
-              strip=False,
-              upx=True,
-              console=False , icon='..\\..\\refnx\\reflect\\_app\\icons\\scattering.ico')
+    exe = EXE(pyz,
+      a.scripts,
+      a.binaries,
+      a.zipfiles,
+      a.datas,
+      name='motofit',
+      bootloader_ignore_signals=False,
+      debug=False,
+      strip=False,
+      upx=False,
+      console=False , icon='..\\..\\refnx\\reflect\\_app\\icons\\scattering.ico')
 
 """
 exe = EXE(pyz,
