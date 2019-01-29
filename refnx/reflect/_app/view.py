@@ -224,13 +224,23 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
             print("Couldn't load experiment")
             return
 
+        self.treeModel._data = state[
+            'datastore']
+        self.treeModel.rebuild()
+
+        # remove and add datasetsToGraphs
+        self.reflectivitygraphs.remove_traces()
+        self.sldgraphs.remove_traces()
+        ds = [d for d in self.treeModel.datastore]
+        self.add_data_objects_to_graphs(ds)
+        self.update_gui_model(ds)
+        self.reflectivitygraphs.draw()
+
         try:
-            self.treeModel._data = state[
-                'datastore']
-            self.treeModel.rebuild()
             self.ui.console_text_edit.setPlainText(state['history'])
             self.settings = state['settings']
             self.settings.experiment_file_name = experiment_file_name
+            self.restore_settings()
 
             widget = self.ui.currently_fitting
             for i in reversed(range(widget.count())):
@@ -239,22 +249,8 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
                 widget.addItem(name)
 
         except KeyError as e:
-            print(type(e), e.message)
+            print(repr(e))
             return
-
-        self.restore_settings()
-
-        # remove and add datasetsToGraphs
-        self.reflectivitygraphs.remove_traces()
-        self.sldgraphs.remove_traces()
-        ds = [d for d in self.treeModel.datastore]
-        self.add_data_objects_to_graphs(ds)
-
-        # when you load in the theoretical model you destroy the link to the
-        # gui, reinstate it.
-        self.treeModel.rebuild()
-
-        self.reflectivitygraphs.draw()
 
     def restore_settings(self):
         """

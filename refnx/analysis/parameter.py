@@ -312,7 +312,7 @@ class BaseParameter(object):
 
     def __str__(self):
         """Returns printable representation of a Parameter object."""
-        s = ("<Parameter:{name:^15s}value={value:g}{fixed: ^10}{bounds}"
+        s = ("<Parameter:{name:^15s}, value={value:g}{fixed: ^10}, {bounds}"
              "{constraint}>")
 
         d = {'name': repr(self.name),
@@ -325,10 +325,9 @@ class BaseParameter(object):
         elif self.stderr is not None:
             d['fixed'] = " +/- {0:0.3g}".format(self.stderr)
 
-        d['bounds'] = ", bounds={0}".format(str(self.bounds))
-
+        d['bounds'] = "bounds={0}".format(str(self.bounds))
         if self.constraint is not None:
-            d['constraint'] = repr(self.constraint)
+            d['constraint'] = ', constraint={}'.format(self.constraint)
         return s.format(**d)
 
 
