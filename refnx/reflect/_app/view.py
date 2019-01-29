@@ -707,12 +707,13 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         licences.remove('about')
 
         text = [refnx.version.version]
-        with open(os.path.join(licence_dir, 'about'), 'r') as f:
+        with open(os.path.join(licence_dir, 'about'), 'r',
+                  encoding='utf-8', errors='replace') as f:
             text.append(''.join(f.readlines()))
 
         for licence in licences:
             fname = os.path.join(licence_dir, licence)
-            with open(fname, 'r') as f:
+            with open(fname, 'r', encoding='utf-8', errors='replace') as f:
                 text.append(''.join(f.readlines()))
 
         display_text = '\n_______________________________________\n'.join(text)
