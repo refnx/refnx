@@ -31,7 +31,7 @@ from .treeview_gui_model import (TreeModel, Node, DatasetNode, DataObjectNode,
 import refnx
 from refnx.analysis import (CurveFitter, Objective,
                             Transform, GlobalObjective)
-from refnx.reflect import SLD, ReflectModel
+from refnx.reflect import SLD, ReflectModel, LipidLeaflet, Slab
 from refnx.reflect._code_fragment import code_fragment
 from refnx._lib import unique, flatten
 
@@ -762,16 +762,20 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
             return msg("You can't append a layer after the backing medium,"
                        " select a previous layer")
 
-        # all checking done, append a layer
-        material = SLD(3.47)
-        slab = material(15, 3)
-        slab.name = 'slab'
-        slab.thick.name = 'thick'
-        slab.rough.name = 'rough'
-        slab.sld.real.name = 'sld'
-        slab.sld.imag.name = 'isld'
-        slab.vfsolv.name = 'vfsolv'
-        structure.insert_component(idx + 1, slab)
+        # what type of component shall we add?
+        comp_type = ['Slab', 'LipidLeaflet']
+        which_type, ok = QtWidgets.QInputDialog.getItem(
+            self, "What Component type did you want to add?", "", comp_type,
+            editable=False)
+        if not ok:
+            return
+
+        if which_type == 'Slab':
+            c = _default_slab(parent=self)
+        elif which_type == 'LipidLeaflet':
+            c = _default_leaflet(parent=self)
+
+        structure.insert_component(idx + 1, c)
 
     @QtCore.pyqtSlot()
     def on_remove_layer_clicked(self):
@@ -1760,3 +1764,30 @@ def msg(text):
     msgBox.setText(text)
     msgBox.exec_()
     return
+
+
+def _default_slab(parent=None):
+    # all checking done, append a layer
+    material = SLD(3.47)
+    c = material(15, 3)
+    c.name = 'slab'
+    c.thick.name = 'thick'
+    c.rough.name = 'rough'
+    c.sld.real.name = 'sld'
+    c.sld.imag.name = 'isld'
+    c.vfsolv.name = 'vfsolv'
+    return c
+
+
+def _default_leaflet(parent=None):
+    # TODO dialog to create a default lipid leaflet
+    b_h = 6.01e-4
+    V_h = 319.
+    b_t = -2.92e-4
+    V_t = 782.
+    APM = 60.
+    thick_h = 9.
+    thick_t = 14.
+    leaflet = LipidLeaflet(APM, b_h, V_h, thick_h, b_t, V_t, thick_t, 3, 3,
+                           name='leaflet')
+    return leaflet
