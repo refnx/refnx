@@ -837,19 +837,12 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
                 p = par.parameter
                 val = p.value
                 bounds = p.bounds
-                if not np.isfinite(bounds.ub):
-                    if val < 0:
-                        bounds.ub = 0
-                    else:
-                        bounds.ub = 2 * val
-
-                if not np.isfinite(bounds.lb):
-                    if val < 0:
-                        bounds.lb = 2 * val
-                    else:
-                        bounds.lb = 0
-
-                # TODO: clip parameter?
+                if val < 0:
+                    bounds.ub = 0
+                    bounds.lb = 2 * val
+                else:
+                    bounds.lb = 0
+                    bounds.ub = 2 * val
 
                 parent, row = par.parent(), par.row()
                 idx1 = self.treeModel.index(row, 3, parent.index)
