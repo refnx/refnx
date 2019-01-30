@@ -181,6 +181,55 @@ class ParNode(Node):
         return True
 
 
+class PropertyNode(Node):
+    # an object that displays/edits some attribute of it's parent node
+    # it's not supposed to be a ParNode.
+    def __init__(self, data, model, parent=QtCore.QModelIndex()):
+        super(PropertyNode, self).__init__(data, model, parent)
+        # here self._data is the attribute name
+        self.attribute_type = type(getattr(parent._data, data))
+
+    def flags(self, column):
+        flags = QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled
+        if column in [1]:
+            flags |= QtCore.Qt.ItemIsEditable
+
+        if column == 1 and self.attribute_type is bool:
+            flags |= QtCore.Qt.ItemIsUserCheckable
+
+        return flags
+
+    def data(self, column, role=QtCore.Qt.DisplayRole):
+        d = getattr(self._parent._data, self._data)
+        if (role == QtCore.Qt.CheckStateRole and column == 1 and
+                self.attribute_type is bool):
+            if d:
+                return QtCore.Qt.Checked
+            else:
+                return QtCore.Qt.Unchecked
+
+        if role == QtCore.Qt.DisplayRole and column == 1:
+            return d
+        if role == QtCore.Qt.DisplayRole and column == 0:
+            return self._data
+
+    def setData(self, column, value, role=QtCore.Qt.EditRole):
+        # we want to use a checkbox to say if a parameter is varying
+        if (role == QtCore.Qt.CheckStateRole and column == 1 and
+                self.attribute_type is bool):
+            if value is QtCore.Qt.Checked:
+                setattr(self._parent._data, self._data, True)
+            else:
+                setattr(self._parent._data, self._data, False)
+            return True
+
+        # parse and fill out parameter values/limits
+        if role == QtCore.Qt.EditRole:
+            return False
+
+        return True
+
+
 def component_class(component):
     """
     Give the node type for a given component
@@ -264,6 +313,8 @@ class SlabNode(ComponentNode):
 class LipidLeafletNode(ComponentNode):
     def __init__(self, data, model, parent=QtCore.QModelIndex()):
         super(LipidLeafletNode, self).__init__(data, model, parent)
+        prop_node = PropertyNode('reverse_monolayer', model, parent=self)
+        self.appendChild(prop_node)
 
     def flags(self, column):
         flags = QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled
@@ -272,7 +323,7 @@ class LipidLeafletNode(ComponentNode):
 
         return flags
 
-    def data(self, column, role=QtCore.Qt.EditRole):
+    def data(self, column, role=QtCore.Qt.DisplayRole):
         if role == QtCore.Qt.CheckStateRole:
             return None
 
