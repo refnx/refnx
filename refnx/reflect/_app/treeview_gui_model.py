@@ -1,4 +1,5 @@
 from copy import deepcopy
+import os.path
 
 import numpy as np
 from PyQt5 import QtCore, QtGui, QtWidgets, uic
@@ -7,7 +8,17 @@ from refnx._lib import flatten
 from refnx.dataset import ReflectDataset
 from refnx.reflect._app.dataobject import DataObject
 from refnx.reflect._app.datastore import DataStore
-from refnx.reflect import Slab, LipidLeaflet
+from refnx.reflect import Slab, LipidLeaflet, SLD
+
+
+def component_class(component):
+    """
+    Give the node type for a given component
+    """
+    if isinstance(component, Slab):
+        return SlabNode
+    elif isinstance(component, LipidLeaflet):
+        return LipidLeafletNode
 
 
 class Node(object):
@@ -182,20 +193,22 @@ class ParNode(Node):
 
 
 class PropertyNode(Node):
-    # an object that displays/edits some attribute of it's parent node
-    # it's not supposed to be a ParNode.
-    def __init__(self, data, model, parent=QtCore.QModelIndex()):
+    # an object that displays/edits some attribute of its parent node
+    # it is not a ParNode.
+    def __init__(self, data, model, parent=QtCore.QModelIndex(),
+                 validators=()):
         super(PropertyNode, self).__init__(data, model, parent)
         # here self._data is the attribute name
         self.attribute_type = type(getattr(parent._data, data))
+        self.validators = validators
 
     def flags(self, column):
         flags = QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled
-        if column in [1]:
+        if column == 1:
             flags |= QtCore.Qt.ItemIsEditable
 
-        if column == 1 and self.attribute_type is bool:
-            flags |= QtCore.Qt.ItemIsUserCheckable
+            if self.attribute_type is bool:
+                flags |= QtCore.Qt.ItemIsUserCheckable
 
         return flags
 
@@ -203,6 +216,7 @@ class PropertyNode(Node):
         d = getattr(self._parent._data, self._data)
         if (role == QtCore.Qt.CheckStateRole and column == 1 and
                 self.attribute_type is bool):
+
             if d:
                 return QtCore.Qt.Checked
             else:
@@ -213,31 +227,28 @@ class PropertyNode(Node):
         if role == QtCore.Qt.DisplayRole and column == 0:
             return self._data
 
+    def columnCount(self):
+        return 2
+
     def setData(self, column, value, role=QtCore.Qt.EditRole):
-        # we want to use a checkbox to say if a parameter is varying
         if (role == QtCore.Qt.CheckStateRole and column == 1 and
                 self.attribute_type is bool):
-            if value is QtCore.Qt.Checked:
+
+            if value == QtCore.Qt.Checked:
                 setattr(self._parent._data, self._data, True)
             else:
                 setattr(self._parent._data, self._data, False)
             return True
 
         # parse and fill out parameter values/limits
-        if role == QtCore.Qt.EditRole:
-            return False
+        if role == QtCore.Qt.EditRole and len(self.validators) and column == 1:
+            for validator in self.validators:
+                voutput = validator.validate(value, 1)
+                if voutput[0] == QtGui.QValidator.Acceptable:
+                    setattr(self._parent._data, self._data, voutput[1])
+                    return True
 
-        return True
-
-
-def component_class(component):
-    """
-    Give the node type for a given component
-    """
-    if isinstance(component, Slab):
-        return SlabNode
-    elif isinstance(component, LipidLeaflet):
-        return LipidLeafletNode
+        return False
 
 
 class ComponentNode(Node):
@@ -291,39 +302,6 @@ class SlabNode(ComponentNode):
         return flags
 
     def data(self, column, role=QtCore.Qt.EditRole):
-        if role == QtCore.Qt.CheckStateRole:
-            return None
-
-        if column > 0:
-            return None
-        return self._data.name
-
-    def setData(self, column, value, role=QtCore.Qt.EditRole):
-        if role == QtCore.Qt.CheckStateRole:
-            return False
-
-        if column:
-            return False
-
-        self.component.name = value
-        self._model.dataChanged.emit(self.index, self.index)
-        return True
-
-
-class LipidLeafletNode(ComponentNode):
-    def __init__(self, data, model, parent=QtCore.QModelIndex()):
-        super(LipidLeafletNode, self).__init__(data, model, parent)
-        prop_node = PropertyNode('reverse_monolayer', model, parent=self)
-        self.appendChild(prop_node)
-
-    def flags(self, column):
-        flags = QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled
-        if column == 0:
-            flags |= QtCore.Qt.ItemIsEditable
-
-        return flags
-
-    def data(self, column, role=QtCore.Qt.DisplayRole):
         if role == QtCore.Qt.CheckStateRole:
             return None
 
@@ -784,3 +762,82 @@ def find_data_object(index):
     data_object_node = [i for i in hierarchy if
                         isinstance(i, DataObjectNode)]
     return data_object_node[0]
+
+
+###############################################################################
+class LipidLeafletNode(ComponentNode):
+    def __init__(self, data, model, parent=QtCore.QModelIndex()):
+        super(LipidLeafletNode, self).__init__(data, model, parent)
+
+        prop_node = PropertyNode('reverse_monolayer', model, parent=self)
+        self.appendChild(prop_node)
+
+    def flags(self, column):
+        flags = QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled
+        if column == 0:
+            flags |= QtCore.Qt.ItemIsEditable
+
+        return flags
+
+    def data(self, column, role=QtCore.Qt.DisplayRole):
+        if role == QtCore.Qt.CheckStateRole:
+            return None
+
+        if column > 0:
+            return None
+        return self._data.name
+
+    def setData(self, column, value, role=QtCore.Qt.EditRole):
+        if role == QtCore.Qt.CheckStateRole:
+            return False
+
+        if column:
+            return False
+
+        self.component.name = value
+        self._model.dataChanged.emit(self.index, self.index)
+        return True
+
+
+class LipidLeafletCreator(object):
+    def __init__(self, ui_loc):
+        # persistent lipid leaflet dlg
+        self.lipid_leaflet_dlg = uic.loadUi(os.path.join(ui_loc,
+                                                         'lipid_leaflet.ui'))
+
+    def _default_leaflet(self):
+        dvalidator = QtGui.QDoubleValidator(-2.0e-10, 5, 6)
+        self.lipid_leaflet_dlg.b_h_real.setValidator(dvalidator)
+        self.lipid_leaflet_dlg.b_h_imag.setValidator(dvalidator)
+        self.lipid_leaflet_dlg.b_t_real.setValidator(dvalidator)
+        self.lipid_leaflet_dlg.b_t_imag.setValidator(dvalidator)
+
+        ok = self.lipid_leaflet_dlg.exec_()
+        if not ok:
+            return None
+
+        b_h_real = self.lipid_leaflet_dlg.b_h_real.text()
+        b_t_real = self.lipid_leaflet_dlg.b_t_real.text()
+        b_h_imag = self.lipid_leaflet_dlg.b_h_imag.text()
+        b_t_imag = self.lipid_leaflet_dlg.b_t_imag.text()
+
+        b_t = complex(float(b_t_real), float(b_t_imag))
+        b_h = complex(float(b_h_real), float(b_h_imag))
+
+        V_h = self.lipid_leaflet_dlg.V_h.value()
+        V_t = self.lipid_leaflet_dlg.V_t.value()
+        APM = self.lipid_leaflet_dlg.APM.value()
+
+        thick_h = self.lipid_leaflet_dlg.thick_h.value()
+        thick_t = self.lipid_leaflet_dlg.thick_t.value()
+
+        head_solvent = self.lipid_leaflet_dlg.head_solvent.value()
+        tail_solvent = self.lipid_leaflet_dlg.tail_solvent.value()
+
+        leaflet = LipidLeaflet(APM, b_h, V_h, thick_h, b_t, V_t, thick_t, 3, 3,
+                               head_solvent=SLD(head_solvent,
+                                                name='head solvent'),
+                               tail_solvent=SLD(tail_solvent,
+                                                name='tail solvent'))
+        leaflet.name = 'leaflet'
+        return leaflet

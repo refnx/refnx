@@ -25,13 +25,13 @@ from .datastore import DataStore
 from .treeview_gui_model import (TreeModel, Node, DatasetNode, DataObjectNode,
                                  ComponentNode, StructureNode,
                                  ReflectModelNode, ParNode, TreeFilter,
-                                 find_data_object, SlabNode)
-
+                                 find_data_object, SlabNode,
+                                 LipidLeafletCreator)
 
 import refnx
 from refnx.analysis import (CurveFitter, Objective,
                             Transform, GlobalObjective)
-from refnx.reflect import SLD, ReflectModel, LipidLeaflet, Slab
+from refnx.reflect import SLD, ReflectModel, Slab
 from refnx.reflect._code_fragment import code_fragment
 from refnx._lib import unique, flatten
 
@@ -131,6 +131,8 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
             linestyle='-', color='r')[0]
 
         self.restore_settings()
+
+        self.lipid_leaflet = LipidLeafletCreator(UI_LOCATION)
 
         print('Session started at:', time.asctime(time.localtime(time.time())))
 
@@ -736,7 +738,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
 
         if not selected_indices:
             return msg('Select a single row within a Structure to insert a'
-                       ' new slab.')
+                       ' new Component.')
 
         index = selected_indices[0]
 
@@ -752,7 +754,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         _component = [i for i in hierarchy if isinstance(i, ComponentNode)]
         if not _component:
             return msg('Select a single row within a Structure to insert a'
-                       ' new slab.')
+                       ' new Component.')
 
         # work out which component you have.
         component = _component[0]
@@ -773,7 +775,9 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         if which_type == 'Slab':
             c = _default_slab(parent=self)
         elif which_type == 'LipidLeaflet':
-            c = _default_leaflet(parent=self)
+            c = self.lipid_leaflet._default_leaflet()
+            if c is None:
+                return
 
         structure.insert_component(idx + 1, c)
 
@@ -1777,17 +1781,3 @@ def _default_slab(parent=None):
     c.sld.imag.name = 'isld'
     c.vfsolv.name = 'vfsolv'
     return c
-
-
-def _default_leaflet(parent=None):
-    # TODO dialog to create a default lipid leaflet
-    b_h = 6.01e-4
-    V_h = 319.
-    b_t = -2.92e-4
-    V_t = 782.
-    APM = 60.
-    thick_h = 9.
-    thick_t = 14.
-    leaflet = LipidLeaflet(APM, b_h, V_h, thick_h, b_t, V_t, thick_t, 3, 3,
-                           name='leaflet')
-    return leaflet
