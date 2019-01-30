@@ -91,6 +91,8 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
             self.on_remove_from_fit_action)
         self.context_menu.link_action.triggered.connect(
             self.link_action)
+        self.context_menu.link_equivalent_action.triggered.connect(
+            self.link_equivalent_action)
         self.context_menu.unlink_action.triggered.connect(
             self.unlink_action)
         self.context_menu.copy_from_action.triggered.connect(
@@ -1151,6 +1153,56 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         self.ui.paramsSlider.setFocus(QtCore.Qt.OtherFocusReason)
         self.ui.treeView.setFocus(QtCore.Qt.OtherFocusReason)
 
+    def link_equivalent_action(self):
+        return
+        # retrieve data_objects
+        datastore = self.treeModel.datastore
+        names = datastore.names
+        names.pop('theoretical')
+        # data_objects = [datastore[name] for name in names]
+
+        # Get other datasets for linkage
+        data_objects = []
+        if len(data_objects) < 2:
+            return msg("You have to select more than one dataset to link"
+                       " equivalent parameters")
+        # Now check that the models are roughly the same
+        models = [data_object.model for data_object in data_objects]
+        structures = [m.structure for m in models]
+        ncomponents = [len(s) for s in structures]
+        parameters = [list(flatten(m.parameters)) for m in models]
+        nparams = [len(p) for p in parameters]
+
+        if len(set(ncomponents)) != 1 or len(set(nparams)):
+            return msg("All models must have equivalent structural components"
+                       " and the same number of parameters for equivalent"
+                       " linking to be available")
+
+        selected_indices = self.ui.treeView.selectedIndexes()
+        par_nodes_to_link = []
+        for index in selected_indices:
+            # from filter to model
+            index = self.mapToSource(index)
+            item = index.internalPointer()
+            if isinstance(item, ParNode):
+                par_nodes_to_link.append(item)
+
+        # now go through other datasets
+        # get unique nodes
+        par_nodes_to_link = list(unique(par_nodes_to_link))
+
+
+        master_parameter = par_nodes_to_link[0]
+        mp = master_parameter.parameter
+        for par in par_nodes_to_link[1:]:
+            par.parameter.constraint = mp
+            idx = self.treeModel.index(par.row(), 1, par.parent().index)
+            idx1 = self.treeModel.index(par.row(), 5, par.parent().index)
+            self.treeModel.dataChanged.emit(idx, idx1)
+
+        self.ui.paramsSlider.setFocus(QtCore.Qt.OtherFocusReason)
+        self.ui.treeView.setFocus(QtCore.Qt.OtherFocusReason)
+
     def unlink_action(self):
         selected_indices = self.ui.treeView.selectedIndexes()
         par_nodes_to_unlink = []
@@ -1754,6 +1806,8 @@ class OpenMenu(QtWidgets.QMenu):
         self.addSeparator()
         self.link_action = self.addAction("Link parameters")
         self.unlink_action = self.addAction("Unlink parameters")
+        self.link_equivalent_action = self.addAction(
+            "Link equivalent parameters on other datasets")
 
     def __call__(self, position):
         action = self.exec_(self._parent.mapToGlobal(position))

@@ -391,9 +391,6 @@ class DatasetNode(Node):
     def dataset(self):
         return self._data
 
-    def columnCount(self):
-        return 1
-
     def refresh(self):
         self.dataset.refresh()
 
