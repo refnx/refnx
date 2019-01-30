@@ -14,14 +14,18 @@ class LipidLeaflet(Component):
     Parameters
     ----------
     APM: float or refnx.analysis.Parameter
-    b_heads: float, refnx.analysis.Parameter or complex
-        Sum of coherent scattering lengths of head group (Angstrom)
+    b_heads: float, refnx.analysis.Parameter, complex or SLD
+        Sum of coherent scattering lengths of head group (Angstrom).
+        When an SLD is provided it is simply an easy way to provide a complex
+        value. `LipidLeaflet.b_heads_real` is set to `SLD.real`, etc.
     vm_heads: float or refnx.analysis.Parameter
         Molecular volume of head group (Angstrom**2)
     thickness_heads: float or refnx.analysis.Parameter
         Thickness of head group region (Angstrom)
-    b_tails: float, refnx.analysis.Parameter or complex
-        Sum of coherent scattering lengths of tail group (Angstrom)
+    b_tails: float, refnx.analysis.Parameter, complex or SLD
+        Sum of coherent scattering lengths of tail group (Angstrom).
+        When an SLD is provided it is simply an easy way to provide a complex
+        value. `LipidLeaflet.b_tails_real` is set to `SLD.real`, etc.
     vm_tails: float or refnx.analysis.Parameter
         Molecular volume of tail group (Angstrom**2)
     thickness_tails: float or refnx.analysis.Parameter
@@ -121,6 +125,9 @@ class LipidLeaflet(Component):
             self.b_heads_imag = possibly_create_parameter(
                 b_heads.imag,
                 name='%s - b_heads_imag' % name)
+        elif isinstance(b_heads, SLD):
+            self.b_heads_real = b_heads.real
+            self.b_heads_imag = b_heads.imag
         else:
             self.b_heads_real = possibly_create_parameter(
                 b_heads,
@@ -144,6 +151,9 @@ class LipidLeaflet(Component):
             self.b_tails_imag = possibly_create_parameter(
                 b_tails.imag,
                 name='%s - b_tails_imag' % name)
+        elif isinstance(b_tails, SLD):
+            self.b_tails_real = b_tails.real
+            self.b_tails_imag = b_tails.imag
         else:
             self.b_tails_real = possibly_create_parameter(
                 b_tails,
@@ -173,6 +183,21 @@ class LipidLeaflet(Component):
 
         self.reverse_monolayer = reverse_monolayer
         self.name = name
+
+    def __repr__(self):
+        d = {}
+        d.update(self.__dict__)
+        sld_bh = SLD([self.b_heads_real, self.b_heads_imag])
+        sld_bt = SLD([self.b_tails_real, self.b_tails_imag])
+        d['bh'] = sld_bh
+        d['bt'] = sld_bt
+
+        s = ("LipidLeaflet({apm!r}, {bh!r}, {vm_heads!r}, {thickness_heads!r},"
+             " {bt!r}, {vm_tails!r}, {thickness_tails!r}, {rough_head_tail!r},"
+             " {rough_preceding_mono!r}, head_solvent={head_solvent!r},"
+             " tail_solvent={tail_solvent!r},"
+             " reverse_monolayer={reverse_monolayer}, name={name!r})")
+        return s.format(**d)
 
     @property
     def slabs(self):

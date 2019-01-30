@@ -6,7 +6,7 @@ from numpy.testing import (assert_almost_equal, assert_equal, assert_,
 
 from refnx.reflect import (SLD, Structure, Spline, Slab, LipidLeaflet)
 from refnx.reflect.structure import _profile_slicer
-from refnx.analysis import Parameter
+from refnx.analysis import Parameter, Interval
 
 
 class TestLipidLeaflet(object):
@@ -57,3 +57,21 @@ class TestLipidLeaflet(object):
         assert_allclose(slabs[1, 1], 1.23 * self.phi_solv_t +
                         (1 - self.phi_solv_t) * self.rho_t)
         assert_allclose(slabs[1, 4], 0)
+
+    def test_initialisation_with_SLD(self):
+        # we should be able to initialise with SLD objects
+        heads = SLD(6.01e-4 + 0j)
+        tails = SLD(-2.92e-4 + 0j)
+        new_leaflet = LipidLeaflet(self.APM,
+                                   heads, self.V_h, self.thick_h,
+                                   tails, self.V_t, self.thick_t,
+                                   2, 3)
+        slabs = self.leaflet.slabs
+        new_slabs = new_leaflet.slabs
+        assert_allclose(new_slabs, slabs)
+
+    def test_repr(self):
+        # test that we can reconstruct the object from a repr
+        s = repr(self.leaflet)
+        q = eval(s)
+        assert_equal(q.slabs, self.leaflet.slabs)
