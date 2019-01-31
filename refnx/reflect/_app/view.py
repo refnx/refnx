@@ -1163,6 +1163,9 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         self.ui.treeView.setFocus(QtCore.Qt.OtherFocusReason)
 
     def link_equivalent_action(self):
+        # link equivalent parameters across a whole range of datasets.
+        # the datasets all need to have the same structure for this to work.
+
         # retrieve data_objects that need to be linked
         datastore = self.treeModel.datastore
         names = datastore.names

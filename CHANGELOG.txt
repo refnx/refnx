@@ -27,3 +27,10 @@ Details of changes made to refnx
 
 0.1.3
 -----
+- GUI machinery can now use Components other than Slab, such as LipidLeaflet
+  (already added). New Components may require extra shim code to be written for
+  them. Specifically how they're to be displayed, and a default way of
+  initialising the Component (which may require a dialogue).
+- The 'Link equivalent parameters' action has been added, enabling equivalent
+  parameters on other datasets to be linked. This greatly aids setup of multiple
+  contrast datasets.
