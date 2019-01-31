@@ -1142,8 +1142,17 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         if len(par_nodes_to_link) < 2:
             return
 
-        master_parameter = par_nodes_to_link[0]
-        mp = master_parameter.parameter
+        mpn = par_nodes_to_link[0]
+        mp = mpn.parameter
+
+        # if the master parameter already has a constraint, then it
+        # has to be removed, otherwise recursion occurs
+        if mp.constraint is not None:
+            mp.constraint = None
+            idx = self.treeModel.index(mpn.row(), 1, mpn.parent().index)
+            idx1 = self.treeModel.index(mpn.row(), 5, mpn.parent().index)
+            self.treeModel.dataChanged.emit(idx, idx1)
+
         for par in par_nodes_to_link[1:]:
             par.parameter.constraint = mp
             idx = self.treeModel.index(par.row(), 1, par.parent().index)
@@ -1154,30 +1163,25 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         self.ui.treeView.setFocus(QtCore.Qt.OtherFocusReason)
 
     def link_equivalent_action(self):
-        return
-        # retrieve data_objects
+        # retrieve data_objects that need to be linked
         datastore = self.treeModel.datastore
         names = datastore.names
-        names.pop('theoretical')
-        # data_objects = [datastore[name] for name in names]
+        names.remove('theoretical')
 
-        # Get other datasets for linkage
-        data_objects = []
-        if len(data_objects) < 2:
-            return msg("You have to select more than one dataset to link"
-                       " equivalent parameters")
-        # Now check that the models are roughly the same
-        models = [data_object.model for data_object in data_objects]
-        structures = [m.structure for m in models]
-        ncomponents = [len(s) for s in structures]
-        parameters = [list(flatten(m.parameters)) for m in models]
-        nparams = [len(p) for p in parameters]
+        dlg = uic.loadUi(os.path.join(UI_LOCATION, 'data_object_selector.ui'))
+        dlg.data_objects.addItems(names)
 
-        if len(set(ncomponents)) != 1 or len(set(nparams)):
-            return msg("All models must have equivalent structural components"
-                       " and the same number of parameters for equivalent"
-                       " linking to be available")
+        ok = dlg.exec_()
+        if not ok:
+            return
+        items = dlg.data_objects.selectedItems()
+        names = [item.text() for item in items]
 
+        # these are the data objects that you want to link across
+        data_objects = [datastore[name] for name in names]
+
+        # these are the nodes selected in the tree view. We're going to link
+        # these nodes together, to equivalent nodes on the other data objects
         selected_indices = self.ui.treeView.selectedIndexes()
         par_nodes_to_link = []
         for index in selected_indices:
@@ -1187,13 +1191,58 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
             if isinstance(item, ParNode):
                 par_nodes_to_link.append(item)
 
-        # now go through other datasets
         # get unique nodes
         par_nodes_to_link = list(unique(par_nodes_to_link))
 
+        def is_same_structure(objs):
+            # Now check that the models are roughly the same
+            models = [data_object.model for data_object in objs]
+            structures = [m.structure for m in models]
+            ncomponents = [len(s) for s in structures]
+            parameters = [list(flatten(m.parameters)) for m in models]
+            nparams = [len(p) for p in parameters]
 
-        master_parameter = par_nodes_to_link[0]
-        mp = master_parameter.parameter
+            if len(set(ncomponents)) == 1 and len(set(nparams)) == 1:
+                return True
+            return False
+
+        extra_pars = []
+        # retrieve equivalent parameters on other datasets
+        for node in par_nodes_to_link:
+            mstr_obj_node = find_data_object(node.index)
+            # check that all data_objects have the same structure as the
+            # selected parameter
+            if not is_same_structure([mstr_obj_node.data_object] +
+                                     data_objects):
+                return msg("All models must have equivalent structural"
+                           " components and the same number of parameters for"
+                           " equivalent linking to be available, no linking"
+                           " has been done.")
+
+            row_indices = node.row_indices()
+
+            for data_object in data_objects:
+                # retrieve the similar parameter from row indices
+                row_indices[1] = self.treeModel.data_object_row(
+                    data_object.name)
+                # now identify where the similar parameter is
+                pn = self.treeModel.node_from_row_indices(row_indices)
+                extra_pars.append(pn)
+
+        par_nodes_to_link.extend(extra_pars)
+        par_nodes_to_link = list(unique(par_nodes_to_link))
+
+        mpn = par_nodes_to_link[0]
+        mp = mpn.parameter
+
+        # if the master parameter already has a constraint, then it
+        # has to be removed, otherwise recursion occurs
+        if mp.constraint is not None:
+            mp.constraint = None
+            idx = self.treeModel.index(mpn.row(), 1, mpn.parent().index)
+            idx1 = self.treeModel.index(mpn.row(), 5, mpn.parent().index)
+            self.treeModel.dataChanged.emit(idx, idx1)
+
         for par in par_nodes_to_link[1:]:
             par.parameter.constraint = mp
             idx = self.treeModel.index(par.row(), 1, par.parent().index)

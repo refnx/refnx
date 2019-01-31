@@ -94,6 +94,13 @@ class Node(object):
         h.reverse()
         return h
 
+    def row_indices(self):
+        hierarchy = self.hierarchy()
+        indices = []
+        for node in hierarchy:
+            indices.append(node.row())
+        return indices
+
     def descendants(self):
         # yield all of the descendants of this node
         for el in self._children:
@@ -681,6 +688,15 @@ class TreeModel(QtCore.QAbstractItemModel):
             return self._rootnode.child(row)
         else:
             return None
+
+    def node_from_row_indices(self, row_indices):
+        # retrieve a descendant node given a series of row indices
+        # the first entry in row_indices should always be 0/None.
+        node = self._rootnode
+        for idx in row_indices[1:]:
+            node = node.child(idx)
+
+        return node
 
     def snapshot(self, snapshot_name):
         original = self.datastore['theoretical']
