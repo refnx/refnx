@@ -1,13 +1,12 @@
-\documentclass[pdf,preprint]{iucr}
+\documentclass[pdf,preprint]{article}
 \RequirePackage{graphicx}
-\journalcode{J}
 
 % \usepackage[colorlinks,urlcolor=black]{hyperref}
-\renewcommand{\harvardurl}[1]{\url{#1}}
-\newcommand{\url}[1]{#1}
+%\renewcommand{\harvardurl}[1]{\url{#1}}
+%\newcommand{\url}[1]{#1}
 
 \usepackage[utf8]{inputenc}
-
+\usepackage{authblk}
 \usepackage{amsmath}
 \usepackage{siunitx}
 \sisetup{
@@ -21,30 +20,29 @@
 
 \begin{document}
 \title{refnx -- Neutron and X-ray reflectometry analysis in Python}
-\cauthor[a]{Andrew~R. J.}{Nelson}{andrew.nelson@ansto.gov.au}{}
-\author[b]{Stuart~W.}{Prescott}
 
-\aff[a]{ANSTO, Locked Bag 2001, Kirrawee DC, NSW 2232 \country{Australia}}
-\aff[b]{School of Chemical Engineering, University of New South Wales,  Sydney, NSW, 2052 \country{Australia}}
-
-\date{\today}
+\author[1]{Andrew~R.J.~Nelson}
+\author[2]{Stuart~W. Prescott}
+\affil[1]{ANSTO, Locked Bag 2001, Kirrawee DC, NSW 2232, Australia}
+\affil[2]{School of Chemical Engineering, University of New South Wales,  Sydney, NSW, 2052, Australia}
+%\date{\today}
 
 \newcommand{\refnx}{\emph{refnx}}
-\newcommand{\Objective}{\textbf{Objective}}
-\newcommand{\GlobalObjective}{\textbf{GlobalObjective}}
-\newcommand{\Parameter}{\textbf{Parameter}}
-\newcommand{\Structure}{\textbf{Structure}}
-\newcommand{\Slab}{\textbf{Slab}}
-\newcommand{\Component}{\textbf{Component}}
-\newcommand{\LipidLeaflet}{\textbf{LipidLeaflet}}
-\newcommand{\Transform}{\textbf{Transform}}
-\newcommand{\DataD}{\textbf{Data1D}}
-\newcommand{\ReflectModel}{\textbf{ReflectModel}}
-\newcommand{\CurveFitter}{\textbf{CurveFitter}}
-\newcommand{\Spline}{\textbf{Spline}}
+\newcommand{\Objective}{\texttt{Objective}}
+\newcommand{\GlobalObjective}{\texttt{GlobalObjective}}
+\newcommand{\Parameter}{\texttt{Parameter}}
+\newcommand{\Structure}{\texttt{Structure}}
+\newcommand{\Slab}{\texttt{Slab}}
+\newcommand{\Component}{\texttt{Component}}
+\newcommand{\LipidLeaflet}{\texttt{LipidLeaflet}}
+\newcommand{\Transform}{\texttt{Transform}}
+\newcommand{\DataD}{\texttt{Data1D}}
+\newcommand{\ReflectModel}{\texttt{ReflectModel}}
+\newcommand{\CurveFitter}{\texttt{CurveFitter}}
+\newcommand{\Spline}{\texttt{Spline}}
 \newcommand{\conda}{\emph{conda}}
 \newcommand{\corner}{\emph{corner}}
-\newcommand{\MixedReflectModel}{\textbf{MixedReflectModel}}
+\newcommand{\MixedReflectModel}{\texttt{MixedReflectModel}}
 \newcommand{\pip}{\emph{pip}}
 \newcommand{\emcee}{\emph{emcee}}
 \newcommand{\ptemcee}{\emph{ptemcee}}
@@ -58,11 +56,11 @@
 
 \hyphenation{Lipid-Leaflet}
 
-\begin{synopsis}
-The refnx Python modules for neutron and X-ray reflectometry data analysis are
-introduced. An sample analysis illustrates a Bayesian approach using a
-Markov Chain Monte Carlo algorithm to understand the confidence in the fit parameters.
-\end{synopsis}
+%\begin{synopsis}
+%The refnx Python modules for neutron and X-ray reflectometry data analysis are
+%introduced. An sample analysis illustrates a Bayesian approach using a
+%Markov Chain Monte Carlo algorithm to understand the confidence in the fit parameters.
+%\end{synopsis}
 
 \begin{abstract}
 \refnx\ is a model-based neutron and X-ray reflectometry data analysis package written in Python. It is cross platform, and has been tested on Linux, macOS, and Windows. Its graphical user interface is browser-based, through a \Jupyter\ notebook.
@@ -178,16 +176,16 @@ The \Jupyter\ notebook used for the analysis, \emph{lipid.ipynb}, is available i
 \begin{figure}
 \centering
 \label{fig:global_fit}%
-\includegraphics[width=85mm]{./supporting_information/global_fit.pdf}%
+\includegraphics[width=100mm]{./supporting_information/global_fit.pdf}%
 
 
-\includegraphics[width=85mm]{./supporting_information/d2o_sld_spread.pdf}
+\includegraphics[width=100mm]{./supporting_information/d2o_sld_spread.pdf}
 
 \caption{a) Neutron reflectivity from a DMPC bilayer supported on a silicon crystal, measured at three contrasts, with 500 samples from the posterior distribution in grey and median of the distribution in red. Data for the contrast matched (HD\textsubscript{mix}) and \ce{H2O} contrast offset by 0.1 and 0.01 respectively. b) SLD profile of the \ce{D2O} model showing 500 samples from the posterior distribution, as well as the median in red. It is seen that the uncertainty in the reflectivity at high $Q$ is associated with an uncertainty in SLD profile at the lipid-\ce{D2O} interface.}
 \end{figure}
 
 \begin{figure}
-  \includegraphics[width=175mm]{./supporting_information/corner.pdf}
+  \includegraphics[width=120mm]{./supporting_information/corner.pdf}
   \caption{Corner plot for the varying parameters of DMPC bilayers supported on a silicon crystal, measured at three contrasts. The sampling took $\sim$\SI{33}{\minute} on a \SI{2.8}{GHz} quad-core computer for 20 saved steps, corresponding to 4000 samples, with the steps being thinned by a factor of 400. A larger scale image is available in supporting information.}
   \label{fig:corner}
 \end{figure}
@@ -225,8 +223,8 @@ Moreover, there are important ramifications for verifiability \cite{Chirigati201
 
 \refnx\ is a powerful tool for least-squares or Bayesian analysis of neutron and X-ray reflectometry data that is ideally usable for reproducible research with \Jupyter\ notebooks, and has been built with extensibility in mind. Its features include: MCMC sampling of posterior distribution for parameters, structural models constructed from modular components with physically relevant parameterisation, algebraic inter-parameter constraints, mixed area models, co-refinement of multiple datasets, probability distributions for parameter bounds used directly for log-prior terms, and a (\Jupyter) \ipywidgets\ GUI.
 
-\ack{Acknowledgements:
-We acknowledge Anton Le Brun (ANSTO) for the provision of the lipid bilayer datasets in the example, James Hester (ANSTO) for comments made on the draft manuscript, and Andrew McCluskey (Bath University) and Isaac Gresham (UNSW) for important feedback on \refnx\ development.}
+\section*{Acknowledgements:}
+We acknowledge Anton Le Brun (ANSTO) for the provision of the lipid bilayer datasets in the example, James Hester (ANSTO) for comments made on the draft manuscript, and Andrew McCluskey (Bath University) and Isaac Gresham (UNSW) for important feedback on \refnx\ development.
 
 \section{Supporting information}
 
@@ -240,13 +238,6 @@ We acknowledge Anton Le Brun (ANSTO) for the provision of the lipid bilayer data
 \textbf{raw\_data.zip} - raw files for the example datasets.\\
 \textbf{refnx-paper.yml} - \conda\ environment file to reproduce the analysis environment in this paper.
 
+\bibliographystyle{abbrv}
 \bibliography{main}
-
-% the provided iucr.bst doesn't match the journal style but a fixed version
-% is not redistributable.
-\IfFileExists{iucrdoi.bst}{
-  \bibliographystyle{iucrdoi}
-}{
-  \bibliographystyle{iucr}
-}
 \end{document}
