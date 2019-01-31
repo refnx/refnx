@@ -3,6 +3,7 @@
 .DS_Store
 build/
 dist/
+.eggs
 *.icns
 __pycache__
 .ipynb_checkpoints/
