@@ -812,40 +812,46 @@ class LipidLeafletNode(ComponentNode):
         return True
 
 
-class LipidLeafletCreator(object):
-    def __init__(self, ui_loc):
+UI_LOCATION = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                           'ui')
+LipidDialog = uic.loadUiType(os.path.join(UI_LOCATION,
+                                          'lipid_leaflet.ui'))[0]
+
+
+class LipidLeafletDialog(QtWidgets.QDialog, LipidDialog):
+    def __init__(self, parent=None):
         # persistent lipid leaflet dlg
-        self.lipid_leaflet_dlg = uic.loadUi(os.path.join(ui_loc,
-                                                         'lipid_leaflet.ui'))
-
-    def _default_leaflet(self):
+        QtWidgets.QDialog.__init__(self, parent)
+        self.setupUi(self)
         dvalidator = QtGui.QDoubleValidator(-2.0e-10, 5, 6)
-        self.lipid_leaflet_dlg.b_h_real.setValidator(dvalidator)
-        self.lipid_leaflet_dlg.b_h_imag.setValidator(dvalidator)
-        self.lipid_leaflet_dlg.b_t_real.setValidator(dvalidator)
-        self.lipid_leaflet_dlg.b_t_imag.setValidator(dvalidator)
+        self.b_h_real.setValidator(dvalidator)
+        self.b_h_imag.setValidator(dvalidator)
+        self.b_t_real.setValidator(dvalidator)
+        self.b_t_imag.setValidator(dvalidator)
 
-        ok = self.lipid_leaflet_dlg.exec_()
-        if not ok:
-            return None
+    @QtCore.pyqtSlot(int)
+    def on_lipid_selector_currentIndexChanged(self, index):
+        # TODO load from the spreadsheet of lipid values
+        pass
 
-        b_h_real = self.lipid_leaflet_dlg.b_h_real.text()
-        b_t_real = self.lipid_leaflet_dlg.b_t_real.text()
-        b_h_imag = self.lipid_leaflet_dlg.b_h_imag.text()
-        b_t_imag = self.lipid_leaflet_dlg.b_t_imag.text()
+    def component(self):
+        b_h_real = self.b_h_real.text()
+        b_t_real = self.b_t_real.text()
+        b_h_imag = self.b_h_imag.text()
+        b_t_imag = self.b_t_imag.text()
 
         b_t = complex(float(b_t_real), float(b_t_imag))
         b_h = complex(float(b_h_real), float(b_h_imag))
 
-        V_h = self.lipid_leaflet_dlg.V_h.value()
-        V_t = self.lipid_leaflet_dlg.V_t.value()
-        APM = self.lipid_leaflet_dlg.APM.value()
+        V_h = self.V_h.value()
+        V_t = self.V_t.value()
+        APM = self.APM.value()
 
-        thick_h = self.lipid_leaflet_dlg.thick_h.value()
-        thick_t = self.lipid_leaflet_dlg.thick_t.value()
+        thick_h = self.thick_h.value()
+        thick_t = self.thick_t.value()
 
-        head_solvent = self.lipid_leaflet_dlg.head_solvent.value()
-        tail_solvent = self.lipid_leaflet_dlg.tail_solvent.value()
+        head_solvent = self.head_solvent.value()
+        tail_solvent = self.tail_solvent.value()
 
         leaflet = LipidLeaflet(APM, b_h, V_h, thick_h, b_t, V_t, thick_t, 3, 3,
                                head_solvent=SLD(head_solvent,

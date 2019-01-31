@@ -26,7 +26,7 @@ from .treeview_gui_model import (TreeModel, Node, DatasetNode, DataObjectNode,
                                  ComponentNode, StructureNode,
                                  ReflectModelNode, ParNode, TreeFilter,
                                  find_data_object, SlabNode,
-                                 LipidLeafletCreator)
+                                 LipidLeafletDialog)
 
 import refnx
 from refnx.analysis import (CurveFitter, Objective,
@@ -134,7 +134,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
 
         self.restore_settings()
 
-        self.lipid_leaflet = LipidLeafletCreator(UI_LOCATION)
+        self.lipid_leaflet = LipidLeafletDialog(self)
 
         print('Session started at:', time.asctime(time.localtime(time.time())))
 
@@ -777,9 +777,10 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         if which_type == 'Slab':
             c = _default_slab(parent=self)
         elif which_type == 'LipidLeaflet':
-            c = self.lipid_leaflet._default_leaflet()
-            if c is None:
+            ok = self.lipid_leaflet.exec_()
+            if not ok:
                 return
+            c = self.lipid_leaflet.component()
 
         structure.insert_component(idx + 1, c)
 
