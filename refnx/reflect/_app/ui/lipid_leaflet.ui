@@ -6,15 +6,32 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>372</width>
-    <height>530</height>
+    <width>669</width>
+    <height>604</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Dialog</string>
   </property>
-  <layout class="QFormLayout" name="formLayout">
-   <item row="1" column="0" colspan="2">
+  <layout class="QGridLayout" name="gridLayout">
+   <item row="0" column="0">
+    <widget class="QComboBox" name="lipid_selector"/>
+   </item>
+   <item row="0" column="1">
+    <widget class="QComboBox" name="radiation">
+     <item>
+      <property name="text">
+       <string>neutrons</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>X-rays</string>
+      </property>
+     </item>
+    </widget>
+   </item>
+   <item row="1" column="0">
     <widget class="QDoubleSpinBox" name="APM">
      <property name="prefix">
       <string>Area per molecule (A^3): </string>
@@ -30,7 +47,26 @@
      </property>
     </widget>
    </item>
-   <item row="2" column="0" colspan="2">
+   <item row="1" column="1">
+    <widget class="QDoubleSpinBox" name="neutron_wavelength">
+     <property name="toolTip">
+      <string>neutron wavelength</string>
+     </property>
+     <property name="prefix">
+      <string>n-lambda: </string>
+     </property>
+     <property name="minimum">
+      <double>1.800000000000000</double>
+     </property>
+     <property name="maximum">
+      <double>30.000000000000000</double>
+     </property>
+     <property name="singleStep">
+      <double>0.100000000000000</double>
+     </property>
+    </widget>
+   </item>
+   <item row="2" column="0">
     <widget class="QDoubleSpinBox" name="head_solvent">
      <property name="prefix">
       <string>head solvent SLD: </string>
@@ -46,7 +82,29 @@
      </property>
     </widget>
    </item>
-   <item row="3" column="0" colspan="2">
+   <item row="2" column="1">
+    <widget class="QDoubleSpinBox" name="xray_energy">
+     <property name="prefix">
+      <string>X-ray energy (keV): </string>
+     </property>
+     <property name="decimals">
+      <number>3</number>
+     </property>
+     <property name="minimum">
+      <double>0.200000000000000</double>
+     </property>
+     <property name="maximum">
+      <double>100.000000000000000</double>
+     </property>
+     <property name="singleStep">
+      <double>0.100000000000000</double>
+     </property>
+     <property name="value">
+      <double>8.048000000000000</double>
+     </property>
+    </widget>
+   </item>
+   <item row="3" column="0">
     <widget class="QDoubleSpinBox" name="tail_solvent">
      <property name="prefix">
       <string>tail solvent SLD: </string>
@@ -62,7 +120,10 @@
      </property>
     </widget>
    </item>
-   <item row="4" column="0" colspan="2">
+   <item row="3" column="1">
+    <widget class="QComboBox" name="condition"/>
+   </item>
+   <item row="4" column="0">
     <widget class="QDoubleSpinBox" name="thick_h">
      <property name="prefix">
       <string>thickness heads (A): </string>
@@ -78,7 +139,10 @@
      </property>
     </widget>
    </item>
-   <item row="5" column="0" colspan="2">
+   <item row="4" column="1" rowspan="6">
+    <widget class="QGraphicsView" name="chemical_structure"/>
+   </item>
+   <item row="5" column="0">
     <widget class="QDoubleSpinBox" name="V_h">
      <property name="prefix">
       <string>volume head group (A^3): </string>
@@ -94,7 +158,14 @@
      </property>
     </widget>
    </item>
-   <item row="7" column="0" colspan="2">
+   <item row="6" column="0">
+    <widget class="QLabel" name="label_3">
+     <property name="text">
+      <string>head - sum real scatt lengths (A)</string>
+     </property>
+    </widget>
+   </item>
+   <item row="7" column="0">
     <widget class="QLineEdit" name="b_h_real">
      <property name="text">
       <string>6.01e-4</string>
@@ -104,7 +175,14 @@
      </property>
     </widget>
    </item>
-   <item row="9" column="0" colspan="2">
+   <item row="8" column="0">
+    <widget class="QLabel" name="label_4">
+     <property name="text">
+      <string>head - sum imag scatt lengths (A)</string>
+     </property>
+    </widget>
+   </item>
+   <item row="9" column="0">
     <widget class="QLineEdit" name="b_h_imag">
      <property name="text">
       <string>0</string>
@@ -114,7 +192,7 @@
      </property>
     </widget>
    </item>
-   <item row="10" column="0" colspan="2">
+   <item row="10" column="0">
     <widget class="QDoubleSpinBox" name="thick_t">
      <property name="prefix">
       <string>thickness tails (A): </string>
@@ -127,7 +205,17 @@
      </property>
     </widget>
    </item>
-   <item row="11" column="0" colspan="2">
+   <item row="10" column="1" rowspan="6">
+    <widget class="QPlainTextEdit" name="references">
+     <property name="acceptDrops">
+      <bool>false</bool>
+     </property>
+     <property name="plainText">
+      <string notr="true"/>
+     </property>
+    </widget>
+   </item>
+   <item row="11" column="0">
     <widget class="QDoubleSpinBox" name="V_t">
      <property name="prefix">
       <string>volume tail group (A^3): </string>
@@ -143,7 +231,14 @@
      </property>
     </widget>
    </item>
-   <item row="13" column="0" colspan="2">
+   <item row="12" column="0">
+    <widget class="QLabel" name="label_2">
+     <property name="text">
+      <string>tail - sum real scatt lengths (A)</string>
+     </property>
+    </widget>
+   </item>
+   <item row="13" column="0">
     <widget class="QLineEdit" name="b_t_real">
      <property name="text">
       <string>-2.92e-4</string>
@@ -153,7 +248,14 @@
      </property>
     </widget>
    </item>
-   <item row="15" column="0" colspan="2">
+   <item row="14" column="0">
+    <widget class="QLabel" name="label">
+     <property name="text">
+      <string>tail - sum imag scatt lengths (A)</string>
+     </property>
+    </widget>
+   </item>
+   <item row="15" column="0">
     <widget class="QLineEdit" name="b_t_imag">
      <property name="text">
       <string>0</string>
@@ -163,35 +265,7 @@
      </property>
     </widget>
    </item>
-   <item row="12" column="0" colspan="2">
-    <widget class="QLabel" name="label_2">
-     <property name="text">
-      <string>tail - sum real scatt lengths (A)</string>
-     </property>
-    </widget>
-   </item>
-   <item row="14" column="0" colspan="2">
-    <widget class="QLabel" name="label">
-     <property name="text">
-      <string>tail - sum imag scatt lengths (A)</string>
-     </property>
-    </widget>
-   </item>
-   <item row="6" column="0" colspan="2">
-    <widget class="QLabel" name="label_3">
-     <property name="text">
-      <string>head - sum real scatt lengths (A)</string>
-     </property>
-    </widget>
-   </item>
-   <item row="8" column="0" colspan="2">
-    <widget class="QLabel" name="label_4">
-     <property name="text">
-      <string>head - sum imag scatt lengths (A)</string>
-     </property>
-    </widget>
-   </item>
-   <item row="16" column="0" colspan="2">
+   <item row="16" column="1">
     <widget class="QDialogButtonBox" name="buttonBox">
      <property name="orientation">
       <enum>Qt::Horizontal</enum>
@@ -199,20 +273,6 @@
      <property name="standardButtons">
       <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
      </property>
-    </widget>
-   </item>
-   <item row="0" column="0" colspan="2">
-    <widget class="QComboBox" name="lipid_selector">
-     <item>
-      <property name="text">
-       <string>item1</string>
-      </property>
-     </item>
-     <item>
-      <property name="text">
-       <string>item2</string>
-      </property>
-     </item>
     </widget>
    </item>
   </layout>

@@ -25,8 +25,8 @@ from .datastore import DataStore
 from .treeview_gui_model import (TreeModel, Node, DatasetNode, DataObjectNode,
                                  ComponentNode, StructureNode,
                                  ReflectModelNode, ParNode, TreeFilter,
-                                 find_data_object, SlabNode,
-                                 LipidLeafletDialog)
+                                 find_data_object, SlabNode)
+from .lipid_leaflet import LipidLeafletDialog
 
 import refnx
 from refnx.analysis import (CurveFitter, Objective,
