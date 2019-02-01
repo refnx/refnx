@@ -133,13 +133,11 @@ class TestPlatypusNexus(object):
     def test_event(self):
         # When you use event mode processing, make sure the right amount of
         # spectra are created
-        out = self.f113.process(eventmode=[0, 900, 1800], integrate=0)
+        out = self.f641.process(eventmode=[0, 900, 1800], integrate=0)
         assert_(np.size(out[1], axis=0) == 2)
 
     def test_event_folder(self):
-        # When you use event mode processing, make sure the right amount of
-        # spectra are created
-        self.f113.process(eventmode=[0, 900, 1800], integrate=0,
+        self.f641.process(eventmode=[0, 900, 1800], integrate=0,
                           event_folder=self.pth)
 
     def test_multiple_acquisitions(self):
@@ -151,18 +149,18 @@ class TestPlatypusNexus(object):
 
     def test_reduction_runs(self):
         # just check it runs
-        self.f113.process()
+        self.f641.process()
 
         # check that event mode reduction gives the same output as non-event
         # mode reduction.
-        spectrum0 = self.f113.process(direct=True)
-        spectrum1 = self.f113.process(direct=True, eventmode=[], integrate=0)
+        spectrum0 = self.f641.process(direct=False)
+        spectrum1 = self.f641.process(direct=False, eventmode=[], integrate=0)
         assert_allclose(spectrum0[1][0], spectrum1[1][0], rtol=0.001)
 
         # check that the wavelength resolution is roughly right, between 7 and
         # 8%.
-        res = (self.f113.processed_spectrum['m_lambda_fwhm'][0] /
-               self.f113.processed_spectrum['m_lambda'][0])
+        res = (self.f641.processed_spectrum['m_lambda_fwhm'][0] /
+               self.f641.processed_spectrum['m_lambda'][0])
         assert_array_less(res, np.ones_like(res) * 0.08)
         assert_array_less(np.ones_like(res) * 0.07, res)
 
