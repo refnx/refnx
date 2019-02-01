@@ -735,6 +735,10 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         SLDcalculator.show()
 
     @QtCore.pyqtSlot()
+    def on_actionLipid_browser_triggered(self):
+        self.lipid_leaflet.show()
+
+    @QtCore.pyqtSlot()
     def on_add_layer_clicked(self):
         selected_indices = self.ui.treeView.selectedIndexes()
 
@@ -777,6 +781,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         if which_type == 'Slab':
             c = _default_slab(parent=self)
         elif which_type == 'LipidLeaflet':
+            self.lipid_leaflet.hide()
             ok = self.lipid_leaflet.exec_()
             if not ok:
                 return

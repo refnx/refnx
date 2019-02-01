@@ -45,7 +45,9 @@ class LipidLeafletDialog(QtWidgets.QDialog, LipidDialog):
         self.condition.addItems(conditions)
 
         self.chemical_name.setText(str(lipid.chemical_name))
+        self.chemical_name.setCursorPosition(0)
         self.references.setText('\n'.join(lipid.references))
+        self.total_formula.setText(str(lipid.formula.atoms))
 
         V_h, V_t = lipid.conditions[conditions[0]]
         th = self.thick_h.value()
@@ -68,7 +70,7 @@ class LipidLeafletDialog(QtWidgets.QDialog, LipidDialog):
             return
 
         lipid = self.lipids[name]
-        pixMap = QtGui.QPixmap(os.path.join(pth, 'icons', lipid.structure))
+        pixMap = QtGui.QPixmap(os.path.join(pth, 'icons', lipid.name + '.png'))
         self._scene = QtWidgets.QGraphicsScene(self)
         self._scene.addPixmap(pixMap)
         self.chemical_structure.setScene(self._scene)
@@ -201,13 +203,12 @@ class LipidLeafletDialog(QtWidgets.QDialog, LipidDialog):
 
 class Lipid(object):
     def __init__(self, name, head_formula, tail_formula, head_exchangable=0,
-                 tail_exchangable=0, structure=None, references=None,
+                 tail_exchangable=0, references=None,
                  conditions=None, chemical_name=None):
         self.name = name
         self.chemical_name = chemical_name
         self.head_formula = head_formula
         self.tail_formula = tail_formula
-        self.structure = structure
         self.references = references
         self.conditions = conditions
         if conditions is None:
@@ -219,7 +220,7 @@ class Lipid(object):
         s = ("Lipid({name!r}, {head_formula!r}, {tail_formula!r},"
              " head_exchangable={head_exchangable!r},"
              " tail_exchangable={tail_exchangable!r},"
-             " structure={structure!r}, references={references!r},"
+             " references={references!r},"
              " conditions={conditions!r}, chemical_name={chemical_name!r}")
         return s.format(**self.__dict__)
 

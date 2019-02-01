@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1044</width>
-    <height>900</height>
+    <height>875</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -623,6 +623,7 @@
      <string>Misc</string>
     </property>
     <addaction name="actionSLD_calculator"/>
+    <addaction name="actionLipid_browser"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuData"/>
@@ -1322,6 +1323,11 @@ errors?</string>
    </property>
    <property name="toolTip">
     <string>Create a code fragment for fitting this model in an interpreter</string>
+   </property>
+  </action>
+  <action name="actionLipid_browser">
+   <property name="text">
+    <string>Lipid browser</string>
    </property>
   </action>
  </widget>
