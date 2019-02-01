@@ -50,7 +50,6 @@ class LipidLeafletDialog(QtWidgets.QDialog, LipidDialog):
         self.total_formula.setText(str(lipid.formula.atoms))
 
         V_h, V_t = lipid.conditions[conditions[0]]
-        th = self.thick_h.value()
         tt = self.thick_t.value()
 
         self.APM.setValue(V_t / tt)
