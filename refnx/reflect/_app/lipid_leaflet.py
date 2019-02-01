@@ -42,6 +42,7 @@ class LipidLeafletDialog(QtWidgets.QDialog, LipidDialog):
         lipid = self.lipids[text]
         conditions = list(lipid.conditions.keys())
         self.condition.addItems(conditions)
+        self.references.setText('\n'.join(lipid.references))
 
         V_h, V_t = lipid.conditions[conditions[0]]
         th = self.thick_h.value()
