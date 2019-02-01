@@ -31,6 +31,7 @@ class LipidLeafletDialog(QtWidgets.QDialog, LipidDialog):
             lipid = Lipid(**l)
             self.lipids[lipid.name] = lipid
 
+        self._scene = None
         self.lipid_selector.addItem('')
         self.lipid_selector.addItems(self.lipids.keys())
 
@@ -42,6 +43,8 @@ class LipidLeafletDialog(QtWidgets.QDialog, LipidDialog):
         lipid = self.lipids[text]
         conditions = list(lipid.conditions.keys())
         self.condition.addItems(conditions)
+
+        self.chemical_name.setText(str(lipid.chemical_name))
         self.references.setText('\n'.join(lipid.references))
 
         V_h, V_t = lipid.conditions[conditions[0]]
@@ -52,11 +55,34 @@ class LipidLeafletDialog(QtWidgets.QDialog, LipidDialog):
         self.V_h.setValue(V_h)
         self.V_t.setValue(V_t)
 
+        self.display_structure()
         self.calculate()
+
+    def resizeEvent(self, event):
+        self.display_structure()
+
+    def display_structure(self):
+        # display the image in the scene
+        name = self.lipid_selector.currentText()
+        if name not in self.lipids:
+            return
+
+        lipid = self.lipids[name]
+        pixMap = QtGui.QPixmap(os.path.join(pth, 'icons', lipid.structure))
+        self._scene = QtWidgets.QGraphicsScene(self)
+        self._scene.addPixmap(pixMap)
+        self.chemical_structure.setScene(self._scene)
+        self.chemical_structure.show()
+        self.chemical_structure.fitInView(self._scene.itemsBoundingRect(),
+                                          QtCore.Qt.KeepAspectRatio)
+        self._scene.update()
 
     @QtCore.pyqtSlot(str)
     def on_condition_currentIndexChanged(self, text):
         name = self.lipid_selector.currentText()
+        if name not in self.lipids:
+            return
+
         lipid = self.lipids[name]
         if text in lipid.conditions:
             self.V_h.setValue(lipid.conditions[text][0])
@@ -176,8 +202,9 @@ class LipidLeafletDialog(QtWidgets.QDialog, LipidDialog):
 class Lipid(object):
     def __init__(self, name, head_formula, tail_formula, head_exchangable=0,
                  tail_exchangable=0, structure=None, references=None,
-                 conditions=None):
+                 conditions=None, chemical_name=None):
         self.name = name
+        self.chemical_name = chemical_name
         self.head_formula = head_formula
         self.tail_formula = tail_formula
         self.structure = structure
@@ -193,7 +220,7 @@ class Lipid(object):
              " head_exchangable={head_exchangable!r},"
              " tail_exchangable={tail_exchangable!r},"
              " structure={structure!r}, references={references!r},"
-             " conditions={conditions!r}")
+             " conditions={conditions!r}, chemical_name={chemical_name!r}")
         return s.format(**self.__dict__)
 
     def add_condition(self, descriptor, vh, vt):
