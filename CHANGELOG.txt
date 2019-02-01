@@ -33,4 +33,12 @@ Details of changes made to refnx
   initialising the Component (which may require a dialogue).
 - The 'Link equivalent parameters' action has been added, enabling equivalent
   parameters on other datasets to be linked. This greatly aids setup of multiple
-  contrast datasets.
+  contrast datasets. All the datasets to be linked must have the same type of
+  structure.
+- The initialisation of a LipidLeaflet is made much easier by using a library
+  of lipid head/volumes and scattering lengths for popular lipids which are
+  presented to the user in an initialisation dialogue.
+- The refnx paper is accepted and the article and manuscript file are
+  included in the repository.
+- The pyqt GUI to refnx can be made into standalone executables for Windows,
+  macOS.
