@@ -1,4 +1,5 @@
 from copy import deepcopy
+import os.path
 
 import numpy as np
 from PyQt5 import QtCore, QtGui, QtWidgets, uic
@@ -7,6 +8,17 @@ from refnx._lib import flatten
 from refnx.dataset import ReflectDataset
 from refnx.reflect._app.dataobject import DataObject
 from refnx.reflect._app.datastore import DataStore
+from refnx.reflect import Slab, LipidLeaflet, SLD
+
+
+def component_class(component):
+    """
+    Give the node type for a given component
+    """
+    if isinstance(component, Slab):
+        return SlabNode
+    elif isinstance(component, LipidLeaflet):
+        return LipidLeafletNode
 
 
 class Node(object):
@@ -81,6 +93,13 @@ class Node(object):
             rp = rp[1]._row_parent()
         h.reverse()
         return h
+
+    def row_indices(self):
+        hierarchy = self.hierarchy()
+        indices = []
+        for node in hierarchy:
+            indices.append(node.row())
+        return indices
 
     def descendants(self):
         # yield all of the descendants of this node
@@ -180,6 +199,65 @@ class ParNode(Node):
         return True
 
 
+class PropertyNode(Node):
+    # an object that displays/edits some attribute of its parent node
+    # it is not a ParNode.
+    def __init__(self, data, model, parent=QtCore.QModelIndex(),
+                 validators=()):
+        super(PropertyNode, self).__init__(data, model, parent)
+        # here self._data is the attribute name
+        self.attribute_type = type(getattr(parent._data, data))
+        self.validators = validators
+
+    def flags(self, column):
+        flags = QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled
+        if column == 1:
+            flags |= QtCore.Qt.ItemIsEditable
+
+            if self.attribute_type is bool:
+                flags |= QtCore.Qt.ItemIsUserCheckable
+
+        return flags
+
+    def data(self, column, role=QtCore.Qt.DisplayRole):
+        d = getattr(self._parent._data, self._data)
+        if (role == QtCore.Qt.CheckStateRole and column == 1 and
+                self.attribute_type is bool):
+
+            if d:
+                return QtCore.Qt.Checked
+            else:
+                return QtCore.Qt.Unchecked
+
+        if role == QtCore.Qt.DisplayRole and column == 1:
+            return d
+        if role == QtCore.Qt.DisplayRole and column == 0:
+            return self._data
+
+    def columnCount(self):
+        return 2
+
+    def setData(self, column, value, role=QtCore.Qt.EditRole):
+        if (role == QtCore.Qt.CheckStateRole and column == 1 and
+                self.attribute_type is bool):
+
+            if value == QtCore.Qt.Checked:
+                setattr(self._parent._data, self._data, True)
+            else:
+                setattr(self._parent._data, self._data, False)
+            return True
+
+        # parse and fill out parameter values/limits
+        if role == QtCore.Qt.EditRole and len(self.validators) and column == 1:
+            for validator in self.validators:
+                voutput = validator.validate(value, 1)
+                if voutput[0] == QtGui.QValidator.Acceptable:
+                    setattr(self._parent._data, self._data, voutput[1])
+                    return True
+
+        return False
+
+
 class ComponentNode(Node):
     def __init__(self, data, model, parent=QtCore.QModelIndex()):
         super(ComponentNode, self).__init__(data, model, parent)
@@ -219,11 +297,43 @@ class ComponentNode(Node):
         return True
 
 
+class SlabNode(ComponentNode):
+    def __init__(self, data, model, parent=QtCore.QModelIndex()):
+        super(SlabNode, self).__init__(data, model, parent)
+
+    def flags(self, column):
+        flags = QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled
+        if column == 0:
+            flags |= QtCore.Qt.ItemIsEditable
+
+        return flags
+
+    def data(self, column, role=QtCore.Qt.EditRole):
+        if role == QtCore.Qt.CheckStateRole:
+            return None
+
+        if column > 0:
+            return None
+        return self._data.name
+
+    def setData(self, column, value, role=QtCore.Qt.EditRole):
+        if role == QtCore.Qt.CheckStateRole:
+            return False
+
+        if column:
+            return False
+
+        self.component.name = value
+        self._model.dataChanged.emit(self.index, self.index)
+        return True
+
+
 class StructureNode(Node):
     def __init__(self, data, model, parent=QtCore.QModelIndex()):
         super(StructureNode, self).__init__(data, model, parent)
         for component in data:
-            self.appendChild(ComponentNode(component, model, self))
+            self.appendChild(
+                component_class(component)(component, model, self))
 
     @property
     def structure(self):
@@ -245,7 +355,7 @@ class StructureNode(Node):
         self._model.endRemoveRows()
 
     def insert_component(self, row, component):
-        n = ComponentNode(component, self._model, self)
+        n = component_class(component)(component, self._model, self)
 
         self._model.beginInsertRows(self.index, row, row)
         self.insertChild(row, n)
@@ -287,9 +397,6 @@ class DatasetNode(Node):
     @property
     def dataset(self):
         return self._data
-
-    def columnCount(self):
-        return 1
 
     def refresh(self):
         self.dataset.refresh()
@@ -582,6 +689,15 @@ class TreeModel(QtCore.QAbstractItemModel):
         else:
             return None
 
+    def node_from_row_indices(self, row_indices):
+        # retrieve a descendant node given a series of row indices
+        # the first entry in row_indices should always be 0/None.
+        node = self._rootnode
+        for idx in row_indices[1:]:
+            node = node.child(idx)
+
+        return node
+
     def snapshot(self, snapshot_name):
         original = self.datastore['theoretical']
         dataset = ReflectDataset()
@@ -636,7 +752,7 @@ class TreeFilter(QtCore.QSortFilterProxyModel):
 
         # filter out parameters for the fronting/backing media
         if (isinstance(item, ParNode) and
-                isinstance(item.parent(), ComponentNode)):
+                isinstance(item.parent(), SlabNode)):
 
             # component
             parent = item.parent()
@@ -659,3 +775,38 @@ def find_data_object(index):
     data_object_node = [i for i in hierarchy if
                         isinstance(i, DataObjectNode)]
     return data_object_node[0]
+
+
+###############################################################################
+class LipidLeafletNode(ComponentNode):
+    def __init__(self, data, model, parent=QtCore.QModelIndex()):
+        super(LipidLeafletNode, self).__init__(data, model, parent)
+
+        prop_node = PropertyNode('reverse_monolayer', model, parent=self)
+        self.appendChild(prop_node)
+
+    def flags(self, column):
+        flags = QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled
+        if column == 0:
+            flags |= QtCore.Qt.ItemIsEditable
+
+        return flags
+
+    def data(self, column, role=QtCore.Qt.DisplayRole):
+        if role == QtCore.Qt.CheckStateRole:
+            return None
+
+        if column > 0:
+            return None
+        return self._data.name
+
+    def setData(self, column, value, role=QtCore.Qt.EditRole):
+        if role == QtCore.Qt.CheckStateRole:
+            return False
+
+        if column:
+            return False
+
+        self.component.name = value
+        self._model.dataChanged.emit(self.index, self.index)
+        return True

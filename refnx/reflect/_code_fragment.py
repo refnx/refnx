@@ -24,7 +24,7 @@ def code_fragment(objective):
     code.append("from refnx.dataset import ReflectDataset")
 
     code.append('from refnx.reflect import Slab, SLD, Structure')
-    code.append('from refnx.reflect import ReflectModel')
+    code.append('from refnx.reflect import ReflectModel, LipidLeaflet')
     code.append('from refnx._lib import flatten')
 
     code.append('import refnx')

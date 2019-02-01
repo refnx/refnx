@@ -25,13 +25,13 @@ from .datastore import DataStore
 from .treeview_gui_model import (TreeModel, Node, DatasetNode, DataObjectNode,
                                  ComponentNode, StructureNode,
                                  ReflectModelNode, ParNode, TreeFilter,
-                                 find_data_object)
-
+                                 find_data_object, SlabNode)
+from .lipid_leaflet import LipidLeafletDialog
 
 import refnx
 from refnx.analysis import (CurveFitter, Objective,
                             Transform, GlobalObjective)
-from refnx.reflect import SLD, ReflectModel
+from refnx.reflect import SLD, ReflectModel, Slab
 from refnx.reflect._code_fragment import code_fragment
 from refnx._lib import unique, flatten
 
@@ -91,6 +91,8 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
             self.on_remove_from_fit_action)
         self.context_menu.link_action.triggered.connect(
             self.link_action)
+        self.context_menu.link_equivalent_action.triggered.connect(
+            self.link_equivalent_action)
         self.context_menu.unlink_action.triggered.connect(
             self.unlink_action)
         self.context_menu.copy_from_action.triggered.connect(
@@ -131,6 +133,8 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
             linestyle='-', color='r')[0]
 
         self.restore_settings()
+
+        self.lipid_leaflet = LipidLeafletDialog(self)
 
         print('Session started at:', time.asctime(time.localtime(time.time())))
 
@@ -731,12 +735,16 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         SLDcalculator.show()
 
     @QtCore.pyqtSlot()
+    def on_actionLipid_browser_triggered(self):
+        self.lipid_leaflet.show()
+
+    @QtCore.pyqtSlot()
     def on_add_layer_clicked(self):
         selected_indices = self.ui.treeView.selectedIndexes()
 
         if not selected_indices:
             return msg('Select a single row within a Structure to insert a'
-                       ' new slab.')
+                       ' new Component.')
 
         index = selected_indices[0]
 
@@ -752,7 +760,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         _component = [i for i in hierarchy if isinstance(i, ComponentNode)]
         if not _component:
             return msg('Select a single row within a Structure to insert a'
-                       ' new slab.')
+                       ' new Component.')
 
         # work out which component you have.
         component = _component[0]
@@ -762,16 +770,24 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
             return msg("You can't append a layer after the backing medium,"
                        " select a previous layer")
 
-        # all checking done, append a layer
-        material = SLD(3.47)
-        slab = material(15, 3)
-        slab.name = 'slab'
-        slab.thick.name = 'thick'
-        slab.rough.name = 'rough'
-        slab.sld.real.name = 'sld'
-        slab.sld.imag.name = 'isld'
-        slab.vfsolv.name = 'vfsolv'
-        structure.insert_component(idx + 1, slab)
+        # what type of component shall we add?
+        comp_type = ['Slab', 'LipidLeaflet']
+        which_type, ok = QtWidgets.QInputDialog.getItem(
+            self, "What Component type did you want to add?", "", comp_type,
+            editable=False)
+        if not ok:
+            return
+
+        if which_type == 'Slab':
+            c = _default_slab(parent=self)
+        elif which_type == 'LipidLeaflet':
+            self.lipid_leaflet.hide()
+            ok = self.lipid_leaflet.exec_()
+            if not ok:
+                return
+            c = self.lipid_leaflet.component()
+
+        structure.insert_component(idx + 1, c)
 
     @QtCore.pyqtSlot()
     def on_remove_layer_clicked(self):
@@ -833,8 +849,8 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
                     bounds.ub = 0
                     bounds.lb = 2 * val
                 else:
-                    bounds.ub = 0
-                    bounds.lb = 2 * val
+                    bounds.lb = 0
+                    bounds.ub = 2 * val
 
                 parent, row = par.parent(), par.row()
                 idx1 = self.treeModel.index(row, 3, parent.index)
@@ -1132,8 +1148,110 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         if len(par_nodes_to_link) < 2:
             return
 
-        master_parameter = par_nodes_to_link[0]
-        mp = master_parameter.parameter
+        mpn = par_nodes_to_link[0]
+        mp = mpn.parameter
+
+        # if the master parameter already has a constraint, then it
+        # has to be removed, otherwise recursion occurs
+        if mp.constraint is not None:
+            mp.constraint = None
+            idx = self.treeModel.index(mpn.row(), 1, mpn.parent().index)
+            idx1 = self.treeModel.index(mpn.row(), 5, mpn.parent().index)
+            self.treeModel.dataChanged.emit(idx, idx1)
+
+        for par in par_nodes_to_link[1:]:
+            par.parameter.constraint = mp
+            idx = self.treeModel.index(par.row(), 1, par.parent().index)
+            idx1 = self.treeModel.index(par.row(), 5, par.parent().index)
+            self.treeModel.dataChanged.emit(idx, idx1)
+
+        self.ui.paramsSlider.setFocus(QtCore.Qt.OtherFocusReason)
+        self.ui.treeView.setFocus(QtCore.Qt.OtherFocusReason)
+
+    def link_equivalent_action(self):
+        # link equivalent parameters across a whole range of datasets.
+        # the datasets all need to have the same structure for this to work.
+
+        # retrieve data_objects that need to be linked
+        datastore = self.treeModel.datastore
+        names = datastore.names
+        names.remove('theoretical')
+
+        dlg = uic.loadUi(os.path.join(UI_LOCATION, 'data_object_selector.ui'))
+        dlg.data_objects.addItems(names)
+
+        ok = dlg.exec_()
+        if not ok:
+            return
+        items = dlg.data_objects.selectedItems()
+        names = [item.text() for item in items]
+
+        # these are the data objects that you want to link across
+        data_objects = [datastore[name] for name in names]
+
+        # these are the nodes selected in the tree view. We're going to link
+        # these nodes together, to equivalent nodes on the other data objects
+        selected_indices = self.ui.treeView.selectedIndexes()
+        par_nodes_to_link = []
+        for index in selected_indices:
+            # from filter to model
+            index = self.mapToSource(index)
+            item = index.internalPointer()
+            if isinstance(item, ParNode):
+                par_nodes_to_link.append(item)
+
+        # get unique nodes
+        par_nodes_to_link = list(unique(par_nodes_to_link))
+
+        def is_same_structure(objs):
+            # Now check that the models are roughly the same
+            models = [data_object.model for data_object in objs]
+            structures = [m.structure for m in models]
+            ncomponents = [len(s) for s in structures]
+            parameters = [list(flatten(m.parameters)) for m in models]
+            nparams = [len(p) for p in parameters]
+
+            if len(set(ncomponents)) == 1 and len(set(nparams)) == 1:
+                return True
+            return False
+
+        extra_pars = []
+        # retrieve equivalent parameters on other datasets
+        for node in par_nodes_to_link:
+            mstr_obj_node = find_data_object(node.index)
+            # check that all data_objects have the same structure as the
+            # selected parameter
+            if not is_same_structure([mstr_obj_node.data_object] +
+                                     data_objects):
+                return msg("All models must have equivalent structural"
+                           " components and the same number of parameters for"
+                           " equivalent linking to be available, no linking"
+                           " has been done.")
+
+            row_indices = node.row_indices()
+
+            for data_object in data_objects:
+                # retrieve the similar parameter from row indices
+                row_indices[1] = self.treeModel.data_object_row(
+                    data_object.name)
+                # now identify where the similar parameter is
+                pn = self.treeModel.node_from_row_indices(row_indices)
+                extra_pars.append(pn)
+
+        par_nodes_to_link.extend(extra_pars)
+        par_nodes_to_link = list(unique(par_nodes_to_link))
+
+        mpn = par_nodes_to_link[0]
+        mp = mpn.parameter
+
+        # if the master parameter already has a constraint, then it
+        # has to be removed, otherwise recursion occurs
+        if mp.constraint is not None:
+            mp.constraint = None
+            idx = self.treeModel.index(mpn.row(), 1, mpn.parent().index)
+            idx1 = self.treeModel.index(mpn.row(), 5, mpn.parent().index)
+            self.treeModel.dataChanged.emit(idx, idx1)
+
         for par in par_nodes_to_link[1:]:
             par.parameter.constraint = mp
             idx = self.treeModel.index(par.row(), 1, par.parent().index)
@@ -1746,6 +1864,8 @@ class OpenMenu(QtWidgets.QMenu):
         self.addSeparator()
         self.link_action = self.addAction("Link parameters")
         self.unlink_action = self.addAction("Unlink parameters")
+        self.link_equivalent_action = self.addAction(
+            "Link equivalent parameters on other datasets")
 
     def __call__(self, position):
         action = self.exec_(self._parent.mapToGlobal(position))
@@ -1760,3 +1880,16 @@ def msg(text):
     msgBox.setText(text)
     msgBox.exec_()
     return
+
+
+def _default_slab(parent=None):
+    # all checking done, append a layer
+    material = SLD(3.47)
+    c = material(15, 3)
+    c.name = 'slab'
+    c.thick.name = 'thick'
+    c.rough.name = 'rough'
+    c.sld.real.name = 'sld'
+    c.sld.imag.name = 'isld'
+    c.vfsolv.name = 'vfsolv'
+    return c
