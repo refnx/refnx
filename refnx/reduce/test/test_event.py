@@ -19,7 +19,7 @@ class TestEvent(object):
     def setup_class(cls):
         path = os.path.dirname(os.path.realpath(__file__))
         cls.event_file_path = os.path.join(path,
-                                           'DAQ_2012-01-19T15-45-52',
+                                           'DAQ_2012-01-20T21-50-32',
                                            'DATASET_0',
                                            'EOS.bin')
 
@@ -42,7 +42,7 @@ class TestEvent(object):
         events(self.event_file_path)
 
     def test_num_events(self):
-        assert_equal(1056618, self.x.size)
+        assert_equal(self.x.size, 783982)
 
     def test_max_frames(self):
         # test reading only a certain number of frames
@@ -70,9 +70,9 @@ class TestEvent(object):
     def test_event_same_as_detector(self):
         # the detector file should be the same as the event file
         orig_file = PlatypusNexus(os.path.join(self.path,
-                                               'PLP0011613.nx.hdf'))
+                                               'PLP0011641.nx.hdf'))
         orig_det = orig_file.cat.detector
-        frames = [np.arange(0, 23999)]
+        frames = [np.arange(0, 501744)]
         event_det, fb = event.process_event_stream(self.event_list,
                                                    frames,
                                                    orig_file.cat.t_bins,
@@ -94,15 +94,15 @@ class TestEvent(object):
     def test_values(self):
         # We know the values of all the events in the file from another program
         # test that a set of random events are correct.
-        assert_equal(self.t[0], 47350)
-        assert_equal(self.x[0], 18)
-        assert_equal(self.y[0], 96)
-        assert_equal(self.f[0], 5)
+        assert_equal(self.f[0], 0)
+        assert_equal(self.t[0], 18912)
+        assert_equal(self.y[0], 18)
+        assert_equal(self.x[0], 19)
 
-        assert_equal(self.t[-1], 31343)
-        assert_equal(self.x[-1], 4)
-        assert_equal(self.y[-1], 13)
-        assert_equal(self.f[-1], 23998)
+        assert_equal(self.f[-1], 501743)
+        assert_equal(self.t[-1], 20786)
+        assert_equal(self.y[-1], 16)
+        assert_equal(self.x[-1], 13)
 
     def test_process_event_stream(self):
         x_bins = np.array([60.5, -60.5])
@@ -115,20 +115,20 @@ class TestEvent(object):
                                                      t_bins,
                                                      y_bins,
                                                      x_bins)
-        assert_equal(detector[0, 382, 97, 0], 70)
-        assert_equal(detector[1, 383, 97, 0], 64)
-        assert_equal(detector[4, 377, 98, 0], 57)
+        assert_equal(detector[0, 300, 97, 0], 7)
+        assert_equal(detector[1, 402, 93, 0], 1)
+        assert_equal(detector[4, 509, 97, 0], 5)
 
         x_bins = np.array([210.5, -210.5])
         y_bins = np.linspace(110.5, -110.5, 222)
         t_bins = np.linspace(0, 50000, 1001)
-        frames = [[6, 10]]
+        frames = [[6, 10, 12, 1000, 1001, 1002, 1003]]
         detector, fbins = event.process_event_stream(self.event_list,
                                                      frames,
                                                      t_bins,
                                                      y_bins,
                                                      x_bins)
-        assert_equal(np.sum(detector.ravel()), 167)
+        assert_equal(np.sum(detector.ravel()), 11)
 
         # # now see what happens if we go too far with the frame_bins
         # frames = event.framebins_to_frames([0, 24000, 30000])
