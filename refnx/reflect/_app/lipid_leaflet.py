@@ -37,6 +37,15 @@ class LipidLeafletDialog(QtWidgets.QDialog, LipidDialog):
 
     @QtCore.pyqtSlot(str)
     def on_lipid_selector_currentIndexChanged(self, text):
+        if text == '':
+            # clear everything
+            self.condition.clear()
+            self.chemical_name.setText('')
+            self.total_formula.setText('')
+            self.references.setText('')
+            if self._scene is not None:
+                self._scene.clear()
+
         if text not in self.lipids:
             return
         self.condition.clear()
@@ -81,6 +90,7 @@ class LipidLeafletDialog(QtWidgets.QDialog, LipidDialog):
     @QtCore.pyqtSlot(str)
     def on_condition_currentIndexChanged(self, text):
         name = self.lipid_selector.currentText()
+
         if name not in self.lipids:
             return
 
