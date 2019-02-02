@@ -57,6 +57,7 @@ class Node(object):
         return None
 
     def setData(self, col, val, role=QtCore.Qt.EditRole):
+        # TreeModel emits the dataChanged Signal, not the node.
         return False
 
     def flags(self, column):
@@ -367,6 +368,8 @@ class ReflectModelNode(Node):
     def __init__(self, data, model, parent=QtCore.QModelIndex()):
         super(ReflectModelNode, self).__init__(data, model, parent=parent)
 
+        self.constantdq_q = True
+
         n = ParNode(data.scale, model, self)
         self.appendChild(n)
         n = ParNode(data.bkg, model, self)
@@ -381,13 +384,43 @@ class ReflectModelNode(Node):
         return 4
 
     def data(self, column, role=QtCore.Qt.EditRole):
-        if role == QtCore.Qt.CheckStateRole:
-            return None
+        if role == QtCore.Qt.CheckStateRole and column == 1:
+            if self.constantdq_q:
+                return QtCore.Qt.Checked
+            else:
+                return QtCore.Qt.Unchecked
 
-        if column > 0:
-            return None
-        # structures name
-        return 'model'
+        if role == QtCore.Qt.DisplayRole:
+            if column == 0:
+                # structures name
+                return 'model'
+            elif column == 1:
+                return "dq/q const. smearing?"
+
+        return None
+
+    def setData(self, column, value, role=QtCore.Qt.EditRole):
+        if role == QtCore.Qt.CheckStateRole and column == 1:
+            self.constantdq_q = value == QtCore.Qt.Checked
+            data_object_node = find_data_object(self.index)
+            data_object = data_object_node.data_object
+            data_object.constantdq_q = self.constantdq_q
+
+            # need to not let the dq parameter vary if there's resolution
+            # information in the dataset
+            if not self.constantdq_q:
+                data_object_node.data_object.model.dq.vary = False
+
+            return True
+
+        return True
+
+    def flags(self, column):
+        flags = QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled
+        if column == 1:
+            flags |= QtCore.Qt.ItemIsUserCheckable
+
+        return flags
 
 
 class DatasetNode(Node):
@@ -476,14 +509,14 @@ class DataObjectNode(Node):
         return 4
 
     def setData(self, column, value, role=QtCore.Qt.EditRole):
-        if role == QtCore.Qt.CheckStateRole and column == 3:
+        if role == QtCore.Qt.CheckStateRole and column == 1:
             self.visible = value == QtCore.Qt.Checked
             return True
 
         return True
 
     def data(self, column, role=QtCore.Qt.DisplayRole):
-        if role == QtCore.Qt.CheckStateRole and column == 3:
+        if role == QtCore.Qt.CheckStateRole and column == 1:
             if self.visible:
                 return QtCore.Qt.Checked
             else:
@@ -493,15 +526,15 @@ class DataObjectNode(Node):
             if column == 0:
                 return self._data.name
             elif column == 1:
-                return 'points: %d' % len(self._data.dataset)
-            elif column == 2:
-                return 'chi2: %g' % self.chi2
-            elif column == 3:
                 return 'display'
+            elif column == 2:
+                return 'points: %d' % len(self._data.dataset)
+            elif column == 3:
+                return 'chi2: %g' % self.chi2
 
     def flags(self, column):
         flags = QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled
-        if column == 3:
+        if column == 1:
             flags |= QtCore.Qt.ItemIsUserCheckable
 
         return flags
@@ -742,17 +775,19 @@ class TreeFilter(QtCore.QSortFilterProxyModel):
             return False
 
         # filter out resolution parameter if the dataset has x_err
-        if (isinstance(item, ParNode) and
-                isinstance(item.parent(), ReflectModelNode)):
-            # find the dataset
+        # and constant dq/q wasn't requested.
+        if (isinstance(item.parent(), ReflectModelNode) and
+                isinstance(item, ParNode)):
             data_object_node = find_data_object(item.index)
             dataset = data_object_node.data_object.dataset
-            if dataset.x_err is not None and item.row() == 2:
+            constantdq_q = data_object_node.data_object.constantdq_q
+            if (item.row() == 2 and not constantdq_q and
+                    dataset.x_err is not None):
                 return False
 
         # filter out parameters for the fronting/backing media
-        if (isinstance(item, ParNode) and
-                isinstance(item.parent(), SlabNode)):
+        if (isinstance(item.parent(), SlabNode) and
+                isinstance(item, ParNode)):
 
             # component
             parent = item.parent()
