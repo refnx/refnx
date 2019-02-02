@@ -1485,7 +1485,6 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
             self.treeModel.dataChanged.emit(index, index)
 
     def update_gui_model(self, data_objects):
-        # TODO correct resolution here
         if not len(data_objects):
             return
 

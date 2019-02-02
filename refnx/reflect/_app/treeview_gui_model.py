@@ -151,27 +151,27 @@ class ParNode(Node):
         return flags
 
     def data(self, column, role=QtCore.Qt.DisplayRole):
-        p = self.parameter
-        d = [p.name, p.value, p.stderr, p.bounds.lb, p.bounds.ub,
-             repr(p.constraint)]
-
         if (role == QtCore.Qt.CheckStateRole):
-            if column != 1:
-                return None
-            if p.vary:
-                return QtCore.Qt.Checked
+            if column == 1:
+                p = self.parameter
+                if p.vary:
+                    return QtCore.Qt.Checked
+                else:
+                    return QtCore.Qt.Unchecked
             else:
-                return QtCore.Qt.Unchecked
+                return None
 
-        if role == QtCore.Qt.DisplayRole and column < len(d):
+        if role == QtCore.Qt.DisplayRole:
+            p = self.parameter
+            d = [p.name, p.value, p.stderr, p.bounds.lb, p.bounds.ub,
+                 repr(p.constraint)]
             return d[column]
 
     def setData(self, column, value, role=QtCore.Qt.EditRole):
-        p = self.parameter
-
         # we want to use a checkbox to say if a parameter is varying
         if role == QtCore.Qt.CheckStateRole and column == 1:
             try:
+                p = self.parameter
                 p.vary = value == QtCore.Qt.Checked
             except RuntimeError:
                 # can't try and hold a parameter that has a constraint
@@ -188,6 +188,7 @@ class ParNode(Node):
                 voutput = [QtGui.QValidator.Acceptable, float(value)]
 
             if voutput[0] == QtGui.QValidator.Acceptable:
+                p = self.parameter
                 if column == 1:
                     p.value = float(voutput[1])
                 elif column == 3:
@@ -221,9 +222,9 @@ class PropertyNode(Node):
         return flags
 
     def data(self, column, role=QtCore.Qt.DisplayRole):
-        d = getattr(self._parent._data, self._data)
         if (role == QtCore.Qt.CheckStateRole and column == 1 and
                 self.attribute_type is bool):
+            d = getattr(self._parent._data, self._data)
 
             if d:
                 return QtCore.Qt.Checked
@@ -231,7 +232,7 @@ class PropertyNode(Node):
                 return QtCore.Qt.Unchecked
 
         if role == QtCore.Qt.DisplayRole and column == 1:
-            return d
+            return getattr(self._parent._data, self._data)
         if role == QtCore.Qt.DisplayRole and column == 0:
             return self._data
 

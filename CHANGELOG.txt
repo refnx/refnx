@@ -42,3 +42,5 @@ Details of changes made to refnx
   included in the repository.
 - The pyqt GUI to refnx can be made into standalone executables for Windows,
   macOS.
+- Fixed a bug that meant most reflectivity calculations were single-threaded
+  instead of multi-threaded.

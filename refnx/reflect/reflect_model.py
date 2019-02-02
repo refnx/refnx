@@ -49,7 +49,7 @@ class ReflectModel(object):
         Specifies the number of threads for parallel calculation. This
         option is only applicable if you are using the ``_creflect``
         module. The option is ignored if using the pure python calculator,
-        ``_reflect``. If `threads == 0` then all available processors are
+        ``_reflect``. If `threads == -1` then all available processors are
         used.
     quad_order: int, optional
         the order of the Gaussian quadrature polynomial for doing the
@@ -63,7 +63,7 @@ class ReflectModel(object):
 
     """
     def __init__(self, structure, scale=1, bkg=1e-7, name='', dq=5.,
-                 threads=0, quad_order=17):
+                 threads=-1, quad_order=17):
         self.name = name
         self._parameters = None
         self.threads = threads
