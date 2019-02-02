@@ -96,6 +96,11 @@ class TestReflectDataset(object):
 
         ReflectDataset(os.path.join(self.pth, 'd_a.txt'))
 
+    def test_init_with_data1d(self):
+        # test we can construct a dataset from a dataset (i.e. a copy)
+        dataset = Data1D(self.data)
+        assert_equal(dataset.y, self.data.y)
+
     def test_add_data(self):
         # test we can add data to the dataset
 

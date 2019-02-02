@@ -192,8 +192,7 @@ class Structure(UserList):
 
         # could possibly speed up by allocating a larger array, filling,
         # then trimming
-        slabs = np.concatenate([c.slabs for c in self.components if
-                                c.slabs is not None])
+        slabs = np.concatenate([c.slabs for c in self.components])
 
         # if the slab representation needs to be reversed.
         if self.reverse_structure:
@@ -202,7 +201,7 @@ class Structure(UserList):
             slabs[1:, 3] = roughnesses[::-1]
             slabs[0, 3] = 0.
 
-        if len(self) > 2:
+        if np.any(slabs[:, 4] > 0):
             # overall SLD is a weighted average
             solvent = self.solvent
             if self.solvent is None:

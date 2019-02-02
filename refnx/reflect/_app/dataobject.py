@@ -28,9 +28,10 @@ class DataObject(object):
                                 'color': str,
                                 'visible': bool}
 
-    def __init__(self, dataset):
+    def __init__(self, dataset, constantdq_q=True):
         self.dataset = dataset
         self.name = dataset.name
+        self.constantdq_q = constantdq_q
 
         self._objective = None
         self._model = None
@@ -45,7 +46,10 @@ class DataObject(object):
     @property
     def generative(self):
         if self.model is not None:
-            return self.model(self.dataset.x, x_err=self.dataset.x_err)
+            x_err = self.dataset.x_err
+            if self.constantdq_q:
+                x_err = None
+            return self.model(self.dataset.x, x_err=x_err)
         else:
             return None
 

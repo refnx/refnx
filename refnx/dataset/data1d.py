@@ -75,6 +75,21 @@ class Data1D(object):
         # if it's a file then open and load the file.
         if hasattr(data, 'read') or type(data) is str:
             self.load(data)
+        elif isinstance(data, Data1D):
+            # copy a dataset (but not it's file info)
+            d = data.data
+            self.name = data.name
+            self.filename = data.filename
+            self.metadata = data.metadata
+
+            self._x = np.array(d[0], dtype=float)
+            self._y = np.array(d[1], dtype=float)
+            if len(data) > 2:
+                self._y_err = np.array(d[2], dtype=float)
+                self.weighted = True
+
+            if len(data) > 3:
+                self._x_err = np.array(d[3], dtype=float)
         elif data is not None:
             self._x = np.array(data[0], dtype=float)
             self._y = np.array(data[1], dtype=float)

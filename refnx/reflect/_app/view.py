@@ -32,6 +32,7 @@ import refnx
 from refnx.analysis import (CurveFitter, Objective,
                             Transform, GlobalObjective)
 from refnx.reflect import SLD, ReflectModel, Slab
+from refnx.dataset import Data1D
 from refnx.reflect._code_fragment import code_fragment
 from refnx._lib import unique, flatten
 
@@ -931,12 +932,18 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         t = Transform(self.settings.transformdata)
         useerrors = self.settings.useerrors
 
-        # TODO fix resolution
         # make objectives
         objectives = []
         for data_object in data_objects:
+            # this is if the user requested constant dq/q. If that's the case
+            # then make a new dataset to hide the resolution information
+            dataset_t = data_object.dataset
+            if data_object.constantdq_q and dataset_t.x_err is not None:
+                dataset_t = Data1D(data=dataset_t)
+                dataset_t.x_err = None
+
             objective = Objective(data_object.model,
-                                  data_object.dataset,
+                                  dataset_t,
                                   name=data_object.name,
                                   transform=t,
                                   use_weights=useerrors)
@@ -1442,7 +1449,6 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
 
     def calculate_chi2(self, data_objects):
         # calculate chi2 for all the data objects
-        # TODO correct resolution here
         if not len(data_objects):
             return
 
@@ -1455,6 +1461,13 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
 
             useerrors = self.settings.useerrors
 
+            # this is if the user requested constant dq/q. If that's the case
+            # then make a new dataset to hide the resolution information
+            dataset_t = data_object.dataset
+            if data_object.constantdq_q and dataset_t.x_err is not None:
+                dataset_t = Data1D(data=dataset_t)
+                dataset_t.x_err = None
+
             t = None
             if self.settings.transformdata is not None:
                 transform = Transform(self.settings.transformdata)
@@ -1462,7 +1475,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
 
             # TODO implement correct resolution smearing
             objective = Objective(data_object.model,
-                                  data_object.dataset,
+                                  dataset_t,
                                   transform=t,
                                   use_weights=useerrors)
             chisqr = objective.chisqr()
@@ -1472,7 +1485,6 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
             self.treeModel.dataChanged.emit(index, index)
 
     def update_gui_model(self, data_objects):
-        # TODO correct resolution here
         if not len(data_objects):
             return
 
@@ -1698,16 +1710,14 @@ class MyReflectivityGraphs(FigureCanvas):
                 continue
 
             dataset = data_object.dataset
-            model = data_object.model
 
             if data_object.name != 'theoretical':
                 y = dataset.y
                 if transform is not None:
                     y, _ = transform(dataset.x, y)
 
-            if model is not None:
-                # TODO take care of correct resolution
-                yfit = model(dataset.x, x_err=dataset.x_err)
+            if data_object.model is not None:
+                yfit = data_object.generative
 
                 if transform is not None:
                     yfit, efit = transform(dataset.x, yfit)

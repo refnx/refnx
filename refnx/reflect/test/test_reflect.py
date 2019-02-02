@@ -88,6 +88,11 @@ class TestReflect(object):
             calc = _creflect.abeles(tempq, self.structure.slabs[..., :4])
             assert_almost_equal(calc, self.rvals[0::5])
 
+    def test_c_abeles_multithreaded(self):
+        if TEST_C_REFLECT:
+            _creflect.abeles(self.qvals, self.structure.slabs[..., :4],
+                             threads=4)
+
     def test_py_abeles(self):
         # test reflectivity calculation with values generated from Motofit
         calc = _reflect.abeles(self.qvals, self.structure.slabs[..., :4])
@@ -250,6 +255,10 @@ class TestReflect(object):
     def test_reflectivity_model(self):
         # test reflectivity calculation with values generated from Motofit
         rff = ReflectModel(self.structure, dq=0)
+
+        # the default for number of threads should be -1
+        assert(rff.threads == -1)
+
         model = rff.model(self.qvals)
         assert_almost_equal(model, self.rvals)
 
