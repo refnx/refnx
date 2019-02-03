@@ -34,7 +34,7 @@ from refnx.analysis import (CurveFitter, Objective,
 from refnx.reflect import SLD, ReflectModel, Slab
 from refnx.dataset import Data1D
 from refnx.reflect._code_fragment import code_fragment
-from refnx._lib import unique, flatten
+from refnx._lib import unique, flatten, PoolWrapper
 
 
 matplotlib.use('Qt5Agg')
@@ -981,14 +981,20 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
                    'MCMC': 'MCMC'}
 
         # least squares doesnt have a callback
-        callback = progress.callback
+        kws = {'callback': progress.callback}
+
         if alg == 'LM':
-            callback = None
+            kws.pop('callback')
 
         if methods[alg] != 'MCMC':
             try:
-                fitter.fit(method=methods[alg],
-                           callback=callback)
+                with PoolWrapper(-1) as workers:
+                    if alg == 'DE':
+                        kws['workers'] = workers
+
+                    fitter.fit(method=methods[alg],
+                               **kws)
+
                 print(str(objective))
             except RuntimeError as e:
                 # user probably aborted the fit

@@ -44,3 +44,5 @@ Details of changes made to refnx
   macOS.
 - Fixed a bug that meant most reflectivity calculations were single-threaded
   instead of multi-threaded.
+- Added MixedReflectModel to the pyqt GUI, allowing one to model 'patchy'
+  systems, i.e. incoherent averaging of reflectivities.
