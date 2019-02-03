@@ -522,8 +522,6 @@ class TestReflect(object):
         assert_allclose(r[1], mm)
 
     def test_repr_reflect_model(self):
-        from refnx.reflect import Structure, Slab
-        from refnx.analysis import Interval
         p = SLD(0.)
         q = SLD(2.07)
         s = p(0, 0) | q(0, 3)
