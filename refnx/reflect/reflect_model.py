@@ -690,6 +690,12 @@ class MixedReflectModel(object):
 
         self._structures = structures
 
+    def __repr__(self):
+        s = ("MixedReflectModel({_structures!r}, scales={_scales!r},"
+             " bkg={_bkg!r}, name={name!r}, dq={_dq!r}, threads={threads!r},"
+             " quad_order={quad_order!r})")
+        return s.format(**self.__dict__)
+
     def __call__(self, x, p=None, x_err=None):
         r"""
         Calculate the generative model

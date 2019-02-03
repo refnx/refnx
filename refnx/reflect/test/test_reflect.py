@@ -13,11 +13,14 @@ try:
 except ImportError:
     HAVE_CREFLECT = False
 
+# Before removing what appear to be unused imports think twice.
+# Some of the tests use eval, which requires the imports.
 import refnx.reflect._reflect as _reflect
 from refnx.analysis import (Transform, Objective,
-                            CurveFitter, Parameter)
+                            CurveFitter, Parameter, Interval,
+                            Parameters)
 from refnx.reflect import (SLD, ReflectModel, MixedReflectModel,
-                           reflectivity)
+                           reflectivity, Structure, Slab)
 from refnx.dataset import ReflectDataset
 
 
@@ -483,6 +486,14 @@ class TestReflect(object):
         assert_(mixed_model.dq.value == 0)
 
         assert_equal(mixed_model_y, mixed_model(self.qvals))
+
+        # test repr of MixedReflectModel
+        q = repr(mixed_model)
+        r = eval(q)
+        assert_equal(r.scales, np.array([0.4, 0.6]))
+        assert_(r.dq.value == 0)
+
+        assert_equal(mixed_model_y, r(self.qvals))
 
     def test_pnr(self):
         # test pnr calculation
