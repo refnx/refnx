@@ -240,6 +240,7 @@ class PoolWrapper(object):
 
     def __del__(self):
         self.close()
+        self.terminate()
 
     def terminate(self):
         if self._own_pool:
@@ -255,15 +256,20 @@ class PoolWrapper(object):
 
     def __exit__(self, exc_type, exc_value, traceback):
         if self._own_pool:
-            if exc_type is None:
-                self.pool.close()
-                self.pool.join()
-            else:
-                self.pool.terminate()
+            self.pool.close()
+            self.pool.terminate()
+
+    def __call__(self, func, iterable):
+        # only accept one iterable because that's all Pool.map accepts
+        try:
+            return self._mapfunc(func, iterable)
+        except TypeError:
+            # wrong number of arguments
+            raise TypeError("The map-like callable must be of the"
+                            " form f(func, iterable)")
 
     def map(self, func, iterable):
-        # only accept one iterable because that's all Pool.map accepts
-        return self._mapfunc(func, iterable)
+        return self(func, iterable)
 
 
 def getargspec(f):
