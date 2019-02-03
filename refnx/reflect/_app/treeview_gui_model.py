@@ -5,10 +5,12 @@ import numpy as np
 from PyQt5 import QtCore, QtGui, QtWidgets, uic
 
 from refnx._lib import flatten
+from refnx.analysis import Parameter, Parameters, possibly_create_parameter
 from refnx.dataset import ReflectDataset
 from refnx.reflect._app.dataobject import DataObject
 from refnx.reflect._app.datastore import DataStore
-from refnx.reflect import Slab, LipidLeaflet, SLD
+from refnx.reflect import (Slab, LipidLeaflet, SLD, ReflectModel,
+                           MixedReflectModel)
 
 
 def component_class(component):
@@ -201,6 +203,36 @@ class ParNode(Node):
         return True
 
 
+class ParametersNode(Node):
+    def __init__(self, data, model, parent=QtCore.QModelIndex()):
+        super(ParametersNode, self).__init__(data, model, parent)
+        for p in data:
+            if isinstance(p, Parameters):
+                n = ParametersNode(p, model, self)
+            if isinstance(p, Parameter):
+                n = ParNode(p, model, self)
+            self.appendChild(n)
+
+    @property
+    def parameters(self):
+        return self._data
+
+    def flags(self, column):
+        flags = QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled
+
+        return flags
+
+    def data(self, column, role=QtCore.Qt.DisplayRole):
+        if role == QtCore.Qt.DisplayRole:
+            if column == 0:
+                name = self._data.name
+                if not name:
+                    name = 'Parameters'
+                return name
+
+        return None
+
+
 class PropertyNode(Node):
     # an object that displays/edits some attribute of its parent node
     # it is not a ParNode.
@@ -371,18 +403,29 @@ class ReflectModelNode(Node):
 
         self.constantdq_q = True
 
-        n = ParNode(data.scale, model, self)
+        # deal with scale factors
+        if isinstance(data, ReflectModel):
+            n = ParNode(data.scale, model, self)
+        elif isinstance(data, MixedReflectModel):
+            n = ParametersNode(data.scales, model, self)
         self.appendChild(n)
+
         n = ParNode(data.bkg, model, self)
         self.appendChild(n)
         n = ParNode(data.dq, model, self)
         self.appendChild(n)
-        n = StructureNode(data.structure, model, self)
-        self.appendChild(n)
 
-    def childCount(self):
-        # scale, bkg, res, structure
-        return 4
+        if isinstance(data, ReflectModel):
+            n = StructureNode(data.structure, model, self)
+            self.appendChild(n)
+        elif isinstance(data, MixedReflectModel):
+            for structure in data.structures:
+                n = StructureNode(structure, model, self)
+                self.appendChild(n)
+
+    @property
+    def structures(self):
+        return [self.child(i)._data for i in range(3, self.childCount())]
 
     def data(self, column, role=QtCore.Qt.EditRole):
         if role == QtCore.Qt.CheckStateRole and column == 1:
@@ -400,12 +443,103 @@ class ReflectModelNode(Node):
 
         return None
 
+    def remove_structure(self, row):
+        # don't remove the last structure
+        if row < 3 or len(self.structures) < 2:
+            return
+
+        # you have to be a mixedreflectmodel because there's more than one
+        # structure
+        data_object_node = find_data_object(self.index)
+        data_object = data_object_node.data_object
+        orig_model = data_object.model
+        structures = orig_model.structures
+        scales = orig_model.scales
+
+        # going down to a single reflectmodel
+        if len(structures) == 2:
+            self._model.beginRemoveRows(self.index, row, row)
+            structures.pop(row - 3)
+            scales.pop(row - 3)
+            sf = possibly_create_parameter(scales[0], name='scale')
+            new_model = ReflectModel(structures[0], scale=sf,
+                                     bkg=orig_model.bkg,
+                                     dq=orig_model.dq)
+            data_object.model = new_model
+            self.popChild(row)
+            self._model.endRemoveRows()
+            n = ParNode(sf, self._model, self)
+            self._model.beginInsertRows(self.index, 0, 0)
+            self.insertChild(0, n)
+            self._model.endInsertRows()
+            self._model.beginRemoveRows(self.index, 1, 1)
+            self.popChild(1)
+            self._model.endRemoveRows()
+            # data_object_node.set_reflect_model(new_model)
+            return
+
+        # you're not down to a single structure, so there must have been more
+        # than 2 structures
+        self._model.beginRemoveRows(self.index, row, row)
+        # pop the structure and scale factor nodes
+        self.popChild(row)
+        structures.pop(row - 3)
+        scales.pop(row - 3)
+        self._model.endRemoveRows()
+
+        self._model.beginRemoveRows(self.child(0).index, row - 3, row - 3)
+        self.child(0).popChild(row - 3)
+        self._model.endRemoveRows()
+
+    def insert_structure(self, row, structure):
+        n = StructureNode(structure, self._model, self)
+
+        data_object_node = find_data_object(self.index)
+        data_object = data_object_node.data_object
+        orig_model = data_object.model
+
+        if len(self.structures) == 1:
+            self._model.beginInsertRows(self.index, row, row)
+            new_structures = [self.structures[0], structure]
+            new_model = MixedReflectModel(new_structures,
+                                          bkg=orig_model.bkg,
+                                          dq=orig_model.dq)
+            data_object.model = new_model
+            data_object_node.set_reflect_model(new_model)
+            return
+
+        # already a mixed model
+        # we can't insert at a lower place than the 3rd row
+        row = max(row, 3)
+        self._model.beginInsertRows(self.index, row, row)
+
+        # insert the structure
+        orig_model.structures.insert(row - 3, structure)
+        v = 1 / len(orig_model.structures)
+        sf = possibly_create_parameter(v, name='scale')
+        orig_model.scales.insert(row - 3, sf)
+
+        self.insertChild(row, n)
+        self._model.endInsertRows()
+
+        # insert a scale factor
+        self._model.beginInsertRows(self.child(0).index,
+                                    row - 3,
+                                    row - 3)
+        # add a scale factor
+        n = ParNode(sf, self._model, self.child(0))
+        self.child(0).insertChild(row - 3, n)
+        self._model.endInsertRows()
+
     def setData(self, column, value, role=QtCore.Qt.EditRole):
         if role == QtCore.Qt.CheckStateRole and column == 1:
             self.constantdq_q = value == QtCore.Qt.Checked
             data_object_node = find_data_object(self.index)
             data_object = data_object_node.data_object
             data_object.constantdq_q = self.constantdq_q
+
+            # TODO emit signal for recalculation of chi2. Do this by saying
+            # TODO parnode for constant dq/q has changed.
 
             # need to not let the dq parameter vary if there's resolution
             # information in the dataset
@@ -782,6 +916,7 @@ class TreeFilter(QtCore.QSortFilterProxyModel):
             data_object_node = find_data_object(item.index)
             dataset = data_object_node.data_object.dataset
             constantdq_q = data_object_node.data_object.constantdq_q
+            # hard-coded the row for dq/q
             if (item.row() == 2 and not constantdq_q and
                     dataset.x_err is not None):
                 return False
