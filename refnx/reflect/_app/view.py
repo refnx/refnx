@@ -98,6 +98,10 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
             self.unlink_action)
         self.context_menu.copy_from_action.triggered.connect(
             self.copy_from_action)
+        self.context_menu.add_mixed_area.triggered.connect(
+            self.add_mixed_area_action)
+        self.context_menu.remove_mixed_area.triggered.connect(
+            self.remove_mixed_area_action)
 
         self.treeModel.dataChanged.connect(self.tree_model_data_changed)
         self.treeModel.rowsRemoved.connect(self.tree_model_structure_changed)
@@ -1305,7 +1309,6 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         if not ok:
             return
 
-        # a trick to make the treeView repaint
         selected_indices = self.ui.treeView.selectedIndexes()
         source_model = datastore[which_model].model
 
@@ -1332,6 +1335,60 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
 
         do = [node.data_object for node in data_object_nodes]
         self.update_gui_model(do)
+
+    @QtCore.pyqtSlot()
+    def add_mixed_area_action(self):
+        selected_indices = self.ui.treeView.selectedIndexes()
+
+        if not selected_indices:
+            return
+
+        index = selected_indices[0]
+
+        # from filter to model
+        index = self.mapToSource(index)
+        if not index.isValid():
+            return
+
+        item = index.internalPointer()
+        data_object_node = find_data_object(index)
+        reflect_model_node = data_object_node.child(1)
+        structures = reflect_model_node.structures
+
+        if isinstance(item, StructureNode):
+            copied_structure = deepcopy(item._data)
+        else:
+            copied_structure = deepcopy(structures[0])
+
+        # add it to the list of structures, at the END
+        reflect_model_node.insert_structure(len(structures) + 3,
+                                            copied_structure)
+
+    @QtCore.pyqtSlot()
+    def remove_mixed_area_action(self):
+        selected_indices = self.ui.treeView.selectedIndexes()
+
+        if not selected_indices:
+            return
+
+        index = selected_indices[0]
+
+        # from filter to model
+        index = self.mapToSource(index)
+        if not index.isValid():
+            return
+
+        item = index.internalPointer()
+        if not isinstance(item, StructureNode):
+            return msg("Please select a single Structure to remove")
+
+        data_object_node = find_data_object(index)
+        reflect_model_node = data_object_node.child(1)
+        if len(reflect_model_node.structures) == 1:
+            return msg("Your model only contains a single Structure, removal"
+                       " not possible")
+
+        reflect_model_node.remove_structure(item.row())
 
     def modify_gui(self):
         """
@@ -1387,8 +1444,8 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         node = parent.internalPointer()
 
         # if you're not adding/removing Components don't respond.
-        if not isinstance(node, StructureNode):
-            return
+        # if not isinstance(node, StructureNode):
+        #     return
 
         # find out which data_object / model we're adjusting
         hierarchy = node.hierarchy()
@@ -1788,12 +1845,18 @@ class MySLDGraphs(FigureCanvas):
 
             if (graph_properties.ax_sld_profile and
                     data_object.model is not None):
-                sld_profile = data_object.model.structure.sld_profile()
+                try:
+                    sld_profile = data_object.model.structure.sld_profile()
 
-                graph_properties.ax_sld_profile.set_data(
-                    sld_profile[0],
-                    sld_profile[1])
-                graph_properties.ax_sld_profile.set_visible(visible)
+                    graph_properties.ax_sld_profile.set_data(
+                        sld_profile[0],
+                        sld_profile[1])
+                    graph_properties.ax_sld_profile.set_visible(visible)
+                except AttributeError:
+                    # this may happen for MixedReflectModel, the model doesnt
+                    # have structure.sld_profile()
+                    continue
+
         self.axes[0].relim()
         self.axes[0].autoscale_view(None, True, True)
         self.draw()
@@ -1876,6 +1939,10 @@ class OpenMenu(QtWidgets.QMenu):
         self.unlink_action = self.addAction("Unlink parameters")
         self.link_equivalent_action = self.addAction(
             "Link equivalent parameters on other datasets")
+        self.addSeparator()
+        self.add_mixed_area = self.addAction('Mixed area - add a structure')
+        self.remove_mixed_area = self.addAction("Mixed area - remove a"
+                                                " structure")
 
     def __call__(self, position):
         action = self.exec_(self._parent.mapToGlobal(position))
