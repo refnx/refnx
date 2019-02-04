@@ -34,8 +34,7 @@ import refnx
 """)
 
 
-_main = (
-"""
+_main = ("""
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

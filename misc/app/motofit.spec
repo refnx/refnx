@@ -13,13 +13,16 @@ icons = (pjoin('..', '..', 'refnx', 'reflect', '_app', 'icons', '*.png'),
          pjoin('refnx', 'reflect', '_app', 'icons'))
 licences = (pjoin('..', '..', 'refnx', 'reflect', '_app', 'ui', 'licences', '*'),
             pjoin('refnx', 'reflect', '_app', 'ui', 'licences'))
+lipid_data = (pjoin('..', '..', 'refnx', 'reflect', '_app', 'lipids.json'),
+              pjoin('refnx', 'reflect', '_app'))
 
 a = Analysis(['motofit.py'],
              pathex=[os.getcwd()],
              binaries=[],
              datas=[uiloc,
                     icons,
-                    licences],
+                    licences,
+                    lipid_data],
              hiddenimports=['periodictable', 'refnx',
                             'refnx.analysis', 'refnx.dataset', 'refnx.reflect',
                             'refnx.reflect._app'],
