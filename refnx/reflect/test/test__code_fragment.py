@@ -58,9 +58,9 @@ class TestCodeFragment(object):
         # check that we can reproduce the objective from the repr
         self.structure361[2].thick.constraint = self.structure361[1].thick
         fragment = code_fragment(objective)
-        fragment = fragment + '\nresult = objective_0.chisqr()'
+        fragment = fragment + '\nobj = objective()\nresult = obj.chisqr()'
         d = {}
-        g = {}
-        exec(fragment, g, d)
-
+        # need to provide the globals dictionary to exec, so it can see imports
+        # e.g. https://bit.ly/2RFOF7i (from stackoverflow)
+        exec(fragment, globals(), d)
         assert_allclose(d['result'], objective.chisqr())
