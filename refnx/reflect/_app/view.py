@@ -140,6 +140,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         self.restore_settings()
 
         self.lipid_leaflet = LipidLeafletDialog(self)
+        self.data_object_selector = DataObjectSelectorDialog(self)
 
         print('Session started at:', time.asctime(time.localtime(time.time())))
 
@@ -251,6 +252,10 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
             self.settings.experiment_file_name = experiment_file_name
             self.restore_settings()
 
+            while self.data_object_selector.data_objects.count():
+                self.data_object_selector.data_objects.takeItem(0)
+
+            self.data_object_selector.addItems(self.treeModel.datastore.names)
             widget = self.ui.currently_fitting
             for i in reversed(range(widget.count())):
                 widget.takeItem(i)
@@ -358,6 +363,9 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         self.add_data_objects_to_graphs(new_data_objects)
 
         self.calculate_chi2(data_objects)
+
+        # add newly loads to the data object selector dialogue
+        self.data_object_selector.addItems(new_names)
         return fnames
 
     @QtCore.pyqtSlot()
@@ -403,6 +411,9 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         self.reflectivitygraphs.remove_trace(
             datastore[which_dataset])
         self.treeModel.remove_data_object(which_dataset)
+
+        # remove from data object selector
+        self.data_object_selector.removeItem(which_dataset)
 
     @QtCore.pyqtSlot()
     def on_actionSave_Fit_triggered(self):
@@ -1191,17 +1202,14 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
 
         # retrieve data_objects that need to be linked
         datastore = self.treeModel.datastore
-        names = datastore.names
-        names.remove('theoretical')
 
-        dlg = uic.loadUi(os.path.join(UI_LOCATION, 'data_object_selector.ui'))
-        dlg.data_objects.addItems(names)
-
-        ok = dlg.exec_()
+        ok = self.data_object_selector.exec_()
         if not ok:
             return
-        items = dlg.data_objects.selectedItems()
+        items = self.data_object_selector.data_objects.selectedItems()
         names = [item.text() for item in items]
+        if 'theoretical' in names:
+            names.pop(names.index('theoretical'))
 
         # these are the data objects that you want to link across
         data_objects = [datastore[name] for name in names]
@@ -1976,3 +1984,23 @@ def _default_slab(parent=None):
     c.sld.imag.name = 'isld'
     c.vfsolv.name = 'vfsolv'
     return c
+
+
+_DataObjectDialog = uic.loadUiType(os.path.join(UI_LOCATION,
+                                                'data_object_selector.ui'))[0]
+
+
+class DataObjectSelectorDialog(QtWidgets.QDialog, _DataObjectDialog):
+    def __init__(self, parent=None):
+        # persistent data object selector dlg
+        QtWidgets.QDialog.__init__(self, parent)
+        self.setupUi(self)
+
+    def addItems(self, items):
+        self.data_objects.addItems(items)
+
+    def removeItem(self, item):
+        list_items = self.data_objects.findItems(item, QtCore.Qt.MatchExactly)
+        if list_items:
+            row = self.data_objects.row(list_items[0])
+            self.data_objects.takeItem(row)
