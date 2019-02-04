@@ -439,7 +439,7 @@
   </property>
   <property name="font">
    <font>
-    <pointsize>14</pointsize>
+    <pointsize>12</pointsize>
    </font>
   </property>
   <property name="acceptDrops">
@@ -937,7 +937,7 @@ errors?</string>
            </property>
            <property name="icon">
             <iconset>
-             <normaloff>../icons/go.jpeg</normaloff>../icons/go.jpeg</iconset>
+             <normaloff>../icons/go.png</normaloff>../icons/go.png</iconset>
            </property>
            <property name="iconSize">
             <size>
