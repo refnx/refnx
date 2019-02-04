@@ -566,6 +566,9 @@
     <addaction name="separator"/>
     <addaction name="actionTake_Snapshot"/>
     <addaction name="separator"/>
+    <addaction name="actionLink_Selected"/>
+    <addaction name="actionUnlink_selected_Parameters"/>
+    <addaction name="actionLink_Equivalent_Parameters"/>
    </widget>
    <widget class="QMenu" name="menuHelp">
     <property name="title">
@@ -1328,6 +1331,30 @@ errors?</string>
   <action name="actionLipid_browser">
    <property name="text">
     <string>Lipid browser</string>
+   </property>
+  </action>
+  <action name="actionLink_Selected">
+   <property name="text">
+    <string>Link selected Parameters</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+1</string>
+   </property>
+  </action>
+  <action name="actionUnlink_selected_Parameters">
+   <property name="text">
+    <string>Unlink selected Parameters</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+2</string>
+   </property>
+  </action>
+  <action name="actionLink_Equivalent_Parameters">
+   <property name="text">
+    <string>Link Equivalent Parameters</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+3</string>
    </property>
   </action>
  </widget>

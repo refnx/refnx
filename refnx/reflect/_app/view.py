@@ -102,6 +102,11 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
             self.add_mixed_area_action)
         self.context_menu.remove_mixed_area.triggered.connect(
             self.remove_mixed_area_action)
+        self.actionLink_Selected.triggered.connect(self.link_action)
+        self.actionUnlink_selected_Parameters.triggered.connect(
+            self.unlink_action)
+        self.actionLink_Equivalent_Parameters.triggered.connect(
+            self.link_equivalent_action)
 
         self.treeModel.dataChanged.connect(self.tree_model_data_changed)
         self.treeModel.rowsRemoved.connect(self.tree_model_structure_changed)
