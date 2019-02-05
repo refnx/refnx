@@ -45,6 +45,10 @@ if __name__ == "__main__":
     parser.add_argument('-s', '--steps', help=("number of thinned MCMC steps"
                                                " to save"),
                         type=int, default=1000)
+    parser.add_argument('-n', '--temps', help=("number of parallel tempering"
+                                               " temperatures (requires the"
+                                               " ptemcee package)"),
+                        type=int, default=1)
     parser.add_argument('-o', '--output', help='file to save chain to',
                         type=str)
 
@@ -52,11 +56,12 @@ if __name__ == "__main__":
     nwalkers = args.walkers
     nthin = args.thin
     nsteps = args.steps
+    ntemps = args.temps
 
     with open('steps.chain', 'w', buffering=500000) as f, Pool() as workers:
         obj = objective()
         # Create the fitter and fit
-        fitter = CurveFitter(obj, nwalkers=nwalkers)
+        fitter = CurveFitter(obj, nwalkers=nwalkers, ntemps=ntemps)
         fitter.initialise('prior')
 
         # the workers kwd is only present in scipy >1.2
