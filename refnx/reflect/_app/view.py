@@ -946,6 +946,10 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
                 dataset_t = Data1D(data=dataset_t)
                 dataset_t.x_err = None
 
+            # can't have negative points if fitting as logR vs Q
+            if self.settings.transformdata == 'logY':
+                dataset_t = self.filter_neg_reflectivity(dataset_t)
+
             objective = Objective(data_object.model,
                                   dataset_t,
                                   name=data_object.name,
@@ -1536,7 +1540,10 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
                 transform = Transform(self.settings.transformdata)
                 t = transform
 
-            # TODO implement correct resolution smearing
+            # can't have negative points if fitting as logR vs Q
+            if self.settings.transformdata == 'logY':
+                dataset_t = self.filter_neg_reflectivity(dataset_t)
+
             objective = Objective(data_object.model,
                                   dataset_t,
                                   transform=t,
@@ -1556,6 +1563,13 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
 
         self.redraw_data_object_graphs(data_objects)
         self.calculate_chi2(data_objects)
+
+    def filter_neg_reflectivity(self, dataset):
+        # if one is fitting as logR vs Q (with/without errors), then negative
+        # points mess up the transform. Therefore, filter those negative points
+        copy = Data1D(data=dataset)
+        copy.mask = dataset.y > 0
+        return copy
 
     def add_data_objects_to_graphs(self, data_objects):
         transform = Transform(self.settings.transformdata)
