@@ -47,7 +47,7 @@ if __name__ == "__main__":
                         type=int, default=1000)
     parser.add_argument('-n', '--temps', help=("number of parallel tempering"
                                                " temperatures (requires the"
-                                               " ptemcee package)",
+                                               " ptemcee package)"),
                         type=int, default=1)
     parser.add_argument('-o', '--output', help='file to save chain to',
                         type=str)
