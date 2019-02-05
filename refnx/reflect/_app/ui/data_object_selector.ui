@@ -7,11 +7,11 @@
     <x>0</x>
     <y>0</y>
     <width>315</width>
-    <height>302</height>
+    <height>277</height>
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Select equivalent datasets for linking</string>
+   <string>Select relevant datasets</string>
   </property>
   <layout class="QGridLayout" name="gridLayout">
    <item row="0" column="0">

@@ -390,36 +390,34 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         """
         you remove data
         """
+        # retrieve data_objects that need to be removed
         datastore = self.treeModel.datastore
-        datasets = list(datastore.names)
-        del(datasets[datasets.index('theoretical')])
-        if not len(datasets):
-            return
 
-        which_dataset, ok = QtWidgets.QInputDialog.getItem(
-            self,
-            "Which dataset did you want to remove?",
-            "dataset",
-            datasets,
-            editable=False)
-
+        self.data_object_selector.setWindowTitle('Select datasets to remove')
+        ok = self.data_object_selector.exec_()
         if not ok:
             return
+        items = self.data_object_selector.data_objects.selectedItems()
+        names = [item.text() for item in items]
+        if 'theoretical' in names:
+            names.pop(names.index('theoretical'))
 
-        # remove from list of datasets to be fitted, if present
-        widget = self.ui.currently_fitting
-        items_found = widget.findItems(which_dataset, QtCore.Qt.MatchExactly)
-        for item in items_found:
-            row = widget.row(item)
-            widget.takeItem(row)
+        for which_dataset in names:
+            # remove from list of datasets to be fitted, if present
+            widget = self.ui.currently_fitting
+            items_found = widget.findItems(which_dataset,
+                                           QtCore.Qt.MatchExactly)
+            for item in items_found:
+                row = widget.row(item)
+                widget.takeItem(row)
 
-        self.reflectivitygraphs.remove_trace(
-            datastore[which_dataset])
-        self.sldgraphs.remove_trace(datastore[which_dataset])
-        self.treeModel.remove_data_object(which_dataset)
+            self.reflectivitygraphs.remove_trace(
+                datastore[which_dataset])
+            self.sldgraphs.remove_trace(datastore[which_dataset])
+            self.treeModel.remove_data_object(which_dataset)
 
-        # remove from data object selector
-        self.data_object_selector.removeItem(which_dataset)
+            # remove from data object selector
+            self.data_object_selector.removeItem(which_dataset)
 
     @QtCore.pyqtSlot()
     def on_actionSave_Fit_triggered(self):
@@ -1213,6 +1211,8 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         # retrieve data_objects that need to be linked
         datastore = self.treeModel.datastore
 
+        self.data_object_selector.setWindowTitle("Select equivalent datasets"
+                                                 " to link")
         ok = self.data_object_selector.exec_()
         if not ok:
             return
@@ -1930,8 +1930,8 @@ class MySLDGraphs(FigureCanvas):
         self.draw()
 
     def remove_trace(self, data_object):
-        if data_object.ax_sld_profile:
-            data_object.ax_sld_profile.remove()
+        if data_object.graph_properties.ax_sld_profile:
+            data_object.graph_properties.ax_sld_profile.remove()
         self.draw()
 
     def remove_traces(self):
