@@ -35,7 +35,9 @@ class Data1D(object):
 
     mask : array-like
         Specifies which data points are (un)masked. Must be broadcastable
-        to the y-data. `Data1D.mask = None` clears the mask.
+        to the y-data. `Data1D.mask = None` clears the mask. If a mask value
+        equates to `True`, then the point is included, if a mask value equates
+        to `False` it is excluded.
 
     Attributes
     ----------
@@ -77,19 +79,15 @@ class Data1D(object):
             self.load(data)
         elif isinstance(data, Data1D):
             # copy a dataset (but not it's file info)
-            d = data.data
             self.name = data.name
             self.filename = data.filename
             self.metadata = data.metadata
-
-            self._x = np.array(d[0], dtype=float)
-            self._y = np.array(d[1], dtype=float)
-            if len(data) > 2:
-                self._y_err = np.array(d[2], dtype=float)
-                self.weighted = True
-
-            if len(data) > 3:
-                self._x_err = np.array(d[3], dtype=float)
+            self._x = data._x
+            self._y = data._y
+            self._y_err = data._y_err
+            self._x_err = data._x_err
+            self.weighted = data.weighted
+            self._mask = data._mask
         elif data is not None:
             self._x = np.array(data[0], dtype=float)
             self._y = np.array(data[1], dtype=float)
