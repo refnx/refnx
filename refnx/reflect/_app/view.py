@@ -415,6 +415,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
 
         self.reflectivitygraphs.remove_trace(
             datastore[which_dataset])
+        self.sldgraphs.remove_trace(datastore[which_dataset])
         self.treeModel.remove_data_object(which_dataset)
 
         # remove from data object selector
@@ -1886,6 +1887,7 @@ class MySLDGraphs(FigureCanvas):
                         sld_profile[1])
                     graph_properties.ax_sld_profile.set_visible(visible)
                 except AttributeError:
+                    # TODO, fix this
                     # this may happen for MixedReflectModel, the model doesnt
                     # have structure.sld_profile()
                     continue
@@ -1906,13 +1908,18 @@ class MySLDGraphs(FigureCanvas):
                     color = artist.getp(graph_properties.ax_data, 'color')
                     lw = artist.getp(graph_properties.ax_data, 'lw')
 
-                graph_properties['ax_sld_profile'] = self.axes[0].plot(
-                    data_object.sld_profile[0],
-                    data_object.sld_profile[1],
-                    linestyle='-',
-                    color=color,
-                    lw=lw,
-                    label='sld_' + data_object.name)[0]
+                try:
+                    graph_properties['ax_sld_profile'] = self.axes[0].plot(
+                        data_object.sld_profile[0],
+                        data_object.sld_profile[1],
+                        linestyle='-',
+                        color=color,
+                        lw=lw,
+                        label='sld_' + data_object.name)[0]
+                except AttributeError:
+                    # this may happen for MixedReflectModel, the model doesnt
+                    # have structure.sld_profile()
+                    continue
 
                 if graph_properties['sld_profile_properties']:
                     artist.setp(graph_properties.ax_sld_profile,

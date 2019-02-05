@@ -55,9 +55,11 @@ class DataObject(object):
 
     @property
     def sld_profile(self):
-        if self.model is not None:
+        try:
             return self.model.structure.sld_profile()
-        else:
+        except AttributeError:
+            # if self.model is None, or if self.model doesn't have a structure
+            # (e.g. MixedReflectModel)
             return None
 
     @property
