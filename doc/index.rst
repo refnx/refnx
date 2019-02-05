@@ -7,7 +7,7 @@ refnx - Neutron and X-ray reflectometry analysis in Python
 .. _refnx github repository:   http://github.com/refnx/refnx
 .. _scipy.optimize:      http://docs.scipy.org/doc/scipy/reference/optimize.html
 .. _emcee:      http://emcee.readthedocs.io/en/stable/
-.. _YouTube:     https://www.youtube.com/channel/UCvhOxwZsdFMGqSzasE0ZSOw
+.. _refnx YouTube channel:     https://www.youtube.com/channel/UCvhOxwZsdFMGqSzasE0ZSOw
 
 *refnx* is a flexible, powerful, Python package for generalised curvefitting
 analysis, specifically neutron and X-ray reflectometry data.
