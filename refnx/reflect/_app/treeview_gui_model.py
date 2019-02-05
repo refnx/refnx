@@ -701,10 +701,13 @@ class ContainerNode(Node):
                 self._model.endInsertRows()
             else:
                 # if the number of datasets didn't increase, then it was
-                # refreshed, update the datasetnode
+                # refreshed.
                 position = self.datastore.names.index(data_object.name)
-                dataset_node = self.child(position).child(0).index
-                self._model.dataChanged.emit(dataset_node, dataset_node)
+                index = self.index
+                idx = self._model.index(position, 1, index)
+                idx1 = self._model.index(position, 3, index)
+
+                self._model.dataChanged.emit(idx, idx1)
 
         return data_object
 

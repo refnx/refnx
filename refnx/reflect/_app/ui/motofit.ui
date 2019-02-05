@@ -562,6 +562,8 @@
     </property>
     <addaction name="actionSave_Model"/>
     <addaction name="actionLoad_Model"/>
+    <addaction name="actionExport_parameters"/>
+    <addaction name="separator"/>
     <addaction name="actionExport_Code_Fragment"/>
     <addaction name="separator"/>
     <addaction name="actionTake_Snapshot"/>
@@ -569,6 +571,7 @@
     <addaction name="actionLink_Selected"/>
     <addaction name="actionUnlink_selected_Parameters"/>
     <addaction name="actionLink_Equivalent_Parameters"/>
+    <addaction name="separator"/>
    </widget>
    <widget class="QMenu" name="menuHelp">
     <property name="title">
@@ -1355,6 +1358,14 @@ errors?</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+3</string>
+   </property>
+  </action>
+  <action name="actionExport_parameters">
+   <property name="text">
+    <string>Export parameters</string>
+   </property>
+   <property name="toolTip">
+    <string>Export parameters to a text file</string>
    </property>
   </action>
  </widget>

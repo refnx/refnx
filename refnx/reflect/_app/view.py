@@ -4,6 +4,7 @@ import pickle
 import os
 import sys
 import time
+import csv
 
 import numpy as np
 import matplotlib
@@ -326,7 +327,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         """
         datastore = self.treeModel.datastore
 
-        existing_data_objects = set(datastore.names)
+        existing_data_objects = datastore.names
 
         data_objects = []
         fnames = []
@@ -340,13 +341,14 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
                 except RuntimeError:
                     continue
 
-        # new data_object_names
-        loaded_data_objects = set([data_object.name for data_object
-                                   in data_objects])
+        loaded_data_objects = [data_object.name for data_object
+                               in data_objects]
+        new_names = [n for n in loaded_data_objects if
+                     n not in existing_data_objects]
 
         # give a newly loaded data object a simple model. You don't want to do
         # this for an object that's already been loaded.
-        for name in loaded_data_objects:
+        for name in new_names:
             fronting = SLD(0, name='fronting')
             sio2 = SLD(3.47, name='1')
             backing = SLD(2.07, name='backing')
@@ -357,13 +359,14 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
             data_object_node.set_reflect_model(model)
 
         # for the intersection of loaded and old, refresh the plot.
-        refresh_names = existing_data_objects.intersection(loaded_data_objects)
+        refresh_names = [n for n in existing_data_objects if
+                         n in loaded_data_objects]
+
         refresh_data_objects = [datastore[name] for name
                                 in refresh_names]
         self.redraw_data_object_graphs(refresh_data_objects)
 
         # for totally new, then add to graphs
-        new_names = loaded_data_objects.difference(existing_data_objects)
         new_data_objects = [datastore[name] for name in new_names]
         self.add_data_objects_to_graphs(new_data_objects)
 
@@ -462,7 +465,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
 
     @QtCore.pyqtSlot()
     def on_actionLoad_Model_triggered(self):
-        # load a model
+        # load a model from a pickle file
         model_file_name, ok = QtWidgets.QFileDialog.getOpenFileName(
             self, 'Select Model File')
         if not ok:
@@ -471,53 +474,67 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
 
     @QtCore.pyqtSlot()
     def on_actionSave_Model_triggered(self):
-        # save a model
+        # save a model to a pickle file
         # which model are you saving?
         datastore = self.treeModel.datastore
 
-        # all data_objects have a model, it's just that they're
-        # not all developed.
-        model_names = datastore.names
-        model_names.append('-all-')
+        self.data_object_selector.setWindowTitle('Select models to save')
+        ok = self.data_object_selector.exec_()
+        if not ok:
+            return
+        items = self.data_object_selector.data_objects.selectedItems()
+        names = [item.text() for item in items]
+        if 'theoretical' in names:
+            names.pop(names.index('theoretical'))
 
-        which_model, ok = QtWidgets.QInputDialog.getItem(
-            self, "Which model did you want to save?",
-            "model",
-            model_names,
-            editable=False)
+        dialog = QtWidgets.QFileDialog(self)
+        dialog.setFileMode(QtWidgets.QFileDialog.Directory)
+        dialog.setWindowTitle('Where do you want to save the models?')
+        if dialog.exec_():
+            folder = dialog.selectedFiles()
 
+            for model_name in names:
+                model = datastore[model_name]
+                fname = os.path.join(folder[0],
+                                     'coef_' + model_name + '.pkl')
+                with open(fname, 'wb') as f:
+                    pickle.dump(model, f)
+
+    @QtCore.pyqtSlot()
+    def on_actionExport_parameters_triggered(self):
+        # save all parameter values to a text file
+        datastore = self.treeModel.datastore
+
+        self.data_object_selector.setWindowTitle('Select parameters to export')
+        ok = self.data_object_selector.exec_()
+        if not ok:
+            return
+        items = self.data_object_selector.data_objects.selectedItems()
+        names = [item.text() for item in items]
+
+        suggested_name = os.path.join(os.getcwd(),
+                                      'coefficients.csv')
+        fname, ok = QtWidgets.QFileDialog.getSaveFileName(
+            self,
+            'Exported file name:',
+            suggested_name)
         if not ok:
             return
 
-        if which_model == '-all-':
-            dialog = QtWidgets.QFileDialog(self)
-            dialog.setFileMode(QtWidgets.QFileDialog.Directory)
-            if dialog.exec_():
-                folder = dialog.selectedFiles()
-
-                for model_name in datastore.names:
-                    model = datastore[model_name]
-                    fname = os.path.join(folder[0],
-                                         'coef_' + model_name + '.pkl')
-                    with open(fname, 'wb') as f:
-                        pickle.dump(model, f)
-        else:
-            suggested_name = os.path.join(os.getcwd(),
-                                          'coef_' + which_model + '.pkl')
-            modelFileName, ok = QtWidgets.QFileDialog.getSaveFileName(
-                self,
-                'Save model as:',
-                suggested_name)
-            if not ok:
-                return
-
-            # retrieve the data_object
-            data_object = datastore[which_model]
-            with open(modelFileName, 'wb') as f:
-                pickle.dump(data_object.model, f)
+        with open(fname, 'w', newline='') as csvfile:
+            writer = csv.writer(csvfile, delimiter=',',
+                                quotechar='|', quoting=csv.QUOTE_MINIMAL)
+            for name in names:
+                model = datastore[name].model
+                writer.writerow([name])
+                writer.writerow([p.name for p in flatten(model.parameters)])
+                writer.writerow([p.value for p in flatten(model.parameters)])
+                writer.writerow([p.stderr for p in flatten(model.parameters)])
 
     @QtCore.pyqtSlot()
     def on_actionExport_Code_Fragment_triggered(self):
+        # exports an executable script for the current fitting system.
+        # this script can be used for e.g. MCMC sampling.
         widget = self.ui.currently_fitting
         rows = widget.count()
         names_to_fit = [widget.item(i).text() for i in range(rows)]

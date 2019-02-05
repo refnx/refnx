@@ -79,7 +79,10 @@ class DataStore(object):
 
         # don't overwrite the data object if present, just refresh it
         if self[do.name] is not None:
-            do.refresh()
+            # TODO refreshing causes the file to be re-read, after it
+            # was probably already read in self.load. Consider setting
+            # the data by copying it from do.
+            self.data_objects[do.name].refresh()
         else:
             self.data_objects[do.name] = do
 
