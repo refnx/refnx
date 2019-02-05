@@ -1023,7 +1023,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
                 msg(repr(e))
                 print(repr(e))
                 print(objective)
-            except ValueError as e:
+            except Exception as e:
                 # Typically shown when sensible limits weren't provided
                 msg(repr(e))
                 progress.close()
