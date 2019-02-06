@@ -667,24 +667,11 @@ class Objective(BaseObjective):
             A randomly chosen parameter vector
 
         """
-        chains = np.array([np.ravel(param.chain[..., nburn::nthin]) for param
-                           in self.varying_parameters()
-                           if param.chain is not None])
+        yield from self.varying_parameters().pgen(ngen=ngen,
+                                                  nburn=nburn,
+                                                  nthin=nthin)
 
-        if len(chains) != len(self.varying_parameters()) or len(chains) == 0:
-            raise ValueError("You need to perform sampling on all the varying"
-                             "parameters first")
-
-        samples = np.arange(np.size(chains, 1))
-
-        choices = np.random.choice(samples,
-                                   size=(min(ngen, samples.size),),
-                                   replace=False)
-
-        for choice in choices:
-            yield chains[..., choice]
-
-    def plot(self, pvals=None, samples=0, parameter=None):
+    def plot(self, pvals=None, samples=0, parameter=None, fig=None):
         """
         Plot the data/model.
 
@@ -700,6 +687,9 @@ class Objective(BaseObjective):
         parameter: refnx.analysis.Parameter
             Creates an interactive plot for the Parameter in Jupyter. Requires
             ipywidgets be installed. Use with %matplotlib notebook/qt.
+        fig: Figure instance, optional
+            If `fig` is not supplied then a new figure is created. Otherwise
+            the graph is created on the current axes on the supplied figure.
 
         Returns
         -------
@@ -711,8 +701,11 @@ class Objective(BaseObjective):
 
         self.setp(pvals)
 
-        fig = plt.figure()
-        ax = fig.add_subplot(111)
+        if fig is None:
+            fig = plt.figure()
+            ax = fig.add_subplot(111)
+        else:
+            ax = fig.gca()
 
         y, y_err, model = self._data_transform(model=self.generative())
 

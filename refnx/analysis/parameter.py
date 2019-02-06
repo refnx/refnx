@@ -204,6 +204,44 @@ class Parameters(UserList):
         q.data = p
         return q
 
+    def pgen(self, ngen=1000, nburn=0, nthin=1):
+        """
+        Yield random parameter vectors (only those varying) from MCMC
+        samples.
+
+        Parameters
+        ----------
+        ngen : int, optional
+            the number of samples to yield. The actual number of samples
+            yielded is `min(ngen, chain.size)`
+        nburn : int, optional
+            discard this many steps from the start of the chain
+        nthin : int, optional
+            only accept every `nthin` samples from the chain
+
+        Yields
+        ------
+        pvec : np.ndarray
+            A randomly chosen parameter vector
+
+        """
+        chains = np.array([np.ravel(param.chain[..., nburn::nthin]) for param
+                           in self.varying_parameters()
+                           if param.chain is not None])
+
+        if len(chains) != len(self.varying_parameters()) or len(chains) == 0:
+            raise ValueError("You need to perform sampling on all the varying"
+                             " parameters first")
+
+        samples = np.arange(np.size(chains, 1))
+
+        choices = np.random.choice(samples,
+                                   size=(min(ngen, samples.size),),
+                                   replace=False)
+
+        for choice in choices:
+            yield chains[..., choice]
+
 
 class BaseParameter(object):
     __add__ = MAKE_BINARY(operator.add)

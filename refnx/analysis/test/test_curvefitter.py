@@ -350,6 +350,11 @@ class TestFitterGauss(object):
         f.sample(steps=2, nthin=4, f=checkpoint, verbose=False)
         assert_equal(f.chain.shape[0], 2)
 
+        # we should be able to produce 2 * 100 steps from the generator
+        g = self.objective.pgen(ngen=20000000000)
+        s = [i for i, a in enumerate(g)]
+        assert_equal(np.max(s), 200 - 1)
+
         # the following test won't work because of emcee/gh226.
         # chain = load_chain(checkpoint)
         # assert_(chain.shape == f.chain.shape)

@@ -362,6 +362,58 @@ class Structure(UserList):
 
         return logp
 
+    def plot(self, pvals=None, samples=0, fig=None):
+        """
+        Plot the structure.
+
+        Requires matplotlib be installed.
+
+        Parameters
+        ----------
+        pvals : np.ndarray, optional
+            Numeric values for the Parameter's that are varying
+        samples: number
+            If this structures constituent parameters have been sampled, how
+            many samples you wish to plot on the graph.
+        fig: Figure instance, optional
+            If `fig` is not supplied then a new figure is created. Otherwise
+            the graph is created on the current axes on the supplied figure.
+
+        Returns
+        -------
+        fig, ax : :class:`matplotlib.Figure`, :class:`matplotlib.Axes`
+          `matplotlib` figure and axes objects.
+
+      """
+        import matplotlib.pyplot as plt
+
+        params = self.parameters
+
+        if pvals is not None:
+            params.pvals = pvals
+
+        if fig is None:
+            fig = plt.figure()
+            ax = fig.add_subplot(111)
+        else:
+            ax = fig.gca()
+
+        if samples > 0:
+            saved_params = np.array(params)
+            # Get a number of chains, chosen randomly, and plot the model.
+            for pvec in self.parameters.pgen(ngen=samples):
+                params.pvals = pvec
+
+                ax.plot(*self.sld_profile(),
+                        color="k", alpha=0.01)
+
+            # put back saved_params
+            params.pvals = saved_params
+
+        ax.plot(*self.sld_profile(), color='red', zorder=20)
+
+        return fig, ax
+
 
 class SLD(object):
     """

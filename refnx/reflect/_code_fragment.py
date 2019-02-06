@@ -49,6 +49,9 @@ if __name__ == "__main__":
                                                " temperatures (requires the"
                                                " ptemcee package)"),
                         type=int, default=1)
+    parser.add_argument('-p', '--plot', help=("create plots of the MCMC"
+                                              " using 'plot' samples"),
+                        type=int, default=1000),
     parser.add_argument('-o', '--output', help='file to save chain to',
                         type=str)
 
@@ -57,6 +60,7 @@ if __name__ == "__main__":
     nthin = args.thin
     nsteps = args.steps
     ntemps = args.temps
+    nplot = args.plot
 
     with open('steps.chain', 'w', buffering=500000) as f, Pool() as workers:
         obj = objective()
@@ -72,6 +76,37 @@ if __name__ == "__main__":
         print(str(obj))
         f.flush()
 
+    if nplot > 0:
+        try:
+            fig, ax = obj.plot(samples=nplot)
+            ax.set_ylabel('R')
+            ax.set_xlabel("Q / $\\AA$")
+            fig.savefig('steps.png')
+
+            # plot sld profiles
+            import matplotlib.pyplot as plt
+            fig2 = plt.figure()
+
+            def splot(o, nplot, fig):
+                # helper function for plotting sld profiles
+                if hasattr(o.model, 'structure'):
+                    _, ax = o.model.structure.plot(samples=nplot,
+                                                   fig=fig)
+                    ax.set_ylabel('SLD / 1e-6 $\\AA^{-2}$')
+                    ax.set_xlabel("z / $\\AA$")
+                    return fig, ax
+                return fig, None
+
+            if isinstance(obj, Objective):
+                fig2, ax = splot(obj, nplot, fig2)
+                fig2.savefig('steps_sld.png')
+            elif isinstance(obj, GlobalObjective):
+                for o in obj.objectives:
+                    fig2, ax = splot(o, nplot, fig2)
+                fig2.savefig('steps_sld.png')
+
+        except ImportError:
+            pass
 """)
 
 
