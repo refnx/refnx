@@ -20,7 +20,8 @@ except ImportError:
     pass
 
 from refnx.analysis import Objective, GlobalObjective, Transform, CurveFitter
-from refnx.analysis import Parameter, Parameters, Interval
+from refnx.analysis import Parameter, Parameters, Interval, process_chain
+from refnx.analysis import load_chain
 from refnx.analysis.parameter import Constant, build_constraint_from_tree
 from refnx.analysis.parameter import _BinaryOp, _UnaryOp
 from refnx.dataset import ReflectDataset, Data1D
@@ -36,6 +37,38 @@ import refnx
 
 _main = ("""
 
+def structure_plot(obj, samples=0):
+    # plot sld profiles
+    import matplotlib.pyplot as plt
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+
+    if isinstance(obj, GlobalObjective):
+        if samples > 0:
+            savedparams = np.array(obj.parameters)
+            for pvec in obj.parameters.pgen(ngen=samples):
+                obj.setp(pvec)
+                for o in obj.objectives:
+                    if hasattr(o.model, 'structure'):
+                        ax.plot(*o.model.structure.sld_profile(),
+                                color="k", alpha=0.01)
+
+            # put back saved_params
+            obj.setp(savedparams)
+
+        for o in obj.objectives:
+            if hasattr(o.model, 'structure'):
+                ax.plot(*o.model.structure.sld_profile(), zorder=20)
+
+        ax.set_ylabel('SLD / $10^{-6}\\AA^{-2}$')
+        ax.set_xlabel("z / $\\AA$")
+
+    elif isinstance(obj, Objective) and hasattr(obj.model, 'structure'):
+        fig, ax = obj.model.structure.plot(samples=samples)
+
+    fig.savefig('steps_sld.png', dpi=1000)
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('-w', '--walkers', help='number of emcee walkers',
@@ -45,15 +78,18 @@ if __name__ == "__main__":
     parser.add_argument('-s', '--steps', help=("number of thinned MCMC steps"
                                                " to save"),
                         type=int, default=1000)
+    parser.add_argument('-b', '--burn', help=("number of initial MCMC steps"
+                                               " to discard"),
+                        type=int, default=0)
     parser.add_argument('-n', '--temps', help=("number of parallel tempering"
                                                " temperatures (requires the"
                                                " ptemcee package)"),
-                        type=int, default=1)
+                        type=int, default=-1)
     parser.add_argument('-p', '--plot', help=("create plots of the MCMC"
                                               " using 'plot' samples"),
-                        type=int, default=1000),
-    parser.add_argument('-o', '--output', help='file to save chain to',
-                        type=str)
+                        type=int, default=0),
+    parser.add_argument('-c', '--chain', help='initialise chain from file',
+                        type=str, default='')
 
     args = parser.parse_args()
     nwalkers = args.walkers
@@ -61,8 +97,10 @@ if __name__ == "__main__":
     nsteps = args.steps
     ntemps = args.temps
     nplot = args.plot
+    nburn = args.burn
+    cfile = args.chain
 
-    with open('steps.chain', 'w', buffering=500000) as f, Pool() as workers:
+    with Pool() as workers:
         obj = objective()
         # Create the fitter and fit
         fitter = CurveFitter(obj, nwalkers=nwalkers, ntemps=ntemps)
@@ -71,42 +109,30 @@ if __name__ == "__main__":
         # the workers kwd is only present in scipy >1.2
         fitter.fit('differential_evolution', workers=workers.map)
 
-        res = fitter.sample(nsteps, pool=workers, f=f, verbose=False,
-                            nthin=nthin);
+        if nsteps:
+            if cfile:
+                chain = load_chain(cfile)
+                fitter.initialise(chain)
+            else:
+                fitter.initialise('covar')
+            with open('steps.chain', 'w', buffering=500000) as f:
+                res = fitter.sample(nsteps, pool=workers, f=f, verbose=False,
+                                    nthin=nthin);
+                f.flush()
+            process_chain(obj, fitter.chain, nburn=nburn)
+
         print(str(obj))
-        f.flush()
 
-    if nplot > 0:
-        try:
-            fig, ax = obj.plot(samples=nplot)
-            ax.set_ylabel('R')
-            ax.set_xlabel("Q / $\\AA$")
-            fig.savefig('steps.png')
+    try:
+        fig, ax = obj.plot(samples=nplot)
+        ax.set_ylabel('R')
+        ax.set_xlabel("Q / $\\AA$")
+        fig.savefig('steps.png', dpi=1000)
 
-            # plot sld profiles
-            import matplotlib.pyplot as plt
-            fig2 = plt.figure()
+        structure_plot(obj, samples=nplot)
 
-            def splot(o, nplot, fig):
-                # helper function for plotting sld profiles
-                if hasattr(o.model, 'structure'):
-                    _, ax = o.model.structure.plot(samples=nplot,
-                                                   fig=fig)
-                    ax.set_ylabel('SLD / 1e-6 $\\AA^{-2}$')
-                    ax.set_xlabel("z / $\\AA$")
-                    return fig, ax
-                return fig, None
-
-            if isinstance(obj, Objective):
-                fig2, ax = splot(obj, nplot, fig2)
-                fig2.savefig('steps_sld.png')
-            elif isinstance(obj, GlobalObjective):
-                for o in obj.objectives:
-                    fig2, ax = splot(o, nplot, fig2)
-                fig2.savefig('steps_sld.png')
-
-        except ImportError:
-            pass
+    except ImportError:
+        pass
 """)
 
 
@@ -115,7 +141,7 @@ def code_fragment(objective):
     code.append(_imports.format(version=refnx.version.version))
 
     if isinstance(objective, GlobalObjective):
-        _objectives = [objective.objectives]
+        _objectives = objective.objectives
     elif isinstance(objective, Objective):
         _objectives = [objective]
 
@@ -129,8 +155,8 @@ def code_fragment(objective):
         global_objective.append('objective_0 = GlobalObjective([')
 
         for i, o in enumerate(_objectives):
-            code.append(objective_fragment(i + 1, o))
-            global_objective.append('objective_{0}, '.format(i))
+            code.append(tab + objective_fragment(i + 1, o))
+            global_objective.append('objective_{0}, '.format(i + 1))
 
         global_objective.append('])')
 

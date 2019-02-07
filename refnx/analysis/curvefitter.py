@@ -301,11 +301,16 @@ class CurveFitter(object):
             sampling run.
         """
         # we should be left with (nwalkers, ndim) or (ntemp, nwalkers, ndim)
-        existing_chain_shape = self.chain.shape[1:]
+
+        if self._ntemps == -1:
+            required_shape = (self._nwalkers, self.nvary)
+        else:
+            required_shape = (self._ntemps, self._nwalkers, self.nvary)
+
         chain_shape = chain.shape[1:]
 
         # if the shapes are the same, then we can initialise
-        if existing_chain_shape == chain_shape:
+        if required_shape == chain_shape:
             self.initialise(pos=chain[-1])
         else:
             raise ValueError("You tried to initialise with a chain, but it was"
