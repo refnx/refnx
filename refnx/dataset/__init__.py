@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-
 from refnx.dataset.data1d import Data1D
 from refnx.dataset.reflectdataset import ReflectDataset
 from refnx._lib._testutils import PytestTester

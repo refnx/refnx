@@ -3,8 +3,6 @@ Generic test utilities.
 AMENDED FROM scipy version Aug17
 """
 
-from __future__ import absolute_import
-
 import os
 import re
 import sys

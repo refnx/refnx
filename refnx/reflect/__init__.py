@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-
 from refnx.reflect.reflect_model import (ReflectModel, reflectivity,
                                          MixedReflectModel)
 from refnx.reflect.structure import (Structure, SLD, Slab, Component,
