@@ -104,22 +104,24 @@ if __name__ == "__main__":
         obj = objective()
         # Create the fitter and fit
         fitter = CurveFitter(obj, nwalkers=nwalkers, ntemps=ntemps)
-        fitter.initialise('prior')
-
-        # the workers kwd is only present in scipy >1.2
-        fitter.fit('differential_evolution', workers=workers.map)
 
         if nsteps:
             if cfile:
                 chain = load_chain(cfile)
                 fitter.initialise(chain)
             else:
+                # the workers kwd is only present in scipy >1.2
+                fitter.fit('differential_evolution', workers=workers.map)
                 fitter.initialise('covar')
+
             with open('steps.chain', 'w', buffering=500000) as f:
                 res = fitter.sample(nsteps, pool=workers, f=f, verbose=False,
                                     nthin=nthin);
                 f.flush()
             process_chain(obj, fitter.chain, nburn=nburn)
+        else:
+            # the workers kwd is only present in scipy >1.2
+            fitter.fit('differential_evolution', workers=workers.map)
 
         print(str(obj))
 
