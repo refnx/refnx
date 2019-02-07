@@ -206,8 +206,7 @@ class Parameters(UserList):
 
     def pgen(self, ngen=1000, nburn=0, nthin=1):
         """
-        Yield random parameter vectors (only those varying) from MCMC
-        samples.
+        Yield random parameter vectors from MCMC samples.
 
         Parameters
         ----------
@@ -224,14 +223,26 @@ class Parameters(UserList):
         pvec : np.ndarray
             A randomly chosen parameter vector
 
+        Notes
+        -----
+        The entire parameter vector is yielded, not only the varying
+        parameters. The reason for this is that some parameters may possess a
+        chain if they are not varying, because they are controlled by a
+        constraint.
         """
+
+        # it's still possible to have chains, even if there are no varying
+        # parameters, if there are parameters that have constraints
+        # generate for all params that have chains.
+        chain_pars = [i for i, p in enumerate(self.flattened()) if
+                      p.chain is not None]
+
         chains = np.array([np.ravel(param.chain[..., nburn::nthin]) for param
-                           in self.varying_parameters()
+                           in self.flattened()
                            if param.chain is not None])
 
-        if len(chains) != len(self.varying_parameters()) or len(chains) == 0:
-            raise ValueError("You need to perform sampling on all the varying"
-                             " parameters first")
+        if len(chains) == 0 or np.size(chains, 1) == 0:
+            raise ValueError("There were no chains to sample from")
 
         samples = np.arange(np.size(chains, 1))
 
@@ -239,8 +250,11 @@ class Parameters(UserList):
                                    size=(min(ngen, samples.size),),
                                    replace=False)
 
+        template_array = np.array(self.flattened())
+
         for choice in choices:
-            yield chains[..., choice]
+            template_array[chain_pars] = chains[..., choice]
+            yield template_array
 
 
 class BaseParameter(object):

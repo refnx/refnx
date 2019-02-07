@@ -186,6 +186,9 @@ class TestCurveFitter(object):
         chain = mcfitter.chain
         mcfitter.initialise(pos=chain)
         assert_equal(mcfitter._state.coords, chain[-1])
+        # initialise with chain if it's never been run before
+        mcfitter = CurveFitter(self.objective, nwalkers=100)
+        mcfitter.initialise(chain)
 
         if not _HAVE_PTSAMPLER:
             return
@@ -207,6 +210,9 @@ class TestCurveFitter(object):
         chain = mcfitter.chain
         mcfitter.initialise(pos=np.copy(chain))
         assert_equal(mcfitter._state.coords, chain[-1])
+        # initialise with chain if it's never been run before
+        mcfitter = CurveFitter(self.objective, nwalkers=100, ntemps=20)
+        mcfitter.initialise(chain)
 
     def test_fit_smoke(self):
         # smoke tests to check that fit runs
@@ -354,6 +360,19 @@ class TestFitterGauss(object):
         g = self.objective.pgen(ngen=20000000000)
         s = [i for i, a in enumerate(g)]
         assert_equal(np.max(s), 200 - 1)
+        g = self.objective.pgen(ngen=200)
+        pvec = next(g)
+        assert_equal(pvec.size, len(self.objective.parameters.flattened()))
+
+        # check that all the parameters are returned via pgen, not only those
+        # being varied.
+        self.params[0].vary = False
+        f = CurveFitter(self.objective, nwalkers=100)
+        f.initialise('jitter')
+        f.sample(steps=2, nthin=4, f=checkpoint, verbose=False)
+        g = self.objective.pgen(ngen=100)
+        pvec = next(g)
+        assert_equal(pvec.size, len(self.objective.parameters.flattened()))
 
         # the following test won't work because of emcee/gh226.
         # chain = load_chain(checkpoint)

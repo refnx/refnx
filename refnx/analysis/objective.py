@@ -648,8 +648,8 @@ class Objective(BaseObjective):
 
     def pgen(self, ngen=1000, nburn=0, nthin=1):
         """
-        Yield random parameter vectors (only those varying) from the MCMC
-        samples. The objective state is not altered.
+        Yield random parameter vectors from the MCMC samples. The objective
+        state is not altered.
 
         Parameters
         ----------
@@ -667,9 +667,9 @@ class Objective(BaseObjective):
             A randomly chosen parameter vector
 
         """
-        yield from self.varying_parameters().pgen(ngen=ngen,
-                                                  nburn=nburn,
-                                                  nthin=nthin)
+        yield from self.parameters.pgen(ngen=ngen,
+                                        nburn=nburn,
+                                        nthin=nthin)
 
     def plot(self, pvals=None, samples=0, parameter=None, fig=None):
         """
@@ -914,16 +914,25 @@ class GlobalObjective(Objective):
 
         return logl
 
-    def plot(self, parameter=None):
+    def plot(self, pvals=None, samples=0, parameter=None, fig=None):
         """
         Plot the data/model for all the objectives in the GlobalObjective.
+
         Matplotlib must be installed to use this method.
 
         Parameters
         ----------
-        parameter: refnx.analysis.Parameter
+        pvals : np.ndarray, optional
+            Numeric values for the Parameter's that are varying
+        samples: number, optional
+            If the objective has been sampled, how many samples you wish to
+            plot on the graph.
+        parameter: refnx.analysis.Parameter, optional
             Creates an interactive plot for the Parameter in Jupyter. Requires
             ipywidgets be installed. Use with %matplotlib notebook/qt.
+        fig: Figure instance, optional
+            If `fig` is not supplied then a new figure is created. Otherwise
+            the graph is created on the current axes on the supplied figure.
 
         Returns
         -------
@@ -933,15 +942,40 @@ class GlobalObjective(Objective):
         """
         import matplotlib.pyplot as plt
 
-        fig = plt.figure()
-        ax = fig.add_subplot(111)
+        self.setp(pvals)
+
+        if fig is None:
+            fig = plt.figure()
+            ax = fig.add_subplot(111)
+        else:
+            ax = fig.gca()
+
         generative_plots = []
 
+        if samples > 0:
+            saved_params = np.array(self.parameters)
+
+            # Get a number of chains, chosen randomly, set the objectives,
+            # and plot the model.
+            for pvec in self.pgen(ngen=samples):
+                self.setp(pvec)
+
+                for objective in self.objectives:
+                    y, y_err, model = objective._data_transform(
+                        model=objective.generative())
+
+                    ax.plot(objective.data.x,
+                            model,
+                            color="k", alpha=0.01)
+
+            # put back saved_params
+            self.setp(saved_params)
+
         for objective in self.objectives:
+            # add the data (in a transformed fashion)
             y, y_err, model = objective._data_transform(
                 model=objective.generative())
 
-            # add the data (in a transformed fashion)
             if objective.weighted:
                 ax.errorbar(objective.data.x, y, y_err,
                             label=objective.data.name,

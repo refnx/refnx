@@ -411,6 +411,8 @@ class Structure(UserList):
             params.pvals = saved_params
 
         ax.plot(*self.sld_profile(), color='red', zorder=20)
+        ax.set_ylabel('SLD / 1e-6 $\\AA^{-2}$')
+        ax.set_xlabel("z / $\\AA$")
 
         return fig, ax
 
