@@ -1,5 +1,3 @@
-from __future__ import division
-
 import refnx.util.general as general
 import refnx
 import numpy as np

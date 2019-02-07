@@ -2,7 +2,6 @@
 Test co-refinement of datasets by fitting 3 neutron reflectivity datasets. The
 overall construction of the models can be done in a few different ways.
 """
-from __future__ import print_function, division
 import os.path
 
 import numpy as np

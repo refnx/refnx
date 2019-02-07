@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-
 import numpy.testing
 
 from refnx._lib.util import (TemporaryDirectory, preserve_cwd,

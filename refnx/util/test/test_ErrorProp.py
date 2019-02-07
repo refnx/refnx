@@ -1,5 +1,3 @@
-from __future__ import division
-
 import refnx.util.ErrorProp as EP
 import numpy as np
 import os
