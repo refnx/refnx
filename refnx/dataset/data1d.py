@@ -18,7 +18,9 @@ class Data1D(object):
     ----------
     data : str, file-like or tuple of np.ndarray, optional
         `data` can be a string or file-like object referring to a File to load
-        the dataset from.
+        the dataset from. The file should be plain text and have 2 to 4
+        columns separated by space, comma or tab. The columns represent
+        `x, y [y_err [, x_err]]`.
 
         Alternatively it is a tuple containing the data from which the dataset
         will be constructed. The tuple should have between 2 and 4 members.
