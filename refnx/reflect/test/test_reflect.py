@@ -220,6 +220,28 @@ class TestReflect(object):
         calc2 = _creflect.abeles(self.qvals, layer2, scale=0.99, bkg=1e-8)
         assert_almost_equal(calc1, calc2)
 
+    def test_compare_refl1d(self):
+        # refl1d calculated with:
+        # from refl1d import abeles
+        # z = abeles.refl(x / 2,
+        #                 [0, 100, 200, 0],
+        #                 [2.07, 3.45, 5., 6.],
+        #                 irho=[0.0, 0.1, 0.01, 0],
+        #                 sigma=[3, 1, 5, 0])
+        # a = z.real ** 2 + z.imag ** 2
+
+        layers = np.array([[0, 2.07, 0, 0],
+                           [100, 3.45, 0.1, 3],
+                           [200, 5.0, 0.01, 1],
+                           [0, 6., 0, 5]])
+        x = np.linspace(0.005, 0.5, 1001)
+        calc1 = _reflect.abeles(x, layers)
+        calc2 = _creflect.abeles(x, layers)
+        refl1d = np.load(os.path.join(self.pth, 'refl1d.npy'))
+
+        assert_almost_equal(calc1, refl1d)
+        assert_almost_equal(calc2, refl1d)
+
     def test_reverse(self):
         # check that the structure reversal works.
         sio2 = SLD(3.47, name='SiO2')
