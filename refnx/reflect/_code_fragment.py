@@ -133,6 +133,10 @@ if __name__ == "__main__":
 
         structure_plot(obj, samples=nplot)
 
+        # corner plot
+        fig = obj.corner()
+        fig.savefig('steps_corner.png')
+
     except ImportError:
         pass
 """)
