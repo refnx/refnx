@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1044</width>
-    <height>875</height>
+    <height>800</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -449,7 +449,7 @@
    <string>Motofit</string>
   </property>
   <property name="windowIcon">
-   <iconset>
+   <iconset resource="../resources.qrc">
     <normaloff>:/icons/scattering.png</normaloff>:/icons/scattering.png</iconset>
   </property>
   <property name="documentMode">
@@ -762,7 +762,7 @@ limits</string>
             <string/>
            </property>
            <property name="icon">
-            <iconset>
+            <iconset resource="../resources.qrc">
              <normaloff>:/icons/minus.png</normaloff>:/icons/minus.png</iconset>
            </property>
            <property name="iconSize">
@@ -808,7 +808,7 @@ limits</string>
             <string/>
            </property>
            <property name="icon">
-            <iconset>
+            <iconset resource="../resources.qrc">
              <normaloff>:/icons/plus.png</normaloff>:/icons/plus.png</iconset>
            </property>
            <property name="iconSize">
@@ -882,6 +882,31 @@ limits</string>
             <font>
              <pointsize>12</pointsize>
             </font>
+           </property>
+           <property name="styleSheet">
+            <string notr="true">QTreeView::branch:has-siblings:!adjoins-item {
+    border-image: url(:/icons/vline.png) 0;
+}
+
+QTreeView::branch:has-siblings:adjoins-item {
+    border-image: url(:/icons/branch-more.png) 0;
+}
+
+QTreeView::branch:!has-children:!has-siblings:adjoins-item {
+    border-image: url(:/icons/branch-end.png) 0;
+}
+
+QTreeView::branch:has-children:!has-siblings:closed,
+QTreeView::branch:closed:has-children:has-siblings {
+        border-image: none;
+        image: url(:/icons/branch-closed.png);
+}
+
+QTreeView::branch:open:has-children:!has-siblings,
+QTreeView::branch:open:has-children:has-siblings  {
+        border-image: none;
+        image: url(:/icons/branch-open.png);
+}</string>
            </property>
            <property name="selectionMode">
             <enum>QAbstractItemView::ExtendedSelection</enum>
@@ -1373,7 +1398,7 @@ errors?</string>
   <tabstop>console_text_edit</tabstop>
  </tabstops>
  <resources>
-  <include location="resources.qrc"/>
+  <include location="../resources.qrc"/>
  </resources>
  <connections/>
 </ui>

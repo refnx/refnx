@@ -1,8 +1,13 @@
 <RCC>
 	<qresource>
-		<file>icons/go.jpeg</file>
+		<file>icons/go.png</file>
 		<file>icons/scattering.png</file>
 		<file>icons/plus.png</file>
 		<file>icons/minus.png</file>
+		<file>icons/branch-closed.png</file>
+        <file>icons/branch-open.png</file>
+        <file>icons/branch-more.png</file>
+        <file>icons/branch-end.png</file>
+        <file>icons/vline.png</file>
 	</qresource>
 </RCC>

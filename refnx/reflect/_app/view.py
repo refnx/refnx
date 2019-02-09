@@ -73,7 +73,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
 
         # set up tree view
         self.treeModel = TreeModel(data_container)
-        # self.ui.treeView.setModel(self.treeModel)
+
         # the filter controls what rows are presented in the treeView
         self.treeFilter = TreeFilter(self.treeModel)
         self.treeFilter.setSourceModel(self.treeModel)
