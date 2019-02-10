@@ -79,7 +79,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         self.treeFilter.setSourceModel(self.treeModel)
         self.ui.treeView.setModel(self.treeFilter)
 
-        self.ui.treeView.setColumnWidth(0, 260)
+        # self.ui.treeView.setColumnWidth(0, 260)
 
         self.ui.treeView.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
 
@@ -147,6 +147,9 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
 
         self.lipid_leaflet = LipidLeafletDialog(self)
         self.data_object_selector = DataObjectSelectorDialog(self)
+
+        h = self.ui.treeView.header()
+        h.setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeToContents)
 
         print('Session started at:', time.asctime(time.localtime(time.time())))
 

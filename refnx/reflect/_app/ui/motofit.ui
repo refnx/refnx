@@ -914,6 +914,12 @@ QTreeView::branch:open:has-children:has-siblings  {
            <property name="selectionBehavior">
             <enum>QAbstractItemView::SelectRows</enum>
            </property>
+           <property name="expandsOnDoubleClick">
+            <bool>false</bool>
+           </property>
+           <attribute name="headerCascadingSectionResizes">
+            <bool>true</bool>
+           </attribute>
           </widget>
          </item>
          <item row="6" column="2">
