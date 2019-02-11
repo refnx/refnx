@@ -8,6 +8,7 @@ import numpy as np
 
 from scipy._lib._util import check_random_state
 from scipy.optimize import minimize, differential_evolution, least_squares
+import scipy.optimize as sciopt
 
 from refnx.analysis import Objective, Interval, PDF, is_parameter
 from refnx._lib import (unique as f_unique, PoolWrapper,
@@ -547,6 +548,8 @@ class CurveFitter(object):
             - `'least_squares'`: `scipy.optimize.least_squares`.
             - `'L-BFGS-B'`: L-BFGS-B
             - `'differential_evolution'`: differential evolution
+            - `'dual_annealing'`: dual annealing (SciPy >= 1.2.0)
+            - `'shgo'`: simplicial homology global optimization (SciPy >= 1.2.0)
 
             You can also choose many of the minimizers from
             ``scipy.optimize.minimize``.
@@ -571,6 +574,9 @@ class CurveFitter(object):
         `Parameter` has a `stderr` attribute which represents the uncertainty
         on the fit parameter.
 
+        The use of `dual annealing` and `shgo` requires that `scipy >= 1.2.0`
+        be installed.
+
         """
         _varying_parameters = self.objective.varying_parameters()
         init_pars = np.array(_varying_parameters)
@@ -592,17 +598,19 @@ class CurveFitter(object):
             res = least_squares(self.objective.residuals,
                                 init_pars,
                                 **_min_kws)
-        # differential_evolution requires lower and upper bounds
-        elif method == 'differential_evolution':
-            res = differential_evolution(self.objective.nll,
-                                         **_min_kws)
+        # differential_evolution, dual_annealing, shgo require lower and upper
+        # bounds
+        elif method in ['differential_evolution', 'dual_annealing', 'shgo']:
+            mini = getattr(sciopt, method)
+            res = mini(self.objective.nll, **_min_kws)
         else:
             # otherwise stick it to minimizer. Default being L-BFGS-B
             _min_kws['method'] = method
             _min_kws['bounds'] = _bounds
             res = minimize(self.objective.nll, init_pars, **_min_kws)
 
-        if res.success:
+        # OptimizeResult.success may not be present (dual annealing)
+        if hasattr(res, 'success') and res.success:
             self.objective.setp(res.x)
 
             # Covariance matrix estimation
