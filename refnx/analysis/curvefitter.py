@@ -547,9 +547,11 @@ class CurveFitter(object):
 
             - `'least_squares'`: `scipy.optimize.least_squares`.
             - `'L-BFGS-B'`: L-BFGS-B
-            - `'differential_evolution'`: differential evolution
-            - `'dual_annealing'`: dual annealing (SciPy >= 1.2.0)
-            - `'shgo'`: simplicial homology global optimization (SciPy >= 1.2.0)
+            - `'differential_evolution'`:
+                `scipy.optimize.differential_evolution`
+            - `'dual_annealing'`:
+                `scipy.optimize.dual_annealing` (SciPy >= 1.2.0)
+            - `'shgo'`: `scipy.optimize.shgo` (SciPy >= 1.2.0)
 
             You can also choose many of the minimizers from
             ``scipy.optimize.minimize``.
