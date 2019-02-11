@@ -27,7 +27,8 @@ from .treeview_gui_model import (TreeModel, Node, DatasetNode, DataObjectNode,
                                  ComponentNode, StructureNode,
                                  ReflectModelNode, ParNode, TreeFilter,
                                  find_data_object, SlabNode)
-from .lipid_leaflet import LipidLeafletDialog
+from ._lipid_leaflet import LipidLeafletDialog
+from ._spline import SplineDialog
 
 import refnx
 from refnx.analysis import (CurveFitter, Objective,
@@ -145,6 +146,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
 
         self.restore_settings()
 
+        self.spline_dialog = SplineDialog(self)
         self.lipid_leaflet = LipidLeafletDialog(self)
         self.data_object_selector = DataObjectSelectorDialog(self)
 
@@ -811,7 +813,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
                        " select a previous layer")
 
         # what type of component shall we add?
-        comp_type = ['Slab', 'LipidLeaflet']
+        comp_type = ['Slab', 'LipidLeaflet', 'Spline']
         which_type, ok = QtWidgets.QInputDialog.getItem(
             self, "What Component type did you want to add?", "", comp_type,
             editable=False)
@@ -826,6 +828,11 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
             if not ok:
                 return
             c = self.lipid_leaflet.component()
+        elif which_type == 'Spline':
+            ok = self.spline_dialog.exec_()
+            if not ok:
+                return
+            c = self.spline_dialog.component()
 
         structure.insert_component(idx + 1, c)
 

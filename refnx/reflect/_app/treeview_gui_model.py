@@ -10,7 +10,7 @@ from refnx.dataset import ReflectDataset
 from refnx.reflect._app.dataobject import DataObject
 from refnx.reflect._app.datastore import DataStore
 from refnx.reflect import (Slab, LipidLeaflet, SLD, ReflectModel,
-                           MixedReflectModel)
+                           MixedReflectModel, Spline)
 
 
 def component_class(component):
@@ -21,6 +21,8 @@ def component_class(component):
         return SlabNode
     elif isinstance(component, LipidLeaflet):
         return LipidLeafletNode
+    elif isinstance(component, Spline):
+        return SplineNode
 
 
 class Node(object):
@@ -293,12 +295,27 @@ class PropertyNode(Node):
 
 
 class ComponentNode(Node):
-    def __init__(self, data, model, parent=QtCore.QModelIndex()):
+    def __init__(self, data, model, parent=QtCore.QModelIndex(), flat=True):
+        """
+        Parameters
+        ----------
+        flat : bool
+            If `flat is True`, then this superclass will flatten out all
+            the parameters in a model and append them as child items.
+        """
         super(ComponentNode, self).__init__(data, model, parent)
 
-        for par in flatten(data.parameters):
-            pn = ParNode(par, model, parent=self)
-            self.appendChild(pn)
+        if flat:
+            for par in flatten(data.parameters):
+                pn = ParNode(par, model, parent=self)
+                self.appendChild(pn)
+        else:
+            for p in data.parameters:
+                if isinstance(p, Parameters):
+                    n = ParametersNode(p, model, self)
+                if isinstance(p, Parameter):
+                    n = ParNode(p, model, self)
+                self.appendChild(n)
 
     @property
     def component(self):
@@ -958,6 +975,38 @@ class LipidLeafletNode(ComponentNode):
 
         prop_node = PropertyNode('reverse_monolayer', model, parent=self)
         self.appendChild(prop_node)
+
+    def flags(self, column):
+        flags = QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled
+        if column == 0:
+            flags |= QtCore.Qt.ItemIsEditable
+
+        return flags
+
+    def data(self, column, role=QtCore.Qt.DisplayRole):
+        if role == QtCore.Qt.CheckStateRole:
+            return None
+
+        if column > 0:
+            return None
+        return self._data.name
+
+    def setData(self, column, value, role=QtCore.Qt.EditRole):
+        if role == QtCore.Qt.CheckStateRole:
+            return False
+
+        if column:
+            return False
+
+        self.component.name = value
+        self._model.dataChanged.emit(self.index, self.index)
+        return True
+
+
+###############################################################################
+class SplineNode(ComponentNode):
+    def __init__(self, data, model, parent=QtCore.QModelIndex()):
+        super(SplineNode, self).__init__(data, model, parent)
 
     def flags(self, column):
         flags = QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled
