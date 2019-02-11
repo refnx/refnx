@@ -28,7 +28,7 @@ class Structure(UserList):
     solvent : refnx.reflect.SLD
         Specifies the scattering length density used for solvation. If no
         solvent is specified then the SLD of the solvent is assumed to be
-        the SLD of `Structure[-1].slabs[-1]` (after any possible slab order
+        the SLD of `Structure[-1].slabs()[-1]` (after any possible slab order
         reversal).
     reverse_structure : bool
         If `Structure.reverse_structure` is `True` then the slab
@@ -46,8 +46,8 @@ class Structure(UserList):
     If `Structure.reverse_structure is True` then the slab representation
     order is reversed.
     If no solvent is specified then the volume fraction of solvent in each of
-    the Components is *assumed* to be the scattering length density of
-    `Structure[-1].slabs[-1]` after any possible slab order reversal. This
+    the Components is *assumed* to have the scattering length density of
+    `Structure[-1].slabs()[-1]` after any possible slab order reversal. This
     slab corresponds to the scattering length density of the semi-infinite
     backing medium.
     The profile contraction specified by the `contract` keyword can improve
@@ -75,17 +75,13 @@ class Structure(UserList):
                  reverse_structure=False, contract=0):
         super(Structure, self).__init__()
         self._name = name
-
-        self.solvent = solvent
-        if solvent is not None:
-            self.solvent = SLD(solvent)
+        self._solvent = solvent
 
         self._reverse_structure = bool(reverse_structure)
         #: **float** if contract > 0 then an attempt to contract/shrink the
         #: slab representation is made. Use larger values for coarser profiles
         #: (and vice versa). A typical starting value to try might be 1.0.
         self.contract = contract
-        # self._parameters = Parameters(name=name)
 
         # if you provide a list of components to start with, then initialise
         # the structure from that
@@ -105,7 +101,7 @@ class Structure(UserList):
         s = list()
         s.append('{:_>80}'.format(''))
         s.append('Structure: {0: ^15}'.format(str(self.name)))
-        s.append('solvent: {0}'.format(repr(self.solvent)))
+        s.append('solvent: {0}'.format(repr(self._solvent)))
         s.append('reverse structure: {0}'.format(str(self.reverse_structure)))
         s.append('contract: {0}\n'.format(str(self.contract)))
 
@@ -117,7 +113,7 @@ class Structure(UserList):
     def __repr__(self):
         return ("Structure(name={_name!r},"
                 " components={data!r},"
-                " solvent={solvent!r},"
+                " solvent={_solvent!r},"
                 " reverse_structure={_reverse_structure},"
                 " contract={contract})".format(**self.__dict__))
 
@@ -148,6 +144,28 @@ class Structure(UserList):
         self._name = name
 
     @property
+    def solvent(self):
+        if self._solvent is None:
+            if not self.reverse_structure:
+                solv_slab = self[-1].slabs(self)
+            else:
+                solv_slab = self[0].slabs(self)
+            return SLD(solv_slab[-1, 1], solv_slab[-1, 2])
+        else:
+            return self._solvent
+
+    @solvent.setter
+    def solvent(self, sld):
+        if sld is None:
+            self._solvent = None
+        elif isinstance(sld, SLD):
+            # don't make a new SLD object, use its reference
+            self._solvent = sld
+        else:
+            solv = SLD(sld)
+            self._solvent = solv
+
+    @property
     def reverse_structure(self):
         """
         **bool**  if `True` then the slab representation produced by
@@ -160,22 +178,26 @@ class Structure(UserList):
     def reverse_structure(self, reverse_structure):
         self._reverse_structure = reverse_structure
 
-    @property
-    def slabs(self):
+    def slabs(self, **kwds):
         r"""
-        :class:`np.ndarray` - slab representation of this structure.
-        Has shape (N, 5).
 
-        - slab[N, 0]
-           thickness of layer N
-        - slab[N, 1]
-           *overall* SLD.real of layer N (material AND solvent)
-        - slab[N, 2]
-           *overall* SLD.imag of layer N (material AND solvent)
-        - slab[N, 3]
-           roughness between layer N and N-1
-        - slab[N, 4]
-           volume fraction of solvent in layer N.
+        Returns
+        -------
+
+        slabs : :class:`np.ndarray`
+            Slab representation of this structure.
+            Has shape (N, 5).
+
+            - slab[N, 0]
+               thickness of layer N
+            - slab[N, 1]
+               *overall* SLD.real of layer N (material AND solvent)
+            - slab[N, 2]
+               *overall* SLD.imag of layer N (material AND solvent)
+            - slab[N, 3]
+               roughness between layer N and N-1
+            - slab[N, 4]
+               volume fraction of solvent in layer N.
 
         Notes
         -----
@@ -190,9 +212,8 @@ class Structure(UserList):
         if not len(self):
             return None
 
-        # could possibly speed up by allocating a larger array, filling,
-        # then trimming
-        slabs = np.concatenate([c.slabs for c in self.components])
+        slabs = np.concatenate([c.slabs(structure=self) for
+                                c in self.components])
 
         # if the slab representation needs to be reversed.
         if self.reverse_structure:
@@ -202,12 +223,8 @@ class Structure(UserList):
             slabs[0, 3] = 0.
 
         if np.any(slabs[:, 4] > 0):
-            # overall SLD is a weighted average
-            solvent = self.solvent
-            if self.solvent is None:
-                solvent = complex(slabs[-1, 1], slabs[-1, 2])
-
-            slabs[1:-1] = self.overall_sld(slabs[1:-1], solvent)
+            # overall SLD is a weighted average of the vfs and slds
+            slabs[1:-1] = self.overall_sld(slabs[1:-1], self.solvent)
 
         if self.contract > 0:
             return _contract_by_area(slabs, self.contract)
@@ -256,7 +273,7 @@ class Structure(UserList):
             ``_reflect``. If `threads == 0` then all available processors are
             used.
         """
-        return refcalc.abeles(q, self.slabs[..., :4], threads=threads)
+        return refcalc.abeles(q, self.slabs()[..., :4], threads=threads)
 
     def sld_profile(self, z=None):
         """
@@ -278,7 +295,7 @@ class Structure(UserList):
         -----
         This can be called in vectorised fashion.
         """
-        slabs = self.slabs
+        slabs = self.slabs()
         if ((slabs is None) or
                 (len(slabs) < 2) or
                 (not isinstance(self.data[0], Slab)) or
@@ -341,7 +358,7 @@ class Structure(UserList):
         """
         p = Parameters(name='Structure - {0}'.format(self.name))
         p.extend([component.parameters for component in self.components])
-        if self.solvent is not None:
+        if self._solvent is not None:
             p.append(self.solvent.parameters)
         return p
 
@@ -475,6 +492,9 @@ class SLD(object):
         sld = complex(self.real.value, self.imag.value)
         return 'SLD = {0} x10**-6 Å**-2'.format(sld)
 
+    def __complex__(self):
+        return complex(self.real.value, self.imag.value)
+
     def __call__(self, thick=0, rough=0):
         """
         Create a :class:`Slab`.
@@ -548,10 +568,31 @@ class Component(object):
         raise NotImplementedError("A component should override the parameters "
                                   "property")
 
-    @property
-    def slabs(self):
+    def slabs(self, structure=None):
         """
         The slab representation of this component
+
+        Parameters
+        ----------
+        structure : refnx.reflect.Structure
+            The Structure hosting the Component.
+
+        Returns
+        -------
+        slabs : np.ndarray
+            Slab representation of this structure.
+            Has shape (N, 5).
+
+            - slab[N, 0]
+               thickness of layer N
+            - slab[N, 1]
+               *overall* SLD.real of layer N (material AND solvent)
+            - slab[N, 2]
+               *overall* SLD.imag of layer N (material AND solvent)
+            - slab[N, 3]
+               roughness between layer N and N-1
+            - slab[N, 4]
+               volume fraction of solvent in layer N.
 
         If a Component returns None, then it doesn't have any slabs.
         """
@@ -635,8 +676,7 @@ class Slab(Component):
         self._parameters.name = self.name
         return self._parameters
 
-    @property
-    def slabs(self):
+    def slabs(self, structure=None):
         """
         slab representation of this component. See :class:`Structure.slabs`
         """

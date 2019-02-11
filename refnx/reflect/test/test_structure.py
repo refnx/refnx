@@ -21,19 +21,37 @@ class TestStructure(object):
     def test_structure_construction(self):
         # structures are constructed by or-ing slabs
         # test that the slab representation is correct
-        assert_equal(self.s.slabs, np.array([[0, 0, 0, 0, 0],
-                                             [100, 3.47, 0, 5, 0],
-                                             [0, 6.36, 0, 4, 0]]))
+        assert_equal(self.s.slabs(), np.array([[0, 0, 0, 0, 0],
+                                              [100, 3.47, 0, 5, 0],
+                                              [0, 6.36, 0, 4, 0]]))
 
-        # slabs have solvent penetration
-        self.s.solvent = self.d2o
         self.s[1] = SLD(3.47 + 1j, name='sio2')(100, 5)
         self.s[1].vfsolv.value = 0.9
+
+        # slabs have solvent penetration
+        self.s.solvent = SLD(5 + 1.2j)
+        sld = 5 * 0.9 + 0.1 * 3.47
+        sldi = 1 * 0.1 + 0.9 * 1.2
+        assert_almost_equal(self.s.slabs(), np.array([[0, 0, 0, 0, 0],
+                                                      [100, sld, sldi, 5, 0.9],
+                                                      [0, 6.36, 0, 4, 0]]))
+
+        # by default solvation is done by backing medium
+        self.s.solvent = None
         sld = 6.36 * 0.9 + 0.1 * 3.47
         sldi = 1 * 0.1
-        assert_almost_equal(self.s.slabs, np.array([[0, 0, 0, 0, 0],
-                                                    [100, sld, sldi, 5, 0.9],
-                                                    [0, 6.36, 0, 4, 0]]))
+        assert_almost_equal(self.s.slabs(), np.array([[0, 0, 0, 0, 0],
+                                                     [100, sld, sldi, 5, 0.9],
+                                                     [0, 6.36, 0, 4, 0]]))
+
+        # by default solvation is done by backing medium, except when structure
+        # is reversed
+        self.s.reverse_structure = True
+        sld = 0 * 0.9 + 0.1 * 3.47
+        sldi = 0 * 0.9 + 1 * 0.1
+        assert_almost_equal(self.s.slabs(), np.array([[0, 6.36, 0, 0, 0],
+                                                      [100, sld, sldi, 4, 0.9],
+                                                      [0, 0, 0, 5, 0]]))
 
     def test_pickle(self):
         # need to be able to pickle and unpickle structure
@@ -98,6 +116,10 @@ class TestStructure(object):
         p = SLD(5 + 1j, name='pop')
         assert_equal(float(p.real), 5)
         assert_equal(float(p.imag), 1)
+
+        # test that we can cast to complex
+        assert_equal(complex(p), 5 + 1j)
+
         p = SLD(5)
         assert_equal(float(p.real), 5)
         q = Parameter(5)
@@ -116,10 +138,9 @@ class TestStructure(object):
         assert_allclose(round_trip_reflectivity, reflectivity, rtol=0.004)
 
     def test_slab_addition(self):
-        # The slabs property for the main Structure component constructs
-        # the overall slabs by concatenating Component slabs. It preallocates
-        # memory to prevent repeated memory allocations. This checks that the
-        # slab concatenation is correct.
+        # The slabs method for the main Structure component constructs
+        # the overall slabs by concatenating Component slabs. This checks that
+        # the slab concatenation is correct.
 
         si = SLD(2.07)
         sio2 = SLD(3.47)
@@ -128,12 +149,10 @@ class TestStructure(object):
         d2o_layer = d2o(0, 3)
         polymer_layer = polymer(20, 3)
         a = Spline(400, [4, 5.9],
-                   [0.2, .4], polymer_layer, d2o_layer, d2o, zgrad=True)
+                   [0.2, .4], zgrad=True)
         film = si | sio2(10, 3) | polymer_layer | a | d2o_layer
         film.sld_profile()
 
-        # the growth size is 100. Try and make 200 layers and check they were
-        # allocated correctly
         structure = si(0, 0)
         for i in range(200):
             p = SLD(i)(i, i)
@@ -141,7 +160,7 @@ class TestStructure(object):
 
         structure |= d2o(0, 3)
 
-        slabs = structure.slabs
+        slabs = structure.slabs()
         assert_equal(slabs[1:-1, 0], np.arange(200))
         assert_equal(slabs[1:-1, 1], np.arange(200))
         assert_equal(slabs[1:-1, 3], np.arange(200))

@@ -82,23 +82,24 @@ class TestReflect(object):
     def test_c_abeles(self):
         if TEST_C_REFLECT:
             # test reflectivity calculation with values generated from Motofit
-            calc = _creflect.abeles(self.qvals, self.structure.slabs[..., :4])
+            calc = _creflect.abeles(self.qvals,
+                                    self.structure.slabs()[..., :4])
             assert_almost_equal(calc, self.rvals)
 
             # test for non-contiguous Q values
             tempq = self.qvals[0::5]
             assert_(tempq.flags['C_CONTIGUOUS'] is False)
-            calc = _creflect.abeles(tempq, self.structure.slabs[..., :4])
+            calc = _creflect.abeles(tempq, self.structure.slabs()[..., :4])
             assert_almost_equal(calc, self.rvals[0::5])
 
     def test_c_abeles_multithreaded(self):
         if TEST_C_REFLECT:
-            _creflect.abeles(self.qvals, self.structure.slabs[..., :4],
+            _creflect.abeles(self.qvals, self.structure.slabs()[..., :4],
                              threads=4)
 
     def test_py_abeles(self):
         # test reflectivity calculation with values generated from Motofit
-        calc = _reflect.abeles(self.qvals, self.structure.slabs[..., :4])
+        calc = _reflect.abeles(self.qvals, self.structure.slabs()[..., :4])
         assert_almost_equal(calc, self.rvals)
 
     def test_first_principles(self):
@@ -144,7 +145,7 @@ class TestReflect(object):
     def test_compare_c_py_abeles(self):
         # test python and c are equivalent
         # but not the same file
-        s = self.structure.slabs[..., :4]
+        s = self.structure.slabs()[..., :4]
 
         if not TEST_C_REFLECT:
             return
@@ -250,7 +251,7 @@ class TestReflect(object):
         structure = si | sio2(100, 3) | air(0, 2)
         structure.reverse_structure = True
 
-        assert_equal(structure.slabs, self.structure.slabs)
+        assert_equal(structure.slabs(), self.structure.slabs())
 
         calc = structure.reflectivity(self.qvals)
         assert_almost_equal(calc, self.rvals)
@@ -259,7 +260,7 @@ class TestReflect(object):
         # c reflectivity should be able to deal with multidimensional input
         if not TEST_C_REFLECT:
             return
-        s = self.structure.slabs[..., :4]
+        s = self.structure.slabs()[..., :4]
 
         reshaped_q = np.reshape(self.qvals, (2, 250))
         reshaped_r = self.rvals.reshape(2, 250)
@@ -269,7 +270,7 @@ class TestReflect(object):
 
     def test_abeles_reshape(self):
         # reflectivity should be able to deal with multidimensional input
-        s = self.structure.slabs[..., :4]
+        s = self.structure.slabs()[..., :4]
 
         reshaped_q = np.reshape(self.qvals, (2, 250))
         reshaped_r = self.rvals.reshape(2, 250)
@@ -415,7 +416,7 @@ class TestReflect(object):
     def test_resolution_kernel(self):
         # check that resolution kernel works, use constant dq/q of 5% as
         # comparison
-        slabs = self.structure361.slabs[:, :4]
+        slabs = self.structure361.slabs()[:, :4]
         npnts = 1000
         q = np.linspace(0.005, 0.3, npnts)
 
@@ -476,7 +477,7 @@ class TestReflect(object):
         model.scale.setp(vary=True, bounds=(0, 2))
         model.bkg.setp(vary=True, bounds=(0, 8e-6))
 
-        slabs = structure.slabs
+        slabs = structure.slabs()
         assert_equal(slabs[2, 0:2], slabs[3, 0:2])
         assert_equal(slabs[2, 3], slabs[3, 3])
         assert_equal(slabs[1, 3], sio2_l.rough.value)
@@ -484,7 +485,7 @@ class TestReflect(object):
         f = CurveFitter(objective)
         f.fit(method='differential_evolution', seed=1)
 
-        slabs = structure.slabs
+        slabs = structure.slabs()
         assert_equal(slabs[2, 0:2], slabs[3, 0:2])
         assert_equal(slabs[2, 3], slabs[3, 3])
 

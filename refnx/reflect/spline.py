@@ -23,12 +23,6 @@ class Spline(Component):
         the real part of the SLD values of each of the knots.
     dz : Sequence of float/Parameter
         the lateral offset between successive knots.
-    left : refnx.reflect.Component
-        The Component to the left of this Spline region.
-    right : refnx.reflect.Component
-        The Component to the right of this Spline region.
-    solvent : refnx.reflect.SLD
-        An SLD instance representing the solvent
     name : str
         Name of component
     interpolator : scipy.interpolate Univariate Interpolator, optional
@@ -61,14 +55,14 @@ class Spline(Component):
     The slab representation of this component are approximated using a
     'microslab' representation of spline. The max thickness of each
     microslab is `microslab_max_thickness`.
+
+    A Spline component should not be used more than once in a given Structure.
     """
 
-    def __init__(self, extent, vs, dz, left, right, solvent, name='',
+    def __init__(self, extent, vs, dz, name='',
                  interpolator=Pchip, zgrad=True, microslab_max_thickness=1):
+        super(Spline, self).__init__()
         self.name = name
-        self.left_slab = left
-        self.right_slab = right
-        self.solvent = solvent
         self.microslab_max_thickness = microslab_max_thickness
 
         self.extent = (
@@ -101,7 +95,12 @@ class Spline(Component):
                                       'interp': None,
                                       'extent': -1}
 
-    def _interpolator(self):
+    def __repr__(self):
+        s = ("Spline({extent!r}, {vs!r}, {dz!r}, name={name!r}, zgrad={zgrad},"
+             " microslab_max_thickness={microslab_max_thickness})")
+        return s.format(**self.__dict__)
+
+    def _interpolator(self, structure):
         dz = np.array(self.dz)
         zeds = np.cumsum(dz)
 
@@ -110,15 +109,21 @@ class Spline(Component):
             zeds /= zeds[-1]
             zeds = np.clip(zeds, 0, 1)
 
+        # note - this means you shouldn't use a spline more than once in
+        # a Component, because only the first use will be detected.
+        loc = structure.index(self)
+        left_component = structure[loc - 1]
+        right_component = structure[loc + 1]
+
         vs = np.array(self.vs)
 
         left_sld = Structure.overall_sld(
-            np.atleast_2d(self.left_slab.slabs[-1]),
-            self.solvent)[..., 1]
+            np.atleast_2d(left_component.slabs(structure)[-1]),
+            structure.solvent)[..., 1]
 
         right_sld = Structure.overall_sld(
-            np.atleast_2d(self.right_slab.slabs[0]),
-            self.solvent)[..., 1]
+            np.atleast_2d(right_component.slabs(structure)[0]),
+            structure.solvent)[..., 1]
 
         if self.zgrad:
             zeds = np.concatenate([[-1.1, 0 - EPS], zeds, [1 + EPS, 2.1]])
@@ -147,7 +152,7 @@ class Spline(Component):
         self.__cached_interpolator['interp'] = interpolator
         return interpolator
 
-    def __call__(self, z):
+    def __call__(self, z, structure):
         """
         Calculates the spline value at z
 
@@ -155,30 +160,39 @@ class Spline(Component):
         ----------
         z : float
             Distance along spline
+        structure: refnx.reflect.Structure
+            Structure hosting this Component
 
         Returns
         -------
         sld : float
             Real part of SLD
         """
-        interpolator = self._interpolator()
+        interpolator = self._interpolator(structure)
         vs = interpolator(z / float(self.extent))
         return vs
 
     @property
     def parameters(self):
         p = Parameters(name=self.name)
-        p.extend([self.extent, self.dz, self.vs,
-                  self.left_slab.parameters,
-                  self.right_slab.parameters,
-                  self.solvent.parameters])
+        p.extend([self.extent, self.dz, self.vs])
         return p
 
     def logp(self):
         return 0
 
-    @property
-    def slabs(self):
+    def slabs(self, structure=None):
+        """
+        Slab representation of the spline, as an array
+
+        Parameters
+        ----------
+        structure : refnx.reflect.Structure
+            The Structure hosting this Component
+        """
+        if not isinstance(structure, Structure):
+            raise ValueError("Spline.slabs() requires a valid Structure")
+
         num_slabs = np.ceil(float(self.extent) / self.microslab_max_thickness)
         slab_thick = float(self.extent / num_slabs)
         slabs = np.zeros((int(num_slabs), 5))
@@ -188,6 +202,6 @@ class Spline(Component):
         slabs[-1:, 3] = 0.5
 
         dist = np.cumsum(slabs[..., 0]) - 0.5 * slab_thick
-        slabs[:, 1] = self(dist)
+        slabs[:, 1] = self(dist, structure)
 
         return slabs
