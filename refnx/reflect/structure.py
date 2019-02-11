@@ -183,7 +183,6 @@ class Structure(UserList):
 
         Returns
         -------
-
         slabs : :class:`np.ndarray`
             Slab representation of this structure.
             Has shape (N, 5).

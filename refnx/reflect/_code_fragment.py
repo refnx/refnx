@@ -60,8 +60,8 @@ def structure_plot(obj, samples=0):
             if hasattr(o.model, 'structure'):
                 ax.plot(*o.model.structure.sld_profile(), zorder=20)
 
-        ax.set_ylabel('SLD / $10^{-6}\AA^{-2}$')
-        ax.set_xlabel("z / $\AA$")
+        ax.set_ylabel('SLD / $10^{-6}\\AA^{-2}$')
+        ax.set_xlabel("z / $\\AA$")
 
     elif isinstance(obj, Objective) and hasattr(obj.model, 'structure'):
         fig, ax = obj.model.structure.plot(samples=samples)
@@ -128,7 +128,7 @@ if __name__ == "__main__":
     try:
         fig, ax = obj.plot(samples=nplot)
         ax.set_ylabel('R')
-        ax.set_xlabel("Q / $\AA$")
+        ax.set_xlabel("Q / $\\AA$")
         fig.savefig('steps.png', dpi=1000)
 
         structure_plot(obj, samples=nplot)

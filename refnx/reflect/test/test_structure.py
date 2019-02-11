@@ -4,6 +4,7 @@ import numpy as np
 from numpy.testing import (assert_almost_equal, assert_equal, assert_,
                            assert_allclose, assert_raises)
 
+from refnx._lib import flatten
 from refnx.reflect import (SLD, Structure, Spline, Slab)
 from refnx.reflect.structure import _profile_slicer
 from refnx.analysis import Parameter, Interval, Parameters
@@ -28,6 +29,8 @@ class TestStructure(object):
         self.s[1] = SLD(3.47 + 1j, name='sio2')(100, 5)
         self.s[1].vfsolv.value = 0.9
 
+        oldpars = len(list(flatten(self.s.parameters)))
+
         # slabs have solvent penetration
         self.s.solvent = SLD(5 + 1.2j)
         sld = 5 * 0.9 + 0.1 * 3.47
@@ -35,6 +38,11 @@ class TestStructure(object):
         assert_almost_equal(self.s.slabs(), np.array([[0, 0, 0, 0, 0],
                                                       [100, sld, sldi, 5, 0.9],
                                                       [0, 6.36, 0, 4, 0]]))
+
+        # when the structure._solvent is not None, but an SLD object, then
+        # it's number of parameters should increase by 2.
+        newpars = len(list(flatten(self.s.parameters)))
+        assert_equal(newpars, oldpars + 2)
 
         # by default solvation is done by backing medium
         self.s.solvent = None
