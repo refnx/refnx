@@ -10,7 +10,7 @@ from refnx.dataset import ReflectDataset
 from refnx.reflect._app.dataobject import DataObject
 from refnx.reflect._app.datastore import DataStore
 from refnx.reflect import (Slab, LipidLeaflet, SLD, ReflectModel,
-                           MixedReflectModel)
+                           MixedReflectModel, Spline)
 
 
 def component_class(component):
@@ -21,6 +21,8 @@ def component_class(component):
         return SlabNode
     elif isinstance(component, LipidLeaflet):
         return LipidLeafletNode
+    elif isinstance(component, Spline):
+        return SplineNode
 
 
 class Node(object):
@@ -286,54 +288,40 @@ class PropertyNode(Node):
             for validator in self.validators:
                 voutput = validator.validate(value, 1)
                 if voutput[0] == QtGui.QValidator.Acceptable:
-                    setattr(self._parent._data, self._data, voutput[1])
+                    setattr(self._parent._data,
+                            self._data,
+                            self.attribute_type(voutput[1]))
                     return True
 
         return False
 
 
 class ComponentNode(Node):
-    def __init__(self, data, model, parent=QtCore.QModelIndex()):
+    def __init__(self, data, model, parent=QtCore.QModelIndex(), flat=True):
+        """
+        Parameters
+        ----------
+        flat : bool
+            If `flat is True`, then this superclass will flatten out all
+            the parameters in a model and append them as child items.
+        """
         super(ComponentNode, self).__init__(data, model, parent)
 
-        for par in flatten(data.parameters):
-            pn = ParNode(par, model, parent=self)
-            self.appendChild(pn)
+        if flat:
+            for par in flatten(data.parameters):
+                pn = ParNode(par, model, parent=self)
+                self.appendChild(pn)
+        else:
+            for p in data.parameters:
+                if isinstance(p, Parameters):
+                    n = ParametersNode(p, model, self)
+                if isinstance(p, Parameter):
+                    n = ParNode(p, model, self)
+                self.appendChild(n)
 
     @property
     def component(self):
         return self._data
-
-    def flags(self, column):
-        flags = QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled
-        if column == 0:
-            flags |= QtCore.Qt.ItemIsEditable
-
-        return flags
-
-    def data(self, column, role=QtCore.Qt.EditRole):
-        if role == QtCore.Qt.CheckStateRole:
-            return None
-
-        if column > 0:
-            return None
-        return self._data.name
-
-    def setData(self, column, value, role=QtCore.Qt.EditRole):
-        if role == QtCore.Qt.CheckStateRole:
-            return False
-
-        if column:
-            return False
-
-        self.component.name = value
-        self._model.dataChanged.emit(self.index, self.index)
-        return True
-
-
-class SlabNode(ComponentNode):
-    def __init__(self, data, model, parent=QtCore.QModelIndex()):
-        super(SlabNode, self).__init__(data, model, parent)
 
     def flags(self, column):
         flags = QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled
@@ -952,6 +940,15 @@ def find_data_object(index):
 
 
 ###############################################################################
+# Classes for the Node structure of different Components
+
+###############################################################################
+class SlabNode(ComponentNode):
+    def __init__(self, data, model, parent=QtCore.QModelIndex()):
+        super(SlabNode, self).__init__(data, model, parent)
+
+
+###############################################################################
 class LipidLeafletNode(ComponentNode):
     def __init__(self, data, model, parent=QtCore.QModelIndex()):
         super(LipidLeafletNode, self).__init__(data, model, parent)
@@ -959,28 +956,17 @@ class LipidLeafletNode(ComponentNode):
         prop_node = PropertyNode('reverse_monolayer', model, parent=self)
         self.appendChild(prop_node)
 
-    def flags(self, column):
-        flags = QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled
-        if column == 0:
-            flags |= QtCore.Qt.ItemIsEditable
 
-        return flags
+###############################################################################
+class SplineNode(ComponentNode):
+    def __init__(self, data, model, parent=QtCore.QModelIndex()):
+        super(SplineNode, self).__init__(data, model, parent, flat=False)
+        prop_node = PropertyNode('zgrad', model, parent=self)
+        self.appendChild(prop_node)
 
-    def data(self, column, role=QtCore.Qt.DisplayRole):
-        if role == QtCore.Qt.CheckStateRole:
-            return None
-
-        if column > 0:
-            return None
-        return self._data.name
-
-    def setData(self, column, value, role=QtCore.Qt.EditRole):
-        if role == QtCore.Qt.CheckStateRole:
-            return False
-
-        if column:
-            return False
-
-        self.component.name = value
-        self._model.dataChanged.emit(self.index, self.index)
-        return True
+        validator = QtGui.QDoubleValidator()
+        validator.setBottom(0)
+        prop_node = PropertyNode('microslab_max_thickness', model, parent=self,
+                                 validators=(validator,))
+        prop_node.attribute_type = float
+        self.appendChild(prop_node)
