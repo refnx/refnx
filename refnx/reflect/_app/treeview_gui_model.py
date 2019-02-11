@@ -288,7 +288,9 @@ class PropertyNode(Node):
             for validator in self.validators:
                 voutput = validator.validate(value, 1)
                 if voutput[0] == QtGui.QValidator.Acceptable:
-                    setattr(self._parent._data, self._data, voutput[1])
+                    setattr(self._parent._data,
+                            self._data,
+                            self.attribute_type(voutput[1]))
                     return True
 
         return False
@@ -1006,7 +1008,16 @@ class LipidLeafletNode(ComponentNode):
 ###############################################################################
 class SplineNode(ComponentNode):
     def __init__(self, data, model, parent=QtCore.QModelIndex()):
-        super(SplineNode, self).__init__(data, model, parent)
+        super(SplineNode, self).__init__(data, model, parent, flat=False)
+        prop_node = PropertyNode('zgrad', model, parent=self)
+        self.appendChild(prop_node)
+
+        validator = QtGui.QDoubleValidator()
+        validator.setBottom(0)
+        prop_node = PropertyNode('microslab_max_thickness', model, parent=self,
+                                 validators=(validator,))
+        prop_node.attribute_type = float
+        self.appendChild(prop_node)
 
     def flags(self, column):
         flags = QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled

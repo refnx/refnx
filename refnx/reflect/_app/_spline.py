@@ -21,4 +21,5 @@ class SplineDialog(QtWidgets.QDialog, SplineDialogUI):
 
     def component(self):
         # return a SplineComponent
-        pass
+        return Spline(100, [2, 3], [0.1, 0.3], name='spline',
+                      microslab_max_thickness=1.0)
