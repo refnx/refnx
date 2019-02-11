@@ -199,10 +199,14 @@ class LipidLeaflet(Component):
              " reverse_monolayer={reverse_monolayer}, name={name!r})")
         return s.format(**d)
 
-    @property
-    def slabs(self):
+    def slabs(self, structure=None):
         """
         Slab representation of monolayer, as an array
+
+        Parameters
+        ----------
+        structure : refnx.reflect.Structure
+            The Structure hosting this Component
         """
         layers = np.zeros((2, 5))
 

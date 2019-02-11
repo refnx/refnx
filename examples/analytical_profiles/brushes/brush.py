@@ -319,16 +319,15 @@ class FreeformVFPextent(Component):
         area = interpolator.integrate(0, 1) * float(self.extent)
 
         for slab in self.left_slabs:
-            _slabs = slab.slabs
+            _slabs = slab.slabs()
             area += _slabs[0, 0] * (1 - _slabs[0, 4])
         for slab in self.right_slabs:
-            _slabs = slab.slabs
+            _slabs = slab.slabs()
             area += _slabs[0, 0] * (1 - _slabs[0, 4])
 
         return area
 
-    @property
-    def slabs(self):
+    def slabs(self, structure=None):
         num_slabs = np.ceil(float(self.extent) / self.microslab_max_thickness)
         slab_thick = float(self.extent / num_slabs)
         slabs = np.zeros((int(num_slabs), 5))
@@ -365,8 +364,8 @@ class FreeformVFPextent(Component):
             layer.vfsolv.value = slab.vfsolv.value
             s |= layer
 
-        polymer_slabs = self.slabs
-        offset = np.sum(s.slabs[:, 0])
+        polymer_slabs = self.slabs()
+        offset = np.sum(s.slabs()[:, 0])
 
         for i in range(np.size(polymer_slabs, 0)):
             layer = m(polymer_slabs[i, 0], polymer_slabs[i, 3])
@@ -381,7 +380,7 @@ class FreeformVFPextent(Component):
         s |= SLD(0, 0)
 
         # now calculate the VFP.
-        total_thickness = np.sum(s.slabs[:, 0])
+        total_thickness = np.sum(s.slabs()[:, 0])
         zed = np.linspace(0, total_thickness, total_thickness + 1)
         # SLD profile puts a very small roughness on the interfaces with zero
         # roughness.
@@ -666,10 +665,10 @@ class FreeformVFPgamma(Component):
         """
         required_spline_area = float(self.gamma)
         for slab in self.left_slabs:
-            _slabs = slab.slabs
+            _slabs = slab.slabs()
             required_spline_area -= _slabs[0, 0] * (1 - _slabs[0, 4])
         for slab in self.right_slabs:
-            _slabs = slab.slabs
+            _slabs = slab.slabs()
             required_spline_area -= _slabs[0, 0] * (1 - _slabs[0, 4])
 
         if required_spline_area <= 0:
@@ -696,16 +695,15 @@ class FreeformVFPgamma(Component):
             area += interpolator.integrate(0, 1) * extent
 
         for slab in self.left_slabs:
-            _slabs = slab.slabs
+            _slabs = slab.slabs()
             area += _slabs[0, 0] * (1 - _slabs[0, 4])
         for slab in self.right_slabs:
-            _slabs = slab.slabs
+            _slabs = slab.slabs()
             area += _slabs[0, 0] * (1 - _slabs[0, 4])
 
         return area
 
-    @property
-    def slabs(self):
+    def slabs(self, structure=None):
         extent = self.extent
         if extent <= 0:
             return None
@@ -746,8 +744,8 @@ class FreeformVFPgamma(Component):
             layer.vfsolv.value = slab.vfsolv.value
             s |= layer
 
-        polymer_slabs = self.slabs
-        offset = np.sum(s.slabs[:, 0])
+        polymer_slabs = self.slabs()
+        offset = np.sum(s.slabs()[:, 0])
 
         if polymer_slabs is not None:
             for i in range(np.size(polymer_slabs, 0)):
@@ -763,7 +761,7 @@ class FreeformVFPgamma(Component):
         s |= SLD(0, 0)
 
         # now calculate the VFP.
-        total_thickness = np.sum(s.slabs[:, 0])
+        total_thickness = np.sum(s.slabs()[:, 0])
         zed = np.linspace(0, total_thickness, total_thickness + 1)
         # SLD profile puts a very small roughness on the interfaces with zero
         # roughness.

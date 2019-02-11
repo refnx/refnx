@@ -46,3 +46,7 @@ Details of changes made to refnx
   instead of multi-threaded.
 - Added MixedReflectModel to the pyqt GUI, allowing one to model 'patchy'
   systems, i.e. incoherent averaging of reflectivities.
+- BACKWARDS INCOMPATIBLE CHANGE: the slabs properties of `Component` and
+  `Structure` have now been changed to methods, taking the optional `structure`
+  kwd parameter. The reason for this is so each `Component` knows what kind of
+  `Structure` it is in.

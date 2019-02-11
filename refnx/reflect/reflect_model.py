@@ -180,7 +180,7 @@ class ReflectModel(object):
             # fallback to what this object was constructed with
             x_err = float(self.dq)
 
-        return reflectivity(x, self.structure.slabs[..., :4],
+        return reflectivity(x, self.structure.slabs()[..., :4],
                             scale=self.scale.value,
                             bkg=self.bkg.value,
                             dq=x_err,
@@ -788,7 +788,7 @@ class MixedReflectModel(object):
 
         for scale, structure in zip(scales, self.structures):
             y += reflectivity(x,
-                              structure.slabs[..., :4],
+                              structure.slabs()[..., :4],
                               scale=scale,
                               dq=x_err,
                               threads=self.threads,

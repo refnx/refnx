@@ -30,7 +30,7 @@ class TestLipidLeaflet(object):
 
     def test_slabs(self):
         # check that slab calculation from parameters is correct
-        slabs = self.leaflet.slabs
+        slabs = self.leaflet.slabs()
         theoretical = np.array([[self.thick_h, self.rho_h, 0, 3,
                                  self.phi_solv_h],
                                 [self.thick_t, self.rho_t, 0, 2,
@@ -41,19 +41,19 @@ class TestLipidLeaflet(object):
         self.leaflet.reverse_monolayer = True
         theoretical = np.flipud(theoretical)
         theoretical[:, 3] = theoretical[::-1, 3]
-        assert_allclose(self.leaflet.slabs, theoretical, rtol=1e-15)
+        assert_allclose(self.leaflet.slabs(), theoretical, rtol=1e-15)
 
     def test_solvent_penetration(self):
         # check different types of solvation for heads/tails.
         self.leaflet.head_solvent = SLD(1.23)
-        slabs = self.leaflet.slabs
+        slabs = self.leaflet.slabs()
         assert_allclose(slabs[0, 1], 1.23 * self.phi_solv_h +
                         (1 - self.phi_solv_h) * self.rho_h)
         assert_allclose(slabs[0, 4], 0)
 
         self.leaflet.head_solvent = None
         self.leaflet.tail_solvent = SLD(1.23)
-        slabs = self.leaflet.slabs
+        slabs = self.leaflet.slabs()
         assert_allclose(slabs[1, 1], 1.23 * self.phi_solv_t +
                         (1 - self.phi_solv_t) * self.rho_t)
         assert_allclose(slabs[1, 4], 0)
@@ -66,12 +66,12 @@ class TestLipidLeaflet(object):
                                    heads, self.V_h, self.thick_h,
                                    tails, self.V_t, self.thick_t,
                                    2, 3)
-        slabs = self.leaflet.slabs
-        new_slabs = new_leaflet.slabs
+        slabs = self.leaflet.slabs()
+        new_slabs = new_leaflet.slabs()
         assert_allclose(new_slabs, slabs)
 
     def test_repr(self):
         # test that we can reconstruct the object from a repr
         s = repr(self.leaflet)
         q = eval(s)
-        assert_equal(q.slabs, self.leaflet.slabs)
+        assert_equal(q.slabs(), self.leaflet.slabs())

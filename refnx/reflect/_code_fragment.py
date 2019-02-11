@@ -27,7 +27,7 @@ from refnx.analysis.parameter import _BinaryOp, _UnaryOp
 from refnx.dataset import ReflectDataset, Data1D
 
 from refnx.reflect import Slab, SLD, Structure
-from refnx.reflect import ReflectModel, LipidLeaflet, MixedReflectModel
+from refnx.reflect import ReflectModel, LipidLeaflet, MixedReflectModel, Spline
 from refnx._lib import flatten
 
 import refnx
@@ -35,7 +35,7 @@ import refnx
 """)
 
 
-_main = ("""
+_main = (r"""
 
 def structure_plot(obj, samples=0):
     # plot sld profiles

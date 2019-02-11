@@ -130,9 +130,9 @@ class TestGlobalFitting(object):
         assert_almost_equal(global_chisqr, indiv_chisqr)
 
         # now check that the parameters were held in common correctly.
-        slabs361 = structure361.slabs
-        slabs365 = structure365.slabs
-        slabs366 = structure366.slabs
+        slabs361 = structure361.slabs()
+        slabs365 = structure365.slabs()
+        slabs366 = structure366.slabs()
 
         assert_equal(slabs365[0:2, 0:5], slabs361[0:2, 0:5])
         assert_equal(slabs366[0:2, 0:5], slabs361[0:2, 0:5])
