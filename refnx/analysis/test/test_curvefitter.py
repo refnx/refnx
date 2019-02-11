@@ -401,6 +401,16 @@ class TestFitterGauss(object):
         # assert_allclose(uncertainties, self.best_unweighted_errors,
         #                 rtol=0.15)
 
+    def test_all_minimisers(self):
+        """test minimisers against the Gaussian fit"""
+        f = CurveFitter(self.objective)
+
+        for method in ['differential_evolution', 'shgo', 'dual_annealing',
+                       'L-BFGS-B', 'least_squares']:
+            self.objective.setp(self.p0)
+            res = f.fit(method=method)
+            assert_almost_equal(res.x, self.best_weighted, 3)
+
 
 """
         The Gaussian example sampling can also be performed with pymc3.
