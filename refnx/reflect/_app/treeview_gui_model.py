@@ -350,37 +350,6 @@ class ComponentNode(Node):
         return True
 
 
-class SlabNode(ComponentNode):
-    def __init__(self, data, model, parent=QtCore.QModelIndex()):
-        super(SlabNode, self).__init__(data, model, parent)
-
-    def flags(self, column):
-        flags = QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled
-        if column == 0:
-            flags |= QtCore.Qt.ItemIsEditable
-
-        return flags
-
-    def data(self, column, role=QtCore.Qt.EditRole):
-        if role == QtCore.Qt.CheckStateRole:
-            return None
-
-        if column > 0:
-            return None
-        return self._data.name
-
-    def setData(self, column, value, role=QtCore.Qt.EditRole):
-        if role == QtCore.Qt.CheckStateRole:
-            return False
-
-        if column:
-            return False
-
-        self.component.name = value
-        self._model.dataChanged.emit(self.index, self.index)
-        return True
-
-
 class StructureNode(Node):
     def __init__(self, data, model, parent=QtCore.QModelIndex()):
         super(StructureNode, self).__init__(data, model, parent)
@@ -971,38 +940,21 @@ def find_data_object(index):
 
 
 ###############################################################################
+# Classes for the Node structure of different Components
+
+###############################################################################
+class SlabNode(ComponentNode):
+    def __init__(self, data, model, parent=QtCore.QModelIndex()):
+        super(SlabNode, self).__init__(data, model, parent)
+
+
+###############################################################################
 class LipidLeafletNode(ComponentNode):
     def __init__(self, data, model, parent=QtCore.QModelIndex()):
         super(LipidLeafletNode, self).__init__(data, model, parent)
 
         prop_node = PropertyNode('reverse_monolayer', model, parent=self)
         self.appendChild(prop_node)
-
-    def flags(self, column):
-        flags = QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled
-        if column == 0:
-            flags |= QtCore.Qt.ItemIsEditable
-
-        return flags
-
-    def data(self, column, role=QtCore.Qt.DisplayRole):
-        if role == QtCore.Qt.CheckStateRole:
-            return None
-
-        if column > 0:
-            return None
-        return self._data.name
-
-    def setData(self, column, value, role=QtCore.Qt.EditRole):
-        if role == QtCore.Qt.CheckStateRole:
-            return False
-
-        if column:
-            return False
-
-        self.component.name = value
-        self._model.dataChanged.emit(self.index, self.index)
-        return True
 
 
 ###############################################################################
@@ -1018,29 +970,3 @@ class SplineNode(ComponentNode):
                                  validators=(validator,))
         prop_node.attribute_type = float
         self.appendChild(prop_node)
-
-    def flags(self, column):
-        flags = QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled
-        if column == 0:
-            flags |= QtCore.Qt.ItemIsEditable
-
-        return flags
-
-    def data(self, column, role=QtCore.Qt.DisplayRole):
-        if role == QtCore.Qt.CheckStateRole:
-            return None
-
-        if column > 0:
-            return None
-        return self._data.name
-
-    def setData(self, column, value, role=QtCore.Qt.EditRole):
-        if role == QtCore.Qt.CheckStateRole:
-            return False
-
-        if column:
-            return False
-
-        self.component.name = value
-        self._model.dataChanged.emit(self.index, self.index)
-        return True
