@@ -312,6 +312,16 @@ class Structure(UserList):
         ----------
         other: :class:`Structure`, :class:`Component`, :class:`SLD`
             The object to add to the structure.
+
+        Examples
+        --------
+
+        >>> air = SLD(0, name='air')
+        >>> sio2 = SLD(3.47, name='SiO2')
+        >>> si = SLD(2.07, name='Si')
+        >>> structure = air | sio2(20, 3)
+        >>> structure |= si(0, 4)
+
         """
         # self |= other
         if isinstance(other, Component):
@@ -334,6 +344,18 @@ class Structure(UserList):
         ----------
         other: :class:`Structure`, :class:`Component`, :class:`SLD`
             The object to add to the structure.
+
+        Examples
+        --------
+
+        >>> air = SLD(0, name='air')
+        >>> sio2 = SLD(3.47, name='SiO2')
+        >>> si = SLD(2.07, name='Si')
+        >>> structure = Structure()
+        >>> structure |= air
+        >>> structure |= sio2(20, 3)
+        >>> structure |= si(0, 3)
+
         """
         # c = self | other
         p = Structure()
@@ -452,7 +474,7 @@ class SLD(object):
     >>> # an SLD object representing Silicon Dioxide
     >>> sio2 = SLD(3.47, name='SiO2')
     >>> # create a Slab of SiO2 20 A in thickness, with a 3 A roughness
-    >>> sio2_layer = SLD(20, 3)
+    >>> sio2_layer = sio2(20, 3)
 
     The SLD object can also be made from a complex number, or from Parameters
 
@@ -510,6 +532,15 @@ class SLD(object):
         -------
         slab : refnx.reflect.Slab
             The newly made Slab.
+
+        Example
+        --------
+
+        >>> # an SLD object representing Silicon Dioxide
+        >>> sio2 = SLD(3.47, name='SiO2')
+        >>> # create a Slab of SiO2 20 A in thickness, with a 3 A roughness
+        >>> sio2_layer = sio2(20, 3)
+
         """
         return Slab(thick, self, rough, name=self.name)
 
@@ -552,6 +583,15 @@ class Component(object):
         -------
         s: refnx.reflect.Structure
             The created Structure
+
+        Examples
+        --------
+
+        >>> air = SLD(0, name='air')
+        >>> sio2 = SLD(3.47, name='SiO2')
+        >>> si = SLD(2.07, name='Si')
+        >>> structure = air | sio2(20, 3) | si(0, 3)
+
         """
         # c = self | other
         p = Structure()
