@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1044</width>
-    <height>800</height>
+    <width>1000</width>
+    <height>822</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -18,8 +18,8 @@
   </property>
   <property name="minimumSize">
    <size>
-    <width>600</width>
-    <height>462</height>
+    <width>1000</width>
+    <height>800</height>
    </size>
   </property>
   <property name="palette">
@@ -540,7 +540,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1044</width>
+     <width>1000</width>
      <height>22</height>
     </rect>
    </property>
@@ -1072,6 +1072,16 @@ errors?</string>
           </widget>
          </item>
         </layout>
+        <zorder>auto_limits_button</zorder>
+        <zorder>remove_layer</zorder>
+        <zorder>add_layer</zorder>
+        <zorder>paramsSlider</zorder>
+        <zorder>use_errors_checkbox</zorder>
+        <zorder>do_fit_button</zorder>
+        <zorder>currently_fitting</zorder>
+        <zorder>remove_from_fit_button</zorder>
+        <zorder>add_to_fit_button</zorder>
+        <zorder>treeView</zorder>
        </widget>
        <widget class="QWidget" name="tab_1">
         <attribute name="title">

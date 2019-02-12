@@ -554,7 +554,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         objective = self.create_objective(data_objects)
         code = code_fragment(objective)
 
-        suggested_name = os.path.join(os.getcwd(), 'code.py')
+        suggested_name = os.path.join(os.getcwd(), 'mcmc.py')
         modelFileName, ok = QtWidgets.QFileDialog.getSaveFileName(
             self,
             'Save code fragment as:',
