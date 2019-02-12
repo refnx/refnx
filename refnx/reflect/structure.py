@@ -455,6 +455,7 @@ class SLD(object):
     >>> sio2_layer = SLD(20, 3)
 
     The SLD object can also be made from a complex number, or from Parameters
+
     >>> sio2 = SLD(3.47+0.01j)
     >>> re = Parameter(3.47)
     >>> im = Parameter(0.01)
