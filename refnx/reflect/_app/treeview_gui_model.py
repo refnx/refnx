@@ -1,10 +1,12 @@
 from copy import deepcopy
 import os.path
+import pickle
+from io import StringIO
 
 import numpy as np
 from PyQt5 import QtCore, QtGui, QtWidgets, uic
 
-from refnx._lib import flatten
+from refnx._lib import flatten, unique
 from refnx.analysis import Parameter, Parameters, possibly_create_parameter
 from refnx.dataset import ReflectDataset
 from refnx.reflect._app.dataobject import DataObject
@@ -328,6 +330,9 @@ class ComponentNode(Node):
         if column == 0:
             flags |= QtCore.Qt.ItemIsEditable
 
+        # say that you want the Components to be draggable
+        flags |= QtCore.Qt.ItemIsDragEnabled | QtCore.Qt.ItemIsDropEnabled
+
         return flags
 
     def data(self, column, role=QtCore.Qt.EditRole):
@@ -375,6 +380,19 @@ class StructureNode(Node):
         self.structure.pop(row)
         self.popChild(row)
         self._model.endRemoveRows()
+
+    def move_component(self, src, dst):
+        self._model.beginMoveRows(self.index, src, 1,
+                                  self.index, dst)
+        # swap nodes
+        src_n = self._children.pop(src)
+        self._children.insert(dst, src_n)
+        # swap in the underlying data
+        strc = self._data
+        c = strc.pop(src)
+        strc.insert(dst, c)
+
+        self._model.endMoveRows()
 
     def insert_component(self, row, component):
         n = component_class(component)(component, self._model, self)
@@ -813,6 +831,57 @@ class TreeModel(QtCore.QAbstractItemModel):
             return QtCore.QModelIndex()
 
         return self.createIndex(parentItem.row(), 0, parentItem)
+
+    def supportedDropActions(self):
+        return QtCore.Qt.MoveAction
+
+    def mimeTypes(self):
+        return ['application/vnd.treeviewdragdrop.list']
+
+    def mimeData(self, indexes):
+        index_info = []
+        mimedata = QtCore.QMimeData()
+        for index in indexes:
+            if index.isValid():
+                node = index.internalPointer()
+                if isinstance(node, Node):
+                    index_info.append(node.row_indices())
+
+        s = pickle.dumps(index_info)
+        mimedata.setData('application/vnd.treeviewdragdrop.list', s)
+        return mimedata
+
+    def dropMimeData(self, data, action, row, column, parent):
+        if action == QtCore.Qt.IgnoreAction:
+            return True
+
+        if not data.hasFormat('application/vnd.treeviewdragdrop.list'):
+            return False
+
+        # what the destination was.
+        node = parent.internalPointer()
+
+        if not isinstance(node, ComponentNode):
+            return False
+
+        dst_row = node.row()
+
+        structure_node = node.parent()
+        structure = structure_node._data
+        ba = data.data('application/vnd.treeviewdragdrop.list')
+        index_info = pickle.loads(ba)
+        dragged_nodes = list(unique(self.node_from_row_indices(ri) for
+                                    ri in index_info))
+        # can't drag a fronting/backing, nor drag a Component
+        # into another structure
+        src_rows = [dn.row() for dn in dragged_nodes]
+        if (0 in src_rows) or (len(structure) - 1 in src_rows):
+            return False
+
+        for src_row in src_rows:
+            structure_node.move_component(src_row, dst_row)
+
+        return True
 
     def rowCount(self, parent=QtCore.QModelIndex()):
         if not parent.isValid():
