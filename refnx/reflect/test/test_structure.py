@@ -5,7 +5,7 @@ from numpy.testing import (assert_almost_equal, assert_equal, assert_,
                            assert_allclose, assert_raises)
 
 from refnx._lib import flatten
-from refnx.reflect import (SLD, Structure, Spline, Slab)
+from refnx.reflect import (SLD, Structure, Spline, Slab, Stack)
 from refnx.reflect.structure import _profile_slicer
 from refnx.analysis import Parameter, Interval, Parameters
 
@@ -193,3 +193,58 @@ class TestStructure(object):
         assert_allclose(slice_reflectivity,
                         reflectivity,
                         rtol=5e-3)
+
+    def test_stack(self):
+        stk = Stack()
+        slabs = stk.slabs(None)
+        assert(slabs is None)
+
+        si = SLD(2.07)
+        sio2 = SLD(3.47)
+        polymer = SLD(1.0)
+        d2o = SLD(6.36)
+
+        # check some initial stack properties
+        stk.append(sio2(55, 4))
+        slabs = stk.slabs(None)
+        assert(slabs.shape == (1, 5))
+        assert_equal(np.sum(slabs[:, 0]), 55)
+        assert_equal(slabs[0, 1], 3.47)
+        stk.repeats = 3
+        slabs = stk.slabs(None)
+        assert(slabs.shape == (3, 5))
+        assert_equal(np.sum(slabs[:, 0]), 165)
+
+        # ior a Stack and a Component
+        stk |= polymer(110, 3.5)
+        assert_equal(len(stk), 2)
+        assert(isinstance(stk, Stack))
+        assert(stk.repeats == 3)
+        slabs = stk.slabs()
+        assert(slabs.shape == (6, 5))
+        assert_equal(np.sum(slabs[:, 0]), 495)
+
+        # place a stack into a structure
+        s = si | d2o(10, 3) | stk | d2o
+        assert(isinstance(s, Structure))
+        slabs = s.slabs()
+        assert_equal(slabs[:, 0], [0, 10, 55, 110, 55, 110, 55, 110, 0])
+        assert_equal(slabs[:, 1],
+                     [2.07, 6.36, 3.47, 1.0, 3.47, 1.0, 3.47, 1.0, 6.36])
+        assert_equal(slabs[:, 3],
+                     [0, 3, 4, 3.5, 4, 3.5, 4, 3.5, 0])
+
+        # ior a Structure and a Stack
+        s = Structure(components=[si(), d2o(10, 3)])
+        s |= stk
+        s |= d2o
+        assert(isinstance(s, Structure))
+
+        assert_equal(s.slabs()[:, 0], [0, 10, 55, 110, 55, 110, 55, 110, 0])
+        assert_equal(s.slabs()[:, 1],
+                     [2.07, 6.36, 3.47, 1.0, 3.47, 1.0, 3.47, 1.0, 6.36])
+
+        s |= stk
+        assert(isinstance(s.components[-1], Stack))
+        with assert_raises(ValueError) as f:
+            s.slabs()

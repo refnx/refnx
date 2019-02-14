@@ -111,9 +111,16 @@ class Spline(Component):
 
         # note - this means you shouldn't use a spline more than once in
         # a Component, because only the first use will be detected.
-        loc = structure.index(self)
-        left_component = structure[loc - 1]
-        right_component = structure[loc + 1]
+        try:
+            loc = structure.index(self)
+            left_component = structure[loc - 1]
+            right_component = structure[loc + 1]
+        except ValueError:
+            raise ValueError("Spline didn't appear to be part of a super"
+                             " Structure")
+        except IndexError:
+            raise ValueError("Spline must be bracketed with other Components"
+                             "in a Structure/Stack")
 
         vs = np.array(self.vs)
 
@@ -190,7 +197,7 @@ class Spline(Component):
         structure : refnx.reflect.Structure
             The Structure hosting this Component
         """
-        if not isinstance(structure, Structure):
+        if structure is None:
             raise ValueError("Spline.slabs() requires a valid Structure")
 
         num_slabs = np.ceil(float(self.extent) / self.microslab_max_thickness)

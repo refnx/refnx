@@ -95,7 +95,6 @@ class Structure(UserList):
 
     def __setitem__(self, i, v):
         self.data[i] = v
-        # self.update()
 
     def __str__(self):
         s = list()
@@ -211,8 +210,13 @@ class Structure(UserList):
         if not len(self):
             return None
 
-        slabs = np.concatenate([c.slabs(structure=self) for
-                                c in self.components])
+        if not (isinstance(self.data[-1], Slab) and
+                isinstance(self.data[0], Slab)):
+            raise ValueError("The first and last Components in a Structure"
+                             " need to be Slabs")
+
+        slabs = [c.slabs(structure=self) for c in self.components]
+        slabs = np.concatenate([s for s in slabs if s is not None])
 
         # if the slab representation needs to be reversed.
         if self.reverse_structure:
@@ -352,9 +356,7 @@ class Structure(UserList):
         >>> sio2 = SLD(3.47, name='SiO2')
         >>> si = SLD(2.07, name='Si')
         >>> structure = Structure()
-        >>> structure |= air
-        >>> structure |= sio2(20, 3)
-        >>> structure |= si(0, 3)
+        >>> structure = air | sio2(20, 3) | si(0, 3)
 
         """
         # c = self | other
@@ -727,12 +729,104 @@ class Slab(Component):
                                        self.vfsolv.value]))
 
 
-class CompositeComponent(Component):
+class Stack(UserList, Component):
     """
-    A series of components to be considered as one.
+    A series of components to be considered as one, and can repeat
     """
-    def __init__(self, components):
-        pass
+    def __init__(self, components=None, repeats=1, name=''):
+        super(Stack, self).__init__()
+
+        self._name = name
+        self.repeats = repeats
+        # if you provide a list of components to start with, then initialise
+        # the structure from that
+        if components is not None:
+            self.data = [c for c in components if isinstance(c, Component)]
+
+    def __setitem__(self, i, v):
+        self.data[i] = v
+
+    @property
+    def name(self):
+        return self._name
+
+    @name.setter
+    def name(self, name):
+        self._name = name
+
+    def append(self, item):
+        """
+        Append a :class:`Component` to the Stack.
+
+        Parameters
+        ----------
+        item: refnx.reflect.Component
+            The component to be added.
+        """
+        if isinstance(item, SLD):
+            self.append(item())
+            return
+
+        if not isinstance(item, Component):
+            raise ValueError("You can only add Component objects to a"
+                             " structure")
+        self.data.append(item)
+
+    def slabs(self, structure=None):
+        if not len(self):
+            return None
+
+        # a sub stack member may want to know what the solvent is.
+        if structure is not None:
+            self.solvent = structure.solvent()
+
+        slabs = np.concatenate([c.slabs(structure=self) for
+                                c in self.components])
+        if self.repeats > 1:
+            slabs = np.concatenate([slabs] * self.repeats)
+
+        if hasattr(self, 'solvent'):
+            delattr(self, 'solvent')
+
+        return slabs
+
+    @property
+    def components(self):
+        """
+        The list of components in the sample.
+        """
+        return self.data
+
+    @property
+    def parameters(self):
+        r"""
+        :class:`refnx.analysis.Parameters`, all the parameters associated with
+        this structure.
+
+        """
+        p = Parameters(name='Stack - {0}'.format(self.name))
+        p.extend([component.parameters for component in self.components])
+        return p
+
+    def __ior__(self, other):
+        """
+        Build a Stack by `IOR`'ing.
+
+        Parameters
+        ----------
+        other: :class:`Component`, :class:`SLD`
+            The object to add to the structure.
+
+        """
+        # self |= other
+        if isinstance(other, Component):
+            self.append(other)
+        elif isinstance(other, SLD):
+            slab = other(0, 0)
+            self.append(slab)
+        else:
+            raise ValueError()
+        return self
 
 
 def _profile_slicer(z, sld_profile, slice_size=None):
