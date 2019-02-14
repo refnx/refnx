@@ -737,6 +737,15 @@ class Slab(Component):
 class Stack(UserList, Component):
     """
     A series of components to be considered as one, and can repeat
+
+    Parameters
+    ----------
+    components : sequence
+        A series of Components to initialise the stack with
+    name : str
+        Name of the Stack
+    repeats : int
+        How many times the Components within a stack repeat themselves
     """
     def __init__(self, components=(), name='', repeats=1):
         super(Stack, self).__init__()

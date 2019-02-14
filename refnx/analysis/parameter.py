@@ -88,7 +88,7 @@ class Parameters(UserList):
 
     def __repr__(self):
         return ("Parameters(data={data!r},"
-               " name={name!r})".format(**self.__dict__))
+                " name={name!r})".format(**self.__dict__))
 
     def __str__(self):
         s = list()
@@ -115,7 +115,7 @@ class Parameters(UserList):
 
     def __ior__(self, other):
         """
-        concatenate Parameter(s). You can concatenate Parameters with Parameter
+        Concatenate Parameter(s). You can concatenate Parameters with Parameter
         or Parameters instances.
         """
         # self |= other
@@ -436,15 +436,36 @@ def possibly_create_parameter(value, name=''):
 
 
 class Parameter(BaseParameter):
+    """
+    Class for specifying a variable.
+
+    Parameters
+    ----------
+    value : float, optional
+        Numerical Parameter value.
+    name : str, optional
+        Name of the parameter.
+    bounds: `refnx.analysis.Bounds`, tuple, optional
+        Sets the bounds for the parameter. Either supply a
+        `refnx.analysis.Bounds` object (or one of its subclasses),
+        or a `(lower_bound, upper_bound)` tuple.
+    vary : bool, optional
+        Whether the Parameter is fixed during a fit.
+    constraint : expression, optional
+        Python expression used to constrain the value during the fit.
+    """
+
     def __init__(self, value=0., name=None, bounds=None, vary=False,
                  constraint=None):
         """
+        Class for specifying a variable.
+
         Parameters
         ----------
-        name : str, optional
-            Name of the parameter.
         value : float, optional
             Numerical Parameter value.
+        name : str, optional
+            Name of the parameter.
         bounds: `refnx.analysis.Bounds`, tuple, optional
             Sets the bounds for the parameter. Either supply a
             `refnx.analysis.Bounds` object (or one of its subclasses),
@@ -538,9 +559,38 @@ class Parameter(BaseParameter):
             self._bounds = rv
 
     def valid(self, val):
+        """
+        The truth of whether a value would satisfy the bounds for this
+        parameter.
+
+        Parameters
+        ----------
+        val : float
+            A proposed value
+
+        Returns
+        -------
+        valid : bool
+            `np.isfinite(Parameter.logp(val))`
+        """
         return self.bounds.valid(val)
 
     def range(self, lower, upper):
+        """
+        Sets the lower and upper limits on the Parameter
+
+        Parameters
+        ----------
+        lower : float
+            lower bound
+        upper : float
+            upper bound
+
+        Returns
+        -------
+        None
+
+        """
         self.bounds = Interval(lower, upper)
 
     @property
@@ -575,7 +625,20 @@ class Parameter(BaseParameter):
 
     def setp(self, value=None, vary=None, bounds=None, constraint=None):
         """
-        Set several attributes of the parameter at once
+        Set several attributes of the parameter at once.
+
+        Parameters
+        ----------
+        value : float, optional
+            Numerical Parameter value.
+        vary : bool, optional
+            Whether the Parameter is fixed during a fit.
+        bounds: `refnx.analysis.Bounds`, tuple, optional
+            Sets the bounds for the parameter. Either supply a
+            `refnx.analysis.Bounds` object (or one of its subclasses),
+            or a `(lower_bound, upper_bound)` tuple.
+        constraint : expression, optional
+            Python expression used to constrain the value during the fit.
         """
         if value is not None:
             self.value = value
