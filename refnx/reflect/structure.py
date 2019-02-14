@@ -740,7 +740,7 @@ class Stack(UserList, Component):
     def __init__(self, components=None, repeats=1, name=''):
         super(Stack, self).__init__()
 
-        self._name = name
+        self.name = name
         self.repeats = repeats
         # if you provide a list of components to start with, then initialise
         # the structure from that
@@ -763,17 +763,9 @@ class Stack(UserList, Component):
         return '\n'.join(s)
 
     def __repr__(self):
-        return ("Stack(name={_name!r},"
+        return ("Stack(name={name!r},"
                 " components={data!r},"
                 " repeats={repeats!r})".format(**self.__dict__))
-
-    @property
-    def name(self):
-        return self._name
-
-    @name.setter
-    def name(self, name):
-        self._name = name
 
     def append(self, item):
         """
