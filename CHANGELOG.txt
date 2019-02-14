@@ -54,3 +54,5 @@ Details of changes made to refnx
 - In the pyqt gui Components can be re-ordered within their host structure by
   drag/drop. Dragging to other Structures copies the Component to that
   structure.
+- Added the Stack Component. A Stack contains a series of Components, and the
+  Stack.repeats attribute can be used to produce a multilayer repeat structure.

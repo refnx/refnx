@@ -26,7 +26,7 @@ from refnx.analysis.parameter import Constant, build_constraint_from_tree
 from refnx.analysis.parameter import _BinaryOp, _UnaryOp
 from refnx.dataset import ReflectDataset, Data1D
 
-from refnx.reflect import Slab, SLD, Structure
+from refnx.reflect import Slab, SLD, Structure, Stack
 from refnx.reflect import ReflectModel, LipidLeaflet, MixedReflectModel, Spline
 from refnx._lib import flatten
 

@@ -26,14 +26,14 @@ from .datastore import DataStore
 from .treeview_gui_model import (TreeModel, Node, DatasetNode, DataObjectNode,
                                  ComponentNode, StructureNode,
                                  ReflectModelNode, ParNode, TreeFilter,
-                                 find_data_object, SlabNode)
+                                 find_data_object, SlabNode, StackNode)
 from ._lipid_leaflet import LipidLeafletDialog
 from ._spline import SplineDialog
 
 import refnx
 from refnx.analysis import (CurveFitter, Objective,
                             Transform, GlobalObjective)
-from refnx.reflect import SLD, ReflectModel, Slab
+from refnx.reflect import SLD, ReflectModel, Slab, Stack, Structure
 from refnx.dataset import Data1D
 from refnx.reflect._code_fragment import code_fragment
 from refnx._lib import unique, flatten, PoolWrapper
@@ -799,22 +799,27 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
 
         item = index.internalPointer()
         hierarchy = item.hierarchy()
+        # reverse so that we see bottom up. We want to see if something is a
+        # Component first, then whether it's a StackNode.
+        hierarchy.reverse()
+
         # the row you selected was within the component list
-        _component = [i for i in hierarchy if isinstance(i, ComponentNode)]
+        _component = [i for i in hierarchy if (isinstance(i, ComponentNode) or
+                                               isinstance(i, StackNode))]
         if not _component:
-            return msg('Select a single row within a Structure to insert a'
-                       ' new Component.')
+            return msg('Select a single location within a Structure to insert'
+                       ' a new Component.')
 
         # work out which component you have.
         component = _component[0]
-        structure = component.parent()
+        host = component.parent()
         idx = component.row()
-        if idx == len(structure._data) - 1:
+        if isinstance(host, StructureNode) and idx == len(host._data) - 1:
             return msg("You can't append a layer after the backing medium,"
                        " select a previous layer")
 
         # what type of component shall we add?
-        comp_type = ['Slab', 'LipidLeaflet', 'Spline']
+        comp_type = ['Slab', 'LipidLeaflet', 'Spline', 'Stack']
         which_type, ok = QtWidgets.QInputDialog.getItem(
             self, "What Component type did you want to add?", "", comp_type,
             editable=False)
@@ -830,12 +835,19 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
                 return
             c = self.lipid_leaflet.component()
         elif which_type == 'Spline':
+            if isinstance(host, StackNode):
+                msg("Can't add Splines to a Stack")
+                return
+
             ok = self.spline_dialog.exec_()
             if not ok:
                 return
             c = self.spline_dialog.component()
+        elif which_type == 'Stack':
+            s = _default_slab()
+            c = Stack(components=[s], name='Stack')
 
-        structure.insert_component(idx + 1, c)
+        host.insert_component(idx + 1, c)
 
     @QtCore.pyqtSlot()
     def on_remove_layer_clicked(self):
@@ -853,21 +865,26 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
 
         item = index.internalPointer()
         hierarchy = item.hierarchy()
+        # reverse so that we see bottom up. We want to see if something is a
+        # Component first, then whether it's a StackNode.
+        hierarchy.reverse()
+
         # the row you selected was within the component list
-        _component = [i for i in hierarchy if isinstance(i, ComponentNode)]
+        _component = [i for i in hierarchy if (isinstance(i, ComponentNode) or
+                                               isinstance(i, StackNode))]
         if not _component:
-            return msg('Select a single row within a Structure to insert a'
-                       ' new slab.')
+            return msg('Select a single Component within a Structure to'
+                       ' remove')
 
         # work out which component you have.
         component = _component[0]
-        structure = component.parent()
+        host = component.parent()
         idx = component.row()
-        if idx in [0, len(structure._data) - 1]:
+        if isinstance(host, StructureNode) and idx in [0, len(host._data) - 1]:
             return msg("You can't remove the fronting or backing media")
 
         # all checking done, remove a layer
-        structure.remove_component(idx)
+        host.remove_component(idx)
 
     @QtCore.pyqtSlot()
     def on_auto_limits_button_clicked(self):
@@ -2023,8 +2040,7 @@ class OpenMenu(QtWidgets.QMenu):
 def msg(text):
     msgBox = QtWidgets.QMessageBox()
     msgBox.setText(text)
-    msgBox.exec_()
-    return
+    return msgBox.exec_()
 
 
 def _default_slab(parent=None):

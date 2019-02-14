@@ -12,7 +12,7 @@ from refnx.dataset import ReflectDataset
 from refnx.reflect._app.dataobject import DataObject
 from refnx.reflect._app.datastore import DataStore
 from refnx.reflect import (Slab, LipidLeaflet, SLD, ReflectModel,
-                           MixedReflectModel, Spline)
+                           MixedReflectModel, Spline, Stack)
 
 
 def component_class(component):
@@ -25,6 +25,8 @@ def component_class(component):
         return LipidLeafletNode
     elif isinstance(component, Spline):
         return SplineNode
+    elif isinstance(component, Stack):
+        return StackNode
 
 
 class Node(object):
@@ -875,9 +877,11 @@ class TreeModel(QtCore.QAbstractItemModel):
         # what the destination was.
         host_node = parent.internalPointer()
 
-        if not isinstance(host_node, ComponentNode):
+        if not (isinstance(host_node, ComponentNode) or
+                isinstance(host_node, StackNode)):
             return False
 
+        # host_structure could be a Structure OR a Stack
         host_structure_node = host_node.parent()
         host_structure = host_structure_node._data
         ba = data.data('application/vnd.treeviewdragdrop.list')
@@ -894,25 +898,33 @@ class TreeModel(QtCore.QAbstractItemModel):
         dragged_nodes.reverse()
 
         for dragged_node in dragged_nodes:
-            # can't drag a fronting/backing medium
+            # can't drag a fronting/backing medium in a Structure
             src_structure_node = dragged_node.parent()
             src_structure = src_structure_node._data
-            if dragged_node.row() in [0, len(src_structure) - 1]:
+
+            if (isinstance(src_structure_node, StructureNode) and
+                    dragged_node.row() in [0, len(src_structure) - 1]):
+                continue
+
+            if (isinstance(dragged_node, SplineNode) and
+                    isinstance(host_structure_node, StackNode)):
                 continue
 
             # figure out what the destination is.
             dst_row = host_node.row() + 1
-            if dst_row == len(host_structure):
-                dst_row = len(host_structure) - 1
+            if (dst_row == len(host_structure) and
+                    isinstance(host_structure_node, StructureNode)):
+                return False
 
             if src_structure_node is host_structure_node:
                 # moving within the same structure
                 src_row = dragged_node.row()
                 host_structure_node.move_component(src_row, dst_row)
             else:
-                # copy (not move) into another structure
-                # deepcopy the component
+                # move the Component between Structures.
                 c = deepcopy(dragged_node._data)
+                src_row = dragged_node.row()
+                src_structure_node.remove_component(src_row)
                 host_structure_node.insert_component(dst_row, c)
 
         return True
@@ -1022,6 +1034,9 @@ class TreeFilter(QtCore.QSortFilterProxyModel):
             # component
             parent = item.parent()
             struc = parent.parent()
+            if not isinstance(struc, StructureNode):
+                return True
+
             component_loc = parent.row()
             if component_loc == 0 and row in [0, 3, 4]:
                 return False
@@ -1073,3 +1088,84 @@ class SplineNode(ComponentNode):
                                  validators=(validator,))
         prop_node.attribute_type = float
         self.appendChild(prop_node)
+
+
+###############################################################################
+class StackNode(Node):
+    def __init__(self, data, model, parent=QtCore.QModelIndex()):
+        super(StackNode, self).__init__(data, model, parent)
+
+        for component in data:
+            self.appendChild(
+                component_class(component)(component, model, self))
+
+        validator = QtGui.QIntValidator()
+        validator.setBottom(1)
+        prop_node = PropertyNode('repeats', model, parent=self,
+                                 validators=(validator,))
+        prop_node.attribute_type = int
+        self.appendChild(prop_node)
+
+    @property
+    def stack(self):
+        return self._data
+
+    def flags(self, column):
+        flags = QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled
+        if column == 0:
+            flags |= QtCore.Qt.ItemIsEditable
+
+        # say that you want the Components to be draggable
+        flags |= QtCore.Qt.ItemIsDragEnabled | QtCore.Qt.ItemIsDropEnabled
+
+        return flags
+
+    def data(self, column, role=QtCore.Qt.EditRole):
+        if role == QtCore.Qt.CheckStateRole:
+            return None
+
+        if column > 0:
+            return None
+
+        if role == QtCore.Qt.DisplayRole:
+            return self._data.name
+
+    def remove_component(self, row):
+        self._model.beginRemoveRows(self.index, row, row)
+        self.stack.pop(row)
+        self.popChild(row)
+        self._model.endRemoveRows()
+
+    def move_component(self, src, dst):
+        if src == dst or dst == src + 1:
+            return
+
+        self._model.beginMoveRows(self.index, src, src,
+                                  self.index, dst)
+
+        # swap in the underlying data
+        strc = self._data
+        children = self._children
+
+        c = strc[src]
+        cn = children[src]
+
+        strc.insert(dst, c)
+        children.insert(dst, cn)
+
+        if src < dst:
+            strc.pop(src)
+            children.pop(src)
+        else:
+            strc.pop(src + 1)
+            children.pop(src + 1)
+
+        self._model.endMoveRows()
+
+    def insert_component(self, row, component):
+        n = component_class(component)(component, self._model, self)
+
+        self._model.beginInsertRows(self.index, row, row)
+        self.insertChild(row, n)
+        self.stack.insert(row, component)
+        self._model.endInsertRows()
