@@ -762,6 +762,7 @@ class Stack(UserList, Component):
         return ("Stack(name={_name!r},"
                 " components={data!r},"
                 " repeats={repeats!r})".format(**self.__dict__))
+
     @property
     def name(self):
         return self._name

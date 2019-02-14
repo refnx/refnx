@@ -252,7 +252,5 @@ class TestStructure(object):
 
         s |= stk
         assert(isinstance(s.components[-1], Stack))
-        with assert_raises(ValueError) as f:
+        with assert_raises(ValueError):
             s.slabs()
-
-
