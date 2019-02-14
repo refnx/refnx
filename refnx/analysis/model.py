@@ -131,7 +131,7 @@ class Model(object):
         r"""
         The model can add additional terms to it's log-probability. However,
         it should _not_ include logp from any of the parameters. That is
-        calculated by objective.logp.
+        calculated by `Objective.logp`.
 
         """
         return 0

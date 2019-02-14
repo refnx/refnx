@@ -667,7 +667,7 @@ class MixedReflectModel(object):
 
         # all reflectometry models need a scale factor and background. Set
         # them all to 1 by default.
-        pscales = Parameters('scale factors')
+        pscales = Parameters(name='scale factors')
 
         if scales is not None and len(structures) == len(scales):
             tscales = scales
