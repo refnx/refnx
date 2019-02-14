@@ -1,7 +1,7 @@
 from copy import deepcopy
 import os.path
 import pickle
-from io import StringIO
+from operator import itemgetter
 
 import numpy as np
 from PyQt5 import QtCore, QtGui, QtWidgets, uic
@@ -341,7 +341,8 @@ class ComponentNode(Node):
 
         if column > 0:
             return None
-        return self._data.name
+        if role == QtCore.Qt.DisplayRole:
+            return self._data.name
 
     def setData(self, column, value, role=QtCore.Qt.EditRole):
         if role == QtCore.Qt.CheckStateRole:
@@ -382,15 +383,28 @@ class StructureNode(Node):
         self._model.endRemoveRows()
 
     def move_component(self, src, dst):
-        self._model.beginMoveRows(self.index, src, 1,
+        if src == dst or dst == src + 1:
+            return
+
+        self._model.beginMoveRows(self.index, src, src,
                                   self.index, dst)
-        # swap nodes
-        src_n = self._children.pop(src)
-        self._children.insert(dst, src_n)
+
         # swap in the underlying data
         strc = self._data
-        c = strc.pop(src)
+        children = self._children
+
+        c = strc[src]
+        cn = children[src]
+
         strc.insert(dst, c)
+        children.insert(dst, cn)
+
+        if src < dst:
+            strc.pop(src)
+            children.pop(src)
+        else:
+            strc.pop(src + 1)
+            children.pop(src + 1)
 
         self._model.endMoveRows()
 
@@ -859,27 +873,47 @@ class TreeModel(QtCore.QAbstractItemModel):
             return False
 
         # what the destination was.
-        node = parent.internalPointer()
+        host_node = parent.internalPointer()
 
-        if not isinstance(node, ComponentNode):
+        if not isinstance(host_node, ComponentNode):
             return False
 
-        dst_row = node.row()
-
-        structure_node = node.parent()
-        structure = structure_node._data
+        host_structure_node = host_node.parent()
+        host_structure = host_structure_node._data
         ba = data.data('application/vnd.treeviewdragdrop.list')
         index_info = pickle.loads(ba)
         dragged_nodes = list(unique(self.node_from_row_indices(ri) for
                                     ri in index_info))
-        # can't drag a fronting/backing, nor drag a Component
-        # into another structure
-        src_rows = [dn.row() for dn in dragged_nodes]
-        if (0 in src_rows) or (len(structure) - 1 in src_rows):
-            return False
 
-        for src_row in src_rows:
-            structure_node.move_component(src_row, dst_row)
+        # order the dragged nodes
+        src_rows = [dn.row() for dn in dragged_nodes]
+        d = sorted(zip(src_rows, dragged_nodes), key=itemgetter(0))
+        dragged_nodes = [i[1] for i in d]
+
+        # add to the destination in reverse
+        dragged_nodes.reverse()
+
+        for dragged_node in dragged_nodes:
+            # can't drag a fronting/backing medium
+            src_structure_node = dragged_node.parent()
+            src_structure = src_structure_node._data
+            if dragged_node.row() in [0, len(src_structure) - 1]:
+                continue
+
+            # figure out what the destination is.
+            dst_row = host_node.row() + 1
+            if dst_row == len(host_structure):
+                dst_row = len(host_structure) - 1
+
+            if src_structure_node is host_structure_node:
+                # moving within the same structure
+                src_row = dragged_node.row()
+                host_structure_node.move_component(src_row, dst_row)
+            else:
+                # copy (not move) into another structure
+                # deepcopy the component
+                c = deepcopy(dragged_node._data)
+                host_structure_node.insert_component(dst_row, c)
 
         return True
 
