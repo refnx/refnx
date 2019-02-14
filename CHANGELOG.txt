@@ -50,3 +50,7 @@ Details of changes made to refnx
   `Structure` have now been changed to methods, taking the optional `structure`
   kwd parameter. The reason for this is so each `Component` knows what kind of
   `Structure` it is in.
+- The Spline Component can be used within the pyqt GUI.
+- In the pyqt gui Components can be re-ordered within their host structure by
+  drag/drop. Dragging to other Structures copies the Component to that
+  structure.
