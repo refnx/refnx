@@ -49,13 +49,19 @@ unary = [operator.neg, operator.abs, np.sin, np.tan, np.cos, np.arcsin,
 
 class Parameters(UserList):
     """
-    A collection of Parameters
+    A sequence of Parameters
+
+    Parameters
+    ----------
+    data : sequence
+        A sequence of Parameter or Parameters
+    name : str
+        Name of this Parameters instance
     """
-    def __init__(self, data=None, name=None):
+    def __init__(self, data=(), name=None):
         super(Parameters, self).__init__()
         self.name = name
-        if data is not None:
-            self.data = data
+        self.data.extend(data)
 
     def __getitem__(self, i):
         if type(i) is str:
@@ -129,6 +135,14 @@ class Parameters(UserList):
         return self
 
     def logp(self):
+        """
+        Calculates logp for all the parameters
+
+        Returns
+        -------
+        logp : float
+            Log probability for all the parameters
+        """
         # logp for all the parameters
         return np.sum([param.logp() for param in f_unique(flatten(self.data))
                        if param.vary])
