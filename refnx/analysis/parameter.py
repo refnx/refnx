@@ -115,8 +115,8 @@ class Parameters(UserList):
 
     def __ior__(self, other):
         """
-        Concatenate Parameter(s). You can concatenate Parameters with Parameter
-        or Parameters instances.
+        Concatenate Parameter(s). You can concatenate :class:`Parameters` with
+        :class:`Parameter` or :class:`Parameters` instances.
         """
         # self |= other
         if not (is_parameter(other) or is_parameters(other)):
@@ -127,8 +127,8 @@ class Parameters(UserList):
 
     def __or__(self, other):
         """
-        concatenate Parameter(s). You can concatenate Parameters with Parameter
-        or Parameters instances.
+        concatenate Parameter(s). You can concatenate :class:`Parameters` with
+        :class:`Parameter` or :class:`Parameters` instances.
         """
         # c = self | other
         if not (is_parameter(other) or is_parameters(other)):
@@ -152,12 +152,18 @@ class Parameters(UserList):
                        if param.vary])
 
     def __array__(self):
-        """Convert Parameters to array."""
+        """
+        Convert Parameters to an array containing their values.
+        """
         return np.array([float(p) for p
                          in flatten(self.data)])
 
     @property
     def pvals(self):
+        """
+        An array containing the values of all the :class:`Parameter` in this
+        object.
+        """
         return np.array(self)
 
     @pvals.setter
@@ -189,21 +195,55 @@ class Parameters(UserList):
         return len(self.flattened())
 
     def flattened(self, unique=False):
+        """
+        A list of all the :class:`Parameter` contained in this object,
+        including those contained within :class:`Parameters` at any depth.
+
+        Parameters
+        ----------
+        unique : bool
+            The list will only contain unique objects.
+
+        Returns
+        -------
+        params : list
+            A list of :class:`Parameter` contained in this object.
+
+        """
         if unique:
             return list(f_unique(flatten(self.data)))
         else:
             return list(flatten(self.data))
 
     def names(self):
+        """
+        Returns
+        -------
+        names : list
+            A list of all the names of all the :class:`Parameter` contained in
+            this object.
+        """
         return [param.name for param in flatten(self.data)]
 
     def nvary(self):
+        """
+        Returns
+        -------
+        nvary : int
+            The number of :class:`Parameter` contained in this object that are
+            allowed to vary.
+
+        """
         return np.sum([1 for param in f_unique(flatten(self.data))
                        if param.vary])
 
     def constrained_parameters(self):
         """
-        List of constrained parameters
+        Returns
+        -------
+        constrained_parameters : list
+            A list of unique :class:`Parameter` contained in this object that
+            have constraints.
         """
         return [param for param in f_unique(flatten(self.data))
                 if param.constraint is not None]
@@ -523,6 +563,9 @@ class Parameter(BaseParameter):
 
     @property
     def value(self):
+        """
+        The numeric value of the :class:`Parameter`
+        """
         if self._constraint is not None:
             retval = self._constraint._eval()
         else:
@@ -544,6 +587,9 @@ class Parameter(BaseParameter):
 
     @property
     def bounds(self):
+        """
+        The bounds placed on this :class:`Parameter`.
+        """
         return self._bounds
 
     @bounds.setter
@@ -595,6 +641,9 @@ class Parameter(BaseParameter):
 
     @property
     def vary(self):
+        """
+        Whether this :class:`Parameter` is allowed to vary
+        """
         return self._vary
 
     @vary.setter

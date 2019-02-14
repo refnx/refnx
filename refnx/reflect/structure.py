@@ -627,15 +627,15 @@ class Component(object):
         Returns
         -------
         slabs : np.ndarray
-            Slab representation of this structure.
+            Slab representation of this Component.
             Has shape (N, 5).
 
             - slab[N, 0]
                thickness of layer N
             - slab[N, 1]
-               *overall* SLD.real of layer N (material AND solvent)
+               SLD.real of layer N (not including solvent)
             - slab[N, 2]
-               *overall* SLD.imag of layer N (material AND solvent)
+               *overall* SLD.imag of layer N (not including solvent)
             - slab[N, 3]
                roughness between layer N and N-1
             - slab[N, 4]
@@ -725,7 +725,7 @@ class Slab(Component):
 
     def slabs(self, structure=None):
         """
-        slab representation of this component. See :class:`Structure.slabs`
+        Slab representation of this component. See :class:`Component.slabs`
         """
         return np.atleast_2d(np.array([self.thick.value,
                                        self.sld.real.value,
@@ -736,7 +736,8 @@ class Slab(Component):
 
 class Stack(UserList, Component):
     """
-    A series of components to be considered as one, and can repeat
+    A series of Components to be considered as one. When part of a Structure
+    the Stack can represent a multilayer by setting the `repeats` attribute.
 
     Parameters
     ----------
@@ -745,7 +746,20 @@ class Stack(UserList, Component):
     name : str
         Name of the Stack
     repeats : int
-        How many times the Components within a stack repeat themselves
+        When viewed from a parent Structure the Components in this Stack will
+        appear to be repeated `repeats` times.
+
+    Notes
+    -----
+    To add Components to the Stack you can:
+
+        - initialise the object with a list of Components
+        - utilise list methods (`extend`, `append`, `insert`, etc)
+        - Add by `__ior__` (e.g. stack |= component)
+
+    You can't use `__or__` to add Components to a stack (e.g.
+    ``Stack() | component``) OR'ing a Stack with other Components will make a
+    Structure.
     """
     def __init__(self, components=(), name='', repeats=1):
         super(Stack, self).__init__()
@@ -800,6 +814,16 @@ class Stack(UserList, Component):
         self.data.append(item)
 
     def slabs(self, structure=None):
+        """
+        Slab representation of this component. See :class:`Component.slabs`
+
+        Notes
+        -----
+        The overall set of slabs returned by this method consists of the
+        concatenated constituent Component slabs repeated `Stack.repeats`
+        times.
+
+        """
         if not len(self):
             return None
 
