@@ -54,9 +54,9 @@ class Parameters(UserList):
     Parameters
     ----------
     data : sequence
-        A sequence of Parameter or Parameters
+        A sequence of :class:`Parameter` or :class:`Parameters`
     name : str
-        Name of this Parameters instance
+        Name of this :class:`Parameters` instance
     """
     def __init__(self, data=(), name=None):
         super(Parameters, self).__init__()
@@ -108,6 +108,9 @@ class Parameters(UserList):
                 yield str(el)
 
     def __contains__(self, item):
+        """
+        Does this instance contain a given :class:`Parameter`
+        """
         return id(item) in [id(p) for p in f_unique(flatten(self.data))]
 
     def __ior__(self, other):
