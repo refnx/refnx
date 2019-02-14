@@ -87,7 +87,8 @@ class Parameters(UserList):
             self.data[i] = v
 
     def __repr__(self):
-        return "Parameters(data={data!r}, name={name!r})".format(**self.__dict__)
+        return ("Parameters(data={data!r},"
+               " name={name!r})".format(**self.__dict__))
 
     def __str__(self):
         s = list()
