@@ -883,6 +883,9 @@ limits</string>
              <pointsize>12</pointsize>
             </font>
            </property>
+           <property name="acceptDrops">
+            <bool>true</bool>
+           </property>
            <property name="styleSheet">
             <string notr="true">QTreeView::branch:has-siblings:!adjoins-item {
     border-image: url(:/icons/vline.png) 0;
@@ -907,6 +910,24 @@ QTreeView::branch:open:has-children:has-siblings  {
         border-image: none;
         image: url(:/icons/branch-open.png);
 }</string>
+           </property>
+           <property name="editTriggers">
+            <set>QAbstractItemView::AnyKeyPressed|QAbstractItemView::DoubleClicked|QAbstractItemView::EditKeyPressed</set>
+           </property>
+           <property name="tabKeyNavigation">
+            <bool>false</bool>
+           </property>
+           <property name="dragEnabled">
+            <bool>true</bool>
+           </property>
+           <property name="dragDropMode">
+            <enum>QAbstractItemView::InternalMove</enum>
+           </property>
+           <property name="defaultDropAction">
+            <enum>Qt::MoveAction</enum>
+           </property>
+           <property name="alternatingRowColors">
+            <bool>false</bool>
            </property>
            <property name="selectionMode">
             <enum>QAbstractItemView::ExtendedSelection</enum>

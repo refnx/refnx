@@ -1,10 +1,12 @@
 from copy import deepcopy
 import os.path
+import pickle
+from operator import itemgetter
 
 import numpy as np
 from PyQt5 import QtCore, QtGui, QtWidgets, uic
 
-from refnx._lib import flatten
+from refnx._lib import flatten, unique
 from refnx.analysis import Parameter, Parameters, possibly_create_parameter
 from refnx.dataset import ReflectDataset
 from refnx.reflect._app.dataobject import DataObject
@@ -328,6 +330,9 @@ class ComponentNode(Node):
         if column == 0:
             flags |= QtCore.Qt.ItemIsEditable
 
+        # say that you want the Components to be draggable
+        flags |= QtCore.Qt.ItemIsDragEnabled | QtCore.Qt.ItemIsDropEnabled
+
         return flags
 
     def data(self, column, role=QtCore.Qt.EditRole):
@@ -336,7 +341,8 @@ class ComponentNode(Node):
 
         if column > 0:
             return None
-        return self._data.name
+        if role == QtCore.Qt.DisplayRole:
+            return self._data.name
 
     def setData(self, column, value, role=QtCore.Qt.EditRole):
         if role == QtCore.Qt.CheckStateRole:
@@ -375,6 +381,32 @@ class StructureNode(Node):
         self.structure.pop(row)
         self.popChild(row)
         self._model.endRemoveRows()
+
+    def move_component(self, src, dst):
+        if src == dst or dst == src + 1:
+            return
+
+        self._model.beginMoveRows(self.index, src, src,
+                                  self.index, dst)
+
+        # swap in the underlying data
+        strc = self._data
+        children = self._children
+
+        c = strc[src]
+        cn = children[src]
+
+        strc.insert(dst, c)
+        children.insert(dst, cn)
+
+        if src < dst:
+            strc.pop(src)
+            children.pop(src)
+        else:
+            strc.pop(src + 1)
+            children.pop(src + 1)
+
+        self._model.endMoveRows()
 
     def insert_component(self, row, component):
         n = component_class(component)(component, self._model, self)
@@ -813,6 +845,77 @@ class TreeModel(QtCore.QAbstractItemModel):
             return QtCore.QModelIndex()
 
         return self.createIndex(parentItem.row(), 0, parentItem)
+
+    def supportedDropActions(self):
+        return QtCore.Qt.MoveAction
+
+    def mimeTypes(self):
+        return ['application/vnd.treeviewdragdrop.list']
+
+    def mimeData(self, indexes):
+        index_info = []
+        mimedata = QtCore.QMimeData()
+        for index in indexes:
+            if index.isValid():
+                node = index.internalPointer()
+                if isinstance(node, Node):
+                    index_info.append(node.row_indices())
+
+        s = pickle.dumps(index_info)
+        mimedata.setData('application/vnd.treeviewdragdrop.list', s)
+        return mimedata
+
+    def dropMimeData(self, data, action, row, column, parent):
+        if action == QtCore.Qt.IgnoreAction:
+            return True
+
+        if not data.hasFormat('application/vnd.treeviewdragdrop.list'):
+            return False
+
+        # what the destination was.
+        host_node = parent.internalPointer()
+
+        if not isinstance(host_node, ComponentNode):
+            return False
+
+        host_structure_node = host_node.parent()
+        host_structure = host_structure_node._data
+        ba = data.data('application/vnd.treeviewdragdrop.list')
+        index_info = pickle.loads(ba)
+        dragged_nodes = list(unique(self.node_from_row_indices(ri) for
+                                    ri in index_info))
+
+        # order the dragged nodes
+        src_rows = [dn.row() for dn in dragged_nodes]
+        d = sorted(zip(src_rows, dragged_nodes), key=itemgetter(0))
+        dragged_nodes = [i[1] for i in d]
+
+        # add to the destination in reverse
+        dragged_nodes.reverse()
+
+        for dragged_node in dragged_nodes:
+            # can't drag a fronting/backing medium
+            src_structure_node = dragged_node.parent()
+            src_structure = src_structure_node._data
+            if dragged_node.row() in [0, len(src_structure) - 1]:
+                continue
+
+            # figure out what the destination is.
+            dst_row = host_node.row() + 1
+            if dst_row == len(host_structure):
+                dst_row = len(host_structure) - 1
+
+            if src_structure_node is host_structure_node:
+                # moving within the same structure
+                src_row = dragged_node.row()
+                host_structure_node.move_component(src_row, dst_row)
+            else:
+                # copy (not move) into another structure
+                # deepcopy the component
+                c = deepcopy(dragged_node._data)
+                host_structure_node.insert_component(dst_row, c)
+
+        return True
 
     def rowCount(self, parent=QtCore.QModelIndex()):
         if not parent.isValid():

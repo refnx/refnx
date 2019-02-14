@@ -110,6 +110,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
 
         self.treeModel.dataChanged.connect(self.tree_model_data_changed)
         self.treeModel.rowsRemoved.connect(self.tree_model_structure_changed)
+        self.treeModel.rowsMoved.connect(self.tree_model_structure_changed)
         self.treeModel.rowsInserted.connect(self.tree_model_structure_changed)
         #######################################################################
 
