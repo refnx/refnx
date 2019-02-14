@@ -215,8 +215,12 @@ class Structure(UserList):
             raise ValueError("The first and last Components in a Structure"
                              " need to be Slabs")
 
-        slabs = [c.slabs(structure=self) for c in self.components]
-        slabs = np.concatenate([s for s in slabs if s is not None])
+        sl = [c.slabs(structure=self) for c in self.components]
+        try:
+            slabs = np.concatenate(sl)
+        except ValueError:
+            # some of slabs may be None. np can't concatenate arr and None
+            slabs = np.concatenate([s for s in sl if s is not None])
 
         # if the slab representation needs to be reversed.
         if self.reverse_structure:
