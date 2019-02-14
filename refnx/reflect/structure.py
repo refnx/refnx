@@ -23,6 +23,8 @@ class Structure(UserList):
 
     Parameters
     ----------
+    components : sequence
+        A sequence of Components to initialise the Structure.
     name : str
         Name of this structure
     solvent : refnx.reflect.SLD
@@ -71,7 +73,7 @@ class Structure(UserList):
     >>> s = air(0, 0) | polymer(200, 4) | si(0, 3)
 
     """
-    def __init__(self, name='', components=None, solvent=None,
+    def __init__(self, components=(), name='', solvent=None,
                  reverse_structure=False, contract=0):
         super(Structure, self).__init__()
         self._name = name
@@ -85,11 +87,10 @@ class Structure(UserList):
 
         # if you provide a list of components to start with, then initialise
         # the structure from that
-        if components is not None:
-            self.data = [c for c in components if isinstance(c, Component)]
+        self.data = [c for c in components if isinstance(c, Component)]
 
     def __copy__(self):
-        s = Structure(self.name, solvent=self.solvent)
+        s = Structure(name=self.name, solvent=self.solvent)
         s.data = self.data.copy()
         return s
 
@@ -110,8 +111,8 @@ class Structure(UserList):
         return '\n'.join(s)
 
     def __repr__(self):
-        return ("Structure(name={_name!r},"
-                " components={data!r},"
+        return ("Structure(components={data!r},"
+                " name={_name!r},"
                 " solvent={_solvent!r},"
                 " reverse_structure={_reverse_structure},"
                 " contract={contract})".format(**self.__dict__))
@@ -737,15 +738,19 @@ class Stack(UserList, Component):
     """
     A series of components to be considered as one, and can repeat
     """
-    def __init__(self, components=None, repeats=1, name=''):
+    def __init__(self, components=(), name='', repeats=1):
         super(Stack, self).__init__()
 
         self.name = name
         self.repeats = repeats
         # if you provide a list of components to start with, then initialise
-        # the structure from that
-        if components is not None:
-            self.data = [c for c in components if isinstance(c, Component)]
+        # the Stack from that
+        for c in components:
+            if isinstance(c, Component):
+                self.data.append(c)
+            else:
+                raise ValueError("You can only initialise a Stack with"
+                                 " Components")
 
     def __setitem__(self, i, v):
         self.data[i] = v

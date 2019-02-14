@@ -51,7 +51,7 @@ class Parameters(UserList):
     """
     A collection of Parameters
     """
-    def __init__(self, name=None, data=None):
+    def __init__(self, data=None, name=None):
         super(Parameters, self).__init__()
         self.name = name
         if data is not None:
@@ -81,7 +81,7 @@ class Parameters(UserList):
             self.data[i] = v
 
     def __repr__(self):
-        return "Parameters({name!r}, data={data!r})".format(**self.__dict__)
+        return "Parameters(data={data!r}, name={name!r})".format(**self.__dict__)
 
     def __str__(self):
         s = list()
