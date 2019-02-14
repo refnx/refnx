@@ -746,6 +746,22 @@ class Stack(UserList, Component):
     def __setitem__(self, i, v):
         self.data[i] = v
 
+    def __str__(self):
+        s = list()
+        s.append("{:=>80}".format(''))
+
+        s.append('Stack start: {} repeats'.format(self.repeats))
+        for component in self:
+            s.append(str(component))
+        s.append('Stack finish')
+        s.append("{:=>80}".format(''))
+
+        return '\n'.join(s)
+
+    def __repr__(self):
+        return ("Stack(name={_name!r},"
+                " components={data!r},"
+                " repeats={repeats!r})".format(**self.__dict__))
     @property
     def name(self):
         return self._name

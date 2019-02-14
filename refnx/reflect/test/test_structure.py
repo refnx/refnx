@@ -244,7 +244,15 @@ class TestStructure(object):
         assert_equal(s.slabs()[:, 1],
                      [2.07, 6.36, 3.47, 1.0, 3.47, 1.0, 3.47, 1.0, 6.36])
 
+        q = repr(s)
+        r = eval(q)
+        assert_equal(r.slabs()[:, 0], [0, 10, 55, 110, 55, 110, 55, 110, 0])
+        assert_equal(r.slabs()[:, 1],
+                     [2.07, 6.36, 3.47, 1.0, 3.47, 1.0, 3.47, 1.0, 6.36])
+
         s |= stk
         assert(isinstance(s.components[-1], Stack))
         with assert_raises(ValueError) as f:
             s.slabs()
+
+
