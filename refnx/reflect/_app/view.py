@@ -835,9 +835,9 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
                 return
             c = self.lipid_leaflet.component()
         elif which_type == 'Spline':
-            if isinstance(host, StackNode):
-                msg("Can't add Splines to a Stack")
-                return
+            # if isinstance(host, StackNode):
+            #     msg("Can't add Splines to a Stack")
+            #     return
 
             ok = self.spline_dialog.exec_()
             if not ok:

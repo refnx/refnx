@@ -906,9 +906,9 @@ class TreeModel(QtCore.QAbstractItemModel):
                     dragged_node.row() in [0, len(src_structure) - 1]):
                 continue
 
-            if (isinstance(dragged_node, SplineNode) and
-                    isinstance(host_structure_node, StackNode)):
-                continue
+            # if (isinstance(dragged_node, SplineNode) and
+            #         isinstance(host_structure_node, StackNode)):
+            #     continue
 
             # figure out what the destination is.
             dst_row = host_node.row() + 1
