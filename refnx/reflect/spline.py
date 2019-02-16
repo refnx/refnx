@@ -109,18 +109,25 @@ class Spline(Component):
             zeds /= zeds[-1]
             zeds = np.clip(zeds, 0, 1)
 
-        # note - this means you shouldn't use a spline more than once in
+        # note - this means you shouldn't use the same Spline more than once in
         # a Component, because only the first use will be detected.
         try:
             loc = structure.index(self)
+            # figure out SLDs for the bracketing Components.
+            # note the use of the modulus operator. This means that if the
+            # Spline is at the end, then the right most Component will be
+            # assumed to be the first Component. This is to aid the use of
+            # Spline in a Stack.
             left_component = structure[loc - 1]
-            right_component = structure[loc + 1]
+            right_component = structure[(loc + 1) % len(structure)]
         except ValueError:
             raise ValueError("Spline didn't appear to be part of a super"
                              " Structure")
-        except IndexError:
-            raise ValueError("Spline must be bracketed with other Components"
-                             "in a Structure/Stack")
+
+        if (isinstance(left_component, Spline) or
+                isinstance(right_component, Spline)):
+            raise ValueError("Spline must be bracketed by Components that"
+                             " aren't Splines.")
 
         vs = np.array(self.vs)
 

@@ -68,6 +68,7 @@ class TestStructure(object):
         assert_(isinstance(unpkl, Structure))
         for param in unpkl.parameters.flattened():
             assert_(isinstance(param, Parameter))
+        assert(hasattr(unpkl, '_solvent'))
 
     def test_sld_profile(self):
         # check that it runs
@@ -118,6 +119,7 @@ class TestStructure(object):
 
         s.name = 'pop'
         q = eval(repr(s))
+        assert(hasattr(q, '_solvent'))
         assert(s.name == q.name)
 
     def test_sld(self):

@@ -90,7 +90,7 @@ class Structure(UserList):
         self.data = [c for c in components if isinstance(c, Component)]
 
     def __copy__(self):
-        s = Structure(name=self.name, solvent=self.solvent)
+        s = Structure(name=self.name, solvent=self._solvent)
         s.data = self.data.copy()
         return s
 
@@ -150,7 +150,7 @@ class Structure(UserList):
                 solv_slab = self[-1].slabs(self)
             else:
                 solv_slab = self[0].slabs(self)
-            return SLD(solv_slab[-1, 1], solv_slab[-1, 2])
+            return SLD(complex(solv_slab[-1, 1], solv_slab[-1, 2]))
         else:
             return self._solvent
 
@@ -829,7 +829,7 @@ class Stack(UserList, Component):
 
         # a sub stack member may want to know what the solvent is.
         if structure is not None:
-            self.solvent = structure.solvent()
+            self.solvent = structure.solvent
 
         slabs = np.concatenate([c.slabs(structure=self) for
                                 c in self.components])
