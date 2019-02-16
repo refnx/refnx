@@ -90,7 +90,7 @@ class Structure(UserList):
         self.data = [c for c in components if isinstance(c, Component)]
 
     def __copy__(self):
-        s = Structure(name=self.name, solvent=self.solvent)
+        s = Structure(name=self.name, solvent=self._solvent)
         s.data = self.data.copy()
         return s
 
