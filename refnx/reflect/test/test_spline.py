@@ -121,3 +121,14 @@ class TestReflect(object):
         q = repr(s)
         r = eval(q)
         assert_equal(r.slabs(), s.slabs())
+
+    def test_spline_repeat(self):
+        # can't have two splines in a row.
+        a = Spline(100, [2],
+                   [0.5], zgrad=False, microslab_max_thickness=1)
+
+        s = self.left | a | a | self.right | self.solvent
+
+        from pytest import raises
+        with raises(ValueError):
+            s.slabs()

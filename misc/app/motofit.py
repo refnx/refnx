@@ -5,5 +5,5 @@ import periodictable
 
 
 if __name__ == "__main__":
-    from refnx.reflect import gui
-    gui()
+    from refnx.reflect import main
+    main()

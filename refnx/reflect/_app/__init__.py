@@ -13,7 +13,12 @@ def gui():
     myapp.show()
     myapp.raise_()
 
-    sys.exit(app.exec_())
+    v = app.exec_()
+    return v
 
 
-__all__ = [gui]
+def main():
+    sys.exit(gui())
+
+
+__all__ = [gui, main]
