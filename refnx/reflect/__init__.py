@@ -5,7 +5,7 @@ from refnx.reflect.structure import (Structure, SLD, Slab, Component,
 from refnx.reflect.spline import Spline
 from refnx.reflect._lipid import LipidLeaflet
 from refnx._lib._testutils import PytestTester
-from refnx.reflect._app import gui
+from refnx.reflect._app import gui, main
 
 
 try:
