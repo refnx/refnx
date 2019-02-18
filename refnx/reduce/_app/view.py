@@ -1,27 +1,29 @@
-from __future__ import print_function, division
 import pickle
 import os.path
 import logging
 
 from PyQt5 import QtCore, QtWidgets, uic
 from PyQt5.QtCore import pyqtSlot
-from model import ReductionTableModel, ReductionState
 from refnx.reduce.manual_beam_finder import ManualBeamFinder
-from plot import SlimPlotWindow
+from .plot import SlimPlotWindow
+from .model import ReductionTableModel, ReductionState
+
+
+UI_LOCATION = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                           'ui')
 
 
 class SlimWindow(QtWidgets.QMainWindow):
     """
     SLIM is an application for reducing neutron reflectometry data
     """
-    def __init__(self, ui_loc, parent=None):
+    def __init__(self, parent=None):
         super(SlimWindow, self).__init__(parent)
-        self.ui_loc = ui_loc
 
-        self.ui = uic.loadUi(os.path.join(ui_loc, 'slim.ui'), self)
+        self.ui = uic.loadUi(os.path.join(UI_LOCATION, 'slim.ui'), self)
 
         self.reduction_options_dialog = uic.loadUi(
-            os.path.join(ui_loc, 'reduction_options.ui'))
+            os.path.join(UI_LOCATION, 'reduction_options.ui'))
 
         # the manual beam finder instance
         self.manual_beam_finder = ManualBeamFinder()
@@ -95,7 +97,7 @@ class SlimWindow(QtWidgets.QMainWindow):
         # if you're doing event mode you need to know how long
         # each time slice is
         if self._reduction_state.streamed_reduction:
-            dialog = uic.loadUi(os.path.join(self.ui_loc, 'event.ui'))
+            dialog = uic.loadUi(os.path.join(UI_LOCATION, 'event.ui'))
             ok = dialog.exec_()
             if not ok:
                 return
@@ -240,7 +242,7 @@ class SlimWindow(QtWidgets.QMainWindow):
                         self.set_state(state)
                 # problem unpickling, or file had zero size.
                 except(pickle.UnpicklingError, EOFError) as e:
-                    logging.info
+                    logging.info(repr(e))
 
     @pyqtSlot()
     def on_plot_clicked(self):

@@ -6,6 +6,7 @@ from refnx.reduce.platypusnexus import (catalogue, PlatypusNexus,
 from refnx.reduce.batchreduction import BatchReducer
 from refnx.reduce.xray import reduce_xrdml
 from refnx._lib._testutils import PytestTester
+from refnx.reduce._app import main, gui
 
 test = PytestTester(__name__)
 del PytestTester

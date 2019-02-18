@@ -1,4 +1,3 @@
-from __future__ import division
 import os.path
 import os
 import logging

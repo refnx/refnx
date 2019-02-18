@@ -1,6 +1,5 @@
 import os.path
 
-
 from PyQt5 import QtCore, QtWidgets, uic
 from PyQt5.QtCore import pyqtSlot
 import numpy as np
@@ -15,8 +14,11 @@ from matplotlib.backends.backend_qt5agg import (NavigationToolbar2QT
 
 from refnx.reduce.peak_utils import peak_finder, centroid
 from refnx.reduce.platypusnexus import fore_back_region, PIXEL_OFFSET
+import refnx.reduce._app as floc
+matplotlib.use('Qt5Agg')
 
-# matplotlib.use('Qt5Agg')
+
+UI_LOCATION = os.path.join(os.path.dirname(floc.__file__), 'ui')
 
 
 class ManualBeamFinder(QtWidgets.QDialog):
@@ -31,8 +33,7 @@ class ManualBeamFinder(QtWidgets.QDialog):
         """
         """
         super(ManualBeamFinder, self).__init__()
-        path = os.path.dirname(os.path.realpath(__file__))
-        self.dialog = uic.loadUi(os.path.join(path, 'ui', 'manual_beam.ui'),
+        self.dialog = uic.loadUi(os.path.join(UI_LOCATION, 'manual_beam.ui'),
                                  self)
 
         # values for spinboxes
