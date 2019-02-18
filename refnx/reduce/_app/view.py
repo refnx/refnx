@@ -253,7 +253,7 @@ class SlimWindow(QtWidgets.QMainWindow):
 
 
 EventDialogClass = uic.loadUiType(os.path.join(UI_LOCATION,
-                                          'event.ui'))[0]
+                                               'event.ui'))[0]
 
 
 class EventDialog(QtWidgets.QDialog, EventDialogClass):
