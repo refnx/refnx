@@ -1,0 +1,8 @@
+When using pyinstaller
+
+1) setup a new conda environment, with just python=3.7
+2) activate the environment
+3) pip install pyqt5 numpy==1.15.2 scipy cython matplotlib pandas xlrd h5py (numpy1.16 doesn't play well with pyinstaller)
+4) pip install refnx pyinstaller
+5) Change the version number in the motofit.spec file
+6) pyinstaller slim.spec

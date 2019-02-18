@@ -1,30 +1,35 @@
-from __future__ import print_function, division
 import pickle
 import os.path
 import logging
 
 from PyQt5 import QtCore, QtWidgets, uic
 from PyQt5.QtCore import pyqtSlot
-from model import ReductionTableModel, ReductionState
 from refnx.reduce.manual_beam_finder import ManualBeamFinder
-from plot import SlimPlotWindow
+from .plot import SlimPlotWindow
+from .model import ReductionTableModel, ReductionState
+
+
+UI_LOCATION = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                           'ui')
 
 
 class SlimWindow(QtWidgets.QMainWindow):
     """
     SLIM is an application for reducing neutron reflectometry data
     """
-    def __init__(self, ui_loc, parent=None):
+    def __init__(self, parent=None):
         super(SlimWindow, self).__init__(parent)
-        self.ui_loc = ui_loc
 
-        self.ui = uic.loadUi(os.path.join(ui_loc, 'slim.ui'), self)
-
-        self.reduction_options_dialog = uic.loadUi(
-            os.path.join(ui_loc, 'reduction_options.ui'))
+        self.ui = uic.loadUi(os.path.join(UI_LOCATION, 'slim.ui'), self)
 
         # the manual beam finder instance
         self.manual_beam_finder = ManualBeamFinder()
+
+        # event dialogue
+        self.event_dialog = EventDialog(self)
+
+        # options dialogue
+        self.reduction_options_dialog = ReductionOptionsDialog(self)
 
         # reduction state contains all the file numbers to be reduced
         # and all the reduction options information. You could pickle this file
@@ -91,17 +96,18 @@ class SlimWindow(QtWidgets.QMainWindow):
         Performs a reduction in response to the reduce plot_button being
         clicked
         """
+        redn_state = self._reduction_state
 
         # if you're doing event mode you need to know how long
         # each time slice is
-        if self._reduction_state.streamed_reduction:
-            dialog = uic.loadUi(os.path.join(self.ui_loc, 'event.ui'))
-            ok = dialog.exec_()
+        if redn_state.streamed_reduction:
+            ok = self.event_dialog.exec_()
             if not ok:
                 return
-            self._reduction_state.stream_start = dialog.start.value()
-            self._reduction_state.stream_end = dialog.stop.value()
-            self._reduction_state.stream_duration = dialog.duration.value()
+
+            redn_state.stream_start = self.event_dialog.start.value()
+            redn_state.stream_end = self.event_dialog.stop.value()
+            redn_state.stream_duration = self.event_dialog.duration.value()
 
         # a progress dialog to show that reduction is occurring
         progress = QtWidgets.QProgressDialog("Reducing files...",
@@ -118,7 +124,7 @@ class SlimWindow(QtWidgets.QMainWindow):
             return True
 
         # the ReductionState object does the reduction
-        self._reduction_state.reducer(callback=callback)
+        redn_state.reducer(callback=callback)
 
         progress.setValue(100)
 
@@ -128,7 +134,6 @@ class SlimWindow(QtWidgets.QMainWindow):
         Present a dialogue to the user to change reduction options
         """
         ok = self.reduction_options_dialog.exec_()
-
         if not ok:
             return
 
@@ -240,8 +245,28 @@ class SlimWindow(QtWidgets.QMainWindow):
                         self.set_state(state)
                 # problem unpickling, or file had zero size.
                 except(pickle.UnpicklingError, EOFError) as e:
-                    logging.info
+                    logging.info(repr(e))
 
     @pyqtSlot()
     def on_plot_clicked(self):
         self._plot.show()
+
+
+EventDialogClass = uic.loadUiType(os.path.join(UI_LOCATION,
+                                               'event.ui'))[0]
+
+
+class EventDialog(QtWidgets.QDialog, EventDialogClass):
+    def __init__(self, parent=None):
+        QtWidgets.QDialog.__init__(self, parent)
+        self.setupUi(self)
+
+
+ReductionOptionsClass = uic.loadUiType(os.path.join(UI_LOCATION,
+                                                    'reduction_options.ui'))[0]
+
+
+class ReductionOptionsDialog(QtWidgets.QDialog, ReductionOptionsClass):
+    def __init__(self, parent=None):
+        QtWidgets.QDialog.__init__(self, parent)
+        self.setupUi(self)

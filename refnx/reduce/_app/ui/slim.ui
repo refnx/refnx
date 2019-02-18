@@ -20,6 +20,11 @@
    <layout class="QGridLayout" name="gridLayout">
     <item row="0" column="0">
      <widget class="QLabel" name="label">
+      <property name="font">
+       <font>
+        <pointsize>12</pointsize>
+       </font>
+      </property>
       <property name="text">
        <string>data directory</string>
       </property>
@@ -34,6 +39,11 @@
     </item>
     <item row="0" column="2">
      <widget class="QPushButton" name="change_data_directory">
+      <property name="font">
+       <font>
+        <pointsize>12</pointsize>
+       </font>
+      </property>
       <property name="text">
        <string>change</string>
       </property>
@@ -41,6 +51,11 @@
     </item>
     <item row="1" column="0">
      <widget class="QLabel" name="label_3">
+      <property name="font">
+       <font>
+        <pointsize>12</pointsize>
+       </font>
+      </property>
       <property name="text">
        <string>streamed data directory</string>
       </property>
@@ -55,6 +70,11 @@
     </item>
     <item row="1" column="2">
      <widget class="QPushButton" name="change_streamed_directory">
+      <property name="font">
+       <font>
+        <pointsize>12</pointsize>
+       </font>
+      </property>
       <property name="text">
        <string>change</string>
       </property>
@@ -62,6 +82,11 @@
     </item>
     <item row="2" column="0">
      <widget class="QLabel" name="label_2">
+      <property name="font">
+       <font>
+        <pointsize>12</pointsize>
+       </font>
+      </property>
       <property name="text">
        <string>output directory</string>
       </property>
@@ -76,6 +101,11 @@
     </item>
     <item row="2" column="2">
      <widget class="QPushButton" name="change_output_directory">
+      <property name="font">
+       <font>
+        <pointsize>12</pointsize>
+       </font>
+      </property>
       <property name="text">
        <string>change</string>
       </property>
@@ -90,6 +120,11 @@
     </item>
     <item row="4" column="0" colspan="3">
      <widget class="QTableView" name="file_list">
+      <property name="font">
+       <font>
+        <pointsize>12</pointsize>
+       </font>
+      </property>
       <property name="verticalScrollBarPolicy">
        <enum>Qt::ScrollBarAlwaysOn</enum>
       </property>
@@ -97,10 +132,10 @@
        <bool>true</bool>
       </attribute>
       <attribute name="horizontalHeaderDefaultSectionSize">
-       <number>120</number>
+       <number>100</number>
       </attribute>
       <attribute name="horizontalHeaderStretchLastSection">
-       <bool>false</bool>
+       <bool>true</bool>
       </attribute>
      </widget>
     </item>
@@ -148,6 +183,11 @@
          </colorrole>
         </disabled>
        </palette>
+      </property>
+      <property name="font">
+       <font>
+        <pointsize>12</pointsize>
+       </font>
       </property>
       <property name="text">
        <string>Reduce</string>
@@ -198,6 +238,11 @@
          </colorrole>
         </disabled>
        </palette>
+      </property>
+      <property name="font">
+       <font>
+        <pointsize>12</pointsize>
+       </font>
       </property>
       <property name="text">
        <string>Plot</string>
@@ -251,8 +296,6 @@
    </property>
   </action>
  </widget>
- <resources>
-  <include location="../resources.qrc"/>
- </resources>
+ <resources/>
  <connections/>
 </ui>

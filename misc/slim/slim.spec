@@ -1,17 +1,22 @@
 # -*- mode: python -*-
-import os.path
+from os.path import join as pjoin
+import os
 import sys
-
-
-UI = os.path.join('ui', '*.ui')
-ICONS = os.path.join('icons', '*.png')
 
 block_cipher = None
 
+
+pathex = pjoin('.', '')
+uiloc = (pjoin('..', '..', 'refnx', 'reduce', '_app', 'ui', '*.ui'),
+         pjoin('refnx', 'reduce', '_app', 'ui'))
+
 a = Analysis(['slim.py'],
+             pathex=[os.getcwd()],
              binaries=[],
-             datas=[(UI, 'ui'), (ICONS, 'icons')],
-             hiddenimports=['h5py.defs', 'h5py.utils', 'h5py.h5ac', 'h5py._proxy'],
+             datas=[uiloc],
+             hiddenimports=['refnx', 'refnx.dataset', 'refnx.reduce', 'refnx.reflect', 'refnx.util',
+                            'refnx._lib', 'refnx.util', 'refnx.reduce._app', 'pandas',
+                            'h5py.defs', 'h5py.utils', 'h5py.h5ac', 'h5py._proxy'],
              hookspath=[],
              runtime_hooks=[],
              excludes=[],
@@ -32,10 +37,9 @@ if sys.platform == 'darwin':
               debug=False,
               strip=False,
               upx=True,
-              console=False , icon='icons/scattering.icns')
+              console=False)
     app = BUNDLE(exe,
                  name='slim.app',
-                 icon='icons/scattering.icns',
                  bundle_identifier=None)
 
 # windows
@@ -50,4 +54,4 @@ elif sys.platform in ['win32', 'cygwin']:
               debug=False,
               strip=False,
               upx=True,
-              console=False , icon='icons\\scattering.ico')
+              console=False)

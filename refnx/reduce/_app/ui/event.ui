@@ -25,7 +25,11 @@
     </widget>
    </item>
    <item row="1" column="0">
-    <widget class="QSpinBox" name="start"/>
+    <widget class="QSpinBox" name="start">
+     <property name="maximum">
+      <number>30000</number>
+     </property>
+    </widget>
    </item>
    <item row="2" column="0">
     <widget class="QLabel" name="label_3">
@@ -37,7 +41,7 @@
    <item row="3" column="0">
     <widget class="QSpinBox" name="stop">
      <property name="maximum">
-      <number>36000</number>
+      <number>60000</number>
      </property>
      <property name="singleStep">
       <number>5</number>
@@ -57,10 +61,10 @@
    <item row="5" column="0">
     <widget class="QSpinBox" name="duration">
      <property name="maximum">
-      <number>3600</number>
+      <number>14400</number>
      </property>
      <property name="singleStep">
-      <number>5</number>
+      <number>1</number>
      </property>
      <property name="value">
       <number>30</number>

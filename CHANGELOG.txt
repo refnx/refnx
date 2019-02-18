@@ -56,3 +56,5 @@ Details of changes made to refnx
   structure.
 - Added the Stack Component. A Stack contains a series of Components, and the
   Stack.repeats attribute can be used to produce a multilayer repeat structure.
+- Folded in a reduction pyqt gui for Platypus data. The app was already in the
+  slim directory. It's now available from refnx.reduce.gui

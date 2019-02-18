@@ -1,4 +1,3 @@
-from __future__ import division
 import os.path
 import os
 import logging
@@ -184,7 +183,7 @@ class ReductionState(object):
                 logging.info(
                     'Reduced {} vs {}, scale={}, angle={}'.format(
                         reflect, direct, val['scale'],
-                        reduced['omega'][0, 0]))
+                        reduced[1]['omega'][0, 0]))
 
                 if combined_dataset is None:
                     combined_dataset = ReflectDataset()
@@ -337,7 +336,8 @@ class ReductionTableModel(QtCore.QAbstractTableModel):
                         else:
                             save_value = value + '.nx.hdf'
                     else:
-                        save_value = ''
+                        return False
+
             entry[attr_name] = save_value
 
         self.dataChanged.emit(index, index)
