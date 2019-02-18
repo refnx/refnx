@@ -13,10 +13,6 @@
   <property name="windowTitle">
    <string notr="true">SLIM</string>
   </property>
-  <property name="windowIcon">
-   <iconset>
-    <normaloff>../../motofit/icons/scattering.png</normaloff>../../motofit/icons/scattering.png</iconset>
-  </property>
   <property name="unifiedTitleAndToolBarOnMac">
    <bool>false</bool>
   </property>
