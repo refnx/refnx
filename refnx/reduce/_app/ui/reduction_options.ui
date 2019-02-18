@@ -26,6 +26,9 @@
      <property name="specialValueText">
       <string/>
      </property>
+     <property name="maximum">
+      <double>25.000000000000000</double>
+     </property>
      <property name="singleStep">
       <double>0.100000000000000</double>
      </property>
@@ -46,8 +49,11 @@
      <property name="specialValueText">
       <string/>
      </property>
+     <property name="minimum">
+      <double>2.000000000000000</double>
+     </property>
      <property name="maximum">
-      <double>100.000000000000000</double>
+      <double>25.000000000000000</double>
      </property>
      <property name="singleStep">
       <double>0.100000000000000</double>
@@ -93,7 +99,7 @@
       <string/>
      </property>
      <property name="decimals">
-      <number>1</number>
+      <number>2</number>
      </property>
      <property name="maximum">
       <double>221.000000000000000</double>

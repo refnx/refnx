@@ -153,7 +153,8 @@ info = {
                                    'pyparsing', 'periodictable', 'pyqt']},
         'tests_require': ['pytest', 'uncertainties'],
         'cmdclass': {'test': PyTest},
-        'entry_points': {"gui_scripts" : ['refnx = refnx.reflect:main']}
+        'entry_points': {"gui_scripts" : ['refnx = refnx.reflect:main',
+                                          'slim = refnx.reduce:main']}
         }
 
 ####################################################################

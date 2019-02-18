@@ -5,7 +5,7 @@ import os.path
 
 
 def gui():
-    from PyQt5 import QtCore, QtGui, QtWidgets
+    from PyQt5 import QtWidgets
     from refnx.reduce._app.view import SlimWindow
 
     time_str = time.strftime('%Y%m%d-%H%M%S')
