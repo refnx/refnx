@@ -483,7 +483,7 @@ class TestReflect(object):
         assert_equal(slabs[1, 3], sio2_l.rough.value)
 
         f = CurveFitter(objective)
-        f.fit(method='differential_evolution', seed=1)
+        f.fit(method='differential_evolution', seed=1, maxiter=3)
 
         slabs = structure.slabs()
         assert_equal(slabs[2, 0:2], slabs[3, 0:2])

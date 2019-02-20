@@ -2,7 +2,7 @@ import pickle
 
 import numpy as np
 from numpy.testing import (assert_almost_equal, assert_equal, assert_,
-                           assert_allclose, assert_raises)
+                           assert_allclose)
 
 from refnx._lib import flatten
 from refnx.reflect import (SLD, Structure, Spline, Slab, Stack)
@@ -254,5 +254,6 @@ class TestStructure(object):
 
         s |= stk
         assert(isinstance(s.components[-1], Stack))
-        with assert_raises(ValueError):
+        import pytest
+        with pytest.raises(ValueError):
             s.slabs()
