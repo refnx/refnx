@@ -112,6 +112,10 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         self.treeModel.rowsRemoved.connect(self.tree_model_structure_changed)
         self.treeModel.rowsMoved.connect(self.tree_model_structure_changed)
         self.treeModel.rowsInserted.connect(self.tree_model_structure_changed)
+
+        # list view for datasets being fitted
+        self.currently_fitting_model = CurrentlyFitting(self)
+        self.ui.currently_fitting.setModel(self.currently_fitting_model)
         #######################################################################
 
         # attach the reflectivity graphs and the SLD profiles
@@ -208,9 +212,8 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         state['history'] = self.ui.console_text_edit.toPlainText()
         state['settings'] = self.settings
 
-        widget = self.ui.currently_fitting
-        state['currently_fitting'] = [widget.item(i).text() for i in
-                                      range(widget.count())]
+        fit_list = self.currently_fitting_model
+        state['currently_fitting'] = fit_list.datasets
 
         with open(os.path.join(experiment_file_name), 'wb') as f:
             pickle.dump(state, f, 0)
@@ -268,11 +271,11 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
                 self.data_object_selector.data_objects.takeItem(0)
 
             self.data_object_selector.addItems(self.treeModel.datastore.names)
-            widget = self.ui.currently_fitting
-            for i in reversed(range(widget.count())):
-                widget.takeItem(i)
-            for name in state['currently_fitting']:
-                widget.addItem(name)
+
+            self.currently_fitting_model = CurrentlyFitting(self)
+            fit_list = self.currently_fitting_model
+            self.ui.currently_fitting.setModel(fit_list)
+            fit_list.addItems(state['currently_fitting'])
 
         except KeyError as e:
             print(repr(e))
@@ -411,14 +414,12 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         if 'theoretical' in names:
             names.pop(names.index('theoretical'))
 
+        fit_list = self.currently_fitting_model
+
         for which_dataset in names:
             # remove from list of datasets to be fitted, if present
-            widget = self.ui.currently_fitting
-            items_found = widget.findItems(which_dataset,
-                                           QtCore.Qt.MatchExactly)
-            for item in items_found:
-                row = widget.row(item)
-                widget.takeItem(row)
+            if which_dataset in fit_list.datasets:
+                fit_list.removeItems([fit_list.datasets.index(which_dataset)])
 
             self.reflectivitygraphs.remove_trace(
                 datastore[which_dataset])
@@ -541,9 +542,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
     def on_actionExport_Code_Fragment_triggered(self):
         # exports an executable script for the current fitting system.
         # this script can be used for e.g. MCMC sampling.
-        widget = self.ui.currently_fitting
-        rows = widget.count()
-        names_to_fit = [widget.item(i).text() for i in range(rows)]
+        names_to_fit = self.currently_fitting_model.datasets
 
         if not names_to_fit:
             return
@@ -888,9 +887,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
 
     @QtCore.pyqtSlot()
     def on_auto_limits_button_clicked(self):
-        widget = self.ui.currently_fitting
-        rows = widget.count()
-        names_to_fit = [widget.item(i).text() for i in range(rows)]
+        names_to_fit = self.currently_fitting_model.datasets
 
         datastore = self.treeModel.datastore
         data_objects = [datastore[name] for name in names_to_fit]
@@ -926,8 +923,9 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
     def on_add_to_fit_button_clicked(self):
         selected_indices = self.ui.treeView.selectedIndexes()
 
-        widget = self.ui.currently_fitting
+        fit_list = self.currently_fitting_model
 
+        to_be_added = []
         for index in selected_indices:
             # from filter to model
             index = self.mapToSource(index)
@@ -937,28 +935,25 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
                 continue
             # see if it's already in the list
             name = data_object_node.data_object.name
-            if name == 'theoretical':
-                continue
+            to_be_added.append(name)
 
-            find_names = widget.findItems(name, QtCore.Qt.MatchExactly)
-            if not find_names:
-                widget.addItem(name)
+        fit_list.addItems(unique(to_be_added))
 
     @QtCore.pyqtSlot()
     def on_remove_from_fit_button_clicked(self):
         # work out what datasets are selected in the listwidget
         # remove all those that are selected
-        widget = self.ui.currently_fitting
-        selected_items = widget.selectedItems()
-        for item in selected_items:
-            row = widget.row(item)
-            widget.takeItem(row)
+        fit_list = self.currently_fitting_model
+        selected_items = self.ui.currently_fitting.selectedIndexes()
+
+        rows = [i.row() for i in selected_items]
+        fit_list.removeItems(rows)
 
     def on_remove_from_fit_action(self):
         selected_indices = self.ui.treeView.selectedIndexes()
+        fit_list = self.currently_fitting_model
 
-        widget = self.ui.currently_fitting
-
+        to_remove = []
         for index in selected_indices:
             # from filter to model
             index = self.mapToSource(index)
@@ -968,20 +963,17 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
                 continue
             # see if it's already in the list
             name = data_object_node.data_object.name
-            list_items = widget.findItems(name, QtCore.Qt.MatchExactly)
-            if list_items:
-                row = widget.row(list_items[0])
-                widget.takeItem(row)
+            if name in fit_list.datasets:
+                to_remove.append(fit_list.datasets.index(name))
+
+        fit_list.removeItems(list(unique(to_remove)))
 
     @QtCore.pyqtSlot()
     def on_do_fit_button_clicked(self):
         """
         you should do a fit
         """
-        widget = self.ui.currently_fitting
-        rows = widget.count()
-
-        names_to_fit = [widget.item(i).text() for i in range(rows)]
+        names_to_fit = self.currently_fitting_model.datasets
 
         if not names_to_fit:
             return msg("Please add datasets to fit.")
@@ -2074,3 +2066,80 @@ class DataObjectSelectorDialog(QtWidgets.QDialog, _DataObjectDialog):
         if list_items:
             row = self.data_objects.row(list_items[0])
             self.data_objects.takeItem(row)
+
+
+class CurrentlyFitting(QtCore.QAbstractListModel):
+    """
+    Keeps a list of the datasets that are currently being fitted
+    """
+    def __init__(self, parent=None):
+        super(CurrentlyFitting, self).__init__(parent=parent)
+        self.datasets = []
+
+    def rowCount(self, index):
+        return len(self.datasets)
+
+    def data(self, index, role):
+        if not index.isValid():
+            return None
+
+        if role == QtCore.Qt.DisplayRole:
+            row = index.row()
+            return self.datasets[row]
+
+    def addItems(self, items):
+        new_items = [i for i in items if
+                     (i not in self.datasets) and (i != 'theoretical')]
+
+        n_current = len(self.datasets)
+        if new_items:
+            self.beginInsertRows(QtCore.QModelIndex(),
+                                 n_current,
+                                 n_current + len(new_items) + 1)
+            self.datasets.extend(new_items)
+            self.endInsertRows()
+
+    def removeItems(self, indices):
+        # remove by number
+        indices.sort()
+        indices.reverse()
+
+        for i in indices:
+            self.beginRemoveRows(QtCore.QModelIndex(), i, i)
+            self.datasets.pop(i)
+            self.endRemoveRows()
+
+    def flags(self, column):
+        flags = QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled
+
+        # say that you want the Components to be draggable
+        flags |= QtCore.Qt.ItemIsDropEnabled
+
+        return flags
+
+    def supportedDropActions(self):
+        return QtCore.Qt.MoveAction
+
+    def mimeTypes(self):
+        return ['application/vnd.treeviewdragdrop.list']
+
+    def dropMimeData(self, data, action, row, column, parent):
+        # drop datasets from the treeview
+        if action == QtCore.Qt.IgnoreAction:
+            return True
+        if not data.hasFormat('application/vnd.treeviewdragdrop.list'):
+            return False
+        # what was dropped?
+        ba = data.data('application/vnd.treeviewdragdrop.list')
+        index_info = pickle.loads(ba)
+
+        to_add = []
+        for i in index_info:
+            if i['name'] is not None:
+                to_add.append(i['name'])
+
+        if to_add:
+            self.addItems(unique(to_add))
+            return True
+
+        return False
