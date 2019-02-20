@@ -1,2 +1,11 @@
-pyside-rcc resources.qrc -o resources_rc.py
-pyside-uic Motofit.ui -o MotofitUI.py
+Building an executable with pyinstaller is a fraught affair on Windows
+
+From trial and error I've found that the most reliable way to build is to:
+1) Install python.org Python.
+2) Do not use a virtualenv (some hooks don't work) to build the executable
+3) Don't use conda, numpy/scipy/matplotlib/pyqt automatically want to install
+   mkl, which isn't GPL compatible
+4) Install with pip all the requirements into the python.org distribution
+   (periodictable, numpy, scipy, cython, pyinstaller, matplotlib, pyqt5)
+5) pip install refnx
+6) pyinstall.
