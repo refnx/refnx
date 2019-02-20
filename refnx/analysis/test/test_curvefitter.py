@@ -2,6 +2,7 @@ import os.path
 import pickle
 
 import numpy as np
+import scipy.optimize as sciopt
 import pytest
 from numpy.testing import (assert_, assert_almost_equal, assert_equal,
                            assert_allclose)
@@ -405,8 +406,13 @@ class TestFitterGauss(object):
         """test minimisers against the Gaussian fit"""
         f = CurveFitter(self.objective)
 
-        for method in ['differential_evolution', 'shgo', 'dual_annealing',
-                       'L-BFGS-B', 'least_squares']:
+        methods = ['differential_evolution', 'L-BFGS-B', 'least_squares']
+        if hasattr(sciopt, 'shgo'):
+            methods.append('shgo')
+        if hasattr(sciopt, 'dual_annealing'):
+            methods.append('dual_annealing')
+
+        for method in methods:
             self.objective.setp(self.p0)
             res = f.fit(method=method)
             assert_almost_equal(res.x, self.best_weighted, 3)
