@@ -1978,17 +1978,6 @@ class MySLDGraphs(FigureCanvas):
         self.draw()
 
 
-class DataSelectionChanges(QtCore.QObject):
-    change = QtCore.pyqtSignal(int)
-
-    def __init__(self):
-        super(DataSelectionChanges, self).__init__()
-
-    @QtCore.pyqtSlot(int)
-    def selectionChanged(self, arg_1):
-        self.change.emit(arg_1)
-
-
 class EmittingStream(QtCore.QObject):
     # a class for rewriting stdout to a console window
     textWritten = QtCore.pyqtSignal(str)
@@ -2030,13 +2019,14 @@ class OpenMenu(QtWidgets.QMenu):
 
 
 def msg(text):
+    # utility function for displaying a message
     msgBox = QtWidgets.QMessageBox()
     msgBox.setText(text)
     return msgBox.exec_()
 
 
 def _default_slab(parent=None):
-    # all checking done, append a layer
+    # a default slab to add to a model
     material = SLD(3.47)
     c = material(15, 3)
     c.name = 'slab'
