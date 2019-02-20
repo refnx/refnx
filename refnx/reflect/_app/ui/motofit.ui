@@ -713,36 +713,7 @@
          <string>Data and Model Trees</string>
         </attribute>
         <layout class="QGridLayout" name="gridLayout_2">
-         <item row="5" column="2">
-          <widget class="QPushButton" name="auto_limits_button">
-           <property name="minimumSize">
-            <size>
-             <width>60</width>
-             <height>60</height>
-            </size>
-           </property>
-           <property name="maximumSize">
-            <size>
-             <width>70</width>
-             <height>70</height>
-            </size>
-           </property>
-           <property name="font">
-            <font>
-             <pointsize>12</pointsize>
-            </font>
-           </property>
-           <property name="toolTip">
-            <string>Give varying parameters finite limits</string>
-           </property>
-           <property name="text">
-            <string>Auto
-adjust
-limits</string>
-           </property>
-          </widget>
-         </item>
-         <item row="4" column="0">
+         <item row="3" column="0">
           <widget class="QPushButton" name="remove_layer">
            <property name="maximumSize">
             <size>
@@ -776,7 +747,36 @@ limits</string>
            </property>
           </widget>
          </item>
-         <item row="3" column="0">
+         <item row="4" column="2">
+          <widget class="QPushButton" name="auto_limits_button">
+           <property name="minimumSize">
+            <size>
+             <width>60</width>
+             <height>60</height>
+            </size>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>70</width>
+             <height>70</height>
+            </size>
+           </property>
+           <property name="font">
+            <font>
+             <pointsize>12</pointsize>
+            </font>
+           </property>
+           <property name="toolTip">
+            <string>Give varying parameters finite limits</string>
+           </property>
+           <property name="text">
+            <string>Auto
+adjust
+limits</string>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="0">
           <widget class="QPushButton" name="add_layer">
            <property name="sizePolicy">
             <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
@@ -822,7 +822,7 @@ limits</string>
            </property>
           </widget>
          </item>
-         <item row="9" column="0" colspan="4">
+         <item row="8" column="0" colspan="4">
           <widget class="QSlider" name="paramsSlider">
            <property name="sizePolicy">
             <sizepolicy hsizetype="Expanding" vsizetype="Minimum">
@@ -870,7 +870,7 @@ limits</string>
            </property>
           </widget>
          </item>
-         <item row="0" column="1" rowspan="7">
+         <item row="0" column="1" rowspan="6">
           <widget class="QTreeView" name="treeView">
            <property name="minimumSize">
             <size>
@@ -943,7 +943,7 @@ QTreeView::branch:open:has-children:has-siblings  {
            </attribute>
           </widget>
          </item>
-         <item row="6" column="2">
+         <item row="5" column="2">
           <widget class="QCheckBox" name="use_errors_checkbox">
            <property name="font">
             <font>
@@ -972,8 +972,8 @@ errors?</string>
            </property>
            <property name="minimumSize">
             <size>
-             <width>50</width>
-             <height>50</height>
+             <width>60</width>
+             <height>60</height>
             </size>
            </property>
            <property name="maximumSize">
@@ -999,8 +999,8 @@ errors?</string>
            </property>
            <property name="iconSize">
             <size>
-             <width>60</width>
-             <height>60</height>
+             <width>40</width>
+             <height>40</height>
             </size>
            </property>
            <property name="shortcut">
@@ -1008,37 +1008,7 @@ errors?</string>
            </property>
           </widget>
          </item>
-         <item row="2" column="3" rowspan="5">
-          <widget class="QListWidget" name="currently_fitting">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Minimum" vsizetype="Expanding">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="minimumSize">
-            <size>
-             <width>130</width>
-             <height>220</height>
-            </size>
-           </property>
-           <property name="maximumSize">
-            <size>
-             <width>140</width>
-             <height>16777215</height>
-            </size>
-           </property>
-           <property name="font">
-            <font>
-             <pointsize>12</pointsize>
-            </font>
-           </property>
-           <property name="toolTip">
-            <string>List of datasets being fitted</string>
-           </property>
-          </widget>
-         </item>
-         <item row="4" column="2">
+         <item row="3" column="2">
           <widget class="QPushButton" name="remove_from_fit_button">
            <property name="minimumSize">
             <size>
@@ -1065,7 +1035,7 @@ errors?</string>
            </property>
           </widget>
          </item>
-         <item row="3" column="2">
+         <item row="2" column="2">
           <widget class="QPushButton" name="add_to_fit_button">
            <property name="minimumSize">
             <size>
@@ -1092,6 +1062,25 @@ errors?</string>
            </property>
           </widget>
          </item>
+         <item row="2" column="3" rowspan="4">
+          <widget class="QListView" name="currently_fitting">
+           <property name="editTriggers">
+            <set>QAbstractItemView::NoEditTriggers</set>
+           </property>
+           <property name="dragEnabled">
+            <bool>false</bool>
+           </property>
+           <property name="dragDropMode">
+            <enum>QAbstractItemView::DropOnly</enum>
+           </property>
+           <property name="defaultDropAction">
+            <enum>Qt::MoveAction</enum>
+           </property>
+           <property name="selectionMode">
+            <enum>QAbstractItemView::MultiSelection</enum>
+           </property>
+          </widget>
+         </item>
         </layout>
         <zorder>auto_limits_button</zorder>
         <zorder>remove_layer</zorder>
@@ -1099,10 +1088,10 @@ errors?</string>
         <zorder>paramsSlider</zorder>
         <zorder>use_errors_checkbox</zorder>
         <zorder>do_fit_button</zorder>
-        <zorder>currently_fitting</zorder>
         <zorder>remove_from_fit_button</zorder>
         <zorder>add_to_fit_button</zorder>
         <zorder>treeView</zorder>
+        <zorder>currently_fitting</zorder>
        </widget>
        <widget class="QWidget" name="tab_1">
         <attribute name="title">

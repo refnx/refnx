@@ -694,6 +694,8 @@ class DataObjectNode(Node):
         if column == 1:
             flags |= QtCore.Qt.ItemIsUserCheckable
 
+        # want to drop dataobject onto currently_fitting
+        flags |= QtCore.Qt.ItemIsDragEnabled
         return flags
 
 
@@ -860,8 +862,12 @@ class TreeModel(QtCore.QAbstractItemModel):
         for index in indexes:
             if index.isValid():
                 node = index.internalPointer()
+                info = {'name': None, 'indices': None}
                 if isinstance(node, Node):
-                    index_info.append(node.row_indices())
+                    info['indices'] = node.row_indices()
+                if isinstance(node, DataObjectNode):
+                    info['name'] = node.data_object.name
+                index_info.append(info)
 
         s = pickle.dumps(index_info)
         mimedata.setData('application/vnd.treeviewdragdrop.list', s)
@@ -886,8 +892,8 @@ class TreeModel(QtCore.QAbstractItemModel):
         host_structure = host_structure_node._data
         ba = data.data('application/vnd.treeviewdragdrop.list')
         index_info = pickle.loads(ba)
-        dragged_nodes = list(unique(self.node_from_row_indices(ri) for
-                                    ri in index_info))
+        dragged_nodes = list(unique(
+            self.node_from_row_indices(i['indices']) for i in index_info))
 
         # order the dragged nodes
         src_rows = [dn.row() for dn in dragged_nodes]
