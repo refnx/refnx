@@ -5,6 +5,7 @@ refnx - Neutron and X-ray reflectometry analysis in Python
 ==========================================================
 
 .. _refnx github repository:   http://github.com/refnx/refnx
+.. _github:     https://github.com/refnx/refnx/releases/latest
 .. _scipy.optimize:      http://docs.scipy.org/doc/scipy/reference/optimize.html
 .. _emcee:      http://emcee.readthedocs.io/en/stable/
 .. _refnx YouTube channel:     https://www.youtube.com/channel/UCvhOxwZsdFMGqSzasE0ZSOw
@@ -30,19 +31,20 @@ about the system (such as adsorbed amount).
 Co-refinement of multiple contrast datasets is straightforward, with sharing of
 joint parameters across each model.
 
-Various tutorials are available from the `refnx YouTube channel`_.
+Various tutorials are available from the `refnx YouTube channel`_, and there are
+GUI programs available on `github`_ as well.
 
 The refnx package is free software, using a BSD licence. If you are interested
-in participating in this project please use the `refnx github repository`_.
+in participating in this project please use the `refnx github repository`_, all
+contributions are welcomed.
 
 .. toctree::
     :maxdepth: 2
 
     installation
-    gui.rst
     getting_started.ipynb
+    gui.rst
     reflectometry_global.ipynb
-    gui.ipynb
     lipid.ipynb
     faq
     testimonials

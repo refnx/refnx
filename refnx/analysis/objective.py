@@ -716,7 +716,7 @@ class Objective(BaseObjective):
                         marker='o', ms=3, lw=0, elinewidth=2)
         else:
             ax.scatter(self.data.x, y, color='blue',
-                       ms=3, label=self.data.name)
+                       s=3, label=self.data.name)
 
         if samples > 0:
             saved_params = np.array(self.parameters)

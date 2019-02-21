@@ -111,6 +111,9 @@ class Data1D(object):
         """
         return self.y.size
 
+    def __str__(self):
+        return "<{0}>, {1} points".format(self.name, len(self))
+
     def __repr__(self):
         msk = self._mask
         if np.all(self._mask):
