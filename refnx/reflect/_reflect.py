@@ -1,6 +1,9 @@
 import numpy as np
 
 
+TINY = np.finfo(np.float64).tiny
+
+
 """
 import numpy as np
 q = np.linspace(0.01, 0.5, 1000)
@@ -56,7 +59,11 @@ def abeles(q, layers, scale=1., bkg=0, threads=0):
     mi00 = np.ones((npnts, nlayers + 1), np.complex128)
 
     sld = np.zeros(nlayers + 2, np.complex128)
-    sld[1:] += ((layers[1:, 1] - layers[0, 1]) + 1j * (layers[1:, 2])) * 1.e-6
+
+    # addition of TINY is to ensure the correct branch cut
+    # in the complex sqrt calculation of kn.
+    sld[1:] += ((layers[1:, 1] - layers[0, 1]) +
+                1j * (np.abs(layers[1:, 2]) + TINY)) * 1.e-6
 
     # kn is a 2D array. Rows are Q points, columns are kn in a layer.
     # calculate wavevector in each layer, for each Q point.

@@ -61,16 +61,17 @@ class TestGlobalFitting(object):
 
         self.objective.transform = Transform('logY')
 
+        starting = np.array(self.objective.parameters)
         with np.errstate(invalid='raise'):
             g = CurveFitter(self.global_objective)
-            res_g = g.fit(method='differential_evolution', seed=1, maxiter=10)
+            res_g = g.fit()
 
+            # need the same starting point
+            self.objective.setp(starting)
             f = CurveFitter(self.objective)
-            res_f = f.fit(method='differential_evolution', seed=1, maxiter=10)
+            res_f = f.fit()
 
-            # individual and global should give the same fit. Because we use DE
-            # there is no dependence on starting point, so long as we set a
-            # seed.
+            # individual and global should give the same fit.
             assert_almost_equal(res_g.x, res_f.x)
 
     def test_multipledataset_corefinement(self):
