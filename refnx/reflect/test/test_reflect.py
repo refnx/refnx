@@ -147,8 +147,8 @@ class TestReflect(object):
         # but not the same file
         s = self.structure.slabs()[..., :4]
 
-        if not TEST_C_REFLECT:
-            return
+        # if not TEST_C_REFLECT:
+        #     return
         assert_(_reflect.__file__ != _creflect.__file__)
 
         calc1 = _reflect.abeles(self.qvals, s)
@@ -196,8 +196,8 @@ class TestReflect(object):
 
     def test_compare_c_py_abeles0(self):
         # test two layer system
-        if not TEST_C_REFLECT:
-            return
+        # if not TEST_C_REFLECT:
+        #     return
         layer0 = np.array([[0, 2.07, 0.01, 3],
                            [0, 6.36, 0.1, 3]])
         calc1 = _reflect.abeles(self.qvals, layer0, scale=0.99, bkg=1e-8)
@@ -211,8 +211,8 @@ class TestReflect(object):
 
     def test_compare_c_py_abeles2(self):
         # test two layer system
-        if not TEST_C_REFLECT:
-            return
+        # if not TEST_C_REFLECT:
+        #     return
         layer2 = np.array([[0, 2.07, 0.01, 3],
                            [10, 3.47, 0.01, 3],
                            [100, 1.0, 0.01, 4],
