@@ -38,7 +38,7 @@ However, the following remains the fastest calculation  so far.
 
 #include "refcalc.h"
 #include <math.h>
-#include "MyComplex.h"
+#include <complex>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -59,9 +59,9 @@ However, the following remains the fastest calculation  so far.
 #endif
 
 #define NUM_CPUS 4
-#define PI 3.141592653589793
+#define PI 3.14159265358979323846
 
-using namespace MyComplexNumber;
+using namespace std;
 
 #ifdef __cplusplus
 extern "C" {
@@ -94,6 +94,14 @@ void* malloc2d(int ii, int jj, int sz){
     return p;
 }
 
+inline void
+matmul(complex<double> a[2][2], complex<double> b[2][2], complex<double> c[2][2]){
+    c[0][0] = a[0][0]*b[0][0] + a[0][1]*b[1][0];
+    c[0][1] = a[0][0]*b[0][1] + a[0][1]*b[1][1];
+    c[1][0]	= a[1][0]*b[0][0] + a[1][1]*b[1][0];
+    c[1][1] = a[1][0]*b[0][1] + a[1][1]*b[1][1];
+}
+
 
 void AbelesCalc_ImagAll(int numcoefs,
                         const double *coefP,
@@ -105,15 +113,15 @@ void AbelesCalc_ImagAll(int numcoefs,
         double scale, bkg;
         double num = 0, den = 0, answer = 0;
 
-        MyComplex super;
-        MyComplex sub;
-        MyComplex oneC = MyComplex(1, 0);
-        MyComplex MRtotal[2][2];
-        MyComplex MI[2][2];
-        MyComplex temp2[2][2];
-        MyComplex qq2;
-        MyComplex *SLD = NULL;
-        double *thickness = NULL;
+        complex<double> super;
+        complex<double> sub;
+        complex<double> oneC = complex<double>(1., 0.);
+        complex<double> MRtotal[2][2];
+        complex<double> MI[2][2];
+        complex<double> temp2[2][2];
+        complex<double> qq2;
+        complex<double> *SLD = NULL;
+        complex<double> *thickness = NULL;
         double *rough_sqr = NULL;
 
         int nlayers = (int) coefP[0];
@@ -124,8 +132,8 @@ void AbelesCalc_ImagAll(int numcoefs,
 //		    if(kn_all == NULL)
 //		        goto done;
 
-            SLD = new MyComplex[nlayers + 2];
-            thickness = new double[nlayers];
+            SLD = new complex<double>[nlayers + 2];
+            thickness = new complex<double>[nlayers];
             rough_sqr = new double[nlayers + 1];
         } catch(...) {
             goto done;
@@ -133,18 +141,19 @@ void AbelesCalc_ImagAll(int numcoefs,
 
         scale = coefP[1];
         bkg = coefP[6];
-        sub = MyComplex(coefP[4] * 1.e-6, coefP[5] * 1.e-6);
-        super = MyComplex(coefP[2] * 1e-6, coefP[3] * 1.e-6);
+        sub = complex<double>(coefP[4] * 1.e-6, coefP[5] * 1.e-6);
+        super = complex<double>(coefP[2] * 1e-6, 0);
 
-        // fillout all the SLD's for all the layers
+        // fill out all the SLD's for all the layers
         for(int ii = 1; ii < nlayers + 1; ii += 1){
-            SLD[ii] = 4 * PI * (MyComplex(coefP[4 * ii + 5] * 1.e-6,
-                                          coefP[4 * ii + 6] * 1.e-6) - super);
-            thickness[ii - 1] = fabs(coefP[4 * ii + 4]);
+            SLD[ii] = 4 * PI * (complex<double>(coefP[4 * ii + 5] * 1.e-6, coefP[4 * ii + 6] * 1.e-6)
+                                - super);
+
+            thickness[ii - 1] = complex<double>(0, fabs(coefP[4 * ii + 4]));
             rough_sqr[ii - 1] = -2 * coefP[4 * ii + 7] * coefP[4 * ii + 7];
         }
 
-        SLD[0] = MyComplex(0, 0);
+        SLD[0] = complex<double>(0, 0);
         SLD[nlayers + 1] = 4 * PI * (sub - super);
         rough_sqr[nlayers] = -2 * coefP[7] * coefP[7];
 
@@ -155,20 +164,20 @@ void AbelesCalc_ImagAll(int numcoefs,
 #endif
 
         for (j = 0; j < npoints; j++) {
-            MyComplex beta, rj;
-            MyComplex kn, kn_next;
+            complex<double> beta, rj;
+            complex<double> kn, kn_next;
 
-            qq2 = MyComplex(xP[j] * xP[j] / 4, 0);
+            qq2 = complex<double>(xP[j] * xP[j] / 4, 0);
 
             // now calculate reflectivities and wavevectors
-            kn = compsqrt(qq2 - SLD[0]);
+            kn = std::sqrt(qq2 - SLD[0]);
             for(int ii = 0 ; ii < nlayers + 1 ; ii++){
                 // wavevector in the layer
-                kn_next = compsqrt(qq2 - SLD[ii + 1]);
+                kn_next = std::sqrt(qq2 - SLD[ii + 1]);
 
                 // reflectance of the interface
                 rj = (kn - kn_next)/(kn + kn_next)
-                      * compexp(kn * kn_next * rough_sqr[ii]) ;
+                      * std::exp(kn * kn_next * rough_sqr[ii]) ;
 
                 if (!ii){
                     // characteristic matrix for first interface
@@ -178,7 +187,7 @@ void AbelesCalc_ImagAll(int numcoefs,
                     MRtotal[1][0] = rj;
                 } else {
                     // work out the beta for the layer
-                    beta = compexp(kn * MyComplex(0, thickness[ii - 1]));
+                    beta = std::exp(kn * thickness[ii - 1]);
                     // this is the characteristic matrix of a layer
                     MI[0][0] = beta;
                     MI[0][1] = rj * beta;
@@ -189,11 +198,11 @@ void AbelesCalc_ImagAll(int numcoefs,
                     memcpy(temp2, MRtotal, sizeof(MRtotal));
                     matmul(temp2, MI, MRtotal);
                 }
-                    kn = kn_next;
+                kn = kn_next;
             }
 
-            num = compnorm(MRtotal[1][0]);
-            den = compnorm(MRtotal[0][0]);
+            num = std::norm(MRtotal[1][0]);
+            den = std::norm(MRtotal[0][0]);
             answer = (num / den);
             answer = (answer * scale) + bkg;
 
