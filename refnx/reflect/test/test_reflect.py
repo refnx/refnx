@@ -221,6 +221,19 @@ class TestReflect(object):
         calc2 = _creflect.abeles(self.qvals, layer2, scale=0.99, bkg=1e-8)
         assert_almost_equal(calc1, calc2)
 
+    def test_c_py_abeles_absorption(self):
+        # https://github.com/andyfaff/refl1d_analysis/tree/master/notebooks
+        q = np.linspace(0.008, 0.05, 500)
+        depth = [0, 850, 0]
+        rho = [2.067, 4.3, 6.]
+        irho_zero = [0., 0.1, 0.]
+        refnx_sigma = [np.nan, 35, 5.]
+
+        w_zero = np.c_[depth, rho, irho_zero, refnx_sigma]
+        py_abeles = _reflect.abeles(q, w_zero)
+        c_abeles = _creflect.abeles(q, w_zero)
+        assert_almost_equal(py_abeles, c_abeles)
+
     def test_compare_refl1d(self):
         # refl1d calculated with:
         # from refl1d import abeles

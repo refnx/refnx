@@ -1,4 +1,5 @@
 #pragma once
+#include <math.h>       /* copysign */
 
 
 namespace MyComplexNumber{
@@ -96,9 +97,10 @@ namespace MyComplexNumber{
 			sqrtholder = sqrt(mag);
 			return MyComplex(sqrtholder * cos(theta), sqrtholder * sin(theta));
 		}
-		
+
+		// floating point imaginary part is zero. Return the correct branch cut.
 		if(comp.re < 0)
-			return MyComplex(0, sqrt(fabs(comp.re)));
+			return MyComplex(0, copysign(comp.im) * sqrt(fabs(comp.re)));
 		
 		return MyComplex(sqrt(comp.re), 0);
 	};
