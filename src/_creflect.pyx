@@ -97,7 +97,7 @@ def reflect(np.ndarray[DTYPE_t, ndim=1] x,
     cdef np.ndarray[np.complex128_t, ndim=1] k = np.zeros_like(y, np.complex128)
     cdef np.ndarray[np.complex128_t, ndim=1] k_next = np.zeros_like(y, np.complex128)
 
-    SLD[:] += 4 * np.pi * (w[:, 1] - w[0, 1] + 1j * (w[:, 2] - w[0, 2])) * 1.e-6
+    SLD[:] += 4 * np.pi * (w[:, 1] - w[0, 1] + 1j * (w[:, 2])) * 1.e-6
     kn[:] = np.sqrt(x.flatten()[:, np.newaxis]**2 / 4. - SLD)
 
     k = kn[:, 0]

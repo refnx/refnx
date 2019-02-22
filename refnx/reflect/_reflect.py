@@ -53,6 +53,7 @@ def abeles(q, layers, scale=1., bkg=0, threads=0):
     npnts = flatq.size
 
     kn = np.zeros((npnts, nlayers + 2), np.complex128)
+    mi00 = np.ones((npnts, nlayers + 1), np.complex128)
 
     sld = np.zeros(nlayers + 2, np.complex128)
     sld[1:] += ((layers[1:, 1] - layers[0, 1]) + 1j * (layers[1:, 2])) * 1.e-6
@@ -61,42 +62,39 @@ def abeles(q, layers, scale=1., bkg=0, threads=0):
     # calculate wavevector in each layer, for each Q point.
     kn[:] = np.sqrt(flatq[:, np.newaxis] ** 2. / 4. - 4. * np.pi * sld)
 
+    # reflectances for each layer
+    # rj.shape = (npnts, nlayers + 1)
+    rj = kn[:, :-1] - kn[:, 1:]
+    rj /= kn[:, :-1] + kn[:, 1:]
+    rj *= np.exp(-2. * kn[:, :-1] * kn[:, 1:] * layers[1:, 3] ** 2)
+
+    # characteristic matrices for each layer
+    # miNN.shape = (npnts, nlayers + 1)
+    if nlayers:
+        mi00[:, 1:] = np.exp(kn[:, 1:-1] * 1j * np.fabs(layers[1:-1, 0]))
+    mi11 = 1. / mi00
+    mi10 = rj * mi00
+    mi01 = rj * mi11
+
     # initialise matrix total
-    mrtot00 = 1
-    mrtot11 = 1
-    mrtot10 = 0
-    mrtot01 = 0
-    k = kn[:, 0]
+    mrtot00 = mi00[:, 0]
+    mrtot01 = mi01[:, 0]
+    mrtot10 = mi10[:, 0]
+    mrtot11 = mi11[:, 0]
 
-    for idx in range(1, nlayers + 2):
-        k_next = kn[:, idx]
-
-        # reflectance of an interface
-        rj = (k - k_next) / (k + k_next)
-        rj *= np.exp(k * k_next * -2. * layers[idx, 3] ** 2)
-
-        # work out characteristic matrix of layer
-        mi00 = np.exp(k * 1j * np.fabs(layers[idx - 1, 0])) if idx - 1 else 1
-        # mi11 = (np.exp(k * -1j * np.fabs(layers[idx - 1, 0]))
-        #         if idx - 1 else 1)
-        mi11 = 1 / mi00 if idx - 1 else 1
-
-        mi10 = rj * mi00
-        mi01 = rj * mi11
-
+    # propagate characteristic matrices
+    for idx in range(1, nlayers + 1):
         # matrix multiply mrtot by characteristic matrix
-        p0 = mrtot00 * mi00 + mrtot10 * mi01
-        p1 = mrtot00 * mi10 + mrtot10 * mi11
+        p0 = mrtot00 * mi00[:, idx] + mrtot10 * mi01[:, idx]
+        p1 = mrtot00 * mi10[:, idx] + mrtot10 * mi11[:, idx]
         mrtot00 = p0
         mrtot10 = p1
 
-        p0 = mrtot01 * mi00 + mrtot11 * mi01
-        p1 = mrtot01 * mi10 + mrtot11 * mi11
+        p0 = mrtot01 * mi00[:, idx] + mrtot11 * mi01[:, idx]
+        p1 = mrtot01 * mi10[:, idx] + mrtot11 * mi11[:, idx]
 
         mrtot01 = p0
         mrtot11 = p1
-
-        k = k_next
 
     reflectivity = (mrtot01 * np.conj(mrtot01)) / (mrtot00 * np.conj(mrtot00))
     reflectivity *= scale
