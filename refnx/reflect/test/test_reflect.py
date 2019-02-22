@@ -93,7 +93,7 @@ class TestReflect(object):
 
     def test_c_abeles_multithreaded(self):
         _creflect.abeles(self.qvals, self.structure.slabs()[..., :4],
-                             threads=4)
+                         threads=4)
 
     def test_py_abeles(self):
         # test reflectivity calculation with values generated from Motofit
