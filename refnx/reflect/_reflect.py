@@ -96,7 +96,8 @@ def abeles(q, layers, scale=1., bkg=0, threads=0):
         mrtot01 = p0
         mrtot11 = p1
 
-    reflectivity = (mrtot01 * np.conj(mrtot01)) / (mrtot00 * np.conj(mrtot00))
+    r = (mrtot01 / mrtot00)
+    reflectivity = r * np.conj(r)
     reflectivity *= scale
     reflectivity += bkg
     return np.real(np.reshape(reflectivity, qvals.shape))
