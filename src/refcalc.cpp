@@ -39,6 +39,7 @@ However, the following remains the fastest calculation  so far.
 #include "refcalc.h"
 #include <math.h>
 #include <complex>
+#include <cmath>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
