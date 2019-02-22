@@ -149,7 +149,7 @@ void AbelesCalc_ImagAll(int numcoefs,
         // fill out all the SLD's for all the layers
         for(int ii = 1; ii < nlayers + 1; ii += 1){
             SLD[ii] = 4e-6 * PI * (complex<double>(coefP[4 * ii + 5], fabs(coefP[4 * ii + 6]) + TINY)
-                                - super);
+                                   - super);
 
             thickness[ii - 1] = complex<double>(0, fabs(coefP[4 * ii + 4]));
             rough_sqr[ii - 1] = -2 * coefP[4 * ii + 7] * coefP[4 * ii + 7];
@@ -172,7 +172,7 @@ void AbelesCalc_ImagAll(int numcoefs,
             qq2 = complex<double>(xP[j] * xP[j] / 4, 0);
 
             // now calculate reflectivities and wavevectors
-            kn = std::sqrt(qq2 - SLD[0]);
+            kn = std::sqrt(qq2);
             for(int ii = 0 ; ii < nlayers + 1 ; ii++){
                 // wavevector in the layer
                 kn_next = std::sqrt(qq2 - SLD[ii + 1]);
