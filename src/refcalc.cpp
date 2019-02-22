@@ -142,7 +142,7 @@ void AbelesCalc_ImagAll(int numcoefs,
         scale = coefP[1];
         bkg = coefP[6];
         sub = complex<double>(coefP[4] * 1.e-6, coefP[5] * 1.e-6);
-        super = complex<double>(coefP[2] * 1e-6, coefP[3] * 1.e-6);
+        super = complex<double>(coefP[2] * 1e-6, 0);
 
         // fill out all the SLD's for all the layers
         for(int ii = 1; ii < nlayers + 1; ii += 1){

@@ -55,8 +55,7 @@ def abeles(q, layers, scale=1., bkg=0, threads=0):
     kn = np.zeros((npnts, nlayers + 2), np.complex128)
 
     sld = np.zeros(nlayers + 2, np.complex128)
-    sld[:] += ((layers[:, 1] - layers[0, 1]) +
-               1j * (layers[:, 2] - layers[0, 2])) * 1.e-6
+    sld[1:] += ((layers[1:, 1] - layers[0, 1]) + 1j * (layers[1:, 2])) * 1.e-6
 
     # kn is a 2D array. Rows are Q points, columns are kn in a layer.
     # calculate wavevector in each layer, for each Q point.
