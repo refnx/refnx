@@ -80,22 +80,20 @@ class TestReflect(object):
         assert_almost_equal(calc, self.rvals)
 
     def test_c_abeles(self):
-        if TEST_C_REFLECT:
-            # test reflectivity calculation with values generated from Motofit
-            calc = _creflect.abeles(self.qvals,
-                                    self.structure.slabs()[..., :4])
-            assert_almost_equal(calc, self.rvals)
+        # test reflectivity calculation with values generated from Motofit
+        calc = _creflect.abeles(self.qvals,
+                                self.structure.slabs()[..., :4])
+        assert_almost_equal(calc, self.rvals)
 
-            # test for non-contiguous Q values
-            tempq = self.qvals[0::5]
-            assert_(tempq.flags['C_CONTIGUOUS'] is False)
-            calc = _creflect.abeles(tempq, self.structure.slabs()[..., :4])
-            assert_almost_equal(calc, self.rvals[0::5])
+        # test for non-contiguous Q values
+        tempq = self.qvals[0::5]
+        assert_(tempq.flags['C_CONTIGUOUS'] is False)
+        calc = _creflect.abeles(tempq, self.structure.slabs()[..., :4])
+        assert_almost_equal(calc, self.rvals[0::5])
 
     def test_c_abeles_multithreaded(self):
-        if TEST_C_REFLECT:
-            _creflect.abeles(self.qvals, self.structure.slabs()[..., :4],
-                             threads=4)
+        _creflect.abeles(self.qvals, self.structure.slabs()[..., :4],
+                         threads=4)
 
     def test_py_abeles(self):
         # test reflectivity calculation with values generated from Motofit
@@ -237,6 +235,7 @@ class TestReflect(object):
     def test_compare_refl1d(self):
         # refl1d calculated with:
         # from refl1d import abeles
+        # x = np.linspace(0.005, 0.5, 1001)
         # z = abeles.refl(x / 2,
         #                 [0, 100, 200, 0],
         #                 [2.07, 3.45, 5., 6.],

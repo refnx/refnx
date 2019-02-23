@@ -61,6 +61,7 @@ However, the following remains the fastest calculation  so far.
 
 #define NUM_CPUS 4
 #define PI 3.14159265358979323846
+#define TINY 2.4e-308
 
 using namespace std;
 
@@ -142,20 +143,20 @@ void AbelesCalc_ImagAll(int numcoefs,
 
         scale = coefP[1];
         bkg = coefP[6];
-        sub = complex<double>(coefP[4] * 1.e-6, coefP[5] * 1.e-6);
-        super = complex<double>(coefP[2] * 1e-6, 0);
+        sub = complex<double>(coefP[4], fabs(coefP[5]) + TINY);
+        super = complex<double>(coefP[2], 0);
 
         // fill out all the SLD's for all the layers
         for(int ii = 1; ii < nlayers + 1; ii += 1){
-            SLD[ii] = 4 * PI * (complex<double>(coefP[4 * ii + 5] * 1.e-6, coefP[4 * ii + 6] * 1.e-6)
-                                - super);
+            SLD[ii] = 4e-6 * PI * (complex<double>(coefP[4 * ii + 5], fabs(coefP[4 * ii + 6]) + TINY)
+                                   - super);
 
             thickness[ii - 1] = complex<double>(0, fabs(coefP[4 * ii + 4]));
             rough_sqr[ii - 1] = -2 * coefP[4 * ii + 7] * coefP[4 * ii + 7];
         }
 
         SLD[0] = complex<double>(0, 0);
-        SLD[nlayers + 1] = 4 * PI * (sub - super);
+        SLD[nlayers + 1] = 4e-6 * PI * (sub - super);
         rough_sqr[nlayers] = -2 * coefP[7] * coefP[7];
 
 // if you have omp.h, then can do the calculation in parallel.
@@ -171,7 +172,7 @@ void AbelesCalc_ImagAll(int numcoefs,
             qq2 = complex<double>(xP[j] * xP[j] / 4, 0);
 
             // now calculate reflectivities and wavevectors
-            kn = std::sqrt(qq2 - SLD[0]);
+            kn = std::sqrt(qq2);
             for(int ii = 0 ; ii < nlayers + 1 ; ii++){
                 // wavevector in the layer
                 kn_next = std::sqrt(qq2 - SLD[ii + 1]);
