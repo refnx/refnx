@@ -61,3 +61,5 @@ Details of changes made to refnx
 
 0.1.4
 -----
+- fixed bug in reflectivity calculation with significant non-zero absorption.
+  The wavevector calculation was using the wrong branch of the complex sqrt.
