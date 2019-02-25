@@ -12,8 +12,8 @@ Here is a *very* incomplete list of published scientific studies that have used 
 
 * `McCluskey, Grant, Smith, et al. (2019) 
   <https://arxiv.org/abs/1901.05514>`_
-* `McCluskey, Sanchez-Fernandez, Edler, et al. (2018)
-  <https://arxiv.org/abs/1810.07616>`_
+* `McCluskey, Sanchez-Fernandez, Edler, et al. (2019)
+  <https://doi.org/10.1039/C9CP00203K>`_
 * `Johnson, Murdoch, et al. (2019)
   <https://doi.org/10.1039/C8CP06644B>`_
 
