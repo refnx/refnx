@@ -2,9 +2,12 @@
 from os.path import join as pjoin
 import os
 import sys
+import periodictable
 
 block_cipher = None
 
+
+periodictable_loc = os.path.dirname(periodictable.__file__)
 
 pathex = pjoin('.', '')
 uiloc = (pjoin('..', '..', 'refnx', 'reflect', '_app', 'ui', '*.ui'),
@@ -15,6 +18,9 @@ licences = (pjoin('..', '..', 'refnx', 'reflect', '_app', 'ui', 'licences', '*')
             pjoin('refnx', 'reflect', '_app', 'ui', 'licences'))
 lipid_data = (pjoin('..', '..', 'refnx', 'reflect', '_app', 'lipids.json'),
               pjoin('refnx', 'reflect', '_app'))
+periodic_table = (pjoin(periodictable_loc, 'xsf', '*.*'),
+              pjoin('periodictable', 'xsf'))
+
 
 a = Analysis(['motofit.py'],
              pathex=[os.getcwd()],
@@ -22,7 +28,8 @@ a = Analysis(['motofit.py'],
              datas=[uiloc,
                     icons,
                     licences,
-                    lipid_data],
+                    lipid_data,
+                    periodic_table],
              hiddenimports=['periodictable', 'refnx',
                             'refnx.analysis', 'refnx.dataset', 'refnx.reflect',
                             'refnx.reflect._app'],
