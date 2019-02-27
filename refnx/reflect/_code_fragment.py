@@ -163,6 +163,9 @@ def main(args):
         print('Duration (s): {}'.format(time.time() - start_time))
  
         try:
+            import matplotlib
+            matplotlib.use('agg')
+
             fig, ax = obj.plot(samples=nplot)
             ax.set_ylabel('R')
             ax.set_xlabel("Q / $\\AA$")
