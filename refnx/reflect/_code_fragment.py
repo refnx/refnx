@@ -36,6 +36,7 @@ The usage then is:
 '''
 
 import sys
+import time
 import argparse
 from multiprocessing import Pool
 import operator
@@ -118,11 +119,24 @@ def main(args):
         pargs = (args.n_cores,)
         
     with pool_klass(*pargs) as workers:
+        # necessary when using MPI.
         if args.mpi and (not workers.is_master()):
             workers.wait()
             sys.exit(0)
 
+        start_time = time.time()
+
         obj = objective()
+
+        # turn off pthread'ing of reflectivity calculation if MPI
+        if args.mpi:
+            _objectives = [obj]
+            if isinstance(obj, GlobalObjective):
+                _objectives = obj.objectives
+
+            for o in _objectives:
+                o.model.threads = 1
+
         # Create the fitter and fit
         fitter = CurveFitter(obj, nwalkers=nwalkers, ntemps=ntemps)
     
@@ -145,7 +159,9 @@ def main(args):
             fitter.fit('differential_evolution', workers=workers.map)
     
         print(str(obj))
-    
+        print('\n')
+        print('Duration (s): {}'.format(time.time() - start_time))
+ 
         try:
             fig, ax = obj.plot(samples=nplot)
             ax.set_ylabel('R')
