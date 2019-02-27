@@ -9,13 +9,42 @@ from refnx._lib import flatten
 import refnx
 
 
-_imports = ("""import argparse
+_imports = ("""#!/bin/bash
+
+'''
+Script exported by refnx for analysing NR/XRR data.
+
+To get help:
+
+    python mcmc.py -h
+
+You will need to install the following packages in a Python interpreter:
+  - refnx
+  - numpy
+  - cython
+  - matplotlib
+  - scipy
+
+If you wish to run the script on a cluster making use of MPI you'll need to
+install:
+  - mpi4py
+  - schwimmbad
+
+The usage then is:
+
+    mpiexec -n 4 python mcmc.py <other options>
+'''
+
+import sys
+import time
+import argparse
 from multiprocessing import Pool
 import operator
 import numpy as np
 from numpy import array
 try:
     import tqdm
+    import schwimmbad
 except ImportError:
     pass
 
@@ -69,12 +98,105 @@ def structure_plot(obj, samples=0):
     fig.savefig('steps_sld.png', dpi=1000)
 
 
+def main(args):
+    nwalkers = args.walkers
+    nthin = args.thin
+    nsteps = args.steps
+    ntemps = args.temps
+    nplot = args.plot
+    nburn = args.burn
+    cfile = args.chain
+    pargs = ()
+
+    try:
+        # we may want to use MPI to parallelise
+        import schwimmbad
+        if args.mpi:
+            pool_klass = schwimmbad.MPIPool
+    except ImportError:
+        pass
+
+    # not wanting MPI, so just use multiprocessing.Pool to parallelise
+    if not args.mpi:
+        pool_klass = Pool
+        pargs = (args.n_cores,)
+
+    with pool_klass(*pargs) as workers:
+        # necessary when using MPI.
+        if args.mpi and (not workers.is_master()):
+            workers.wait()
+            sys.exit(0)
+
+        start_time = time.time()
+
+        obj = objective()
+
+        # turn off pthread'ing of reflectivity calculation if MPI. Otherwise
+        # the reflectivity calculation will want to spread out over all the
+        # available processors.
+        if args.mpi:
+            _objectives = [obj]
+            if isinstance(obj, GlobalObjective):
+                _objectives = obj.objectives
+
+            for o in _objectives:
+                o.model.threads = 1
+
+        # Create the fitter and fit
+        fitter = CurveFitter(obj, nwalkers=nwalkers, ntemps=ntemps)
+
+        if nsteps:
+            if cfile:
+                # Initialise the walkers with a pre-existing chain
+                chain = load_chain(cfile)
+                fitter.initialise(chain)
+            else:
+                # Initialise the walkers by doing a fit, then using the
+                # covariance. The workers kwd is only present in scipy >1.2
+                fitter.fit('differential_evolution', workers=workers.map)
+                fitter.initialise('covar')
+
+            # Buffering is there so the chain file is not written to
+            # continuously
+            with open('steps.chain', 'w', buffering=500000) as f:
+                res = fitter.sample(nsteps, pool=workers, f=f, verbose=False,
+                                    nthin=nthin);
+                f.flush()
+            process_chain(obj, fitter.chain, nburn=nburn)
+        else:
+            # the workers kwd is only present in scipy >1.2
+            fitter.fit('differential_evolution', workers=workers.map)
+
+        print(str(obj))
+        print('\n')
+        print('Duration (s): {}'.format(time.time() - start_time))
+
+        try:
+            # create graphs of reflectivity and SLD profiles
+            import matplotlib
+            matplotlib.use('agg')
+
+            fig, ax = obj.plot(samples=nplot)
+            ax.set_ylabel('R')
+            ax.set_xlabel("Q / $\\AA$")
+            fig.savefig('steps.png', dpi=1000)
+
+            structure_plot(obj, samples=nplot)
+
+            # corner plot
+            fig = obj.corner()
+            fig.savefig('steps_corner.png')
+
+        except ImportError:
+            pass
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('-w', '--walkers', help='number of emcee walkers',
                         type=int, default=300)
     parser.add_argument('-t', '--thin', help='factor to thin chain by',
-                        type=int, default=10)
+                        type=int, default=1)
     parser.add_argument('-s', '--steps', help=("number of thinned MCMC steps"
                                                " to save"),
                         type=int, default=1000)
@@ -91,54 +213,18 @@ if __name__ == "__main__":
     parser.add_argument('-c', '--chain', help='initialise chain from file',
                         type=str, default='')
 
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument("--ncores", dest="n_cores", default=-1,
+                       type=int, help=("Number of processes (uses"
+                       "multiprocessing)."))
+    group.add_argument("--mpi", dest="mpi", default=False,
+                       action="store_true", help="Run with MPI.")
+
     args = parser.parse_args()
-    nwalkers = args.walkers
-    nthin = args.thin
-    nsteps = args.steps
-    ntemps = args.temps
-    nplot = args.plot
-    nburn = args.burn
-    cfile = args.chain
 
-    with Pool() as workers:
-        obj = objective()
-        # Create the fitter and fit
-        fitter = CurveFitter(obj, nwalkers=nwalkers, ntemps=ntemps)
-
-        if nsteps:
-            if cfile:
-                chain = load_chain(cfile)
-                fitter.initialise(chain)
-            else:
-                # the workers kwd is only present in scipy >1.2
-                fitter.fit('differential_evolution', workers=workers.map)
-                fitter.initialise('covar')
-
-            with open('steps.chain', 'w', buffering=500000) as f:
-                res = fitter.sample(nsteps, pool=workers, f=f, verbose=False,
-                                    nthin=nthin);
-                f.flush()
-            process_chain(obj, fitter.chain, nburn=nburn)
-        else:
-            # the workers kwd is only present in scipy >1.2
-            fitter.fit('differential_evolution', workers=workers.map)
-
-        print(str(obj))
-
-    try:
-        fig, ax = obj.plot(samples=nplot)
-        ax.set_ylabel('R')
-        ax.set_xlabel("Q / $\\AA$")
-        fig.savefig('steps.png', dpi=1000)
-
-        structure_plot(obj, samples=nplot)
-
-        # corner plot
-        fig = obj.corner()
-        fig.savefig('steps_corner.png')
-
-    except ImportError:
-        pass
+    if args.n_cores == -1:
+        args.n_cores = None
+    main(args)
 """)
 
 
