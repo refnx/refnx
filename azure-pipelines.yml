@@ -32,4 +32,15 @@ jobs:
   - script: |
       pip install pytest
       python setup.py test
+      python setup.py bdist_wheel
     displayName: 'pytest'
+
+- task: CopyFiles@2
+   inputs:
+     contents: dist/**
+     targetFolder: $(Build.ArtifactStagingDirectory)
+
+- task: PublishBuildArtifacts@1
+   inputs:
+     pathtoPublish: $(Build.ArtifactStagingDirectory)
+     artifactName: refnx_wheels
