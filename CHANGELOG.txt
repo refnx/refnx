@@ -63,3 +63,9 @@ Details of changes made to refnx
 -----
 - fixed bug in reflectivity calculation with significant non-zero absorption.
   The wavevector calculation was using the wrong branch of the complex sqrt.
+
+0.1.5
+-----
+- fixed font size in pyqt GUI.
+- script export from pyqt GUI can use either multiprocessing or MPI for
+  parallelisation during MCMC sampling.
