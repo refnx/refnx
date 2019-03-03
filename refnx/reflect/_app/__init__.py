@@ -9,10 +9,10 @@ def gui():
     app = QtWidgets.QApplication(sys.argv)
     app.setWindowIcon(QtGui.QIcon(':icons/scattering.png'))
     myapp = MotofitMainWindow()
+
     fnt = QtGui.QFont('Arial')
     fnt.setPixelSize(12)
-
-    app.setFont(fnt);
+    app.setFont(fnt)
 
     myapp.show()
     myapp.raise_()
