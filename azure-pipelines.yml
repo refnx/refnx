@@ -32,8 +32,12 @@ jobs:
   - script: |
       pip install pytest
       python setup.py test
-      python setup.py bdist_wheel
     displayName: 'pytest'
+
+  - script: |
+      pip install wheel
+      python setup.py bdist_wheel
+    displayName: 'wheel'
 
   - task: CopyFiles@2
     inputs:
