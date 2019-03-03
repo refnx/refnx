@@ -1044,7 +1044,7 @@ class TreeFilter(QtCore.QSortFilterProxyModel):
                 return True
 
             component_loc = parent.row()
-            if component_loc == 0 and row in [0, 3, 4]:
+            if component_loc == 0 and row in [0, 2, 3, 4]:
                 return False
             if component_loc == len(struc.structure) - 1 and row in [0, 4]:
                 return False
