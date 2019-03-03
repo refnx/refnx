@@ -1045,8 +1045,7 @@ QTreeView::branch:open:has-children:has-siblings  {
         </attribute>
         <layout class="QGridLayout" name="gridLayout_8">
          <item row="0" column="0">
-          <widget class="QPlainTextEdit" name="console_text_edit">
-          </widget>
+          <widget class="QPlainTextEdit" name="console_text_edit"/>
          </item>
         </layout>
        </widget>
@@ -1354,6 +1353,17 @@ QTreeView::branch:open:has-children:has-siblings  {
   </action>
  </widget>
  <tabstops>
+  <tabstop>tabWidget</tabstop>
+  <tabstop>treeView</tabstop>
+  <tabstop>paramsSlider</tabstop>
+  <tabstop>add_layer</tabstop>
+  <tabstop>remove_layer</tabstop>
+  <tabstop>do_fit_button</tabstop>
+  <tabstop>add_to_fit_button</tabstop>
+  <tabstop>remove_from_fit_button</tabstop>
+  <tabstop>auto_limits_button</tabstop>
+  <tabstop>use_errors_checkbox</tabstop>
+  <tabstop>currently_fitting</tabstop>
   <tabstop>console_text_edit</tabstop>
  </tabstops>
  <resources>
