@@ -216,7 +216,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         state['currently_fitting'] = fit_list.datasets
 
         with open(os.path.join(experiment_file_name), 'wb') as f:
-            pickle.dump(state, f, 0)
+            pickle.dump(state, f, -1)
 
         self.setWindowTitle('Motofit - ' + experiment_file_name)
 

@@ -51,6 +51,11 @@ class TestReflect(object):
                    [0.3, 0.3], zgrad=False, microslab_max_thickness=1)
 
         s = self.left | a | self.right | self.solvent
+
+        # cause the spline to be evaluated
+        s.sld_profile()
+        assert(a._Spline__cached_interpolator['interp'] is not None)
+
         pkl = pickle.dumps(s)
         r = pickle.loads(pkl)
         assert(isinstance(r, Structure))
