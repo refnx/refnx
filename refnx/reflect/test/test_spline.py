@@ -1,3 +1,4 @@
+import pickle
 import numpy as np
 from numpy.testing import (assert_allclose, assert_equal, assert_almost_equal,
                            assert_)
@@ -44,6 +45,15 @@ class TestReflect(object):
         s.solvent = self.solvent
         # calculate an SLD profile
         s.sld_profile()
+
+    def test_pickle(self):
+        a = Spline(100, [2, 3],
+                   [0.3, 0.3], zgrad=False, microslab_max_thickness=1)
+
+        s = self.left | a | self.right | self.solvent
+        pkl = pickle.dumps(s)
+        r = pickle.loads(pkl)
+        assert(isinstance(r, Structure))
 
     def test_spline_solvation(self):
         a = Spline(100, [2],
