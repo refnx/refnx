@@ -58,7 +58,7 @@ def test_add_spline_save(qtbot, tmpdir):
 
 def save_and_reload_experiment(app, tmpdir):
     # save and reopen experiment.
-    sf = pjoin(tmpdir, 'experiment1.mtft')
+    sf = pjoin(str(tmpdir), 'experiment1.mtft')
     # this is just to make sure that the file exists
     with open(sf, 'wb') as f:
         f.write(b'sksij')

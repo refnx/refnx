@@ -9,10 +9,18 @@ matrix:
         - os: osx
           language: generic
           env: PY=3.7
+
+
 addons:
     apt:
         packages:
             - libhdf5-serial-dev
+
+
+# for pyqt testing
+services:
+  - xvfb
+
 
 before_install:
     - echo $TRAVIS_OS_NAME
@@ -41,6 +49,7 @@ before_install:
     # added W504 July18 because it starts to raise error in 3.7
     - flake8 --ignore=F401,W504 --exclude=refnx/_lib/emcee,refnx/reflect/_app/resources_rc.py refnx
 
+
 script:
     # definitely want to test the _creflect module on travis.
     - export REQUIRE_C=1
@@ -48,6 +57,7 @@ script:
     - python setup.py test
     - pip install .
     - sphinx-build -b html doc doc/html
+
 
 notifications:
     # Perhaps we should have status emails sent to the mailing list, but
