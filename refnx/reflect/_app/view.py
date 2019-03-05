@@ -39,7 +39,7 @@ from refnx.reflect._code_fragment import code_fragment
 from refnx._lib import unique, flatten, PoolWrapper
 
 
-matplotlib.use('Qt5Agg')
+# matplotlib.use('Qt5Agg')
 UI_LOCATION = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                            'ui')
 
