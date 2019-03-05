@@ -69,3 +69,6 @@ Details of changes made to refnx
 - fixed font size in pyqt GUI.
 - script export from pyqt GUI can use either multiprocessing or MPI for
   parallelisation during MCMC sampling.
+- speeded up reflectivity calculation, following on from changes made in 0.1.4
+  (if the imaginary part of a complex sqrt argument is very small, then the C++
+  calculation takes a lot longer).
