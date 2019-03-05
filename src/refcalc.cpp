@@ -61,7 +61,10 @@ However, the following remains the fastest calculation  so far.
 
 #define NUM_CPUS 4
 #define PI 3.14159265358979323846
-#define TINY 2.4e-308
+// TINY is required to make sure a complex sqrt takes the correct branch
+// if you choose too small a number for tiny then the complex square root
+// takes a lot longer.
+#define TINY 1e-30
 
 using namespace std;
 
