@@ -24,7 +24,7 @@ jobs:
       versionSpec: '$(python.version)'
       architecture: 'x64'
 
-  - script: python -m pip install --upgrade pip && pip install numpy scipy cython traitlets ipython ipywidgets pandas h5py xlrd pytest tqdm corner matplotlib
+  - script: python -m pip install --upgrade pip && pip install numpy scipy cython traitlets ipython ipywidgets pandas h5py xlrd pytest tqdm corner matplotlib pyqt5 pytest-qt periodictable
   - script: pip install git+https://github.com/pymc-devs/pymc3
 
     displayName: 'Install dependencies'

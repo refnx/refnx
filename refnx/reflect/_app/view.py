@@ -39,7 +39,7 @@ from refnx.reflect._code_fragment import code_fragment
 from refnx._lib import unique, flatten, PoolWrapper
 
 
-matplotlib.use('Qt5Agg')
+# matplotlib.use('Qt5Agg')
 UI_LOCATION = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                            'ui')
 
@@ -347,7 +347,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
                     if data_object is not None:
                         data_objects.append(data_object)
                         fnames.append(file)
-                except RuntimeError:
+                except Exception:
                     continue
 
         loaded_data_objects = [data_object.name for data_object

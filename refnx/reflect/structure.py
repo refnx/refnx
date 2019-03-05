@@ -735,7 +735,7 @@ class Slab(Component):
 
 
 class Stack(UserList, Component):
-    """
+    r"""
     A series of Components to be considered as one. When part of a Structure
     the Stack can represent a multilayer by setting the `repeats` attribute.
 
