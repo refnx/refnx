@@ -34,7 +34,7 @@ before_install:
     - source activate conda-refnx
     - conda install --yes numpy scipy h5py cython pandas xlrd flake8 pytest ipywidgets IPython matplotlib traitlets pyqt
     - conda install --yes numpydoc sphinx jupyter pandoc nbconvert
-    - pip install uncertainties ptemcee corner nbsphinx jupyter-sphinx sphinx_rtd_theme tqdm pytest-qt
+    - pip install uncertainties ptemcee corner nbsphinx jupyter-sphinx sphinx_rtd_theme tqdm pytest-qt periodictable
     - pip install git+https://github.com/pymc-devs/pymc3
 
     # gradually expand flake8 to all of codebase
