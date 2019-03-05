@@ -1,5 +1,4 @@
 # cython: language_level=3, boundscheck=False
-from __future__ import division, absolute_import
 from multiprocessing import cpu_count
 import numpy as np
 
@@ -64,72 +63,96 @@ cpdef np.ndarray abeles(np.ndarray x,
     return y
 
 """
-# Slower than the python version!
+cdef extern from "<complex.h>":
+    double complex sqrt(double complex)
+    double complex exp(double complex)
+    double complex conj(double complex)
+    double abs(double)
+
+
+import numpy as np
+cimport numpy as cnp
+cimport cython
+from cython.view cimport array as cvarray
+
+DTYPE = np.float64
+ctypedef cnp.float64_t DTYPE_t
+TINY = 1e-30
+
 @cython.boundscheck(False)
 @cython.cdivision(True)
-def reflect(np.ndarray[DTYPE_t, ndim=1] x,
-             np.ndarray[DTYPE_t, ndim=2] w,
-             double scale=1.0, double bkg=0.):
+def reflect(double[:] x not None,
+            cnp.ndarray[cnp.float64_t, ndim=2] w,
+            double scale=1.0, double bkg=0.):
     if w.shape[1] != 4 or w.shape[0] < 2:
         raise ValueError("Parameters for reflection must have shape (>2, 4)")
-    assert w.dtype == np.float64 and x.dtype == np.float64
     cdef int nlayers = w.shape[0] - 2
     cdef int npoints = x.shape[0]
     cdef int layer
-    cdef np.ndarray[np.complex128_t, ndim=1] y = np.zeros(npoints,
+    cdef int i
+    cdef int m
+    cdef double complex M_4PI = 4 * np.pi
+    cdef double complex I = 1j
+    cdef double complex rj, k, k_next, q2, rough, mi00, mi01, mi10, mi11, thick
+    cdef double complex mrtot00, mrtot01, mrtot10, mrtot11, p0, p1, beta, arg
+
+    cdef cnp.ndarray[cnp.complex128_t, ndim=1] y = np.zeros(npoints,
                              np.complex128)
-    cdef np.ndarray[np.complex128_t, ndim=2] kn = np.zeros(
-                            (npoints, w.shape[0]), np.complex128)
-    cdef np.ndarray[np.complex128_t, ndim=1] rj = np.zeros(
-                            (npoints), np.complex128)
-    cdef np.ndarray[np.complex128_t, ndim=1] SLD = np.zeros(
+    cdef cnp.ndarray[cnp.complex128_t, ndim=1] roughsqr = np.empty(nlayers + 1,
+                             np.complex128)
+
+    cdef cnp.ndarray[cnp.complex128_t, ndim=1] SLD = np.zeros(
                             (w.shape[0]), np.complex128)
-    cdef np.ndarray[np.complex128_t, ndim=1] mi00 = np.ones_like(y, np.complex128)
-    cdef np.ndarray[np.complex128_t, ndim=1] mi01 = np.zeros_like(y, np.complex128)
-    cdef np.ndarray[np.complex128_t, ndim=1] mi10 = np.zeros_like(y, np.complex128)
-    cdef np.ndarray[np.complex128_t, ndim=1] mi11 = np.ones_like(y, np.complex128)
-    cdef np.ndarray[np.complex128_t, ndim=1] mrtot00 = np.ones_like(y, np.complex128)
-    cdef np.ndarray[np.complex128_t, ndim=1] mrtot01 = np.zeros_like(y, np.complex128)
-    cdef np.ndarray[np.complex128_t, ndim=1] mrtot10 = np.zeros_like(y, np.complex128)
-    cdef np.ndarray[np.complex128_t, ndim=1] mrtot11 = np.ones_like(y, np.complex128)
-    cdef np.ndarray[np.complex128_t, ndim=1] p0 = np.zeros_like(y, np.complex128)
-    cdef np.ndarray[np.complex128_t, ndim=1] p1 = np.zeros_like(y, np.complex128)
-    cdef np.ndarray[np.complex128_t, ndim=1] k = np.zeros_like(y, np.complex128)
-    cdef np.ndarray[np.complex128_t, ndim=1] k_next = np.zeros_like(y, np.complex128)
 
-    SLD[:] += 4 * np.pi * (w[:, 1] - w[0, 1] + 1j * (w[:, 2])) * 1.e-6
-    kn[:] = np.sqrt(x.flatten()[:, np.newaxis]**2 / 4. - SLD)
+    cdef double[:, :] wbuf = w
+    cdef double complex[:] SLDbuf = SLD
+    cdef double complex[:] roughbuf = roughsqr
 
-    k = kn[:, 0]
-    for idx in range(1, nlayers + 2):
-        k_next = kn[:, idx]
-        rj = (k - k_next) / (k + k_next)
-        rj *= np.exp(k * k_next * -2. * w[idx, 3] ** 2)
+    for i in range(1, nlayers + 2):
+        SLDbuf[i] = M_4PI * (wbuf[i, 1] - wbuf[0, 1] +
+                             1j * (abs(wbuf[i, 2]) + TINY)) * 1.e-6
+        roughbuf[i - 1] = -2. * wbuf[i, 3] * wbuf[i, 3]
 
-        # work out characteristic matrix of layer
-        if idx - 1:
-            mi00 = np.exp(k * 1j * np.fabs(w[idx - 1, 0]))
-            mi11 = np.exp(k * -1j * np.fabs(w[idx - 1, 0]))
+    for i in range(npoints):
+        q2 = x[i] * x[i] / 4.
+        k = sqrt(q2)
+        for m in range(0, nlayers + 1):
+            k_next = sqrt(q2 - SLDbuf[m + 1])
+            rj = (k - k_next) / (k + k_next) * exp(k * k_next * roughbuf[m])
 
-        mi10 = rj * mi00
-        mi01 = rj * mi11
+            if not m:
+                # characteristic matrix for first interface
+                mrtot00 = 1.
+                mrtot01 = rj
+                mrtot11 = 1.
+                mrtot10 = rj
+            else:
+                # work out the beta for the layer
+                thick = wbuf[m, 0]
+                beta = exp(k * thick * I)
+                # this is the characteristic matrix of a layer
+                mi00 = beta
+                mi11 = 1. / beta
+                mi10 = rj * mi00
+                mi01 = rj * mi11
 
-        # matrix multiply mrtot and mi
-        p0 = mrtot00 * mi00 + mrtot10 * mi01
-        p1 = mrtot00 * mi10 + mrtot10 * mi11
-        mrtot00 = p0
-        mrtot10 = p1
+                # matrix multiply
+                p0 = mrtot00 * mi00 + mrtot10 * mi01
+                p1 = mrtot00 * mi10 + mrtot10 * mi11
+                mrtot00 = p0
+                mrtot10 = p1
 
-        p0 = mrtot01 * mi00 + mrtot11 * mi01
-        p1 = mrtot01 * mi10 + mrtot11 * mi11
+                p0 = mrtot01 * mi00 + mrtot11 * mi01
+                p1 = mrtot01 * mi10 + mrtot11 * mi11
 
-        mrtot01 = p0
-        mrtot11 = p1
+                mrtot01 = p0
+                mrtot11 = p1
 
-        k = k_next
+            k = k_next
 
-    y = (mrtot01 * np.conj(mrtot01)) / (mrtot00 * np.conj(mrtot00)))
-    y *= scale
-    y += bkg
+        y[i] = (mrtot01 / mrtot00)
+        y[i] = y[i] * conj(y[i])
+        y[i] *= scale
+        y[i] += bkg
     return y.real
 """

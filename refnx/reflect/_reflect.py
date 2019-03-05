@@ -1,8 +1,8 @@
 import numpy as np
 
 
-TINY = np.finfo(np.float64).tiny
-
+# TINY = np.finfo(np.float64).tiny
+TINY = 1e-30
 
 """
 import numpy as np
@@ -11,6 +11,18 @@ w = np.array([[0, 2.07, 0, 0],
               [100, 3.47, 0, 3],
               [500, -0.5, 0.00001, 3],
               [0, 6.36, 0, 3]])
+"""
+
+"""
+The timings for the reflectivity calculation above are (6/3/2019):
+
+_creflect.abeles = 254 us
+_reflect.abeles = 433 us
+the alternative cython implementation is 572 us.
+
+If TINY is made too small, then the C implementations start too suffer because
+the sqrt calculation takes too long. The C implementation is only just ahead of
+the python implementation!
 """
 
 
