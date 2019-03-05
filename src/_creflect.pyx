@@ -63,7 +63,6 @@ cpdef np.ndarray abeles(np.ndarray x,
     return y
 
 """
-# Slower than the python version!
 cdef extern from "<complex.h>":
     double complex sqrt(double complex)
     double complex exp(double complex)
@@ -78,7 +77,7 @@ from cython.view cimport array as cvarray
 
 DTYPE = np.float64
 ctypedef cnp.float64_t DTYPE_t
-TINY = 1e-10
+TINY = 1e-30
 
 @cython.boundscheck(False)
 @cython.cdivision(True)
