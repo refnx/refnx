@@ -1,7 +1,6 @@
 import os.path
 from os.path import join as pjoin
 
-from PyQt5.QtCore import *
 from PyQt5 import QtWidgets, QtCore, QtGui
 
 from refnx.reflect._app.view import MotofitMainWindow
