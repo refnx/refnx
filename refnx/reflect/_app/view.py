@@ -347,7 +347,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
                     if data_object is not None:
                         data_objects.append(data_object)
                         fnames.append(file)
-                except (RuntimeError, UnicodeDecodeError):
+                except Exception:
                     continue
 
         loaded_data_objects = [data_object.name for data_object

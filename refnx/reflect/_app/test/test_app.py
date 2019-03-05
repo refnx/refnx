@@ -34,9 +34,6 @@ def test_myapp(qtbot, tmpdir):
     myapp2 = save_and_reload_experiment(myapp, tmpdir)
     model2 = myapp2.treeModel
     assert(len(model2.datastore) == 2)
-    ###########################################
-
-    myapp.on_actionLoad_Data_triggered()
 
 
 def test_add_spline_save(qtbot, tmpdir):
