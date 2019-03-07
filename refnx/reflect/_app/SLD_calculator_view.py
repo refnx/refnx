@@ -29,6 +29,9 @@ class SLDcalculatorView(QtWidgets.QDialog):
         except (pyparsing.ParseException, TypeError, ValueError):
             return
 
+        if not len(formula.atoms):
+            return
+
         density = self.ui.mass_density.value()
         molecular_volume = self.ui.molecular_volume.value()
         neutron_wavelength = self.ui.neutron_wavelength.value()
@@ -49,23 +52,32 @@ class SLDcalculatorView(QtWidgets.QDialog):
                 volume = np.nan
             self.ui.molecular_volume.setValue(volume)
 
-        real, imag, mu = pt.neutron_sld(formula,
-                                        density=density,
-                                        wavelength=neutron_wavelength)
+        try:
+            real, imag, mu = pt.neutron_sld(formula,
+                                            density=density,
+                                            wavelength=neutron_wavelength)
 
-        self.ui.neutron_SLD.setText(
-            '%.6g' %
-            real +
-            ' + ' +
-            '%.6g' %
-            imag +
-            'j')
+            self.ui.neutron_SLD.setText(
+                '%.6g' %
+                real +
+                ' + ' +
+                '%.6g' %
+                imag +
+                'j')
+        except Exception:
+            self.ui.neutron_SLD.setText('NaN')
 
-        real, imag = pt.xray_sld(formula,
-                                 density=density,
-                                 energy=xray_energy)
+        try:
+            real, imag = pt.xray_sld(formula,
+                                     density=density,
+                                     energy=xray_energy)
 
-        self.ui.xray_SLD.setText('%.6g' % real + ' + ' + '%.6g' % imag + 'j')
+            self.ui.xray_SLD.setText('%.6g' % real + ' + ' +
+                                     '%.6g' % imag + 'j')
+        except Exception:
+            self.ui.xray_SLD.setText('NaN')
+            # sometimes the X-ray and neutron SLD calc can fail, if there are
+            # no scattering factors
 
     @pyqtSlot(float)
     def on_mass_density_valueChanged(self, arg_1):
