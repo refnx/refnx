@@ -72,3 +72,5 @@ Details of changes made to refnx
 - speeded up reflectivity calculation, following on from changes made in 0.1.4
   (if the imaginary part of a complex sqrt argument is very small, then the C++
   calculation takes a lot longer).
+- added a plot method to PlatypusNexus
+
