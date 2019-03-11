@@ -476,6 +476,47 @@ class ReflectNexus(object):
 
         return True
 
+    def plot(self, point=0, fig=None):
+        """
+        Plot a processed spectrum.
+
+        Requires matplotlib be installed.
+
+        Parameters
+        ----------
+        point: int or sequence, optional
+            The spectrum number to be plotted. By default the first spectrum
+            will be plotted. Pass `-1` to plot all spectra at once.
+        fig: Figure instance, optional
+            If `fig` is not supplied then a new figure is created. Otherwise
+            the graph is created on the current axes on the supplied figure.
+
+        Returns
+        -------
+        fig, ax : :class:`matplotlib.Figure`, :class:`matplotlib.Axes`
+            `matplotlib` figure and axes objects.
+
+        """
+        lam, spec, spec_sd, _ = self.spectrum
+
+        import matplotlib.pyplot as plt
+        if fig is None:
+            fig = plt.figure()
+            ax = fig.add_subplot(111)
+        else:
+            ax = fig.gca()
+
+        if hasattr(point, 'len'):
+            for p in point:
+                ax.plot(lam[p], spec[p])
+        elif point == -1:
+            for p in range(len(lam)):
+                ax.plot(lam[p], spec[p])
+        else:
+            ax.plot(lam[point], spec[point])
+
+        return fig, ax
+
     @property
     def spectrum(self):
         return (self.processed_spectrum['m_lambda'],
