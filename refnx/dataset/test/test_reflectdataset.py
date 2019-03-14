@@ -73,6 +73,7 @@ class TestReflectDataset(object):
             dataset1.load(f)
         assert_equal(len(dataset1), 31)
         assert(dataset1.y_err is not None)
+        assert(dataset1.x_err is None)
 
         with open(os.path.join(self.pth, 'dot.aft')) as f:
             dataset1.load(f)
