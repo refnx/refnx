@@ -439,7 +439,7 @@ class Data1D(object):
                         numcols = len(nums)
                     elif len(nums) != numcols:
                         # if the number of columns changes there's an issue
-                            break
+                        break
                     x.append(nums[0])
                     y.append(nums[1])
                     if len(nums) > 2:
