@@ -58,11 +58,6 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
 
         self.error_handler = QtWidgets.QErrorMessage()
 
-        # redirect stdout to a console window
-        console = EmittingStream()
-        sys.stdout = console
-        console.textWritten.connect(self.writeTextToConsole)
-
         #######################################################################
         # Everything ending in 'model' refers to a QtAbstract<x>Model.  These
         # are the basis for GUI elements.  They also contain data.
@@ -157,6 +152,11 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         h = self.ui.treeView.header()
         h.setMinimumSectionSize(100)
         # h.setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeToContents)
+
+        # redirect stdout to a console window
+        console = EmittingStream()
+        sys.stdout = console
+        console.textWritten.connect(self.writeTextToConsole)
 
         print('Session started at:', time.asctime(time.localtime(time.time())))
 
@@ -1980,7 +1980,12 @@ class MySLDGraphs(FigureCanvas):
 
 class EmittingStream(QtCore.QObject):
     # a class for rewriting stdout to a console window
+
     textWritten = QtCore.pyqtSignal(str)
+
+    def __init__(self):
+        QtCore.QObject.__init__(self)
+        # super(EmittingStream, self).__init__()
 
     def write(self, text):
         self.textWritten.emit(str(text))
