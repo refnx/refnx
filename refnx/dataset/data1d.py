@@ -430,7 +430,7 @@ class Data1D(object):
                     nums = [float(tok) for tok in
                             re.split(r"\s|,", line)
                             if len(tok)]
-                    if len(nums) == 0:
+                    if len(nums) in [0, 1]:
                         # might be trailing newlines at the end of the file,
                         # just ignore those
                         continue
@@ -448,8 +448,9 @@ class Data1D(object):
                         x_err.append(nums[3])
                 except ValueError:
                     # you should drop into this if you can't parse tokens into
-                    # a series of floats
-                    break
+                    # a series of floats. But the text may be meta-data, so
+                    # try to carry on.
+                    continue
 
         x.reverse()
         y.reverse()
