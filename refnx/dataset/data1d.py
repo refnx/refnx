@@ -484,6 +484,39 @@ class Data1D(object):
             with open(self.filename) as f:
                 self.load(f)
 
+    def plot(self, fig=None):
+        """
+        Plot the dataset.
+
+        Requires matplotlib be installed.
+
+        Parameters
+        ----------
+        fig: Figure instance, optional
+            If `fig` is not supplied then a new figure is created. Otherwise
+            the graph is created on the current axes on the supplied figure.
+
+        Returns
+        -------
+        fig, ax : :class:`matplotlib.Figure`, :class:`matplotlib.Axes`
+            `matplotlib` figure and axes objects.
+
+        """
+        import matplotlib.pyplot as plt
+
+        if fig is None:
+            fig = plt.figure()
+            ax = fig.add_subplot(111)
+        else:
+            ax = fig.gca()
+
+        if self.y_err is not None:
+            ax.errorbar(self.x, self.y, self.y_err, label=self.name)
+        else:
+            ax.scatter(self.x, self.y, label=self.name)
+
+        return fig, ax
+
     def __add__(self, other):
         """
         Adds two datasets together. Splices the data and trims data in the
