@@ -439,7 +439,7 @@ class Data1D(object):
                         numcols = len(nums)
                     elif len(nums) != numcols:
                         # if the number of columns changes there's an issue
-                            break
+                        break
                     x.append(nums[0])
                     y.append(nums[1])
                     if len(nums) > 2:
@@ -483,6 +483,39 @@ class Data1D(object):
         if self.filename is not None:
             with open(self.filename) as f:
                 self.load(f)
+
+    def plot(self, fig=None):
+        """
+        Plot the dataset.
+
+        Requires matplotlib be installed.
+
+        Parameters
+        ----------
+        fig: Figure instance, optional
+            If `fig` is not supplied then a new figure is created. Otherwise
+            the graph is created on the current axes on the supplied figure.
+
+        Returns
+        -------
+        fig, ax : :class:`matplotlib.Figure`, :class:`matplotlib.Axes`
+            `matplotlib` figure and axes objects.
+
+        """
+        import matplotlib.pyplot as plt
+
+        if fig is None:
+            fig = plt.figure()
+            ax = fig.add_subplot(111)
+        else:
+            ax = fig.gca()
+
+        if self.y_err is not None:
+            ax.errorbar(self.x, self.y, self.y_err, label=self.name)
+        else:
+            ax.scatter(self.x, self.y, label=self.name)
+
+        return fig, ax
 
     def __add__(self, other):
         """
