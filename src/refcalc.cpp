@@ -55,9 +55,9 @@ However, the following remains the fastest calculation  so far.
     #define HAVE_PTHREAD_H
 #endif
 
-#ifdef _OPENMP
-   #include <omp.h>
-#endif
+//#ifdef _OPENMP
+//   #include <omp.h>
+//#endif
 
 #define NUM_CPUS 4
 #define PI 3.14159265358979323846
@@ -163,10 +163,10 @@ void AbelesCalc_ImagAll(int numcoefs,
         rough_sqr[nlayers] = -2 * coefP[7] * coefP[7];
 
 // if you have omp.h, then can do the calculation in parallel.
-#ifdef _OPENMP
-        omp_set_num_threads(workers);
-        #pragma omp parallel for shared(kn_all) private(j, num, den, answer, qq2, MRtotal, MI, temp2)
-#endif
+//#ifdef _OPENMP
+//        omp_set_num_threads(workers);
+//        #pragma omp parallel for shared(kn_all) private(j, num, den, answer, qq2, MRtotal, MI, temp2)
+//#endif
 
         for (j = 0; j < npoints; j++) {
             complex<double> beta, rj;
@@ -427,8 +427,8 @@ is present for parallelisation.
 */
 #if defined HAVE_PTHREAD_H
     AbelesCalc_Imag(numcoefs, coefP, npoints, yP, xP, threads);
-#elif defined _OPENMP
-    AbelesCalc_ImagAll(numcoefs, coefP, npoints, yP, xP, threads);
+//#elif defined _OPENMP
+//    AbelesCalc_ImagAll(numcoefs, coefP, npoints, yP, xP, threads);
 #elif defined _WIN32
     AbelesCalc_Imag(numcoefs, coefP, npoints, yP, xP, threads);
 #else

@@ -56,6 +56,18 @@ before_install:
     # added W504 July18 because it starts to raise error in 3.7
     - flake8 --ignore=F401,W504 --exclude=refnx/_lib/emcee,refnx/reflect/_app/resources_rc.py refnx
 
+    # enable OpenMP support for Apple-clang
+    - |
+      if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
+        brew install libomp
+        export CC=/usr/bin/clang
+        export CXX=/usr/bin/clang++
+        export CXXFLAGS="$CXXFLAGS -Xpreprocessor -fopenmp"
+        export CFLAGS="$CFLAGS -I/usr/local/opt/libomp/include"
+        export CXXFLAGS="$CXXFLAGS -I/usr/local/opt/libomp/include"
+        export LDFLAGS="$LDFLAGS -L/usr/local/opt/libomp/lib -lomp"
+        export DYLD_LIBRARY_PATH=/usr/local/opt/libomp/lib
+      fi
 
 script:
     # definitely want to test the _creflect module on travis.
