@@ -36,7 +36,7 @@ from refnx.analysis import (CurveFitter, Objective,
 from refnx.reflect import SLD, ReflectModel, Slab, Stack, Structure
 from refnx.dataset import Data1D
 from refnx.reflect._code_fragment import code_fragment
-from refnx._lib import unique, flatten, PoolWrapper
+from refnx._lib import unique, flatten, MapWrapper
 
 
 # matplotlib.use('Qt5Agg')
@@ -1045,7 +1045,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         if methods[alg] != 'MCMC':
             try:
                 # workers is added to differential evolution in scipy 1.2
-                with PoolWrapper(-1) as workers:
+                with MapWrapper(-1) as workers:
                     if alg == 'DE':
                         kws['workers'] = workers
                     fitter.fit(method=methods[alg],
