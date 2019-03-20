@@ -73,4 +73,5 @@ Details of changes made to refnx
   (if the imaginary part of a complex sqrt argument is very small, then the C++
   calculation takes a lot longer).
 - added a plot method to PlatypusNexus
+- refactor util.PoolWrapper to util.MapWrapper
 

@@ -4,7 +4,7 @@ from multiprocessing.pool import Pool as PWL
 from pytest import raises as assert_raises
 from numpy.testing import assert_equal, assert_
 
-from refnx._lib.util import flatten, unique, PoolWrapper
+from refnx._lib.util import flatten, unique, MapWrapper
 from refnx._lib._cutil import c_flatten
 
 import numpy as np
@@ -32,14 +32,14 @@ class TestUtil(object):
         assert_equal(num_unique2, num_unique)
 
 
-class TestPoolWrapper(object):
+class TestMapWrapper(object):
 
     def setup_method(self):
         self.input = np.arange(10.)
         self.output = np.sin(self.input)
 
     def test_serial(self):
-        p = PoolWrapper(1)
+        p = MapWrapper(1)
         assert_(p._mapfunc is map)
         assert_(p.pool is None)
         assert_(p._own_pool is False)
@@ -47,7 +47,7 @@ class TestPoolWrapper(object):
         assert_equal(out, self.output)
 
     def test_parallel(self):
-        with PoolWrapper(2) as p:
+        with MapWrapper(2) as p:
             out = p.map(np.sin, self.input)
             assert_equal(list(out), self.output)
 
@@ -64,16 +64,15 @@ class TestPoolWrapper(object):
         err_type = excinfo.type
         assert_((err_type is ValueError) or (err_type is AssertionError))
 
-        # can also set a PoolWrapper up with a Pool instance
+        # can also set a MapWrapper up with a Pool instance
         try:
             p = Pool(2)
-            q = PoolWrapper(p)
+            q = MapWrapper(p.map)
 
             assert_(q._own_pool is False)
-            assert_(isinstance(q.pool, PWL))
             q.close()
 
-            # closing the PoolWrapper shouldn't close the internal pool
+            # closing the MapWrapper shouldn't close the internal pool
             # because it didn't create it
             out = p.map(np.sin, self.input)
             assert_equal(out, self.output)
