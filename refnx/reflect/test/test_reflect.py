@@ -22,6 +22,7 @@ from refnx.analysis import (Transform, Objective,
 from refnx.reflect import (SLD, ReflectModel, MixedReflectModel,
                            reflectivity, Structure, Slab)
 from refnx.dataset import ReflectDataset
+from refnx._lib import MapWrapper
 
 
 # if REQUIRE_C is specified then definitely test C plugins
@@ -335,6 +336,28 @@ class TestReflect(object):
                             (0.4 * indiv1(self.qvals) +
                              0.3 * indiv2(self.qvals) +
                              1e-7))
+
+    def test_parallel_objective(self):
+        # check that a parallel objective works without issue
+        # (it could be possible that parallel evaluation fails at a higher
+        #  level in e.g. emcee or in scipy.optimize.differential_evolution)
+        model = self.model361
+        objective = Objective(model,
+                              (self.qvals361, self.rvals361, self.evals361),
+                              transform=Transform('logY'))
+        p0 = np.array(objective.varying_parameters())
+        cov = objective.covar()
+        walkers = np.random.multivariate_normal(np.atleast_1d(p0),
+                                                np.atleast_2d(cov),
+                                                size=(100))
+        map_logl = np.array(list(map(objective.logl, walkers)))
+        map_chi2 = np.array(list(map(objective.chisqr, walkers)))
+
+        with MapWrapper() as g:
+            mapw_logl = g(objective.logl, walkers)
+            mapw_chi2 = g(objective.chisqr, walkers)
+        assert_equal(mapw_logl, map_logl)
+        assert_equal(mapw_chi2, map_chi2)
 
     def test_reflectivity_fit(self):
         # a smoke test to make sure the reflectivity fit proceeds
