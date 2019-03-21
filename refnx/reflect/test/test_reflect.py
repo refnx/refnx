@@ -337,6 +337,26 @@ class TestReflect(object):
                              0.3 * indiv2(self.qvals) +
                              1e-7))
 
+    def test_parallel_calculator(self):
+        # test that parallel abeles + cabeles work with a mapper
+        q = np.linspace(0.01, 0.5, 10000).reshape(20, 500)
+        p0 = np.array([[0, 2.07, 0, 0],
+                      [100, 3.47, 0, 3],
+                      [500, -0.5, 1e-3, 3],
+                      [0, 6.36, 0, 3]])
+
+        wf = Wrapper_fn(_reflect.abeles, p0)
+        y = map(wf, q)
+        with MapWrapper() as f:
+            z = f(wf, q)
+        assert_equal(z, np.array(list(y)))
+
+        wf = Wrapper_fn(_creflect.abeles, p0)
+        y = map(wf, q)
+        with MapWrapper() as f:
+            z = f(wf, q)
+        assert_equal(z, np.array(list(y)))
+
     def test_parallel_objective(self):
         # check that a parallel objective works without issue
         # (it could be possible that parallel evaluation fails at a higher
@@ -588,3 +608,13 @@ class TestReflect(object):
 
         x = np.linspace(0.005, 0.3, 1000)
         assert_equal(r(x), model(x))
+
+
+class Wrapper_fn(object):
+    def __init__(self, fn, w):
+        self.fn = fn
+        self.w = w
+
+    def __call__(self, x):
+        assert(len(x.shape) == 1)
+        return self.fn(x, self.w)
