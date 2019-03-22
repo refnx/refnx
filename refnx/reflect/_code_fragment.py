@@ -159,8 +159,8 @@ def main(args):
             # Buffering is there so the chain file is not written to
             # continuously
             with open('steps.chain', 'w', buffering=500000) as f:
-                res = fitter.sample(nsteps, pool=workers.map, f=f, verbose=False,
-                                    nthin=nthin);
+                res = fitter.sample(nsteps, pool=workers.map, f=f,
+                                    verbose=False, nthin=nthin);
                 f.flush()
             process_chain(obj, fitter.chain, nburn=nburn)
         else:
