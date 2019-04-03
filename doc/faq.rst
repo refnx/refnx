@@ -12,20 +12,20 @@ Frequently Asked Questions
 A list of common questions.
 
 What's the best way to ask for help or submit a bug report?
-================================================================
+-----------------------------------------------------------
 
 If you have questions on the use of refnx please use the `mailing list`_.
 If you find a bug in the code or documentation, use `GitHub Issues`_.
 
 How should I cite refnx?
-===========================
+------------------------
 
 The full reference for the refnx paper is:
 
     "Nelson, A.R.J. & Prescott, S.W. (2019). J. Appl. Cryst. 52, https://doi.org/10.1107/S1600576718017296."
 
 How is instrumental resolution smearing handled?
-=================================================
+------------------------------------------------
 
 There are a variety of ways that you can account for instrumental resolution
 smearing in refnx. The easiest is if the fractional instrumental resolution,
@@ -47,3 +47,10 @@ The first two options are typically used, only more advanced users will ever
 need to apply the last option. For further details on instrumental resolution
 functions it's a good idea to read the papers by `van Well et al`_, and
 `Nelson et al`_.
+
+What are the units of scattering length density?
+------------------------------------------------
+
+If the scattering length density of a material is
+:math:`(124.88 + 12.85j)\times 10^{-6} A^{-2}` (the X-ray SLD for Au), then you would use 124.88 as
+the real part and 12.85 as the imaginary part.
