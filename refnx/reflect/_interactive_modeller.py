@@ -1244,7 +1244,7 @@ def to_code(objective):
     """
     header = """import numpy as np
 import refnx
-from refnx.analysis import Objective, CurveFitter
+from refnx.analysis import Objective, CurveFitter, Transform
 from refnx.reflect import SLD, Slab, ReflectModel, Structure
 from refnx.dataset import ReflectDataset
 
@@ -1312,7 +1312,9 @@ print(refnx.version.version)
                         .format(p.bounds.lb, p.bounds.ub))
 
     code.append('\n# make the objective')
-    code.append('objective = Objective(model, data)')
+    code.append('transform = {}'.format(repr(objective.transform)))
+    code.append('objective = Objective(model, data, transform=transform,'
+                ' use_weights={})'.format(objective.weighted))
 
     code.append('\n# make the curvefitter')
     code.append('fitter = CurveFitter(objective)')
