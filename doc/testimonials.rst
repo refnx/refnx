@@ -11,7 +11,7 @@ Its full reference is:
 Here is a *very* incomplete list of published scientific studies that have used ``refnx`` :
 
 * `McCluskey, Grant, Smith, et al. (2019) 
-  <https://arxiv.org/abs/1901.05514>`_
+  <https://doi.org/10.1088/2399-6528/ab12a9>`_
 * `McCluskey, Sanchez-Fernandez, Edler, et al. (2019)
   <https://doi.org/10.1039/C9CP00203K>`_
 * `Johnson, Murdoch, et al. (2019)
