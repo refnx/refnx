@@ -662,7 +662,7 @@
    </attribute>
    <widget class="QWidget" name="dockWidgetContents">
     <layout class="QGridLayout" name="gridLayout">
-     <item row="1" column="0">
+     <item row="0" column="0">
       <widget class="QTabWidget" name="tabWidget">
        <property name="enabled">
         <bool>true</bool>
@@ -696,52 +696,6 @@
          <string>Data and Model Trees</string>
         </attribute>
         <layout class="QGridLayout" name="gridLayout_2">
-         <item row="4" column="2">
-          <widget class="QPushButton" name="auto_limits_button">
-           <property name="minimumSize">
-            <size>
-             <width>60</width>
-             <height>60</height>
-            </size>
-           </property>
-           <property name="maximumSize">
-            <size>
-             <width>70</width>
-             <height>70</height>
-            </size>
-           </property>
-           <property name="toolTip">
-            <string>Give varying parameters finite limits</string>
-           </property>
-           <property name="text">
-            <string>Auto
-adjust
-limits</string>
-           </property>
-          </widget>
-         </item>
-         <item row="3" column="2">
-          <widget class="QPushButton" name="remove_from_fit_button">
-           <property name="minimumSize">
-            <size>
-             <width>60</width>
-             <height>60</height>
-            </size>
-           </property>
-           <property name="maximumSize">
-            <size>
-             <width>70</width>
-             <height>70</height>
-            </size>
-           </property>
-           <property name="toolTip">
-            <string>Remove dataset from those being fitted</string>
-           </property>
-           <property name="text">
-            <string>&lt;-</string>
-           </property>
-          </widget>
-         </item>
          <item row="1" column="3">
           <widget class="QPushButton" name="do_fit_button">
            <property name="sizePolicy">
@@ -780,20 +734,6 @@ limits</string>
            </property>
            <property name="shortcut">
             <string>Ctrl+F</string>
-           </property>
-          </widget>
-         </item>
-         <item row="5" column="2">
-          <widget class="QCheckBox" name="use_errors_checkbox">
-           <property name="text">
-            <string>Use
-errors?</string>
-           </property>
-           <property name="checked">
-            <bool>true</bool>
-           </property>
-           <property name="tristate">
-            <bool>false</bool>
            </property>
           </widget>
          </item>
@@ -837,28 +777,6 @@ errors?</string>
            </property>
            <property name="tickPosition">
             <enum>QSlider::NoTicks</enum>
-           </property>
-          </widget>
-         </item>
-         <item row="2" column="2">
-          <widget class="QPushButton" name="add_to_fit_button">
-           <property name="minimumSize">
-            <size>
-             <width>60</width>
-             <height>60</height>
-            </size>
-           </property>
-           <property name="maximumSize">
-            <size>
-             <width>70</width>
-             <height>70</height>
-            </size>
-           </property>
-           <property name="toolTip">
-            <string>Add a dataset to those being fitted</string>
-           </property>
-           <property name="text">
-            <string>-&gt;</string>
            </property>
           </widget>
          </item>
@@ -1019,17 +937,111 @@ QTreeView::branch:open:has-children:has-siblings  {
            </attribute>
           </widget>
          </item>
+         <item row="1" column="2">
+          <widget class="QPushButton" name="add_to_fit_button">
+           <property name="minimumSize">
+            <size>
+             <width>60</width>
+             <height>60</height>
+            </size>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>70</width>
+             <height>70</height>
+            </size>
+           </property>
+           <property name="toolTip">
+            <string>Add a dataset to those being fitted</string>
+           </property>
+           <property name="text">
+            <string>-&gt;</string>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="2">
+          <widget class="QPushButton" name="remove_from_fit_button">
+           <property name="minimumSize">
+            <size>
+             <width>60</width>
+             <height>60</height>
+            </size>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>70</width>
+             <height>70</height>
+            </size>
+           </property>
+           <property name="toolTip">
+            <string>Remove dataset from those being fitted</string>
+           </property>
+           <property name="text">
+            <string>&lt;-</string>
+           </property>
+          </widget>
+         </item>
+         <item row="3" column="2">
+          <widget class="QPushButton" name="auto_limits_button">
+           <property name="minimumSize">
+            <size>
+             <width>60</width>
+             <height>60</height>
+            </size>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>70</width>
+             <height>70</height>
+            </size>
+           </property>
+           <property name="toolTip">
+            <string>Give varying parameters finite limits</string>
+           </property>
+           <property name="text">
+            <string>Auto
+adjust
+limits</string>
+           </property>
+          </widget>
+         </item>
+         <item row="4" column="2">
+          <widget class="QCheckBox" name="use_errors_checkbox">
+           <property name="text">
+            <string>Use
+errors?</string>
+           </property>
+           <property name="checked">
+            <bool>true</bool>
+           </property>
+           <property name="tristate">
+            <bool>false</bool>
+           </property>
+          </widget>
+         </item>
+         <item row="5" column="2">
+          <widget class="QCheckBox" name="only_fitted">
+           <property name="toolTip">
+            <string>Only display the parameters that are being allowed to vary.</string>
+           </property>
+           <property name="text">
+            <string>Only show
+varying?</string>
+           </property>
+          </widget>
+         </item>
         </layout>
-        <zorder>auto_limits_button</zorder>
         <zorder>remove_layer</zorder>
         <zorder>add_layer</zorder>
         <zorder>paramsSlider</zorder>
-        <zorder>use_errors_checkbox</zorder>
         <zorder>do_fit_button</zorder>
-        <zorder>remove_from_fit_button</zorder>
-        <zorder>add_to_fit_button</zorder>
         <zorder>treeView</zorder>
         <zorder>currently_fitting</zorder>
+        <zorder>add_to_fit_button</zorder>
+        <zorder>remove_from_fit_button</zorder>
+        <zorder>auto_limits_button</zorder>
+        <zorder>use_errors_checkbox</zorder>
+        <zorder>only_fitted</zorder>
        </widget>
        <widget class="QWidget" name="tab_1">
         <attribute name="title">
@@ -1353,16 +1365,11 @@ QTreeView::branch:open:has-children:has-siblings  {
   </action>
  </widget>
  <tabstops>
-  <tabstop>tabWidget</tabstop>
   <tabstop>treeView</tabstop>
   <tabstop>paramsSlider</tabstop>
   <tabstop>add_layer</tabstop>
   <tabstop>remove_layer</tabstop>
   <tabstop>do_fit_button</tabstop>
-  <tabstop>add_to_fit_button</tabstop>
-  <tabstop>remove_from_fit_button</tabstop>
-  <tabstop>auto_limits_button</tabstop>
-  <tabstop>use_errors_checkbox</tabstop>
   <tabstop>currently_fitting</tabstop>
   <tabstop>console_text_edit</tabstop>
  </tabstops>

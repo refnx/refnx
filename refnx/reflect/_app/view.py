@@ -1103,6 +1103,16 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         self.redraw_data_object_graphs(data_objects)
 
     @QtCore.pyqtSlot(int)
+    def on_only_fitted_stateChanged(self, arg_1):
+        """
+        only display fitted parameters
+        """
+        self.treeFilter.only_fitted = arg_1
+        self.treeFilter._fitted_datasets = (
+            self.currently_fitting_model.datasets)
+        self.treeFilter.invalidateFilter()
+
+    @QtCore.pyqtSlot(int)
     def on_use_errors_checkbox_stateChanged(self, arg_1):
         """
         want to weight by error bars, recalculate chi2

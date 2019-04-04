@@ -1007,9 +1007,13 @@ class TreeModel(QtCore.QAbstractItemModel):
 
 
 class TreeFilter(QtCore.QSortFilterProxyModel):
-    def __init__(self, tree_model, parent=None):
+    def __init__(self, tree_model, parent=None, only_fitted=False):
         super(TreeFilter, self).__init__(parent)
         self.tree_model = tree_model
+        # only_fitted means that only the entries that are varying will be
+        # displayed.
+        self.only_fitted = only_fitted
+        self._fitted_datasets = []
 
     def filterAcceptsRow(self, row, index):
         idx = self.tree_model.index(row, 0, index)
@@ -1047,6 +1051,15 @@ class TreeFilter(QtCore.QSortFilterProxyModel):
             if component_loc == 0 and row in [0, 2, 3, 4]:
                 return False
             if component_loc == len(struc.structure) - 1 and row in [0, 4]:
+                return False
+
+        # only_fitted means that only varying parameters should be displayed
+        if self.only_fitted:
+            # you have to be in the currently fitting list to be shown
+            dataset = find_data_object(idx).data_object
+            if dataset.name not in self._fitted_datasets:
+                return False
+            if isinstance(item, ParNode) and item._data.vary is False:
                 return False
 
         return True
