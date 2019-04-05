@@ -28,7 +28,7 @@ except ValueError:
 MAJOR = 0
 MINOR = 1
 MICRO = 5
-ISRELEASED = False
+ISRELEASED = True
 VERSION = '%d.%d.%d' % (MAJOR, MINOR, MICRO)
 
 
