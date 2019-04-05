@@ -80,3 +80,6 @@ Details of changes made to refnx
 - update testimonials.bib
 - "to code" button in Jupyter interactive modeller respects the transform
   popup.
+
+0.1.6
+-----
