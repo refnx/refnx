@@ -745,9 +745,11 @@ class Stack(UserList, Component):
         A series of Components to initialise the stack with
     name : str
         Name of the Stack
-    repeats : int
+    repeats : number, Parameter
         When viewed from a parent Structure the Components in this Stack will
-        appear to be repeated `repeats` times.
+        appear to be repeated `repeats` times. Internally `repeats` is rounded
+        to the nearest integer before use, allowing it to be used as a fitting
+        parameter.
 
     Notes
     -----
@@ -765,7 +767,9 @@ class Stack(UserList, Component):
         super(Stack, self).__init__()
 
         self.name = name
-        self.repeats = repeats
+        self.repeats = possibly_create_parameter(repeats, 'repeats')
+        self.repeats.bounds.lb = 1
+
         # if you provide a list of components to start with, then initialise
         # the Stack from that
         for c in components:
@@ -782,7 +786,8 @@ class Stack(UserList, Component):
         s = list()
         s.append("{:=>80}".format(''))
 
-        s.append('Stack start: {} repeats'.format(self.repeats))
+        s.append('Stack start: {} repeats'.format(
+            round(abs(self.repeats.value))))
         for component in self:
             s.append(str(component))
         s.append('Stack finish')
@@ -831,10 +836,13 @@ class Stack(UserList, Component):
         if structure is not None:
             self.solvent = structure.solvent
 
+        repeats = round(abs(self.repeats.value))
+
         slabs = np.concatenate([c.slabs(structure=self) for
                                 c in self.components])
-        if self.repeats > 1:
-            slabs = np.concatenate([slabs] * self.repeats)
+
+        if repeats > 1:
+            slabs = np.concatenate([slabs] * repeats)
 
         if hasattr(self, 'solvent'):
             delattr(self, 'solvent')
@@ -856,6 +864,7 @@ class Stack(UserList, Component):
 
         """
         p = Parameters(name='Stack - {0}'.format(self.name))
+        p.append(self.repeats)
         p.extend([component.parameters for component in self.components])
         return p
 

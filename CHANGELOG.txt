@@ -74,4 +74,9 @@ Details of changes made to refnx
   calculation takes a lot longer).
 - added a plot method to PlatypusNexus
 - refactor util.PoolWrapper to util.MapWrapper
-
+- allow the number of Stack repeats to be fittable.
+- GUI option to only display those parameters (and datasets) that are going to
+  be varied in a fit.
+- update testimonials.bib
+- "to code" button in Jupyter interactive modeller respects the transform
+  popup.

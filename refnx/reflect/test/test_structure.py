@@ -212,7 +212,7 @@ class TestStructure(object):
         assert(slabs.shape == (1, 5))
         assert_equal(np.sum(slabs[:, 0]), 55)
         assert_equal(slabs[0, 1], 3.47)
-        stk.repeats = 3
+        stk.repeats.value = 3.2
         slabs = stk.slabs(None)
         assert(slabs.shape == (3, 5))
         assert_equal(np.sum(slabs[:, 0]), 165)
@@ -221,7 +221,7 @@ class TestStructure(object):
         stk |= polymer(110, 3.5)
         assert_equal(len(stk), 2)
         assert(isinstance(stk, Stack))
-        assert(stk.repeats == 3)
+        assert_almost_equal(stk.repeats, 3.2)
         slabs = stk.slabs()
         assert(slabs.shape == (6, 5))
         assert_equal(np.sum(slabs[:, 0]), 495)

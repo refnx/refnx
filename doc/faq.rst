@@ -52,5 +52,12 @@ What are the units of scattering length density?
 ------------------------------------------------
 
 If the scattering length density of a material is
-:math:`(124.88 + 12.85j)\times 10^{-6} A^{-2}` (the X-ray SLD for Au), then you would use 124.88 as
-the real part and 12.85 as the imaginary part.
+:math:`(124.88 + 12.85j)\times 10^{-6} A^{-2}` (the X-ray SLD for Au), then you
+would use 124.88 as the real part and 12.85 as the imaginary part.
+
+What are the 'fronting' and 'backing' media?
+--------------------------------------------
+
+The 'fronting' and 'backing' media are infinite. The 'fronting' medium carries
+the incident beam of radiation, whilst the 'backing' medium will carry the
+transmitted beam away from the interface.
