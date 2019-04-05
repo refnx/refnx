@@ -12,14 +12,9 @@ environment:
     # Note: Because we have to separate the py2 and py3 components due to compiler version, we have a race condition for non-python packages.
     # Not sure how to resolve this, but maybe we should be tracking the VS version in the build string anyway?
     - TARGET_ARCH: x64
-      CONDA_NPY: 115
+      CONDA_NPY: 116
       PYTHON_VERSION: 3.7
-      CONDA_INSTALL_LOCN: C:\\Miniconda36-x64
-
-#    - TARGET_ARCH: x64
-#      CONDA_NPY: 115
-#      PYTHON_VERSION: 2.7
-#      CONDA_INSTALL_LOCN: C:\\Miniconda-x64
+      CONDA_INSTALL_LOCN: C:\\Miniconda37-x64
 
 # We always use a 64-bit machine, but can build x86 distributions
 # with the TARGET_ARCH variable (which is used by CMD_IN_ENV).
@@ -64,7 +59,7 @@ install:
     # Configure the VM.
     - activate test
     - conda install --yes --quiet numpy scipy h5py cython traitlets ipywidgets xlrd pandas pytest pyqt
-    - pip install corner uncertainties matplotlib IPython pytest-qt periodictable
+    - pip install corner uncertainties matplotlib IPython pytest-qt periodictable pyqt5
     - pip install git+https://github.com/pymc-devs/pymc3
 
 build_script:

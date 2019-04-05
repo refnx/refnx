@@ -1114,16 +1114,13 @@ class StackNode(Node):
     def __init__(self, data, model, parent=QtCore.QModelIndex()):
         super(StackNode, self).__init__(data, model, parent)
 
+        # append the number of repeats
+        pn = ParNode(data.repeats, model, parent=self)
+        self.appendChild(pn)
+
         for component in data:
             self.appendChild(
                 component_class(component)(component, model, self))
-
-        validator = QtGui.QIntValidator()
-        validator.setBottom(1)
-        prop_node = PropertyNode('repeats', model, parent=self,
-                                 validators=(validator,))
-        prop_node.attribute_type = int
-        self.appendChild(prop_node)
 
     @property
     def stack(self):
