@@ -20,8 +20,16 @@ class TestParameter(object):
         # simple test of constraint
         x = Parameter(5.)
         y = Parameter(1.)
+
+        y.constraint = x
+        assert(x in y.dependencies())
+
         y.constraint = x * 2.
         assert_equal(y.value, x.value * 2.)
+
+        # parameter should be in y's dependencies
+        assert(x in y._deps)
+        assert(x in y.dependencies())
 
         # if you've constrained a parameter it shouldn't be varying
         assert_(y.vary is False)
@@ -43,6 +51,11 @@ class TestParameter(object):
         # check that nested circular constraints aren't allowed
         with raises(ValueError):
             x.constraint = z
+
+        # z = x + y --> z = x + 2*x
+        # therefore y shouldn't be in z's dependencies, but x should be.
+        assert(x in z.dependencies())
+        assert(not y in z.dependencies())
 
         # absolute value constraint
         y.constraint = abs(x)
