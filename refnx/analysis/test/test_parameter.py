@@ -55,7 +55,7 @@ class TestParameter(object):
         # z = x + y --> z = x + 2*x
         # therefore y shouldn't be in z's dependencies, but x should be.
         assert(x in z.dependencies())
-        assert(not y in z.dependencies())
+        assert(y not in z.dependencies())
 
         # absolute value constraint
         y.constraint = abs(x)
