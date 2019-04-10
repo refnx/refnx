@@ -1058,8 +1058,14 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
                 # user probably aborted the fit
                 # but it's still worth creating a fit curve, so don't return
                 # in this catch block
-                msg(repr(e))
-                print(repr(e))
+                # xk should be the best fit so far.
+                text = e.args[0]
+                xk = e.args[1]
+
+                msg(repr(text))
+                print(repr(text))
+
+                objective.setp(xk)
                 print(objective)
             except Exception as e:
                 # Typically shown when sensible limits weren't provided
@@ -1669,6 +1675,7 @@ class ProgressCallback(QtWidgets.QDialog):
         self.ui.timer.display(float(self.elapsed))
         self.ui.buttonBox.rejected.connect(self.abort)
         self.objective = objective
+        self.iterations = 0
 
     def abort(self):
         self.abort_flag = True
@@ -1677,6 +1684,8 @@ class ProgressCallback(QtWidgets.QDialog):
         # a callback for scipy.optimize.minimize, which enters
         # every iteration.
         new_time = time.time()
+        self.iterations += 1
+
         if new_time - self.last_time > 1:
             # gp = self.dataset.graph_properties
             # if gp.line2Dfit is not None:
@@ -1688,11 +1697,14 @@ class ProgressCallback(QtWidgets.QDialog):
             self.ui.timer.display(float(self.elapsed))
             self.last_time = new_time
 
-            text = 'Chi2 : %f' % self.objective.chisqr(xk)
+            text = 'Chi2 : {}\nIterations : {}'.format(
+                self.objective.chisqr(xk),
+                self.iterations)
+
             self.ui.values.setPlainText(text)
             QtWidgets.QApplication.processEvents()
             if self.abort_flag:
-                raise RuntimeError("WARNING: FIT WAS TERMINATED EARLY")
+                raise RuntimeError("WARNING: FIT WAS TERMINATED EARLY", xk)
 
         return self.abort_flag
 
