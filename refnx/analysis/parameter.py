@@ -415,10 +415,13 @@ class BaseParameter(object):
         dep_list = []
         for _dep in self._deps:
             if isinstance(_dep, Parameter):
-                dep_list.append(_dep)
+                if _dep.constraint is not None:
+                    dep_list.append(_dep.dependencies())
+                else:
+                    dep_list.append(_dep)
             if isinstance(_dep, (_UnaryOp, _BinaryOp)):
                 dep_list.append(_dep.dependencies())
-        return dep_list
+        return list(flatten(dep_list))
 
     def __str__(self):
         """Returns printable representation of a Parameter object."""
@@ -659,6 +662,7 @@ class Parameter(BaseParameter):
 
     @constraint.setter
     def constraint(self, expr):
+        self._deps = []
         if expr is None:
             value = self.value
             self._constraint = None
@@ -668,8 +672,9 @@ class Parameter(BaseParameter):
         if id(self) in [id(dep) for dep in flatten(_expr.dependencies())]:
             raise ValueError("Your constraint contains a circular dependency")
         self._constraint = _expr
-        for _dep in flatten(_expr.dependencies()):
-            self._deps.append(_dep)
+        if isinstance(expr, Parameter):
+            self._deps.append(expr)
+        self._deps.extend(flatten(_expr.dependencies()))
         self._vary = False
 
     def setp(self, value=None, vary=None, bounds=None, constraint=None):

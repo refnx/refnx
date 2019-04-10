@@ -882,6 +882,8 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         if isinstance(host, StructureNode) and idx in [0, len(host._data) - 1]:
             return msg("You can't remove the fronting or backing media")
 
+        # TODO: unlink any parameters that might depend on this component?
+
         # all checking done, remove a layer
         host.remove_component(idx)
 
@@ -1566,14 +1568,28 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
 
         # only redraw if you're altering values
         # otherwise we'd be performing continual updates of the model
-        if top_left.column() != 1:
-            return
+        if (top_left.column() == 1 and isinstance(node, ParNode) and
+                len(role) and role[0] == QtCore.Qt.EditRole):
+            param = node.parameter
+            wipe_update = [find_data_object(top_left).data_object]
 
-        hierarchy = node.hierarchy()
-        for n in hierarchy:
-            if isinstance(n, DataObjectNode):
-                self.clear_data_object_uncertainties([n.data_object])
-                self.update_gui_model([n.data_object])
+            # find if there are dependent parameters on the original
+            # parameter. There's an argument for doing this in the treeModel,
+            # the model is normally responsible for manipulating data. However,
+            # if we do it here then we only need to redraw once.
+            ds = self.treeModel.datastore
+            for do in ds:
+                model = do.model
+                cpars = model.parameters.constrained_parameters()
+                for cpar in cpars:
+                    deps = cpar.dependencies()
+                    if param in deps:
+                        wipe_update.append(do)
+                        break
+
+            wipe_update = list(unique(wipe_update))
+            self.clear_data_object_uncertainties(wipe_update)
+            self.update_gui_model(wipe_update)
 
     def calculate_chi2(self, data_objects):
         # calculate chi2 for all the data objects
