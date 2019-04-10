@@ -90,3 +90,6 @@ Details of changes made to refnx
 - When a dataset/component/structure containing a master parameter (i.e. a
   parameter to which other parameters are constrained to) is removed, the GUI
   now unlinks those dependent parameters from the master parameter.
+- display number of iterations in GUI progress box. If fit is aborted put best
+  fit so far into Objective that's being fitted.
+
