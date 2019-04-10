@@ -1574,7 +1574,9 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
             wipe_update = [find_data_object(top_left).data_object]
 
             # find if there are dependent parameters on the original
-            # parameter
+            # parameter. There's an argument for doing this in the treeModel,
+            # the model is normally responsible for manipulating data. However,
+            # if we do it here then we only need to redraw once.
             ds = self.treeModel.datastore
             for do in ds:
                 model = do.model

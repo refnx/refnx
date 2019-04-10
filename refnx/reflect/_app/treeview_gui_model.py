@@ -380,8 +380,14 @@ class StructureNode(Node):
 
     def remove_component(self, row):
         self._model.beginRemoveRows(self.index, row, row)
+
+        # remove all dependent parameters (either in this dataset or elsewhere)
+        # this has to be done before it's popped from the Structure.
+        self._model.unlink_dependent_parameters(self.child(row))
+
         self.structure.pop(row)
         self.popChild(row)
+
         self._model.endRemoveRows()
 
     def move_component(self, src, dst):
@@ -481,6 +487,11 @@ class ReflectModelNode(Node):
         # going down to a single reflectmodel
         if len(structures) == 2:
             self._model.beginRemoveRows(self.index, row, row)
+            # remove all dependent parameters (either in this dataset or
+            # elsewhere)
+            # do this before the Structure is popped.
+            self._model.unlink_dependent_parameters(self.child(row))
+
             structures.pop(row - 3)
             scales.pop(row - 3)
             sf = possibly_create_parameter(scales[0], name='scale')
@@ -503,6 +514,11 @@ class ReflectModelNode(Node):
         # you're not down to a single structure, so there must have been more
         # than 2 structures
         self._model.beginRemoveRows(self.index, row, row)
+
+        # remove all dependent parameters (either in this dataset or elsewhere)
+        # do this before the Structure is popped.
+        self._model.unlink_dependent_parameters(self.child(row))
+
         # pop the structure and scale factor nodes
         self.popChild(row)
         structures.pop(row - 3)
@@ -759,9 +775,16 @@ class ContainerNode(Node):
             return
 
         self._model.beginRemoveRows(self.index, row, row)
+
+        # remove all dependent parameters (either in this dataset or elsewhere)
+        # do this before the data_object is popped.
+        self._model.unlink_dependent_parameters(
+            self._model.data_object_node(name))
+
         # remove from the backing datastore and pop from the nodelist
         self.datastore.remove_dataset(name)
         self.popChild(row)
+
         self._model.endRemoveRows()
 
     def refresh(self):
@@ -1004,6 +1027,33 @@ class TreeModel(QtCore.QAbstractItemModel):
 
     def refresh(self):
         self._rootnode.refresh()
+
+    def unlink_dependent_parameters(self, node):
+        # if a dataset, or component, is removed which contains a 'master'
+        # parameter, this method iterates through all dataobjects and removes
+        # all constraints for parameters (on all datasets) that were linked to
+        # those master parameters.
+
+        # all the data_object nodes
+        dons = self._rootnode._children
+
+        if isinstance(node, DataObjectNode):
+            # removing a dataset
+            o_params = node.data_object.model.parameters.flattened()
+        elif isinstance(node, ComponentNode):
+            o_params = node.component.parameters.flattened()
+        elif isinstance(node, StructureNode):
+            o_params = node.structure.parameters.flattened()
+
+        # iterate through dataobjects and see if any parameters depend on
+        # any of these model parameters
+        for don in dons:
+            do = don.data_object
+            model_pars = do.model.parameters.flattened()
+            for mp in model_pars:
+                if set(mp.dependencies()).intersection(o_params):
+                    mp.constraint = None
+            # TODO: investigate whether a dataChanged emit is necessary.
 
 
 class TreeFilter(QtCore.QSortFilterProxyModel):
