@@ -83,3 +83,10 @@ Details of changes made to refnx
 
 0.1.6
 -----
+- When parameters are linked in the refnx GUI only the dataset containing the
+  master parameter was being updated (reflectivity/SLD curves) when the master
+  was changed. Now all datasets that have parameters linked to the master
+  parameter (a constraint) are updated.
+- When a dataset/component/structure containing a master parameter (i.e. a
+  parameter to which other parameters are constrained to) is removed, the GUI
+  now unlinks those dependent parameters from the master parameter.
