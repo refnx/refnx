@@ -1314,6 +1314,9 @@ varying?</string>
    </property>
   </action>
   <action name="actionL_BFGS_B">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>L-BFGS-B</string>
    </property>
