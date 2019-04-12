@@ -129,6 +129,9 @@ info = {
         'author_email': 'andyfaff+refnx@gmail.com',
         'license': 'BSD',
         'url': 'https://github.com/refnx/refnx',
+        'project_urls': {"Bug Tracker": "https://github.com/refnx/refnx/issues",
+                         "Documentation": "https://refnx.readthedocs.io/en/latest/",
+                         "Source Code": "https://github.com/refnx/refnx"},
         'platforms': ["Windows", "Linux", "Solaris", "Mac OS-X", "Unix"],
         'classifiers': [
         'Development Status :: 4 - Beta',
