@@ -1044,6 +1044,8 @@ class TreeModel(QtCore.QAbstractItemModel):
             o_params = node.component.parameters.flattened()
         elif isinstance(node, StructureNode):
             o_params = node.structure.parameters.flattened()
+        elif isinstance(node, StackNode):
+            o_params = node.stack.parameters.flattened()
 
         # iterate through dataobjects and see if any parameters depend on
         # any of these model parameters
