@@ -94,4 +94,4 @@ Details of changes made to refnx
   fit so far into Objective that's being fitted.
 - fixed crash resulting from the use of a comma when entering a floating point
   number. Entering '3,1' would crash the gui, using '3.1' would work but be
-  displayed as '3,1'. The use of a dot as a decimal point is now enforced.  
+  displayed as '3,1'. The use of a dot as a decimal point is now enforced.
