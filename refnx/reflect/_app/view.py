@@ -301,6 +301,10 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
             self.ui.actionMCMC.setChecked(True)
         elif self.settings.fitting_algorithm == 'L-BFGS-B':
             self.ui.actionL_BFGS_B.setChecked(True)
+        elif self.settings.fitting_algorithm == 'Dual Annealing':
+            self.ui.actionDual_Annealing.setChecked(True)
+        elif self.settings.fitting_algorithm == 'SHGO':
+            self.ui.actionSHGO.setChecked(True)
 
         self.settransformoption(self.settings.transformdata)
 
@@ -564,37 +568,48 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         with open(suggested_name, 'w') as f:
             f.write(code)
 
+    def select_fitting_algorithm(self, method):
+        meth = {'LM': self.ui.actionLevenberg_Marquardt,
+                'MCMC': self.ui.actionMCMC,
+                'L-BFGS-B': self.ui.actionL_BFGS_B,
+                'SHGO': self.ui.actionSHGO,
+                'dual_annealing': self.ui.actionDual_Annealing,
+                'DE': self.ui.actionDifferential_Evolution
+                }
+        self.settings.fitting_algorithm = method
+        meth.pop(method)
+        for k, v in meth.items():
+            v.setChecked(False)
+
     @QtCore.pyqtSlot()
     def on_actionDifferential_Evolution_triggered(self):
         if self.ui.actionDifferential_Evolution.isChecked():
-            self.settings.fitting_algorithm = 'DE'
-            self.ui.actionLevenberg_Marquardt.setChecked(False)
-            self.ui.actionMCMC.setChecked(False)
-            self.ui.actionL_BFGS_B.setChecked(False)
+            self.select_fitting_algorithm('DE')
 
     @QtCore.pyqtSlot()
     def on_actionMCMC_triggered(self):
         if self.ui.actionMCMC.isChecked():
-            self.settings.fitting_algorithm = 'MCMC'
-            self.ui.actionLevenberg_Marquardt.setChecked(False)
-            self.ui.actionDifferential_Evolution.setChecked(False)
-            self.ui.actionL_BFGS_B.setChecked(False)
+            self.select_fitting_algorithm('MCMC')
+
+    @QtCore.pyqtSlot()
+    def on_actionDual_Annealing_triggered(self):
+        if self.ui.actionDual_Annealing.isChecked():
+            self.select_fitting_algorithm('dual_annealing')
+
+    @QtCore.pyqtSlot()
+    def on_actionSHGO_triggered(self):
+        if self.ui.actionSHGO.isChecked():
+            self.select_fitting_algorithm('SHGO')
 
     @QtCore.pyqtSlot()
     def on_actionLevenberg_Marquardt_triggered(self):
         if self.ui.actionLevenberg_Marquardt.isChecked():
-            self.settings.fitting_algorithm = 'LM'
-            self.ui.actionDifferential_Evolution.setChecked(False)
-            self.ui.actionMCMC.setChecked(False)
-            self.ui.actionL_BFGS_B.setChecked(False)
+            self.select_fitting_algorithm('LM')
 
     @QtCore.pyqtSlot()
     def on_actionL_BFGS_B_triggered(self):
         if self.ui.actionL_BFGS_B.isChecked():
-            self.settings.fitting_algorithm = 'L-BFGS-B'
-            self.ui.actionDifferential_Evolution.setChecked(False)
-            self.ui.actionMCMC.setChecked(False)
-            self.ui.actionLevenberg_Marquardt.setChecked(False)
+            self.select_fitting_algorithm('L-BFGS-B')
 
     def change_Q_range(self, qmin, qmax, numpnts):
         data_object_node = self.treeModel.data_object_node('theoretical')
@@ -1036,6 +1051,8 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         methods = {'DE': 'differential_evolution',
                    'LM': 'least_squares',
                    'L-BFGS-B': 'L-BFGS-B',
+                   'dual_annealing': 'dual_annealing',
+                   'SHGO': 'shgo',
                    'MCMC': 'MCMC'}
 
         # least squares doesnt have a callback

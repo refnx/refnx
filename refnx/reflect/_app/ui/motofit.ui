@@ -584,6 +584,8 @@
      <addaction name="actionDifferential_Evolution"/>
      <addaction name="actionLevenberg_Marquardt"/>
      <addaction name="actionL_BFGS_B"/>
+     <addaction name="actionDual_Annealing"/>
+     <addaction name="actionSHGO"/>
      <addaction name="actionMCMC"/>
     </widget>
     <widget class="QMenu" name="menuFit_as">
@@ -1286,7 +1288,7 @@ varying?</string>
   </action>
   <action name="actionMCMC">
    <property name="checkable">
-    <bool>true</bool>
+    <bool>false</bool>
    </property>
    <property name="text">
     <string>MCMC</string>
@@ -1364,6 +1366,22 @@ varying?</string>
    </property>
    <property name="toolTip">
     <string>Export parameters to a text file</string>
+   </property>
+  </action>
+  <action name="actionDual_Annealing">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Dual Annealing</string>
+   </property>
+  </action>
+  <action name="actionSHGO">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>SHGO</string>
    </property>
   </action>
  </widget>
