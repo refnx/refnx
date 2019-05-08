@@ -98,3 +98,5 @@ Details of changes made to refnx
 
 0.1.7
 -----
+- print human readable output when fitting with the Jupyter interactive
+  modeller.
