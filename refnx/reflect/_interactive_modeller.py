@@ -1123,7 +1123,7 @@ class Motofit(object):
         # self.model_view.refresh()
         self.set_model(self.model)
 
-        self._print(repr(self.objective))
+        self._print(str(self.objective))
 
     def _to_code(self, change=None):
         self._print(self.code)
