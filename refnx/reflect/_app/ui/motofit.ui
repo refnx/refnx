@@ -1290,6 +1290,9 @@ varying?</string>
    <property name="checkable">
     <bool>false</bool>
    </property>
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <property name="text">
     <string>MCMC</string>
    </property>
@@ -1312,7 +1315,7 @@ varying?</string>
   </action>
   <action name="actiondocumentation">
    <property name="text">
-    <string>documentation</string>
+    <string>Documentation</string>
    </property>
   </action>
   <action name="actionL_BFGS_B">
@@ -1338,7 +1341,7 @@ varying?</string>
   </action>
   <action name="actionLink_Selected">
    <property name="text">
-    <string>Link selected Parameters</string>
+    <string>Link Selected Parameters</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+1</string>
@@ -1346,7 +1349,7 @@ varying?</string>
   </action>
   <action name="actionUnlink_selected_Parameters">
    <property name="text">
-    <string>Unlink selected Parameters</string>
+    <string>Unlink Selected Parameters</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+2</string>
