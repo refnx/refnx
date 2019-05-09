@@ -666,6 +666,7 @@ class DataObjectNode(Node):
                 self._model.beginInsertRows(self.index, 1, 1)
                 self.appendChild(n)
                 self.data_object.model = model
+                self.data_object.constantdq_q = constdq_q
                 self._model.endInsertRows()
             # there is a pre-existing ReflectModel, overwrite.
             elif len(self._children) == 2:
@@ -676,6 +677,7 @@ class DataObjectNode(Node):
                 self._model.beginInsertRows(self.index, 1, 1)
                 self.appendChild(n)
                 self.data_object.model = model
+                self.data_object.constantdq_q = constdq_q
                 self._model.endInsertRows()
 
     def set_dataset(self, dataset):
