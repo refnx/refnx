@@ -543,7 +543,8 @@ class ReflectModelNode(Node):
                                           bkg=orig_model.bkg,
                                           dq=orig_model.dq)
             data_object.model = new_model
-            data_object_node.set_reflect_model(new_model)
+            data_object_node.set_reflect_model(new_model,
+                                               constdq_q=self.constantdq_q)
             return
 
         # already a mixed model
@@ -570,6 +571,7 @@ class ReflectModelNode(Node):
         self._model.endInsertRows()
 
     def setData(self, column, value, role=QtCore.Qt.EditRole):
+        # currently this only deals with constant dq/q
         if role == QtCore.Qt.CheckStateRole and column == 1:
             self.constantdq_q = value == QtCore.Qt.Checked
             data_object_node = find_data_object(self.index)
@@ -583,6 +585,10 @@ class ReflectModelNode(Node):
             # information in the dataset
             if not self.constantdq_q:
                 data_object_node.data_object.model.dq.vary = False
+
+            lindex = self._model.index(2, 0, self.index)
+            rindex = self._model.index(2, 4, self.index)
+            self._model.dataChanged.emit(lindex, rindex)
 
             return True
 
@@ -650,9 +656,11 @@ class DataObjectNode(Node):
 
         self._model.dataChanged.emit(idx, idx1)
 
-    def set_reflect_model(self, model):
+    def set_reflect_model(self, model, constdq_q=True):
         if model is not None:
             n = ReflectModelNode(model, self._model, self)
+            n.constantdq_q = constdq_q
+
             # no ReflectModel, append the ReflectModel as a child
             if len(self._children) == 1:
                 self._model.beginInsertRows(self.index, 1, 1)
