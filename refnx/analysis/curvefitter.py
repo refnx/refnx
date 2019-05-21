@@ -535,7 +535,7 @@ class CurveFitter(object):
         # sets parameter value and stderr
         return process_chain(self.objective, self.chain)
 
-    def fit(self, method='L-BFGS-B', **kws):
+    def fit(self, method='L-BFGS-B', prior=False, **kws):
         """
         Obtain the maximum log-likelihood estimate (mode) of the objective. For
         a least-squares objective this would correspond to lowest chi2.
@@ -555,6 +555,11 @@ class CurveFitter(object):
 
             You can also choose many of the minimizers from
             ``scipy.optimize.minimize``.
+        prior : bool
+            Have prior probabilities been defined that should be considered?
+            This is only supported for the differential_evolution optimisation
+            method, and if True will calculate the negative log-posterior
+            probability.
         kws : dict
             Additional arguments are passed to the underlying minimization
             method.
@@ -604,7 +609,16 @@ class CurveFitter(object):
         # bounds
         elif method in ['differential_evolution', 'dual_annealing', 'shgo']:
             mini = getattr(sciopt, method)
-            res = mini(self.objective.nll, **_min_kws)
+            if prior:
+                if method == 'differential_evolution':
+                    res = mini(self.objective.nlpost, **_min_kws)
+                else:
+                    raise ValueError('The use of a prior probability is '
+                                     'currently only supported for the '
+                                     'differential_evolution optimisation '
+                                     'method.')
+            else:
+                res = mini(self.objective.nll, **_min_kws)
         else:
             # otherwise stick it to minimizer. Default being L-BFGS-B
             _min_kws['method'] = method
