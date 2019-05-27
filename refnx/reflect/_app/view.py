@@ -1595,13 +1595,13 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         # redraw if you're altering a PropertyNode (edit or check)
         if (top_left.column() == 1 and len(role) and
             role[0] in [QtCore.Qt.CheckStateRole, QtCore.Qt.EditRole] and
-            isinstance(node, PropertyNode)):
+                isinstance(node, PropertyNode)):
             wipe_update = [find_data_object(top_left).data_object]
 
         # only redraw if you're altering values
         # otherwise we'd be performing continual updates of the model
         if (top_left.column() == 1 and len(role) and
-            role[0] == QtCore.Qt.EditRole and isinstance(node, ParNode)):
+                role[0] == QtCore.Qt.EditRole and isinstance(node, ParNode)):
             param = node.parameter
             wipe_update = [find_data_object(top_left).data_object]
 
