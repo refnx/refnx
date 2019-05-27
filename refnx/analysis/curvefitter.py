@@ -890,7 +890,7 @@ def bounds_list(parameters):
             bnd = param.bounds
             bounds.append((bnd.lb, bnd.ub))
         elif (hasattr(param, 'bounds') and isinstance(param.bounds, PDF) and
-            hasattr(param.bounds.rv, 'ppf')):
+              hasattr(param.bounds.rv, 'ppf')):
             bounds.append(param.bounds.rv.ppf([0.005, 0.995]))
         else:
             # We can't handle this bound

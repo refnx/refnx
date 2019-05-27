@@ -430,8 +430,9 @@ class TestFitterGauss(object):
             res = f.fit(method=method)
             assert_almost_equal(res.x, self.best_weighted, 3)
 
-        res = f.fit(method='differential_evolution', target='lnpost', popsize=5)
-        assert_almost_equal(res.x, self.best_weighted, 3)
+        # smoke test to check that we can use nlpost
+        self.objective.setp(self.p0)
+        res = f.fit(method='differential_evolution', target='nlpost')
 
 
 """
