@@ -24,7 +24,7 @@ import matplotlib.lines as lines
 from .SLD_calculator_view import SLDcalculatorView
 from .datastore import DataStore
 from .treeview_gui_model import (TreeModel, Node, DatasetNode, DataObjectNode,
-                                 ComponentNode, StructureNode,
+                                 ComponentNode, StructureNode, PropertyNode,
                                  ReflectModelNode, ParNode, TreeFilter,
                                  find_data_object, SlabNode, StackNode)
 from ._lipid_leaflet import LipidLeafletDialog
@@ -1589,10 +1589,19 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
             self.redraw_data_object_graphs([node.data_object])
             return
 
+        # list of data objects to wipe and update
+        wipe_update = []
+
+        # redraw if you're altering a PropertyNode (edit or check)
+        if (top_left.column() == 1 and len(role) and
+            role[0] in [QtCore.Qt.CheckStateRole, QtCore.Qt.EditRole] and
+                isinstance(node, PropertyNode)):
+            wipe_update = [find_data_object(top_left).data_object]
+
         # only redraw if you're altering values
         # otherwise we'd be performing continual updates of the model
-        if (top_left.column() == 1 and isinstance(node, ParNode) and
-                len(role) and role[0] == QtCore.Qt.EditRole):
+        if (top_left.column() == 1 and len(role) and
+                role[0] == QtCore.Qt.EditRole and isinstance(node, ParNode)):
             param = node.parameter
             wipe_update = [find_data_object(top_left).data_object]
 
@@ -1610,6 +1619,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
                         wipe_update.append(do)
                         break
 
+        if wipe_update:
             wipe_update = list(unique(wipe_update))
             self.clear_data_object_uncertainties(wipe_update)
             self.update_gui_model(wipe_update)
