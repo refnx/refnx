@@ -3,13 +3,16 @@ import pickle
 
 import numpy as np
 import scipy.optimize as sciopt
+from scipy.stats import norm
+
 import pytest
 from numpy.testing import (assert_, assert_almost_equal, assert_equal,
                            assert_allclose)
 
 from refnx.analysis import (CurveFitter, Parameter, Parameters, Model,
-                            Objective, process_chain, load_chain)
-from refnx.analysis.curvefitter import _HAVE_PTSAMPLER
+                            Objective, process_chain, load_chain, Bounds,
+                            PDF)
+from refnx.analysis.curvefitter import _HAVE_PTSAMPLER, bounds_list
 from refnx.dataset import Data1D
 from refnx._lib import emcee
 
@@ -66,6 +69,16 @@ class TestCurveFitter(object):
         self.mod = mod
 
         self.mcfitter = CurveFitter(self.objective)
+
+    def test_bounds_list(self):
+        bnds = bounds_list(self.p)
+        assert_allclose(bnds, [(-100, 100), (-100, 100)])
+
+        # try making a Parameter bound a normal distribution, then get an
+        # approximation to box bounds
+        self.p[0].bounds = PDF(norm(0, 1))
+        assert_allclose(bounds_list(self.p),
+                        [norm(0, 1).ppf([0.005, 0.995]), (-100, 100)])
 
     def test_constraints(self):
         # constraints should work during fitting
@@ -416,6 +429,9 @@ class TestFitterGauss(object):
             self.objective.setp(self.p0)
             res = f.fit(method=method)
             assert_almost_equal(res.x, self.best_weighted, 3)
+
+        res = f.fit(method='differential_evolution', target='lnpost', popsize=5)
+        assert_almost_equal(res.x, self.best_weighted, 3)
 
 
 """

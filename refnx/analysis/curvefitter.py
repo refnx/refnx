@@ -538,8 +538,8 @@ class CurveFitter(object):
     def fit(self, method='L-BFGS-B', target='nll', **kws):
         """
         Obtain the maximum log-likelihood, or log-posterior, estimate (mode)
-        of the objective. For a least-squares objective maximum log-likelihood
-        corresponds to lowest chi2.
+        of the objective. Maximising the log-likelihood is equivalent to
+        minimising chi2 in a least squares fit.
 
         Parameters
         ----------
@@ -556,13 +556,22 @@ class CurveFitter(object):
 
             You can also choose many of the minimizers from
             ``scipy.optimize.minimize``.
+
         target : {'nll', 'nlpost'}, optional
             Minimize the negative log-likelihood (`'nll'`) or the negative
             log-posterior (`'nlpost'`). This is equivalent to maximising the
             likelihood or posterior probabilities respectively.
+            Maximising the likelihood is equivalent to minimising chi^2 in a
+            least-squares fit.
             This option only applies to the `differential_evolution`, `shgo`,
-            `dual_annealing` or `L-BFGS-B` options.
-            Have prior probabilities been defined that should be considered?
+            `dual_annealing` or `L-BFGS-B` methods.
+            These optimisers require lower and upper (box) bounds for each
+            parameter. If the `Bounds` on a parameter are not an `Interval`,
+            but a `PDF` specifying a statistical distribution, then the lower
+            and upper bounds are approximated as
+            ``PDF.rv.ppf([0.005, 0.995])``, covering 99 % of the statistical
+            distribution.
+
         kws : dict
             Additional arguments are passed to the underlying minimization
             method.
@@ -857,7 +866,22 @@ def uncertainty_from_chain(chain):
 
 def bounds_list(parameters):
     """
-    Return (interval) bounds for all varying parameters
+    Approximates interval bounds for a parameter set.
+
+    Parameters
+    ----------
+    parameters : sequence
+        A sequence containing individual parameters
+
+    Returns
+    -------
+    bounds: tuple
+        ``(min, max)`` pairs that define the finite lower and upper bounds
+        every element in ``parameters``.
+
+    If the `Bounds` applied by a parameter are a `PDF` instance then the upper
+    and lower bound are approximated by ``PDF.rv.ppf([0.005, 0.995])``, which
+    covers 99% of the statistical distribution.
     """
     bounds = []
     for param in parameters:
@@ -865,7 +889,12 @@ def bounds_list(parameters):
                 isinstance(param.bounds, Interval)):
             bnd = param.bounds
             bounds.append((bnd.lb, bnd.ub))
-        # TODO could also do any truncated PDF
+        elif (hasattr(param, 'bounds') and isinstance(param.bounds, PDF) and
+            hasattr(param.bounds.rv, 'ppf')):
+            bounds.append(param.bounds.rv.ppf([0.005, 0.995]))
+        else:
+            # We can't handle this bound
+            bounds.append((-np.inf, np.inf))
 
     return bounds
 
