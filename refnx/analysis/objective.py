@@ -132,6 +132,27 @@ class BaseObjective(object):
         logpost += self.logl(vals)
         return logpost
 
+    def nlpost(self, pvals=None):
+        """
+        Negative log-posterior function
+
+        Parameters
+        ----------
+        pvals : np.ndarray
+            Array containing the values to be tested.
+
+        Returns
+        -------
+        nlpost : float
+            negative log-posterior
+
+        """
+        vals = self.parameters
+        if pvals is not None:
+            vals = pvals
+
+        return -self.logpost(vals)
+
     def varying_parameters(self):
         """
         Returns

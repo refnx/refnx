@@ -535,10 +535,11 @@ class CurveFitter(object):
         # sets parameter value and stderr
         return process_chain(self.objective, self.chain)
 
-    def fit(self, method='L-BFGS-B', **kws):
+    def fit(self, method='L-BFGS-B', target='nll', **kws):
         """
-        Obtain the maximum log-likelihood estimate (mode) of the objective. For
-        a least-squares objective this would correspond to lowest chi2.
+        Obtain the maximum log-likelihood, or log-posterior, estimate (mode)
+        of the objective. For a least-squares objective maximum log-likelihood
+        corresponds to lowest chi2.
 
         Parameters
         ----------
@@ -555,6 +556,13 @@ class CurveFitter(object):
 
             You can also choose many of the minimizers from
             ``scipy.optimize.minimize``.
+        target : {'nll', 'nlpost'}, optional
+            Minimize the negative log-likelihood (`'nll'`) or the negative
+            log-posterior (`'nlpost'`). This is equivalent to maximising the
+            likelihood or posterior probabilities respectively.
+            This option only applies to the `differential_evolution`, `shgo`,
+            `dual_annealing` or `L-BFGS-B` options.
+            Have prior probabilities been defined that should be considered?
         kws : dict
             Additional arguments are passed to the underlying minimization
             method.
@@ -588,6 +596,10 @@ class CurveFitter(object):
         _bounds = bounds_list(self.objective.varying_parameters())
         _min_kws['bounds'] = _bounds
 
+        cost = self.objective.nll
+        if target == 'nlpost':
+            cost = self.objective.nlpost
+
         # least_squares Trust Region Reflective by default
         if method == 'least_squares':
             b = np.array(_bounds)
@@ -604,12 +616,12 @@ class CurveFitter(object):
         # bounds
         elif method in ['differential_evolution', 'dual_annealing', 'shgo']:
             mini = getattr(sciopt, method)
-            res = mini(self.objective.nll, **_min_kws)
+            res = mini(cost, **_min_kws)
         else:
             # otherwise stick it to minimizer. Default being L-BFGS-B
             _min_kws['method'] = method
             _min_kws['bounds'] = _bounds
-            res = minimize(self.objective.nll, init_pars, **_min_kws)
+            res = minimize(cost, init_pars, **_min_kws)
 
         # OptimizeResult.success may not be present (dual annealing)
         if hasattr(res, 'success') and res.success:
