@@ -457,8 +457,8 @@ class TestFitterGauss(object):
         nll2 = self.objective.nll()
         nlpost2 = self.objective.nlpost()
 
-        assert_allclose(nlpost1, nlpost2)
-        assert_allclose(nll1, nll2)
+        assert_allclose(nlpost1, nlpost2, atol=0.001)
+        assert_allclose(nll1, nll2, atol=0.001)
 
         # these two priors are calculated for different parameter values
         # (before and after the fit) they should be the same because all
