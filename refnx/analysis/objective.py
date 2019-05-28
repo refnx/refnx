@@ -126,7 +126,7 @@ class BaseObjective(object):
         if pvals is not None:
             vals = pvals
 
-            logpost = self.logp(vals)
+        logpost = self.logp(vals)
         if not np.isfinite(logpost):
             return -np.inf
         logpost += self.logl(vals)

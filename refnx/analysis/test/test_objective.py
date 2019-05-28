@@ -135,6 +135,9 @@ class TestObjective(object):
         # http://dan.iel.fm/emcee/current/user/line/
         assert_almost_equal(self.objective.logp(), 0)
 
+        assert_almost_equal(self.objective.nlpost(),
+                            -self.objective.logpost())
+
         # the uncertainties are underestimated in this example...
         # amendment factor because dfm emcee example does not include 2pi
         amend = 0.5 * self.objective.npoints * np.log(2 * np.pi)
