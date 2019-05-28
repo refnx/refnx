@@ -432,7 +432,38 @@ class TestFitterGauss(object):
 
         # smoke test to check that we can use nlpost
         self.objective.setp(self.p0)
-        res = f.fit(method='differential_evolution', target='nlpost')
+        logp0 = self.objective.logp()
+
+        # check that probabilities are calculated correctly
+        assert_allclose(self.objective.logpost(),
+                        self.objective.logp() + self.objective.logl())
+        assert_allclose(self.objective.nlpost(),
+                        -self.objective.logpost())
+
+        # if the priors are all uniform then the only difference between
+        # logpost and logl is a constant. A minimiser should converge on the
+        # same answer. The following tests examine that.
+        # The test works for dual_annealing, but not for differential
+        # evolution, not sure why that is.
+        self.objective.setp(self.p0)
+        res1 = f.fit(method='dual_annealing', seed=1)
+        assert_almost_equal(res1.x, self.best_weighted, 3)
+        nll1 = self.objective.nll()
+        nlpost1 = self.objective.nlpost()
+
+        self.objective.setp(self.p0)
+        res2 = f.fit(method='dual_annealing', target='nlpost', seed=1)
+        assert_almost_equal(res2.x, self.best_weighted, 3)
+        nll2 = self.objective.nll()
+        nlpost2 = self.objective.nlpost()
+
+        assert_allclose(nlpost1, nlpost2)
+        assert_allclose(nll1, nll2)
+
+        # these two priors are calculated for different parameter values
+        # (before and after the fit) they should be the same because all
+        # the parameters have uniform priors.
+        assert_almost_equal(self.objective.logp(), logp0)
 
 
 """
