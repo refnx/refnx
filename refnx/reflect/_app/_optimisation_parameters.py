@@ -55,7 +55,8 @@ class OptimisationParameterView(QtWidgets.QDialog):
             kws['restart_temp_ratio'] = self.ui.da_restart_temp.value()
             kws['visit'] = self.ui.da_visit.value()
             kws['accept'] = self.ui.da_accept.value()
-            kws['no_local_search'] = self.ui.da_no_local_search.isChecked() == True
+            kws['no_local_search'] = (
+                    self.ui.da_no_local_search.isChecked() is True)
 
             target = self.ui.de_target.currentText()
             if target == 'log-posterior':
