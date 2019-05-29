@@ -49,5 +49,19 @@ class OptimisationParameterView(QtWidgets.QDialog):
             else:
                 target = 'nll'
             kws['target'] = target
+        elif method == 'dual_annealing':
+            kws['maxiter'] = self.ui.da_maxiter.value()
+            kws['initial_temp'] = self.ui.da_initial_temp.value()
+            kws['restart_temp_ratio'] = self.ui.da_restart_temp.value()
+            kws['visit'] = self.ui.da_visit.value()
+            kws['accept'] = self.ui.da_accept.value()
+            kws['no_local_search'] = self.ui.da_no_local_search.isChecked() == True
+
+            target = self.ui.de_target.currentText()
+            if target == 'log-posterior':
+                target = 'nlpost'
+            else:
+                target = 'nll'
+            kws['target'] = target
 
         return kws
