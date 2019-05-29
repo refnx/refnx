@@ -14,7 +14,6 @@ class SLDcalculatorView(QtWidgets.QDialog):
 
     def __init__(self, parent=None):
         super(SLDcalculatorView, self).__init__(parent)
-        (os.path.join(UI_LOCATION, 'progress.ui'), self)
 
         self.ui = uic.loadUi(
             os.path.join(UI_LOCATION,
