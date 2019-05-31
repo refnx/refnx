@@ -28,6 +28,7 @@ from .treeview_gui_model import (TreeModel, Node, DatasetNode, DataObjectNode,
                                  ReflectModelNode, ParNode, TreeFilter,
                                  find_data_object, SlabNode, StackNode)
 from ._lipid_leaflet import LipidLeafletDialog
+from ._optimisation_parameters import OptimisationParameterView
 from ._spline import SplineDialog
 
 import refnx
@@ -145,7 +146,9 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         self.restore_settings()
 
         self.spline_dialog = SplineDialog(self)
+        self.sld_calculator = SLDcalculatorView(self)
         self.lipid_leaflet = LipidLeafletDialog(self)
+        self.optimisation_parameters = OptimisationParameterView(self)
         self.data_object_selector = DataObjectSelectorDialog(self)
 
         self.ui.treeView.setColumnWidth(0, 200)
@@ -788,8 +791,11 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
 
     @QtCore.pyqtSlot()
     def on_actionSLD_calculator_triggered(self):
-        SLDcalculator = SLDcalculatorView(self)
-        SLDcalculator.show()
+        self.sld_calculator.show()
+
+    @QtCore.pyqtSlot()
+    def on_actionOptimisation_parameters_triggered(self):
+        self.optimisation_parameters.show()
 
     @QtCore.pyqtSlot()
     def on_actionLipid_browser_triggered(self):
@@ -1060,6 +1066,9 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
 
         if alg == 'LM':
             kws.pop('callback')
+
+        # obtain optimisation parameters (maxiter, etc)
+        kws.update(self.optimisation_parameters.parameters(alg))
 
         if methods[alg] != 'MCMC':
             try:

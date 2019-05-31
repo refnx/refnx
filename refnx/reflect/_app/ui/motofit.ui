@@ -587,6 +587,8 @@
      <addaction name="actionDual_Annealing"/>
      <addaction name="actionSHGO"/>
      <addaction name="actionMCMC"/>
+     <addaction name="separator"/>
+     <addaction name="actionOptimisation_parameters"/>
     </widget>
     <widget class="QMenu" name="menuFit_as">
      <property name="title">
@@ -1385,6 +1387,11 @@ varying?</string>
    </property>
    <property name="text">
     <string>SHGO</string>
+   </property>
+  </action>
+  <action name="actionOptimisation_parameters">
+   <property name="text">
+    <string>Optimisation parameters</string>
    </property>
   </action>
  </widget>

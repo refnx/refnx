@@ -101,3 +101,5 @@ Details of changes made to refnx
 - print human readable output when fitting with the Jupyter interactive
   modeller.
 - added shgo and dual_annealing minimiser options to the refnx gui.
+- SLD calculator retains state between viewings.
+- Added dialogue to adjust optimisation parameters
