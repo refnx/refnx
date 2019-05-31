@@ -64,5 +64,20 @@ class OptimisationParameterView(QtWidgets.QDialog):
             else:
                 target = 'nll'
             kws['target'] = target
+        elif method == 'L-BFGS-B':
+            kws['maxiter'] = self.ui.lbfgsb_maxiter.value()
+            target = self.ui.lbfgsb_target.currentText()
+            if target == 'log-posterior':
+                target = 'nlpost'
+            else:
+                target = 'nll'
+            kws['target'] = target
+        elif method == 'SHGO':
+            target = self.ui.shgo_target.currentText()
+            if target == 'log-posterior':
+                target = 'nlpost'
+            else:
+                target = 'nll'
+            kws['target'] = target
 
         return kws
