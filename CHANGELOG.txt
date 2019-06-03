@@ -104,3 +104,5 @@ Details of changes made to refnx
 - SLD calculator retains state between viewings.
 - Added dialogue to adjust optimisation parameters.
 - Fixed bug in export of MCMC code fragment, Gui would crash.
+- Autocorrelation plot produced from mcmc.py code fragment, this can be used to
+  judge how much to thin the chains by.
