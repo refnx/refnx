@@ -106,6 +106,7 @@ def main(args):
     nplot = args.plot
     nburn = args.burn
     cfile = args.chain
+    verbose = args.verbose
     pargs = ()
 
     try:
@@ -160,7 +161,7 @@ def main(args):
             # continuously
             with open('steps.chain', 'w', buffering=500000) as f:
                 res = fitter.sample(nsteps, pool=workers.map, f=f,
-                                    verbose=False, nthin=nthin);
+                                    verbose=verbose, nthin=nthin);
                 f.flush()
             process_chain(obj, fitter.chain, nburn=nburn)
         else:
@@ -174,6 +175,7 @@ def main(args):
         try:
             # create graphs of reflectivity and SLD profiles
             import matplotlib
+            import matplotlib.pyplot as plt
             matplotlib.use('agg')
 
             fig, ax = obj.plot(samples=nplot)
@@ -187,6 +189,13 @@ def main(args):
             fig = obj.corner()
             fig.savefig('steps_corner.png')
 
+            # plot the Autocorrelation function of the chain
+            fig = plt.figure()
+            ax = fig.add_subplot(111)
+            ax.plot(fitter.acf())
+            ax.set_ylabel('autocorrelation')
+            ax.set_xlabel('step')
+            fig.savefig('steps-autocorrelation.png')
         except ImportError:
             pass
 
@@ -194,7 +203,7 @@ def main(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('-w', '--walkers', help='number of emcee walkers',
-                        type=int, default=300)
+                        type=int, default=200)
     parser.add_argument('-t', '--thin', help='factor to thin chain by',
                         type=int, default=1)
     parser.add_argument('-s', '--steps', help=("number of thinned MCMC steps"
@@ -212,6 +221,8 @@ if __name__ == "__main__":
                         type=int, default=0),
     parser.add_argument('-c', '--chain', help='initialise chain from file',
                         type=str, default='')
+    parser.add_argument('-v', '--verbose', help='verbose output',
+                        dest='verbose', action='store_true',  default=False)
 
     group = parser.add_mutually_exclusive_group()
     group.add_argument("--ncores", dest="n_cores", default=-1,
