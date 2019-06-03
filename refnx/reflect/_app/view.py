@@ -1069,11 +1069,6 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         if not vp:
             return msg("No parameters are being varied.")
 
-        fitter = CurveFitter(objective)
-
-        progress = ProgressCallback(self, objective=objective)
-        progress.show()
-
         methods = {'DE': 'differential_evolution',
                    'LM': 'least_squares',
                    'L-BFGS-B': 'L-BFGS-B',
@@ -1081,16 +1076,17 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
                    'SHGO': 'shgo',
                    'MCMC': 'MCMC'}
 
-        # least squares doesnt have a callback
-        kws = {'callback': progress.callback}
-
-        if alg == 'LM':
-            kws.pop('callback')
-
         # obtain optimisation parameters (maxiter, etc)
-        kws.update(self.optimisation_parameters.parameters(alg))
+        kws = self.optimisation_parameters.parameters(alg)
 
         if methods[alg] != 'MCMC':
+            fitter = CurveFitter(objective)
+
+            if alg != 'LM':
+                progress = ProgressCallback(self, objective=objective)
+                progress.show()
+                kws['callback'] = progress.callback
+
             try:
                 # workers is added to differential evolution in scipy 1.2
                 with MapWrapper(-1) as workers:
@@ -1118,11 +1114,12 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
                 msg(repr(e))
                 progress.close()
                 return None
-        else:
-            # TODO implement MCMC
-            pass
 
-        progress.close()
+            progress.close()
+        else:
+            fitter = CurveFitter(objective)
+            fitter.sample(100)
+            print(str(objective))
 
         # mark models as having been updated
         # prevent the GUI from updating whilst we change all the values
