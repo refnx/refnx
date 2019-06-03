@@ -102,4 +102,5 @@ Details of changes made to refnx
   modeller.
 - added shgo and dual_annealing minimiser options to the refnx gui.
 - SLD calculator retains state between viewings.
-- Added dialogue to adjust optimisation parameters
+- Added dialogue to adjust optimisation parameters.
+- Fixed bug in export of MCMC code fragment, Gui would crash.

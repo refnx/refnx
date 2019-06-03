@@ -568,8 +568,12 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
             suggested_name)
         if not ok:
             return
-        with open(suggested_name, 'w') as f:
-            f.write(code)
+
+        try:
+            with open(modelFileName, 'w') as f:
+                f.write(code)
+        except Exception as e:
+            print(e)
 
     def select_fitting_algorithm(self, method):
         meth = {'LM': self.ui.actionLevenberg_Marquardt,
