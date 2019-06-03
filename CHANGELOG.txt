@@ -106,3 +106,9 @@ Details of changes made to refnx
 - Fixed bug in export of MCMC code fragment, Gui would crash.
 - Autocorrelation plot produced from mcmc.py code fragment, this can be used to
   judge how much to thin the chains by.
+- `refnx.analysis` now possesses a standalone function, `autocorrelation_chain`
+  for calculating chain autocorrelation. Previously the calculation had to be
+  done using a CurveFitter instance.
+- Function for calculating autocorrelation time made visible as:
+  `refnx.analysis.integrated_time`. You should pass the autocorrelation array
+  to this function.

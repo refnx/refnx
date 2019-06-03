@@ -5,7 +5,8 @@ from refnx.analysis.objective import (Objective, BaseObjective,
                                       GlobalObjective, Transform,
                                       pymc_objective)
 from refnx.analysis.curvefitter import (CurveFitter, MCMCResult, process_chain,
-                                        load_chain)
+                                        load_chain, autocorrelation_chain)
+from refnx._lib.emcee.autocorr import integrated_time
 from refnx.analysis.model import Model, fitfunc
 
 

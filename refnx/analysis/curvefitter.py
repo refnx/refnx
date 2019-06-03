@@ -365,26 +365,7 @@ class CurveFitter(object):
         acfs : np.ndarray
             The autocorrelation function, acfs.shape=(lags, nvary)
         """
-        lchain = self.chain
-        if self._ntemps != -1:
-            lchain = lchain[:, 0]
-
-        lchain = lchain[nburn::nthin]
-        # iterations, walkers, vary
-        # (walkers, iterations, vary) -> (vary, walkers, iterations)
-        lchain = np.swapaxes(lchain, 0, 2)
-        shape = lchain.shape[:-1]
-
-        acfs = np.zeros_like(lchain)
-
-        # iterate over each parameter/walker
-        for index in np.ndindex(*shape):
-            s = _function_1d(lchain[index])
-            acfs[index] = s
-
-        # now average over walkers
-        acfs = np.mean(acfs, axis=1)
-        return np.transpose(acfs)
+        return autocorrelation_chain(self.chain, nburn=nburn, nthin=nthin)
 
     def sample(self, steps, nthin=1, random_state=None, f=None, callback=None,
                verbose=True, pool=-1):
@@ -862,6 +843,43 @@ def uncertainty_from_chain(chain):
     flatchain = chain.flatten()
     std_l, median, std_u = np.percentile(flatchain, [15.87, 50, 84.13])
     return median, 0.5 * (std_u - std_l)
+
+
+def autocorrelation_chain(chain, nburn=0, nthin=1):
+    """
+    Calculate the autocorrelation function
+
+    Parameters
+    ----------
+    chain : np.ndarray
+        The MCMC chain - `(nsteps, nwalkers, ndim)` or
+        `(nsteps, ntemps, nwalkers, ndim)`
+
+    Returns
+    -------
+    acfs : np.ndarray
+        The autocorrelation function, acfs.shape=(lags, nvary)
+    """
+    lchain = chain
+    # parallel tempered chain
+    if len(chain.shape) == 4:
+        lchain = lchain[:, 0]
+
+    lchain = lchain[nburn::nthin]
+    # (iterations, walkers, vary) -> (vary, walkers, iterations)
+    lchain = np.swapaxes(lchain, 0, 2)
+    shape = lchain.shape[:-1]
+
+    acfs = np.zeros_like(lchain)
+
+    # iterate over each parameter/walker
+    for index in np.ndindex(*shape):
+        s = _function_1d(lchain[index])
+        acfs[index] = s
+
+    # now average over walkers
+    acfs = np.mean(acfs, axis=1)
+    return np.transpose(acfs)
 
 
 def bounds_list(parameters):

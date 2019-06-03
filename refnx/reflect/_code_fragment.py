@@ -221,7 +221,8 @@ if __name__ == "__main__":
                         type=int, default=0),
     parser.add_argument('-c', '--chain', help='initialise chain from file',
                         type=str, default='')
-    parser.add_argument('-v', '--verbose', help='verbose output',
+    parser.add_argument('-v', '--verbose', help="Displays a progress bar while"
+                        " sampling",
                         dest='verbose', action='store_true',  default=False)
 
     group = parser.add_mutually_exclusive_group()

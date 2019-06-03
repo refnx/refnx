@@ -11,7 +11,7 @@ from numpy.testing import (assert_, assert_almost_equal, assert_equal,
 
 from refnx.analysis import (CurveFitter, Parameter, Parameters, Model,
                             Objective, process_chain, load_chain, Bounds,
-                            PDF)
+                            PDF, autocorrelation_chain, integrated_time)
 from refnx.analysis.curvefitter import _HAVE_PTSAMPLER, bounds_list
 from refnx.dataset import Data1D
 from refnx._lib import emcee
@@ -128,6 +128,13 @@ class TestCurveFitter(object):
         # check that the autocorrelation function at least runs
         acfs = mcfitter.acf(nburn=10)
         assert_equal(acfs.shape[-1], mcfitter.nvary)
+
+        # check the standalone autocorrelation calculator
+        acfs2 = autocorrelation_chain(mcfitter.chain, nburn=10)
+        assert_equal(acfs, acfs2)
+
+        # check integrated_time
+        integrated_time(acfs2, tol=5)
 
         # check chain shape
         assert_equal(mcfitter.chain.shape, (33, 50, 2))
