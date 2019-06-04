@@ -113,3 +113,6 @@ Details of changes made to refnx
   `refnx.analysis.integrated_time`. You should pass the autocorrelation array
   to this function.
 - GUI can now export an ASCII file representing the model SLD curve.
+- BUG: when the GUI saves a model it should pickle a ReflectModel. It wasn't
+  doing this, it was pickling a DataObject. This has now been fixed, but the
+  fix affects back compatibility.
