@@ -30,6 +30,8 @@ from .treeview_gui_model import (TreeModel, Node, DatasetNode, DataObjectNode,
 from ._lipid_leaflet import LipidLeafletDialog
 from ._optimisation_parameters import OptimisationParameterView
 from ._spline import SplineDialog
+from ._mcmc import ProcessMCMCDialog
+
 
 import refnx
 from refnx.analysis import (CurveFitter, Objective,
@@ -1118,7 +1120,10 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
             progress.close()
         else:
             fitter = CurveFitter(objective)
-            fitter.sample(100)
+            fitter.sample(10)
+            dialog = ProcessMCMCDialog(objective, fitter.chain)
+
+            dialog.exec_()
             print(str(objective))
 
         # mark models as having been updated
