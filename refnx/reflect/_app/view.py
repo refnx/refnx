@@ -1120,7 +1120,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
             progress.close()
         else:
             fitter = CurveFitter(objective)
-            fitter.sample(10)
+            fitter.sample(20)
             dialog = ProcessMCMCDialog(objective, fitter.chain)
 
             dialog.exec_()

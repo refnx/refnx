@@ -589,6 +589,7 @@
      <addaction name="actionMCMC"/>
      <addaction name="separator"/>
      <addaction name="actionOptimisation_parameters"/>
+     <addaction name="actionProcess_MCMC"/>
     </widget>
     <widget class="QMenu" name="menuFit_as">
      <property name="title">
@@ -1290,10 +1291,10 @@ varying?</string>
   </action>
   <action name="actionMCMC">
    <property name="checkable">
-    <bool>false</bool>
+    <bool>true</bool>
    </property>
    <property name="enabled">
-    <bool>false</bool>
+    <bool>true</bool>
    </property>
    <property name="text">
     <string>MCMC</string>
@@ -1397,6 +1398,11 @@ varying?</string>
   <action name="actionSave_SLD_Curve">
    <property name="text">
     <string>Save SLD Curve</string>
+   </property>
+  </action>
+  <action name="actionProcess_MCMC">
+   <property name="text">
+    <string>Process MCMC</string>
    </property>
   </action>
  </widget>
