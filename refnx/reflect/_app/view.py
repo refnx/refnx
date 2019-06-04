@@ -439,67 +439,44 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
     @QtCore.pyqtSlot()
     def on_actionSave_Fit_triggered(self):
         datastore = self.treeModel.datastore
-        fits = datastore.names
-        fits.append('-all-')
 
-        which_fit, ok = QtWidgets.QInputDialog.getItem(
-            self, "Which fit did you want to save?", "", fits, editable=False)
+        self.data_object_selector.setWindowTitle('Select fits to save')
+        ok = self.data_object_selector.exec_()
         if not ok:
             return
-
-        if which_fit == '-all-':
-            dialog = QtWidgets.QFileDialog(self)
-            dialog.setFileMode(QtWidgets.QFileDialog.Directory)
-            if dialog.exec_():
-                folder = dialog.selectedFiles()
-                fits.pop()
-                for fit in fits:
-                    datastore[fit].save_fit(
-                        os.path.join(folder[0], 'fit_' + fit + '.dat'))
-        else:
-            fit_file_name, ok = QtWidgets.QFileDialog.getSaveFileName(
-                self, 'Save fit as:', 'fit_' + which_fit + '.dat')
-            if not ok:
-                return
-            datastore[which_fit].save_fit(fit_file_name)
+        items = self.data_object_selector.data_objects.selectedItems()
+        names = [item.text() for item in items]
+        dialog = QtWidgets.QFileDialog(self)
+        dialog.setFileMode(QtWidgets.QFileDialog.Directory)
+        if dialog.exec_():
+            folder = dialog.selectedFiles()
+            for name in names:
+                datastore[name].save_fit(
+                    os.path.join(folder[0], 'fit_' + name + '.dat'))
 
     @QtCore.pyqtSlot()
     def on_actionSave_SLD_Curve_triggered(self):
         # saves an SLD curve as a text file
         datastore = self.treeModel.datastore
-        fits = datastore.names
-        fits.append('-all-')
 
-        which_fit, ok = QtWidgets.QInputDialog.getItem(
-            self, "Which SLD curve did you want to save?", "", fits,
-            editable=False)
+        self.data_object_selector.setWindowTitle('Select fits to save')
+        ok = self.data_object_selector.exec_()
         if not ok:
             return
-
-        if which_fit == '-all-':
-            dialog = QtWidgets.QFileDialog(self)
-            dialog.setFileMode(QtWidgets.QFileDialog.Directory)
-            if dialog.exec_():
-                folder = dialog.selectedFiles()
-                fits.pop()
-                for fit in fits:
-                    data_object = datastore[fit]
-                    sld_curve = np.array(data_object.sld_profile).T
-                    if sld_curve is not None:
-                        # it may be None if it's a mixed area model
-                        sld_file_name = os.path.join(folder[0],
-                                                     'sld_' + fit + '.dat')
-                        np.savetxt(sld_file_name, sld_curve)
-        else:
-            sld_file_name, ok = QtWidgets.QFileDialog.getSaveFileName(
-                self, 'Save SLD curve as:', 'sld_' + which_fit + '.dat')
-            if not ok:
-                return
-            data_object = datastore[which_fit]
-            sld_curve = np.array(data_object.sld_profile).T
-            if sld_curve is not None:
-                # it may be None if it's a mixed area model
-                np.savetxt(sld_file_name, sld_curve)
+        items = self.data_object_selector.data_objects.selectedItems()
+        names = [item.text() for item in items]
+        dialog = QtWidgets.QFileDialog(self)
+        dialog.setFileMode(QtWidgets.QFileDialog.Directory)
+        if dialog.exec_():
+            folder = dialog.selectedFiles()
+            for name in names:
+                data_object = datastore[name]
+                sld_curve = np.array(data_object.sld_profile).T
+                if sld_curve is not None:
+                    # it may be None if it's a mixed area model
+                    sld_file_name = os.path.join(folder[0],
+                                                 'sld_' + name + '.dat')
+                    np.savetxt(sld_file_name, sld_curve)
 
     def load_model(self, model_file_name):
         with open(model_file_name, 'rb') as f:
@@ -540,8 +517,6 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
             return
         items = self.data_object_selector.data_objects.selectedItems()
         names = [item.text() for item in items]
-        if 'theoretical' in names:
-            names.pop(names.index('theoretical'))
 
         dialog = QtWidgets.QFileDialog(self)
         dialog.setFileMode(QtWidgets.QFileDialog.Directory)
@@ -549,10 +524,10 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         if dialog.exec_():
             folder = dialog.selectedFiles()
 
-            for model_name in names:
+            for name in names:
                 fname = os.path.join(folder[0],
-                                     'coef_' + model_name + '.pkl')
-                model = datastore[model_name]
+                                     'coef_' + name + '.pkl')
+                model = datastore[name]
                 model.save_model(fname)
 
     @QtCore.pyqtSlot()
