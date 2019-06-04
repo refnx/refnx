@@ -457,11 +457,49 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
                     datastore[fit].save_fit(
                         os.path.join(folder[0], 'fit_' + fit + '.dat'))
         else:
-            fitFileName, ok = QtWidgets.QFileDialog.getSaveFileName(
+            fit_file_name, ok = QtWidgets.QFileDialog.getSaveFileName(
                 self, 'Save fit as:', 'fit_' + which_fit + '.dat')
             if not ok:
                 return
-            datastore[which_fit].save_fit(fitFileName)
+            datastore[which_fit].save_fit(fit_file_name)
+
+    @QtCore.pyqtSlot()
+    def on_actionSave_SLD_Curve_triggered(self):
+        # saves an SLD curve as a text file
+        datastore = self.treeModel.datastore
+        fits = datastore.names
+        fits.append('-all-')
+
+        which_fit, ok = QtWidgets.QInputDialog.getItem(
+            self, "Which SLD curve did you want to save?", "", fits,
+            editable=False)
+        if not ok:
+            return
+
+        if which_fit == '-all-':
+            dialog = QtWidgets.QFileDialog(self)
+            dialog.setFileMode(QtWidgets.QFileDialog.Directory)
+            if dialog.exec_():
+                folder = dialog.selectedFiles()
+                fits.pop()
+                for fit in fits:
+                    data_object = datastore[fit]
+                    sld_curve = np.array(data_object.sld_profile).T
+                    if sld_curve is not None:
+                        # it may be None if it's a mixed area model
+                        sld_file_name = os.path.join(folder[0],
+                                                     'sld_' + fit + '.dat')
+                        np.savetxt(sld_file_name, sld_curve)
+        else:
+            sld_file_name, ok = QtWidgets.QFileDialog.getSaveFileName(
+                self, 'Save SLD curve as:', 'sld_' + which_fit + '.dat')
+            if not ok:
+                return
+            data_object = datastore[which_fit]
+            sld_curve = np.array(data_object.sld_profile).T
+            if sld_curve is not None:
+                # it may be None if it's a mixed area model
+                np.savetxt(sld_file_name, sld_curve)
 
     def load_model(self, model_file_name):
         with open(model_file_name, 'rb') as f:
