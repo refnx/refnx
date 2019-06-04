@@ -546,11 +546,10 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
             folder = dialog.selectedFiles()
 
             for model_name in names:
-                model = datastore[model_name]
                 fname = os.path.join(folder[0],
                                      'coef_' + model_name + '.pkl')
-                with open(fname, 'wb') as f:
-                    pickle.dump(model, f)
+                model = datastore[model_name]
+                model.save_model(fname)
 
     @QtCore.pyqtSlot()
     def on_actionExport_parameters_triggered(self):
