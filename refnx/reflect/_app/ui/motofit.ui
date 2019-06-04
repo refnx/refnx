@@ -1402,7 +1402,7 @@ varying?</string>
   </action>
   <action name="actionProcess_MCMC">
    <property name="text">
-    <string>Process MCMC</string>
+    <string>Process MCMC chain</string>
    </property>
   </action>
  </widget>

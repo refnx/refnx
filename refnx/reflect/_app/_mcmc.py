@@ -8,12 +8,22 @@ from PyQt5 import QtCore, QtGui, QtWidgets, uic
 from refnx.analysis import (load_chain, process_chain, autocorrelation_chain,
                             integrated_time, GlobalObjective, Objective)
 from refnx.reflect import Structure
-from refnx.reflect._app.view import msg
+from matplotlib.backends.backend_qt5agg import (
+    FigureCanvasQTAgg as FigureCanvas)
+from matplotlib.figure import Figure
 
 pth = os.path.dirname(os.path.abspath(__file__))
 UI_LOCATION = os.path.join(pth, 'ui')
 ProcessMCMCDialogUI = uic.loadUiType(os.path.join(UI_LOCATION,
-                                             'process_mcmc.ui'))[0]
+                                     'process_mcmc.ui'))[0]
+SampleMCMCDialogUI = uic.loadUiType(os.path.join(UI_LOCATION,
+                                    'sample_mcmc.ui'))[0]
+
+
+class SampleMCMCDialog(QtWidgets.QDialog, SampleMCMCDialogUI):
+    def __init__(self, parent=None):
+        QtWidgets.QDialog.__init__(self, parent)
+        self.setupUi(self)
 
 
 class ProcessMCMCDialog(QtWidgets.QDialog, ProcessMCMCDialogUI):
@@ -28,12 +38,12 @@ class ProcessMCMCDialog(QtWidgets.QDialog, ProcessMCMCDialogUI):
                 self, 'Select chain file')
             if not ok:
                 return
+            self.folder = os.path.dirname(model_file_name)
             try:
                 chain = load_chain(model_file_name)
             except Exception as e:
                 # a chain load will go wrong quite often I'd expect
                 print(repr(e))
-                msg("Couldn't load chain file correctly")
                 return
 
         self.chain = chain
@@ -47,7 +57,7 @@ class ProcessMCMCDialog(QtWidgets.QDialog, ProcessMCMCDialogUI):
             steps, temps, walkers, varys = chain.shape
             self.chain_size.setText(
                 'steps: {}, temps: {}, walkers: {}, varys: {}'.format(
-                steps, temps, walkers, varys))
+                    steps, temps, walkers, varys))
 
         self.total_samples.setText(
             'Total samples: {}'.format(steps * walkers))
@@ -86,6 +96,7 @@ class ProcessMCMCDialog(QtWidgets.QDialog, ProcessMCMCDialogUI):
         time = integrated_time(acfs, tol=1, quiet=True)
         self.autocorrelation_time.setText(
             'Estimated Autocorrelation Time: {}'.format(time))
+        self.nplot.setMaximum(steps * walkers)
 
     @QtCore.pyqtSlot()
     def on_buttonBox_accepted(self):
@@ -94,49 +105,52 @@ class ProcessMCMCDialog(QtWidgets.QDialog, ProcessMCMCDialogUI):
 
         process_chain(self.objective, self.chain, nburn=nburn, nthin=nthin)
 
-        _plots(self.objective, 200)
 
-
-def _plots(obj, nplot=0):
+def _plots(obj, nplot=0, folder=None):
     # create graphs of reflectivity and SLD profiles
-    import matplotlib
-    import matplotlib.pyplot as plt
+    if folder is None:
+        folder = os.getcwd()
 
-    fig, ax = obj.plot(samples=nplot)
+    fig = Figure()
+    FigureCanvas(fig)
+
+    _, ax = obj.plot(samples=nplot, fig=fig)
     ax.set_ylabel('R')
     ax.set_xlabel("Q / $\\AA$")
-    fig.savefig('steps.png', dpi=1000)
-    plt.close(fig)
+    fig.savefig(os.path.join(folder, 'steps.png'), dpi=1000)
 
-    # corner plot
-    # fig = obj.corner()
-    # fig.savefig('steps_corner.png')
+    # # corner plot
+    # fig2 = obj.corner()
+    # fig2.savefig(os.path.join(folder, 'steps_corner.png'))
 
     # plot sld profiles
     if isinstance(obj, GlobalObjective):
-        fig2 = plt.figure()
-        ax2 = fig2.add_subplot(111)
+        fig3 = Figure()
+        FigureCanvas(fig3)
+        ax3 = fig3.add_subplot(111)
 
         if nplot > 0:
             savedparams = np.array(obj.parameters)
-            for pvec in obj.parameters.pgen(ngen=samples):
+            for pvec in obj.parameters.pgen(ngen=nplot):
                 obj.setp(pvec)
                 for o in obj.objectives:
                     if hasattr(o.model, 'structure'):
-                        ax2.plot(*o.model.structure.sld_profile(),
-                                color="k", alpha=0.01)
+                        ax3.plot(*o.model.structure.sld_profile(),
+                                 color="k", alpha=0.01)
 
             # put back saved_params
             obj.setp(savedparams)
 
         for o in obj.objectives:
             if hasattr(o.model, 'structure'):
-                ax2.plot(*o.model.structure.sld_profile(), zorder=20)
+                ax3.plot(*o.model.structure.sld_profile(), zorder=20)
 
-        ax2.set_ylabel('SLD / $10^{-6}\\AA^{-2}$')
-        ax2.set_xlabel("z / $\\AA$")
+        ax3.set_ylabel('SLD / $10^{-6}\\AA^{-2}$')
+        ax3.set_xlabel("z / $\\AA$")
 
     elif isinstance(obj, Objective) and hasattr(obj.model, 'structure'):
-        fig2, ax2 = obj.model.structure.plot(samples=nplot)
-    fig2.savefig('steps_sld.png', dpi=1000)
-    plt.close(fig2)
+        fig3 = Figure()
+        FigureCanvas(fig3)
+        fig3, ax3 = obj.model.structure.plot(samples=nplot, fig=fig3)
+
+    fig3.savefig(os.path.join(folder, 'steps_sld.png'), dpi=1000)
