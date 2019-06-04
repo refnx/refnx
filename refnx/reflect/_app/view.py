@@ -505,6 +505,10 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         with open(model_file_name, 'rb') as f:
             model = pickle.load(f)
 
+        if not isinstance(model, ReflectModel):
+            msg('The pkl file you were loading was not a ReflectModel')
+            return
+
         data_object_node = self.treeModel.data_object_node(model.name)
         if data_object_node is not None:
             data_object_node.set_reflect_model(model)
