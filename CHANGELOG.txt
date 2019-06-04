@@ -112,3 +112,4 @@ Details of changes made to refnx
 - Function for calculating autocorrelation time made visible as:
   `refnx.analysis.integrated_time`. You should pass the autocorrelation array
   to this function.
+- GUI can now export an ASCII file representing the model SLD curve.
