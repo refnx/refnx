@@ -8,6 +8,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets, uic
 from refnx.analysis import (load_chain, process_chain, autocorrelation_chain,
                             integrated_time, GlobalObjective, Objective)
 from refnx.reflect import Structure
+from refnx.reflect._app.view import msg
 
 pth = os.path.dirname(os.path.abspath(__file__))
 UI_LOCATION = os.path.join(pth, 'ui')
@@ -23,8 +24,17 @@ class ProcessMCMCDialog(QtWidgets.QDialog, ProcessMCMCDialogUI):
         self.objective = objective
 
         if chain is None:
-            # TODO open file dialogue for chain.
-            pass
+            model_file_name, ok = QtWidgets.QFileDialog.getOpenFileName(
+                self, 'Select chain file')
+            if not ok:
+                return
+            try:
+                chain = load_chain(model_file_name)
+            except Exception as e:
+                # a chain load will go wrong quite often I'd expect
+                print(repr(e))
+                msg("Couldn't load chain file correctly")
+                return
 
         self.chain = chain
 
