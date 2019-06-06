@@ -1134,7 +1134,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
                                **kws)
 
                 print(str(objective))
-            except RuntimeError as e:
+            except StopIteration as e:
                 # user probably aborted the fit
                 # but it's still worth creating a fit curve, so don't return
                 # in this catch block
@@ -1862,7 +1862,7 @@ class ProgressCallback(QtWidgets.QDialog):
             self.ui.values.setPlainText(text)
             QtWidgets.QApplication.processEvents()
             if self.abort_flag:
-                raise RuntimeError("WARNING: FIT WAS TERMINATED EARLY", xk)
+                raise StopIteration("WARNING: FIT WAS TERMINATED EARLY", xk)
 
         return self.abort_flag
 
