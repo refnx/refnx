@@ -1,4 +1,4 @@
-from multiprocessing import Pool
+from multiprocessing import Pool, get_context
 import warnings as _warnings
 import os as _os
 import sys as _sys
@@ -211,11 +211,15 @@ class MapWrapper(object):
         If `pool` is a map-like callable that follows the same
         calling sequence as the built-in map function, then this callable is
         used for parallelisation.
+    context : None, {'spawn', 'fork', 'forkserver'}
+
     """
-    def __init__(self, pool=-1):
+    def __init__(self, pool=-1, context=None):
         self.pool = None
         self._mapfunc = map
         self._own_pool = False
+
+        ctx = get_context(context)
 
         if callable(pool):
             self.pool = pool
@@ -224,14 +228,14 @@ class MapWrapper(object):
             # user supplies a number
             if int(pool) == -1:
                 # use as many processors as possible
-                self.pool = Pool()
+                self.pool = ctx.Pool()
                 self._mapfunc = self.pool.map
                 self._own_pool = True
             elif int(pool) in [0, 1]:
                 pass
             elif int(pool) > 1:
                 # use the number of processors requested
-                self.pool = Pool(processes=int(pool))
+                self.pool = ctx.Pool(processes=int(pool))
                 self._mapfunc = self.pool.map
                 self._own_pool = True
 
