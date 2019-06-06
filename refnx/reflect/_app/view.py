@@ -547,7 +547,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
             dialog = ProcessMCMCDialog(objective, None, parent=self)
             dialog.exec_()
             print(str(objective))
-            _plots(objective, nplot=dialog.nplot.value())
+            _plots(objective, nplot=dialog.nplot.value(), folder=dialog.folder)
         except Exception as e:
             print(repr(e))
             msg("MCMC processing went wrong. The MCMC chain can only be"

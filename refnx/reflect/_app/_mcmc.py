@@ -32,6 +32,7 @@ class ProcessMCMCDialog(QtWidgets.QDialog, ProcessMCMCDialogUI):
         self.setupUi(self)
 
         self.objective = objective
+        self.folder = os.getcwd()
 
         if chain is None:
             model_file_name, ok = QtWidgets.QFileDialog.getOpenFileName(
