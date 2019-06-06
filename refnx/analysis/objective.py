@@ -718,11 +718,10 @@ class Objective(BaseObjective):
             `matplotlib` figure and axes objects.
 
         """
-        import matplotlib.pyplot as plt
-
         self.setp(pvals)
 
         if fig is None:
+            import matplotlib.pyplot as plt
             fig = plt.figure()
             ax = fig.add_subplot(111)
         else:
@@ -961,11 +960,11 @@ class GlobalObjective(Objective):
             `matplotlib` figure and axes objects.
 
         """
-        import matplotlib.pyplot as plt
 
         self.setp(pvals)
 
         if fig is None:
+            import matplotlib.pyplot as plt
             fig = plt.figure()
             ax = fig.add_subplot(111)
         else:

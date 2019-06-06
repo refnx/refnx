@@ -391,7 +391,8 @@ class CurveFitter(object):
             `(ntemps, nwalkers, ndim)`. There are `steps` rows in the
             file.
         callback : callable
-            callback function to be called at each iteration step
+            callback function to be called at each iteration step. Has the
+            signature `callback(coords, logprob)`.
         verbose : bool, optional
             Gives updates on the sampling progress
         pool : int or map-like object, optional
