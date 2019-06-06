@@ -750,15 +750,36 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         # iterate and fit over all the selected datasets, but first copy the
         # model from the theoretical model because it's unlikely you're going
         # to setup all the individual models first.
-        for name in names:
-            data_object = datastore[name]
-            if data_object.name == 'theoretical':
-                continue
-            new_model = deepcopy(theoretical.model)
-            new_model.name = name
-            data_object_node = self.treeModel.data_object_node(name)
-            data_object_node.set_reflect_model(new_model)
-            self.do_a_fit_and_add_to_gui([data_object])
+        progress = QtWidgets.QProgressDialog('Batch fitting progress',
+                                             'Stop',
+                                             0,
+                                             len(names),
+                                             parent=self)
+        progress.setWindowModality(QtCore.Qt.WindowModal)
+        progress.setAutoClose(True)
+        progress.setValue(0)
+        progress.show()
+
+        try:
+            self._hold_updating = True
+            for name in names:
+                if progress.wasCanceled():
+                    raise StopIteration()
+
+                data_object = datastore[name]
+                if data_object.name == 'theoretical':
+                    continue
+                new_model = deepcopy(theoretical.model)
+                new_model.name = name
+                data_object_node = self.treeModel.data_object_node(name)
+                data_object_node.set_reflect_model(new_model)
+                self.do_a_fit_and_add_to_gui([data_object])
+                progress.setValue(progress.value() + 1)
+        except StopIteration:
+            pass
+        finally:
+            self._hold_updating = False
+            progress.close()
 
     @QtCore.pyqtSlot()
     def on_actionRefresh_Data_triggered(self):
@@ -1119,9 +1140,13 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
 
         if methods[alg] != 'MCMC':
             fitter = CurveFitter(objective)
+            progress = ProgressCallback(self, objective=objective)
+
+            if alg == 'L-BFGS-B':
+                maxiter = kws.pop('maxiter')
+                kws['options'] = {'maxiter': maxiter}
 
             if alg != 'LM':
-                progress = ProgressCallback(self, objective=objective)
                 progress.show()
                 kws['callback'] = progress.callback
 
