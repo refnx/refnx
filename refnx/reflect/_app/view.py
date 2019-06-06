@@ -761,7 +761,6 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         progress.show()
 
         try:
-            self._hold_updating = True
             for name in names:
                 if progress.wasCanceled():
                     raise StopIteration()
@@ -778,7 +777,6 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         except StopIteration:
             pass
         finally:
-            self._hold_updating = False
             progress.close()
 
     @QtCore.pyqtSlot()
