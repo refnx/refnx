@@ -83,6 +83,7 @@ class DataStore(object):
             # was probably already read in self.load. Consider setting
             # the data by copying it from do.
             self.data_objects[do.name].refresh()
+            do = self.data_objects[do.name]
         else:
             self.data_objects[do.name] = do
 
