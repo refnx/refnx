@@ -116,5 +116,7 @@ Details of changes made to refnx
 - BUG: when the GUI saves a model it should pickle a ReflectModel. It wasn't
   doing this, it was pickling a DataObject. This has now been fixed, but the
   fix affects back compatibility.
-- GUI can now do MCMC sampling
-- Add option to change context of Mapwrapper
+- *GUI can now do MCMC sampling*
+- Add option to change context of Mapwrapper (spawn/fork/forkserver)
+- BUG: when loading (not refreshing) a dataset that was already loaded, the
+  associated model was lost. (GH331)
