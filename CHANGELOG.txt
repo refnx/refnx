@@ -122,3 +122,6 @@ Details of changes made to refnx
   associated model was lost. (GH331)
 - Added a progress bar for batch fitting.
 - Speeded up batch fitting
+
+0.1.8
+-----
