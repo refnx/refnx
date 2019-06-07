@@ -121,3 +121,4 @@ Details of changes made to refnx
 - BUG: when loading (not refreshing) a dataset that was already loaded, the
   associated model was lost. (GH331)
 - Added a progress bar for batch fitting.
+- Speeded up batch fitting
