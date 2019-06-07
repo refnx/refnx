@@ -1,5 +1,5 @@
 /*
-    refcalc.h
+    refcalc.cpp
 
     *Calculates the specular (Neutron or X-ray) reflectivity from a stratified
     series of layers.
