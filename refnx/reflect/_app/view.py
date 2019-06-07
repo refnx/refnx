@@ -629,33 +629,33 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
 
     @QtCore.pyqtSlot()
     def on_actionDifferential_Evolution_triggered(self):
-        if self.ui.actionDifferential_Evolution.isChecked():
-            self.select_fitting_algorithm('DE')
+        self.ui.actionDifferential_Evolution.setChecked(True)
+        self.select_fitting_algorithm('DE')
 
     @QtCore.pyqtSlot()
     def on_actionMCMC_triggered(self):
-        if self.ui.actionMCMC.isChecked():
-            self.select_fitting_algorithm('MCMC')
+        self.ui.actionMCMC.setChecked(True)
+        self.select_fitting_algorithm('MCMC')
 
     @QtCore.pyqtSlot()
     def on_actionDual_Annealing_triggered(self):
-        if self.ui.actionDual_Annealing.isChecked():
-            self.select_fitting_algorithm('dual_annealing')
+        self.ui.actionDual_Annealing.setChecked(True)
+        self.select_fitting_algorithm('dual_annealing')
 
     @QtCore.pyqtSlot()
     def on_actionSHGO_triggered(self):
-        if self.ui.actionSHGO.isChecked():
-            self.select_fitting_algorithm('SHGO')
+        self.ui.actionSHGO.setChecked(True)
+        self.select_fitting_algorithm('SHGO')
 
     @QtCore.pyqtSlot()
     def on_actionLevenberg_Marquardt_triggered(self):
-        if self.ui.actionLevenberg_Marquardt.isChecked():
-            self.select_fitting_algorithm('LM')
+        self.ui.actionLevenberg_Marquardt.setChecked(True)
+        self.select_fitting_algorithm('LM')
 
     @QtCore.pyqtSlot()
     def on_actionL_BFGS_B_triggered(self):
-        if self.ui.actionL_BFGS_B.isChecked():
-            self.select_fitting_algorithm('L-BFGS-B')
+        self.ui.actionL_BFGS_B.setChecked(True)
+        self.select_fitting_algorithm('L-BFGS-B')
 
     def change_Q_range(self, qmin, qmax, numpnts):
         data_object_node = self.treeModel.data_object_node('theoretical')
@@ -750,15 +750,51 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         # iterate and fit over all the selected datasets, but first copy the
         # model from the theoretical model because it's unlikely you're going
         # to setup all the individual models first.
-        for name in names:
-            data_object = datastore[name]
-            if data_object.name == 'theoretical':
-                continue
-            new_model = deepcopy(theoretical.model)
-            new_model.name = name
-            data_object_node = self.treeModel.data_object_node(name)
-            data_object_node.set_reflect_model(new_model)
-            self.do_a_fit_and_add_to_gui([data_object])
+        progress = QtWidgets.QProgressDialog('Batch fitting progress',
+                                             'Stop',
+                                             0,
+                                             len(names),
+                                             parent=self)
+        progress.setWindowModality(QtCore.Qt.WindowModal)
+        progress.setAutoClose(True)
+        progress.setValue(0)
+        progress.show()
+
+        gui_update_list = []
+        # turn of graph/treeview updating during fitting, it takes up a lot of
+        # resources. Just do it all at once at the end.
+        self._hold_updating = True
+        last_time = time.time()
+        completed = 0
+        try:
+            for name in names:
+                if progress.wasCanceled():
+                    raise StopIteration()
+
+                data_object = datastore[name]
+                if data_object.name == 'theoretical':
+                    continue
+                new_model = deepcopy(theoretical.model)
+                new_model.name = name
+                data_object_node = self.treeModel.data_object_node(name)
+                data_object_node.set_reflect_model(new_model)
+                successfully_fitted = self.fit_data_objects([data_object])
+                if successfully_fitted:
+                    gui_update_list.append(successfully_fitted)
+
+                completed += 1
+                # update progress bar every 3 secs
+                if (time.time() - last_time) > 3.:
+                    progress.setValue(completed)
+                    last_time = time.time()
+
+        except StopIteration:
+            pass
+        finally:
+            self._hold_updating = False
+            gui_update_list = list(flatten(gui_update_list))
+            self.update_gui_fitted_data_objects(gui_update_list)
+            progress.close()
 
     @QtCore.pyqtSlot()
     def on_actionRefresh_Data_triggered(self):
@@ -1062,9 +1098,16 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         # retrieve data_objects
         datastore = self.treeModel.datastore
         data_objects = [datastore[name] for name in names_to_fit]
-        self.do_a_fit_and_add_to_gui(data_objects)
+
+        successfully_fitted = self.fit_data_objects(data_objects)
+        if successfully_fitted:
+            self.update_gui_fitted_data_objects(successfully_fitted)
 
     def create_objective(self, data_objects):
+        """
+        Creates an Objective for a list of DataObject.
+        """
+
         # performs a global fit to the list of data_objects
         t = Transform(self.settings.transformdata)
         useerrors = self.settings.useerrors
@@ -1097,7 +1140,20 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
 
         return objective
 
-    def do_a_fit_and_add_to_gui(self, data_objects):
+    def fit_data_objects(self, data_objects):
+        """
+        Simultaneously fits a sequence of datasets
+
+        Parameters
+        ----------
+        data_objects: list of DataObjects
+
+        Returns
+        -------
+        fitted_dataobjects : list of DataObjects
+            A list of successfully fitted datasets
+        """
+
         objective = self.create_objective(data_objects)
 
         alg = self.settings.fitting_algorithm
@@ -1119,19 +1175,24 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
 
         if methods[alg] != 'MCMC':
             fitter = CurveFitter(objective)
+            progress = ProgressCallback(self, objective=objective)
+
+            if alg == 'L-BFGS-B':
+                maxiter = kws.pop('maxiter')
+                kws['options'] = {'maxiter': maxiter}
 
             if alg != 'LM':
-                progress = ProgressCallback(self, objective=objective)
                 progress.show()
                 kws['callback'] = progress.callback
 
             try:
                 # workers is added to differential evolution in scipy 1.2
-                with MapWrapper(-1) as workers:
-                    if alg == 'DE':
+                if alg == 'DE':
+                    with MapWrapper(-1) as workers:
                         kws['workers'] = workers
-                    fitter.fit(method=methods[alg],
-                               **kws)
+                        fitter.fit(method=methods[alg], **kws)
+                else:
+                    fitter.fit(method=methods[alg], **kws)
 
                 print(str(objective))
             except StopIteration as e:
@@ -1151,13 +1212,13 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
                 # Typically shown when sensible limits weren't provided
                 msg(repr(e))
                 progress.close()
-                return None
+                return []
 
             progress.close()
         else:
             dialog = SampleMCMCDialog(parent=self)
             if not dialog.exec_():
-                return None
+                return []
 
             folder_dialog = QtWidgets.QFileDialog(
                 parent=self,
@@ -1166,7 +1227,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
             if folder_dialog.exec_():
                 folder = folder_dialog.selectedFiles()[0]
             else:
-                return None
+                return []
 
             nwalkers = dialog.walkers.value()
             init = dialog.init.currentText()
@@ -1191,8 +1252,16 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
                 progress.setValue(0)
                 progress.show()
 
+                # only want to update every few seconds - updating the progress
+                # bar can chew processor cycles.
+                completed = [0]
+                last_time = [time.time()]
+
                 def callback(coords, logprob):
-                    progress.setValue(progress.value() + 1)
+                    completed[0] += 1
+                    if (time.time() - last_time[0]) > 2:
+                        last_time[0] = time.time()
+                        progress.setValue(completed[0])
                     if progress.wasCanceled():
                         raise StopIteration("Sampling aborted")
 
@@ -1207,7 +1276,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
                 progress.close()
                 msg(repr(e))
                 print(repr(e))
-                return None
+                return []
             progress.close()
 
             # process the samples
@@ -1222,12 +1291,31 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
                 dialog.close()
                 msg(repr(e))
                 print(repr(e))
-                return None
+                return []
 
             print(str(objective))
 
-        # mark models as having been updated
-        # prevent the GUI from updating whilst we change all the values
+        return data_objects
+
+    def update_gui_fitted_data_objects(self, data_objects):
+        """
+        Updates the GUI for a sequence of successfully fitted DataObject.
+
+        The data tree is updated first with new model values, then chi2 is
+        updated for all the datasets. Finally the graphs for the datasets
+        are updated.
+        This method is separated out from `update_gui_model`, as it is changing
+        values in the tree model.
+
+        Parameters
+        ----------
+        data_objects: list of DataObject
+        """
+
+        # mark models as having been updated.
+        # prevent the GUI from updating whilst we change all the values.
+        # This means we have to update the graphs separately at the end of
+        # this method.
         self._hold_updating = True
 
         for data_object in data_objects:
@@ -1251,12 +1339,9 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         # re-enable the GUI updating whilst we change all the values
         self._hold_updating = False
 
-        # update all the chi2 values
-        self.calculate_chi2(data_objects)
-        # plot the fit and sld_profile
-        # TODO refactor both of the following into a single method?
         self.add_data_objects_to_graphs(data_objects)
-        self.redraw_data_object_graphs(data_objects)
+        # calculates chi2 and redraws generative model
+        self.update_gui_model(data_objects)
 
     @QtCore.pyqtSlot(int)
     def on_only_fitted_stateChanged(self, arg_1):
@@ -1555,13 +1640,21 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         data_object_nodes = list(unique(data_object_nodes))
 
         # now set the model for all those data object nodes
-        for don in data_object_nodes:
-            new_model = deepcopy(source_model)
-            new_model.name = don.data_object.name
-            don.set_reflect_model(new_model)
+        # _hold_updating is set so that if a lot of things change in the
+        # tree structure, the recalculation of reflectivity curves triggered
+        # by set_reflect_model doesn't cause an enormous slowdown. It should
+        # be sufficient to do a single update at the end.
+        self._hold_updating = True
+        try:
+            for don in data_object_nodes:
+                new_model = deepcopy(source_model)
+                new_model.name = don.data_object.name
+                don.set_reflect_model(new_model)
+        finally:
+            do = [node.data_object for node in data_object_nodes]
 
-        do = [node.data_object for node in data_object_nodes]
-        self.update_gui_model(do)
+            self._hold_updating = False
+            self.update_gui_model(do)
 
     @QtCore.pyqtSlot()
     def add_mixed_area_action(self):
@@ -1633,8 +1726,9 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
     def redraw_data_object_graphs(self, data_objects,
                                   all=False,
                                   transform=True):
-        """ Asks the graphs to be redrawn, delegating generative
-        calculation to reflectivitygraphs.redraw_data_objects
+        """
+        Asks the graphs to be redrawn, delegating generative calculation to
+        reflectivitygraphs.redraw_data_objects
 
         Parameters
         ----------
@@ -1796,6 +1890,9 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
             self.treeModel.dataChanged.emit(index, index)
 
     def update_gui_model(self, data_objects):
+        """
+        Recalculates chi2 and the generative model for a list of DataObject
+        """
         if not len(data_objects):
             return
 
@@ -1844,7 +1941,8 @@ class ProgressCallback(QtWidgets.QDialog):
         new_time = time.time()
         self.iterations += 1
 
-        if new_time - self.last_time > 1:
+        # update every 1.5 seconds
+        if new_time - self.last_time > 1.5:
             # gp = self.dataset.graph_properties
             # if gp.line2Dfit is not None:
             #     self.parent.redraw_data_object_graphs([self.dataset])

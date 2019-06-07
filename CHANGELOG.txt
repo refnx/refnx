@@ -120,3 +120,5 @@ Details of changes made to refnx
 - Add option to change context of Mapwrapper (spawn/fork/forkserver)
 - BUG: when loading (not refreshing) a dataset that was already loaded, the
   associated model was lost. (GH331)
+- Added a progress bar for batch fitting.
+- Speeded up batch fitting
