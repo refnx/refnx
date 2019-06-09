@@ -295,22 +295,8 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
             title += ' - ' + self.settings.experiment_file_name
         self.setWindowTitle(title)
 
+        self.select_fitting_algorithm(self.settings.fitting_algorithm)
         self.ui.use_errors_checkbox.setChecked(self.settings.useerrors)
-        self.ui.actionLevenberg_Marquardt.setChecked(False)
-        self.ui.actionDifferential_Evolution.setChecked(False)
-        if self.settings.fitting_algorithm == 'LM':
-            self.ui.actionLevenberg_Marquardt.setChecked(True)
-        elif self.settings.fitting_algorithm == 'DE':
-            self.ui.actionDifferential_Evolution.setChecked(True)
-        elif self.settings.fitting_algorithm == 'MCMC':
-            self.ui.actionMCMC.setChecked(True)
-        elif self.settings.fitting_algorithm == 'L-BFGS-B':
-            self.ui.actionL_BFGS_B.setChecked(True)
-        elif self.settings.fitting_algorithm == 'Dual Annealing':
-            self.ui.actionDual_Annealing.setChecked(True)
-        elif self.settings.fitting_algorithm == 'SHGO':
-            self.ui.actionSHGO.setChecked(True)
-
         self.settransformoption(self.settings.transformdata)
 
     def apply_settings_to_params(self, params):
@@ -623,38 +609,33 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
                 'DE': self.ui.actionDifferential_Evolution
                 }
         self.settings.fitting_algorithm = method
+        meth[method].setChecked(True)
         meth.pop(method)
         for k, v in meth.items():
             v.setChecked(False)
 
     @QtCore.pyqtSlot()
     def on_actionDifferential_Evolution_triggered(self):
-        self.ui.actionDifferential_Evolution.setChecked(True)
         self.select_fitting_algorithm('DE')
 
     @QtCore.pyqtSlot()
     def on_actionMCMC_triggered(self):
-        self.ui.actionMCMC.setChecked(True)
         self.select_fitting_algorithm('MCMC')
 
     @QtCore.pyqtSlot()
     def on_actionDual_Annealing_triggered(self):
-        self.ui.actionDual_Annealing.setChecked(True)
         self.select_fitting_algorithm('dual_annealing')
 
     @QtCore.pyqtSlot()
     def on_actionSHGO_triggered(self):
-        self.ui.actionSHGO.setChecked(True)
         self.select_fitting_algorithm('SHGO')
 
     @QtCore.pyqtSlot()
     def on_actionLevenberg_Marquardt_triggered(self):
-        self.ui.actionLevenberg_Marquardt.setChecked(True)
         self.select_fitting_algorithm('LM')
 
     @QtCore.pyqtSlot()
     def on_actionL_BFGS_B_triggered(self):
-        self.ui.actionL_BFGS_B.setChecked(True)
         self.select_fitting_algorithm('L-BFGS-B')
 
     def change_Q_range(self, qmin, qmax, numpnts):

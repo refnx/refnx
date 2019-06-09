@@ -125,3 +125,5 @@ Details of changes made to refnx
 
 0.1.8
 -----
+- When GUI experiment file is loaded the correct fitting algorithm wasn't being
+  set correctly (GH338)
