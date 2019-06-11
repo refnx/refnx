@@ -129,3 +129,4 @@ Details of changes made to refnx
   set correctly (GH338).
 - Prevent crash when trying to refresh a stale dataset (i.e. is no longer in
   its original location.
+- Produce autocorrelation graph when sampling in GUI.

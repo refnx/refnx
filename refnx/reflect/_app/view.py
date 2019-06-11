@@ -1269,7 +1269,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
             # process the samples
             try:
                 dialog = ProcessMCMCDialog(objective, fitter.chain,
-                                           parent=self)
+                                           folder=folder, parent=self)
                 dialog.exec_()
                 dialog.close()
                 # create MCMC graphs
