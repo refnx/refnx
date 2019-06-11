@@ -782,8 +782,14 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         """
             you are refreshing existing datasets
         """
-        self.treeModel.refresh()
-        self.redraw_data_object_graphs(None, all=True)
+        try:
+            self.treeModel.refresh()
+            self.redraw_data_object_graphs(None, all=True)
+        except FileNotFoundError:
+            print("FileNotFoundError: one or more datafiles is no longer in"
+                  "their original location")
+            msg("FileNotFoundError: one or more datafiles is no longer in"
+                "their original location")
 
     @QtCore.pyqtSlot()
     def on_actionlogY_vs_X_triggered(self):
