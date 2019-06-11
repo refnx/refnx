@@ -79,6 +79,14 @@ class DataStore(object):
 
         # don't overwrite the data object if present, just refresh it
         if self[do.name] is not None:
+            # update the filename
+            # this addresses the use case where the dataset is asked to be
+            # refreshed but fails because the filepath is no longer valid.
+            # if the user loads a file with the same name again, then the
+            # following line would ensure that the datasets filename was
+            # valid again, with the user being able to refresh.
+            self.data_objects[do.name].dataset.filename = dataset.filename
+
             # TODO refreshing causes the file to be re-read, after it
             # was probably already read in self.load. Consider setting
             # the data by copying it from do.

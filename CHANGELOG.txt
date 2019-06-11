@@ -126,4 +126,6 @@ Details of changes made to refnx
 0.1.8
 -----
 - When GUI experiment file is loaded the correct fitting algorithm wasn't being
-  set correctly (GH338)
+  set correctly (GH338).
+- Prevent crash when trying to refresh a stale dataset (i.e. is no longer in
+  its original location.
