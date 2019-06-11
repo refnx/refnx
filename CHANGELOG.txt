@@ -130,3 +130,4 @@ Details of changes made to refnx
 - Prevent crash when trying to refresh a stale dataset (i.e. is no longer in
   its original location.
 - Produce autocorrelation graph when sampling in GUI.
+- Added links to ptemcee and emcee in the optimisation parameters window.
