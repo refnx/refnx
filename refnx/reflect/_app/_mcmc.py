@@ -27,12 +27,13 @@ class SampleMCMCDialog(QtWidgets.QDialog, SampleMCMCDialogUI):
 
 
 class ProcessMCMCDialog(QtWidgets.QDialog, ProcessMCMCDialogUI):
-    def __init__(self, objective, chain, parent=None):
+    def __init__(self, objective, chain, folder=None, parent=None):
         QtWidgets.QDialog.__init__(self, parent)
         self.setupUi(self)
 
         self.objective = objective
-        self.folder = os.getcwd()
+        if folder is None:
+            self.folder = os.getcwd()
 
         if chain is None:
             model_file_name, ok = QtWidgets.QFileDialog.getOpenFileName(
@@ -106,6 +107,19 @@ class ProcessMCMCDialog(QtWidgets.QDialog, ProcessMCMCDialogUI):
 
         process_chain(self.objective, self.chain, nburn=nburn, nthin=nthin)
 
+        # plot the Autocorrelation function of the chain
+        acfs = autocorrelation_chain(self.chain, nburn=nburn, nthin=nthin)
+
+        fig = Figure()
+        FigureCanvas(fig)
+
+        ax = fig.add_subplot(111)
+        ax.plot(acfs)
+        ax.set_ylabel('autocorrelation')
+        ax.set_xlabel('step')
+        fig.savefig(os.path.join(self.folder,
+                                 'steps-autocorrelation.png'))
+
 
 def _plots(obj, nplot=0, folder=None):
     # create graphs of reflectivity and SLD profiles
@@ -120,7 +134,7 @@ def _plots(obj, nplot=0, folder=None):
     ax.set_xlabel("Q / $\\AA$")
     fig.savefig(os.path.join(folder, 'steps.png'), dpi=1000)
 
-    # # corner plot
+    # corner plot
     # fig2 = obj.corner()
     # fig2.savefig(os.path.join(folder, 'steps_corner.png'))
 
