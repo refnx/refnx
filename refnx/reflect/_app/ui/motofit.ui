@@ -1172,7 +1172,7 @@ varying?</string>
   </action>
   <action name="actionLoad_File">
    <property name="text">
-    <string>Load Experiment</string>
+    <string>Open Experiment</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+O</string>
