@@ -789,7 +789,9 @@ class Objective(BaseObjective):
         chain = np.array([par.chain for par in var_pars])
         labels = [par.name for par in var_pars]
         chain = chain.reshape(len(chain), -1).T
-        return corner.corner(chain, labels=labels, **kwds)
+        kwds['labels'] = labels
+        kwds['quantiles'] = [0.16, 0.5, 0.84]
+        return corner.corner(chain, **kwds)
 
 
 class GlobalObjective(Objective):

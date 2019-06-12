@@ -32,6 +32,7 @@ class ProcessMCMCDialog(QtWidgets.QDialog, ProcessMCMCDialogUI):
         self.setupUi(self)
 
         self.objective = objective
+        self.folder = folder
         if folder is None:
             self.folder = os.getcwd()
 
@@ -135,8 +136,15 @@ def _plots(obj, nplot=0, folder=None):
     fig.savefig(os.path.join(folder, 'steps.png'), dpi=1000)
 
     # corner plot
-    # fig2 = obj.corner()
-    # fig2.savefig(os.path.join(folder, 'steps_corner.png'))
+    try:
+        fig2 = Figure()
+        FigureCanvas(fig2)
+        nvars = len(obj.varying_parameters())
+        fig2.subplots(nvars, nvars)
+        obj.corner(fig=fig2)
+        fig2.savefig(os.path.join(folder, 'steps_corner.png'))
+    except ImportError:
+        pass
 
     # plot sld profiles
     if isinstance(obj, GlobalObjective):
