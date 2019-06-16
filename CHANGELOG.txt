@@ -132,3 +132,4 @@ Details of changes made to refnx
 - Produce autocorrelation graph when sampling in GUI.
 - Added links to ptemcee and emcee in the optimisation parameters window.
 - GUI produces corner plot after MCMC sampling
+- BUG fix for rebinning code (doesn't affect analysis)

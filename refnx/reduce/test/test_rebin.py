@@ -32,11 +32,15 @@ class TestRebin(object):
 
         # some arbitrary distribution
         y_old = 1. + np.sin(x_old[:-1] * np.pi) / np.diff(x_old)
+        y_old_sd = np.sqrt(y_old)
 
         # rebin
         y_new = rebin.rebin(x_old, y_old, x_new)
-
         assert_allclose(y_new, y_old)
+
+        y_new, y_new_sd = rebin.rebin(x_old, y_old, x_new, y1_sd=y_old_sd)
+        assert_allclose(y_new, y_old)
+        assert_allclose(y_new_sd, y_old_sd)
 
     def test_x2_surrounds_x1(self):
         """
@@ -180,6 +184,40 @@ class TestRebin(object):
 
         assert_allclose(y_new, y_new_here)
 
+    def test_x2_in_x1_2(self):
+        """
+        x2 has a couple of bins, each of which span more than one original bin
+        """
+        # old size
+        m = 10
+
+        # bin edges
+        x_old = np.linspace(0., 1., m + 1)
+        x_new = np.array([0.25, 0.55, 0.75])
+
+        # some arbitrary distribution
+        y_old = 1. + np.sin(x_old[:-1] * np.pi) / np.ediff1d(x_old)
+
+        y_old = unp.uarray(y_old, 0.1 * y_old * uniform((m,)))
+
+        # rebin
+        y_new, y_new_sd = rebin.rebin(x_old,
+                                      unp.nominal_values(y_old),
+                                      x_new,
+                                      y1_sd=unp.std_devs(y_old))
+
+        # compute answer here to check rebin
+        y_new_here = unp.uarray(np.zeros(2), np.zeros(2))
+        y_new_here[0] = 0.5 * y_old[2] + y_old[3] + y_old[4] + 0.5 * y_old[5]
+        y_new_here[1] = 0.5 * y_old[5] + y_old[6] + 0.5 * y_old[7]
+
+        assert_allclose(y_new,
+                        unp.nominal_values(y_new_here))
+
+        # mean or nominal value comparison
+        assert_allclose(y_new_sd,
+                        unp.std_devs(y_new_here))
+
     def test_y1_uncertainties(self):
         """
         x2 range surrounds x1 range, y1 has uncertainties
@@ -237,3 +275,47 @@ class TestRebin(object):
                         [[25.5, 27.]]])
 
         assert_equal(res, output)
+
+    def test_GH344(self):
+        x_old = np.array([1.5, 2.5, 3.5, 4.5, 5.5, 6.5])
+        y_old = np.array([10, 10, 10, 10, 10])
+        x_new = np.array([1.7, 2.27332857, 2.84665714, 3.41998571,
+                          3.99331429, 4.56664286])
+        y_new = rebin.rebin(x_old, y_old, x_new)
+        assert_allclose(y_new,
+                        [5.7332857] * 5)
+
+        # with uncertainties
+        y_old = np.array([11., 12., 13., 14., 15.])
+
+        y_old = unp.uarray(y_old, 0.1 * y_old)
+
+        # rebin
+        y_new, y_new_sd = rebin.rebin(x_old,
+                                      unp.nominal_values(y_old),
+                                      x_new,
+                                      y1_sd=unp.std_devs(y_old))
+
+        # compute answer here to check rebin
+        y_old_ave = y_old / np.diff(x_old)
+        y_new_here = np.array(
+            [y_old_ave[0] * (x_new[1] - x_new[0]),
+
+             y_old_ave[0] * (x_old[1] - x_new[1]) +
+             y_old_ave[1] * (x_new[2] - x_old[1]),
+
+             y_old_ave[1] * (x_new[3] - x_new[2]),
+
+             y_old_ave[1] * (x_old[2] - x_new[3]) +
+             y_old_ave[2] * (x_new[4] - x_old[2]),
+
+             y_old_ave[3] * (x_new[5] - x_old[3]) +
+             y_old_ave[2] * (x_old[3] - x_new[4])])
+
+        # mean or nominal value comparison
+        assert_allclose(y_new,
+                        unp.nominal_values(y_new_here))
+
+        # mean or nominal value comparison
+        assert_allclose(y_new_sd,
+                        unp.std_devs(y_new_here))
