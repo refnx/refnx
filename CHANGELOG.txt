@@ -133,3 +133,7 @@ Details of changes made to refnx
 - Added links to ptemcee and emcee in the optimisation parameters window.
 - GUI produces corner plot after MCMC sampling
 - BUG fix for rebinning code (doesn't affect analysis)
+- Different interfacial roughness types can be specified between all Components
+  in a Structure. The available types are: Erf (Error Function, default), Tanh,
+  Sinusoidal, Exponential, Step, Linear. User specifiable interfaces can be
+  created by subclassing Interface.

@@ -5,7 +5,8 @@ from numpy.testing import (assert_almost_equal, assert_equal, assert_,
                            assert_allclose)
 
 from refnx._lib import flatten
-from refnx.reflect import (SLD, Structure, Spline, Slab, Stack)
+from refnx.reflect import (SLD, Structure, Spline, Slab, Stack, Erf,
+                           Linear, Exponential)
 from refnx.reflect.structure import _profile_slicer
 from refnx.analysis import Parameter, Interval, Parameters
 
@@ -60,6 +61,53 @@ class TestStructure(object):
         assert_almost_equal(self.s.slabs(), np.array([[0, 6.36, 0, 0, 0],
                                                       [100, sld, sldi, 4, 0.9],
                                                       [0, 0, 0, 5, 0]]))
+
+    def test_interface(self):
+        # can we set the interface property correctly
+        c = self.sio2(10, 3)
+        i = Erf()
+
+        assert isinstance(c.interfaces, list)
+        assert c.interfaces[0] is None
+
+        c.interfaces = i
+        assert isinstance(c.interfaces, list)
+        assert isinstance(c.interfaces[0], Erf)
+
+        c.interfaces = None
+        assert isinstance(c.interfaces, list)
+        assert c.interfaces[0] is None
+
+        import pytest
+        with pytest.raises(ValueError):
+            c.interfaces = [1]
+
+    def test_micro_slab(self):
+        # test micro-slab representation by calculating reflectivity from a
+        # structure with default interfacial profiles for all the components.
+        # Then specify an Erf interface for the slab and check that the
+        # reflectivity signal is the same.
+        sio2 = self.sio2(100, 5)
+        d2o = self.d2o(0, 4)
+
+        s = self.air | sio2 | d2o
+        s.contract = -1
+        q = np.linspace(0.01, 0.5, 101)
+        reflectivity = s.reflectivity(q)
+
+        sio2.interfaces = Erf()
+        d2o.interfaces = Erf()
+        assert len(sio2.interfaces) == 1
+        assert len(d2o.interfaces) == 1
+
+        micro_slab_reflectivity = s.reflectivity(q)
+
+        # Should be within 1%
+        # How close the micro-slicing is to the Nevot-Croce is going to
+        # depend on the exact system you look at, and what slice thickness
+        # is used.
+        assert_allclose(micro_slab_reflectivity,
+                        reflectivity, rtol=0.01)
 
     def test_pickle(self):
         # need to be able to pickle and unpickle structure
@@ -235,6 +283,10 @@ class TestStructure(object):
                      [2.07, 6.36, 3.47, 1.0, 3.47, 1.0, 3.47, 1.0, 6.36])
         assert_equal(slabs[:, 3],
                      [0, 3, 4, 3.5, 4, 3.5, 4, 3.5, 0])
+
+        # what are the interfaces of the Stack
+        assert_equal(len(stk.interfaces), len(stk.slabs()))
+        assert_equal(len(s.interfaces), len(s.slabs()))
 
         # ior a Structure and a Stack
         s = Structure(components=[si(), d2o(10, 3)])
