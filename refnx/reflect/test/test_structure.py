@@ -67,16 +67,14 @@ class TestStructure(object):
         c = self.sio2(10, 3)
         i = Erf()
 
-        assert isinstance(c.interfaces, list)
-        assert c.interfaces[0] is None
+        assert c.interfaces is None
 
         c.interfaces = i
         assert isinstance(c.interfaces, list)
         assert isinstance(c.interfaces[0], Erf)
 
         c.interfaces = None
-        assert isinstance(c.interfaces, list)
-        assert c.interfaces[0] is None
+        assert c.interfaces is None
 
         import pytest
         with pytest.raises(ValueError):
@@ -286,7 +284,7 @@ class TestStructure(object):
 
         # what are the interfaces of the Stack
         assert_equal(len(stk.interfaces), len(stk.slabs()))
-        assert_equal(len(s.interfaces), len(s.slabs()))
+        assert_equal(len(list(flatten(s.interfaces))), len(s.slabs()))
 
         # ior a Structure and a Stack
         s = Structure(components=[si(), d2o(10, 3)])

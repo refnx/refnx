@@ -250,7 +250,7 @@ class Structure(UserList):
         # Each layer can be given a different type of roughness profile
         # that defines transition between successive layers.
         # The default interface is specified by None (= Gaussian roughness)
-        interfaces = self.interfaces
+        interfaces = list(flatten(self.interfaces))
         if all([i is None for i in interfaces]):
             # if all the interfaces are Gaussian, then simply concatenate
             # the default slabs property of each component.
@@ -309,6 +309,15 @@ class Structure(UserList):
         # interfaces between all the slabs
         _interfaces = self.interfaces
         erf_interface = Erf()
+        i = 0
+        # some Components may have many slabs (e.g. Spline), but not have
+        # overridden the default interfaces value.
+        for _interface, _slabs in zip(_interfaces, sl):
+            if _interface is None:
+                _interfaces[i] = [erf_interface] * len(_slabs)
+            i += 1
+
+        _interfaces = list(flatten(_interfaces))
         _interfaces = [erf_interface if i is None else i for i in _interfaces]
 
         # distance of each interface from the fronting interface
@@ -355,10 +364,11 @@ class Structure(UserList):
     @property
     def interfaces(self):
         """
-        The interfacial roughness type between each layer in `Component.slabs`.
-        These may be changed by altering the `Component.interfaces` property.
+        A nested list containing the interfacial roughness types for each
+        of the `Component`s.
+        `len(Structure.interfaces) == len(Structure.components)`
         """
-        return list(flatten([c.interfaces for c in self.components]))
+        return [c.interfaces for c in self.components]
 
     @staticmethod
     def overall_sld(slabs, solvent):
@@ -770,11 +780,12 @@ class Component(object):
 
     @interfaces.setter
     def interfaces(self, interfaces):
-        n_slabs = len(self.slabs())
-
+        # Sentinel for default roughness.
         if interfaces is None:
-            self._interfaces = [None] * n_slabs
+            self._interfaces = None
             return
+
+        n_slabs = len(self.slabs())
 
         if isinstance(interfaces, Interface):
             self._interfaces = [interfaces] * n_slabs
