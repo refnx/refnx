@@ -65,13 +65,13 @@ class TestStructure(object):
     def test_interface(self):
         # can we set the interface property correctly
         c = self.sio2(10, 3)
-        i = Erf()
-
         assert c.interfaces is None
 
-        c.interfaces = i
-        assert isinstance(c.interfaces, list)
-        assert isinstance(c.interfaces[0], Erf)
+        c.interfaces = Erf()
+        assert isinstance(c.interfaces, Erf)
+
+        c.interfaces = [Erf()]
+        assert isinstance(c.interfaces, Erf)
 
         c.interfaces = None
         assert c.interfaces is None
@@ -79,6 +79,10 @@ class TestStructure(object):
         import pytest
         with pytest.raises(ValueError):
             c.interfaces = [1]
+
+        # because len(c.slabs()) = 1
+        with pytest.raises(ValueError):
+            c.interfaces = [Erf(), Erf()]
 
     def test_micro_slab(self):
         # test micro-slab representation by calculating reflectivity from a
@@ -95,8 +99,6 @@ class TestStructure(object):
 
         sio2.interfaces = Erf()
         d2o.interfaces = Erf()
-        assert len(sio2.interfaces) == 1
-        assert len(d2o.interfaces) == 1
 
         micro_slab_reflectivity = s.reflectivity(q)
 

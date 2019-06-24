@@ -92,7 +92,7 @@ class Structure(UserList):
     Example
     -------
 
-    >>> from refnx.reflect import SLD
+    >>> from refnx.reflect import SLD, Linear, Tanh
     >>> # make the materials
     >>> air = SLD(0, 0)
     >>> # overall SLD of polymer is (1.0 + 0.001j) x 10**-6 A**-2
@@ -103,6 +103,15 @@ class Structure(UserList):
     >>> # of 4 A.
     >>> s = air(0, 0) | polymer(200, 4) | si(0, 3)
 
+    >>> # use Linear roughness between air and polymer (rather than default
+    >>> # Gaussian roughness)
+    >>> # use Tanh roughness between si and polymer
+    >>> s[1].interfaces = Linear()
+    >>> s[2].interfaces = Tanh()
+    >>> # If non-default roughness is used then the reflectivity is calculated
+    >>> # via micro-slicing - set the `contract` property to speed the
+    >>> # calculation up
+    >>> s.contract = 0.5
     """
     def __init__(self, components=(), name='', solvent=None,
                  reverse_structure=False, contract=0):
@@ -310,11 +319,14 @@ class Structure(UserList):
         _interfaces = self.interfaces
         erf_interface = Erf()
         i = 0
-        # some Components may have many slabs (e.g. Spline), but not have
-        # overridden the default interfaces value.
+        # the default Interface is None.
+        # The Component.interfaces property may not have the same length as the
+        # Component.slabs. Expand it so it matches the number of slabs,
+        # otherwise the calculation of microslabs fails.
         for _interface, _slabs in zip(_interfaces, sl):
-            if _interface is None:
-                _interfaces[i] = [erf_interface] * len(_slabs)
+            if _interface is None or isinstance(_interface, Interface):
+                f = _interface or erf_interface
+                _interfaces[i] = [f] * len(_slabs)
             i += 1
 
         _interfaces = list(flatten(_interfaces))
@@ -364,8 +376,8 @@ class Structure(UserList):
     @property
     def interfaces(self):
         """
-        A nested list containing the interfacial roughness types for each
-        of the `Component`s.
+        A nested list containing the interfacial roughness types for each of
+        the `Component`s.
         `len(Structure.interfaces) == len(Structure.components)`
         """
         return [c.interfaces for c in self.components]
@@ -764,7 +776,6 @@ class Component(object):
     def parameters(self):
         """
         :class:`refnx.analysis.Parameters` associated with this component
-
         """
         raise NotImplementedError("A component should override the parameters "
                                   "property")
@@ -785,15 +796,18 @@ class Component(object):
             self._interfaces = None
             return
 
-        n_slabs = len(self.slabs())
-
         if isinstance(interfaces, Interface):
-            self._interfaces = [interfaces] * n_slabs
+            self._interfaces = interfaces
             return
 
         # this will raise TypeError is interfaces is not iterable
         _interfaces = [i for i in interfaces if isinstance(i, Interface)]
 
+        if len(_interfaces) == 1:
+            self._interfaces = _interfaces[0]
+            return
+
+        n_slabs = len(self.slabs())
         if len(_interfaces) == n_slabs:
             self._interfaces = _interfaces
         else:
