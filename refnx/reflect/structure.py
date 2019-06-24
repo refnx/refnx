@@ -250,7 +250,7 @@ class Structure(UserList):
         # Each layer can be given a different type of roughness profile
         # that defines transition between successive layers.
         # The default interface is specified by None (= Gaussian roughness)
-        interfaces = list(flatten(self.interfaces))
+        interfaces = flatten(self.interfaces)
         if all([i is None for i in interfaces]):
             # if all the interfaces are Gaussian, then simply concatenate
             # the default slabs property of each component.
