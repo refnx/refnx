@@ -53,6 +53,9 @@ class Erf(Interface):
     def __call__(self, z, scale=1, loc=0):
         return norm.cdf(z, scale=scale, loc=loc)
 
+    def __repr__(self):
+        return ("Erf()")
+
 
 class Linear(Interface):
     """
@@ -71,6 +74,9 @@ class Linear(Interface):
         f[new_z <= -_SQRT3 * scale] = 0
         f[new_z >= _SQRT3 * scale] = 1
         return f
+
+    def __repr__(self):
+        return ("Linear()")
 
 
 class Exponential(Interface):
@@ -91,6 +97,9 @@ class Exponential(Interface):
         f[new_z <= 0] = 0.5 * np.exp(_SQRT2 * new_z[new_z <= 0] / scale)
         return f
 
+    def __repr__(self):
+        return ("Exponential()")
+
 
 class Tanh(Interface):
     """
@@ -107,6 +116,9 @@ class Tanh(Interface):
     def __call__(self, z, scale=1, loc=0):
         arg = np.sqrt(2 / np.pi) * (z - loc) / scale
         return 0.5 * (1 + np.tanh(arg))
+
+    def __repr__(self):
+        return ("Tanh()")
 
 
 class Sinusoidal(Interface):
@@ -126,6 +138,9 @@ class Sinusoidal(Interface):
         f[new_z <= -_GAMMA * scale] = 0
         f[new_z >= _GAMMA * scale] = 1
         return f
+
+    def __repr__(self):
+        return ("Sinusoidal()")
 
 
 class Step(Interface):
@@ -148,3 +163,6 @@ class Step(Interface):
         f[new_z <= -scale] = 0
         f[new_z >= scale] = 1
         return f
+
+    def __repr__(self):
+        return ("Step()")

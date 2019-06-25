@@ -35,3 +35,11 @@ class TestStructure(object):
     def test_Tanh(self):
         i = Tanh()
         i(self.x, scale=1.1, loc=-1.)
+
+    def test_repr(self):
+        cls = [Erf, Exponential, Step, Linear, Tanh, Sinusoidal]
+
+        for c in cls:
+            o = c()
+            p = eval(repr(o))
+            assert isinstance(p, c)
