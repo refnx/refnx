@@ -3,10 +3,10 @@ import pickle
 import numpy as np
 from numpy.testing import (assert_almost_equal, assert_equal, assert_,
                            assert_allclose)
-
+from scipy.stats import cauchy
 from refnx._lib import flatten
 from refnx.reflect import (SLD, Structure, Spline, Slab, Stack, Erf,
-                           Linear, Exponential)
+                           Linear, Exponential, Interface)
 from refnx.reflect.structure import _profile_slicer
 from refnx.analysis import Parameter, Interval, Parameters
 
@@ -109,6 +109,15 @@ class TestStructure(object):
         assert_allclose(micro_slab_reflectivity,
                         reflectivity, rtol=0.01)
 
+        # test out user defined roughness type
+        class Cauchy(Interface):
+            def __call__(self, x, loc=0, scale=1):
+                return cauchy.cdf(x, loc=loc, scale=scale)
+
+        c = Cauchy()
+        sio2.interfaces = c
+        s.reflectivity(q)
+
         # imaginary part of micro slab should be calculated in same way as
         # real part
         fronting = SLD(1 + 1j)
@@ -202,7 +211,7 @@ class TestStructure(object):
 
         reflectivity = self.s.reflectivity(q)
         z, sld = self.s.sld_profile(z=np.linspace(-150, 250, 1000))
-        round_trip_structure = _profile_slicer(z, sld, slice_size=0.1)
+        round_trip_structure = _profile_slicer(z, sld, slice_size=0.5)
         round_trip_reflectivity = round_trip_structure.reflectivity(q)
         assert_allclose(round_trip_reflectivity, reflectivity, rtol=0.004)
 
@@ -248,7 +257,7 @@ class TestStructure(object):
                         reflectivity)
 
         z, sld = self.s.sld_profile(z=np.linspace(-150, 250, 1000))
-        slice_structure = _profile_slicer(z, sld, slice_size=0.05)
+        slice_structure = _profile_slicer(z, sld, slice_size=0.5)
         slice_structure.contract = 0.02
         slice_reflectivity = slice_structure.reflectivity(q)
         assert_allclose(slice_reflectivity,

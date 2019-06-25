@@ -84,6 +84,8 @@ class Structure(UserList):
     up into small-slabs, and calculating the reflectivity from those. This
     normally takes much longer than the Nevot-Croce approximation. To speed
     the calculation up the `Structure.contract` property can be used.
+    Contracting too far may mask the subtle differences between different
+    roughness types.
     The profile contraction specified by this property can greatly improve
     calculation time for Structures created with micro-slicing. If you use
     this option it is recommended to check the reflectivity signal with and
@@ -92,7 +94,7 @@ class Structure(UserList):
     Example
     -------
 
-    >>> from refnx.reflect import SLD, Linear, Tanh
+    >>> from refnx.reflect import SLD, Linear, Tanh, Interface
     >>> # make the materials
     >>> air = SLD(0, 0)
     >>> # overall SLD of polymer is (1.0 + 0.001j) x 10**-6 A**-2
@@ -103,15 +105,26 @@ class Structure(UserList):
     >>> # of 4 A.
     >>> s = air(0, 0) | polymer(200, 4) | si(0, 3)
 
-    >>> # use Linear roughness between air and polymer (rather than default
-    >>> # Gaussian roughness)
-    >>> # use Tanh roughness between si and polymer
+    Use Linear roughness between air and polymer (rather than default Gaussian
+    roughness). Use Tanh roughness between si and polymer.
+    If non-default roughness is used then the reflectivity is calculated via
+    micro-slicing - set the `contract` property to speed the calculation up.
+
     >>> s[1].interfaces = Linear()
     >>> s[2].interfaces = Tanh()
-    >>> # If non-default roughness is used then the reflectivity is calculated
-    >>> # via micro-slicing - set the `contract` property to speed the
-    >>> # calculation up
     >>> s.contract = 0.5
+
+    Create a user defined interfacial roughness based on the cumulative
+    distribution function (CDF) of a Cauchy.
+
+    >>> from scipy.stats import cauchy
+    >>> class Cauchy(Interface):
+    ...     def __call__(self, x, loc=0, scale=1):
+    ...         return cauchy.cdf(x, loc=loc, scale=scale)
+    >>>
+    >>> c = Cauchy()
+    >>> s[1].interfaces = c
+
     """
     def __init__(self, components=(), name='', solvent=None,
                  reverse_structure=False, contract=0):
