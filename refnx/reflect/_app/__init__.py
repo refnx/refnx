@@ -8,6 +8,14 @@ def gui():
 
     app = QtWidgets.QApplication(sys.argv)
 
+    # should enable high resolution on 4k desktops??
+    # "https://coad.ca/2017/05/15/
+    # one-way-to-deal-with-high-dpi-4k-screens-in-python/"
+    if hasattr(QtCore.Qt, 'AA_EnableHighDpiScaling'):
+        app.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling, True)
+    if hasattr(QtCore.Qt, 'AA_UseHighDpiPixmaps'):
+        app.setAttribute(QtCore.Qt.AA_UseHighDpiPixmaps, True)
+
     # used to make sure that only decimal point is used for
     # entering floats (3.1), rejecting commas (3,1).
     # This reduces confusion for international users
