@@ -46,6 +46,23 @@ class TestReflect(object):
         # calculate an SLD profile
         s.sld_profile()
 
+    def test_spline_no_knots(self):
+        # try and make Spline with no knots
+        a = Spline(100, [], [], zgrad=False, microslab_max_thickness=1)
+
+        s = self.left | a | self.right | self.solvent
+        b = a.slabs(s)
+        assert_equal(b[:, 2], 0)
+
+        # microslabs are assessed in the middle of the slab
+        assert_equal(b[0, 1], a(0.5 * b[0, 0], s))
+
+        # with the ends turned off the profile should be a straight line
+        assert_equal(a(50, s), 2.0)
+
+        q = np.linspace(0.01, 0.5, 1001)
+        s.reflectivity(q)
+
     def test_pickle(self):
         a = Spline(100, [2, 3],
                    [0.3, 0.3], zgrad=False, microslab_max_thickness=1)

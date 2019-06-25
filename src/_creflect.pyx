@@ -1,3 +1,4 @@
+# cython: language_level=3, boundscheck=False
 """
     *Calculates the specular (Neutron or X-ray) reflectivity from a stratified
     series of layers.
@@ -23,7 +24,6 @@ FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THIS SOFTWARE.
 
 """
-# cython: language_level=3, boundscheck=False
 from multiprocessing import cpu_count
 import numpy as np
 

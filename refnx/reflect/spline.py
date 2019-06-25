@@ -105,7 +105,8 @@ class Spline(Component):
         zeds = np.cumsum(dz)
 
         # if dz's sum to more than 1, then normalise to unit interval.
-        if zeds[-1] > 1:
+        if len(zeds) and zeds[-1] > 1:
+            # there may be no knots
             zeds /= zeds[-1]
             zeds = np.clip(zeds, 0, 1)
 
