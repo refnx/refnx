@@ -350,16 +350,18 @@ class Structure(UserList):
         delta_irho = total_slabs[1:, 2] - total_slabs[:-1, 2]
 
         # the RMS roughness of each step
-        sigma = np.clip(total_slabs[1:, 3], 1e-3, None)
+        sigma = total_slabs[1:, 3]
+        step = Step()
 
         # accumulate the SLD of each step.
         for i in range(len(total_slabs) - 1):
-            sld += delta_rho[i] * _interfaces[i + 1](zed,
-                                                     scale=sigma[i],
-                                                     loc=dist[i])
-            isld = delta_irho[i] * _interfaces[i + 1](zed,
-                                                      scale=sigma[i],
-                                                      loc=dist[i])
+            f = _interfaces[i + 1]
+            if sigma[i] == 0:
+                f = step
+
+            p = f(zed, scale=sigma[i], loc=dist[i])
+            sld += delta_rho[i] * p
+            isld += delta_irho[i] * p
 
         sld[0] = total_slabs[0, 1]
         isld[0] = total_slabs[0, 2]

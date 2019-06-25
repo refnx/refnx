@@ -109,6 +109,17 @@ class TestStructure(object):
         assert_allclose(micro_slab_reflectivity,
                         reflectivity, rtol=0.01)
 
+        # imaginary part of micro slab should be calculated in same way as
+        # real part
+        fronting = SLD(1 + 1j)
+        layer = SLD(4 + 4j)
+        backing = SLD(6 + 6j)
+        s = fronting | layer(100, 4) | backing(0, 4)
+        s[1].interfaces = Erf()
+        s[-1].interfaces = Erf()
+        slabs = s.slabs()
+        assert_almost_equal(slabs[:, 1], slabs[:, 2])
+
     def test_pickle(self):
         # need to be able to pickle and unpickle structure
         pkl = pickle.dumps(self.s)

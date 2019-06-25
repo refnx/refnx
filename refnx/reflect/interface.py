@@ -54,7 +54,7 @@ class Erf(Interface):
         return norm.cdf(z, scale=scale, loc=loc)
 
     def __repr__(self):
-        return ("Erf()")
+        return "Erf()"
 
 
 class Linear(Interface):
@@ -76,7 +76,7 @@ class Linear(Interface):
         return f
 
     def __repr__(self):
-        return ("Linear()")
+        return "Linear()"
 
 
 class Exponential(Interface):
@@ -98,7 +98,7 @@ class Exponential(Interface):
         return f
 
     def __repr__(self):
-        return ("Exponential()")
+        return "Exponential()"
 
 
 class Tanh(Interface):
@@ -118,7 +118,7 @@ class Tanh(Interface):
         return 0.5 * (1 + np.tanh(arg))
 
     def __repr__(self):
-        return ("Tanh()")
+        return "Tanh()"
 
 
 class Sinusoidal(Interface):
@@ -140,7 +140,7 @@ class Sinusoidal(Interface):
         return f
 
     def __repr__(self):
-        return ("Sinusoidal()")
+        return "Sinusoidal()"
 
 
 class Step(Interface):
@@ -165,4 +165,4 @@ class Step(Interface):
         return f
 
     def __repr__(self):
-        return ("Step()")
+        return "Step()"
