@@ -2,6 +2,8 @@ from refnx.reflect.reflect_model import (ReflectModel, reflectivity,
                                          MixedReflectModel)
 from refnx.reflect.structure import (Structure, SLD, Slab, Component,
                                      sld_profile, Stack)
+from refnx.reflect.interface import (Erf, Interface, Linear, Exponential,
+                                     Tanh, Sinusoidal, Step)
 from refnx.reflect.spline import Spline
 from refnx.reflect._lipid import LipidLeaflet
 from refnx._lib._testutils import PytestTester

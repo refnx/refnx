@@ -3,9 +3,10 @@ import pickle
 import numpy as np
 from numpy.testing import (assert_almost_equal, assert_equal, assert_,
                            assert_allclose)
-
+from scipy.stats import cauchy
 from refnx._lib import flatten
-from refnx.reflect import (SLD, Structure, Spline, Slab, Stack)
+from refnx.reflect import (SLD, Structure, Spline, Slab, Stack, Erf,
+                           Linear, Exponential, Interface)
 from refnx.reflect.structure import _profile_slicer
 from refnx.analysis import Parameter, Interval, Parameters
 
@@ -60,6 +61,73 @@ class TestStructure(object):
         assert_almost_equal(self.s.slabs(), np.array([[0, 6.36, 0, 0, 0],
                                                       [100, sld, sldi, 4, 0.9],
                                                       [0, 0, 0, 5, 0]]))
+
+    def test_interface(self):
+        # can we set the interface property correctly
+        c = self.sio2(10, 3)
+        assert c.interfaces is None
+
+        c.interfaces = Erf()
+        assert isinstance(c.interfaces, Erf)
+
+        c.interfaces = [Erf()]
+        assert isinstance(c.interfaces, Erf)
+
+        c.interfaces = None
+        assert c.interfaces is None
+
+        import pytest
+        with pytest.raises(ValueError):
+            c.interfaces = [1]
+
+        # because len(c.slabs()) = 1
+        with pytest.raises(ValueError):
+            c.interfaces = [Erf(), Erf()]
+
+    def test_micro_slab(self):
+        # test micro-slab representation by calculating reflectivity from a
+        # structure with default interfacial profiles for all the components.
+        # Then specify an Erf interface for the slab and check that the
+        # reflectivity signal is the same.
+        sio2 = self.sio2(100, 5)
+        d2o = self.d2o(0, 4)
+
+        s = self.air | sio2 | d2o
+        s.contract = -1
+        q = np.linspace(0.01, 0.5, 101)
+        reflectivity = s.reflectivity(q)
+
+        sio2.interfaces = Erf()
+        d2o.interfaces = Erf()
+
+        micro_slab_reflectivity = s.reflectivity(q)
+
+        # Should be within 1%
+        # How close the micro-slicing is to the Nevot-Croce is going to
+        # depend on the exact system you look at, and what slice thickness
+        # is used.
+        assert_allclose(micro_slab_reflectivity,
+                        reflectivity, rtol=0.01)
+
+        # test out user defined roughness type
+        class Cauchy(Interface):
+            def __call__(self, x, loc=0, scale=1):
+                return cauchy.cdf(x, loc=loc, scale=scale)
+
+        c = Cauchy()
+        sio2.interfaces = c
+        s.reflectivity(q)
+
+        # imaginary part of micro slab should be calculated in same way as
+        # real part
+        fronting = SLD(1 + 1j)
+        layer = SLD(4 + 4j)
+        backing = SLD(6 + 6j)
+        s = fronting | layer(100, 4) | backing(0, 4)
+        s[1].interfaces = Erf()
+        s[-1].interfaces = Erf()
+        slabs = s.slabs()
+        assert_almost_equal(slabs[:, 1], slabs[:, 2])
 
     def test_pickle(self):
         # need to be able to pickle and unpickle structure
@@ -143,7 +211,7 @@ class TestStructure(object):
 
         reflectivity = self.s.reflectivity(q)
         z, sld = self.s.sld_profile(z=np.linspace(-150, 250, 1000))
-        round_trip_structure = _profile_slicer(z, sld, slice_size=0.1)
+        round_trip_structure = _profile_slicer(z, sld, slice_size=0.5)
         round_trip_reflectivity = round_trip_structure.reflectivity(q)
         assert_allclose(round_trip_reflectivity, reflectivity, rtol=0.004)
 
@@ -189,7 +257,7 @@ class TestStructure(object):
                         reflectivity)
 
         z, sld = self.s.sld_profile(z=np.linspace(-150, 250, 1000))
-        slice_structure = _profile_slicer(z, sld, slice_size=0.05)
+        slice_structure = _profile_slicer(z, sld, slice_size=0.5)
         slice_structure.contract = 0.02
         slice_reflectivity = slice_structure.reflectivity(q)
         assert_allclose(slice_reflectivity,
@@ -235,6 +303,10 @@ class TestStructure(object):
                      [2.07, 6.36, 3.47, 1.0, 3.47, 1.0, 3.47, 1.0, 6.36])
         assert_equal(slabs[:, 3],
                      [0, 3, 4, 3.5, 4, 3.5, 4, 3.5, 0])
+
+        # what are the interfaces of the Stack
+        assert_equal(len(stk.interfaces), len(stk.slabs()))
+        assert_equal(len(list(flatten(s.interfaces))), len(s.slabs()))
 
         # ior a Structure and a Stack
         s = Structure(components=[si(), d2o(10, 3)])
