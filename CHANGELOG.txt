@@ -137,3 +137,6 @@ Details of changes made to refnx
   in a Structure. The available types are: Erf (Error Function, default), Tanh,
   Sinusoidal, Exponential, Step, Linear. User specifiable interfaces can be
   created by subclassing Interface.
+- A fix for the PyQt5 interface using 4K screens on Windows was made.
+  Previously the GUI elements and fonts were being displayed in a much too
+  small fashion.
