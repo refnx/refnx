@@ -14,7 +14,7 @@ environment:
     - TARGET_ARCH: x64
       CONDA_NPY: 116
       PYTHON_VERSION: 3.7
-      CONDA_INSTALL_LOCN: C:\\Miniconda37-x64
+      CONDA_INSTALL_LOCN: C:\\Miniconda36-x64
 
 # We always use a 64-bit machine, but can build x86 distributions
 # with the TARGET_ARCH variable (which is used by CMD_IN_ENV).
