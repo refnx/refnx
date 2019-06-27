@@ -30,7 +30,7 @@ def gui():
     myapp = MotofitMainWindow()
 
     fnt = QtGui.QFont('Arial')
-    fnt.setPixelSize(12)
+    fnt.setPointSize(12)
     app.setFont(fnt)
 
     myapp.show()
