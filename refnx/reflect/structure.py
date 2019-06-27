@@ -599,7 +599,7 @@ class Structure(UserList):
         fig, ax : :class:`matplotlib.Figure`, :class:`matplotlib.Axes`
           `matplotlib` figure and axes objects.
 
-      """
+        """
         import matplotlib.pyplot as plt
 
         params = self.parameters

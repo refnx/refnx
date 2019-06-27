@@ -11,10 +11,6 @@ from refnx.reflect._app import gui, main
 
 
 try:
-    import ipywidgets as _ipywidgets
-    import traitlets as _traitlets
-    import matplotlib as _matplotlib
-    import IPython as _ipython
     from refnx.reflect._interactive_modeller import Motofit
 except ImportError:
 

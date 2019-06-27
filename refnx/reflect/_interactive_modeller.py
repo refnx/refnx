@@ -32,9 +32,7 @@ import numpy as np
 import ipywidgets as widgets
 import traitlets
 from traitlets import HasTraits
-import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
-from IPython.display import display, clear_output
 
 from refnx.reflect import Slab, ReflectModel
 from refnx.dataset import ReflectDataset
@@ -971,6 +969,7 @@ class Motofit(object):
         """
         # the theoretical model
         # display the main graph
+        import matplotlib.pyplot as plt
         self.fig = plt.figure(figsize=(9, 4))
 
         # grid specs depending on whether the residuals are displayed
@@ -1099,6 +1098,7 @@ class Motofit(object):
         """
         Print to the output widget
         """
+        from IPython.display import clear_output
         with self.output:
             clear_output()
             print(string)
@@ -1196,6 +1196,7 @@ class Motofit(object):
         self.update_model(None)
 
     def _on_display_residuals_changed(self, change):
+        import matplotlib.pyplot as plt
         if change['new']:
             self.ax_residual.set_visible(True)
             self.ax_data.set_position(

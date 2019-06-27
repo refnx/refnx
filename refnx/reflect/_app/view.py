@@ -12,7 +12,6 @@ import matplotlib
 
 from PyQt5 import QtCore, QtGui, QtWidgets, uic
 
-# matplotlib.rcParams['backend.qt5'] = 'PyQt5'
 from matplotlib.backends.backend_qt5agg import (
     FigureCanvasQTAgg as FigureCanvas)
 from matplotlib.backends.backend_qt5agg import (
