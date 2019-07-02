@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>300</width>
-    <height>240</height>
+    <height>215</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -94,12 +94,12 @@
     <widget class="QComboBox" name="init">
      <item>
       <property name="text">
-       <string>prior</string>
+       <string>covar</string>
       </property>
      </item>
      <item>
       <property name="text">
-       <string>covar</string>
+       <string>prior</string>
       </property>
      </item>
      <item>
