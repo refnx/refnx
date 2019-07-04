@@ -215,6 +215,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         state['datastore'] = self.treeModel.datastore
         state['history'] = self.ui.console_text_edit.toPlainText()
         state['settings'] = self.settings
+        state['refnx.version'] = refnx.version.version
 
         fit_list = self.currently_fitting_model
         state['currently_fitting'] = fit_list.datasets
@@ -253,17 +254,25 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
             print("Couldn't load experiment")
             return
 
-        self.treeModel._data = state[
-            'datastore']
-        self.treeModel.rebuild()
+        try:
+            self.treeModel._data = state[
+                'datastore']
+            self.treeModel.rebuild()
 
-        # remove and add datasetsToGraphs
-        self.reflectivitygraphs.remove_traces()
-        self.sldgraphs.remove_traces()
-        ds = [d for d in self.treeModel.datastore]
-        self.add_data_objects_to_graphs(ds)
-        self.update_gui_model(ds)
-        self.reflectivitygraphs.draw()
+            # remove and add datasetsToGraphs
+            self.reflectivitygraphs.remove_traces()
+            self.sldgraphs.remove_traces()
+            ds = [d for d in self.treeModel.datastore]
+            self.add_data_objects_to_graphs(ds)
+            self.update_gui_model(ds)
+            self.reflectivitygraphs.draw()
+        except Exception as e:
+            version = state.get('refnx.version', 'N/A')
+            msg("Failed to load experiment. It may have been saved in a"
+                " previous refnx version ({}). Please use that version to"
+                " continue with analysis, refnx will now"
+                " close.".format(version))
+            raise e
 
         try:
             self.ui.console_text_edit.setPlainText(state['history'])
