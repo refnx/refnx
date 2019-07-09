@@ -1219,6 +1219,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
                 parent=self,
                 caption='Select location to save MCMC output')
             folder_dialog.setFileMode(QtWidgets.QFileDialog.Directory)
+            folder_dialog.setWindowModality(QtCore.Qt.WindowModal)
             if folder_dialog.exec_():
                 folder = folder_dialog.selectedFiles()[0]
             else:
