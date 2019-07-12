@@ -144,3 +144,6 @@ Details of changes made to refnx
  lost).
 - fixed bugs if cancel was pressed during the MCMC folder dialogue phase.
 - made loading of experiment file back compatible.
+
+0.1.9
+-----
