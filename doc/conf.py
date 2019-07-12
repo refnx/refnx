@@ -38,7 +38,7 @@ extensions = [
     'sphinx.ext.autosummary',
     'sphinx.ext.napoleon',
     'nbsphinx',
-    'jupyter_sphinx.embed_widgets'
+    'jupyter_sphinx.execute'
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -57,7 +57,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'refnx'
-copyright = '2015-2017, Andrew Nelson'
+copyright = '2015-2019, Andrew Nelson'
 author = 'Andrew Nelson'
 
 # The version info for the project you're documenting, acts as replacement for
