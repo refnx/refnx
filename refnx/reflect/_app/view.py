@@ -539,6 +539,8 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
 
         try:
             dialog = ProcessMCMCDialog(objective, None, parent=self)
+            if dialog.chain is None:
+                return
             dialog.exec_()
             print(str(objective))
             _plots(objective, nplot=dialog.nplot.value(), folder=dialog.folder)

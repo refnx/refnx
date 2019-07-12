@@ -142,3 +142,5 @@ Details of changes made to refnx
   small fashion.
 - Made various dialogues in the PyQt5 GUI window modal (to prevent them being
  lost).
+- fixed bugs if cancel was pressed during the MCMC folder dialogue phase.
+- made loading of experiment file back compatible.

@@ -33,31 +33,34 @@ class ProcessMCMCDialog(QtWidgets.QDialog, ProcessMCMCDialogUI):
 
         self.objective = objective
         self.folder = folder
+        self.chain = chain
+
         if folder is None:
             self.folder = os.getcwd()
 
-        if chain is None:
+        if self.chain is None:
             model_file_name, ok = QtWidgets.QFileDialog.getOpenFileName(
                 self, 'Select chain file')
             if not ok:
                 return
             self.folder = os.path.dirname(model_file_name)
             try:
-                chain = load_chain(model_file_name)
+                self.chain = load_chain(model_file_name)
             except Exception as e:
                 # a chain load will go wrong quite often I'd expect
+                self.chain = None
                 print(repr(e))
                 return
 
         self.chain = chain
 
-        if len(chain.shape) == 3:
-            steps, walkers, varys = chain.shape
+        if len(self.chain.shape) == 3:
+            steps, walkers, varys = self.chain.shape
             self.chain_size.setText(
                 'steps: {}, walkers: {}, varys: {}'.format(
                     steps, walkers, varys))
         else:
-            steps, temps, walkers, varys = chain.shape
+            steps, temps, walkers, varys = self.chain.shape
             self.chain_size.setText(
                 'steps: {}, temps: {}, walkers: {}, varys: {}'.format(
                     steps, temps, walkers, varys))
