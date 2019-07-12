@@ -259,6 +259,10 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
                 'datastore']
             self.treeModel.rebuild()
 
+            # amend the internal state to compensate for mtft files saved in
+            # older versions missing attributes saved in later versions.
+            self.compensate_older_versions()
+
             # remove and add datasetsToGraphs
             self.reflectivitygraphs.remove_traces()
             self.sldgraphs.remove_traces()
@@ -306,6 +310,23 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         self.select_fitting_algorithm(self.settings.fitting_algorithm)
         self.ui.use_errors_checkbox.setChecked(self.settings.useerrors)
         self.settransformoption(self.settings.transformdata)
+
+    def compensate_older_versions(self):
+        """
+        Amends the internal state of the program to add attributes that may
+        be missing in experiment files that were saved in earlier versions of
+        the GUI.
+        """
+        # add interfaces attribute to all Components (added in v0.1.8)
+        # another way of doing it would be to use
+        # `self.__dict__.get('_interfaces', None)` in the interfaces property,
+        # but that is slower.
+        for do in self.treeModel.datastore:
+            model = do.model
+            s = model.structure
+            for component in s:
+                if not hasattr(component, '_interfaces'):
+                    component._interfaces = None
 
     def apply_settings_to_params(self, params):
         for key in self.settings.__dict__:
