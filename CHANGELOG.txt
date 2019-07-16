@@ -147,3 +147,4 @@ Details of changes made to refnx
 
 0.1.9
 -----
+- Added DOTAP, h-DOPC, 18:1 Diether PC to lipids database
