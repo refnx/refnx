@@ -209,6 +209,8 @@ class Catalogue(object):
         except KeyError:
             # older PLP files didn't have y_pixels_per_mm, so use built in
             # value
+            warnings.warn('Setting default pixel size to 1.177',
+                          RuntimeWarning)
             d['y_pixels_per_mm'] = np.array([1.177])
 
         self.cat = d
