@@ -207,7 +207,8 @@ class Catalogue(object):
             d['y_pixels_per_mm'] = h5d[
                 'entry1/instrument/parameters/y_pixels_per_mm'][:]
         except KeyError:
-            # older PLP files didn't have y_pixels_per_mm, so use built in value
+            # older PLP files didn't have y_pixels_per_mm, so use built in
+            # value
             d['y_pixels_per_mm'] = np.array([1.177])
 
         self.cat = d
@@ -1210,7 +1211,7 @@ class PlatypusNexus(ReflectNexus):
         -------
         phase_angle, master_opening : float
             The phase angle in degrees, and the angular opening of the master
-            chopper
+            chopper in radians
         """
         cat = self.cat
         master = cat.master
