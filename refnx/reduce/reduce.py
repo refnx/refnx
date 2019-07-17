@@ -5,8 +5,7 @@ from time import gmtime, strftime
 
 import numpy as np
 from refnx.reduce.platypusnexus import (PlatypusNexus, ReflectNexus,
-                                        number_datafile,
-                                        Y_PIXEL_SPACING, basename_datafile)
+                                        number_datafile, basename_datafile)
 from refnx.util import ErrorProp as EP
 import refnx.util.general as general
 from refnx.reduce.parabolic_motion import (parabola_line_intersection_point,
@@ -301,6 +300,8 @@ class PlatypusReduce(ReflectReduce):
 
         beampos_z_difference = (self.reflected_beam.m_beampos -
                                 self.direct_beam.m_beampos)
+
+        Y_PIXEL_SPACING = self.reflected_beam.cat.y_pixels_per_mm[0]
 
         total_z_deflection = (detector_z_difference +
                               beampos_z_difference * Y_PIXEL_SPACING)

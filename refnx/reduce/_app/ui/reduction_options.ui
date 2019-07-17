@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>387</width>
-    <height>414</height>
+    <height>389</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -102,13 +102,13 @@
       <number>2</number>
      </property>
      <property name="maximum">
-      <double>221.000000000000000</double>
+      <double>1024.000000000000000</double>
      </property>
      <property name="singleStep">
       <double>1.000000000000000</double>
      </property>
      <property name="value">
-      <double>123.000000000000000</double>
+      <double>500.000000000000000</double>
      </property>
     </widget>
    </item>
