@@ -1,4 +1,6 @@
 import os
+import warnings
+
 import numpy as np
 from numpy.testing import assert_equal
 import refnx.reduce.event as event
@@ -69,8 +71,13 @@ class TestEvent(object):
 
     def test_event_same_as_detector(self):
         # the detector file should be the same as the event file
-        orig_file = PlatypusNexus(os.path.join(self.path,
-                                               'PLP0011641.nx.hdf'))
+        # warnings filter for pixel size
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore', RuntimeWarning)
+
+            orig_file = PlatypusNexus(
+                os.path.join(self.path, 'PLP0011641.nx.hdf'))
+
         orig_det = orig_file.cat.detector
         frames = [np.arange(0, 501744)]
         event_det, fb = event.process_event_stream(self.event_list,

@@ -21,10 +21,12 @@ class TestPlatypusNexus(object):
     def setup_method(self, tmpdir):
         self.pth = os.path.dirname(os.path.abspath(__file__))
 
-        self.f113 = PlatypusNexus(os.path.join(self.pth,
-                                               'PLP0011613.nx.hdf'))
-        self.f641 = PlatypusNexus(os.path.join(self.pth,
-                                               'PLP0011641.nx.hdf'))
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore', RuntimeWarning)
+            self.f113 = PlatypusNexus(os.path.join(self.pth,
+                                                   'PLP0011613.nx.hdf'))
+            self.f641 = PlatypusNexus(os.path.join(self.pth,
+                                                   'PLP0011641.nx.hdf'))
         self.cwd = os.getcwd()
 
         self.tmpdir = tmpdir.strpath
@@ -208,23 +210,26 @@ class TestPlatypusNexus(object):
         pths = [os.path.join(self.pth, fname) for fname in fnames]
         plp.accumulate_HDF_files(pths)
 
-        # it should be processable
-        fadd = PlatypusNexus(os.path.join(os.getcwd(),
-                                          'ADD_PLP0000708.nx.hdf'))
-        fadd.process()
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore', RuntimeWarning)
+            # it should be processable
+            fadd = PlatypusNexus(os.path.join(os.getcwd(),
+                                              'ADD_PLP0000708.nx.hdf'))
+            fadd.process()
 
-        # it should also be reduceable
-        reducer = PlatypusReduce(os.path.join(self.pth,
-                                              'PLP0000711.nx.hdf'))
-        datasets, reduced = reducer.reduce(os.path.join(os.getcwd(),
-                                           'ADD_PLP0000708.nx.hdf'))
-        assert_('y' in reduced)
+            # it should also be reduceable
+            reducer = PlatypusReduce(os.path.join(self.pth,
+                                                  'PLP0000711.nx.hdf'))
 
-        # the error bars should be smaller
-        datasets2, reduced2 = reducer.reduce(os.path.join(self.pth,
-                                                          'PLP0000708.nx.hdf'))
+            datasets, reduced = reducer.reduce(os.path.join(os.getcwd(),
+                                               'ADD_PLP0000708.nx.hdf'))
+            assert_('y' in reduced)
 
-        assert_(np.all(reduced['y_err'] < reduced2['y_err']))
+            # the error bars should be smaller
+            datasets2, reduced2 = reducer.reduce(
+                os.path.join(self.pth, 'PLP0000708.nx.hdf'))
+
+            assert_(np.all(reduced['y_err'] < reduced2['y_err']))
 
     def test_manual_beam_find(self):
         # you can specify a function that finds where the specular ridge is.
