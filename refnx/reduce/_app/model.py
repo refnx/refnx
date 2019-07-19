@@ -34,7 +34,7 @@ class ReductionState(object):
             'low_wavelength': (2.5, float),
             'high_wavelength': (19, float),
             'rebin_percent': (2., float),
-            'expected_centre': (123., float),
+            'expected_centre': (500., float),
             'manual_beam_find': (False, bool),
             'background_subtraction': (True, bool),
             'monitor_normalisation': (True, bool),

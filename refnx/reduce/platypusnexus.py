@@ -28,9 +28,6 @@ from refnx.reduce.rebin import rebin, rebin_along_axis
 from refnx._lib import possibly_open_file
 
 
-# detector y pixel spacing in mm per pixel
-Y_PIXEL_SPACING = 1.177
-
 disc_openings = (60., 10., 25., 60.)
 O_C1d, O_C2d, O_C3d, O_C4d = disc_openings
 O_C1, O_C2, O_C3, O_C4 = np.radians(disc_openings)
@@ -206,7 +203,16 @@ class Catalogue(object):
             h5d['entry1/data/hmm'].attrs['axes'].decode('utf8').split(':')[0])
         d['scan_axis'] = h5d['entry1/data/%s' % d['scan_axis_name']][:]
 
-        # TODO put HDF file y pixel spacing in here.
+        try:
+            d['y_pixels_per_mm'] = h5d[
+                'entry1/instrument/parameters/y_pixels_per_mm'][:]
+        except KeyError:
+            # older PLP files didn't have y_pixels_per_mm, so use built in
+            # value
+            warnings.warn('Setting default pixel size to 1.177',
+                          RuntimeWarning)
+            d['y_pixels_per_mm'] = np.array([1.177])
+
         self.cat = d
 
     def __getattr__(self, item):
@@ -846,7 +852,7 @@ class PlatypusNexus(ReflectNexus):
             penumb = (np.sqrt((0.289 * 0.5 * (umb + penumb))**2. + 2.2**2) *
                       EXTENT_MULT * 2)
             # we need it in pixels
-            estimated_beam_width[idx] = penumb / Y_PIXEL_SPACING
+            estimated_beam_width[idx] = penumb / cat.y_pixels_per_mm[0]
 
             """
             work out the total flight length
@@ -911,13 +917,15 @@ class PlatypusNexus(ReflectNexus):
         # gravity correction if direct beam
         if direct:
             # TODO: Correlated Uncertainties?
-            output = correct_for_gravity(detector,
-                                         detector_sd,
-                                         m_lambda,
-                                         self.cat.collimation_distance,
-                                         self.cat.dy,
-                                         lo_wavelength,
-                                         hi_wavelength)
+            output = correct_for_gravity(
+                detector,
+                detector_sd,
+                m_lambda,
+                cat.collimation_distance,
+                cat.dy,
+                lo_wavelength,
+                hi_wavelength,
+                y_pixels_per_mm=cat.y_pixels_per_mm[0])
             detector, detector_sd, m_gravcorrcoefs = output
 
         # where is the specular ridge?
@@ -1205,7 +1213,7 @@ class PlatypusNexus(ReflectNexus):
         -------
         phase_angle, master_opening : float
             The phase angle in degrees, and the angular opening of the master
-            chopper
+            chopper in radians
         """
         cat = self.cat
         master = cat.master
@@ -1799,7 +1807,7 @@ def fore_back_region(beam_centre, beam_sd):
 
 def correct_for_gravity(detector, detector_sd, lamda, coll_distance,
                         sample_det, lo_wavelength, hi_wavelength,
-                        theta=0):
+                        theta=0, y_pixels_per_mm=0.284):
     """
     Returns a gravity corrected yt plot, given the data, its associated errors,
     the wavelength corresponding to each of the time bins, and the trajectory
@@ -1825,6 +1833,8 @@ def correct_for_gravity(detector, detector_sd, lamda, coll_distance,
     theta : float
         Angle between second collimation slit, first collimation slit, and
         horizontal
+    y_pixels_per_mm: float
+        size of one y pixel on the detector
 
     Returns
     -------
@@ -1861,7 +1871,7 @@ def correct_for_gravity(detector, detector_sd, lamda, coll_distance,
                                        neutron_speeds[lopx: hipx],
                                        travel_distance)
 
-            model = 1000. * deflections / Y_PIXEL_SPACING + tru_centre
+            model = 1000. * deflections / y_pixels_per_mm + tru_centre
             diff = model - centroids[lopx: hipx, 0]
             diff = diff[~np.isnan(diff)]
             return diff
@@ -1874,7 +1884,7 @@ def correct_for_gravity(detector, detector_sd, lamda, coll_distance,
         total_deflection = 1000. * y_deflection(trajectories,
                                                 neutron_speeds,
                                                 travel_distance)
-        total_deflection /= Y_PIXEL_SPACING
+        total_deflection /= y_pixels_per_mm
 
         x_rebin = x_init.T + total_deflection[:, np.newaxis]
         for wavelength in range(np.size(detector, axis=1)):

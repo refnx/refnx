@@ -1,5 +1,6 @@
 import os.path
 import os
+import warnings
 import pandas
 import tempfile
 
@@ -29,23 +30,31 @@ class TestReduce(object):
 
     def test_batch_reduce(self):
         filename = os.path.join(self.path, "test_batch_reduction.xls")
-        b = BatchReducer(filename, data_folder=self.path, verbose=False,
-                         persistent=False)
+        # warnings filter for pixel size
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore', RuntimeWarning)
 
-        b.reduce(show=False)
+            b = BatchReducer(filename, data_folder=self.path, verbose=False,
+                             persistent=False)
+
+            b.reduce(show=False)
 
     def test_batch_reduce_ipython(self):
         filename = os.path.join(self.path, "test_batch_reduction.xls")
 
-        refnx.reduce.batchreduction._have_ipython = False
-        b = BatchReducer(filename, data_folder=self.path, verbose=False,
-                         persistent=False)
-        b.reduce(show=False)
+        # warnings filter for pixel size
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore', RuntimeWarning)
 
-        refnx.reduce.batchreduction._have_ipython = True
-        b = BatchReducer(filename, data_folder=self.path, verbose=False,
-                         persistent=False)
-        b.reduce(show=False)
+            refnx.reduce.batchreduction._have_ipython = False
+            b = BatchReducer(filename, data_folder=self.path, verbose=False,
+                             persistent=False)
+            b.reduce(show=False)
+
+            refnx.reduce.batchreduction._have_ipython = True
+            b = BatchReducer(filename, data_folder=self.path, verbose=False,
+                             persistent=False)
+            b.reduce(show=False)
 
 
 class TestReductionCache(object):

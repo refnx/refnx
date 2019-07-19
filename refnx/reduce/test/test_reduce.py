@@ -1,5 +1,6 @@
 import os
 import os.path
+import warnings
 import pytest
 
 from numpy.testing import (assert_equal, assert_allclose, assert_)
@@ -24,27 +25,35 @@ class TestReduce(object):
 
     def test_smoke(self):
         # a quick smoke test to check that the reduction can occur
-        a, fname = reduce_stitch([708, 709, 710], [711, 711, 711],
-                                 data_folder=self.pth, rebin_percent=2)
-        a.save('test1.dat')
+        # warnings filter for pixel size
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore', RuntimeWarning)
+            a, fname = reduce_stitch([708, 709, 710], [711, 711, 711],
+                                     data_folder=self.pth, rebin_percent=2)
+            a.save('test1.dat')
 
     def test_reduction_method(self):
         # a quick smoke test to check that the reduction can occur
-        a = PlatypusReduce('PLP0000711.nx.hdf', data_folder=self.pth)
+        # warnings filter for pixel size
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore', RuntimeWarning)
 
-        # try reduction with the reduce method
-        a.reduce('PLP0000708.nx.hdf', data_folder=self.pth, rebin_percent=4)
+            a = PlatypusReduce('PLP0000711.nx.hdf', data_folder=self.pth)
 
-        # try reduction with the __call__ method
-        a('PLP0000708.nx.hdf', data_folder=self.pth, rebin_percent=4)
+            # try reduction with the reduce method
+            a.reduce('PLP0000708.nx.hdf', data_folder=self.pth,
+                     rebin_percent=4)
 
-        # this should also have saved a couple of files in the current
-        # directory
-        assert_(os.path.isfile('./PLP0000708_0.dat'))
-        assert_(os.path.isfile('./PLP0000708_0.xml'))
+            # try reduction with the __call__ method
+            a('PLP0000708.nx.hdf', data_folder=self.pth, rebin_percent=4)
 
-        # try writing offspecular data
-        a.write_offspecular('offspec.xml', 0)
+            # this should also have saved a couple of files in the current
+            # directory
+            assert_(os.path.isfile('./PLP0000708_0.dat'))
+            assert_(os.path.isfile('./PLP0000708_0.xml'))
+
+            # try writing offspecular data
+            a.write_offspecular('offspec.xml', 0)
 
     def test_free_liquids(self):
         # smoke test for free liquids
@@ -60,36 +69,41 @@ class TestReduce(object):
     def test_event_reduction(self):
         # check that eventmode reduction can occur, and that there are the
         # correct number of datasets produced.
-        a = PlatypusReduce(
-            os.path.join(self.pth, 'PLP0011613.nx.hdf'))
 
-        a.reduce(os.path.join(self.pth, 'PLP0011641.nx.hdf'),
-                 integrate=0, rebin_percent=2, eventmode=[0, 900, 1800])
+        # warnings filter for pixel size
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore', RuntimeWarning)
 
-        assert_equal(a.y.shape[0], 2)
+            a = PlatypusReduce(
+                os.path.join(self.pth, 'PLP0011613.nx.hdf'))
 
-        # check that two datasets are written out.
-        assert_(os.path.isfile('PLP0011641_0.dat'))
-        assert_(os.path.isfile('PLP0011641_1.dat'))
+            a.reduce(os.path.join(self.pth, 'PLP0011641.nx.hdf'),
+                     integrate=0, rebin_percent=2, eventmode=[0, 900, 1800])
 
-        # check that the resolutions are pretty much the same
-        assert_allclose(a.x_err[0] / a.x[0],
-                        a.x_err[1] / a.x[1],
-                        atol=0.001)
+            assert_equal(a.y.shape[0], 2)
 
-        # check that the (right?) timestamps are written into the datafile
-        tree = ET.parse(os.path.join(os.getcwd(), 'PLP0011641_1.xml'))
-        tree.find('.//REFentry').attrib['time']
-        # TODO, timestamp is created in the local time stamp of the testing
-        # machine. The following works if reduced with a computer in Australian
-        # EST.
-        # assert_(t == '2012-01-20T22:05:32')
+            # check that two datasets are written out.
+            assert_(os.path.isfile('PLP0011641_0.dat'))
+            assert_(os.path.isfile('PLP0011641_1.dat'))
 
-        # # what happens if you have too many frame bins
-        # # you should get the same number of fr
-        # a = PlatypusReduce(
-        #     os.path.join(self.pth, 'PLP0011613.nx.hdf'),
-        #     reflect=os.path.join(self.pth, 'PLP0011641.nx.hdf'),
-        #     integrate=0, rebin_percent=2,
-        #     eventmode=[0, 25200, 27000, 30000])
-        # assert_equal(a.ydata.shape[0], 3)
+            # check that the resolutions are pretty much the same
+            assert_allclose(a.x_err[0] / a.x[0],
+                            a.x_err[1] / a.x[1],
+                            atol=0.001)
+
+            # check that the (right?) timestamps are written into the datafile
+            tree = ET.parse(os.path.join(os.getcwd(), 'PLP0011641_1.xml'))
+            tree.find('.//REFentry').attrib['time']
+            # TODO, timestamp is created in the local time stamp of the testing
+            # machine. The following works if reduced with a computer in
+            # Australian EST.
+            # assert_(t == '2012-01-20T22:05:32')
+
+            # # what happens if you have too many frame bins
+            # # you should get the same number of fr
+            # a = PlatypusReduce(
+            #     os.path.join(self.pth, 'PLP0011613.nx.hdf'),
+            #     reflect=os.path.join(self.pth, 'PLP0011641.nx.hdf'),
+            #     integrate=0, rebin_percent=2,
+            #     eventmode=[0, 25200, 27000, 30000])
+            # assert_equal(a.ydata.shape[0], 3)

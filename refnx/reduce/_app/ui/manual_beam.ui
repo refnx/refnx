@@ -10,7 +10,7 @@
     <x>0</x>
     <y>0</y>
     <width>944</width>
-    <height>532</height>
+    <height>507</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -29,13 +29,13 @@
       <number>1</number>
      </property>
      <property name="maximum">
-      <number>300</number>
+      <number>1024</number>
      </property>
      <property name="singleStep">
       <number>5</number>
      </property>
      <property name="value">
-      <number>121</number>
+      <number>500</number>
      </property>
     </widget>
    </item>
@@ -48,7 +48,7 @@
       <number>5</number>
      </property>
      <property name="maximum">
-      <number>300</number>
+      <number>1000</number>
      </property>
      <property name="singleStep">
       <number>5</number>
@@ -100,10 +100,10 @@
       <item row="0" column="1">
        <widget class="QDoubleSpinBox" name="true_centre">
         <property name="maximum">
-         <double>221.000000000000000</double>
+         <double>1024.000000000000000</double>
         </property>
         <property name="value">
-         <double>121.000000000000000</double>
+         <double>500.000000000000000</double>
         </property>
        </widget>
       </item>
@@ -118,6 +118,9 @@
        <widget class="QDoubleSpinBox" name="true_fwhm">
         <property name="minimum">
          <double>0.500000000000000</double>
+        </property>
+        <property name="maximum">
+         <double>800.000000000000000</double>
         </property>
         <property name="value">
          <double>5.000000000000000</double>

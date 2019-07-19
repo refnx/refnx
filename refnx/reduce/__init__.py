@@ -1,8 +1,8 @@
 from refnx.reduce.reduce import PlatypusReduce, reduce_stitch
 from refnx.reduce.platypusnexus import (catalogue, PlatypusNexus,
                                         number_datafile, basename_datafile,
-                                        datafile_number, Y_PIXEL_SPACING,
-                                        accumulate_HDF_files, Catalogue)
+                                        datafile_number, accumulate_HDF_files,
+                                        Catalogue)
 from refnx.reduce.batchreduction import BatchReducer
 from refnx.reduce.xray import reduce_xrdml
 from refnx._lib._testutils import PytestTester
