@@ -41,7 +41,7 @@ class ManualBeamFinder(QtWidgets.QDialog):
         self._true_sd = 20.
 
         self._pixels_to_include = 200
-        self._integrate_width = 50
+        self._integrate_width = 200
         self._integrate_position = 500
         self._low_px = 500
         self._high_px = 501
