@@ -34,7 +34,7 @@ O_C1, O_C2, O_C3, O_C4 = np.radians(disc_openings)
 
 DISCRADIUS = 350.
 EXTENT_MULT = 2
-PIXEL_OFFSET = 1
+PIXEL_OFFSET = 4
 
 spectrum_template = """<?xml version="1.0"?>
 <REFroot xmlns="">
