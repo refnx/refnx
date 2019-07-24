@@ -9,8 +9,8 @@ set -e -x
 
 # Compile wheels
 for PYBIN in /opt/python/cp3[5-9]-cp*/bin; do
-    "${PYBIN}/pip" install numpy cython
-    "${PYBIN}/pip" wheel /io/ -w wheelhouse/
+  "${PYBIN}/pip" install numpy cython
+  "${PYBIN}/pip" wheel /io/ -w wheelhouse/
 done
 
 # Bundle external shared libraries into the wheels
@@ -19,8 +19,8 @@ for whl in wheelhouse/*.whl; do
 done
 
 # Install packages and test
-# for PYBIN in /opt/python/cp3[5-9]-cp*/; do
-#   "${PYBIN}/pip" install refnx --no-index -f /io/wheelhouse
-#   (cd "$HOME"; "${PYBIN}/pytest" refnx)
-# done
-
+for PYBIN in /opt/python/cp3[5-9]-cp*/bin; do
+  "${PYBIN}/pip" install refnx --no-index -f /io/wheelhouse
+  "${PYBIN}/pip" install scipy matplotlib pytest corner uncertainties h5py xlrd periodictable pandas
+  ${PYBIN}/python setup.py test -a refnx/analysis
+done
