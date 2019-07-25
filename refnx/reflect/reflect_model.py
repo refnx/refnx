@@ -30,7 +30,7 @@ import warnings
 
 import numpy as np
 import scipy
-from scipy.interpolate import InterpolatedUnivariateSpline
+from scipy.interpolate import splrep, splev
 
 try:
     from refnx.reflect import _creflect as refcalc
@@ -625,10 +625,15 @@ def _smeared_abeles_constant(q, w, resolution, threads=-1):
 
     rvals = refcalc.abeles(xlin, w, threads=threads)
     smeared_rvals = np.convolve(rvals, gauss_y, mode='same')
-    interpolator = InterpolatedUnivariateSpline(xlin, smeared_rvals)
+    smeared_rvals *= gauss_x[1] - gauss_x[0]
 
-    smeared_output = interpolator(q)
-    smeared_output *= gauss_x[1] - gauss_x[0]
+    # interpolator = InterpolatedUnivariateSpline(xlin, smeared_rvals)
+    #
+    # smeared_output = interpolator(q)
+
+    tck = splrep(xlin, smeared_rvals)
+    smeared_output = splev(q, tck)
+
     return smeared_output
 
 
