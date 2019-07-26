@@ -45,6 +45,24 @@ _FWHM = 2 * np.sqrt(2 * np.log(2.0))
 _INTLIMIT = 3.5
 
 
+"""
+Implementation notes
+--------------------
+1. For _smeared_abeles_fixed I investigated calculating a master curve,
+   adjacent data points have overlapping resolution kernels. So instead of
+   using e.g. an oversampling factor of 17, one could get away with using
+   a factor of 6. This is because the calculated points can be used to smear
+   more than one datapoint. One can't use Gaussian quadrature, Simpsons rule is
+   needed. Technically the approach works, but turns out to be no faster than
+   the Gaussian quadrature with the x17 oversampling (even if everything is
+   vectorised). There are a couple of reasons: a) calculating the Gaussian
+   weights has to be re-done for all the resolution smearing points for every
+   datapoint. For Gaussian quadrature that calculation only needs to be done
+   once, because the oversampling points are at constant locations around the
+   mean. b) in the implementation I tried the Simpsons rule had to integrate
+   e.g. 700 odd points instead of the fixed 17 for the Gaussin quadrature.
+"""
+
 class ReflectModel(object):
     r"""
     Parameters
