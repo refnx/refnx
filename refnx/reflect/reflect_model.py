@@ -63,6 +63,7 @@ Implementation notes
    e.g. 700 odd points instead of the fixed 17 for the Gaussin quadrature.
 """
 
+
 class ReflectModel(object):
     r"""
     Parameters
