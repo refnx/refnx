@@ -150,3 +150,5 @@ Details of changes made to refnx
 - Added DOTAP, h-DOPC, 18:1 Diether PC to lipids database
 - Updated SLIM reduction software to cope with the new monobloc detector
 - Improve speed of resolution smearing by using splev/splrep
+- Added shell scripts to build manylinux and macOS wheels (as well as test
+ them).
