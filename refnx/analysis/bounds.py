@@ -140,7 +140,7 @@ class PDF(Bounds):
         valid : array-like
             valid values within the support
         """
-        _val = np.asfarray(val)
+        _val = np.asarray(val, dtype=float)
         valid = np.where(np.isfinite(self.logp(_val)),
                          _val,
                          self.rv.rvs(size=_val.shape))
@@ -267,7 +267,7 @@ class Interval(Bounds):
         self._set_bounds(self._lb, val)
 
     def logp(self, val):
-        _val = np.asfarray(val)
+        _val = np.asarray(val, dtype=float)
         valid = np.logical_and(self._lb <= _val, _val <= self._ub)
 
         if self._closed_bounds:
@@ -305,7 +305,7 @@ class Interval(Bounds):
         >>> b.valid(11.5)
         8.5
         """
-        _val = np.asfarray(val)
+        _val = np.asarray(val, dtype=float)
         if self._closed_bounds:
             valid = np.where(np.isfinite(self.logp(_val)),
                              _val,

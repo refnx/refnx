@@ -946,11 +946,11 @@ class Slab(Component):
         """
         Slab representation of this component. See :class:`Component.slabs`
         """
-        return np.atleast_2d(np.array([self.thick.value,
-                                       self.sld.real.value,
-                                       self.sld.imag.value,
-                                       self.rough.value,
-                                       self.vfsolv.value]))
+        return np.array([[self.thick.value,
+                          self.sld.real.value,
+                          self.sld.imag.value,
+                          self.rough.value,
+                          self.vfsolv.value]])
 
 
 class Stack(Component, UserList):
