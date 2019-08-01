@@ -22,7 +22,7 @@ def c_flatten(seq):
             iter(el)
             if isinstance(el, (str, bytes)):
                 raise TypeError
-            yield from flatten(el)
+            yield from c_flatten(el)
         except TypeError:
             yield el
 
