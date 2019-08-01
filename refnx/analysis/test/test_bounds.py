@@ -22,12 +22,20 @@ class TestBounds(object):
         assert_equal(interval.logp(0), 0)
         assert_equal(interval.logp(1001), -np.inf)
 
+        # you should be able to send in multiple values
+        assert_equal(interval.logp(np.array([1., 1002.])),
+                     np.array([0, -np.inf]))
+
         # fully closed interval
         interval.lb = -1000
         assert_equal(interval.logp(-1001), -np.inf)
         assert_equal(interval.lb, -1000)
         assert_equal(interval.ub, 1000)
         assert_equal(interval.logp(0), np.log(1 / 2000.))
+
+        # you should be able to send in multiple values
+        assert_equal(interval.logp(np.array([1., 2.])),
+                     np.array([np.log(1/2000.)] * 2))
 
         # try and set lb higher than ub
         interval.lb = 1002

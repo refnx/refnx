@@ -19,7 +19,7 @@ class Bounds(object):
 
         Parameters
         ----------
-        val : float or np.ndarray
+        val : float or array-like
             variates to calculate the log-probability for
 
         Returns
@@ -113,7 +113,7 @@ class PDF(Bounds):
 
         Parameters
         ----------
-        val : float or np.ndarray
+        val : float or array-like
             variate to calculate the log-probability for
 
         Returns
@@ -210,6 +210,7 @@ class Interval(Bounds):
 
         self._lb = lb
         self._ub = ub
+        self._logprob = 0
         self.rv = None
         self._closed_bounds = False
         self._set_bounds(self._lb, self._ub)
@@ -225,8 +226,10 @@ class Interval(Bounds):
 
         if np.isfinite([self._lb, self._ub]).all():
             self._closed_bounds = True
+            self._logprob = np.log(1 / (self._ub - self._lb))
             self.rv = uniform(self._lb, self._ub - self._lb)
         else:
+            self._logprob = 0.
             self._closed_bounds = False
 
     def __repr__(self):
@@ -267,15 +270,34 @@ class Interval(Bounds):
         self._set_bounds(self._lb, val)
 
     def logp(self, val):
-        _val = np.asarray(val, dtype=float)
-        valid = np.logical_and(self._lb <= _val, _val <= self._ub)
+        """
+        Calculate the log-prior probability of a value with the Interval.
 
-        if self._closed_bounds:
-            # TODO special case where lb==ub==val?
-            prob = np.where(valid, np.log(1 / (self._ub - self._lb)), -np.inf)
-        else:
-            prob = np.where(valid, 0, -np.inf)
-        return prob
+        Parameters
+        ----------
+        val : float or array-like
+            variates to calculate the log-probability for
+
+        Returns
+        -------
+        arr : float or np.ndarray
+            The log-probabilty corresponding to each of the variates
+        """
+        # Special case when val is array-like. We'll assume that it may be
+        # array-like if it has a length. This special casing is done because
+        # a lot of time is spent on the `asarray`, `logical_and` and `where`.
+        # Most of the time val is a single float, so this speedup is
+        # appreciable.
+        if hasattr(val, '__len__'):
+            _val = np.asarray(val, dtype=float)
+            valid = np.logical_and(self._lb <= _val, _val <= self._ub)
+            prob = np.where(valid, self._logprob, -np.inf)
+            return prob
+
+        if self._lb <= val <= self._ub:
+            return self._logprob
+
+        return -np.inf
 
     def valid(self, val):
         """
