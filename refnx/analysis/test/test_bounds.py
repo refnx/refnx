@@ -35,7 +35,7 @@ class TestBounds(object):
 
         # you should be able to send in multiple values
         assert_equal(interval.logp(np.array([1., 2.])),
-                     np.array([np.log(1/2000.)] * 2))
+                     np.array([np.log(1 / 2000.)] * 2))
 
         # try and set lb higher than ub
         interval.lb = 1002

@@ -226,7 +226,11 @@ class Interval(Bounds):
 
         if np.isfinite([self._lb, self._ub]).all():
             self._closed_bounds = True
-            self._logprob = np.log(1 / (self._ub - self._lb))
+            if self._lb == self._ub:
+                self._logprob = 0.
+            else:
+                self._logprob = np.log(1 / (self._ub - self._lb))
+
             self.rv = uniform(self._lb, self._ub - self._lb)
         else:
             self._logprob = 0.
