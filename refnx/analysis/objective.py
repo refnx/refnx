@@ -302,8 +302,7 @@ class Objective(BaseObjective):
         # create and return a Parameters object because it has the
         # __array__ method, which allows one to quickly get numerical values.
         p = Parameters()
-        p.data = [param for param in f_unique(flatten(self.parameters))
-                  if param.vary]
+        p.data = list(f_unique(p for p in flatten(self.parameters) if p.vary))
         return p
 
     def _data_transform(self, model=None):
@@ -475,7 +474,8 @@ class Objective(BaseObjective):
         """
         self.setp(pvals)
 
-        logp = np.sum([param.logp() for param in self.varying_parameters()])
+        logp = np.sum([param.logp() for param in (f_unique(
+            p for p in flatten(self.parameters) if p.vary))])
 
         if not np.isfinite(logp):
             return -np.inf

@@ -4,7 +4,6 @@ import os as _os
 import sys as _sys
 import functools
 from tempfile import mkdtemp
-from collections.abc import Iterable
 from contextlib import contextmanager
 from inspect import getfullargspec as _getargspecf
 
@@ -112,25 +111,27 @@ class TemporaryDirectory(object):
             pass
 
 
-def flatten(l):
+def flatten(seq):
     """
     Flatten a nested sequence.
 
     Parameters
     ----------
-    l : sequence
+    seq : sequence
         The sequence to flatten
 
     Returns
     -------
     el : generator
-        yields flattened sequences from l
+        yields flattened sequences from seq
     """
-    for el in l:
-        if (isinstance(el, Iterable) and
-                not isinstance(el, (str, bytes))):
+    for el in seq:
+        try:
+            iter(el)
+            if isinstance(el, (str, bytes)):
+                raise TypeError
             yield from flatten(el)
-        else:
+        except TypeError:
             yield el
 
 
