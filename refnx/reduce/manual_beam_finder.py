@@ -103,6 +103,13 @@ class ManualBeamFinder(QtWidgets.QDialog):
             self.detector_err = detector_err[0]
             n_images = np.size(detector, 0)
 
+        # set min/max values for the detector image GUI. Crashes result
+        # otherwise
+        self.integrate_position.setMaximum(np.size(self.detector, -1) - 1)
+        self.integrate_width.setMaximum(np.size(self.detector, -1) - 1)
+        self.pixels_to_include.setMaximum(np.size(self.detector, 0))
+        self.true_centre.setMaximum(np.size(self.detector, -1))
+
         # guess peak centre from centroid.
         xs = np.sum(self.detector, axis=0)
         self._integrate_position, _ = centroid(xs)
@@ -142,8 +149,16 @@ class ManualBeamFinder(QtWidgets.QDialog):
 
         regions = fore_back_region(beam_centre, beam_sd)
         self._low_px, self._high_px, bp = regions
-        self._low_bkg = np.min(bp[0])
-        self._high_bkg = np.max(bp[0])
+
+        # perhaps fore_back_region returned regions that weren't on the
+        # detector
+        self._low_px = np.clip(self._low_px, 0, np.size(self.detector, 1))
+        self._high_px = np.clip(self._high_px, 0, np.size(self.detector, 1))
+
+        # perhaps fore_back_region returned no background pixels
+        if len(bp[0]) > 0:
+            self._low_bkg = np.min(bp[0])
+            self._high_bkg = np.max(bp[0])
 
         self.detector_image.display_image(self.detector, beam_centre,
                                           self._low_px,
@@ -268,8 +283,16 @@ class ManualBeamFinder(QtWidgets.QDialog):
 
         regions = fore_back_region(self._true_centre, self._true_sd)
         self._low_px, self._high_px, bp = regions
-        self._low_bkg = np.min(bp[0])
-        self._high_bkg = np.max(bp[0])
+
+        # perhaps fore_back_region returned regions that weren't on the
+        # detector
+        self._low_px = np.clip(self._low_px, 0, np.size(self.detector, 1))
+        self._high_px = np.clip(self._high_px, 0, np.size(self.detector, 1))
+
+        # perhaps fore_back_region returned no background pixels
+        if len(bp[0]) > 0:
+            self._low_bkg = np.min(bp[0])
+            self._high_bkg = np.max(bp[0])
 
         self.redraw_cross_section_regions()
 
