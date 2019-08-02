@@ -152,3 +152,7 @@ Details of changes made to refnx
 - Improve speed of resolution smearing by using splev/splrep
 - Added shell scripts to build manylinux and macOS wheels (as well as test
  them).
+- Some minor optimisations for calculation of `Interval.logp`.
+- Some minor optimisations for various calculations in `Objective`.
+- Fixed potential for crashes in ManualBeamFinder if controls specified
+  regions that went outside the detector region.
