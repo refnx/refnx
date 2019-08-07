@@ -234,18 +234,22 @@ def setup_package():
             #
             # However, it's not present in Apple Clang. Therefore one has to
             # jump through hoops to enable it.
-            # I recommend installing cmake and building a static version of
-            # the OpenMP library, and installing into PREFIX=/usr/local
+            # It's probably easier to install OpenMP on macOS via homebrew.
+            # However, it's fairly simple to build the OpenMP library, and
+            # installing it into PREFIX=/usr/local
             #
             # https://gist.github.com/andyfaff/084005bee32aee83d6b59e843278ab3e
             #
-            # Then set the following environment variables
+            # Instructions for macOS:
             #
-            # export CFLAGS="-Xpreprocessor -fopenmp $CFLAGS"
-            # export CPPFLAGS="-Xpreprocessor -fopenmp $CPPFLAGS"
-            # export CFLAGS="$CFLAGS -I/usr/local/include"
-            # export CXXFLAGS="$CXXFLAGS -I/usr/local/include"
-            # export LDFLAGS="$LDFLAGS /usr/local/lib/libomp.a"
+            # brew install libomp
+            # export CC=clang
+            # export CXX =clang++
+            # export CXXFLAGS="$CXXFLAGS -Xpreprocessor -fopenmp"
+            # export CFLAGS="$CFLAGS -I/usr/local/opt/libomp/include"
+            # export CXXFLAGS="$CXXFLAGS -I/usr/local/opt/libomp/include"
+            # export LDFLAGS="$LDFLAGS -L/usr/local/opt/libomp/lib -lomp"
+            # export DYLD_LIBRARY_PATH =/usr/local/opt/libomp/lib
 
             if HAS_OPENMP:
                 from numpy.distutils.ccompiler import new_compiler

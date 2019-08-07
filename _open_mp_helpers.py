@@ -52,11 +52,14 @@ def get_openmp_flag(compiler):
         # set the following environment variables, assumes that llvm openmp
         # has been built and installed by the user.
         #
-        # export CFLAGS="-Xpreprocessor -fopenmp $CFLAGS"
-        # export CPPFLAGS="-Xpreprocessor -fopenmp $CPPFLAGS"
-        # export CFLAGS="$CFLAGS -I/usr/local/include"
-        # export CXXFLAGS="$CXXFLAGS -I/usr/local/include"
-        # export LDFLAGS="$LDFLAGS -lomp"
+        # brew install libomp
+        # export CC=clang
+        # export CXX =clang++
+        # export CXXFLAGS="$CXXFLAGS -Xpreprocessor -fopenmp"
+        # export CFLAGS="$CFLAGS -I/usr/local/opt/libomp/include"
+        # export CXXFLAGS="$CXXFLAGS -I/usr/local/opt/libomp/include"
+        # export LDFLAGS="$LDFLAGS -L/usr/local/opt/libomp/lib -lomp"
+        # export DYLD_LIBRARY_PATH =/usr/local/opt/libomp/lib
         return []
     # Default flag for GCC and clang:
     return ['-fopenmp']
