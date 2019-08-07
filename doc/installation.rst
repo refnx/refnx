@@ -67,7 +67,7 @@ package from within the refnx git repository (see later in this document).
 
     ::
 
-     homebrew install libomp
+     brew install libomp
      export CC=clang
      export CXX=clang++
      export CXXFLAGS="$CXXFLAGS -Xpreprocessor -fopenmp"
