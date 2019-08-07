@@ -1281,8 +1281,8 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
                     if (time.time() - last_time[0]) > 2:
                         last_time[0] = time.time()
                         progress.setValue(completed[0])
-                    if progress.wasCanceled():
-                        raise StopIteration("Sampling aborted")
+                        if progress.wasCanceled():
+                            raise StopIteration("Sampling aborted")
 
                 with open(os.path.join(folder, 'steps.chain'), 'w') as f,\
                         get_context('spawn').Pool() as workers:

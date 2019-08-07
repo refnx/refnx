@@ -63,8 +63,9 @@ before_install:
         export CC=/usr/bin/clang
         export CXX=/usr/bin/clang++
         export CXXFLAGS="$CXXFLAGS -Xpreprocessor -fopenmp"
-        export CFLAGS="$CFLAGS -I/usr/local/opt/libomp/include"
+        export CFLAGS="$CFLAGS -Xpreprocessor -fopenmp"
         export CXXFLAGS="$CXXFLAGS -I/usr/local/opt/libomp/include"
+        export CFLAGS="$CFLAGS -I/usr/local/opt/libomp/include"
         export LDFLAGS="$LDFLAGS -L/usr/local/opt/libomp/lib -lomp"
         export DYLD_LIBRARY_PATH=/usr/local/opt/libomp/lib
       fi

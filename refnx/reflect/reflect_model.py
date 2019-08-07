@@ -78,19 +78,22 @@ def get_reflect_backend(backend='cython'):
     """
     if backend == 'cython':
         try:
-            from refnx.reflect import _cyreflect as refcalc
+            from refnx.reflect import _cyreflect as _cy
+            f = _cy.abeles
         except ImportError:
             return get_reflect_backend('c')
     elif backend == 'c':
         try:
-            from refnx.reflect import _creflect as refcalc
+            from refnx.reflect import _creflect as _c
+            f = _c.abeles
         except ImportError:
             return get_reflect_backend('python')
     elif backend == 'python':
         warnings.warn("Using the SLOW reflectivity calculation.")
-        from refnx.reflect import _reflect as refcalc
+        from refnx.reflect import _reflect as _py
+        f = _py.abeles
 
-    return refcalc.abeles
+    return f
 
 
 abeles = get_reflect_backend()
