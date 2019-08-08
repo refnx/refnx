@@ -181,3 +181,75 @@ def reflect(double[:] x not None,
         y[i] += bkg
     return y.real
 """
+
+cpdef _contract_by_area(np.ndarray[np.float64_t, ndim=2] slabs, dA=0.5):
+    newslabs = np.copy(slabs)[::-1]
+
+    cdef double [:, :] newslabs_view = newslabs
+    cdef double [:] d = newslabs_view[:, 0]
+    cdef double [:] rho = newslabs_view[:, 1]
+    cdef double [:] irho = newslabs_view[:, 2]
+    cdef double [:] sigma = newslabs[:, 3]
+    cdef double [:] vfsolv = newslabs[:, 4]
+
+    cdef size_t n = np.size(d, 0)
+    cdef size_t i, newi
+    cdef double dz, rhoarea, irhoarea, vfsolvarea, rholo, rhohi, irholo, irhohi
+    cdef double da = float(dA)
+
+    i = 1
+    newi = 1 # skip the substrate
+
+    while i < n:
+        # Get ready for the next layer
+        # Accumulation of the first row happens in the inner loop
+        dz = rhoarea = irhoarea = vfsolvarea = 0.
+        rholo = rhohi = rho[i]
+        irholo = irhohi = irho[i]
+
+        # Accumulate slices into layer
+        while True:
+            # Accumulate next slice
+            dz += d[i]
+            rhoarea += d[i] * rho[i]
+            irhoarea += d[i] * irho[i]
+            vfsolvarea += d[i] * vfsolv[i]
+
+            i += 1
+            # If no more slices or sigma != 0, break immediately
+            if i == n or sigma[i - 1] != 0.:
+                break
+
+            # If next slice won't fit, break
+            if rho[i] < rholo:
+                rholo = rho[i]
+            if rho[i] > rhohi:
+                rhohi = rho[i]
+            if (rhohi - rholo) * (dz + d[i]) > da:
+                break
+
+            if irho[i] < irholo:
+                irholo = irho[i]
+            if irho[i] > irhohi:
+                irhohi = irho[i]
+            if (irhohi - irholo) * (dz + d[i]) > da:
+                break
+
+        # Save the layer
+        d[newi] = dz
+        if i == n:
+            # printf("contract: adding final sld at %d\n",newi)
+            # Last layer uses surface values
+            rho[newi] = rho[n - 1]
+            irho[newi] = irho[n - 1]
+            vfsolv[newi] = vfsolv[n - 1]
+        else:
+            # Middle layers uses average values
+            rho[newi] = rhoarea / dz
+            irho[newi] = irhoarea / dz
+            sigma[newi] = sigma[i - 1]
+            vfsolv[newi] = vfsolvarea / dz
+        # First layer uses substrate values
+        newi += 1
+
+    return newslabs[:newi][::-1]

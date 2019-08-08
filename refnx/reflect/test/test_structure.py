@@ -264,6 +264,16 @@ class TestStructure(object):
                         reflectivity,
                         rtol=5e-3)
 
+        # test cythonized contract_by_area code
+        try:
+            from refnx.reflect._creflect import _contract_by_area as ca2
+            from refnx.reflect._reflect import _contract_by_area as ca
+
+            slabs = slice_structure.slabs()
+            assert_almost_equal(ca2(slabs, 2), ca(slabs, 2))
+        except ImportError:
+            pass
+
     def test_stack(self):
         stk = Stack()
         slabs = stk.slabs(None)
