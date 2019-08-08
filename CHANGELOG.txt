@@ -156,3 +156,5 @@ Details of changes made to refnx
 - Some minor optimisations for various calculations in `Objective`.
 - Fixed potential for crashes in ManualBeamFinder if controls specified
   regions that went outside the detector region.
+- cythonized contract_by_area, resulting in huge speedup for microsliced
+  structures.
