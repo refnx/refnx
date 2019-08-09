@@ -32,11 +32,7 @@ import numpy as np
 import scipy
 from scipy.interpolate import splrep, splev
 
-try:
-    from refnx.reflect import _creflect as refcalc
-except ImportError:
-    print('WARNING, Using slow reflectivity calculation')
-    from refnx.reflect import _reflect as refcalc
+
 from refnx.analysis import (Parameters, Parameter, possibly_create_parameter)
 
 
@@ -62,6 +58,45 @@ Implementation notes
    mean. b) in the implementation I tried the Simpsons rule had to integrate
    e.g. 700 odd points instead of the fixed 17 for the Gaussin quadrature.
 """
+
+
+def get_reflect_backend(backend='c'):
+    r"""
+
+    Parameters
+    ----------
+    backend: {'python', 'cython', 'c'}, str
+        The module that calculates the reflectivity. Speed should go in the
+        order cython > c > python. If a particular method is not available the
+        function falls back: cython --> c --> python.
+
+    Returns
+    -------
+    abeles: callable
+        The callable that calculates the reflectivity
+
+    """
+    if backend == 'cython':
+        try:
+            from refnx.reflect import _cyreflect as _cy
+            f = _cy.abeles
+        except ImportError:
+            return get_reflect_backend('c')
+    elif backend == 'c':
+        try:
+            from refnx.reflect import _creflect as _c
+            f = _c.abeles
+        except ImportError:
+            return get_reflect_backend('python')
+    elif backend == 'python':
+        warnings.warn("Using the SLOW reflectivity calculation.")
+        from refnx.reflect import _reflect as _py
+        f = _py.abeles
+
+    return f
+
+
+abeles = get_reflect_backend()
 
 
 class ReflectModel(object):
@@ -369,7 +404,7 @@ def reflectivity(q, slabs, scale=1., bkg=0., dq=5., quad_order=17,
     """
     # constant dq/q smearing
     if isinstance(dq, numbers.Real) and float(dq) == 0:
-        return refcalc.abeles(q, slabs, scale=scale, bkg=bkg, threads=threads)
+        return abeles(q, slabs, scale=scale, bkg=bkg, threads=threads)
     elif isinstance(dq, numbers.Real):
         dq = float(dq)
         return (scale *
@@ -410,9 +445,9 @@ def reflectivity(q, slabs, scale=1., bkg=0., dq=5., quad_order=17,
 
         qvals_for_res = dq[:, 0, :]
         # work out the reflectivity at the kernel evaluation points
-        smeared_rvals = refcalc.abeles(qvals_for_res,
-                                       slabs,
-                                       threads=threads)
+        smeared_rvals = abeles(qvals_for_res,
+                               slabs,
+                               threads=threads)
 
         # multiply by probability
         smeared_rvals *= dq[:, 1, :]
@@ -482,7 +517,7 @@ def _smearkernel(x, w, q, dq, threads):
     prefactor = 1 / np.sqrt(2 * np.pi)
     gauss = prefactor * np.exp(-0.5 * x * x)
     localq = q + x * dq / _FWHM
-    return refcalc.abeles(localq, w, threads=threads) * gauss
+    return abeles(localq, w, threads=threads) * gauss
 
 
 def _smeared_abeles_adaptive(qvals, w, dqvals, threads=-1):
@@ -582,9 +617,9 @@ def _smeared_abeles_fixed(qvals, w, dqvals, quad_order=17, threads=-1):
 
     qvals_for_res = ((np.atleast_2d(abscissa) *
                      (vb - va) + vb + va) / 2.)
-    smeared_rvals = refcalc.abeles(qvals_for_res,
-                                   w,
-                                   threads=threads)
+    smeared_rvals = abeles(qvals_for_res,
+                           w,
+                           threads=threads)
 
     smeared_rvals = np.reshape(smeared_rvals,
                                (qvals.size, abscissa.size))
@@ -617,7 +652,7 @@ def _smeared_abeles_constant(q, w, resolution, threads=-1):
     """
 
     if resolution < 0.5:
-        return refcalc.abeles(q, w, threads=threads)
+        return abeles(q, w, threads=threads)
 
     resolution /= 100
     gaussnum = 51
@@ -642,7 +677,7 @@ def _smeared_abeles_constant(q, w, resolution, threads=-1):
     gauss_x = np.linspace(-1.7 * resolution, 1.7 * resolution, gaussnum)
     gauss_y = gauss(gauss_x, resolution / _FWHM)
 
-    rvals = refcalc.abeles(xlin, w, threads=threads)
+    rvals = abeles(xlin, w, threads=threads)
     smeared_rvals = np.convolve(rvals, gauss_y, mode='same')
     smeared_rvals *= gauss_x[1] - gauss_x[0]
 

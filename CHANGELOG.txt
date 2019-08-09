@@ -158,3 +158,5 @@ Details of changes made to refnx
   regions that went outside the detector region.
 - cythonized contract_by_area, resulting in huge speedup for microsliced
   structures.
+- Enabled parallel calculation of reflectivity using OpenMP. Tests show that
+  it should be ~20% faster than the previous calculation in C.

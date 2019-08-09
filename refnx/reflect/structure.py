@@ -32,13 +32,14 @@ from scipy.interpolate import interp1d
 try:
     from refnx.reflect import _creflect as refcalc
 except ImportError:
-    print('WARNING, Using slow reflectivity calculation')
     from refnx.reflect import _reflect as refcalc
 
 from refnx._lib import flatten
 from refnx.analysis import Parameters, Parameter, possibly_create_parameter
 from refnx.reflect.interface import Interface, Erf, Step
+from refnx.reflect.reflect_model import get_reflect_backend
 
+# contracting the SLD profile can greatly speed a reflectivity calculation up.
 contract_by_area = refcalc._contract_by_area
 
 
@@ -454,7 +455,8 @@ class Structure(UserList):
         Nevot-Croce approximation. To speed the calculation up the
         `Structure.contract` property can be used.
         """
-        return refcalc.abeles(q, self.slabs()[..., :4], threads=threads)
+        abeles = get_reflect_backend()
+        return abeles(q, self.slabs()[..., :4], threads=threads)
 
     def sld_profile(self, z=None):
         """

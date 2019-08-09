@@ -6,6 +6,7 @@ import os
 import subprocess
 import sys
 import warnings
+import _open_mp_helpers
 
 try:
     from Cython.Distutils import build_ext
@@ -16,13 +17,10 @@ except ImportError:
 else:
     USE_CYTHON = True
 
-packages = find_packages()
-try:
-    idx = packages.index('motofit')
-    if idx >= 0:
-        packages.pop(idx)
-except ValueError:
-    pass
+
+# do you want to parallelise things with openmp?
+HAS_OPENMP = _open_mp_helpers.check_openmp_support()
+
 
 # versioning
 MAJOR = 0
@@ -34,6 +32,15 @@ VERSION = '%d.%d.%d' % (MAJOR, MINOR, MICRO)
 
 # are we on windows, darwin, etc?
 platform = sys.platform
+packages = find_packages()
+try:
+    idx = packages.index('motofit')
+    if idx >= 0:
+        packages.pop(idx)
+    if idx >= 0:
+        packages.pop(idx)
+except ValueError:
+    pass
 
 
 # Return the git revision as a string
@@ -147,7 +154,7 @@ info = {
         ],
         'packages': packages,
         'include_package_data': True,
-        'setup_requires': ['numpy'],
+        'setup_requires': ['numpy', 'cython'],
         'python_requires': '>=3.5',
         'install_requires': ['numpy', 'scipy'],
         'extras_require': {'all': ['IPython', 'ipywidgets', 'traitlets',
@@ -188,20 +195,6 @@ def setup_package():
             except AttributeError:
                 numpy_include = np.get_numpy_include()
 
-            # creflect extension module
-            _creflect = Extension(
-                                  name='refnx.reflect._creflect',
-                                  sources=['src/_creflect.pyx',
-                                           'src/refcalc.cpp'],
-                                  include_dirs=[numpy_include],
-                                  language='c++',
-                                  extra_compile_args=[],
-                                  extra_link_args=['-lpthread']
-                                  # libraries=
-                                  # extra_compile_args = "...".split(),
-                                  )
-            ext_modules.append(_creflect)
-
             _cevent = Extension(
                                 name='refnx.reduce._cevent',
                                 sources=['src/_cevent.pyx'],
@@ -221,6 +214,66 @@ def setup_package():
                                # extra_compile_args = "...".split(),
                                )
             ext_modules.append(_cutil)
+
+            # creflect extension module
+            _creflect = Extension(
+                name='refnx.reflect._creflect',
+                sources=['src/_creflect.pyx',
+                         'src/refcalc.cpp'],
+                include_dirs=[numpy_include],
+                language='c++',
+                extra_compile_args=[],
+                extra_link_args=['-lpthread']
+                # libraries=
+                # extra_compile_args = "...".split(),
+            )
+            ext_modules.append(_creflect)
+
+            # if we have openmp use pure cython version
+            # openmp should be present on windows, linux
+            #
+            # However, it's not present in Apple Clang. Therefore one has to
+            # jump through hoops to enable it.
+            # It's probably easier to install OpenMP on macOS via homebrew.
+            # However, it's fairly simple to build the OpenMP library, and
+            # installing it into PREFIX=/usr/local
+            #
+            # https://gist.github.com/andyfaff/084005bee32aee83d6b59e843278ab3e
+            #
+            # Instructions for macOS:
+            #
+            # brew install libomp
+            # export CC=clang
+            # export CXX =clang++
+            # export CXXFLAGS="$CXXFLAGS -Xpreprocessor -fopenmp"
+            # export CFLAGS="$CFLAGS -I/usr/local/opt/libomp/include"
+            # export CXXFLAGS="$CXXFLAGS -I/usr/local/opt/libomp/include"
+            # export LDFLAGS="$LDFLAGS -L/usr/local/opt/libomp/lib -lomp"
+            # export DYLD_LIBRARY_PATH =/usr/local/opt/libomp/lib
+
+            if HAS_OPENMP:
+                from numpy.distutils.ccompiler import new_compiler
+                from distutils.sysconfig import customize_compiler
+
+                # cyreflect extension module
+                _cyreflect = Extension(
+                    name='refnx.reflect._cyreflect',
+                    sources=['src/_cyreflect.pyx'],
+                    include_dirs=[numpy_include],
+                    language='c++',
+                    extra_compile_args=[],
+                    extra_link_args=[]
+                    # libraries=
+                    # extra_compile_args = "...".split(),
+                )
+                ccompiler = new_compiler()
+                customize_compiler(ccompiler)
+
+                openmp_flags = _open_mp_helpers.get_openmp_flag(ccompiler)
+                _cyreflect.extra_compile_args += openmp_flags
+                _cyreflect.extra_link_args += openmp_flags
+
+                ext_modules.append(_cyreflect)
 
             # specify min deployment version for macOS
             if platform == 'darwin':

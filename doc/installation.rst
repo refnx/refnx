@@ -7,6 +7,7 @@ Installation
 .. _Visual Studio compiler: https://wiki.python.org/moin/WindowsCompilers
 .. _miniconda: https://conda.io/miniconda.html
 .. _github: https://github.com/refnx/refnx
+.. _homebrew: https://brew.sh/
 
 *refnx* has been tested on Python 3.5, 3.6 and 3.7. It requires the
 *numpy, scipy, cython* packages to work. Additional features
@@ -41,7 +42,7 @@ Creating a conda environment
     ::
 
      # on OSX
-     source activate refnx
+     conda activate refnx
 
      # on windows
      activate refnx
@@ -58,14 +59,31 @@ Installing from source
 The latest source code can be obtained from `github`_. You can also build the
 package from within the refnx git repository (see later in this document).
 
-1. In a shell window navigate into the source directory and build the package.
+1. [macOS only] If you wish to enable the parallelised calculation of
+   reflectivity with OpenMP, then you will need to install *libomp*. This is
+   easily achieved via `homebrew`_, and the setting of environment variables.
+   However, the alternate reflectivity calculation is also parallelised and is
+   only ~20% slower.
+
+    ::
+
+     brew install libomp
+     export CC=clang
+     export CXX=clang++
+     export CXXFLAGS="$CXXFLAGS -Xpreprocessor -fopenmp"
+     export CFLAGS="$CFLAGS -I/usr/local/opt/libomp/include"
+     export CXXFLAGS="$CXXFLAGS -I/usr/local/opt/libomp/include"
+     export LDFLAGS="$LDFLAGS -L/usr/local/opt/libomp/lib -lomp"
+     export DYLD_LIBRARY_PATH=/usr/local/opt/libomp/lib
+
+2. In a shell window navigate into the source directory and build the package.
    If you are on Windows you'll need to start a Visual Studio command window.
 
     ::
 
      pip install .
 
-2. Run the tests, they should all work.
+3. Run the tests, they should all work.
 
     ::
 
