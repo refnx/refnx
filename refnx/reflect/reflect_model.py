@@ -60,7 +60,7 @@ Implementation notes
 """
 
 
-def get_reflect_backend(backend='cython'):
+def get_reflect_backend(backend='c'):
     r"""
 
     Parameters
