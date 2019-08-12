@@ -209,7 +209,7 @@ def setup_package():
                                name='refnx._lib._cutil',
                                sources=['src/_cutil.pyx'],
                                include_dirs=[numpy_include],
-                               language='c++',
+                               language='c',
                                # libraries=
                                # extra_compile_args = "...".split(),
                                )

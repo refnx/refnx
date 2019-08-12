@@ -160,3 +160,4 @@ Details of changes made to refnx
   structures.
 - Enabled parallel calculation of reflectivity using OpenMP. Tests show that
   it should be ~20% faster than the previous calculation in C.
+- tqdm progress bar for ptemcee sampling (if tqdm is installed).

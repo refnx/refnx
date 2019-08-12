@@ -1,7 +1,5 @@
 # cython: language_level=3
 
-from __future__ import division, absolute_import
-
 
 def c_flatten(seq):
     """
