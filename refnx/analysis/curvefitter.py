@@ -17,6 +17,7 @@ from refnx._lib.util import getargspec
 
 from refnx._lib import emcee
 from refnx._lib.emcee.state import State
+from refnx._lib.emcee.pbar import get_progress_bar
 
 # PTSampler has been forked into a separate package. Try both places
 _HAVE_PTSAMPLER = False
@@ -496,12 +497,14 @@ class CurveFitter(object):
             # ptemcee returns coords, logpost
             # emcee returns a State object
             if isinstance(self.sampler, PTSampler):
-                for result in self.sampler.sample(self._state.coords,
-                                                  **kwargs):
-                    self._state = State(result[0],
-                                        log_prob=result[1] + result[2],
-                                        random_state=self.sampler._random)
-                    _callback_wrapper(self._state, h=h)
+                with get_progress_bar(verbose, total=steps) as pbar:
+                    for result in (self.sampler.sample(self._state.coords,
+                                                       **kwargs)):
+                        self._state = State(result[0],
+                                            log_prob=result[1] + result[2],
+                                            random_state=self.sampler._random)
+                        _callback_wrapper(self._state, h=h)
+                        pbar.update(1)
             else:
                 for state in self.sampler.sample(self._state,
                                                  **kwargs):
@@ -509,10 +512,6 @@ class CurveFitter(object):
                     _callback_wrapper(state, h=h)
 
         self.sampler.pool = None
-
-        # finish off the progress bar
-        if verbose:
-            sys.stdout.write("\n")
 
         # sets parameter value and stderr
         return process_chain(self.objective, self.chain)
