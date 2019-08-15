@@ -222,10 +222,7 @@ def setup_package():
                          'src/refcalc.cpp'],
                 include_dirs=[numpy_include],
                 language='c++',
-                extra_compile_args=[],
-                extra_link_args=['-lpthread']
-                # libraries=
-                # extra_compile_args = "...".split(),
+                extra_compile_args=['-std=c++11'],
             )
             ext_modules.append(_creflect)
 

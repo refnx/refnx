@@ -161,3 +161,6 @@ Details of changes made to refnx
 - Enabled parallel calculation of reflectivity using OpenMP. Tests show that
   it should be ~20% faster than the previous calculation in C.
 - tqdm progress bar for ptemcee sampling (if tqdm is installed).
+- Cleaned up the _creflect module. Threaded reflectivity calculation in that
+  extension now uses std::thread instead of pthreads (POSIX) or WinAPI
+  (windows).
