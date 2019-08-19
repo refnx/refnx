@@ -27,26 +27,3 @@ Go into windows
 
 checkout master branch
 make sure ISRELEASED is False in setup.py
-
-
-Parallelisation
----------------
-The reflectivity calculation in the refnx.analysis._creflect module can be
-achieved with either openmp or pthreads. If pthreads is available then the
-module will use that by default.
-To enable openmp usage then set the following flags during the build phase:
-
-*NIX:
-CFLAGS=-fopenmp
-LDFLAGS=-lgomp
-
-On OSX you might wish to statically link because libgomp is not generally
-available with clang.
-LDFLAGS="-lgomp -static"
-
-On Windows the flags might be:
-CFLAGS="/openmp"
-
-Note: it doesn't make sense to use pthreads AND openmp, it's no quicker. So
-these instructions only really apply to those platforms which don't have
-pthreads.

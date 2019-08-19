@@ -164,3 +164,6 @@ Details of changes made to refnx
 - Cleaned up the _creflect module. Threaded reflectivity calculation in that
   extension now uses std::thread instead of pthreads (POSIX) or WinAPI
   (windows).
+
+0.1.10
+------
