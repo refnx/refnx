@@ -34,9 +34,13 @@ VERSION = '%d.%d.%d' % (MAJOR, MINOR, MICRO)
 platform = sys.platform
 packages = find_packages()
 try:
-    idx = packages.index('motofit')
+    idx = packages.index('benchmarks')
     if idx >= 0:
         packages.pop(idx)
+    idx = packages.index('benchmarks.benchmarks')
+    if idx >= 0:
+        packages.pop(idx)
+    idx = packages.index('motofit')
     if idx >= 0:
         packages.pop(idx)
 except ValueError:

@@ -167,3 +167,4 @@ Details of changes made to refnx
 
 0.1.10
 ------
+- Prevent spurious benchmark package installation.
