@@ -168,3 +168,4 @@ Details of changes made to refnx
 0.1.10
 ------
 - Prevent spurious benchmark package installation.
+- Fixed bug when loading a MTFT file saved in a previous version of refnx.
