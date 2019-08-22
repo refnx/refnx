@@ -437,6 +437,11 @@
     </disabled>
    </palette>
   </property>
+  <property name="font">
+   <font>
+    <pointsize>12</pointsize>
+   </font>
+  </property>
   <property name="acceptDrops">
    <bool>true</bool>
   </property>
@@ -488,7 +493,7 @@
        <enum>QTabWidget::Rounded</enum>
       </property>
       <property name="currentIndex">
-       <number>0</number>
+       <number>1</number>
       </property>
       <widget class="QWidget" name="reflectivity">
        <attribute name="title">
@@ -882,6 +887,11 @@
              <height>0</height>
             </size>
            </property>
+           <property name="font">
+            <font>
+             <pointsize>12</pointsize>
+            </font>
+           </property>
            <property name="acceptDrops">
             <bool>true</bool>
            </property>
@@ -999,6 +1009,11 @@ QTreeView::branch:open:has-children:has-siblings  {
              <width>70</width>
              <height>70</height>
             </size>
+           </property>
+           <property name="font">
+            <font>
+             <pointsize>12</pointsize>
+            </font>
            </property>
            <property name="toolTip">
             <string>Give varying parameters finite limits</string>
