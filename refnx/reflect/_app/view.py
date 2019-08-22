@@ -321,12 +321,23 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         # another way of doing it would be to use
         # `self.__dict__.get('_interfaces', None)` in the interfaces property,
         # but that is slower.
+
+        # add bounds._logprob attribute to all parameter bounds (added in
+        # v0.1.9)
+        from refnx.analysis.bounds import Interval
         for do in self.treeModel.datastore:
             model = do.model
             s = model.structure
             for component in s:
                 if not hasattr(component, '_interfaces'):
                     component._interfaces = None
+
+            parameters = model.parameters
+            for parameter in flatten(parameters):
+                bnd = parameter.bounds
+                if isinstance(bnd, Interval) and not hasattr(bnd, '_logprob'):
+                    bnd._logprob = 0
+                    bnd._set_bounds(bnd.lb, bnd.ub)
 
     def apply_settings_to_params(self, params):
         for key in self.settings.__dict__:
