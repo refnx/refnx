@@ -140,11 +140,16 @@ def _plots(obj, nplot=0, folder=None):
 
     # corner plot
     try:
-        fig2 = Figure()
-        FigureCanvas(fig2)
-        nvars = len(obj.varying_parameters())
-        fig2.subplots(nvars, nvars)
-        obj.corner(fig=fig2)
+        import corner
+        kwds = {}
+        var_pars = obj.varying_parameters()
+        chain = np.array([par.chain for par in var_pars])
+        labels = [par.name for par in var_pars]
+        chain = chain.reshape(len(chain), -1).T
+        kwds['labels'] = labels
+        kwds['quantiles'] = [0.16, 0.5, 0.84]
+        fig2 = corner.corner(chain, **kwds)
+
         fig2.savefig(os.path.join(folder, 'steps_corner.png'))
     except ImportError:
         pass
