@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1050</width>
+    <width>1000</width>
     <height>800</height>
    </rect>
   </property>
@@ -18,7 +18,7 @@
   </property>
   <property name="minimumSize">
    <size>
-    <width>1000</width>
+    <width>700</width>
     <height>800</height>
    </size>
   </property>
@@ -538,7 +538,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1050</width>
+     <width>1000</width>
      <height>22</height>
     </rect>
    </property>
@@ -862,6 +862,18 @@
          </item>
          <item row="2" column="3" rowspan="4">
           <widget class="QListView" name="currently_fitting">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Maximum" vsizetype="Expanding">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>100</width>
+             <height>16777215</height>
+            </size>
+           </property>
            <property name="editTriggers">
             <set>QAbstractItemView::NoEditTriggers</set>
            </property>
@@ -883,7 +895,7 @@
           <widget class="QTreeView" name="treeView">
            <property name="minimumSize">
             <size>
-             <width>700</width>
+             <width>300</width>
              <height>0</height>
             </size>
            </property>
