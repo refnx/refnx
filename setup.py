@@ -245,12 +245,12 @@ def setup_package():
             #
             # brew install libomp
             # export CC=clang
-            # export CXX =clang++
+            # export CXX=clang++
             # export CXXFLAGS="$CXXFLAGS -Xpreprocessor -fopenmp"
             # export CFLAGS="$CFLAGS -I/usr/local/opt/libomp/include"
             # export CXXFLAGS="$CXXFLAGS -I/usr/local/opt/libomp/include"
             # export LDFLAGS="$LDFLAGS -L/usr/local/opt/libomp/lib -lomp"
-            # export DYLD_LIBRARY_PATH =/usr/local/opt/libomp/lib
+            # export DYLD_LIBRARY_PATH=/usr/local/opt/libomp/lib
 
             if HAS_OPENMP:
                 from numpy.distutils.ccompiler import new_compiler
