@@ -1313,7 +1313,7 @@ varying?</string>
   </action>
   <action name="actionAbout">
    <property name="text">
-    <string>Motofit?</string>
+    <string>About</string>
    </property>
   </action>
   <action name="actionMCMC">
