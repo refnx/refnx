@@ -255,6 +255,15 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
             return
 
         try:
+            self.ui.console_text_edit.setPlainText(state['history'])
+            self.settings = state['settings']
+            self.settings.experiment_file_name = experiment_file_name
+            self.restore_settings()
+        except KeyError as e:
+            print(repr(e))
+            return
+
+        try:
             self.treeModel._data = state[
                 'datastore']
             self.treeModel.rebuild()
@@ -279,11 +288,6 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
             raise e
 
         try:
-            self.ui.console_text_edit.setPlainText(state['history'])
-            self.settings = state['settings']
-            self.settings.experiment_file_name = experiment_file_name
-            self.restore_settings()
-
             while self.data_object_selector.data_objects.count():
                 self.data_object_selector.data_objects.takeItem(0)
 
