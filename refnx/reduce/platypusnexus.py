@@ -54,20 +54,29 @@ def catalogue(start, stop, data_folder=None, prefix='PLP'):
     Parameters
     ----------
     start : int
-        start cataloguing from this run number.
+        start cataloguing from this run number
     stop : int
         stop cataloguing at this run number
     data_folder : str, optional
         path specifying location of NeXUS files
+    prefix : {'PLP', 'SPZ'}, optional
+        str specifying whether you want to catalogue Platypus or Spatz files
 
     Returns
     -------
     catalog : pd.DataFrame
         Dataframe containing interesting parameters from Platypus Nexus files
     """
-    info = ['filename', 'end_time', 'sample_name', 'ss1vg', 'ss2vg', 'ss3vg',
-            'ss4vg', 'omega', 'twotheta', 'total_counts', 'bm1_counts', 'time',
-            'daq_dirname', 'start_time']
+    info = ['filename', 'end_time', 'sample_name']
+
+    if prefix == 'PLP':
+        info += ['ss1vg', 'ss2vg', 'ss3vg', 'ss4vg']
+    elif prefix == 'SPZ':
+        info += ['ss1hg', 'ss2hg', 'ss3hg', 'ss4hg']
+
+    info += ['omega', 'twotheta', 'total_counts', 'bm1_counts', 'time',
+             'daq_dirname', 'start_time']
+
     run_number = []
     d = {key: [] for key in info}
 
@@ -573,6 +582,9 @@ class ReflectNexus(object):
                 self.processed_spectrum['m_lambda_fwhm'])
 
     def detector_average_unwanted_direction(self, detector):
+        """
+        Averages over non-collimated beam direction
+        """
         raise NotImplementedError()
 
     def create_detector_norm(self, h5norm):
@@ -598,7 +610,8 @@ class ReflectNexus(object):
 
     def correct_for_gravity(self, detector, detector_sd,
                             m_lambda, lo_wavelength, hi_wavelength):
-        raise NotImplementedError()
+        # default implementation is no gravity correction
+        return detector, detector_sd, None
 
     def process(self, h5norm=None, lo_wavelength=2.5, hi_wavelength=19.,
                 background=True, direct=False, omega=None, twotheta=None,
@@ -1313,7 +1326,10 @@ class PlatypusNexus(ReflectNexus):
             self.cat = PlatypusCatalogue(f)
 
     def detector_average_unwanted_direction(self, detector):
-        # Up until this point detector.shape=(N, T, Y)
+        """
+        Averages over non-collimated beam direction
+        """
+        # Up until this point detector.shape=(N, T, Y, X)
         # pre-average over x, leaving (n, t, y) also convert to dp
         return np.sum(detector, axis=3, dtype='float64')
 
@@ -1585,7 +1601,6 @@ class SpatzNexus(ReflectNexus):
         An HDF5 NeXus file for Spatz, or a `str` containing the path
         to one
     """
-
     def __init__(self, h5data):
         """
         Initialises the SpatzNexus object.
@@ -1595,6 +1610,54 @@ class SpatzNexus(ReflectNexus):
         with _possibly_open_hdf_file(h5data, 'r') as f:
             self.cat = SpatzCatalogue(f)
 
+    def detector_average_unwanted_direction(self, detector):
+        """
+        Averages over non-collimated beam direction
+        """
+        # Up until this point detector.shape=(N, T, Y, X)
+        # pre-average over Y, leaving (n, t, x) also convert to dp
+        return np.sum(detector, axis=2, dtype='float64')
+
+    def create_detector_norm(self, h5norm):
+        """
+        Produces a detector normalisation array for a neutron detector.
+        Here we average over N, T and Y to provide a relative efficiency for
+        each X wire.
+
+        Parameters
+        ----------
+        h5norm : hdf5 file
+            Containing a flood field run (water)
+
+        Returns
+        -------
+        norm, norm_sd : array_like
+            1D array containing the normalisation data for each x pixel
+        """
+        y_bins = self.cat.y_bins
+        return create_detector_norm(h5norm, y_bins[0], y_bins[1], axis=2)
+
+    def estimated_beam_width_at_detector(self, scanpoint):
+        # TODO FIX WITH PROPER SPATZ IMPLEMENTATION
+        cat = self.cat
+        L23 = cat.slit3_distance[scanpoint] - cat.slit2_distance[0]
+        L3det = (cat.dy[scanpoint] +
+                 cat.sample_distance[0] - cat.slit3_distance[scanpoint])
+        ebw = general.height_of_beam_after_dx(cat.ss2hg[scanpoint],
+                                              cat.ss3hg[scanpoint],
+                                              L23,
+                                              L3det)
+        umb, penumb = ebw
+        # convolve in detector resolution (~2.2 mm?)
+        # first convert to beam sd, convolve in detector, and expand sd
+        # back to total foreground width
+        # use average of umb and penumb, the calc assumes a rectangular
+        # distribution
+        penumb = (np.sqrt((0.289 * 0.5 * (umb + penumb)) ** 2. + 2.2 ** 2) *
+                  EXTENT_MULT * 2)
+        # we need it in pixels
+        return penumb / cat.y_pixels_per_mm[0]
+
     def time_offset(self, master_phase_offset, master_opening,
                     freq, phase_angle, z0, flight_distance,
                     tof_hist):
@@ -1602,6 +1665,7 @@ class SpatzNexus(ReflectNexus):
         Timing offsets for Spatz chopper system
         return t_offset
         """
+        # TODO FIX WITH PROPER SPATZ IMPLEMENTATION
         pass
 
     def phase_angle(self, scanpoint=0):
@@ -1619,6 +1683,7 @@ class SpatzNexus(ReflectNexus):
             The phase angle in degrees, and the angular opening of the master
             chopper in radians
         """
+        # TODO FIX WITH PROPER SPATZ IMPLEMENTATION
         pass
         # cat = self.cat
         # master = cat.master
@@ -1667,7 +1732,7 @@ class SpatzNexus(ReflectNexus):
         chod, d_cx : float, float
             Flight distance (mm), distance between chopper discs (mm)
         """
-
+        # TODO FIX WITH PROPER SPATZ IMPLEMENTATION
         chod = 0
 
         # guide 1 is the single deflection mirror (SB)

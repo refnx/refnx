@@ -4,11 +4,10 @@ import numpy as np
 
 cimport numpy as np
 cimport cython
-from cython.view cimport array as cvarray
 
 ii32 = np.iinfo(np.int32)
 
-
+@cython.boundscheck(False)
 @cython.cdivision(False)
 def _cevents(f,
              int end_last_event=127,
@@ -39,7 +38,7 @@ def _cevents(f,
     """
     if max_frames is None:
         max_frames = ii32.max
-    max_frames = int(max_frames)
+    cdef int max_framesi = int(max_frames)
 
     fi = f
     auto_f = None
@@ -64,16 +63,26 @@ def _cevents(f,
     cdef np.ndarray[np.uint32_t, ndim=1] t_events = np.array((), dtype=np.uint32)
     cdef np.ndarray[np.int32_t, ndim=1] f_events = np.array((), dtype=np.int32)
 
-    cdef int bufsize = 32768
+    cdef int bufsize = 524288
     cdef int bytes_read = 0
+
     # these are buffers to store events from each read of the file
     # use of buffers prevents continual allocation of memory.
-    cdef np.ndarray[np.int32_t, ndim=1] x_neutrons = np.zeros((bufsize), dtype=np.int32)
-    cdef np.ndarray[np.int32_t, ndim=1] y_neutrons = np.zeros((bufsize), dtype=np.int32)
-    cdef np.ndarray[np.uint32_t, ndim=1] t_neutrons = np.zeros((bufsize), dtype=np.uint32)
-    cdef np.ndarray[np.int32_t, ndim=1] f_neutrons = np.zeros((bufsize), dtype=np.int32)
+    cdef int x_neutrons[524288]
+    cdef int y_neutrons[524288]
+    cdef unsigned int t_neutrons[524288]
+    cdef int f_neutrons[524288]
 
-    while True and frame_number < max_frames:
+    cdef int[:] x_neutrons_buf = x_neutrons
+    cdef int[:] y_neutrons_buf = y_neutrons
+    cdef unsigned int[:] t_neutrons_buf = t_neutrons
+    cdef int[:] f_neutrons_buf = f_neutrons
+
+    cdef int c0 = 0xFFFFFC00
+    cdef unsigned int c1 = 0xFFFFFFFF
+    cdef const unsigned char[:] bufv
+
+    while True and frame_number < max_framesi:
         num_events = 0
         # TODO: possibly re-szeo *_neutrons?
 
@@ -86,32 +95,33 @@ def _cevents(f,
         if not bytes_read:
             break
 
-        buf = bytearray(buf)
+        bufv = memoryview(buf)
 
         state = 0
 
         for i in range(bytes_read):
-            c = buf[i]
+            c = bufv[i]
             if state == 0:
                 x = c
                 state += 1
             elif state == 1:
-                x |= (c & 0x3) * 256
+                x |= (<unsigned int>(c & 0x3)) << 8;
+                if (x & 0x200):
+                    x |= c0;
+                y = c >> 2;
 
-                if x & 0x200:
-                    x = - (0x100000000 - (x | 0xFFFFFC00))
-                y = int(c / 4)
                 state += 1
             else:
                 if state == 2:
-                    y |= (c & 0xF) * 64
+                    y |= ((<unsigned int> c) & 0xF) << 6;
+                    if (y & 0x200):
+                        y |= c0
 
-                    if y & 0x200:
-                        y = -(0x100000000 - (y | 0xFFFFFC00))
                 event_ended = ((c & 0xC0) != 0xC0 or state >= 7)
 
                 if not event_ended:
                     c &= 0x3F
+
                 if state == 2:
                     dt = c >> 4
                 else:
@@ -123,26 +133,26 @@ def _cevents(f,
                     # print "got to state", state, event_ended, x, y, frame_number, t, dt
                     state = 0
                     end_last_event = filepos + i
-                    if x == 0 and y == 0 and dt == 0xFFFFFFFF:
+                    if x == 0 and y == 0 and dt == c1:
                         t = 0
                         frame_number += 1
-                        if frame_number == max_frames:
+                        if frame_number == max_framesi:
                             break
                     else:
                         t += dt
                         if frame_number == -1:
                             return None
-                        x_neutrons[num_events] = x
-                        y_neutrons[num_events] = y
-                        t_neutrons[num_events] = t
-                        f_neutrons[num_events] = frame_number
+                        x_neutrons_buf[num_events] = x
+                        y_neutrons_buf[num_events] = y
+                        t_neutrons_buf[num_events] = t
+                        f_neutrons_buf[num_events] = frame_number
                         num_events += 1
 
-        if len(x_neutrons):
-            x_events = np.append(x_events, x_neutrons[0:num_events])
-            y_events = np.append(y_events, y_neutrons[0:num_events])
-            t_events = np.append(t_events, t_neutrons[0:num_events])
-            f_events = np.append(f_events, f_neutrons[0:num_events])
+        if num_events:
+            x_events = np.append(x_events, x_neutrons_buf[0:num_events])
+            y_events = np.append(y_events, y_neutrons_buf[0:num_events])
+            t_events = np.append(t_events, t_neutrons_buf[0:num_events])
+            f_events = np.append(f_events, f_neutrons_buf[0:num_events])
 
     t_events //= 1000
 
