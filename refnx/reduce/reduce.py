@@ -5,7 +5,8 @@ from time import gmtime, strftime
 
 import numpy as np
 from refnx.reduce.platypusnexus import (PlatypusNexus, ReflectNexus,
-                                        number_datafile, basename_datafile)
+                                        number_datafile, basename_datafile,
+                                        SpatzNexus)
 from refnx.util import ErrorProp as EP
 import refnx.util.general as general
 from refnx.reduce.parabolic_motion import (parabola_line_intersection_point,
@@ -44,9 +45,12 @@ class ReflectReduce(object):
 
         if prefix == 'PLP':
             self.reflect_klass = PlatypusNexus
+        elif prefix == 'SPZ':
+            self.reflect_klass = SpatzNexus
         else:
             raise ValueError("Instrument prefix not known. Must be one of"
                              " ['PLP']")
+
         if isinstance(direct, ReflectNexus):
             self.direct_beam = direct
         elif type(direct) is str:
@@ -499,10 +503,8 @@ class SpatzReduce(ReflectReduce):
     """
 
     def __init__(self, direct, data_folder=None, **kwds):
-
-        # TODO correct spatz prefix
         super(SpatzReduce, self).__init__(direct, 'SPZ',
-                                             data_folder=data_folder)
+                                          data_folder=data_folder)
 
     def _reduce_single_angle(self, scale=1):
         """

@@ -82,8 +82,9 @@ def catalogue(start, stop, data_folder=None, prefix='PLP'):
     for idx, file in enumerate(files):
         if prefix == 'PLP':
             pn = PlatypusNexus(file)
+        elif prefix == 'SPZ':
+            pn = SpatzNexus(file)
         else:
-            # TODO spatz
             raise RuntimeError("prefix not known yet")
 
         cat = pn.cat.cat
@@ -124,6 +125,32 @@ class Catalogue(object):
         d['filename'] = h5d.filename
         d['end_time'] = h5d['entry1/end_time'][0]
 
+        d['detector'] = h5d['entry1/data/hmm'][:]
+        d['t_bins'] = h5d['entry1/data/time_of_flight'][:].astype('float64')
+        d['x_bins'] = h5d['entry1/data/x_bin'][:]
+        d['y_bins'] = h5d['entry1/data/y_bin'][:]
+
+        d['bm1_counts'] = h5d['entry1/monitor/bm1_counts'][:]
+        d['total_counts'] = h5d['entry1/instrument/detector/total_counts'][:]
+        d['time'] = h5d['entry1/instrument/detector/time'][:]
+
+        try:
+            event_directory_name = h5d[
+                'entry1/instrument/detector/daq_dirname'][0]
+            d['daq_dirname'] = event_directory_name.decode()
+        except KeyError:
+            # daq_dirname doesn't exist in this file
+            d['daq_dirname'] = None
+
+        d['ss1vg'] = h5d['entry1/instrument/slits/first/vertical/gap'][:]
+        d['ss2vg'] = h5d['entry1/instrument/slits/second/vertical/gap'][:]
+        d['ss3vg'] = h5d['entry1/instrument/slits/third/vertical/gap'][:]
+        d['ss4vg'] = h5d['entry1/instrument/slits/fourth/vertical/gap'][:]
+        d['ss1hg'] = h5d['entry1/instrument/slits/first/horizontal/gap'][:]
+        d['ss2hg'] = h5d['entry1/instrument/slits/second/horizontal/gap'][:]
+        d['ss3hg'] = h5d['entry1/instrument/slits/third/horizontal/gap'][:]
+        d['ss4hg'] = h5d['entry1/instrument/slits/fourth/horizontal/gap'][:]
+
         try:
             d['start_time'] = (
                 h5d['entry1/instrument/detector/start_time'][:])
@@ -156,8 +183,7 @@ class SpatzCatalogue(Catalogue):
         h5d - HDF5 file handle
         """
         super(PlatypusCatalogue, self).__init__(h5d)
-        # TODO Spatz prefix
-        # self.prefix =
+        self.prefix = 'SPZ'
 
 
 class PlatypusCatalogue(Catalogue):
@@ -177,37 +203,11 @@ class PlatypusCatalogue(Catalogue):
         self.prefix = 'PLP'
 
         d = self.cat
-        d['ss1vg'] = h5d['entry1/instrument/slits/first/vertical/gap'][:]
-        d['ss2vg'] = h5d['entry1/instrument/slits/second/vertical/gap'][:]
-        d['ss3vg'] = h5d['entry1/instrument/slits/third/vertical/gap'][:]
-        d['ss4vg'] = h5d['entry1/instrument/slits/fourth/vertical/gap'][:]
-        d['ss1hg'] = h5d['entry1/instrument/slits/first/horizontal/gap'][:]
-        d['ss2hg'] = h5d['entry1/instrument/slits/second/horizontal/gap'][:]
-        d['ss3hg'] = h5d['entry1/instrument/slits/third/horizontal/gap'][:]
-        d['ss4hg'] = h5d['entry1/instrument/slits/fourth/horizontal/gap'][:]
-
         d['omega'] = h5d['entry1/instrument/parameters/omega'][:]
         d['twotheta'] = h5d['entry1/instrument/parameters/twotheta'][:]
 
-        d['detector'] = h5d['entry1/data/hmm'][:]
         d['sth'] = h5d['entry1/sample/sth'][:]
-        d['bm1_counts'] = h5d['entry1/monitor/bm1_counts'][:]
-        d['total_counts'] = h5d['entry1/instrument/detector/total_counts'][:]
-
-        d['time'] = h5d['entry1/instrument/detector/time'][:]
         d['mode'] = h5d['entry1/instrument/parameters/mode'][0].decode()
-
-        try:
-            event_directory_name = h5d[
-                'entry1/instrument/detector/daq_dirname'][0]
-            d['daq_dirname'] = event_directory_name.decode()
-        except KeyError:
-            # daq_dirname doesn't exist in this file
-            d['daq_dirname'] = None
-
-        d['t_bins'] = h5d['entry1/data/time_of_flight'][:].astype('float64')
-        d['x_bins'] = h5d['entry1/data/x_bin'][:]
-        d['y_bins'] = h5d['entry1/data/y_bin'][:]
 
         master, slave, frequency, phase = self._chopper_values(h5d)
         d['master'] = master
@@ -238,7 +238,13 @@ class PlatypusCatalogue(Catalogue):
             'entry1/instrument/parameters/slit2_distance'][:]
         d['slit3_distance'] = h5d[
             'entry1/instrument/parameters/slit3_distance'][:]
+
+        # collimation parameters
+        # first and second collimation slits
         d['collimation_distance'] = d['slit3_distance'] - d['slit2_distance']
+        d['ss_coll1'] = h5d['entry1/instrument/slits/second/vertical/gap'][:]
+        d['ss_coll2'] = h5d['entry1/instrument/slits/third/vertical/gap'][:]
+
         d['dy'] = h5d[
             'entry1/instrument/detector/longitudinal_translation'][:]
         d['dz'] = h5d[
@@ -397,7 +403,7 @@ def datafile_number(fname, prefix='PLP'):
 
 
 class ReflectNexus(object):
-    def __init__(self, h5data, prefix):
+    def __init__(self):
         self.cat = None
 
         self.processed_spectrum = dict()
@@ -406,8 +412,7 @@ class ReflectNexus(object):
         # `process`. If the arguments don't change then you shouldn't need to
         # call process again, thereby saving time.
         self._arguments = {}
-
-        self.prefix = prefix
+        self.prefix = None
 
     def __getattr__(self, item):
         if item in self.__dict__:
@@ -567,149 +572,33 @@ class ReflectNexus(object):
                 self.processed_spectrum['m_spec_sd'],
                 self.processed_spectrum['m_lambda_fwhm'])
 
-    def process_event_stream(self, t_bins=None, x_bins=None, y_bins=None,
-                             frame_bins=None, scanpoint=0, event_folder=None,
-                             event_filter=None):
-        """
-        Processes the event mode dataset for the NeXUS file. Assumes that
-        there is a event mode directory in the same directory as the NeXUS
-        file, as specified by in 'entry1/instrument/detector/daq_dirname'
+    def detector_average_unwanted_direction(self, detector):
+        raise NotImplementedError()
 
-        Parameters
-        ----------
-        t_bins : array_like, optional
-            specifies the time bins required in the image
-        x_bins : array_like, optional
-            specifies the x bins required in the image
-        y_bins : array_like, optional
-            specifies the y bins required in the image
-        scanpoint : int, optional
-            Scanpoint you are interested in
-        event_folder : None or str
-            Specifies the path for the eventmode data. If
-            `event_folder is None` then the eventmode data is assumed to reside
-            in the same directory as the NeXUS file. If event_folder is a
-            string, then the string specifies the path to the eventmode data.
-        frame_bins : array_like, optional
-            specifies the frame bins required in the image. If
-            frame_bins = [5, 10, 120] you will get 2 images.  The first starts
-            at 5s and finishes at 10s. The second starts at 10s and finishes
-            at 120s. If frame_bins has zero length, e.g. [], then a single
-            interval consisting of the entire acquisition time is used:
-            [0, acquisition_time]. If `event_filter` is provided then this
-            parameter is ignored.
-        event_filter : callable, optional
-            A function, that processes the event stream, returning a `detector`
-            array, and a `frame_count` array. `detector` has shape
-            `(N, T, Y, X)`, where `N` is the number of detector images, `T` is
-            the number of time bins (`len(t_bins)`), etc. `frame_count` has
-            shape `(N,)` and contains the number of frames for each of the
-            detector images. The frame_count is used to determine what fraction
-            of the overall monitor counts should be ascribed to each detector
-            image. The function has signature:
+    def create_detector_norm(self, h5norm):
+        raise NotImplementedError()
 
-            detector, frame_count = event_filter(loaded_events,
-                                                 t_bins=None,
-                                                 y_bins=None,
-                                                 x_bins=None)
-
-            `loaded_events` is a 4-tuple of numpy arrays:
-            `(f_events, t_events, y_events, x_events)`, where `f_events`
-            contains the frame number for each neutron, landing at position
-            `x_events, y_events` on the detector, with time-of-flight
-            `t_events`.
-
-        Returns
-        -------
-        detector, frame_count, bm1_counts : np.ndarray, np.ndarray, np.ndarray
-
-        Create a new detector image based on the t_bins, x_bins, y_bins and
-        frame_bins you supply to the method (these should all be lists/numpy
-        arrays specifying the edges of the required bins). If these are not
-        specified, then the default bins are taken from the nexus file. This
-        would essentially return the same detector image as the nexus file.
-        However, you can specify the frame_bins list to generate detector
-        images based on subdivided periods of the total acquisition.
-        For example if frame_bins = [5, 10, 120] you will get 2 images.  The
-        first starts at 5s and finishes at 10s. The second starts at 10s
-        and finishes at 120s. The frame_bins are clipped to the total
-        acquisition time if necessary.
-        `frame_count` is how many frames went into making each detector image.
-
-        """
+    def beam_divergence(self, scanpoint):
+        # works out the beam divergence for a given scan point
         cat = self.cat
+        return general.div(cat.ss_coll1[scanpoint],
+                           cat.ss_coll2[scanpoint],
+                           cat.collimation_distance[0])[0]
 
-        if not t_bins:
-            t_bins = cat.t_bins
-        if not y_bins:
-            y_bins = cat.y_bins
-        if not x_bins:
-            x_bins = cat.x_bins
-        if frame_bins is None or np.size(frame_bins) == 0:
-            frame_bins = [0, cat.time[scanpoint]]
+    def estimated_beam_width_at_detector(self, scanpoint):
+        raise NotImplementedError()
 
-        total_acquisition_time = cat.time[scanpoint]
-        frequency = cat.frequency[scanpoint]
+    def phase_angle(self, scanpoint):
+        raise NotImplementedError()
 
-        bm1_counts_for_scanpoint = cat.bm1_counts[scanpoint]
+    def time_offset(self, master_phase_offset, master_opening,
+                    freq, phase_angle, z0, flight_distance,
+                    tof_hist):
+        raise NotImplementedError()
 
-        event_directory_name = cat.daq_dirname
-
-        _eventpath = cat.path
-        if event_folder is not None:
-            _eventpath = event_folder
-
-        stream_filename = os.path.join(_eventpath,
-                                       event_directory_name,
-                                       'DATASET_%d' % scanpoint,
-                                       'EOS.bin')
-
-        with io.open(stream_filename, 'rb') as f:
-            last_frame = int(frame_bins[-1] * frequency)
-            loaded_events, end_of_last_event = events(f,
-                                                      max_frames=last_frame)
-
-        # convert frame_bins to list of filter frames
-        frames = framebins_to_frames(np.asfarray(frame_bins) *
-                                     frequency)
-
-        if event_filter is not None:
-            output = event_filter(loaded_events, t_bins, y_bins, x_bins)
-        else:
-            output = process_event_stream(loaded_events,
-                                          frames,
-                                          t_bins,
-                                          y_bins,
-                                          x_bins)
-
-        detector, frame_count = output
-
-        bm1_counts = (frame_count * bm1_counts_for_scanpoint /
-                      total_acquisition_time /
-                      frequency)
-
-        return detector, frame_count, bm1_counts
-
-
-class PlatypusNexus(ReflectNexus):
-    """
-    Processes Platypus NeXus files to produce an intensity vs wavelength
-    spectrum
-
-    Parameters
-    ----------
-    h5data : HDF5 NeXus file or str
-        An HDF5 NeXus file for Platypus, or a `str` containing the path
-        to one
-    """
-
-    def __init__(self, h5data):
-        """
-        Initialises the PlatypusNexus object.
-        """
-        super(PlatypusNexus, self).__init__(h5data, 'PLP')
-        with _possibly_open_hdf_file(h5data, 'r') as f:
-            self.cat = PlatypusCatalogue(f)
+    def correct_for_gravity(self, detector, detector_sd,
+                            m_lambda, lo_wavelength, hi_wavelength):
+        raise NotImplementedError()
 
     def process(self, h5norm=None, lo_wavelength=2.5, hi_wavelength=19.,
                 background=True, direct=False, omega=None, twotheta=None,
@@ -719,7 +608,7 @@ class PlatypusNexus(ReflectNexus):
                 background_mask=None, normalise_bins=True,
                 manual_beam_find=None, event_filter=None, **kwds):
         r"""
-        Processes the PlatypusNexus object to produce a time of flight spectrum.
+        Processes the ReflectNexus object to produce a time of flight spectrum.
         The processed spectrum is stored in the `processed_spectrum` attribute.
         The specular spectrum is also returned from this function.
 
@@ -736,7 +625,7 @@ class PlatypusNexus(ReflectNexus):
             Should a background subtraction be carried out?
         direct : bool
             Is it a direct beam you measured? This is so a gravity correction
-            can be applied.
+            can be applied (if the instrument needs one).
         omega : float
             Expected angle of incidence of beam. If this is None, then the
             rough angle of incidence is obtained from the NeXus file.
@@ -811,10 +700,10 @@ class PlatypusNexus(ReflectNexus):
             A function which allows the location of the specular ridge to be
             determined. Has the signature `f(detector, detector_err)` where
             `detector` and `detector_err` is the detector image and its
-            uncertainty. `detector` and `detector_err` have shape (n, t, y)
-            where `n` is the number of detector images, `t` is the number of
-            time of flight bins and `y` is the number of y pixels. The function
-            should return a tuple,
+            uncertainty. `detector` and `detector_err` have shape
+            (n, t, {x, y}) where `n` is the number of detector images, `t` is
+            the number of time of flight bins and `x` or `y` is the number of
+            x or y pixels. The function should return a tuple,
             `(centre, centre_sd, lopx, hipx, background_pixels)`. `centre`,
             `centre_sd`, `lopx`, `hipx` should be arrays of shape `(n, )`,
             specifying the beam centre, beam width (standard deviation), lowest
@@ -852,7 +741,8 @@ class PlatypusNexus(ReflectNexus):
         - path - path to the data file
         - datafilename - name of the datafile
         - datafile_number - datafile number.
-        - m_topandtail - the corrected 2D detector image, (n_spectra, TOF, Y)
+        - m_topandtail - the corrected 2D detector image,
+                         (n_spectra, TOF, {X, Y})
         - m_topandtail_sd - corresponding standard deviations
         - n_spectra - number of spectra in processed data
         - bm1_counts - beam montor counts, (n_spectra,)
@@ -863,12 +753,12 @@ class PlatypusNexus(ReflectNexus):
         - m_lambda_fwhm - corresponding FWHM of wavelength distribution
         - m_lambda_hist - wavelength bins for each spectrum, (n_spectra, TOF)
         - m_spec_tof - TOF for each wavelength bin, (n_spectra, TOF)
-        - mode - the Platypus mode, e.g. FOC/MT/POL/POLANAL/SB/DB
-        - detector_z - detector height, (n_spectra, )
+        - mode - the experimental mode, e.g. FOC/MT/POL/POLANAL/SB/DB
+        - detector_z - detector height or angle, (n_spectra, )
         - detector_y - sample-detector distance, (n_spectra, )
         - domega - collimation uncertainty
-        - lopx - lowest extent of specular beam (in y pixels), (n_spectra, )
-        - hipx - highest extent of specular beam (in y pixels), (n_spectra, )
+        - lopx - lowest extent of specular beam (in pixels), (n_spectra, )
+        - hipx - highest extent of specular beam (in pixels), (n_spectra, )
 
         Returns
         -------
@@ -937,23 +827,19 @@ class PlatypusNexus(ReflectNexus):
 
         n_spectra = np.size(detector, 0)
 
-        # Up until this point detector.shape=(N, T, Y)
-        # pre-average over x, leaving (n, t, y) also convert to dp
-        detector = np.sum(detector, axis=3, dtype='float64')
+        # Up until this point detector.shape=(N, T, Y, X)
+        # average to (N, T, Y) - platypus or (N, T, X) - spatz
+        detector = self.detector_average_unwanted_direction(detector)
 
-        # detector shape should now be (n, t, y)
         # calculate the counting uncertainties
         detector_sd = np.sqrt(detector)
         bm1_counts_sd = np.sqrt(bm1_counts)
 
         # detector normalisation with a water file
         if h5norm is not None:
-            x_bins = cat.x_bins
-
             with _possibly_open_hdf_file(h5norm, 'r') as f:
-                # shape (y,)
-                detector_norm, detector_norm_sd = create_detector_norm(
-                    f, x_bins[0], x_bins[1])
+                # shape ({x, y},)
+                detector_norm, detector_norm_sd = self.create_detector_norm(f)
 
             # detector has shape (N, T, Y), shape of detector_norm should
             # broadcast to (1, 1, y)
@@ -990,31 +876,13 @@ class PlatypusNexus(ReflectNexus):
             freq = cat.frequency[scanpoint]
 
             # calculate the angular divergence
-            domega[idx] = general.div(cat.ss2vg[scanpoint],
-                                      cat.ss3vg[scanpoint],
-                                      (cat.slit3_distance[0] -
-                                       cat.slit2_distance[0]))[0]
+            domega[idx] = self.beam_divergence(scanpoint)
 
             """
             estimated beam width in pixels at detector
             """
-            L23 = cat.slit3_distance[idx] - cat.slit2_distance[0]
-            L3det = (cat.dy[idx] +
-                     cat.sample_distance[0] - cat.slit3_distance[idx])
-            ebw = general.height_of_beam_after_dx(cat.ss2vg[scanpoint],
-                                                  cat.ss3vg[scanpoint],
-                                                  L23,
-                                                  L3det)
-            umb, penumb = ebw
-            # convolve in detector resolution (~2.2 mm?)
-            # first convert to beam sd, convolve in detector, and expand sd
-            # back to total foreground width
-            # use average of umb and penumb, the calc assumes a rectangular
-            # distribution
-            penumb = (np.sqrt((0.289 * 0.5 * (umb + penumb))**2. + 2.2**2) *
-                      EXTENT_MULT * 2)
-            # we need it in pixels
-            estimated_beam_width[idx] = penumb / cat.y_pixels_per_mm[0]
+            estimated_beam_width[idx] = self.estimated_beam_width_at_detector(
+                scanpoint)
 
             """
             work out the total flight length
@@ -1031,8 +899,7 @@ class PlatypusNexus(ReflectNexus):
             flight_distance[idx], d_cx[idx] = output
 
             # calculate nominal phase openings
-            output = self.phase_angle(scanpoint)
-            phase_angle[scanpoint], master_opening = output
+            phase_angle[idx], master_opening = self.phase_angle(scanpoint)
 
             """
             toffset - the time difference between the magnet pickup on the
@@ -1042,13 +909,13 @@ class PlatypusNexus(ReflectNexus):
             time offset has to be relocated slightly, as time0 is not at the
             trailing edge.
             """
-            t_offset = self._platypus_time_offset(cat.chopper1_phase_offset[0],
-                                                  master_opening,
-                                                  freq,
-                                                  phase_angle[scanpoint],
-                                                  d_cx[0],
-                                                  flight_distance[idx],
-                                                  m_spec_tof_hist[idx])
+            t_offset = self.time_offset(cat.chopper1_phase_offset[0],
+                                        master_opening,
+                                        freq,
+                                        phase_angle[idx],
+                                        d_cx[0],
+                                        flight_distance[idx],
+                                        m_spec_tof_hist[idx])
 
             m_spec_tof_hist[idx] -= t_offset
 
@@ -1079,16 +946,8 @@ class PlatypusNexus(ReflectNexus):
         # gravity correction if direct beam
         if direct:
             # TODO: Correlated Uncertainties?
-            output = correct_for_gravity(
-                detector,
-                detector_sd,
-                m_lambda,
-                cat.collimation_distance,
-                cat.dy,
-                lo_wavelength,
-                hi_wavelength,
-                y_pixels_per_mm=cat.y_pixels_per_mm[0])
-            detector, detector_sd, m_gravcorrcoefs = output
+            detector, detector_sd, m_gravcorrcoefs = self.correct_for_gravity(
+                detector, detector_sd, m_lambda, lo_wavelength, hi_wavelength)
 
         # where is the specular ridge?
         if peak_pos == -1:
@@ -1266,7 +1125,7 @@ class PlatypusNexus(ReflectNexus):
                                       z0=d_cx[:, np.newaxis] / 1000.,
                                       freq=cat.frequency[:, np.newaxis],
                                       L=flight_distance[:, np.newaxis] / 1000.,
-                                      H=cat.ss2vg[original_scanpoint] / 1000.,
+                                      H=cat.ss_coll2[original_scanpoint] / 1000.,
                                       xsi=phase_angle[:, np.newaxis],
                                       tau_da=tau_da))
 
@@ -1310,9 +1169,212 @@ class PlatypusNexus(ReflectNexus):
         self.processed_spectrum = d
         return m_lambda, m_spec, m_spec_sd
 
-    def _platypus_time_offset(self, master_phase_offset, master_opening,
-                              freq, phase_angle, z0, flight_distance,
-                              tof_hist):
+    def process_event_stream(self, t_bins=None, x_bins=None, y_bins=None,
+                             frame_bins=None, scanpoint=0, event_folder=None,
+                             event_filter=None):
+        """
+        Processes the event mode dataset for the NeXUS file. Assumes that
+        there is a event mode directory in the same directory as the NeXUS
+        file, as specified by in 'entry1/instrument/detector/daq_dirname'
+
+        Parameters
+        ----------
+        t_bins : array_like, optional
+            specifies the time bins required in the image
+        x_bins : array_like, optional
+            specifies the x bins required in the image
+        y_bins : array_like, optional
+            specifies the y bins required in the image
+        scanpoint : int, optional
+            Scanpoint you are interested in
+        event_folder : None or str
+            Specifies the path for the eventmode data. If
+            `event_folder is None` then the eventmode data is assumed to reside
+            in the same directory as the NeXUS file. If event_folder is a
+            string, then the string specifies the path to the eventmode data.
+        frame_bins : array_like, optional
+            specifies the frame bins required in the image. If
+            frame_bins = [5, 10, 120] you will get 2 images.  The first starts
+            at 5s and finishes at 10s. The second starts at 10s and finishes
+            at 120s. If frame_bins has zero length, e.g. [], then a single
+            interval consisting of the entire acquisition time is used:
+            [0, acquisition_time]. If `event_filter` is provided then this
+            parameter is ignored.
+        event_filter : callable, optional
+            A function, that processes the event stream, returning a `detector`
+            array, and a `frame_count` array. `detector` has shape
+            `(N, T, Y, X)`, where `N` is the number of detector images, `T` is
+            the number of time bins (`len(t_bins)`), etc. `frame_count` has
+            shape `(N,)` and contains the number of frames for each of the
+            detector images. The frame_count is used to determine what fraction
+            of the overall monitor counts should be ascribed to each detector
+            image. The function has signature:
+
+            detector, frame_count = event_filter(loaded_events,
+                                                 t_bins=None,
+                                                 y_bins=None,
+                                                 x_bins=None)
+
+            `loaded_events` is a 4-tuple of numpy arrays:
+            `(f_events, t_events, y_events, x_events)`, where `f_events`
+            contains the frame number for each neutron, landing at position
+            `x_events, y_events` on the detector, with time-of-flight
+            `t_events`.
+
+        Returns
+        -------
+        detector, frame_count, bm1_counts : np.ndarray, np.ndarray, np.ndarray
+
+        Create a new detector image based on the t_bins, x_bins, y_bins and
+        frame_bins you supply to the method (these should all be lists/numpy
+        arrays specifying the edges of the required bins). If these are not
+        specified, then the default bins are taken from the nexus file. This
+        would essentially return the same detector image as the nexus file.
+        However, you can specify the frame_bins list to generate detector
+        images based on subdivided periods of the total acquisition.
+        For example if frame_bins = [5, 10, 120] you will get 2 images.  The
+        first starts at 5s and finishes at 10s. The second starts at 10s
+        and finishes at 120s. The frame_bins are clipped to the total
+        acquisition time if necessary.
+        `frame_count` is how many frames went into making each detector image.
+
+        """
+        cat = self.cat
+
+        if not t_bins:
+            t_bins = cat.t_bins
+        if not y_bins:
+            y_bins = cat.y_bins
+        if not x_bins:
+            x_bins = cat.x_bins
+        if frame_bins is None or np.size(frame_bins) == 0:
+            frame_bins = [0, cat.time[scanpoint]]
+
+        total_acquisition_time = cat.time[scanpoint]
+        frequency = cat.frequency[scanpoint]
+
+        bm1_counts_for_scanpoint = cat.bm1_counts[scanpoint]
+
+        event_directory_name = cat.daq_dirname
+
+        _eventpath = cat.path
+        if event_folder is not None:
+            _eventpath = event_folder
+
+        stream_filename = os.path.join(_eventpath,
+                                       event_directory_name,
+                                       'DATASET_%d' % scanpoint,
+                                       'EOS.bin')
+
+        with io.open(stream_filename, 'rb') as f:
+            last_frame = int(frame_bins[-1] * frequency)
+            loaded_events, end_of_last_event = events(f,
+                                                      max_frames=last_frame)
+
+        # convert frame_bins to list of filter frames
+        frames = framebins_to_frames(np.asfarray(frame_bins) *
+                                     frequency)
+
+        if event_filter is not None:
+            output = event_filter(loaded_events, t_bins, y_bins, x_bins)
+        else:
+            output = process_event_stream(loaded_events,
+                                          frames,
+                                          t_bins,
+                                          y_bins,
+                                          x_bins)
+
+        detector, frame_count = output
+
+        bm1_counts = (frame_count * bm1_counts_for_scanpoint /
+                      total_acquisition_time /
+                      frequency)
+
+        return detector, frame_count, bm1_counts
+
+
+class PlatypusNexus(ReflectNexus):
+    """
+    Processes Platypus NeXus files to produce an intensity vs wavelength
+    spectrum
+
+    Parameters
+    ----------
+    h5data : HDF5 NeXus file or str
+        An HDF5 NeXus file for Platypus, or a `str` containing the path
+        to one
+    """
+
+    def __init__(self, h5data):
+        """
+        Initialises the PlatypusNexus object.
+        """
+        super(PlatypusNexus, self).__init__()
+        self.prefix = 'PLP'
+        with _possibly_open_hdf_file(h5data, 'r') as f:
+            self.cat = PlatypusCatalogue(f)
+
+    def detector_average_unwanted_direction(self, detector):
+        # Up until this point detector.shape=(N, T, Y)
+        # pre-average over x, leaving (n, t, y) also convert to dp
+        return np.sum(detector, axis=3, dtype='float64')
+
+    def create_detector_norm(self, h5norm):
+        """
+        Produces a detector normalisation array for a neutron detector.
+        Here we average over N, T and X to provide a relative efficiency for
+        each y wire.
+
+        Parameters
+        ----------
+        h5norm : hdf5 file
+            Containing a flood field run (water)
+
+        Returns
+        -------
+        norm, norm_sd : array_like
+            1D array containing the normalisation data for each y pixel
+        """
+        x_bins = self.cat.x_bins
+        return create_detector_norm(h5norm, x_bins[0], x_bins[1], axis=3)
+
+    def estimated_beam_width_at_detector(self, scanpoint):
+        cat = self.cat
+        L23 = cat.slit3_distance[scanpoint] - cat.slit2_distance[0]
+        L3det = (cat.dy[scanpoint] +
+                 cat.sample_distance[0] - cat.slit3_distance[scanpoint])
+        ebw = general.height_of_beam_after_dx(cat.ss2vg[scanpoint],
+                                              cat.ss3vg[scanpoint],
+                                              L23,
+                                              L3det)
+        umb, penumb = ebw
+        # convolve in detector resolution (~2.2 mm?)
+        # first convert to beam sd, convolve in detector, and expand sd
+        # back to total foreground width
+        # use average of umb and penumb, the calc assumes a rectangular
+        # distribution
+        penumb = (np.sqrt((0.289 * 0.5 * (umb + penumb)) ** 2. + 2.2 ** 2) *
+                  EXTENT_MULT * 2)
+        # we need it in pixels
+        return penumb / cat.y_pixels_per_mm[0]
+
+    def correct_for_gravity(self, detector, detector_sd, m_lambda,
+                            lo_wavelength, hi_wavelength):
+        cat = self.cat
+
+        return correct_for_gravity(
+            detector,
+            detector_sd,
+            m_lambda,
+            cat.collimation_distance,
+            cat.dy,
+            lo_wavelength,
+            hi_wavelength,
+            y_pixels_per_mm=cat.y_pixels_per_mm[0])
+
+    def time_offset(self, master_phase_offset, master_opening,
+                    freq, phase_angle, z0, flight_distance,
+                    tof_hist):
         """
         Timing offsets for Platypus chopper system, includes a gravity
         correction for phase angle
@@ -1530,607 +1592,19 @@ class SpatzNexus(ReflectNexus):
         """
         Initialises the SpatzNexus object.
         """
-        # TODO Spatz prefix
-        super(SpatzNexus, self).__init__(h5data, 'PLP')
+        super(SpatzNexus, self).__init__()
+        self.prefix = 'SPZ'
         with _possibly_open_hdf_file(h5data, 'r') as f:
             self.cat = SpatzCatalogue(f)
 
-    def process(self, h5norm=None, lo_wavelength=2.5, hi_wavelength=19.,
-                background=True, direct=False, omega=None, twotheta=None,
-                rebin_percent=1., wavelength_bins=None, normalise=True,
-                integrate=-1, eventmode=None, event_folder=None,
-                peak_pos=None, peak_pos_tol=0.0025,
-                background_mask=None, normalise_bins=True,
-                manual_beam_find=None, event_filter=None, **kwds):
-        r"""
-        Processes the SpatzNexus object to produce a time of flight spectrum.
-        The processed spectrum is stored in the `processed_spectrum` attribute.
-        The specular spectrum is also returned from this function.
-
-        Parameters
-        ----------
-        h5norm : str or HDF5 NeXus file
-            If a str then `h5norm` is a path to the floodfield data, otherwise
-            it is a hdf5 file handle containing the floodfield data.
-        lo_wavelength : float
-            The low wavelength cutoff for the rebinned data (A).
-        hi_wavelength : float
-            The high wavelength cutoff for the rebinned data (A).
-        background : bool
-            Should a background subtraction be carried out?
-        direct : bool
-            This parameter is ignored.
-        omega : float
-            Expected angle of incidence of beam. If this is None, then the
-            rough angle of incidence is obtained from the NeXus file.
-        twotheta : float
-            Expected two theta value of specular beam. If this is None then
-            the rough angle of incidence is obtained from the NeXus file.
-        rebin_percent : float
-            Specifies the rebinning percentage for the spectrum.  If
-            `rebin_percent is None`, then no rebinning is done.
-        wavelength_bins : array_like
-            The wavelength bins for rebinning.  If `wavelength_bins is not
-            None` then the `rebin_percent` parameter is ignored.
-        normalise : bool
-            Normalise by the monitor counts.
-        integrate : int
-            Specifies which scanpoints to use.
-
-             - integrate == -1
-               the spectrum is integrated over all the scanpoints.
-             - integrate >= 0
-               the individual spectra are calculated individually.
-               If `eventmode is not None`, or `event_filter is not None` then
-               integrate specifies which scanpoint to examine.
-
-        eventmode : None or array_like
-            If eventmode is `None` then the integrated detector image is used.
-            If eventmode is an array then the array specifies the integration
-            times (in seconds) for the detector image, e.g. [0, 20, 30] would
-            result in two spectra. The first would contain data for 0 s to 20s,
-            the second would contain data for 20 s to 30 s.  This option can
-            only be used when `integrate >= -1`.
-            If eventmode has zero length (e.g. []), then a single time interval
-            for the entire acquisition is used, [0, acquisition_time].  This
-            would source the image from the eventmode file, rather than the
-            NeXUS file. The two approaches will probably not give
-            identical results, because the eventmode method adjusts the total
-            acquisition time and beam monitor counts to the frame number of the
-            last event detected (which may be quite different if the count rate
-            is very low). This parameter is disregarded if `event_filter` is
-            provided.
-        event_folder : None or str
-            Specifies the path for the eventmode data. If
-            `event_folder is None` then the eventmode data is assumed to reside
-            in the same directory as the NeXUS file. If event_folder is a
-            string, then the string specifies the path to the eventmode data.
-        peak_pos : -1, None, or (float, float)
-            Options for finding specular peak position and peak standard
-            deviation.
-
-            - \-1
-               use `manual_beam_find`.
-            - None
-               use the automatic beam finder, falling back to
-               `manual_beam_find` if it's provided.
-            - (float, float)
-               specify the peak and peak standard deviation.
-
-        peak_pos_tol : float
-            Convergence tolerance for the beam position and width to be
-            accepted from successive beam-finder calculations; see the
-            `tol` parameter in the `find_specular_ridge` function.
-        background_mask : array_like
-            An array of bool that specifies which x-pixels to use for
-            background subtraction.  Should be the same length as the number of
-            x pixels in the detector image.  Otherwise an automatic mask is
-            applied (if background is True).
-        normalise_bins : bool
-            Divides the intensity in each wavelength bin by the width of the
-            bin. This allows one to compare spectra even if they were processed
-            with different rebin percentages.
-        manual_beam_find : callable, optional
-            A function which allows the location of the specular ridge to be
-            determined. Has the signature `f(detector, detector_err)` where
-            `detector` and `detector_err` is the detector image and its
-            uncertainty. `detector` and `detector_err` have shape (n, t, x)
-            where `n` is the number of detector images, `t` is the number of
-            time of flight bins and `x` is the number of x pixels. The function
-            should return a tuple,
-            `(centre, centre_sd, lopx, hipx, background_pixels)`. `centre`,
-            `centre_sd`, `lopx`, `hipx` should be arrays of shape `(n, )`,
-            specifying the beam centre, beam width (standard deviation), lowest
-            pixel of foreground region, highest pixel of foreground region.
-            `background_pixels` is a list of length `n`. Each of the entries
-            should contain arrays of pixel numbers that specify the background
-            region for each of the detector images.
-        event_filter : callable, optional
-            A function, that processes the event stream, returning a `detector`
-            array, and a `frame_count` array. `detector` has shape
-            `(N, T, Y, X)`, where `N` is the number of detector images, `T` is
-            the number of time bins (`len(t_bins)`), etc. `frame_count` has
-            shape `(N,)` and contains the number of frames for each of the
-            detector images. The frame_count is used to determine what fraction
-            of the overall monitor counts should be ascribed to each detector
-            image (by dividing by the total number of frames). The function has
-            signature:
-
-            detector, frame_count = event_filter(loaded_events,
-                                                 t_bins=None,
-                                                 y_bins=None,
-                                                 x_bins=None)
-
-            `loaded_events` is a 4-tuple of numpy arrays:
-            `(f_events, t_events, y_events, x_events)`, where `f_events`
-            contains the frame number for each neutron, landing at position
-            `x_events, y_events` on the detector, with time-of-flight
-            `t_events`.
-
-        Notes
-        -----
-        After processing this object contains the following the following
-        attributes:
-
-        - path - path to the data file
-        - datafilename - name of the datafile
-        - datafile_number - datafile number.
-        - m_topandtail - the corrected 2D detector image, (n_spectra, TOF, X)
-        - m_topandtail_sd - corresponding standard deviations
-        - n_spectra - number of spectra in processed data
-        - bm1_counts - beam montor counts, (n_spectra,)
-        - m_spec - specular intensity, (n_spectra, TOF)
-        - m_spec_sd - corresponding standard deviations
-        - m_beampos - beam_centre for each spectrum, (n_spectra, )
-        - m_lambda - wavelengths for each spectrum, (n_spectra, TOF)
-        - m_lambda_fwhm - corresponding FWHM of wavelength distribution
-        - m_lambda_hist - wavelength bins for each spectrum, (n_spectra, TOF)
-        - m_spec_tof - TOF for each wavelength bin, (n_spectra, TOF)
-        - detector_z - detector height, (n_spectra, )
-        - detector_y - sample-detector distance, (n_spectra, )
-        - domega - collimation uncertainty
-        - lopx - lowest extent of specular beam (in x pixels), (n_spectra, )
-        - hipx - highest extent of specular beam (in x pixels), (n_spectra, )
-
-        Returns
-        -------
-        m_lambda, m_spec, m_spec_sd: np.ndarray
-            Arrays containing the wavelength, specular intensity as a function
-            of wavelength, standard deviation of specular intensity
-
+    def time_offset(self, master_phase_offset, master_opening,
+                    freq, phase_angle, z0, flight_distance,
+                    tof_hist):
         """
-
-        # it can be advantageous to save processing time if the arguments
-        # haven't changed
-        _arguments = locals().copy()
-        _arguments.pop('_arguments', None)
-        _arguments.pop('self', None)
-        # if you've already processed, then you may not need to process again
-        if (self.processed_spectrum and
-                self._short_circuit_process(_arguments)):
-            return (self.processed_spectrum['m_lambda'],
-                    self.processed_spectrum['m_spec'],
-                    self.processed_spectrum['m_spec_sd'])
-        else:
-            self._arguments = _arguments
-
-        cat = self.cat
-
-        scanpoint = 0
-
-        # beam monitor counts for normalising data
-        bm1_counts = cat.bm1_counts.astype('float64')
-
-        # TOF bins
-        TOF = cat.t_bins.astype('float64')
-
-        # This section controls how multiple detector images are handled.
-        # We want event streaming.
-        if eventmode is not None or event_filter is not None:
-            scanpoint = integrate
-            if integrate == -1:
-                scanpoint = 0
-
-            output = self.process_event_stream(scanpoint=scanpoint,
-                                               frame_bins=eventmode,
-                                               event_folder=event_folder,
-                                               event_filter=event_filter)
-            detector, frame_count, bm1_counts = output
-
-            start_time = np.zeros(np.size(detector, 0))
-            if cat.start_time is not None:
-                start_time += cat.start_time[scanpoint]
-                start_time[1:] += (np.cumsum(frame_count)[:-1] /
-                                   cat.frequency[scanpoint])
-        else:
-            # we don't want detector streaming
-            detector = cat.detector
-            scanpoint = 0
-
-            # integrate over all spectra
-            if integrate == -1:
-                detector = np.sum(detector, 0)[np.newaxis, ]
-                bm1_counts[:] = np.sum(bm1_counts)
-
-            start_time = np.zeros(np.size(detector, 0))
-            if cat.start_time is not None:
-                for idx in range(start_time.size):
-                    start_time[idx] = cat.start_time[idx]
-
-        n_spectra = np.size(detector, 0)
-
-        # Up until this point detector.shape=(N, T, Y, X)
-        # pre-average over y, leaving (n, t, x) also convert to dp
-        detector = np.sum(detector, axis=2, dtype='float64')
-
-        # detector shape should now be (n, t, x)
-        # calculate the counting uncertainties
-        detector_sd = np.sqrt(detector)
-        bm1_counts_sd = np.sqrt(bm1_counts)
-
-        # detector normalisation with a water file
-        if h5norm is not None:
-            y_bins = cat.y_bins
-
-            with _possibly_open_hdf_file(h5norm, 'r') as f:
-                # shape (x,)
-                detector_norm, detector_norm_sd = create_detector_norm(
-                    f, y_bins[0], y_bins[1], axis='y')
-
-            # detector has shape (N, T, X), shape of detector_norm should
-            # broadcast to (1, 1, x)
-            # TODO: Correlated Uncertainties?
-            detector, detector_sd = EP.EPdiv(detector, detector_sd,
-                                             detector_norm, detector_norm_sd)
-
-        # shape of these is (n_spectra, TOFbins)
-        m_spec_tof_hist = np.zeros((n_spectra, np.size(TOF, 0)),
-                                   dtype='float64')
-        m_lambda_hist = np.zeros((n_spectra, np.size(TOF, 0)),
-                                 dtype='float64')
-        m_spec_tof_hist[:] = TOF
-
-        """
-        chopper to detector distances
-        note that if eventmode is specified the n_spectra is NOT
-        equal to the number of entries in e.g. /longitudinal_translation
-        this means you have to copy values in from the correct scanpoint
-        """
-        flight_distance = np.zeros(n_spectra, dtype='float64')
-        d_cx = np.zeros(n_spectra, dtype='float64')
-        detpositions = np.zeros(n_spectra, dtype='float64')
-
-        # The angular divergence of the instrument
-        domega = np.zeros(n_spectra, dtype='float64')
-        estimated_beam_width = np.zeros(n_spectra, dtype='float64')
-
-        phase_angle = np.zeros(n_spectra, dtype='float64')
-
-        # process each of the spectra taken in the detector image
-        original_scanpoint = scanpoint
-        for idx in range(n_spectra):
-            freq = cat.frequency[scanpoint]
-
-            # calculate the angular divergence
-            domega[idx] = general.div(cat.ss2vg[scanpoint],
-                                      cat.ss3vg[scanpoint],
-                                      (cat.slit3_distance[0] -
-                                       cat.slit2_distance[0]))[0]
-
-            """
-            estimated beam width in pixels at detector
-            """
-            L23 = cat.slit3_distance[idx] - cat.slit2_distance[0]
-            L3det = (cat.dy[idx] +
-                     cat.sample_distance[0] - cat.slit3_distance[idx])
-            ebw = general.height_of_beam_after_dx(cat.ss2vg[scanpoint],
-                                                  cat.ss3vg[scanpoint],
-                                                  L23,
-                                                  L3det)
-            umb, penumb = ebw
-            # convolve in detector resolution (~2.2 mm?)
-            # first convert to beam sd, convolve in detector, and expand sd
-            # back to total foreground width
-            # use average of umb and penumb, the calc assumes a rectangular
-            # distribution
-            penumb = (np.sqrt((0.289 * 0.5 * (umb + penumb))**2. + 2.2**2) *
-                      EXTENT_MULT * 2)
-            # we need it in pixels
-            estimated_beam_width[idx] = penumb / cat.y_pixels_per_mm[0]
-
-            """
-            work out the total flight length
-            IMPORTANT: this varies as a function of twotheta. This is
-            because the Platypus detector does not move on an arc.
-            At high angles chod can be ~ 0.75% different. This is will
-            visibly shift fringes.
-            """
-            if omega is None:
-                omega = cat.omega[scanpoint]
-            if twotheta is None:
-                twotheta = cat.twotheta[scanpoint]
-            output = self.chod(omega, twotheta, scanpoint=scanpoint)
-            flight_distance[idx], d_cx[idx] = output
-
-            # calculate nominal phase openings
-            output = self.phase_angle(scanpoint)
-            phase_angle[scanpoint], master_opening = output
-
-            """
-            toffset - the time difference between the magnet pickup on the
-            choppers (TTL pulse), which is situated in the middle of the
-            chopper window, and the trailing edge of chopper 1, which is
-            supposed to be time0.  However, if there is a phase opening this
-            time offset has to be relocated slightly, as time0 is not at the
-            trailing edge.
-            """
-            t_offset = self._time_offset(cat.chopper1_phase_offset[0],
-                                         master_opening,
-                                         freq,
-                                         phase_angle[scanpoint],
-                                         d_cx[0],
-                                         flight_distance[idx],
-                                         m_spec_tof_hist[idx])
-
-            m_spec_tof_hist[idx] -= t_offset
-
-            detpositions[idx] = cat.dy[scanpoint]
-
-            if eventmode is not None or event_filter is not None:
-                m_spec_tof_hist[:] = TOF - t_offset
-                flight_distance[:] = flight_distance[0]
-                detpositions[:] = detpositions[0]
-                domega[:] = domega[0]
-                estimated_beam_width[:] = estimated_beam_width[0]
-                d_cx[:] = d_cx[0]
-                phase_angle[:] = phase_angle[0]
-                break
-            else:
-                scanpoint += 1
-
-        scanpoint = original_scanpoint
-
-        # convert TOF to lambda
-        # m_spec_tof_hist (n, t) and chod is (n,)
-        m_lambda_hist = general.velocity_wavelength(
-            1.e3 * flight_distance[:, np.newaxis] / m_spec_tof_hist)
-
-        m_lambda = 0.5 * (m_lambda_hist[:, 1:] + m_lambda_hist[:, :-1])
-        TOF -= t_offset
-
-        # where is the specular ridge?
-        if peak_pos == -1:
-            # you always want to find the beam manually
-            ret = manual_beam_find(detector, detector_sd)
-            beam_centre, beam_sd, lopx, hipx, bp = ret
-
-            full_backgnd_mask = np.zeros_like(detector, dtype=bool)
-            for i, v in enumerate(bp):
-                full_backgnd_mask[i, :, v] = True
-
-        elif peak_pos is None:
-            # use the auto finder, falling back to manual_beam_find
-            ret = find_specular_ridge(detector,
-                                      detector_sd,
-                                      tol=peak_pos_tol,
-                                      manual_beam_find=manual_beam_find)
-            beam_centre, beam_sd, lopx, hipx, full_backgnd_mask = ret
-        else:
-            # the specular ridge has been specified
-            beam_centre = np.ones(n_spectra) * peak_pos[0]
-            beam_sd = np.ones(n_spectra) * peak_pos[1]
-            lopx, hipx, bp = fore_back_region(beam_centre,
-                                              beam_sd)
-
-            full_backgnd_mask = np.zeros_like(detector, dtype=bool)
-            for i, v in enumerate(bp):
-                full_backgnd_mask[i, :, v] = True
-
-        lopx = lopx.astype(int)
-        hipx = hipx.astype(int)
-
-        # Warning if the beam appears to be much broader than the divergence
-        # would predict. The use of 30% tolerance is a guess. This might happen
-        # if the beam finder includes incoherent background region by mistake.
-        if not np.allclose(estimated_beam_width, hipx - lopx + 1, rtol=0.3):
-            warnings.warn("The foreground width (%s) estimate"
-                          " does not match the divergence of the beam (%s)."
-                          " Consider checking with manual beam finder." %
-                          (str(hipx - lopx + 1),
-                           str(estimated_beam_width)))
-
-        if np.size(beam_centre) != n_spectra:
-            raise RuntimeError('The number of beam centres should be equal'
-                               ' to the number of detector images.')
-
-        '''
-        Rebinning in lambda for all detector
-        Rebinning is the default option, but sometimes you don't want to.
-        detector shape input is (n, t, x)
-        '''
-        if wavelength_bins is not None:
-            rebinning = wavelength_bins
-        elif 0. < rebin_percent < 15.:
-            rebinning = calculate_wavelength_bins(lo_wavelength,
-                                                  hi_wavelength,
-                                                  rebin_percent)
-
-        # rebin_percent percentage is zero. No rebinning, just cutoff
-        # wavelength
-        else:
-            rebinning = m_lambda_hist[0, :]
-            rebinning = rebinning[np.searchsorted(rebinning, lo_wavelength):
-                                  np.searchsorted(rebinning, hi_wavelength)]
-
-        """
-        now do the rebinning for all the N detector images
-        rebin.rebinND could do all of these at once.  However, m_lambda_hist
-        could vary across the range of spectra.  If it was the same I could
-        eliminate the loop.
-        """
-        output = []
-        output_sd = []
-        for idx in range(n_spectra):
-            # TODO: Correlated Uncertainties?
-            plane, plane_sd = rebin_along_axis(detector[idx],
-                                               m_lambda_hist[idx],
-                                               rebinning,
-                                               y1_sd=detector_sd[idx])
-            output.append(plane)
-            output_sd.append(plane_sd)
-
-        detector = np.array(output)
-        detector_sd = np.array(output_sd)
-
-        if len(detector.shape) == 2:
-            detector = detector[np.newaxis, ]
-            detector_sd = detector_sd[np.newaxis, ]
-
-        # (1, T)
-        m_lambda_hist = np.atleast_2d(rebinning)
-
-        """
-        Divide the detector intensities by the width of the wavelength bin.
-        This is so the intensities between different rebinning strategies can
-        be compared.
-        """
-        if normalise_bins:
-            div = 1 / np.diff(m_lambda_hist[0])[:, np.newaxis]
-            detector, detector_sd = EP.EPmulk(detector,
-                                              detector_sd,
-                                              div)
-
-        # convert the wavelength base to a timebase
-        m_spec_tof_hist = (0.001 * flight_distance[:, np.newaxis] /
-                           general.wavelength_velocity(m_lambda_hist))
-
-        m_lambda = 0.5 * (m_lambda_hist[:, 1:] + m_lambda_hist[:, :-1])
-
-        m_spec_tof = (0.001 * flight_distance[:, np.newaxis] /
-                      general.wavelength_velocity(m_lambda))
-
-        m_spec = np.zeros((n_spectra, np.size(detector, 1)))
-        m_spec_sd = np.zeros_like(m_spec)
-
-        # background subtraction
-        if background:
-            if background_mask is not None:
-                # background_mask is (Y), need to make 3 dimensional (N, T, Y)
-                # first make into (T, Y)
-                backgnd_mask = np.repeat(background_mask[np.newaxis, :],
-                                         detector.shape[1],
-                                         axis=0)
-                # make into (N, T, Y)
-                full_backgnd_mask = np.repeat(backgnd_mask[np.newaxis, :],
-                                              n_spectra,
-                                              axis=0)
-
-            # TODO: Correlated Uncertainties?
-            detector, detector_sd = background_subtract(detector,
-                                                        detector_sd,
-                                                        full_backgnd_mask)
-
-        '''
-        top and tail the specular beam with the known beam centres.
-        All this does is produce a specular intensity with shape (N, T),
-        i.e. integrate over specular beam
-        '''
-        for i in range(n_spectra):
-            m_spec[i] = np.sum(detector[i, :, lopx[i]: hipx[i] + 1], axis=1)
-            sd = np.sum(detector_sd[i, :, lopx[i]: hipx[i] + 1] ** 2,
-                        axis=1)
-            m_spec_sd[i] = np.sqrt(sd)
-
-        # assert np.isfinite(m_spec).all()
-        # assert np.isfinite(m_specSD).all()
-        # assert np.isfinite(detector).all()
-        # assert np.isfinite(detectorSD).all()
-
-        # normalise by beam monitor 1.
-        if normalise:
-            m_spec, m_spec_sd = EP.EPdiv(m_spec,
-                                         m_spec_sd,
-                                         bm1_counts[:, np.newaxis],
-                                         bm1_counts_sd[:, np.newaxis])
-
-            output = EP.EPdiv(detector,
-                              detector_sd,
-                              bm1_counts[:, np.newaxis, np.newaxis],
-                              bm1_counts_sd[:, np.newaxis, np.newaxis])
-            detector, detector_sd = output
-
-        '''
-        now work out dlambda/lambda, the resolution contribution from
-        wavelength.
-        van Well, Physica B,  357(2005) pp204-207), eqn 4.
-        this is only an approximation for our instrument, as the 2nd and 3rd
-        discs have smaller openings compared to the master chopper.
-        Therefore the burst time needs to be looked at.
-        '''
-        tau_da = m_spec_tof_hist[:, 1:] - m_spec_tof_hist[:, :-1]
-
-        m_lambda_fwhm = (
-            resolution_double_chopper(m_lambda,
-                                      z0=d_cx[:, np.newaxis] / 1000.,
-                                      freq=cat.frequency[:, np.newaxis],
-                                      L=flight_distance[:, np.newaxis] / 1000.,
-                                      H=cat.ss2vg[original_scanpoint] / 1000.,
-                                      xsi=phase_angle[:, np.newaxis],
-                                      tau_da=tau_da))
-
-        m_lambda_fwhm *= m_lambda
-
-        # put the detector positions and mode into the dictionary as well.
-        detector_y = cat.dy
-        mode = cat.mode
-
-        d = dict()
-        d['path'] = cat.path
-        d['datafilename'] = cat.filename
-        d['datafile_number'] = cat.datafile_number
-
-        if h5norm is not None:
-            if type(h5norm) == h5py.File:
-                d['normfilename'] = h5norm.filename
-            else:
-                d['normfilename'] = h5norm
-        d['m_topandtail'] = detector
-        d['m_topandtail_sd'] = detector_sd
-        d['n_spectra'] = n_spectra
-        d['bm1_counts'] = bm1_counts
-        d['m_spec'] = m_spec
-        d['m_spec_sd'] = m_spec_sd
-        d['m_beampos'] = beam_centre
-        d['m_beampos_sd'] = beam_sd
-        d['m_lambda'] = m_lambda
-        d['m_lambda_fwhm'] = m_lambda_fwhm
-        d['m_lambda_hist'] = m_lambda_hist
-        d['m_spec_tof'] = m_spec_tof
-        d['mode'] = mode
-        d['detector_y'] = detector_y
-        d['domega'] = domega
-        d['lopx'] = lopx
-        d['hipx'] = hipx
-        d['start_time'] = start_time
-
-        self.processed_spectrum = d
-        return m_lambda, m_spec, m_spec_sd
-
-    def _time_offset(self, master_phase_offset, master_opening,
-                              freq, phase_angle, z0, flight_distance,
-                              tof_hist):
-        """
-        Timing offsets for Spatz chopper system, includes a gravity
-        correction for phase angle
-        """
-        # calculate initial time offset
-        p_offset = 1.e6 * master_phase_offset / (2. * 360. * freq)
-        t_offset = (p_offset +
-                    1.e6 * master_opening / 2 / (2 * np.pi) / freq -
-                    1.e6 * phase_angle / (360 * 2 * freq))
-
-
+        Timing offsets for Spatz chopper system
         return t_offset
+        """
+        pass
 
     def phase_angle(self, scanpoint=0):
         """
@@ -2147,33 +1621,34 @@ class SpatzNexus(ReflectNexus):
             The phase angle in degrees, and the angular opening of the master
             chopper in radians
         """
-        cat = self.cat
-        master = cat.master
-        slave = cat.slave
-        disc_phase = cat.phase[scanpoint]
-        phase_angle = 0
+        pass
+        # cat = self.cat
+        # master = cat.master
+        # slave = cat.slave
+        # disc_phase = cat.phase[scanpoint]
+        # phase_angle = 0
+        #
+        # if master == 1:
+        #     phase_angle += 0.5 * O_C1d
+        #     master_opening = O_C1
+        # elif master == 2:
+        #     phase_angle += 0.5 * O_C2d
+        #     master_opening = O_C2
+        # elif master == 3:
+        #     phase_angle += 0.5 * O_C3d
+        #     master_opening = O_C3
+        #
+        # if slave == 2:
+        #     phase_angle += 0.5 * O_C2d
+        #     phase_angle += -disc_phase - cat.chopper2_phase_offset[0]
+        # elif slave == 3:
+        #     phase_angle += 0.5 * O_C3d
+        #     phase_angle += -disc_phase - cat.chopper3_phase_offset[0]
+        # elif slave == 4:
+        #     phase_angle += 0.5 * O_C4d
+        #     phase_angle += disc_phase - cat.chopper4_phase_offset[0]
 
-        if master == 1:
-            phase_angle += 0.5 * O_C1d
-            master_opening = O_C1
-        elif master == 2:
-            phase_angle += 0.5 * O_C2d
-            master_opening = O_C2
-        elif master == 3:
-            phase_angle += 0.5 * O_C3d
-            master_opening = O_C3
-
-        if slave == 2:
-            phase_angle += 0.5 * O_C2d
-            phase_angle += -disc_phase - cat.chopper2_phase_offset[0]
-        elif slave == 3:
-            phase_angle += 0.5 * O_C3d
-            phase_angle += -disc_phase - cat.chopper3_phase_offset[0]
-        elif slave == 4:
-            phase_angle += 0.5 * O_C4d
-            phase_angle += disc_phase - cat.chopper4_phase_offset[0]
-
-        return phase_angle, master_opening
+        # return phase_angle, master_opening
 
     def chod(self, omega=0., twotheta=0., scanpoint=0):
         """
@@ -2244,57 +1719,6 @@ class SpatzNexus(ReflectNexus):
             chod += cat.dy[scanpoint] / np.cos(np.radians(twotheta))
 
         return chod, d_cx
-
-
-def create_detector_norm(h5norm, xy_min, xy_max, axis='x'):
-    """
-    Produces a detector normalisation array for a neutron detector.
-    Here we average over N, T and X to provide a relative efficiency for each
-    y wire.
-
-    Parameters
-    ----------
-    h5norm : hdf5 file
-        Containing a flood field run (water)
-    xy_min : float, int
-        Minimum xy location to use
-    xy_max : float, int
-        Maximum xy location to use
-
-    Returns
-    -------
-    norm, norm_sd : array_like
-        1D array containing the normalisation data for each y pixel
-    """
-    # sum over N and T
-    detector = h5norm['entry1/data/hmm']
-    if axis == 'x':
-        xy_bin = h5norm['entry1/data/x_bin']
-    elif axis == 'y':
-        xy_bin = h5norm['entry1/data/y_bin']
-
-    # find out what pixels to use
-    xy_low = np.searchsorted(xy_bin, xy_min, sorter=np.argsort(xy_bin))
-    xy_low = np.argsort(xy_bin)[xy_low]
-    xy_high = np.searchsorted(xy_bin, xy_max, sorter=np.argsort(xy_bin))
-    xy_high = np.argsort(xy_bin)[xy_high]
-
-    if(xy_low > xy_high):
-        xy_low, xy_high = xy_high, xy_low
-
-    norm = np.sum(detector, axis=(0, 1),
-                  dtype='float64')
-
-    # By this point you have norm[y][x]
-    norm = norm[:, xy_low: xy_high]
-    if axis == 'x':
-        norm = np.sum(norm, axis=1)
-    elif axis == 'y':
-        norm = np.sum(norm, axis=0)
-
-    mean = np.mean(norm)
-
-    return norm / mean, np.sqrt(norm) / mean
 
 
 def background_subtract(detector, detector_sd, background_mask):
@@ -2680,6 +2104,67 @@ def correct_for_gravity(detector, detector_sd, lamda, coll_distance,
             corrected_data_sd[spec, wavelength] = output[1]
 
     return corrected_data, corrected_data_sd, m_gravcorrcoefs
+
+
+def create_detector_norm(h5norm, bin_min, bin_max, axis):
+    """
+    Produces a detector normalisation array for a neutron detector
+    (N, T, Y, X).
+    The data in h5norm is averaged over N, T to start with, leaving
+    a (Y, X) array. The data is then average over Y (axis=2) or X (axis=3)
+    to provide a relative efficiency.
+
+    Parameters
+    ----------
+    h5norm : hdf5 file
+        Containing a flood field run (water)
+    bin_min : float, int
+        Minimum bin location to use
+    bin_max : float, int
+        Maximum bin location to use
+    axis : int
+        If axis = 2 the efficiency array is produced in the X direction.
+        If axis = 3 the efficiency array is produced in the Y direction.
+
+    Returns
+    -------
+    norm, norm_sd : array_like
+        1D array containing the normalisation data for each y pixel
+    """
+    if axis not in (2, 3):
+        raise RuntimeError('axis must be 2 or 3.')
+
+    # sum over N and T
+    detector = h5norm['entry1/data/hmm']
+    if axis == 3:
+        norm_bins = h5norm['entry1/data/x_bin']
+    elif axis == 2:
+        norm_bins = h5norm['entry1/data/y_bin']
+
+    # find out what pixels to use
+    x_low = np.searchsorted(norm_bins, bin_min,
+                            sorter=np.argsort(norm_bins))
+    x_low = np.argsort(norm_bins)[x_low]
+    x_high = np.searchsorted(norm_bins, bin_max,
+                             sorter=np.argsort(norm_bins))
+    x_high = np.argsort(norm_bins)[x_high]
+
+    if (x_low > x_high):
+        x_low, x_high = x_high, x_low
+
+    norm = np.sum(detector, axis=(0, 1),
+                  dtype='float64')
+
+    # By this point you have norm[y][x]
+    if axis == 3:
+        norm = norm[:, x_low: x_high]
+        norm = np.sum(norm, axis=1)
+    elif axis == 2:
+        norm = norm[x_low: x_high, :]
+        norm = np.sum(norm, axis=0)
+
+    mean = np.mean(norm)
+    return norm / mean, np.sqrt(norm) / mean
 
 
 def calculate_wavelength_bins(lo_wavelength, hi_wavelength, rebin_percent):

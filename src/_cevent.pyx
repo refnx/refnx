@@ -65,7 +65,7 @@ def _cevents(f,
     cdef np.ndarray[np.int32_t, ndim=1] f_events = np.array((), dtype=np.int32)
 
     cdef int bufsize = 32768
-
+    cdef int bytes_read = 0
     # these are buffers to store events from each read of the file
     # use of buffers prevents continual allocation of memory.
     cdef np.ndarray[np.int32_t, ndim=1] x_neutrons = np.zeros((bufsize), dtype=np.int32)
@@ -82,14 +82,16 @@ def _cevents(f,
 
         filepos = end_last_event + 1
 
-        if not len(buf):
+        bytes_read = len(buf)
+        if not bytes_read:
             break
 
         buf = bytearray(buf)
 
         state = 0
 
-        for i, c in enumerate(buf):
+        for i in range(bytes_read):
+            c = buf[i]
             if state == 0:
                 x = c
                 state += 1
