@@ -1121,14 +1121,12 @@ class ReflectNexus(object):
         tau_da = m_spec_tof_hist[:, 1:] - m_spec_tof_hist[:, :-1]
 
         m_lambda_fwhm = (
-            resolution_double_chopper(m_lambda,
-                                      z0=d_cx[:, np.newaxis] / 1000.,
-                                      freq=cat.frequency[:, np.newaxis],
-                                      L=flight_distance[:, np.newaxis] / 1000.,
-                                      H=cat.ss_coll2[original_scanpoint] / 1000.,
-                                      xsi=phase_angle[:, np.newaxis],
-                                      tau_da=tau_da))
-
+            resolution_double_chopper(
+                m_lambda, z0=d_cx[:, np.newaxis] / 1000.,
+                freq=cat.frequency[:, np.newaxis],
+                L=flight_distance[:, np.newaxis] / 1000.,
+                H=cat.ss_coll2[original_scanpoint] / 1000.,
+                xsi=phase_angle[:, np.newaxis], tau_da=tau_da))
         m_lambda_fwhm *= m_lambda
 
         # put the detector positions and mode into the dictionary as well.
