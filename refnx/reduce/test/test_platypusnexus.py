@@ -304,11 +304,11 @@ class TestPlatypusNexus(object):
 
         fname = os.path.join(self.pth, 'flood.h5')
         with h5py.File(fname, 'r') as f:
-            norm, norm_sd = create_detector_norm(f, 3.5, -3.5)
+            norm, norm_sd = create_detector_norm(f, 3.5, -3.5, axis=3)
 
             assert_almost_equal(norm, test_norm, 6)
             assert_almost_equal(norm_sd, test_norm_sd, 6)
 
-            norm, norm_sd = create_detector_norm(f, -3.5, 3.5)
+            norm, norm_sd = create_detector_norm(f, -3.5, 3.5, axis=3)
             assert_almost_equal(norm, test_norm, 6)
             assert_almost_equal(norm_sd, test_norm_sd, 6)

@@ -169,3 +169,4 @@ Details of changes made to refnx
 ------
 - Prevent spurious benchmark package installation.
 - Fixed bug when loading a MTFT file saved in a previous version of refnx.
+- event mode data reduction sped up by an order of magnitude
