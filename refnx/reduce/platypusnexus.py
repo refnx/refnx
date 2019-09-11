@@ -1279,8 +1279,8 @@ class ReflectNexus(object):
 
         with io.open(stream_filename, 'rb') as f:
             last_frame = int(frame_bins[-1] * frequency)
-            loaded_events, end_of_last_event = events(f,
-                                                      max_frames=last_frame)
+            loaded_events, end_events = events(f,
+                                               max_frames=last_frame)
 
         # convert frame_bins to list of filter frames
         frames = framebins_to_frames(np.asfarray(frame_bins) *

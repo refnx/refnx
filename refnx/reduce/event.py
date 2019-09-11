@@ -139,11 +139,11 @@ def events(f, end_last_event=127, max_frames=None):
 
     Returns
     -------
-    (f_events, t_events, y_events, x_events), end_last_event:
+    (f_events, t_events, y_events, x_events), end_events:
         x_events, y_events, t_events and f_events are numpy arrays containing
-        the events. end_last_event is a byte offset to the end of the last
-        successful event read from the file. Use this value to extract more
-        events from the same file at a future date.
+        the events. end_events is an array containing the byte offset to the
+        end of the last successful event read from the file. Use this value to
+        extract more events from the same file at a future date.
     """
     if HAVE_CEVENTS:
         return _cevents(f, end_last_event=end_last_event,
@@ -173,11 +173,11 @@ def _events(f, end_last_event=127, max_frames=None):
 
     Returns
     -------
-    (f_events, t_events, y_events, x_events), end_last_event:
+    (f_events, t_events, y_events, x_events), end_events:
         x_events, y_events, t_events and f_events are numpy arrays containing
-        the events. end_last_event is a byte offset to the end of the last
-        successful event read from the file. Use this value to extract more
-        events from the same file at a future date.
+        the events. end_events is an array containing the  byte offset to the
+        end of the last successful event read from the file. Use this value to
+        extract more events from the same file at a future date.
     """
     if max_frames is None:
         max_frames = ii32.max
@@ -198,6 +198,7 @@ def _events(f, end_last_event=127, max_frames=None):
     y_events = np.array((), dtype='int32')
     t_events = np.array((), dtype='uint32')
     f_events = np.array((), dtype='int32')
+    end_events = np.array((), dtype='uint32')
 
     bufsize = 32768
 
@@ -206,6 +207,7 @@ def _events(f, end_last_event=127, max_frames=None):
         y_neutrons = []
         t_neutrons = []
         f_neutrons = []
+        end_event_pos = []
 
         fi.seek(end_last_event + 1)
         buf = fi.read(bufsize)
@@ -263,6 +265,7 @@ def _events(f, end_last_event=127, max_frames=None):
                         y_neutrons.append(y)
                         t_neutrons.append(t)
                         f_neutrons.append(frame_number)
+                        end_event_pos.append(end_last_event)
 
         if x_neutrons:
             x_events = np.append(x_events, x_neutrons)
@@ -275,4 +278,4 @@ def _events(f, end_last_event=127, max_frames=None):
     if auto_f:
         auto_f.close()
 
-    return (f_events, t_events, y_events, x_events), end_last_event
+    return (f_events, t_events, y_events, x_events), end_events
