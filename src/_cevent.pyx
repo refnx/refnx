@@ -4,8 +4,7 @@ import numpy as np
 cimport numpy as cnp
 cimport cython
 
-from libc.stdio cimport fopen, fclose, FILE, EOF, fseek, SEEK_END, SEEK_SET
-from libc.stdio cimport ftell, fgetc, fgets, getc, gets, feof, fread, getline
+import mmap
 
 ii32 = np.iinfo(np.int32)
 
@@ -79,15 +78,58 @@ def _cevents(f,
     """
     if max_frames is None:
         max_frames = ii32.max
-    cdef int max_framesi = int(max_frames)
 
     fi = f
     auto_f = None
     if not hasattr(fi, 'read'):
+        # it's not a file-like, so open it as a mmap
         auto_f = open(f, 'rb')
-        fi = auto_f
+        buffer = mmap.mmap(auto_f.fileno(), 0, access=mmap.ACCESS_READ)
+        # fi = auto_f
+    else:
+        buffer = fi.read()
+
+    events, end_events = unpack_buffer(buffer, end_last_event=end_last_event,
+                                       max_frames=max_frames)
+
+    if auto_f:
+        auto_f.close()
+    return events, end_events
+
+
+@cython.boundscheck(False)
+@cython.cdivision(False)
+cpdef unpack_buffer(buffer,
+                    int end_last_event=127,
+                    max_frames=None):
+    """
+    Unpacks event data from packedbinary bytearray format for the ANSTO
+    Platypus instrument
+
+    Parameters
+    ----------
+
+    buffer : bytearray-like
+        A bytearray-like to read the events from.
+    end_last_event : int
+        The reading of event data starts from `end_last_event + 1`. The default
+        of 127 corresponds to a file header that is 128 bytes long.
+    max_frames : None, int
+        Stop reading the event file when have read this many frames.
+
+    Returns
+    -------
+    (f_events, t_events, y_events, x_events), end_events:
+        x_events, y_events, t_events and f_events are numpy arrays containing
+        the events. end_events is an array containing the byte offsets to the
+        end of the last successful event read from the file. Use this value to
+        extract more events from the same file at a future date.
+    """
+    if max_frames is None:
+        max_frames = ii32.max
 
     cdef:
+        cdef int max_framesi = int(max_frames)
         Py_ssize_t frame_number = -1
         Py_ssize_t i = 0
         Py_ssize_t num_events = 0
@@ -99,8 +141,10 @@ def _cevents(f,
         unsigned char c
         int event_ended = 0
         Py_ssize_t filepos = 0
+        Py_ssize_t buflen = len(buffer)
+        Py_ssize_t bytes_to_read = 0
+
         int bufsize = 524288 * 2
-        int bytes_read = 0
 
         cnp.ndarray[cnp.int32_t, ndim=1] x_events = np.array((), dtype=np.int32)
         cnp.ndarray[cnp.int32_t, ndim=1] y_events = np.array((), dtype=np.int32)
@@ -122,29 +166,19 @@ def _cevents(f,
         int[:] f_neutrons_buf = f_neutrons
         unsigned int[:] end_event_pos_buf = end_event_pos
 
-        const unsigned char[:] bufv
-
-    buffer = bytearray(bufsize)
-    bufv = memoryview(buffer)
+        const unsigned char[:] bufv = memoryview(buffer)
 
     while True and frame_number < max_framesi:
         num_events = 0
 
-        fi.seek(end_last_event + 1)
-        bytes_read = fi.readinto(buffer)
-
-        # buffer = fi.read(bufsize)
-        # bytes_read = len(buffer)
-        # bufv = memoryview(buffer)
-
         filepos = end_last_event + 1
-
-        if not bytes_read:
+        bytes_to_read = min(bufsize, buflen - filepos)
+        if bytes_to_read == 0:
             break
 
         state = 0
 
-        for i in range(bytes_read):
+        for i in range(filepos, filepos + bytes_to_read):
             c = bufv[i]
             if state == 0:
                 x = c
@@ -177,7 +211,7 @@ def _cevents(f,
                 else:
                     # print "got to state", state, event_ended, x, y, frame_number, t, dt
                     state = 0
-                    end_last_event = filepos + i
+                    end_last_event = i
 
                     if dt == <unsigned int> 0xFFFFFFFF and x == 0 and y == 0:
                         t = 0
@@ -204,6 +238,4 @@ def _cevents(f,
 
     t_events //= 1000
 
-    if auto_f:
-        auto_f.close()
     return (f_events, t_events, y_events, x_events), end_events

@@ -69,6 +69,18 @@ class TestEvent(object):
             assert_equal(cyy, y)
             assert_equal(cyx, x)
 
+            event_list, fpos = _cevent._cevents(self.event_file_path,
+                                                max_frames=10)
+            cyf, cyt, cyy, cyx = event_list
+
+            max_f = np.max(cyf)
+            assert_equal(9, max_f)
+
+            assert_equal(cyf, f)
+            assert_equal(cyt, t)
+            assert_equal(cyy, y)
+            assert_equal(cyx, x)
+
     def test_event_same_as_detector(self):
         # the detector file should be the same as the event file
         # warnings filter for pixel size

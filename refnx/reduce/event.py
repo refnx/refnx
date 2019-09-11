@@ -52,7 +52,7 @@ def process_event_stream(events, frames, t_bins, y_bins, x_bins):
     ...     [0, 40000], np.linspace(110.5, -110.5, 222),
     ...     np.linspace(210.5, -210.5, 422))
     """
-    max_frame = max(events[0])
+    max_frame = np.max(events[0])
 
     t_events = np.asarray(events).T
 
@@ -81,15 +81,7 @@ def process_event_stream(events, frames, t_bins, y_bins, x_bins):
         frame_numbers = np.unique(np.clip(np.asarray(frame), 0, max_frame))
         frame_count[i] = frame_numbers.size
 
-        frames_with_events = set(frame_numbers).intersection(t_events[:, 0])
-
-        frame_numbers = list(frames_with_events)
-        frame_numbers.sort()
-
-        left = np.searchsorted(t_events[:, 0], frame_numbers)
-        right = np.searchsorted(t_events[:, 0], frame_numbers, side='right')
-        idxs = np.concatenate([np.arange(l, r) for l, r in zip(left, right)])
-
+        idxs = np.isin(t_events[:, 0], frame_numbers)
         filtered_events = t_events[idxs]
 
         detector[i], edge = np.histogramdd(filtered_events[:, 1:],
