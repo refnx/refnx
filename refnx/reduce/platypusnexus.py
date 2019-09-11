@@ -160,6 +160,19 @@ class Catalogue(object):
         d['ss3hg'] = h5d['entry1/instrument/slits/third/horizontal/gap'][:]
         d['ss4hg'] = h5d['entry1/instrument/slits/fourth/horizontal/gap'][:]
 
+        d['sample_distance'] = h5d[
+            'entry1/instrument/parameters/sample_distance'][:]
+        d['slit2_distance'] = h5d[
+            'entry1/instrument/parameters/slit2_distance'][:]
+        d['slit3_distance'] = h5d[
+            'entry1/instrument/parameters/slit3_distance'][:]
+        d['collimation_distance'] = d['slit3_distance'] - d['slit2_distance']
+        d['dy'] = h5d[
+            'entry1/instrument/detector/longitudinal_translation'][:]
+        d['scan_axis_name'] = (
+            h5d['entry1/data/hmm'].attrs['axes'].decode('utf8').split(':')[0])
+        d['scan_axis'] = h5d['entry1/data/%s' % d['scan_axis_name']][:]
+
         try:
             d['start_time'] = (
                 h5d['entry1/instrument/detector/start_time'][:])
@@ -167,6 +180,7 @@ class Catalogue(object):
             # start times don't exist in this file
             d['start_time'] = None
 
+        d['original_file_name'] = h5d['entry1/experiment/file_name']
         d['sample_name'] = h5d['entry1/sample/name'][:]
         self.cat = d
 
@@ -193,6 +207,13 @@ class SpatzCatalogue(Catalogue):
         """
         super(PlatypusCatalogue, self).__init__(h5d)
         self.prefix = 'SPZ'
+
+        d = self.cat
+
+        # collimation parameters
+        # first and second collimation slits
+        d['ss_coll1'] = h5d['entry1/instrument/slits/second/horizontal/gap'][:]
+        d['ss_coll2'] = h5d['entry1/instrument/slits/third/horizontal/gap'][:]
 
 
 class PlatypusCatalogue(Catalogue):
@@ -241,28 +262,14 @@ class PlatypusCatalogue(Catalogue):
             'entry1/instrument/parameters/guide1_distance'][:]
         d['guide2_distance'] = h5d[
             'entry1/instrument/parameters/guide2_distance'][:]
-        d['sample_distance'] = h5d[
-            'entry1/instrument/parameters/sample_distance'][:]
-        d['slit2_distance'] = h5d[
-            'entry1/instrument/parameters/slit2_distance'][:]
-        d['slit3_distance'] = h5d[
-            'entry1/instrument/parameters/slit3_distance'][:]
 
         # collimation parameters
         # first and second collimation slits
-        d['collimation_distance'] = d['slit3_distance'] - d['slit2_distance']
         d['ss_coll1'] = h5d['entry1/instrument/slits/second/vertical/gap'][:]
         d['ss_coll2'] = h5d['entry1/instrument/slits/third/vertical/gap'][:]
 
-        d['dy'] = h5d[
-            'entry1/instrument/detector/longitudinal_translation'][:]
         d['dz'] = h5d[
             'entry1/instrument/detector/vertical_translation'][:]
-        d['original_file_name'] = h5d['entry1/experiment/file_name']
-
-        d['scan_axis_name'] = (
-            h5d['entry1/data/hmm'].attrs['axes'].decode('utf8').split(':')[0])
-        d['scan_axis'] = h5d['entry1/data/%s' % d['scan_axis_name']][:]
 
         try:
             d['y_pixels_per_mm'] = h5d[
@@ -1734,12 +1741,6 @@ class SpatzNexus(ReflectNexus):
         """
         # TODO FIX WITH PROPER SPATZ IMPLEMENTATION
         chod = 0
-
-        # guide 1 is the single deflection mirror (SB)
-        # its distance is from chopper 1 to the middle of the mirror (1m long)
-        # guide 2 is the double deflection mirror (DB)
-        # its distance is from chopper 1 to the middle of the second of the
-        # compound mirrors! (a bit weird, I know).
 
         cat = self.cat
         mode = cat.mode
