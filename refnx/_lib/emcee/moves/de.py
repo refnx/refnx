@@ -9,7 +9,7 @@ __all__ = ["DEMove"]
 
 
 class DEMove(RedBlueMove):
-    """A proposal using differential evolution.
+    r"""A proposal using differential evolution.
 
     This `Differential evolution proposal
     <http://www.stat.columbia.edu/~gelman/stuff_for_blog/cajo.pdf>`_ is
@@ -24,7 +24,8 @@ class DEMove(RedBlueMove):
             as recommended by the two references.
 
     """
-    def __init__(self, sigma, gamma0=None, **kwargs):
+
+    def __init__(self, sigma=1.0e-5, gamma0=None, **kwargs):
         self.sigma = sigma
         self.gamma0 = gamma0
         kwargs["nsplits"] = 3
@@ -42,10 +43,10 @@ class DEMove(RedBlueMove):
         Nc = list(map(len, c))
         ndim = s.shape[1]
         q = np.empty((Ns, ndim), dtype=np.float64)
-        f = random.randn(Ns)
+        f = self.sigma * random.randn(Ns)
         for i in range(Ns):
             w = np.array([c[j][random.randint(Nc[j])] for j in range(2)])
             random.shuffle(w)
-            g = np.diff(w, axis=0) * (1 + self.g0 * f[i])
+            g = np.diff(w, axis=0) * self.g0 + f[i]
             q[i] = s[i] + g
         return q, np.zeros(Ns, dtype=np.float64)
