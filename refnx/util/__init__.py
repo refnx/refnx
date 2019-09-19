@@ -13,7 +13,7 @@ from refnx.util.general import (div, q, q2, qcrit, double_chopper_frequency,
                                 energy_wavelength, xray_energy,
                                 xray_wavelength, velocity_wavelength,
                                 wavelength_velocity, wavelength_energy,
-                                actual_footprint)
+                                actual_footprint, neutron_transmission)
 from refnx.util.quickplot import refplot
 
 from refnx._lib._testutils import PytestTester

@@ -2,7 +2,7 @@ import refnx.util.general as general
 import refnx
 import numpy as np
 import os
-from numpy.testing import assert_almost_equal, assert_
+from numpy.testing import assert_almost_equal, assert_, assert_allclose
 
 
 def test_version():
@@ -47,3 +47,22 @@ class TestGeneral(object):
         assert_(not general._dict_compare(c, d))
 
         assert_(general._dict_compare({'a': 1}, {'a': 1}))
+
+    def test_neutron_transmission(self):
+        try:
+            import periodictable as pt
+        except ImportError:
+            return
+
+        mat = pt.formula('N2', density=1.25e-3)
+        ntd = general._neutron_transmission_depth(mat, 2)
+        assert_allclose(ntd, 1365.8010284973458 * 10)
+
+        t = general.neutron_transmission('N2', 1.25e-3, 2,
+                                         1365.8010284973458 * 10)
+        assert_almost_equal(t, np.exp(-1.))
+
+        # check that we can vectorise
+        t = general.neutron_transmission('N2', 1.25e-3, [2, 2.],
+                                         [1365.8010284973458 * 10] * 2)
+        assert_almost_equal(t, [np.exp(-1.)] * 2)
