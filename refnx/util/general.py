@@ -445,7 +445,7 @@ def _neutron_transmission_depth(material, wavelength):
     """
     import periodictable as pt
     return 10. * pt.neutron_scattering(material,
-                                      wavelength=wavelength)[-1]
+                                       wavelength=wavelength)[-1]
 
 
 def neutron_transmission(formula, density, wavelength, thickness):

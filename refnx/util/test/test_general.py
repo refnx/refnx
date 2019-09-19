@@ -64,5 +64,5 @@ class TestGeneral(object):
 
         # check that we can vectorise
         t = general.neutron_transmission('N2', 1.25e-3, [2, 2.],
-                                         [1365.8010284973458 * 10]*2)
+                                         [1365.8010284973458 * 10] * 2)
         assert_almost_equal(t, [np.exp(-1.)] * 2)
