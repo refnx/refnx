@@ -431,6 +431,53 @@ def transmission_single_chopper(R=0.35, phi=60, N=1, H=0.005):
     return N * (np.radians(phi) * R + H) / (2 * np.pi * R)
 
 
+def _neutron_transmission_depth(material, wavelength):
+    """
+    Calculate the penetration depth for a material with a given neutron
+    wavelength
+
+    Parameters
+    ----------
+    material : pt.Formula
+
+    wavelength : float
+        neutron wavelength in Angstrom
+    """
+    import periodictable as pt
+    return 10. * pt.neutron_scattering(material,
+                                      wavelength=wavelength)[-1]
+
+
+def neutron_transmission(formula, density, wavelength, thickness):
+    """
+    Calculates the transmission of neutrons through a material.
+    Includes absorption + scattering (coherent+incoherent) cross sections.
+
+    Parameters
+    ----------
+    formula : str
+        Chemical formula of the material.
+    density : float
+        material density in g/cm^3
+    wavelength : float, np.ndarray
+        wavelength of neutron in Angstrom
+    thickness : float
+        thickness of material in mm
+
+    Returns
+    -------
+    transmission : float or np.ndarray
+        transmission of material
+    """
+    import periodictable as pt
+    material = pt.formula(formula, density=density)
+
+    _depth_fn = np.vectorize(_neutron_transmission_depth, excluded={0})
+    depths = _depth_fn(material, wavelength)
+    transmission = np.exp(-(thickness / depths))
+    return transmission
+
+
 def xray_wavelength(energy):
     """
     convert energy (keV) to wavelength (angstrom)
