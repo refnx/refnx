@@ -171,3 +171,4 @@ Details of changes made to refnx
 - Fixed bug when loading a MTFT file saved in a previous version of refnx.
 - event mode data reduction sped up by an order of magnitude
 - Added neutron transmission calculator (if periodictable is present)
+- event file reader can now read any ANSTO packedbin file (reduction).

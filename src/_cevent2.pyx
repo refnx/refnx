@@ -1,10 +1,14 @@
+%%cython -a
+
 # cython: language_level=3, cdivision=False
 from collections import namedtuple
+from refnx._lib import possibly_open_file
 import numpy as np
 
+from libc.stdint cimport uint32_t, int64_t, int32_t, uint8_t
 cimport numpy as cnp
 cimport cython
-from libc.stdint cimport uint32_t, int64_t, int32_t, uint8_t
+
 import mmap
 
 ii32 = np.iinfo(np.int32)
@@ -19,20 +23,23 @@ EventFileHeader_Packed = namedtuple('EventFileHeader_Packed',
                                      'evt_stg_nbits_v', 'evt_stg_nbits_w',
                                       'evt_stg_nbits_wa', 'evt_stg_xy_signed'])
 
-def event_header(buffer):
+def event_header(f):
     """
     Reads the header from an ANSTO event file
 
     Parameters
     ----------
-    buffer : byte_array
-        Buffer containing file bytes
+    f : str or file-like
+        The event file of interest
 
     Returns
     -------
     base, packed : EventFileHeader_Base, EventFileHeader_Packed
     """
-    header_arr = np.frombuffer(buffer[:128], dtype='int32')
+    with possibly_open_file(f, 'rb') as fh:
+        fh.seek(0)
+        header = fh.read(128)
+        header_arr = np.frombuffer(header, dtype='int32')
 
     base = EventFileHeader_Base(magic_number=header_arr[0],
                                 format_number=header_arr[1],
@@ -58,78 +65,19 @@ def event_header(buffer):
     return base, packed
 
 
-@cython.boundscheck(False)
-@cython.cdivision(False)
-def _cevents(f,
-             int end_last_event=127,
-             max_frames=None):
-    """
-    Unpacks event data from packedbinary format for the ANSTO Platypus
-    instrument
-
-    Parameters
-    ----------
-
-    f : file-like or str
-        The file to read the data from. If `f` is not file-like then f is
-        assumed to be a path pointing to the event file.
-    end_last_event : uint
-        The reading of event data starts from `end_last_event + 1`. The default
-        of 127 corresponds to a file header that is 128 bytes long.
-    max_frames : None, int
-        Stop reading the event file when have read this many frames.
-
-    Returns
-    -------
-    (f_events, t_events, y_events, x_events), end_events:
-        x_events, y_events, t_events and f_events are numpy arrays containing
-        the events. end_events is an array containing the byte offsets to the
-        end of the last successful event read from the file. Use this value to
-        extract more events from the same file at a future date.
-    """
-    if max_frames is None:
-        max_frames = ii32.max
-
-    fi = f
-    auto_f = None
-    if not hasattr(fi, 'read'):
-        # it's not a file-like, so open it as a mmap
-        auto_f = open(f, 'rb')
-        buffer = mmap.mmap(auto_f.fileno(), 0, access=mmap.ACCESS_READ)
-        # fi = auto_f
-    else:
-        # mmap the file so we have easy access in memory
-        buffer = mmap.mmap(fi.fileno(), 0, access=mmap.ACCESS_READ)
-        # buffer = fi.read()
-
-    # read file header (base header then packed-format header)
-    hdr_base, hdr_packed = event_header(buffer)
-    if hdr_base.pack_format:
-        raise RuntimeError("only packed binary format is supported")
-
-    events, end_events = unpack_buffer(buffer, hdr_base, hdr_packed,
-                                       end_last_event=end_last_event,
-                                       max_frames=max_frames)
-
-    if auto_f:
-        auto_f.close()
-    return events, end_events
-
-
 """
 event decoding state machine
 for all events
 initial state - then DECODE_VAL_BITFIELDS (for neutron
 events) or DECODE_OOB_BYTE_1 (for OOB events) for OOB events only
 """
-cdef enum event_decode_state:
-    DECODE_START
-    DECODE_OOB_BYTE_1
-    DECODE_OOB_BYTE_2
-    # for all events
-    DECODE_VAL_BITFIELDS = 3
-    # final state - then output data and return to DECODE_START
-    DECODE_DT
+cdef int DECODE_START = 0
+cdef int DECODE_OOB_BYTE_1 = 1
+cdef int DECODE_OOB_BYTE_2 = 2
+# for all events
+cdef int DECODE_VAL_BITFIELDS = 3
+# final state - then output data and return to DECODE_START
+cdef int DECODE_DT = 4
 
 # all events contain some or all of these fields
 # x, y, v, w, wa
@@ -155,60 +103,18 @@ Other types are not used in general (DATASIZES = -1 TBD in future, FLUSH = -4
 deprecated, FRAME_DEASSERT = -5 only on Fastcomtec P7888 DAE).
 """
 
-
 @cython.boundscheck(False)
 @cython.cdivision(False)
-cpdef unpack_buffer(buffer,
-                    hdr_base,
-                    hdr_packed,
-                    int end_last_event=127,
-                    max_frames=None,
-                    def_clock_scale=1000, use_tx_chopper=False):
-    """
-    Unpacks event data from packedbinary bytearray format for the ANSTO
-    Platypus instrument
+def events(f, def_clock_scale=1000, use_tx_chopper=False):
 
-    Parameters
-    ----------
+    # read file header (base header then packed-format header)
+    hdr_base, hdr_packed = event_header(f)
 
-    buffer : bytearray-like
-        A bytearray-like to read the events from.
-    end_last_event : int
-        The reading of event data starts from `end_last_event + 1`. The default
-        of 127 corresponds to a file header that is 128 bytes long.
-    max_frames : None, int
-        Stop reading the event file when have read this many frames.
+    if hdr_base.pack_format:
+        raise RuntimeError("only packed binary format is supported")
 
-    Returns
-    -------
-    (f_events, t_events, y_events, x_events), end_events:
-        x_events, y_events, t_events and f_events are numpy arrays containing
-        the events. end_events is an array containing the byte offsets to the
-        end of the last successful event read from the file. Use this value to
-        extract more events from the same file at a future date.
-    """
-    if max_frames is None:
-        max_frames = ii32.max
-
-    cdef:
-        cdef int max_framesi = int(max_frames)
-        Py_ssize_t frame_number = -1
-        Py_ssize_t filepos = 0
-        Py_ssize_t buflen = len(buffer)
-
-        cnp.ndarray[cnp.int32_t, ndim=1] x_events = np.empty((buflen,), dtype=np.int32)
-        cnp.ndarray[cnp.int32_t, ndim=1] y_events = np.empty((buflen,), dtype=np.int32)
-        cnp.ndarray[cnp.int32_t, ndim=1] t_events = np.empty((buflen,), dtype=np.int32)
-        cnp.ndarray[cnp.uint32_t, ndim=1] f_events = np.empty((buflen,), dtype=np.uint32)
-        cnp.ndarray[cnp.uint32_t, ndim=1] end_events = np.empty((buflen,), dtype=np.uint32)
-
-        int[:] x_neutrons_buf = x_events
-        int[:] y_neutrons_buf = y_events
-        int[:] t_neutrons_buf = t_events
-        unsigned int[:] f_neutrons_buf = f_events
-        unsigned int[:] end_event_pos_buf = end_events
-
-        const unsigned char[:] bufv = memoryview(buffer)
+    # data starts at byte 128
+    f.seek(128)
 
     """
     Setup the clock_scale.  In format 0x00010001 this was not part of the
@@ -231,9 +137,11 @@ cpdef unpack_buffer(buffer,
         bint auxillary_ok = False
         bint evt_stg_xy_signed = hdr_packed.evt_stg_xy_signed
 
+    cdef:
         # event data fields
         uint32_t x = 0, y = 0, v = 0, w = 0, wa = 0
         uint32_t ptr_val[NVAL]
+        Py_ssize_t frame_number = -1
         int32_t signed_x, signed_y
 
     ptr_val = [0, 0, 0, 0, 0]
@@ -267,7 +175,7 @@ cpdef unpack_buffer(buffer,
         int32_t c = 0
         int32_t nbits_val_neutron[NVAL]
         int32_t nbits_val_oob[NVAL]
-        event_decode_state state
+        int state = DECODE_START
         int num_events = 0
 
     nbits_val_oob = [0, 0, 0, 0, 0]
@@ -291,18 +199,13 @@ cpdef unpack_buffer(buffer,
     # event decoding state machine
     state = DECODE_START
 
-    # start reading from this location
-    filepos = end_last_event
-
-    num_events = 0
-    while True and filepos < buflen and frame_number < max_framesi:
-        filepos += 1
-        if filepos == buflen:
-            break
-
+    while True:
         # read next byte
-        ch = bufv[filepos]
-
+        www = f.read(1)
+        if len(www):
+            ch = www[0]
+        else:
+            break
         # no bits used initially, 8 to go
         nbits_ch_used = 0
 
@@ -421,8 +324,6 @@ cpdef unpack_buffer(buffer,
         x, y, v, w, wa = ptr_val
 
         if event_ended:
-            end_last_event = filepos
-
             # start on new event next time
             state = DECODE_START
             # update times
@@ -441,8 +342,7 @@ cpdef unpack_buffer(buffer,
                 if oob_event:
                     if c == -3:
                         # FRAME_AUX_START = -3
-                        # 0 is the reflecting chopper and
-                        # 1 is the transmission chopper
+                        # 0 is the reflecting chopper and 1 is the transmission chopper
                         if not use_tx_chopper and x == 0:
                             auxillary_time = 0
                             auxillary_ok = True
@@ -452,22 +352,17 @@ cpdef unpack_buffer(buffer,
                 else:
                     # if times are ok, time units in usec
                     if primary_ok and auxillary_ok:
-                        signed_x, signed_y = x, y
                         if evt_stg_xy_signed:
                             # if x and y are signed then convert from uint32 to int32
+                            signed_x, signed_y = x, y
                             if x & (2**(nbits_val_neutron[0] - 1)):
                                 signed_x = - (<uint32_t>0x100000000 -
                                               (x | <uint32_t>0xFFFFFC00))
                             if y & (2**(nbits_val_neutron[1] - 1)):
                                 signed_y = - (<uint32_t>0x100000000 -
                                               (y | <uint32_t>0xFFFFFC00))
-                        # add to the list
-                        x_neutrons_buf[num_events] = signed_x
-                        y_neutrons_buf[num_events] = signed_y
-                        t_neutrons_buf[num_events] = int(primary_time * scale_microsec)
-                        f_neutrons_buf[num_events] = frame_number
-                        end_event_pos_buf[num_events] = end_last_event
-
+                        # TODO ADD AN EVENT TO A LIST SOMEWHERE
+                        print(signed_x, signed_y, primary_time * scale_microsec)
                         num_events += 1
 
             if frame_start_event:
@@ -480,11 +375,11 @@ cpdef unpack_buffer(buffer,
                     auxillary_time = 0
                     auxillary_ok = True
 
+                # TODO INCREMENT A FRAME NUMBER
                 frame_number += 1
 
-            event_ended = False
+            # TODO UPDATE FILE POSITION
+            # progress.update(loader.selected_position())
 
-    return ((f_events[:num_events],
-             t_events[:num_events],
-             y_events[:num_events],
-             x_events[:num_events]), end_events[:num_events])
+            event_ended = False
+    return num_events, frame_number

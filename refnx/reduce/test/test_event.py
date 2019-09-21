@@ -4,7 +4,6 @@ import warnings
 import numpy as np
 from numpy.testing import assert_equal
 import refnx.reduce.event as event
-from refnx.reduce.event import events
 from refnx.reduce import PlatypusNexus
 
 try:
@@ -26,10 +25,7 @@ class TestEvent(object):
                                            'EOS.bin')
 
         with open(cls.event_file_path, 'rb') as f:
-            if HAVE_CEVENTS:
-                event_list, fpos = _cevent._cevents(f)
-            else:
-                event_list, fpos = event._events(f)
+            event_list, fpos = _cevent._cevents(f)
 
         cls.event_list = event_list
         cls.fpos = fpos
@@ -41,20 +37,13 @@ class TestEvent(object):
 
     def test_events_smoke(self):
         # check that the event.events function works
-        events(self.event_file_path)
+        event.events(self.event_file_path)
 
     def test_num_events(self):
         assert_equal(self.x.size, 783982)
 
     def test_max_frames(self):
         # test reading only a certain number of frames
-        # also use this test to compare pure python read of events
-        with open(self.event_file_path, 'rb') as g:
-            event_list, fpos = event._events(g, max_frames=10)
-
-        f, t, y, x = event_list
-        max_f = np.max(f)
-        assert_equal(9, max_f)
 
         if HAVE_CEVENTS:
             with open(self.event_file_path, 'rb') as g:
@@ -64,22 +53,12 @@ class TestEvent(object):
             max_f = np.max(cyf)
             assert_equal(9, max_f)
 
-            assert_equal(cyf, f)
-            assert_equal(cyt, t)
-            assert_equal(cyy, y)
-            assert_equal(cyx, x)
-
             event_list, fpos = _cevent._cevents(self.event_file_path,
                                                 max_frames=10)
             cyf, cyt, cyy, cyx = event_list
 
             max_f = np.max(cyf)
             assert_equal(9, max_f)
-
-            assert_equal(cyf, f)
-            assert_equal(cyt, t)
-            assert_equal(cyy, y)
-            assert_equal(cyx, x)
 
     def test_event_same_as_detector(self):
         # the detector file should be the same as the event file
@@ -105,7 +84,8 @@ class TestEvent(object):
 
     def test_open_with_path(self):
         # give the event reader a file path
-        event_list, fpos = event._events(self.event_file_path, max_frames=10)
+        event_list, fpos = _cevent._cevents(self.event_file_path,
+                                            max_frames=10)
         f, t, y, x = event_list
         max_f = np.max(f)
         assert_equal(9, max_f)
