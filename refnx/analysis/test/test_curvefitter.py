@@ -79,6 +79,9 @@ class TestCurveFitter(object):
         self.p[0].bounds = PDF(norm(0, 1))
         assert_allclose(bounds_list(self.p),
                         [norm(0, 1).ppf([0.005, 0.995]), (-100, 100)])
+        self.p[0].bounds.rv.a = 0.2
+        self.p[0].bounds.rv.b = 0.8
+        assert_allclose(bounds_list(self.p), [[0.2, 0.8], (-100, 100)])
 
     def test_constraints(self):
         # constraints should work during fitting

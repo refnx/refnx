@@ -9,6 +9,7 @@ import numpy as np
 from scipy._lib._util import check_random_state
 from scipy.optimize import minimize, differential_evolution, least_squares
 import scipy.optimize as sciopt
+import scipy.stats as scistat
 
 from refnx.analysis import Objective, Interval, PDF, is_parameter
 from refnx._lib import (unique as f_unique, MapWrapper,
@@ -907,6 +908,12 @@ def bounds_list(parameters):
                 isinstance(param.bounds, Interval)):
             bnd = param.bounds
             bounds.append((bnd.lb, bnd.ub))
+        elif (hasattr(param, 'bounds') and isinstance(param.bounds, PDF) and
+              isinstance(param.bounds.rv,
+                         (scistat.rv_continuous,
+                          scistat._distn_infrastructure.rv_frozen)) and
+              np.isfinite([param.bounds.rv.a, param.bounds.rv.b]).all()):
+            bounds.append((param.bounds.rv.a, param.bounds.rv.b))
         elif (hasattr(param, 'bounds') and isinstance(param.bounds, PDF) and
               hasattr(param.bounds.rv, 'ppf')):
             bounds.append(param.bounds.rv.ppf([0.005, 0.995]))
