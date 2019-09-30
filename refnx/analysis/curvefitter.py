@@ -909,11 +909,8 @@ def bounds_list(parameters):
             bnd = param.bounds
             bounds.append((bnd.lb, bnd.ub))
         elif (hasattr(param, 'bounds') and isinstance(param.bounds, PDF) and
-              isinstance(param.bounds.rv,
-                         (scistat.rv_continuous,
-                          scistat._distn_infrastructure.rv_frozen)) and
-              np.isfinite([param.bounds.rv.a, param.bounds.rv.b]).all()):
-            bounds.append((param.bounds.rv.a, param.bounds.rv.b))
+              np.isfinite([param.bounds.lb, param.bounds.ub]).all()):
+            bounds.append((param.bounds.lb, param.bounds.ub))
         elif (hasattr(param, 'bounds') and isinstance(param.bounds, PDF) and
               hasattr(param.bounds.rv, 'ppf')):
             bounds.append(param.bounds.rv.ppf([0.005, 0.995]))

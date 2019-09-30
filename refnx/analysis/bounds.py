@@ -94,11 +94,13 @@ class PDF(Bounds):
     (-11.043938533204672, -11.043938533204672)
 
     """
-    def __init__(self, rv, seed=None):
+    def __init__(self, rv, bounds=[-np.inf, np.inf], seed=None):
         super(PDF, self).__init__(seed=seed)
         # we'll accept any object so long as it has logpdf and rvs methods
         if hasattr(rv, 'logpdf') and hasattr(rv, 'rvs'):
             self.rv = rv
+            self.lb = bounds[0]
+            self.ub = bounds[1]
         else:
             raise ValueError("You must initialise PDF with an object that has"
                              " logpdf and rvs methods")

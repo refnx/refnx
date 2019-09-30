@@ -3,7 +3,7 @@ import pickle
 
 import numpy as np
 import scipy.optimize as sciopt
-from scipy.stats import norm
+from scipy.stats import norm, truncnorm
 
 import pytest
 from numpy.testing import (assert_, assert_almost_equal, assert_equal,
@@ -79,9 +79,8 @@ class TestCurveFitter(object):
         self.p[0].bounds = PDF(norm(0, 1))
         assert_allclose(bounds_list(self.p),
                         [norm(0, 1).ppf([0.005, 0.995]), (-100, 100)])
-        self.p[0].bounds.rv.a = 0.2
-        self.p[0].bounds.rv.b = 0.8
-        assert_allclose(bounds_list(self.p), [[0.2, 0.8], (-100, 100)])
+        self.p[0].bounds = PDF(truncnorm(0.2, 0.8, 1, 1), bounds=[0.2, 1.2])
+        assert_allclose(bounds_list(self.p), [(0.2, 1.2), (-100, 100)])
 
     def test_constraints(self):
         # constraints should work during fitting
