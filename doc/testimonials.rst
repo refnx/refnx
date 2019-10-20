@@ -16,6 +16,9 @@ Here is a *very* incomplete list of published scientific studies that have used 
   <https://doi.org/10.1039/C9CP00203K>`_
 * `Johnson, Murdoch, et al. (2019)
   <https://doi.org/10.1039/C8CP06644B>`_
+* `Appel, Kuttich, et al. (2019)
+  <https://doi.org/10.1021/acs.langmuir.9b02094>`_
+
 
 Please `let us know <mailto:andyfaff+refnx@gmail.com>`_ if your work should be included
 in this list or `fork the repository <https://github.com/refnx/refnx>`_ and add
