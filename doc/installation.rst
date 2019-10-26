@@ -35,7 +35,7 @@ Creating a conda environment
 
     ::
 
-     conda create -n refnx python=3.7 numpy scipy cython pandas h5py xlrd pytest
+     conda create -n refnx python=3.7 numpy scipy cython pandas h5py xlrd pytest pyqt matplotlib
 
 2. Activate the environment that we're going to be working in:
 
@@ -51,7 +51,7 @@ Creating a conda environment
 
     ::
 
-     pip install uncertainties ptemcee
+     pip install uncertainties ptemcee periodictable
 
 Installing from source
 =======================
