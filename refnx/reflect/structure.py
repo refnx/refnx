@@ -458,7 +458,7 @@ class Structure(UserList):
         abeles = get_reflect_backend()
         return abeles(q, self.slabs()[..., :4], threads=threads)
 
-    def sld_profile(self, z=None):
+    def sld_profile(self, z=None, align=0):
         """
         Calculates an SLD profile, as a function of distance through the
         interface.
@@ -468,6 +468,10 @@ class Structure(UserList):
         z : float
             Interfacial distance (Angstrom) measured from interface between the
             fronting medium and the first layer.
+        align: int, optional
+            Places a specified interface in the slab representation of a
+            Structure at z = 0. Python indexing is allowed, e.g. supplying -1
+            will place the backing medium at z = 0.
 
         Returns
         -------
@@ -486,7 +490,23 @@ class Structure(UserList):
             raise ValueError("Structure requires fronting and backing"
                              " Slabs in order to calculate.")
 
-        return sld_profile(slabs, z)
+        zed, sld = sld_profile(slabs, z)
+
+        offset = 0
+        if align != 0:
+            align = int(align)
+            if align >= len(slabs) - 1 or align < -1 * len(slabs):
+                raise RuntimeError('abs(align) has to be less than '
+                                   'len(slabs) - 1')
+            # to figure out the offset you need to know the cumulative distance
+            # to the interface
+            slabs[0, 0] = slabs[-1, 0] = 0.
+            if align >= 0:
+                offset = np.sum(slabs[:align + 1, 0])
+            else:
+                offset = np.sum(slabs[:align, 0])
+
+        return zed - offset, sld
 
     def __ior__(self, other):
         """
@@ -582,7 +602,7 @@ class Structure(UserList):
 
         return logp
 
-    def plot(self, pvals=None, samples=0, fig=None):
+    def plot(self, pvals=None, samples=0, fig=None, align=0):
         """
         Plot the structure.
 
@@ -598,6 +618,14 @@ class Structure(UserList):
         fig: Figure instance, optional
             If `fig` is not supplied then a new figure is created. Otherwise
             the graph is created on the current axes on the supplied figure.
+        align: int, optional
+            Aligns the plotted structures around a specified interface in the
+            slab representation of a Structure. This interface will appear at
+            z = 0 in the sld plot. Note that Components can consist of more
+            than a single slab, so some thought is required if the interface to
+            be aligned around lies in the middle of a Component. Python
+            indexing is allowed, e.g. supplying -1 will align at the backing
+            medium.
 
         Returns
         -------
@@ -624,13 +652,13 @@ class Structure(UserList):
             for pvec in self.parameters.pgen(ngen=samples):
                 params.pvals = pvec
 
-                ax.plot(*self.sld_profile(),
+                ax.plot(*self.sld_profile(align=align),
                         color="k", alpha=0.01)
 
             # put back saved_params
             params.pvals = saved_params
 
-        ax.plot(*self.sld_profile(), color='red', zorder=20)
+        ax.plot(*self.sld_profile(align=align), color='red', zorder=20)
         ax.set_ylabel('SLD / 1e-6 $\\AA^{-2}$')
         ax.set_xlabel("z / $\\AA$")
 
