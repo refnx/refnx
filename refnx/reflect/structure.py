@@ -421,7 +421,7 @@ class Structure(UserList):
         """
         solv = solvent
         if isinstance(solvent, SLD):
-            solv = complex(solvent.real.value, solvent.imag.value)
+            solv = complex(solvent)
 
         slabs[..., 1:3] *= (1 - slabs[..., 4])[..., np.newaxis]
         slabs[..., 1] += solv.real * slabs[..., 4]
