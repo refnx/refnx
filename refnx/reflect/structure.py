@@ -820,6 +820,9 @@ class Component(object):
         p |= other
         return p
 
+    def __str__(self):
+        return str(self.parameters)
+
     @property
     def parameters(self):
         """
