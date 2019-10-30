@@ -88,6 +88,8 @@ class LipidLeaflet(Component):
             Molecular volume of tail group (Angstrom**3)
         thickness_tails: float or Parameter
             Thickness of head group region (Angstrom)
+        rough_head_tail: float or refnx.analysis.Parameter
+            Roughness of head-tail group (Angstrom)
         rough_preceding_mono: float or Parameter
             Roughness between preceding component (in the fronting direction)
             and the monolayer (Angstrom). If `reverse_monolayer is False` then
