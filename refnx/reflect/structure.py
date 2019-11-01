@@ -697,28 +697,49 @@ class SLD(object):
     def __init__(self, value, name=''):
         self.name = name
 
-        self.imag = Parameter(0, name='%s - isld' % name)
+        self._imag = Parameter(0, name='%s - isld' % name)
         if isinstance(value, numbers.Real):
-            self.real = Parameter(value.real, name='%s - sld' % name)
+            self._real = Parameter(value.real, name='%s - sld' % name)
         elif isinstance(value, numbers.Complex):
-            self.real = Parameter(value.real, name='%s - sld' % name)
+            self._real = Parameter(value.real, name='%s - sld' % name)
             self.imag = Parameter(value.imag, name='%s - isld' % name)
         elif isinstance(value, SLD):
-            self.real = value.real
-            self.imag = value.imag
+            self._real = value.real
+            self._imag = value.imag
         elif isinstance(value, Parameter):
-            self.real = value
+            self._real = value
         elif (hasattr(value, '__len__') and isinstance(value[0], Parameter) and
               isinstance(value[1], Parameter)):
-            self.real = value[0]
-            self.imag = value[1]
+            self._real = value[0]
+            self._imag = value[1]
 
         self._parameters = Parameters(name=name)
         self._parameters.extend([self.real, self.imag])
 
     def __repr__(self):
+        d = {'real': self.real,
+             'imag': self.imag,
+             'name': self.name}
         return ("SLD([{real!r}, {imag!r}],"
-                " name={name!r})".format(**self.__dict__))
+                " name={name!r})".format(**d))
+
+    @property
+    def real(self):
+        return self._real
+
+    @real.setter
+    def real(self, value):
+        if isinstance(value, Parameter):
+            self._real = value
+
+    @property
+    def imag(self):
+        return self._imag
+
+    @imag.setter
+    def imag(self, value):
+        if isinstance(value, Parameter):
+            self._imag = value
 
     def __str__(self):
         sld = complex(self.real.value, self.imag.value)
@@ -950,8 +971,9 @@ class Slab(Component):
                                       name='%s - volfrac solvent' % name))
 
         p = Parameters(name=self.name)
-        p.extend([self.thick, self.sld.real, self.sld.imag,
-                  self.rough, self.vfsolv])
+        p.extend([self.thick])
+        p.extend(self.sld.parameters)
+        p.extend([self.rough, self.vfsolv])
 
         self._parameters = p
         self.interfaces = interface
@@ -982,9 +1004,10 @@ class Slab(Component):
         """
         Slab representation of this component. See :class:`Component.slabs`
         """
+        sldc = complex(self.sld)
         return np.array([[self.thick.value,
-                          self.sld.real.value,
-                          self.sld.imag.value,
+                          sldc.real,
+                          sldc.imag,
                           self.rough.value,
                           self.vfsolv.value]])
 

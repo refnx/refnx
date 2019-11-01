@@ -217,10 +217,11 @@ cpdef unpack_buffer(buffer,
     written to the header and need not be specified, unless some alternate
     scale is needed.
     """
-    scale_microsec = 1 / hdr_base.clock_scale
     if not hdr_base.clock_scale:
         # old eventfile format did not have clock_scale...
         scale_microsec = 1 / def_clock_scale
+    else:
+        scale_microsec = 1 / hdr_base.clock_scale
 
     # the initial time is not set correctly so wait until primary and auxillary
     # time have been reset before sending events
