@@ -170,6 +170,16 @@ class TestStructure(object):
 
     def test_materialsld(self):
         p = MaterialSLD('SiO2', density=2.2, name='silica')
+        assert_allclose(float(p.real), 3.4752690258246504)
+        assert_allclose(float(p.imag), 1.0508799522721932e-05)
+
+        assert p.formula == 'SiO2'
+
+        # the density value should change the SLD
+        p.density.value = 4.4
+        assert_allclose(float(p.real), 3.4752690258246504 * 2)
+        assert_allclose(float(p.imag), 1.0508799522721932e-05 * 2)
+
         slab = p(10, 3)
         assert isinstance(slab, Slab)
         slab = Slab(10, p, 3)

@@ -823,7 +823,7 @@ class MaterialSLD(SLD):
         self._real = None
         self._imag = None
 
-        self._formula = pt.formula(formula, density=density)
+        self.__formula = pt.formula(formula)
         self._compound = formula
         self.density = possibly_create_parameter(density, name='density')
         self._parameters = Parameters(name=name)
@@ -838,24 +838,27 @@ class MaterialSLD(SLD):
 
     @property
     def formula(self):
-        return self._formula
+        return self._compound
 
     @formula.setter
     def formula(self, formula):
         import periodictable as pt
-        self._formula = pt.formula(formula, self.density.value)
+        self.__formula = pt.formula(formula)
         self._compound = formula
 
     @property
     def real(self):
-        return self._formula.neutron_sld(wavelength=1.8)[0]
+        sldc = complex(self)
+        return sldc.real
 
     @property
     def imag(self):
-        return self._formula.neutron_sld(wavelength=1.8)[1]
+        sldc = complex(self)
+        return sldc.imag
 
     def __complex__(self):
-        sldc = self._formula.neutron_sld(wavelength=1.8)
+        import periodictable as pt
+        sldc = pt.neutron_sld(self.__formula, density=self.density.value)
         return complex(sldc[0], sldc[1])
 
 
