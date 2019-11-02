@@ -180,10 +180,21 @@ class TestStructure(object):
         assert_allclose(float(p.real), 3.4752690258246504 * 2)
         assert_allclose(float(p.imag), 1.0508799522721932e-05 * 2)
 
+        # should be able to make a Slab from MaterialSLD
         slab = p(10, 3)
         assert isinstance(slab, Slab)
         slab = Slab(10, p, 3)
         assert isinstance(slab, Slab)
+
+        # make a full structure and check that the reflectivity calc works
+        air = SLD(0)
+        sio2 = MaterialSLD('SiO2', density=2.2)
+        si = MaterialSLD('Si', density=2.33)
+        s = air | sio2(10, 3) | si(0, 3)
+        s.reflectivity(np.linspace(0.005, 0.3, 100))
+
+        p = s.parameters
+        assert len(list(flatten(p))) == 5 + 4 + 4
 
     def test_repr_slab(self):
         p = SLD(5 + 1j)
