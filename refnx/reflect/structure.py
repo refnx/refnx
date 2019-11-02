@@ -714,7 +714,7 @@ class SLD(object):
             self._imag = value[1]
 
         self._parameters = Parameters(name=name)
-        self._parameters.extend([self.real, self.imag])
+        self._parameters.extend([self._real, self._imag])
 
     def __repr__(self):
         d = {'real': self.real,
@@ -742,7 +742,7 @@ class SLD(object):
             self._imag = value
 
     def __str__(self):
-        sld = complex(self.real.value, self.imag.value)
+        sld = complex(self)
         return 'SLD = {0} x10**-6 Å**-2'.format(sld)
 
     def __complex__(self):
@@ -791,6 +791,72 @@ class SLD(object):
         # p = Parameters(name=self.name)
         # p.extend([self.real, self.imag])
         # return p
+
+
+class MaterialSLD(SLD):
+    """
+    Object representing SLD of a chemical formula
+
+    Parameters
+    ----------
+    formula : str
+        Chemical formula
+    density : float or Parameter
+        mass density of compound in g / cm**3
+    name : str, optional
+        Name of material
+
+    Notes
+    -----
+    You need to have the `periodictable` package installed to use this object.
+    An SLD object can be used to create a Slab:
+
+    >>> # a MaterialSLD object representing Silicon Dioxide
+    >>> sio2 = MaterialSLD('SiO2', 2.2, name='SiO2')
+    >>> # create a Slab of SiO2 20 A in thickness, with a 3 A roughness
+    >>> sio2_layer = sio2(20, 3)
+    """
+    def __init__(self, formula, density, name=''):
+        import periodictable as pt
+        super(MaterialSLD, self).__init__(0, name=name)
+        # overwrite these unused attributes
+        self._real = None
+        self._imag = None
+
+        self._formula = pt.formula(formula, density=density)
+        self._compound = formula
+        self.density = possibly_create_parameter(density, name='density')
+        self._parameters = Parameters(name=name)
+        self._parameters.extend([self.density])
+
+    def __repr__(self):
+        d = {'compound': self._compound,
+             'density': self.density,
+             'name': self.name}
+        return ("MaterialSLD({compound!r}, {density!r},"
+                " name={name!r})".format(**d))
+
+    @property
+    def formula(self):
+        return self._formula
+
+    @formula.setter
+    def formula(self, formula):
+        import periodictable as pt
+        self._formula = pt.formula(formula, self.density.value)
+        self._compound = formula
+
+    @property
+    def real(self):
+        return self._formula.neutron_sld(wavelength=1.8)[0]
+
+    @property
+    def imag(self):
+        return self._formula.neutron_sld(wavelength=1.8)[1]
+
+    def __complex__(self):
+        sldc = self._formula.neutron_sld(wavelength=1.8)
+        return complex(sldc[0], sldc[1])
 
 
 class Component(object):

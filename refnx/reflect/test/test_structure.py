@@ -6,7 +6,7 @@ from numpy.testing import (assert_almost_equal, assert_equal, assert_,
 from scipy.stats import cauchy
 from refnx._lib import flatten
 from refnx.reflect import (SLD, Structure, Spline, Slab, Stack, Erf,
-                           Linear, Exponential, Interface)
+                           Linear, Exponential, Interface, MaterialSLD)
 from refnx.reflect.structure import _profile_slicer
 from refnx.analysis import Parameter, Interval, Parameters
 
@@ -158,6 +158,22 @@ class TestStructure(object):
         q = eval(repr(p))
         assert_equal(float(q.real), 5)
         assert_equal(float(q.imag), 1)
+
+    def test_repr_materialsld(self):
+        p = MaterialSLD('SiO2', density=2.2, name='silica')
+        assert_allclose(float(p.real), 3.4752690258246504)
+        assert_allclose(float(p.imag), 1.0508799522721932e-05)
+        print(repr(p))
+        q = eval(repr(p))
+        assert_allclose(float(p.real), 3.4752690258246504)
+        assert_allclose(float(p.imag), 1.0508799522721932e-05)
+
+    def test_materialsld(self):
+        p = MaterialSLD('SiO2', density=2.2, name='silica')
+        slab = p(10, 3)
+        assert isinstance(slab, Slab)
+        slab = Slab(10, p, 3)
+        assert isinstance(slab, Slab)
 
     def test_repr_slab(self):
         p = SLD(5 + 1j)
