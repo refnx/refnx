@@ -807,7 +807,7 @@ class MaterialSLD(SLD):
     probe : {'x-ray', 'neutron'}, optional
         Are you using neutrons or X-rays?
     wavelength : float, optional
-        wavelength of radiation
+        wavelength of radiation (Angstrom)
     name : str, optional
         Name of material
 
