@@ -795,7 +795,8 @@ class SLD(object):
 
 class MaterialSLD(SLD):
     """
-    Object representing SLD of a chemical formula
+    Object representing SLD of a chemical formula.
+    You can fit the mass density of the material.
 
     Parameters
     ----------
@@ -803,6 +804,10 @@ class MaterialSLD(SLD):
         Chemical formula
     density : float or Parameter
         mass density of compound in g / cm**3
+    probe : {'x-ray', 'neutron'}, optional
+        Are you using neutrons or X-rays?
+    wavelength : float, optional
+        wavelength of radiation
     name : str, optional
         Name of material
 
@@ -813,10 +818,14 @@ class MaterialSLD(SLD):
 
     >>> # a MaterialSLD object representing Silicon Dioxide
     >>> sio2 = MaterialSLD('SiO2', 2.2, name='SiO2')
-    >>> # create a Slab of SiO2 20 A in thickness, with a 3 A roughness
+    >>> # create a silica slab of SiO2 20 A in thickness, with a 3 A roughness
     >>> sio2_layer = sio2(20, 3)
+    >>> # allow the mass density of the silica to vary between 2.1 and 2.3
+    >>> # g/cm**3
+    >>> sio2.density.setp(vary=True, bounds=(2.1, 2.3))
     """
-    def __init__(self, formula, density, name=''):
+    def __init__(self, formula, density, probe='neutron', wavelength=1.8,
+                 name=''):
         import periodictable as pt
         super(MaterialSLD, self).__init__(0, name=name)
         # overwrite these unused attributes
@@ -826,15 +835,22 @@ class MaterialSLD(SLD):
         self.__formula = pt.formula(formula)
         self._compound = formula
         self.density = possibly_create_parameter(density, name='density')
+        if probe.lower() not in ['x-ray', 'neutron']:
+            raise RuntimeError("'probe' must be one of 'x-ray' or 'neutron'")
+        self.probe = probe
+        self.wavelength = wavelength
+
         self._parameters = Parameters(name=name)
         self._parameters.extend([self.density])
 
     def __repr__(self):
         d = {'compound': self._compound,
              'density': self.density,
+             'wavelength': self.wavelength,
+             'probe': self.probe,
              'name': self.name}
-        return ("MaterialSLD({compound!r}, {density!r},"
-                " name={name!r})".format(**d))
+        return ("MaterialSLD({compound!r}, {density!r}, probe={probe!r},"
+                " wavelength={wavelength!r}, name={name!r})".format(**d))
 
     @property
     def formula(self):
@@ -858,7 +874,12 @@ class MaterialSLD(SLD):
 
     def __complex__(self):
         import periodictable as pt
-        sldc = pt.neutron_sld(self.__formula, density=self.density.value)
+        if self.probe == 'neutron':
+            sldc = pt.neutron_sld(self.__formula, density=self.density.value,
+                                  wavelength=self.wavelength)
+        elif self.probe == 'x-ray':
+            sldc = pt.xray_sld(self.__formula, density=self.density.value,
+                               wavelength=self.wavelength)
         return complex(sldc[0], sldc[1])
 
 
