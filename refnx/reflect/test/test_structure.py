@@ -6,7 +6,7 @@ from numpy.testing import (assert_almost_equal, assert_equal, assert_,
 from scipy.stats import cauchy
 from refnx._lib import flatten
 from refnx.reflect import (SLD, Structure, Spline, Slab, Stack, Erf,
-                           Linear, Exponential, Interface)
+                           Linear, Exponential, Interface, MaterialSLD)
 from refnx.reflect.structure import _profile_slicer
 from refnx.analysis import Parameter, Interval, Parameters
 
@@ -158,6 +158,56 @@ class TestStructure(object):
         q = eval(repr(p))
         assert_equal(float(q.real), 5)
         assert_equal(float(q.imag), 1)
+
+    def test_repr_materialsld(self):
+        p = MaterialSLD('SiO2', density=2.2, name='silica')
+        assert_allclose(float(p.real), 3.4752690258246504)
+        assert_allclose(float(p.imag), 1.0508799522721932e-05)
+        print(repr(p))
+        q = eval(repr(p))
+        assert_allclose(float(q.real), 3.4752690258246504)
+        assert_allclose(float(q.imag), 1.0508799522721932e-05)
+
+    def test_materialsld(self):
+        p = MaterialSLD('SiO2', density=2.2, name='silica')
+        sldc = complex(p)
+        assert_allclose(float(p.real), 3.4752690258246504)
+        assert_allclose(float(p.imag), 1.0508799522721932e-05)
+        assert_allclose(sldc.real, 3.4752690258246504)
+        assert_allclose(sldc.imag, 1.0508799522721932e-05)
+        assert p.probe == 'neutron'
+
+        # is X-ray SLD correct?
+        p.wavelength = 1.54
+        p.probe = 'x-ray'
+        sldc = complex(p)
+        assert_allclose(sldc.real, 18.864796064009866)
+        assert_allclose(sldc.imag, 0.2436013463223236)
+
+        assert len(p.parameters) == 1
+        assert p.formula == 'SiO2'
+
+        # the density value should change the SLD
+        p.probe = 'neutron'
+        p.density.value = 4.4
+        assert_allclose(float(p.real), 3.4752690258246504 * 2)
+        assert_allclose(float(p.imag), 1.0508799522721932e-05 * 2)
+
+        # should be able to make a Slab from MaterialSLD
+        slab = p(10, 3)
+        assert isinstance(slab, Slab)
+        slab = Slab(10, p, 3)
+        assert isinstance(slab, Slab)
+
+        # make a full structure and check that the reflectivity calc works
+        air = SLD(0)
+        sio2 = MaterialSLD('SiO2', density=2.2)
+        si = MaterialSLD('Si', density=2.33)
+        s = air | sio2(10, 3) | si(0, 3)
+        s.reflectivity(np.linspace(0.005, 0.3, 100))
+
+        p = s.parameters
+        assert len(list(flatten(p))) == 5 + 4 + 4
 
     def test_repr_slab(self):
         p = SLD(5 + 1j)

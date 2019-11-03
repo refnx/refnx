@@ -697,31 +697,52 @@ class SLD(object):
     def __init__(self, value, name=''):
         self.name = name
 
-        self.imag = Parameter(0, name='%s - isld' % name)
+        self._imag = Parameter(0, name='%s - isld' % name)
         if isinstance(value, numbers.Real):
-            self.real = Parameter(value.real, name='%s - sld' % name)
+            self._real = Parameter(value.real, name='%s - sld' % name)
         elif isinstance(value, numbers.Complex):
-            self.real = Parameter(value.real, name='%s - sld' % name)
+            self._real = Parameter(value.real, name='%s - sld' % name)
             self.imag = Parameter(value.imag, name='%s - isld' % name)
         elif isinstance(value, SLD):
-            self.real = value.real
-            self.imag = value.imag
+            self._real = value.real
+            self._imag = value.imag
         elif isinstance(value, Parameter):
-            self.real = value
+            self._real = value
         elif (hasattr(value, '__len__') and isinstance(value[0], Parameter) and
               isinstance(value[1], Parameter)):
-            self.real = value[0]
-            self.imag = value[1]
+            self._real = value[0]
+            self._imag = value[1]
 
         self._parameters = Parameters(name=name)
-        self._parameters.extend([self.real, self.imag])
+        self._parameters.extend([self._real, self._imag])
 
     def __repr__(self):
+        d = {'real': self.real,
+             'imag': self.imag,
+             'name': self.name}
         return ("SLD([{real!r}, {imag!r}],"
-                " name={name!r})".format(**self.__dict__))
+                " name={name!r})".format(**d))
+
+    @property
+    def real(self):
+        return self._real
+
+    @real.setter
+    def real(self, value):
+        if isinstance(value, Parameter):
+            self._real = value
+
+    @property
+    def imag(self):
+        return self._imag
+
+    @imag.setter
+    def imag(self, value):
+        if isinstance(value, Parameter):
+            self._imag = value
 
     def __str__(self):
-        sld = complex(self.real.value, self.imag.value)
+        sld = complex(self)
         return 'SLD = {0} x10**-6 Å**-2'.format(sld)
 
     def __complex__(self):
@@ -770,6 +791,96 @@ class SLD(object):
         # p = Parameters(name=self.name)
         # p.extend([self.real, self.imag])
         # return p
+
+
+class MaterialSLD(SLD):
+    """
+    Object representing SLD of a chemical formula.
+    You can fit the mass density of the material.
+
+    Parameters
+    ----------
+    formula : str
+        Chemical formula
+    density : float or Parameter
+        mass density of compound in g / cm**3
+    probe : {'x-ray', 'neutron'}, optional
+        Are you using neutrons or X-rays?
+    wavelength : float, optional
+        wavelength of radiation (Angstrom)
+    name : str, optional
+        Name of material
+
+    Notes
+    -----
+    You need to have the `periodictable` package installed to use this object.
+    An SLD object can be used to create a Slab:
+
+    >>> # a MaterialSLD object representing Silicon Dioxide
+    >>> sio2 = MaterialSLD('SiO2', 2.2, name='SiO2')
+    >>> # create a silica slab of SiO2 20 A in thickness, with a 3 A roughness
+    >>> sio2_layer = sio2(20, 3)
+    >>> # allow the mass density of the silica to vary between 2.1 and 2.3
+    >>> # g/cm**3
+    >>> sio2.density.setp(vary=True, bounds=(2.1, 2.3))
+    """
+    def __init__(self, formula, density, probe='neutron', wavelength=1.8,
+                 name=''):
+        import periodictable as pt
+        super(MaterialSLD, self).__init__(0, name=name)
+        # overwrite these unused attributes
+        self._real = None
+        self._imag = None
+
+        self.__formula = pt.formula(formula)
+        self._compound = formula
+        self.density = possibly_create_parameter(density, name='density')
+        if probe.lower() not in ['x-ray', 'neutron']:
+            raise RuntimeError("'probe' must be one of 'x-ray' or 'neutron'")
+        self.probe = probe
+        self.wavelength = wavelength
+
+        self._parameters = Parameters(name=name)
+        self._parameters.extend([self.density])
+
+    def __repr__(self):
+        d = {'compound': self._compound,
+             'density': self.density,
+             'wavelength': self.wavelength,
+             'probe': self.probe,
+             'name': self.name}
+        return ("MaterialSLD({compound!r}, {density!r}, probe={probe!r},"
+                " wavelength={wavelength!r}, name={name!r})".format(**d))
+
+    @property
+    def formula(self):
+        return self._compound
+
+    @formula.setter
+    def formula(self, formula):
+        import periodictable as pt
+        self.__formula = pt.formula(formula)
+        self._compound = formula
+
+    @property
+    def real(self):
+        sldc = complex(self)
+        return sldc.real
+
+    @property
+    def imag(self):
+        sldc = complex(self)
+        return sldc.imag
+
+    def __complex__(self):
+        import periodictable as pt
+        if self.probe == 'neutron':
+            sldc = pt.neutron_sld(self.__formula, density=self.density.value,
+                                  wavelength=self.wavelength)
+        elif self.probe == 'x-ray':
+            sldc = pt.xray_sld(self.__formula, density=self.density.value,
+                               wavelength=self.wavelength)
+        return complex(sldc[0], sldc[1])
 
 
 class Component(object):
@@ -950,8 +1061,9 @@ class Slab(Component):
                                       name='%s - volfrac solvent' % name))
 
         p = Parameters(name=self.name)
-        p.extend([self.thick, self.sld.real, self.sld.imag,
-                  self.rough, self.vfsolv])
+        p.extend([self.thick])
+        p.extend(self.sld.parameters)
+        p.extend([self.rough, self.vfsolv])
 
         self._parameters = p
         self.interfaces = interface
@@ -982,9 +1094,10 @@ class Slab(Component):
         """
         Slab representation of this component. See :class:`Component.slabs`
         """
+        sldc = complex(self.sld)
         return np.array([[self.thick.value,
-                          self.sld.real.value,
-                          self.sld.imag.value,
+                          sldc.real,
+                          sldc.imag,
                           self.rough.value,
                           self.vfsolv.value]])
 

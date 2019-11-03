@@ -3,7 +3,7 @@ import os
 from refnx.reflect.reflect_model import (ReflectModel, reflectivity,
                                          MixedReflectModel)
 from refnx.reflect.structure import (Structure, SLD, Slab, Component,
-                                     sld_profile, Stack)
+                                     sld_profile, Stack, MaterialSLD)
 from refnx.reflect.interface import (Erf, Interface, Linear, Exponential,
                                      Tanh, Sinusoidal, Step)
 from refnx.reflect.spline import Spline

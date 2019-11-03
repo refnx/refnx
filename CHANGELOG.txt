@@ -174,3 +174,6 @@ Details of changes made to refnx
 - event file reader can now read any ANSTO packedbin file (reduction).
 - Align SLD plots around a specific interface in a slab representation. Useful
   if plotting many samples at the same time.
+- Add MaterialSLD object that is constructed from a chemical formula and mass
+  density. This enables the use of specific materials to describe layers, e.g.
+  MaterialSLD('SiO2', density=2.2).

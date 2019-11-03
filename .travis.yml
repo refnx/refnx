@@ -13,9 +13,12 @@ matrix:
 
 
 addons:
+    homebrew:
+      packages:
+        - libomp
     apt:
-        packages:
-            - libhdf5-serial-dev
+      packages:
+        - libhdf5-serial-dev
 
 services:
   - xvfb
@@ -59,7 +62,6 @@ before_install:
     # enable OpenMP support for Apple-clang
     - |
       if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
-        brew install libomp
         export CC=/usr/bin/clang
         export CXX=/usr/bin/clang++
         export CXXFLAGS="$CXXFLAGS -Xpreprocessor -fopenmp"
