@@ -75,8 +75,8 @@ script:
     # definitely want to test the _creflect module on travis.
     - export REQUIRE_C=1
     - export MPLBACKEND=agg
-    - python setup.py test
     - pip install .
+    - pytest
     - sphinx-build -b html doc doc/html
 
 
