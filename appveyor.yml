@@ -69,7 +69,7 @@ build_script:
 test_script:
     # Run the project tests
     - cmd: set "REQUIRE_C=1"
-    - cmd: python setup.py test
+    - cmd: pytest
 
 after_test:
     # If tests are successful, create binary packages for the project.
