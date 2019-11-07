@@ -161,18 +161,18 @@ class TestStructure(object):
 
     def test_repr_materialsld(self):
         p = MaterialSLD('SiO2', density=2.2, name='silica')
-        assert_allclose(float(p.real), 3.4752690258246504)
-        assert_allclose(float(p.imag), 1.0508799522721932e-05)
+        sldc = complex(p)
+        assert_allclose(sldc.real, 3.4752690258246504)
+        assert_allclose(sldc.imag, 1.0508799522721932e-05)
         print(repr(p))
         q = eval(repr(p))
-        assert_allclose(float(q.real), 3.4752690258246504)
-        assert_allclose(float(q.imag), 1.0508799522721932e-05)
+        sldc = complex(q)
+        assert_allclose(sldc.real, 3.4752690258246504)
+        assert_allclose(sldc.imag, 1.0508799522721932e-05)
 
     def test_materialsld(self):
         p = MaterialSLD('SiO2', density=2.2, name='silica')
         sldc = complex(p)
-        assert_allclose(float(p.real), 3.4752690258246504)
-        assert_allclose(float(p.imag), 1.0508799522721932e-05)
         assert_allclose(sldc.real, 3.4752690258246504)
         assert_allclose(sldc.imag, 1.0508799522721932e-05)
         assert p.probe == 'neutron'
@@ -190,8 +190,9 @@ class TestStructure(object):
         # the density value should change the SLD
         p.probe = 'neutron'
         p.density.value = 4.4
-        assert_allclose(float(p.real), 3.4752690258246504 * 2)
-        assert_allclose(float(p.imag), 1.0508799522721932e-05 * 2)
+        sldc = complex(p)
+        assert_allclose(sldc.real, 3.4752690258246504 * 2)
+        assert_allclose(sldc.imag, 1.0508799522721932e-05 * 2)
 
         # should be able to make a Slab from MaterialSLD
         slab = p(10, 3)

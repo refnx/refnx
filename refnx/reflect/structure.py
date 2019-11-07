@@ -55,7 +55,7 @@ class Structure(UserList):
         A sequence of Components to initialise the Structure.
     name : str
         Name of this structure
-    solvent : refnx.reflect.SLD
+    solvent : refnx.reflect.Scatterer
         Specifies the scattering length density used for solvation. If no
         solvent is specified then the SLD of the solvent is assumed to be
         the SLD of `Structure[-1].slabs()[-1]` (after any possible slab order
@@ -183,7 +183,7 @@ class Structure(UserList):
         item: refnx.reflect.Component
             The component to be added.
         """
-        if isinstance(item, SLD):
+        if isinstance(item, Scatterer):
             self.append(item())
             return
 
@@ -215,7 +215,7 @@ class Structure(UserList):
     def solvent(self, sld):
         if sld is None:
             self._solvent = None
-        elif isinstance(sld, SLD):
+        elif isinstance(sld, Scatterer):
             # don't make a new SLD object, use its reference
             self._solvent = sld
         else:
@@ -411,7 +411,7 @@ class Structure(UserList):
         ----------
         slabs : np.ndarray
             Slab representation of the layers to be averaged.
-        solvent : complex or reflect.SLD
+        solvent : complex or reflect.Scatterer
             SLD of solvating material.
 
         Returns
@@ -420,7 +420,7 @@ class Structure(UserList):
             the averaged slabs.
         """
         solv = solvent
-        if isinstance(solvent, SLD):
+        if isinstance(solvent, Scatterer):
             solv = complex(solvent)
 
         slabs[..., 1:3] *= (1 - slabs[..., 4])[..., np.newaxis]
@@ -532,7 +532,7 @@ class Structure(UserList):
             self.append(other)
         elif isinstance(other, Structure):
             self.extend(other.data)
-        elif isinstance(other, SLD):
+        elif isinstance(other, Scatterer):
             slab = other(0, 0)
             self.append(slab)
         else:
@@ -665,88 +665,24 @@ class Structure(UserList):
         return fig, ax
 
 
-class SLD(object):
+class Scatterer(object):
     """
-    Object representing freely varying SLD of a material
-
-    Parameters
-    ----------
-    value : float, complex, Parameter, Parameters
-        Scattering length density of a material.
-        Units (10**-6 Angstrom**-2)
-    name : str, optional
-        Name of material.
-
-    Notes
-    -----
-    An SLD object can be used to create a Slab:
-
-    >>> # an SLD object representing Silicon Dioxide
-    >>> sio2 = SLD(3.47, name='SiO2')
-    >>> # create a Slab of SiO2 20 A in thickness, with a 3 A roughness
-    >>> sio2_layer = sio2(20, 3)
-
-    The SLD object can also be made from a complex number, or from Parameters
-
-    >>> sio2 = SLD(3.47+0.01j)
-    >>> re = Parameter(3.47)
-    >>> im = Parameter(0.01)
-    >>> sio2 = SLD(re)
-    >>> sio2 = SLD([re, im])
+    Abstract base class for something that will have a scattering length
+    density
     """
-    def __init__(self, value, name=''):
+    def __init__(self, name=''):
         self.name = name
-
-        self._imag = Parameter(0, name='%s - isld' % name)
-        if isinstance(value, numbers.Real):
-            self._real = Parameter(value.real, name='%s - sld' % name)
-        elif isinstance(value, numbers.Complex):
-            self._real = Parameter(value.real, name='%s - sld' % name)
-            self.imag = Parameter(value.imag, name='%s - isld' % name)
-        elif isinstance(value, SLD):
-            self._real = value.real
-            self._imag = value.imag
-        elif isinstance(value, Parameter):
-            self._real = value
-        elif (hasattr(value, '__len__') and isinstance(value[0], Parameter) and
-              isinstance(value[1], Parameter)):
-            self._real = value[0]
-            self._imag = value[1]
-
-        self._parameters = Parameters(name=name)
-        self._parameters.extend([self._real, self._imag])
-
-    def __repr__(self):
-        d = {'real': self.real,
-             'imag': self.imag,
-             'name': self.name}
-        return ("SLD([{real!r}, {imag!r}],"
-                " name={name!r})".format(**d))
-
-    @property
-    def real(self):
-        return self._real
-
-    @real.setter
-    def real(self, value):
-        if isinstance(value, Parameter):
-            self._real = value
-
-    @property
-    def imag(self):
-        return self._imag
-
-    @imag.setter
-    def imag(self, value):
-        if isinstance(value, Parameter):
-            self._imag = value
 
     def __str__(self):
         sld = complex(self)
         return 'SLD = {0} x10**-6 Å**-2'.format(sld)
 
     def __complex__(self):
-        return complex(self.real.value, self.imag.value)
+        raise NotImplementedError
+
+    @property
+    def parameters(self):
+        raise NotImplementedError
 
     def __call__(self, thick=0, rough=0):
         """
@@ -780,6 +716,66 @@ class SLD(object):
         slab = self()
         return slab | other
 
+
+class SLD(Scatterer):
+    """
+    Object representing freely varying SLD of a material
+
+    Parameters
+    ----------
+    value : float, complex, Parameter, Parameters
+        Scattering length density of a material.
+        Units (10**-6 Angstrom**-2)
+    name : str, optional
+        Name of material.
+
+    Notes
+    -----
+    An SLD object can be used to create a Slab:
+
+    >>> # an SLD object representing Silicon Dioxide
+    >>> sio2 = SLD(3.47, name='SiO2')
+    >>> # create a Slab of SiO2 20 A in thickness, with a 3 A roughness
+    >>> sio2_layer = sio2(20, 3)
+
+    The SLD object can also be made from a complex number, or from Parameters
+
+    >>> sio2 = SLD(3.47+0.01j)
+    >>> re = Parameter(3.47)
+    >>> im = Parameter(0.01)
+    >>> sio2 = SLD(re)
+    >>> sio2 = SLD([re, im])
+    """
+    def __init__(self, value, name=''):
+        super(SLD, self).__init__(name=name)
+
+        self.imag = Parameter(0, name='%s - isld' % name)
+        if isinstance(value, numbers.Real):
+            self.real = Parameter(value.real, name='%s - sld' % name)
+        elif isinstance(value, numbers.Complex):
+            self.real = Parameter(value.real, name='%s - sld' % name)
+            self.imag = Parameter(value.imag, name='%s - isld' % name)
+        elif isinstance(value, SLD):
+            self.real = value.real
+            self.imag = value.imag
+        elif isinstance(value, Parameter):
+            self.real = value
+        elif (hasattr(value, '__len__') and isinstance(value[0], Parameter) and
+              isinstance(value[1], Parameter)):
+            self.real = value[0]
+            self.imag = value[1]
+
+        self._parameters = Parameters(name=name)
+        self._parameters.extend([self.real, self.imag])
+
+    def __repr__(self):
+        return ("SLD([{real!r}, {imag!r}],"
+                " name={name!r})".format(**self.__dict__))
+
+    def __complex__(self):
+        sldc = complex(self.real.value, self.imag.value)
+        return sldc
+
     @property
     def parameters(self):
         """
@@ -793,7 +789,7 @@ class SLD(object):
         # return p
 
 
-class MaterialSLD(SLD):
+class MaterialSLD(Scatterer):
     """
     Object representing SLD of a chemical formula.
     You can fit the mass density of the material.
@@ -827,17 +823,14 @@ class MaterialSLD(SLD):
     def __init__(self, formula, density, probe='neutron', wavelength=1.8,
                  name=''):
         import periodictable as pt
-        super(MaterialSLD, self).__init__(0, name=name)
-        # overwrite these unused attributes
-        self._real = None
-        self._imag = None
+        super(MaterialSLD, self).__init__(name=name)
 
         self.__formula = pt.formula(formula)
         self._compound = formula
         self.density = possibly_create_parameter(density, name='density')
         if probe.lower() not in ['x-ray', 'neutron']:
             raise RuntimeError("'probe' must be one of 'x-ray' or 'neutron'")
-        self.probe = probe
+        self.probe = probe.lower()
         self.wavelength = wavelength
 
         self._parameters = Parameters(name=name)
@@ -862,16 +855,6 @@ class MaterialSLD(SLD):
         self.__formula = pt.formula(formula)
         self._compound = formula
 
-    @property
-    def real(self):
-        sldc = complex(self)
-        return sldc.real
-
-    @property
-    def imag(self):
-        sldc = complex(self)
-        return sldc.imag
-
     def __complex__(self):
         import periodictable as pt
         if self.probe == 'neutron':
@@ -881,6 +864,10 @@ class MaterialSLD(SLD):
             sldc = pt.xray_sld(self.__formula, density=self.density.value,
                                wavelength=self.wavelength)
         return complex(sldc[0], sldc[1])
+
+    @property
+    def parameters(self):
+        return self._parameters
 
 
 class Component(object):
@@ -1032,7 +1019,7 @@ class Slab(Component):
     ----------
     thick : refnx.analysis.Parameter or float
         thickness of slab (Angstrom)
-    sld : refnx.reflect.SLD, complex, or float
+    sld : refnx.reflect.Scatterer, complex, or float
         (complex) SLD of film (/1e-6 Angstrom**2)
     rough : float
         roughness on top of this slab (Angstrom)
@@ -1050,7 +1037,7 @@ class Slab(Component):
         super(Slab, self).__init__(name=name)
         self.thick = possibly_create_parameter(thick,
                                                name='%s - thick' % name)
-        if isinstance(sld, SLD):
+        if isinstance(sld, Scatterer):
             self.sld = sld
         else:
             self.sld = SLD(sld)
@@ -1177,7 +1164,7 @@ class Stack(Component, UserList):
         item: refnx.reflect.Component
             The component to be added.
         """
-        if isinstance(item, SLD):
+        if isinstance(item, Scatterer):
             self.append(item())
             return
 
@@ -1259,14 +1246,14 @@ class Stack(Component, UserList):
 
         Parameters
         ----------
-        other: :class:`Component`, :class:`SLD`
+        other: :class:`Component`, :class:`Scatterer`
             The object to add to the structure.
 
         """
         # self |= other
         if isinstance(other, Component):
             self.append(other)
-        elif isinstance(other, SLD):
+        elif isinstance(other, Scatterer):
             slab = other(0, 0)
             self.append(slab)
         else:
