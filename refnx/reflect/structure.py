@@ -921,7 +921,17 @@ class Component(object):
 
     def __mul__(self, n):
         """
-        Concatenate Components when they are multiplied by a number
+        MUL'ing components makes them repeat.
+
+        Parameters
+        ----------
+        n: int
+            How many times you want to repeat the Component
+
+        Returns
+        -------
+        s: refnx.reflect.Structure
+            The created Structure
         """
         # convert to integer, should raise an error if there's a problem
         n = operator.index(n)

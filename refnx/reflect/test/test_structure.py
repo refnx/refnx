@@ -329,6 +329,9 @@ class TestStructure(object):
         slabs = s.slabs()
         assert_almost_equal(np.sum(slabs[:, 0]), 110 * 3 * 5)
 
+        # try multiplying a structure
+        q = s * 5
+
     def test_contraction(self):
         q = np.linspace(0.005, 0.2, 100)
 
