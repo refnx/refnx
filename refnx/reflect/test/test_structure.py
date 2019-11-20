@@ -312,6 +312,14 @@ class TestStructure(object):
         slabs = s.slabs()
         assert_almost_equal(np.sum(slabs[:, 0]), 500)
 
+        # multiplying a structure should work because it extends UserList
+        s = sio2(10, 3) | polymer(100, 5) * 5
+        q = s * 5
+        assert isinstance(q, Structure)
+        assert len(q) == 30
+        slabs = q.slabs()
+        assert_almost_equal(np.sum(slabs[:, 0]), 510 * 5)
+
         # test multiplying a Stack
         stk = Stack()
         stk.append(sio2(10, 3))
@@ -328,9 +336,6 @@ class TestStructure(object):
         assert_equal(len(s), 5)
         slabs = s.slabs()
         assert_almost_equal(np.sum(slabs[:, 0]), 110 * 3 * 5)
-
-        # try multiplying a structure
-        q = s * 5
 
     def test_contraction(self):
         q = np.linspace(0.005, 0.2, 100)
