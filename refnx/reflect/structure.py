@@ -24,6 +24,7 @@ DEALINGS IN THIS SOFTWARE.
 
 from collections import UserList
 import numbers
+import operator
 
 import numpy as np
 from scipy.stats import norm
@@ -917,6 +918,21 @@ class Component(object):
         p |= self
         p |= other
         return p
+
+    def __mul__(self, n):
+        """
+        Concatenate Components when they are multiplied by a number
+        """
+        # convert to integer, should raise an error if there's a problem
+        n = operator.index(n)
+        if n < 1:
+            return Structure()
+        elif n == 1:
+            return self
+        else:
+            s = Structure()
+            s.extend([self] * n)
+            return s
 
     def __str__(self):
         return str(self.parameters)
