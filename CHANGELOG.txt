@@ -177,3 +177,4 @@ Details of changes made to refnx
 - Add MaterialSLD object that is constructed from a chemical formula and mass
   density. This enables the use of specific materials to describe layers, e.g.
   MaterialSLD('SiO2', density=2.2).
+- Components can be multiplied by an integer to make them repeat.
