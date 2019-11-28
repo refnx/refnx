@@ -79,6 +79,7 @@ script:
     - pushd
     # install and test from the sdist
     - python setup.py sdist
+    - cd dist
     - pip install *.tar.gz
     - python -c 'import refnx;refnx.test()'
     # restore the working directory to the root refnx directory
