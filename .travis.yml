@@ -75,8 +75,14 @@ script:
     # definitely want to test the _creflect module on travis.
     - export REQUIRE_C=1
     - export MPLBACKEND=agg
-    - pip install .
-    - pytest
+    # put cwd in the top of the directory stack
+    - pushd
+    # install and test from the sdist
+    - python setup.py sdist
+    - pip install *.tar.gz
+    - python -c 'import refnx;refnx.test()'
+    # restore the working directory to the root refnx directory
+    - popd
     - sphinx-build -b html doc doc/html
 
 
