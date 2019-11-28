@@ -178,3 +178,4 @@ Details of changes made to refnx
   density. This enables the use of specific materials to describe layers, e.g.
   MaterialSLD('SiO2', density=2.2).
 - Components can be multiplied by an integer to make them repeat.
+- Add _open_mp_helpers to MANIFEST.in (gh381).
