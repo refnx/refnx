@@ -76,7 +76,7 @@ script:
     - export REQUIRE_C=1
     - export MPLBACKEND=agg
     # put cwd in the top of the directory stack
-    - pushd
+    - pushd .
     # install and test from the sdist
     - python setup.py sdist
     - cd dist
