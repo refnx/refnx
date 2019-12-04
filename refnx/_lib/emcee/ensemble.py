@@ -1,8 +1,15 @@
 # -*- coding: utf-8 -*-
 
-from __future__ import division, print_function
+import numpy as np
 
-__all__ = ["EnsembleSampler"]
+from .backends import Backend
+from .model import Model
+from .moves import StretchMove
+from .pbar import get_progress_bar
+from .state import State
+from .utils import deprecated, deprecation_warning
+
+__all__ = ["EnsembleSampler", "walkers_independent"]
 
 try:
     from collections.abc import Iterable
@@ -10,19 +17,15 @@ except ImportError:
     # for py2.7, will be an Exception in 3.8
     from collections import Iterable
 
-import numpy as np
-import warnings
-
-from .state import State
-from .model import Model
-from .backends import Backend
-from .moves import StretchMove
-from .pbar import get_progress_bar
-from .utils import deprecated, deprecation_warning
-
 
 class EnsembleSampler(object):
     """An ensemble MCMC sampler
+
+    If you are upgrading from an earlier version of emcee, you might notice
+    that some arguments are now deprecated. The parameters that control the
+    proposals have been moved to the :ref:`moves-user` interface (``a`` and
+    ``live_dangerously``), and the parameters related to parallelization can
+    now be controlled via the ``pool`` argument (:ref:`parallel`).
 
     Args:
         nwalkers (int): The number of walkers in the ensemble.
@@ -231,9 +234,9 @@ class EnsembleSampler(object):
                 ``'notebook'``, which shows a progress bar suitable for
                 Jupyter notebooks.  If ``False``, no progress bar will be
                 shown.
-            skip_initial_state_check (Optional[bool]): If ``True``, a check that
-                the initial_state can fully explore the space will be skipped.
-                (default: ``False``)
+            skip_initial_state_check (Optional[bool]): If ``True``, a check
+                that the initial_state can fully explore the space will be
+                skipped. (default: ``False``)
 
 
         Every ``thin_by`` steps, this generator yields the
@@ -244,18 +247,13 @@ class EnsembleSampler(object):
         state = State(initial_state, copy=True)
         if np.shape(state.coords) != (self.nwalkers, self.ndim):
             raise ValueError("incompatible input dimensions")
-        if (not skip_initial_state_check) and np.isclose(
-            np.linalg.det(
-                np.cov(state.coords, rowvar=False).reshape(
-                    (self.ndim, self.ndim)
-                )
-            ),
-            0,
+        if (not skip_initial_state_check) and (
+            not walkers_independent(state.coords)
         ):
-            warnings.warn(
-                "Initial state is not linearly independent and it will not "
-                "allow a full exploration of parameter space",
-                category=RuntimeWarning,
+            raise ValueError(
+                "Initial state has a large condition number. "
+                "Make sure that your walkers are linearly independent for the "
+                "best performance"
             )
 
         # Try to set the initial value of the random number generator. This
@@ -480,6 +478,7 @@ class EnsembleSampler(object):
     def lnprobability(self):  # pragma: no cover
         log_prob = self.get_log_prob()
         return np.swapaxes(log_prob, 0, 1)
+
     @property
     @deprecated("get_log_prob(flat=True)")
     def flatlnprobability(self):  # pragma: no cover
@@ -554,3 +553,35 @@ class _FunctionWrapper(object):
             print("  exception:")
             traceback.print_exc()
             raise
+
+
+def walkers_independent(coords):
+    if not np.all(np.isfinite(coords)):
+        return False
+    C = coords - np.mean(coords, axis=0)[None, :]
+    C_colmax = np.amax(np.abs(C), axis=0)
+    if np.any(C_colmax == 0):
+        return False
+    C /= C_colmax
+    C_colsum = np.sqrt(np.sum(C ** 2, axis=0))
+    C /= C_colsum
+    return np.linalg.cond(C.astype(float)) <= 1e8
+
+
+def walkers_independent_cov(coords):
+    C = np.cov(coords, rowvar=False)
+    if np.any(np.isnan(C)):
+        return False
+    return _scaled_cond(np.atleast_2d(C)) <= 1e8
+
+
+def _scaled_cond(a):
+    asum = np.sqrt((a ** 2).sum(axis=0))[None, :]
+    if np.any(asum == 0):
+        return np.inf
+    b = a / asum
+    bsum = np.sqrt((b ** 2).sum(axis=1))[:, None]
+    if np.any(bsum == 0):
+        return np.inf
+    c = b / bsum
+    return np.linalg.cond(c.astype(float))

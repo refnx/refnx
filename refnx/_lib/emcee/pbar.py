@@ -1,10 +1,9 @@
 # -*- coding: utf-8 -*-
 
-from __future__ import division, print_function
+import logging
 
 __all__ = ["get_progress_bar"]
 
-import logging
 
 try:
     import tqdm
@@ -54,4 +53,3 @@ def get_progress_bar(display, total):
                 return getattr(tqdm, "tqdm_" + display)(total=total)
 
     return _NoOpPBar()
-

@@ -9,13 +9,14 @@ from tempfile import NamedTemporaryFile
 
 import numpy as np
 
+from .. import __version__
+from .backend import Backend
+
+
 try:
     import h5py
 except ImportError:
     h5py = None
-
-from .backend import Backend
-from .. import __version__
 
 
 class HDFBackend(Backend):
@@ -33,12 +34,18 @@ class HDFBackend(Backend):
             ``RuntimeError`` if the file is opened with write access.
 
     """
-    def __init__(self, filename, name="mcmc", read_only=False):
+    def __init__(self, filename, name="mcmc", read_only=False, dtype=None):
         if h5py is None:
             raise ImportError("you must install 'h5py' to use the HDFBackend")
         self.filename = filename
         self.name = name
         self.read_only = read_only
+        if dtype is None:
+            self.dtype_set = False
+            self.dtype = np.float64
+        else:
+            self.dtype_set = True
+            self.dtype = dtype
 
     @property
     def initialized(self):
@@ -52,10 +59,18 @@ class HDFBackend(Backend):
 
     def open(self, mode="r"):
         if self.read_only and mode != "r":
-            raise RuntimeError("The backend has been loaded in read-only "
-                               "mode. Set `read_only = False` to make "
-                               "changes.")
-        return h5py.File(self.filename, mode)
+            raise RuntimeError(
+                "The backend has been loaded in read-only "
+                "mode. Set `read_only = False` to make "
+                "changes."
+            )
+        f = h5py.File(self.filename, mode)
+        if not self.dtype_set and self.name in f:
+            g = f[self.name]
+            if "chain" in g:
+                self.dtype = g["chain"].dtype
+                self.dtype_set = True
+        return f
 
     def reset(self, nwalkers, ndim):
         """Clear the state of the chain and empty the backend
@@ -76,14 +91,18 @@ class HDFBackend(Backend):
             g.attrs["has_blobs"] = False
             g.attrs["iteration"] = 0
             g.create_dataset("accepted", data=np.zeros(nwalkers))
-            g.create_dataset("chain",
-                             (0, nwalkers, ndim),
-                             maxshape=(None, nwalkers, ndim),
-                             dtype=np.float64)
-            g.create_dataset("log_prob",
-                             (0, nwalkers),
-                             maxshape=(None, nwalkers),
-                             dtype=np.float64)
+            g.create_dataset(
+                "chain",
+                (0, nwalkers, ndim),
+                maxshape=(None, nwalkers, ndim),
+                dtype=self.dtype,
+            )
+            g.create_dataset(
+                "log_prob",
+                (0, nwalkers),
+                maxshape=(None, nwalkers),
+                dtype=self.dtype,
+            )
 
     def has_blobs(self):
         with self.open() as f:
@@ -91,21 +110,25 @@ class HDFBackend(Backend):
 
     def get_value(self, name, flat=False, thin=1, discard=0):
         if not self.initialized:
-            raise AttributeError("You must run the sampler with "
-                                 "'store == True' before accessing the "
-                                 "results")
+            raise AttributeError(
+                "You must run the sampler with "
+                "'store == True' before accessing the "
+                "results"
+            )
         with self.open() as f:
             g = f[self.name]
             iteration = g.attrs["iteration"]
             if iteration <= 0:
-                raise AttributeError("You must run the sampler with "
-                                     "'store == True' before accessing the "
-                                     "results")
+                raise AttributeError(
+                    "You must run the sampler with "
+                    "'store == True' before accessing the "
+                    "results"
+                )
 
             if name == "blobs" and not g.attrs["has_blobs"]:
                 return None
 
-            v = g[name][discard+thin-1:self.iteration:thin]
+            v = g[name][discard + thin - 1 : self.iteration : thin]
             if flat:
                 s = list(v.shape[1:])
                 s[0] = np.prod(v.shape[:2])
@@ -159,9 +182,12 @@ class HDFBackend(Backend):
                 if not has_blobs:
                     nwalkers = g.attrs["nwalkers"]
                     dt = np.dtype((blobs[0].dtype, blobs[0].shape))
-                    g.create_dataset("blobs", (ntot, nwalkers),
-                                     maxshape=(None, nwalkers),
-                                     dtype=dt)
+                    g.create_dataset(
+                        "blobs",
+                        (ntot, nwalkers),
+                        maxshape=(None, nwalkers),
+                        dtype=dt,
+                    )
                 else:
                     g["blobs"].resize(ntot, axis=0)
                 g.attrs["has_blobs"] = True
@@ -195,11 +221,17 @@ class HDFBackend(Backend):
 
 class TempHDFBackend(object):
 
+    def __init__(self, dtype=None):
+        self.dtype = dtype
+        self.filename = None
+
     def __enter__(self):
-        f = NamedTemporaryFile("w", delete=False)
+        f = NamedTemporaryFile(prefix="emcee-temporary-hdf5",
+                               suffix=".hdf5",
+                               delete=False)
         f.close()
         self.filename = f.name
-        return HDFBackend(f.name, "test")
+        return HDFBackend(f.name, "test", dtype=self.dtype)
 
     def __exit__(self, exception_type, exception_value, traceback):
         os.remove(self.filename)

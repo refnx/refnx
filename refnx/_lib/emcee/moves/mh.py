@@ -1,11 +1,9 @@
 # -*- coding: utf-8 -*-
 
-from __future__ import division, print_function
-
 import numpy as np
 
-from .move import Move
 from ..state import State
+from .move import Move
 
 __all__ = ["MHMove"]
 

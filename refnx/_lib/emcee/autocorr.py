@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
 
-from __future__ import division, print_function
-
 import logging
 
 import numpy as np
@@ -33,8 +31,8 @@ def function_1d(x):
     n = next_pow_two(len(x))
 
     # Compute the FFT and then (from that) the auto-correlation function
-    f = np.fft.fft(x - np.mean(x), n=2*n)
-    acf = np.fft.ifft(f * np.conjugate(f))[:len(x)].real
+    f = np.fft.fft(x - np.mean(x), n=2 * n)
+    acf = np.fft.ifft(f * np.conjugate(f))[: len(x)].real
     acf /= acf[0]
     return acf
 
@@ -93,7 +91,7 @@ def integrated_time(x, c=5, tol=50, quiet=False):
         for k in range(n_w):
             f += function_1d(x[:, k, d])
         f /= n_w
-        taus = 2.0*np.cumsum(f)-1.0
+        taus = 2.0 * np.cumsum(f) - 1.0
         windows[d] = auto_window(taus, c)
         tau_est[d] = taus[windows[d]]
 
@@ -107,7 +105,7 @@ def integrated_time(x, c=5, tol=50, quiet=False):
             "autocorrelation time for {1} parameter(s). Use this estimate "
             "with caution and run a longer chain!\n"
         ).format(tol, np.sum(flag))
-        msg += "N/{0} = {1:.0f};\ntau: {2}".format(tol, n_t/tol, tau_est)
+        msg += "N/{0} = {1:.0f};\ntau: {2}".format(tol, n_t / tol, tau_est)
         if not quiet:
             raise AutocorrError(tau_est, msg)
         logging.warning(msg)
@@ -122,6 +120,7 @@ class AutocorrError(Exception):
     ``tau`` attribute of this exception.
 
     """
+
     def __init__(self, tau, *args, **kwargs):
         self.tau = tau
         super(AutocorrError, self).__init__(*args, **kwargs)

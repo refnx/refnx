@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
 
-from __future__ import division, print_function
-
 import numpy as np
+
 from .red_blue import RedBlueMove
 
 __all__ = ["DESnookerMove"]
@@ -23,6 +22,7 @@ class DESnookerMove(RedBlueMove):
             reference.
 
     """
+
     def __init__(self, gammas=1.7, **kwargs):
         self.gammas = gammas
         kwargs["nsplits"] = 4
@@ -42,5 +42,5 @@ class DESnookerMove(RedBlueMove):
             norm = np.linalg.norm(delta)
             u = delta / np.sqrt(norm)
             q[i] = s[i] + u * self.gammas * (np.dot(u, z1) - np.dot(u, z2))
-            metropolis[i] = np.log(np.linalg.norm(q[i]-z)) - np.log(norm)
+            metropolis[i] = np.log(np.linalg.norm(q[i] - z)) - np.log(norm)
         return q, 0.5 * (ndim - 1.0) * metropolis
