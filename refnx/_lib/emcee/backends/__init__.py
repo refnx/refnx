@@ -1,15 +1,9 @@
 # -*- coding: utf-8 -*-
 
-from __future__ import division, print_function
-
-__all__ = [
-    "Backend",
-    "HDFBackend", "TempHDFBackend",
-    "get_test_backends",
-]
-
 from .backend import Backend
 from .hdf import HDFBackend, TempHDFBackend
+
+__all__ = ["Backend", "HDFBackend", "TempHDFBackend", "get_test_backends"]
 
 
 def get_test_backends():

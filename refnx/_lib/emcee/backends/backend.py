@@ -1,20 +1,21 @@
 # -*- coding: utf-8 -*-
 
-from __future__ import division, print_function
-
-__all__ = ["Backend"]
-
 import numpy as np
 
 from .. import autocorr
 from ..state import State
 
+__all__ = ["Backend"]
+
 
 class Backend(object):
     """A simple default backend that stores the chain in memory"""
 
-    def __init__(self):
+    def __init__(self, dtype=None):
         self.initialized = False
+        if dtype is None:
+            dtype = np.float
+        self.dtype = dtype
 
     def reset(self, nwalkers, ndim):
         """Clear the state of the chain and empty the backend
@@ -27,9 +28,9 @@ class Backend(object):
         self.nwalkers = int(nwalkers)
         self.ndim = int(ndim)
         self.iteration = 0
-        self.accepted = np.zeros(self.nwalkers)
-        self.chain = np.empty((0, self.nwalkers, self.ndim))
-        self.log_prob = np.empty((0, self.nwalkers))
+        self.accepted = np.zeros(self.nwalkers, dtype=self.dtype)
+        self.chain = np.empty((0, self.nwalkers, self.ndim), dtype=self.dtype)
+        self.log_prob = np.empty((0, self.nwalkers), dtype=self.dtype)
         self.blobs = None
         self.random_state = None
         self.initialized = True
@@ -40,14 +41,16 @@ class Backend(object):
 
     def get_value(self, name, flat=False, thin=1, discard=0):
         if self.iteration <= 0:
-            raise AttributeError("you must run the sampler with "
-                                 "'store == True' before accessing the "
-                                 "results")
+            raise AttributeError(
+                "you must run the sampler with "
+                "'store == True' before accessing the "
+                "results"
+            )
 
         if name == "blobs" and not self.has_blobs():
             return None
 
-        v = getattr(self, name)[discard+thin-1:self.iteration:thin]
+        v = getattr(self, name)[discard + thin - 1 : self.iteration : thin]
         if flat:
             s = list(v.shape[1:])
             s[0] = np.prod(v.shape[:2])
@@ -108,16 +111,18 @@ class Backend(object):
     def get_last_sample(self):
         """Access the most recent sample in the chain"""
         if (not self.initialized) or self.iteration <= 0:
-            raise AttributeError("you must run the sampler with "
-                                 "'store == True' before accessing the "
-                                 "results")
+            raise AttributeError(
+                "you must run the sampler with "
+                "'store == True' before accessing the "
+                "results"
+            )
         it = self.iteration
-        blobs = self.get_blobs(discard=it-1)
+        blobs = self.get_blobs(discard=it - 1)
         if blobs is not None:
             blobs = blobs[0]
         return State(
-            self.get_chain(discard=it-1)[0],
-            log_prob=self.get_log_prob(discard=it-1)[0],
+            self.get_chain(discard=it - 1)[0],
+            log_prob=self.get_log_prob(discard=it - 1)[0],
             blobs=blobs,
             random_state=self.random_state,
         )
@@ -167,9 +172,9 @@ class Backend(object):
         """
         self._check_blobs(blobs)
         i = ngrow - (len(self.chain) - self.iteration)
-        a = np.empty((i, self.nwalkers, self.ndim))
+        a = np.empty((i, self.nwalkers, self.ndim), dtype=self.dtype)
         self.chain = np.concatenate((self.chain, a), axis=0)
-        a = np.empty((i, self.nwalkers))
+        a = np.empty((i, self.nwalkers), dtype=self.dtype)
         self.log_prob = np.concatenate((self.log_prob, a), axis=0)
         if blobs is not None:
             dt = np.dtype((blobs[0].dtype, blobs[0].shape))
@@ -184,21 +189,27 @@ class Backend(object):
         nwalkers, ndim = self.shape
         has_blobs = self.has_blobs()
         if state.coords.shape != (nwalkers, ndim):
-            raise ValueError("invalid coordinate dimensions; expected {0}"
-                             .format((nwalkers, ndim)))
-        if state.log_prob.shape != (nwalkers, ):
-            raise ValueError("invalid log probability size; expected {0}"
-                             .format(nwalkers))
+            raise ValueError(
+                "invalid coordinate dimensions; expected {0}".format(
+                    (nwalkers, ndim)
+                )
+            )
+        if state.log_prob.shape != (nwalkers,):
+            raise ValueError(
+                "invalid log probability size; expected {0}".format(nwalkers)
+            )
         if state.blobs is not None and not has_blobs:
             raise ValueError("unexpected blobs")
         if state.blobs is None and has_blobs:
             raise ValueError("expected blobs, but none were given")
         if state.blobs is not None and len(state.blobs) != nwalkers:
-            raise ValueError("invalid blobs size; expected {0}"
-                             .format(nwalkers))
-        if accepted.shape != (nwalkers, ):
-            raise ValueError("invalid acceptance size; expected {0}"
-                             .format(nwalkers))
+            raise ValueError(
+                "invalid blobs size; expected {0}".format(nwalkers)
+            )
+        if accepted.shape != (nwalkers,):
+            raise ValueError(
+                "invalid acceptance size; expected {0}".format(nwalkers)
+            )
 
     def save_step(self, state, accepted):
         """Save a step to the backend

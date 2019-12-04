@@ -1,11 +1,10 @@
 # -*- coding: utf-8 -*-
 
-from __future__ import division, print_function
-
-__all__ = ["State"]
+from copy import deepcopy
 
 import numpy as np
-from copy import deepcopy
+
+__all__ = ["State"]
 
 
 class State(object):
@@ -28,8 +27,9 @@ class State(object):
 
     __slots__ = "coords", "log_prob", "blobs", "random_state"
 
-    def __init__(self, coords, log_prob=None, blobs=None, random_state=None,
-                 copy=False):
+    def __init__(
+        self, coords, log_prob=None, blobs=None, random_state=None, copy=False
+    ):
         dc = deepcopy if copy else lambda x: x
 
         if hasattr(coords, "coords"):
@@ -52,5 +52,6 @@ class State(object):
     def __iter__(self):
         if self.blobs is None:
             return iter((self.coords, self.log_prob, self.random_state))
-        return iter((self.coords, self.log_prob, self.random_state,
-                     self.blobs))
+        return iter(
+            (self.coords, self.log_prob, self.random_state, self.blobs)
+        )

@@ -1,13 +1,11 @@
 # -*- coding: utf-8 -*-
 
-from __future__ import division, print_function
-
-__all__ = ["sample_ball", "deprecated", "deprecation_warning"]
-
 import warnings
 from functools import wraps
 
 import numpy as np
+
+__all__ = ["sample_ball", "deprecated", "deprecation_warning"]
 
 
 def deprecation_warning(msg):
@@ -24,6 +22,7 @@ def deprecated(alternate):
         def f(*args, **kwargs):
             deprecation_warning(msg)
             return func(*args, **kwargs)
+
         return f
 
     return wrapper
@@ -39,9 +38,10 @@ def sample_ball(p0, std, size=1):
     :param size: The number of samples to produce.
 
     """
-    assert(len(p0) == len(std))
-    return np.vstack([p0 + std * np.random.normal(size=len(p0))
-                      for i in range(size)])
+    assert len(p0) == len(std)
+    return np.vstack(
+        [p0 + std * np.random.normal(size=len(p0)) for i in range(size)]
+    )
 
 
 @deprecated(None)
@@ -57,6 +57,6 @@ def sample_ellipsoid(p0, covmat, size=1):
     :param size: The number of samples to produce.
 
     """
-    return np.random.multivariate_normal(np.atleast_1d(p0),
-                                         np.atleast_2d(covmat),
-                                         size=size)
+    return np.random.multivariate_normal(
+        np.atleast_1d(p0), np.atleast_2d(covmat), size=size
+    )

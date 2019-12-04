@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
 
-from __future__ import division, print_function
-
 import numpy as np
 
 from .mh import MHMove
@@ -32,6 +30,7 @@ class GaussianMove(MHMove):
             the other arguments are inconsistent.
 
     """
+
     def __init__(self, cov, mode="vector", factor=None):
         # Parse the proposal type.
         try:
@@ -75,9 +74,12 @@ class _isotropic_proposal(object):
             self._log_factor = np.log(factor)
 
         if mode not in self.allowed_modes:
-            raise ValueError(("'{0}' is not a recognized mode. "
-                              "Please select from: {1}")
-                             .format(mode, self.allowed_modes))
+            raise ValueError(
+                (
+                    "'{0}' is not a recognized mode. "
+                    "Please select from: {1}"
+                ).format(mode, self.allowed_modes)
+            )
         self.mode = mode
 
     def get_factor(self, rng):
@@ -104,7 +106,6 @@ class _isotropic_proposal(object):
 
 
 class _diagonal_proposal(_isotropic_proposal):
-
     def get_updated_vector(self, rng, x0):
         return x0 + self.get_factor(rng) * self.scale * rng.randn(*(x0.shape))
 
@@ -115,4 +116,5 @@ class _proposal(_isotropic_proposal):
 
     def get_updated_vector(self, rng, x0):
         return x0 + self.get_factor(rng) * rng.multivariate_normal(
-            np.zeros(len(self.scale)), self.scale)
+            np.zeros(len(self.scale)), self.scale
+        )

@@ -1,8 +1,5 @@
 # -*- coding: utf-8 -*-
 
-from __future__ import print_function, absolute_import
-
-__version__ = "3.0rc2"
 __bibtex__ = """
 @article{emcee,
    author = {{Foreman-Mackey}, D. and {Hogg}, D.~W. and {Lang}, D. and {Goodman}, J.},
@@ -14,19 +11,26 @@ __bibtex__ = """
    eprint = {1202.3665},
       doi = {10.1086/670067}
 }
-"""  # NOQA
+"""
+__uri__ = "https://emcee.readthedocs.io"
+__author__ = "Daniel Foreman-Mackey"
+__email__ = "foreman.mackey@gmail.com"
+__license__ = "MIT"
+__description__ = "The Python ensemble sampling toolkit for MCMC"
 
-try:
-    __EMCEE_SETUP__
-except NameError:
-    __EMCEE_SETUP__ = False
+__version__ = 'dev'
+#from .emcee_version import __version__  # isort:skip
 
-if not __EMCEE_SETUP__:
-    from .ensemble import EnsembleSampler
-    from .state import State
+from . import autocorr, backends, moves
+from .ensemble import EnsembleSampler, walkers_independent
+from .state import State
 
-    from . import moves
-    from . import autocorr
-    from . import backends
-
-    __all__ = ["EnsembleSampler", "State", "moves", "autocorr", "backends"]
+__all__ = [
+    "EnsembleSampler",
+    "walkers_independent",
+    "State",
+    "moves",
+    "autocorr",
+    "backends",
+    "__version__",
+]

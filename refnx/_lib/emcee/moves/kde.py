@@ -1,15 +1,14 @@
 # -*- coding: utf-8 -*-
 
-from __future__ import division, print_function
-
 import numpy as np
+
+from .red_blue import RedBlueMove
 
 try:
     from scipy.stats import gaussian_kde
 except ImportError:
     gaussian_kde = None
 
-from .red_blue import RedBlueMove
 
 __all__ = ["KDEMove"]
 
@@ -23,14 +22,16 @@ class KDEMove(RedBlueMove):
 
     Args:
         bw_method: The bandwidth estimation method. See `the scipy docs
-            <http://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.gaussian_kde.html>`_
+            <https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.gaussian_kde.html>`_
             for allowed values.
 
     """
+
     def __init__(self, bw_method=None, **kwargs):
         if gaussian_kde is None:
-            raise ImportError("you need scipy.stats.gaussian_kde to use the "
-                              "KDEMove")
+            raise ImportError(
+                "you need scipy.stats.gaussian_kde to use the " "KDEMove"
+            )
         self.bw_method = bw_method
         super(KDEMove, self).__init__(**kwargs)
 

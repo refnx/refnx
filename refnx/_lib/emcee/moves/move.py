@@ -1,22 +1,15 @@
 # -*- coding: utf-8 -*-
 
-from __future__ import division, print_function
-
 import numpy as np
 
 __all__ = ["Move"]
 
 
 class Move(object):
-
     def tune(self, state, accepted):
         pass
 
-    def update(self,
-               old_state,
-               new_state,
-               accepted,
-               subset=None):
+    def update(self, old_state, new_state, accepted, subset=None):
         """Update a given subset of the ensemble with an accepted proposal
 
         Args:
@@ -45,7 +38,8 @@ class Move(object):
                 raise ValueError(
                     "If you start sampling with a given log_prob, "
                     "you also need to provide the current list of "
-                    "blobs at that position.")
+                    "blobs at that position."
+                )
             old_state.blobs[m1] = new_state.blobs[m2]
 
         return old_state
