@@ -180,3 +180,6 @@ Details of changes made to refnx
 - Components can be multiplied by an integer to make them repeat.
 - Add _open_mp_helpers to MANIFEST.in (gh381).
 - update bundled vendored emcee
+
+0.1.11
+------
