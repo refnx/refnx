@@ -10,16 +10,13 @@ General release instructions
 - git commit -a
 - git tag -a <tagname>
 - git push refnx <tagname>
-- git checkout -b maintenance/<tagname>
 - git commit -a
-- git push refnx maintenance/<tagname>
 - source activate dev3
 - python setup.py bdist_wheel sdist
 - twine upload dist/*
 
 Go into windows
 - update git repository
-- git checkout maintenance/<tagname>
 - git clean -xdf
 - activate dev3
 - python setup.py bdist_wheel
