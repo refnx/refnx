@@ -131,11 +131,15 @@ class PyTest(TestCommand):
         errno = pytest.main(shlex.split(self.pytest_args))
         sys.exit(errno)
 
+with open("README.md", "r") as fh:
+    long_description = fh.read()
 
 # refnx setup
 info = {
         'name': 'refnx',
         'description': 'Neutron and X-ray Reflectometry Analysis',
+        'long_description': long_description,
+        'long_description_content_type': "text/markdown",
         'author': 'Andrew Nelson',
         'author_email': 'andyfaff+refnx@gmail.com',
         'license': 'BSD',
