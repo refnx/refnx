@@ -35,7 +35,8 @@ from ._mcmc import (ProcessMCMCDialog, SampleMCMCDialog, _plots)
 import refnx
 from refnx.analysis import (CurveFitter, Objective,
                             Transform, GlobalObjective)
-from refnx.reflect import SLD, ReflectModel, Slab, Stack, Structure
+from refnx.reflect import (SLD, ReflectModel, Slab, Stack, Structure,
+                           MixedReflectModel)
 from refnx.dataset import Data1D
 from refnx.reflect._code_fragment import code_fragment
 from refnx._lib import unique, flatten, MapWrapper
@@ -328,20 +329,31 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
 
         # add bounds._logprob attribute to all parameter bounds (added in
         # v0.1.9)
+
+        # iterate through structures if model is a MixedReflectModel.
+        # v0.1.11
+
         from refnx.analysis.bounds import Interval
         for do in self.treeModel.datastore:
             model = do.model
-            s = model.structure
-            for component in s:
-                if not hasattr(component, '_interfaces'):
-                    component._interfaces = None
 
-            parameters = model.parameters
-            for parameter in flatten(parameters):
-                bnd = parameter.bounds
-                if isinstance(bnd, Interval) and not hasattr(bnd, '_logprob'):
-                    bnd._logprob = 0
-                    bnd._set_bounds(bnd.lb, bnd.ub)
+            if isinstance(model, MixedReflectModel):
+                strcs = [model.structures]
+            else:
+                strcs = [model.structure]
+
+            for s in strcs:
+                for component in s:
+                    if not hasattr(component, '_interfaces'):
+                        component._interfaces = None
+
+                parameters = model.parameters
+                for parameter in flatten(parameters):
+                    bnd = parameter.bounds
+                    if (isinstance(bnd, Interval) and
+                            not hasattr(bnd, '_logprob')):
+                        bnd._logprob = 0
+                        bnd._set_bounds(bnd.lb, bnd.ub)
 
     def apply_settings_to_params(self, params):
         for key in self.settings.__dict__:
