@@ -183,3 +183,4 @@ Details of changes made to refnx
 
 0.1.11
 ------
+- fixed a bug in the GUI that prevented load/save of mixed area models.
