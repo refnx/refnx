@@ -564,9 +564,11 @@ class Data1D(object):
         gnoise = np.random.randn(*shape)
 
         new_y = self._y + gnoise * self._y_err
+        data = list(self.data)
+        data.pop(1)
+        data.insert(1, new_y)
 
         dataset = Data1D()
-        dataset.data = self.data
-        dataset._y = new_y
+        dataset.data = data
 
         return dataset
