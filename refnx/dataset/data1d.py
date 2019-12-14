@@ -563,7 +563,7 @@ class Data1D(object):
         shape = self._y_err.shape
         gnoise = np.random.randn(*shape)
 
-        new_y = self._y + gnoise * self._y
+        new_y = self._y + gnoise * self._y_err
 
         dataset = Data1D()
         dataset.data = self.data
