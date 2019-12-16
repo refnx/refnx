@@ -19,6 +19,14 @@ EventFileHeader_Packed = namedtuple('EventFileHeader_Packed',
                                      'evt_stg_nbits_v', 'evt_stg_nbits_w',
                                       'evt_stg_nbits_wa', 'evt_stg_xy_signed'])
 
+EventFileHeader_Unpacked = namedtuple('EventFileHeader_Unpacked',
+                                    ['evt_stg_nbits_c', 'evt_stg_nbits_x',
+                                     'evt_stg_nbits_y', 'evt_stg_xy_signed',
+                                     'evt_stg_nbits_t', 'evt_stg_nbits_f',
+                                     'evt_stg_nbits_v', 'evt_stg_nbits_w',
+                                     'evt_stg_nbits_wa',
+                                     'evt_stg_nbits_spare'])
+
 def event_header(buffer):
     """
     Reads the header from an ANSTO event file
@@ -30,32 +38,54 @@ def event_header(buffer):
 
     Returns
     -------
-    base, packed : EventFileHeader_Base, EventFileHeader_Packed
+    base, {packed, unpacked}: EventFileHeader_Base,
+                            {EventFileHeader_Packed, EventFileHeader_Unpacked}
+
+    Notes
+    -----
+    One of {EventFileHeader_Packed, EventFileHeader_Unpacked} is returned
+    depending on whether the event file is packed or unpacked. This can be
+    determined by checking `base.pack_format`, 0 == PACKED, 1 == UNPACKED.
     """
     header_arr = np.frombuffer(buffer[:128], dtype='int32')
 
     base = EventFileHeader_Base(magic_number=header_arr[0],
                                 format_number=header_arr[1],
-                                anstohm_version = header_arr[2],
-                                pack_format = header_arr[3],
-                                oob_enabled = header_arr[4],
-                                clock_scale = header_arr[5])
+                                anstohm_version=header_arr[2],
+                                pack_format=header_arr[3],
+                                oob_enabled=header_arr[4],
+                                clock_scale=header_arr[5])
     assert(base.magic_number == 0x0DAE0DAE)
+    if base.pack_format == 0:
+        # PACKED
+        if header_arr[1] >= 0x00010002:
+            evt_stg_nbits_wa = header_arr[20]
+            evt_stg_xy_signed = header_arr[21]
+        else:
+            evt_stg_nbits_wa = 0
+            evt_stg_xy_signed = header_arr[20]
 
-    if header_arr[1] >= 0x00010002:
-        evt_stg_nbits_wa = header_arr[20]
-        evt_stg_xy_signed = header_arr[21]
-    else:
-        evt_stg_nbits_wa = 0
-        evt_stg_xy_signed = header_arr[20]
-
-    packed = EventFileHeader_Packed(evt_stg_nbits_x=header_arr[16],
-                            evt_stg_nbits_y=header_arr[17],
-                            evt_stg_nbits_v=header_arr[18],
-                            evt_stg_nbits_w=header_arr[19],
-                            evt_stg_nbits_wa=evt_stg_nbits_wa,
-                            evt_stg_xy_signed=evt_stg_xy_signed)
-    return base, packed
+        packed = EventFileHeader_Packed(evt_stg_nbits_x=header_arr[16],
+                                        evt_stg_nbits_y=header_arr[17],
+                                        evt_stg_nbits_v=header_arr[18],
+                                        evt_stg_nbits_w=header_arr[19],
+                                        evt_stg_nbits_wa=evt_stg_nbits_wa,
+                                        evt_stg_xy_signed=evt_stg_xy_signed)
+        return base, packed
+    elif base.pack_format == 1:
+        # UNPACKED
+        unpacked = EventFileHeader_Unpacked(
+            evt_stg_nbits_c=header_arr[16],
+            evt_stg_nbits_x=header_arr[17],
+            evt_stg_nbits_y=header_arr[18],
+            evt_stg_nbits_xy_signed=header_arr[19],
+            evt_stg_nbits_t=header_arr[20],
+            evt_stg_nbits_f=header_arr[21],
+            evt_stg_nbits_v=header_arr[22],
+            evt_stg_nbits_w=header_arr[23],
+            evt_stg_nbits_wa=header_arr[24],
+            evt_stg_nbits_spare=header_arr[25])
+        return base, unpacked
 
 
 @cython.boundscheck(False)
@@ -103,13 +133,17 @@ def _cevents(f,
         # buffer = fi.read()
 
     # read file header (base header then packed-format header)
-    hdr_base, hdr_packed = event_header(buffer)
-    if hdr_base.pack_format:
-        raise RuntimeError("only packed binary format is supported")
-
-    events, end_events = unpack_buffer(buffer, hdr_base, hdr_packed,
-                                       end_last_event=end_last_event,
-                                       max_frames=max_frames)
+    hdr_base, hdr_packing = event_header(buffer)
+    if hdr_base.pack_format == 0:
+        # PACKED binary
+        events, end_events = packed_buffer(buffer, hdr_base, hdr_packing,
+                                           end_last_event=end_last_event,
+                                           max_frames=max_frames)
+    elif hdr_base.pack_format == 1:
+        # UNPACKED binary
+        events, end_events = unpacked_buffer(buffer, hdr_base, hdr_packing,
+                                             end_last_event=end_last_event,
+                                             max_frames=max_frames)
 
     if auto_f:
         auto_f.close()
@@ -158,19 +192,18 @@ deprecated, FRAME_DEASSERT = -5 only on Fastcomtec P7888 DAE).
 
 @cython.boundscheck(False)
 @cython.cdivision(False)
-cpdef unpack_buffer(buffer,
+cpdef packed_buffer(buffer,
                     hdr_base,
                     hdr_packed,
                     int end_last_event=127,
                     max_frames=None,
                     def_clock_scale=1000, use_tx_chopper=False):
     """
-    Unpacks event data from packedbinary bytearray format for the ANSTO
+    Unpacks event data from PACKED binary bytearray format for the ANSTO
     Platypus instrument
 
     Parameters
     ----------
-
     buffer : bytearray-like
         A bytearray-like to read the events from.
     end_last_event : int
@@ -489,3 +522,77 @@ cpdef unpack_buffer(buffer,
              t_events[:num_events],
              y_events[:num_events],
              x_events[:num_events]), end_events[:num_events])
+
+
+@cython.boundscheck(False)
+@cython.cdivision(False)
+cpdef unpacked_buffer(buffer,
+                      hdr_base,
+                      hdr_unpacked,
+                      int end_last_event=127,
+                      max_frames=None,
+                      def_clock_scale=1000):
+    """
+    Unpacks event data from UNPACKED binary bytearray format for the ANSTO
+    Platypus instrument
+
+    Parameters
+    ----------
+    buffer : bytearray-like
+        A bytearray-like to read the events from.
+    end_last_event : int
+        The reading of event data starts from `end_last_event + 1`. The default
+        of 127 corresponds to a file header that is 128 bytes long.
+    max_frames : None, int
+        Stop reading the event file when have read this many frames.
+
+    Returns
+    -------
+    (f_events, t_events, y_events, x_events), end_events:
+        x_events, y_events, t_events and f_events are numpy arrays containing
+        the events. end_events is an array containing the byte offsets to the
+        end of the last successful event read from the file. Use this value to
+        extract more events from the same file at a future date.
+    """
+    sz_struct = np.array([getattr(hdr_unpacked, attr) for attr
+                          in EventFileHeader_Unpacked._fields])
+    if sz_struct % 8:
+        raise RuntimeError("Can only use 8 bit aligned UNPACKED event"
+                           " files")
+
+    if max_frames is None:
+        max_frames = ii32.max
+
+    cdef:
+        cdef int max_framesi = int(max_frames)
+        Py_ssize_t filepos = 0
+        Py_ssize_t buflen = len(buffer)
+
+        cnp.ndarray[cnp.int32_t, ndim=1] x_events = np.empty((buflen,), dtype=np.int32)
+        cnp.ndarray[cnp.int32_t, ndim=1] y_events = np.empty((buflen,), dtype=np.int32)
+        cnp.ndarray[cnp.int32_t, ndim=1] t_events = np.empty((buflen,), dtype=np.int32)
+        cnp.ndarray[cnp.uint32_t, ndim=1] f_events = np.empty((buflen,), dtype=np.uint32)
+        cnp.ndarray[cnp.uint32_t, ndim=1] end_events = np.empty((buflen,), dtype=np.uint32)
+
+        int[:] x_neutrons_buf = x_events
+        int[:] y_neutrons_buf = y_events
+        int[:] t_neutrons_buf = t_events
+        unsigned int[:] f_neutrons_buf = f_events
+        unsigned int[:] end_event_pos_buf = end_events
+
+        const unsigned char[:] bufv = memoryview(buffer)
+
+    """
+    Setup the clock_scale.  In format 0x00010001 this was not part of the
+    headers, hence a function argument is provided to allow it to be
+    specified manually. In the current format 0x00010002, clock_scale is
+    written to the header and need not be specified, unless some alternate
+    scale is needed.
+    """
+    if not hdr_base.clock_scale:
+        # old eventfile format did not have clock_scale...
+        scale_microsec = 1 / def_clock_scale
+    else:
+        scale_microsec = 1 / hdr_base.clock_scale
+
+    raise RuntimeError("Only packed format supported at this moment.")
