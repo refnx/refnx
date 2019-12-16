@@ -137,3 +137,13 @@ class TestEvent(object):
         #                                              y_bins,
         #                                              x_bins)
         # assert_equal(np.size(detector, 0), 1)
+
+    def test_monobloc_events(self):
+        # the event file changed when the ILL monobloc detector was installed
+        event_file_path = os.path.join(path,
+                                       'DAQ_2019-11-25T12-25-07',
+                                       'DATASET_0',
+                                       'EOS.bin')
+        data = event.events(event_file_path)
+        f, t, y, x = data[0]
+        assert len(t) == 71223
