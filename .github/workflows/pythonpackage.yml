@@ -32,12 +32,9 @@ jobs:
         # stop the build if there are Python syntax errors or undefined names
         flake8 --ignore=F401,W504 --count --show-source --statistics --exclude=refnx/_lib/emcee,refnx/reflect/_app/resources_rc.py refnx
     - name: setup xvfb
-      env:
-        DISPLAY: :99.0
       run: |
         sudo apt-get install xvfb
-        sh -e /etc/init.d/xvfb start
-        sleep 3
+        pip install pytest-xvfb
     - name: Test with pytest
       env:
         MPLBACKEND: agg
