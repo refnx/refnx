@@ -41,4 +41,4 @@ jobs:
       run: |
         pip install pytest
         # uses xvfb for GUI part of the test
-        pytest
+        xvfb-run pytest
