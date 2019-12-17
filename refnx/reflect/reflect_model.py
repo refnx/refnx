@@ -33,7 +33,8 @@ import scipy
 from scipy.interpolate import splrep, splev
 
 
-from refnx.analysis import (Parameters, Parameter, possibly_create_parameter)
+from refnx.analysis import (Parameters, Parameter, possibly_create_parameter,
+                            Transform)
 
 
 # some definitions for resolution smearing
@@ -922,3 +923,111 @@ class MixedReflectModel(object):
         self._parameters.extend([structure.parameters for structure
                                  in self._structures])
         return self._parameters
+
+
+class FresnelTransform(Transform):
+    """
+    Fresnel transform for data.
+
+    Divides experimental signal by reflectivity from an infinitely
+    sharp interface.
+
+    Parameters
+    ----------
+    sld_fronting: float
+        SLD of fronting medium
+    sld_backing: float
+        SLD of backing medium
+    dq : float, array-like optional
+        - `dq == 0`
+           no resolution smearing is employed.
+        - `dq` is a float
+           a constant dQ/Q resolution smearing is employed.  For 5% resolution
+           smearing supply 5.
+        - `dq` is array-like
+           the array contains the FWHM of a Gaussian approximated resolution
+           kernel. Point by point resolution smearing is employed.  Use this
+           option if dQ/Q varies across your dataset.
+
+    Notes
+    -----
+    Using a null reflectivity system (`sld_fronting == sld_backing`) will lead
+    to `ZeroDivisionError`.
+    If point-by-point resolution smearing is employed then a unique transform
+    must be created for each Objective. This is because the number of points in
+    `dq` must be the same as `x.size` when `FresnelTransform.transform` is
+    called.
+    """
+
+    def __init__(self, sld_fronting, sld_backing, dq=0):
+        self.form = 'Fresnel'
+
+        self.sld_fronting = sld_fronting
+        self.sld_backing = sld_backing
+        self.dq = dq
+
+    def __repr__(self):
+        # use repr for sld's because they could be `reflect.SLD` objects
+        return "FresnelTransform({0}, {1}, dq={2})".format(
+            repr(self.sld_fronting),
+            repr(self.sld_backing),
+            repr(self.dq))
+
+    def __call__(self, x, y, y_err=None, x_err=0):
+        """
+        Calculate the transformed data
+
+        Parameters
+        ----------
+        x : array-like
+            x-values
+        y : array-like
+            y-values
+        y_err : array-like
+            Uncertainties in `y` (standard deviation)
+        x_err : array-like
+            Uncertainties in `x` (*FWHM*)
+
+        Returns
+        -------
+        yt, et : tuple
+            The transformed data
+
+        """
+        return self.__transform(x, y, y_err=y_err)
+
+    def __transform(self, x, y, y_err=None):
+        r"""
+        Transform the data passed in
+
+        Parameters
+        ----------
+        x : array-like
+            x-values
+        y : array-like
+            y-values
+        y_err : array-like
+            Uncertainties in `y` (standard deviation)
+        x_err : array-like
+            Uncertainties in `x` (*FWHM*)
+
+        Returns
+        -------
+        yt, et : tuple
+            The transformed data
+        """
+        sld_fronting = complex(self.sld_fronting)
+        sld_backing = complex(self.sld_backing)
+
+        slabs = np.array([[0, sld_fronting.real, 0, 0],
+                          [0, sld_backing.real, 0, 0]])
+
+        fresnel = reflectivity(x, slabs, dq=self.dq)
+
+        yt = np.copy(y)
+        yt /= fresnel
+
+        if y_err is None:
+            return yt, None
+        else:
+            return yt, y_err / fresnel
