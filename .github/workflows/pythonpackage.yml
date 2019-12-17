@@ -1,6 +1,8 @@
 name: Lint + Test
 
-on: [push]
+on: 
+  - push
+  - pull_request
 
 jobs:
   build:
@@ -29,7 +31,9 @@ jobs:
         pip install flake8
         # stop the build if there are Python syntax errors or undefined names
         flake8 --ignore=F401,W504 --count --show-source --statistics --exclude=refnx/_lib/emcee,refnx/reflect/_app/resources_rc.py refnx
+    - run: sudo apt-get install xvfb
     - name: Test with pytest
       run: |
         pip install pytest
-        pytest
+        # uses xvfb for GUI part of the test
+        xvfb-run --auto-servernum pytest
