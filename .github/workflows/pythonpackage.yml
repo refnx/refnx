@@ -31,7 +31,13 @@ jobs:
         pip install flake8
         # stop the build if there are Python syntax errors or undefined names
         flake8 --ignore=F401,W504 --count --show-source --statistics --exclude=refnx/_lib/emcee,refnx/reflect/_app/resources_rc.py refnx
-    - run: sudo apt-get install xvfb
+    - name: setup xvfb
+      env:
+        DISPLAY: :99.0
+      run: |
+        sudo apt-get install xvfb
+        xvfb start
+        sleep 3
     - name: Test with pytest
       env:
         MPLBACKEND: agg
