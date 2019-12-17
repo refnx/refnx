@@ -26,7 +26,8 @@ from refnx.analysis import (Transform, Objective,
                             CurveFitter, Parameter, Interval,
                             Parameters)
 from refnx.reflect import (SLD, ReflectModel, MixedReflectModel,
-                           reflectivity, Structure, Slab)
+                           reflectivity, Structure, Slab,
+                           FresnelTransform)
 from refnx.dataset import ReflectDataset
 from refnx._lib import MapWrapper
 
@@ -717,6 +718,28 @@ class TestReflect(object):
 
         x = np.linspace(0.005, 0.3, 1000)
         assert_equal(r(x), model(x))
+
+    def test_FresnelTransform(self):
+        t = FresnelTransform(2.07, 6.36, dq=5)
+
+        slabs = np.array([[0, 2.07, 0, 0],
+                          [0, 6.36, 0, 0]])
+
+        q = np.linspace(0.01, 1.0, 1000)
+        r = reflectivity(q, slabs, dq=5)
+
+        rt, et = t(q, r)
+        assert_almost_equal(rt, 1.)
+
+        # test errors are transformed
+        rt, et = t(q, r, y_err=1.)
+        assert_almost_equal(et, 1. / r)
+
+        # reconstitute a repr'd transform and check it works
+        s = repr(t)
+        st = eval(s)
+        rt, et = t(q, r)
+        assert_almost_equal(rt, 1.)
 
 
 class Wrapper_fn(object):
