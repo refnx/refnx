@@ -185,3 +185,4 @@ Details of changes made to refnx
 ------
 - fixed a bug in the GUI that prevented load/save of mixed area models.
 - Fixed a bug in the resynthesis of data
+- fixed a bug in the loading of event data from the Platypus monobloc detector.
