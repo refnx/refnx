@@ -2,6 +2,8 @@ import os
 import warnings
 
 import numpy as np
+import h5py
+
 from numpy.testing import assert_equal
 import refnx.reduce.event as event
 from refnx.reduce import PlatypusNexus
@@ -137,3 +139,32 @@ class TestEvent(object):
         #                                              y_bins,
         #                                              x_bins)
         # assert_equal(np.size(detector, 0), 1)
+
+    def test_monobloc_events(self):
+        # the event file changed when the ILL monobloc detector was installed
+        event_file_path = os.path.join(self.path,
+                                       'DAQ_2019-11-25T12-25-07',
+                                       'DATASET_0',
+                                       'EOS.bin')
+        data = event.events(event_file_path)
+        f, t, y, x = data[0]
+        assert len(t) == 71223
+
+        x_bins = np.array([2.5, 28.5])
+        y_bins = np.linspace(-0.5, 1023.5, 1025)
+        t_bins = np.linspace(0, 40000, 1001)
+        frames = [np.arange(0, 57599, 1)]
+
+        detector, fbins = event.process_event_stream(data[0],
+                                                     frames,
+                                                     t_bins,
+                                                     y_bins,
+                                                     x_bins)
+        detector = np.squeeze(detector)
+
+        with h5py.File(os.path.join(self.path, 'PLP0046853.nx.hdf'), 'r') as g:
+            det = np.copy(g['entry1/data/hmm'])
+            det = np.squeeze(det)
+            assert det.shape == (1000, 1024)
+
+        assert_equal(np.sum(detector, 1), np.sum(det, 1))
