@@ -738,7 +738,7 @@ class TestReflect(object):
         # reconstitute a repr'd transform and check it works
         s = repr(t)
         st = eval(s)
-        rt, et = t(q, r)
+        rt, et = st(q, r)
         assert_almost_equal(rt, 1.)
 
 

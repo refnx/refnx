@@ -962,8 +962,8 @@ class FresnelTransform(Transform):
     def __init__(self, sld_fronting, sld_backing, dq=0):
         self.form = 'Fresnel'
 
-        self.sld_fronting = float(sld_fronting)
-        self.sld_backing = float(sld_backing)
+        self.sld_fronting = sld_fronting
+        self.sld_backing = sld_backing
         self.dq = dq
 
     def __repr__(self):
@@ -1014,8 +1014,11 @@ class FresnelTransform(Transform):
         yt, et : tuple
             The transformed data
         """
-        slabs = np.array([[0, self.sld_fronting, 0, 0],
-                          [0, self.sld_backing, 0, 0]])
+        sld_fronting = complex(self.sld_fronting)
+        sld_backing = complex(self.sld_backing)
+
+        slabs = np.array([[0, sld_fronting.real, 0, 0],
+                          [0, sld_backing.real, 0, 0]])
 
         fresnel = reflectivity(x, slabs, dq=self.dq)
 
