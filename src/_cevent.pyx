@@ -197,7 +197,7 @@ cpdef packed_buffer(buffer,
                     hdr_packed,
                     int end_last_event=127,
                     max_frames=None,
-                    def_clock_scale=1000, use_tx_chopper=False):
+                    def_clock_scale=1, use_tx_chopper=False):
     """
     Unpacks event data from PACKED binary bytearray format for the ANSTO
     Platypus instrument
@@ -229,11 +229,16 @@ cpdef packed_buffer(buffer,
         Py_ssize_t filepos = 0
         Py_ssize_t buflen = len(buffer)
 
-        cnp.ndarray[cnp.int32_t, ndim=1] x_events = np.empty((buflen,), dtype=np.int32)
-        cnp.ndarray[cnp.int32_t, ndim=1] y_events = np.empty((buflen,), dtype=np.int32)
-        cnp.ndarray[cnp.int32_t, ndim=1] t_events = np.empty((buflen,), dtype=np.int32)
-        cnp.ndarray[cnp.uint32_t, ndim=1] f_events = np.empty((buflen,), dtype=np.uint32)
-        cnp.ndarray[cnp.uint32_t, ndim=1] end_events = np.empty((buflen,), dtype=np.uint32)
+        cnp.ndarray[cnp.int32_t, ndim=1] x_events = np.empty((buflen,),
+                                                             dtype=np.int32)
+        cnp.ndarray[cnp.int32_t, ndim=1] y_events = np.empty((buflen,),
+                                                             dtype=np.int32)
+        cnp.ndarray[cnp.int32_t, ndim=1] t_events = np.empty((buflen,),
+                                                             dtype=np.int32)
+        cnp.ndarray[cnp.uint32_t, ndim=1] f_events = np.empty((buflen,),
+                                                              dtype=np.uint32)
+        cnp.ndarray[cnp.uint32_t, ndim=1] end_events = np.empty((buflen,),
+                                                                dtype=np.uint32)
 
         int[:] x_neutrons_buf = x_events
         int[:] y_neutrons_buf = y_events
@@ -248,13 +253,21 @@ cpdef packed_buffer(buffer,
     headers, hence a function argument is provided to allow it to be
     specified manually. In the current format 0x00010002, clock_scale is
     written to the header and need not be specified, unless some alternate
-    scale is needed.
+    scale is needed. clock_scale converts from hardware ticks to
+    nano-seconds.
+    BUG - 
+    TODO - DEC2019, CLOCK_SCALE is not being set correctly in the event file.
+    This is the responsibility of the DAE histogram server.
+    With the new CAEN digitiser CLOCK_SCALE should be 16, which is the number
+    of ns per hardware time step (tick).
     """
     if not hdr_base.clock_scale:
         # old eventfile format did not have clock_scale...
-        scale_microsec = 1 / def_clock_scale
+        scale_time = def_clock_scale
     else:
-        scale_microsec = 1 / hdr_base.clock_scale
+        # scale_time = 1 / hdr_base.clock_scale
+        # FAKE the CLOCK_SCALE until bug is fixed.
+        scale_time = 16
 
     # the initial time is not set correctly so wait until primary and auxillary
     # time have been reset before sending events
@@ -488,7 +501,8 @@ cpdef packed_buffer(buffer,
                     if primary_ok and auxillary_ok:
                         signed_x, signed_y = x, y
                         if evt_stg_xy_signed:
-                            # if x and y are signed then convert from uint32 to int32
+                            # if x and y are signed then convert from uint32
+                            # to int32
                             if x & (2**(nbits_val_neutron[0] - 1)):
                                 signed_x = - (<uint32_t>0x100000000 -
                                               (x | <uint32_t>0xFFFFFC00))
@@ -498,7 +512,10 @@ cpdef packed_buffer(buffer,
                         # add to the list
                         x_neutrons_buf[num_events] = signed_x
                         y_neutrons_buf[num_events] = signed_y
-                        t_neutrons_buf[num_events] = int(primary_time * scale_microsec)
+                        # convert from hardware ticks to ns, then to
+                        # microseconds
+                        t_neutrons_buf[num_events] = int((
+                            primary_time * scale_time * 0.001))
                         f_neutrons_buf[num_events] = frame_number
                         end_event_pos_buf[num_events] = end_last_event
 
