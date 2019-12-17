@@ -967,9 +967,11 @@ class FresnelTransform(Transform):
         self.dq = dq
 
     def __repr__(self):
-        return "FresnelTransform({0}, {1}, dq={2})".format(self.sld_fronting,
-                                                           self.sld_backing,
-                                                           repr(self.dq))
+        # use repr for sld's because they could be `reflect.SLD` objects
+        return "FresnelTransform({0}, {1}, dq={2})".format(
+            repr(self.sld_fronting),
+            repr(self.sld_backing),
+            repr(self.dq))
 
     def __call__(self, x, y, y_err=None, x_err=0):
         """

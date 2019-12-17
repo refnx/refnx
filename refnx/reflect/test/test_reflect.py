@@ -735,6 +735,11 @@ class TestReflect(object):
         rt, et = t(q, r, y_err=1.)
         assert_almost_equal(et, 1. / r)
 
+        # check that you can use an SLD object
+        t = FresnelTransform(SLD(2.07), SLD(6.36), dq=5)
+        rt, et = t(q, r)
+        assert_almost_equal(rt, 1.)
+
         # reconstitute a repr'd transform and check it works
         s = repr(t)
         st = eval(s)
