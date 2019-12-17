@@ -44,4 +44,4 @@ jobs:
       run: |
         pip install pytest
         # uses xvfb for GUI part of the test
-        xvfb-run --auto-servernum pytest
+        pytest
