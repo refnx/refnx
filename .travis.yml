@@ -52,10 +52,6 @@ before_install:
     - pip install uncertainties ptemcee corner nbsphinx jupyter_sphinx sphinx_rtd_theme tqdm pytest-qt periodictable
     - pip install git+https://github.com/pymc-devs/pymc3
 
-    # gradually expand flake8 to all of codebase
-    # added W504 July18 because it starts to raise error in 3.7
-    - flake8 --ignore=F401,W504 --exclude=refnx/_lib/emcee,refnx/reflect/_app/resources_rc.py refnx
-
     # enable OpenMP support for Apple-clang
     - |
       if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
