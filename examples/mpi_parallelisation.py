@@ -15,7 +15,6 @@ Usage
 -----
 mpiexec -n 4 python mpi_parallelisation.py
 """
-from __future__ import print_function, division
 
 # Start off by importing necessary packages
 import sys
