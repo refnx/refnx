@@ -44,6 +44,8 @@ before_install:
 
     # Useful for debugging any issues with conda
     - conda info -a
+    - conda config --add channels conda-forge
+    - conda config --set channel_priority strict
 
     - conda create --yes -n conda-refnx python=$PY
     - source activate conda-refnx
