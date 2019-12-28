@@ -187,3 +187,4 @@ Details of changes made to refnx
 - Fixed a bug in the resynthesis of data.
 - Fixed a bug in the loading of event data from the Platypus monobloc detector.
 - Added a FresnelTransform.
+- Document inequality constraints.
