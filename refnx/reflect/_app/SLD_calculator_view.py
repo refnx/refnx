@@ -25,7 +25,8 @@ class SLDcalculatorView(QtWidgets.QDialog):
         try:
             formula = pt.formula(self.ui.chemical_formula.text(),)
 
-        except (pyparsing.ParseException, TypeError, ValueError):
+        except (pyparsing.ParseException, TypeError, ValueError, KeyError):
+            # a problem was experience during parsing of the formula.
             return
 
         if not len(formula.atoms):

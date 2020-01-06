@@ -188,3 +188,4 @@ Details of changes made to refnx
 - Fixed a bug in the loading of event data from the Platypus monobloc detector.
 - Added a FresnelTransform.
 - Document inequality constraints.
+- Made refnx SLD calculator GUI more fault tolerant to incorrect formula.

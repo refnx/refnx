@@ -1,4 +1,3 @@
-from __future__ import division
 import os.path
 from collections import namedtuple
 import numpy as np
