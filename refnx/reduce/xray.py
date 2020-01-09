@@ -2,13 +2,13 @@ import numpy as np
 import refnx.util.general as general
 import refnx.util.ErrorProp as EP
 import xml.etree.ElementTree as et
-# from refnx.dataset import reflectdataset
+from refnx.dataset import ReflectDataset
 
 # mm
 XRR_BEAMWIDTH_SD = 0.019449
 
 
-def reduce_xrdml(f, bkg=None, scale=1, sample_length=None):
+def reduce_xrdml(f, bkg=None, scale=None, sample_length=None):
     """
     Reduces a Panalytical XRDML file
 
@@ -21,15 +21,17 @@ def reduce_xrdml(f, bkg=None, scale=1, sample_length=None):
         measurements. The background is assumed to have the same number of
         points as the specular reflectivity curve.  The backgrounds are
         averaged and subtracted from the specular reflectivity
-    scale: float
-        The direct beam intensity (cps)
+    scale: float, None
+        The direct beam intensity (cps). If `scale is None` then the dataset
+        is scaled by the point with maximum intensity below Q = 0.0318 (Q_crit
+        for Si at 8.048 keV).
     sample_length: None or float
         If None then no footprint correction is done. Otherwise the transverse
         footprint of the sample (mm).
 
     Returns
     -------
-    specular_q, specular_r, specular_dr: np.ndarray
+    dataset: refnx.dataset.ReflectDataset
         The specular reflectivity as a function of momentum transfer, Q.
     """
 
@@ -76,10 +78,19 @@ def reduce_xrdml(f, bkg=None, scale=1, sample_length=None):
     # divide by the direct beam intensity
     # assumes that the direct beam intensity is enormous, so the counting
     # uncertainties in the scale factor are negligible.
+    if scale is None:
+        # no scale factor was specifed, so normalise by highest intensity point
+        # below Qc for Silicon at 8.048 keV
+        below_qc = qz[qz < 0.0318]
+        if len(below_qc):
+            scale = np.max(reflectivity[qz < 0.0318])
+
     reflectivity /= scale
     reflectivity_s /= scale
 
-    return qz, reflectivity, reflectivity_s
+    d = ReflectDataset(data=(qz, reflectivity, reflectivity_s))
+
+    return d
 
 
 def parse_xrdml_file(f):

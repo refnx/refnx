@@ -189,3 +189,5 @@ Details of changes made to refnx
 - Added a FresnelTransform.
 - Document inequality constraints.
 - Made refnx SLD calculator GUI more fault tolerant to incorrect formula.
+- Add example Jupyter notebook for batch reduction.
+- Autoscaling for Panalytical XRR reduction.
