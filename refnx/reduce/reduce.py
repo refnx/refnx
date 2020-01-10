@@ -305,7 +305,7 @@ class PlatypusReduce(ReflectReduce):
         beampos_z_difference = (self.reflected_beam.m_beampos -
                                 self.direct_beam.m_beampos)
 
-        Y_PIXEL_SPACING = self.reflected_beam.cat.y_pixels_per_mm[0]
+        Y_PIXEL_SPACING = self.reflected_beam.cat.qz_pixel_size[0]
 
         total_z_deflection = (detector_z_difference +
                               beampos_z_difference * Y_PIXEL_SPACING)

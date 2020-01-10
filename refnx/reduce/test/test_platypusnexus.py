@@ -9,7 +9,8 @@ from numpy.testing import (assert_almost_equal, assert_, assert_equal,
 import h5py
 
 import refnx.reduce.platypusnexus as plp
-from refnx.reduce import PlatypusReduce, PlatypusNexus, basename_datafile
+from refnx.reduce import (PlatypusReduce, PlatypusNexus, SpatzNexus,
+                          basename_datafile)
 from refnx.reduce.peak_utils import gauss
 from refnx.reduce.platypusnexus import (fore_back_region, EXTENT_MULT,
                                         PIXEL_OFFSET, create_detector_norm)
@@ -312,3 +313,40 @@ class TestPlatypusNexus(object):
             norm, norm_sd = create_detector_norm(f, -3.5, 3.5, axis=3)
             assert_almost_equal(norm, test_norm, 6)
             assert_almost_equal(norm_sd, test_norm_sd, 6)
+
+
+class TestSpatzNexus(object):
+
+    @pytest.fixture(autouse=True)
+    def setup_method(self, tmpdir):
+        self.pth = os.path.dirname(os.path.abspath(__file__))
+
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore', RuntimeWarning)
+            pass
+            # self.f113 = PlatypusNexus(os.path.join(self.pth,
+            #                                        'PLP0011613.nx.hdf'))
+        self.cwd = os.getcwd()
+
+        self.tmpdir = tmpdir.strpath
+        os.chdir(self.tmpdir)
+        return 0
+
+    def teardown_method(self):
+        os.chdir(self.cwd)
+
+    def test_chod(self):
+        pass
+        # flight_length = self.f113.chod()
+        # assert_almost_equal(flight_length[0], 7141.413818359375)
+        # assert_almost_equal(flight_length[1], 808)
+        # flight_length = self.f641.chod(omega=1.8, twotheta=3.6)
+        # assert_almost_equal(flight_length[0], 7146.3567785516016)
+        # assert_almost_equal(flight_length[1], 808)
+
+    def test_phase_angle(self):
+        pass
+        # # TODO. Add more tests where the phase_angle isn't zero.
+        # phase_angle, master_opening = self.f641.phase_angle()
+        # assert_almost_equal(phase_angle, 0)
+        # assert_almost_equal(master_opening, 1.04719755)

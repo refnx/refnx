@@ -151,11 +151,9 @@ class Catalogue(object):
             # daq_dirname doesn't exist in this file
             d['daq_dirname'] = None
 
-        d['ss1vg'] = h5d['entry1/instrument/slits/first/vertical/gap'][:]
         d['ss2vg'] = h5d['entry1/instrument/slits/second/vertical/gap'][:]
         d['ss3vg'] = h5d['entry1/instrument/slits/third/vertical/gap'][:]
         d['ss4vg'] = h5d['entry1/instrument/slits/fourth/vertical/gap'][:]
-        d['ss1hg'] = h5d['entry1/instrument/slits/first/horizontal/gap'][:]
         d['ss2hg'] = h5d['entry1/instrument/slits/second/horizontal/gap'][:]
         d['ss3hg'] = h5d['entry1/instrument/slits/third/horizontal/gap'][:]
         d['ss4hg'] = h5d['entry1/instrument/slits/fourth/horizontal/gap'][:]
@@ -167,8 +165,6 @@ class Catalogue(object):
         d['slit3_distance'] = h5d[
             'entry1/instrument/parameters/slit3_distance'][:]
         d['collimation_distance'] = d['slit3_distance'] - d['slit2_distance']
-        d['dy'] = h5d[
-            'entry1/instrument/detector/longitudinal_translation'][:]
         d['scan_axis_name'] = (
             h5d['entry1/data/hmm'].attrs['axes'].decode('utf8').split(':')[0])
         d['scan_axis'] = h5d['entry1/data/%s' % d['scan_axis_name']][:]
@@ -205,15 +201,97 @@ class SpatzCatalogue(Catalogue):
         ----------
         h5d - HDF5 file handle
         """
-        super(PlatypusCatalogue, self).__init__(h5d)
+        super(SpatzCatalogue, self).__init__(h5d)
         self.prefix = 'SPZ'
 
         d = self.cat
+
+        # grab chopper settings
+        master, slave, frequency, phase = self._chopper_values(h5d)
+        d['master'] = master
+        # slave == 2 --> chopper 2
+        # slave == 3 --> chopper 2B
+        # slave == 4 --> chopper 3
+        d['slave'] = slave
+        d['frequency'] = frequency
+        d['phase'] = phase
+        # TODO These are dummy values, replace for SPZ
+        d['master_phase_offset'] = np.array([0.])
+        d['chopper2_phase_offset'] = np.array([0.])
+        d['chopper2B_phase_offset'] = np.array([0.])
+        d['chopper3_phase_offset'] = np.array([0.])
+
+        d['chopper2_distance'] = h5d[
+            'entry1/instrument/ch02_distance/pos'][:]
+        d['chopper2B_distance'] = h5d[
+            'entry1/instrument/parameters/ch02b_distance'][:]
+        d['chopper3_distance'] = h5d[
+            'entry1/instrument/parameters/ch03_distance'][:]
 
         # collimation parameters
         # first and second collimation slits
         d['ss_coll1'] = h5d['entry1/instrument/slits/second/horizontal/gap'][:]
         d['ss_coll2'] = h5d['entry1/instrument/slits/third/horizontal/gap'][:]
+
+        # sample omega, the nominal angle of incidence
+        d['omega'] = h5d['entry1/sample/som'][:]
+        d['som'] = d['omega']
+        # two theta value for detector arm.
+        d['twotheta'] = h5d['entry1/instrument/detector/detrot'][:]
+        d['detrot'] = d['omega']
+        d['dz'] = d['twotheta']
+
+        # detector longitudinal translation from sample
+        d['dy'] = (
+            h5d['entry1/instrument/detector/detector_distance/pos'][:] -
+            d['sample_distance'])
+
+        # logical size (mm) of 1 pixel in the scattering plane
+        d['qz_pixel_size'] = np.array([1.])
+
+    def _chopper_values(self, h5data):
+        """
+        Obtains chopper settings from NeXUS file
+
+        Parameters
+        ----------
+        h5data : HDF5 NeXUS file
+            datafile,
+
+        Returns
+        -------
+        master, slave, frequency, phase : float, float, float, float
+        """
+        master = 1
+        slave = 2
+
+        chopper1_speed = h5data['entry1/instrument/chopper/c01/spee'][:]
+        chopper2_speed = h5data['entry1/instrument/chopper/c02/spee'][:]
+        chopper2B_speed = h5data['entry1/instrument/chopper/c2b/spee'][:]
+        # chopper3_speed = h5data['entry1/instrument/chopper/c03/spee']
+
+        # ch1phase = h5data['entry1/instrument/chopper/c01/spha']
+        ch2phase = h5data['entry1/instrument/chopper/c02/spha'][:]
+        ch2Bphase = h5data['entry1/instrument/chopper/c2b/spha'][:]
+        # ch3phase = h5data['entry1/instrument/chopper/c03/spha']
+
+        if chopper1_speed[0] > 2:
+            master = 1
+            # TODO assert 2B is stationary?
+            # TODO 2B could be slave?
+            slave = 2
+            freq = chopper1_speed
+            phase = ch2phase
+        else:
+            master = 2
+            freq = chopper2_speed
+            # if slave == 3 refers to chopper 2B
+            assert (chopper2B_speed > 1).all()
+
+            slave = 3
+            phase = ch2Bphase
+
+        return master, slave, freq, phase
 
 
 class PlatypusCatalogue(Catalogue):
@@ -233,6 +311,9 @@ class PlatypusCatalogue(Catalogue):
         self.prefix = 'PLP'
 
         d = self.cat
+        d['ss1vg'] = h5d['entry1/instrument/slits/first/vertical/gap'][:]
+        d['ss1hg'] = h5d['entry1/instrument/slits/first/horizontal/gap'][:]
+
         d['omega'] = h5d['entry1/instrument/parameters/omega'][:]
         d['twotheta'] = h5d['entry1/instrument/parameters/twotheta'][:]
 
@@ -250,7 +331,7 @@ class PlatypusCatalogue(Catalogue):
             'entry1/instrument/parameters/chopper3_distance'][:]
         d['chopper4_distance'] = h5d[
             'entry1/instrument/parameters/chopper4_distance'][:]
-        d['chopper1_phase_offset'] = h5d[
+        d['master_phase_offset'] = h5d[
             'entry1/instrument/parameters/chopper1_phase_offset'][:]
         d['chopper2_phase_offset'] = h5d[
             'entry1/instrument/parameters/chopper2_phase_offset'][:]
@@ -268,18 +349,23 @@ class PlatypusCatalogue(Catalogue):
         d['ss_coll1'] = h5d['entry1/instrument/slits/second/vertical/gap'][:]
         d['ss_coll2'] = h5d['entry1/instrument/slits/third/vertical/gap'][:]
 
+        d['dy'] = h5d[
+            'entry1/instrument/detector/longitudinal_translation'][:]
         d['dz'] = h5d[
             'entry1/instrument/detector/vertical_translation'][:]
 
+        # pixel size (mm) in scattering plane. y_pixels_per_mm is incorrect,
+        # it should really be mm_per_y_pixel, but let's stick with the
+        # historical error
         try:
-            d['y_pixels_per_mm'] = h5d[
+            d['qz_pixel_size'] = h5d[
                 'entry1/instrument/parameters/y_pixels_per_mm'][:]
         except KeyError:
             # older PLP files didn't have y_pixels_per_mm, so use built in
             # value
             warnings.warn('Setting default pixel size to 1.177',
                           RuntimeWarning)
-            d['y_pixels_per_mm'] = np.array([1.177])
+            d['qz_pixel_size'] = np.array([1.177])
 
     def _chopper_values(self, h5data):
         """
@@ -924,12 +1010,12 @@ class ReflectNexus(object):
             """
             toffset - the time difference between the magnet pickup on the
             choppers (TTL pulse), which is situated in the middle of the
-            chopper window, and the trailing edge of chopper 1, which is
+            chopper window, and the trailing edge of master chopper, which is
             supposed to be time0.  However, if there is a phase opening this
             time offset has to be relocated slightly, as time0 is not at the
             trailing edge.
             """
-            t_offset = self.time_offset(cat.chopper1_phase_offset[0],
+            t_offset = self.time_offset(cat.master_phase_offset[0],
                                         master_opening,
                                         freq,
                                         phase_angle[idx],
@@ -1152,7 +1238,12 @@ class ReflectNexus(object):
         # put the detector positions and mode into the dictionary as well.
         detector_z = cat.dz
         detector_y = cat.dy
-        mode = cat.mode
+
+        try:
+            mode = cat.mode
+        except KeyError:
+            # no mode for SPZ
+            mode = None
 
         d = dict()
         d['path'] = cat.path
@@ -1377,7 +1468,7 @@ class PlatypusNexus(ReflectNexus):
         penumb = (np.sqrt((0.289 * 0.5 * (umb + penumb)) ** 2. + 2.2 ** 2) *
                   EXTENT_MULT * 2)
         # we need it in pixels
-        return penumb / cat.y_pixels_per_mm[0]
+        return penumb / cat.qz_pixel_size[0]
 
     def correct_for_gravity(self, detector, detector_sd, m_lambda,
                             lo_wavelength, hi_wavelength):
@@ -1391,7 +1482,7 @@ class PlatypusNexus(ReflectNexus):
             cat.dy,
             lo_wavelength,
             hi_wavelength,
-            y_pixels_per_mm=cat.y_pixels_per_mm[0])
+            qz_pixel_size=cat.qz_pixel_size[0])
 
     def time_offset(self, master_phase_offset, master_opening,
                     freq, phase_angle, z0, flight_distance,
@@ -1663,7 +1754,7 @@ class SpatzNexus(ReflectNexus):
         penumb = (np.sqrt((0.289 * 0.5 * (umb + penumb)) ** 2. + 2.2 ** 2) *
                   EXTENT_MULT * 2)
         # we need it in pixels
-        return penumb / cat.y_pixels_per_mm[0]
+        return penumb / cat.qz_pixel_size[0]
 
     def time_offset(self, master_phase_offset, master_opening,
                     freq, phase_angle, z0, flight_distance,
@@ -1673,7 +1764,14 @@ class SpatzNexus(ReflectNexus):
         return t_offset
         """
         # TODO FIX WITH PROPER SPATZ IMPLEMENTATION
-        pass
+
+        # calculate initial time offset
+        p_offset = 1.e6 * master_phase_offset / (2. * 360. * freq)
+        t_offset = (p_offset +
+                    1.e6 * master_opening / 2 / (2 * np.pi) / freq -
+                    1.e6 * phase_angle / (360 * 2 * freq))
+
+        return t_offset
 
     def phase_angle(self, scanpoint=0):
         """
@@ -1691,38 +1789,41 @@ class SpatzNexus(ReflectNexus):
             chopper in radians
         """
         # TODO FIX WITH PROPER SPATZ IMPLEMENTATION
-        pass
-        # cat = self.cat
-        # master = cat.master
-        # slave = cat.slave
-        # disc_phase = cat.phase[scanpoint]
-        # phase_angle = 0
-        #
-        # if master == 1:
-        #     phase_angle += 0.5 * O_C1d
-        #     master_opening = O_C1
-        # elif master == 2:
-        #     phase_angle += 0.5 * O_C2d
-        #     master_opening = O_C2
-        # elif master == 3:
-        #     phase_angle += 0.5 * O_C3d
-        #     master_opening = O_C3
-        #
-        # if slave == 2:
-        #     phase_angle += 0.5 * O_C2d
-        #     phase_angle += -disc_phase - cat.chopper2_phase_offset[0]
-        # elif slave == 3:
-        #     phase_angle += 0.5 * O_C3d
-        #     phase_angle += -disc_phase - cat.chopper3_phase_offset[0]
-        # elif slave == 4:
-        #     phase_angle += 0.5 * O_C4d
-        #     phase_angle += disc_phase - cat.chopper4_phase_offset[0]
 
-        # return phase_angle, master_opening
+        disc_openings = (26., 42., 43.5, 126.)
+        O_C1d, O_C2d, O_C2Bd, O_C3d = disc_openings
+        O_C1, O_C2, O_C2B, O_C3 = np.radians(disc_openings)
+
+        cat = self.cat
+        master = cat.master
+        slave = cat.slave
+        disc_phase = cat.phase[scanpoint]
+        phase_angle = 0
+
+        # TODO correct master opening
+        # TODO correct phase angle
+        master_opening = O_C1
+
+        if master == 1:
+            phase_angle += 0.5 * O_C1d
+            master_opening = O_C1
+        elif master == 2:
+            phase_angle += 0.5 * O_C2d
+            master_opening = O_C2
+
+        if slave == 2:
+            phase_angle += 0.5 * O_C2d
+            phase_angle += -disc_phase - cat.chopper2_phase_offset[0]
+        elif slave == 3:
+            # chopper 2B
+            phase_angle += 0.5 * O_C2Bd
+            phase_angle += -disc_phase - cat.chopper2B_phase_offset[0]
+
+        return phase_angle, master_opening
 
     def chod(self, omega=0., twotheta=0., scanpoint=0):
         """
-        Calculates the flight length of the neutrons in the Platypus
+        Calculates the flight length of the neutrons in the Spatz
         instrument.
 
         Parameters
@@ -1739,48 +1840,31 @@ class SpatzNexus(ReflectNexus):
         chod, d_cx : float, float
             Flight distance (mm), distance between chopper discs (mm)
         """
-        # TODO FIX WITH PROPER SPATZ IMPLEMENTATION
         chod = 0
 
         cat = self.cat
-        mode = cat.mode
 
         # Find out chopper pairing
         master = cat.master
         slave = cat.slave
 
-        d_cx = 0
-
         if master == 1:
-            chod = 0
+            if slave == 2:
+                d_cx = cat.chopper2_distance[0]
+            elif slave == 3:
+                d_cx = cat.chopper2B_distance[0]
+            else:
+                raise RuntimeError("Couldn't figure out chopper spacing")
+
         elif master == 2:
-            chod -= cat.chopper2_distance[0]
-            d_cx -= chod
-        elif master == 3:
-            chod -= cat.chopper3_distance[0]
-            d_cx -= chod
-        else:
-            raise ValueError("Chopper pairing should be one of '12', '13',"
-                             "'14', '23', '24', '34'")
+            if slave == 3:
+                d_cx = cat.chopper3_distance[0] - cat.chopper2B_distance[0]
+            else:
+                raise RuntimeError("Couldn't figure out chopper spacing")
 
-        if slave == 2:
-            chod -= cat.chopper2_distance[0]
-            d_cx += cat.chopper2_distance[0]
-        elif slave == 3:
-            chod -= cat.chopper3_distance[0]
-            d_cx += cat.chopper3_distance[0]
-        elif slave == 4:
-            chod -= cat.chopper4_distance[0]
-            d_cx += cat.chopper4_distance[0]
-
-        # start of flight length is midway between master and slave, but master
-        # may not necessarily be disk 1. However, all instrument lengths are
-        # measured from disk1
-        chod /= 2.
-
-        if mode in ['FOC', 'POL', 'MT', 'POLANAL']:
-            chod += cat.sample_distance[0]
-            chod += cat.dy[scanpoint] / np.cos(np.radians(twotheta))
+        # TODO correct chod based on chopper pairing and distance between
+        # choppers
+        chod = cat.sample_distance + cat.dy[scanpoint] - 0.5 * d_cx
 
         return chod, d_cx
 
@@ -2078,7 +2162,7 @@ def fore_back_region(beam_centre, beam_sd):
 
 def correct_for_gravity(detector, detector_sd, lamda, coll_distance,
                         sample_det, lo_wavelength, hi_wavelength,
-                        theta=0, y_pixels_per_mm=0.284):
+                        theta=0, qz_pixel_size=0.284):
     """
     Returns a gravity corrected yt plot, given the data, its associated errors,
     the wavelength corresponding to each of the time bins, and the trajectory
@@ -2104,8 +2188,8 @@ def correct_for_gravity(detector, detector_sd, lamda, coll_distance,
     theta : float
         Angle between second collimation slit, first collimation slit, and
         horizontal
-    y_pixels_per_mm: float
-        size of one y pixel on the detector
+    qz_pixel_size: float
+        size of one pixel on the detector
 
     Returns
     -------
@@ -2142,7 +2226,7 @@ def correct_for_gravity(detector, detector_sd, lamda, coll_distance,
                                        neutron_speeds[lopx: hipx],
                                        travel_distance)
 
-            model = 1000. * deflections / y_pixels_per_mm + tru_centre
+            model = 1000. * deflections / qz_pixel_size + tru_centre
             diff = model - centroids[lopx: hipx, 0]
             diff = diff[~np.isnan(diff)]
             return diff
@@ -2155,7 +2239,7 @@ def correct_for_gravity(detector, detector_sd, lamda, coll_distance,
         total_deflection = 1000. * y_deflection(trajectories,
                                                 neutron_speeds,
                                                 travel_distance)
-        total_deflection /= y_pixels_per_mm
+        total_deflection /= qz_pixel_size
 
         x_rebin = x_init.T + total_deflection[:, np.newaxis]
         for wavelength in range(np.size(detector, axis=1)):
