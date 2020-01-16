@@ -216,9 +216,12 @@ class SpatzCatalogue(Catalogue):
         d['frequency'] = frequency
         d['phase'] = phase
 
-        # -0.22 degrees measured for SPZ on 20200116
+        # SPZ offsets measured on 20200116
+        # with master = 1, slave = 2
+        # master_phase_offset = -25.90
+        # chopper2_phase_offset -0.22 degrees
         # TODO These are dummy values, replace for SPZ
-        d['master_phase_offset'] = np.array([0.])
+        d['master_phase_offset'] = np.array([-25.9])
         d['chopper2_phase_offset'] = np.array([-0.22])
         d['chopper2B_phase_offset'] = np.array([0.])
         d['chopper3_phase_offset'] = np.array([0.])
@@ -249,7 +252,8 @@ class SpatzCatalogue(Catalogue):
             d['sample_distance'])
 
         # logical size (mm) of 1 pixel in the scattering plane
-        d['qz_pixel_size'] = np.array([1.])
+        # TODO FIXME FOR SPATZ
+        d['qz_pixel_size'] = np.array([.3])
 
     def _chopper_values(self, h5data):
         """
@@ -1497,6 +1501,8 @@ class PlatypusNexus(ReflectNexus):
 
         # calculate initial time offset
         p_offset = 1.e6 * master_phase_offset / (2. * 360. * freq)
+        # assumes that the pickups/T_0 signal is issued from middle
+        # of chopper window
         t_offset = (p_offset +
                     1.e6 * master_opening / 2 / (2 * np.pi) / freq -
                     1.e6 * phase_angle / (360 * 2 * freq))
