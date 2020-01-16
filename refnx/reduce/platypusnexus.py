@@ -270,7 +270,7 @@ class SpatzCatalogue(Catalogue):
         chopper2B_speed = h5data['entry1/instrument/chopper/c2b/spee'][:]
         # chopper3_speed = h5data['entry1/instrument/chopper/c03/spee']
 
-        # ch1phase = h5data['entry1/instrument/chopper/c01/spha']
+        ch1phase = h5data['entry1/instrument/chopper/c01/spha']
         ch2phase = h5data['entry1/instrument/chopper/c02/spha'][:]
         ch2Bphase = h5data['entry1/instrument/chopper/c2b/spha'][:]
         # ch3phase = h5data['entry1/instrument/chopper/c03/spha']
@@ -281,7 +281,7 @@ class SpatzCatalogue(Catalogue):
             # TODO 2B could be slave?
             slave = 2
             freq = chopper1_speed
-            phase = ch2phase
+            phase = ch2phase - ch1phase
         else:
             master = 2
             freq = chopper2_speed
@@ -289,7 +289,7 @@ class SpatzCatalogue(Catalogue):
             assert (chopper2B_speed > 1).all()
 
             slave = 3
-            phase = ch2Bphase
+            phase = ch2Bphase - ch2phase
 
         return master, slave, freq, phase
 
