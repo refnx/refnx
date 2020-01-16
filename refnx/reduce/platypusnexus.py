@@ -215,9 +215,11 @@ class SpatzCatalogue(Catalogue):
         d['slave'] = slave
         d['frequency'] = frequency
         d['phase'] = phase
+
+        # -0.22 degrees measured for SPZ on 20200116
         # TODO These are dummy values, replace for SPZ
         d['master_phase_offset'] = np.array([0.])
-        d['chopper2_phase_offset'] = np.array([0.])
+        d['chopper2_phase_offset'] = np.array([-0.22])
         d['chopper2B_phase_offset'] = np.array([0.])
         d['chopper3_phase_offset'] = np.array([0.])
 
@@ -1573,6 +1575,12 @@ class PlatypusNexus(ReflectNexus):
             phase_angle += 0.5 * O_C3d
             master_opening = O_C3
 
+        # the phase_offset is defined as the angle you have to add to the
+        # calibrated blind opening to get to the nominal optically blind
+        # chopper opening.
+        # e.g. Nominal opening for optically may be at 42.5 degrees
+        # but the calibrated optically blind position is 42.2 degrees
+        # the chopper_phase_offset would be 0.3 degrees.
         if slave == 2:
             phase_angle += 0.5 * O_C2d
             phase_angle += -disc_phase - cat.chopper2_phase_offset[0]
@@ -1801,7 +1809,6 @@ class SpatzNexus(ReflectNexus):
         phase_angle = 0
 
         # TODO correct master opening
-        # TODO correct phase angle
         master_opening = O_C1
 
         if master == 1:
@@ -1811,6 +1818,12 @@ class SpatzNexus(ReflectNexus):
             phase_angle += 0.5 * O_C2d
             master_opening = O_C2
 
+        # the phase_offset is defined as the angle you have to add to the
+        # calibrated blind opening to get to the nominal optically blind
+        # chopper opening.
+        # e.g. Nominal opening for optically blind may be at 34 degrees
+        # but the calibrated optically blind position is 34.22 degrees
+        # the chopper_phase_offset would be -0.22 degrees.
         if slave == 2:
             phase_angle += 0.5 * O_C2d
             phase_angle += -disc_phase - cat.chopper2_phase_offset[0]
