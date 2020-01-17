@@ -1,4 +1,4 @@
-from refnx.reduce.reduce import PlatypusReduce, reduce_stitch
+from refnx.reduce.reduce import PlatypusReduce, SpatzReduce, reduce_stitch
 from refnx.reduce.platypusnexus import (catalogue, PlatypusNexus,
                                         number_datafile, basename_datafile,
                                         datafile_number, accumulate_HDF_files,
