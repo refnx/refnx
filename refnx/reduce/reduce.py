@@ -514,9 +514,6 @@ class SpatzReduce(ReflectReduce):
         n_tpixels = np.size(self.reflected_beam.m_topandtail, 1)
         n_ypixels = np.size(self.reflected_beam.m_topandtail, 2)
 
-        # calculate omega and two_theta depending on the mode.
-        mode = self.reflected_beam.mode
-
         # we'll need the wavelengths to calculate Q.
         wavelengths = self.reflected_beam.m_lambda
         m_twotheta = np.zeros((n_spectra, n_tpixels, n_ypixels))
@@ -532,26 +529,25 @@ class SpatzReduce(ReflectReduce):
         total_z_deflection = (detrot_difference +
                               beampos_z_difference * QZ_PIXEL_SPACING)
 
-        if mode in ['FOC', 'POL', 'POLANAL', 'MT']:
-            # omega_nom.shape = (N, )
-            omega_nom = np.degrees(np.arctan(total_z_deflection /
-                                   self.reflected_beam.detector_y) / 2.)
+        # omega_nom.shape = (N, )
+        omega_nom = np.degrees(np.arctan(total_z_deflection /
+                               self.reflected_beam.detector_y) / 2.)
 
-            omega_corrected = omega_nom[:, np.newaxis]
+        omega_corrected = omega_nom[:, np.newaxis]
 
-            m_twotheta += np.arange(n_ypixels * 1.)[np.newaxis, np.newaxis, :]
-            m_twotheta -= self.direct_beam.m_beampos[:, np.newaxis, np.newaxis]
-            m_twotheta *= QZ_PIXEL_SPACING
-            m_twotheta += detrot_difference
-            m_twotheta /= (
-                self.reflected_beam.detector_y[:, np.newaxis, np.newaxis])
-            m_twotheta = np.arctan(m_twotheta)
-            m_twotheta = np.degrees(m_twotheta)
+        m_twotheta += np.arange(n_ypixels * 1.)[np.newaxis, np.newaxis, :]
+        m_twotheta -= self.direct_beam.m_beampos[:, np.newaxis, np.newaxis]
+        m_twotheta *= QZ_PIXEL_SPACING
+        m_twotheta += detrot_difference
+        m_twotheta /= (
+            self.reflected_beam.detector_y[:, np.newaxis, np.newaxis])
+        m_twotheta = np.arctan(m_twotheta)
+        m_twotheta = np.degrees(m_twotheta)
 
-            # you may be reflecting upside down, reverse the sign.
-            upside_down = np.sign(omega_corrected[:, 0])
-            m_twotheta *= upside_down[:, np.newaxis, np.newaxis]
-            omega_corrected *= upside_down[:, np.newaxis]
+        # you may be reflecting upside down, reverse the sign.
+        upside_down = np.sign(omega_corrected[:, 0])
+        m_twotheta *= upside_down[:, np.newaxis, np.newaxis]
+        omega_corrected *= upside_down[:, np.newaxis]
 
         '''
         --Specular Reflectivity--
