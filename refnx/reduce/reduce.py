@@ -521,16 +521,16 @@ class SpatzReduce(ReflectReduce):
         wavelengths = self.reflected_beam.m_lambda
         m_twotheta = np.zeros((n_spectra, n_tpixels, n_ypixels))
 
-        detector_z_difference = (self.reflected_beam.detector_z -
-                                 self.direct_beam.detector_z)
+        detrot_difference = (self.reflected_beam.detector_z -
+                             self.direct_beam.detector_z)
 
         beampos_z_difference = (self.reflected_beam.m_beampos -
                                 self.direct_beam.m_beampos)
 
-        Y_PIXEL_SPACING = self.reflected_beam.cat.y_pixels_per_mm[0]
+        QZ_PIXEL_SPACING = self.reflected_beam.cat.qz_pixel_size[0]
 
-        total_z_deflection = (detector_z_difference +
-                              beampos_z_difference * Y_PIXEL_SPACING)
+        total_z_deflection = (detrot_difference +
+                              beampos_z_difference * QZ_PIXEL_SPACING)
 
         if mode in ['FOC', 'POL', 'POLANAL', 'MT']:
             # omega_nom.shape = (N, )
@@ -541,8 +541,8 @@ class SpatzReduce(ReflectReduce):
 
             m_twotheta += np.arange(n_ypixels * 1.)[np.newaxis, np.newaxis, :]
             m_twotheta -= self.direct_beam.m_beampos[:, np.newaxis, np.newaxis]
-            m_twotheta *= Y_PIXEL_SPACING
-            m_twotheta += detector_z_difference
+            m_twotheta *= QZ_PIXEL_SPACING
+            m_twotheta += detrot_difference
             m_twotheta /= (
                 self.reflected_beam.detector_y[:, np.newaxis, np.newaxis])
             m_twotheta = np.arctan(m_twotheta)

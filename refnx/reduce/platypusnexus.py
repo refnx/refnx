@@ -243,7 +243,7 @@ class SpatzCatalogue(Catalogue):
         d['som'] = d['omega']
         # two theta value for detector arm.
         d['twotheta'] = h5d['entry1/instrument/detector/detrot'][:]
-        d['detrot'] = d['omega']
+        d['detrot'] = d['twotheta']
         d['dz'] = d['twotheta']
 
         # detector longitudinal translation from sample
@@ -253,7 +253,7 @@ class SpatzCatalogue(Catalogue):
 
         # logical size (mm) of 1 pixel in the scattering plane
         # TODO FIXME FOR SPATZ
-        d['qz_pixel_size'] = np.array([.3])
+        d['qz_pixel_size'] = np.array([0.294])
 
     def _chopper_values(self, h5data):
         """
@@ -1765,7 +1765,7 @@ class SpatzNexus(ReflectNexus):
         # back to total foreground width
         # use average of umb and penumb, the calc assumes a rectangular
         # distribution
-        penumb = (np.sqrt((0.289 * 0.5 * (umb + penumb)) ** 2. + 2.2 ** 2) *
+        penumb = (np.sqrt((0.2289 * 0.5 * (umb + penumb)) ** 2. + 2.2 ** 2) *
                   EXTENT_MULT * 2)
         # we need it in pixels
         return penumb / cat.qz_pixel_size[0]
