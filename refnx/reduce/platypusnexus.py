@@ -1458,9 +1458,9 @@ class PlatypusNexus(ReflectNexus):
 
     def estimated_beam_width_at_detector(self, scanpoint):
         cat = self.cat
-        L23 = cat.slit3_distance[scanpoint] - cat.slit2_distance[0]
+        L23 = cat['collimation_distance']
         L3det = (cat.dy[scanpoint] +
-                 cat.sample_distance[0] - cat.slit3_distance[scanpoint])
+                 cat.sample_distance[0] - cat.slit3_distance[0])
         ebw = general.height_of_beam_after_dx(cat.ss2vg[scanpoint],
                                               cat.ss3vg[scanpoint],
                                               L23,
@@ -1750,11 +1750,10 @@ class SpatzNexus(ReflectNexus):
         return create_detector_norm(h5norm, y_bins[0], y_bins[1], axis=2)
 
     def estimated_beam_width_at_detector(self, scanpoint):
-        # TODO FIX WITH PROPER SPATZ IMPLEMENTATION
         cat = self.cat
-        L23 = cat.slit3_distance[scanpoint] - cat.slit2_distance[0]
+        L23 = d['collimation_distance']
         L3det = (cat.dy[scanpoint] +
-                 cat.sample_distance[0] - cat.slit3_distance[scanpoint])
+                 cat.sample_distance[0] - cat.slit3_distance[0])
         ebw = general.height_of_beam_after_dx(cat.ss2hg[scanpoint],
                                               cat.ss3hg[scanpoint],
                                               L23,
@@ -1765,7 +1764,7 @@ class SpatzNexus(ReflectNexus):
         # back to total foreground width
         # use average of umb and penumb, the calc assumes a rectangular
         # distribution
-        penumb = (np.sqrt((0.2289 * 0.5 * (umb + penumb)) ** 2. + 2.2 ** 2) *
+        penumb = (np.sqrt((0.289 * 0.5 * (umb + penumb)) ** 2. + 2.2 ** 2) *
                   EXTENT_MULT * 2)
         # we need it in pixels
         return penumb / cat.qz_pixel_size[0]
@@ -1813,9 +1812,6 @@ class SpatzNexus(ReflectNexus):
         slave = cat.slave
         disc_phase = cat.phase[scanpoint]
         phase_angle = 0
-
-        # TODO correct master opening
-        master_opening = O_C1
 
         if master == 1:
             phase_angle += 0.5 * O_C1d
@@ -1868,6 +1864,8 @@ class SpatzNexus(ReflectNexus):
         slave = cat.slave
 
         if master == 1:
+            chod = cat.sample_distance
+
             if slave == 2:
                 d_cx = cat.chopper2_distance[0]
             elif slave == 3:
@@ -1876,14 +1874,14 @@ class SpatzNexus(ReflectNexus):
                 raise RuntimeError("Couldn't figure out chopper spacing")
 
         elif master == 2:
+            chod = cat.sample_distance - cat.chopper2_distance[0]
             if slave == 3:
-                d_cx = cat.chopper3_distance[0] - cat.chopper2B_distance[0]
+                # chopper2B is the slave
+                d_cx = cat.chopper2B_distance[0] - cat.chopper2_distance[0]
             else:
                 raise RuntimeError("Couldn't figure out chopper spacing")
 
-        # TODO correct chod based on chopper pairing and distance between
-        # choppers
-        chod = cat.sample_distance + cat.dy[scanpoint] - 0.5 * d_cx
+        chod += cat.dy[scanpoint] - 0.5 * d_cx
 
         return chod, d_cx
 

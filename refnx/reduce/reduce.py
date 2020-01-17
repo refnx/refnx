@@ -521,28 +521,30 @@ class SpatzReduce(ReflectReduce):
         detrot_difference = (self.reflected_beam.detector_z -
                              self.direct_beam.detector_z)
 
-        beampos_z_difference = (self.reflected_beam.m_beampos -
-                                self.direct_beam.m_beampos)
-
+        # difference in pixels between reflected position and direct beam
+        # at the two different detrots.
         QZ_PIXEL_SPACING = self.reflected_beam.cat.qz_pixel_size[0]
+        dy = self.reflected_beam.detector_y
 
-        total_z_deflection = (detrot_difference +
-                              beampos_z_difference * QZ_PIXEL_SPACING)
+        # convert that pixel difference to angle (in small angle approximation)
+        # TODO check that the sign of this is correct
+        beampos_2theta_diff = (self.reflected_beam.m_beampos -
+                               self.direct_beam.m_beampos)
+        beampos_2theta_diff *= QZ_PIXEL_SPACING / dy[0]
+        beampos_2theta_diff = np.degrees(beampos_2theta_diff)
+
+        total_2theta_deflection = (detrot_difference +
+                                   beampos_2theta_diff)
 
         # omega_nom.shape = (N, )
-        omega_nom = np.degrees(np.arctan(total_z_deflection /
-                               self.reflected_beam.detector_y) / 2.)
-
+        omega_nom = total_2theta_deflection / 2.
         omega_corrected = omega_nom[:, np.newaxis]
 
         m_twotheta += np.arange(n_ypixels * 1.)[np.newaxis, np.newaxis, :]
         m_twotheta -= self.direct_beam.m_beampos[:, np.newaxis, np.newaxis]
-        m_twotheta *= QZ_PIXEL_SPACING
-        m_twotheta += detrot_difference
-        m_twotheta /= (
-            self.reflected_beam.detector_y[:, np.newaxis, np.newaxis])
-        m_twotheta = np.arctan(m_twotheta)
+        m_twotheta *= QZ_PIXEL_SPACING / dy[:, np.newaxis, np.newaxis]
         m_twotheta = np.degrees(m_twotheta)
+        m_twotheta += detrot_difference
 
         # you may be reflecting upside down, reverse the sign.
         upside_down = np.sign(omega_corrected[:, 0])
