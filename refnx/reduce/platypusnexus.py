@@ -1751,7 +1751,7 @@ class SpatzNexus(ReflectNexus):
 
     def estimated_beam_width_at_detector(self, scanpoint):
         cat = self.cat
-        L23 = d['collimation_distance']
+        L23 = cat['collimation_distance']
         L3det = (cat.dy[scanpoint] +
                  cat.sample_distance[0] - cat.slit3_distance[0])
         ebw = general.height_of_beam_after_dx(cat.ss2hg[scanpoint],
