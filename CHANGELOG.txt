@@ -191,3 +191,4 @@ Details of changes made to refnx
 - Made refnx SLD calculator GUI more fault tolerant to incorrect formula.
 - Add example Jupyter notebook for batch reduction.
 - Autoscaling for Panalytical XRR reduction.
+- Fixed bug in drag/drop within a Stack in the GUI.
