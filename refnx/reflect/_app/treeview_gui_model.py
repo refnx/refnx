@@ -1209,8 +1209,15 @@ class StackNode(Node):
             return self._data.name
 
     def remove_component(self, row):
+        strc = self._data
+        if len(strc) == 1:
+            # can't remove the last component in a stack.
+            return
+
         self._model.beginRemoveRows(self.index, row, row)
-        self.stack.pop(row)
+        # the first row in the GUI model is the repeats parnode, the second is
+        # the first component
+        self.stack.pop(row - 1)
         self.popChild(row)
         self._model.endRemoveRows()
 
@@ -1225,17 +1232,17 @@ class StackNode(Node):
         strc = self._data
         children = self._children
 
-        c = strc[src]
+        c = strc[src - 1]
         cn = children[src]
 
-        strc.insert(dst, c)
+        strc.insert(dst - 1, c)
         children.insert(dst, cn)
 
         if src < dst:
-            strc.pop(src)
+            strc.pop(src - 1)
             children.pop(src)
         else:
-            strc.pop(src + 1)
+            strc.pop(src)
             children.pop(src + 1)
 
         self._model.endMoveRows()
