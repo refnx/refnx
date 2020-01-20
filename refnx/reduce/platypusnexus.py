@@ -215,9 +215,14 @@ class SpatzCatalogue(Catalogue):
         d['slave'] = slave
         d['frequency'] = frequency
         d['phase'] = phase
+
+        # SPZ offsets measured on 20200116
+        # with master = 1, slave = 2
+        # master_phase_offset = -25.90
+        # chopper2_phase_offset -0.22 degrees
         # TODO These are dummy values, replace for SPZ
-        d['master_phase_offset'] = np.array([0.])
-        d['chopper2_phase_offset'] = np.array([0.])
+        d['master_phase_offset'] = np.array([-25.9])
+        d['chopper2_phase_offset'] = np.array([-0.22])
         d['chopper2B_phase_offset'] = np.array([0.])
         d['chopper3_phase_offset'] = np.array([0.])
 
@@ -238,7 +243,7 @@ class SpatzCatalogue(Catalogue):
         d['som'] = d['omega']
         # two theta value for detector arm.
         d['twotheta'] = h5d['entry1/instrument/detector/detrot'][:]
-        d['detrot'] = d['omega']
+        d['detrot'] = d['twotheta']
         d['dz'] = d['twotheta']
 
         # detector longitudinal translation from sample
@@ -247,7 +252,8 @@ class SpatzCatalogue(Catalogue):
             d['sample_distance'])
 
         # logical size (mm) of 1 pixel in the scattering plane
-        d['qz_pixel_size'] = np.array([1.])
+        # TODO FIXME FOR SPATZ
+        d['qz_pixel_size'] = np.array([0.294])
 
     def _chopper_values(self, h5data):
         """
@@ -270,7 +276,7 @@ class SpatzCatalogue(Catalogue):
         chopper2B_speed = h5data['entry1/instrument/chopper/c2b/spee'][:]
         # chopper3_speed = h5data['entry1/instrument/chopper/c03/spee']
 
-        # ch1phase = h5data['entry1/instrument/chopper/c01/spha']
+        ch1phase = h5data['entry1/instrument/chopper/c01/spha']
         ch2phase = h5data['entry1/instrument/chopper/c02/spha'][:]
         ch2Bphase = h5data['entry1/instrument/chopper/c2b/spha'][:]
         # ch3phase = h5data['entry1/instrument/chopper/c03/spha']
@@ -281,7 +287,7 @@ class SpatzCatalogue(Catalogue):
             # TODO 2B could be slave?
             slave = 2
             freq = chopper1_speed
-            phase = ch2phase
+            phase = ch2phase - ch1phase
         else:
             master = 2
             freq = chopper2_speed
@@ -289,7 +295,7 @@ class SpatzCatalogue(Catalogue):
             assert (chopper2B_speed > 1).all()
 
             slave = 3
-            phase = ch2Bphase
+            phase = ch2Bphase - ch2phase
 
         return master, slave, freq, phase
 
@@ -1452,9 +1458,9 @@ class PlatypusNexus(ReflectNexus):
 
     def estimated_beam_width_at_detector(self, scanpoint):
         cat = self.cat
-        L23 = cat.slit3_distance[scanpoint] - cat.slit2_distance[0]
+        L23 = cat.cat['collimation_distance']
         L3det = (cat.dy[scanpoint] +
-                 cat.sample_distance[0] - cat.slit3_distance[scanpoint])
+                 cat.sample_distance[0] - cat.slit3_distance[0])
         ebw = general.height_of_beam_after_dx(cat.ss2vg[scanpoint],
                                               cat.ss3vg[scanpoint],
                                               L23,
@@ -1495,6 +1501,8 @@ class PlatypusNexus(ReflectNexus):
 
         # calculate initial time offset
         p_offset = 1.e6 * master_phase_offset / (2. * 360. * freq)
+        # assumes that the pickups/T_0 signal is issued from middle
+        # of chopper window
         t_offset = (p_offset +
                     1.e6 * master_opening / 2 / (2 * np.pi) / freq -
                     1.e6 * phase_angle / (360 * 2 * freq))
@@ -1573,6 +1581,12 @@ class PlatypusNexus(ReflectNexus):
             phase_angle += 0.5 * O_C3d
             master_opening = O_C3
 
+        # the phase_offset is defined as the angle you have to add to the
+        # calibrated blind opening to get to the nominal optically blind
+        # chopper opening.
+        # e.g. Nominal opening for optically may be at 42.5 degrees
+        # but the calibrated optically blind position is 42.2 degrees
+        # the chopper_phase_offset would be 0.3 degrees.
         if slave == 2:
             phase_angle += 0.5 * O_C2d
             phase_angle += -disc_phase - cat.chopper2_phase_offset[0]
@@ -1736,11 +1750,10 @@ class SpatzNexus(ReflectNexus):
         return create_detector_norm(h5norm, y_bins[0], y_bins[1], axis=2)
 
     def estimated_beam_width_at_detector(self, scanpoint):
-        # TODO FIX WITH PROPER SPATZ IMPLEMENTATION
         cat = self.cat
-        L23 = cat.slit3_distance[scanpoint] - cat.slit2_distance[0]
+        L23 = cat.cat['collimation_distance']
         L3det = (cat.dy[scanpoint] +
-                 cat.sample_distance[0] - cat.slit3_distance[scanpoint])
+                 cat.sample_distance[0] - cat.slit3_distance[0])
         ebw = general.height_of_beam_after_dx(cat.ss2hg[scanpoint],
                                               cat.ss3hg[scanpoint],
                                               L23,
@@ -1800,10 +1813,6 @@ class SpatzNexus(ReflectNexus):
         disc_phase = cat.phase[scanpoint]
         phase_angle = 0
 
-        # TODO correct master opening
-        # TODO correct phase angle
-        master_opening = O_C1
-
         if master == 1:
             phase_angle += 0.5 * O_C1d
             master_opening = O_C1
@@ -1811,6 +1820,12 @@ class SpatzNexus(ReflectNexus):
             phase_angle += 0.5 * O_C2d
             master_opening = O_C2
 
+        # the phase_offset is defined as the angle you have to add to the
+        # calibrated blind opening to get to the nominal optically blind
+        # chopper opening.
+        # e.g. Nominal opening for optically blind may be at 34 degrees
+        # but the calibrated optically blind position is 34.22 degrees
+        # the chopper_phase_offset would be -0.22 degrees.
         if slave == 2:
             phase_angle += 0.5 * O_C2d
             phase_angle += -disc_phase - cat.chopper2_phase_offset[0]
@@ -1849,6 +1864,8 @@ class SpatzNexus(ReflectNexus):
         slave = cat.slave
 
         if master == 1:
+            chod = cat.sample_distance
+
             if slave == 2:
                 d_cx = cat.chopper2_distance[0]
             elif slave == 3:
@@ -1857,14 +1874,14 @@ class SpatzNexus(ReflectNexus):
                 raise RuntimeError("Couldn't figure out chopper spacing")
 
         elif master == 2:
+            chod = cat.sample_distance - cat.chopper2_distance[0]
             if slave == 3:
-                d_cx = cat.chopper3_distance[0] - cat.chopper2B_distance[0]
+                # chopper2B is the slave
+                d_cx = cat.chopper2B_distance[0] - cat.chopper2_distance[0]
             else:
                 raise RuntimeError("Couldn't figure out chopper spacing")
 
-        # TODO correct chod based on chopper pairing and distance between
-        # choppers
-        chod = cat.sample_distance + cat.dy[scanpoint] - 0.5 * d_cx
+        chod += cat.dy[scanpoint] - 0.5 * d_cx
 
         return chod, d_cx
 
