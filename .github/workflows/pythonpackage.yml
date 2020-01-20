@@ -33,6 +33,7 @@ jobs:
         flake8 --ignore=F401,W504 --count --show-source --statistics --exclude=refnx/_lib/emcee,refnx/reflect/_app/resources_rc.py refnx
     - name: setup xvfb
       run: |
+        sudo apt-get update
         sudo apt-get install xvfb qt5-default
     - name: Test with pytest
       env:
