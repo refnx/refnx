@@ -390,8 +390,8 @@ class Objective(BaseObjective):
         """
         # TODO reduced chisqr? include z-scores for parameters? DOF?
         self.setp(pvals)
-
-        return np.sum(self.residuals(None)**2)
+        res = self.residuals(None)
+        return np.dot(res, res)
 
     @property
     def parameters(self):
