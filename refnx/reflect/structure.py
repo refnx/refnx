@@ -1047,7 +1047,7 @@ class Slab(Component):
         thickness of slab (Angstrom)
     sld : refnx.reflect.Scatterer, complex, or float
         (complex) SLD of film (/1e-6 Angstrom**2)
-    rough : float
+    rough : refnx.analysis.Parameter or float
         roughness on top of this slab (Angstrom)
     name : str
         Name of this slab
