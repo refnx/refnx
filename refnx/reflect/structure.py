@@ -1062,16 +1062,17 @@ class Slab(Component):
     def __init__(self, thick, sld, rough, name='', vfsolv=0, interface=None):
         super(Slab, self).__init__(name=name)
         self.thick = possibly_create_parameter(thick,
-                                               name='%s - thick' % name)
+                                               name=f'{name} - thick')
         if isinstance(sld, Scatterer):
             self.sld = sld
         else:
             self.sld = SLD(sld)
         self.rough = possibly_create_parameter(rough,
-                                               name='%s - rough' % name)
+                                               name=f'{name} - rough')
         self.vfsolv = (
             possibly_create_parameter(vfsolv,
-                                      name='%s - volfrac solvent' % name))
+                                      name=f'{name} - volfrac solvent'))
+        self.vfsolv.bounds = (0., 1.)
 
         p = Parameters(name=self.name)
         p.extend([self.thick])
@@ -1082,8 +1083,9 @@ class Slab(Component):
         self.interfaces = interface
 
     def __repr__(self):
-        return ("Slab({thick!r}, {sld!r}, {rough!r},"
-                " name={name!r}, vfsolv={vfsolv!r})".format(**self.__dict__))
+        return (f"Slab({self.thick!r}, {self.sld!r}, {self.rough!r},"
+                f" name={self.name!r}, vfsolv={self.vfsolv!r},"
+                f" interface={self.interfaces!r})")
 
     def __str__(self):
         # sld = repr(self.sld)
@@ -1108,6 +1110,117 @@ class Slab(Component):
         Slab representation of this component. See :class:`Component.slabs`
         """
         sldc = complex(self.sld)
+        return np.array([[self.thick.value,
+                          sldc.real,
+                          sldc.imag,
+                          self.rough.value,
+                          self.vfsolv.value]])
+
+
+class MixedSlab(Component):
+    """
+    A slab component made of several components
+
+    Parameters
+    ----------
+    thick : refnx.analysis.Parameter or float
+        thickness of slab (Angstrom)
+    sld_list : sequence of refnx.reflect.Scatterer, complex, or float
+        Sequence of (complex) SLDs that are contained in film
+        (/1e-6 Angstrom**2)
+    vf_list : sequence of refnx.analysis.Parameter or float
+        relative volume fractions of each of the materials contained in the
+        film.
+    rough : refnx.analysis.Parameter or float
+        roughness on top of this slab (Angstrom)
+    name : str
+        Name of this slab
+    vfsolv : refnx.analysis.Parameter or float
+        Volume fraction of solvent [0, 1]
+    interface : {:class:`Interface`, None}, optional
+        The type of interfacial roughness associated with the Slab.
+        If `None`, then the default interfacial roughness is an Error
+        function (also known as Gaussian roughness).
+
+    Notes
+    -----
+    The SLD of this Slab is calculated using the normalised volume fractions of
+    each of the constituent Scatterers:
+    `np.sum([complex(sld) * vf / np.sum(vf_list) for sld, vf in
+     zip(sld_list, vf_list)])`. The overall SLD then takes into account the
+     volume fraction of solvent, `vfsolv`.
+    """
+
+    def __init__(self, thick, sld_list, vf_list, rough, name='', vfsolv=0,
+                 interface=None):
+        super(MixedSlab, self).__init__(name=name)
+        self.thick = possibly_create_parameter(thick,
+                                               name='%s - thick' % name)
+
+        self.sld = []
+        self.vf = []
+        self._sld_parameters = Parameters(name=f"{name} - slds")
+        self._vf_parameters = Parameters(name=f"{name} - volfracs")
+
+        i = 0
+        for s, v in zip(sld_list, vf_list):
+            if isinstance(s, Scatterer):
+                self.sld.append(s)
+            else:
+                self.sld.append(SLD(s))
+
+            self._sld_parameters.append(self.sld[-1].parameters)
+
+            vf = possibly_create_parameter(v,
+                                           name=f'vf{i} - {name}')
+            vf.bounds = (0., 1.)
+            self.vf.append(vf)
+            self._vf_parameters.append(vf)
+            i += 1
+
+        self.vfsolv = (
+            possibly_create_parameter(vfsolv,
+                                      name=f'{name} - volfrac solvent'))
+        self.vfsolv.bounds = (0., 1.)
+        self.rough = possibly_create_parameter(rough,
+                                               name=f'{name} - rough')
+
+        p = Parameters(name=self.name)
+        p.append(self.thick)
+        p.extend(self._sld_parameters)
+        p.extend(self._vf_parameters)
+        p.extend([self.vfsolv, self.rough])
+
+        self._parameters = p
+        self.interfaces = interface
+
+    def __repr__(self):
+        return (f"MixedSlab({self.thick!r}, {self.sld!r}, {self.vf!r},"
+                f" {self.rough!r}, vfsolv={self.vfsolv!r}, name={self.name!r},"
+                f" interface={self.interfaces!r})")
+
+    def __str__(self):
+        return str(self.parameters)
+
+    @property
+    def parameters(self):
+        """
+        :class:`refnx.analysis.Parameters` associated with this component
+
+        """
+        self._parameters.name = self.name
+        return self._parameters
+
+    def slabs(self, structure=None):
+        """
+        Slab representation of this component. See :class:`Component.slabs`
+        """
+        vfs = np.array(self._vf_parameters)
+        sum_vfs = np.sum(vfs)
+
+        sldc = np.sum([complex(sld) * vf / sum_vfs for sld, vf in
+                       zip(self.sld, vfs)])
+
         return np.array([[self.thick.value,
                           sldc.real,
                           sldc.imag,

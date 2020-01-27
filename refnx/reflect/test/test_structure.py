@@ -6,7 +6,8 @@ from numpy.testing import (assert_almost_equal, assert_equal, assert_,
 from scipy.stats import cauchy
 from refnx._lib import flatten
 from refnx.reflect import (SLD, Structure, Spline, Slab, Stack, Erf,
-                           Linear, Exponential, Interface, MaterialSLD)
+                           Linear, Exponential, Interface, MaterialSLD,
+                           MixedSlab)
 from refnx.reflect.structure import _profile_slicer
 from refnx.analysis import Parameter, Interval, Parameters
 
@@ -83,6 +84,31 @@ class TestStructure(object):
         # because len(c.slabs()) = 1
         with pytest.raises(ValueError):
             c.interfaces = [Erf(), Erf()]
+
+    def test_mixed_slab(self):
+        m = MixedSlab(10., [1, 2 + 0.1j, 3. + 1j], [0.1, 0.2, 0.3], 10.,
+                      vfsolv=0.1, interface=Linear(), name='pop')
+        slabs = m.slabs()
+        assert_allclose(slabs[0, 0], 10.)
+
+        assert_allclose(slabs[0, 1], 2.3333333333333333)
+        assert_allclose(slabs[0, 2], 0.5333333333333333)
+        assert_allclose(slabs[0, 3], 10.)
+        assert_allclose(slabs[0, 4], 0.1)
+        assert_equal(float(m.vfsolv), 0.1)
+        assert m.name == 'pop'
+
+        # test the repr
+        q = eval(repr(m))
+        slabs = q.slabs()
+        assert_allclose(slabs[0, 0], 10.)
+
+        assert_allclose(slabs[0, 1], 2.3333333333333333)
+        assert_allclose(slabs[0, 2], 0.5333333333333333)
+        assert_allclose(slabs[0, 3], 10.)
+        assert_allclose(slabs[0, 4], 0.1)
+
+        assert_equal(float(q.vfsolv), 0.1)
 
     def test_micro_slab(self):
         # test micro-slab representation by calculating reflectivity from a
@@ -214,12 +240,14 @@ class TestStructure(object):
         p = SLD(5 + 1j)
         t = p(10.5, 3.)
         t.vfsolv = 0.1
+        t.interfaces = Linear()
         q = eval(repr(t))
         assert(isinstance(q, Slab))
         assert_equal(float(q.thick), 10.5)
         assert_equal(float(t.sld.real), 5)
         assert_equal(float(t.sld.imag), 1)
         assert_equal(float(q.vfsolv), 0.1)
+        assert isinstance(q.interfaces, Linear)
 
         t.name = 'pop'
         q = eval(repr(t))
