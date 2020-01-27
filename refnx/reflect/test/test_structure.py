@@ -86,8 +86,8 @@ class TestStructure(object):
             c.interfaces = [Erf(), Erf()]
 
     def test_mixed_slab(self):
-        m = MixedSlab(10., [1, 2+0.1j, 3.+1j], [0.1, 0.2, 0.3], 10., vfsolv=0.1,
-                      interface=Linear(), name='pop')
+        m = MixedSlab(10., [1, 2 + 0.1j, 3. + 1j], [0.1, 0.2, 0.3], 10.,
+                      vfsolv=0.1, interface=Linear(), name='pop')
         slabs = m.slabs()
         assert_allclose(slabs[0, 0], 10.)
 
