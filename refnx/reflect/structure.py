@@ -896,7 +896,7 @@ class Component(object):
 
         Parameters
         ----------
-        other: refnx.reflect.Structure`, refnx.reflect.Component
+        other: refnx.reflect.Structure, refnx.reflect.Component
             Combines with this component to make a Structure
 
         Returns
@@ -1045,7 +1045,7 @@ class Slab(Component):
     ----------
     thick : refnx.analysis.Parameter or float
         thickness of slab (Angstrom)
-    sld : refnx.reflect.Scatterer, complex, or float
+    sld : :class:`refnx.reflect.Scatterer`, complex, or float
         (complex) SLD of film (/1e-6 Angstrom**2)
     rough : refnx.analysis.Parameter or float
         roughness on top of this slab (Angstrom)
@@ -1125,7 +1125,7 @@ class MixedSlab(Component):
     ----------
     thick : refnx.analysis.Parameter or float
         thickness of slab (Angstrom)
-    sld_list : sequence of refnx.reflect.Scatterer, complex, or float
+    sld_list : sequence of {refnx.reflect.Scatterer, complex, float}
         Sequence of (complex) SLDs that are contained in film
         (/1e-6 Angstrom**2)
     vf_list : sequence of refnx.analysis.Parameter or float

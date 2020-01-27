@@ -16,6 +16,7 @@ dependencies:
   - h5py
   - numpydoc
   - pandas
+  - pip
   - pip:
     - nbsphinx
     - jupyter-sphinx
