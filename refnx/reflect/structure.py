@@ -1146,9 +1146,12 @@ class MixedSlab(Component):
     -----
     The SLD of this Slab is calculated using the normalised volume fractions of
     each of the constituent Scatterers:
-    `np.sum([complex(sld) * vf / np.sum(vf_list) for sld, vf in
-     zip(sld_list, vf_list)])`. The overall SLD then takes into account the
-     volume fraction of solvent, `vfsolv`.
+
+    >>> np.sum([complex(sld) * vf / np.sum(vf_list) for sld, vf in
+    ...         zip(sld_list, vf_list)]).
+
+    The overall SLD then takes into account the volume fraction of solvent,
+    `vfsolv`.
     """
 
     def __init__(self, thick, sld_list, vf_list, rough, name='', vfsolv=0,
