@@ -192,3 +192,5 @@ Details of changes made to refnx
 - Add example Jupyter notebook for batch reduction.
 - Autoscaling for Panalytical XRR reduction.
 - Fixed bug in drag/drop within a Stack in the GUI.
+- Added a MixedSlab Component which is constituted from several individual
+  Scatterers. The SLD of the MixedSlab is weighted by their volume fractions.
