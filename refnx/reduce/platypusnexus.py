@@ -72,7 +72,7 @@ def catalogue(start, stop, data_folder=None, prefix='PLP'):
     if prefix == 'PLP':
         info += ['ss1vg', 'ss2vg', 'ss3vg', 'ss4vg']
     elif prefix == 'SPZ':
-        info += ['ss1hg', 'ss2hg', 'ss3hg', 'ss4hg']
+        info += ['ss2hg', 'ss3hg', 'ss4hg']
 
     info += ['omega', 'twotheta', 'total_counts', 'bm1_counts', 'time',
              'daq_dirname', 'start_time']
