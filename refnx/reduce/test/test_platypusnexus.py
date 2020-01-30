@@ -10,7 +10,7 @@ import h5py
 
 import refnx.reduce.platypusnexus as plp
 from refnx.reduce import (PlatypusReduce, PlatypusNexus, SpatzNexus,
-                          basename_datafile)
+                          basename_datafile, catalogue)
 from refnx.reduce.peak_utils import gauss
 from refnx.reduce.platypusnexus import (fore_back_region, EXTENT_MULT,
                                         PIXEL_OFFSET, create_detector_norm)
@@ -350,3 +350,9 @@ class TestSpatzNexus(object):
         # phase_angle, master_opening = self.f641.phase_angle()
         # assert_almost_equal(phase_angle, 0)
         # assert_almost_equal(master_opening, 1.04719755)
+
+
+def test_catalogue():
+    pth = os.path.dirname(os.path.abspath(__file__))
+    catalogue(0, 10000000, data_folder=pth, prefix='PLP')
+    catalogue(0, 10000000, data_folder=pth, prefix='SPZ')
