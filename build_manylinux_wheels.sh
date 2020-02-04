@@ -3,12 +3,12 @@ set -e -x
 
 # docker run --rm -it -v $(pwd):/io quay.io/pypa/manylinux2010_x86_64 /bin/bash
 # you need to export PLAT so that auditwheel works
- export PLAT=manylinux2010_x86_64
- cd io
- bash build_manylinux_wheels.sh
+# export PLAT=manylinux2010_x86_64
+# cd /io
+# bash build_manylinux_wheels.sh
 
 # Compile wheels
-for PYBIN in /opt/python/cp3[5-9]-cp*/bin; do
+for PYBIN in /opt/python/cp3[6-9]-cp*/bin; do
   "${PYBIN}/pip" install numpy cython
   "${PYBIN}/pip" wheel /io/ -w wheelhouse/
 done
@@ -20,7 +20,7 @@ done
 
 # Install packages and test
 yum install hdf5-devel
-for PYBIN in /opt/python/cp3[5-9]-cp*/bin; do
+for PYBIN in /opt/python/cp3[6-9]-cp*/bin; do
   "${PYBIN}/pip" install scipy matplotlib pytest corner uncertainties h5py xlrd periodictable pandas
   "${PYBIN}/pip" install refnx --no-index -f /io/wheelhouse
   ${PYBIN}/python setup.py test -a refnx/analysis

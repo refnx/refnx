@@ -194,3 +194,6 @@ Details of changes made to refnx
 - Fixed bug in drag/drop within a Stack in the GUI.
 - Added a MixedSlab Component which is constituted from several individual
   Scatterers. The SLD of the MixedSlab is weighted by their volume fractions.
+
+0.1.12
+------
