@@ -725,6 +725,8 @@ def reduce_stitch(reflect_list, direct_list, background_list=None,
 
     if prefix == 'PLP':
         reducer_klass = PlatypusReduce
+    elif prefix == 'SPZ':
+        reducer_klass = SpatzReduce
     else:
         raise ValueError("Incorrect prefix specified")
 
