@@ -512,11 +512,11 @@ class SpatzReduce(ReflectReduce):
         """
         n_spectra = self.reflected_beam.n_spectra
         n_tpixels = np.size(self.reflected_beam.m_topandtail, 1)
-        n_ypixels = np.size(self.reflected_beam.m_topandtail, 2)
+        n_xpixels = np.size(self.reflected_beam.m_topandtail, 2)
 
         # we'll need the wavelengths to calculate Q.
         wavelengths = self.reflected_beam.m_lambda
-        m_twotheta = np.zeros((n_spectra, n_tpixels, n_ypixels))
+        m_twotheta = np.zeros((n_spectra, n_tpixels, n_xpixels))
 
         detrot_difference = (self.reflected_beam.detector_z -
                              self.direct_beam.detector_z)
@@ -527,9 +527,10 @@ class SpatzReduce(ReflectReduce):
         dy = self.reflected_beam.detector_y
 
         # convert that pixel difference to angle (in small angle approximation)
-        # TODO check that the sign of this is correct
-        beampos_2theta_diff = (self.reflected_beam.m_beampos -
-                               self.direct_beam.m_beampos)
+        # higher `som` leads to lower m_beampos. i.e. higher two theta
+        # is at lower pixel values
+        beampos_2theta_diff = -(self.reflected_beam.m_beampos -
+                                self.direct_beam.m_beampos)
         beampos_2theta_diff *= QZ_PIXEL_SPACING / dy[0]
         beampos_2theta_diff = np.degrees(beampos_2theta_diff)
 
@@ -540,9 +541,11 @@ class SpatzReduce(ReflectReduce):
         omega_nom = total_2theta_deflection / 2.
         omega_corrected = omega_nom[:, np.newaxis]
 
-        m_twotheta += np.arange(n_ypixels * 1.)[np.newaxis, np.newaxis, :]
+        m_twotheta += np.arange(n_xpixels * 1.)[np.newaxis, np.newaxis, :]
         m_twotheta -= self.direct_beam.m_beampos[:, np.newaxis, np.newaxis]
-        m_twotheta *= QZ_PIXEL_SPACING / dy[:, np.newaxis, np.newaxis]
+        # minus sign in following line because higher two theta is at lower
+        # pixel values
+        m_twotheta *= -QZ_PIXEL_SPACING / dy[:, np.newaxis, np.newaxis]
         m_twotheta = np.degrees(m_twotheta)
         m_twotheta += detrot_difference
 
