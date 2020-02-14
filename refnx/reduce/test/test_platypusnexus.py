@@ -353,7 +353,7 @@ class TestSpatzNexus(object):
         assert_allclose(phase_angle, 0, atol=1e-5)
 
         toff = self.f342.time_offset(-25.90, np.radians(26),
-                    25, 0., 479.9536, 8062.0232, None)
+                                     25, 0., 479.9536, 8062.0232, None)
         assert_allclose(toff, 5.5555555555555)
 
 
