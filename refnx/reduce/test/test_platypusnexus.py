@@ -323,9 +323,8 @@ class TestSpatzNexus(object):
 
         with warnings.catch_warnings():
             warnings.simplefilter('ignore', RuntimeWarning)
-            pass
-            # self.f113 = PlatypusNexus(os.path.join(self.pth,
-            #                                        'PLP0011613.nx.hdf'))
+            self.f342 = SpatzNexus(os.path.join(self.pth,
+                                                'SPZ0000342.nx.hdf'))
         self.cwd = os.getcwd()
 
         self.tmpdir = tmpdir.strpath
@@ -336,20 +335,26 @@ class TestSpatzNexus(object):
         os.chdir(self.cwd)
 
     def test_chod(self):
-        pass
-        # flight_length = self.f113.chod()
-        # assert_almost_equal(flight_length[0], 7141.413818359375)
-        # assert_almost_equal(flight_length[1], 808)
-        # flight_length = self.f641.chod(omega=1.8, twotheta=3.6)
-        # assert_almost_equal(flight_length[0], 7146.3567785516016)
-        # assert_almost_equal(flight_length[1], 808)
+        flight_length = self.f342.chod()
+        assert_almost_equal(flight_length[0], 8062.0232)
+        assert_almost_equal(flight_length[1], 479.9536, decimal=4)
 
     def test_phase_angle(self):
-        pass
-        # # TODO. Add more tests where the phase_angle isn't zero.
-        # phase_angle, master_opening = self.f641.phase_angle()
-        # assert_almost_equal(phase_angle, 0)
-        # assert_almost_equal(master_opening, 1.04719755)
+        assert_allclose(self.f342.cat.master_phase_offset, -25.90)
+        assert(self.f342.cat.master == 1)
+        assert(self.f342.cat.slave == 2)
+        assert_allclose(self.f342.cat.frequency, 25)
+        assert_allclose(self.f342.cat.phase, 34.22)
+        assert_allclose(self.f342.cat.poff_c2_slave_1_master[0], -0.22)
+
+        phase_angle, master_opening = self.f342.phase_angle()
+        # chopper 1 has an opening of 26 degrees
+        assert_almost_equal(master_opening, np.radians(26))
+        assert_allclose(phase_angle, 0, atol=1e-5)
+
+        toff = self.f342.time_offset(-25.90, np.radians(26),
+                    25, 0., 479.9536, 8062.0232, None)
+        assert_allclose(toff, 5.5555555555555)
 
 
 def test_catalogue():
