@@ -216,16 +216,6 @@ class SpatzCatalogue(Catalogue):
         d['frequency'] = frequency
         d['phase'] = phase
 
-        # SPZ offsets measured on 20200116
-        # with master = 1, slave = 2
-        # master_phase_offset = -25.90
-        # chopper2_phase_offset -0.22 degrees
-        # TODO These are dummy values, replace for SPZ
-        d['master_phase_offset'] = np.array([-25.9])
-        d['chopper2_phase_offset'] = np.array([-0.22])
-        d['chopper2B_phase_offset'] = np.array([0.])
-        d['chopper3_phase_offset'] = np.array([0.])
-
         d['chopper2_distance'] = h5d[
             'entry1/instrument/ch02_distance/pos'][:]
         d['chopper2B_distance'] = h5d[
@@ -252,7 +242,6 @@ class SpatzCatalogue(Catalogue):
             d['sample_distance'])
 
         # logical size (mm) of 1 pixel in the scattering plane
-        # TODO FIXME FOR SPATZ
         d['qz_pixel_size'] = np.array([0.294])
 
     def _chopper_values(self, h5data):
@@ -271,6 +260,8 @@ class SpatzCatalogue(Catalogue):
         master = 1
         slave = 2
 
+        d = self.cat
+
         chopper1_speed = h5data['entry1/instrument/chopper/c01/spee'][:]
         chopper2_speed = h5data['entry1/instrument/chopper/c02/spee'][:]
         chopper2B_speed = h5data['entry1/instrument/chopper/c2b/spee'][:]
@@ -283,19 +274,37 @@ class SpatzCatalogue(Catalogue):
 
         if chopper1_speed[0] > 2:
             master = 1
-            # TODO assert 2B is stationary?
-            # TODO 2B could be slave?
-            slave = 2
+            d['master_phase_offset'] = h5data[
+                'entry1/instrument/parameters/poff_c1_master'][:]
+            if chopper2_speed[0] > 2:
+                slave = 2
+            else:
+                # chopper2B is slave
+                slave = 3
             freq = chopper1_speed
             phase = ch2phase - ch1phase
+            d['poff_c2_slave_1_master'] = h5data[
+                'entry1/instrument/parameters/poff_c2_slave_1_master'][:]
+            d['poff_c2b_slave_1_master'] = h5data[
+                'entry1/instrument/parameters/poff_c2b_slave_1_master'][:]
         else:
             master = 2
+            d['master_phase_offset'] = h5data[
+                'entry1/instrument/parameters/poff_c2_master'][:]
+            d['poff_c2b_slave_2_master'] = h5data[
+                'entry1/instrument/parameters/poff_c2b_slave_2_master'][:]
+
             freq = chopper2_speed
             # if slave == 3 refers to chopper 2B
             assert (chopper2B_speed > 1).all()
 
             slave = 3
             phase = ch2Bphase - ch2phase
+
+        # SPZ offsets measured on 20200116
+        # with master = 1, slave = 2
+        # master_phase_offset = -25.90
+        # chopper2_phase_offset -0.22 degrees
 
         return master, slave, freq, phase
 
@@ -1776,8 +1785,6 @@ class SpatzNexus(ReflectNexus):
         Timing offsets for Spatz chopper system
         return t_offset
         """
-        # TODO FIX WITH PROPER SPATZ IMPLEMENTATION
-
         # calculate initial time offset
         p_offset = 1.e6 * master_phase_offset / (2. * 360. * freq)
         t_offset = (p_offset +
@@ -1801,8 +1808,6 @@ class SpatzNexus(ReflectNexus):
             The phase angle in degrees, and the angular opening of the master
             chopper in radians
         """
-        # TODO FIX WITH PROPER SPATZ IMPLEMENTATION
-
         disc_openings = (26., 42., 43.5, 126.)
         O_C1d, O_C2d, O_C2Bd, O_C3d = disc_openings
         O_C1, O_C2, O_C2B, O_C3 = np.radians(disc_openings)
@@ -1828,11 +1833,14 @@ class SpatzNexus(ReflectNexus):
         # the chopper_phase_offset would be -0.22 degrees.
         if slave == 2:
             phase_angle += 0.5 * O_C2d
-            phase_angle += -disc_phase - cat.chopper2_phase_offset[0]
+            phase_angle += -disc_phase - cat.poff_c2_slave_1_master[0]
         elif slave == 3:
             # chopper 2B
             phase_angle += 0.5 * O_C2Bd
-            phase_angle += -disc_phase - cat.chopper2B_phase_offset[0]
+            if master == 1:
+                phase_angle += -disc_phase - cat.poff_c2b_slave_1_master[0]
+            elif master == 2:
+                phase_angle += -disc_phase - cat.poff_c2b_slave_2_master[0]
 
         return phase_angle, master_opening
 
