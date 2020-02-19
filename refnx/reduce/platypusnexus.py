@@ -215,6 +215,9 @@ class SpatzCatalogue(Catalogue):
         d['slave'] = slave
         d['frequency'] = frequency
         d['phase'] = phase
+        d['t_offset'] = None
+        if 't_offset' in h5d:
+            d['t_offset'] = h5d['entry1/instrument/parameters/t_offset'][:]
 
         d['chopper2_distance'] = h5d[
             'entry1/instrument/ch02_distance/pos'][:]
@@ -354,6 +357,12 @@ class PlatypusCatalogue(Catalogue):
             'entry1/instrument/parameters/chopper3_phase_offset'][:]
         d['chopper4_phase_offset'] = h5d[
             'entry1/instrument/parameters/chopper4_phase_offset'][:]
+        # time offset for choppers if you're using a signal generator to
+        # delay T0
+        d['t_offset'] = None
+        if 't_offset' in h5d:
+            d['t_offset'] = h5d['entry1/instrument/parameters/t_offset'][:]
+
         d['guide1_distance'] = h5d[
             'entry1/instrument/parameters/guide1_distance'][:]
         d['guide2_distance'] = h5d[
@@ -717,7 +726,7 @@ class ReflectNexus(object):
 
     def time_offset(self, master_phase_offset, master_opening,
                     freq, phase_angle, z0, flight_distance,
-                    tof_hist):
+                    tof_hist, t_offset=None):
         raise NotImplementedError()
 
     def correct_for_gravity(self, detector, detector_sd,
@@ -1040,7 +1049,8 @@ class ReflectNexus(object):
                                         phase_angle[idx],
                                         d_cx[0],
                                         flight_distance[idx],
-                                        m_spec_tof_hist[idx])
+                                        m_spec_tof_hist[idx],
+                                        t_offset=cat.t_offset)
 
             m_spec_tof_hist[idx] -= t_offset
 
@@ -1505,25 +1515,31 @@ class PlatypusNexus(ReflectNexus):
 
     def time_offset(self, master_phase_offset, master_opening,
                     freq, phase_angle, z0, flight_distance,
-                    tof_hist):
+                    tof_hist, t_offset=None):
         """
         Timing offsets for Platypus chopper system, includes a gravity
         correction for phase angle
         """
         DISCRADIUS = 350.0
 
-        # calculate initial time offset
-        p_offset = 1.e6 * master_phase_offset / (2. * 360. * freq)
-        # assumes that the pickups/T_0 signal is issued from middle
-        # of chopper window
-        t_offset = (p_offset +
-                    1.e6 * master_opening / 2 / (2 * np.pi) / freq -
-                    1.e6 * phase_angle / (360 * 2 * freq))
+        # calculate initial time offset from the pickup being slightly in
+        # the wrong place
+        m_offset = 1.e6 * master_phase_offset / (2. * 360. * freq)
+        # make a correction for the phase angle
+        total_offset = m_offset - 1.e6 * phase_angle / (360 * 2 * freq)
+
+        # assumes that the pickup/T_0 signal is issued from middle
+        # of chopper window. But you can override this by supplying a t_offset.
+        # This is for where a signal generator has been used to offset that t_0.
+        if t_offset is not None:
+            total_offset += t_offset
+        else:
+            total_offset += 1.e6 * master_opening / 2 / (2 * np.pi) / freq
 
         ###########################################
-        # now make a gravity correction to t_offset
+        # now make a gravity correction to total_offset
         # work out velocities for each bin edge
-        velocities = 1.e3 * flight_distance / (tof_hist - t_offset)
+        velocities = 1.e3 * flight_distance / (tof_hist - total_offset)
 
         angles = find_trajectory(self.cat.collimation_distance / 1000.,
                                  0,
@@ -1535,7 +1551,14 @@ class PlatypusNexus(ReflectNexus):
         d_slave = d_c1 + z0
 
         corr_t_offset = np.zeros_like(tof_hist)
-        corr_t_offset += master_opening / 2 / (2 * np.pi) / freq
+
+        # assumes that the pickups/T_0 signal is issued from middle
+        # of chopper window. `t_offset` is for where a signal generator
+        # has been used to offset that t_0.
+        if t_offset is not None:
+            corr_t_offset += t_offset
+        else:
+            corr_t_offset += master_opening / 2 / (2 * np.pi) / freq
 
         for i, (velocity, angle) in enumerate(zip(velocities, angles)):
             parab = parabola(angle, velocity)
@@ -1784,18 +1807,24 @@ class SpatzNexus(ReflectNexus):
 
     def time_offset(self, master_phase_offset, master_opening,
                     freq, phase_angle, z0, flight_distance,
-                    tof_hist):
+                    tof_hist, t_offset=None):
         """
         Timing offsets for Spatz chopper system
-        return t_offset
+        return total_offset
         """
-        # calculate initial time offset
-        p_offset = 1.e6 * master_phase_offset / (2. * 360. * freq)
-        t_offset = (p_offset +
-                    1.e6 * master_opening / 2 / (2 * np.pi) / freq -
-                    1.e6 * phase_angle / (360 * 2 * freq))
+        # calculate initial time offset from the phase angle and master
+        # chopper offset.
+        m_offset = 1.e6 * master_phase_offset / (2. * 360. * freq)
+        total_offset = m_offset + 1.e6 * phase_angle / (360 * 2 * freq)
 
-        return t_offset
+        # assumes that the pickup is in the middle of the chopper disc. But
+        # you can override this by supplying a t_offset value.
+        if t_offset is not None:
+            total_offset += t_offset
+        else:
+            total_offset += 1.e6 * master_opening / 2 / (2 * np.pi) / freq
+
+        return total_offset
 
     def phase_angle(self, scanpoint=0):
         """
