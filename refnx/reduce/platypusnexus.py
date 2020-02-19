@@ -1530,7 +1530,7 @@ class PlatypusNexus(ReflectNexus):
 
         # assumes that the pickup/T_0 signal is issued from middle
         # of chopper window. But you can override this by supplying a t_offset.
-        # This is for where a signal generator has been used to offset that t_0.
+        # This is for where a signal generator has been used to offset that t_0
         if t_offset is not None:
             total_offset += t_offset
         else:
