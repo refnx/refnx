@@ -403,8 +403,12 @@ class PlatypusCatalogue(Catalogue):
         ch3phase = h5data['entry1/instrument/disk_chopper/ch3phase']
         ch4phase = h5data['entry1/instrument/disk_chopper/ch4phase']
 
-        if ('entry1/instrument/parameters/slave' in h5data and
-                'entry1/instrument/parameters/master' in h5data):
+        m = 'entry1/instrument/parameters/master'
+        s = 'entry1/instrument/parameters/slave'
+        if (s in h5data and m in h5data and h5data[m][0] in [1, 2, 3, 4] and
+                h5data[s][0] in [1, 2, 3, 4]):
+            # master and slave parameters have to be set correctly in order
+            # to use them.
             master = h5data['entry1/instrument/parameters/master'][0]
             slave = h5data['entry1/instrument/parameters/slave'][0]
         else:
