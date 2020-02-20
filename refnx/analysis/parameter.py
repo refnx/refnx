@@ -458,14 +458,26 @@ class Constant(BaseParameter):
         return self._value
 
 
-def possibly_create_parameter(value, name=''):
+def possibly_create_parameter(value, name='', bounds=None, vary=False,
+                              constraint=None):
     """
     If supplied with a Parameter return it. If supplied with float, wrap it in
     a Parameter instance.
 
     Parameters
     ----------
-    value : float or refnx.analysis.Parameter
+    value : float, optional
+        Numerical Parameter value.
+    name : str, optional
+        Name of the parameter.
+    bounds: `refnx.analysis.Bounds`, tuple, optional
+        Sets the bounds for the parameter. Either supply a
+        `refnx.analysis.Bounds` object (or one of its subclasses),
+        or a `(lower_bound, upper_bound)` tuple.
+    vary : bool, optional
+        Whether the Parameter is fixed during a fit.
+    constraint : expression, optional
+        Python expression used to constrain the value during the fit.
 
     Returns
     -------
@@ -475,7 +487,8 @@ def possibly_create_parameter(value, name=''):
     if is_parameter(value):
         return value
     else:
-        return Parameter(value, name=name)
+        return Parameter(value, name=name, bounds=bounds, vary=vary,
+                         constraint=constraint)
 
 
 class Parameter(BaseParameter):
