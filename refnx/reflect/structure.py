@@ -1071,8 +1071,8 @@ class Slab(Component):
                                                name=f'{name} - rough')
         self.vfsolv = (
             possibly_create_parameter(vfsolv,
-                                      name=f'{name} - volfrac solvent'))
-        self.vfsolv.bounds = (0., 1.)
+                                      name=f'{name} - volfrac solvent',
+                                      bounds=(0., 1.)))
 
         p = Parameters(name=self.name)
         p.extend([self.thick])
@@ -1175,16 +1175,16 @@ class MixedSlab(Component):
             self._sld_parameters.append(self.sld[-1].parameters)
 
             vf = possibly_create_parameter(v,
-                                           name=f'vf{i} - {name}')
-            vf.bounds = (0., 1.)
+                                           name=f'vf{i} - {name}',
+                                           bounds=(0., 1.))
             self.vf.append(vf)
             self._vf_parameters.append(vf)
             i += 1
 
         self.vfsolv = (
             possibly_create_parameter(vfsolv,
-                                      name=f'{name} - volfrac solvent'))
-        self.vfsolv.bounds = (0., 1.)
+                                      name=f'{name} - volfrac solvent',
+                                      bounds=(0., 1.)))
         self.rough = possibly_create_parameter(rough,
                                                name=f'{name} - rough')
 

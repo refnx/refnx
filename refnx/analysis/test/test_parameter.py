@@ -8,7 +8,8 @@ from scipy.stats import norm, uniform
 from refnx.analysis import (Interval, PDF, Parameter, Parameters,
                             is_parameters)
 from refnx.analysis.parameter import (constraint_tree,
-                                      build_constraint_from_tree)
+                                      build_constraint_from_tree,
+                                      possibly_create_parameter)
 
 
 class TestParameter(object):
@@ -205,6 +206,19 @@ class TestParameter(object):
         e = Parameter(1)
         e.constraint = 2
         assert_allclose(e.value, 2)
+
+    def test_possibly_create_parameter(self):
+        p = Parameter(10, bounds=(1., 2.))
+        q = possibly_create_parameter(p, vary=True, bounds=(-1., 2.))
+        assert(q is p)
+        assert_allclose(p.bounds.lb, 1)
+        assert_allclose(p.bounds.ub, 2)
+
+        q = possibly_create_parameter(10, vary=True, bounds=(-1., 2.))
+        assert_allclose(q.value, 10)
+        assert_allclose(q.bounds.lb, -1)
+        assert_allclose(q.bounds.ub, 2.)
+        assert(q.vary)
 
 
 class TestParameters(object):
