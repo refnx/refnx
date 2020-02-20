@@ -52,6 +52,8 @@ class TestPlatypusNexus(object):
         assert_almost_equal(phase_angle, 0)
         assert_almost_equal(master_opening, 1.04719755)
 
+        assert(self.f641.cat.t_offset is None)
+
     def test_background_subtract_line(self):
         # checked each step of the background subtraction with IGOR
         # so this test background correction should be correct.
@@ -343,6 +345,7 @@ class TestSpatzNexus(object):
         assert_allclose(self.f342.cat.master_phase_offset, -25.90)
         assert(self.f342.cat.master == 1)
         assert(self.f342.cat.slave == 2)
+        assert(self.f342.cat.t_offset is None)
         assert_allclose(self.f342.cat.frequency, 25)
         assert_allclose(self.f342.cat.phase, 34.22)
         assert_allclose(self.f342.cat.poff_c2_slave_1_master[0], -0.22)
@@ -353,8 +356,13 @@ class TestSpatzNexus(object):
         assert_allclose(phase_angle, 0, atol=1e-5)
 
         toff = self.f342.time_offset(-25.90, np.radians(26),
-                                     25, 0., 479.9536, 8062.0232, None)
+                                     25, 0., None, None, None)
         assert_allclose(toff, 5.5555555555555)
+
+        toff = self.f342.time_offset(-25.90, np.radians(26),
+                                     25, 0., None, None, None,
+                                     t_offset=1438.888888888888888)
+        assert_allclose(toff, 0)
 
 
 def test_catalogue():

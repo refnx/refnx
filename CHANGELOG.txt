@@ -197,3 +197,5 @@ Details of changes made to refnx
 
 0.1.12
 ------
+- allow master and slave chopper parameters to be ignored in PLP reduction.
+- tunable t_0 offset in PLP/SPZ reduction.
