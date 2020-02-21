@@ -1556,7 +1556,7 @@ class PlatypusNexus(ReflectNexus):
         # of chopper window. `t_offset` is for where a signal generator
         # has been used to offset that t_0.
         if t_offset is not None:
-            corr_t_offset += t_offset
+            corr_t_offset += t_offset / 1.e6
         else:
             corr_t_offset += master_opening / 2 / (2 * np.pi) / freq
 
