@@ -29,11 +29,11 @@ def test_myapp(qtbot, tmpdir):
     pth = os.path.dirname(refd.__file__)
     f = pjoin(pth, 'test', 'c_PLP0000708.dat')
     myapp.load_data([f])
-    assert(len(model.datastore) == 2)
+    assert len(model.datastore) == 2
 
     myapp2 = save_and_reload_experiment(myapp, tmpdir)
     model2 = myapp2.treeModel
-    assert(len(model2.datastore) == 2)
+    assert len(model2.datastore) == 2
 
 
 def test_add_spline_save(qtbot, tmpdir):

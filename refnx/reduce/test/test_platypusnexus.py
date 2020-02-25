@@ -52,7 +52,7 @@ class TestPlatypusNexus(object):
         assert_almost_equal(phase_angle, 0)
         assert_almost_equal(master_opening, 1.04719755)
 
-        assert(self.f641.cat.t_offset is None)
+        assert self.f641.cat.t_offset is None
 
     def test_background_subtract_line(self):
         # checked each step of the background subtraction with IGOR
@@ -343,9 +343,9 @@ class TestSpatzNexus(object):
 
     def test_phase_angle(self):
         assert_allclose(self.f342.cat.master_phase_offset, -25.90)
-        assert(self.f342.cat.master == 1)
-        assert(self.f342.cat.slave == 2)
-        assert(self.f342.cat.t_offset is None)
+        assert self.f342.cat.master == 1
+        assert self.f342.cat.slave == 2
+        assert self.f342.cat.t_offset is None
         assert_allclose(self.f342.cat.frequency, 25)
         assert_allclose(self.f342.cat.phase, 34.22)
         assert_allclose(self.f342.cat.poff_c2_slave_1_master[0], -0.22)

@@ -162,7 +162,7 @@ class TestStructure(object):
         assert_(isinstance(unpkl, Structure))
         for param in unpkl.parameters.flattened():
             assert_(isinstance(param, Parameter))
-        assert(hasattr(unpkl, '_solvent'))
+        assert hasattr(unpkl, '_solvent')
 
     def test_sld_profile(self):
         # check that it runs
@@ -242,7 +242,7 @@ class TestStructure(object):
         t.vfsolv = 0.1
         t.interfaces = Linear()
         q = eval(repr(t))
-        assert(isinstance(q, Slab))
+        assert isinstance(q, Slab)
         assert_equal(float(q.thick), 10.5)
         assert_equal(float(t.sld.real), 5)
         assert_equal(float(t.sld.imag), 1)
@@ -251,7 +251,7 @@ class TestStructure(object):
 
         t.name = 'pop'
         q = eval(repr(t))
-        assert(t.name == q.name)
+        assert t.name == q.name
 
     def test_repr_structure(self):
         p = SLD(5 + 1j)
@@ -259,15 +259,15 @@ class TestStructure(object):
         t.vfsolv = 0.1
         s = t | t
         q = eval(repr(s))
-        assert(isinstance(q, Structure))
+        assert isinstance(q, Structure)
         assert_equal(float(q[0].thick), 10.5)
         assert_equal(float(q[1].sld.real), 5)
         assert_equal(float(q[1].sld.imag), 1)
 
         s.name = 'pop'
         q = eval(repr(s))
-        assert(hasattr(q, '_solvent'))
-        assert(s.name == q.name)
+        assert hasattr(q, '_solvent')
+        assert s.name == q.name
 
     def test_sld(self):
         p = SLD(5 + 1j, name='pop')
@@ -396,7 +396,7 @@ class TestStructure(object):
     def test_stack(self):
         stk = Stack()
         slabs = stk.slabs(None)
-        assert(slabs is None)
+        assert slabs is None
 
         si = SLD(2.07)
         sio2 = SLD(3.47)
@@ -406,26 +406,26 @@ class TestStructure(object):
         # check some initial stack properties
         stk.append(sio2(55, 4))
         slabs = stk.slabs(None)
-        assert(slabs.shape == (1, 5))
+        assert slabs.shape == (1, 5)
         assert_equal(np.sum(slabs[:, 0]), 55)
         assert_equal(slabs[0, 1], 3.47)
         stk.repeats.value = 3.2
         slabs = stk.slabs(None)
-        assert(slabs.shape == (3, 5))
+        assert slabs.shape == (3, 5)
         assert_equal(np.sum(slabs[:, 0]), 165)
 
         # ior a Stack and a Component
         stk |= polymer(110, 3.5)
         assert_equal(len(stk), 2)
-        assert(isinstance(stk, Stack))
+        assert isinstance(stk, Stack)
         assert_almost_equal(stk.repeats, 3.2)
         slabs = stk.slabs()
-        assert(slabs.shape == (6, 5))
+        assert slabs.shape == (6, 5)
         assert_equal(np.sum(slabs[:, 0]), 495)
 
         # place a stack into a structure
         s = si | d2o(10, 3) | stk | d2o
-        assert(isinstance(s, Structure))
+        assert isinstance(s, Structure)
         slabs = s.slabs()
         assert_equal(slabs[:, 0], [0, 10, 55, 110, 55, 110, 55, 110, 0])
         assert_equal(slabs[:, 1],
@@ -441,7 +441,7 @@ class TestStructure(object):
         s = Structure(components=[si(), d2o(10, 3)])
         s |= stk
         s |= d2o
-        assert(isinstance(s, Structure))
+        assert isinstance(s, Structure)
 
         assert_equal(s.slabs()[:, 0], [0, 10, 55, 110, 55, 110, 55, 110, 0])
         assert_equal(s.slabs()[:, 1],
@@ -454,7 +454,7 @@ class TestStructure(object):
                      [2.07, 6.36, 3.47, 1.0, 3.47, 1.0, 3.47, 1.0, 6.36])
 
         s |= stk
-        assert(isinstance(s.components[-1], Stack))
+        assert isinstance(s.components[-1], Stack)
         import pytest
         with pytest.raises(ValueError):
             s.slabs()

@@ -231,11 +231,11 @@ class TestObjective(object):
     def test_repr_transform(self):
         p = Transform(None)
         q = eval(repr(p))
-        assert(p.form == q.form)
+        assert p.form == q.form
 
         p = Transform('logY')
         q = eval(repr(p))
-        assert(p.form == q.form)
+        assert p.form == q.form
 
     def test_lnsigma(self):
         # check that lnsigma works correctly, by using the emcee line fit
