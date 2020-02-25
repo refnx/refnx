@@ -2,21 +2,6 @@ channels:
   - conda-forge
 dependencies:
   - python==3.7
-  - sphinx
-  - pandoc
-  - nbconvert
-  - ipywidgets
-  - numpy
-  - cython
-  - jupyter
-  - scipy
-  - matplotlib
-  - pytest
-  - xlrd
-  - h5py
-  - numpydoc
-  - pandas
-  - pip
   - pip:
     - nbsphinx
     - jupyter-sphinx
@@ -24,3 +9,17 @@ dependencies:
     - tqdm
     - corner
     - periodictable
+    - pandoc
+    - scipy
+    - numpy
+    - sphinx
+    - pandas
+    - numpydoc
+    - h5py
+    - nbconvert
+    - ipywidgets
+    - cython
+    - jupyter
+    - matplotlib
+    - pytest
+    - xlrd
