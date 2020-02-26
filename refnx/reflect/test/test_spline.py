@@ -71,11 +71,11 @@ class TestSpline(object):
 
         # cause the spline to be evaluated
         s.sld_profile()
-        assert(a._Spline__cached_interpolator['interp'] is not None)
+        assert a._Spline__cached_interpolator['interp'] is not None
 
         pkl = pickle.dumps(s)
         r = pickle.loads(pkl)
-        assert(isinstance(r, Structure))
+        assert isinstance(r, Structure)
 
     def test_spline_solvation(self):
         a = Spline(100, [2],

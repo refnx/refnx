@@ -13,9 +13,9 @@ def test_graphproperties():
     gp.save_graph_properties()
 
     pkl = pickle.dumps(gp)
-    assert(pkl is not None)
+    assert pkl is not None
 
     re_gp = pickle.loads(pkl)
-    assert(isinstance(re_gp, GraphProperties))
+    assert isinstance(re_gp, GraphProperties)
 
-    assert(re_gp.ax_data is None)
+    assert re_gp.ax_data is None

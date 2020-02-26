@@ -399,7 +399,7 @@ class TestReflect(object):
         rff = ReflectModel(self.structure, dq=0)
 
         # the default for number of threads should be -1
-        assert(rff.threads == -1)
+        assert rff.threads == -1
 
         model = rff.model(self.qvals)
         assert_almost_equal(model, self.rvals)
@@ -753,5 +753,5 @@ class Wrapper_fn(object):
         self.w = w
 
     def __call__(self, x):
-        assert(len(x.shape) == 1)
+        assert len(x.shape) == 1
         return self.fn(x, self.w)

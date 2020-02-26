@@ -23,14 +23,14 @@ class TestParameter(object):
         y = Parameter(1.)
 
         y.constraint = x
-        assert(x in y.dependencies())
+        assert x in y.dependencies()
 
         y.constraint = x * 2.
         assert_equal(y.value, x.value * 2.)
 
         # parameter should be in y's dependencies
-        assert(x in y._deps)
-        assert(x in y.dependencies())
+        assert x in y._deps
+        assert x in y.dependencies()
 
         # if you've constrained a parameter it shouldn't be varying
         assert_(y.vary is False)
@@ -55,8 +55,8 @@ class TestParameter(object):
 
         # z = x + y --> z = x + 2*x
         # therefore y shouldn't be in z's dependencies, but x should be.
-        assert(x in z.dependencies())
-        assert(y not in z.dependencies())
+        assert x in z.dependencies()
+        assert y not in z.dependencies()
 
         # absolute value constraint
         y.constraint = abs(x)
@@ -69,7 +69,7 @@ class TestParameter(object):
     def test_repr(self):
         p = Parameter(value=5, name='pop', vary=True)
         q = eval(repr(p))
-        assert(q.name == 'pop')
+        assert q.name == 'pop'
         assert_allclose(q.value, p.value)
 
         p.bounds.lb = -5
@@ -210,7 +210,7 @@ class TestParameter(object):
     def test_possibly_create_parameter(self):
         p = Parameter(10, bounds=(1., 2.))
         q = possibly_create_parameter(p, vary=True, bounds=(-1., 2.))
-        assert(q is p)
+        assert q is p
         assert_allclose(p.bounds.lb, 1)
         assert_allclose(p.bounds.ub, 2)
 
@@ -218,7 +218,7 @@ class TestParameter(object):
         assert_allclose(q.value, 10)
         assert_allclose(q.bounds.lb, -1)
         assert_allclose(q.bounds.ub, 2.)
-        assert(q.vary)
+        assert q.vary
 
 
 class TestParameters(object):
@@ -246,10 +246,10 @@ class TestParameters(object):
         f.append(g)
 
         q = eval(repr(f))
-        assert(q.name is None)
+        assert q.name is None
         assert_equal(q[0].value, 5)
-        assert(q[0].vary is False)
-        assert(isinstance(q[1], Parameters))
+        assert q[0].vary is False
+        assert isinstance(q[1], Parameters)
 
     def test_set_by_name(self):
         c = Parameter(3.)

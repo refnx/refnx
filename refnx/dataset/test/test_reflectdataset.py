@@ -72,30 +72,30 @@ class TestReflectDataset(object):
         with open(os.path.join(self.pth, 'dot.dat')) as f:
             dataset1.load(f)
         assert_equal(len(dataset1), 31)
-        assert(dataset1.y_err is not None)
-        assert(dataset1.x_err is None)
+        assert dataset1.y_err is not None
+        assert dataset1.x_err is None
 
         with open(os.path.join(self.pth, 'dot.aft')) as f:
             dataset1.load(f)
         assert_equal(len(dataset1), 36)
-        assert(dataset1.y_err is not None)
+        assert dataset1.y_err is not None
 
         with open(os.path.join(self.pth, 'dot.refl')) as f:
             dataset1.load(f)
         assert_equal(len(dataset1), 59)
-        assert(dataset1.y_err is not None)
+        assert dataset1.y_err is not None
 
         with open(os.path.join(self.pth, 'dot.out')) as f:
             dataset1.load(f)
         assert_equal(len(dataset1), 1122)
-        assert(dataset1.y_err is not None)
-        assert(dataset1.x_err is not None)
+        assert dataset1.y_err is not None
+        assert dataset1.x_err is not None
 
         with open(os.path.join(self.pth, 'dot.mft')) as f:
             dataset1.load(f)
         assert_equal(len(dataset1), 213)
-        assert(dataset1.y_err is not None)
-        assert(dataset1.x_err is not None)
+        assert dataset1.y_err is not None
+        assert dataset1.x_err is not None
 
     def test_load_dat_with_header(self):
         # check that the file load works with a header
