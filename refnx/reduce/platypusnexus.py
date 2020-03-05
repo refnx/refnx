@@ -809,7 +809,7 @@ class ReflectNexus(object):
             Options for finding specular peak position and peak standard
             deviation.
 
-            - \-1
+            - -1
                use `manual_beam_find`.
             - None
                use the automatic beam finder, falling back to
