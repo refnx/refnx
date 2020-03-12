@@ -201,3 +201,4 @@ Details of changes made to refnx
 - tunable t_0 offset in PLP/SPZ reduction.
 - possibly_create_parameter accepts default bounds/vary/constraint. This fixes
   a bug in MixedSlab.
+- Don't require numpy be installed before setup.py can run.
