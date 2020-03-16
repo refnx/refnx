@@ -64,9 +64,12 @@ def get_openmp_flag(compiler):
 def check_openmp_support():
     """Check whether OpenMP test code can be compiled and run"""
 
-    from numpy.distutils.ccompiler import new_compiler
-    from distutils.sysconfig import customize_compiler
-    from distutils.errors import CompileError, LinkError
+    try:
+        from numpy.distutils.ccompiler import new_compiler
+        from distutils.sysconfig import customize_compiler
+        from distutils.errors import CompileError, LinkError
+    except ImportError:
+        return False
 
     ccompiler = new_compiler()
     customize_compiler(ccompiler)
