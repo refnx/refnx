@@ -308,10 +308,12 @@ class Structure(UserList):
             if self._solvent is not None:
                 solv = self._solvent
             else:
-                if not reverse:
-                    solv = complex(slabs[-1, 1], slabs[-1, 2])
-                else:
-                    solv = complex(slabs[0, 1], slabs[0, 2])
+                # we should always choose the solvating material to be the last
+                # slab. If the structure is not reversed then you want the last
+                # slab. If the structure is reversed then you should want to
+                # use the first slab, but the code block above reverses the
+                # slab order, so we still want the last one
+                solv = complex(slabs[-1, 1], slabs[-1, 2])
 
             slabs[1:-1] = self.overall_sld(slabs[1:-1], solv)
 
