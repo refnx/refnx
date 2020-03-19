@@ -25,6 +25,7 @@ DEALINGS IN THIS SOFTWARE.
 """
 import abc
 import math
+from functools import lru_cache
 import numbers
 import warnings
 
