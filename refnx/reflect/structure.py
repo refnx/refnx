@@ -294,7 +294,8 @@ class Structure(UserList):
             slabs = self._micro_slabs()
 
         # if the slab representation needs to be reversed.
-        if self.reverse_structure:
+        reverse = self.reverse_structure
+        if reverse:
             roughnesses = slabs[1:, 3]
             slabs = np.flipud(slabs)
             slabs[1:, 3] = roughnesses[::-1]
@@ -302,7 +303,19 @@ class Structure(UserList):
 
         if np.any(slabs[:, 4] > 0):
             # overall SLD is a weighted average of the vfs and slds
-            slabs[1:-1] = self.overall_sld(slabs[1:-1], self.solvent)
+            # accessing self.solvent leads to overhead from object
+            # creation.
+            if self._solvent is not None:
+                solv = self._solvent
+            else:
+                # we should always choose the solvating material to be the last
+                # slab. If the structure is not reversed then you want the last
+                # slab. If the structure is reversed then you should want to
+                # use the first slab, but the code block above reverses the
+                # slab order, so we still want the last one
+                solv = complex(slabs[-1, 1], slabs[-1, 2])
+
+            slabs[1:-1] = self.overall_sld(slabs[1:-1], solv)
 
         if self.contract > 0:
             return contract_by_area(slabs, self.contract)

@@ -202,3 +202,4 @@ Details of changes made to refnx
 - possibly_create_parameter accepts default bounds/vary/constraint. This fixes
   a bug in MixedSlab.
 - Don't require numpy be installed before setup.py can run.
+- Speed up reflectivity calculation if there is solvation.
