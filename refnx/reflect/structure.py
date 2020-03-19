@@ -294,7 +294,8 @@ class Structure(UserList):
             slabs = self._micro_slabs()
 
         # if the slab representation needs to be reversed.
-        if self.reverse_structure:
+        reverse = self.reverse_structure
+        if reverse:
             roughnesses = slabs[1:, 3]
             slabs = np.flipud(slabs)
             slabs[1:, 3] = roughnesses[::-1]
@@ -302,7 +303,17 @@ class Structure(UserList):
 
         if np.any(slabs[:, 4] > 0):
             # overall SLD is a weighted average of the vfs and slds
-            slabs[1:-1] = self.overall_sld(slabs[1:-1], self.solvent)
+            # accessing self.solvent leads to overhead from object
+            # creation.
+            if self._solvent is not None:
+                solv = self._solvent
+            else:
+                if not reverse:
+                    solv = complex(slabs[-1, 1], slabs[-1, 2])
+                else:
+                    solv = complex(slabs[0, 1], slabs[0, 2])
+
+            slabs[1:-1] = self.overall_sld(slabs[1:-1], solv)
 
         if self.contract > 0:
             return contract_by_area(slabs, self.contract)
