@@ -675,7 +675,7 @@ def _smeared_abeles_constant(q, w, resolution, threads=-1):
     xlin = np.power(10., xtemp)
 
     # resolution smear over [-4 sigma, 4 sigma]
-    gauss_x = _cache_linspace(-1.7 * resolution, 1.7 * resolution, gaussnum)
+    gauss_x = _cached_linspace(-1.7 * resolution, 1.7 * resolution, gaussnum)
     gauss_y = gauss(gauss_x, resolution / _FWHM)
 
     rvals = abeles(xlin, w, threads=threads)
