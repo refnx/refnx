@@ -25,6 +25,7 @@ DEALINGS IN THIS SOFTWARE.
 """
 import abc
 import math
+from functools import lru_cache
 import numbers
 import warnings
 
@@ -671,11 +672,11 @@ def _smeared_abeles_constant(q, w, resolution, threads=-1):
     finish = np.log10(highq * (1 + 6 * resolution / _FWHM))
     interpnum = np.round(np.abs(1 * (np.abs(start - finish)) /
                          (1.7 * resolution / _FWHM / gaussgpoint)))
-    xtemp = np.linspace(start, finish, int(interpnum))
+    xtemp = _cached_linspace(start, finish, int(interpnum))
     xlin = np.power(10., xtemp)
 
     # resolution smear over [-4 sigma, 4 sigma]
-    gauss_x = np.linspace(-1.7 * resolution, 1.7 * resolution, gaussnum)
+    gauss_x = _cached_linspace(-1.7 * resolution, 1.7 * resolution, gaussnum)
     gauss_y = gauss(gauss_x, resolution / _FWHM)
 
     rvals = abeles(xlin, w, threads=threads)
@@ -690,6 +691,14 @@ def _smeared_abeles_constant(q, w, resolution, threads=-1):
     smeared_output = splev(q, tck)
 
     return smeared_output
+
+
+@lru_cache(maxsize=128)
+def _cached_linspace(start, stop, num):
+    # calculates linspace for _smeared_abeles_constant
+    # this deserves a cache because it's called a lot with
+    # the same parameters
+    return np.linspace(start, stop, num)
 
 
 class MixedReflectModel(object):
