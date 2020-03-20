@@ -1,7 +1,8 @@
 import os
 
 from refnx.reflect.reflect_model import (ReflectModel, reflectivity,
-                                         MixedReflectModel, FresnelTransform)
+                                         MixedReflectModel, FresnelTransform,
+                                         choose_dq_type)
 from refnx.reflect.structure import (Structure, SLD, Slab, Component,
                                      sld_profile, Stack, MaterialSLD,
                                      MixedSlab)

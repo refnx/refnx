@@ -203,3 +203,6 @@ Details of changes made to refnx
   a bug in MixedSlab.
 - Don't require numpy be installed before setup.py can run.
 - Speed up reflectivity calculation if there is solvation.
+- reflect.choose_dq_type for finding out fastest mode of resolution smearing.
+- User can now select resolution smearing approach in ReflectModel. Choosing
+  between 'pointwise' or 'constant'.
