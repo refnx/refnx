@@ -1074,7 +1074,8 @@ def choose_dq_type(objective):
     """
     # choose which resolution smearing approach to use
     if (objective.data.x_err is None or
-            not isinstance(objective.model, (ReflectModel, MixedReflectModel))):
+            not isinstance(objective.model,
+                           (ReflectModel, MixedReflectModel))):
         return 'pointwise'
 
     original_method = objective.model.dq_type
