@@ -685,12 +685,12 @@ class TestReflect(object):
 
         # check that the comparison worked
         const_time = time.time()
-        objective.generative()
+        for i in range(1000): objective.generative()
         const_time = time.time() - const_time
 
         model.dq_type = 'pointwise'
         point_time = time.time()
-        objective.generative()
+        for i in range(1000): objective.generative()
         point_time = time.time() - point_time
 
         if fastest_method == 'pointwise':
