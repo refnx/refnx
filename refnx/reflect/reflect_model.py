@@ -25,6 +25,7 @@ DEALINGS IN THIS SOFTWARE.
 """
 import abc
 import math
+import time
 from functools import lru_cache
 import numbers
 import warnings
@@ -58,7 +59,7 @@ Implementation notes
    datapoint. For Gaussian quadrature that calculation only needs to be done
    once, because the oversampling points are at constant locations around the
    mean. b) in the implementation I tried the Simpsons rule had to integrate
-   e.g. 700 odd points instead of the fixed 17 for the Gaussin quadrature.
+   e.g. 700 odd points instead of the fixed 17 for the Gaussian quadrature.
 """
 
 
@@ -123,9 +124,8 @@ class ReflectModel(object):
            a constant dQ/Q resolution smearing is employed.  For 5% resolution
            smearing supply 5.
 
-        However, if `x_err` is supplied to the `model` method, then that
-        overrides any setting given here. This value is turned into
-        a Parameter during the construction of this object.
+        This value is turned into a Parameter during the construction of this
+        object.
     threads: int, optional
         Specifies the number of threads for parallel calculation. This
         option is only applicable if you are using the ``_creflect``
@@ -141,10 +141,14 @@ class ReflectModel(object):
         time. BUT it won't necessarily work across all samples. For
         example, 13 points may be fine for a thin layer, but will be
         atrocious at describing a multilayer with bragg peaks.
-
+    dq_type: {'pointwise', 'constant'}, optional
+        Chooses whether pointwise or constant dQ/Q resolution smearing (see
+        `dq` keyword) is used. To use pointwise smearing the `x_err` keyword
+        provided to `Objective.model` method must be an array, otherwise the
+        smearing falls back to 'constant'.
     """
     def __init__(self, structure, scale=1, bkg=1e-7, name='', dq=5.,
-                 threads=-1, quad_order=17):
+                 threads=-1, quad_order=17, dq_type='pointwise'):
         self.name = name
         self._parameters = None
         self.threads = threads
@@ -160,6 +164,7 @@ class ReflectModel(object):
         # we can optimize the resolution (but this is always overridden by
         # x_err if supplied. There is therefore possibly no dependence on it.
         self._dq = possibly_create_parameter(dq, name='dq - resolution')
+        self.dq_type = dq_type
 
         self._structure = None
         self.structure = structure
@@ -185,10 +190,10 @@ class ReflectModel(object):
         return self.model(x, p=p, x_err=x_err)
 
     def __repr__(self):
-        return ("ReflectModel({_structure!r}, name={name!r},"
-                " scale={_scale!r}, bkg={_bkg!r},"
-                " dq={_dq!r}, threads={threads},"
-                " quad_order={quad_order})".format(**self.__dict__))
+        return (f"ReflectModel({self._structure!r}, name={self.name!r},"
+                f" scale={self.scale!r}, bkg={self.bkg!r},"
+                f" dq={self.dq!r}, threads={self.threads},"
+                f" quad_order={self.quad_order!r}, dq_type={self.dq_type!r})")
 
     @property
     def dq(self):
@@ -257,7 +262,7 @@ class ReflectModel(object):
         """
         if p is not None:
             self.parameters.pvals = np.array(p)
-        if x_err is None:
+        if x_err is None or self.dq_type == 'constant':
             # fallback to what this object was constructed with
             x_err = float(self.dq)
 
@@ -750,10 +755,14 @@ class MixedReflectModel(object):
         time. BUT it won't necessarily work across all samples. For
         example, 13 points may be fine for a thin layer, but will be
         atrocious at describing a multilayer with bragg peaks.
-
+    dq_type: {'pointwise', 'constant'}, optional
+        Chooses whether pointwise or constant dQ/Q resolution smearing (see
+        `dq` keyword) is used. To use pointwise smearing the `x_err` keyword
+        provided to `Objective.model` method must be an array, otherwise the
+        smearing falls back to 'constant'.
     """
     def __init__(self, structures, scales=None, bkg=1e-7, name='', dq=5.,
-                 threads=-1, quad_order=17):
+                 threads=-1, quad_order=17, dq_type='pointwise'):
         self.name = name
         self._parameters = None
         self.threads = threads
@@ -781,14 +790,17 @@ class MixedReflectModel(object):
         # we can optimize the resolution (but this is always overridden by
         # x_err if supplied. There is therefore possibly no dependence on it.
         self._dq = possibly_create_parameter(dq, name='dq - resolution')
+        self.dq_type = dq_type
 
         self._structures = structures
 
     def __repr__(self):
-        s = ("MixedReflectModel({_structures!r}, scales={_scales!r},"
-             " bkg={_bkg!r}, name={name!r}, dq={_dq!r}, threads={threads!r},"
-             " quad_order={quad_order!r})")
-        return s.format(**self.__dict__)
+        s = (f"MixedReflectModel({self._structures!r},"
+             f" scales={self._scales!r}, bkg={self._bkg!r},"
+             f" name={self.name!r}, dq={self._dq!r},"
+             f" threads={self.threads!r}, quad_order={self.quad_order!r},"
+             f" dq_type={self.dq_type!r})")
+        return s
 
     def __call__(self, x, p=None, x_err=None):
         r"""
@@ -872,7 +884,7 @@ class MixedReflectModel(object):
         """
         if p is not None:
             self.parameters.pvals = np.array(p)
-        if x_err is None:
+        if x_err is None or self.dq_type == 'constant':
             # fallback to what this object was constructed with
             x_err = float(self.dq)
 
@@ -1040,3 +1052,55 @@ class FresnelTransform(Transform):
             return yt, None
         else:
             return yt, y_err / fresnel
+
+
+def choose_dq_type(objective):
+    """
+    Chooses which resolution smearing approach has the
+    fastest calculation time.
+
+    Parameters
+    ----------
+    objective: Objective
+        The objective being calculated
+
+    Returns
+    -------
+    method: str
+        One of {'pointwise', 'constant'}. If 'pointwise' then using
+        the resolution information from the datafile is the fastest mode
+        of calculation. If 'constant', then a constant dq/q (expressed as
+        a percentage) Q resolution is quicker.
+    """
+    # choose which resolution smearing approach to use
+    if (objective.data.x_err is None or
+            not isinstance(objective.model, (ReflectModel, MixedReflectModel))):
+        return 'pointwise'
+
+    original_method = objective.model.dq_type
+
+    # time how long point-by-point takes
+    objective.model.dq_type = 'pointwise'
+    start = time.time()
+    for i in range(100):
+        objective.generative()
+    time_pp = time.time() - start
+
+    x_err = objective.data.x_err
+    objective.data.x_err = None
+    dq = 10. * x_err / objective.data.x
+    objective.model.dq.value = np.mean(dq)
+    objective.model.dq_type = 'constant'
+    start = time.time()
+    for i in range(10):
+        objective.generative()
+    const_pp = time.time() - start
+
+    # replace original state
+    objective.data.x_err = x_err
+    objective.model.dq_type = original_method
+    #     print(f"Constant: {const_pp}, point-by-point: {time_pp}")
+    if const_pp < time_pp:
+        # if constant resolution smearing better.
+        return 'constant'
+    return 'pointwise'

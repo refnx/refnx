@@ -1,6 +1,7 @@
 import os.path
 import os
 import pickle
+import time
 
 import numpy as np
 from numpy.testing import (assert_almost_equal, assert_equal, assert_,
@@ -27,7 +28,7 @@ from refnx.analysis import (Transform, Objective,
                             Parameters)
 from refnx.reflect import (SLD, ReflectModel, MixedReflectModel,
                            reflectivity, Structure, Slab,
-                           FresnelTransform)
+                           FresnelTransform, choose_dq_type)
 from refnx.dataset import ReflectDataset
 from refnx._lib import MapWrapper
 
@@ -502,14 +503,16 @@ class TestReflect(object):
     def test_model_pickle(self):
         model = self.model361
         model.dq = 5.
+        model.dq_type = 'constant'
         pkl = pickle.dumps(model)
         unpkl = pickle.loads(pkl)
-        assert_(isinstance(unpkl, ReflectModel))
+        assert isinstance(unpkl, ReflectModel)
         for param in unpkl.parameters.flattened():
             try:
-                assert_(isinstance(param, Parameter))
+                assert isinstance(param, Parameter)
             except AssertionError:
                 raise AssertionError(type(param))
+        assert unpkl.dq_type == 'constant'
 
     def test_reflectivity_emcee(self):
         model = self.model361
@@ -653,6 +656,50 @@ class TestReflect(object):
         slabs = structure.slabs()
         assert_equal(slabs[2, 0:2], slabs[3, 0:2])
         assert_equal(slabs[2, 3], slabs[3, 3])
+
+    def test_resolution_speed_comparator(self):
+        fname = os.path.join(self.pth, 'c_PLP0011859_q.txt')
+        dataset = ReflectDataset(fname)
+
+        sio2 = SLD(3.47, name='SiO2')
+        si = SLD(2.07, name='Si')
+        d2o = SLD(6.36, name='D2O')
+        polymer = SLD(2., name='polymer')
+
+        sio2_l = sio2(30, 3)
+        polymer_l = polymer(125, 3)
+
+        dx = dataset.x_err
+        structure = (si | sio2_l | polymer_l | polymer_l | d2o(0, 3))
+        model = ReflectModel(structure, bkg=2e-6, dq_type='constant')
+        objective = Objective(model,
+                              dataset,
+                              use_weights=False,
+                              transform=Transform('logY'))
+
+        # check that choose_resolution_approach doesn't change state
+        # of model
+        fastest_method = choose_dq_type(objective)
+        assert model.dq_type == 'constant'
+        assert_equal(dx, objective.data.x_err)
+
+        # check that the comparison worked
+        const_time = time.time()
+        objective.generative()
+        const_time = time.time() - const_time
+
+        model.dq_type = 'pointwise'
+        point_time = time.time()
+        objective.generative()
+        point_time = time.time() - point_time
+
+        if fastest_method == 'pointwise':
+            assert point_time < const_time
+        elif fastest_method == 'constant':
+            assert const_time < point_time
+
+        # check that we could use the function to setup a reflectmodel
+        ReflectModel(structure, bkg=2e-6, dq_type=choose_dq_type(objective))
 
     def test_mixed_model(self):
         # test for MixedReflectModel
