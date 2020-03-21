@@ -153,7 +153,7 @@ void AbelesCalc_ImagAll(int numcoefs,
             qq2 = complex<double>(xP[j] * xP[j] / 4, 0);
 
             // now calculate reflectivities and wavevectors
-            kn = std::sqrt(qq2);
+            kn = xP[j] / 2.;
             for(int ii = 0 ; ii < nlayers + 1 ; ii++){
                 // wavevector in the layer
                 kn_next = std::sqrt(qq2 - SLD[ii + 1]);
