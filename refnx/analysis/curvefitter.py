@@ -516,7 +516,7 @@ class CurveFitter(object):
         # sets parameter value and stderr
         return process_chain(self.objective, self.chain)
 
-    def fit(self, method='L-BFGS-B', target='nll', **kws):
+    def fit(self, method='L-BFGS-B', target='nll', verbose=True, **kws):
         """
         Obtain the maximum log-likelihood, or log-posterior, estimate (mode)
         of the objective. Maximising the log-likelihood is equivalent to
@@ -552,7 +552,9 @@ class CurveFitter(object):
             and upper bounds are approximated as
             ``PDF.rv.ppf([0.005, 0.995])``, covering 99 % of the statistical
             distribution.
-
+        verbose : bool, optional
+            Gives fitting progress. To see a progress bar tqdm has to be
+            installed.
         kws : dict
             Additional arguments are passed to the underlying minimization
             method.
@@ -586,9 +588,23 @@ class CurveFitter(object):
         _bounds = bounds_list(self.objective.varying_parameters())
         _min_kws['bounds'] = _bounds
 
+        # setup callback default
+        _min_kws.setdefault('callback', None)
+
         cost = self.objective.nll
         if target == 'nlpost':
             cost = self.objective.nlpost
+
+        # a decorator for the progress bar updater
+        def _callback_wrapper(callback_func, pbar):
+            def callback(*args, **kwds):
+                pbar.update(1)
+                if callback_func is None:
+                    return None
+                else:
+                    return callback_func(*args, **kwds)
+
+            return callback
 
         # least_squares Trust Region Reflective by default
         if method == 'least_squares':
@@ -596,8 +612,7 @@ class CurveFitter(object):
             _min_kws['bounds'] = (b[..., 0], b[..., 1])
 
             # least_squares doesn't have a callback
-            if 'callback' in _min_kws:
-                _min_kws.pop('callback')
+            _min_kws.pop('callback', None)
 
             res = least_squares(self.objective.residuals,
                                 init_pars,
@@ -606,12 +621,21 @@ class CurveFitter(object):
         # bounds
         elif method in ['differential_evolution', 'dual_annealing', 'shgo']:
             mini = getattr(sciopt, method)
-            res = mini(cost, **_min_kws)
+            with get_progress_bar(verbose, None) as pbar:
+                _min_kws['callback'] = _callback_wrapper(_min_kws['callback'],
+                                                         pbar)
+
+                res = mini(cost, **_min_kws)
         else:
             # otherwise stick it to minimizer. Default being L-BFGS-B
             _min_kws['method'] = method
             _min_kws['bounds'] = _bounds
-            res = minimize(cost, init_pars, **_min_kws)
+
+            with get_progress_bar(verbose, None) as pbar:
+                _min_kws['callback'] = _callback_wrapper(_min_kws['callback'],
+                                                         pbar)
+
+                res = minimize(cost, init_pars, **_min_kws)
 
         # OptimizeResult.success may not be present (dual annealing)
         if hasattr(res, 'success') and res.success:
