@@ -235,16 +235,22 @@ class TestCurveFitter(object):
 
     def test_fit_smoke(self):
         # smoke tests to check that fit runs
+        def callback(xk):
+            return
+
+        def callback2(xk, **kws):
+            return
+
         # L-BFGS-B
-        res0 = self.mcfitter.fit()
+        res0 = self.mcfitter.fit(callback=callback)
         assert_almost_equal(res0.x, [self.b_ls, self.m_ls], 6)
+        res0 = self.mcfitter.fit()
+        res0 = self.mcfitter.fit(verbose=False)
+        res0 = self.mcfitter.fit(verbose=False, callback=callback)
 
         # least_squares
         res1 = self.mcfitter.fit(method='least_squares')
         assert_almost_equal(res1.x, [self.b_ls, self.m_ls], 6)
-
-        def callback(xk):
-            return
 
         # least_squares doesn't accept a callback. As well as testing that
         # least_squares works, it checks that providing a callback doesn't
@@ -256,7 +262,7 @@ class TestCurveFitter(object):
         self.p[0].range(3, 7)
         self.p[1].range(-2, 0)
         res2 = self.mcfitter.fit(method='differential_evolution', seed=1,
-                                 popsize=10, maxiter=100)
+                                 popsize=10, maxiter=100, callback=callback2)
         assert_almost_equal(res2.x, [self.b_ls, self.m_ls], 6)
 
         # check that the res object has covar and stderr
