@@ -83,7 +83,7 @@ class TestBounds(object):
         assert_equal(pdf.logp(0), norm.logpdf(0))
 
         # examine dist with finite support
-        pdf = PDF(truncnorm(-1, 1), seed=1)
+        pdf = PDF(truncnorm(-1, 1))
         assert_equal(pdf.logp(-2), -np.inf)
         assert_equal(pdf.logp(-0.5), truncnorm.logpdf(-0.5, -1, 1))
 

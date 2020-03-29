@@ -9,8 +9,8 @@ class Bounds(object):
     A base class that describes the probability distribution for a parameter
 
     """
-    def __init__(self, seed=None):
-        self._random_state = check_random_state(seed)
+    def __init__(self):
+        pass
 
     def logp(self, value):
         """
@@ -79,8 +79,6 @@ class PDF(Bounds):
         A continuous probability distribution. If `rv` is not an
         `rv_continuous`, then it must implement the `logpdf` and `rvs`
         methods.
-    seed : int, float or np.random.RandomState
-        Seed for random variates
 
     Examples
     --------
@@ -94,8 +92,8 @@ class PDF(Bounds):
     (-11.043938533204672, -11.043938533204672)
 
     """
-    def __init__(self, rv, seed=None):
-        super(PDF, self).__init__(seed=seed)
+    def __init__(self, rv):
+        super(PDF, self).__init__()
         # we'll accept any object so long as it has logpdf and rvs methods
         if hasattr(rv, 'logpdf') and hasattr(rv, 'rvs'):
             self.rv = rv
@@ -164,8 +162,6 @@ class PDF(Bounds):
             Random variates from within the probability distribution.
 
         """
-        if random_state is None:
-            random_state = self._random_state
         return self.rv.rvs(size=size, random_state=random_state)
 
 
@@ -180,8 +176,6 @@ class Interval(Bounds):
         The lower bound
     ub : float
         The upper bound
-    seed : None, int, float or np.random.RandomState
-        For reproducible sampling
 
     Examples
     --------
@@ -201,8 +195,8 @@ class Interval(Bounds):
     array([0., 0.])
 
     """
-    def __init__(self, lb=-np.inf, ub=np.inf, seed=None):
-        super(Interval, self).__init__(seed=seed)
+    def __init__(self, lb=-np.inf, ub=np.inf):
+        super(Interval, self).__init__()
         if lb is None:
             lb = -np.inf
         if ub is None:
@@ -211,14 +205,12 @@ class Interval(Bounds):
         self._lb = lb
         self._ub = ub
         self._logprob = 0
-        self.rv = None
         self._closed_bounds = False
         self._set_bounds(self._lb, self._ub)
 
     def _set_bounds(self, lb, ub):
-        t_lb, t_ub = lb, ub
-        self._lb = min(t_lb, t_ub)
-        self._ub = max(t_lb, t_ub)
+        self._lb = min(lb, ub)
+        self._ub = max(lb, ub)
         self._closed_bounds = False
 
         if np.isnan([self._lb, self._ub]).any():
@@ -231,10 +223,13 @@ class Interval(Bounds):
             else:
                 self._logprob = np.log(1 / (self._ub - self._lb))
 
-            self.rv = uniform(self._lb, self._ub - self._lb)
         else:
             self._logprob = 0.
             self._closed_bounds = False
+
+    @property
+    def rv(self):
+        return uniform(self._lb, self._ub - self._lb)
 
     def __repr__(self):
         lb, ub = self.lb, self.ub
@@ -344,9 +339,8 @@ class Interval(Bounds):
 
     def rvs(self, size=1, random_state=None):
         if self._closed_bounds:
-            if random_state is None:
-                random_state = self._random_state
-            return self.rv.rvs(size=size, random_state=random_state)
+            gen = check_random_state(random_state)
+            return gen.uniform(self._lb, self._ub, size=size)
         else:
             raise RuntimeError("Can't ask for a random variate from a"
                                " semi-closed interval")
