@@ -234,8 +234,7 @@ class Parameters(UserList):
             allowed to vary.
 
         """
-        return np.sum([1 for param in f_unique(flatten(self.data))
-                       if param.vary])
+        return len([1 for param in f_unique(flatten(self.data)) if param.vary])
 
     def constrained_parameters(self):
         """
@@ -355,8 +354,7 @@ class BaseParameter(object):
 
         d = self.__dict__
         for k in ops:
-            if k in d:
-                d.pop(k)
+            d.pop(k, None)
         return d
 
     def __setstate__(self, state):

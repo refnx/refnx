@@ -3,7 +3,7 @@
 
 def c_flatten(seq):
     """
-    Flatten a nested sequence.
+    Flatten a nested sequence. Ordering is preserved
 
     Parameters
     ----------
@@ -27,11 +27,13 @@ def c_flatten(seq):
 
 def c_unique(seq, idfun=id):
     """
-    List of unique values in sequence (by object id). Ordering is preserved
+    List of unique values in sequence (by object id).
+
     Parameters
     ----------
     seq : sequence
     idfun : callable
+
     Returns
     -------
     p : generator

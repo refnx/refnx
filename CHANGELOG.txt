@@ -207,3 +207,4 @@ Details of changes made to refnx
 - User can now select resolution smearing approach in ReflectModel. Choosing
   between 'pointwise' or 'constant'.
 - Add progress bar for Curvefitter.fit() (requires tqdm being installed).
+- A few micro-optimisations.
