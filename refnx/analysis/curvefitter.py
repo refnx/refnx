@@ -449,7 +449,7 @@ class CurveFitter(object):
             rstate0 = rng.get_state()
             self._state.random_state = rstate0
             if isinstance(self.sampler, PTSampler):
-                self.sampler._random = rstate0
+                self.sampler._random = rng
             else:
                 self.sampler.random_state = rstate0
 

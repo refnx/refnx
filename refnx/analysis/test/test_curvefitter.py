@@ -152,22 +152,6 @@ class TestCurveFitter(object):
         self.mcfitter.make_sampler()
         self.mcfitter.sample(1)
 
-    def test_random_initialisation(self):
-        # check that initialisation of sampling is reproducible
-        self.mcfitter.initialise('prior', random_state=1)
-        starting_pos = np.copy(self.mcfitter._state.coords)
-
-        self.mcfitter.initialise('prior', random_state=1)
-        starting_pos2 = self.mcfitter._state.coords
-        assert_equal(starting_pos, starting_pos2)
-
-        self.mcfitter.initialise('jitter', random_state=1)
-        starting_pos = np.copy(self.mcfitter._state.coords)
-
-        self.mcfitter.initialise('jitter', random_state=1)
-        starting_pos2 = self.mcfitter._state.coords
-        assert_equal(starting_pos, starting_pos2)
-
     def test_random_seed(self):
         # check that MCMC sampling is reproducible
         self.mcfitter.sample(steps=2, random_state=1)
@@ -205,6 +189,22 @@ class TestCurveFitter(object):
     def test_mcmc_init(self):
         # smoke test for sampler initialisation
         # TODO check that the initialisation worked.
+        # reproducible initialisation with random_state dependents
+        self.mcfitter.initialise('prior', random_state=1)
+        starting_pos = np.copy(self.mcfitter._state.coords)
+
+        self.mcfitter.initialise('prior', random_state=1)
+        starting_pos2 = self.mcfitter._state.coords
+        assert_equal(starting_pos, starting_pos2)
+
+        self.mcfitter.initialise('jitter', random_state=1)
+        starting_pos = np.copy(self.mcfitter._state.coords)
+
+        self.mcfitter.initialise('jitter', random_state=1)
+        starting_pos2 = self.mcfitter._state.coords
+        assert_equal(starting_pos, starting_pos2)
+
+
         mcfitter = CurveFitter(self.objective, nwalkers=100)
         mcfitter.initialise('covar')
         assert_equal(mcfitter._state.coords.shape, (100, 2))
