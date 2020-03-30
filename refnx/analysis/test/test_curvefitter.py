@@ -152,7 +152,6 @@ class TestCurveFitter(object):
         self.mcfitter.make_sampler()
         self.mcfitter.sample(1)
 
-
     def test_random_initialisation(self):
         # check that initialisation of sampling is reproducible
         self.mcfitter.initialise('prior', random_state=1)
