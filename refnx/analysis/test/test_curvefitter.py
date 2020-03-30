@@ -152,13 +152,31 @@ class TestCurveFitter(object):
         self.mcfitter.make_sampler()
         self.mcfitter.sample(1)
 
+
+    def test_random_initialisation(self):
+        # check that initialisation of sampling is reproducible
+        self.mcfitter.initialise('prior', random_state=1)
+        starting_pos = np.copy(self.mcfitter._state.coords)
+
+        self.mcfitter.initialise('prior', random_state=1)
+        starting_pos2 = self.mcfitter._state.coords
+        assert_equal(starting_pos, starting_pos2)
+
+        self.mcfitter.initialise('jitter', random_state=1)
+        starting_pos = np.copy(self.mcfitter._state.coords)
+
+        self.mcfitter.initialise('jitter', random_state=1)
+        starting_pos2 = self.mcfitter._state.coords
+        assert_equal(starting_pos, starting_pos2)
+
     def test_random_seed(self):
-        # check that MCMC is reproducible
-        self.mcfitter.sample(steps=2)
+        # check that MCMC sampling is reproducible
+        self.mcfitter.sample(steps=2, random_state=1)
 
         # get a starting pos
         starting_pos = self.mcfitter._state.coords
 
+        # is sampling reproducible
         self.mcfitter.reset()
         self.mcfitter.initialise(pos=starting_pos)
         self.mcfitter.sample(3, random_state=1, pool=1)
@@ -363,14 +381,14 @@ class TestFitterGauss(object):
 
         # compare samples to best_weighted_errors
         np.random.seed(1)
-        f.sample(steps=101, random_state=1, verbose=False, f=checkpoint)
+        f.sample(steps=201, random_state=1, verbose=False, f=checkpoint)
         process_chain(self.objective, f.chain, nburn=50, nthin=10)
         uncertainties = [param.stderr for param in self.params]
         assert_allclose(uncertainties, self.best_weighted_errors, rtol=0.07)
 
         # test that the checkpoint worked
         check_array = np.loadtxt(checkpoint)
-        check_array = check_array.reshape(101, f._nwalkers, f.nvary)
+        check_array = check_array.reshape(201, f._nwalkers, f.nvary)
         assert_allclose(check_array, f.chain)
 
         # test loading the checkpoint
