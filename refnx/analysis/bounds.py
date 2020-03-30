@@ -1,3 +1,4 @@
+import math
 from scipy.stats import rv_continuous, uniform
 from scipy.stats._distn_infrastructure import rv_frozen
 from scipy._lib._util import check_random_state
@@ -213,10 +214,10 @@ class Interval(Bounds):
         self._ub = max(lb, ub)
         self._closed_bounds = False
 
-        if np.isnan([self._lb, self._ub]).any():
+        if math.isnan(self._lb) or math.isnan(self._ub):
             raise ValueError("Can't set Interval with NaN")
 
-        if np.isfinite([self._lb, self._ub]).all():
+        if math.isfinite(self._lb) and math.isfinite(self._ub):
             self._closed_bounds = True
             if self._lb == self._ub:
                 self._logprob = 0.
