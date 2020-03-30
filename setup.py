@@ -25,8 +25,8 @@ HAS_OPENMP = _open_mp_helpers.check_openmp_support()
 # versioning
 MAJOR = 0
 MINOR = 1
-MICRO = 12
-ISRELEASED = True
+MICRO = 13
+ISRELEASED = False
 VERSION = '%d.%d.%d' % (MAJOR, MINOR, MICRO)
 
 
@@ -163,7 +163,7 @@ info = {
         'packages': packages,
         'include_package_data': True,
         'setup_requires': ['numpy', 'cython'],
-        'python_requires': '>=3.5',
+        'python_requires': '>=3.6',
         'install_requires': ['numpy', 'scipy'],
         'extras_require': {'all': ['IPython', 'ipywidgets', 'traitlets',
                                    'matplotlib', 'xlrd', 'h5py', 'tqdm',
