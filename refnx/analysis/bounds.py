@@ -339,8 +339,8 @@ class Interval(Bounds):
 
     def rvs(self, size=1, random_state=None):
         if self._closed_bounds:
-            gen = check_random_state(random_state)
-            return gen.uniform(self._lb, self._ub, size=size)
+            return uniform.rvs(self._lb, self._ub - self._lb, size=size,
+                               random_state=random_state)
         else:
             raise RuntimeError("Can't ask for a random variate from a"
                                " semi-closed interval")
