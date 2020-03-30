@@ -204,7 +204,6 @@ class TestCurveFitter(object):
         starting_pos2 = self.mcfitter._state.coords
         assert_equal(starting_pos, starting_pos2)
 
-
         mcfitter = CurveFitter(self.objective, nwalkers=100)
         mcfitter.initialise('covar')
         assert_equal(mcfitter._state.coords.shape, (100, 2))
