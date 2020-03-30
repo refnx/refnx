@@ -210,3 +210,4 @@ Details of changes made to refnx
 - A few micro-optimisations.
 - Optimized pickling/unpickling of Bounds instances. This can lead to a huge
   performance increase (~ 40%) when doing parallel sampling.
+- MCMC sampling initialisation made reproducible

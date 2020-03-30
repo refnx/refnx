@@ -188,7 +188,7 @@ class CurveFitter(object):
                                " To keep on using the CurveFitter call"
                                " the CurveFitter.make_samplers() method.")
 
-    def initialise(self, pos='covar'):
+    def initialise(self, pos='covar', random_state=None):
         """
         Initialise the emcee walkers.
 
@@ -204,9 +204,20 @@ class CurveFitter(object):
                 `(nwalkers, ndim)`, or `(ntemps, nwalkers, ndim)` if parallel
                  tempering is employed. You can also provide a previously
                  created chain.
+        random_state : {int, `np.random.RandomState`, `np.random.Generator`}
+            If `random_state` is not specified the `~np.random.RandomState`
+            singleton is used.
+            If `random_state` is an int, a new ``RandomState`` instance is
+            used, seeded with random_state.
+            If `random_state` is already a ``RandomState`` or a ``Generator``
+            instance, then that object is used.
+            Specify `random_state` for repeatable initialisations.
         """
         nwalkers = self._nwalkers
         nvary = self.nvary
+
+        # acquire a random number generator
+        rng = check_random_state(random_state)
 
         # account for parallel tempering
         _ntemps = self._ntemps
@@ -239,7 +250,7 @@ class CurveFitter(object):
         elif pos == 'covar':
             p0 = np.array(self._varying_parameters)
             cov = self.objective.covar()
-            init_walkers = np.random.multivariate_normal(
+            init_walkers = rng.multivariate_normal(
                 np.atleast_1d(p0),
                 np.atleast_2d(cov),
                 size=(_ntemps, nwalkers))
@@ -247,9 +258,7 @@ class CurveFitter(object):
         # position is specified by jittering the parameters with gaussian noise
         elif pos == 'jitter':
             var_arr = np.array(self._varying_parameters)
-            pos = 1 + np.random.randn(_ntemps,
-                                      nwalkers,
-                                      nvary) * 1.e-4
+            pos = 1 + rng.standard_normal((_ntemps, nwalkers, nvary)) * 1.e-4
             pos *= var_arr
             init_walkers = pos
 
@@ -261,11 +270,12 @@ class CurveFitter(object):
                 # bounds are not a closed interval, just jitter it.
                 if (isinstance(param.bounds, Interval) and
                         not param.bounds._closed_bounds):
-                    vals = ((1 + np.random.randn(_ntemps, nwalkers) * 1.e-1) *
-                            param.value)
+                    vals = 1 + rng.standard_normal((_ntemps, nwalkers)) * 1.e-1
+                    vals *= param.value
                     arr[..., i] = vals
                 else:
-                    arr[..., i] = param.bounds.rvs(size=(_ntemps, nwalkers))
+                    arr[..., i] = param.bounds.rvs(size=(_ntemps, nwalkers),
+                                                   random_state=rng)
 
             init_walkers = arr
 
@@ -283,7 +293,11 @@ class CurveFitter(object):
         for i, param in enumerate(self._varying_parameters):
             init_walkers[..., i] = param.valid(init_walkers[..., i])
 
-        self._state = State(init_walkers)
+        rstate0 = None
+        if isinstance(rng, np.random.RandomState):
+            rstate0 = rng.get_state()
+
+        self._state = State(init_walkers, random_state=rstate0)
 
         # finally reset the sampler to reset the chain
         # you have to do this at the end, not at the start because resetting
@@ -380,12 +394,14 @@ class CurveFitter(object):
             total of `steps * nthin` moves.
         nthin : int, optional
             Each chain sample is separated by `nthin` iterations.
-        random_state : int or `np.random.RandomState`, optional
-            If `random_state` is an int, a new `np.random.RandomState` instance
-            is used, seeded with `random_state`.
-            If `random_state` is already a `np.random.RandomState` instance,
-            then that `np.random.RandomState` instance is used. Specify
-            `random_state` for repeatable sampling
+        random_state : {int, `np.random.RandomState`, `np.random.Generator`}
+            If `random_state` is not specified the `~np.random.RandomState`
+            singleton is used.
+            If `random_state` is an int, a new ``RandomState`` instance is
+            used, seeded with random_state.
+            If `random_state` is already a ``RandomState`` or a ``Generator``
+            instance, then that object is used.
+            Specify `random_state` for repeatable minimizations.
         f : file-like or str
             File to incrementally save chain progress to. Each row in the file
             is a flattened array of size `(nwalkers, ndim)` or
@@ -420,8 +436,22 @@ class CurveFitter(object):
         """
         self._check_vars_unchanged()
 
+        # setup a random number generator
+        rng = check_random_state(random_state)
+
         if self._state is None:
-            self.initialise()
+            self.initialise(random_state=rng)
+
+        # set the random state of the sampler
+        # normally one could give this as an argument to the sample method
+        # but PTSampler didn't historically accept that...
+        if isinstance(rng, np.random.RandomState):
+            rstate0 = rng.get_state()
+            self._state.random_state = rstate0
+            if isinstance(self.sampler, PTSampler):
+                self.sampler._random = rng
+            else:
+                self.sampler.random_state = rstate0
 
         self.__pt_iterations = 0
         if isinstance(self.sampler, PTSampler):
@@ -442,15 +472,6 @@ class CurveFitter(object):
 
                 h.write(' '.join(map(str, state.coords.ravel())))
                 h.write('\n')
-
-        # set the random state of the sampler
-        # normally one could give this as an argument to the sample method
-        # but PTSampler didn't historically accept that...
-        if random_state is not None:
-            rstate0 = check_random_state(random_state).get_state()
-            self._state.random_state = rstate0
-            if isinstance(self.sampler, PTSampler):
-                self.sampler._random = rstate0
 
         # remove chains from each of the parameters because they slow down
         # pickling but only if they are parameter objects.
