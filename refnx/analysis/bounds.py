@@ -222,7 +222,7 @@ class Interval(Bounds):
             if self._lb == self._ub:
                 self._logprob = 0.
             else:
-                self._logprob = np.log(1 / (self._ub - self._lb))
+                self._logprob = math.log(1 / (self._ub - self._lb))
 
         else:
             self._logprob = 0.
