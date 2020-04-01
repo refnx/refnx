@@ -66,6 +66,9 @@ class TestParameter(object):
         y.constraint = np.sin(x) + 2.
         assert_equal(y.value, 2. + np.sin(x.value))
 
+        x.value = 10
+        assert_equal(y.value, 2. + np.sin(10))
+
     def test_repr(self):
         p = Parameter(value=5, name='pop', vary=True)
         q = eval(repr(p))
@@ -148,9 +151,11 @@ class TestParameter(object):
         unpkl = pickle.loads(pkl)
         d, e = unpkl
         d.value = 2.
+
         assert_equal(e.value, np.sin(2.))
         # should still have all math functions
         assert_(hasattr(d, 'sin'))
+        assert_(hasattr(a, 'sin'))
 
     def test_or(self):
         # concatenation of Parameter instances

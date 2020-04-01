@@ -1,6 +1,7 @@
 import operator
 from types import MethodType
 from collections import UserList
+import copy
 
 
 import numpy as np
@@ -335,7 +336,6 @@ class BaseParameter(object):
 
     def __init__(self):
         # add mathematical operations as methods to this object
-        # math_ops = {k: MAKE_UNARY(v) for k, v in self.ops.items()}
 
         for k, v in math_ops.items():
             setattr(self, k, MethodType(v, self))
@@ -345,14 +345,16 @@ class BaseParameter(object):
         self._value = None
         self._bounds = None
         self._deps = []
-        self.stderr = None
+        self._stderr = None
         self.chain = None
 
     def __getstate__(self):
         # the mathematical ops aren't unpickleable, so lets pop them. They'll
         # be reinstated when the constructor is called anyway.
 
-        d = self.__dict__
+        # we need to retain the mathops in this object, but not in the pickle
+        # dict. Perform a shallow copy.
+        d = self.__dict__.copy()
         for k in ops:
             d.pop(k, None)
         return d
@@ -397,6 +399,10 @@ class BaseParameter(object):
     def value(self):
         return self._eval()
 
+    @value.setter
+    def value(self, v):
+        self._value = v
+
     @property
     def constraint(self):
         return None
@@ -405,9 +411,16 @@ class BaseParameter(object):
     def bounds(self):
         return None
 
-    @value.setter
-    def value(self, v):
-        self._value = v
+    @property
+    def stderr(self):
+        return self._stderr
+
+    @stderr.setter
+    def stderr(self, val):
+        try:
+            self._stderr = float(val)
+        except TypeError:
+            self._stderr = None
 
     def dependencies(self):
         dep_list = []

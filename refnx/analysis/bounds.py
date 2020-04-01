@@ -210,8 +210,8 @@ class Interval(Bounds):
         self._set_bounds(self._lb, self._ub)
 
     def _set_bounds(self, lb, ub):
-        self._lb = min(lb, ub)
-        self._ub = max(lb, ub)
+        self._lb = float(min(lb, ub))
+        self._ub = float(max(lb, ub))
         self._closed_bounds = False
 
         if math.isnan(self._lb) or math.isnan(self._ub):
@@ -222,7 +222,7 @@ class Interval(Bounds):
             if self._lb == self._ub:
                 self._logprob = 0.
             else:
-                self._logprob = np.log(1 / (self._ub - self._lb))
+                self._logprob = math.log(1 / (self._ub - self._lb))
 
         else:
             self._logprob = 0.
