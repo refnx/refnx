@@ -29,9 +29,9 @@ DEALINGS IN THIS SOFTWARE.
 /*
 Efforts to speed this code up have included:
 
-1) Use <complex> header instead of special MyComplex class.
-2) Use <complex> using valarrays for vectorisation.
-
+1) Use <complex> using valarrays for vectorisation.
+2) Use Strassen approach to matrix multiplication.
+https://www.johndcook.com/blog/2018/08/31/how-fast-can-you-multiply-matrices/
 
 However, the following remains the fastest calculation  so far.
 */
