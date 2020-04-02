@@ -61,3 +61,11 @@ What are the 'fronting' and 'backing' media?
 The 'fronting' and 'backing' media are infinite. The 'fronting' medium carries
 the incident beam of radiation, whilst the 'backing' medium will carry the
 transmitted beam away from the interface.
+
+How do I open the standalone app on macOS Catalina?
+----------------------------------------------------
+
+macOS Catalina expects all apps to be code-signed and notarised for them to be
+able to run via 'double-clicking' in the finder. The project is working towards
+fulfilling those conditions, but in the meantime you can still open the
+standalone motofit.app by right-clicking and selecting 'open'.
