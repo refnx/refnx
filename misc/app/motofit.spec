@@ -60,8 +60,10 @@ if sys.platform == 'darwin':
                  icon='../../refnx/reflect/_app/icons/Motofit.icns',
                  bundle_identifier=None,
                  info_plist={
-                    'NSHighResolutionCapable': 'True'},
+                    'NSHighResolutionCapable': 'True',
+                    'LSBackgroundOnly', 'False'},
                  )
+# 'CFBundleShortVersionString': '0.1.12',
 
 # windows
 
