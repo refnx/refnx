@@ -54,11 +54,14 @@ Implementation notes
    more than one datapoint. One can't use Gaussian quadrature, Simpsons rule is
    needed. Technically the approach works, but turns out to be no faster than
    the Gaussian quadrature with the x17 oversampling (even if everything is
-   vectorised). There are a couple of reasons: a) calculating the Gaussian
-   weights has to be re-done for all the resolution smearing points for every
-   datapoint. For Gaussian quadrature that calculation only needs to be done
-   once, because the oversampling points are at constant locations around the
-   mean. b) in the implementation I tried the Simpsons rule had to integrate
+   vectorised). There are a couple of reasons:
+   a) calculating the Gaussian weights has to be re-done for all the resolution
+   smearing points for every datapoint. For Gaussian quadrature that
+   calculation only needs to be done once, because the oversampling points are
+   at constant locations around the mean. I experimented with using a cached
+   spline to evaluate the Gaussian weights (rather than explicit calculation),
+   but this is no faster.
+   b) in the implementation I tried the Simpsons rule had to integrate
    e.g. 700 odd points instead of the fixed 17 for the Gaussian quadrature.
 """
 
