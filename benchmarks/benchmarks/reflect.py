@@ -1,5 +1,6 @@
 import os.path
 import numpy as np
+import pickle
 
 from .common import Benchmark
 
@@ -19,8 +20,8 @@ class Abeles(Benchmark):
                                 [200, -0.5, 1e-5, 5],
                                 [50, 1, 0, 3],
                                 [0, 6.36, 0, 3]])
-        self.repeat=20
-        self.number=10
+        self.repeat = 20
+        self.number = 10
 
     def time_cabeles(self):
         c_abeles(self.q, self.layers)
@@ -28,13 +29,16 @@ class Abeles(Benchmark):
     def time_abeles(self):
         abeles(self.q, self.layers)
 
-    def time_reflectivity(self):
+    def time_reflectivity_constant_dq_q(self):
         reflectivity(self.q, self.layers)
+
+    def time_reflectivity_pointwise_dq(self):
+        reflectivity(self.q, self.layers, dq=0.05 * self.q)
 
 
 class Reflect(Benchmark):
     timeout = 120.
-    repeat = 2
+    # repeat = 2
 
     def setup(self):
         pth = os.path.dirname(os.path.abspath(refnx.reflect.__file__))
@@ -59,6 +63,7 @@ class Reflect(Benchmark):
         structure361[-1].sld.real.vary = True
         structure361[-1].sld.real.range(6, 6.36)
 
+        self.p = structure361[1].thick
         structure361[1].thick.vary = True
         structure361[1].thick.range(5, 20)
         structure361[2].thick.vary = True
@@ -67,11 +72,39 @@ class Reflect(Benchmark):
         structure361[2].sld.real.vary = True
         structure361[2].sld.real.range(0.2, 1.5)
 
+        self.structure361 = structure361
+        self.model361 = model361
+
         # e361.x_err = None
-        objective = Objective(model361,
-                              e361)
-        self.fitter = CurveFitter(objective, nwalkers=200)
+        self.objective = Objective(self.model361,
+                                   e361)
+        self.fitter = CurveFitter(self.objective, nwalkers=200)
         self.fitter.initialise('jitter')
 
     def time_reflect_emcee(self):
-        self.fitter.sampler.run_mcmc(self.fitter._state, 50)
+        # test how fast the emcee sampler runs in serial mode
+        self.fitter.sampler.run_mcmc(self.fitter._state, 30)
+
+    def time_reflect_sampling_parallel(self):
+        # discrepancies in different runs may be because of different numbers
+        # of processors
+        self.model361.threads = 1
+        self.fitter.sample(30, pool=-1)
+
+    def time_pickle_objective(self):
+        # time taken to pickle an objective
+        s = pickle.dumps(self.objective)
+        pickle.loads(s)
+
+    def time_pickle_model(self):
+        # time taken to pickle a model
+        s = pickle.dumps(self.model361)
+        pickle.loads(s)
+
+    def time_pickle_model(self):
+        # time taken to pickle a parameter
+        s = pickle.dumps(self.p)
+        pickle.loads(s)
+
+    def time_structure_slabs(self):
+        self.structure361.slabs()
