@@ -232,13 +232,17 @@ class TestReflectDataset(object):
 
     def test_synthesise(self):
         # add gaussian noise to a Data1D.y
-        new_dataset = self.data.synthesise()
+        new_dataset = self.data.synthesise(random_state=1)
 
         # y-array should not be the same, so don't test that
         assert_equal(new_dataset.y_err, self.data.y_err)
         assert_equal(new_dataset.x_err, self.data.x_err)
         assert_equal(new_dataset.x, self.data.x)
         assert_equal(new_dataset.weighted, self.data.weighted)
+
+        # synthesis should be repeatable with provision of a seed
+        new_dataset2 = self.data.synthesise(random_state=1)
+        assert_equal(new_dataset.y_err, new_dataset2.data.y_err)
 
     def test_mask(self):
         # if you mask all points there should be none left
