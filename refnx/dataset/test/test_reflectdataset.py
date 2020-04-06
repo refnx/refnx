@@ -242,7 +242,7 @@ class TestReflectDataset(object):
 
         # synthesis should be repeatable with provision of a seed
         new_dataset2 = self.data.synthesise(random_state=1)
-        assert_equal(new_dataset.y_err, new_dataset2.data.y_err)
+        assert_equal(new_dataset.y, new_dataset2.y)
 
     def test_mask(self):
         # if you mask all points there should be none left
