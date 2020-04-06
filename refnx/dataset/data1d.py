@@ -5,7 +5,7 @@ import os.path
 import re
 
 import numpy as np
-
+from scipy._lib._util import check_random_state
 from refnx.util.nsplice import get_scaling_in_overlap
 from refnx._lib import possibly_open_file
 
@@ -546,7 +546,7 @@ class Data1D(object):
         self.add_data(other.data, requires_splice=True, trim_trailing=True)
         return self
 
-    def synthesise(self):
+    def synthesise(self, random_state=None):
         """
         Synthesise a new dataset by adding Gaussian noise onto each of the
         datapoints of the existing data.
@@ -555,13 +555,21 @@ class Data1D(object):
         -------
         dataset : refnx.dataset.Data1D
             A new synthesised dataset
+        random_state : {int, `np.random.RandomState`, `np.random.Generator`}
+            If `random_state` is not specified the `~np.random.RandomState`
+            singleton is used.
+            If `random_state` is an int, a new ``RandomState`` instance is
+            used, seeded with random_state.
+            If `random_state` is already a ``RandomState`` or a ``Generator``
+            instance, then that object is used.
+            Specify `random_state` for repeatable synthesising.
         """
         if self._y_err is None:
             raise RuntimeError("Can't synthesise new dataset without y_err"
                                "uncertainties")
 
-        shape = self._y_err.shape
-        gnoise = np.random.randn(*shape)
+        rng = check_random_state(random_state)
+        gnoise = rng.standard_normal(size=self._y_err.shape)
 
         new_y = self._y + gnoise * self._y_err
         data = list(self.data)

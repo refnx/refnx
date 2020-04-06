@@ -214,3 +214,5 @@ Details of changes made to refnx
 
 0.1.13
 ------
+- synthesising of datasets (Data1D.synthesise) can now be repeatable by
+  providing a seed.
