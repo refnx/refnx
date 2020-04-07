@@ -216,3 +216,4 @@ Details of changes made to refnx
 ------
 - synthesising of datasets (Data1D.synthesise) can now be repeatable by
   providing a seed.
+- use Github Actions to test and build macOS wheels across all the Pythons.
