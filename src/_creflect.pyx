@@ -31,7 +31,7 @@ cimport numpy as np
 cimport cython
 from cython.view cimport array as cvarray
 
-cdef extern from "refcalc.h":
+cdef extern from "refcalc.h" nogil:
     void reflect(int numcoefs, const double *coefP, int npoints, double *yP,
                  const double *xP)
     void reflectMT(int numcoefs, const double *coefP, int npoints, double *yP,
@@ -78,12 +78,13 @@ cpdef np.ndarray abeles(np.ndarray x,
     elif threads == 0:
         threads = 1
 
-    if threads > 1:
-        reflectMT(4*nlayers + 8, <const double*>coefs.data, npoints,
-                  <double*>y.data, <const double*>xtemp.data, threads)
-    else:
-        reflect(4*nlayers + 8, <const double*>coefs.data, npoints,
-                <double*>y.data, <const double*>xtemp.data)
+    with nogil:
+        if threads > 1:
+            reflectMT(4*nlayers + 8, <const double*>coefs.data, npoints,
+                      <double*>y.data, <const double*>xtemp.data, threads)
+        else:
+            reflect(4*nlayers + 8, <const double*>coefs.data, npoints,
+                    <double*>y.data, <const double*>xtemp.data)
 
     return y
 

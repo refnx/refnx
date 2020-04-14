@@ -18,7 +18,7 @@ cdef extern from "<complex>" namespace "std" nogil:
     double complex conj(double complex)
 
 
-cdef extern from "<math.h>":
+cdef extern from "<math.h>" nogil:
     double fabs(double)
 
 
