@@ -440,11 +440,11 @@ def reflectivity(q, slabs, scale=1., bkg=0., dq=5., quad_order=17,
         # fixed order quadrature
         else:
             smeared_rvals = (scale *
-                             _smeared_abeles_fixed(qvals_flat,
-                                                   slabs,
-                                                   dqvals_flat,
-                                                   quad_order=quad_order,
-                                                   threads=threads) +
+                             _smeared_abeles_pointwise(qvals_flat,
+                                                       slabs,
+                                                       dqvals_flat,
+                                                       quad_order=quad_order,
+                                                       threads=threads) +
                              bkg)
             return np.reshape(smeared_rvals, q.shape)
 
@@ -573,7 +573,7 @@ def _smeared_abeles_adaptive(qvals, w, dqvals, threads=-1):
     return smeared_rvals
 
 
-def _smeared_abeles_fixed(qvals, w, dqvals, quad_order=17, threads=-1):
+def _smeared_abeles_pointwise(qvals, w, dqvals, quad_order=17, threads=-1):
     """
     Resolution smearing that uses fixed order Gaussian quadrature integration
     for the convolution.
