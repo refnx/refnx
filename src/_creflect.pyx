@@ -72,7 +72,7 @@ cpdef cnp.ndarray abeles(cnp.ndarray x,
     coefs_view[0] = nlayers
     coefs_view[1] = scale
     coefs_view[2:4] = w[0, 1: 3]
-    coefs_view[4: 6] = w[-1, 1: 3]g
+    coefs_view[4: 6] = w[-1, 1: 3]
     coefs_view[6] = bkg
     coefs_view[7] = w[-1, 3]
     if nlayers:
