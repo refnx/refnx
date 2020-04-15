@@ -25,9 +25,7 @@ DEALINGS IN THIS SOFTWARE.
 
 """
 from multiprocessing import cpu_count
-import math
 import numpy as np
-from scipy.special import p_roots
 
 cimport numpy as cnp
 cimport cython
