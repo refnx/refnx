@@ -53,9 +53,10 @@ cpdef cnp.ndarray abeles(cnp.ndarray x,
                          int threads=-1):
 
     if w.shape[1] != 4 or w.shape[0] < 2:
-        raise ValueError("Parameters for _creflect must have shape (>2, 4)")
+        raise ValueError("Layer parameters for _creflect must be an array of"
+                         " shape (>2, 4)")
     if x.dtype != np.float64:
-        raise ValueError("Parameters for _creflect must be np.float64")
+        raise ValueError("Q values for _creflect must be np.float64")
     cdef:
         int nlayers = w.shape[0] - 2
         int npoints = x.size
@@ -67,24 +68,24 @@ cpdef cnp.ndarray abeles(cnp.ndarray x,
     if not x.flags['C_CONTIGUOUS']:
         x = np.ascontiguousarray(x, dtype=DTYPE)
 
-    coefs_view[0] = nlayers
-    coefs_view[1] = scale
-    coefs_view[2:4] = w[0, 1: 3]
-    coefs_view[4: 6] = w[-1, 1: 3]
-    coefs_view[6] = bkg
-    coefs_view[7] = w[-1, 3]
-    if nlayers:
-        coefs_view[8::4] = w[1:-1, 0]
-        coefs_view[9::4] = w[1:-1, 1]
-        coefs_view[10::4] = w[1:-1, 2]
-        coefs_view[11::4] = w[1:-1, 3]
-
     if threads == -1:
         threads = NCPU
     elif threads == 0:
         threads = 1
 
     with nogil:
+        coefs_view[0] = nlayers
+        coefs_view[1] = scale
+        coefs_view[2:4] = w[0, 1: 3]
+        coefs_view[4: 6] = w[-1, 1: 3]
+        coefs_view[6] = bkg
+        coefs_view[7] = w[-1, 3]
+        if nlayers:
+            coefs_view[8::4] = w[1:-1, 0]
+            coefs_view[9::4] = w[1:-1, 1]
+            coefs_view[10::4] = w[1:-1, 2]
+            coefs_view[11::4] = w[1:-1, 3]
+
         if threads > 1:
             reflectMT(4*nlayers + 8, <const double*>coefs.data, npoints,
                       <double*>y.data, <const double*>x.data, threads)
