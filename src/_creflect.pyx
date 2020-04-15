@@ -49,36 +49,37 @@ NCPU = cpu_count()
 @cython.boundscheck(False)
 @cython.cdivision(True)
 cpdef cnp.ndarray abeles(cnp.ndarray x,
-                         cnp.ndarray[DTYPE_t, ndim=2] w,
+                         double[:, :] w,
                          double scale=1.0,
                          double bkg=0.,
                          int threads=-1):
 
     if w.shape[1] != 4 or w.shape[0] < 2:
         raise ValueError("Parameters for _creflect must have shape (>2, 4)")
-    if (w.dtype != np.float64 or x.dtype != np.float64):
+    if x.dtype != np.float64:
         raise ValueError("Parameters for _creflect must be np.float64")
-    if not x.flags['C_CONTIGUOUS']:
-        x = np.ascontiguousarray(x, dtype=DTYPE)
-
     cdef:
         int nlayers = w.shape[0] - 2
         int npoints = x.size
-        double[:, :] w_view = w
-
-        cnp.ndarray[DTYPE_t, ndim=1] coefs = np.empty(4 * nlayers + 8,
+        cnp.ndarray[DTYPE_t, ndim=1] coefs = np.empty(4*nlayers + 8,
                                                       DTYPE)
         double[::1] coefs_view = coefs
         cnp.ndarray y = np.empty_like(x, DTYPE)
 
+    if not x.flags['C_CONTIGUOUS']:
+        x = np.ascontiguousarray(x, dtype=DTYPE)
+
     coefs_view[0] = nlayers
     coefs_view[1] = scale
-    coefs_view[2:4] = w_view[0, 1: 3]
-    coefs_view[4: 6] = w_view[-1, 1: 3]
+    coefs_view[2:4] = w[0, 1: 3]
+    coefs_view[4: 6] = w[-1, 1: 3]g
     coefs_view[6] = bkg
-    coefs_view[7] = w_view[-1, 3]
+    coefs_view[7] = w[-1, 3]
     if nlayers:
-        coefs[8:] = w.ravel()[4: -4]
+        coefs_view[8::4] = w[1:-1, 0]
+        coefs_view[9::4] = w[1:-1, 1]
+        coefs_view[10::4] = w[1:-1, 2]
+        coefs_view[11::4] = w[1:-1, 3]
 
     if threads == -1:
         threads = NCPU
