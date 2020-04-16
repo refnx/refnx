@@ -217,3 +217,7 @@ Details of changes made to refnx
 - synthesising of datasets (Data1D.synthesise) can now be repeatable by
   providing a seed.
 - use Github Actions to test and build macOS wheels across all the Pythons.
+- The _creflect.abeles reflectivity calculation can release the GIL for a
+  large part of its calculation now. This will enable parallelisation using
+  either Processes or Threads. Processes still have the edge on speed at the
+  moment.
