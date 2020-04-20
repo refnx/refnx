@@ -435,9 +435,10 @@ class Objective(BaseObjective):
                 param.value = pvals[idx]
             return
 
-        raise ValueError('Incorrect number of values supplied, supply either'
-                         ' the full number of parameters, or only the varying'
-                         ' parameters.')
+        raise ValueError(f'Incorrect number of values supplied ({len(pvals)})'
+                         f', supply either the full number of parameters'
+                         f' ({len(flattened_parameters)}, or only the varying'
+                         f' parameters ({len(_varying_parameters)}).')
 
     def logp(self, pvals=None):
         """
