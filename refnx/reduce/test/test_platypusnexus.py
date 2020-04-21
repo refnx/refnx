@@ -50,7 +50,7 @@ class TestPlatypusNexus(object):
         # TODO. Add more tests where the phase_angle isn't zero.
         phase_angle, master_opening = self.f641.phase_angle()
         assert_almost_equal(phase_angle, 0)
-        assert_almost_equal(master_opening, 1.04719755)
+        assert_almost_equal(master_opening, 60)
 
         assert self.f641.cat.t_offset is None
 
@@ -352,14 +352,14 @@ class TestSpatzNexus(object):
 
         phase_angle, master_opening = self.f342.phase_angle()
         # chopper 1 has an opening of 26 degrees
-        assert_almost_equal(master_opening, np.radians(26))
+        assert_almost_equal(master_opening, 26)
         assert_allclose(phase_angle, 0, atol=1e-5)
 
-        toff = self.f342.time_offset(-25.90, np.radians(26),
+        toff = self.f342.time_offset(-25.90, 26,
                                      25, 0., None, None, None)
         assert_allclose(toff, 5.5555555555555)
 
-        toff = self.f342.time_offset(-25.90, np.radians(26),
+        toff = self.f342.time_offset(-25.90, 26,
                                      25, 0., None, None, None,
                                      t_offset=1438.888888888888888)
         assert_allclose(toff, 0)

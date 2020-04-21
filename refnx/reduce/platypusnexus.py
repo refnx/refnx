@@ -722,6 +722,20 @@ class ReflectNexus(object):
         raise NotImplementedError()
 
     def phase_angle(self, scanpoint):
+        """
+        Calculates the phase angle for a given scanpoint
+
+        Parameters
+        ----------
+        scanpoint : int
+            The scanpoint you're interested in
+
+        Returns
+        -------
+        phase_angle, master_opening : float
+            The phase angle and angular opening of the master chopper in
+            degrees.
+        """
         raise NotImplementedError()
 
     def time_offset(self, master_phase_offset, master_opening,
@@ -1534,7 +1548,7 @@ class PlatypusNexus(ReflectNexus):
         if t_offset is not None:
             total_offset += t_offset
         else:
-            total_offset += 1.e6 * master_opening / 2 / (2 * np.pi) / freq
+            total_offset += 1.e6 * master_opening / (2 * 360 * freq)
 
         ###########################################
         # now make a gravity correction to total_offset
@@ -1558,7 +1572,7 @@ class PlatypusNexus(ReflectNexus):
         if t_offset is not None:
             corr_t_offset += t_offset / 1.e6
         else:
-            corr_t_offset += master_opening / 2 / (2 * np.pi) / freq
+            corr_t_offset += master_opening / (2 * 360 * freq)
 
         for i, (velocity, angle) in enumerate(zip(velocities, angles)):
             parab = parabola(angle, velocity)
@@ -1594,12 +1608,11 @@ class PlatypusNexus(ReflectNexus):
         Returns
         -------
         phase_angle, master_opening : float
-            The phase angle in degrees, and the angular opening of the master
-            chopper in radians
+            The phase angle and angular opening of the master chopper in
+            degrees.
         """
         disc_openings = (60., 10., 25., 60.)
         O_C1d, O_C2d, O_C3d, O_C4d = disc_openings
-        O_C1, O_C2, O_C3, O_C4 = np.radians(disc_openings)
 
         cat = self.cat
         master = cat.master
@@ -1609,13 +1622,13 @@ class PlatypusNexus(ReflectNexus):
 
         if master == 1:
             phase_angle += 0.5 * O_C1d
-            master_opening = O_C1
+            master_opening = O_C1d
         elif master == 2:
             phase_angle += 0.5 * O_C2d
-            master_opening = O_C2
+            master_opening = O_C2d
         elif master == 3:
             phase_angle += 0.5 * O_C3d
-            master_opening = O_C3
+            master_opening = O_C3d
 
         # the phase_offset is defined as the angle you have to add to the
         # calibrated blind opening to get to the nominal optically blind
@@ -1822,7 +1835,7 @@ class SpatzNexus(ReflectNexus):
         if t_offset is not None:
             total_offset += t_offset
         else:
-            total_offset += 1.e6 * master_opening / 2 / (2 * np.pi) / freq
+            total_offset += 1.e6 * master_opening / (2 * 360 * freq)
 
         return total_offset
 
@@ -1838,12 +1851,11 @@ class SpatzNexus(ReflectNexus):
         Returns
         -------
         phase_angle, master_opening : float
-            The phase angle in degrees, and the angular opening of the master
-            chopper in radians
+            The phase angle and angular opening of the master chopper in
+            degrees.
         """
         disc_openings = (26., 42., 43.5, 126.)
         O_C1d, O_C2d, O_C2Bd, O_C3d = disc_openings
-        O_C1, O_C2, O_C2B, O_C3 = np.radians(disc_openings)
 
         cat = self.cat
         master = cat.master
@@ -1853,10 +1865,10 @@ class SpatzNexus(ReflectNexus):
 
         if master == 1:
             phase_angle += 0.5 * O_C1d
-            master_opening = O_C1
+            master_opening = O_C1d
         elif master == 2:
             phase_angle += 0.5 * O_C2d
-            master_opening = O_C2
+            master_opening = O_C2d
 
         # the phase_offset is defined as the angle you have to add to the
         # calibrated blind opening to get to the nominal optically blind
