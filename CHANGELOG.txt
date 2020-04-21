@@ -221,3 +221,5 @@ Details of changes made to refnx
   large part of its calculation now. This will enable parallelisation using
   either Processes or Threads. Processes still have the edge on speed at the
   moment.
+- change reduction code for ReflectNexus.phase_angle to use degrees, not
+  radians. (previously angles were returned in a mix of degrees/radians)
