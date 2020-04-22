@@ -32,6 +32,8 @@ Efforts to speed this code up have included:
 1) Use <complex> using valarrays for vectorisation.
 2) Use Strassen approach to matrix multiplication.
 https://www.johndcook.com/blog/2018/08/31/how-fast-can-you-multiply-matrices/
+3) Experiments have found that c++ <complex> is about 10-20% slower than C99
+   double complex. C99 complex doesn't work on Windows.
 
 However, the following remains the fastest calculation  so far.
 */

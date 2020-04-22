@@ -239,13 +239,13 @@ def setup_package():
             if sys.platform == 'win32':
                 # use the C++ code on Windows. The C++ code uses the
                 # std::complex<double> object for its arithmetic.
-                refcalc_obj = ccompiler.compile(['src/refcalc.cpp'],
-                                                extra_preargs=extra_preargs)
+                f = ['src/refcalc.cpp']
             else:
                 # and C code on other machines. The C code uses C99 complex
                 # arithmetic which is 10-20% faster.
-                refcalc_obj = ccompiler.compile(['src/refcalc.c'],
-                                                extra_preargs=extra_preargs)
+                f = ['src/refcalc.c']
+
+            refcalc_obj = ccompiler.compile(f, extra_preargs=extra_preargs)
             print(refcalc_obj)
 
             _creflect = Extension(

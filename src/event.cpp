@@ -20,6 +20,7 @@ constexpr int32_t NVAL = 5; // x, y, v, w, wa
 
 #pragma pack(push, 1) // otherwise may get 8 byte aligned, no good for us
 
+
 struct EventFileHeader_Base { // total content should be 16*int (64 bytes)
   int32_t
       magic_number; // must equal EVENTFILEHEADER_BASE_MAGIC_NUMBER (DAE data)
@@ -35,6 +36,7 @@ struct EventFileHeader_Base { // total content should be 16*int (64 bytes)
   // cppcheck-suppress unusedStructMember
   int32_t spares[16 - 6]; // spares (padding)
 };
+
 
 struct EventFileHeader_Packed { // total content should be 16*int (64 bytes)
   int32_t evt_stg_nbits_x;      // number of bits in x datum
