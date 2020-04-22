@@ -41,7 +41,7 @@ ctypedef cnp.float64_t DTYPE_t
 
 
 # figure out CPU count
-NCPU = cpu_count()
+cdef int NCPU = cpu_count()
 
 
 @cython.boundscheck(False)
@@ -68,12 +68,12 @@ cpdef cnp.ndarray abeles(cnp.ndarray x,
     if not x.flags['C_CONTIGUOUS']:
         x = np.ascontiguousarray(x, dtype=DTYPE)
 
-    if threads == -1:
-        threads = NCPU
-    elif threads == 0:
-        threads = 1
-
     with nogil:
+        if threads == -1:
+            threads = NCPU
+        elif threads == 0:
+            threads = 1
+
         coefs_view[0] = nlayers
         coefs_view[1] = scale
         coefs_view[2:4] = w[0, 1: 3]

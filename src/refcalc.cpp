@@ -101,8 +101,7 @@ void AbelesCalc_ImagAll(int numcoefs,
                         const double *coefP,
                         int npoints,
                         double *yP,
-                        const double *xP,
-                        int workers){
+                        const double *xP){
         int j;
         double scale, bkg;
         double num = 0, den = 0, answer = 0;
@@ -230,8 +229,7 @@ void AbelesCalc_ImagAll(int numcoefs,
                                                  coefP,
                                                  pointsEachThread,
                                                  yP + pointsConsumed,
-                                                 xP + pointsConsumed,
-                                                 0));
+                                                 xP + pointsConsumed));
                 pointsRemaining -= pointsEachThread;
                 pointsConsumed += pointsEachThread;
             } else {
@@ -240,8 +238,7 @@ void AbelesCalc_ImagAll(int numcoefs,
                                                  coefP,
                                                  pointsRemaining,
                                                  yP + pointsConsumed,
-                                                 xP + pointsConsumed,
-                                                 0));
+                                                 xP + pointsConsumed));
                 pointsRemaining -= pointsRemaining;
                 pointsConsumed += pointsRemaining;
             }
@@ -276,7 +273,7 @@ void reflect(int numcoefs,
             int npoints,
             double *yP,
             const double *xP){
-    AbelesCalc_ImagAll(numcoefs, coefP, npoints, yP, xP, 0);
+    AbelesCalc_ImagAll(numcoefs, coefP, npoints, yP, xP);
 }
 
 #ifdef __cplusplus
