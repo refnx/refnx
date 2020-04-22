@@ -32,11 +32,12 @@ Efforts to speed this code up have included:
 1) Use <complex> using valarrays for vectorisation.
 2) Use Strassen approach to matrix multiplication.
 https://www.johndcook.com/blog/2018/08/31/how-fast-can-you-multiply-matrices/
+3) Experiments have found that c++ <complex> is about 10-20% slower than C99
+   double complex. C99 complex doesn't work on Windows.
 
 However, the following remains the fastest calculation  so far.
 */
 
-#include "refcalc.h"
 #include <math.h>
 #include <complex>
 #include <cmath>
@@ -44,7 +45,6 @@ However, the following remains the fastest calculation  so far.
 #include <stdlib.h>
 #include <string.h>
 #include <cstdio>
-#include <thread>
 #include <vector>
 
 
@@ -199,82 +199,6 @@ void AbelesCalc_ImagAll(int numcoefs,
         if(rough_sqr)
             delete[] rough_sqr;
     }
-
-
-    void AbelesCalc_Imag(int numcoefs,
-                          const double *coefP,
-                           int npoints,
-                            double *yP,
-                             const double *xP,
-                              int workers){
-
-        std::vector<std::thread> threads;
-
-        int pointsEachThread, pointsRemaining, pointsConsumed;
-
-        // need to calculated how many points are given to each thread.
-        if(workers > 0){
-            pointsEachThread = floorl(npoints / workers);
-        } else {
-            pointsEachThread = npoints;
-        }
-
-        pointsRemaining = npoints;
-        pointsConsumed = 0;
-
-        for (int ii = 0; ii < workers; ii++){
-            if(ii < workers - 1){
-                threads.emplace_back(std::thread(AbelesCalc_ImagAll,
-                                                 numcoefs,
-                                                 coefP,
-                                                 pointsEachThread,
-                                                 yP + pointsConsumed,
-                                                 xP + pointsConsumed));
-                pointsRemaining -= pointsEachThread;
-                pointsConsumed += pointsEachThread;
-            } else {
-                threads.emplace_back(std::thread(AbelesCalc_ImagAll,
-                                                 numcoefs,
-                                                 coefP,
-                                                 pointsRemaining,
-                                                 yP + pointsConsumed,
-                                                 xP + pointsConsumed));
-                pointsRemaining -= pointsRemaining;
-                pointsConsumed += pointsRemaining;
-            }
-        }
-
-        // synchronise threads
-        for (auto& th : threads) th.join();
-    }
-
-
-/*
-Parallelised version
-*/
-void reflectMT(int numcoefs,
-               const double *coefP,
-               int npoints,
-               double *yP,
-               const double *xP,
-               int threads){
-/*
-choose between the mode of calculation, depending on whether pthreads or omp.h
-is present for parallelisation.
-*/
-    AbelesCalc_Imag(numcoefs, coefP, npoints, yP, xP, threads);
-}
-
-/*
-Non parallelised version
-*/
-void reflect(int numcoefs,
-            const double *coefP,
-            int npoints,
-            double *yP,
-            const double *xP){
-    AbelesCalc_ImagAll(numcoefs, coefP, npoints, yP, xP);
-}
 
 #ifdef __cplusplus
     }

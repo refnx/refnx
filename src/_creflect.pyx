@@ -30,7 +30,7 @@ import numpy as np
 cimport numpy as cnp
 cimport cython
 
-cdef extern from "refcalc.h" nogil:
+cdef extern from "refcaller.h" nogil:
     void reflect(int numcoefs, const double *coefP, int npoints, double *yP,
                  const double *xP)
     void reflectMT(int numcoefs, const double *coefP, int npoints, double *yP,
@@ -51,7 +51,41 @@ cpdef cnp.ndarray abeles(cnp.ndarray x,
                          double scale=1.0,
                          double bkg=0.,
                          int threads=-1):
+    """Abeles matrix formalism for calculating reflectivity from a stratified
+    medium.
 
+    Parameters
+    ----------
+    q: array_like
+        the q values required for the calculation.
+        Q = 4 * Pi / lambda * sin(omega).
+        Units = Angstrom**-1
+    layers: np.ndarray
+        coefficients required for the calculation, has shape (2 + N, 4),
+        where N is the number of layers
+        layers[0, 1] - SLD of fronting (/1e-6 Angstrom**-2)
+        layers[0, 2] - iSLD of fronting (/1e-6 Angstrom**-2)
+        layers[N, 0] - thickness of layer N
+        layers[N, 1] - SLD of layer N (/1e-6 Angstrom**-2)
+        layers[N, 2] - iSLD of layer N (/1e-6 Angstrom**-2)
+        layers[N, 3] - roughness between layer N-1/N
+        layers[-1, 1] - SLD of backing (/1e-6 Angstrom**-2)
+        layers[-1, 2] - iSLD of backing (/1e-6 Angstrom**-2)
+        layers[-1, 3] - roughness between backing and last layer
+    scale: float
+        Multiply all reflectivities by this value.
+    bkg: float
+        Linear background to be added to all reflectivities
+    threads: int, optional
+        How many threads you would like to use in the reflectivity calculation.
+        If `threads == -1` then the calculation is automatically spread over
+        `multiprocessing.cpu_count()` threads.
+
+    Returns
+    -------
+    Reflectivity: np.ndarray
+        Calculated reflectivity values for each q value.
+    """
     if w.shape[1] != 4 or w.shape[0] < 2:
         raise ValueError("Layer parameters for _creflect must be an array of"
                          " shape (>2, 4)")

@@ -223,3 +223,7 @@ Details of changes made to refnx
   moment.
 - change reduction code for ReflectNexus.phase_angle to use degrees, not
   radians. (previously angles were returned in a mix of degrees/radians)
+- Speed of reflectivity calculation is improved between 10 and 20 %. This is
+  achieved by the use of C99 complex arithmetic instead of C++ std::complex.
+  This improvement does not apply to Windows because it doesn't have a
+  C99 standard conformant compiler.

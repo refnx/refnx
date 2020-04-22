@@ -26,9 +26,9 @@ DEALINGS IN THIS SOFTWARE.
 
 */
 
+
 /*
-    AbelesCalc_ImagAll uses the Abeles matrix method to calculate specular
-    reflectivity.
+    reflect uses the Abeles matrix method to calculate specular reflectivity.
     The system is assumed to consist of a series of uniformly dense layers
     (slabs). The radiation is incident through the fronting medium, leaving
     through the backing medium.
@@ -50,10 +50,13 @@ DEALINGS IN THIS SOFTWARE.
     xP - array containing the Q (momentum transfer) points. It has units Å**-1.
     The array is npoints long
 
+    threads - specifies the number of parallel threads to use.
+
+
     Detailed description of the entries in coefP
     --------------------------------------------
     coefP[0] - the number of layers. Should be an integer.
-               4 * (int) coefP[0] + 8 == numcoefs
+               4 * coefP[0] + 8 == numcoefs
 
     coefP[1] - scale factor.  The calculated reflectivity is multiplied by this
     value. i.e. yP = scale * ref + background
@@ -69,7 +72,7 @@ DEALINGS IN THIS SOFTWARE.
     coefP[6] - background.  A constant value added to all the reflectivity
     points.
 
-    coefP[7] - roughness between backing medium and bottom most layer (Å). If
+    coefP[7] - roughness between backing medium and bottom most layer (Å).  If
     there are no layers, the roughness between the fronting and backing media.
 
     coefP[4 * M + 8] - thickness of layer M, with M = 0, ... N - 1. (Å)
@@ -81,14 +84,14 @@ DEALINGS IN THIS SOFTWARE.
     coefP[4 * M + 11] - roughness between layer M - 1 / M (Å)
 */
 
+/*
+Parallelised
+*/
+void reflectMT(int numcoefs, const double *coefP, int npoints, double *yP,
+               const double *xP, int threads);
 
-#ifndef REFCALC_H
-#define REFCALC_H
-
-void AbelesCalc_ImagAll(int numcoefs,
-                        const double *coefP,
-                        int npoints,
-                        double *yP,
-                        const double *xP);
-
-#endif
+/*
+Non parallelised
+*/
+void reflect(int numcoefs, const double *coefP, int npoints, double *yP,
+             const double *xP);

@@ -224,13 +224,38 @@ def setup_package():
             ext_modules.append(_cutil)
 
             # creflect extension module
+            # Compile reflectivity calculator to object with C compiler
+            # first.
+            # It's not possible to do this in an Extension object because
+            # the `-std=c++11` compile arg and C99 C code are incompatible
+            # (at least on Darwin).
+            from numpy.distutils.ccompiler import new_compiler
+            from distutils.sysconfig import customize_compiler
+            ccompiler = new_compiler()
+            customize_compiler(ccompiler)
+            ccompiler.verbose = True
+            extra_preargs = ['-O2']
+
+            if sys.platform == 'win32':
+                # use the C++ code on Windows. The C++ code uses the
+                # std::complex<double> object for its arithmetic.
+                f = ['src/refcalc.cpp']
+            else:
+                # and C code on other machines. The C code uses C99 complex
+                # arithmetic which is 10-20% faster.
+                f = ['src/refcalc.c']
+
+            refcalc_obj = ccompiler.compile(f, extra_preargs=extra_preargs)
+            print(refcalc_obj)
+
             _creflect = Extension(
                 name='refnx.reflect._creflect',
                 sources=['src/_creflect.pyx',
-                         'src/refcalc.cpp'],
+                         'src/refcaller.cpp'],
                 include_dirs=[numpy_include],
                 language='c++',
                 extra_compile_args=['-std=c++11'],
+                extra_objects=refcalc_obj,
             )
             ext_modules.append(_creflect)
 
