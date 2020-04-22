@@ -30,7 +30,7 @@ import numpy as np
 cimport numpy as cnp
 cimport cython
 
-cdef extern from "refcalc.h" nogil:
+cdef extern from "refcaller.h" nogil:
     void reflect(int numcoefs, const double *coefP, int npoints, double *yP,
                  const double *xP)
     void reflectMT(int numcoefs, const double *coefP, int npoints, double *yP,
