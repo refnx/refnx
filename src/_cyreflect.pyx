@@ -48,27 +48,27 @@ cdef _abeles(double[:] x,
              cnp.ndarray[cnp.float64_t, ndim=2] w,
              double scale=1.0, double bkg=0., int num_threads=1):
 
-    cdef int _num_threads = num_threads
-    cdef int nlayers = w.shape[0] - 2
-    cdef int npoints = x.shape[0]
-    cdef int layer
-    cdef int i
-    cdef int m
-    cdef double complex M_4PI = 4 * np.pi
-    cdef double complex I = 1j
-    cdef double complex rj, k, k_next, q2, rough, mi00, mi01, mi10, mi11, thick
-    cdef double complex mrtot00, mrtot01, mrtot10, mrtot11, p0, p1, beta, arg
+    cdef:
+        int _num_threads = num_threads
+        int nlayers = w.shape[0] - 2
+        int npoints = x.shape[0]
+        int layer, i, m
+        double complex M_4PI = 4 * np.pi
+        double complex I = 1j
+        double complex rj, k, k_next, q2, rough, mi00, mi01, mi10, mi11, thick
+        double complex mrtot00, mrtot01, mrtot10, mrtot11, p0, p1, beta, arg
 
-    cdef cnp.ndarray[cnp.complex128_t, ndim=1] y = np.zeros(npoints, np.complex128)
-    cdef cnp.ndarray[cnp.complex128_t, ndim=1] roughsqr = np.empty(nlayers + 1,
-                             np.complex128)
+        cnp.ndarray[cnp.complex128_t, ndim=1] y = np.zeros(npoints,
+                                                           np.complex128)
+        cnp.ndarray[cnp.complex128_t, ndim=1] roughsqr = np.empty(
+            nlayers + 1, np.complex128)
 
-    cdef cnp.ndarray[cnp.complex128_t, ndim=1] SLD = np.zeros(
-                            (w.shape[0]), np.complex128)
+        cnp.ndarray[cnp.complex128_t, ndim=1] SLD = np.zeros(
+            (w.shape[0]), np.complex128)
 
-    cdef double[:, :] wbuf = w
-    cdef double complex[:] SLDbuf = SLD
-    cdef double complex[:] roughbuf = roughsqr
+        double[:, :] wbuf = w
+        double complex[:] SLDbuf = SLD
+        double complex[:] roughbuf = roughsqr
 
     for i in range(1, nlayers + 2):
         SLDbuf[i] = M_4PI * (wbuf[i, 1] - wbuf[0, 1] +
@@ -77,7 +77,7 @@ cdef _abeles(double[:] x,
 
     for i in prange(npoints, nogil=True, num_threads=_num_threads):
         q2 = x[i] * x[i] / 4.
-        k = sqrt(q2)
+        k = x[i] / 2.
         for m in range(0, nlayers + 1):
             k_next = sqrt(q2 - SLDbuf[m + 1])
             rj = (k - k_next) / (k + k_next) * exp(k * k_next * roughbuf[m])
