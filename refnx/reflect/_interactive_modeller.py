@@ -811,6 +811,8 @@ class Motofit(object):
         is constructed from the current time. These constructed filenames will
         be in the current working directory, for a specific save location `f`
         must be provided.
+        This method is only intended to be used to serialise models created by
+        this interactive Jupyter widget modeller.
 
         Parameters
         ----------
@@ -832,6 +834,10 @@ class Motofit(object):
         corresponding to the current dataset name,
         `'model_' + self.dataset.name + '.pkl'`. If there is no current
         dataset then the most recent model will be loaded.
+        This method is only intended to be used to deserialise models created
+        by this interactive Jupyter widget modeller, and will not successfully
+        load complicated ReflectModel created outside of the interactive
+        modeller.
 
         Parameters
         ----------

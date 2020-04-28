@@ -69,3 +69,21 @@ macOS Catalina expects all apps to be code-signed and notarised for them to be
 able to run via 'double-clicking' in the finder. The project is working towards
 fulfilling those conditions, but in the meantime you can still open the
 standalone motofit.app by right-clicking and selecting 'open'.
+
+Can I save models/objectives to file?
+-----------------------------------------
+I'm assuming that you have a `ReflectModel` or `Objective` that you'd like to
+save to file. The easiest way to do this is via serialisation to a Python
+pickle::
+
+    import pickle
+    # save
+    with open('my_objective.pkl', 'wb+') as f:
+        pickle.dump(objective, f)
+
+    # load
+    with open('my_objective.pkl', 'rb') as f:
+        restored_objective = pickle.load(f)
+
+The saved pickle files are in a binary format, and are not human readable.
+It may also be useful to save the representation, :code:`repr(objective)`.
