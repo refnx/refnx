@@ -227,3 +227,4 @@ Details of changes made to refnx
   achieved by the use of C99 complex arithmetic instead of C++ std::complex.
   This improvement does not apply to Windows because it doesn't have a
   C99 standard conformant compiler.
+- Document how to save a model.
