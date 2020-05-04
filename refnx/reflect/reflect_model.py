@@ -93,18 +93,21 @@ def get_reflect_backend(backend='c'):
             from refnx.reflect._reflect import abeles_pyopencl
             f = abeles_pyopencl
         except ImportError:
+            warnings.warn("Can't use the pyopencl abeles backend")
             return get_reflect_backend('c')
     if backend == 'cython':
         try:
             from refnx.reflect import _cyreflect as _cy
             f = _cy.abeles
         except ImportError:
+            warnings.warn("Can't use the cython abeles backend")
             return get_reflect_backend('c')
     elif backend == 'c':
         try:
             from refnx.reflect import _creflect as _c
             f = _c.abeles
         except ImportError:
+            warnings.warn("Can't use the C abeles backend")
             return get_reflect_backend('python')
     elif backend == 'python':
         warnings.warn("Using the SLOW reflectivity calculation.")
