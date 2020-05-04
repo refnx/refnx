@@ -73,7 +73,7 @@ def get_reflect_backend(backend='c'):
     ----------
     backend: {'python', 'cython', 'c', 'pyopencl'}, str
         The module that calculates the reflectivity. Speed should go in the
-        order: c > pyopencl > cython > python. If a particular method is not
+        order: c > pyopencl / cython > python. If a particular method is not
         available the function falls back: cython/pyopencl --> c --> python.
 
     Returns
@@ -83,9 +83,10 @@ def get_reflect_backend(backend='c'):
 
     Notes
     -----
-    The pyopencl implementation uses pyopencl on a GPU to calculate
-    reflectivity. It is not as accurate as the other options. 'c' is
-    preferred for most circumstances.
+    'c' is preferred for most circumstances.
+    'pyopencl' uses a GPU to calculate reflectivity and requires that pyopencl
+    be installed. It is not as accurate as the other options. 'pyopencl' is
+    only included for completeness.
     """
     if backend == 'pyopencl':
         try:
