@@ -71,28 +71,43 @@ def get_reflect_backend(backend='c'):
 
     Parameters
     ----------
-    backend: {'python', 'cython', 'c'}, str
+    backend: {'python', 'cython', 'c', 'pyopencl'}, str
         The module that calculates the reflectivity. Speed should go in the
-        order cython > c > python. If a particular method is not available the
-        function falls back: cython --> c --> python.
+        order: c > pyopencl / cython > python. If a particular method is not
+        available the function falls back: cython/pyopencl --> c --> python.
 
     Returns
     -------
     abeles: callable
         The callable that calculates the reflectivity
 
+    Notes
+    -----
+    'c' is preferred for most circumstances.
+    'pyopencl' uses a GPU to calculate reflectivity and requires that pyopencl
+    be installed. It is not as accurate as the other options. 'pyopencl' is
+    only included for completeness.
     """
+    if backend == 'pyopencl':
+        try:
+            from refnx.reflect._reflect import abeles_pyopencl
+            f = abeles_pyopencl
+        except ImportError:
+            warnings.warn("Can't use the pyopencl abeles backend")
+            return get_reflect_backend('c')
     if backend == 'cython':
         try:
             from refnx.reflect import _cyreflect as _cy
             f = _cy.abeles
         except ImportError:
+            warnings.warn("Can't use the cython abeles backend")
             return get_reflect_backend('c')
     elif backend == 'c':
         try:
             from refnx.reflect import _creflect as _c
             f = _c.abeles
         except ImportError:
+            warnings.warn("Can't use the C abeles backend")
             return get_reflect_backend('python')
     elif backend == 'python':
         warnings.warn("Using the SLOW reflectivity calculation.")
