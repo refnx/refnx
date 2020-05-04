@@ -315,7 +315,7 @@ class TestReflect(object):
             calc2 = _reflect.abeles_pyopencl(self.qvals, layer2,
                                              scale=0.99, bkg=1e-8)
             assert_allclose(calc1, calc2, rtol=0.02)
-        except AttributeError:
+        except RuntimeError:
             pass
 
     def test_c_py_abeles_absorption(self):

@@ -123,7 +123,9 @@ try:
             cl.enqueue_copy(queue, reflectivity, ref_g)
         return reflectivity
 
-except ImportError:
+except Exception:
+    # general catch-all because I don't know what other Exceptions will be
+    # raised
     pass
 
 
