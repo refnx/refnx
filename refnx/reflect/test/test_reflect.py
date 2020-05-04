@@ -253,7 +253,7 @@ class TestReflect(object):
     """
 
     def test_compare_c_py_abeles0(self):
-        # test two layer system
+        # test one layer system
         # if not TEST_C_REFLECT:
         #     return
         layer0 = np.array([[0, 2.07, 0.01, 3],
@@ -303,6 +303,20 @@ class TestReflect(object):
         calc1 = _reflect.abeles(self.qvals, layer2, scale=0.99, bkg=1e-8)
         calc2 = _cyreflect.abeles(self.qvals, layer2, scale=0.99, bkg=1e-8)
         assert_almost_equal(calc1, calc2)
+
+    def test_compare_pyopencl_py_abeles2(self):
+        # test two layer system
+        layer2 = np.array([[0, 2.07, 0.01, 3],
+                           [10, 3.47, 0.01, 3],
+                           [100, 1.0, 0.01, 4],
+                           [0, 6.36, 0.1, 3]])
+        calc1 = _reflect.abeles(self.qvals, layer2, scale=0.99, bkg=1e-8)
+        try:
+            calc2 = _reflect.abeles_pyopencl(self.qvals, layer2,
+                                             scale=0.99, bkg=1e-8)
+            assert_allclose(calc1, calc2, rtol=0.02)
+        except AttributeError:
+            pass
 
     def test_c_py_abeles_absorption(self):
         # https://github.com/andyfaff/refl1d_analysis/tree/master/notebooks
