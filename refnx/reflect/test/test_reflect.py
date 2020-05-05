@@ -4,8 +4,7 @@ import pickle
 import time
 
 import numpy as np
-from numpy.testing import (assert_almost_equal, assert_equal, assert_,
-                           assert_allclose)
+from numpy.testing import assert_almost_equal, assert_equal, assert_allclose
 import scipy.stats as stats
 
 try:
@@ -29,6 +28,7 @@ from refnx.analysis import (Transform, Objective,
 from refnx.reflect import (SLD, ReflectModel, MixedReflectModel,
                            reflectivity, Structure, Slab,
                            FresnelTransform, choose_dq_type)
+import refnx.reflect.reflect_model as reflect_model
 from refnx.dataset import ReflectDataset
 from refnx._lib import MapWrapper
 
@@ -96,7 +96,7 @@ class TestReflect(object):
 
         # test for non-contiguous Q values
         tempq = self.qvals[0::5]
-        assert_(tempq.flags['C_CONTIGUOUS'] is False)
+        assert tempq.flags['C_CONTIGUOUS'] is False
         calc = _creflect.abeles(tempq, self.structure.slabs()[..., :4])
         assert_almost_equal(calc, self.rvals[0::5])
 
@@ -110,7 +110,7 @@ class TestReflect(object):
 
         # test for non-contiguous Q values
         tempq = self.qvals[0::5]
-        assert_(tempq.flags['C_CONTIGUOUS'] is False)
+        assert tempq.flags['C_CONTIGUOUS'] is False
         calc = _cyreflect.abeles(tempq, self.structure.slabs()[..., :4])
         assert_almost_equal(calc, self.rvals[0::5])
 
@@ -177,7 +177,7 @@ class TestReflect(object):
 
         # if not TEST_C_REFLECT:
         #     return
-        assert_(_reflect.__file__ != _creflect.__file__)
+        assert _reflect.__file__ != _creflect.__file__
 
         calc1 = _reflect.abeles(self.qvals, s)
         calc2 = _creflect.abeles(self.qvals, s)
@@ -207,7 +207,7 @@ class TestReflect(object):
 
         # if not TEST_C_REFLECT:
         #     return
-        assert_(_reflect.__file__ != _cyreflect.__file__)
+        assert _reflect.__file__ != _cyreflect.__file__
 
         calc1 = _reflect.abeles(self.qvals, s)
         calc2 = _cyreflect.abeles(self.qvals, s)
@@ -374,6 +374,15 @@ class TestReflect(object):
             calc2 = _cyreflect.abeles(x, layers)
             assert_almost_equal(calc2, refl1d)
 
+    def test_use_reflectivity_backend(self):
+        assert _reflect.__file__ != _creflect.__file__
+        reflect_model.abeles = _reflect.abeles
+
+        with reflect_model.use_reflect_backend('c') as f:
+            assert f == _creflect.abeles
+            assert reflect_model.abeles == _creflect.abeles
+        assert reflect_model.abeles == _reflect.abeles
+
     def test_reverse(self):
         # check that the structure reversal works.
         sio2 = SLD(3.47, name='SiO2')
@@ -536,8 +545,8 @@ class TestReflect(object):
                               transform=Transform('logY'))
         fitter = CurveFitter(objective, nwalkers=100)
 
-        assert_(len(objective.generative().shape) == 1)
-        assert_(len(objective.residuals().shape) == 1)
+        assert len(objective.generative().shape) == 1
+        assert len(objective.residuals().shape) == 1
 
         res = fitter.fit('least_squares')
         res_mcmc = fitter.sample(steps=5, nthin=10, random_state=1,
@@ -734,7 +743,7 @@ class TestReflect(object):
                                         bkg=0, dq=0)
 
         assert_equal(mixed_model.scales, np.array([0.4, 0.6]))
-        assert_(mixed_model.dq.value == 0)
+        assert mixed_model.dq.value == 0
 
         assert_allclose(mixed_model_y, mixed_model(self.qvals), atol=1e-13)
 
@@ -742,7 +751,7 @@ class TestReflect(object):
         q = repr(mixed_model)
         r = eval(q)
         assert_equal(r.scales, np.array([0.4, 0.6]))
-        assert_(r.dq.value == 0)
+        assert r.dq.value == 0
 
         assert_allclose(mixed_model_y, r(self.qvals), atol=1e-13)
 
