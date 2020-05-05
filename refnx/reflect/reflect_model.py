@@ -23,8 +23,7 @@ FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THIS SOFTWARE.
 
 """
-import abc
-import math
+from contextlib import contextmanager
 import time
 from functools import lru_cache
 import numbers
@@ -68,6 +67,13 @@ Implementation notes
 
 def get_reflect_backend(backend='c'):
     r"""
+    Obtain an 'abeles' function used for calculating reflectivity.
+
+    It does not change the function used by ReflectModel to calculate
+    reflectivity. In order to change this you should change the
+    refnx.reflect.reflect_model.abeles module variable to point to a different
+    function, or use the refnx.reflect.reflect_model.use_reflect_backend
+    context manager.
 
     Parameters
     ----------
@@ -88,6 +94,8 @@ def get_reflect_backend(backend='c'):
     be installed. It is not as accurate as the other options. 'pyopencl' is
     only included for completeness.
     """
+    backend = backend.lower()
+
     if backend == 'pyopencl':
         try:
             from refnx.reflect._reflect import abeles_pyopencl
@@ -117,7 +125,32 @@ def get_reflect_backend(backend='c'):
     return f
 
 
-abeles = get_reflect_backend()
+# this function is used to calculate reflectivity
+abeles = get_reflect_backend('c')
+
+
+@contextmanager
+def use_reflect_backend(backend='c'):
+    """Context manager for temporarily setting the backend used for
+    calculating reflectivity
+
+    Parameters
+    ----------
+    backend: {'python', 'cython', 'c', 'pyopencl'}, str
+        The function that calculates the reflectivity. Speed should go in the
+        order: c > pyopencl / cython > python. If a particular method is not
+        available the function falls back: cython/pyopencl --> c --> python.
+
+    Yields
+    ------
+    abeles: callable
+        A callable that calculates the reflectivity
+    """
+    global abeles
+    f = abeles
+    abeles = get_reflect_backend(backend)
+    yield abeles
+    abeles = f
 
 
 class ReflectModel(object):
@@ -1094,7 +1127,7 @@ def choose_dq_type(objective):
     if (objective.data.x_err is None or
             not isinstance(objective.model,
                            (ReflectModel, MixedReflectModel))):
-        return 'pointwise'
+        return 'constant'
 
     original_method = objective.model.dq_type
 
@@ -1111,7 +1144,7 @@ def choose_dq_type(objective):
     objective.model.dq.value = np.mean(dq)
     objective.model.dq_type = 'constant'
     start = time.time()
-    for i in range(10):
+    for i in range(100):
         objective.generative()
     const_pp = time.time() - start
 
