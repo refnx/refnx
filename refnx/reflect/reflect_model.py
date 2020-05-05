@@ -133,6 +133,18 @@ abeles = get_reflect_backend('c')
 def use_reflect_backend(backend='c'):
     """Context manager for temporarily setting the backend used for
     calculating reflectivity
+
+    Parameters
+    ----------
+    backend: {'python', 'cython', 'c', 'pyopencl'}, str
+        The function that calculates the reflectivity. Speed should go in the
+        order: c > pyopencl / cython > python. If a particular method is not
+        available the function falls back: cython/pyopencl --> c --> python.
+
+    Yields
+    ------
+    abeles: callable
+        A callable that calculates the reflectivity
     """
     global abeles
     f = abeles
