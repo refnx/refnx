@@ -509,9 +509,9 @@ class TestReflect(object):
             mapw_mod = g(wf, walkers)
             mapw_logl = g(objective.logl, walkers)
             mapw_chi2 = g(objective.chisqr, walkers)
-        assert_equal(mapw_logl, map_logl)
-        assert_equal(mapw_chi2, map_chi2)
-        assert_equal(mapw_mod, map_mod)
+        assert_allclose(mapw_logl, map_logl)
+        assert_allclose(mapw_chi2, map_chi2)
+        assert_allclose(mapw_mod, map_mod)
 
     def test_reflectivity_fit(self):
         # a smoke test to make sure the reflectivity fit proceeds
