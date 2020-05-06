@@ -2,7 +2,6 @@ import os.path
 import os
 import pickle
 import time
-
 import numpy as np
 from numpy.testing import assert_almost_equal, assert_equal, assert_allclose
 import scipy.stats as stats
@@ -496,20 +495,20 @@ class TestReflect(object):
             z = f(wf, q)
         assert_equal(z, np.array(list(y)))
 
-        try:
-            import pyopencl as cl
-        except ModuleNotFoundError:
-            return
-        try:
-            cl.get_platforms()
-        except cl._cl.LogicError:
-            return
+        # try:
+        #     import pyopencl as cl
+        # except ModuleNotFoundError:
+        #     return
+        # try:
+        #     cl.get_platforms()
+        # except cl._cl.LogicError:
+        #     return
 
-        wf = Wrapper_fn(_reflect.abeles_pyopencl, p0)
-        y = map(wf, q)
-        with MapWrapper(2) as f:
-            z = f(wf, q)
-        assert_equal(z, np.array(list(y)))
+        # wf = Wrapper_fn(_reflect.abeles_pyopencl, p0)
+        # y = map(wf, q)
+        # with MapWrapper(2) as f:
+        #     z = f(wf, q)
+        # assert_equal(z, np.array(list(y)))
 
     def test_parallel_objective(self):
         # check that a parallel objective works without issue
