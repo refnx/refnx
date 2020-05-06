@@ -383,6 +383,10 @@ class TestReflect(object):
             assert reflect_model.abeles == _creflect.abeles
         assert reflect_model.abeles == _reflect.abeles
 
+        # this shouldn't error if pyopencl is not installed
+        # it should just fall back to 'c'
+        reflect_model.use_reflect_backend('pyopencl')
+
     def test_reverse(self):
         # check that the structure reversal works.
         sio2 = SLD(3.47, name='SiO2')
@@ -490,7 +494,7 @@ class TestReflect(object):
             with MapWrapper(2) as f:
                 z = f(wf, q)
             assert_equal(z, np.array(list(y)))
-        except AttributeError:
+        except (AttributeError, ModuleNotFoundError):
             pass
 
     def test_parallel_objective(self):

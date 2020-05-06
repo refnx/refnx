@@ -99,10 +99,12 @@ def get_reflect_backend(backend='c'):
 
     if backend == 'pyopencl':
         try:
+            import pyopencl
             from refnx.reflect._reflect import abeles_pyopencl
             f = abeles_pyopencl
-        except ImportError:
-            warnings.warn("Can't use the pyopencl abeles backend")
+        except (ImportError, ModuleNotFoundError):
+            warnings.warn("Can't use the pyopencl abeles backend, you need"
+                          "to install pyopencl")
             return get_reflect_backend('c')
     if backend == 'cython':
         try:
