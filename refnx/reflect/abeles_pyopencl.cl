@@ -23,7 +23,6 @@ FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THIS SOFTWARE.
 
 */
-
 #define PYOPENCL_DEFINE_CDOUBLE
 #include <pyopencl-complex.h>
 
@@ -46,10 +45,10 @@ __kernel void abeles(
     q2 = cdouble_fromreal(q_g[gid] * q_g[gid] / 4.);
     kn = cdouble_fromreal(q_g[gid] / 2.);
 
-    mrtot00.real = 1.;
-    mrtot00.imag = 0.;
-    mrtot11.real = 1.;
-    mrtot00.imag = 0.;
+    mrtot00 = cdouble_fromreal(1.0);
+    mrtot11 = cdouble_fromreal(1.0);
+    mrtot01 = cdouble_fromreal(0.);
+    mrtot10 = cdouble_fromreal(0.);
     I.real = 0.;
     I.imag = 1.;
 
@@ -90,12 +89,12 @@ __kernel void abeles(
             // matrix multiply
             p0 = cdouble_add(cdouble_mul(mrtot00, mi00), cdouble_mul(mrtot10, mi01));
             p1 = cdouble_add(cdouble_mul(mrtot00, mi10), cdouble_mul(mrtot10, mi11));
+
             mrtot00 = p0;
             mrtot10 = p1;
 
             p0 = cdouble_add(cdouble_mul(mrtot01, mi00), cdouble_mul(mrtot11, mi01));
             p1 = cdouble_add(cdouble_mul(mrtot01, mi10), cdouble_mul(mrtot11, mi11));
-
             mrtot01 = p0;
             mrtot11 = p1;
 

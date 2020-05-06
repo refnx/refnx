@@ -96,6 +96,9 @@ try:
         Reflectivity: np.ndarray
             Calculated reflectivity values for each q value.
         """
+        qvals = np.asfarray(q)
+        flatq = qvals.ravel()
+
         nlayers = len(w) - 2
         coefs = np.empty((nlayers * 4 + 8))
         coefs[0] = nlayers
@@ -112,16 +115,17 @@ try:
 
         mf = cl.mem_flags
         with cl.CommandQueue(ctx) as queue:
-            q_g = cl.Buffer(ctx, mf.READ_ONLY | mf.USE_HOST_PTR, hostbuf=q)
+            q_g = cl.Buffer(ctx, mf.READ_ONLY | mf.USE_HOST_PTR, hostbuf=flatq)
             coefs_g = cl.Buffer(ctx, mf.READ_ONLY | mf.USE_HOST_PTR,
                                 hostbuf=coefs)
-            ref_g = cl.Buffer(ctx, mf.WRITE_ONLY, q.nbytes)
+            ref_g = cl.Buffer(ctx, mf.WRITE_ONLY, flatq.nbytes)
 
-            prg.abeles(queue, q.shape, None, q_g, coefs_g, ref_g)
+            prg.abeles(queue, flatq.shape, None, q_g, coefs_g, ref_g)
 
-            reflectivity = np.empty_like(q)
+            reflectivity = np.empty_like(flatq)
             cl.enqueue_copy(queue, reflectivity, ref_g)
-        return reflectivity
+
+        return np.reshape(reflectivity, qvals.shape)
 
 except Exception:
     # general catch-all because I don't know what other Exceptions will be
