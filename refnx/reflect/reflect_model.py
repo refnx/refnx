@@ -99,33 +99,38 @@ def get_reflect_backend(backend='c'):
 
     if backend == 'pyopencl':
         try:
-            import pyopencl
+            import pyopencl as cl
+            # this raises a pyopencl._cl.LogicError if there isn't a platform
+            cl.get_platforms()
             from refnx.reflect._reflect import abeles_pyopencl
-            f = abeles_pyopencl
+            return abeles_pyopencl
         except (ImportError, ModuleNotFoundError):
             warnings.warn("Can't use the pyopencl abeles backend, you need"
                           "to install pyopencl")
+        except cl._cl.LogicError:
+            warnings.warn("There are no openCL platforms available")
+        finally:
             return get_reflect_backend('c')
-    if backend == 'cython':
+    elif backend == 'cython':
         try:
             from refnx.reflect import _cyreflect as _cy
-            f = _cy.abeles
+            return = _cy.abeles
         except ImportError:
             warnings.warn("Can't use the cython abeles backend")
             return get_reflect_backend('c')
     elif backend == 'c':
         try:
             from refnx.reflect import _creflect as _c
-            f = _c.abeles
+            return _c.abeles
         except ImportError:
             warnings.warn("Can't use the C abeles backend")
             return get_reflect_backend('python')
     elif backend == 'python':
         warnings.warn("Using the SLOW reflectivity calculation.")
-        from refnx.reflect import _reflect as _py
-        f = _py.abeles
 
-    return f
+    # if nothing works return the Python backend
+    from refnx.reflect import _reflect as _py
+    return _py.abeles
 
 
 # this function is used to calculate reflectivity
