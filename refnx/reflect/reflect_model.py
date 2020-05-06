@@ -101,15 +101,17 @@ def get_reflect_backend(backend='c'):
         try:
             import pyopencl as cl
             # this raises a pyopencl._cl.LogicError if there isn't a platform
-            cl.get_platforms()
-            from refnx.reflect._reflect import abeles_pyopencl
-            return abeles_pyopencl
         except (ImportError, ModuleNotFoundError):
             warnings.warn("Can't use the pyopencl abeles backend, you need"
                           "to install pyopencl")
+            return get_reflect_backend('c')
+        try:
+            # see if there are any openCL platforms
+            cl.get_platforms()
+            from refnx.reflect._reflect import abeles_pyopencl
+            return abeles_pyopencl
         except cl._cl.LogicError:
             warnings.warn("There are no openCL platforms available")
-        finally:
             return get_reflect_backend('c')
     elif backend == 'cython':
         try:
