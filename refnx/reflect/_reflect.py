@@ -140,7 +140,7 @@ try:
             return np.reshape(reflectivity, qvals.shape)
 
         def _init_opencl(self):
-            self.ctx = cl.create_some_context(interactive=False)
+            self.ctx = cl.create_some_context()
             pth = os.path.dirname(os.path.abspath(__file__))
             with open(os.path.join(pth, 'abeles_pyopencl.cl'), 'r') as f:
                 src = f.read()
