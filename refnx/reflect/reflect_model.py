@@ -91,8 +91,9 @@ def get_reflect_backend(backend='c'):
     -----
     'c' is preferred for most circumstances.
     'pyopencl' uses a GPU to calculate reflectivity and requires that pyopencl
-    be installed. It is not as accurate as the other options. 'pyopencl' is
-    only included for completeness.
+    be installed. It may not as accurate as the other options. 'pyopencl' is
+    only included for completeness. The 'pyopencl' backend is also harder to
+    use with multiprocessing-based parallelism.
     """
     backend = backend.lower()
 
@@ -145,6 +146,14 @@ def use_reflect_backend(backend='c'):
     ------
     abeles: callable
         A callable that calculates the reflectivity
+
+    Notes
+    -----
+    'c' is preferred for most circumstances.
+    'pyopencl' uses a GPU to calculate reflectivity and requires that pyopencl
+    be installed. It may not as accurate as the other options. 'pyopencl' is
+    only included for completeness. The 'pyopencl' backend is also harder to
+    use with multiprocessing-based parallelism.
     """
     global abeles
     f = abeles
