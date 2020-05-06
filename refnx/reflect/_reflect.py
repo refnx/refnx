@@ -145,7 +145,6 @@ try:
                 cl.enqueue_copy(queue, reflectivity, ref_g)
             return np.reshape(reflectivity, qvals.shape)
 
-
     abeles_pyopencl = _Abeles_pyopencl()
 
 except Exception:
