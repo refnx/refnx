@@ -50,6 +50,7 @@ the sqrt calculation takes too long. The C implementation is only just ahead of
 the python implementation!
 """
 
+
 class _Abeles_pyopencl():
     def __init__(self):
         self.ctx = None
@@ -143,6 +144,7 @@ class _Abeles_pyopencl():
             reflectivity = np.empty_like(flatq)
             cl.enqueue_copy(queue, reflectivity, ref_g)
         return np.reshape(reflectivity, qvals.shape)
+
 
 abeles_pyopencl = _Abeles_pyopencl()
 
