@@ -484,6 +484,15 @@ class TestReflect(object):
             z = f(wf, q)
         assert_equal(z, np.array(list(y)))
 
+        # try:
+        #     wf = Wrapper_fn(_reflect.abeles_pyopencl, p0)
+        #     y = map(wf, q)
+        #     with MapWrapper(2) as f:
+        #         z = f(wf, q)
+        #     assert_equal(z, np.array(list(y)))
+        # except AttributeError:
+        #     pass
+
     def test_parallel_objective(self):
         # check that a parallel objective works without issue
         # (it could be possible that parallel evaluation fails at a higher

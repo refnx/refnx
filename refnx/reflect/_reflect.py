@@ -52,80 +52,102 @@ the python implementation!
 
 try:
     import pyopencl as cl
-    ctx = cl.create_some_context()
 
-    pth = os.path.dirname(os.path.abspath(__file__))
-    with open(os.path.join(pth, 'abeles_pyopencl.cl'), 'r') as f:
-        src = f.read()
-    prg = cl.Program(ctx, src).build()
+    class _Abeles_pyopencl():
+        def __init__(self):
+            self.ctx = None
+            self.prg = None
 
-    def abeles_pyopencl(q, w, scale=1, bkg=0, threads=0):
-        """
-        Abeles matrix formalism for calculating reflectivity from a stratified
-        medium.
-        Uses pyopencl on a GPU to calculate reflectivity. The accuracy of this
-        function is not as good as the C and Python based versions.
+        def __getstate__(self):
+            # pyopencl Contexts and Programs can't be pickled.
+            d = self.__dict__
+            d['ctx'] = None
+            d['prg'] = None
+            return d
 
-        Parameters
-        ----------
-        q: array_like
-            the q values required for the calculation.
-            Q = 4 * Pi / lambda * sin(omega).
-            Units = Angstrom**-1
-        layers: np.ndarray
-            coefficients required for the calculation, has shape (2 + N, 4),
-            where N is the number of layers
-            layers[0, 1] - SLD of fronting (/1e-6 Angstrom**-2)
-            layers[0, 2] - iSLD of fronting (/1e-6 Angstrom**-2)
-            layers[N, 0] - thickness of layer N
-            layers[N, 1] - SLD of layer N (/1e-6 Angstrom**-2)
-            layers[N, 2] - iSLD of layer N (/1e-6 Angstrom**-2)
-            layers[N, 3] - roughness between layer N-1/N
-            layers[-1, 1] - SLD of backing (/1e-6 Angstrom**-2)
-            layers[-1, 2] - iSLD of backing (/1e-6 Angstrom**-2)
-            layers[-1, 3] - roughness between backing and last layer
-        scale: float
-            Multiply all reflectivities by this value.
-        bkg: float
-            Linear background to be added to all reflectivities
-        threads: int, optional
-            <THIS OPTION IS CURRENTLY IGNORED>
+        def __setstate__(self, state):
+            self.__dict__.update(state)
 
-        Returns
-        -------
-        Reflectivity: np.ndarray
-            Calculated reflectivity values for each q value.
-        """
-        qvals = np.asfarray(q)
-        flatq = qvals.ravel()
+        def __call__(self, q, w, scale=1., bkg=0., threads=0):
+            """
+             Abeles matrix formalism for calculating reflectivity from a stratified
+             medium.
+             Uses pyopencl on a GPU to calculate reflectivity. The accuracy of this
+             function is not as good as the C and Python based versions.
 
-        nlayers = len(w) - 2
-        coefs = np.empty((nlayers * 4 + 8))
-        coefs[0] = nlayers
-        coefs[1] = scale
-        coefs[2:4] = w[0, 1: 3]
-        coefs[4: 6] = w[-1, 1: 3]
-        coefs[6] = bkg
-        coefs[7] = w[-1, 3]
-        if nlayers:
-            coefs[8::4] = w[1:-1, 0]
-            coefs[9::4] = w[1:-1, 1]
-            coefs[10::4] = w[1:-1, 2]
-            coefs[11::4] = w[1:-1, 3]
+             Parameters
+             ----------
+             q: array_like
+                 the q values required for the calculation.
+                 Q = 4 * Pi / lambda * sin(omega).
+                 Units = Angstrom**-1
+             layers: np.ndarray
+                 coefficients required for the calculation, has shape (2 + N, 4),
+                 where N is the number of layers
+                 layers[0, 1] - SLD of fronting (/1e-6 Angstrom**-2)
+                 layers[0, 2] - iSLD of fronting (/1e-6 Angstrom**-2)
+                 layers[N, 0] - thickness of layer N
+                 layers[N, 1] - SLD of layer N (/1e-6 Angstrom**-2)
+                 layers[N, 2] - iSLD of layer N (/1e-6 Angstrom**-2)
+                 layers[N, 3] - roughness between layer N-1/N
+                 layers[-1, 1] - SLD of backing (/1e-6 Angstrom**-2)
+                 layers[-1, 2] - iSLD of backing (/1e-6 Angstrom**-2)
+                 layers[-1, 3] - roughness between backing and last layer
+             scale: float
+                 Multiply all reflectivities by this value.
+             bkg: float
+                 Linear background to be added to all reflectivities
+             threads: int, optional
+                 <THIS OPTION IS CURRENTLY IGNORED>
 
-        mf = cl.mem_flags
-        with cl.CommandQueue(ctx) as queue:
-            q_g = cl.Buffer(ctx, mf.READ_ONLY | mf.USE_HOST_PTR, hostbuf=flatq)
-            coefs_g = cl.Buffer(ctx, mf.READ_ONLY | mf.USE_HOST_PTR,
-                                hostbuf=coefs)
-            ref_g = cl.Buffer(ctx, mf.WRITE_ONLY, flatq.nbytes)
+             Returns
+             -------
+             Reflectivity: np.ndarray
+                 Calculated reflectivity values for each q value.
+             """
+            if self.ctx is None or self.prg is None:
+                self._init_opencl()
 
-            prg.abeles(queue, flatq.shape, None, q_g, coefs_g, ref_g)
+            qvals = np.asfarray(q)
+            flatq = qvals.ravel()
 
-            reflectivity = np.empty_like(flatq)
-            cl.enqueue_copy(queue, reflectivity, ref_g)
+            nlayers = len(w) - 2
+            coefs = np.empty((nlayers * 4 + 8))
+            coefs[0] = nlayers
+            coefs[1] = scale
+            coefs[2:4] = w[0, 1: 3]
+            coefs[4: 6] = w[-1, 1: 3]
+            coefs[6] = bkg
+            coefs[7] = w[-1, 3]
+            if nlayers:
+                coefs[8::4] = w[1:-1, 0]
+                coefs[9::4] = w[1:-1, 1]
+                coefs[10::4] = w[1:-1, 2]
+                coefs[11::4] = w[1:-1, 3]
 
-        return np.reshape(reflectivity, qvals.shape)
+            mf = cl.mem_flags
+            with cl.CommandQueue(self.ctx) as queue:
+                q_g = cl.Buffer(self.ctx, mf.READ_ONLY | mf.COPY_HOST_PTR,
+                                hostbuf=flatq)
+                coefs_g = cl.Buffer(self.ctx, mf.READ_ONLY | mf.COPY_HOST_PTR,
+                                    hostbuf=coefs)
+                ref_g = cl.Buffer(self.ctx, mf.WRITE_ONLY, flatq.nbytes)
+
+                self.prg.abeles(queue, flatq.shape, None, q_g, coefs_g, ref_g)
+
+                reflectivity = np.empty_like(flatq)
+                cl.enqueue_copy(queue, reflectivity, ref_g)
+            return np.reshape(reflectivity, qvals.shape)
+
+        def _init_opencl(self):
+            self.ctx = cl.create_some_context(interactive=False)
+            pth = os.path.dirname(os.path.abspath(__file__))
+            with open(os.path.join(pth, 'abeles_pyopencl.cl'), 'r') as f:
+                src = f.read()
+            self.prg = cl.Program(self.ctx, src).build()
+
+
+    abeles_pyopencl = _Abeles_pyopencl()
 
 except Exception:
     # general catch-all because I don't know what other Exceptions will be
