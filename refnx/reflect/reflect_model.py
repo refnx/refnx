@@ -114,7 +114,7 @@ def get_reflect_backend(backend='c'):
     elif backend == 'cython':
         try:
             from refnx.reflect import _cyreflect as _cy
-            return = _cy.abeles
+            return _cy.abeles
         except ImportError:
             warnings.warn("Can't use the cython abeles backend")
             return get_reflect_backend('c')
