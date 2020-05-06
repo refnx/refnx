@@ -50,7 +50,7 @@ before_install:
     - conda create --yes -n conda-refnx python=$PY
     - source activate conda-refnx
     - conda install --yes -c conda-forge numpy scipy h5py cython pandas xlrd pytest ipywidgets IPython matplotlib traitlets pyqt
-    - conda install --yes -c conda-forge numpydoc sphinx jupyter pandoc nbconvert
+    - conda install --yes -c conda-forge numpydoc sphinx jupyter pandoc nbconvert pyopencl
     - pip install uncertainties ptemcee corner nbsphinx jupyter_sphinx sphinx_rtd_theme tqdm pytest-qt periodictable
     - pip install git+https://github.com/pymc-devs/pymc3
 

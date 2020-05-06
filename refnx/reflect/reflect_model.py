@@ -91,38 +91,48 @@ def get_reflect_backend(backend='c'):
     -----
     'c' is preferred for most circumstances.
     'pyopencl' uses a GPU to calculate reflectivity and requires that pyopencl
-    be installed. It is not as accurate as the other options. 'pyopencl' is
-    only included for completeness.
+    be installed. It may not as accurate as the other options. 'pyopencl' is
+    only included for completeness. The 'pyopencl' backend is also harder to
+    use with multiprocessing-based parallelism.
     """
     backend = backend.lower()
 
     if backend == 'pyopencl':
         try:
-            from refnx.reflect._reflect import abeles_pyopencl
-            f = abeles_pyopencl
-        except ImportError:
-            warnings.warn("Can't use the pyopencl abeles backend")
+            import pyopencl as cl
+            # this raises a pyopencl._cl.LogicError if there isn't a platform
+        except (ImportError, ModuleNotFoundError):
+            warnings.warn("Can't use the pyopencl abeles backend, you need"
+                          "to install pyopencl")
             return get_reflect_backend('c')
-    if backend == 'cython':
+        try:
+            # see if there are any openCL platforms
+            cl.get_platforms()
+            from refnx.reflect._reflect import abeles_pyopencl
+            return abeles_pyopencl
+        except cl._cl.LogicError:
+            warnings.warn("There are no openCL platforms available")
+            return get_reflect_backend('c')
+    elif backend == 'cython':
         try:
             from refnx.reflect import _cyreflect as _cy
-            f = _cy.abeles
+            return _cy.abeles
         except ImportError:
             warnings.warn("Can't use the cython abeles backend")
             return get_reflect_backend('c')
     elif backend == 'c':
         try:
             from refnx.reflect import _creflect as _c
-            f = _c.abeles
+            return _c.abeles
         except ImportError:
             warnings.warn("Can't use the C abeles backend")
             return get_reflect_backend('python')
     elif backend == 'python':
         warnings.warn("Using the SLOW reflectivity calculation.")
-        from refnx.reflect import _reflect as _py
-        f = _py.abeles
 
-    return f
+    # if nothing works return the Python backend
+    from refnx.reflect import _reflect as _py
+    return _py.abeles
 
 
 # this function is used to calculate reflectivity
@@ -145,6 +155,14 @@ def use_reflect_backend(backend='c'):
     ------
     abeles: callable
         A callable that calculates the reflectivity
+
+    Notes
+    -----
+    'c' is preferred for most circumstances.
+    'pyopencl' uses a GPU to calculate reflectivity and requires that pyopencl
+    be installed. It may not as accurate as the other options. 'pyopencl' is
+    only included for completeness. The 'pyopencl' backend is also harder to
+    use with multiprocessing-based parallelism.
     """
     global abeles
     f = abeles

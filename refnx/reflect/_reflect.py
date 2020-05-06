@@ -50,21 +50,31 @@ the sqrt calculation takes too long. The C implementation is only just ahead of
 the python implementation!
 """
 
-try:
-    import pyopencl as cl
-    ctx = cl.create_some_context()
 
-    pth = os.path.dirname(os.path.abspath(__file__))
-    with open(os.path.join(pth, 'abeles_pyopencl.cl'), 'r') as f:
-        src = f.read()
-    prg = cl.Program(ctx, src).build()
+class _Abeles_pyopencl():
+    def __init__(self):
+        self.ctx = None
+        self.prg = None
 
-    def abeles_pyopencl(q, w, scale=1, bkg=0, threads=0):
+    def __getstate__(self):
+        # pyopencl Contexts and Programs can't be pickled.
+        d = self.__dict__
+        d['ctx'] = None
+        d['prg'] = None
+        return d
+
+    def __setstate__(self, state):
+        self.__dict__.update(state)
+
+    def __call__(self, q, w, scale=1., bkg=0., threads=0):
         """
-        Abeles matrix formalism for calculating reflectivity from a stratified
+        Abeles matrix formalism for calculating reflectivity from a
+        stratified
         medium.
-        Uses pyopencl on a GPU to calculate reflectivity. The accuracy of this
-        function is not as good as the C and Python based versions.
+        Uses pyopencl on a GPU to calculate reflectivity. The accuracy of
+        this function may not as good as the C and Python based versions.
+        Furthermore, it can be tricky to use when using multiprocessing
+        based parallelism.
 
         Parameters
         ----------
@@ -73,8 +83,8 @@ try:
             Q = 4 * Pi / lambda * sin(omega).
             Units = Angstrom**-1
         layers: np.ndarray
-            coefficients required for the calculation, has shape (2 + N, 4),
-            where N is the number of layers
+            coefficients required for the calculation, has shape
+            (2 + N, 4), where N is the number of layers
             layers[0, 1] - SLD of fronting (/1e-6 Angstrom**-2)
             layers[0, 2] - iSLD of fronting (/1e-6 Angstrom**-2)
             layers[N, 0] - thickness of layer N
@@ -96,6 +106,14 @@ try:
         Reflectivity: np.ndarray
             Calculated reflectivity values for each q value.
         """
+        import pyopencl as cl
+        if self.ctx is None or self.prg is None:
+            self.ctx = cl.create_some_context(interactive=False)
+            pth = os.path.dirname(os.path.abspath(__file__))
+            with open(os.path.join(pth, 'abeles_pyopencl.cl'), 'r') as f:
+                src = f.read()
+            self.prg = cl.Program(self.ctx, src).build()
+
         qvals = np.asfarray(q)
         flatq = qvals.ravel()
 
@@ -114,23 +132,21 @@ try:
             coefs[11::4] = w[1:-1, 3]
 
         mf = cl.mem_flags
-        with cl.CommandQueue(ctx) as queue:
-            q_g = cl.Buffer(ctx, mf.READ_ONLY | mf.USE_HOST_PTR, hostbuf=flatq)
-            coefs_g = cl.Buffer(ctx, mf.READ_ONLY | mf.USE_HOST_PTR,
+        with cl.CommandQueue(self.ctx) as queue:
+            q_g = cl.Buffer(self.ctx, mf.READ_ONLY | mf.COPY_HOST_PTR,
+                            hostbuf=flatq)
+            coefs_g = cl.Buffer(self.ctx, mf.READ_ONLY | mf.COPY_HOST_PTR,
                                 hostbuf=coefs)
-            ref_g = cl.Buffer(ctx, mf.WRITE_ONLY, flatq.nbytes)
+            ref_g = cl.Buffer(self.ctx, mf.WRITE_ONLY, flatq.nbytes)
 
-            prg.abeles(queue, flatq.shape, None, q_g, coefs_g, ref_g)
+            self.prg.abeles(queue, flatq.shape, None, q_g, coefs_g, ref_g)
 
             reflectivity = np.empty_like(flatq)
             cl.enqueue_copy(queue, reflectivity, ref_g)
-
         return np.reshape(reflectivity, qvals.shape)
 
-except Exception:
-    # general catch-all because I don't know what other Exceptions will be
-    # raised
-    pass
+
+abeles_pyopencl = _Abeles_pyopencl()
 
 
 def abeles(q, layers, scale=1., bkg=0, threads=0):
