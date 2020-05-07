@@ -232,3 +232,6 @@ Details of changes made to refnx
 - An openCL reflectivity calculation backend is added that can use a GPU.
 - Added a `reflect.use_reflect_backend` function to choose between the backends
   used to calculate reflectivity.
+
+0.1.14
+------
