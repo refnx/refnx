@@ -26,7 +26,7 @@ HAS_OPENMP = _open_mp_helpers.check_openmp_support()
 MAJOR = 0
 MINOR = 1
 MICRO = 13
-ISRELEASED = False
+ISRELEASED = True
 VERSION = '%d.%d.%d' % (MAJOR, MINOR, MICRO)
 
 
