@@ -19,9 +19,10 @@ for whl in wheelhouse/*.whl; do
 done
 
 # Install packages and test
-yum install hdf5-devel
+yum install -y hdf5-devel
 for PYBIN in /opt/python/cp3[6-9]-cp*/bin; do
   "${PYBIN}/pip" install scipy matplotlib pytest corner uncertainties h5py xlrd periodictable pandas
   "${PYBIN}/pip" install refnx --no-index -f /io/wheelhouse
   ${PYBIN}/python setup.py test -a refnx/analysis
+  ${PYBIN}/python setup.py test -a refnx/reflect/test/test_reflect.py
 done
