@@ -229,8 +229,6 @@ Details of changes made to refnx
   C99 standard conformant compiler.
 - Document how to save a model.
 - macOS wheels (and CI testing) have the cyreflect openmp option activated.
-- An openCL reflectivity calculation backend is added that can use a GPU. It
-  is less accurate and slower than the C backend, but is included for
-  completeness.
-- Added a use_reflect_backend to choose between the backends used to calculate
-  reflectivity.
+- An openCL reflectivity calculation backend is added that can use a GPU.
+- Added a `reflect.use_reflect_backend` function to choose between the backends
+  used to calculate reflectivity.
