@@ -234,7 +234,7 @@ def setup_package():
             ccompiler = new_compiler()
             customize_compiler(ccompiler)
             ccompiler.verbose = True
-            extra_preargs = ['-O2']
+            extra_preargs = ['-O2', ]
 
             if sys.platform == 'win32':
                 # use the C++ code on Windows. The C++ code uses the
@@ -243,6 +243,8 @@ def setup_package():
             else:
                 # and C code on other machines. The C code uses C99 complex
                 # arithmetic which is 10-20% faster.
+                # the CMPLX macro was only standardised in C11
+                extra_preargs.append('-std=c11')
                 f = ['src/refcalc.c']
 
             refcalc_obj = ccompiler.compile(f, extra_preargs=extra_preargs)

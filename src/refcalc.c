@@ -57,7 +57,7 @@ extern "C" {
 
 #ifndef CMPLX
 #define CMPLX(x, y)  ((double complex)((double)(x) + \
-                            _Imaginary_I * (double)(y)))
+                            _Complex_I * (double)(y)))
 #endif
 
 void* malloc2d(int ii, int jj, int sz){
