@@ -235,3 +235,7 @@ Details of changes made to refnx
 
 0.1.14
 ------
+This will be a bug fix release over 0.1.13. The Linux wheels weren't tested
+enough and the default reflectivity calculation backend didn't work correctly
+in 0.1.13.
+- fix default backend calculation.
