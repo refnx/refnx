@@ -32,7 +32,7 @@ a = Analysis(['motofit.py'],
                     periodic_table],
              hiddenimports=['periodictable', 'refnx',
                             'refnx.analysis', 'refnx.dataset', 'refnx.reflect',
-                            'refnx.reflect._app', 'ptemcee', 'corner'],
+                            'refnx.reflect._app', 'ptemcee', 'corner', 'pkg_resources'],
              hookspath=[],
              runtime_hooks=[],
              excludes=[],
@@ -61,7 +61,7 @@ if sys.platform == 'darwin':
                  bundle_identifier=None,
                  info_plist={
                     'NSHighResolutionCapable': 'True',
-                    'LSBackgroundOnly', 'False'},
+                    'LSBackgroundOnly': 'False'},
                  )
 # 'CFBundleShortVersionString': '0.1.12',
 
