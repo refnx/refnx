@@ -104,9 +104,9 @@ jobs:
         pytest
 
     - name: Make frozen GUI executable
-      if: ${{ matrix.python-version }} == '3.8'
+      if: ${{ matrix.python-version == '3.8' }}
       run: |
-        pip uninstall pytest pytest-qt h5py pandas xlrd uncertainties
+        pip uninstall -y pytest pytest-qt h5py pandas xlrd uncertainties
         pyinstaller dist/app/motofit.spec
         rm dist/motofit
 
