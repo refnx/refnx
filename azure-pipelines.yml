@@ -46,7 +46,7 @@ jobs:
       pip install setuptools==44
       pyinstaller misc/app/motofit.spec
     displayName: 'Frozen refnx GUI'
-    condition: eq('${{ python.version }}', '3.8'))
+    condition: in(variables['python.version'], '3.8')
 
   - task: CopyFiles@2
     inputs:
