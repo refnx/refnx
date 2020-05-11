@@ -242,3 +242,4 @@ in 0.1.13.
 
 0.1.15
 ------
+- Build standalone GUI as part of continuous integration runs.
