@@ -107,7 +107,8 @@ jobs:
       if: ${{ matrix.python-version == '3.8' }}
       run: |
         pip uninstall -y pytest pytest-qt h5py pandas xlrd uncertainties
-        pyinstaller dist/app/motofit.spec
+        pip install setuptools==44
+        pyinstaller misc/app/motofit.spec
         rm dist/motofit
 
     - uses: actions/upload-artifact@v1
