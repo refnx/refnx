@@ -85,7 +85,7 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install numpy scipy h5py cython pandas xlrd pytest ipywidgets IPython matplotlib traitlets pyqt5
-        pip install uncertainties ptemcee corner tqdm pytest-qt periodictable wheel delocate pyopencl
+        pip install uncertainties ptemcee corner tqdm pytest-qt periodictable wheel delocate pyopencl pyinstaller
         pip install git+https://github.com/pymc-devs/pymc3
 
     - name: Make wheel
@@ -102,6 +102,13 @@ jobs:
       run: |
         pip install --only-binary=refnx --no-index --find-links=dist/ refnx
         pytest
+
+    - name: Make frozen GUI executable
+      if: ${{ matrix.python-version }} == '3.8'
+      run: |
+        pip uninstall pytest pytest-qt h5py pandas xlrd uncertainties
+        pyinstaller dist/app/motofit.spec
+        rm dist/motofit
 
     - uses: actions/upload-artifact@v1
       with:
