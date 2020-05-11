@@ -3,9 +3,12 @@ from os.path import join as pjoin
 import os
 import sys
 import periodictable
+import refnx
 
 block_cipher = None
 
+
+refnx_version = refnx.version.version
 
 periodictable_loc = os.path.dirname(periodictable.__file__)
 
@@ -60,10 +63,11 @@ if sys.platform == 'darwin':
                  icon='../../refnx/reflect/_app/icons/Motofit.icns',
                  bundle_identifier=None,
                  info_plist={
+                    'NSPrincipalClass': 'NSApplication',
                     'NSHighResolutionCapable': 'True',
+                    'CFBundleShortVersionString': refnx_version,
                     'LSBackgroundOnly': 'False'},
                  )
-# 'CFBundleShortVersionString': '0.1.12',
 
 # windows
 
