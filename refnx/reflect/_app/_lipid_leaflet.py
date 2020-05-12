@@ -27,8 +27,8 @@ class LipidLeafletDialog(QtWidgets.QDialog, LipidDialog):
             lipids = json.load(f)
 
         self.lipids = {}
-        for l in lipids:
-            lipid = Lipid(**l)
+        for lip in lipids:
+            lipid = Lipid(**lip)
             self.lipids[lipid.name] = lipid
 
         self._scene = None
