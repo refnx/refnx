@@ -243,3 +243,6 @@ in 0.1.13.
 0.1.15
 ------
 - Build standalone GUI as part of continuous integration runs.
+- Fix couple of GUI warnings when started from a terminal.
+- pyinstaller plist settings adjusted to make retina compatible and include
+  refnx version number.

@@ -1235,6 +1235,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
                 if alg == 'DE':
                     with MapWrapper(-1) as workers:
                         kws['workers'] = workers
+                        kws['updating'] = 'deferred'
                         fitter.fit(method=methods[alg], **kws)
                 else:
                     fitter.fit(method=methods[alg], **kws)
