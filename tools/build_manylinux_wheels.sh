@@ -8,16 +8,16 @@ cd /io
 # bash build_manylinux_wheels.sh
 
 # Compile wheels
-#for PYBIN in /opt/python/cp3[6-9]-cp*/bin; do
-#  "${PYBIN}/pip" install numpy cython
-#  "${PYBIN}/pip" wheel --no-deps -w wheelhouse/ .
-#done
-#
-### Bundle external shared libraries into the wheels
-#for whl in wheelhouse/*.whl; do
-#    auditwheel repair "$whl" --plat $PLAT -w /io/wheelhouse/
-#    rm $whl
-#done
+for PYBIN in /opt/python/cp3[6-9]-cp*/bin; do
+  "${PYBIN}/pip" install numpy cython
+  "${PYBIN}/pip" wheel --no-deps -w wheelhouse/ .
+done
+
+# Bundle external shared libraries into the wheels
+for whl in wheelhouse/*.whl; do
+    auditwheel repair "$whl" --plat $PLAT -w /io/wheelhouse/
+    rm $whl
+done
 
 # Install packages and test
 # yum install -y hdf5-devel
