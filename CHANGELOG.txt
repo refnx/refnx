@@ -246,3 +246,4 @@ in 0.1.13.
 - Fix couple of GUI warnings when started from a terminal.
 - pyinstaller plist settings adjusted to make retina compatible and include
   refnx version number.
+- use Github Actions to test and build Linux wheels across all the Pythons.
