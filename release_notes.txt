@@ -1,26 +1,36 @@
 General release instructions
 ----------------------------
 
+# make sure we're up to data
+- git fetch refnx
 - git checkout master
+- git rebase refnx/master
 - git clean -xdf (no detritus left over)
-- bump version number in setup.py, but only do it once
-- git commit -a
-- git push refnx master
+
+# a feature branch for the release
+- git checkout -B <feature name>
+- if necessary bump version number in setup.py, but only do it once
 - change ISRELEASED to True in setup.py
-- git commit -a
-- git tag -a <tagname>
-- git push refnx <tagname>
-- git commit -a
-- source activate dev3
-- python setup.py bdist_wheel sdist
-- twine upload dist/*
+- git commit -a -m'REL: vX.Y.Z'
+- git push origin <feature name>
 
-Go into windows
-- update git repository
-- git clean -xdf
-- activate dev3
-- python setup.py bdist_wheel
-- twine upload dist/*
+# once the CI has passed
+- merge the feature branch
+- git fetch refnx
+- git checkout master
+- git rebase refnx/master
 
-checkout master branch
-make sure ISRELEASED is False in setup.py
+# tag the release and put it onto github
+- git tag -a vX.Y.Z
+- git push vX.Y.Z
+
+# make the sdist
+- python setup.py sdist
+- twine upload dist/*.tar.gz
+
+# Epilogue
+- git checkout master
+- make sure ISRELEASED is False in setup.py, bump version number, create new
+  section in CHANGELOG.
+- git commit -a -m'MAINT: bump version number [ci skip]'
+- git push refnx master
