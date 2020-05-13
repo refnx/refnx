@@ -50,8 +50,7 @@ jobs:
       # fix for multiprocessing on Py3.8 is not merged in PyInstaller
       # if you are on Py3.7 you can just pip install pyinstaller
       pip install git+https://github.com/andyfaff/pyinstaller.git@gh4865
-
-      pyinstaller misc/app/motofit.spec
+      pyinstaller tools/app/motofit.spec
     displayName: 'Frozen refnx GUI'
     condition: in(variables['python.version'], '3.8')
 

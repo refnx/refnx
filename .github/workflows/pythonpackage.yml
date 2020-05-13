@@ -45,6 +45,22 @@ jobs:
         xvfb-run pytest
 
 
+  linux_wheels:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v1
+    - name: Make Linux Wheels
+      run: |
+        docker run --rm -v $(pwd):/io quay.io/pypa/manylinux2010_x86_64 /bin/bash /io/tools/build_manylinux_wheels.sh
+
+    - uses: actions/upload-artifact@v1
+      with:
+        name: refnx-wheel
+        path: dist/
+
+
   test_macos:
 
     runs-on: macos-latest
@@ -113,7 +129,7 @@ jobs:
         # if you are on Py3.7 you can just pip install pyinstaller
         pip install git+https://github.com/andyfaff/pyinstaller.git@gh4865
 
-        pyinstaller misc/app/motofit.spec
+        pyinstaller tools/app/motofit.spec
         rm dist/motofit
 
     - uses: actions/upload-artifact@v1
