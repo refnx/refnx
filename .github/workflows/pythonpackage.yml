@@ -45,7 +45,7 @@ jobs:
         xvfb-run pytest
 
 
-linux_wheels:
+  linux_wheels:
 
     runs-on: ubuntu-latest
 
