@@ -25,7 +25,7 @@ jobs:
       architecture: 'x64'
 
   - script: |
-      python -m pip install --upgrade pip && pip install numpy scipy cython traitlets ipython ipywidgets pandas h5py xlrd pytest tqdm corner uncertainties matplotlib pyqt5 pytest-qt periodictable pyinstaller
+      python -m pip install --upgrade pip && pip install numpy scipy cython traitlets ipython ipywidgets pandas h5py xlrd pytest tqdm corner uncertainties matplotlib pyqt5 pytest-qt periodictable
   # - script: pip install git+https://github.com/pymc-devs/pymc3
 
     displayName: 'Install dependencies'
@@ -43,7 +43,14 @@ jobs:
 
   - script: |
       pip uninstall -y pandas h5py xlrd pytest pytest-qt
+
+      # more recent versions of setuptools don't work with PyInstaller
       pip install setuptools==44
+
+      # fix for multiprocessing on Py3.8 is not merged in PyInstaller
+      # if you are on Py3.7 you can just pip install pyinstaller
+      pip install git+https://github.com/andyfaff/pyinstaller.git@gh4865
+
       pyinstaller misc/app/motofit.spec
     displayName: 'Frozen refnx GUI'
     condition: in(variables['python.version'], '3.8')
