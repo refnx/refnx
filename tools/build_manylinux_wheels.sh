@@ -23,7 +23,7 @@ done
 # yum install -y hdf5-devel
 for PYBIN in /opt/python/cp3[6-9]-cp*/bin; do
   "${PYBIN}/pip" install scipy matplotlib pytest corner
-  "${PYBIN}/pip" install --pre --only-binary --no-index --find-links /io/wheelhouse refnx
+  "${PYBIN}/pip" install --pre --only-binary refnx --no-index --find-links /io/wheelhouse refnx
   "${PYBIN}/pytest" refnx/analysis refnx/reflect/test/test_reflect.py
 done
 
