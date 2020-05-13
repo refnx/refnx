@@ -45,11 +45,8 @@ jobs:
       pip uninstall -y pandas h5py xlrd pytest pytest-qt
 
       # more recent versions of setuptools don't work with PyInstaller
-      pip install setuptools==44
+      pip install setuptools==44 pyinstaller
 
-      # fix for multiprocessing on Py3.8 is not merged in PyInstaller
-      # if you are on Py3.7 you can just pip install pyinstaller
-      pip install git+https://github.com/andyfaff/pyinstaller.git@gh4865
       pyinstaller tools/app/motofit.spec
     displayName: 'Frozen refnx GUI'
     condition: in(variables['python.version'], '3.8')
