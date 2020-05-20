@@ -53,7 +53,11 @@ jobs:
     - uses: actions/checkout@v1
     - name: Make Linux Wheels
       run: |
-        docker run --rm -v $(pwd):/io quay.io/pypa/manylinux2010_x86_64 /bin/bash /io/tools/build_manylinux_wheels.sh
+        docker run --rm -e PLAT=manylinux2010_x86_64 -v $(pwd):/io quay.io/pypa/manylinux2010_x86_64 /bin/bash /io/tools/build_manylinux_wheels.sh
+
+    - name: Make Linux Wheels
+      run: |
+        docker run --rm PLAT=manylinux1_x86_64 -v $(pwd):/io quay.io/pypa/manylinux1_x86_64 /bin/bash /io/tools/build_manylinux_wheels.sh
 
     - uses: actions/upload-artifact@v1
       with:
