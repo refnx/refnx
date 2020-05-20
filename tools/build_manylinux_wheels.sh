@@ -7,6 +7,8 @@ set -e -x
 cd /io
 # bash build_manylinux_wheels.sh
 
+echo $PLAT
+
 # Compile wheels
 for PYBIN in /opt/python/cp3[6-9]-cp*/bin; do
   "${PYBIN}/pip" install numpy cython
