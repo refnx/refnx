@@ -65,7 +65,6 @@ def elevation(initial_trajectory, speed, flight_length):
     return np.degrees(np.arctan(dydx))
 
 
-@np.vectorize
 def find_trajectory(flight_length, theta, speed):
     """
     Find the initial trajectory of an object that has to pass through a certain
