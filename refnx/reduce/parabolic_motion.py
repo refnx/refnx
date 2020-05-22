@@ -28,7 +28,6 @@ def y_deflection(initial_trajectory, speed, flight_length):
     return eqn(flight_length)
 
 
-@np.vectorize
 def elevation(initial_trajectory, speed, flight_length):
     """
     Angle between x-axis and tangent of flight path at a given horizontal
@@ -55,13 +54,10 @@ def elevation(initial_trajectory, speed, flight_length):
     # eqn = parabola(initial_trajectory, speed)
     # dydx = eqn.deriv()
     # return np.degrees(np.arctan(dydx(flight_length)))
-
-    init_traj, spds = np.broadcast_arrays(initial_trajectory, speed)
-
     traj_rad = np.radians(initial_trajectory)
     # o_0 = 0
     o_1 = np.tan(traj_rad)
-    o_2 = -constants.g / 2. / (spds * np.cos(traj_rad)) ** 2.
+    o_2 = -constants.g / 2. / (speed * np.cos(traj_rad)) ** 2.
 
     # y = o_0 + o_1*x + o_2*x**2
     # need to work out derivative of y, dy/dx.
