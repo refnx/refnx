@@ -28,7 +28,6 @@ def y_deflection(initial_trajectory, speed, flight_length):
     return eqn(flight_length)
 
 
-@np.vectorize
 def elevation(initial_trajectory, speed, flight_length):
     """
     Angle between x-axis and tangent of flight path at a given horizontal
@@ -52,12 +51,20 @@ def elevation(initial_trajectory, speed, flight_length):
         angle is measured relative to the x-axis, with a positive angle in an
         anticlockwise direction.
     """
-    eqn = parabola(initial_trajectory, speed)
-    dydx = eqn.deriv()
-    return np.degrees(np.arctan(dydx(flight_length)))
+    # eqn = parabola(initial_trajectory, speed)
+    # dydx = eqn.deriv()
+    # return np.degrees(np.arctan(dydx(flight_length)))
+    traj_rad = np.radians(initial_trajectory)
+    # o_0 = 0
+    o_1 = np.tan(traj_rad)
+    o_2 = -constants.g / 2. / (speed * np.cos(traj_rad)) ** 2.
+
+    # y = o_0 + o_1*x + o_2*x**2
+    # need to work out derivative of y, dy/dx.
+    dydx = o_1 + 2 * o_2 * flight_length
+    return np.degrees(np.arctan(dydx))
 
 
-@np.vectorize
 def find_trajectory(flight_length, theta, speed):
     """
     Find the initial trajectory of an object that has to pass through a certain
