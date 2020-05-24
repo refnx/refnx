@@ -536,23 +536,7 @@ def reflectivity(q, slabs, scale=1., bkg=0., dq=5., quad_order=17,
     return None
 
 
-def _memoize_gl(f):
-    """
-    Cache the gaussian quadrature abscissae, so they don't have to be
-    calculated all the time.
-    """
-    cache = {}
-
-    def inner(n):
-        if n in cache:
-            return cache[n]
-        else:
-            result = cache[n] = f(n)
-            return result
-    return inner
-
-
-@_memoize_gl
+@lru_cache(maxsize=128)
 def gauss_legendre(n):
     """
     Calculate gaussian quadrature abscissae and weights
