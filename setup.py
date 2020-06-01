@@ -284,9 +284,6 @@ def setup_package():
             # export DYLD_LIBRARY_PATH=/usr/local/opt/libomp/lib
 
             if HAS_OPENMP:
-                from numpy.distutils.ccompiler import new_compiler
-                from distutils.sysconfig import customize_compiler
-
                 # cyreflect extension module
                 _cyreflect = Extension(
                     name='refnx.reflect._cyreflect',
