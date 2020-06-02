@@ -6,6 +6,7 @@ import numpy as np
 from numpy.testing import assert_almost_equal, assert_equal, assert_allclose
 import scipy.stats as stats
 
+from refnx.reflect import use_reflect_backend
 try:
     import refnx.reflect._creflect as _creflect
     HAVE_CREFLECT = True
@@ -337,6 +338,24 @@ class TestReflect(object):
         py_abeles = _reflect.abeles(q, w_zero)
         c_abeles = _creflect.abeles(q, w_zero)
         assert_almost_equal(py_abeles, c_abeles)
+
+    def test_c_py_abeles_absorption2(self):
+        # https://github.com/andyfaff/refl1d_analysis/tree/master/notebooks
+        # this has an appreciable notch just below the critical edge
+        refl1d = np.load(os.path.join(self.pth, 'absorption.npy'))
+
+        q = np.geomspace(0.005, 0.3, 201)
+        depth = [0, 1200, 0]
+        rho = [2.07, 4.66, 6.36]
+        irho = [0, 0.016, 0]
+        refnx_sigma = [np.nan, 10, 3]
+
+        slabs = np.c_[depth, rho, irho, refnx_sigma]
+
+        py_abeles = _reflect.abeles(q, slabs)
+        c_abeles = _creflect.abeles(q, slabs)
+        assert_almost_equal(py_abeles, refl1d[1])
+        assert_almost_equal(c_abeles, refl1d[1])
 
     def test_cy_py_abeles_absorption(self):
         # https://github.com/andyfaff/refl1d_analysis/tree/master/notebooks
