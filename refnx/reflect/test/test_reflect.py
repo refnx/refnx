@@ -425,7 +425,7 @@ class TestReflect(object):
         map_logl = np.array(list(map(objective.logl, walkers)))
         map_chi2 = np.array(list(map(objective.chisqr, walkers)))
 
-        wf = Wrapper_fn(model.model, p0)
+        wf = Wrapper_fn2(model.model, p0)
         map_mod = np.array(list(map(wf, walkers)))
 
         with MapWrapper(2) as g:
@@ -750,3 +750,13 @@ class Wrapper_fn(object):
     def __call__(self, x):
         assert len(x.shape) == 1
         return self.fn(x, self.w, threads=1)
+
+
+class Wrapper_fn2(object):
+    def __init__(self, fn, w):
+        self.fn = fn
+        self.w = w
+
+    def __call__(self, x):
+        assert len(x.shape) == 1
+        return self.fn(x, self.w)
