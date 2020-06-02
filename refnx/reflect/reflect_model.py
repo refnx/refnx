@@ -65,6 +65,36 @@ Implementation notes
 """
 
 
+def _available_backends():
+    """
+    tuple containing the available reflectivity calculator backends
+    """
+    backends = ["python"]
+    try:
+        import refnx.reflect._creflect as _creflect
+        backends.append("c")
+    except ImportError:
+        pass
+
+    try:
+        import refnx.reflect._cyreflect as _cyreflect
+        backends.append("cython")
+    except ImportError:
+        pass
+
+    try:
+        import pyopencl as cl
+        cl.get_platforms()
+        from refnx.reflect._reflect import abeles_pyopencl
+        backends.append("pyopencl")
+    except Exception:
+        # importing pyopencl would be a ModuleNotFoundError
+        # failure to get an opencl platform would be cl._cl.LogicError
+        pass
+
+    return tuple(backends)
+
+
 def get_reflect_backend(backend='c'):
     r"""
     Obtain an 'abeles' function used for calculating reflectivity.
@@ -100,7 +130,6 @@ def get_reflect_backend(backend='c'):
     if backend == 'pyopencl':
         try:
             import pyopencl as cl
-            # this raises a pyopencl._cl.LogicError if there isn't a platform
         except (ImportError, ModuleNotFoundError):
             warnings.warn("Can't use the pyopencl abeles backend, you need"
                           "to install pyopencl")
@@ -111,6 +140,7 @@ def get_reflect_backend(backend='c'):
             from refnx.reflect._reflect import abeles_pyopencl
             return abeles_pyopencl
         except cl._cl.LogicError:
+            # a pyopencl._cl.LogicError is raised if there isn't a platform
             warnings.warn("There are no openCL platforms available")
             return get_reflect_backend('c')
     elif backend == 'cython':
