@@ -749,4 +749,4 @@ class Wrapper_fn(object):
 
     def __call__(self, x):
         assert len(x.shape) == 1
-        return self.fn(x, self.w)
+        return self.fn(x, self.w, threads=1)
