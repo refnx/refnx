@@ -396,6 +396,10 @@ class TestReflect(object):
                       [0, 6.36, 0, 3]])
 
         for backend in BACKENDS:
+            if backend == 'pyopencl':
+                # can't do pyopencl in a multiprocessing.Pool
+                continue
+
             with use_reflect_backend(backend) as abeles:
                 wf = Wrapper_fn(abeles, p0)
                 y = map(wf, q)
