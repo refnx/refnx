@@ -65,7 +65,7 @@ Implementation notes
 """
 
 
-def _available_backends():
+def available_backends():
     """
     tuple containing the available reflectivity calculator backends
     """

@@ -20,7 +20,7 @@ import refnx.reflect.reflect_model as reflect_model
 from refnx.dataset import ReflectDataset
 from refnx._lib import MapWrapper
 
-BACKENDS = reflect_model._available_backends()
+BACKENDS = reflect_model.available_backends()
 
 
 class TestReflect(object):
