@@ -68,7 +68,6 @@ build_script:
 
 test_script:
     # Run the project tests
-    - cmd: set "REQUIRE_C=1"
     - cmd: pytest
 
 after_test:

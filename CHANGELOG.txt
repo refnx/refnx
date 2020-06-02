@@ -247,3 +247,5 @@ in 0.1.13.
 - pyinstaller plist settings adjusted to make retina compatible and include
   refnx version number.
 - use Github Actions to test and build Linux wheels across all the Pythons.
+- Refactor test_reflect to challenge all reflectivity calculation backends.
+- refnx.reflect.available_backends lists all reflectivity calculation backends.
