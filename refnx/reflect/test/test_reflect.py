@@ -6,19 +6,6 @@ import numpy as np
 from numpy.testing import assert_almost_equal, assert_equal, assert_allclose
 import scipy.stats as stats
 
-from refnx.reflect import use_reflect_backend
-try:
-    import refnx.reflect._creflect as _creflect
-    HAVE_CREFLECT = True
-except ImportError:
-    HAVE_CREFLECT = False
-
-try:
-    import refnx.reflect._cyreflect as _cyreflect
-    HAVE_CYREFLECT = True
-except ImportError:
-    HAVE_CYREFLECT = False
-
 # Before removing what appear to be unused imports think twice.
 # Some of the tests use eval, which requires the imports.
 import refnx.reflect._reflect as _reflect
@@ -27,15 +14,13 @@ from refnx.analysis import (Transform, Objective,
                             Parameters)
 from refnx.reflect import (SLD, ReflectModel, MixedReflectModel,
                            reflectivity, Structure, Slab,
-                           FresnelTransform, choose_dq_type)
+                           FresnelTransform, choose_dq_type,
+                           use_reflect_backend)
 import refnx.reflect.reflect_model as reflect_model
 from refnx.dataset import ReflectDataset
 from refnx._lib import MapWrapper
 
-
-# if REQUIRE_C is specified then definitely test C plugins
-REQUIRE_C = os.environ.get('REQUIRE_C', 0)
-TEST_C_REFLECT = HAVE_CREFLECT or REQUIRE_C
+BACKENDS = reflect_model.available_backends()
 
 
 class TestReflect(object):
@@ -84,51 +69,45 @@ class TestReflect(object):
                                                        e361.y_err)
 
     def test_abeles(self):
-        # test reflectivity calculation with values generated from Motofit
-        calc = self.structure.reflectivity(self.qvals)
-        assert_almost_equal(calc, self.rvals)
+        slabs = self.structure.slabs()[..., :4]
 
-    def test_c_abeles(self):
-        # test reflectivity calculation with values generated from Motofit
-        calc = _creflect.abeles(self.qvals,
-                                self.structure.slabs()[..., :4])
-        assert_almost_equal(calc, self.rvals)
+        for backend in BACKENDS:
+            # test reflectivity calculation with values generated from Motofit
+            with use_reflect_backend(backend) as abeles:
+                calc = abeles(self.qvals, slabs)
+            assert_almost_equal(calc, self.rvals)
 
+    def test_noncontig_abeles(self):
         # test for non-contiguous Q values
         tempq = self.qvals[0::5]
+        slabs = self.structure.slabs()[..., :4]
+
         assert tempq.flags['C_CONTIGUOUS'] is False
-        calc = _creflect.abeles(tempq, self.structure.slabs()[..., :4])
-        assert_almost_equal(calc, self.rvals[0::5])
 
-    def test_cy_abeles(self):
-        if not HAVE_CYREFLECT:
-            return
-        # test reflectivity calculation with values generated from Motofit
-        calc = _cyreflect.abeles(self.qvals,
-                                 self.structure.slabs()[..., :4])
-        assert_almost_equal(calc, self.rvals)
+        for backend in BACKENDS:
+            with use_reflect_backend(backend) as abeles:
+                calc = abeles(tempq, slabs)
+                assert_almost_equal(calc, self.rvals[0::5])
 
-        # test for non-contiguous Q values
-        tempq = self.qvals[0::5]
-        assert tempq.flags['C_CONTIGUOUS'] is False
-        calc = _cyreflect.abeles(tempq, self.structure.slabs()[..., :4])
-        assert_almost_equal(calc, self.rvals[0::5])
+    def test_abeles_multithreaded(self):
+        slabs = self.structure.slabs()[..., :4]
 
-    def test_c_abeles_multithreaded(self):
-        _creflect.abeles(self.qvals, self.structure.slabs()[..., :4],
-                         threads=4)
+        for backend in BACKENDS:
+            # test reflectivity calculation with values generated from Motofit
+            with use_reflect_backend(backend) as abeles:
+                calc = abeles(self.qvals, slabs, threads=4)
+            assert_almost_equal(calc, self.rvals)
 
-    def test_cy_abeles_multithreaded(self):
-        if not HAVE_CYREFLECT:
-            return
+    def test_available_backends(self):
+        assert "python" in BACKENDS
+        assert "c" in BACKENDS
+        import refnx.reflect._creflect as _creflect
+        import refnx.reflect._reflect as _reflect
+        assert _reflect.__file__ != _creflect.__file__
 
-        _cyreflect.abeles(self.qvals, self.structure.slabs()[..., :4],
-                          threads=4)
-
-    def test_py_abeles(self):
-        # test reflectivity calculation with values generated from Motofit
-        calc = _reflect.abeles(self.qvals, self.structure.slabs()[..., :4])
-        assert_almost_equal(calc, self.rvals)
+        if "cython" in BACKENDS:
+            import refnx.reflect._cyreflect as _cyreflect
+            assert _creflect.__file__ != _cyreflect.__file__
 
     def test_first_principles(self):
         # Test a first principles reflectivity calculation, rather than
@@ -158,7 +137,10 @@ class TestReflect(object):
 
         # now from refnx code
         struct = SLD(sld1)(0, 0) | SLD(sld2)(0, 0)
-        assert_allclose(struct.reflectivity(q), reflectivity, rtol=1e-14)
+        slabs = struct.slabs()[..., :4]
+        for backend in BACKENDS:
+            with use_reflect_backend(backend) as abeles:
+                assert_allclose(abeles(q, slabs), reflectivity, rtol=1e-14)
 
         # reverse the direction
         kf = kn(q, sld2, sld2)
@@ -168,64 +150,37 @@ class TestReflect(object):
 
         # now from refnx code
         struct = SLD(sld2)(0, 0) | SLD(sld1)(0, 0)
-        assert_allclose(struct.reflectivity(q), reflectivity, rtol=1e-14)
+        slabs = struct.slabs()[..., :4]
+        for backend in BACKENDS:
+            with use_reflect_backend(backend) as abeles:
+                assert_allclose(abeles(q, slabs), reflectivity, rtol=1e-14)
 
-    def test_compare_c_py_abeles(self):
-        # test python and c are equivalent
-        # but not the same file
+    def test_scale_bkg_abeles(self):
         s = self.structure.slabs()[..., :4]
 
-        # if not TEST_C_REFLECT:
-        #     return
-        assert _reflect.__file__ != _creflect.__file__
+        calcs = []
+        for backend in BACKENDS:
+            with use_reflect_backend(backend) as abeles:
+                calc = abeles(self.qvals, s, scale=2.)
+                calcs.append(calc)
+        for calc in calcs[1:]:
+            assert_allclose(calc, calcs[0])
 
-        calc1 = _reflect.abeles(self.qvals, s)
-        calc2 = _creflect.abeles(self.qvals, s)
-        assert_almost_equal(calc1, calc2)
-        calc1 = _reflect.abeles(self.qvals, s, scale=2.)
-        calc2 = _creflect.abeles(self.qvals, s, scale=2.)
-        assert_almost_equal(calc1, calc2)
-        calc1 = _reflect.abeles(self.qvals, s, scale=0.5,
-                                bkg=0.1)
-        # threads = 1 is a non-threaded implementation
-        calc2 = _creflect.abeles(self.qvals, s, scale=0.5,
-                                 bkg=0.1, threads=1)
-        # threads = 2 forces the calculation to go through multithreaded calcn,
-        # even on single core processor
-        calc3 = _creflect.abeles(self.qvals, s, scale=0.5,
-                                 bkg=0.1, threads=2)
-        assert_almost_equal(calc1, calc2)
-        assert_almost_equal(calc1, calc3)
+        calcs = []
+        for backend in BACKENDS:
+            with use_reflect_backend(backend) as abeles:
+                calc = abeles(self.qvals, s, scale=0.5, bkg=0.1)
+                calcs.append(calc)
+        for calc in calcs[1:]:
+            assert_allclose(calc, calcs[0])
 
-    def test_compare_cy_py_abeles(self):
-        # test python and c/cy are equivalent
-        # but not the same file
-        s = self.structure.slabs()[..., :4]
-
-        if not HAVE_CYREFLECT:
-            return
-
-        # if not TEST_C_REFLECT:
-        #     return
-        assert _reflect.__file__ != _cyreflect.__file__
-
-        calc1 = _reflect.abeles(self.qvals, s)
-        calc2 = _cyreflect.abeles(self.qvals, s)
-        assert_almost_equal(calc1, calc2)
-        calc1 = _reflect.abeles(self.qvals, s, scale=2.)
-        calc2 = _cyreflect.abeles(self.qvals, s, scale=2.)
-        assert_almost_equal(calc1, calc2)
-        calc1 = _reflect.abeles(self.qvals, s, scale=0.5,
-                                bkg=0.1)
-        # threads = 1 is a non-threaded implementation
-        calc2 = _cyreflect.abeles(self.qvals, s, scale=0.5,
-                                  bkg=0.1, threads=1)
-        # threads = 2 forces the calculation to go through multithreaded calcn,
-        # even on single core processor
-        calc3 = _cyreflect.abeles(self.qvals, s, scale=0.5,
-                                  bkg=0.1, threads=2)
-        assert_almost_equal(calc1, calc2)
-        assert_almost_equal(calc1, calc3)
+        calcs = []
+        for backend in BACKENDS:
+            with use_reflect_backend(backend) as abeles:
+                calc = abeles(self.qvals, s, scale=0.5, bkg=0.1, threads=2)
+                calcs.append(calc)
+        for calc in calcs[1:]:
+            assert_allclose(calc, calcs[0])
 
     """
     @np.testing.decorators.knownfailure
@@ -252,81 +207,42 @@ class TestReflect(object):
         assert_(0.7 * (sfinish - sstart) > (pfinish - pstart))
     """
 
-    def test_compare_c_py_abeles0(self):
-        # test one layer system
-        # if not TEST_C_REFLECT:
-        #     return
+    def test_compare_abeles0(self):
+        # test one layer system against the python implementation
         layer0 = np.array([[0, 2.07, 0.01, 3],
                            [0, 6.36, 0.1, 3]])
-        calc1 = _reflect.abeles(self.qvals, layer0, scale=0.99, bkg=1e-8)
-        calc2 = _creflect.abeles(self.qvals, layer0, scale=0.99, bkg=1e-8)
-        assert_almost_equal(calc1, calc2)
+        with use_reflect_backend("python") as abeles:
+            calc1 = abeles(self.qvals, layer0, scale=0.99, bkg=1e-8)
+
+        for backend in BACKENDS:
+            with use_reflect_backend(backend) as abeles:
+                calc2 = abeles(self.qvals, layer0, scale=0.99, bkg=1e-8)
+            assert_almost_equal(calc1, calc2)
 
         # test a negative background
-        calc1 = _reflect.abeles(self.qvals, layer0, scale=0.99, bkg=-5e-7)
-        calc2 = _creflect.abeles(self.qvals, layer0, scale=0.99, bkg=-5e-7)
-        assert_almost_equal(calc1, calc2)
+        with use_reflect_backend("python") as abeles:
+            calc1 = abeles(self.qvals, layer0, scale=0.99, bkg=-5e-7)
 
-    def test_compare_cy_py_abeles0(self):
-        # test two layer system
-        if not HAVE_CYREFLECT:
-            return
-        layer0 = np.array([[0, 2.07, 0.01, 3],
-                           [0, 6.36, 0.1, 3]])
-        calc1 = _reflect.abeles(self.qvals, layer0, scale=0.99, bkg=1e-8)
-        calc2 = _cyreflect.abeles(self.qvals, layer0, scale=0.99, bkg=1e-8)
-        assert_almost_equal(calc1, calc2)
+        for backend in BACKENDS:
+            with use_reflect_backend(backend) as abeles:
+                calc2 = abeles(self.qvals, layer0, scale=0.99, bkg=-5e-7)
+            assert_almost_equal(calc1, calc2)
 
-        # test a negative background
-        calc1 = _reflect.abeles(self.qvals, layer0, scale=0.99, bkg=-5e-7)
-        calc2 = _cyreflect.abeles(self.qvals, layer0, scale=0.99, bkg=-5e-7)
-        assert_almost_equal(calc1, calc2)
-
-    def test_compare_c_py_abeles2(self):
-        # test two layer system
+    def test_compare_abeles2(self):
+        # test two layer system against the python implementation
         layer2 = np.array([[0, 2.07, 0.01, 3],
                            [10, 3.47, 0.01, 3],
                            [100, 1.0, 0.01, 4],
                            [0, 6.36, 0.1, 3]])
-        calc1 = _reflect.abeles(self.qvals, layer2, scale=0.99, bkg=1e-8)
-        calc2 = _creflect.abeles(self.qvals, layer2, scale=0.99, bkg=1e-8)
-        assert_almost_equal(calc1, calc2)
+        with use_reflect_backend("python") as abeles:
+            calc1 = abeles(self.qvals, layer2, scale=0.99, bkg=1e-8)
 
-    def test_compare_cy_py_abeles2(self):
-        # test two layer system
-        if not HAVE_CYREFLECT:
-            return
-        layer2 = np.array([[0, 2.07, 0.01, 3],
-                           [10, 3.47, 0.01, 3],
-                           [100, 1.0, 0.01, 4],
-                           [0, 6.36, 0.1, 3]])
-        calc1 = _reflect.abeles(self.qvals, layer2, scale=0.99, bkg=1e-8)
-        calc2 = _cyreflect.abeles(self.qvals, layer2, scale=0.99, bkg=1e-8)
-        assert_almost_equal(calc1, calc2)
+        for backend in BACKENDS:
+            with use_reflect_backend(backend) as abeles:
+                calc2 = abeles(self.qvals, layer2, scale=0.99, bkg=1e-8)
+            assert_almost_equal(calc1, calc2)
 
-    def test_compare_pyopencl_py_abeles2(self):
-        try:
-            import pyopencl as cl
-        except ModuleNotFoundError:
-            return
-        try:
-            cl.get_platforms()
-        except cl._cl.LogicError:
-            return
-
-        # have openCL and an openCL platform
-        # test two layer system
-        layer2 = np.array([[0, 2.07, 0.01, 3],
-                           [10, 3.47, 0.01, 3],
-                           [100, 1.0, 0.01, 4],
-                           [0, 6.36, 0.1, 3]])
-        calc1 = _reflect.abeles(self.qvals, layer2, scale=0.99, bkg=1e-8)
-
-        calc2 = _reflect.abeles_pyopencl(self.qvals, layer2,
-                                         scale=0.99, bkg=1e-8)
-        assert_allclose(calc1, calc2)
-
-    def test_c_py_abeles_absorption(self):
+    def test_abeles_absorption(self):
         # https://github.com/andyfaff/refl1d_analysis/tree/master/notebooks
         q = np.linspace(0.008, 0.05, 500)
         depth = [0, 850, 0]
@@ -335,11 +251,16 @@ class TestReflect(object):
         refnx_sigma = [np.nan, 35, 5.]
 
         w_zero = np.c_[depth, rho, irho_zero, refnx_sigma]
-        py_abeles = _reflect.abeles(q, w_zero)
-        c_abeles = _creflect.abeles(q, w_zero)
-        assert_almost_equal(py_abeles, c_abeles)
 
-    def test_c_py_abeles_absorption2(self):
+        with use_reflect_backend("python") as abeles:
+            calc1 = abeles(q, w_zero)
+
+        for backend in BACKENDS:
+            with use_reflect_backend(backend) as abeles:
+                calc2 = abeles(q, w_zero)
+            assert_almost_equal(calc1, calc2)
+
+    def test_abeles_absorption2(self):
         # https://github.com/andyfaff/refl1d_analysis/tree/master/notebooks
         # this has an appreciable notch just below the critical edge
         refl1d = np.load(os.path.join(self.pth, 'absorption.npy'))
@@ -352,26 +273,10 @@ class TestReflect(object):
 
         slabs = np.c_[depth, rho, irho, refnx_sigma]
 
-        py_abeles = _reflect.abeles(q, slabs)
-        c_abeles = _creflect.abeles(q, slabs)
-        assert_almost_equal(py_abeles, refl1d[1])
-        assert_almost_equal(c_abeles, refl1d[1])
-
-    def test_cy_py_abeles_absorption(self):
-        # https://github.com/andyfaff/refl1d_analysis/tree/master/notebooks
-        if not HAVE_CYREFLECT:
-            return
-
-        q = np.linspace(0.008, 0.05, 500)
-        depth = [0, 850, 0]
-        rho = [2.067, 4.3, 6.]
-        irho_zero = [0., 0.1, 0.]
-        refnx_sigma = [np.nan, 35, 5.]
-
-        w_zero = np.c_[depth, rho, irho_zero, refnx_sigma]
-        py_abeles = _reflect.abeles(q, w_zero)
-        cy_abeles = _cyreflect.abeles(q, w_zero)
-        assert_almost_equal(py_abeles, cy_abeles)
+        for backend in BACKENDS:
+            with use_reflect_backend(backend) as abeles:
+                calc = abeles(q, slabs)
+            assert_almost_equal(calc, refl1d[1])
 
     def test_compare_refl1d(self):
         # refl1d calculated with:
@@ -389,22 +294,20 @@ class TestReflect(object):
                            [200, 5.0, 0.01, 1],
                            [0, 6., 0, 5]])
         x = np.linspace(0.005, 0.5, 1001)
-        calc1 = _reflect.abeles(x, layers)
-        calc2 = _creflect.abeles(x, layers)
         refl1d = np.load(os.path.join(self.pth, 'refl1d.npy'))
 
-        assert_almost_equal(calc1, refl1d)
-        assert_almost_equal(calc2, refl1d)
-
-        if HAVE_CYREFLECT:
-            calc2 = _cyreflect.abeles(x, layers)
-            assert_almost_equal(calc2, refl1d)
+        for backend in BACKENDS:
+            with use_reflect_backend(backend) as abeles:
+                calc = abeles(x, layers)
+            assert_almost_equal(calc, refl1d)
 
     def test_use_reflectivity_backend(self):
-        assert _reflect.__file__ != _creflect.__file__
+        import refnx.reflect._creflect as _creflect
+        import refnx.reflect._reflect as _reflect
+
         reflect_model.abeles = _reflect.abeles
 
-        with reflect_model.use_reflect_backend('c') as f:
+        with use_reflect_backend('c') as f:
             assert f == _creflect.abeles
             assert reflect_model.abeles == _creflect.abeles
         assert reflect_model.abeles == _reflect.abeles
@@ -426,27 +329,17 @@ class TestReflect(object):
         calc = structure.reflectivity(self.qvals)
         assert_almost_equal(calc, self.rvals)
 
-    def test_c_abeles_reshape(self):
-        # c reflectivity should be able to deal with multidimensional input
-        if not TEST_C_REFLECT:
-            return
-        s = self.structure.slabs()[..., :4]
-
-        reshaped_q = np.reshape(self.qvals, (2, 250))
-        reshaped_r = self.rvals.reshape(2, 250)
-        calc = _creflect.abeles(reshaped_q, s)
-        assert_equal(reshaped_r.shape, calc.shape)
-        assert_almost_equal(reshaped_r, calc, 15)
-
     def test_abeles_reshape(self):
         # reflectivity should be able to deal with multidimensional input
         s = self.structure.slabs()[..., :4]
-
         reshaped_q = np.reshape(self.qvals, (2, 250))
         reshaped_r = self.rvals.reshape(2, 250)
-        calc = _reflect.abeles(reshaped_q, s)
-        assert_equal(reshaped_r.shape, calc.shape)
-        assert_almost_equal(reshaped_r, calc, 15)
+
+        for backend in BACKENDS:
+            with use_reflect_backend(backend) as abeles:
+                calc = abeles(reshaped_q, s)
+            assert_equal(calc.shape, reshaped_r.shape)
+            assert_almost_equal(calc, reshaped_r, 15)
 
     def test_reflectivity_model(self):
         # test reflectivity calculation with values generated from Motofit
@@ -495,39 +388,24 @@ class TestReflect(object):
                              1e-7))
 
     def test_parallel_calculator(self):
-        # test that parallel abeles + cabeles work with a mapper
-        q = np.linspace(0.01, 0.5, 10000).reshape(20, 500)
+        # test that parallel abeles work with a mapper
+        q = np.linspace(0.01, 0.5, 1000).reshape(20, 50)
         p0 = np.array([[0, 2.07, 0, 0],
                       [100, 3.47, 0, 3],
                       [500, -0.5, 1e-3, 3],
                       [0, 6.36, 0, 3]])
 
-        wf = Wrapper_fn(_reflect.abeles, p0)
-        y = map(wf, q)
-        with MapWrapper(2) as f:
-            z = f(wf, q)
-        assert_equal(z, np.array(list(y)))
+        for backend in BACKENDS:
+            if backend == 'pyopencl':
+                # can't do pyopencl in a multiprocessing.Pool
+                continue
 
-        wf = Wrapper_fn(_creflect.abeles, p0)
-        y = map(wf, q)
-        with MapWrapper(2) as f:
-            z = f(wf, q)
-        assert_equal(z, np.array(list(y)))
-
-        # try:
-        #     import pyopencl as cl
-        # except ModuleNotFoundError:
-        #     return
-        # try:
-        #     cl.get_platforms()
-        # except cl._cl.LogicError:
-        #     return
-
-        # wf = Wrapper_fn(_reflect.abeles_pyopencl, p0)
-        # y = map(wf, q)
-        # with MapWrapper(2) as f:
-        #     z = f(wf, q)
-        # assert_equal(z, np.array(list(y)))
+            with use_reflect_backend(backend) as abeles:
+                wf = Wrapper_fn(abeles, p0)
+                y = map(wf, q)
+                with MapWrapper(2) as f:
+                    z = f(wf, q)
+                assert_equal(z, np.array(list(y)))
 
     def test_parallel_objective(self):
         # check that a parallel objective works without issue
@@ -547,7 +425,7 @@ class TestReflect(object):
         map_logl = np.array(list(map(objective.logl, walkers)))
         map_chi2 = np.array(list(map(objective.chisqr, walkers)))
 
-        wf = Wrapper_fn(model.model, p0)
+        wf = Wrapper_fn2(model.model, p0)
         map_mod = np.array(list(map(wf, walkers)))
 
         with MapWrapper(2) as g:
@@ -865,6 +743,16 @@ class TestReflect(object):
 
 
 class Wrapper_fn(object):
+    def __init__(self, fn, w):
+        self.fn = fn
+        self.w = w
+
+    def __call__(self, x):
+        assert len(x.shape) == 1
+        return self.fn(x, self.w, threads=1)
+
+
+class Wrapper_fn2(object):
     def __init__(self, fn, w):
         self.fn = fn
         self.w = w

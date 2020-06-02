@@ -70,8 +70,6 @@ before_install:
       fi
 
 script:
-    # definitely want to test the _creflect module on travis.
-    - export REQUIRE_C=1
     - export MPLBACKEND=agg
     # put cwd in the top of the directory stack
     - pushd .
