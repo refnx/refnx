@@ -247,5 +247,7 @@ in 0.1.13.
 - pyinstaller plist settings adjusted to make retina compatible and include
   refnx version number.
 - use Github Actions to test and build Linux wheels across all the Pythons.
+- Compensate for dq_type being added to ReflectModel (older .mtft files
+  wouldn't load into GUI).
 - Refactor test_reflect to challenge all reflectivity calculation backends.
 - refnx.reflect.available_backends lists all reflectivity calculation backends.

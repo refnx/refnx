@@ -333,10 +333,13 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         # iterate through structures if model is a MixedReflectModel.
         # v0.1.11
 
+        # added ReflectModel.dq_type
+        # v0.1.12
+
         from refnx.analysis.bounds import Interval
         for do in self.treeModel.datastore:
             model = do.model
-
+            model.dq_type = 'pointwise'
             if isinstance(model, MixedReflectModel):
                 strcs = [model.structures]
             else:
