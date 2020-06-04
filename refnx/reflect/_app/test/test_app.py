@@ -2,6 +2,7 @@ import os.path
 import glob
 from os.path import join as pjoin
 
+import pytest
 from PyQt5 import QtWidgets, QtCore, QtGui
 
 from refnx.reflect._app.view import MotofitMainWindow
@@ -20,6 +21,7 @@ def mysetup(qtbot):
     return myapp, model
 
 
+@pytest.mark.usefixtures('no_data_directory')
 def test_app_load_old_experiment_file(qtbot, data_directory):
     # tests loading old experiment files.
     # The main issue here is that newer code may have attributes which aren't
@@ -27,11 +29,6 @@ def test_app_load_old_experiment_file(qtbot, data_directory):
     # trying to _restore_state this causes various Exceptions.
     # compensate_older_versions is supposed to fix that, but we test for it
     # here.
-
-    if data_directory is None:
-        # there was a problem retrieving the data
-        return
-
     myapp, model = mysetup(qtbot)
 
     def handle_dialog():
