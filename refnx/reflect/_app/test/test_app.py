@@ -19,6 +19,28 @@ def mysetup(qtbot):
     return myapp, model
 
 
+# def test_app_load_old_experiment_file(qtbot, tmpdir):
+#     # tests loading old experiment files.
+#     # The main issue here is that newer code may have attributes which aren't
+#     # in an experiment pickle file saved by older versions of the gui. When
+#     # trying to _restore_state this causes various Exceptions.
+#     # compensate_older_versions is supposed to fix that, but we test for it
+#     # here.
+#     myapp, model = mysetup(qtbot)
+#
+#     def handle_dialog():
+#         messagebox = QtWidgets.QApplication.activeWindow()
+#         if messagebox is None:
+#             return
+#
+#         ok_button = messagebox.button(QtWidgets.QMessageBox.Ok)
+#         qtbot.mouseClick(ok_button, QtCore.Qt.LeftButton, delay=1)
+#
+#     # get a reference to the dialog and handle it here
+#     QtCore.QTimer.singleShot(2500, handle_dialog)
+#     myapp._restore_state("DOTAP_Tris_Mg_Ca.mtft")
+
+
 def test_myapp(qtbot, tmpdir):
     myapp, model = mysetup(qtbot)
 

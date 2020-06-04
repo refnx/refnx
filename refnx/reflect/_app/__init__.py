@@ -1,7 +1,8 @@
 import sys
+import os.path
 
 
-def gui():
+def gui(expt_file=None):
     from PyQt5 import QtGui, QtWidgets, QtCore
 
     # should enable high resolution on 4k desktops??
@@ -33,6 +34,9 @@ def gui():
     fnt.setPointSize(12)
     app.setFont(fnt)
 
+    if expt_file is not None and os.path.isfile(expt_file):
+        myapp._restore_state(expt_file)
+
     myapp.show()
     myapp.raise_()
 
@@ -40,8 +44,8 @@ def gui():
     return v
 
 
-def main():
-    sys.exit(gui())
+def main(expt_file=None):
+    sys.exit(gui(expt_file=expt_file))
 
 
 __all__ = [gui, main]
