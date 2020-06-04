@@ -50,7 +50,15 @@ def test_app_load_old_experiment_file(qtbot, data_directory):
     assert len(files) > 0
 
     for file in files:
-        myapp._restore_state(file)
+        try:
+            myapp._restore_state(file)
+        except ValueError as e:
+            if str(e) == "unsupported pickle protocol: 5"
+                # if you're on older versions of python
+                # the tests wouldn't be expected to work
+                continue
+            else:
+                raise e
 
 
 def test_myapp(qtbot, tmpdir):
