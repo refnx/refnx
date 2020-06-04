@@ -117,7 +117,7 @@ jobs:
         MPLBACKEND: agg
       run: |
         pushd dist
-        pip install --only-binary=refnx --no-index refnx*.whl
+        pip install --only-binary=refnx --no-index --find-links=. refnx
         pytest --pyargs refnx
         popd
 

@@ -37,7 +37,7 @@ jobs:
 
   - script: |
       cd dist
-      pip install --only-binary=refnx --no-index refnx*.whl
+      pip install --only-binary=refnx --no-index --find-links=. refnx
       pip install pytest
       pytest --pyargs refnx
       cd ..
