@@ -31,7 +31,7 @@ jobs:
     displayName: 'Install dependencies'
 
   - script: |
-      pip install .
+      pip install -e .
       pip install pytest
       pytest
     displayName: 'pytest'
