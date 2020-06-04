@@ -27,6 +27,11 @@ def test_app_load_old_experiment_file(qtbot, data_directory):
     # trying to _restore_state this causes various Exceptions.
     # compensate_older_versions is supposed to fix that, but we test for it
     # here.
+
+    if data_directory is None:
+        # there was a problem retrieving the data
+        return
+
     myapp, model = mysetup(qtbot)
 
     def handle_dialog():

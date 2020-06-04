@@ -14,15 +14,29 @@ def data_directory(tmpdir_factory):
     """
     Retrieves the refnx-testdata repository, placing it in a temporary
     directory, for use in pytest fixtures
+
+    Returns
+    -------
+    data_dir: str or None
+        If the retrieval works then a str pointing to the test data is
+        returned. If the retrieval fails then None is returned.
     """
+    url = "https://github.com/refnx/refnx-testdata/archive/master.zip"
     tmpdir = tmpdir_factory.mktemp("data")
-    with urllib.request.urlopen(
-        "https://github.com/refnx/refnx-testdata/archive/master.zip"
-    ) as response, open(pjoin(tmpdir, 'master.zip'), 'wb') as f:
-        shutil.copyfileobj(response, f)
 
-    # master.zip is in tmpdir
-    with zipfile.ZipFile(pjoin(tmpdir, 'master.zip')) as zf:
-        zf.extractall(path=tmpdir)
+    try:
+        # grab the test data
+        with urllib.request.urlopen(url, timeout=5) as response, open(
+            pjoin(tmpdir, "master.zip"), "wb"
+        ) as f:
+            shutil.copyfileobj(response, f)
 
-    return pjoin(tmpdir, 'refnx-testdata-master', 'data')
+        # master.zip is in tmpdir
+        with zipfile.ZipFile(pjoin(tmpdir, "master.zip")) as zf:
+            zf.extractall(path=tmpdir)
+
+        data_dir = pjoin(tmpdir, "refnx-testdata-master", "data")
+    except urllib.error.URLError:
+        data_dir = None
+
+    return data_dir
