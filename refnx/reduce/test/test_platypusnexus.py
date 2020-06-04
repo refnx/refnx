@@ -178,8 +178,8 @@ class TestPlatypusNexus(object):
         # check that the wavelength resolution is roughly right, between 7 and
         # 8%.
         res = (
-            self.f641.processed_spectrum["m_lambda_fwhm"][0]
-            / self.f641.processed_spectrum["m_lambda"][0]
+            self.f641.processed_spectrum["m_lambda_fwhm"][0] /
+            self.f641.processed_spectrum["m_lambda"][0]
         )
         assert_array_less(res, np.ones_like(res) * 0.08)
         assert_array_less(np.ones_like(res) * 0.07, res)
@@ -370,7 +370,7 @@ class TestSpatzNexus(object):
         assert_allclose(toff, 5.5555555555555)
 
         toff = self.f342.time_offset(
-            -25.90, 26, 25, 0.0, None, None, None, t_offset=1438.888888888888888
+            -25.90, 26, 25, 0.0, None, None, None, t_offset=1438.8888888888888,
         )
         assert_allclose(toff, 0)
 

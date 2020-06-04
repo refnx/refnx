@@ -86,12 +86,6 @@ jobs:
         python-version: ${{ matrix.python-version }}
     - run: mkdir -p dist
 
-    - name: Lint with flake8
-      run: |
-        pip install flake8
-        # stop the build if there are Python syntax errors or undefined names
-        flake8 --ignore=F401,W504 --count --show-source --statistics --exclude=refnx/_lib/emcee,refnx/reflect/_app/resources_rc.py refnx
-
     - name: Install openmp
       run: |
         brew update

@@ -47,10 +47,14 @@ class TestReduce(object):
             a = PlatypusReduce("PLP0000711.nx.hdf", data_folder=self.pth)
 
             # try reduction with the reduce method
-            a.reduce("PLP0000708.nx.hdf", data_folder=self.pth, rebin_percent=4)
+            a.reduce(
+                "PLP0000708.nx.hdf", data_folder=self.pth, rebin_percent=4,
+            )
 
             # try reduction with the __call__ method
-            a("PLP0000708.nx.hdf", data_folder=self.pth, rebin_percent=4)
+            a(
+                "PLP0000708.nx.hdf", data_folder=self.pth, rebin_percent=4,
+            )
 
             # this should also have saved a couple of files in the current
             # directory
