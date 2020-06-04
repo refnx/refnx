@@ -64,7 +64,7 @@ install:
 
 build_script:
     # Build the compiled extension
-    - python setup.py install
+    - pip install -e .
 
 test_script:
     # Run the project tests

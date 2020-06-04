@@ -251,3 +251,5 @@ in 0.1.13.
   wouldn't load into GUI).
 - Refactor test_reflect to challenge all reflectivity calculation backends.
 - refnx.reflect.available_backends lists all reflectivity calculation backends.
+- Add pytest fixture to download test data. This will eventually reduce the
+  size of the package.

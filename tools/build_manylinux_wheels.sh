@@ -21,11 +21,15 @@ done
 
 # Install packages and test
 # yum install -y hdf5-devel
+
+# need to exit source directory to run tests
+cd /home
 for PYBIN in /opt/python/cp3[6-9]-cp*/bin; do
   "${PYBIN}/pip" install scipy matplotlib pytest corner
   "${PYBIN}/pip" install --pre --only-binary refnx --no-index --find-links /io/wheelhouse refnx
-  "${PYBIN}/pytest" refnx/analysis refnx/reflect/test/test_reflect.py
+  "${PYBIN}/pytest" --pyargs refnx.reflect.test.test_reflect refnx.analysis
 done
+cd /io
 
 mkdir -p /io/dist
 cp wheelhouse/refnx*manylinux2010*.whl dist/

@@ -5,6 +5,7 @@ build/
 dist/
 .eggs
 *.icns
+.tox
 __pycache__
 .ipynb_checkpoints/
 refnx.egg-info/

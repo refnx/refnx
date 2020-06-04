@@ -1,4 +1,5 @@
 import os.path
+import glob
 from os.path import join as pjoin
 
 from PyQt5 import QtWidgets, QtCore, QtGui
@@ -19,26 +20,45 @@ def mysetup(qtbot):
     return myapp, model
 
 
-# def test_app_load_old_experiment_file(qtbot, tmpdir):
-#     # tests loading old experiment files.
-#     # The main issue here is that newer code may have attributes which aren't
-#     # in an experiment pickle file saved by older versions of the gui. When
-#     # trying to _restore_state this causes various Exceptions.
-#     # compensate_older_versions is supposed to fix that, but we test for it
-#     # here.
-#     myapp, model = mysetup(qtbot)
-#
-#     def handle_dialog():
-#         messagebox = QtWidgets.QApplication.activeWindow()
-#         if messagebox is None:
-#             return
-#
-#         ok_button = messagebox.button(QtWidgets.QMessageBox.Ok)
-#         qtbot.mouseClick(ok_button, QtCore.Qt.LeftButton, delay=1)
-#
-#     # get a reference to the dialog and handle it here
-#     QtCore.QTimer.singleShot(2500, handle_dialog)
-#     myapp._restore_state("DOTAP_Tris_Mg_Ca.mtft")
+def test_app_load_old_experiment_file(qtbot, data_directory):
+    # tests loading old experiment files.
+    # The main issue here is that newer code may have attributes which aren't
+    # in an experiment pickle file saved by older versions of the gui. When
+    # trying to _restore_state this causes various Exceptions.
+    # compensate_older_versions is supposed to fix that, but we test for it
+    # here.
+
+    if data_directory is None:
+        # there was a problem retrieving the data
+        return
+
+    myapp, model = mysetup(qtbot)
+
+    def handle_dialog():
+        messagebox = QtWidgets.QApplication.activeWindow()
+        if messagebox is None:
+            return
+
+        ok_button = messagebox.button(QtWidgets.QMessageBox.Ok)
+        qtbot.mouseClick(ok_button, QtCore.Qt.LeftButton, delay=1)
+
+    # get a reference to the dialog and handle it here
+    QtCore.QTimer.singleShot(2500, handle_dialog)
+
+    tdir = pjoin(data_directory, "reflect", "_app")
+    files = glob.glob(pjoin(tdir, "*.mtft"))
+    assert len(files) > 0
+
+    for file in files:
+        try:
+            myapp._restore_state(file)
+        except ValueError as e:
+            if str(e) == "unsupported pickle protocol: 5":
+                # if you're on older versions of python
+                # the tests wouldn't be expected to work
+                continue
+            else:
+                raise e
 
 
 def test_myapp(qtbot, tmpdir):
