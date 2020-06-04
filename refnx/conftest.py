@@ -40,3 +40,9 @@ def data_directory(tmpdir_factory):
         data_dir = None
 
     return data_dir
+
+
+@pytest.fixture(scope="session")
+def no_data_directory(data_directory):
+    if data_directory is None:
+        pytest.skip('No data directory available')
