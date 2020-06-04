@@ -412,7 +412,7 @@ def setup_package():
                     # libraries=
                     # extra_compile_args = "...".split(),
                 )
-                openmp_flags = _open_mp_helpers.get_openmp_flag(ccompiler)
+                openmp_flags = get_openmp_flag(ccompiler)
                 _cyreflect.extra_compile_args += openmp_flags
                 _cyreflect.extra_link_args += openmp_flags
 
