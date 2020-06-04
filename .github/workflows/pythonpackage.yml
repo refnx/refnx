@@ -23,18 +23,18 @@ jobs:
       run: |
         sudo apt-get update
         sudo apt-get install xvfb qt5-default opencl-headers ocl-icd-opencl-dev
+        python -m pip install --upgrade pip
+    - name: Lint with flake8
+      run: |
+        python -m pip install flake8
+        # stop the build if there are Python syntax errors or undefined names
+        flake8 --ignore=F401,W504 --count --show-source --statistics --exclude=refnx/_lib/emcee,refnx/reflect/_app/resources_rc.py refnx
     - name: Install dependencies
       run: |
-        python -m pip install --upgrade pip
         python -m pip install wheel
         python -m pip install numpy scipy h5py cython pandas xlrd flake8 pytest ipywidgets IPython matplotlib traitlets pyqt5
         python -m pip install uncertainties ptemcee corner tqdm pytest-qt periodictable pyopencl
         pip install git+https://github.com/pymc-devs/pymc3
-    - name: Lint with flake8
-      run: |
-        pip install flake8
-        # stop the build if there are Python syntax errors or undefined names
-        flake8 --ignore=F401,W504 --count --show-source --statistics --exclude=refnx/_lib/emcee,refnx/reflect/_app/resources_rc.py refnx
     - name: Test with pytest
       env:
         MPLBACKEND: agg
@@ -117,7 +117,7 @@ jobs:
         MPLBACKEND: agg
       run: |
         pushd dist
-        pip install --only-binary=refnx --no-index refnx
+        pip install --only-binary=refnx --no-index refnx*.whl
         python -c "import refnx;refnx.test()"
         popd
 
