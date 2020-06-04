@@ -5,33 +5,42 @@ import warnings
 
 import pytest
 import numpy as np
-from numpy.testing import (assert_almost_equal, assert_, assert_equal,
-                           assert_array_less, assert_allclose)
+from numpy.testing import (
+    assert_almost_equal,
+    assert_,
+    assert_equal,
+    assert_array_less,
+    assert_allclose,
+)
 import h5py
 
 import refnx.reduce.platypusnexus as plp
-from refnx.reduce import (PlatypusReduce, PlatypusNexus, SpatzNexus,
-                          basename_datafile, catalogue)
+from refnx.reduce import (
+    PlatypusReduce,
+    PlatypusNexus,
+    SpatzNexus,
+    basename_datafile,
+    catalogue,
+)
 from refnx.reduce.peak_utils import gauss
-from refnx.reduce.platypusnexus import (fore_back_region, EXTENT_MULT,
-                                        PIXEL_OFFSET, create_detector_norm)
+from refnx.reduce.platypusnexus import (
+    fore_back_region,
+    EXTENT_MULT,
+    PIXEL_OFFSET,
+    create_detector_norm,
+)
 
 
 class TestPlatypusNexus(object):
-
     @pytest.mark.usefixtures("no_data_directory")
     @pytest.fixture(autouse=True)
     def setup_method(self, tmpdir, data_directory):
-        self.pth = pjoin(data_directory, 'reduce')
+        self.pth = pjoin(data_directory, "reduce")
 
         with warnings.catch_warnings():
-            warnings.simplefilter('ignore', RuntimeWarning)
-            self.f113 = PlatypusNexus(
-                pjoin(self.pth, 'PLP0011613.nx.hdf')
-            )
-            self.f641 = PlatypusNexus(
-                pjoin(self.pth, 'PLP0011641.nx.hdf')
-            )
+            warnings.simplefilter("ignore", RuntimeWarning)
+            self.f113 = PlatypusNexus(pjoin(self.pth, "PLP0011613.nx.hdf"))
+            self.f641 = PlatypusNexus(pjoin(self.pth, "PLP0011641.nx.hdf"))
         self.cwd = os.getcwd()
 
         self.tmpdir = tmpdir.strpath
@@ -75,11 +84,11 @@ class TestPlatypusNexus(object):
         mask[30:70] = True
         mask[130:160] = True
 
-        profile, profile_sd = plp.background_subtract_line(yvals,
-                                                           yvals_sd,
-                                                           mask)
+        profile, profile_sd = plp.background_subtract_line(
+            yvals, yvals_sd, mask
+        )
 
-        verified_data = np.load(pjoin(self.pth, 'background_subtract.npy'))
+        verified_data = np.load(pjoin(self.pth, "background_subtract.npy"))
 
         assert_almost_equal(verified_data, np.c_[profile, profile_sd])
 
@@ -88,8 +97,9 @@ class TestPlatypusNexus(object):
         yvals = np.ceil(gauss(xvals, 0, 1000, 0, 1))
         detector = np.repeat(yvals[:, np.newaxis], 1000, axis=1).T
         detector_sd = np.sqrt(detector)
-        output = plp.find_specular_ridge(detector[np.newaxis, :],
-                                         detector_sd[np.newaxis, :])
+        output = plp.find_specular_ridge(
+            detector[np.newaxis, :], detector_sd[np.newaxis, :]
+        )
         assert_(len(output) == 5)
         assert_almost_equal(output[0][0], 100)
 
@@ -105,10 +115,10 @@ class TestPlatypusNexus(object):
 
         # now make an (N, T, Y) detector image
         n_tbins = 10
-        detector = np.repeat(yvals,
-                             n_tbins).reshape(xvals.size, n_tbins).T
-        detector_sd = np.repeat(yvals_sd,
-                                n_tbins).reshape(xvals.size, n_tbins).T
+        detector = np.repeat(yvals, n_tbins).reshape(xvals.size, n_tbins).T
+        detector_sd = (
+            np.repeat(yvals_sd, n_tbins).reshape(xvals.size, n_tbins).T
+        )
         detector = detector.reshape(1, n_tbins, xvals.size)
         detector_sd = detector_sd.reshape(1, n_tbins, xvals.size)
 
@@ -116,15 +126,15 @@ class TestPlatypusNexus(object):
         mask[:, :, 30:70] = True
         mask[:, :, 130:160] = True
 
-        det_bkg, detSD_bkg = plp.background_subtract(detector,
-                                                     detector_sd,
-                                                     mask)
+        det_bkg, detSD_bkg = plp.background_subtract(
+            detector, detector_sd, mask
+        )
 
         # each of the (N, T) entries should have the same background subtracted
         # entries
-        verified_data = np.load(pjoin(self.pth, 'background_subtract.npy'))
+        verified_data = np.load(pjoin(self.pth, "background_subtract.npy"))
 
-        it = np.nditer(detector, flags=['multi_index'])
+        it = np.nditer(detector, flags=["multi_index"])
         it.remove_axis(2)
         while not it.finished:
             profile = det_bkg[it.multi_index]
@@ -133,7 +143,7 @@ class TestPlatypusNexus(object):
             it.iternext()
 
     def test_calculate_bins(self):
-        bins = plp.calculate_wavelength_bins(2., 18, 2.)
+        bins = plp.calculate_wavelength_bins(2.0, 18, 2.0)
         assert_almost_equal(bins[0], 1.98)
         assert_almost_equal(bins[-1], 18.18)
 
@@ -144,8 +154,9 @@ class TestPlatypusNexus(object):
         assert_(np.size(out[1], axis=0) == 2)
 
     def test_event_folder(self):
-        self.f641.process(eventmode=[0, 900, 1800], integrate=0,
-                          event_folder=self.pth)
+        self.f641.process(
+            eventmode=[0, 900, 1800], integrate=0, event_folder=self.pth
+        )
 
     def test_multiple_acquisitions(self):
         """
@@ -166,8 +177,10 @@ class TestPlatypusNexus(object):
 
         # check that the wavelength resolution is roughly right, between 7 and
         # 8%.
-        res = (self.f641.processed_spectrum['m_lambda_fwhm'][0] /
-               self.f641.processed_spectrum['m_lambda'][0])
+        res = (
+            self.f641.processed_spectrum["m_lambda_fwhm"][0]
+            / self.f641.processed_spectrum["m_lambda"][0]
+        )
         assert_array_less(res, np.ones_like(res) * 0.08)
         assert_array_less(np.ones_like(res) * 0.07, res)
 
@@ -176,30 +189,27 @@ class TestPlatypusNexus(object):
         self.f113.process()
 
         # can save the spectra by supplying a filename
-        self.f113.write_spectrum_xml(pjoin(self.tmpdir, 'test.xml'))
-        self.f113.write_spectrum_dat(pjoin(self.tmpdir, 'test.dat'))
+        self.f113.write_spectrum_xml(pjoin(self.tmpdir, "test.xml"))
+        self.f113.write_spectrum_dat(pjoin(self.tmpdir, "test.dat"))
 
         # can save by supplying file handle:
-        with open(pjoin(self.tmpdir, 'test.xml'), 'wb') as f:
+        with open(pjoin(self.tmpdir, "test.xml"), "wb") as f:
             self.f113.write_spectrum_xml(f)
 
     def test_accumulate_files(self):
-        fnames = ['PLP0000708.nx.hdf', 'PLP0000709.nx.hdf']
+        fnames = ["PLP0000708.nx.hdf", "PLP0000709.nx.hdf"]
         pths = [pjoin(self.pth, fname) for fname in fnames]
         plp.accumulate_HDF_files(pths)
         f8, f9, fadd = None, None, None
 
         try:
-            f8 = h5py.File(pjoin(self.pth,
-                                        'PLP0000708.nx.hdf'), 'r')
-            f9 = h5py.File(pjoin(self.pth,
-                                        'PLP0000709.nx.hdf'), 'r')
-            fadd = h5py.File(pjoin(self.tmpdir,
-                                          'ADD_PLP0000708.nx.hdf'), 'r')
+            f8 = h5py.File(pjoin(self.pth, "PLP0000708.nx.hdf"), "r")
+            f9 = h5py.File(pjoin(self.pth, "PLP0000709.nx.hdf"), "r")
+            fadd = h5py.File(pjoin(self.tmpdir, "ADD_PLP0000708.nx.hdf"), "r")
 
-            f8d = f8['entry1/data/hmm'][0]
-            f9d = f9['entry1/data/hmm'][0]
-            faddd = fadd['entry1/data/hmm'][0]
+            f8d = f8["entry1/data/hmm"][0]
+            f9d = f9["entry1/data/hmm"][0]
+            faddd = fadd["entry1/data/hmm"][0]
             assert_equal(faddd, f8d + f9d)
         finally:
             if f8 is not None:
@@ -211,30 +221,30 @@ class TestPlatypusNexus(object):
 
     def test_accumulate_files_reduce(self):
         # test by adding a file to itself. Should have smaller stats
-        fnames = ['PLP0000708.nx.hdf', 'PLP0000708.nx.hdf']
+        fnames = ["PLP0000708.nx.hdf", "PLP0000708.nx.hdf"]
         pths = [pjoin(self.pth, fname) for fname in fnames]
         plp.accumulate_HDF_files(pths)
 
         with warnings.catch_warnings():
-            warnings.simplefilter('ignore', RuntimeWarning)
+            warnings.simplefilter("ignore", RuntimeWarning)
             # it should be processable
-            fadd = PlatypusNexus(pjoin(os.getcwd(),
-                                              'ADD_PLP0000708.nx.hdf'))
+            fadd = PlatypusNexus(pjoin(os.getcwd(), "ADD_PLP0000708.nx.hdf"))
             fadd.process()
 
             # it should also be reduceable
-            reducer = PlatypusReduce(pjoin(self.pth,
-                                                  'PLP0000711.nx.hdf'))
+            reducer = PlatypusReduce(pjoin(self.pth, "PLP0000711.nx.hdf"))
 
-            datasets, reduced = reducer.reduce(pjoin(os.getcwd(),
-                                               'ADD_PLP0000708.nx.hdf'))
-            assert_('y' in reduced)
+            datasets, reduced = reducer.reduce(
+                pjoin(os.getcwd(), "ADD_PLP0000708.nx.hdf")
+            )
+            assert_("y" in reduced)
 
             # the error bars should be smaller
             datasets2, reduced2 = reducer.reduce(
-                pjoin(self.pth, 'PLP0000708.nx.hdf'))
+                pjoin(self.pth, "PLP0000708.nx.hdf")
+            )
 
-            assert_(np.all(reduced['y_err'] < reduced2['y_err']))
+            assert_(np.all(reduced["y_err"] < reduced2["y_err"]))
 
     def test_manual_beam_find(self):
         # you can specify a function that finds where the specular ridge is.
@@ -249,19 +259,18 @@ class TestPlatypusNexus(object):
         # the beam_sd is much larger than the beam divergence, so a warning
         # should be raised.
         with pytest.warns(UserWarning):
-            self.f113.process(manual_beam_find=manual_beam_find,
-                              peak_pos=-1)
-        assert_equal(self.f113.processed_spectrum['m_beampos'][0], 50)
+            self.f113.process(manual_beam_find=manual_beam_find, peak_pos=-1)
+        assert_equal(self.f113.processed_spectrum["m_beampos"][0], 50)
 
         # manual beam finding also specifies the lower and upper pixel of the
         # foreground
-        assert_equal(self.f113.processed_spectrum['lopx'][0], 40)
-        assert_equal(self.f113.processed_spectrum['hipx'][0], 60)
+        assert_equal(self.f113.processed_spectrum["lopx"][0], 40)
+        assert_equal(self.f113.processed_spectrum["hipx"][0], 60)
 
     def test_fore_back_region(self):
         # calculation of foreground and background regions is done correctly
-        centres = np.array([100., 90.])
-        sd = np.array([5., 11.5])
+        centres = np.array([100.0, 90.0])
+        sd = np.array([5.0, 11.5])
         lopx, hipx, background_pixels = fore_back_region(centres, sd)
 
         assert_(len(lopx) == 2)
@@ -275,40 +284,41 @@ class TestPlatypusNexus(object):
         calc_higher = np.ceil(centres + sd * EXTENT_MULT)
         assert_equal(hipx, calc_higher)
 
-        y1 = np.atleast_1d(
-            np.round(lopx - PIXEL_OFFSET).astype('int'))
+        y1 = np.atleast_1d(np.round(lopx - PIXEL_OFFSET).astype("int"))
         y0 = np.atleast_1d(
-            np.round(lopx - PIXEL_OFFSET - EXTENT_MULT * sd).astype('int'))
+            np.round(lopx - PIXEL_OFFSET - EXTENT_MULT * sd).astype("int")
+        )
 
-        y2 = np.atleast_1d(
-            np.round(hipx + PIXEL_OFFSET).astype('int'))
+        y2 = np.atleast_1d(np.round(hipx + PIXEL_OFFSET).astype("int"))
         y3 = np.atleast_1d(
-            np.round(hipx + PIXEL_OFFSET + EXTENT_MULT * sd).astype('int'))
+            np.round(hipx + PIXEL_OFFSET + EXTENT_MULT * sd).astype("int")
+        )
 
-        bp = np.r_[np.arange(y0[0], y1[0] + 1),
-                   np.arange(y2[0], y3[0] + 1)]
+        bp = np.r_[np.arange(y0[0], y1[0] + 1), np.arange(y2[0], y3[0] + 1)]
 
         assert_equal(bp, background_pixels[0])
 
     def test_basename_datafile(self):
         # check that the right basename is returned
-        pth = 'a/b/c.nx.hdf'
-        assert_(basename_datafile(pth) == 'c')
+        pth = "a/b/c.nx.hdf"
+        assert_(basename_datafile(pth) == "c")
 
-        pth = 'c.nx.hdf'
-        assert_(basename_datafile(pth) == 'c')
+        pth = "c.nx.hdf"
+        assert_(basename_datafile(pth) == "c")
 
     def test_floodfield_correction(self):
         # check that flood field calculation works
         # the values were worked out by hand on a randomly
         # generated array
-        test_norm = np.array([1.12290503, 1.23743017, 0.8603352,
-                              0.70111732, 1.07821229])
-        test_norm_sd = np.array([0.05600541, 0.05879208, 0.04902215,
-                                 0.04425413, 0.05487956])
+        test_norm = np.array(
+            [1.12290503, 1.23743017, 0.8603352, 0.70111732, 1.07821229]
+        )
+        test_norm_sd = np.array(
+            [0.05600541, 0.05879208, 0.04902215, 0.04425413, 0.05487956]
+        )
 
-        fname = os.path.join(self.pth, 'flood.h5')
-        with h5py.File(fname, 'r') as f:
+        fname = os.path.join(self.pth, "flood.h5")
+        with h5py.File(fname, "r") as f:
             norm, norm_sd = create_detector_norm(f, 3.5, -3.5, axis=3)
 
             assert_almost_equal(norm, test_norm, 6)
@@ -320,15 +330,14 @@ class TestPlatypusNexus(object):
 
 
 class TestSpatzNexus(object):
-
     @pytest.mark.usefixtures("no_data_directory")
     @pytest.fixture(autouse=True)
     def setup_method(self, tmpdir, data_directory):
-        self.pth = pjoin(data_directory, 'reduce')
+        self.pth = pjoin(data_directory, "reduce")
 
         with warnings.catch_warnings():
-            warnings.simplefilter('ignore', RuntimeWarning)
-            self.f342 = SpatzNexus(pjoin(self.pth, 'SPZ0000342.nx.hdf'))
+            warnings.simplefilter("ignore", RuntimeWarning)
+            self.f342 = SpatzNexus(pjoin(self.pth, "SPZ0000342.nx.hdf"))
         self.cwd = os.getcwd()
 
         self.tmpdir = tmpdir.strpath
@@ -357,18 +366,17 @@ class TestSpatzNexus(object):
         assert_almost_equal(master_opening, 26)
         assert_allclose(phase_angle, 0, atol=1e-5)
 
-        toff = self.f342.time_offset(-25.90, 26,
-                                     25, 0., None, None, None)
+        toff = self.f342.time_offset(-25.90, 26, 25, 0.0, None, None, None)
         assert_allclose(toff, 5.5555555555555)
 
-        toff = self.f342.time_offset(-25.90, 26,
-                                     25, 0., None, None, None,
-                                     t_offset=1438.888888888888888)
+        toff = self.f342.time_offset(
+            -25.90, 26, 25, 0.0, None, None, None, t_offset=1438.888888888888888
+        )
         assert_allclose(toff, 0)
 
 
 @pytest.mark.usefixtures("no_data_directory")
 def test_catalogue(data_directory):
-    pth = os.path.dirname(pjoin(data_directory, 'reduce'))
-    catalogue(0, 10000000, data_folder=pth, prefix='PLP')
-    catalogue(0, 10000000, data_folder=pth, prefix='SPZ')
+    pth = os.path.dirname(pjoin(data_directory, "reduce"))
+    catalogue(0, 10000000, data_folder=pth, prefix="PLP")
+    catalogue(0, 10000000, data_folder=pth, prefix="SPZ")
