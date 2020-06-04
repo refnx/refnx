@@ -24,19 +24,19 @@ def data_directory(tmpdir_factory):
     url = "https://github.com/refnx/refnx-testdata/archive/master.zip"
     tmpdir = tmpdir_factory.mktemp("data")
 
-    try:
-        # grab the test data
-        with urllib.request.urlopen(url, timeout=5) as response, open(
-            pjoin(tmpdir, "master.zip"), "wb"
-        ) as f:
-            shutil.copyfileobj(response, f)
-
-        # master.zip is in tmpdir
-        with zipfile.ZipFile(pjoin(tmpdir, "master.zip")) as zf:
-            zf.extractall(path=tmpdir)
-
-        data_dir = pjoin(tmpdir, "refnx-testdata-master", "data")
-    except urllib.error.URLError:
-        data_dir = None
-
-    return data_dir
+    # try:
+    #     # grab the test data
+    #     with urllib.request.urlopen(url, timeout=5) as response, open(
+    #         pjoin(tmpdir, "master.zip"), "wb"
+    #     ) as f:
+    #         shutil.copyfileobj(response, f)
+    #
+    #     # master.zip is in tmpdir
+    #     with zipfile.ZipFile(pjoin(tmpdir, "master.zip")) as zf:
+    #         zf.extractall(path=tmpdir)
+    #
+    #     data_dir = pjoin(tmpdir, "refnx-testdata-master", "data")
+    # except urllib.error.URLError:
+    #     data_dir = None
+    #
+    # return data_dir
