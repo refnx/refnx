@@ -1,4 +1,5 @@
 import os
+from os.path import join as pjoin
 import numbers
 import warnings
 
@@ -18,16 +19,19 @@ from refnx.reduce.platypusnexus import (fore_back_region, EXTENT_MULT,
 
 class TestPlatypusNexus(object):
 
+    @pytest.mark.usefixtures("no_data_directory")
     @pytest.fixture(autouse=True)
-    def setup_method(self, tmpdir):
-        self.pth = os.path.dirname(os.path.abspath(__file__))
+    def setup_method(self, tmpdir, data_directory):
+        self.pth = pjoin(data_directory, 'reduce')
 
         with warnings.catch_warnings():
             warnings.simplefilter('ignore', RuntimeWarning)
-            self.f113 = PlatypusNexus(os.path.join(self.pth,
-                                                   'PLP0011613.nx.hdf'))
-            self.f641 = PlatypusNexus(os.path.join(self.pth,
-                                                   'PLP0011641.nx.hdf'))
+            self.f113 = PlatypusNexus(
+                pjoin(self.pth, 'PLP0011613.nx.hdf')
+            )
+            self.f641 = PlatypusNexus(
+                pjoin(self.pth, 'PLP0011641.nx.hdf')
+            )
         self.cwd = os.getcwd()
 
         self.tmpdir = tmpdir.strpath
@@ -75,8 +79,7 @@ class TestPlatypusNexus(object):
                                                            yvals_sd,
                                                            mask)
 
-        verified_data = np.load(os.path.join(self.pth,
-                                             'background_subtract.npy'))
+        verified_data = np.load(pjoin(self.pth, 'background_subtract.npy'))
 
         assert_almost_equal(verified_data, np.c_[profile, profile_sd])
 
@@ -119,8 +122,7 @@ class TestPlatypusNexus(object):
 
         # each of the (N, T) entries should have the same background subtracted
         # entries
-        verified_data = np.load(os.path.join(self.pth,
-                                             'background_subtract.npy'))
+        verified_data = np.load(pjoin(self.pth, 'background_subtract.npy'))
 
         it = np.nditer(detector, flags=['multi_index'])
         it.remove_axis(2)
@@ -174,25 +176,25 @@ class TestPlatypusNexus(object):
         self.f113.process()
 
         # can save the spectra by supplying a filename
-        self.f113.write_spectrum_xml(os.path.join(self.tmpdir, 'test.xml'))
-        self.f113.write_spectrum_dat(os.path.join(self.tmpdir, 'test.dat'))
+        self.f113.write_spectrum_xml(pjoin(self.tmpdir, 'test.xml'))
+        self.f113.write_spectrum_dat(pjoin(self.tmpdir, 'test.dat'))
 
         # can save by supplying file handle:
-        with open(os.path.join(self.tmpdir, 'test.xml'), 'wb') as f:
+        with open(pjoin(self.tmpdir, 'test.xml'), 'wb') as f:
             self.f113.write_spectrum_xml(f)
 
     def test_accumulate_files(self):
         fnames = ['PLP0000708.nx.hdf', 'PLP0000709.nx.hdf']
-        pths = [os.path.join(self.pth, fname) for fname in fnames]
+        pths = [pjoin(self.pth, fname) for fname in fnames]
         plp.accumulate_HDF_files(pths)
         f8, f9, fadd = None, None, None
 
         try:
-            f8 = h5py.File(os.path.join(self.pth,
+            f8 = h5py.File(pjoin(self.pth,
                                         'PLP0000708.nx.hdf'), 'r')
-            f9 = h5py.File(os.path.join(self.pth,
+            f9 = h5py.File(pjoin(self.pth,
                                         'PLP0000709.nx.hdf'), 'r')
-            fadd = h5py.File(os.path.join(self.tmpdir,
+            fadd = h5py.File(pjoin(self.tmpdir,
                                           'ADD_PLP0000708.nx.hdf'), 'r')
 
             f8d = f8['entry1/data/hmm'][0]
@@ -210,27 +212,27 @@ class TestPlatypusNexus(object):
     def test_accumulate_files_reduce(self):
         # test by adding a file to itself. Should have smaller stats
         fnames = ['PLP0000708.nx.hdf', 'PLP0000708.nx.hdf']
-        pths = [os.path.join(self.pth, fname) for fname in fnames]
+        pths = [pjoin(self.pth, fname) for fname in fnames]
         plp.accumulate_HDF_files(pths)
 
         with warnings.catch_warnings():
             warnings.simplefilter('ignore', RuntimeWarning)
             # it should be processable
-            fadd = PlatypusNexus(os.path.join(os.getcwd(),
+            fadd = PlatypusNexus(pjoin(os.getcwd(),
                                               'ADD_PLP0000708.nx.hdf'))
             fadd.process()
 
             # it should also be reduceable
-            reducer = PlatypusReduce(os.path.join(self.pth,
+            reducer = PlatypusReduce(pjoin(self.pth,
                                                   'PLP0000711.nx.hdf'))
 
-            datasets, reduced = reducer.reduce(os.path.join(os.getcwd(),
+            datasets, reduced = reducer.reduce(pjoin(os.getcwd(),
                                                'ADD_PLP0000708.nx.hdf'))
             assert_('y' in reduced)
 
             # the error bars should be smaller
             datasets2, reduced2 = reducer.reduce(
-                os.path.join(self.pth, 'PLP0000708.nx.hdf'))
+                pjoin(self.pth, 'PLP0000708.nx.hdf'))
 
             assert_(np.all(reduced['y_err'] < reduced2['y_err']))
 
@@ -319,14 +321,14 @@ class TestPlatypusNexus(object):
 
 class TestSpatzNexus(object):
 
+    @pytest.mark.usefixtures("no_data_directory")
     @pytest.fixture(autouse=True)
-    def setup_method(self, tmpdir):
-        self.pth = os.path.dirname(os.path.abspath(__file__))
+    def setup_method(self, tmpdir, data_directory):
+        self.pth = pjoin(data_directory, 'reduce')
 
         with warnings.catch_warnings():
             warnings.simplefilter('ignore', RuntimeWarning)
-            self.f342 = SpatzNexus(os.path.join(self.pth,
-                                                'SPZ0000342.nx.hdf'))
+            self.f342 = SpatzNexus(pjoin(self.pth, 'SPZ0000342.nx.hdf'))
         self.cwd = os.getcwd()
 
         self.tmpdir = tmpdir.strpath
@@ -365,7 +367,8 @@ class TestSpatzNexus(object):
         assert_allclose(toff, 0)
 
 
-def test_catalogue():
-    pth = os.path.dirname(os.path.abspath(__file__))
+@pytest.mark.usefixtures("no_data_directory")
+def test_catalogue(data_directory):
+    pth = os.path.dirname(pjoin(data_directory, 'reduce'))
     catalogue(0, 10000000, data_folder=pth, prefix='PLP')
     catalogue(0, 10000000, data_folder=pth, prefix='SPZ')
