@@ -1,5 +1,6 @@
-import os.path
 import os
+import os.path
+from os.path import join as pjoin
 import warnings
 import pandas
 import tempfile
@@ -8,16 +9,16 @@ from numpy.testing import assert_equal, assert_
 import pytest
 
 from refnx.reduce import BatchReducer
+
 # also get access to file-scope variables
 import refnx.reduce.batchreduction
 
 
 class TestReduce(object):
-
+    @pytest.mark.usefixtures("no_data_directory")
     @pytest.fixture(autouse=True)
-    def setup_method(self, tmpdir):
-        path = os.path.dirname(__file__)
-        self.path = path
+    def setup_method(self, tmpdir, data_directory):
+        self.pth = os.path.dirname(__file__)
 
         self.cwd = os.getcwd()
 
@@ -29,31 +30,34 @@ class TestReduce(object):
         os.chdir(self.cwd)
 
     def test_batch_reduce(self):
-        filename = os.path.join(self.path, "test_batch_reduction.xls")
+        filename = pjoin(self.pth, "test_batch_reduction.xls")
         # warnings filter for pixel size
         with warnings.catch_warnings():
-            warnings.simplefilter('ignore', RuntimeWarning)
+            warnings.simplefilter("ignore", RuntimeWarning)
 
-            b = BatchReducer(filename, data_folder=self.path, verbose=False,
-                             persistent=False)
+            b = BatchReducer(
+                filename, data_folder=self.pth, verbose=False, persistent=False
+            )
 
             b.reduce(show=False)
 
     def test_batch_reduce_ipython(self):
-        filename = os.path.join(self.path, "test_batch_reduction.xls")
+        filename = pjoin(self.pth, "test_batch_reduction.xls")
 
         # warnings filter for pixel size
         with warnings.catch_warnings():
-            warnings.simplefilter('ignore', RuntimeWarning)
+            warnings.simplefilter("ignore", RuntimeWarning)
 
             refnx.reduce.batchreduction._have_ipython = False
-            b = BatchReducer(filename, data_folder=self.path, verbose=False,
-                             persistent=False)
+            b = BatchReducer(
+                filename, data_folder=self.pth, verbose=False, persistent=False
+            )
             b.reduce(show=False)
 
             refnx.reduce.batchreduction._have_ipython = True
-            b = BatchReducer(filename, data_folder=self.path, verbose=False,
-                             persistent=False)
+            b = BatchReducer(
+                filename, data_folder=self.pth, verbose=False, persistent=False
+            )
             b.reduce(show=False)
 
 
@@ -72,14 +76,15 @@ class TestReductionCache(object):
 
     def setup_method(self):
         self.cache = refnx.reduce.batchreduction.ReductionCache(
-            persistent=False)
+            persistent=False
+        )
 
         # populate the cache with some fake data to test selector methods
         for line in self.entries:
             self._addentry(line)
 
     def _addentry(self, line, dest=None, **kwargs):
-        runs = pandas.Series(dict(zip(['refl1', 'refl2', 'refl3'], line[4])))
+        runs = pandas.Series(dict(zip(["refl1", "refl2", "refl3"], line[4])))
         entry = line[:]
         entry[4] = runs
         if dest is None:
@@ -91,32 +96,35 @@ class TestReductionCache(object):
 
         # test adding with update=True
         new_entry = self.entries[-1]
-        new_entry[2] = 'Sample D2'
+        new_entry[2] = "Sample D2"
         self._addentry(self.entries[-1], update=True)
         assert_equal(len(self.cache), 6)
-        assert_equal(self.cache.row(7).name, 'Sample D2')
+        assert_equal(self.cache.row(7).name, "Sample D2")
 
         # test adding with update=True
-        new_entry[2] = 'Sample D3'
+        new_entry[2] = "Sample D3"
         self._addentry(self.entries[-1], update=False)
         # the old entry is still in the list
         assert_equal(len(self.cache), 7)
-        assert_(self.cache.name('Sample D2'))
+        assert_(self.cache.name("Sample D2"))
         # but the new entry should be visible searching by-row
-        assert_equal(self.cache.row(7).name, 'Sample D3')
+        assert_equal(self.cache.row(7).name, "Sample D3")
 
     def test_run(self):
-        assert_equal(self.cache.run(21).entry['refl2'], 22)
+        assert_equal(self.cache.run(21).entry["refl2"], 22)
         assert_equal(self.cache.run(42).name, "Sample A2")
 
     def test_runs(self):
         assert_equal(len(self.cache.runs((2, 12))), 2)
-        assert_(type(self.cache.runs([2])[0])
-                is refnx.reduce.batchreduction.ReductionEntry)
+        assert_(
+            type(self.cache.runs([2])[0])
+            is refnx.reduce.batchreduction.ReductionEntry
+        )
 
     def test_row(self):
         from pytest import raises
-        assert_equal(self.cache.row(5).name, 'Sample A1')
+
+        assert_equal(self.cache.row(5).name, "Sample A1")
         with raises(KeyError):
             self.cache.row(4)
         with raises(KeyError):
@@ -129,22 +137,22 @@ class TestReductionCache(object):
     def test_name(self):
         from pytest import raises
 
-        assert_equal(self.cache.name('Sample C').fname, 'c.dat')
+        assert_equal(self.cache.name("Sample C").fname, "c.dat")
         with raises(KeyError):
-            self.cache.name('No such sample')
+            self.cache.name("No such sample")
 
     def test_name_startswith(self):
-        assert_equal(len(self.cache.name_startswith('Sample A')), 3)
+        assert_equal(len(self.cache.name_startswith("Sample A")), 3)
 
     def test_name_search(self):
-        assert_equal(len(self.cache.name_search('^Sample A')), 3)
-        assert_equal(len(self.cache.name_search('A')), 3)
-        assert_equal(len(self.cache.name_search(r'A\d')), 2)
-        assert_equal(len(self.cache.name_search('no such sample')), 0)
+        assert_equal(len(self.cache.name_search("^Sample A")), 3)
+        assert_equal(len(self.cache.name_search("A")), 3)
+        assert_equal(len(self.cache.name_search(r"A\d")), 2)
+        assert_equal(len(self.cache.name_search("no such sample")), 0)
 
     def test_str(self):
         # smoke test the __str__ method
-        assert_(str(self.cache) != '')
+        assert_(str(self.cache) != "")
 
     def test_persistence(self, tmpdir):
         # test persistence of cache in a local file
@@ -157,8 +165,7 @@ class TestReductionCache(object):
         cache = refnx.reduce.batchreduction.ReductionCache(persistent=True)
         self._addentry(self.entries[0], dest=cache)
         assert_equal(len(cache), 1)
-        assert_(cache._cache_filename() ==
-                self.cache._default_persistent_cache)
+        assert cache._cache_filename() == self.cache._default_persistent_cache
         assert_(os.path.exists(cache._cache_filename()))
 
         # check that the persistent cache has has been dropped
@@ -166,11 +173,12 @@ class TestReductionCache(object):
         assert_(not os.path.exists(cache._cache_filename()))
 
         # check that the cache filename can be set
-        cachename = tmpdir.mkdir('test').join('redn-test.pickle').strpath
+        cachename = tmpdir.mkdir("test").join("redn-test.pickle").strpath
 
         # make a new cache that has persistence with specified filename
         cache = refnx.reduce.batchreduction.ReductionCache(
-            persistent=cachename)
+            persistent=cachename
+        )
 
         assert_(cache._cache_filename() == cachename)
 
@@ -183,5 +191,6 @@ class TestReductionCache(object):
 
         # check that the persistent cache is loaded again
         cache2 = refnx.reduce.batchreduction.ReductionCache(
-            persistent=cachename)
+            persistent=cachename
+        )
         assert_equal(len(cache2), 1)
