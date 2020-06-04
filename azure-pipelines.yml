@@ -31,15 +31,17 @@ jobs:
     displayName: 'Install dependencies'
 
   - script: |
-      pip install -e .
-      pip install pytest
-      pytest
-    displayName: 'pytest'
-
-  - script: |
       pip install wheel
       python setup.py bdist_wheel
-    displayName: 'wheel'
+    displayName: 'make wheel'
+
+  - script: |
+      cd dist
+      pip install --only-binary=refnx --no-index refnx*.whl
+      pip install pytest
+      pytest --pyargs refnx
+      cd ..
+    displayName: 'pytest'
 
   - script: |
       pip uninstall -y pandas h5py xlrd pytest pytest-qt

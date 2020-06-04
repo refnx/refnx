@@ -118,7 +118,7 @@ jobs:
       run: |
         pushd dist
         pip install --only-binary=refnx --no-index refnx*.whl
-        python -c "import refnx;refnx.test()"
+        pytest --pyargs refnx
         popd
 
     - name: Make frozen GUI executable
