@@ -53,7 +53,7 @@ def test_app_load_old_experiment_file(qtbot, data_directory):
         try:
             myapp._restore_state(file)
         except ValueError as e:
-            if str(e) == "unsupported pickle protocol: 5"
+            if str(e) == "unsupported pickle protocol: 5":
                 # if you're on older versions of python
                 # the tests wouldn't be expected to work
                 continue
