@@ -10,6 +10,7 @@ class Bounds(object):
     A base class that describes the probability distribution for a parameter
 
     """
+
     def __init__(self):
         pass
 
@@ -93,14 +94,17 @@ class PDF(Bounds):
     (-11.043938533204672, -11.043938533204672)
 
     """
+
     def __init__(self, rv):
         super(PDF, self).__init__()
         # we'll accept any object so long as it has logpdf and rvs methods
-        if hasattr(rv, 'logpdf') and hasattr(rv, 'rvs'):
+        if hasattr(rv, "logpdf") and hasattr(rv, "rvs"):
             self.rv = rv
         else:
-            raise ValueError("You must initialise PDF with an object that has"
-                             " logpdf and rvs methods")
+            raise ValueError(
+                "You must initialise PDF with an object that has"
+                " logpdf and rvs methods"
+            )
 
     def __repr__(self):
         return "PDF({rv!r})".format(**self.__dict__)
@@ -140,9 +144,9 @@ class PDF(Bounds):
             valid values within the support
         """
         _val = np.asarray(val, dtype=float)
-        valid = np.where(np.isfinite(self.logp(_val)),
-                         _val,
-                         self.rv.rvs(size=_val.shape))
+        valid = np.where(
+            np.isfinite(self.logp(_val)), _val, self.rv.rvs(size=_val.shape)
+        )
 
         return valid
 
@@ -196,6 +200,7 @@ class Interval(Bounds):
     array([0., 0.])
 
     """
+
     def __init__(self, lb=-np.inf, ub=np.inf):
         super(Interval, self).__init__()
         if lb is None:
@@ -220,12 +225,12 @@ class Interval(Bounds):
         if math.isfinite(self._lb) and math.isfinite(self._ub):
             self._closed_bounds = True
             if self._lb == self._ub:
-                self._logprob = 0.
+                self._logprob = 0.0
             else:
                 self._logprob = math.log(1 / (self._ub - self._lb))
 
         else:
-            self._logprob = 0.
+            self._logprob = 0.0
             self._closed_bounds = False
 
     @property
@@ -235,13 +240,13 @@ class Interval(Bounds):
     def __repr__(self):
         lb, ub = self.lb, self.ub
         if np.isneginf(self.lb):
-            lb = '-np.inf'
+            lb = "-np.inf"
         if np.isinf(self.ub):
-            ub = 'np.inf'
+            ub = "np.inf"
         return "Interval(lb={}, ub={})".format(lb, ub)
 
     def __str__(self):
-        return '[{0}, {1}]'.format(self.lb, self.ub)
+        return "[{0}, {1}]".format(self.lb, self.ub)
 
     @property
     def lb(self):
@@ -288,7 +293,7 @@ class Interval(Bounds):
         # a lot of time is spent on the `asarray`, `logical_and` and `where`.
         # Most of the time val is a single float, so this speedup is
         # appreciable.
-        if hasattr(val, '__len__'):
+        if hasattr(val, "__len__"):
             _val = np.asarray(val, dtype=float)
             valid = np.logical_and(self._lb <= _val, _val <= self._ub)
             prob = np.where(valid, self._logprob, -np.inf)
@@ -329,9 +334,9 @@ class Interval(Bounds):
         """
         _val = np.asarray(val, dtype=float)
         if self._closed_bounds:
-            valid = np.where(np.isfinite(self.logp(_val)),
-                             _val,
-                             self.rvs(size=_val.shape))
+            valid = np.where(
+                np.isfinite(self.logp(_val)), _val, self.rvs(size=_val.shape)
+            )
         else:
             valid = np.where(_val < self._ub, _val, 2 * self._ub - _val)
             valid = np.where(valid > self._lb, valid, 2 * self._lb - valid)
@@ -340,8 +345,13 @@ class Interval(Bounds):
 
     def rvs(self, size=1, random_state=None):
         if self._closed_bounds:
-            return uniform.rvs(self._lb, self._ub - self._lb, size=size,
-                               random_state=random_state)
+            return uniform.rvs(
+                self._lb,
+                self._ub - self._lb,
+                size=size,
+                random_state=random_state,
+            )
         else:
-            raise RuntimeError("Can't ask for a random variate from a"
-                               " semi-closed interval")
+            raise RuntimeError(
+                "Can't ask for a random variate from a" " semi-closed interval"
+            )

@@ -11,8 +11,12 @@ from scipy.optimize import minimize, differential_evolution, least_squares
 import scipy.optimize as sciopt
 
 from refnx.analysis import Objective, Interval, PDF, is_parameter
-from refnx._lib import (unique as f_unique, MapWrapper,
-                        possibly_open_file, flatten)
+from refnx._lib import (
+    unique as f_unique,
+    MapWrapper,
+    possibly_open_file,
+    flatten,
+)
 from refnx._lib.util import getargspec
 
 from refnx._lib import emcee
@@ -25,13 +29,18 @@ PTSampler = type(None)
 
 try:
     from ptemcee.sampler import Sampler as PTSampler
+
     _HAVE_PTSAMPLER = True
 except ImportError:
-    warnings.warn("PTSampler (parallel tempering) is not available,"
-                  " please install the ptemcee package", ImportWarning)
+    warnings.warn(
+        "PTSampler (parallel tempering) is not available,"
+        " please install the ptemcee package",
+        ImportWarning,
+    )
 
-MCMCResult = namedtuple('MCMCResult', ['name', 'param', 'stderr', 'chain',
-                                       'median'])
+MCMCResult = namedtuple(
+    "MCMCResult", ["name", "param", "stderr", "chain", "median"]
+)
 
 
 class CurveFitter(object):
@@ -67,6 +76,7 @@ class CurveFitter(object):
     are ignored here. Specification of parallel threading is done with the
     `pool` argument in the `sample` method.
     """
+
     def __init__(self, objective, nwalkers=200, ntemps=-1, **mcmc_kws):
         """
         Parameters
@@ -106,10 +116,10 @@ class CurveFitter(object):
         if mcmc_kws is not None:
             self.mcmc_kws.update(mcmc_kws)
 
-        if 'pool' in self.mcmc_kws:
-            self.mcmc_kws.pop('pool')
-        if 'threads' in self.mcmc_kws:
-            self.mcmc_kws.pop('threads')
+        if "pool" in self.mcmc_kws:
+            self.mcmc_kws.pop("pool")
+        if "threads" in self.mcmc_kws:
+            self.mcmc_kws.pop("threads")
 
         self._nwalkers = nwalkers
         self._ntemps = ntemps
@@ -118,8 +128,9 @@ class CurveFitter(object):
 
     def __setstate__(self, state):
         self.__dict__.update(state)
-        self.__var_id = [id(obj) for obj
-                         in self.objective.varying_parameters()]
+        self.__var_id = [
+            id(obj) for obj in self.objective.varying_parameters()
+        ]
 
     @property
     def nvary(self):
@@ -129,12 +140,18 @@ class CurveFitter(object):
         # attempt to get a minimum repr for a CurveFitter. However,
         # it has so much state when the sampling has been done, that
         # will be ignored.
-        d = {'objective': self.objective, '_nwalkers': self._nwalkers,
-             '_ntemps': self._ntemps, 'mcmc_kws': self.mcmc_kws}
-        return ("CurveFitter({objective!r},"
-                " nwalkers={_nwalkers},"
-                " ntemps={_ntemps},"
-                " {mcmc_kws!r})".format(**d))
+        d = {
+            "objective": self.objective,
+            "_nwalkers": self._nwalkers,
+            "_ntemps": self._ntemps,
+            "mcmc_kws": self.mcmc_kws,
+        }
+        return (
+            "CurveFitter({objective!r},"
+            " nwalkers={_nwalkers},"
+            " ntemps={_ntemps},"
+            " {mcmc_kws!r})".format(**d)
+        )
 
     def make_sampler(self):
         """
@@ -149,22 +166,27 @@ class CurveFitter(object):
             raise ValueError("No parameters are being fitted")
 
         if self._ntemps == -1:
-            self.sampler = emcee.EnsembleSampler(self._nwalkers,
-                                                 self.nvary,
-                                                 self.objective.logpost,
-                                                 **self.mcmc_kws)
+            self.sampler = emcee.EnsembleSampler(
+                self._nwalkers,
+                self.nvary,
+                self.objective.logpost,
+                **self.mcmc_kws
+            )
         # Parallel Tempering was requested.
         else:
             if not _HAVE_PTSAMPLER:
-                raise RuntimeError("You need to install the 'ptemcee' package"
-                                   " to use parallel tempering")
+                raise RuntimeError(
+                    "You need to install the 'ptemcee' package"
+                    " to use parallel tempering"
+                )
 
-            sig = {'ntemps': self._ntemps,
-                   'nwalkers': self._nwalkers,
-                   'dim': self.nvary,
-                   'logl': self.objective.logl,
-                   'logp': self.objective.logp
-                   }
+            sig = {
+                "ntemps": self._ntemps,
+                "nwalkers": self._nwalkers,
+                "dim": self.nvary,
+                "logl": self.objective.logl,
+                "logp": self.objective.logp,
+            }
             sig.update(self.mcmc_kws)
             self.sampler = PTSampler(**sig)
 
@@ -182,13 +204,15 @@ class CurveFitter(object):
 
         """
         var_ids = [id(obj) for obj in self.objective.varying_parameters()]
-        if not(np.array_equal(var_ids, self.__var_id)):
-            raise RuntimeError("The Objective.varying_parameters() have"
-                               " changed since the CurveFitter was created."
-                               " To keep on using the CurveFitter call"
-                               " the CurveFitter.make_samplers() method.")
+        if not (np.array_equal(var_ids, self.__var_id)):
+            raise RuntimeError(
+                "The Objective.varying_parameters() have"
+                " changed since the CurveFitter was created."
+                " To keep on using the CurveFitter call"
+                " the CurveFitter.make_samplers() method."
+            )
 
-    def initialise(self, pos='covar', random_state=None):
+    def initialise(self, pos="covar", random_state=None):
         """
         Initialise the emcee walkers.
 
@@ -230,15 +254,19 @@ class CurveFitter(object):
             _ntemps = 1
 
         # position is specified with array (no parallel tempering)
-        if (isinstance(pos, np.ndarray) and
-                self._ntemps == -1 and
-                pos.shape == (nwalkers, nvary)):
+        if (
+            isinstance(pos, np.ndarray)
+            and self._ntemps == -1
+            and pos.shape == (nwalkers, nvary)
+        ):
             init_walkers = np.copy(pos)[np.newaxis]
 
         # position is specified with array (with parallel tempering)
-        elif (isinstance(pos, np.ndarray) and
-              self._ntemps > -1 and
-              pos.shape == (_ntemps, nwalkers, nvary)):
+        elif (
+            isinstance(pos, np.ndarray)
+            and self._ntemps > -1
+            and pos.shape == (_ntemps, nwalkers, nvary)
+        ):
             init_walkers = np.copy(pos)
 
         # position is specified with existing chain
@@ -247,41 +275,46 @@ class CurveFitter(object):
             return
 
         # position is to be created from covariance matrix
-        elif pos == 'covar':
+        elif pos == "covar":
             p0 = np.array(self._varying_parameters)
             cov = self.objective.covar()
             init_walkers = rng.multivariate_normal(
-                np.atleast_1d(p0),
-                np.atleast_2d(cov),
-                size=(_ntemps, nwalkers))
+                np.atleast_1d(p0), np.atleast_2d(cov), size=(_ntemps, nwalkers)
+            )
 
         # position is specified by jittering the parameters with gaussian noise
-        elif pos == 'jitter':
+        elif pos == "jitter":
             var_arr = np.array(self._varying_parameters)
-            pos = 1 + rng.standard_normal((_ntemps, nwalkers, nvary)) * 1.e-4
+            pos = 1 + rng.standard_normal((_ntemps, nwalkers, nvary)) * 1.0e-4
             pos *= var_arr
             init_walkers = pos
 
         # use the prior to initialise position
-        elif pos == 'prior':
+        elif pos == "prior":
             arr = np.zeros((_ntemps, nwalkers, nvary))
 
             for i, param in enumerate(self._varying_parameters):
                 # bounds are not a closed interval, just jitter it.
-                if (isinstance(param.bounds, Interval) and
-                        not param.bounds._closed_bounds):
-                    vals = 1 + rng.standard_normal((_ntemps, nwalkers)) * 1.e-1
+                if (
+                    isinstance(param.bounds, Interval)
+                    and not param.bounds._closed_bounds
+                ):
+                    vals = (
+                        1 + rng.standard_normal((_ntemps, nwalkers)) * 1.0e-1
+                    )
                     vals *= param.value
                     arr[..., i] = vals
                 else:
-                    arr[..., i] = param.bounds.rvs(size=(_ntemps, nwalkers),
-                                                   random_state=rng)
+                    arr[..., i] = param.bounds.rvs(
+                        size=(_ntemps, nwalkers), random_state=rng
+                    )
 
             init_walkers = arr
 
         else:
-            raise RuntimeError("Didn't use any known method for "
-                               "CurveFitter.initialise")
+            raise RuntimeError(
+                "Didn't use any known method for " "CurveFitter.initialise"
+            )
 
         # if you're not doing parallel tempering then remove the first
         # dimension
@@ -329,8 +362,10 @@ class CurveFitter(object):
         if required_shape == chain_shape:
             self.initialise(pos=chain[-1])
         else:
-            raise ValueError("You tried to initialise with a chain, but it was"
-                             " the wrong shape")
+            raise ValueError(
+                "You tried to initialise with a chain, but it was"
+                " the wrong shape"
+            )
 
     @property
     def chain(self):
@@ -382,8 +417,16 @@ class CurveFitter(object):
         """
         return autocorrelation_chain(self.chain, nburn=nburn, nthin=nthin)
 
-    def sample(self, steps, nthin=1, random_state=None, f=None, callback=None,
-               verbose=True, pool=-1):
+    def sample(
+        self,
+        steps,
+        nthin=1,
+        random_state=None,
+        f=None,
+        callback=None,
+        verbose=True,
+        pool=-1,
+    ):
         """
         Performs sampling from the objective.
 
@@ -470,8 +513,8 @@ class CurveFitter(object):
                     if self.__pt_iterations % nthin:
                         return None
 
-                h.write(' '.join(map(str, state.coords.ravel())))
-                h.write('\n')
+                h.write(" ".join(map(str, state.coords.ravel())))
+                h.write("\n")
 
         # remove chains from each of the parameters because they slow down
         # pickling but only if they are parameter objects.
@@ -484,16 +527,16 @@ class CurveFitter(object):
 
         # make sure the checkpoint file exists
         if f is not None:
-            with possibly_open_file(f, 'w') as h:
+            with possibly_open_file(f, "w") as h:
                 # write the shape of each step of the chain
-                h.write('# ')
+                h.write("# ")
                 shape = self._state.coords.shape
-                h.write(', '.join(map(str, shape)))
-                h.write('\n')
+                h.write(", ".join(map(str, shape)))
+                h.write("\n")
 
         # using context manager means we kill off zombie pool objects
         # but does mean that the pool has to be specified each time.
-        with MapWrapper(pool) as g, possibly_open_file(f, 'a') as h:
+        with MapWrapper(pool) as g, possibly_open_file(f, "a") as h:
             # if you're not creating more than 1 thread, then don't bother with
             # a pool.
             if pool == 1:
@@ -502,33 +545,34 @@ class CurveFitter(object):
                 self.sampler.pool = g
 
             # these kwargs are provided to the sampler.sample method
-            kwargs = {'iterations': steps,
-                      'thin': nthin}
+            kwargs = {"iterations": steps, "thin": nthin}
 
             # new emcee arguments
             sampler_args = getargspec(self.sampler.sample).args
-            if 'progress' in sampler_args and verbose:
-                kwargs['progress'] = True
+            if "progress" in sampler_args and verbose:
+                kwargs["progress"] = True
                 verbose = False
 
-            if 'thin_by' in sampler_args:
-                kwargs['thin_by'] = nthin
-                kwargs.pop('thin', 0)
+            if "thin_by" in sampler_args:
+                kwargs["thin_by"] = nthin
+                kwargs.pop("thin", 0)
 
             # ptemcee returns coords, logpost
             # emcee returns a State object
             if isinstance(self.sampler, PTSampler):
                 with get_progress_bar(verbose, total=steps) as pbar:
-                    for result in (self.sampler.sample(self._state.coords,
-                                                       **kwargs)):
-                        self._state = State(result[0],
-                                            log_prob=result[1] + result[2],
-                                            random_state=self.sampler._random)
+                    for result in self.sampler.sample(
+                        self._state.coords, **kwargs
+                    ):
+                        self._state = State(
+                            result[0],
+                            log_prob=result[1] + result[2],
+                            random_state=self.sampler._random,
+                        )
                         _callback_wrapper(self._state, h=h)
                         pbar.update(1)
             else:
-                for state in self.sampler.sample(self._state,
-                                                 **kwargs):
+                for state in self.sampler.sample(self._state, **kwargs):
                     self._state = state
                     _callback_wrapper(state, h=h)
 
@@ -537,7 +581,7 @@ class CurveFitter(object):
         # sets parameter value and stderr
         return process_chain(self.objective, self.chain)
 
-    def fit(self, method='L-BFGS-B', target='nll', verbose=True, **kws):
+    def fit(self, method="L-BFGS-B", target="nll", verbose=True, **kws):
         """
         Obtain the maximum log-likelihood, or log-posterior, estimate (mode)
         of the objective. Maximising the log-likelihood is equivalent to
@@ -607,13 +651,13 @@ class CurveFitter(object):
         _min_kws = {}
         _min_kws.update(kws)
         _bounds = bounds_list(self.objective.varying_parameters())
-        _min_kws['bounds'] = _bounds
+        _min_kws["bounds"] = _bounds
 
         # setup callback default
-        _min_kws.setdefault('callback', None)
+        _min_kws.setdefault("callback", None)
 
         cost = self.objective.nll
-        if target == 'nlpost':
+        if target == "nlpost":
             cost = self.objective.nlpost
 
         # a decorator for the progress bar updater
@@ -628,49 +672,50 @@ class CurveFitter(object):
             return callback
 
         # least_squares Trust Region Reflective by default
-        if method == 'least_squares':
+        if method == "least_squares":
             b = np.array(_bounds)
-            _min_kws['bounds'] = (b[..., 0], b[..., 1])
+            _min_kws["bounds"] = (b[..., 0], b[..., 1])
 
             # least_squares doesn't have a callback
-            _min_kws.pop('callback', None)
+            _min_kws.pop("callback", None)
 
-            res = least_squares(self.objective.residuals,
-                                init_pars,
-                                **_min_kws)
+            res = least_squares(
+                self.objective.residuals, init_pars, **_min_kws
+            )
         # differential_evolution, dual_annealing, shgo require lower and upper
         # bounds
-        elif method in ['differential_evolution', 'dual_annealing', 'shgo']:
+        elif method in ["differential_evolution", "dual_annealing", "shgo"]:
             mini = getattr(sciopt, method)
             with get_progress_bar(verbose, None) as pbar:
-                _min_kws['callback'] = _callback_wrapper(_min_kws['callback'],
-                                                         pbar)
+                _min_kws["callback"] = _callback_wrapper(
+                    _min_kws["callback"], pbar
+                )
 
                 res = mini(cost, **_min_kws)
         else:
             # otherwise stick it to minimizer. Default being L-BFGS-B
-            _min_kws['method'] = method
-            _min_kws['bounds'] = _bounds
+            _min_kws["method"] = method
+            _min_kws["bounds"] = _bounds
 
             with get_progress_bar(verbose, None) as pbar:
-                _min_kws['callback'] = _callback_wrapper(_min_kws['callback'],
-                                                         pbar)
+                _min_kws["callback"] = _callback_wrapper(
+                    _min_kws["callback"], pbar
+                )
 
                 res = minimize(cost, init_pars, **_min_kws)
 
         # OptimizeResult.success may not be present (dual annealing)
-        if hasattr(res, 'success') and res.success:
+        if hasattr(res, "success") and res.success:
             self.objective.setp(res.x)
 
             # Covariance matrix estimation
             covar = self.objective.covar()
             errors = np.sqrt(np.diag(covar))
-            res['covar'] = covar
-            res['stderr'] = errors
+            res["covar"] = covar
+            res["stderr"] = errors
 
             # check if the parameters are all Parameter instances.
-            flat_params = list(f_unique(flatten(
-                self.objective.parameters)))
+            flat_params = list(f_unique(flatten(self.objective.parameters)))
             if np.all([is_parameter(param) for param in flat_params]):
                 # zero out all the old parameter stderrs
                 for param in flat_params:
@@ -703,7 +748,7 @@ def load_chain(f):
         The loaded chain - `(nsteps, nwalkers, ndim)` or
         `(nsteps, ntemps, nwalkers, ndim)`
     """
-    with possibly_open_file(f, 'r') as g:
+    with possibly_open_file(f, "r") as g:
         # read header
         header = g.readline()
         expr = re.compile(r"(\d+)")
@@ -723,10 +768,9 @@ def load_chain(f):
         read_arr = array.array("d")
 
         for i, l in enumerate(g, 1):
-            read_arr.extend(np.fromstring(l,
-                                          dtype=float,
-                                          count=chain_size,
-                                          sep=' '))
+            read_arr.extend(
+                np.fromstring(l, dtype=float, count=chain_size, sep=" ")
+            )
 
         chain = np.frombuffer(read_arr, dtype=np.float, count=len(read_arr))
 
@@ -820,16 +864,21 @@ def process_chain(objective, chain, nburn=0, nthin=1, flatchain=False):
 
             # copy in the chain
             param.chain = np.copy(chain[..., i])
-            res = MCMCResult(name=param.name, param=param,
-                             median=param.value, stderr=param.stderr,
-                             chain=param.chain)
+            res = MCMCResult(
+                name=param.name,
+                param=param,
+                median=param.value,
+                stderr=param.stderr,
+                chain=param.chain,
+            )
             result_list.append(res)
 
         fitted_values = np.array(varying_parameters)
 
         # give each constrained param a chain (to be reshaped later)
-        constrained_params = [param for param in flat_params
-                              if param.constraint is not None]
+        constrained_params = [
+            param for param in flat_params if param.constraint is not None
+        ]
 
         for constrain_param in constrained_params:
             constrain_param.chain = np.empty(chain.shape[:-1], float)
@@ -846,8 +895,9 @@ def process_chain(objective, chain, nburn=0, nthin=1, flatchain=False):
                     constrain_param.chain[index] = constrain_param.value
 
             for constrain_param in constrained_params:
-                quantiles = np.percentile(constrain_param.chain,
-                                          [15.87, 50, 84.13])
+                quantiles = np.percentile(
+                    constrain_param.chain, [15.87, 50, 84.13]
+                )
 
                 std_l, median, std_u = quantiles
                 constrain_param.value = median
@@ -863,9 +913,9 @@ def process_chain(objective, chain, nburn=0, nthin=1, flatchain=False):
         for i in range(nvary):
             c = np.copy(chain[..., i])
             median, stderr = uncertainty_from_chain(c)
-            res = MCMCResult(name='', param=median,
-                             median=median, stderr=stderr,
-                             chain=c)
+            res = MCMCResult(
+                name="", param=median, median=median, stderr=stderr, chain=c
+            )
             result_list.append(res)
 
     return result_list
@@ -948,12 +998,14 @@ def bounds_list(parameters):
     """
     bounds = []
     for param in parameters:
-        if (hasattr(param, 'bounds') and
-                isinstance(param.bounds, Interval)):
+        if hasattr(param, "bounds") and isinstance(param.bounds, Interval):
             bnd = param.bounds
             bounds.append((bnd.lb, bnd.ub))
-        elif (hasattr(param, 'bounds') and isinstance(param.bounds, PDF) and
-              hasattr(param.bounds.rv, 'ppf')):
+        elif (
+            hasattr(param, "bounds")
+            and isinstance(param.bounds, PDF)
+            and hasattr(param.bounds.rv, "ppf")
+        ):
             bounds.append(param.bounds.rv.ppf([0.005, 0.995]))
         else:
             # We can't handle this bound
@@ -989,6 +1041,6 @@ def _function_1d(x):
 
     # Compute the FFT and then (from that) the auto-correlation function
     f = np.fft.fft(x - np.mean(x), n=2 * n)
-    acf = np.fft.ifft(f * np.conjugate(f))[:len(x)].real
+    acf = np.fft.ifft(f * np.conjugate(f))[: len(x)].real
     acf /= acf[0]
     return acf

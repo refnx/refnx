@@ -14,11 +14,22 @@ from scipy.optimize import minimize, least_squares
 from scipy.optimize._numdiff import approx_derivative
 import scipy.stats as stats
 
-from numpy.testing import (assert_almost_equal, assert_equal, assert_,
-                           assert_allclose)
+from numpy.testing import (
+    assert_almost_equal,
+    assert_equal,
+    assert_,
+    assert_allclose,
+)
 
-from refnx.analysis import (Parameter, Model, Objective, BaseObjective,
-                            Transform, Parameters, PDF)
+from refnx.analysis import (
+    Parameter,
+    Model,
+    Objective,
+    BaseObjective,
+    Transform,
+    Parameters,
+    PDF,
+)
 from refnx.dataset import Data1D, ReflectDataset
 from refnx.util import ErrorProp as EP
 from refnx._lib import emcee
@@ -31,15 +42,14 @@ def line(x, params, *args, **kwds):
 
 def gauss(x, p0):
     p = np.array(p0)
-    return p[0] + p[1] * np.exp(-((x - p[2]) / p[3])**2)
+    return p[0] + p[1] * np.exp(-(((x - p[2]) / p[3]) ** 2))
 
 
 def logp_extra(model, data):
-    return 1.
+    return 1.0
 
 
 class TestObjective(object):
-
     def setup_method(self):
         # Choose the "true" parameters.
 
@@ -62,7 +72,7 @@ class TestObjective(object):
 
         self.data = Data1D(data=(x, y, y_err))
 
-        self.p = Parameter(self.b_ls, 'b') | Parameter(self.m_ls, 'm')
+        self.p = Parameter(self.b_ls, "b") | Parameter(self.m_ls, "m")
         self.model = Model(self.p, fitfunc=line)
         self.objective = Objective(self.model, self.data)
 
@@ -70,19 +80,60 @@ class TestObjective(object):
         self.p[0].vary = True
         self.p[1].vary = True
 
-        mod = np.array([4.78166609, 4.42364699, 4.16404064, 3.50343504,
-                        3.4257084, 2.93594347, 2.92035638, 2.67533842,
-                        2.28136038, 2.19772983, 1.99295496, 1.93748334,
-                        1.87484436, 1.65161016, 1.44613461, 1.11128101,
-                        1.04584535, 0.86055984, 0.76913963, 0.73906649,
-                        0.73331407, 0.68350418, 0.65216599, 0.59838566,
-                        0.13070299, 0.10749131, -0.01010195, -0.10010155,
-                        -0.29495372, -0.42817431, -0.43122391, -0.64637715,
-                        -1.30560686, -1.32626428, -1.44835768, -1.52589881,
-                        -1.56371158, -2.12048349, -2.24899179, -2.50292682,
-                        -2.53576659, -2.55797996, -2.60870542, -2.7074727,
-                        -3.93781479, -4.12415366, -4.42313742, -4.98368609,
-                        -5.38782395, -5.44077086])
+        mod = np.array(
+            [
+                4.78166609,
+                4.42364699,
+                4.16404064,
+                3.50343504,
+                3.4257084,
+                2.93594347,
+                2.92035638,
+                2.67533842,
+                2.28136038,
+                2.19772983,
+                1.99295496,
+                1.93748334,
+                1.87484436,
+                1.65161016,
+                1.44613461,
+                1.11128101,
+                1.04584535,
+                0.86055984,
+                0.76913963,
+                0.73906649,
+                0.73331407,
+                0.68350418,
+                0.65216599,
+                0.59838566,
+                0.13070299,
+                0.10749131,
+                -0.01010195,
+                -0.10010155,
+                -0.29495372,
+                -0.42817431,
+                -0.43122391,
+                -0.64637715,
+                -1.30560686,
+                -1.32626428,
+                -1.44835768,
+                -1.52589881,
+                -1.56371158,
+                -2.12048349,
+                -2.24899179,
+                -2.50292682,
+                -2.53576659,
+                -2.55797996,
+                -2.60870542,
+                -2.7074727,
+                -3.93781479,
+                -4.12415366,
+                -4.42313742,
+                -4.98368609,
+                -5.38782395,
+                -5.44077086,
+            ]
+        )
         self.mod = mod
 
     def test_model(self):
@@ -115,10 +166,9 @@ class TestObjective(object):
         assert_equal(np.array(self.p), [1.234, 1.23])
 
     def test_pvals(self):
-        assert_equal(self.objective.parameters.pvals,
-                     [self.b_ls, self.m_ls])
+        assert_equal(self.objective.parameters.pvals, [self.b_ls, self.m_ls])
         self.objective.parameters.pvals = [1, 2]
-        assert_equal(self.objective.parameters.pvals, [1, 2.])
+        assert_equal(self.objective.parameters.pvals, [1, 2.0])
 
     def test_logp(self):
         self.p[0].range(0, 10)
@@ -135,40 +185,44 @@ class TestObjective(object):
         # http://dan.iel.fm/emcee/current/user/line/
         assert_almost_equal(self.objective.logp(), 0)
 
-        assert_almost_equal(self.objective.nlpost(),
-                            -self.objective.logpost())
+        assert_almost_equal(self.objective.nlpost(), -self.objective.logpost())
 
         # the uncertainties are underestimated in this example...
         # amendment factor because dfm emcee example does not include 2pi
         amend = 0.5 * self.objective.npoints * np.log(2 * np.pi)
-        assert_almost_equal(self.objective.logl() + amend,
-                            -559.01078135444595)
-        assert_almost_equal(self.objective.logpost() + amend,
-                            -559.01078135444595)
+        assert_almost_equal(self.objective.logl() + amend, -559.01078135444595)
+        assert_almost_equal(
+            self.objective.logpost() + amend, -559.01078135444595
+        )
 
     def test_chisqr(self):
-        assert_almost_equal(self.objective.chisqr(),
-                            1231.1096772954229)
+        assert_almost_equal(self.objective.chisqr(), 1231.1096772954229)
 
     def test_residuals(self):
         # weighted, with and without transform
-        assert_almost_equal(self.objective.residuals(),
-                            (self.data.y - self.mod) / self.data.y_err)
+        assert_almost_equal(
+            self.objective.residuals(),
+            (self.data.y - self.mod) / self.data.y_err,
+        )
 
-        objective = Objective(self.model, self.data,
-                              transform=Transform('lin'))
-        assert_almost_equal(objective.residuals(),
-                            (self.data.y - self.mod) / self.data.y_err)
+        objective = Objective(
+            self.model, self.data, transform=Transform("lin")
+        )
+        assert_almost_equal(
+            objective.residuals(), (self.data.y - self.mod) / self.data.y_err
+        )
 
         # unweighted, with and without transform
         objective = Objective(self.model, self.data, use_weights=False)
-        assert_almost_equal(objective.residuals(),
-                            self.data.y - self.mod)
+        assert_almost_equal(objective.residuals(), self.data.y - self.mod)
 
-        objective = Objective(self.model, self.data, use_weights=False,
-                              transform=Transform('lin'))
-        assert_almost_equal(objective.residuals(),
-                            self.data.y - self.mod)
+        objective = Objective(
+            self.model,
+            self.data,
+            use_weights=False,
+            transform=Transform("lin"),
+        )
+        assert_almost_equal(objective.residuals(), self.data.y - self.mod)
 
     def test_masked_dataset(self):
         residuals = self.objective.residuals()
@@ -192,7 +246,7 @@ class TestObjective(object):
         pickle.loads(pkl)
 
         # check the ForkingPickler as well.
-        if hasattr(ForkingPickler, 'dumps'):
+        if hasattr(ForkingPickler, "dumps"):
             pkl = ForkingPickler.dumps(self.objective)
             pickle.loads(pkl)
 
@@ -202,21 +256,21 @@ class TestObjective(object):
         pickle.loads(pkl)
 
         # check the ForkingPickler as well.
-        if hasattr(ForkingPickler, 'dumps'):
+        if hasattr(ForkingPickler, "dumps"):
             pkl = ForkingPickler.dumps(self.objective)
             pickle.loads(pkl)
 
     def test_transform_pickle(self):
         # can you pickle the Transform object?
-        pkl = pickle.dumps(Transform('logY'))
+        pkl = pickle.dumps(Transform("logY"))
         pickle.loads(pkl)
 
     def test_transform(self):
         pth = os.path.dirname(os.path.abspath(__file__))
 
-        fname = os.path.join(pth, 'c_PLP0011859_q.txt')
+        fname = os.path.join(pth, "c_PLP0011859_q.txt")
         data = ReflectDataset(fname)
-        t = Transform('logY')
+        t = Transform("logY")
 
         yt, et = t(data.x, data.y, y_err=data.y_err)
         assert_equal(yt, np.log10(data.y))
@@ -233,7 +287,7 @@ class TestObjective(object):
         q = eval(repr(p))
         assert p.form == q.form
 
-        p = Transform('logY')
+        p = Transform("logY")
         q = eval(repr(p))
         assert p.form == q.form
 
@@ -251,17 +305,18 @@ class TestObjective(object):
             model = m * x + b
             inv_sigma2 = 1.0 / (yerr ** 2 + model ** 2 * np.exp(2 * lnf))
             print(inv_sigma2)
-            return -0.5 * (np.sum((y - model) ** 2 * inv_sigma2 -
-                                  np.log(inv_sigma2)))
+            return -0.5 * (
+                np.sum((y - model) ** 2 * inv_sigma2 - np.log(inv_sigma2))
+            )
 
         x, y, yerr, _ = self.data.data
 
         theta = [self.m_true, self.b_true, np.log(self.f_true)]
-        bo = BaseObjective(theta, logl, logp=logp,
-                           fcn_args=(x, y, yerr))
+        bo = BaseObjective(theta, logl, logp=logp, fcn_args=(x, y, yerr))
 
-        lnsigma = Parameter(np.log(self.f_true), 'lnsigma', bounds=(-10, 1),
-                            vary=True)
+        lnsigma = Parameter(
+            np.log(self.f_true), "lnsigma", bounds=(-10, 1), vary=True
+        )
         self.objective.setp(np.array([self.b_true, self.m_true]))
         self.objective.lnsigma = lnsigma
 
@@ -282,18 +337,17 @@ class TestObjective(object):
             m, b, lnf = theta
             model = m * x + b
             inv_sigma2 = 1.0 / (yerr ** 2 + model ** 2 * np.exp(2 * lnf))
-            return -0.5 * (np.sum((y - model)**2 * inv_sigma2 -
-                                  np.log(inv_sigma2)))
+            return -0.5 * (
+                np.sum((y - model) ** 2 * inv_sigma2 - np.log(inv_sigma2))
+            )
 
         x, y, yerr, _ = self.data.data
 
         theta = [self.m_true, self.b_true, np.log(self.f_true)]
-        bo = BaseObjective(theta, logl, logp=logp,
-                           fcn_args=(x, y, yerr))
+        bo = BaseObjective(theta, logl, logp=logp, fcn_args=(x, y, yerr))
 
         # test that the wrapper gives the same logl as the direct function
-        assert_almost_equal(bo.logl(theta),
-                            logl(theta, x, y, yerr))
+        assert_almost_equal(bo.logl(theta), logl(theta, x, y, yerr))
         assert_almost_equal(bo.logl(theta), -bo.nll(theta))
         assert_almost_equal(bo.nll(theta), 12.8885352412)
 
@@ -304,8 +358,9 @@ class TestObjective(object):
         np.random.seed(1)
 
         ndim, nwalkers = 3, 100
-        pos = [result["x"] + 1e-4 * np.random.randn(ndim) for
-               i in range(nwalkers)]
+        pos = [
+            result["x"] + 1e-4 * np.random.randn(ndim) for i in range(nwalkers)
+        ]
 
         sampler = emcee.EnsembleSampler(nwalkers, ndim, bo.logpost)
         state = emcee.State(pos, random_state=np.random.get_state())
@@ -314,39 +369,29 @@ class TestObjective(object):
         burnin = 200
         samples = sampler.get_chain()[burnin:, :, :].reshape((-1, ndim))
         samples[:, 2] = np.exp(samples[:, 2])
-        m_mc, b_mc, f_mc = map(lambda v: (v[1], v[2] - v[1], v[1] - v[0]),
-                               zip(*np.percentile(samples, [16, 50, 84],
-                                                  axis=0)))
-        assert_allclose(m_mc, (-1.0071664,
-                               0.0809444,
-                               0.0784894),
-                        rtol=0.04)
+        m_mc, b_mc, f_mc = map(
+            lambda v: (v[1], v[2] - v[1], v[1] - v[0]),
+            zip(*np.percentile(samples, [16, 50, 84], axis=0)),
+        )
+        assert_allclose(m_mc, (-1.0071664, 0.0809444, 0.0784894), rtol=0.04)
 
-        assert_allclose(b_mc, (4.5428107,
-                               0.3549174,
-                               0.3673304),
-                        rtol=0.04)
+        assert_allclose(b_mc, (4.5428107, 0.3549174, 0.3673304), rtol=0.04)
 
-        assert_allclose(f_mc, (0.4610898,
-                               0.0823304,
-                               0.0640812),
-                        rtol=0.06)
+        assert_allclose(f_mc, (0.4610898, 0.0823304, 0.0640812), rtol=0.06)
 
         # # smoke test for covariance matrix
-        bo.parameters = np.array(result['x'])
+        bo.parameters = np.array(result["x"])
         covar1 = bo.covar()
         uncertainties = np.sqrt(np.diag(covar1))
 
         # covariance from objective._covar should be almost equal to
         # the covariance matrix from sampling
         covar2 = np.cov(samples.T)
-        assert_almost_equal(np.sqrt(np.diag(covar2))[:2],
-                            uncertainties[:2],
-                            2)
+        assert_almost_equal(np.sqrt(np.diag(covar2))[:2], uncertainties[:2], 2)
 
         # check covariance of self.objective
         # TODO
-        var_arr = result['x'][:]
+        var_arr = result["x"][:]
         var_arr[0], var_arr[1], var_arr[2] = var_arr[2], var_arr[1], var_arr[0]
 
         # assert_(self.objective.data.weighted)
@@ -360,15 +405,15 @@ class TestObjective(object):
         # checks objective.covar against optimize.least_squares covariance.
         path = os.path.dirname(os.path.abspath(__file__))
 
-        theoretical = np.loadtxt(os.path.join(path, 'gauss_data.txt'))
+        theoretical = np.loadtxt(os.path.join(path, "gauss_data.txt"))
         xvals, yvals, evals = np.hsplit(theoretical, 3)
         xvals = xvals.flatten()
         yvals = yvals.flatten()
         evals = evals.flatten()
 
-        p0 = np.array([0.1, 20., 0.1, 0.1])
-        names = ['bkg', 'A', 'x0', 'width']
-        bounds = [(-1, 1), (0, 30), (-5., 5.), (0.001, 2)]
+        p0 = np.array([0.1, 20.0, 0.1, 0.1])
+        names = ["bkg", "A", "x0", "width"]
+        bounds = [(-1, 1), (0, 30), (-5.0, 5.0), (0.001, 2)]
 
         params = Parameters(name="gauss_params")
         for p, name, bound in zip(p0, names, bounds):
@@ -382,8 +427,9 @@ class TestObjective(object):
         objective = Objective(model, data)
 
         # first calculate least_squares jac/hess/covariance matrices
-        res = least_squares(objective.residuals, np.array(params),
-                            jac='3-point')
+        res = least_squares(
+            objective.residuals, np.array(params), jac="3-point"
+        )
 
         hess_least_squares = np.matmul(res.jac.T, res.jac)
         covar_least_squares = np.linalg.inv(hess_least_squares)
@@ -412,11 +458,12 @@ class TestObjective(object):
         assert_allclose(covar_objective, covar_least_squares)
 
         # now see what happens with a parameter that has no effect on residuals
-        param = Parameter(1.234, name='dummy')
+        param = Parameter(1.234, name="dummy")
         param.vary = True
         params.append(param)
 
         from pytest import raises
+
         with raises(LinAlgError):
             objective.covar()
 
@@ -437,31 +484,32 @@ class TestObjective(object):
 
         mod = pymc_objective(self.objective)
         with mod:
-            pymc_logl = mod.logp({'p0': self.p[0].value,
-                                  'p1': self.p[1].value})
+            pymc_logl = mod.logp(
+                {"p0": self.p[0].value, "p1": self.p[1].value}
+            )
 
         assert_allclose(logl, pymc_logl)
 
         # now check some of the distributions
         with pm.Model():
             p = Parameter(1, bounds=(1, 10))
-            d = _to_pymc3_distribution('a', p)
+            d = _to_pymc3_distribution("a", p)
             assert_almost_equal(d.distribution.logp(2).eval(), p.logp(2))
             assert_(np.isneginf(d.distribution.logp(-1).eval()))
 
             q = Parameter(1, bounds=PDF(stats.uniform(1, 9)))
-            d = _to_pymc3_distribution('b', q)
+            d = _to_pymc3_distribution("b", q)
             assert_almost_equal(d.distribution.logp(2).eval(), q.logp(2))
             assert_(np.isneginf(d.distribution.logp(-1).eval()))
 
             p = Parameter(1, bounds=PDF(stats.uniform))
-            d = _to_pymc3_distribution('c', p)
+            d = _to_pymc3_distribution("c", p)
             assert_almost_equal(d.distribution.logp(0.5).eval(), p.logp(0.5))
 
             p = Parameter(1, bounds=PDF(stats.norm))
-            d = _to_pymc3_distribution('d', p)
+            d = _to_pymc3_distribution("d", p)
             assert_almost_equal(d.distribution.logp(2).eval(), p.logp(2))
 
             p = Parameter(1, bounds=PDF(stats.norm(1, 10)))
-            d = _to_pymc3_distribution('e', p)
+            d = _to_pymc3_distribution("e", p)
             assert_almost_equal(d.distribution.logp(2).eval(), p.logp(2))

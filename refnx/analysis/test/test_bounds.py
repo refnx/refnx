@@ -3,12 +3,11 @@ import pickle
 from refnx.analysis import Interval, PDF
 
 import numpy as np
-from numpy.testing import (assert_equal, assert_, assert_almost_equal)
+from numpy.testing import assert_equal, assert_, assert_almost_equal
 from scipy.stats import norm, truncnorm, uniform
 
 
 class TestBounds(object):
-
     def setup_method(self):
         pass
 
@@ -23,19 +22,22 @@ class TestBounds(object):
         assert_equal(interval.logp(1001), -np.inf)
 
         # you should be able to send in multiple values
-        assert_equal(interval.logp(np.array([1., 1002.])),
-                     np.array([0, -np.inf]))
+        assert_equal(
+            interval.logp(np.array([1.0, 1002.0])), np.array([0, -np.inf])
+        )
 
         # fully closed interval
         interval.lb = -1000
         assert_equal(interval.logp(-1001), -np.inf)
         assert_equal(interval.lb, -1000)
         assert_equal(interval.ub, 1000)
-        assert_equal(interval.logp(0), np.log(1 / 2000.))
+        assert_equal(interval.logp(0), np.log(1 / 2000.0))
 
         # you should be able to send in multiple values
-        assert_equal(interval.logp(np.array([1., 2.])),
-                     np.array([np.log(1 / 2000.)] * 2))
+        assert_equal(
+            interval.logp(np.array([1.0, 2.0])),
+            np.array([np.log(1 / 2000.0)] * 2),
+        )
 
         # try and set lb higher than ub
         interval.lb = 1002
@@ -94,11 +96,11 @@ class TestBounds(object):
 
         # test a uniform distribution
         pdf = PDF(uniform(1, 9))
-        assert_equal(pdf.logp(2), np.log(1. / 9.))
-        assert_equal(pdf.logp(10.), np.log(1. / 9.))
+        assert_equal(pdf.logp(2), np.log(1.0 / 9.0))
+        assert_equal(pdf.logp(10.0), np.log(1.0 / 9.0))
 
     def test_pickle(self):
-        bounds = PDF(norm(1., 2.))
+        bounds = PDF(norm(1.0, 2.0))
         pkl = pickle.dumps(bounds)
         pickle.loads(pkl)
 
@@ -110,9 +112,9 @@ class TestBounds(object):
         pdf = UserPDF()
         bounds = PDF(pdf)
 
-        assert_equal(bounds.valid(1.), 1)
+        assert_equal(bounds.valid(1.0), 1)
         bounds.rvs(1)
-        assert_equal(bounds.logp(1.), 0)
+        assert_equal(bounds.logp(1.0), 0)
 
 
 class UserPDF(object):
@@ -120,7 +122,7 @@ class UserPDF(object):
         pass
 
     def logpdf(self, v):
-        return 0.
+        return 0.0
 
     def rvs(self, size=1, random_state=None):
         return np.random.random(size)

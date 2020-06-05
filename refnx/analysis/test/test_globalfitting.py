@@ -5,42 +5,48 @@ overall construction of the models can be done in a few different ways.
 import os.path
 
 import numpy as np
-from numpy.testing import (assert_, assert_equal, assert_almost_equal,
-                           assert_allclose)
+from numpy.testing import (
+    assert_,
+    assert_equal,
+    assert_almost_equal,
+    assert_allclose,
+)
 
-from refnx.analysis import (CurveFitter, Objective, GlobalObjective, Transform)
+from refnx.analysis import CurveFitter, Objective, GlobalObjective, Transform
 from refnx.dataset import ReflectDataset
-from refnx.reflect import (Slab, SLD, ReflectModel)
+from refnx.reflect import Slab, SLD, ReflectModel
 
 SEED = 1
 
 
 class TestGlobalFitting(object):
-
     def setup_method(self):
         self.pth = os.path.dirname(os.path.abspath(__file__))
 
-        self.si = SLD(2.07, name='Si')
-        self.sio2 = SLD(3.47, name='SiO2')
-        self.d2o = SLD(6.36, name='d2o')
-        self.h2o = SLD(-0.56, name='h2o')
-        self.cm3 = SLD(3.5, name='cm3')
-        self.polymer = SLD(2, name='polymer')
+        self.si = SLD(2.07, name="Si")
+        self.sio2 = SLD(3.47, name="SiO2")
+        self.d2o = SLD(6.36, name="d2o")
+        self.h2o = SLD(-0.56, name="h2o")
+        self.cm3 = SLD(3.5, name="cm3")
+        self.polymer = SLD(2, name="polymer")
 
         self.sio2_l = self.sio2(40, 3)
         self.polymer_l = self.polymer(200, 3)
 
-        self.structure = (self.si | self.sio2_l | self.polymer_l |
-                          self.d2o(0, 3))
+        self.structure = (
+            self.si | self.sio2_l | self.polymer_l | self.d2o(0, 3)
+        )
 
-        fname = os.path.join(self.pth, 'c_PLP0011859_q.txt')
+        fname = os.path.join(self.pth, "c_PLP0011859_q.txt")
 
         self.dataset = ReflectDataset(fname)
         self.model = ReflectModel(self.structure, bkg=2e-7)
-        self.objective = Objective(self.model,
-                                   self.dataset,
-                                   use_weights=False,
-                                   transform=Transform('logY'))
+        self.objective = Objective(
+            self.model,
+            self.dataset,
+            use_weights=False,
+            transform=Transform("logY"),
+        )
         self.global_objective = GlobalObjective([self.objective])
 
     def test_residuals_length(self):
@@ -59,10 +65,10 @@ class TestGlobalFitting(object):
         self.polymer_l.thick.setp(bounds=(0.01, 400), vary=True)
         self.polymer_l.sld.real.setp(vary=True, bounds=(0.01, 4))
 
-        self.objective.transform = Transform('logY')
+        self.objective.transform = Transform("logY")
 
         starting = np.array(self.objective.parameters)
-        with np.errstate(invalid='raise'):
+        with np.errstate(invalid="raise"):
             g = CurveFitter(self.global_objective)
             res_g = g.fit()
 
@@ -76,16 +82,16 @@ class TestGlobalFitting(object):
 
     def test_multipledataset_corefinement(self):
         # test corefinement of three datasets
-        data361 = ReflectDataset(os.path.join(self.pth, 'e361r.txt'))
-        data365 = ReflectDataset(os.path.join(self.pth, 'e365r.txt'))
-        data366 = ReflectDataset(os.path.join(self.pth, 'e366r.txt'))
+        data361 = ReflectDataset(os.path.join(self.pth, "e361r.txt"))
+        data365 = ReflectDataset(os.path.join(self.pth, "e365r.txt"))
+        data366 = ReflectDataset(os.path.join(self.pth, "e366r.txt"))
 
-        si = SLD(2.07, name='Si')
-        sio2 = SLD(3.47, name='SiO2')
-        d2o = SLD(6.36, name='d2o')
-        h2o = SLD(-0.56, name='h2o')
-        cm3 = SLD(3.47, name='cm3')
-        polymer = SLD(1, name='polymer')
+        si = SLD(2.07, name="Si")
+        sio2 = SLD(3.47, name="SiO2")
+        d2o = SLD(6.36, name="d2o")
+        h2o = SLD(-0.56, name="h2o")
+        cm3 = SLD(3.47, name="cm3")
+        polymer = SLD(1, name="polymer")
 
         structure361 = si | sio2(10, 4) | polymer(200, 3) | d2o(0, 3)
         structure365 = si | structure361[1] | structure361[2] | cm3(0, 3)
@@ -95,9 +101,11 @@ class TestGlobalFitting(object):
         structure366[-1].rough = structure361[-1].rough
 
         structure361[1].thick.setp(vary=True, bounds=(0, 20))
-        structure361[2].thick.setp(value=200., bounds=(200., 250.), vary=True)
+        structure361[2].thick.setp(
+            value=200.0, bounds=(200.0, 250.0), vary=True
+        )
         structure361[2].sld.real.setp(vary=True, bounds=(0, 2))
-        structure361[2].vfsolv.setp(value=5., bounds=(0., 100.), vary=True)
+        structure361[2].vfsolv.setp(value=5.0, bounds=(0.0, 100.0), vary=True)
 
         model361 = ReflectModel(structure361, bkg=2e-5)
         model365 = ReflectModel(structure365, bkg=2e-5)
@@ -111,9 +119,9 @@ class TestGlobalFitting(object):
         objective365 = Objective(model365, data365)
         objective366 = Objective(model366, data366)
 
-        global_objective = GlobalObjective([objective361,
-                                            objective365,
-                                            objective366])
+        global_objective = GlobalObjective(
+            [objective361, objective365, objective366]
+        )
         # are the right numbers of parameters varying?
         assert_equal(len(global_objective.varying_parameters()), 7)
 
@@ -123,8 +131,9 @@ class TestGlobalFitting(object):
         f = CurveFitter(global_objective)
         f.fit()
 
-        indiv_chisqr = np.sum([objective.chisqr() for objective
-                               in global_objective.objectives])
+        indiv_chisqr = np.sum(
+            [objective.chisqr() for objective in global_objective.objectives]
+        )
 
         # the overall chi2 should be sum of individual chi2
         global_chisqr = global_objective.chisqr()
@@ -145,10 +154,14 @@ class TestGlobalFitting(object):
         res365 = objective365.residuals()
         res366 = objective366.residuals()
         res_global = global_objective.residuals()
-        assert_allclose(res_global[0:len(res361)], res361, rtol=1e-5)
-        assert_allclose(res_global[len(res361):len(res361) + len(res365)],
-                        res365, rtol=1e-5)
-        assert_allclose(res_global[len(res361) + len(res365):],
-                        res366, rtol=1e-5)
+        assert_allclose(res_global[0 : len(res361)], res361, rtol=1e-5)
+        assert_allclose(
+            res_global[len(res361) : len(res361) + len(res365)],
+            res365,
+            rtol=1e-5,
+        )
+        assert_allclose(
+            res_global[len(res361) + len(res365) :], res366, rtol=1e-5
+        )
 
         repr(global_objective)

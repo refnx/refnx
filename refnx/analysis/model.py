@@ -37,6 +37,7 @@ class Model(object):
     inheriting `Model` and are also overriding `Model.model`.
 
     """
+
     def __init__(self, parameters, fitfunc=None, fcn_args=(), fcn_kwds=None):
         self._parameters = parameters
 
@@ -50,9 +51,11 @@ class Model(object):
             self.fcn_kwds = fcn_kwds
 
     def __repr__(self):
-        return ("Model({_parameters!r}, fitfunc={_fitfunc!r},"
-                " fcn_args={fcn_args!r},"
-                " fcn_kwds={fcn_kwds!r})".format(**self.__dict_))
+        return (
+            "Model({_parameters!r}, fitfunc={_fitfunc!r},"
+            " fcn_args={fcn_args!r},"
+            " fcn_kwds={fcn_kwds!r})".format(**self.__dict_)
+        )
 
     def __call__(self, x, p=None, x_err=None):
         """
@@ -114,18 +117,18 @@ class Model(object):
 
             if self._fitfunc_has_xerr:
                 # fitfunc has resolution
-                kwds['x_err'] = x_err
+                kwds["x_err"] = x_err
 
             _params = self._parameters
             if p is not None:
                 _params = p
 
-            return self.fitfunc(x, _params,
-                                *self.fcn_args,
-                                **kwds)
+            return self.fitfunc(x, _params, *self.fcn_args, **kwds)
         else:
-            raise RuntimeError("Overide Model.model() or provide a fitfunc to"
-                               " the constructor")
+            raise RuntimeError(
+                "Overide Model.model() or provide a fitfunc to"
+                " the constructor"
+            )
 
     def logp(self):
         r"""
@@ -147,7 +150,7 @@ class Model(object):
     def fitfunc(self, fitfunc):
         self._fitfunc = fitfunc
         self._fitfunc_has_xerr = False
-        if 'x_err' in getargspec(fitfunc).args:
+        if "x_err" in getargspec(fitfunc).args:
             self._fitfunc_has_xerr = True
 
     @property
