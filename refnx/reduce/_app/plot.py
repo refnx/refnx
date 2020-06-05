@@ -3,10 +3,12 @@ import sys
 from PyQt5.QtWidgets import QDialog, QPushButton, QVBoxLayout, QApplication
 from PyQt5 import QtWidgets
 from PyQt5.QtCore import pyqtSlot
-from matplotlib.backends.backend_qt5agg import (FigureCanvasQTAgg as
-                                                FigureCanvas)
-from matplotlib.backends.backend_qt5agg import (NavigationToolbar2QT as
-                                                NavigationToolbar)
+from matplotlib.backends.backend_qt5agg import (
+    FigureCanvasQTAgg as FigureCanvas,
+)
+from matplotlib.backends.backend_qt5agg import (
+    NavigationToolbar2QT as NavigationToolbar,
+)
 from matplotlib.figure import Figure
 
 import numpy as np
@@ -30,10 +32,10 @@ class SlimPlotWindow(QDialog):
         self.toolbar = NavigationToolbar(self.canvas, self)
 
         # Just some plot_button connected to `plot` method
-        self.plot_button = QPushButton('Plot')
+        self.plot_button = QPushButton("Plot")
         self.plot_button.clicked.connect(self.plot)
 
-        self.refresh_button = QPushButton('Refresh')
+        self.refresh_button = QPushButton("Refresh")
         self.refresh_button.clicked.connect(self.refresh)
 
         # set the layout
@@ -45,7 +47,7 @@ class SlimPlotWindow(QDialog):
         self.setLayout(layout)
 
         self.files_displayed = {}
-        self.data_directory = '~/'
+        self.data_directory = "~/"
 
     def refresh(self):
         # refresh a dataset (may have been re-reduced)
@@ -83,7 +85,8 @@ class SlimPlotWindow(QDialog):
                 self,
                 "Select reflectometry data files to plot",
                 directory=self.data_directory,
-                filter='Reflectometry files (*.xml *.dat)')
+                filter="Reflectometry files (*.xml *.dat)",
+            )
             files_to_display = files[0]
 
         if not files_to_display:
@@ -109,7 +112,7 @@ class SlimPlotWindow(QDialog):
 
         # add legend and plot log-lin
         self.ax.legend()
-        self.ax.set_yscale('log')
+        self.ax.set_yscale("log")
 
         self.files_displayed = displayed
 
@@ -127,13 +130,15 @@ class SlimPlotWindow(QDialog):
         yerr_top = y_base + y_error
         yerr_bot = y_base - y_error
 
-        new_segments_y = [np.array([[x, yt], [x, yb]]) for
-                          x, yt, yb in zip(x_base, yerr_top, yerr_bot)]
+        new_segments_y = [
+            np.array([[x, yt], [x, yb]])
+            for x, yt, yb in zip(x_base, yerr_top, yerr_bot)
+        ]
         barsy[0].set_segments(new_segments_y)
         ln.set_data(x, y)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     app = QApplication(sys.argv)
     ex = SlimPlotWindow()
     ex.show()

@@ -70,17 +70,18 @@ def rebin_along_axis(y1, x1, x2, axis=0, y1_sd=None):
         raise ValueError("That axis is not in y1")
 
     if np.size(y1, axis) != np.size(x1) - 1:
-        raise ValueError("The original number of xbins does not match the axis"
-                         "size")
+        raise ValueError(
+            "The original number of xbins does not match the axis" "size"
+        )
 
-    odtype = np.dtype('float')
-    if y1.dtype is np.dtype('O'):
-        odtype = np.dtype('O')
+    odtype = np.dtype("float")
+    if y1.dtype is np.dtype("O"):
+        odtype = np.dtype("O")
 
     output = np.empty(new_shape, dtype=odtype)
     output_sd = np.copy(output)
 
-    it = np.nditer(y1, flags=['multi_index', 'refs_ok'])
+    it = np.nditer(y1, flags=["multi_index", "refs_ok"])
     it.remove_axis(axis)
 
     while not it.finished:
@@ -93,10 +94,7 @@ def rebin_along_axis(y1, x1, x2, axis=0, y1_sd=None):
         # different result.
         b = tuple(a)
         if y1_sd is not None:
-            rebinned, rebinned_sd = rebin(x1,
-                                          y1[b],
-                                          x2,
-                                          y1_sd=y1_sd[b])
+            rebinned, rebinned_sd = rebin(x1, y1[b], x2, y1_sd=y1_sd[b])
 
             output_sd[b] = rebinned_sd[:]
         else:
@@ -139,17 +137,17 @@ def rebinND(y1, axes, old_bins, new_bins, y1_sd=None):
     if np.max(axes) > num_axes - 1 or np.min(axes) < 0:
         raise ValueError("One of the axes is not in the original array")
 
-    if (len(old_bins) != len(new_bins) or len(old_bins) != len(axes)):
-        raise ValueError("The number of bins must be the same as the number"
-                         "of axes you wish to rebin")
+    if len(old_bins) != len(new_bins) or len(old_bins) != len(axes):
+        raise ValueError(
+            "The number of bins must be the same as the number"
+            "of axes you wish to rebin"
+        )
 
     output = np.copy(y1)
     for i, axis in enumerate(axes):
-        output = rebin_along_axis(output,
-                                  old_bins[i],
-                                  new_bins[i],
-                                  axis,
-                                  y1_sd=y1_sd)
+        output = rebin_along_axis(
+            output, old_bins[i], new_bins[i], axis, y1_sd=y1_sd
+        )
 
     return output
 
@@ -184,7 +182,7 @@ def rebin(x1, y1, x2, y1_sd=None):
     # greater than or equal to one original bin.
     # This is the contribution from the 'intact' bins (not including the
     # fractional start and end parts.
-    whole_bins = np.floor(i_place[1:]) - np.ceil(i_place[:-1]) >= 1.
+    whole_bins = np.floor(i_place[1:]) - np.ceil(i_place[:-1]) >= 1.0
 
     start = cum_sum_var[np.ceil(i_place[:-1]).astype(int)]
     finish = cum_sum_var[np.floor(i_place[1:]).astype(int)]
@@ -197,7 +195,7 @@ def rebin(x1, y1, x2, y1_sd=None):
     #                    np.arange(len(cum_sum_var)),
     #                    cum_sum_var)
 
-    y2_var = np.where(whole_bins, finish - start, 0.)
+    y2_var = np.where(whole_bins, finish - start, 0.0)
 
     bin_loc = np.clip(np.floor(i_place).astype(int), 0, len(y1_sd_temp) - 1)
 
@@ -206,7 +204,7 @@ def rebin(x1, y1, x2, y1_sd=None):
     same_cell = np.floor(i_place[1:]) == np.floor(i_place[:-1])
     frac = i_place[1:] - i_place[:-1]
     contrib = (frac * y1_sd_temp[bin_loc[:-1]]) ** 2
-    y2_var += np.where(same_cell, contrib, 0.)
+    y2_var += np.where(same_cell, contrib, 0.0)
 
     # fractional contribution for bins where the left and right bin edges are
     # in different original bins.
@@ -217,6 +215,6 @@ def rebin(x1, y1, x2, y1_sd=None):
     frac_right = i_place[1:] - np.floor(i_place[1:])
     contrib += (frac_right * y1_sd_temp[bin_loc[1:]]) ** 2
 
-    y2_var += np.where(different_cell, contrib, 0.)
+    y2_var += np.where(different_cell, contrib, 0.0)
 
     return y2, np.sqrt(y2_var)

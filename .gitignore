@@ -4,6 +4,7 @@
 build/
 dist/
 *.o
+*.so
 .eggs
 *.icns
 .tox

@@ -4,13 +4,19 @@ import os.path
 from time import gmtime, strftime
 
 import numpy as np
-from refnx.reduce.platypusnexus import (PlatypusNexus, ReflectNexus,
-                                        number_datafile, basename_datafile,
-                                        SpatzNexus)
+from refnx.reduce.platypusnexus import (
+    PlatypusNexus,
+    ReflectNexus,
+    number_datafile,
+    basename_datafile,
+    SpatzNexus,
+)
 from refnx.util import ErrorProp as EP
 import refnx.util.general as general
-from refnx.reduce.parabolic_motion import (parabola_line_intersection_point,
-                                           find_trajectory)
+from refnx.reduce.parabolic_motion import (
+    parabola_line_intersection_point,
+    find_trajectory,
+)
 from refnx.dataset import ReflectDataset
 from refnx._lib import possibly_open_file
 
@@ -43,13 +49,14 @@ class ReflectReduce(object):
         if data_folder is not None:
             self.data_folder = data_folder
 
-        if prefix == 'PLP':
+        if prefix == "PLP":
             self.reflect_klass = PlatypusNexus
-        elif prefix == 'SPZ':
+        elif prefix == "SPZ":
             self.reflect_klass = SpatzNexus
         else:
-            raise ValueError("Instrument prefix not known. Must be one of"
-                             " ['PLP']")
+            raise ValueError(
+                "Instrument prefix not known. Must be one of" " ['PLP']"
+            )
 
         if isinstance(direct, ReflectNexus):
             self.direct_beam = direct
@@ -64,7 +71,7 @@ class ReflectReduce(object):
     def __call__(self, reflect, scale=1, save=True, **kwds):
         return self.reduce(reflect, scale=scale, save=save, **kwds)
 
-    def reduce(self, reflect, scale=1., save=True, **kwds):
+    def reduce(self, reflect, scale=1.0, save=True, **kwds):
         """
         Reduction of a single dataset.
 
@@ -146,19 +153,19 @@ class ReflectReduce(object):
         direct_keywords = kwds.copy()
 
         # get the direct beam spectrum
-        direct_keywords['direct'] = True
-        direct_keywords['integrate'] = -1
+        direct_keywords["direct"] = True
+        direct_keywords["integrate"] = -1
 
-        if 'eventmode' in direct_keywords:
-            direct_keywords.pop('eventmode')
+        if "eventmode" in direct_keywords:
+            direct_keywords.pop("eventmode")
 
-        if 'event_filter' in direct_keywords:
-            direct_keywords.pop('event_filter')
+        if "event_filter" in direct_keywords:
+            direct_keywords.pop("event_filter")
 
         self.direct_beam.process(**direct_keywords)
 
         # get the reflected beam spectrum
-        reflect_keywords['direct'] = False
+        reflect_keywords["direct"] = False
         if isinstance(reflect, ReflectNexus):
             self.reflected_beam = reflect
         elif type(reflect) is str:
@@ -169,7 +176,7 @@ class ReflectReduce(object):
 
         # Got to use the same wavelength bins as the direct spectrum.
         # done this way around to save processing direct beam over and over
-        reflect_keywords['wavelength_bins'] = self.direct_beam.m_lambda_hist[0]
+        reflect_keywords["wavelength_bins"] = self.direct_beam.m_lambda_hist[0]
 
         self.reflected_beam.process(**reflect_keywords)
 
@@ -192,10 +199,12 @@ class ReflectReduce(object):
         (Q, R, dR, dQ): np.ndarray tuple
             dR is standard deviation, dQ is FWHM
         """
-        return (self.x[scanpoint],
-                self.y[scanpoint],
-                self.y_err[scanpoint],
-                self.x_err[scanpoint])
+        return (
+            self.x[scanpoint],
+            self.y[scanpoint],
+            self.y_err[scanpoint],
+            self.x_err[scanpoint],
+        )
 
     def data2d(self, scanpoint=0):
         """
@@ -212,10 +221,12 @@ class ReflectReduce(object):
         (Qz, Qx, R, dR): np.ndarrays
         """
 
-        return (self.m_qz[scanpoint],
-                self.m_qx[scanpoint],
-                self.m_ref[scanpoint],
-                self.m_ref_err[scanpoint])
+        return (
+            self.m_qz[scanpoint],
+            self.m_qx[scanpoint],
+            self.m_ref[scanpoint],
+            self.m_ref_err[scanpoint],
+        )
 
     def scale(self, scale):
         """
@@ -233,24 +244,24 @@ class ReflectReduce(object):
 
     def write_offspecular(self, f, scanpoint=0):
         d = dict()
-        d['time'] = strftime("%a, %d %b %Y %H:%M:%S +0000", gmtime())
-        d['_rnumber'] = self.reflected_beam.datafile_number
-        d['_numpointsz'] = np.size(self.m_ref, 1)
-        d['_numpointsy'] = np.size(self.m_ref, 2)
+        d["time"] = strftime("%a, %d %b %Y %H:%M:%S +0000", gmtime())
+        d["_rnumber"] = self.reflected_beam.datafile_number
+        d["_numpointsz"] = np.size(self.m_ref, 1)
+        d["_numpointsy"] = np.size(self.m_ref, 2)
 
         s = string.Template(_template_ref_xml)
 
         # filename = 'off_PLP{:07d}_{:d}.xml'.format(self._rnumber, index)
-        d['_r'] = repr(self.m_ref[scanpoint].tolist()).strip(',[]')
-        d['_qz'] = repr(self.m_qz[scanpoint].tolist()).strip(',[]')
-        d['_dr'] = repr(self.m_ref_err[scanpoint].tolist()).strip(',[]')
-        d['_qx'] = repr(self.m_qx[scanpoint].tolist()).strip(',[]')
+        d["_r"] = repr(self.m_ref[scanpoint].tolist()).strip(",[]")
+        d["_qz"] = repr(self.m_qz[scanpoint].tolist()).strip(",[]")
+        d["_dr"] = repr(self.m_ref_err[scanpoint].tolist()).strip(",[]")
+        d["_qx"] = repr(self.m_qx[scanpoint].tolist()).strip(",[]")
 
         thefile = s.safe_substitute(d)
 
-        with possibly_open_file(f, 'wb') as g:
-            if 'b' in g.mode:
-                thefile = thefile.encode('utf-8')
+        with possibly_open_file(f, "wb") as g:
+            if "b" in g.mode:
+                thefile = thefile.encode("utf-8")
 
             g.write(thefile)
             g.truncate()
@@ -281,8 +292,9 @@ class PlatypusReduce(ReflectReduce):
 
     def __init__(self, direct, data_folder=None, **kwds):
 
-        super(PlatypusReduce, self).__init__(direct, 'PLP',
-                                             data_folder=data_folder)
+        super(PlatypusReduce, self).__init__(
+            direct, "PLP", data_folder=data_folder
+        )
 
     def _reduce_single_angle(self, scale=1):
         """
@@ -299,23 +311,28 @@ class PlatypusReduce(ReflectReduce):
         wavelengths = self.reflected_beam.m_lambda
         m_twotheta = np.zeros((n_spectra, n_tpixels, n_ypixels))
 
-        detector_z_difference = (self.reflected_beam.detector_z -
-                                 self.direct_beam.detector_z)
+        detector_z_difference = (
+            self.reflected_beam.detector_z - self.direct_beam.detector_z
+        )
 
-        beampos_z_difference = (self.reflected_beam.m_beampos -
-                                self.direct_beam.m_beampos)
+        beampos_z_difference = (
+            self.reflected_beam.m_beampos - self.direct_beam.m_beampos
+        )
 
         Y_PIXEL_SPACING = self.reflected_beam.cat.qz_pixel_size[0]
 
-        total_z_deflection = (detector_z_difference +
-                              beampos_z_difference * Y_PIXEL_SPACING)
+        total_z_deflection = (
+            detector_z_difference + beampos_z_difference * Y_PIXEL_SPACING
+        )
 
-        if mode in ['FOC', 'POL', 'POLANAL', 'MT']:
+        if mode in ["FOC", "POL", "POLANAL", "MT"]:
             # omega_nom.shape = (N, )
-            omega_nom = np.degrees(np.arctan(total_z_deflection /
-                                   self.reflected_beam.detector_y) / 2.)
+            omega_nom = np.degrees(
+                np.arctan(total_z_deflection / self.reflected_beam.detector_y)
+                / 2.0
+            )
 
-            '''
+            """
             Wavelength specific angle of incidence correction
             This involves:
             1) working out the trajectory of the neutrons through the
@@ -324,35 +341,41 @@ class PlatypusReduce(ReflectReduce):
             3) working out the elevation of the neutrons when they hit the
             sample.
             4) correcting the angle of incidence.
-            '''
+            """
             speeds = general.wavelength_velocity(wavelengths)
             collimation_distance = self.reflected_beam.cat.collimation_distance
-            s2_sample_distance = (self.reflected_beam.cat.sample_distance -
-                                  self.reflected_beam.cat.slit2_distance)
+            s2_sample_distance = (
+                self.reflected_beam.cat.sample_distance
+                - self.reflected_beam.cat.slit2_distance
+            )
 
             # work out the trajectories of the neutrons for them to pass
             # through the collimation system.
-            trajectories = find_trajectory(collimation_distance / 1000.,
-                                           0, speeds)
+            trajectories = find_trajectory(
+                collimation_distance / 1000.0, 0, speeds
+            )
 
             # work out where the beam hits the sample
-            res = parabola_line_intersection_point(s2_sample_distance / 1000,
-                                                   0,
-                                                   trajectories,
-                                                   speeds,
-                                                   omega_nom[:, np.newaxis])
+            res = parabola_line_intersection_point(
+                s2_sample_distance / 1000,
+                0,
+                trajectories,
+                speeds,
+                omega_nom[:, np.newaxis],
+            )
             intersect_x, intersect_y, x_prime, elevation = res
 
             # correct the angle of incidence with a wavelength dependent
             # elevation.
             omega_corrected = omega_nom[:, np.newaxis] - elevation
 
-            m_twotheta += np.arange(n_ypixels * 1.)[np.newaxis, np.newaxis, :]
+            m_twotheta += np.arange(n_ypixels * 1.0)[np.newaxis, np.newaxis, :]
             m_twotheta -= self.direct_beam.m_beampos[:, np.newaxis, np.newaxis]
             m_twotheta *= Y_PIXEL_SPACING
             m_twotheta += detector_z_difference
-            m_twotheta /= (
-                self.reflected_beam.detector_y[:, np.newaxis, np.newaxis])
+            m_twotheta /= self.reflected_beam.detector_y[
+                :, np.newaxis, np.newaxis
+            ]
             m_twotheta = np.arctan(m_twotheta)
             m_twotheta = np.degrees(m_twotheta)
 
@@ -361,22 +384,25 @@ class PlatypusReduce(ReflectReduce):
             m_twotheta *= upside_down[:, np.newaxis, np.newaxis]
             omega_corrected *= upside_down[:, np.newaxis]
 
-        elif mode in ['SB', 'DB']:
+        elif mode in ["SB", "DB"]:
             # the angle of incidence is half the two theta of the reflected
             # beam
-            omega = np.arctan(total_z_deflection /
-                              self.reflected_beam.detector_y) / 2.
+            omega = (
+                np.arctan(total_z_deflection / self.reflected_beam.detector_y)
+                / 2.0
+            )
 
             # work out two theta for each of the detector pixels
-            m_twotheta += np.arange(n_ypixels * 1.)[np.newaxis, np.newaxis, :]
+            m_twotheta += np.arange(n_ypixels * 1.0)[np.newaxis, np.newaxis, :]
             m_twotheta -= self.direct_beam.m_beampos[:, np.newaxis, np.newaxis]
             m_twotheta += detector_z_difference
-            m_twotheta -= (
-                self.reflected_beam.detector_y[:, np.newaxis, np.newaxis] *
-                np.tan(omega[:, np.newaxis, np.newaxis]))
+            m_twotheta -= self.reflected_beam.detector_y[
+                :, np.newaxis, np.newaxis
+            ] * np.tan(omega[:, np.newaxis, np.newaxis])
 
-            m_twotheta /= (
-                self.reflected_beam.detector_y[:, np.newaxis, np.newaxis])
+            m_twotheta /= self.reflected_beam.detector_y[
+                :, np.newaxis, np.newaxis
+            ]
             m_twotheta = np.arctan(m_twotheta)
             m_twotheta += omega[:, np.newaxis, np.newaxis]
 
@@ -387,7 +413,7 @@ class PlatypusReduce(ReflectReduce):
             omega_corrected = np.degrees(omega)[:, np.newaxis]
             m_twotheta = np.degrees(m_twotheta)
 
-        '''
+        """
         --Specular Reflectivity--
         Use the (constant wavelength) spectra that have already been integrated
         over 2theta (in processnexus) to calculate the specular reflectivity.
@@ -397,21 +423,25 @@ class PlatypusReduce(ReflectReduce):
         plot to calculate reflectivity
         (sum {Iref_{2theta, lambda}}/I_direct_{lambda}) then the error bars in
         the reflectivity turn out much larger than they should be.
-        '''
-        ydata, ydata_sd = EP.EPdiv(self.reflected_beam.m_spec,
-                                   self.reflected_beam.m_spec_sd,
-                                   self.direct_beam.m_spec,
-                                   self.direct_beam.m_spec_sd)
+        """
+        ydata, ydata_sd = EP.EPdiv(
+            self.reflected_beam.m_spec,
+            self.reflected_beam.m_spec_sd,
+            self.direct_beam.m_spec,
+            self.direct_beam.m_spec_sd,
+        )
 
         # calculate the 1D Qz values.
         xdata = general.q(omega_corrected, wavelengths)
-        xdata_sd = (self.reflected_beam.m_lambda_fwhm /
-                    self.reflected_beam.m_lambda) ** 2
-        xdata_sd += (self.reflected_beam.domega[:, np.newaxis] /
-                     omega_corrected) ** 2
+        xdata_sd = (
+            self.reflected_beam.m_lambda_fwhm / self.reflected_beam.m_lambda
+        ) ** 2
+        xdata_sd += (
+            self.reflected_beam.domega[:, np.newaxis] / omega_corrected
+        ) ** 2
         xdata_sd = np.sqrt(xdata_sd) * xdata
 
-        '''
+        """
         ---Offspecular reflectivity---
         normalise the counts in the reflected beam by the direct beam
         spectrum this gives a reflectivity. Also propagate the errors,
@@ -419,12 +449,13 @@ class PlatypusReduce(ReflectReduce):
         --Note-- that adjacent y-pixels (same wavelength) are correlated in
         this treatment, so you can't just sum over them.
         i.e. (c_0 / d) + ... + c_n / d) != (c_0 + ... + c_n) / d
-        '''
+        """
         m_ref, m_ref_sd = EP.EPdiv(
             self.reflected_beam.m_topandtail,
             self.reflected_beam.m_topandtail_sd,
             self.direct_beam.m_spec[:, :, np.newaxis],
-            self.direct_beam.m_spec_sd[:, :, np.newaxis])
+            self.direct_beam.m_spec_sd[:, :, np.newaxis],
+        )
 
         # you may have had divide by zero's.
         m_ref = np.where(np.isinf(m_ref), 0, m_ref)
@@ -433,31 +464,34 @@ class PlatypusReduce(ReflectReduce):
         # calculate the Q values for the detector pixels.  Each pixel has
         # different 2theta and different wavelength, ASSUME that they have the
         # same angle of incidence
-        qx, qy, qz = general.q2(omega_corrected[:, :, np.newaxis],
-                                m_twotheta,
-                                0,
-                                wavelengths[:, :, np.newaxis])
+        qx, qy, qz = general.q2(
+            omega_corrected[:, :, np.newaxis],
+            m_twotheta,
+            0,
+            wavelengths[:, :, np.newaxis],
+        )
 
         reduction = {}
-        reduction['x'] = self.x = xdata
-        reduction['x_err'] = self.x_err = xdata_sd
-        reduction['y'] = self.y = ydata / scale
-        reduction['y_err'] = self.y_err = ydata_sd / scale
-        reduction['omega'] = omega_corrected
-        reduction['m_twotheta'] = m_twotheta
-        reduction['m_ref'] = self.m_ref = m_ref
-        reduction['m_ref_err'] = self.m_ref_err = m_ref_sd
-        reduction['qz'] = self.m_qz = qz
-        reduction['qx'] = self.m_qx = qx
-        reduction['nspectra'] = self.n_spectra = n_spectra
-        reduction['start_time'] = self.reflected_beam.start_time
-        reduction['datafile_number'] = self.datafile_number = (
-            self.reflected_beam.datafile_number)
+        reduction["x"] = self.x = xdata
+        reduction["x_err"] = self.x_err = xdata_sd
+        reduction["y"] = self.y = ydata / scale
+        reduction["y_err"] = self.y_err = ydata_sd / scale
+        reduction["omega"] = omega_corrected
+        reduction["m_twotheta"] = m_twotheta
+        reduction["m_ref"] = self.m_ref = m_ref
+        reduction["m_ref_err"] = self.m_ref_err = m_ref_sd
+        reduction["qz"] = self.m_qz = qz
+        reduction["qx"] = self.m_qx = qx
+        reduction["nspectra"] = self.n_spectra = n_spectra
+        reduction["start_time"] = self.reflected_beam.start_time
+        reduction[
+            "datafile_number"
+        ] = self.datafile_number = self.reflected_beam.datafile_number
 
         fnames = []
         datasets = []
         datafilename = self.reflected_beam.datafilename
-        datafilename = os.path.basename(datafilename.split('.nx.hdf')[0])
+        datafilename = os.path.basename(datafilename.split(".nx.hdf")[0])
 
         for i in range(n_spectra):
             data_tup = self.data(scanpoint=i)
@@ -465,17 +499,16 @@ class PlatypusReduce(ReflectReduce):
 
         if self.save:
             for i, dataset in enumerate(datasets):
-                fname = '{0}_{1}.dat'.format(datafilename, i)
+                fname = "{0}_{1}.dat".format(datafilename, i)
                 fnames.append(fname)
-                with open(fname, 'wb') as f:
+                with open(fname, "wb") as f:
                     dataset.save(f)
 
-                fname = '{0}_{1}.xml'.format(datafilename, i)
-                with open(fname, 'wb') as f:
-                    dataset.save_xml(f,
-                                     start_time=reduction['start_time'][i])
+                fname = "{0}_{1}.xml".format(datafilename, i)
+                with open(fname, "wb") as f:
+                    dataset.save_xml(f, start_time=reduction["start_time"][i])
 
-        reduction['fname'] = fnames
+        reduction["fname"] = fnames
         return datasets, deepcopy(reduction)
 
 
@@ -503,8 +536,9 @@ class SpatzReduce(ReflectReduce):
     """
 
     def __init__(self, direct, data_folder=None, **kwds):
-        super(SpatzReduce, self).__init__(direct, 'SPZ',
-                                          data_folder=data_folder)
+        super(SpatzReduce, self).__init__(
+            direct, "SPZ", data_folder=data_folder
+        )
 
     def _reduce_single_angle(self, scale=1):
         """
@@ -518,8 +552,9 @@ class SpatzReduce(ReflectReduce):
         wavelengths = self.reflected_beam.m_lambda
         m_twotheta = np.zeros((n_spectra, n_tpixels, n_xpixels))
 
-        detrot_difference = (self.reflected_beam.detector_z -
-                             self.direct_beam.detector_z)
+        detrot_difference = (
+            self.reflected_beam.detector_z - self.direct_beam.detector_z
+        )
 
         # difference in pixels between reflected position and direct beam
         # at the two different detrots.
@@ -529,19 +564,19 @@ class SpatzReduce(ReflectReduce):
         # convert that pixel difference to angle (in small angle approximation)
         # higher `som` leads to lower m_beampos. i.e. higher two theta
         # is at lower pixel values
-        beampos_2theta_diff = -(self.reflected_beam.m_beampos -
-                                self.direct_beam.m_beampos)
+        beampos_2theta_diff = -(
+            self.reflected_beam.m_beampos - self.direct_beam.m_beampos
+        )
         beampos_2theta_diff *= QZ_PIXEL_SPACING / dy[0]
         beampos_2theta_diff = np.degrees(beampos_2theta_diff)
 
-        total_2theta_deflection = (detrot_difference +
-                                   beampos_2theta_diff)
+        total_2theta_deflection = detrot_difference + beampos_2theta_diff
 
         # omega_nom.shape = (N, )
-        omega_nom = total_2theta_deflection / 2.
+        omega_nom = total_2theta_deflection / 2.0
         omega_corrected = omega_nom[:, np.newaxis]
 
-        m_twotheta += np.arange(n_xpixels * 1.)[np.newaxis, np.newaxis, :]
+        m_twotheta += np.arange(n_xpixels * 1.0)[np.newaxis, np.newaxis, :]
         m_twotheta -= self.direct_beam.m_beampos[:, np.newaxis, np.newaxis]
         # minus sign in following line because higher two theta is at lower
         # pixel values
@@ -554,7 +589,7 @@ class SpatzReduce(ReflectReduce):
         m_twotheta *= upside_down[:, np.newaxis, np.newaxis]
         omega_corrected *= upside_down[:, np.newaxis]
 
-        '''
+        """
         --Specular Reflectivity--
         Use the (constant wavelength) spectra that have already been integrated
         over 2theta (in processnexus) to calculate the specular reflectivity.
@@ -564,21 +599,25 @@ class SpatzReduce(ReflectReduce):
         plot to calculate reflectivity
         (sum {Iref_{2theta, lambda}}/I_direct_{lambda}) then the error bars in
         the reflectivity turn out much larger than they should be.
-        '''
-        ydata, ydata_sd = EP.EPdiv(self.reflected_beam.m_spec,
-                                   self.reflected_beam.m_spec_sd,
-                                   self.direct_beam.m_spec,
-                                   self.direct_beam.m_spec_sd)
+        """
+        ydata, ydata_sd = EP.EPdiv(
+            self.reflected_beam.m_spec,
+            self.reflected_beam.m_spec_sd,
+            self.direct_beam.m_spec,
+            self.direct_beam.m_spec_sd,
+        )
 
         # calculate the 1D Qz values.
         xdata = general.q(omega_corrected, wavelengths)
-        xdata_sd = (self.reflected_beam.m_lambda_fwhm /
-                    self.reflected_beam.m_lambda) ** 2
-        xdata_sd += (self.reflected_beam.domega[:, np.newaxis] /
-                     omega_corrected) ** 2
+        xdata_sd = (
+            self.reflected_beam.m_lambda_fwhm / self.reflected_beam.m_lambda
+        ) ** 2
+        xdata_sd += (
+            self.reflected_beam.domega[:, np.newaxis] / omega_corrected
+        ) ** 2
         xdata_sd = np.sqrt(xdata_sd) * xdata
 
-        '''
+        """
         ---Offspecular reflectivity---
         normalise the counts in the reflected beam by the direct beam
         spectrum this gives a reflectivity. Also propagate the errors,
@@ -586,12 +625,13 @@ class SpatzReduce(ReflectReduce):
         --Note-- that adjacent y-pixels (same wavelength) are correlated in
         this treatment, so you can't just sum over them.
         i.e. (c_0 / d) + ... + c_n / d) != (c_0 + ... + c_n) / d
-        '''
+        """
         m_ref, m_ref_sd = EP.EPdiv(
             self.reflected_beam.m_topandtail,
             self.reflected_beam.m_topandtail_sd,
             self.direct_beam.m_spec[:, :, np.newaxis],
-            self.direct_beam.m_spec_sd[:, :, np.newaxis])
+            self.direct_beam.m_spec_sd[:, :, np.newaxis],
+        )
 
         # you may have had divide by zero's.
         m_ref = np.where(np.isinf(m_ref), 0, m_ref)
@@ -600,31 +640,34 @@ class SpatzReduce(ReflectReduce):
         # calculate the Q values for the detector pixels.  Each pixel has
         # different 2theta and different wavelength, ASSUME that they have the
         # same angle of incidence
-        qx, qy, qz = general.q2(omega_corrected[:, :, np.newaxis],
-                                m_twotheta,
-                                0,
-                                wavelengths[:, :, np.newaxis])
+        qx, qy, qz = general.q2(
+            omega_corrected[:, :, np.newaxis],
+            m_twotheta,
+            0,
+            wavelengths[:, :, np.newaxis],
+        )
 
         reduction = {}
-        reduction['x'] = self.x = xdata
-        reduction['x_err'] = self.x_err = xdata_sd
-        reduction['y'] = self.y = ydata / scale
-        reduction['y_err'] = self.y_err = ydata_sd / scale
-        reduction['omega'] = omega_corrected
-        reduction['m_twotheta'] = m_twotheta
-        reduction['m_ref'] = self.m_ref = m_ref
-        reduction['m_ref_err'] = self.m_ref_err = m_ref_sd
-        reduction['qz'] = self.m_qz = qz
-        reduction['qx'] = self.m_qx = qx
-        reduction['nspectra'] = self.n_spectra = n_spectra
-        reduction['start_time'] = self.reflected_beam.start_time
-        reduction['datafile_number'] = self.datafile_number = (
-            self.reflected_beam.datafile_number)
+        reduction["x"] = self.x = xdata
+        reduction["x_err"] = self.x_err = xdata_sd
+        reduction["y"] = self.y = ydata / scale
+        reduction["y_err"] = self.y_err = ydata_sd / scale
+        reduction["omega"] = omega_corrected
+        reduction["m_twotheta"] = m_twotheta
+        reduction["m_ref"] = self.m_ref = m_ref
+        reduction["m_ref_err"] = self.m_ref_err = m_ref_sd
+        reduction["qz"] = self.m_qz = qz
+        reduction["qx"] = self.m_qx = qx
+        reduction["nspectra"] = self.n_spectra = n_spectra
+        reduction["start_time"] = self.reflected_beam.start_time
+        reduction[
+            "datafile_number"
+        ] = self.datafile_number = self.reflected_beam.datafile_number
 
         fnames = []
         datasets = []
         datafilename = self.reflected_beam.datafilename
-        datafilename = os.path.basename(datafilename.split('.nx.hdf')[0])
+        datafilename = os.path.basename(datafilename.split(".nx.hdf")[0])
 
         for i in range(n_spectra):
             data_tup = self.data(scanpoint=i)
@@ -632,23 +675,30 @@ class SpatzReduce(ReflectReduce):
 
         if self.save:
             for i, dataset in enumerate(datasets):
-                fname = '{0}_{1}.dat'.format(datafilename, i)
+                fname = "{0}_{1}.dat".format(datafilename, i)
                 fnames.append(fname)
-                with open(fname, 'wb') as f:
+                with open(fname, "wb") as f:
                     dataset.save(f)
 
-                fname = '{0}_{1}.xml'.format(datafilename, i)
-                with open(fname, 'wb') as f:
-                    dataset.save_xml(f,
-                                     start_time=reduction['start_time'][i])
+                fname = "{0}_{1}.xml".format(datafilename, i)
+                with open(fname, "wb") as f:
+                    dataset.save_xml(f, start_time=reduction["start_time"][i])
 
-        reduction['fname'] = fnames
+        reduction["fname"] = fnames
         return datasets, deepcopy(reduction)
 
 
-def reduce_stitch(reflect_list, direct_list, background_list=None,
-                  norm_file_num=None, data_folder=None, prefix='PLP',
-                  trim_trailing=True, save=True, **kwds):
+def reduce_stitch(
+    reflect_list,
+    direct_list,
+    background_list=None,
+    norm_file_num=None,
+    data_folder=None,
+    prefix="PLP",
+    trim_trailing=True,
+    save=True,
+    **kwds
+):
     """
     Reduces a list of reflected beam run numbers and a list of corresponding
     direct beam run numbers from the Platypus reflectometer. If there are
@@ -705,11 +755,11 @@ def reduce_stitch(reflect_list, direct_list, background_list=None,
 
     """
 
-    scale = kwds.get('scale', 1.)
+    scale = kwds.get("scale", 1.0)
 
     kwds_copy = {}
     kwds_copy.update(kwds)
-    kwds_copy.pop('background', None)
+    kwds_copy.pop("background", None)
 
     if not background_list:
         background_list = [True] * len(reflect_list)
@@ -724,31 +774,34 @@ def reduce_stitch(reflect_list, direct_list, background_list=None,
 
     if norm_file_num:
         norm_datafile = number_datafile(norm_file_num, prefix=prefix)
-        kwds['h5norm'] = norm_datafile
+        kwds["h5norm"] = norm_datafile
 
-    if prefix == 'PLP':
+    if prefix == "PLP":
         reducer_klass = PlatypusReduce
-    elif prefix == 'SPZ':
+    elif prefix == "SPZ":
         reducer_klass = SpatzReduce
     else:
         raise ValueError("Incorrect prefix specified")
 
     for index, val in enumerate(zipped):
-        reflect_datafile = os.path.join(data_folder,
-                                        number_datafile(val[0], prefix=prefix))
-        direct_datafile = os.path.join(data_folder,
-                                       number_datafile(val[1], prefix=prefix))
+        reflect_datafile = os.path.join(
+            data_folder, number_datafile(val[0], prefix=prefix)
+        )
+        direct_datafile = os.path.join(
+            data_folder, number_datafile(val[1], prefix=prefix)
+        )
 
         reducer = reducer_klass(direct_datafile)
-        datasets, fnames = reducer.reduce(reflect_datafile, save=save,
-                                          background=val[2], **kwds_copy)
+        datasets, fnames = reducer.reduce(
+            reflect_datafile, save=save, background=val[2], **kwds_copy
+        )
 
         if not index:
             datasets[0].scale(scale)
 
-        combined_dataset.add_data(datasets[0].data,
-                                  requires_splice=True,
-                                  trim_trailing=trim_trailing)
+        combined_dataset.add_data(
+            datasets[0].data, requires_splice=True, trim_trailing=trim_trailing
+        )
 
     fname_dat = None
 
@@ -759,11 +812,11 @@ def reduce_stitch(reflect_list, direct_list, background_list=None,
         # now chop off .nx.hdf extension
         fname = basename_datafile(fname)
 
-        fname_dat = 'c_{0}.dat'.format(fname)
-        with open(fname_dat, 'wb') as f:
+        fname_dat = "c_{0}.dat".format(fname)
+        with open(fname_dat, "wb") as f:
             combined_dataset.save(f)
-        fname_xml = 'c_{0}.xml'.format(fname)
-        with open(fname_xml, 'wb') as f:
+        fname_xml = "c_{0}.xml".format(fname)
+        with open(fname_xml, "wb") as f:
             combined_dataset.save_xml(f)
 
     return combined_dataset, fname_dat
@@ -774,6 +827,6 @@ if __name__ == "__main__":
 
     a = reduce_stitch([708, 709, 710], [711, 711, 711], rebin_percent=2)
 
-    a.save('test1.dat')
+    a.save("test1.dat")
 
     print(strftime("%a, %d %b %Y %H:%M:%S +0000", gmtime()))

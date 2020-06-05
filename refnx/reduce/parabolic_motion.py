@@ -57,7 +57,7 @@ def elevation(initial_trajectory, speed, flight_length):
     traj_rad = np.radians(initial_trajectory)
     # o_0 = 0
     o_1 = np.tan(traj_rad)
-    o_2 = -constants.g / 2. / (speed * np.cos(traj_rad)) ** 2.
+    o_2 = -constants.g / 2.0 / (speed * np.cos(traj_rad)) ** 2.0
 
     # y = o_0 + o_1*x + o_2*x**2
     # need to work out derivative of y, dy/dx.
@@ -106,7 +106,7 @@ def find_trajectory(flight_length, theta, speed):
     g = constants.g
 
     # num0 = (v ** 2 + np.sqrt(v ** 4 - g * (g * x ** 2 + 2 * y * v ** 2)))
-    num1 = (v ** 2 - np.sqrt(v ** 4 - g * (g * x ** 2 + 2 * y * v ** 2)))
+    num1 = v ** 2 - np.sqrt(v ** 4 - g * (g * x ** 2 + 2 * y * v ** 2))
     # there are two trajectories that could hit the target
     # we only need one branch.
     # alpha1 = np.arctan2(num0, g * x)
@@ -133,15 +133,20 @@ def parabola(initial_trajectory, speed):
         Equation of parabolic path
     """
     traj_rad = np.radians(initial_trajectory)
-    eqn = Polynomial([0,
-                      np.tan(traj_rad),
-                      -constants.g / 2. / (speed * np.cos(traj_rad)) ** 2.])
+    eqn = Polynomial(
+        [
+            0,
+            np.tan(traj_rad),
+            -constants.g / 2.0 / (speed * np.cos(traj_rad)) ** 2.0,
+        ]
+    )
     return eqn
 
 
 @np.vectorize
-def parabola_line_intersection_point(flight_length, theta, initial_trajectory,
-                                     speed, omega):
+def parabola_line_intersection_point(
+    flight_length, theta, initial_trajectory, speed, omega
+):
     """
     Find the intersection point of the parabolic motion path and a line.
     The line is specified by an angle and a point through which the line
@@ -180,9 +185,9 @@ def parabola_line_intersection_point(flight_length, theta, initial_trajectory,
     line_gradient = np.tan(omega_prime)
 
     # equation of line
-    line_eqn = Polynomial([(flight_length *
-                            (np.tan(theta_rad) - line_gradient)),
-                           line_gradient])
+    line_eqn = Polynomial(
+        [(flight_length * (np.tan(theta_rad) - line_gradient)), line_gradient]
+    )
 
     # equation of parabola
     parab_eqn = parabola(initial_trajectory, speed)
@@ -195,8 +200,9 @@ def parabola_line_intersection_point(flight_length, theta, initial_trajectory,
     intersection_y = line_eqn(intersection_x)
 
     # distance between parabola-line intersection and 'point on line'
-    distance = ((intersection_x - flight_length) ** 2 +
-                (intersection_y - flight_length * np.tan(theta_rad)) ** 2)
+    distance = (intersection_x - flight_length) ** 2 + (
+        intersection_y - flight_length * np.tan(theta_rad)
+    ) ** 2
     x_prime = np.sqrt(distance)
 
     # calculate the elevation
