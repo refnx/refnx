@@ -253,3 +253,5 @@ in 0.1.13.
 - refnx.reflect.available_backends lists all reflectivity calculation backends.
 - Add pytest fixture to download test data. This dramatically reduces the
   size of the package.
+- Compensate for _stderr being added to Parameter (older .mtft files wouldn't
+  load properly into GUI).
