@@ -8,7 +8,7 @@ import re
 import sys
 
 
-__all__ = ['PytestTester']
+__all__ = ["PytestTester"]
 
 
 class PytestTester(object):
@@ -19,14 +19,21 @@ class PytestTester(object):
     def __init__(self, module_name):
         self.module_name = module_name
 
-    def __call__(self, label="fast", verbose=1, extra_argv=None,
-                 doctests=False, coverage=False, tests=None):
+    def __call__(
+        self,
+        label="fast",
+        verbose=1,
+        extra_argv=None,
+        doctests=False,
+        coverage=False,
+        tests=None,
+    ):
         import pytest
 
         module = sys.modules[self.module_name]
         module_path = os.path.abspath(module.__path__[0])
 
-        pytest_args = ['-l']
+        pytest_args = ["-l"]
 
         if doctests:
             raise ValueError("Doctests not supported")
@@ -48,11 +55,11 @@ class PytestTester(object):
         if tests is None:
             tests = [self.module_name]
 
-        pytest_args += ['--pyargs'] + list(tests)
+        pytest_args += ["--pyargs"] + list(tests)
 
         try:
             code = pytest.main(pytest_args)
         except SystemExit as exc:
             code = exc.code
 
-        return (code == 0)
+        return code == 0

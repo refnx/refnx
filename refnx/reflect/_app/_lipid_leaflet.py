@@ -8,9 +8,8 @@ from refnx.reflect import LipidLeaflet, SLD
 
 
 pth = os.path.dirname(os.path.abspath(__file__))
-UI_LOCATION = os.path.join(pth, 'ui')
-LipidDialog = uic.loadUiType(os.path.join(UI_LOCATION,
-                                          'lipid_leaflet.ui'))[0]
+UI_LOCATION = os.path.join(pth, "ui")
+LipidDialog = uic.loadUiType(os.path.join(UI_LOCATION, "lipid_leaflet.ui"))[0]
 
 
 class LipidLeafletDialog(QtWidgets.QDialog, LipidDialog):
@@ -23,7 +22,7 @@ class LipidLeafletDialog(QtWidgets.QDialog, LipidDialog):
         self.b_h_imag.setValidator(dvalidator)
         self.b_t_real.setValidator(dvalidator)
         self.b_t_imag.setValidator(dvalidator)
-        with open(os.path.join(pth, 'lipids.json'), 'r') as f:
+        with open(os.path.join(pth, "lipids.json"), "r") as f:
             lipids = json.load(f)
 
         self.lipids = {}
@@ -32,17 +31,17 @@ class LipidLeafletDialog(QtWidgets.QDialog, LipidDialog):
             self.lipids[lipid.name] = lipid
 
         self._scene = None
-        self.lipid_selector.addItem('')
+        self.lipid_selector.addItem("")
         self.lipid_selector.addItems(self.lipids.keys())
 
     @QtCore.pyqtSlot(str)
     def on_lipid_selector_currentIndexChanged(self, text):
-        if text == '':
+        if text == "":
             # clear everything
             self.condition.clear()
-            self.chemical_name.setText('')
-            self.total_formula.setText('')
-            self.references.setText('')
+            self.chemical_name.setText("")
+            self.total_formula.setText("")
+            self.references.setText("")
             if self._scene is not None:
                 self._scene.clear()
 
@@ -55,7 +54,7 @@ class LipidLeafletDialog(QtWidgets.QDialog, LipidDialog):
 
         self.chemical_name.setText(str(lipid.chemical_name))
         self.chemical_name.setCursorPosition(0)
-        self.references.setText('\n'.join(lipid.references))
+        self.references.setText("\n".join(lipid.references))
         self.total_formula.setText(str(lipid.formula.atoms))
 
         V_h, V_t = lipid.conditions[conditions[0]]
@@ -78,13 +77,14 @@ class LipidLeafletDialog(QtWidgets.QDialog, LipidDialog):
             return
 
         lipid = self.lipids[name]
-        pixMap = QtGui.QPixmap(os.path.join(pth, 'icons', lipid.name + '.png'))
+        pixMap = QtGui.QPixmap(os.path.join(pth, "icons", lipid.name + ".png"))
         self._scene = QtWidgets.QGraphicsScene(self)
         self._scene.addPixmap(pixMap)
         self.chemical_structure.setScene(self._scene)
         self.chemical_structure.show()
-        self.chemical_structure.fitInView(self._scene.itemsBoundingRect(),
-                                          QtCore.Qt.KeepAspectRatio)
+        self.chemical_structure.fitInView(
+            self._scene.itemsBoundingRect(), QtCore.Qt.KeepAspectRatio
+        )
         self._scene.update()
 
     @QtCore.pyqtSlot(str)
@@ -167,11 +167,13 @@ class LipidLeafletDialog(QtWidgets.QDialog, LipidDialog):
         phi_h = (hsolv + 0.56) / 6.92
         phi_t = (tsolv + 0.56) / 6.92
 
-        if self.radiation.currentText() == 'neutrons':
-            scatlens_h = lipid.neutron_scattering_lengths(condition,
-                                                          vf_d_solvent=phi_h)
-            scatlens_t = lipid.neutron_scattering_lengths(condition,
-                                                          vf_d_solvent=phi_t)
+        if self.radiation.currentText() == "neutrons":
+            scatlens_h = lipid.neutron_scattering_lengths(
+                condition, vf_d_solvent=phi_h
+            )
+            scatlens_t = lipid.neutron_scattering_lengths(
+                condition, vf_d_solvent=phi_t
+            )
             scatlens = (scatlens_h[0], scatlens_t[1])
         else:
             energy = self.xray_energy.value()
@@ -201,19 +203,35 @@ class LipidLeafletDialog(QtWidgets.QDialog, LipidDialog):
         head_solvent = self.head_solvent.value()
         tail_solvent = self.tail_solvent.value()
 
-        leaflet = LipidLeaflet(APM, b_h, V_h, thick_h, b_t, V_t, thick_t, 3, 3,
-                               head_solvent=SLD(head_solvent,
-                                                name='head solvent'),
-                               tail_solvent=SLD(tail_solvent,
-                                                name='tail solvent'))
-        leaflet.name = 'leaflet'
+        leaflet = LipidLeaflet(
+            APM,
+            b_h,
+            V_h,
+            thick_h,
+            b_t,
+            V_t,
+            thick_t,
+            3,
+            3,
+            head_solvent=SLD(head_solvent, name="head solvent"),
+            tail_solvent=SLD(tail_solvent, name="tail solvent"),
+        )
+        leaflet.name = "leaflet"
         return leaflet
 
 
 class Lipid(object):
-    def __init__(self, name, head_formula, tail_formula, head_exchangable=0,
-                 tail_exchangable=0, references=None,
-                 conditions=None, chemical_name=None):
+    def __init__(
+        self,
+        name,
+        head_formula,
+        tail_formula,
+        head_exchangable=0,
+        tail_exchangable=0,
+        references=None,
+        conditions=None,
+        chemical_name=None,
+    ):
         self.name = name
         self.chemical_name = chemical_name
         self.head_formula = head_formula
@@ -226,11 +244,13 @@ class Lipid(object):
         self.tail_exchangable = tail_exchangable
 
     def __repr__(self):
-        s = ("Lipid({name!r}, {head_formula!r}, {tail_formula!r},"
-             " head_exchangable={head_exchangable!r},"
-             " tail_exchangable={tail_exchangable!r},"
-             " references={references!r},"
-             " conditions={conditions!r}, chemical_name={chemical_name!r}")
+        s = (
+            "Lipid({name!r}, {head_formula!r}, {tail_formula!r},"
+            " head_exchangable={head_exchangable!r},"
+            " tail_exchangable={tail_exchangable!r},"
+            " references={references!r},"
+            " conditions={conditions!r}, chemical_name={chemical_name!r}"
+        )
         return s.format(**self.__dict__)
 
     def add_condition(self, descriptor, vh, vt):
@@ -248,24 +268,27 @@ class Lipid(object):
     def hf(self):
         return pt.formula(self.head_formula)
 
-    def neutron_scattering_lengths(self, condition, vf_d_solvent=1,
-                                   neutron_wavelength=1.8):
+    def neutron_scattering_lengths(
+        self, condition, vf_d_solvent=1, neutron_wavelength=1.8
+    ):
         vh, vt = self.conditions[condition]
 
-        hf = exchange_protons_formula(self.hf,
-                                      self.head_exchangable,
-                                      vf_d_solvent)
-        tf = exchange_protons_formula(self.tf,
-                                      self.tail_exchangable,
-                                      vf_d_solvent)
+        hf = exchange_protons_formula(
+            self.hf, self.head_exchangable, vf_d_solvent
+        )
+        tf = exchange_protons_formula(
+            self.tf, self.tail_exchangable, vf_d_solvent
+        )
 
         h_density = calculate_density(hf, vh)
         t_density = calculate_density(tf, vt)
 
-        h_sld = pt.neutron_sld(hf, density=h_density,
-                               wavelength=neutron_wavelength)
-        t_sld = pt.neutron_sld(tf, density=t_density,
-                               wavelength=neutron_wavelength)
+        h_sld = pt.neutron_sld(
+            hf, density=h_density, wavelength=neutron_wavelength
+        )
+        t_sld = pt.neutron_sld(
+            tf, density=t_density, wavelength=neutron_wavelength
+        )
         h_scatlen = complex(*h_sld[0:2]) * vh / 1e6
         t_scatlen = complex(*t_sld[0:2]) * vt / 1e6
         return h_scatlen, t_scatlen

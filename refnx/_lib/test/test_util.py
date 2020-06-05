@@ -11,7 +11,6 @@ import numpy as np
 
 
 class TestUtil(object):
-
     def setup_method(self):
         pass
 
@@ -33,9 +32,8 @@ class TestUtil(object):
 
 
 class TestMapWrapper(object):
-
     def setup_method(self):
-        self.input = np.arange(10.)
+        self.input = np.arange(10.0)
         self.output = np.sin(self.input)
 
     def test_serial(self):

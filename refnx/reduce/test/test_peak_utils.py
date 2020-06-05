@@ -1,5 +1,5 @@
 import numpy as np
-from numpy.testing import (assert_almost_equal, assert_equal)
+from numpy.testing import assert_almost_equal, assert_equal
 import refnx.reduce.peak_utils as peak_utils
 
 
@@ -22,12 +22,12 @@ class TestPeakUtils(object):
         assert_equal(centroid, 4.5)
 
         y = np.ones(3)
-        x = np.array([0, 1.0, 9.])
+        x = np.array([0, 1.0, 9.0])
         centroid, sd = peak_utils.centroid(y, x=x)
         assert_equal(centroid, 4.5)
 
         y = np.ones(2)
-        centroid, sd = peak_utils.centroid(y, dx=9.)
+        centroid, sd = peak_utils.centroid(y, dx=9.0)
         assert_equal(centroid, 4.5)
 
     def test_median(self):
@@ -36,10 +36,10 @@ class TestPeakUtils(object):
         assert_equal(median, 4.5)
 
         y = np.ones(3)
-        x = np.array([0, 1.0, 9.])
+        x = np.array([0, 1.0, 9.0])
         median, sd = peak_utils.median(y, x=x)
         assert_equal(median, 4.5)
 
         y = np.ones(2)
-        median, sd = peak_utils.median(y, dx=9.)
+        median, sd = peak_utils.median(y, dx=9.0)
         assert_equal(median, 4.5)

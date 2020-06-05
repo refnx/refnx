@@ -11,8 +11,15 @@ from refnx.analysis import Parameter, Parameters, possibly_create_parameter
 from refnx.dataset import ReflectDataset
 from refnx.reflect._app.dataobject import DataObject
 from refnx.reflect._app.datastore import DataStore
-from refnx.reflect import (Slab, LipidLeaflet, SLD, ReflectModel,
-                           MixedReflectModel, Spline, Stack)
+from refnx.reflect import (
+    Slab,
+    LipidLeaflet,
+    SLD,
+    ReflectModel,
+    MixedReflectModel,
+    Spline,
+    Stack,
+)
 
 
 def component_class(component):
@@ -159,7 +166,7 @@ class ParNode(Node):
         return flags
 
     def data(self, column, role=QtCore.Qt.DisplayRole):
-        if (role == QtCore.Qt.CheckStateRole):
+        if role == QtCore.Qt.CheckStateRole:
             if column == 1:
                 p = self.parameter
                 if p.vary:
@@ -171,8 +178,14 @@ class ParNode(Node):
 
         if role == QtCore.Qt.DisplayRole:
             p = self.parameter
-            d = [p.name, p.value, p.stderr, p.bounds.lb, p.bounds.ub,
-                 repr(p.constraint)]
+            d = [
+                p.name,
+                p.value,
+                p.stderr,
+                p.bounds.lb,
+                p.bounds.ub,
+                repr(p.constraint),
+            ]
             return d[column]
 
     def setData(self, column, value, role=QtCore.Qt.EditRole):
@@ -233,7 +246,7 @@ class ParametersNode(Node):
             if column == 0:
                 name = self._data.name
                 if not name:
-                    name = 'Parameters'
+                    name = "Parameters"
                 return name
 
         return None
@@ -242,8 +255,9 @@ class ParametersNode(Node):
 class PropertyNode(Node):
     # an object that displays/edits some attribute of its parent node
     # it is not a ParNode.
-    def __init__(self, data, model, parent=QtCore.QModelIndex(),
-                 validators=()):
+    def __init__(
+        self, data, model, parent=QtCore.QModelIndex(), validators=()
+    ):
         super(PropertyNode, self).__init__(data, model, parent)
         # here self._data is the attribute name
         self.attribute_type = type(getattr(parent._data, data))
@@ -260,8 +274,11 @@ class PropertyNode(Node):
         return flags
 
     def data(self, column, role=QtCore.Qt.DisplayRole):
-        if (role == QtCore.Qt.CheckStateRole and column == 1 and
-                self.attribute_type is bool):
+        if (
+            role == QtCore.Qt.CheckStateRole
+            and column == 1
+            and self.attribute_type is bool
+        ):
             d = getattr(self._parent._data, self._data)
 
             if d:
@@ -278,8 +295,11 @@ class PropertyNode(Node):
         return 2
 
     def setData(self, column, value, role=QtCore.Qt.EditRole):
-        if (role == QtCore.Qt.CheckStateRole and column == 1 and
-                self.attribute_type is bool):
+        if (
+            role == QtCore.Qt.CheckStateRole
+            and column == 1
+            and self.attribute_type is bool
+        ):
 
             if value == QtCore.Qt.Checked:
                 setattr(self._parent._data, self._data, True)
@@ -292,9 +312,11 @@ class PropertyNode(Node):
             for validator in self.validators:
                 voutput = validator.validate(value, 1)
                 if voutput[0] == QtGui.QValidator.Acceptable:
-                    setattr(self._parent._data,
-                            self._data,
-                            self.attribute_type(voutput[1]))
+                    setattr(
+                        self._parent._data,
+                        self._data,
+                        self.attribute_type(voutput[1]),
+                    )
                     return True
 
         return False
@@ -363,7 +385,8 @@ class StructureNode(Node):
         super(StructureNode, self).__init__(data, model, parent)
         for component in data:
             self.appendChild(
-                component_class(component)(component, model, self))
+                component_class(component)(component, model, self)
+            )
 
     @property
     def structure(self):
@@ -376,7 +399,7 @@ class StructureNode(Node):
         if column > 0:
             return None
         # structures name
-        return 'structure'
+        return "structure"
 
     def remove_component(self, row):
         self._model.beginRemoveRows(self.index, row, row)
@@ -394,8 +417,7 @@ class StructureNode(Node):
         if src == dst or dst == src + 1:
             return
 
-        self._model.beginMoveRows(self.index, src, src,
-                                  self.index, dst)
+        self._model.beginMoveRows(self.index, src, src, self.index, dst)
 
         # swap in the underlying data
         strc = self._data
@@ -465,7 +487,7 @@ class ReflectModelNode(Node):
         if role == QtCore.Qt.DisplayRole:
             if column == 0:
                 # structures name
-                return 'model'
+                return "model"
             elif column == 1:
                 return "dq/q const. smearing?"
 
@@ -494,10 +516,10 @@ class ReflectModelNode(Node):
 
             structures.pop(row - 3)
             scales.pop(row - 3)
-            sf = possibly_create_parameter(scales[0], name='scale')
-            new_model = ReflectModel(structures[0], scale=sf,
-                                     bkg=orig_model.bkg,
-                                     dq=orig_model.dq)
+            sf = possibly_create_parameter(scales[0], name="scale")
+            new_model = ReflectModel(
+                structures[0], scale=sf, bkg=orig_model.bkg, dq=orig_model.dq
+            )
             data_object.model = new_model
             self.popChild(row)
             self._model.endRemoveRows()
@@ -539,12 +561,13 @@ class ReflectModelNode(Node):
         if len(self.structures) == 1:
             self._model.beginInsertRows(self.index, row, row)
             new_structures = [self.structures[0], structure]
-            new_model = MixedReflectModel(new_structures,
-                                          bkg=orig_model.bkg,
-                                          dq=orig_model.dq)
+            new_model = MixedReflectModel(
+                new_structures, bkg=orig_model.bkg, dq=orig_model.dq
+            )
             data_object.model = new_model
-            data_object_node.set_reflect_model(new_model,
-                                               constdq_q=self.constantdq_q)
+            data_object_node.set_reflect_model(
+                new_model, constdq_q=self.constantdq_q
+            )
             return
 
         # already a mixed model
@@ -555,16 +578,14 @@ class ReflectModelNode(Node):
         # insert the structure
         orig_model.structures.insert(row - 3, structure)
         v = 1 / len(orig_model.structures)
-        sf = possibly_create_parameter(v, name='scale')
+        sf = possibly_create_parameter(v, name="scale")
         orig_model.scales.insert(row - 3, sf)
 
         self.insertChild(row, n)
         self._model.endInsertRows()
 
         # insert a scale factor
-        self._model.beginInsertRows(self.child(0).index,
-                                    row - 3,
-                                    row - 3)
+        self._model.beginInsertRows(self.child(0).index, row - 3, row - 3)
         # add a scale factor
         n = ParNode(sf, self._model, self.child(0))
         self.child(0).insertChild(row - 3, n)
@@ -709,11 +730,11 @@ class DataObjectNode(Node):
             if column == 0:
                 return self._data.name
             elif column == 1:
-                return 'display'
+                return "display"
             elif column == 2:
-                return 'points: %d' % len(self._data.dataset)
+                return "points: %d" % len(self._data.dataset)
             elif column == 3:
-                return 'chi2: %g' % self.chi2
+                return "chi2: %g" % self.chi2
 
     def flags(self, column):
         flags = QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled
@@ -789,7 +810,8 @@ class ContainerNode(Node):
         # remove all dependent parameters (either in this dataset or elsewhere)
         # do this before the data_object is popped.
         self._model.unlink_dependent_parameters(
-            self._model.data_object_node(name))
+            self._model.data_object_node(name)
+        )
 
         # remove from the backing datastore and pop from the nodelist
         self.datastore.remove_dataset(name)
@@ -849,9 +871,11 @@ class TreeModel(QtCore.QAbstractItemModel):
         return item.flags(index.column())
 
     def headerData(self, section, orientation, role):
-        headers = ["Name", "value", 'sigma', 'lb', 'ub', 'constraint']
-        if (orientation == QtCore.Qt.Horizontal and
-                role == QtCore.Qt.DisplayRole):
+        headers = ["Name", "value", "sigma", "lb", "ub", "constraint"]
+        if (
+            orientation == QtCore.Qt.Horizontal
+            and role == QtCore.Qt.DisplayRole
+        ):
             return headers[section]
 
         return None
@@ -887,7 +911,7 @@ class TreeModel(QtCore.QAbstractItemModel):
         return QtCore.Qt.MoveAction
 
     def mimeTypes(self):
-        return ['application/vnd.treeviewdragdrop.list']
+        return ["application/vnd.treeviewdragdrop.list"]
 
     def mimeData(self, indexes):
         index_info = []
@@ -895,38 +919,43 @@ class TreeModel(QtCore.QAbstractItemModel):
         for index in indexes:
             if index.isValid():
                 node = index.internalPointer()
-                info = {'name': None, 'indices': None}
+                info = {"name": None, "indices": None}
                 if isinstance(node, Node):
-                    info['indices'] = node.row_indices()
+                    info["indices"] = node.row_indices()
                 if isinstance(node, DataObjectNode):
-                    info['name'] = node.data_object.name
+                    info["name"] = node.data_object.name
                 index_info.append(info)
 
         s = pickle.dumps(index_info)
-        mimedata.setData('application/vnd.treeviewdragdrop.list', s)
+        mimedata.setData("application/vnd.treeviewdragdrop.list", s)
         return mimedata
 
     def dropMimeData(self, data, action, row, column, parent):
         if action == QtCore.Qt.IgnoreAction:
             return True
 
-        if not data.hasFormat('application/vnd.treeviewdragdrop.list'):
+        if not data.hasFormat("application/vnd.treeviewdragdrop.list"):
             return False
 
         # what the destination was.
         host_node = parent.internalPointer()
 
-        if not (isinstance(host_node, ComponentNode) or
-                isinstance(host_node, StackNode)):
+        if not (
+            isinstance(host_node, ComponentNode)
+            or isinstance(host_node, StackNode)
+        ):
             return False
 
         # host_structure could be a Structure OR a Stack
         host_structure_node = host_node.parent()
         host_structure = host_structure_node._data
-        ba = data.data('application/vnd.treeviewdragdrop.list')
+        ba = data.data("application/vnd.treeviewdragdrop.list")
         index_info = pickle.loads(ba)
-        dragged_nodes = list(unique(
-            self.node_from_row_indices(i['indices']) for i in index_info))
+        dragged_nodes = list(
+            unique(
+                self.node_from_row_indices(i["indices"]) for i in index_info
+            )
+        )
 
         # order the dragged nodes
         src_rows = [dn.row() for dn in dragged_nodes]
@@ -941,8 +970,9 @@ class TreeModel(QtCore.QAbstractItemModel):
             src_structure_node = dragged_node.parent()
             src_structure = src_structure_node._data
 
-            if (isinstance(src_structure_node, StructureNode) and
-                    dragged_node.row() in [0, len(src_structure) - 1]):
+            if isinstance(
+                src_structure_node, StructureNode
+            ) and dragged_node.row() in [0, len(src_structure) - 1,]:
                 continue
 
             # if (isinstance(dragged_node, SplineNode) and
@@ -951,8 +981,9 @@ class TreeModel(QtCore.QAbstractItemModel):
 
             # figure out what the destination is.
             dst_row = host_node.row() + 1
-            if (dst_row == len(host_structure) and
-                    isinstance(host_structure_node, StructureNode)):
+            if dst_row == len(host_structure) and isinstance(
+                host_structure_node, StructureNode
+            ):
                 return False
 
             if src_structure_node is host_structure_node:
@@ -1012,11 +1043,12 @@ class TreeModel(QtCore.QAbstractItemModel):
         return node
 
     def snapshot(self, snapshot_name):
-        original = self.datastore['theoretical']
+        original = self.datastore["theoretical"]
         dataset = ReflectDataset()
-        dataset.data = (original.dataset.x,
-                        original.model.model(original.dataset.x,
-                                             x_err=dataset.x_err))
+        dataset.data = (
+            original.dataset.x,
+            original.model.model(original.dataset.x, x_err=dataset.x_err),
+        )
         dataset.name = snapshot_name
 
         new_model = deepcopy(original.model)
@@ -1089,19 +1121,22 @@ class TreeFilter(QtCore.QSortFilterProxyModel):
 
         # filter out resolution parameter if the dataset has x_err
         # and constant dq/q wasn't requested.
-        if (isinstance(item.parent(), ReflectModelNode) and
-                isinstance(item, ParNode)):
+        if isinstance(item.parent(), ReflectModelNode) and isinstance(
+            item, ParNode
+        ):
             data_object_node = find_data_object(item.index)
             dataset = data_object_node.data_object.dataset
             constantdq_q = data_object_node.data_object.constantdq_q
             # hard-coded the row for dq/q
-            if (item.row() == 2 and not constantdq_q and
-                    dataset.x_err is not None):
+            if (
+                item.row() == 2
+                and not constantdq_q
+                and dataset.x_err is not None
+            ):
                 return False
 
         # filter out parameters for the fronting/backing media
-        if (isinstance(item.parent(), SlabNode) and
-                isinstance(item, ParNode)):
+        if isinstance(item.parent(), SlabNode) and isinstance(item, ParNode):
 
             # component
             parent = item.parent()
@@ -1133,8 +1168,7 @@ def find_data_object(index):
 
     item = index.internalPointer()
     hierarchy = item.hierarchy()
-    data_object_node = [i for i in hierarchy if
-                        isinstance(i, DataObjectNode)]
+    data_object_node = [i for i in hierarchy if isinstance(i, DataObjectNode)]
     return data_object_node[0]
 
 
@@ -1152,7 +1186,7 @@ class LipidLeafletNode(ComponentNode):
     def __init__(self, data, model, parent=QtCore.QModelIndex()):
         super(LipidLeafletNode, self).__init__(data, model, parent)
 
-        prop_node = PropertyNode('reverse_monolayer', model, parent=self)
+        prop_node = PropertyNode("reverse_monolayer", model, parent=self)
         self.appendChild(prop_node)
 
 
@@ -1160,13 +1194,17 @@ class LipidLeafletNode(ComponentNode):
 class SplineNode(ComponentNode):
     def __init__(self, data, model, parent=QtCore.QModelIndex()):
         super(SplineNode, self).__init__(data, model, parent, flat=False)
-        prop_node = PropertyNode('zgrad', model, parent=self)
+        prop_node = PropertyNode("zgrad", model, parent=self)
         self.appendChild(prop_node)
 
         validator = QtGui.QDoubleValidator()
         validator.setBottom(0)
-        prop_node = PropertyNode('microslab_max_thickness', model, parent=self,
-                                 validators=(validator,))
+        prop_node = PropertyNode(
+            "microslab_max_thickness",
+            model,
+            parent=self,
+            validators=(validator,),
+        )
         prop_node.attribute_type = float
         self.appendChild(prop_node)
 
@@ -1182,7 +1220,8 @@ class StackNode(Node):
 
         for component in data:
             self.appendChild(
-                component_class(component)(component, model, self))
+                component_class(component)(component, model, self)
+            )
 
     @property
     def stack(self):
@@ -1225,8 +1264,7 @@ class StackNode(Node):
         if src == dst or dst == src + 1:
             return
 
-        self._model.beginMoveRows(self.index, src, src,
-                                  self.index, dst)
+        self._model.beginMoveRows(self.index, src, src, self.index, dst)
 
         # swap in the underlying data
         strc = self._data

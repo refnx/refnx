@@ -20,7 +20,7 @@ EPS = np.MachAr().eps
 
 def _get_epsilon(x, s, epsilon, n):
     if epsilon is None:
-        h = EPS**(1. / s) * np.maximum(np.abs(x), 0.1)
+        h = EPS ** (1.0 / s) * np.maximum(np.abs(x), 0.1)
     else:
         if np.isscalar(epsilon):
             h = np.empty(n)
@@ -28,8 +28,9 @@ def _get_epsilon(x, s, epsilon, n):
         else:  # pragma : no cover
             h = np.asarray(epsilon)
             if h.shape != x.shape:
-                raise ValueError("If h is not a scalar it must have the same"
-                                 " shape as x.")
+                raise ValueError(
+                    "If h is not a scalar it must have the same" " shape as x."
+                )
     return h
 
 
@@ -82,10 +83,16 @@ def approx_hess2(x, f, epsilon=None, args=(), kwargs={}, return_grad=False):
     # Compute "double" forward step
     for i in range(n):
         for j in range(i, n):
-            hess[i, j] = (f(*((x + ee[i, :] + ee[j, :],) + args), **kwargs) -
-                          g[i] - g[j] + f0 +
-                          f(*((x - ee[i, :] - ee[j, :],) + args), **kwargs) -
-                          gg[i] - gg[j] + f0) / (2 * hess[i, j])
+            hess[i, j] = (
+                f(*((x + ee[i, :] + ee[j, :],) + args), **kwargs)
+                - g[i]
+                - g[j]
+                + f0
+                + f(*((x - ee[i, :] - ee[j, :],) + args), **kwargs)
+                - gg[i]
+                - gg[j]
+                + f0
+            ) / (2 * hess[i, j])
             hess[j, i] = hess[i, j]
     if return_grad:
         grad = (g - f0) / h

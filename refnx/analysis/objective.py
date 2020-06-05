@@ -7,14 +7,23 @@ from refnx.util import ErrorProp as EP
 from refnx._lib import flatten, approx_hess2
 from refnx._lib import unique as f_unique
 from refnx.dataset import Data1D
-from refnx.analysis import (is_parameter, Parameter, possibly_create_parameter,
-                            is_parameters, Parameters, Interval, PDF)
+from refnx.analysis import (
+    is_parameter,
+    Parameter,
+    possibly_create_parameter,
+    is_parameters,
+    Parameters,
+    Interval,
+    PDF,
+)
 
 
 class BaseObjective(object):
     """Don't necessarily have to use Parameters, could use np.array"""
-    def __init__(self, p, logl, logp=None, fcn_args=(), fcn_kwds=None,
-                 name=None):
+
+    def __init__(
+        self, p, logl, logp=None, fcn_args=(), fcn_kwds=None, name=None
+    ):
         self.name = name
         self.parameters = p
         self.nvary = len(p)
@@ -224,8 +233,16 @@ class Objective(BaseObjective):
 
     """
 
-    def __init__(self, model, data, lnsigma=None, use_weights=True,
-                 transform=None, logp_extra=None, name=None):
+    def __init__(
+        self,
+        model,
+        data,
+        lnsigma=None,
+        use_weights=True,
+        transform=None,
+        logp_extra=None,
+        name=None,
+    ):
         self.model = model
         # should be a Data1D instance
         if isinstance(data, Data1D):
@@ -235,7 +252,7 @@ class Objective(BaseObjective):
 
         self.lnsigma = lnsigma
         if lnsigma is not None:
-            self.lnsigma = possibly_create_parameter(lnsigma, 'lnsigma')
+            self.lnsigma = possibly_create_parameter(lnsigma, "lnsigma")
 
         self._use_weights = use_weights
         self.transform = transform
@@ -245,30 +262,32 @@ class Objective(BaseObjective):
             self.name = id(self)
 
     def __str__(self):
-        s = ["{:_>80}".format('')]
-        s.append('Objective - {0}'.format(self.name))
+        s = ["{:_>80}".format("")]
+        s.append("Objective - {0}".format(self.name))
 
         # dataset name
         if self.data.name is None:
-            s.append('Dataset = {0}'.format(self.data))
+            s.append("Dataset = {0}".format(self.data))
         else:
-            s.append('Dataset = {0}'.format(self.data.name))
+            s.append("Dataset = {0}".format(self.data.name))
 
-        s.append('datapoints = {0}'.format(self.npoints))
-        s.append('chi2 = {0}'.format(self.chisqr()))
-        s.append('Weighted = {0}'.format(self.weighted))
-        s.append('Transform = {0}'.format(self.transform))
+        s.append("datapoints = {0}".format(self.npoints))
+        s.append("chi2 = {0}".format(self.chisqr()))
+        s.append("Weighted = {0}".format(self.weighted))
+        s.append("Transform = {0}".format(self.transform))
         s.append(str(self.parameters))
 
-        return '\n'.join(s)
+        return "\n".join(s)
 
     def __repr__(self):
-        return ("Objective({model!r}, {data!r},"
-                " lnsigma={lnsigma!r},"
-                " use_weights={_use_weights},"
-                " transform={transform!r},"
-                " logp_extra={logp_extra!r},"
-                " name={name!r})".format(**self.__dict__))
+        return (
+            "Objective({model!r}, {data!r},"
+            " lnsigma={lnsigma!r},"
+            " use_weights={_use_weights},"
+            " transform={transform!r},"
+            " logp_extra={logp_extra!r},"
+            " name={name!r})".format(**self.__dict__)
+        )
 
     @property
     def weighted(self):
@@ -309,7 +328,7 @@ class Objective(BaseObjective):
         x = self.data.x
         y = self.data.y
 
-        y_err = 1.
+        y_err = 1.0
         if self.weighted:
             y_err = self.data.y_err
 
@@ -366,8 +385,9 @@ class Objective(BaseObjective):
         y, y_err, model = self._data_transform(model)
 
         if self.lnsigma is not None:
-            s_n = np.sqrt(y_err * y_err +
-                          np.exp(2 * float(self.lnsigma)) * model * model)
+            s_n = np.sqrt(
+                y_err * y_err + np.exp(2 * float(self.lnsigma)) * model * model
+            )
         else:
             s_n = y_err
 
@@ -435,10 +455,12 @@ class Objective(BaseObjective):
                 param.value = pvals[idx]
             return
 
-        raise ValueError(f'Incorrect number of values supplied ({len(pvals)})'
-                         f', supply either the full number of parameters'
-                         f' ({len(flattened_parameters)}, or only the varying'
-                         f' parameters ({len(_varying_parameters)}).')
+        raise ValueError(
+            f"Incorrect number of values supplied ({len(pvals)})"
+            f", supply either the full number of parameters"
+            f" ({len(flattened_parameters)}, or only the varying"
+            f" parameters ({len(_varying_parameters)})."
+        )
 
     def logp(self, pvals=None):
         """
@@ -475,9 +497,14 @@ class Objective(BaseObjective):
         """
         self.setp(pvals)
 
-        logp = np.sum([param.logp() for param in
-                       f_unique(p for p in flatten(self.parameters) if
-                                p.vary)])
+        logp = np.sum(
+            [
+                param.logp()
+                for param in f_unique(
+                    p for p in flatten(self.parameters) if p.vary
+                )
+            ]
+        )
 
         if not np.isfinite(logp):
             return -np.inf
@@ -526,13 +553,14 @@ class Objective(BaseObjective):
 
         model = self.model(self.data.x, x_err=self.data.x_err)
 
-        logl = 0.
+        logl = 0.0
 
         y, y_err, model = self._data_transform(model)
 
         if self.lnsigma is not None:
-            var_y = (y_err * y_err +
-                     np.exp(2 * float(self.lnsigma)) * model * model)
+            var_y = (
+                y_err * y_err + np.exp(2 * float(self.lnsigma)) * model * model
+            )
         else:
             var_y = y_err ** 2
 
@@ -540,7 +568,7 @@ class Objective(BaseObjective):
         if self.weighted:
             logl += np.log(2 * np.pi * var_y)
 
-        logl += (y - model)**2 / var_y
+        logl += (y - model) ** 2 / var_y
 
         # nans play havoc
         if np.isnan(logl).any():
@@ -622,7 +650,7 @@ class Objective(BaseObjective):
             if np.any(_pvals == 0):
                 raise FloatingPointError()
 
-            with np.errstate(invalid='raise'):
+            with np.errstate(invalid="raise"):
                 jac = approx_derivative(residuals_scaler, np.ones_like(_pvals))
             used_residuals_scaler = True
         except FloatingPointError:
@@ -643,7 +671,7 @@ class Objective(BaseObjective):
         _, s, VT = np.linalg.svd(jac, full_matrices=False)
         threshold = np.finfo(float).eps * max(jac.shape) * s[0]
         s = s[s > threshold]
-        VT = VT[:s.size]
+        VT = VT[: s.size]
         covar = np.dot(VT.T / s ** 2, VT)
 
         if used_residuals_scaler:
@@ -657,15 +685,18 @@ class Objective(BaseObjective):
             var_params = self.varying_parameters()
             singular_params = [var_params[ps] for ps in psingular]
 
-            raise LinAlgError("The following Parameters have no effect on"
-                              " Objective.residuals, please consider fixing"
-                              " them.\n" + repr(singular_params))
+            raise LinAlgError(
+                "The following Parameters have no effect on"
+                " Objective.residuals, please consider fixing"
+                " them.\n" + repr(singular_params)
+            )
 
-        scale = 1.
+        scale = 1.0
         # scale by reduced chi2 if experimental uncertainties weren't used.
         if not (self.weighted):
-            scale = (self.chisqr() /
-                     (n_datapoints - len(self.varying_parameters())))
+            scale = self.chisqr() / (
+                n_datapoints - len(self.varying_parameters())
+            )
 
         return covar * scale
 
@@ -690,9 +721,7 @@ class Objective(BaseObjective):
             A randomly chosen parameter vector
 
         """
-        yield from self.parameters.pgen(ngen=ngen,
-                                        nburn=nburn,
-                                        nthin=nthin)
+        yield from self.parameters.pgen(ngen=ngen, nburn=nburn, nthin=nthin)
 
     def plot(self, pvals=None, samples=0, parameter=None, fig=None):
         """
@@ -724,6 +753,7 @@ class Objective(BaseObjective):
 
         if fig is None:
             import matplotlib.pyplot as plt
+
             fig = plt.figure()
             ax = fig.add_subplot(111)
         else:
@@ -733,12 +763,19 @@ class Objective(BaseObjective):
 
         # add the data (in a transformed fashion)
         if self.weighted:
-            ax.errorbar(self.data.x, y, y_err, color='blue',
-                        label=self.data.name,
-                        marker='o', ms=3, lw=0, elinewidth=2)
+            ax.errorbar(
+                self.data.x,
+                y,
+                y_err,
+                color="blue",
+                label=self.data.name,
+                marker="o",
+                ms=3,
+                lw=0,
+                elinewidth=2,
+            )
         else:
-            ax.scatter(self.data.x, y, color='blue',
-                       s=3, label=self.data.name)
+            ax.scatter(self.data.x, y, color="blue", s=3, label=self.data.name)
 
         if samples > 0:
             saved_params = np.array(self.parameters)
@@ -746,17 +783,16 @@ class Objective(BaseObjective):
             # and plot the model.
             for pvec in self.pgen(ngen=samples):
                 y, y_err, model = self._data_transform(
-                    model=self.generative(pvec))
+                    model=self.generative(pvec)
+                )
 
-                ax.plot(self.data.x,
-                        model,
-                        color="k", alpha=0.01)
+                ax.plot(self.data.x, model, color="k", alpha=0.01)
 
             # put back saved_params
             self.setp(saved_params)
 
         # add the fit
-        generative_plot = ax.plot(self.data.x, model, color='red', zorder=20)
+        generative_plot = ax.plot(self.data.x, model, color="red", zorder=20)
 
         if parameter is None:
             return fig, ax
@@ -770,6 +806,7 @@ class Objective(BaseObjective):
             fig.canvas.draw()
 
         import ipywidgets
+
         return fig, ax, ipywidgets.interact(f, val=float(parameter))
 
     def corner(self, **kwds):
@@ -787,12 +824,13 @@ class Objective(BaseObjective):
         fig : :class:`matplotlib.Figure` object.
         """
         import corner
+
         var_pars = self.varying_parameters()
         chain = np.array([par.chain for par in var_pars])
         labels = [par.name for par in var_pars]
         chain = chain.reshape(len(chain), -1).T
-        kwds['labels'] = labels
-        kwds['quantiles'] = [0.16, 0.5, 0.84]
+        kwds["labels"] = labels
+        kwds["quantiles"] = [0.16, 0.5, 0.84]
         return corner.corner(chain, **kwds)
 
 
@@ -815,16 +853,18 @@ class GlobalObjective(Objective):
         self._weighted = np.array(weighted, dtype=bool)
 
         if len(np.unique(self._weighted)) > 1:
-            raise ValueError("All the objectives must be either weighted or"
-                             " unweighted, you cannot have a mixture.")
+            raise ValueError(
+                "All the objectives must be either weighted or"
+                " unweighted, you cannot have a mixture."
+            )
 
     def __str__(self):
-        s = ["{:_>80}".format('\n')]
-        s.append('--Global Objective--')
+        s = ["{:_>80}".format("\n")]
+        s.append("--Global Objective--")
         for obj in self.objectives:
             s.append(str(obj))
-            s.append('\n')
-        return '\n'.join(s)
+            s.append("\n")
+        return "\n".join(s)
 
     def __repr__(self):
         return "GlobalObjective({0})".format(repr(self.objectives))
@@ -882,7 +922,7 @@ class GlobalObjective(Objective):
         """
         # TODO this is probably going to be slow.
         # cache and update strategy?
-        p = Parameters(name='global fitting parameters')
+        p = Parameters(name="global fitting parameters")
 
         for objective in self.objectives:
             p.append(objective.parameters)
@@ -906,7 +946,7 @@ class GlobalObjective(Objective):
         """
         self.setp(pvals)
 
-        logp = 0.
+        logp = 0.0
         for objective in self.objectives:
             logp += objective.logp()
             # shortcut if one of the priors is impossible
@@ -931,7 +971,7 @@ class GlobalObjective(Objective):
 
         """
         self.setp(pvals)
-        logl = 0.
+        logl = 0.0
 
         for objective in self.objectives:
             logl += objective.logl()
@@ -969,6 +1009,7 @@ class GlobalObjective(Objective):
 
         if fig is None:
             import matplotlib.pyplot as plt
+
             fig = plt.figure()
             ax = fig.add_subplot(111)
         else:
@@ -986,11 +1027,10 @@ class GlobalObjective(Objective):
 
                 for objective in self.objectives:
                     y, y_err, model = objective._data_transform(
-                        model=objective.generative())
+                        model=objective.generative()
+                    )
 
-                    ax.plot(objective.data.x,
-                            model,
-                            color="k", alpha=0.01)
+                    ax.plot(objective.data.x, model, color="k", alpha=0.01)
 
             # put back saved_params
             self.setp(saved_params)
@@ -998,20 +1038,29 @@ class GlobalObjective(Objective):
         for objective in self.objectives:
             # add the data (in a transformed fashion)
             y, y_err, model = objective._data_transform(
-                model=objective.generative())
+                model=objective.generative()
+            )
 
             if objective.weighted:
-                ax.errorbar(objective.data.x, y, y_err,
-                            label=objective.data.name,
-                            ms=3, lw=0, elinewidth=2, marker='o')
+                ax.errorbar(
+                    objective.data.x,
+                    y,
+                    y_err,
+                    label=objective.data.name,
+                    ms=3,
+                    lw=0,
+                    elinewidth=2,
+                    marker="o",
+                )
             else:
-                ax.scatter(objective.data.x, y,
-                           label=objective.data.name)
+                ax.scatter(objective.data.x, y, label=objective.data.name)
 
             # add the fit
             generative_plots.append(
-                ax.plot(objective.data.x, model, color='r',
-                        lw=1.5, zorder=20)[0])
+                ax.plot(objective.data.x, model, color="r", lw=1.5, zorder=20)[
+                    0
+                ]
+            )
 
         if parameter is None:
             return fig, ax
@@ -1022,12 +1071,14 @@ class GlobalObjective(Objective):
                 parameter.value = float(val)
             for i, objective in enumerate(self.objectives):
                 y, y_err, model = objective._data_transform(
-                    model=objective.generative())
+                    model=objective.generative()
+                )
 
                 generative_plots[i].set_data(objective.data.x, model)
             fig.canvas.draw()
 
         import ipywidgets
+
         return fig, ax, ipywidgets.interact(f, val=float(parameter))
 
         return fig, ax
@@ -1069,15 +1120,18 @@ class Transform(object):
            3.        ])
 
     """
+
     def __init__(self, form):
-        types = [None, 'lin', 'logY', 'YX4', 'YX2']
+        types = [None, "lin", "logY", "YX4", "YX2"]
         self.form = None
 
         if form in types:
             self.form = form
         else:
-            raise ValueError("The form parameter must be one of [None, 'lin',"
-                             " 'logY', 'YX4', 'YX2']")
+            raise ValueError(
+                "The form parameter must be one of [None, 'lin',"
+                " 'logY', 'YX4', 'YX2']"
+            )
 
     def __repr__(self):
         return "Transform({0})".format(repr(self.form))
@@ -1138,15 +1192,15 @@ class Transform(object):
         else:
             etemp = y_err
 
-        if self.form in ['lin', None]:
+        if self.form in ["lin", None]:
             yt = np.copy(y)
             et = np.copy(etemp)
-        elif self.form == 'logY':
+        elif self.form == "logY":
             yt, et = EP.EPlog10(y, etemp)
-        elif self.form == 'YX4':
+        elif self.form == "YX4":
             yt = y * np.power(x, 4)
             et = etemp * np.power(x, 4)
-        elif self.form == 'YX2':
+        elif self.form == "YX2":
             yt = y * np.power(x, 2)
             et = etemp * np.power(x, 2)
         if y_err is None:
@@ -1178,12 +1232,14 @@ class _pymc_objective_wrapper(object):
             self.func = objective.model.fitfunc
 
     def __name__(self):
-        return 'objective'
+        return "objective"
 
     def __call__(self, *args):
-        vals = self.func(self.objective.data.x,
-                         np.array(args),
-                         x_err=self.objective.data.x_err)
+        vals = self.func(
+            self.objective.data.x,
+            np.array(args),
+            x_err=self.objective.data.x_err,
+        )
         return vals
 
 
@@ -1221,7 +1277,7 @@ def pymc_objective(objective):
     with basic_model:
         # Priors for unknown model parameters
         for i, par in enumerate(pars):
-            name = 'p%d' % i
+            name = "p%d" % i
             p = _to_pymc3_distribution(name, par)
             wrapped_pars.append(p)
 
@@ -1229,15 +1285,19 @@ def pymc_objective(objective):
         try:
             v = wrapped_obj(*wrapped_pars)
         except Exception:
-            print("Falling back, theano autodiff won't work on function"
-                  " object")
-            o = as_op(itypes=[T.dscalar] * len(pars),
-                      otypes=[T.dvector])(wrapped_obj)
+            print(
+                "Falling back, theano autodiff won't work on function"
+                " object"
+            )
+            o = as_op(itypes=[T.dscalar] * len(pars), otypes=[T.dvector])(
+                wrapped_obj
+            )
             v = o(*wrapped_pars)
 
         # Likelihood (sampling distribution) of observations
-        y_obs = pm.Normal('Y_obs', mu=v, sd=objective.data.y_err,
-                          observed=objective.data.y)
+        y_obs = pm.Normal(
+            "Y_obs", mu=v, sd=objective.data.y_err, observed=objective.data.y
+        )
 
         if not y_obs:
             return None
@@ -1268,13 +1328,14 @@ def _to_pymc3_distribution(name, par):
 
     dist = par.bounds
     # interval and both lb, ub are finite
-    if (isinstance(dist, Interval) and
-            np.isfinite([dist.lb, dist.ub]).all()):
+    if isinstance(dist, Interval) and np.isfinite([dist.lb, dist.ub]).all():
         return pm.Uniform(name, dist.lb, dist.ub)
     # no bounds
-    elif (isinstance(dist, Interval) and
-          np.isneginf(dist.lb) and
-          np.isinf(dist.lb)):
+    elif (
+        isinstance(dist, Interval)
+        and np.isneginf(dist.lb)
+        and np.isinf(dist.lb)
+    ):
         return pm.Flat(name)
     # half open uniform
     elif isinstance(dist, Interval) and not np.isfinite(dist.lb):
@@ -1285,22 +1346,23 @@ def _to_pymc3_distribution(name, par):
 
     # it's a PDF
     if isinstance(dist, PDF):
-        dist_gen = getattr(dist.rv, 'dist', None)
+        dist_gen = getattr(dist.rv, "dist", None)
 
         if isinstance(dist.rv, stats.rv_continuous):
             dist_gen = dist.rv
 
         if isinstance(dist_gen, type(stats.uniform)):
-            if hasattr(dist.rv, 'args'):
-                p = pm.Uniform(name, dist.rv.args[0],
-                               dist.rv.args[1] + dist.rv.args[0])
+            if hasattr(dist.rv, "args"):
+                p = pm.Uniform(
+                    name, dist.rv.args[0], dist.rv.args[1] + dist.rv.args[0]
+                )
             else:
                 p = pm.Uniform(name, 0, 1)
             return p
 
         # norm from scipy.stats
         if isinstance(dist_gen, type(stats.norm)):
-            if hasattr(dist.rv, 'args'):
+            if hasattr(dist.rv, "args"):
                 p = pm.Normal(name, mu=dist.rv.args[0], sd=dist.rv.args[1])
             else:
                 p = pm.Normal(name, mu=0, sd=1)

@@ -67,10 +67,22 @@ class LipidLeaflet(Component):
     """
 
     # TODO: use SLD of head instead of b_heads, vm_heads?
-    def __init__(self, apm, b_heads, vm_heads, thickness_heads,
-                 b_tails, vm_tails, thickness_tails, rough_head_tail,
-                 rough_preceding_mono, head_solvent=None, tail_solvent=None,
-                 reverse_monolayer=False, name=''):
+    def __init__(
+        self,
+        apm,
+        b_heads,
+        vm_heads,
+        thickness_heads,
+        b_tails,
+        vm_tails,
+        thickness_tails,
+        rough_head_tail,
+        rough_preceding_mono,
+        head_solvent=None,
+        tail_solvent=None,
+        reverse_monolayer=False,
+        name="",
+    ):
         """
         Parameters
         ----------
@@ -117,65 +129,66 @@ class LipidLeaflet(Component):
             The name for the component
         """
         super(LipidLeaflet, self).__init__()
-        self.apm = possibly_create_parameter(apm,
-                                             '%s - area_per_molecule' % name)
+        self.apm = possibly_create_parameter(
+            apm, "%s - area_per_molecule" % name
+        )
 
         if isinstance(b_heads, complex):
             self.b_heads_real = possibly_create_parameter(
-                b_heads.real,
-                name='%s - b_heads_real' % name)
+                b_heads.real, name="%s - b_heads_real" % name
+            )
             self.b_heads_imag = possibly_create_parameter(
-                b_heads.imag,
-                name='%s - b_heads_imag' % name)
+                b_heads.imag, name="%s - b_heads_imag" % name
+            )
         elif isinstance(b_heads, SLD):
             self.b_heads_real = b_heads.real
             self.b_heads_imag = b_heads.imag
         else:
             self.b_heads_real = possibly_create_parameter(
-                b_heads,
-                name='%s - b_heads_real' % name)
+                b_heads, name="%s - b_heads_real" % name
+            )
             self.b_heads_imag = possibly_create_parameter(
-                0,
-                name='%s - b_heads_imag' % name)
+                0, name="%s - b_heads_imag" % name
+            )
 
         self.vm_heads = possibly_create_parameter(
-            vm_heads,
-            name='%s - vm_heads' % name)
+            vm_heads, name="%s - vm_heads" % name
+        )
 
         self.thickness_heads = possibly_create_parameter(
-            thickness_heads,
-            name='%s - thickness_heads' % name)
+            thickness_heads, name="%s - thickness_heads" % name
+        )
 
         if isinstance(b_tails, complex):
             self.b_tails_real = possibly_create_parameter(
-                b_tails.real,
-                name='%s - b_tails_real' % name)
+                b_tails.real, name="%s - b_tails_real" % name
+            )
             self.b_tails_imag = possibly_create_parameter(
-                b_tails.imag,
-                name='%s - b_tails_imag' % name)
+                b_tails.imag, name="%s - b_tails_imag" % name
+            )
         elif isinstance(b_tails, SLD):
             self.b_tails_real = b_tails.real
             self.b_tails_imag = b_tails.imag
         else:
             self.b_tails_real = possibly_create_parameter(
-                b_tails,
-                name='%s - b_tails_real' % name)
+                b_tails, name="%s - b_tails_real" % name
+            )
             self.b_tails_imag = possibly_create_parameter(
-                0,
-                name='%s - b_tails_imag' % name)
+                0, name="%s - b_tails_imag" % name
+            )
 
         self.vm_tails = possibly_create_parameter(
-            vm_tails,
-            name='%s - vm_tails' % name)
+            vm_tails, name="%s - vm_tails" % name
+        )
         self.thickness_tails = possibly_create_parameter(
-            thickness_tails,
-            name='%s - thickness_tails' % name)
+            thickness_tails, name="%s - thickness_tails" % name
+        )
         self.rough_head_tail = possibly_create_parameter(
-            rough_head_tail,
-            name='%s - rough_head_tail' % name)
+            rough_head_tail, name="%s - rough_head_tail" % name
+        )
         self.rough_preceding_mono = possibly_create_parameter(
-            rough_preceding_mono,
-            name='%s - rough_fronting_mono' % name)
+            rough_preceding_mono, name="%s - rough_fronting_mono" % name
+        )
 
         self.head_solvent = self.tail_solvent = None
         if head_solvent is not None:
@@ -191,14 +204,16 @@ class LipidLeaflet(Component):
         d.update(self.__dict__)
         sld_bh = SLD([self.b_heads_real, self.b_heads_imag])
         sld_bt = SLD([self.b_tails_real, self.b_tails_imag])
-        d['bh'] = sld_bh
-        d['bt'] = sld_bt
+        d["bh"] = sld_bh
+        d["bt"] = sld_bt
 
-        s = ("LipidLeaflet({apm!r}, {bh!r}, {vm_heads!r}, {thickness_heads!r},"
-             " {bt!r}, {vm_tails!r}, {thickness_tails!r}, {rough_head_tail!r},"
-             " {rough_preceding_mono!r}, head_solvent={head_solvent!r},"
-             " tail_solvent={tail_solvent!r},"
-             " reverse_monolayer={reverse_monolayer}, name={name!r})")
+        s = (
+            "LipidLeaflet({apm!r}, {bh!r}, {vm_heads!r}, {thickness_heads!r},"
+            " {bt!r}, {vm_tails!r}, {thickness_tails!r}, {rough_head_tail!r},"
+            " {rough_preceding_mono!r}, head_solvent={head_solvent!r},"
+            " tail_solvent={tail_solvent!r},"
+            " reverse_monolayer={reverse_monolayer}, name={name!r})"
+        )
         return s.format(**d)
 
     def slabs(self, structure=None):
@@ -217,11 +232,11 @@ class LipidLeaflet(Component):
         layers[1, 0] = float(self.thickness_tails)
 
         # real and imag SLD's
-        layers[0, 1] = float(self.b_heads_real) / float(self.vm_heads) * 1.e6
-        layers[0, 2] = float(self.b_heads_imag) / float(self.vm_heads) * 1.e6
+        layers[0, 1] = float(self.b_heads_real) / float(self.vm_heads) * 1.0e6
+        layers[0, 2] = float(self.b_heads_imag) / float(self.vm_heads) * 1.0e6
 
-        layers[1, 1] = float(self.b_tails_real) / float(self.vm_tails) * 1.e6
-        layers[1, 2] = float(self.b_tails_imag) / float(self.vm_tails) * 1.e6
+        layers[1, 1] = float(self.b_tails_real) / float(self.vm_tails) * 1.0e6
+        layers[1, 2] = float(self.b_tails_imag) / float(self.vm_tails) * 1.0e6
 
         # roughnesses
         layers[0, 3] = float(self.rough_preceding_mono)
@@ -229,8 +244,9 @@ class LipidLeaflet(Component):
 
         # volume fractions
         # head region
-        volfrac = self.vm_heads.value / (self.apm.value *
-                                         self.thickness_heads.value)
+        volfrac = self.vm_heads.value / (
+            self.apm.value * self.thickness_heads.value
+        )
         layers[0, 4] = 1 - volfrac
         if self.head_solvent is not None:
             # we do the solvation here, not in Structure.slabs
@@ -238,8 +254,9 @@ class LipidLeaflet(Component):
             layers[0, 4] = 0
 
         # tail region
-        volfrac = self.vm_tails.value / (self.apm.value *
-                                         self.thickness_tails.value)
+        volfrac = self.vm_tails.value / (
+            self.apm.value * self.thickness_tails.value
+        )
 
         layers[1, 4] = 1 - volfrac
         if self.tail_solvent is not None:
@@ -256,12 +273,21 @@ class LipidLeaflet(Component):
     @property
     def parameters(self):
         p = Parameters(name=self.name)
-        p.extend([self.apm,
-                  self.b_heads_real, self.b_heads_imag, self.vm_heads,
-                  self.thickness_heads,
-                  self.b_tails_real, self.b_tails_imag, self.vm_tails,
-                  self.thickness_tails, self.rough_head_tail,
-                  self.rough_preceding_mono])
+        p.extend(
+            [
+                self.apm,
+                self.b_heads_real,
+                self.b_heads_imag,
+                self.vm_heads,
+                self.thickness_heads,
+                self.b_tails_real,
+                self.b_tails_imag,
+                self.vm_tails,
+                self.thickness_tails,
+                self.rough_head_tail,
+                self.rough_preceding_mono,
+            ]
+        )
         if self.head_solvent is not None:
             p.append(self.head_solvent.parameters)
         if self.tail_solvent is not None:
@@ -271,12 +297,14 @@ class LipidLeaflet(Component):
 
     def logp(self):
         # penalise unphysical volume fractions.
-        volfrac_h = self.vm_heads.value / (self.apm.value *
-                                           self.thickness_heads.value)
+        volfrac_h = self.vm_heads.value / (
+            self.apm.value * self.thickness_heads.value
+        )
 
         # tail region
-        volfrac_t = self.vm_tails.value / (self.apm.value *
-                                           self.thickness_tails.value)
+        volfrac_t = self.vm_tails.value / (
+            self.apm.value * self.thickness_tails.value
+        )
 
         if volfrac_h > 1 or volfrac_t > 1:
             return -np.inf

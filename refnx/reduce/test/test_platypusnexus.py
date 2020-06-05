@@ -178,8 +178,8 @@ class TestPlatypusNexus(object):
         # check that the wavelength resolution is roughly right, between 7 and
         # 8%.
         res = (
-            self.f641.processed_spectrum["m_lambda_fwhm"][0] /
-            self.f641.processed_spectrum["m_lambda"][0]
+            self.f641.processed_spectrum["m_lambda_fwhm"][0]
+            / self.f641.processed_spectrum["m_lambda"][0]
         )
         assert_array_less(res, np.ones_like(res) * 0.08)
         assert_array_less(np.ones_like(res) * 0.07, res)

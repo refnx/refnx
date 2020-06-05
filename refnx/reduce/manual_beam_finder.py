@@ -5,20 +5,23 @@ from PyQt5.QtCore import pyqtSlot
 import numpy as np
 
 import matplotlib
-from matplotlib.backends.backend_qt5agg import (FigureCanvasQTAgg
-                                                as FigureCanvas)
+from matplotlib.backends.backend_qt5agg import (
+    FigureCanvasQTAgg as FigureCanvas,
+)
 from matplotlib.figure import Figure
 from matplotlib import patches
-from matplotlib.backends.backend_qt5agg import (NavigationToolbar2QT
-                                                as NavigationToolbar)
+from matplotlib.backends.backend_qt5agg import (
+    NavigationToolbar2QT as NavigationToolbar,
+)
 
 from refnx.reduce.peak_utils import peak_finder, centroid
 from refnx.reduce.platypusnexus import fore_back_region, PIXEL_OFFSET
 import refnx.reduce._app as floc
-matplotlib.use('Qt5Agg')
+
+matplotlib.use("Qt5Agg")
 
 
-UI_LOCATION = os.path.join(os.path.dirname(floc.__file__), 'ui')
+UI_LOCATION = os.path.join(os.path.dirname(floc.__file__), "ui")
 
 
 class ManualBeamFinder(QtWidgets.QDialog):
@@ -29,16 +32,18 @@ class ManualBeamFinder(QtWidgets.QDialog):
     ``%gui qt`` should be used before creating an instance of this class.
     Otherwise the ipython kernel will crash immediately.
     """
+
     def __init__(self):
         """
         """
         super(ManualBeamFinder, self).__init__()
-        self.dialog = uic.loadUi(os.path.join(UI_LOCATION, 'manual_beam.ui'),
-                                 self)
+        self.dialog = uic.loadUi(
+            os.path.join(UI_LOCATION, "manual_beam.ui"), self
+        )
 
         # values for spinboxes
-        self._true_centre = 500.
-        self._true_sd = 20.
+        self._true_centre = 500.0
+        self._true_sd = 20.0
 
         self._pixels_to_include = 200
         self._integrate_width = 200
@@ -50,7 +55,8 @@ class ManualBeamFinder(QtWidgets.QDialog):
 
         # detector image
         self.detector_image_layout = QtWidgets.QGridLayout(
-            self.dialog.detector_image)
+            self.dialog.detector_image
+        )
         self.detector_image_layout.setObjectName("detector_image_layout")
 
         self.detector_image = DetectorImage(self.dialog.detector_image)
@@ -60,15 +66,17 @@ class ManualBeamFinder(QtWidgets.QDialog):
 
         # cross section image
         self.cross_section_layout = QtWidgets.QGridLayout(
-            self.dialog.cross_section)
+            self.dialog.cross_section
+        )
         self.cross_section_layout.setObjectName("cross_section_layout")
 
         self.cross_section = Cross_Section(self.dialog.cross_section)
         self.cross_section_layout.addWidget(self.cross_section)
 
         # register a listener to drag events on cross section
-        self.cross_section.mpl_connect('button_release_event',
-                                       self.on_cross_drag_release)
+        self.cross_section.mpl_connect(
+            "button_release_event", self.on_cross_drag_release
+        )
 
     def __call__(self, detector, detector_err):
         """
@@ -122,24 +130,30 @@ class ManualBeamFinder(QtWidgets.QDialog):
 
         y1 = int(round(self._low_px - PIXEL_OFFSET))
         y2 = int(round(self._high_px + PIXEL_OFFSET))
-        background_pixels = np.r_[np.arange(self._low_bkg, y1 + 1),
-                                  np.arange(y2, self._high_bkg + 1)]
+        background_pixels = np.r_[
+            np.arange(self._low_bkg, y1 + 1), np.arange(y2, self._high_bkg + 1)
+        ]
 
-        return (np.ones((n_images,)) * self._true_centre,
-                np.ones((n_images,)) * self._true_sd,
-                np.ones((n_images,)) * self._low_px,
-                np.ones((n_images,)) * self._high_px,
-                [background_pixels for i in range(n_images)])
+        return (
+            np.ones((n_images,)) * self._true_centre,
+            np.ones((n_images,)) * self._true_sd,
+            np.ones((n_images,)) * self._low_px,
+            np.ones((n_images,)) * self._high_px,
+            [background_pixels for i in range(n_images)],
+        )
 
     def recalculate_graphs(self):
         """
         After the ROI for the beam find has been changed redraw the detector
         cross section and recalculate the beam centre and widths.
         """
-        x, xs, xs_err = get_cross_section(self.detector, self.detector_err,
-                                          self._pixels_to_include,
-                                          self._integrate_position,
-                                          self._integrate_width)
+        x, xs, xs_err = get_cross_section(
+            self.detector,
+            self.detector_err,
+            self._pixels_to_include,
+            self._integrate_position,
+            self._integrate_width,
+        )
 
         # peak finder returns (centroid, gaussian coefs)
         beam_centre, beam_sd = peak_finder(xs, x=x)[1]
@@ -160,19 +174,26 @@ class ManualBeamFinder(QtWidgets.QDialog):
             self._low_bkg = np.min(bp[0])
             self._high_bkg = np.max(bp[0])
 
-        self.detector_image.display_image(self.detector, beam_centre,
-                                          self._low_px,
-                                          self._high_px,
-                                          self._low_bkg,
-                                          self._high_bkg,
-                                          self._pixels_to_include,
-                                          self._integrate_width,
-                                          self._integrate_position)
-        self.cross_section.display_cross_section(x, xs, beam_centre,
-                                                 self._low_px,
-                                                 self._high_px,
-                                                 self._low_bkg,
-                                                 self._high_bkg)
+        self.detector_image.display_image(
+            self.detector,
+            beam_centre,
+            self._low_px,
+            self._high_px,
+            self._low_bkg,
+            self._high_bkg,
+            self._pixels_to_include,
+            self._integrate_width,
+            self._integrate_position,
+        )
+        self.cross_section.display_cross_section(
+            x,
+            xs,
+            beam_centre,
+            self._low_px,
+            self._high_px,
+            self._low_bkg,
+            self._high_bkg,
+        )
 
         self.true_centre.setValue(self._true_centre)
         self.true_fwhm.setValue(self._true_sd * 2.3548)
@@ -229,25 +250,27 @@ class ManualBeamFinder(QtWidgets.QDialog):
         dragged_attr, dragged_line = self.cross_section._press[0]
         if (lopx >= hipx) or (low_bkg >= high_bkg):
             # set it back to what it was
-            setattr(self.cross_section,
-                    dragged_attr,
-                    getattr(self, dragged_attr))
+            setattr(
+                self.cross_section, dragged_attr, getattr(self, dragged_attr)
+            )
             # and redraw the line
             dragged_line.set_xdata(getattr(self, dragged_attr))
             self.cross_section.draw()
             return
         else:
             # drag was legal, update the attribute in here
-            setattr(self,
-                    dragged_attr,
-                    getattr(self.cross_section, dragged_attr))
+            setattr(
+                self, dragged_attr, getattr(self.cross_section, dragged_attr)
+            )
 
         # recalculate beam_centre, beam_sd based off cross section
-        x, xs, xs_err = get_cross_section(self.detector,
-                                          self.detector_err,
-                                          self._pixels_to_include,
-                                          self._integrate_position,
-                                          self._integrate_width)
+        x, xs, xs_err = get_cross_section(
+            self.detector,
+            self.detector_err,
+            self._pixels_to_include,
+            self._integrate_position,
+            self._integrate_width,
+        )
         # trim to foreground region
         in_foreground = np.logical_and(x >= lopx, x <= hipx)
         x = x[in_foreground]
@@ -323,8 +346,13 @@ class ManualBeamFinder(QtWidgets.QDialog):
         self.recalculate_graphs()
 
 
-def get_cross_section(detector, detector_err, pixels_to_include,
-                      integrate_position, integrate_width):
+def get_cross_section(
+    detector,
+    detector_err,
+    pixels_to_include,
+    integrate_position,
+    integrate_width,
+):
     """
     Obtains the detector cross section
 
@@ -348,19 +376,21 @@ def get_cross_section(detector, detector_err, pixels_to_include,
     det_err = np.squeeze(detector_err)
 
     pixels = det.shape[-1]
-    low_bracket = max(0,
-                      int(np.floor(integrate_position - integrate_width / 2)))
-    high_bracket = min(int(np.ceil(integrate_position + integrate_width / 2)),
-                       pixels - 1)
+    low_bracket = max(
+        0, int(np.floor(integrate_position - integrate_width / 2))
+    )
+    high_bracket = min(
+        int(np.ceil(integrate_position + integrate_width / 2)), pixels - 1
+    )
 
     x = np.arange(det.shape[-1], dtype=float)
-    det = det[-pixels_to_include:, low_bracket:high_bracket + 1]
-    x = x[low_bracket: high_bracket + 1]
-    det_err = det_err[:-pixels_to_include, low_bracket:high_bracket + 1]
+    det = det[-pixels_to_include:, low_bracket : high_bracket + 1]
+    x = x[low_bracket : high_bracket + 1]
+    det_err = det_err[:-pixels_to_include, low_bracket : high_bracket + 1]
 
     # sum over time bins
     xs = np.sum(det, axis=0)
-    xs_err = np.sqrt(np.sum(det_err**2, axis=0))
+    xs_err = np.sqrt(np.sum(det_err ** 2, axis=0))
 
     return x, xs, xs_err
 
@@ -376,53 +406,65 @@ class DetectorImage(FigureCanvas):
         self.axes = self.figure.add_axes([0.08, 0.06, 0.9, 0.93])
         self.axes.margins(0.0005)
 
-        FigureCanvas.setSizePolicy(self,
-                                   QtWidgets.QSizePolicy.Expanding,
-                                   QtWidgets.QSizePolicy.Expanding)
+        FigureCanvas.setSizePolicy(
+            self,
+            QtWidgets.QSizePolicy.Expanding,
+            QtWidgets.QSizePolicy.Expanding,
+        )
         FigureCanvas.updateGeometry(self)
         # self.mpl_connect('motion_notify_event', self.mouse_move)
 
-    def display_image(self, detector, beam_centre, low_px, high_px, low_bkg,
-                      high_bkg, pixels_to_include, integrate_width,
-                      integrate_position):
+    def display_image(
+        self,
+        detector,
+        beam_centre,
+        low_px,
+        high_px,
+        low_bkg,
+        high_bkg,
+        pixels_to_include,
+        integrate_width,
+        integrate_position,
+    ):
         self.axes.clear()
 
         # want the first colour to be white
         disp = np.copy(detector)
         disp[disp == 0.0] = np.nan
 
-        self.axes.imshow(disp.T,
-                         aspect='auto',
-                         origin='lower',
-                         vmin=-1 / np.max(detector))
+        self.axes.imshow(
+            disp.T, aspect="auto", origin="lower", vmin=-1 / np.max(detector)
+        )
         # display a rectangle that shows where we're looking for beam
         patch_x = np.size(disp, 0) - pixels_to_include
         patch_y = max(0, integrate_position - integrate_width / 2)
         width = min(integrate_width, np.size(disp, 1) - patch_y)
-        rect = patches.Rectangle((patch_x, patch_y),
-                                 pixels_to_include,
-                                 width,
-                                 fill=False,
-                                 color='yellow')
+        rect = patches.Rectangle(
+            (patch_x, patch_y),
+            pixels_to_include,
+            width,
+            fill=False,
+            color="yellow",
+        )
         self.axes.add_patch(rect)
 
         # also display foreground/background regions
         # background regions
-        self.l_lbkg = self.axes.axhline(color='black')  # the vert line
+        self.l_lbkg = self.axes.axhline(color="black")  # the vert line
         self.l_lbkg.set_ydata(low_bkg - 0.5)
 
-        self.l_hbkg = self.axes.axhline(color='black')  # the vert line
+        self.l_hbkg = self.axes.axhline(color="black")  # the vert line
         self.l_hbkg.set_ydata(high_bkg + 0.5)
 
         # beam centre
-        self.l_bc = self.axes.axhline(color='red')  # the vert line
+        self.l_bc = self.axes.axhline(color="red")  # the vert line
         self.l_bc.set_ydata(beam_centre)
 
         # foreground regions
-        self.l_lfore = self.axes.axhline(color='blue')  # the vert line
+        self.l_lfore = self.axes.axhline(color="blue")  # the vert line
         self.l_lfore.set_ydata(low_px - 0.5)
 
-        self.l_hfore = self.axes.axhline(color='blue')  # the vert line
+        self.l_hfore = self.axes.axhline(color="blue")  # the vert line
         self.l_hfore.set_ydata(high_px + 0.5)
 
         self.draw()
@@ -465,14 +507,17 @@ class Cross_Section(FigureCanvas):
         self.axes = self.figure.add_axes([0.1, 0.07, 0.95, 0.94])
         self.axes.margins(0.0005)
 
-        FigureCanvas.setSizePolicy(self,
-                                   QtWidgets.QSizePolicy.Expanding,
-                                   QtWidgets.QSizePolicy.Expanding)
+        FigureCanvas.setSizePolicy(
+            self,
+            QtWidgets.QSizePolicy.Expanding,
+            QtWidgets.QSizePolicy.Expanding,
+        )
         FigureCanvas.updateGeometry(self)
         self.connect()
 
-    def display_cross_section(self, x, xs, beam_centre, low_px,
-                              high_px, low_bkg, high_bkg):
+    def display_cross_section(
+        self, x, xs, beam_centre, low_px, high_px, low_bkg, high_bkg
+    ):
 
         self._beam_centre = beam_centre
         self._low_px = low_px
@@ -485,43 +530,46 @@ class Cross_Section(FigureCanvas):
         self.axes.set_xlim(np.min(x), np.max(x))
 
         # background regions
-        self.l_lbkg = self.axes.axvline(color='black')  # the vert line
+        self.l_lbkg = self.axes.axvline(color="black")  # the vert line
         self.l_lbkg.set_xdata(low_bkg)
 
-        self.l_hbkg = self.axes.axvline(color='black')  # the vert line
+        self.l_hbkg = self.axes.axvline(color="black")  # the vert line
         self.l_hbkg.set_xdata(high_bkg)
 
         # beam centre
-        self.l_bc = self.axes.axvline(color='red')  # the vert line
+        self.l_bc = self.axes.axvline(color="red")  # the vert line
         self.l_bc.set_xdata(beam_centre)
 
         # foreground regions
-        self.l_lfore = self.axes.axvline(color='blue')  # the vert line
+        self.l_lfore = self.axes.axvline(color="blue")  # the vert line
         self.l_lfore.set_xdata(low_px)
 
-        self.l_hfore = self.axes.axvline(color='blue')  # the vert line
+        self.l_hfore = self.axes.axvline(color="blue")  # the vert line
         self.l_hfore.set_xdata(high_px)
 
         # text location in axes coords
-        self.txt = self.axes.text(0.6, 0.9, '', transform=self.axes.transAxes)
+        self.txt = self.axes.text(0.6, 0.9, "", transform=self.axes.transAxes)
 
         # these are the lines that are draggable
-        self.line_attrs = {'_low_bkg': self.l_lbkg,
-                           '_high_bkg': self.l_hbkg,
-                           '_low_px': self.l_lfore,
-                           '_high_px': self.l_hfore}
+        self.line_attrs = {
+            "_low_bkg": self.l_lbkg,
+            "_high_bkg": self.l_hbkg,
+            "_low_px": self.l_lfore,
+            "_high_px": self.l_hfore,
+        }
         self.draw()
 
     def connect(self):
         """
         connect to all the events we need
         """
-        self.cidpress = self.mpl_connect('button_press_event',
-                                         self.on_press)
-        self.cidrelease = self.mpl_connect('button_release_event',
-                                           self.on_release)
-        self.cidmotion = self.mpl_connect('motion_notify_event',
-                                          self.on_motion)
+        self.cidpress = self.mpl_connect("button_press_event", self.on_press)
+        self.cidrelease = self.mpl_connect(
+            "button_release_event", self.on_release
+        )
+        self.cidmotion = self.mpl_connect(
+            "motion_notify_event", self.on_motion
+        )
 
     def on_press(self, event):
         if not event.inaxes:
@@ -549,7 +597,7 @@ class Cross_Section(FigureCanvas):
             return
 
         x, y = event.xdata, event.ydata
-        self.txt.set_text('x=%1.2f, y=%1.2f' % (x, y))
+        self.txt.set_text("x=%1.2f, y=%1.2f" % (x, y))
 
         if self._dragging:
             found, loc, xpress, ypress = self._press
@@ -573,12 +621,14 @@ class NavToolBar(NavigationToolbar):
     """
     Toolbar for the detector image
     """
+
     toolitems = [
-        ('Home', 'Reset original view', 'home', 'home'),
-        ('Back', 'Back to previous view', 'back', 'back'),
-        ('Forward', 'Forward to next view', 'forward', 'forward'),
-        ('Pan', 'Pan axes with left mouse, zoom with right', 'move', 'pan'),
-        ('Zoom', 'Zoom to rectangle', 'zoom_to_rect', 'zoom')]
+        ("Home", "Reset original view", "home", "home"),
+        ("Back", "Back to previous view", "back", "back"),
+        ("Forward", "Forward to next view", "forward", "forward"),
+        ("Pan", "Pan axes with left mouse, zoom with right", "move", "pan"),
+        ("Zoom", "Zoom to rectangle", "zoom_to_rect", "zoom"),
+    ]
 
     def __init__(self, canvas, parent, coordinates=True):
         NavigationToolbar.__init__(self, canvas, parent, coordinates)

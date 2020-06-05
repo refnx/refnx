@@ -51,7 +51,7 @@ the python implementation!
 """
 
 
-class _Abeles_pyopencl():
+class _Abeles_pyopencl:
     def __init__(self):
         self.ctx = None
         self.prg = None
@@ -59,14 +59,14 @@ class _Abeles_pyopencl():
     def __getstate__(self):
         # pyopencl Contexts and Programs can't be pickled.
         d = self.__dict__
-        d['ctx'] = None
-        d['prg'] = None
+        d["ctx"] = None
+        d["prg"] = None
         return d
 
     def __setstate__(self, state):
         self.__dict__.update(state)
 
-    def __call__(self, q, w, scale=1., bkg=0., threads=0):
+    def __call__(self, q, w, scale=1.0, bkg=0.0, threads=0):
         """
         Abeles matrix formalism for calculating reflectivity from a
         stratified
@@ -107,10 +107,11 @@ class _Abeles_pyopencl():
             Calculated reflectivity values for each q value.
         """
         import pyopencl as cl
+
         if self.ctx is None or self.prg is None:
             self.ctx = cl.create_some_context(interactive=False)
             pth = os.path.dirname(os.path.abspath(__file__))
-            with open(os.path.join(pth, 'abeles_pyopencl.cl'), 'r') as f:
+            with open(os.path.join(pth, "abeles_pyopencl.cl"), "r") as f:
                 src = f.read()
             self.prg = cl.Program(self.ctx, src).build()
 
@@ -121,8 +122,8 @@ class _Abeles_pyopencl():
         coefs = np.empty((nlayers * 4 + 8))
         coefs[0] = nlayers
         coefs[1] = scale
-        coefs[2:4] = w[0, 1: 3]
-        coefs[4: 6] = w[-1, 1: 3]
+        coefs[2:4] = w[0, 1:3]
+        coefs[4:6] = w[-1, 1:3]
         coefs[6] = bkg
         coefs[7] = w[-1, 3]
         if nlayers:
@@ -133,10 +134,12 @@ class _Abeles_pyopencl():
 
         mf = cl.mem_flags
         with cl.CommandQueue(self.ctx) as queue:
-            q_g = cl.Buffer(self.ctx, mf.READ_ONLY | mf.COPY_HOST_PTR,
-                            hostbuf=flatq)
-            coefs_g = cl.Buffer(self.ctx, mf.READ_ONLY | mf.COPY_HOST_PTR,
-                                hostbuf=coefs)
+            q_g = cl.Buffer(
+                self.ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=flatq
+            )
+            coefs_g = cl.Buffer(
+                self.ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=coefs
+            )
             ref_g = cl.Buffer(self.ctx, mf.WRITE_ONLY, flatq.nbytes)
 
             self.prg.abeles(queue, flatq.shape, None, q_g, coefs_g, ref_g)
@@ -149,7 +152,7 @@ class _Abeles_pyopencl():
 abeles_pyopencl = _Abeles_pyopencl()
 
 
-def abeles(q, layers, scale=1., bkg=0, threads=0):
+def abeles(q, layers, scale=1.0, bkg=0, threads=0):
     """
     Abeles matrix formalism for calculating reflectivity from a stratified
     medium.
@@ -197,24 +200,25 @@ def abeles(q, layers, scale=1., bkg=0, threads=0):
 
     # addition of TINY is to ensure the correct branch cut
     # in the complex sqrt calculation of kn.
-    sld[1:] += ((layers[1:, 1] - layers[0, 1]) +
-                1j * (np.abs(layers[1:, 2]) + TINY)) * 1.e-6
+    sld[1:] += (
+        (layers[1:, 1] - layers[0, 1]) + 1j * (np.abs(layers[1:, 2]) + TINY)
+    ) * 1.0e-6
 
     # kn is a 2D array. Rows are Q points, columns are kn in a layer.
     # calculate wavevector in each layer, for each Q point.
-    kn[:] = np.sqrt(flatq[:, np.newaxis] ** 2. / 4. - 4. * np.pi * sld)
+    kn[:] = np.sqrt(flatq[:, np.newaxis] ** 2.0 / 4.0 - 4.0 * np.pi * sld)
 
     # reflectances for each layer
     # rj.shape = (npnts, nlayers + 1)
     rj = kn[:, :-1] - kn[:, 1:]
     rj /= kn[:, :-1] + kn[:, 1:]
-    rj *= np.exp(-2. * kn[:, :-1] * kn[:, 1:] * layers[1:, 3] ** 2)
+    rj *= np.exp(-2.0 * kn[:, :-1] * kn[:, 1:] * layers[1:, 3] ** 2)
 
     # characteristic matrices for each layer
     # miNN.shape = (npnts, nlayers + 1)
     if nlayers:
         mi00[:, 1:] = np.exp(kn[:, 1:-1] * 1j * np.fabs(layers[1:-1, 0]))
-    mi11 = 1. / mi00
+    mi11 = 1.0 / mi00
     mi10 = rj * mi00
     mi01 = rj * mi11
 
@@ -238,7 +242,7 @@ def abeles(q, layers, scale=1., bkg=0, threads=0):
         mrtot01 = p0
         mrtot11 = p1
 
-    r = (mrtot01 / mrtot00)
+    r = mrtot01 / mrtot00
     reflectivity = r * np.conj(r)
     reflectivity *= scale
     reflectivity += bkg
@@ -294,7 +298,7 @@ def _contract_by_area(slabs, dA=0.5):
     while i < n:
         # Get ready for the next layer
         # Accumulation of the first row happens in the inner loop
-        dz = rhoarea = irhoarea = vfsolvarea = 0.
+        dz = rhoarea = irhoarea = vfsolvarea = 0.0
         rholo = rhohi = rho[i]
         irholo = irhohi = irho[i]
 
@@ -308,7 +312,7 @@ def _contract_by_area(slabs, dA=0.5):
 
             i += 1
             # If no more slices or sigma != 0, break immediately
-            if i == n or sigma[i - 1] != 0.:
+            if i == n or sigma[i - 1] != 0.0:
                 break
 
             # If next slice won't fit, break
@@ -443,8 +447,8 @@ def _rmatrix(theta):
     """
     r = np.zeros((4, 4), np.complex128)
 
-    cos_term = np.cos(theta / 2.) * complex(1, 0)
-    sin_term = np.sin(theta / 2.) * complex(1, 0)
+    cos_term = np.cos(theta / 2.0) * complex(1, 0)
+    sin_term = np.sin(theta / 2.0) * complex(1, 0)
 
     r[0, 0] = cos_term
     r[1, 1] = cos_term
@@ -475,7 +479,7 @@ def _magsqr(z):
     magsqr - real or np.ndarray
         Magnitude squared of the complex argument
     """
-    return np.abs(z)**2
+    return np.abs(z) ** 2
 
 
 def pnr(q, layers):
@@ -536,8 +540,8 @@ def pnr(q, layers):
     sldd *= 1e-6
 
     # wavevector in each layer
-    kn_u = np.sqrt(0.25 * xx[:, np.newaxis]**2 - 4 * np.pi * sldu)
-    kn_d = np.sqrt(0.25 * xx[:, np.newaxis]**2 - 4 * np.pi * sldd)
+    kn_u = np.sqrt(0.25 * xx[:, np.newaxis] ** 2 - 4 * np.pi * sldu)
+    kn_d = np.sqrt(0.25 * xx[:, np.newaxis] ** 2 - 4 * np.pi * sldd)
 
     mm = np.zeros((xx.size, 4, 4), np.complex128)
     mm[:] = np.identity(4, np.complex128)
@@ -560,7 +564,7 @@ def pnr(q, layers):
     M = d_inv @ r @ mm @ d
 
     # equation 16 in Blundell and Bland
-    den = (M[:, 0, 0] * M[:, 2, 2] - M[:, 0, 2] * M[:, 2, 0])
+    den = M[:, 0, 0] * M[:, 2, 2] - M[:, 0, 2] * M[:, 2, 0]
     # uu
     pp = _magsqr((M[:, 1, 0] * M[:, 2, 2] - M[:, 1, 2] * M[:, 2, 0]) / den)
 
@@ -576,18 +580,18 @@ def pnr(q, layers):
     return (pp, mm, pm, mp)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     a = np.zeros(12)
-    a[0] = 1.
-    a[1] = 1.
+    a[0] = 1.0
+    a[1] = 1.0
     a[4] = 2.07
     a[7] = 3
     a[8] = 100
     a[9] = 3.47
     a[11] = 2
 
-    b = np.arange(1000.)
-    b /= 2000.
+    b = np.arange(1000.0)
+    b /= 2000.0
     b += 0.001
 
     def loop():

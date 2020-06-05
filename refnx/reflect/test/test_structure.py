@@ -1,34 +1,50 @@
 import pickle
 
 import numpy as np
-from numpy.testing import (assert_almost_equal, assert_equal, assert_,
-                           assert_allclose)
+from numpy.testing import (
+    assert_almost_equal,
+    assert_equal,
+    assert_,
+    assert_allclose,
+)
 from scipy.stats import cauchy
 from refnx._lib import flatten
-from refnx.reflect import (SLD, Structure, Spline, Slab, Stack, Erf,
-                           Linear, Exponential, Interface, MaterialSLD,
-                           MixedSlab)
+from refnx.reflect import (
+    SLD,
+    Structure,
+    Spline,
+    Slab,
+    Stack,
+    Erf,
+    Linear,
+    Exponential,
+    Interface,
+    MaterialSLD,
+    MixedSlab,
+)
 from refnx.reflect.structure import _profile_slicer
 from refnx.analysis import Parameter, Interval, Parameters
 
 
 class TestStructure(object):
-
     def setup_method(self):
-        self.air = SLD(0, name='air')
-        self.sio2 = SLD(3.47, name='sio2')
-        self.d2o = SLD(6.36, name='d2o')
-        self.h2o = SLD(-0.56, name='h2o')
+        self.air = SLD(0, name="air")
+        self.sio2 = SLD(3.47, name="sio2")
+        self.d2o = SLD(6.36, name="d2o")
+        self.h2o = SLD(-0.56, name="h2o")
         self.s = self.air | self.sio2(100, 5) | self.d2o(0, 4)
 
     def test_structure_construction(self):
         # structures are constructed by or-ing slabs
         # test that the slab representation is correct
-        assert_equal(self.s.slabs(), np.array([[0, 0, 0, 0, 0],
-                                              [100, 3.47, 0, 5, 0],
-                                              [0, 6.36, 0, 4, 0]]))
+        assert_equal(
+            self.s.slabs(),
+            np.array(
+                [[0, 0, 0, 0, 0], [100, 3.47, 0, 5, 0], [0, 6.36, 0, 4, 0]]
+            ),
+        )
 
-        self.s[1] = SLD(3.47 + 1j, name='sio2')(100, 5)
+        self.s[1] = SLD(3.47 + 1j, name="sio2")(100, 5)
         self.s[1].vfsolv.value = 0.9
 
         oldpars = len(list(flatten(self.s.parameters)))
@@ -37,9 +53,12 @@ class TestStructure(object):
         self.s.solvent = SLD(5 + 1.2j)
         sld = 5 * 0.9 + 0.1 * 3.47
         sldi = 1 * 0.1 + 0.9 * 1.2
-        assert_almost_equal(self.s.slabs(), np.array([[0, 0, 0, 0, 0],
-                                                      [100, sld, sldi, 5, 0.9],
-                                                      [0, 6.36, 0, 4, 0]]))
+        assert_almost_equal(
+            self.s.slabs(),
+            np.array(
+                [[0, 0, 0, 0, 0], [100, sld, sldi, 5, 0.9], [0, 6.36, 0, 4, 0]]
+            ),
+        )
 
         # when the structure._solvent is not None, but an SLD object, then
         # it's number of parameters should increase by 2.
@@ -50,18 +69,24 @@ class TestStructure(object):
         self.s.solvent = None
         sld = 6.36 * 0.9 + 0.1 * 3.47
         sldi = 1 * 0.1
-        assert_almost_equal(self.s.slabs(), np.array([[0, 0, 0, 0, 0],
-                                                     [100, sld, sldi, 5, 0.9],
-                                                     [0, 6.36, 0, 4, 0]]))
+        assert_almost_equal(
+            self.s.slabs(),
+            np.array(
+                [[0, 0, 0, 0, 0], [100, sld, sldi, 5, 0.9], [0, 6.36, 0, 4, 0]]
+            ),
+        )
 
         # by default solvation is done by backing medium, except when structure
         # is reversed
         self.s.reverse_structure = True
         sld = 0 * 0.9 + 0.1 * 3.47
         sldi = 0 * 0.9 + 1 * 0.1
-        assert_almost_equal(self.s.slabs(), np.array([[0, 6.36, 0, 0, 0],
-                                                      [100, sld, sldi, 4, 0.9],
-                                                      [0, 0, 0, 5, 0]]))
+        assert_almost_equal(
+            self.s.slabs(),
+            np.array(
+                [[0, 6.36, 0, 0, 0], [100, sld, sldi, 4, 0.9], [0, 0, 0, 5, 0]]
+            ),
+        )
 
     def test_interface(self):
         # can we set the interface property correctly
@@ -78,6 +103,7 @@ class TestStructure(object):
         assert c.interfaces is None
 
         import pytest
+
         with pytest.raises(ValueError):
             c.interfaces = [1]
 
@@ -86,26 +112,33 @@ class TestStructure(object):
             c.interfaces = [Erf(), Erf()]
 
     def test_mixed_slab(self):
-        m = MixedSlab(10., [1, 2 + 0.1j, 3. + 1j], [0.1, 0.2, 0.3], 10.,
-                      vfsolv=0.1, interface=Linear(), name='pop')
+        m = MixedSlab(
+            10.0,
+            [1, 2 + 0.1j, 3.0 + 1j],
+            [0.1, 0.2, 0.3],
+            10.0,
+            vfsolv=0.1,
+            interface=Linear(),
+            name="pop",
+        )
         slabs = m.slabs()
-        assert_allclose(slabs[0, 0], 10.)
+        assert_allclose(slabs[0, 0], 10.0)
 
         assert_allclose(slabs[0, 1], 2.3333333333333333)
         assert_allclose(slabs[0, 2], 0.5333333333333333)
-        assert_allclose(slabs[0, 3], 10.)
+        assert_allclose(slabs[0, 3], 10.0)
         assert_allclose(slabs[0, 4], 0.1)
         assert_equal(float(m.vfsolv), 0.1)
-        assert m.name == 'pop'
+        assert m.name == "pop"
 
         # test the repr
         q = eval(repr(m))
         slabs = q.slabs()
-        assert_allclose(slabs[0, 0], 10.)
+        assert_allclose(slabs[0, 0], 10.0)
 
         assert_allclose(slabs[0, 1], 2.3333333333333333)
         assert_allclose(slabs[0, 2], 0.5333333333333333)
-        assert_allclose(slabs[0, 3], 10.)
+        assert_allclose(slabs[0, 3], 10.0)
         assert_allclose(slabs[0, 4], 0.1)
 
         assert_equal(float(q.vfsolv), 0.1)
@@ -132,8 +165,7 @@ class TestStructure(object):
         # How close the micro-slicing is to the Nevot-Croce is going to
         # depend on the exact system you look at, and what slice thickness
         # is used.
-        assert_allclose(micro_slab_reflectivity,
-                        reflectivity, rtol=0.01)
+        assert_allclose(micro_slab_reflectivity, reflectivity, rtol=0.01)
 
         # test out user defined roughness type
         class Cauchy(Interface):
@@ -162,7 +194,7 @@ class TestStructure(object):
         assert_(isinstance(unpkl, Structure))
         for param in unpkl.parameters.flattened():
             assert_(isinstance(param, Parameter))
-        assert hasattr(unpkl, '_solvent')
+        assert hasattr(unpkl, "_solvent")
 
     def test_sld_profile(self):
         # check that it runs
@@ -177,7 +209,7 @@ class TestStructure(object):
         self.s.reflectivity(q)
 
     def test_repr_sld(self):
-        p = SLD(5 + 1j, name='pop')
+        p = SLD(5 + 1j, name="pop")
         assert_equal(float(p.real), 5)
         assert_equal(float(p.imag), 1)
         print(repr(p))
@@ -186,7 +218,7 @@ class TestStructure(object):
         assert_equal(float(q.imag), 1)
 
     def test_repr_materialsld(self):
-        p = MaterialSLD('SiO2', density=2.2, name='silica')
+        p = MaterialSLD("SiO2", density=2.2, name="silica")
         sldc = complex(p)
         assert_allclose(sldc.real, 3.4752690258246504)
         assert_allclose(sldc.imag, 1.0508799522721932e-05)
@@ -197,24 +229,24 @@ class TestStructure(object):
         assert_allclose(sldc.imag, 1.0508799522721932e-05)
 
     def test_materialsld(self):
-        p = MaterialSLD('SiO2', density=2.2, name='silica')
+        p = MaterialSLD("SiO2", density=2.2, name="silica")
         sldc = complex(p)
         assert_allclose(sldc.real, 3.4752690258246504)
         assert_allclose(sldc.imag, 1.0508799522721932e-05)
-        assert p.probe == 'neutron'
+        assert p.probe == "neutron"
 
         # is X-ray SLD correct?
         p.wavelength = 1.54
-        p.probe = 'x-ray'
+        p.probe = "x-ray"
         sldc = complex(p)
         assert_allclose(sldc.real, 18.864796064009866)
         assert_allclose(sldc.imag, 0.2436013463223236)
 
         assert len(p.parameters) == 1
-        assert p.formula == 'SiO2'
+        assert p.formula == "SiO2"
 
         # the density value should change the SLD
-        p.probe = 'neutron'
+        p.probe = "neutron"
         p.density.value = 4.4
         sldc = complex(p)
         assert_allclose(sldc.real, 3.4752690258246504 * 2)
@@ -228,8 +260,8 @@ class TestStructure(object):
 
         # make a full structure and check that the reflectivity calc works
         air = SLD(0)
-        sio2 = MaterialSLD('SiO2', density=2.2)
-        si = MaterialSLD('Si', density=2.33)
+        sio2 = MaterialSLD("SiO2", density=2.2)
+        si = MaterialSLD("Si", density=2.33)
         s = air | sio2(10, 3) | si(0, 3)
         s.reflectivity(np.linspace(0.005, 0.3, 100))
 
@@ -238,7 +270,7 @@ class TestStructure(object):
 
     def test_repr_slab(self):
         p = SLD(5 + 1j)
-        t = p(10.5, 3.)
+        t = p(10.5, 3.0)
         t.vfsolv = 0.1
         t.interfaces = Linear()
         q = eval(repr(t))
@@ -249,13 +281,13 @@ class TestStructure(object):
         assert_equal(float(q.vfsolv), 0.1)
         assert isinstance(q.interfaces, Linear)
 
-        t.name = 'pop'
+        t.name = "pop"
         q = eval(repr(t))
         assert t.name == q.name
 
     def test_repr_structure(self):
         p = SLD(5 + 1j)
-        t = p(10.5, 3.)
+        t = p(10.5, 3.0)
         t.vfsolv = 0.1
         s = t | t
         q = eval(repr(s))
@@ -264,13 +296,13 @@ class TestStructure(object):
         assert_equal(float(q[1].sld.real), 5)
         assert_equal(float(q[1].sld.imag), 1)
 
-        s.name = 'pop'
+        s.name = "pop"
         q = eval(repr(s))
-        assert hasattr(q, '_solvent')
+        assert hasattr(q, "_solvent")
         assert s.name == q.name
 
     def test_sld(self):
-        p = SLD(5 + 1j, name='pop')
+        p = SLD(5 + 1j, name="pop")
         assert_equal(float(p.real), 5)
         assert_equal(float(p.imag), 1)
 
@@ -305,8 +337,7 @@ class TestStructure(object):
         d2o = SLD(6.36)
         d2o_layer = d2o(0, 3)
         polymer_layer = polymer(20, 3)
-        a = Spline(400, [4, 5.9],
-                   [0.2, .4], zgrad=True)
+        a = Spline(400, [4, 5.9], [0.2, 0.4], zgrad=True)
         film = si | sio2(10, 3) | polymer_layer | a | d2o_layer
         film.sld_profile()
 
@@ -372,16 +403,13 @@ class TestStructure(object):
         reflectivity = self.s.reflectivity(q)
 
         self.s.contract = 0.5
-        assert_allclose(self.s.reflectivity(q),
-                        reflectivity)
+        assert_allclose(self.s.reflectivity(q), reflectivity)
 
         z, sld = self.s.sld_profile(z=np.linspace(-150, 250, 1000))
         slice_structure = _profile_slicer(z, sld, slice_size=0.5)
         slice_structure.contract = 0.02
         slice_reflectivity = slice_structure.reflectivity(q)
-        assert_allclose(slice_reflectivity,
-                        reflectivity,
-                        rtol=5e-3)
+        assert_allclose(slice_reflectivity, reflectivity, rtol=5e-3)
 
         # test cythonized contract_by_area code
         try:
@@ -428,10 +456,10 @@ class TestStructure(object):
         assert isinstance(s, Structure)
         slabs = s.slabs()
         assert_equal(slabs[:, 0], [0, 10, 55, 110, 55, 110, 55, 110, 0])
-        assert_equal(slabs[:, 1],
-                     [2.07, 6.36, 3.47, 1.0, 3.47, 1.0, 3.47, 1.0, 6.36])
-        assert_equal(slabs[:, 3],
-                     [0, 3, 4, 3.5, 4, 3.5, 4, 3.5, 0])
+        assert_equal(
+            slabs[:, 1], [2.07, 6.36, 3.47, 1.0, 3.47, 1.0, 3.47, 1.0, 6.36]
+        )
+        assert_equal(slabs[:, 3], [0, 3, 4, 3.5, 4, 3.5, 4, 3.5, 0])
 
         # what are the interfaces of the Stack
         assert_equal(len(stk.interfaces), len(stk.slabs()))
@@ -444,17 +472,22 @@ class TestStructure(object):
         assert isinstance(s, Structure)
 
         assert_equal(s.slabs()[:, 0], [0, 10, 55, 110, 55, 110, 55, 110, 0])
-        assert_equal(s.slabs()[:, 1],
-                     [2.07, 6.36, 3.47, 1.0, 3.47, 1.0, 3.47, 1.0, 6.36])
+        assert_equal(
+            s.slabs()[:, 1],
+            [2.07, 6.36, 3.47, 1.0, 3.47, 1.0, 3.47, 1.0, 6.36],
+        )
 
         q = repr(s)
         r = eval(q)
         assert_equal(r.slabs()[:, 0], [0, 10, 55, 110, 55, 110, 55, 110, 0])
-        assert_equal(r.slabs()[:, 1],
-                     [2.07, 6.36, 3.47, 1.0, 3.47, 1.0, 3.47, 1.0, 6.36])
+        assert_equal(
+            r.slabs()[:, 1],
+            [2.07, 6.36, 3.47, 1.0, 3.47, 1.0, 3.47, 1.0, 6.36],
+        )
 
         s |= stk
         assert isinstance(s.components[-1], Stack)
         import pytest
+
         with pytest.raises(ValueError):
             s.slabs()

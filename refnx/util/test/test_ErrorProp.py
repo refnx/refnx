@@ -5,7 +5,6 @@ from numpy.testing import assert_equal, assert_array_almost_equal
 
 
 class TestErrorProp(object):
-
     def setup_method(self):
         pass
 

@@ -35,17 +35,46 @@ def asMagicNumber(x):
 # asMagicNumber = lambda x: x if isinstance(x, BaseParameter) else Constant(x)
 
 # mathematical operations that we might want to use in constraints
-ops = {'sin': np.sin, 'cos': np.cos, 'tan': np.tan, 'arcsin': np.arcsin,
-       'arccos': np.arccos, 'arctan': np.arctan, 'log': np.log,
-       'log10': np.log10, 'exp': np.exp, 'sqrt': np.sqrt, 'sum': np.sum}
+ops = {
+    "sin": np.sin,
+    "cos": np.cos,
+    "tan": np.tan,
+    "arcsin": np.arcsin,
+    "arccos": np.arccos,
+    "arctan": np.arctan,
+    "log": np.log,
+    "log10": np.log10,
+    "exp": np.exp,
+    "sqrt": np.sqrt,
+    "sum": np.sum,
+}
 math_ops = {k: MAKE_UNARY(v) for k, v in ops.items()}
 
-binary = [operator.add, operator.sub, operator.mul, operator.truediv,
-          operator.floordiv, np.power, operator.pow,
-          operator.mod]
+binary = [
+    operator.add,
+    operator.sub,
+    operator.mul,
+    operator.truediv,
+    operator.floordiv,
+    np.power,
+    operator.pow,
+    operator.mod,
+]
 
-unary = [operator.neg, operator.abs, np.sin, np.tan, np.cos, np.arcsin,
-         np.arctan, np.arccos, np.log10, np.log, np.sqrt, np.exp]
+unary = [
+    operator.neg,
+    operator.abs,
+    np.sin,
+    np.tan,
+    np.cos,
+    np.arcsin,
+    np.arctan,
+    np.arccos,
+    np.log10,
+    np.log,
+    np.sqrt,
+    np.exp,
+]
 
 
 class Parameters(UserList):
@@ -59,6 +88,7 @@ class Parameters(UserList):
     name : str
         Name of this :class:`Parameters` instance
     """
+
     def __init__(self, data=(), name=None):
         super(Parameters, self).__init__()
         self.name = name
@@ -88,18 +118,19 @@ class Parameters(UserList):
             self.data[i] = v
 
     def __repr__(self):
-        return ("Parameters(data={data!r},"
-                " name={name!r})".format(**self.__dict__))
+        return "Parameters(data={data!r}," " name={name!r})".format(
+            **self.__dict__
+        )
 
     def __str__(self):
         s = list()
-        s.append("{:_>80}".format(''))
+        s.append("{:_>80}".format(""))
         s.append("Parameters: {0: ^15}".format(repr(self.name)))
 
         for el in self._pprint():
             s.append(el)
 
-        return '\n'.join(list(flatten(s)))
+        return "\n".join(list(flatten(s)))
 
     def _pprint(self):
         for el in self.data:
@@ -121,8 +152,10 @@ class Parameters(UserList):
         """
         # self |= other
         if not (is_parameter(other) or is_parameters(other)):
-            raise ValueError("Can only concatenate a Parameter with another"
-                             " Parameter or Parameters instance")
+            raise ValueError(
+                "Can only concatenate a Parameter with another"
+                " Parameter or Parameters instance"
+            )
         self.append(other)
         return self
 
@@ -133,8 +166,10 @@ class Parameters(UserList):
         """
         # c = self | other
         if not (is_parameter(other) or is_parameters(other)):
-            raise ValueError("Can only concatenate a Parameter with another"
-                             " Parameter or Parameters instance")
+            raise ValueError(
+                "Can only concatenate a Parameter with another"
+                " Parameter or Parameters instance"
+            )
 
         self.append(other)
         return self
@@ -149,15 +184,19 @@ class Parameters(UserList):
             Log probability for all the parameters
         """
         # logp for all the parameters
-        return np.sum([param.logp() for param in f_unique(flatten(self.data))
-                       if param.vary])
+        return np.sum(
+            [
+                param.logp()
+                for param in f_unique(flatten(self.data))
+                if param.vary
+            ]
+        )
 
     def __array__(self):
         """
         Convert Parameters to an array containing their values.
         """
-        return np.array([float(p) for p
-                         in flatten(self.data)])
+        return np.array([float(p) for p in flatten(self.data)])
 
     @property
     def pvals(self):
@@ -169,23 +208,29 @@ class Parameters(UserList):
 
     @pvals.setter
     def pvals(self, pvals):
-        varying = [param for param in f_unique(flatten(self.data))
-                   if param.vary]
+        varying = [
+            param for param in f_unique(flatten(self.data)) if param.vary
+        ]
         if np.size(pvals) == len(varying):
-            [setattr(param, 'value', pvals[i]) for i, param
-             in enumerate(varying)]
+            [
+                setattr(param, "value", pvals[i])
+                for i, param in enumerate(varying)
+            ]
             return
 
         flattened_parameters = list(flatten(self.data))
 
         if np.size(pvals) == len(flattened_parameters):
-            [setattr(param, 'value', pvals[i]) for i, param
-             in enumerate(flattened_parameters)]
+            [
+                setattr(param, "value", pvals[i])
+                for i, param in enumerate(flattened_parameters)
+            ]
             return
         else:
-            raise ValueError("You supplied the wrong number of values %d when "
-                             "setting this Parameters.pvals attribute"
-                             % len(pvals))
+            raise ValueError(
+                "You supplied the wrong number of values %d when "
+                "setting this Parameters.pvals attribute" % len(pvals)
+            )
 
     @property
     def parameters(self):
@@ -245,8 +290,11 @@ class Parameters(UserList):
             A list of unique :class:`Parameter` contained in this object that
             have constraints.
         """
-        return [param for param in f_unique(flatten(self.data))
-                if param.constraint is not None]
+        return [
+            param
+            for param in f_unique(flatten(self.data))
+            if param.constraint is not None
+        ]
 
     def varying_parameters(self):
         """
@@ -292,21 +340,26 @@ class Parameters(UserList):
         # it's still possible to have chains, even if there are no varying
         # parameters, if there are parameters that have constraints
         # generate for all params that have chains.
-        chain_pars = [i for i, p in enumerate(self.flattened()) if
-                      p.chain is not None]
+        chain_pars = [
+            i for i, p in enumerate(self.flattened()) if p.chain is not None
+        ]
 
-        chains = np.array([np.ravel(param.chain[..., nburn::nthin]) for param
-                           in self.flattened()
-                           if param.chain is not None])
+        chains = np.array(
+            [
+                np.ravel(param.chain[..., nburn::nthin])
+                for param in self.flattened()
+                if param.chain is not None
+            ]
+        )
 
         if len(chains) == 0 or np.size(chains, 1) == 0:
             raise ValueError("There were no chains to sample from")
 
         samples = np.arange(np.size(chains, 1))
 
-        choices = np.random.choice(samples,
-                                   size=(min(ngen, samples.size),),
-                                   replace=False)
+        choices = np.random.choice(
+            samples, size=(min(ngen, samples.size),), replace=False
+        )
 
         template_array = np.array(self.flattened())
 
@@ -370,8 +423,10 @@ class BaseParameter(object):
     def __or__(self, other):
         # concatenate parameter with parameter or parameters
         if not (is_parameter(other) or is_parameters(other)):
-            raise ValueError("Can only concatenate a Parameter with another"
-                             " Parameter or Parameters instance")
+            raise ValueError(
+                "Can only concatenate a Parameter with another"
+                " Parameter or Parameters instance"
+            )
 
         p = Parameters()
         p.append(self)
@@ -383,8 +438,9 @@ class BaseParameter(object):
         return self._vary
 
     def logp(self):
-        raise NotImplementedError("Subclass of BaseParameter should override"
-                                  " this method")
+        raise NotImplementedError(
+            "Subclass of BaseParameter should override" " this method"
+        )
 
     def __float__(self):
         return float(self.value)
@@ -436,27 +492,31 @@ class BaseParameter(object):
 
     def __str__(self):
         """Returns printable representation of a Parameter object."""
-        s = ("<Parameter:{name:^15s}, value={value:g}{fixed: ^10}, {bounds}"
-             "{constraint}>")
+        s = (
+            "<Parameter:{name:^15s}, value={value:g}{fixed: ^10}, {bounds}"
+            "{constraint}>"
+        )
 
-        d = {'name': repr(self.name),
-             'value': self.value,
-             'fixed': '',
-             'constraint': ''}
+        d = {
+            "name": repr(self.name),
+            "value": self.value,
+            "fixed": "",
+            "constraint": "",
+        }
 
         if not self.vary and self.constraint is None:
-            d['fixed'] = '(fixed)'
+            d["fixed"] = "(fixed)"
         elif self.stderr is not None:
-            d['fixed'] = " +/- {0:0.3g}".format(self.stderr)
+            d["fixed"] = " +/- {0:0.3g}".format(self.stderr)
 
-        d['bounds'] = "bounds={0}".format(str(self.bounds))
+        d["bounds"] = "bounds={0}".format(str(self.bounds))
         if self.constraint is not None:
-            d['constraint'] = ', constraint={}'.format(self.constraint)
+            d["constraint"] = ", constraint={}".format(self.constraint)
         return s.format(**d)
 
 
 class Constant(BaseParameter):
-    def __init__(self, value=0., name=None):
+    def __init__(self, value=0.0, name=None):
         super(Constant, self).__init__()
         self.name = name
         self.value = value
@@ -469,8 +529,9 @@ class Constant(BaseParameter):
         return self._value
 
 
-def possibly_create_parameter(value, name='', bounds=None, vary=False,
-                              constraint=None):
+def possibly_create_parameter(
+    value, name="", bounds=None, vary=False, constraint=None
+):
     """
     If supplied with a Parameter return it. If supplied with float, wrap it in
     a Parameter instance.
@@ -498,8 +559,9 @@ def possibly_create_parameter(value, name='', bounds=None, vary=False,
     if is_parameter(value):
         return value
     else:
-        return Parameter(value, name=name, bounds=bounds, vary=vary,
-                         constraint=constraint)
+        return Parameter(
+            value, name=name, bounds=bounds, vary=vary, constraint=constraint
+        )
 
 
 class Parameter(BaseParameter):
@@ -522,8 +584,9 @@ class Parameter(BaseParameter):
         Python expression used to constrain the value during the fit.
     """
 
-    def __init__(self, value=0., name=None, bounds=None, vary=False,
-                 constraint=None):
+    def __init__(
+        self, value=0.0, name=None, bounds=None, vary=False, constraint=None
+    ):
         """
         Class for specifying a variable.
 
@@ -561,13 +624,20 @@ class Parameter(BaseParameter):
     def __repr__(self):
         # repr does not include stderr because that can't be used to
         # create a Parameter
-        d = {'kls': self.__class__.__name__, 'value': float(self.value),
-             'name': self.name, 'vary': self.vary, 'bounds': self._bounds,
-             'constraint': self._constraint}
-        return ("{kls}(value={value},"
-                " name={name!r}, vary={vary!r},"
-                " bounds={bounds!r},"
-                " constraint={constraint!r})".format(**d))
+        d = {
+            "kls": self.__class__.__name__,
+            "value": float(self.value),
+            "name": self.name,
+            "vary": self.vary,
+            "bounds": self._bounds,
+            "constraint": self._constraint,
+        }
+        return (
+            "{kls}(value={value},"
+            " name={name!r}, vary={vary!r},"
+            " bounds={bounds!r},"
+            " constraint={constraint!r})".format(**d)
+        )
 
     def logp(self, pval=None):
         """
@@ -586,7 +656,7 @@ class Parameter(BaseParameter):
         if self.bounds is not None:
             return self.bounds.logp(val)
         else:
-            return 0.
+            return 0.0
 
     @property
     def value(self):
@@ -625,7 +695,7 @@ class Parameter(BaseParameter):
             self._bounds = bounds
         elif bounds is None:
             self._bounds = Interval()
-        elif hasattr(bounds, '__len__') and len(bounds) == 2:
+        elif hasattr(bounds, "__len__") and len(bounds) == 2:
             self.range(*bounds)
         else:
             rv = PDF(bounds)
@@ -771,12 +841,15 @@ def _constraint_tree_helper(expr):
     if isinstance(expr, Constant):
         return expr
     if isinstance(expr, _BinaryOp):
-        t.append([_constraint_tree_helper(expr.op1),
-                  _constraint_tree_helper(expr.op2),
-                  expr.opn])
+        t.append(
+            [
+                _constraint_tree_helper(expr.op1),
+                _constraint_tree_helper(expr.op2),
+                expr.opn,
+            ]
+        )
     if isinstance(expr, _UnaryOp):
-        t.append([_constraint_tree_helper(expr.op1),
-                  expr.opn])
+        t.append([_constraint_tree_helper(expr.op1), expr.opn])
     return t
 
 

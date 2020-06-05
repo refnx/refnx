@@ -9,13 +9,25 @@ import scipy.stats as stats
 # Before removing what appear to be unused imports think twice.
 # Some of the tests use eval, which requires the imports.
 import refnx.reflect._reflect as _reflect
-from refnx.analysis import (Transform, Objective,
-                            CurveFitter, Parameter, Interval,
-                            Parameters)
-from refnx.reflect import (SLD, ReflectModel, MixedReflectModel,
-                           reflectivity, Structure, Slab,
-                           FresnelTransform, choose_dq_type,
-                           use_reflect_backend)
+from refnx.analysis import (
+    Transform,
+    Objective,
+    CurveFitter,
+    Parameter,
+    Interval,
+    Parameters,
+)
+from refnx.reflect import (
+    SLD,
+    ReflectModel,
+    MixedReflectModel,
+    reflectivity,
+    Structure,
+    Slab,
+    FresnelTransform,
+    choose_dq_type,
+    use_reflect_backend,
+)
 import refnx.reflect.reflect_model as reflect_model
 from refnx.dataset import ReflectDataset
 from refnx._lib import MapWrapper
@@ -24,19 +36,18 @@ BACKENDS = reflect_model.available_backends()
 
 
 class TestReflect(object):
-
     def setup_method(self):
         self.pth = os.path.dirname(os.path.abspath(__file__))
 
-        sio2 = SLD(3.47, name='SiO2')
-        air = SLD(0, name='air')
-        si = SLD(2.07, name='Si')
-        d2o = SLD(6.36, name='D2O')
-        polymer = SLD(1, name='polymer')
+        sio2 = SLD(3.47, name="SiO2")
+        air = SLD(0, name="air")
+        si = SLD(2.07, name="Si")
+        d2o = SLD(6.36, name="D2O")
+        polymer = SLD(1, name="polymer")
 
         self.structure = air | sio2(100, 2) | si(0, 3)
 
-        theoretical = np.loadtxt(os.path.join(self.pth, 'theoretical.txt'))
+        theoretical = np.loadtxt(os.path.join(self.pth, "theoretical.txt"))
         qvals, rvals = np.hsplit(theoretical, 2)
         self.qvals = qvals.flatten()
         self.rvals = rvals.flatten()
@@ -63,10 +74,12 @@ class TestReflect(object):
         self.structure361[2].sld.real.vary = True
         self.structure361[2].sld.real.range(0.2, 1.5)
 
-        e361 = ReflectDataset(os.path.join(self.pth, 'e361r.txt'))
-        self.qvals361, self.rvals361, self.evals361 = (e361.x,
-                                                       e361.y,
-                                                       e361.y_err)
+        e361 = ReflectDataset(os.path.join(self.pth, "e361r.txt"))
+        self.qvals361, self.rvals361, self.evals361 = (
+            e361.x,
+            e361.y,
+            e361.y_err,
+        )
 
     def test_abeles(self):
         slabs = self.structure.slabs()[..., :4]
@@ -82,7 +95,7 @@ class TestReflect(object):
         tempq = self.qvals[0::5]
         slabs = self.structure.slabs()[..., :4]
 
-        assert tempq.flags['C_CONTIGUOUS'] is False
+        assert tempq.flags["C_CONTIGUOUS"] is False
 
         for backend in BACKENDS:
             with use_reflect_backend(backend) as abeles:
@@ -103,10 +116,12 @@ class TestReflect(object):
         assert "c" in BACKENDS
         import refnx.reflect._creflect as _creflect
         import refnx.reflect._reflect as _reflect
+
         assert _reflect.__file__ != _creflect.__file__
 
         if "cython" in BACKENDS:
             import refnx.reflect._cyreflect as _cyreflect
+
             assert _creflect.__file__ != _cyreflect.__file__
 
     def test_first_principles(self):
@@ -118,9 +133,8 @@ class TestReflect(object):
         def kn(q, sld_layer, sld_fronting):
             # wave vector in a given layer
             kvec = np.zeros_like(q, np.complex128)
-            sld = complex(sld_layer - sld_fronting) * 1.e-6
-            kvec[:] = np.sqrt(q[:] ** 2. / 4. -
-                              4. * np.pi * sld)
+            sld = complex(sld_layer - sld_fronting) * 1.0e-6
+            kvec[:] = np.sqrt(q[:] ** 2.0 / 4.0 - 4.0 * np.pi * sld)
             return kvec
 
         q = np.linspace(0.001, 1.0, 1001)
@@ -161,7 +175,7 @@ class TestReflect(object):
         calcs = []
         for backend in BACKENDS:
             with use_reflect_backend(backend) as abeles:
-                calc = abeles(self.qvals, s, scale=2.)
+                calc = abeles(self.qvals, s, scale=2.0)
                 calcs.append(calc)
         for calc in calcs[1:]:
             assert_allclose(calc, calcs[0])
@@ -209,8 +223,7 @@ class TestReflect(object):
 
     def test_compare_abeles0(self):
         # test one layer system against the python implementation
-        layer0 = np.array([[0, 2.07, 0.01, 3],
-                           [0, 6.36, 0.1, 3]])
+        layer0 = np.array([[0, 2.07, 0.01, 3], [0, 6.36, 0.1, 3]])
         with use_reflect_backend("python") as abeles:
             calc1 = abeles(self.qvals, layer0, scale=0.99, bkg=1e-8)
 
@@ -230,10 +243,14 @@ class TestReflect(object):
 
     def test_compare_abeles2(self):
         # test two layer system against the python implementation
-        layer2 = np.array([[0, 2.07, 0.01, 3],
-                           [10, 3.47, 0.01, 3],
-                           [100, 1.0, 0.01, 4],
-                           [0, 6.36, 0.1, 3]])
+        layer2 = np.array(
+            [
+                [0, 2.07, 0.01, 3],
+                [10, 3.47, 0.01, 3],
+                [100, 1.0, 0.01, 4],
+                [0, 6.36, 0.1, 3],
+            ]
+        )
         with use_reflect_backend("python") as abeles:
             calc1 = abeles(self.qvals, layer2, scale=0.99, bkg=1e-8)
 
@@ -246,9 +263,9 @@ class TestReflect(object):
         # https://github.com/andyfaff/refl1d_analysis/tree/master/notebooks
         q = np.linspace(0.008, 0.05, 500)
         depth = [0, 850, 0]
-        rho = [2.067, 4.3, 6.]
-        irho_zero = [0., 0.1, 0.]
-        refnx_sigma = [np.nan, 35, 5.]
+        rho = [2.067, 4.3, 6.0]
+        irho_zero = [0.0, 0.1, 0.0]
+        refnx_sigma = [np.nan, 35, 5.0]
 
         w_zero = np.c_[depth, rho, irho_zero, refnx_sigma]
 
@@ -263,7 +280,7 @@ class TestReflect(object):
     def test_abeles_absorption2(self):
         # https://github.com/andyfaff/refl1d_analysis/tree/master/notebooks
         # this has an appreciable notch just below the critical edge
-        refl1d = np.load(os.path.join(self.pth, 'absorption.npy'))
+        refl1d = np.load(os.path.join(self.pth, "absorption.npy"))
 
         q = np.geomspace(0.005, 0.3, 201)
         depth = [0, 1200, 0]
@@ -289,12 +306,16 @@ class TestReflect(object):
         #                 sigma=[3, 1, 5, 0])
         # a = z.real ** 2 + z.imag ** 2
 
-        layers = np.array([[0, 2.07, 0, 0],
-                           [100, 3.45, 0.1, 3],
-                           [200, 5.0, 0.01, 1],
-                           [0, 6., 0, 5]])
+        layers = np.array(
+            [
+                [0, 2.07, 0, 0],
+                [100, 3.45, 0.1, 3],
+                [200, 5.0, 0.01, 1],
+                [0, 6.0, 0, 5],
+            ]
+        )
         x = np.linspace(0.005, 0.5, 1001)
-        refl1d = np.load(os.path.join(self.pth, 'refl1d.npy'))
+        refl1d = np.load(os.path.join(self.pth, "refl1d.npy"))
 
         for backend in BACKENDS:
             with use_reflect_backend(backend) as abeles:
@@ -307,20 +328,20 @@ class TestReflect(object):
 
         reflect_model.abeles = _reflect.abeles
 
-        with use_reflect_backend('c') as f:
+        with use_reflect_backend("c") as f:
             assert f == _creflect.abeles
             assert reflect_model.abeles == _creflect.abeles
         assert reflect_model.abeles == _reflect.abeles
 
         # this shouldn't error if pyopencl is not installed
         # it should just fall back to 'c'
-        reflect_model.use_reflect_backend('pyopencl')
+        reflect_model.use_reflect_backend("pyopencl")
 
     def test_reverse(self):
         # check that the structure reversal works.
-        sio2 = SLD(3.47, name='SiO2')
-        air = SLD(0, name='air')
-        si = SLD(2.07, name='Si')
+        sio2 = SLD(3.47, name="SiO2")
+        air = SLD(0, name="air")
+        si = SLD(2.07, name="Si")
         structure = si | sio2(100, 3) | air(0, 2)
         structure.reverse_structure = True
 
@@ -355,9 +376,9 @@ class TestReflect(object):
         # test that mixed area model works ok.
 
         # should be same as data generated from Motofit
-        sio2 = SLD(3.47, name='SiO2')
-        air = SLD(0, name='air')
-        si = SLD(2.07, name='Si')
+        sio2 = SLD(3.47, name="SiO2")
+        air = SLD(0, name="air")
+        si = SLD(2.07, name="Si")
 
         s1 = air | sio2(100, 2) | si(0, 3)
         s2 = air | sio2(100, 2) | si(0, 3)
@@ -374,29 +395,34 @@ class TestReflect(object):
         indiv1 = ReflectModel(s1, bkg=0)
         indiv2 = ReflectModel(s2, bkg=0)
 
-        assert_almost_equal(mixed_model(self.qvals),
-                            (0.4 * indiv1(self.qvals) +
-                             0.3 * indiv2(self.qvals)))
+        assert_almost_equal(
+            mixed_model(self.qvals),
+            (0.4 * indiv1(self.qvals) + 0.3 * indiv2(self.qvals)),
+        )
 
         # now try out the mixed model compared to sum of individual models
         # with smearing, and background.
 
         mixed_model.bkg.value = 1e-7
-        assert_almost_equal(mixed_model(self.qvals),
-                            (0.4 * indiv1(self.qvals) +
-                             0.3 * indiv2(self.qvals) +
-                             1e-7))
+        assert_almost_equal(
+            mixed_model(self.qvals),
+            (0.4 * indiv1(self.qvals) + 0.3 * indiv2(self.qvals) + 1e-7),
+        )
 
     def test_parallel_calculator(self):
         # test that parallel abeles work with a mapper
         q = np.linspace(0.01, 0.5, 1000).reshape(20, 50)
-        p0 = np.array([[0, 2.07, 0, 0],
-                      [100, 3.47, 0, 3],
-                      [500, -0.5, 1e-3, 3],
-                      [0, 6.36, 0, 3]])
+        p0 = np.array(
+            [
+                [0, 2.07, 0, 0],
+                [100, 3.47, 0, 3],
+                [500, -0.5, 1e-3, 3],
+                [0, 6.36, 0, 3],
+            ]
+        )
 
         for backend in BACKENDS:
-            if backend == 'pyopencl':
+            if backend == "pyopencl":
                 # can't do pyopencl in a multiprocessing.Pool
                 continue
 
@@ -414,14 +440,16 @@ class TestReflect(object):
         model = self.model361
         model.threads = 2
 
-        objective = Objective(model,
-                              (self.qvals361, self.rvals361, self.evals361),
-                              transform=Transform('logY'))
+        objective = Objective(
+            model,
+            (self.qvals361, self.rvals361, self.evals361),
+            transform=Transform("logY"),
+        )
         p0 = np.array(objective.varying_parameters())
         cov = objective.covar()
-        walkers = np.random.multivariate_normal(np.atleast_1d(p0),
-                                                np.atleast_2d(cov),
-                                                size=(100))
+        walkers = np.random.multivariate_normal(
+            np.atleast_1d(p0), np.atleast_2d(cov), size=(100)
+        )
         map_logl = np.array(list(map(objective.logl, walkers)))
         map_chi2 = np.array(list(map(objective.chisqr, walkers)))
 
@@ -439,17 +467,19 @@ class TestReflect(object):
     def test_reflectivity_fit(self):
         # a smoke test to make sure the reflectivity fit proceeds
         model = self.model361
-        objective = Objective(model,
-                              (self.qvals361, self.rvals361, self.evals361),
-                              transform=Transform('logY'))
+        objective = Objective(
+            model,
+            (self.qvals361, self.rvals361, self.evals361),
+            transform=Transform("logY"),
+        )
         fitter = CurveFitter(objective)
-        with np.errstate(invalid='raise'):
-            fitter.fit('differential_evolution')
+        with np.errstate(invalid="raise"):
+            fitter.fit("differential_evolution")
 
     def test_model_pickle(self):
         model = self.model361
-        model.dq = 5.
-        model.dq_type = 'constant'
+        model.dq = 5.0
+        model.dq_type = "constant"
         pkl = pickle.dumps(model)
         unpkl = pickle.loads(pkl)
         assert isinstance(unpkl, ReflectModel)
@@ -458,22 +488,25 @@ class TestReflect(object):
                 assert isinstance(param, Parameter)
             except AssertionError:
                 raise AssertionError(type(param))
-        assert unpkl.dq_type == 'constant'
+        assert unpkl.dq_type == "constant"
 
     def test_reflectivity_emcee(self):
         model = self.model361
-        model.dq = 5.
-        objective = Objective(model,
-                              (self.qvals361, self.rvals361, self.evals361),
-                              transform=Transform('logY'))
+        model.dq = 5.0
+        objective = Objective(
+            model,
+            (self.qvals361, self.rvals361, self.evals361),
+            transform=Transform("logY"),
+        )
         fitter = CurveFitter(objective, nwalkers=100)
 
         assert len(objective.generative().shape) == 1
         assert len(objective.residuals().shape) == 1
 
-        res = fitter.fit('least_squares')
-        res_mcmc = fitter.sample(steps=5, nthin=10, random_state=1,
-                                 verbose=False)
+        res = fitter.fit("least_squares")
+        res_mcmc = fitter.sample(
+            steps=5, nthin=10, random_state=1, verbose=False
+        )
 
         mcmc_val = [mcmc_result.median for mcmc_result in res_mcmc]
         assert_allclose(mcmc_val, res.x, rtol=0.05)
@@ -483,14 +516,15 @@ class TestReflect(object):
     def test_smearedabeles(self):
         # test smeared reflectivity calculation with values generated from
         # Motofit (quadrature precsion order = 13)
-        theoretical = np.loadtxt(os.path.join(self.pth,
-                                              'smeared_theoretical.txt'))
+        theoretical = np.loadtxt(
+            os.path.join(self.pth, "smeared_theoretical.txt")
+        )
         qvals, rvals, dqvals = np.hsplit(theoretical, 3)
-        '''
+        """
         the order of the quadrature precision used to create these smeared
         values in Motofit was 13.
         Do the same here
-        '''
+        """
         rff = ReflectModel(self.structure, quad_order=13)
         calc = rff.model(qvals.flatten(), x_err=dqvals.flatten())
 
@@ -499,14 +533,15 @@ class TestReflect(object):
     def test_smearedabeles_reshape(self):
         # test smeared reflectivity calculation with values generated from
         # Motofit (quadrature precsion order = 13)
-        theoretical = np.loadtxt(os.path.join(self.pth,
-                                              'smeared_theoretical.txt'))
+        theoretical = np.loadtxt(
+            os.path.join(self.pth, "smeared_theoretical.txt")
+        )
         qvals, rvals, dqvals = np.hsplit(theoretical, 3)
-        '''
+        """
         the order of the quadrature precision used to create these smeared
         values in Motofit was 13.
         Do the same here
-        '''
+        """
         reshaped_q = np.reshape(qvals, (2, 250))
         reshaped_r = np.reshape(rvals, (2, 250))
         reshaped_dq = np.reshape(dqvals, (2, 250))
@@ -519,10 +554,10 @@ class TestReflect(object):
     def test_constant_smearing(self):
         # check that constant dq/q smearing is the same as point by point
         dqvals = 0.05 * self.qvals
-        rff = ReflectModel(self.structure, quad_order='ultimate')
+        rff = ReflectModel(self.structure, quad_order="ultimate")
         calc = rff.model(self.qvals, x_err=dqvals)
 
-        rff.dq = 5.
+        rff.dq = 5.0
         calc2 = rff.model(self.qvals)
 
         assert_allclose(calc, calc2, rtol=0.011)
@@ -535,17 +570,26 @@ class TestReflect(object):
         q = np.linspace(0.005, 0.3, npnts)
 
         # use constant dq/q for comparison
-        const_R = reflectivity(q, slabs, scale=1.01, bkg=1e-6, dq=0.05 * q,
-                               quad_order=101, threads=-1)
+        const_R = reflectivity(
+            q,
+            slabs,
+            scale=1.01,
+            bkg=1e-6,
+            dq=0.05 * q,
+            quad_order=101,
+            threads=-1,
+        )
 
         # lets create a kernel.
         kernel = np.zeros((npnts, 2, 501), float)
         sd = 0.05 * q / (2 * np.sqrt(2 * np.log(2)))
         for i in range(npnts):
-            kernel[i, 0, :] = np.linspace(q[i] - 3.5 * sd[i],
-                                          q[i] + 3.5 * sd[i], 501)
-            kernel[i, 1, :] = stats.norm.pdf(kernel[i, 0, :],
-                                             loc=q[i], scale=sd[i])
+            kernel[i, 0, :] = np.linspace(
+                q[i] - 3.5 * sd[i], q[i] + 3.5 * sd[i], 501
+            )
+            kernel[i, 1, :] = stats.norm.pdf(
+                kernel[i, 0, :], loc=q[i], scale=sd[i]
+            )
 
         kernel_R = reflectivity(q, slabs, scale=1.01, bkg=1e-6, dq=kernel)
 
@@ -553,8 +597,8 @@ class TestReflect(object):
 
     def test_sld_profile(self):
         # test SLD profile with SLD profile from Motofit.
-        np.seterr(invalid='raise')
-        profile = np.loadtxt(os.path.join(self.pth, 'sld_theoretical_R.txt'))
+        np.seterr(invalid="raise")
+        profile = np.loadtxt(os.path.join(self.pth, "sld_theoretical_R.txt"))
         z, rho = np.split(profile, 2)
 
         rff = ReflectModel(self.structure)
@@ -564,18 +608,18 @@ class TestReflect(object):
     def test_modelvals_degenerate_layers(self):
         # try fitting dataset with a deposited layer split into two degenerate
         # layers
-        fname = os.path.join(self.pth, 'c_PLP0011859_q.txt')
+        fname = os.path.join(self.pth, "c_PLP0011859_q.txt")
         dataset = ReflectDataset(fname)
 
-        sio2 = SLD(3.47, name='SiO2')
-        si = SLD(2.07, name='Si')
-        d2o = SLD(6.36, name='D2O')
-        polymer = SLD(2., name='polymer')
+        sio2 = SLD(3.47, name="SiO2")
+        si = SLD(2.07, name="Si")
+        d2o = SLD(6.36, name="D2O")
+        polymer = SLD(2.0, name="polymer")
 
         sio2_l = sio2(30, 3)
         polymer_l = polymer(125, 3)
 
-        structure = (si | sio2_l | polymer_l | polymer_l | d2o(0, 3))
+        structure = si | sio2_l | polymer_l | polymer_l | d2o(0, 3)
 
         polymer_l.thick.setp(value=125, vary=True, bounds=(0, 250))
         polymer_l.rough.setp(value=4, vary=True, bounds=(0, 8))
@@ -583,10 +627,9 @@ class TestReflect(object):
         sio2_l.rough.setp(value=3.16, vary=True, bounds=(0, 8))
 
         model = ReflectModel(structure, bkg=2e-6)
-        objective = Objective(model,
-                              dataset,
-                              use_weights=False,
-                              transform=Transform('logY'))
+        objective = Objective(
+            model, dataset, use_weights=False, transform=Transform("logY")
+        )
 
         model.scale.setp(vary=True, bounds=(0, 2))
         model.bkg.setp(vary=True, bounds=(0, 8e-6))
@@ -597,36 +640,35 @@ class TestReflect(object):
         assert_equal(slabs[1, 3], sio2_l.rough.value)
 
         f = CurveFitter(objective)
-        f.fit(method='differential_evolution', seed=1, maxiter=3)
+        f.fit(method="differential_evolution", seed=1, maxiter=3)
 
         slabs = structure.slabs()
         assert_equal(slabs[2, 0:2], slabs[3, 0:2])
         assert_equal(slabs[2, 3], slabs[3, 3])
 
     def test_resolution_speed_comparator(self):
-        fname = os.path.join(self.pth, 'c_PLP0011859_q.txt')
+        fname = os.path.join(self.pth, "c_PLP0011859_q.txt")
         dataset = ReflectDataset(fname)
 
-        sio2 = SLD(3.47, name='SiO2')
-        si = SLD(2.07, name='Si')
-        d2o = SLD(6.36, name='D2O')
-        polymer = SLD(2., name='polymer')
+        sio2 = SLD(3.47, name="SiO2")
+        si = SLD(2.07, name="Si")
+        d2o = SLD(6.36, name="D2O")
+        polymer = SLD(2.0, name="polymer")
 
         sio2_l = sio2(30, 3)
         polymer_l = polymer(125, 3)
 
         dx = dataset.x_err
-        structure = (si | sio2_l | polymer_l | polymer_l | d2o(0, 3))
-        model = ReflectModel(structure, bkg=2e-6, dq_type='constant')
-        objective = Objective(model,
-                              dataset,
-                              use_weights=False,
-                              transform=Transform('logY'))
+        structure = si | sio2_l | polymer_l | polymer_l | d2o(0, 3)
+        model = ReflectModel(structure, bkg=2e-6, dq_type="constant")
+        objective = Objective(
+            model, dataset, use_weights=False, transform=Transform("logY")
+        )
 
         # check that choose_resolution_approach doesn't change state
         # of model
         fastest_method = choose_dq_type(objective)
-        assert model.dq_type == 'constant'
+        assert model.dq_type == "constant"
         assert_equal(dx, objective.data.x_err)
 
         # check that the comparison worked
@@ -635,15 +677,15 @@ class TestReflect(object):
             objective.generative()
         const_time = time.time() - const_time
 
-        model.dq_type = 'pointwise'
+        model.dq_type = "pointwise"
         point_time = time.time()
         for i in range(1000):
             objective.generative()
         point_time = time.time() - point_time
 
-        if fastest_method == 'pointwise':
+        if fastest_method == "pointwise":
             assert point_time < const_time
-        elif fastest_method == 'constant':
+        elif fastest_method == "constant":
             assert const_time < point_time
 
         # check that we could use the function to setup a reflectmodel
@@ -651,9 +693,9 @@ class TestReflect(object):
 
     def test_mixed_model(self):
         # test for MixedReflectModel
-        air = SLD(0, name='air')
-        sio2 = SLD(3.47, name='SiO2')
-        si = SLD(2.07, name='Si')
+        air = SLD(0, name="air")
+        sio2 = SLD(3.47, name="SiO2")
+        si = SLD(2.07, name="Si")
 
         structure1 = air | sio2(100, 2) | si(0, 3)
         structure2 = air | sio2(50, 3) | si(0, 5)
@@ -662,8 +704,9 @@ class TestReflect(object):
         mixed_model_y = 0.4 * structure1.reflectivity(self.qvals)
         mixed_model_y += 0.6 * structure2.reflectivity(self.qvals)
 
-        mixed_model = MixedReflectModel([structure1, structure2], [0.4, 0.6],
-                                        bkg=0, dq=0)
+        mixed_model = MixedReflectModel(
+            [structure1, structure2], [0.4, 0.6], bkg=0, dq=0
+        )
 
         assert_equal(mixed_model.scales, np.array([0.4, 0.6]))
         assert mixed_model.dq.value == 0
@@ -683,18 +726,14 @@ class TestReflect(object):
         q = np.linspace(0.01, 0.3, 1001)
 
         # use for spin channel PNR calculation
-        players = np.array([[0, 0, 0, 0, 0],
-                           [100, 3, 0, 1, 0],
-                           [0, 4, 0, 0, 0]])
+        players = np.array(
+            [[0, 0, 0, 0, 0], [100, 3, 0, 1, 0], [0, 4, 0, 0, 0]]
+        )
 
         # use for NSF calculation with abeles
-        pp_layers = np.array([[0, 0, 0, 0],
-                              [100, 4., 0, 0],
-                              [0, 4, 0, 0]])
+        pp_layers = np.array([[0, 0, 0, 0], [100, 4.0, 0, 0], [0, 4, 0, 0]])
 
-        mm_layers = np.array([[0, 0, 0, 0],
-                              [100, 2, 0, 0],
-                              [0, 4, 0, 0]])
+        mm_layers = np.array([[0, 0, 0, 0], [100, 2, 0, 0], [0, 4, 0, 0]])
 
         r = _reflect.pnr(q, players)
 
@@ -705,10 +744,10 @@ class TestReflect(object):
         assert_allclose(r[1], mm)
 
     def test_repr_reflect_model(self):
-        p = SLD(0.)
+        p = SLD(0.0)
         q = SLD(2.07)
         s = p(0, 0) | q(0, 3)
-        model = ReflectModel(s, scale=0.99, bkg=1e-8, )
+        model = ReflectModel(s, scale=0.99, bkg=1e-8,)
         r = eval(repr(model))
 
         x = np.linspace(0.005, 0.3, 1000)
@@ -717,29 +756,28 @@ class TestReflect(object):
     def test_FresnelTransform(self):
         t = FresnelTransform(2.07, 6.36, dq=5)
 
-        slabs = np.array([[0, 2.07, 0, 0],
-                          [0, 6.36, 0, 0]])
+        slabs = np.array([[0, 2.07, 0, 0], [0, 6.36, 0, 0]])
 
         q = np.linspace(0.01, 1.0, 1000)
         r = reflectivity(q, slabs, dq=5)
 
         rt, et = t(q, r)
-        assert_almost_equal(rt, 1.)
+        assert_almost_equal(rt, 1.0)
 
         # test errors are transformed
-        rt, et = t(q, r, y_err=1.)
-        assert_almost_equal(et, 1. / r)
+        rt, et = t(q, r, y_err=1.0)
+        assert_almost_equal(et, 1.0 / r)
 
         # check that you can use an SLD object
         t = FresnelTransform(SLD(2.07), SLD(6.36), dq=5)
         rt, et = t(q, r)
-        assert_almost_equal(rt, 1.)
+        assert_almost_equal(rt, 1.0)
 
         # reconstitute a repr'd transform and check it works
         s = repr(t)
         st = eval(s)
         rt, et = st(q, r)
-        assert_almost_equal(rt, 1.)
+        assert_almost_equal(rt, 1.0)
 
 
 class Wrapper_fn(object):

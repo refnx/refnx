@@ -17,6 +17,7 @@ def preserve_cwd(function):
     function : callable
 
     """
+
     @functools.wraps(function)
     def decorator(*args, **kwargs):
         cwd = _os.getcwd()
@@ -24,6 +25,7 @@ def preserve_cwd(function):
             return function(*args, **kwargs)
         finally:
             _os.chdir(cwd)
+
     return decorator
 
 
@@ -61,14 +63,18 @@ class TemporaryDirectory(object):
                 # up due to missing globals
                 if "None" not in str(ex):
                     raise
-                print("ERROR: {!r} while cleaning up {!r}".format(ex, self,),
-                      file=_sys.stderr)
+                print(
+                    "ERROR: {!r} while cleaning up {!r}".format(ex, self,),
+                    file=_sys.stderr,
+                )
                 return
             self._closed = True
             if _warn:
                 # ResourceWarning
-                self._warn("ResourceWarning: Implicitly cleaning"
-                           " up {!r}".format(self))
+                self._warn(
+                    "ResourceWarning: Implicitly cleaning"
+                    " up {!r}".format(self)
+                )
 
     def __exit__(self, exc, value, tb):
         self.cleanup()
@@ -165,7 +171,7 @@ def unique(seq, idfun=id):
 
 
 @contextmanager
-def possibly_open_file(f, mode='wb'):
+def possibly_open_file(f, mode="wb"):
     """
     Context manager for files.
 
@@ -187,7 +193,7 @@ def possibly_open_file(f, mode='wb'):
         this context manager.
     """
     close_file = False
-    if (hasattr(f, 'read') and hasattr(f, 'write')) or f is None:
+    if (hasattr(f, "read") and hasattr(f, "write")) or f is None:
         g = f
     else:
         g = open(f, mode)
@@ -215,6 +221,7 @@ class MapWrapper(object):
     context : None, {'spawn', 'fork', 'forkserver'}
 
     """
+
     def __init__(self, pool=-1, context=None):
         self.pool = None
         self._mapfunc = map
@@ -270,8 +277,10 @@ class MapWrapper(object):
             return self._mapfunc(func, iterable)
         except TypeError:
             # wrong number of arguments
-            raise TypeError("The map-like callable must be of the"
-                            " form f(func, iterable)")
+            raise TypeError(
+                "The map-like callable must be of the"
+                " form f(func, iterable)"
+            )
 
     def map(self, func, iterable):
         return self(func, iterable)

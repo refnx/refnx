@@ -388,8 +388,8 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
                         v = None
                         # check to see if a parameter.stderr already existed
                         if (
-                            hasattr(parameter, "stderr") and
-                                parameter.stderr is not None
+                            hasattr(parameter, "stderr")
+                            and parameter.stderr is not None
                         ):
                             v = parameter.stderr
                         parameter._stderr = v
@@ -1957,9 +1957,9 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
             return
 
         if (
-            len(role) and
-                role[0] == QtCore.Qt.CheckStateRole and
-                isinstance(node, DataObjectNode)
+            len(role)
+            and role[0] == QtCore.Qt.CheckStateRole
+            and isinstance(node, DataObjectNode)
         ):
             # set visibility of data_object
             graph_properties = node.data_object.graph_properties
@@ -1972,20 +1972,20 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
 
         # redraw if you're altering a PropertyNode (edit or check)
         if (
-            top_left.column() == 1 and
-                len(role) and
-                role[0] in [QtCore.Qt.CheckStateRole, QtCore.Qt.EditRole] and
-                isinstance(node, PropertyNode)
+            top_left.column() == 1
+            and len(role)
+            and role[0] in [QtCore.Qt.CheckStateRole, QtCore.Qt.EditRole]
+            and isinstance(node, PropertyNode)
         ):
             wipe_update = [find_data_object(top_left).data_object]
 
         # only redraw if you're altering values
         # otherwise we'd be performing continual updates of the model
         if (
-            top_left.column() == 1 and
-                len(role) and
-                role[0] == QtCore.Qt.EditRole and
-                isinstance(node, ParNode)
+            top_left.column() == 1
+            and len(role)
+            and role[0] == QtCore.Qt.EditRole
+            and isinstance(node, ParNode)
         ):
             param = node.parameter
             wipe_update = [find_data_object(top_left).data_object]
@@ -2228,8 +2228,8 @@ class MyReflectivityGraphs(FigureCanvas):
             graph_properties = data_object.graph_properties
 
             if (
-                graph_properties.ax_data is None and
-                data_object.name != "theoretical"
+                graph_properties.ax_data is None
+                and data_object.name != "theoretical"
             ):
                 yt = dataset.y
                 if transform is not None:
@@ -2382,8 +2382,8 @@ class MySLDGraphs(FigureCanvas):
             visible = graph_properties.visible
 
             if (
-                graph_properties.ax_sld_profile and
-                data_object.model is not None
+                graph_properties.ax_sld_profile
+                and data_object.model is not None
             ):
                 try:
                     sld_profile = data_object.model.structure.sld_profile()
@@ -2406,8 +2406,8 @@ class MySLDGraphs(FigureCanvas):
         for data_object in data_objects:
             graph_properties = data_object.graph_properties
             if (
-                graph_properties.ax_sld_profile is None and
-                data_object.sld_profile is not None
+                graph_properties.ax_sld_profile is None
+                and data_object.sld_profile is not None
             ):
 
                 color = "r"

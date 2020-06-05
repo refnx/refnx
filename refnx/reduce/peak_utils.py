@@ -3,8 +3,8 @@ from scipy.integrate import simps, cumtrapz
 from scipy.optimize import curve_fit
 
 
-def centroid(y, x=None, dx=1.):
-    '''Computes the centroid for the specified data.
+def centroid(y, x=None, dx=1.0):
+    """Computes the centroid for the specified data.
 
     Parameters
     ----------
@@ -20,11 +20,11 @@ def centroid(y, x=None, dx=1.):
 
     This is not really all that good of an algorithm, unless the peak is much
     higher than the background
-    '''
+    """
     yt = np.asfarray(y)
 
     if x is None:
-        x = np.arange(yt.size, dtype='float') * dx
+        x = np.arange(yt.size, dtype="float") * dx
 
     normaliser = simps(yt, x)
 
@@ -35,12 +35,12 @@ def centroid(y, x=None, dx=1.):
 
     centroid /= normaliser
 
-    var = simps((x - centroid)**2 * yt, x) / normaliser
+    var = simps((x - centroid) ** 2 * yt, x) / normaliser
 
     return centroid, np.sqrt(var)
 
 
-def median(y, x=None, dx=1.):
+def median(y, x=None, dx=1.0):
     r"""
     Computes the median of the specified data.
 
@@ -59,7 +59,7 @@ def median(y, x=None, dx=1.):
     yt = np.asfarray(y)
 
     if x is None:
-        x = np.arange(yt.size, dtype='float') * dx
+        x = np.arange(yt.size, dtype="float") * dx
 
     c = cumtrapz(yt, x=x, initial=0)
     c0 = c[0]
@@ -78,7 +78,7 @@ def gauss_fit(p0, x, y, sigma=None):
 
 
 def gauss(x, bkg, peak, mean, sd):
-    '''Computes the gaussian function.
+    """Computes the gaussian function.
 
     Parameters
     ----------
@@ -97,13 +97,13 @@ def gauss(x, bkg, peak, mean, sd):
     -------
     gval : float
         evaluated gaussian distribution value at each of the sampling points.
-    '''
+    """
 
-    return bkg + peak * np.exp(-0.5 * ((mean - x) / sd)**2)
+    return bkg + peak * np.exp(-0.5 * ((mean - x) / sd) ** 2)
 
 
 def peak_finder(y, x=None, sigma=None):
-    '''Finds a peak in the specified data.
+    """Finds a peak in the specified data.
 
     Parameters
     ----------
@@ -117,15 +117,15 @@ def peak_finder(y, x=None, sigma=None):
     centroid and sd are the centroid and standard deviation of the data.
     gfit_mean and gfit_sd are the mean and standard deviation obtained by
     fitting the data to a Gaussian function.
-    '''
+    """
     maxval = np.amax(y)
     if x is None:
-        x = np.arange(1. * len(y))
+        x = np.arange(1.0 * len(y))
 
     expected_centre, expected_SD = centroid(y, x=x)
 
     try:
-        p0 = np.array([2., maxval, expected_centre, expected_SD])
+        p0 = np.array([2.0, maxval, expected_centre, expected_SD])
         popt = gauss_fit(p0, x, y)
     except RuntimeError:
         # if we can't find a centre return the centroid

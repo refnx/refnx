@@ -26,9 +26,11 @@ jobs:
         python -m pip install --upgrade pip
     - name: Lint with flake8
       run: |
-        python -m pip install flake8
+        python -m pip install flake8 black
         # stop the build if there are Python syntax errors or undefined names
-        flake8 --ignore=F401,W504 --count --show-source --statistics --exclude=refnx/_lib/emcee,refnx/reflect/_app/resources_rc.py refnx
+        # the ignores are taken care of by black
+        flake8 --ignore=F401,W504,W503,E203,E231 --count --show-source --statistics --exclude=refnx/_lib/emcee,refnx/reflect/_app/resources_rc.py,refnx/analysis refnx
+        black --check --exclude refnx/_lib/emcee refnx -l 79
     - name: Install dependencies
       run: |
         python -m pip install wheel

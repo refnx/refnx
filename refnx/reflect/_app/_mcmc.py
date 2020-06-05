@@ -5,19 +5,28 @@ import os
 
 import numpy as np
 from PyQt5 import QtCore, QtGui, QtWidgets, uic
-from refnx.analysis import (load_chain, process_chain, autocorrelation_chain,
-                            integrated_time, GlobalObjective, Objective)
+from refnx.analysis import (
+    load_chain,
+    process_chain,
+    autocorrelation_chain,
+    integrated_time,
+    GlobalObjective,
+    Objective,
+)
 from refnx.reflect import Structure
 from matplotlib.backends.backend_qt5agg import (
-    FigureCanvasQTAgg as FigureCanvas)
+    FigureCanvasQTAgg as FigureCanvas,
+)
 from matplotlib.figure import Figure
 
 pth = os.path.dirname(os.path.abspath(__file__))
-UI_LOCATION = os.path.join(pth, 'ui')
-ProcessMCMCDialogUI = uic.loadUiType(os.path.join(UI_LOCATION,
-                                     'process_mcmc.ui'))[0]
-SampleMCMCDialogUI = uic.loadUiType(os.path.join(UI_LOCATION,
-                                    'sample_mcmc.ui'))[0]
+UI_LOCATION = os.path.join(pth, "ui")
+ProcessMCMCDialogUI = uic.loadUiType(
+    os.path.join(UI_LOCATION, "process_mcmc.ui")
+)[0]
+SampleMCMCDialogUI = uic.loadUiType(
+    os.path.join(UI_LOCATION, "sample_mcmc.ui")
+)[0]
 
 
 class SampleMCMCDialog(QtWidgets.QDialog, SampleMCMCDialogUI):
@@ -40,7 +49,8 @@ class ProcessMCMCDialog(QtWidgets.QDialog, ProcessMCMCDialogUI):
 
         if self.chain is None:
             model_file_name, ok = QtWidgets.QFileDialog.getOpenFileName(
-                self, 'Select chain file')
+                self, "Select chain file"
+            )
             if not ok:
                 return
             self.folder = os.path.dirname(model_file_name)
@@ -57,16 +67,19 @@ class ProcessMCMCDialog(QtWidgets.QDialog, ProcessMCMCDialogUI):
         if len(self.chain.shape) == 3:
             steps, walkers, varys = self.chain.shape
             self.chain_size.setText(
-                'steps: {}, walkers: {}, varys: {}'.format(
-                    steps, walkers, varys))
+                "steps: {}, walkers: {}, varys: {}".format(
+                    steps, walkers, varys
+                )
+            )
         else:
             steps, temps, walkers, varys = self.chain.shape
             self.chain_size.setText(
-                'steps: {}, temps: {}, walkers: {}, varys: {}'.format(
-                    steps, temps, walkers, varys))
+                "steps: {}, temps: {}, walkers: {}, varys: {}".format(
+                    steps, temps, walkers, varys
+                )
+            )
 
-        self.total_samples.setText(
-            'Total samples: {}'.format(steps * walkers))
+        self.total_samples.setText("Total samples: {}".format(steps * walkers))
 
         self.burn.setMaximum(steps - 1)
         self.thin.setMaximum(steps - 1)
@@ -74,7 +87,8 @@ class ProcessMCMCDialog(QtWidgets.QDialog, ProcessMCMCDialogUI):
         acfs = autocorrelation_chain(self.chain)
         time = integrated_time(acfs, tol=1, quiet=True)
         self.autocorrelation_time.setText(
-            'Estimated Autocorrelation Time: {}'.format(time))
+            "Estimated Autocorrelation Time: {}".format(time)
+        )
 
     @QtCore.pyqtSlot(int)
     def on_burn_valueChanged(self, val):
@@ -95,13 +109,13 @@ class ProcessMCMCDialog(QtWidgets.QDialog, ProcessMCMCDialogUI):
         else:
             steps, temps, walkers, varys = lchain.shape
 
-        self.total_samples.setText(
-            'Total samples: {}'.format(steps * walkers))
+        self.total_samples.setText("Total samples: {}".format(steps * walkers))
 
         acfs = autocorrelation_chain(lchain)
         time = integrated_time(acfs, tol=1, quiet=True)
         self.autocorrelation_time.setText(
-            'Estimated Autocorrelation Time: {}'.format(time))
+            "Estimated Autocorrelation Time: {}".format(time)
+        )
         self.nplot.setMaximum(steps * walkers)
 
     @QtCore.pyqtSlot()
@@ -119,10 +133,9 @@ class ProcessMCMCDialog(QtWidgets.QDialog, ProcessMCMCDialogUI):
 
         ax = fig.add_subplot(111)
         ax.plot(acfs)
-        ax.set_ylabel('autocorrelation')
-        ax.set_xlabel('step')
-        fig.savefig(os.path.join(self.folder,
-                                 'steps-autocorrelation.png'))
+        ax.set_ylabel("autocorrelation")
+        ax.set_xlabel("step")
+        fig.savefig(os.path.join(self.folder, "steps-autocorrelation.png"))
 
 
 def _plots(obj, nplot=0, folder=None):
@@ -134,23 +147,24 @@ def _plots(obj, nplot=0, folder=None):
     FigureCanvas(fig)
 
     _, ax = obj.plot(samples=nplot, fig=fig)
-    ax.set_ylabel('R')
+    ax.set_ylabel("R")
     ax.set_xlabel("Q / $\\AA$")
-    fig.savefig(os.path.join(folder, 'steps.png'), dpi=1000)
+    fig.savefig(os.path.join(folder, "steps.png"), dpi=1000)
 
     # corner plot
     try:
         import corner
+
         kwds = {}
         var_pars = obj.varying_parameters()
         chain = np.array([par.chain for par in var_pars])
         labels = [par.name for par in var_pars]
         chain = chain.reshape(len(chain), -1).T
-        kwds['labels'] = labels
-        kwds['quantiles'] = [0.16, 0.5, 0.84]
+        kwds["labels"] = labels
+        kwds["quantiles"] = [0.16, 0.5, 0.84]
         fig2 = corner.corner(chain, **kwds)
 
-        fig2.savefig(os.path.join(folder, 'steps_corner.png'))
+        fig2.savefig(os.path.join(folder, "steps_corner.png"))
     except ImportError:
         pass
 
@@ -165,23 +179,26 @@ def _plots(obj, nplot=0, folder=None):
             for pvec in obj.parameters.pgen(ngen=nplot):
                 obj.setp(pvec)
                 for o in obj.objectives:
-                    if hasattr(o.model, 'structure'):
-                        ax3.plot(*o.model.structure.sld_profile(),
-                                 color="k", alpha=0.01)
+                    if hasattr(o.model, "structure"):
+                        ax3.plot(
+                            *o.model.structure.sld_profile(),
+                            color="k",
+                            alpha=0.01
+                        )
 
             # put back saved_params
             obj.setp(savedparams)
 
         for o in obj.objectives:
-            if hasattr(o.model, 'structure'):
+            if hasattr(o.model, "structure"):
                 ax3.plot(*o.model.structure.sld_profile(), zorder=20)
 
-        ax3.set_ylabel('SLD / $10^{-6}\\AA^{-2}$')
+        ax3.set_ylabel("SLD / $10^{-6}\\AA^{-2}$")
         ax3.set_xlabel("z / $\\AA$")
 
-    elif isinstance(obj, Objective) and hasattr(obj.model, 'structure'):
+    elif isinstance(obj, Objective) and hasattr(obj.model, "structure"):
         fig3 = Figure()
         FigureCanvas(fig3)
         fig3, ax3 = obj.model.structure.plot(samples=nplot, fig=fig3)
 
-    fig3.savefig(os.path.join(folder, 'steps_sld.png'), dpi=1000)
+    fig3.savefig(os.path.join(folder, "steps_sld.png"), dpi=1000)

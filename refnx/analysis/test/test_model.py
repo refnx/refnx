@@ -1,8 +1,12 @@
 import pickle
 
 import numpy as np
-from numpy.testing import (assert_almost_equal, assert_equal, assert_,
-                           assert_allclose)
+from numpy.testing import (
+    assert_almost_equal,
+    assert_equal,
+    assert_,
+    assert_allclose,
+)
 
 from refnx.analysis import Parameter, Model
 
@@ -13,7 +17,7 @@ def line(x, params, *args, **kwds):
 
 
 def line2(x, p):
-    return p['c'].value + p['m'].value * x
+    return p["c"].value + p["m"].value * x
 
 
 def line3(x, params, x_err=None):
@@ -21,18 +25,17 @@ def line3(x, params, x_err=None):
 
 
 class TestModel(object):
-
     def setup_method(self):
         pass
 
     def test_evaluation(self):
-        c = Parameter(1.0, name='c')
-        m = Parameter(2.0, name='m')
+        c = Parameter(1.0, name="c")
+        m = Parameter(2.0, name="m")
         p = c | m
 
         fit_model = Model(p, fitfunc=line)
-        x = np.linspace(0, 100., 20)
-        y = 2. * x + 1.
+        x = np.linspace(0, 100.0, 20)
+        y = 2.0 * x + 1.0
 
         # different ways of getting the model instance to evaluate
         assert_equal(fit_model.model(x, p), y)
@@ -55,8 +58,8 @@ class TestModel(object):
         assert_equal(fit_model(x, p), y)
 
     def test_xerr(self):
-        c = Parameter(1.0, name='c')
-        m = Parameter(2.0, name='m')
+        c = Parameter(1.0, name="c")
+        m = Parameter(2.0, name="m")
         p = c | m
 
         fit_model = Model(p, fitfunc=line3)

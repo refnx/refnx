@@ -14,6 +14,7 @@ import warnings
 
 try:
     import IPython.display
+
     _have_ipython = True
 except ImportError:
     _have_ipython = False
@@ -21,20 +22,16 @@ except ImportError:
 from refnx.reduce import reduce_stitch
 
 
-ReductionEntryTuple = collections.namedtuple('ReductionEntry',
-                                             ['row',
-                                              'ds',
-                                              'name',
-                                              'fname',
-                                              'entry', ])
+ReductionEntryTuple = collections.namedtuple(
+    "ReductionEntry", ["row", "ds", "name", "fname", "entry",]
+)
 
 
 class ReductionEntry(ReductionEntryTuple):
-
     def rescale(self, scale_factor, write=True):
         self.ds.scale(scale_factor)
         if write:
-            with open(self.fname, 'w') as w:
+            with open(self.fname, "w") as w:
                 self.ds.save(w)
 
 
@@ -193,8 +190,11 @@ class ReductionCache(list):
         row_numbers : iterable
             row numbers to find
         """
-        return [entry for entry in self
-                if entry is not None and entry.row in row_numbers]
+        return [
+            entry
+            for entry in self
+            if entry is not None and entry.row in row_numbers
+        ]
 
     def name(self, name):
         """ select a single data set by sample name
@@ -214,8 +214,11 @@ class ReductionCache(list):
         name : str
             fragment that must be at the start of the sample name
         """
-        matches = [entry for entry in self
-                   if entry is not None and entry.name.startswith(name)]
+        matches = [
+            entry
+            for entry in self
+            if entry is not None and entry.name.startswith(name)
+        ]
         return matches
 
     def name_search(self, search):
@@ -244,8 +247,11 @@ class ReductionCache(list):
             name_re = re.compile(search)
         else:
             name_re = search
-        matches = [entry for entry in self
-                   if entry is not None and name_re.search(entry.name)]
+        matches = [
+            entry
+            for entry in self
+            if entry is not None and name_re.search(entry.name)
+        ]
         return matches
 
     def summary(self):
@@ -277,7 +283,7 @@ class ReductionCache(list):
             filename to which the cache should be written; if not specified
             or `None`, the default filename is used.
         """
-        with open(self._cache_filename(filename), 'wb') as fh:
+        with open(self._cache_filename(filename), "wb") as fh:
             pickle.dump(self, fh)
 
     def drop_cache(self, filename=None):
@@ -305,7 +311,7 @@ class ReductionCache(list):
                 print("On-disk cache empty")
                 return
 
-            with open(self._cache_filename(filename), 'rb') as fh:
+            with open(self._cache_filename(filename), "rb") as fh:
                 cached = pickle.load(fh)
             self.name_cache = cached.name_cache
             self.run_cache = cached.run_cache
@@ -357,8 +363,9 @@ class BatchReducer:
     name is set will be processed.
     """
 
-    def __init__(self, filename, data_folder=None, verbose=True,
-                 persistent=True, **kwds):
+    def __init__(
+        self, filename, data_folder=None, verbose=True, persistent=True, **kwds
+    ):
         """
         Create a batch reducer using metadata from a spreadsheet
 
@@ -387,7 +394,7 @@ class BatchReducer:
             self.data_folder = data_folder
 
         self.kwds = kwds
-        self.kwds['data_folder'] = self.data_folder
+        self.kwds["data_folder"] = self.data_folder
         self.verbose = verbose
 
     def _reduce_row(self, entry):
@@ -399,30 +406,41 @@ class BatchReducer:
             Spreadsheet row for this data set
         """
         # Identify the runs to be used for reduction
-        runs = run_list(entry, 'refl')
-        directs = run_list(entry, 'directs')
+        runs = run_list(entry, "refl")
+        directs = run_list(entry, "directs")
 
         if self.verbose:
             fmt = "Reducing %s [%s]/[%s]"
 
-            print(fmt % (entry['name'],
-                         ", ".join('%d' % r for r in runs),
-                         ", ".join('%d' % r for r in directs)))
-            sys.stdout.flush()   # keep progress updated
+            print(
+                fmt
+                % (
+                    entry["name"],
+                    ", ".join("%d" % r for r in runs),
+                    ", ".join("%d" % r for r in directs),
+                )
+            )
+            sys.stdout.flush()  # keep progress updated
 
         if not runs:
-            warnings.warn("Row %d (%s) has no reflection runs. Skipped." %
-                          (entry['source'], entry['name']))
+            warnings.warn(
+                "Row %d (%s) has no reflection runs. Skipped."
+                % (entry["source"], entry["name"])
+            )
             return None, None
         if not directs:
-            warnings.warn("Row %d (%s) has no direct beam runs. Skipped." %
-                          (entry['source'], entry['name']))
+            warnings.warn(
+                "Row %d (%s) has no direct beam runs. Skipped."
+                % (entry["source"], entry["name"])
+            )
             return None, None
 
         if len(runs) > len(directs):
-            warnings.warn("Row %d (%s) has differing numbers of"
-                          " direct & reflection runs. Skipped." %
-                          (entry['source'], entry['name']))
+            warnings.warn(
+                "Row %d (%s) has differing numbers of"
+                " direct & reflection runs. Skipped."
+                % (entry["source"], entry["name"])
+            )
             return None, None
 
         ds, fname = reduce_stitch(runs, directs, **self.kwds)
@@ -435,27 +453,27 @@ class BatchReducer:
             self.filename,
             usecols=cols,
             converters={
-                'refl1': int,
-                'refl2': int,
-                'refl3': int,
-                'dir1': int,
-                'dir2': int,
-                'dir3': int,
+                "refl1": int,
+                "refl2": int,
+                "refl3": int,
+                "dir1": int,
+                "dir2": int,
+                "dir3": int,
             },
         )
 
         # Add the row number in the spreadsheet as an extra column
         # row numbers for the runs will start at 2 not 0
-        all_runs.insert(0, 'source', all_runs.index + 2)
+        all_runs.insert(0, "source", all_runs.index + 2)
 
         # add in some extra columns to indicate successful reduction
-        all_runs['reduced'] = np.zeros(len(all_runs))
-        all_runs['filename'] = np.zeros(len(all_runs))
+        all_runs["reduced"] = np.zeros(len(all_runs))
+        all_runs["filename"] = np.zeros(len(all_runs))
         return all_runs
 
     def select_runs(self, all_runs):
         # skip samples not marked for reduction or with no sample name
-        mask = (all_runs.reduce == 1) & (~ all_runs.name.isnull())
+        mask = (all_runs.reduce == 1) & (~all_runs.name.isnull())
         return mask
 
     def reduce(self, show=True):
@@ -473,7 +491,7 @@ class BatchReducer:
 
         # iterate through the rows that were marked for reduction
         for idx in rows:
-            name = str(all_runs.loc[idx, 'name'])
+            name = str(all_runs.loc[idx, "name"])
 
             try:
                 ds, fname = self._reduce_row(all_runs.loc[idx])
@@ -484,22 +502,23 @@ class BatchReducer:
                 ds = None
                 fname = None
             else:
-                reduction_ok = (ds is not None)
+                reduction_ok = ds is not None
                 if reduction_ok:
                     # store this away to make plotting easier later
                     ds.name = name
 
             # record outcomes of reduction in the table
-            all_runs.loc[idx, 'filename'] = fname
-            all_runs.loc[idx, 'reduced'] = reduction_ok
+            all_runs.loc[idx, "filename"] = fname
+            all_runs.loc[idx, "reduced"] = reduction_ok
 
-            cached = self.cache.add(all_runs.loc[idx, 'source'],
-                                    ds, name, fname, all_runs.loc[idx])
+            cached = self.cache.add(
+                all_runs.loc[idx, "source"], ds, name, fname, all_runs.loc[idx]
+            )
             if reduction_ok:
-                scale = all_runs.loc[idx, 'scale']
+                scale = all_runs.loc[idx, "scale"]
                 if not np.isnan(scale) and scale != 1:
                     print("Applying scale factor %f" % scale)
-                    sys.stdout.flush()   # keep progress updated
+                    sys.stdout.flush()  # keep progress updated
                     cached.rescale(scale)
 
         if show:
@@ -516,7 +535,7 @@ class BatchReducer:
         return self.reduce()
 
 
-def run_list(entry, mode='refl'):
+def run_list(entry, mode="refl"):
     """
     Generates a list of run numbers from a reduction spreadsheet entry
 
@@ -528,19 +547,19 @@ def run_list(entry, mode='refl'):
         Fetch either the run numbers from the reflectometry experiment
         or from the direct beams.
     """
-    if mode not in ('refl', 'directs'):
+    if mode not in ("refl", "directs"):
         # FIXME: crap API
         raise ValueError("Unknown mode %s" % mode)
 
-    if mode == 'refl':
-        listed = [entry['refl1'], entry['refl2'], entry['refl3']]
+    if mode == "refl":
+        listed = [entry["refl1"], entry["refl2"], entry["refl3"]]
     else:
-        listed = [entry['dir1'], entry['dir2'], entry['dir3']]
+        listed = [entry["dir1"], entry["dir2"], entry["dir3"]]
 
     valid = []
     for item in listed:
-        if isinstance(item, str) and ',' in item:
-            runs = [int(i) for i in item.split(',')]
+        if isinstance(item, str) and "," in item:
+            runs = [int(i) for i in item.split(",")]
         else:
             runs = [item]
         for run in runs:
@@ -548,8 +567,10 @@ def run_list(entry, mode='refl'):
                 if not np.isnan(run):
                     valid.append(run)
             except TypeError:
-                raise ValueError("Value '%s' could not be interpreted as a run"
-                                 " number" % run)
+                raise ValueError(
+                    "Value '%s' could not be interpreted as a run"
+                    " number" % run
+                )
 
     # valid = [int(r) for r in l if not np.isnan(r)]
     return [int(v) for v in valid]

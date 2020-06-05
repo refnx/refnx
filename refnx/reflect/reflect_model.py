@@ -34,8 +34,12 @@ import scipy
 from scipy.interpolate import splrep, splev
 
 
-from refnx.analysis import (Parameters, Parameter, possibly_create_parameter,
-                            Transform)
+from refnx.analysis import (
+    Parameters,
+    Parameter,
+    possibly_create_parameter,
+    Transform,
+)
 
 
 # some definitions for resolution smearing
@@ -72,20 +76,24 @@ def available_backends():
     backends = ["python"]
     try:
         import refnx.reflect._creflect as _creflect
+
         backends.append("c")
     except ImportError:
         pass
 
     try:
         import refnx.reflect._cyreflect as _cyreflect
+
         backends.append("cython")
     except ImportError:
         pass
 
     try:
         import pyopencl as cl
+
         cl.get_platforms()
         from refnx.reflect._reflect import abeles_pyopencl
+
         backends.append("pyopencl")
     except Exception:
         # importing pyopencl would be a ModuleNotFoundError
@@ -95,7 +103,7 @@ def available_backends():
     return tuple(backends)
 
 
-def get_reflect_backend(backend='c'):
+def get_reflect_backend(backend="c"):
     r"""
     Obtain an 'abeles' function used for calculating reflectivity.
 
@@ -127,50 +135,56 @@ def get_reflect_backend(backend='c'):
     """
     backend = backend.lower()
 
-    if backend == 'pyopencl':
+    if backend == "pyopencl":
         try:
             import pyopencl as cl
         except (ImportError, ModuleNotFoundError):
-            warnings.warn("Can't use the pyopencl abeles backend, you need"
-                          "to install pyopencl")
-            return get_reflect_backend('c')
+            warnings.warn(
+                "Can't use the pyopencl abeles backend, you need"
+                " to install pyopencl"
+            )
+            return get_reflect_backend("c")
         try:
             # see if there are any openCL platforms
             cl.get_platforms()
             from refnx.reflect._reflect import abeles_pyopencl
+
             return abeles_pyopencl
         except cl._cl.LogicError:
             # a pyopencl._cl.LogicError is raised if there isn't a platform
             warnings.warn("There are no openCL platforms available")
-            return get_reflect_backend('c')
-    elif backend == 'cython':
+            return get_reflect_backend("c")
+    elif backend == "cython":
         try:
             from refnx.reflect import _cyreflect as _cy
+
             return _cy.abeles
         except ImportError:
             warnings.warn("Can't use the cython abeles backend")
-            return get_reflect_backend('c')
-    elif backend == 'c':
+            return get_reflect_backend("c")
+    elif backend == "c":
         try:
             from refnx.reflect import _creflect as _c
+
             return _c.abeles
         except ImportError:
             warnings.warn("Can't use the C abeles backend")
-            return get_reflect_backend('python')
-    elif backend == 'python':
+            return get_reflect_backend("python")
+    elif backend == "python":
         warnings.warn("Using the SLOW reflectivity calculation.")
 
     # if nothing works return the Python backend
     from refnx.reflect import _reflect as _py
+
     return _py.abeles
 
 
 # this function is used to calculate reflectivity
-abeles = get_reflect_backend('c')
+abeles = get_reflect_backend("c")
 
 
 @contextmanager
-def use_reflect_backend(backend='c'):
+def use_reflect_backend(backend="c"):
     """Context manager for temporarily setting the backend used for
     calculating reflectivity
 
@@ -246,8 +260,18 @@ class ReflectModel(object):
         provided to `Objective.model` method must be an array, otherwise the
         smearing falls back to 'constant'.
     """
-    def __init__(self, structure, scale=1, bkg=1e-7, name='', dq=5.,
-                 threads=-1, quad_order=17, dq_type='pointwise'):
+
+    def __init__(
+        self,
+        structure,
+        scale=1,
+        bkg=1e-7,
+        name="",
+        dq=5.0,
+        threads=-1,
+        quad_order=17,
+        dq_type="pointwise",
+    ):
         self.name = name
         self._parameters = None
         self.threads = threads
@@ -257,12 +281,12 @@ class ReflectModel(object):
         self.fitfunc = None
 
         # all reflectometry models need a scale factor and background
-        self._scale = possibly_create_parameter(scale, name='scale')
-        self._bkg = possibly_create_parameter(bkg, name='bkg')
+        self._scale = possibly_create_parameter(scale, name="scale")
+        self._bkg = possibly_create_parameter(bkg, name="bkg")
 
         # we can optimize the resolution (but this is always overridden by
         # x_err if supplied. There is therefore possibly no dependence on it.
-        self._dq = possibly_create_parameter(dq, name='dq - resolution')
+        self._dq = possibly_create_parameter(dq, name="dq - resolution")
         self.dq_type = dq_type
 
         self._structure = None
@@ -289,10 +313,12 @@ class ReflectModel(object):
         return self.model(x, p=p, x_err=x_err)
 
     def __repr__(self):
-        return (f"ReflectModel({self._structure!r}, name={self.name!r},"
-                f" scale={self.scale!r}, bkg={self.bkg!r},"
-                f" dq={self.dq!r}, threads={self.threads},"
-                f" quad_order={self.quad_order!r}, dq_type={self.dq_type!r})")
+        return (
+            f"ReflectModel({self._structure!r}, name={self.name!r},"
+            f" scale={self.scale!r}, bkg={self.bkg!r},"
+            f" dq={self.dq!r}, threads={self.threads},"
+            f" quad_order={self.quad_order!r}, dq_type={self.dq_type!r})"
+        )
 
     @property
     def dq(self):
@@ -361,16 +387,19 @@ class ReflectModel(object):
         """
         if p is not None:
             self.parameters.pvals = np.array(p)
-        if x_err is None or self.dq_type == 'constant':
+        if x_err is None or self.dq_type == "constant":
             # fallback to what this object was constructed with
             x_err = float(self.dq)
 
-        return reflectivity(x, self.structure.slabs()[..., :4],
-                            scale=self.scale.value,
-                            bkg=self.bkg.value,
-                            dq=x_err,
-                            threads=self.threads,
-                            quad_order=self.quad_order)
+        return reflectivity(
+            x,
+            self.structure.slabs()[..., :4],
+            scale=self.scale.value,
+            bkg=self.bkg.value,
+            dq=x_err,
+            threads=self.threads,
+            quad_order=self.quad_order,
+        )
 
     def logp(self):
         r"""
@@ -398,7 +427,7 @@ class ReflectModel(object):
     @structure.setter
     def structure(self, structure):
         self._structure = structure
-        p = Parameters(name='instrument parameters')
+        p = Parameters(name="instrument parameters")
         p.extend([self.scale, self.bkg, self.dq])
 
         self._parameters = Parameters(name=self.name)
@@ -415,8 +444,9 @@ class ReflectModel(object):
         return self._parameters
 
 
-def reflectivity(q, slabs, scale=1., bkg=0., dq=5., quad_order=17,
-                 threads=-1):
+def reflectivity(
+    q, slabs, scale=1.0, bkg=0.0, dq=5.0, quad_order=17, threads=-1
+):
     r"""
     Abeles matrix formalism for calculating reflectivity from a stratified
     medium.
@@ -513,11 +543,9 @@ def reflectivity(q, slabs, scale=1., bkg=0., dq=5., quad_order=17,
         return abeles(q, slabs, scale=scale, bkg=bkg, threads=threads)
     elif isinstance(dq, numbers.Real):
         dq = float(dq)
-        return (scale *
-                _smeared_abeles_constant(q,
-                                         slabs,
-                                         dq,
-                                         threads=threads)) + bkg
+        return (
+            scale * _smeared_abeles_constant(q, slabs, dq, threads=threads)
+        ) + bkg
 
     # point by point resolution smearing (each q point has different dq/q)
     if isinstance(dq, np.ndarray) and dq.size == q.size:
@@ -525,35 +553,40 @@ def reflectivity(q, slabs, scale=1., bkg=0., dq=5., quad_order=17,
         qvals_flat = q.flatten()
 
         # adaptive quadrature
-        if quad_order == 'ultimate':
-            smeared_rvals = (scale *
-                             _smeared_abeles_adaptive(qvals_flat,
-                                                      slabs,
-                                                      dqvals_flat,
-                                                      threads=threads) +
-                             bkg)
+        if quad_order == "ultimate":
+            smeared_rvals = (
+                scale
+                * _smeared_abeles_adaptive(
+                    qvals_flat, slabs, dqvals_flat, threads=threads
+                )
+                + bkg
+            )
             return smeared_rvals.reshape(q.shape)
         # fixed order quadrature
         else:
-            smeared_rvals = (scale *
-                             _smeared_abeles_pointwise(qvals_flat,
-                                                       slabs,
-                                                       dqvals_flat,
-                                                       quad_order=quad_order,
-                                                       threads=threads) +
-                             bkg)
+            smeared_rvals = (
+                scale
+                * _smeared_abeles_pointwise(
+                    qvals_flat,
+                    slabs,
+                    dqvals_flat,
+                    quad_order=quad_order,
+                    threads=threads,
+                )
+                + bkg
+            )
             return np.reshape(smeared_rvals, q.shape)
 
     # resolution kernel smearing
-    elif (isinstance(dq, np.ndarray) and
-          dq.ndim == q.ndim + 2 and
-          dq.shape[0: q.ndim] == q.shape):
+    elif (
+        isinstance(dq, np.ndarray)
+        and dq.ndim == q.ndim + 2
+        and dq.shape[0 : q.ndim] == q.shape
+    ):
 
         qvals_for_res = dq[:, 0, :]
         # work out the reflectivity at the kernel evaluation points
-        smeared_rvals = abeles(qvals_for_res,
-                               slabs,
-                               threads=threads)
+        smeared_rvals = abeles(qvals_for_res, slabs, threads=threads)
 
         # multiply by probability
         smeared_rvals *= dq[:, 1, :]
@@ -639,7 +672,7 @@ def _smeared_abeles_adaptive(qvals, w, dqvals, threads=-1):
     absolute tolerance.
     """
     smeared_rvals = np.zeros(qvals.size)
-    warnings.simplefilter('ignore', Warning)
+    warnings.simplefilter("ignore", Warning)
     for idx, val in enumerate(qvals):
         smeared_rvals[idx], err = scipy.integrate.quadrature(
             _smearkernel,
@@ -647,7 +680,8 @@ def _smeared_abeles_adaptive(qvals, w, dqvals, threads=-1):
             _INTLIMIT,
             tol=2 * np.finfo(np.float64).eps,
             rtol=2 * np.finfo(np.float64).eps,
-            args=(w, qvals[idx], dqvals[idx], threads))
+            args=(w, qvals[idx], dqvals[idx], threads),
+        )
 
     warnings.resetwarnings()
     return smeared_rvals
@@ -691,7 +725,7 @@ def _smeared_abeles_pointwise(qvals, w, dqvals, quad_order=17, threads=-1):
     abscissa, weights = gauss_legendre(quad_order)
 
     # get the normal distribution at that point
-    prefactor = 1. / np.sqrt(2 * np.pi)
+    prefactor = 1.0 / np.sqrt(2 * np.pi)
 
     def gauss(x):
         return np.exp(-0.5 * x * x)
@@ -705,14 +739,10 @@ def _smeared_abeles_pointwise(qvals, w, dqvals, quad_order=17, threads=-1):
     va = va[:, np.newaxis]
     vb = vb[:, np.newaxis]
 
-    qvals_for_res = ((np.atleast_2d(abscissa) *
-                     (vb - va) + vb + va) / 2.)
-    smeared_rvals = abeles(qvals_for_res,
-                           w,
-                           threads=threads)
+    qvals_for_res = (np.atleast_2d(abscissa) * (vb - va) + vb + va) / 2.0
+    smeared_rvals = abeles(qvals_for_res, w, threads=threads)
 
-    smeared_rvals = np.reshape(smeared_rvals,
-                               (qvals.size, abscissa.size))
+    smeared_rvals = np.reshape(smeared_rvals, (qvals.size, abscissa.size))
 
     smeared_rvals *= np.atleast_2d(gaussvals * weights)
     return np.sum(smeared_rvals, 1) * _INTLIMIT
@@ -749,7 +779,7 @@ def _smeared_abeles_constant(q, w, resolution, threads=-1):
     gaussgpoint = (gaussnum - 1) / 2
 
     def gauss(x, s):
-        return 1. / s / np.sqrt(2 * np.pi) * np.exp(-0.5 * x**2 / s / s)
+        return 1.0 / s / np.sqrt(2 * np.pi) * np.exp(-0.5 * x ** 2 / s / s)
 
     lowq = np.min(q)
     highq = np.max(q)
@@ -758,17 +788,22 @@ def _smeared_abeles_constant(q, w, resolution, threads=-1):
 
     start = np.log10(lowq) - 6 * resolution / _FWHM
     finish = np.log10(highq * (1 + 6 * resolution / _FWHM))
-    interpnum = np.round(np.abs(1 * (np.abs(start - finish)) /
-                         (1.7 * resolution / _FWHM / gaussgpoint)))
+    interpnum = np.round(
+        np.abs(
+            1
+            * (np.abs(start - finish))
+            / (1.7 * resolution / _FWHM / gaussgpoint)
+        )
+    )
     xtemp = _cached_linspace(start, finish, int(interpnum))
-    xlin = np.power(10., xtemp)
+    xlin = np.power(10.0, xtemp)
 
     # resolution smear over [-4 sigma, 4 sigma]
     gauss_x = _cached_linspace(-1.7 * resolution, 1.7 * resolution, gaussnum)
     gauss_y = gauss(gauss_x, resolution / _FWHM)
 
     rvals = abeles(xlin, w, threads=threads)
-    smeared_rvals = np.convolve(rvals, gauss_y, mode='same')
+    smeared_rvals = np.convolve(rvals, gauss_y, mode="same")
     smeared_rvals *= gauss_x[1] - gauss_x[0]
 
     # interpolator = InterpolatedUnivariateSpline(xlin, smeared_rvals)
@@ -844,8 +879,18 @@ class MixedReflectModel(object):
         provided to `Objective.model` method must be an array, otherwise the
         smearing falls back to 'constant'.
     """
-    def __init__(self, structures, scales=None, bkg=1e-7, name='', dq=5.,
-                 threads=-1, quad_order=17, dq_type='pointwise'):
+
+    def __init__(
+        self,
+        structures,
+        scales=None,
+        bkg=1e-7,
+        name="",
+        dq=5.0,
+        threads=-1,
+        quad_order=17,
+        dq_type="pointwise",
+    ):
         self.name = name
         self._parameters = None
         self.threads = threads
@@ -853,36 +898,39 @@ class MixedReflectModel(object):
 
         # all reflectometry models need a scale factor and background. Set
         # them all to 1 by default.
-        pscales = Parameters(name='scale factors')
+        pscales = Parameters(name="scale factors")
 
         if scales is not None and len(structures) == len(scales):
             tscales = scales
         elif scales is not None and len(structures) != len(scales):
-            raise ValueError("You need to supply scale factor for each"
-                             " structure")
+            raise ValueError(
+                "You need to supply scale factor for each" " structure"
+            )
         else:
             tscales = [1 / len(structures)] * len(structures)
 
         for scale in tscales:
-            p_scale = possibly_create_parameter(scale, name='scale')
+            p_scale = possibly_create_parameter(scale, name="scale")
             pscales.append(p_scale)
 
         self._scales = pscales
-        self._bkg = possibly_create_parameter(bkg, name='bkg')
+        self._bkg = possibly_create_parameter(bkg, name="bkg")
 
         # we can optimize the resolution (but this is always overridden by
         # x_err if supplied. There is therefore possibly no dependence on it.
-        self._dq = possibly_create_parameter(dq, name='dq - resolution')
+        self._dq = possibly_create_parameter(dq, name="dq - resolution")
         self.dq_type = dq_type
 
         self._structures = structures
 
     def __repr__(self):
-        s = (f"MixedReflectModel({self._structures!r},"
-             f" scales={self._scales!r}, bkg={self._bkg!r},"
-             f" name={self.name!r}, dq={self._dq!r},"
-             f" threads={self.threads!r}, quad_order={self.quad_order!r},"
-             f" dq_type={self.dq_type!r})")
+        s = (
+            f"MixedReflectModel({self._structures!r},"
+            f" scales={self._scales!r}, bkg={self._bkg!r},"
+            f" name={self.name!r}, dq={self._dq!r},"
+            f" threads={self.threads!r}, quad_order={self.quad_order!r},"
+            f" dq_type={self.dq_type!r})"
+        )
         return s
 
     def __call__(self, x, p=None, x_err=None):
@@ -967,7 +1015,7 @@ class MixedReflectModel(object):
         """
         if p is not None:
             self.parameters.pvals = np.array(p)
-        if x_err is None or self.dq_type == 'constant':
+        if x_err is None or self.dq_type == "constant":
             # fallback to what this object was constructed with
             x_err = float(self.dq)
 
@@ -976,12 +1024,14 @@ class MixedReflectModel(object):
         y = np.zeros_like(x)
 
         for scale, structure in zip(scales, self.structures):
-            y += reflectivity(x,
-                              structure.slabs()[..., :4],
-                              scale=scale,
-                              dq=x_err,
-                              threads=self.threads,
-                              quad_order=self.quad_order)
+            y += reflectivity(
+                x,
+                structure.slabs()[..., :4],
+                scale=scale,
+                dq=x_err,
+                threads=self.threads,
+                quad_order=self.quad_order,
+            )
 
         return y + self.bkg.value
 
@@ -1019,13 +1069,14 @@ class MixedReflectModel(object):
         model.
 
         """
-        p = Parameters(name='instrument parameters')
+        p = Parameters(name="instrument parameters")
         p.extend([self.scales, self.bkg, self.dq])
 
         self._parameters = Parameters(name=self.name)
         self._parameters.append([p])
-        self._parameters.extend([structure.parameters for structure
-                                 in self._structures])
+        self._parameters.extend(
+            [structure.parameters for structure in self._structures]
+        )
         return self._parameters
 
 
@@ -1064,7 +1115,7 @@ class FresnelTransform(Transform):
     """
 
     def __init__(self, sld_fronting, sld_backing, dq=0):
-        self.form = 'Fresnel'
+        self.form = "Fresnel"
 
         self.sld_fronting = sld_fronting
         self.sld_backing = sld_backing
@@ -1073,9 +1124,8 @@ class FresnelTransform(Transform):
     def __repr__(self):
         # use repr for sld's because they could be `reflect.SLD` objects
         return "FresnelTransform({0}, {1}, dq={2})".format(
-            repr(self.sld_fronting),
-            repr(self.sld_backing),
-            repr(self.dq))
+            repr(self.sld_fronting), repr(self.sld_backing), repr(self.dq)
+        )
 
     def __call__(self, x, y, y_err=None, x_err=0):
         """
@@ -1123,8 +1173,9 @@ class FresnelTransform(Transform):
         sld_fronting = complex(self.sld_fronting)
         sld_backing = complex(self.sld_backing)
 
-        slabs = np.array([[0, sld_fronting.real, 0, 0],
-                          [0, sld_backing.real, 0, 0]])
+        slabs = np.array(
+            [[0, sld_fronting.real, 0, 0], [0, sld_backing.real, 0, 0]]
+        )
 
         fresnel = reflectivity(x, slabs, dq=self.dq)
 
@@ -1156,15 +1207,15 @@ def choose_dq_type(objective):
         a percentage) Q resolution is quicker.
     """
     # choose which resolution smearing approach to use
-    if (objective.data.x_err is None or
-            not isinstance(objective.model,
-                           (ReflectModel, MixedReflectModel))):
-        return 'constant'
+    if objective.data.x_err is None or not isinstance(
+        objective.model, (ReflectModel, MixedReflectModel)
+    ):
+        return "constant"
 
     original_method = objective.model.dq_type
 
     # time how long point-by-point takes
-    objective.model.dq_type = 'pointwise'
+    objective.model.dq_type = "pointwise"
     start = time.time()
     for i in range(100):
         objective.generative()
@@ -1172,9 +1223,9 @@ def choose_dq_type(objective):
 
     x_err = objective.data.x_err
     objective.data.x_err = None
-    dq = 10. * x_err / objective.data.x
+    dq = 10.0 * x_err / objective.data.x
     objective.model.dq.value = np.mean(dq)
-    objective.model.dq_type = 'constant'
+    objective.model.dq_type = "constant"
     start = time.time()
     for i in range(100):
         objective.generative()
@@ -1186,5 +1237,5 @@ def choose_dq_type(objective):
     #     print(f"Constant: {const_pp}, point-by-point: {time_pp}")
     if const_pp < time_pp:
         # if constant resolution smearing better.
-        return 'constant'
-    return 'pointwise'
+        return "constant"
+    return "pointwise"

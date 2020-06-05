@@ -91,17 +91,21 @@ class ReflectModelView(HasTraits):
 
         # got to listen to all the slab views
         for slab_view in slab_views:
-            slab_view.observe(self._on_slab_params_modified,
-                              names=['view_changed'])
+            slab_view.observe(
+                self._on_slab_params_modified, names=["view_changed"]
+            )
 
         # if you'd like to change the number of layers
         self.w_layers = widgets.BoundedIntText(
-            description='Number of layers',
-            value=len(slab_views) - 2, min=0, max=1000,
-            style={'description_width': '120px'},
-            continuous_update=False)
+            description="Number of layers",
+            value=len(slab_views) - 2,
+            min=0,
+            max=1000,
+            style={"description_width": "120px"},
+            continuous_update=False,
+        )
 
-        self.w_layers.observe(self._on_change_layers, names=['value'])
+        self.w_layers.observe(self._on_change_layers, names=["value"])
 
         # where you're going to add/remove layers
         # varying layers is a flag to say if you're currently in the process
@@ -113,71 +117,91 @@ class ReflectModelView(HasTraits):
 
         # associated with ReflectModel
         p = reflect_model.scale
-        self.w_scale = widgets.FloatText(value=p.value,
-                                         description='scale', step=0.01,
-                                         style={'description_width': '120px'})
+        self.w_scale = widgets.FloatText(
+            value=p.value,
+            description="scale",
+            step=0.01,
+            style={"description_width": "120px"},
+        )
         self.c_scale = widgets.Checkbox(value=p.vary)
         self.scale_low_limit = widgets.FloatText(value=p.bounds.lb, step=0.01)
         self.scale_hi_limit = widgets.FloatText(value=p.bounds.ub, step=0.01)
 
         p = reflect_model.bkg
-        self.w_bkg = widgets.FloatText(value=p.value,
-                                       description='background', step=1e-7,
-                                       style={'description_width': '120px'})
+        self.w_bkg = widgets.FloatText(
+            value=p.value,
+            description="background",
+            step=1e-7,
+            style={"description_width": "120px"},
+        )
         self.c_bkg = widgets.Checkbox(value=reflect_model.bkg.vary)
         self.bkg_low_limit = widgets.FloatText(p.bounds.lb, step=1e-8)
         self.bkg_hi_limit = widgets.FloatText(value=p.bounds.ub, step=1e-7)
 
         p = reflect_model.dq
-        self.w_dq = widgets.BoundedFloatText(value=p.value,
-                                             description='dq/q', step=0.1,
-                                             min=0, max=20.)
+        self.w_dq = widgets.BoundedFloatText(
+            value=p.value, description="dq/q", step=0.1, min=0, max=20.0
+        )
         self.c_dq = widgets.Checkbox(value=reflect_model.dq.vary)
-        self.dq_low_limit = widgets.BoundedFloatText(value=p.bounds.lb,
-                                                     min=0, max=20,
-                                                     step=0.1)
-        self.dq_hi_limit = widgets.BoundedFloatText(value=p.bounds.ub,
-                                                    min=0, max=20,
-                                                    step=0.1)
+        self.dq_low_limit = widgets.BoundedFloatText(
+            value=p.bounds.lb, min=0, max=20, step=0.1
+        )
+        self.dq_hi_limit = widgets.BoundedFloatText(
+            value=p.bounds.ub, min=0, max=20, step=0.1
+        )
 
-        self.c_scale.style.description_width = '0px'
-        self.c_bkg.style.description_width = '0px'
-        self.c_dq.style.description_width = '0px'
-        self.do_fit_button = widgets.Button(description='Do Fit')
-        self.to_code_button = widgets.Button(description='To code')
-        self.save_model_button = widgets.Button(description='Save Model')
-        self.load_model_button = widgets.Button(description='Load Model')
+        self.c_scale.style.description_width = "0px"
+        self.c_bkg.style.description_width = "0px"
+        self.c_dq.style.description_width = "0px"
+        self.do_fit_button = widgets.Button(description="Do Fit")
+        self.to_code_button = widgets.Button(description="To code")
+        self.save_model_button = widgets.Button(description="Save Model")
+        self.load_model_button = widgets.Button(description="Load Model")
 
-        widget_list = [self.w_scale, self.c_scale, self.w_bkg,
-                       self.c_bkg, self.w_dq, self.c_dq]
+        widget_list = [
+            self.w_scale,
+            self.c_scale,
+            self.w_bkg,
+            self.c_bkg,
+            self.w_dq,
+            self.c_dq,
+        ]
 
-        limits_widgets_list = [self.scale_low_limit, self.scale_hi_limit,
-                               self.bkg_low_limit, self.bkg_hi_limit,
-                               self.dq_low_limit, self.dq_hi_limit]
+        limits_widgets_list = [
+            self.scale_low_limit,
+            self.scale_hi_limit,
+            self.bkg_low_limit,
+            self.bkg_hi_limit,
+            self.dq_low_limit,
+            self.dq_hi_limit,
+        ]
 
         for widget in widget_list:
-            widget.observe(self._on_model_params_modified, names=['value'])
+            widget.observe(self._on_model_params_modified, names=["value"])
 
         for widget in limits_widgets_list:
-            widget.observe(self._on_model_limits_modified, names=['value'])
+            widget.observe(self._on_model_limits_modified, names=["value"])
 
         # button to create default limits
         self.default_limits_button = widgets.Button(
-            description='Set default limits')
+            description="Set default limits"
+        )
         self.default_limits_button.on_click(self.default_limits)
 
         # widgets for easy model change
         self.model_slider = widgets.FloatSlider()
-        self.model_slider.layout = widgets.Layout(width='100%')
+        self.model_slider.layout = widgets.Layout(width="100%")
         self.model_slider_link = None
         self.model_slider_min = widgets.FloatText()
-        self.model_slider_min.layout = widgets.Layout(width='10%')
+        self.model_slider_min.layout = widgets.Layout(width="10%")
         self.model_slider_max = widgets.FloatText()
-        self.model_slider_max.layout = widgets.Layout(width='10%')
-        self.model_slider_max.observe(self._on_slider_limits_modified,
-                                      names=['value'])
-        self.model_slider_min.observe(self._on_slider_limits_modified,
-                                      names=['value'])
+        self.model_slider_max.layout = widgets.Layout(width="10%")
+        self.model_slider_max.observe(
+            self._on_slider_limits_modified, names=["value"]
+        )
+        self.model_slider_min.observe(
+            self._on_slider_limits_modified, names=["value"]
+        )
         self.last_selected_param = None
 
         self.num_varying = len(self.model.parameters.varying_parameters())
@@ -194,14 +218,14 @@ class ReflectModelView(HasTraits):
             idx = id(par)
             wids = d[idx]
 
-            if change['owner'] in wids:
-                loc = wids.index(change['owner'])
+            if change["owner"] in wids:
+                loc = wids.index(change["owner"])
                 if loc == 0:
                     par.value = wids[0].value
 
                     # this captures when the user starts modifying a different
                     # parameter
-                    self._possibly_link_slider(change['owner'])
+                    self._possibly_link_slider(change["owner"])
 
                     self.view_changed = time.time()
                     break
@@ -212,8 +236,9 @@ class ReflectModelView(HasTraits):
                     # need to rebuild the limit widgets, achieved by redrawing
                     # box
                     # set the number of varying parameters
-                    self.num_varying = (
-                        len(self.model.parameters.varying_parameters()))
+                    self.num_varying = len(
+                        self.model.parameters.varying_parameters()
+                    )
 
                     self.view_redraw = time.time()
                     break
@@ -221,7 +246,7 @@ class ReflectModelView(HasTraits):
                     return
 
         # this captures when the user starts modifying a different parameter
-        self._possibly_link_slider(change['owner'])
+        self._possibly_link_slider(change["owner"])
 
     def _on_model_limits_modified(self, change):
         """
@@ -233,8 +258,8 @@ class ReflectModelView(HasTraits):
             idx = id(par)
             wids = d[idx]
 
-            if change['owner'] in wids:
-                loc = wids.index(change['owner'])
+            if change["owner"] in wids:
+                loc = wids.index(change["owner"])
                 if loc == 2:
                     par.bounds.lb = wids[2].value
                     break
@@ -259,7 +284,7 @@ class ReflectModelView(HasTraits):
         Called when slab parameters are varied.
         """
         # this captures when the user starts modifying a different parameter
-        if isinstance(change['owner'].param_being_varied, widgets.Checkbox):
+        if isinstance(change["owner"].param_being_varied, widgets.Checkbox):
             # you are changing the number of fitted parameters
 
             # set the number of varying parameters
@@ -268,7 +293,7 @@ class ReflectModelView(HasTraits):
             # need to rebuild the limit widgets, achieved by redrawing box
             self.view_redraw = time.time()
         else:
-            self._possibly_link_slider(change['owner'].param_being_varied)
+            self._possibly_link_slider(change["owner"].param_being_varied)
             self.view_changed = time.time()
 
     def _possibly_link_slider(self, change_owner):
@@ -276,17 +301,20 @@ class ReflectModelView(HasTraits):
         When a ReflectModel value is changed link a slider widget to the
         parameter that is being varied.
         """
-        if (change_owner is not self.last_selected_param):
+        if change_owner is not self.last_selected_param:
             self.last_selected_param = change_owner
             if self.model_slider_link is not None:
                 self.model_slider_link.unlink()
             self.model_slider_link = widgets.link(
-                (self.last_selected_param, 'value'),
-                (self.model_slider, 'value'))
+                (self.last_selected_param, "value"),
+                (self.model_slider, "value"),
+            )
             self.model_slider_max.value = max(
-                0, 2. * self.last_selected_param.value)
+                0, 2.0 * self.last_selected_param.value
+            )
             self.model_slider_min.value = min(
-                0, 2. * self.last_selected_param.value)
+                0, 2.0 * self.last_selected_param.value
+            )
 
     def _on_slider_limits_modified(self, change):
         """
@@ -295,21 +323,26 @@ class ReflectModelView(HasTraits):
         """
         self.model_slider.max = self.model_slider_max.value
         self.model_slider.min = self.model_slider_min.value
-        self.model_slider.step = (self.model_slider.max -
-                                  self.model_slider.min) / 200.
+        self.model_slider.step = (
+            self.model_slider.max - self.model_slider.min
+        ) / 200.0
 
     def _on_change_layers(self, change):
         self.ok_button = widgets.Button(description="OK")
-        if change['new'] > change['old']:
-            description = 'Insert before which layer?'
+        if change["new"] > change["old"]:
+            description = "Insert before which layer?"
             min_loc = 1
             max_loc = len(self.model.structure) - 2 + 1
             self.ok_button.on_click(self._increase_layers)
-        elif change['new'] < change['old']:
+        elif change["new"] < change["old"]:
             min_loc = 1
-            max_loc = (len(self.model.structure) - 2 -
-                       (change['old'] - change['new']) + 1)
-            description = 'Remove from which layer?'
+            max_loc = (
+                len(self.model.structure)
+                - 2
+                - (change["old"] - change["new"])
+                + 1
+            )
+            description = "Remove from which layer?"
             self.ok_button.on_click(self._decrease_layers)
         else:
             return
@@ -323,8 +356,10 @@ class ReflectModelView(HasTraits):
         self._location = widgets.BoundedIntText(
             value=min_loc,
             description=description,
-            min=min_loc, max=max_loc,
-            style={'description_width': 'initial'})
+            min=min_loc,
+            max=max_loc,
+            style={"description_width": "initial"},
+        )
         self.cancel_button = widgets.Button(description="Cancel")
         self.cancel_button.on_click(self._cancel_layers)
         self.view_redraw = time.time()
@@ -392,18 +427,30 @@ class ReflectModelView(HasTraits):
         d = self.param_widgets_link
         model = self.model
 
-        d[id(model.scale)] = (self.w_scale, self.c_scale,
-                              self.scale_low_limit, self.scale_hi_limit)
-        d[id(model.bkg)] = (self.w_bkg, self.c_bkg,
-                            self.bkg_low_limit, self.bkg_hi_limit)
-        d[id(model.dq)] = (self.w_dq, self.c_dq,
-                           self.dq_low_limit, self.dq_hi_limit)
+        d[id(model.scale)] = (
+            self.w_scale,
+            self.c_scale,
+            self.scale_low_limit,
+            self.scale_hi_limit,
+        )
+        d[id(model.bkg)] = (
+            self.w_bkg,
+            self.c_bkg,
+            self.bkg_low_limit,
+            self.bkg_hi_limit,
+        )
+        d[id(model.dq)] = (
+            self.w_dq,
+            self.c_dq,
+            self.dq_low_limit,
+            self.dq_hi_limit,
+        )
 
     def _cancel_layers(self, b):
         # disable the change layers widget to prevent recursion
-        self.w_layers.unobserve(self._on_change_layers, names='value')
+        self.w_layers.unobserve(self._on_change_layers, names="value")
         self.w_layers.value = len(self.model.structure) - 2
-        self.w_layers.observe(self._on_change_layers, names='value')
+        self.w_layers.observe(self._on_change_layers, names="value")
         self.w_layers.disabled = False
         self.do_fit_button.disabled = False
         self.to_code_button.disabled = False
@@ -434,24 +481,37 @@ class ReflectModelView(HasTraits):
         """
         `ipywidgets.Vbox` displaying model relevant widgets.
         """
-        output = [self.w_layers,
-                  widgets.HBox([self.w_scale, self.c_scale,
-                                self.w_dq, self.c_dq]),
-                  widgets.HBox([self.w_bkg, self.c_bkg]),
-                  self.structure_view.box,
-                  widgets.HBox([self.model_slider_min,
-                                self.model_slider,
-                                self.model_slider_max])]
+        output = [
+            self.w_layers,
+            widgets.HBox([self.w_scale, self.c_scale, self.w_dq, self.c_dq]),
+            widgets.HBox([self.w_bkg, self.c_bkg]),
+            self.structure_view.box,
+            widgets.HBox(
+                [
+                    self.model_slider_min,
+                    self.model_slider,
+                    self.model_slider_max,
+                ]
+            ),
+        ]
 
         if self._varying_layers:
-            output.append(widgets.HBox([self._location,
-                                        self.ok_button,
-                                        self.cancel_button]))
+            output.append(
+                widgets.HBox(
+                    [self._location, self.ok_button, self.cancel_button]
+                )
+            )
 
-        output.append(widgets.HBox([self.do_fit_button,
-                                    self.to_code_button,
-                                    self.save_model_button,
-                                    self.load_model_button]))
+        output.append(
+            widgets.HBox(
+                [
+                    self.do_fit_button,
+                    self.to_code_button,
+                    self.save_model_button,
+                    self.load_model_button,
+                ]
+            )
+        )
 
         return widgets.VBox(output)
 
@@ -486,17 +546,21 @@ class StructureView(object):
 
     @property
     def box(self):
-        layout = widgets.Layout(flex='1 1 auto', width='auto')
-        label_row = widgets.HBox([widgets.HTML('thick', layout=layout),
-                                  widgets.HTML('sld', layout=layout),
-                                  widgets.HTML('isld', layout=layout),
-                                  widgets.HTML('rough', layout=layout)])
+        layout = widgets.Layout(flex="1 1 auto", width="auto")
+        label_row = widgets.HBox(
+            [
+                widgets.HTML("thick", layout=layout),
+                widgets.HTML("sld", layout=layout),
+                widgets.HTML("isld", layout=layout),
+                widgets.HTML("rough", layout=layout),
+            ]
+        )
 
         hboxes = [label_row]
         hboxes.extend([view.box for view in self.slab_views])
         # add in layer numbers
-        self.slab_views[0].w_thick.description = 'fronting'
-        self.slab_views[-1].w_thick.description = 'backing'
+        self.slab_views[0].w_thick.description = "fronting"
+        self.slab_views[-1].w_thick.description = "backing"
         for i in range(1, len(self.slab_views) - 1):
             self.slab_views[i].w_thick.description = str(i)
 
@@ -534,61 +598,69 @@ class SlabView(HasTraits):
         self.widgets_param_link[self.w_thick] = p
         self.c_thick = widgets.Checkbox(value=p.vary)
         self.thick_low_limit = widgets.FloatText(value=p.bounds.lb, step=1)
-        self.thick_hi_limit = widgets.FloatText(value=p.bounds.ub,
-                                                step=1)
+        self.thick_hi_limit = widgets.FloatText(value=p.bounds.ub, step=1)
 
         p = slab.sld.real
         self.w_sld = widgets.FloatText(value=p.value, step=0.01)
         self.widgets_param_link[self.w_sld] = p
         self.c_sld = widgets.Checkbox(value=p.vary)
-        self.sld_low_limit = widgets.FloatText(value=p.bounds.lb,
-                                               step=0.01)
-        self.sld_hi_limit = widgets.FloatText(value=p.bounds.ub,
-                                              step=0.01)
+        self.sld_low_limit = widgets.FloatText(value=p.bounds.lb, step=0.01)
+        self.sld_hi_limit = widgets.FloatText(value=p.bounds.ub, step=0.01)
         p = slab.sld.imag
         self.w_isld = widgets.FloatText(value=p.value, step=0.01)
         self.widgets_param_link[self.w_isld] = p
         self.c_isld = widgets.Checkbox(value=p.vary)
         self.isld_low_limit = widgets.FloatText(value=p.bounds.lb, step=0.01)
-        self.isld_hi_limit = widgets.FloatText(value=p.bounds.ub,
-                                               step=0.01)
+        self.isld_hi_limit = widgets.FloatText(value=p.bounds.ub, step=0.01)
 
         p = slab.rough
         self.w_rough = widgets.FloatText(value=p, step=1)
         self.widgets_param_link[self.w_rough] = p
         self.c_rough = widgets.Checkbox(value=p.vary)
         self.rough_low_limit = widgets.FloatText(p.bounds.lb, step=0.01)
-        self.rough_hi_limit = widgets.FloatText(value=p.bounds.ub,
-                                                step=0.01)
+        self.rough_hi_limit = widgets.FloatText(value=p.bounds.ub, step=0.01)
 
-        self._widget_list = [self.w_thick, self.c_thick, self.w_sld,
-                             self.c_sld, self.w_isld, self.c_isld,
-                             self.w_rough, self.c_rough]
-        self._limits_list = [self.thick_low_limit, self.thick_hi_limit,
-                             self.sld_low_limit, self.sld_hi_limit,
-                             self.isld_low_limit, self.isld_hi_limit,
-                             self.rough_low_limit, self.rough_hi_limit]
+        self._widget_list = [
+            self.w_thick,
+            self.c_thick,
+            self.w_sld,
+            self.c_sld,
+            self.w_isld,
+            self.c_isld,
+            self.w_rough,
+            self.c_rough,
+        ]
+        self._limits_list = [
+            self.thick_low_limit,
+            self.thick_hi_limit,
+            self.sld_low_limit,
+            self.sld_hi_limit,
+            self.isld_low_limit,
+            self.isld_hi_limit,
+            self.rough_low_limit,
+            self.rough_hi_limit,
+        ]
 
         # link widgets to observers
         for widget in [self.w_thick, self.w_sld, self.w_isld, self.w_rough]:
-            widget.style.description_width = '0px'
-            widget.observe(self._on_slab_values_modified, names='value')
-        self.w_thick.style.description_width = '50px'
+            widget.style.description_width = "0px"
+            widget.observe(self._on_slab_values_modified, names="value")
+        self.w_thick.style.description_width = "50px"
 
         for widget in [self.c_thick, self.c_sld, self.c_isld, self.c_rough]:
-            widget.style.description_width = '0px'
-            widget.observe(self._on_slab_varies_modified, names='value')
+            widget.style.description_width = "0px"
+            widget.observe(self._on_slab_varies_modified, names="value")
 
         for widget in self._limits_list:
-            widget.observe(self._on_slab_limits_modified, names='value')
+            widget.observe(self._on_slab_limits_modified, names="value")
 
         self._link_param_widgets()
 
     def _on_slab_values_modified(self, change):
         d = self.widgets_param_link
-        d[change['owner']].value = change['owner'].value
+        d[change["owner"]].value = change["owner"].value
 
-        self.param_being_varied = change['owner']
+        self.param_being_varied = change["owner"]
         self.view_changed = time.time()
 
     def _on_slab_varies_modified(self, change):
@@ -596,12 +668,12 @@ class SlabView(HasTraits):
         slab = self.slab
 
         for par in flatten(slab.parameters):
-            if id(par) in d and change['owner'] in d[id(par)]:
+            if id(par) in d and change["owner"] in d[id(par)]:
                 wids = d[id(par)]
                 par.vary = wids[1].value
                 break
 
-        self.param_being_varied = change['owner']
+        self.param_being_varied = change["owner"]
         self.view_changed = time.time()
 
     def _on_slab_limits_modified(self, change):
@@ -609,9 +681,9 @@ class SlabView(HasTraits):
         d = self.param_widgets_link
 
         for par in flatten(slab.parameters):
-            if id(par) in d and change['owner'] in d[id(par)]:
+            if id(par) in d and change["owner"] in d[id(par)]:
                 wids = d[id(par)]
-                loc = wids.index(change['owner'])
+                loc = wids.index(change["owner"])
                 if loc == 2:
                     par.bounds.lb = wids[loc].value
                     break
@@ -629,23 +701,31 @@ class SlabView(HasTraits):
         #                             upperlim, lowerlim)
         d = self.param_widgets_link
 
-        d[id(self.slab.thick)] = (self.w_thick,
-                                  self.c_thick,
-                                  self.thick_low_limit,
-                                  self.thick_hi_limit)
-        d[id(self.slab.sld.real)] = (self.w_sld,
-                                     self.c_sld,
-                                     self.sld_low_limit,
-                                     self.sld_hi_limit)
-        d[id(self.slab.sld.imag)] = (self.w_isld,
-                                     self.c_isld,
-                                     self.isld_low_limit,
-                                     self.isld_hi_limit)
+        d[id(self.slab.thick)] = (
+            self.w_thick,
+            self.c_thick,
+            self.thick_low_limit,
+            self.thick_hi_limit,
+        )
+        d[id(self.slab.sld.real)] = (
+            self.w_sld,
+            self.c_sld,
+            self.sld_low_limit,
+            self.sld_hi_limit,
+        )
+        d[id(self.slab.sld.imag)] = (
+            self.w_isld,
+            self.c_isld,
+            self.isld_low_limit,
+            self.isld_hi_limit,
+        )
 
-        d[id(self.slab.rough)] = (self.w_rough,
-                                  self.c_rough,
-                                  self.rough_low_limit,
-                                  self.rough_hi_limit)
+        d[id(self.slab.rough)] = (
+            self.w_rough,
+            self.c_rough,
+            self.rough_low_limit,
+            self.rough_hi_limit,
+        )
 
     def refresh(self):
         """
@@ -726,9 +806,9 @@ class Motofit(object):
         self.ax_sld = None
         # gridspecs specify how the plots are laid out. Gridspec1 is when the
         # residuals plot is displayed. Gridspec2 is when it's not visible
-        self._gridspec1 = gridspec.GridSpec(2, 2,
-                                            height_ratios=[5, 1],
-                                            width_ratios=[1, 1], hspace=0.01)
+        self._gridspec1 = gridspec.GridSpec(
+            2, 2, height_ratios=[5, 1], width_ratios=[1, 1], hspace=0.01
+        )
         self._gridspec2 = gridspec.GridSpec(1, 2)
 
         self.theoretical_plot = None
@@ -742,9 +822,9 @@ class Motofit(object):
         self.residuals_plot = None
         self.data_plot_sld = None
 
-        self.dataset_name = widgets.Text(description='dataset:')
+        self.dataset_name = widgets.Text(description="dataset:")
         self.dataset_name.disabled = True
-        self.chisqr = widgets.FloatText(description='chi-squared:')
+        self.chisqr = widgets.FloatText(description="chi-squared:")
         self.chisqr.disabled = True
 
         # fronting
@@ -772,33 +852,36 @@ class Motofit(object):
         self.display_box = widgets.VBox()
 
         self.tab = widgets.Tab()
-        self.tab.set_title(0, 'Model')
-        self.tab.set_title(1, 'Limits')
-        self.tab.set_title(2, 'Options')
-        self.tab.observe(self._on_tab_changed, names='selected_index')
+        self.tab.set_title(0, "Model")
+        self.tab.set_title(1, "Limits")
+        self.tab.set_title(2, "Options")
+        self.tab.observe(self._on_tab_changed, names="selected_index")
 
         # an output area for messages.
         self.output = widgets.Output()
 
         # options tab
-        self.plot_type = widgets.Dropdown(options=['lin', 'logY',
-                                                   'YX4', 'YX2'],
-                                          value='lin',
-                                          description='Plot Type:',
-                                          disabled=False)
-        self.plot_type.observe(self._on_plot_type_changed, names='value')
+        self.plot_type = widgets.Dropdown(
+            options=["lin", "logY", "YX4", "YX2"],
+            value="lin",
+            description="Plot Type:",
+            disabled=False,
+        )
+        self.plot_type.observe(self._on_plot_type_changed, names="value")
         self.use_weights = widgets.RadioButtons(
-            options=['Yes', 'No'],
-            value='Yes',
-            description='use dataset weights?',
-            style={'description_width': 'initial'})
-        self.use_weights.observe(self._on_use_weights_changed, names='value')
-        self.transform = Transform('lin')
+            options=["Yes", "No"],
+            value="Yes",
+            description="use dataset weights?",
+            style={"description_width": "initial"},
+        )
+        self.use_weights.observe(self._on_use_weights_changed, names="value")
+        self.transform = Transform("lin")
         self.display_residuals = widgets.Checkbox(
-            value=False,
-            description='Display residuals')
-        self.display_residuals.observe(self._on_display_residuals_changed,
-                                       names='value')
+            value=False, description="Display residuals"
+        )
+        self.display_residuals.observe(
+            self._on_display_residuals_changed, names="value"
+        )
 
         self.model_view = None
         self.set_model(self.model)
@@ -820,9 +903,9 @@ class Motofit(object):
             File to save model to.
         """
         if f is None:
-            f = 'model_' + datetime.datetime.now().isoformat() + '.pkl'
+            f = "model_" + datetime.datetime.now().isoformat() + ".pkl"
             if self.dataset is not None:
-                f = 'model_' + self.dataset.name + '.pkl'
+                f = "model_" + self.dataset.name + ".pkl"
 
         with possibly_open_file(f) as g:
             pickle.dump(self.model, g)
@@ -846,7 +929,7 @@ class Motofit(object):
         """
         if f is None and self.dataset is not None:
             # try and load the model corresponding to the current dataset
-            f = 'model_' + self.dataset.name + '.pkl'
+            f = "model_" + self.dataset.name + ".pkl"
         elif f is None:
             # load the most recent model file
             files = list(filter(os.path.isfile, glob.glob("model_*.pkl")))
@@ -860,7 +943,7 @@ class Motofit(object):
             return
 
         try:
-            with possibly_open_file(f, 'rb') as g:
+            with possibly_open_file(f, "rb") as g:
                 reflect_model = pickle.load(g)
             self.set_model(reflect_model)
         except (RuntimeError, FileNotFoundError) as exc:
@@ -893,13 +976,14 @@ class Motofit(object):
         self.model = model
 
         self.model_view = ReflectModelView(self.model)
-        self.model_view.observe(self.update_model, names=['view_changed'])
-        self.model_view.observe(self.redraw, names=['view_redraw'])
+        self.model_view.observe(self.update_model, names=["view_changed"])
+        self.model_view.observe(self.redraw, names=["view_redraw"])
 
         # observe when the number of varying parameters changed. This
         # invalidates a curvefitter, and a new one has to be produced.
-        self.model_view.observe(self._on_num_varying_changed,
-                                names=['num_varying'])
+        self.model_view.observe(
+            self._on_num_varying_changed, names=["num_varying"]
+        )
 
         self.model_view.do_fit_button.on_click(self.do_fit)
         self.model_view.to_code_button.on_click(self._to_code)
@@ -937,7 +1021,7 @@ class Motofit(object):
             # if there's a dataset loaded then residuals_plot
             # should exist
             residuals = self.objective.residuals()
-            self.chisqr.value = np.sum(residuals**2)
+            self.chisqr.value = np.sum(residuals ** 2)
 
             self.residuals_plot.set_data(self.dataset.x, residuals)
             self.ax_residual.relim()
@@ -948,14 +1032,17 @@ class Motofit(object):
     def _on_num_varying_changed(self, change):
         # observe when the number of varying parameters changed. This
         # invalidates a curvefitter, and a new one has to be produced.
-        if change['new'] != change['old']:
+        if change["new"] != change["old"]:
             self._curvefitter = None
 
     def _update_analysis_objects(self):
-        use_weights = self.use_weights.value == 'Yes'
-        self.objective = Objective(self.model, self.dataset,
-                                   transform=self.transform,
-                                   use_weights=use_weights)
+        use_weights = self.use_weights.value == "Yes"
+        self.objective = Objective(
+            self.model,
+            self.dataset,
+            transform=self.transform,
+            use_weights=use_weights,
+        )
         self._curvefitter = None
 
     def __call__(self, data=None, model=None):
@@ -976,6 +1063,7 @@ class Motofit(object):
         # the theoretical model
         # display the main graph
         import matplotlib.pyplot as plt
+
         self.fig = plt.figure(figsize=(9, 4))
 
         # grid specs depending on whether the residuals are displayed
@@ -988,18 +1076,19 @@ class Motofit(object):
 
         self.ax_data = self.fig.add_subplot(d_gs)
         self.ax_data.set_xlabel(r"$Q/\AA^{-1}$")
-        self.ax_data.set_ylabel('Reflectivity')
+        self.ax_data.set_ylabel("Reflectivity")
 
-        self.ax_data.grid(True, color='b', linestyle='--', linewidth=0.1)
+        self.ax_data.grid(True, color="b", linestyle="--", linewidth=0.1)
 
         self.ax_sld = self.fig.add_subplot(sld_gs)
         self.ax_sld.set_ylabel(r"$\rho/10^{-6}\AA^{-2}$")
         self.ax_sld.set_xlabel(r"$z/\AA$")
 
-        self.ax_residual = self.fig.add_subplot(self._gridspec1[1, 0],
-                                                sharex=self.ax_data)
+        self.ax_residual = self.fig.add_subplot(
+            self._gridspec1[1, 0], sharex=self.ax_data
+        )
         self.ax_residual.set_xlabel(r"$Q/\AA^{-1}$")
-        self.ax_residual.grid(True, color='b', linestyle='--', linewidth=0.1)
+        self.ax_residual.grid(True, color="b", linestyle="--", linewidth=0.1)
         self.ax_residual.set_visible(self.display_residuals.value)
 
         with warnings.catch_warnings():
@@ -1011,7 +1100,7 @@ class Motofit(object):
         yt, _ = self.transform(q, theoretical)
 
         self.theoretical_plot = self.ax_data.plot(q, yt, zorder=2)[0]
-        self.ax_data.set_yscale('log')
+        self.ax_data.set_yscale("log")
 
         z, sld = self.model.structure.sld_profile()
         self.theoretical_plot_sld = self.ax_sld.plot(z, sld)[0]
@@ -1056,22 +1145,24 @@ class Motofit(object):
         self.qmin = np.min(self.dataset.x)
         self.qmax = np.max(self.dataset.x)
         if self.fig is not None:
-            yt, et = self.transform(self.dataset.x,
-                                    self.dataset.y)
+            yt, et = self.transform(self.dataset.x, self.dataset.y)
 
             if self.data_plot is None:
-                self.data_plot, = self.ax_data.plot(self.dataset.x,
-                                                    yt,
-                                                    label=self.dataset.name,
-                                                    ms=2,
-                                                    marker='o', ls='',
-                                                    zorder=1)
+                (self.data_plot,) = self.ax_data.plot(
+                    self.dataset.x,
+                    yt,
+                    label=self.dataset.name,
+                    ms=2,
+                    marker="o",
+                    ls="",
+                    zorder=1,
+                )
                 self.data_plot.set_label(self.dataset.name)
                 self.ax_data.legend()
 
                 # no need to calculate residuals here, that'll be updated in
                 # the redraw method
-                self.residuals_plot, = self.ax_residual.plot(self.dataset.x)
+                (self.residuals_plot,) = self.ax_residual.plot(self.dataset.x)
             else:
                 self.data_plot.set_xdata(self.dataset.x)
                 self.data_plot.set_ydata(yt)
@@ -1105,6 +1196,7 @@ class Motofit(object):
         Print to the output widget
         """
         from IPython.display import clear_output
+
         with self.output:
             clear_output()
             print(string)
@@ -1132,19 +1224,23 @@ class Motofit(object):
         try:
             logp = self.objective.logp()
             if not np.isfinite(logp):
-                self._print("One of your parameter values lies outside its"
-                            " bounds. Please adjust the value, or the bounds.")
+                self._print(
+                    "One of your parameter values lies outside its"
+                    " bounds. Please adjust the value, or the bounds."
+                )
                 return
         except ZeroDivisionError:
-            self._print("One parameter has equal lower and upper bounds."
-                        " Either alter the bounds, or don't let that"
-                        " parameter vary.")
+            self._print(
+                "One parameter has equal lower and upper bounds."
+                " Either alter the bounds, or don't let that"
+                " parameter vary."
+            )
             return
 
         def callback(xk, convergence):
             self.chisqr.value = self.objective.chisqr(xk)
 
-        self.curvefitter.fit('differential_evolution', callback=callback)
+        self.curvefitter.fit("differential_evolution", callback=callback)
 
         # need to update the widgets as the model will be updated.
         # this also redraws GUI.
@@ -1173,13 +1269,12 @@ class Motofit(object):
         """
         User would like to plot and fit as logR/linR/RQ4/RQ2, etc
         """
-        self.transform = Transform(change['new'])
+        self.transform = Transform(change["new"])
         if self.objective is not None:
             self.objective.transform = self.transform
 
         if self.dataset is not None:
-            yt, _ = self.transform(self.dataset.x,
-                                   self.dataset.y)
+            yt, _ = self.transform(self.dataset.x, self.dataset.y)
 
             self.data_plot.set_xdata(self.dataset.x)
             self.data_plot.set_ydata(yt)
@@ -1188,10 +1283,10 @@ class Motofit(object):
 
         # probably have to change LHS axis of the data plot when
         # going between different plot types.
-        if change['new'] == 'logY':
-            self.ax_data.set_yscale('linear')
+        if change["new"] == "logY":
+            self.ax_data.set_yscale("linear")
         else:
-            self.ax_data.set_yscale('log')
+            self.ax_data.set_yscale("log")
 
         self.ax_data.relim()
         self.ax_data.autoscale_view()
@@ -1203,26 +1298,31 @@ class Motofit(object):
 
     def _on_display_residuals_changed(self, change):
         import matplotlib.pyplot as plt
-        if change['new']:
+
+        if change["new"]:
             self.ax_residual.set_visible(True)
             self.ax_data.set_position(
-                self._gridspec1[0, 0].get_position(self.fig))
+                self._gridspec1[0, 0].get_position(self.fig)
+            )
             self.ax_sld.set_position(
-                self._gridspec1[:, 1].get_position(self.fig))
+                self._gridspec1[:, 1].get_position(self.fig)
+            )
             plt.setp(self.ax_data.get_xticklabels(), visible=False)
         else:
             self.ax_residual.set_visible(False)
             self.ax_data.set_position(
-                self._gridspec2[:, 0].get_position(self.fig))
+                self._gridspec2[:, 0].get_position(self.fig)
+            )
             self.ax_sld.set_position(
-                self._gridspec2[:, 1].get_position(self.fig))
+                self._gridspec2[:, 1].get_position(self.fig)
+            )
             plt.setp(self.ax_data.get_xticklabels(), visible=True)
 
     @property
     def _options_box(self):
-        return widgets.VBox([self.plot_type,
-                             self.use_weights,
-                             self.display_residuals])
+        return widgets.VBox(
+            [self.plot_type, self.use_weights, self.display_residuals]
+        )
 
     def _update_display_box(self, box):
         """
@@ -1233,9 +1333,11 @@ class Motofit(object):
         if self.dataset is not None:
             vbox_widgets.append(widgets.HBox([self.dataset_name, self.chisqr]))
 
-        self.tab.children = [self.model_view.model_box,
-                             self.model_view.limits_box,
-                             self._options_box]
+        self.tab.children = [
+            self.model_view.model_box,
+            self.model_view.limits_box,
+            self._options_box,
+        ]
 
         vbox_widgets.append(self.tab)
         vbox_widgets.append(self.output)
@@ -1244,16 +1346,16 @@ class Motofit(object):
 
 def rename_params(structure):
     for i in range(1, len(structure) - 1):
-        structure[i].thick.name = '%d - thick' % i
-        structure[i].sld.real.name = '%d - sld' % i
-        structure[i].sld.imag.name = '%d - isld' % i
-        structure[i].rough.name = '%d - rough' % i
+        structure[i].thick.name = "%d - thick" % i
+        structure[i].sld.real.name = "%d - sld" % i
+        structure[i].sld.imag.name = "%d - isld" % i
+        structure[i].rough.name = "%d - rough" % i
 
-    structure[0].sld.real.name = 'sld - fronting'
-    structure[0].sld.imag.name = 'isld - fronting'
-    structure[-1].sld.real.name = 'sld - backing'
-    structure[-1].sld.imag.name = 'isld - backing'
-    structure[-1].rough.name = 'rough - backing'
+    structure[0].sld.real.name = "sld - fronting"
+    structure[0].sld.imag.name = "isld - fronting"
+    structure[-1].sld.real.name = "sld - backing"
+    structure[-1].sld.imag.name = "isld - backing"
+    structure[-1].rough.name = "rough - backing"
 
 
 def to_code(objective):
@@ -1283,37 +1385,47 @@ print(refnx.version.version)
     code = [header]
 
     # the dataset
-    code.append("data = ReflectDataset(\"{0}\")".format(
-        objective.data.filename))
+    code.append('data = ReflectDataset("{0}")'.format(objective.data.filename))
 
     # make some SLD's and slabs
-    slds = ['\n# set up the SLD objects for each layer']
-    slabs = ['\n# set up the Slab objects for each layer']
+    slds = ["\n# set up the SLD objects for each layer"]
+    slabs = ["\n# set up the Slab objects for each layer"]
     limits = []
 
-    structure = 'structure = '
+    structure = "structure = "
     for i, slab in enumerate(objective.model.structure):
         sld = slab.sld
-        lims = [(sld.real, 'sld{0}.real'),
-                (sld.imag, 'sld{0}.imag'),
-                (slab.thick, 'slab{0}.thick'),
-                (slab.rough, 'slab{0}.rough')]
+        lims = [
+            (sld.real, "sld{0}.real"),
+            (sld.imag, "sld{0}.imag"),
+            (slab.thick, "slab{0}.thick"),
+            (slab.rough, "slab{0}.rough"),
+        ]
 
-        slds.append("sld{0} = SLD({1} + {2}j, name=\'{3}\')".format(
-            i, sld.real.value, sld.imag.value, slab.name))
+        slds.append(
+            "sld{0} = SLD({1} + {2}j, name='{3}')".format(
+                i, sld.real.value, sld.imag.value, slab.name
+            )
+        )
 
-        slabs.append("slab{0} = Slab({1}, sld{0}, {2}, name=\'{3}\')".format(
-            i, slab.thick.value, slab.rough.value, slab.name))
+        slabs.append(
+            "slab{0} = Slab({1}, sld{0}, {2}, name='{3}')".format(
+                i, slab.thick.value, slab.rough.value, slab.name
+            )
+        )
 
         for p, temp in lims:
             if p.vary:
-                limits.append((temp + '.setp(vary=True, bounds=({1}, {2}))')
-                              .format(i, p.bounds.lb, p.bounds.ub))
+                limits.append(
+                    (temp + ".setp(vary=True, bounds=({1}, {2}))").format(
+                        i, p.bounds.lb, p.bounds.ub
+                    )
+                )
 
         if not i:
-            structure += 'slab{0}'.format(i)
+            structure += "slab{0}".format(i)
         else:
-            structure += ' | slab{0}'.format(i)
+            structure += " | slab{0}".format(i)
 
     code.extend(slds)
     code.extend(slabs)
@@ -1321,33 +1433,41 @@ print(refnx.version.version)
     code.append("\n# set up the limits for SLD's and Slabs")
     code.extend(limits)
 
-    code.append('\n# set up the Structure object from the Slabs')
+    code.append("\n# set up the Structure object from the Slabs")
     code.append(structure)
 
     model = objective.model
-    code.append('\n# make the reflectometry model')
-    code.append('model = ReflectModel(structure, scale={0}, bkg={1}, dq={2})'
-                .format(model.scale.value,
-                        model.bkg.value,
-                        model.dq.value))
+    code.append("\n# make the reflectometry model")
+    code.append(
+        "model = ReflectModel(structure, scale={0}, bkg={1}, dq={2})".format(
+            model.scale.value, model.bkg.value, model.dq.value
+        )
+    )
 
-    lims = [(model.scale, 'model.scale'),
-            (model.bkg, 'model.bkg'),
-            (model.dq, 'model.dq')]
+    lims = [
+        (model.scale, "model.scale"),
+        (model.bkg, "model.bkg"),
+        (model.dq, "model.dq"),
+    ]
 
     for p, temp in lims:
         if p.vary:
-            code.append((temp + '.setp(vary=True, bounds=({0}, {1}))')
-                        .format(p.bounds.lb, p.bounds.ub))
+            code.append(
+                (temp + ".setp(vary=True, bounds=({0}, {1}))").format(
+                    p.bounds.lb, p.bounds.ub
+                )
+            )
 
-    code.append('\n# make the objective')
-    code.append('transform = {}'.format(repr(objective.transform)))
-    code.append('objective = Objective(model, data, transform=transform,'
-                ' use_weights={})'.format(objective.weighted))
+    code.append("\n# make the objective")
+    code.append("transform = {}".format(repr(objective.transform)))
+    code.append(
+        "objective = Objective(model, data, transform=transform,"
+        " use_weights={})".format(objective.weighted)
+    )
 
-    code.append('\n# make the curvefitter')
-    code.append('fitter = CurveFitter(objective)')
+    code.append("\n# make the curvefitter")
+    code.append("fitter = CurveFitter(objective)")
     code.append("fitter.fit('differential_evolution')")
-    code.append('print(objective)')
+    code.append("print(objective)")
 
-    return '\n'.join(code)
+    return "\n".join(code)

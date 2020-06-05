@@ -1,32 +1,36 @@
 import pickle
 
 import numpy as np
-from numpy.testing import (assert_almost_equal, assert_equal, assert_,
-                           assert_allclose)
+from numpy.testing import (
+    assert_almost_equal,
+    assert_equal,
+    assert_,
+    assert_allclose,
+)
 from scipy.stats import norm, uniform
 
-from refnx.analysis import (Interval, PDF, Parameter, Parameters,
-                            is_parameters)
-from refnx.analysis.parameter import (constraint_tree,
-                                      build_constraint_from_tree,
-                                      possibly_create_parameter)
+from refnx.analysis import Interval, PDF, Parameter, Parameters, is_parameters
+from refnx.analysis.parameter import (
+    constraint_tree,
+    build_constraint_from_tree,
+    possibly_create_parameter,
+)
 
 
 class TestParameter(object):
-
     def setup_method(self):
         pass
 
     def test_parameter(self):
         # simple test of constraint
-        x = Parameter(5.)
-        y = Parameter(1.)
+        x = Parameter(5.0)
+        y = Parameter(1.0)
 
         y.constraint = x
         assert x in y.dependencies()
 
-        y.constraint = x * 2.
-        assert_equal(y.value, x.value * 2.)
+        y.constraint = x * 2.0
+        assert_equal(y.value, x.value * 2.0)
 
         # parameter should be in y's dependencies
         assert x in y._deps
@@ -38,15 +42,16 @@ class TestParameter(object):
         # you can't set a constraint on a parameter with an expression that
         # already involves the parameter
         from pytest import raises
+
         with raises(ValueError):
             x.constraint = y
 
         # try a negative value
-        x.value = -1.
-        assert_equal(y.value, -2.)
+        x.value = -1.0
+        assert_equal(y.value, -2.0)
 
         # nested constraints
-        z = Parameter(1.)
+        z = Parameter(1.0)
         z.constraint = x + y
         assert_equal(z.value, -3)
         # check that nested circular constraints aren't allowed
@@ -63,16 +68,16 @@ class TestParameter(object):
         assert_equal(y.value, 1)
 
         # sin constraint
-        y.constraint = np.sin(x) + 2.
-        assert_equal(y.value, 2. + np.sin(x.value))
+        y.constraint = np.sin(x) + 2.0
+        assert_equal(y.value, 2.0 + np.sin(x.value))
 
         x.value = 10
-        assert_equal(y.value, 2. + np.sin(10))
+        assert_equal(y.value, 2.0 + np.sin(10))
 
     def test_repr(self):
-        p = Parameter(value=5, name='pop', vary=True)
+        p = Parameter(value=5, name="pop", vary=True)
         q = eval(repr(p))
-        assert q.name == 'pop'
+        assert q.name == "pop"
         assert_allclose(q.value, p.value)
 
         p.bounds.lb = -5
@@ -88,12 +93,12 @@ class TestParameter(object):
     def test_func_attribute(self):
         # a Parameter object should have math function attributes
         a = Parameter(1)
-        assert_(hasattr(a, 'sin'))
+        assert_(hasattr(a, "sin"))
 
     def test_remove_constraint(self):
-        x = Parameter(5.)
-        y = Parameter(1.)
-        y.constraint = x * 2.
+        x = Parameter(5.0)
+        y = Parameter(1.0)
+        y.constraint = x * 2.0
         y.constraint = None
         assert_(y.vary is False)
         assert_equal(y.value, 10)
@@ -119,10 +124,10 @@ class TestParameter(object):
         assert_(id(x.bounds) != id(y.bounds))
 
     def test_range(self):
-        x = Parameter(0.)
-        x.range(-1, 1.)
+        x = Parameter(0.0)
+        x.range(-1, 1.0)
         assert_equal(x.bounds.lb, -1)
-        assert_equal(x.bounds.ub, 1.)
+        assert_equal(x.bounds.ub, 1.0)
 
         vals = x.valid(np.linspace(-100, 100, 10000))
         assert_(np.min(vals) >= -1)
@@ -130,38 +135,38 @@ class TestParameter(object):
 
     def test_parameter_attrib(self):
         # each parameter should have bound math methods
-        a = Parameter(1.)
-        assert_(hasattr(a, 'sin'))
+        a = Parameter(1.0)
+        assert_(hasattr(a, "sin"))
 
     def test_pickle(self):
         # a parameter and a constrained parameter should be pickleable
-        bounds = PDF(norm(1., 2.))
+        bounds = PDF(norm(1.0, 2.0))
         x = Parameter(1, bounds=bounds)
         pkl = pickle.dumps(x)
         unpkl = pickle.loads(pkl)
 
         # test pickling on a constrained parameter system
-        a = Parameter(1.)
-        b = Parameter(2.)
+        a = Parameter(1.0)
+        b = Parameter(2.0)
         b.constraint = np.sin(a)
 
-        assert_(hasattr(a, 'sin'))
+        assert_(hasattr(a, "sin"))
         c = [a, b]
         pkl = pickle.dumps(c)
         unpkl = pickle.loads(pkl)
         d, e = unpkl
-        d.value = 2.
+        d.value = 2.0
 
-        assert_equal(e.value, np.sin(2.))
+        assert_equal(e.value, np.sin(2.0))
         # should still have all math functions
-        assert_(hasattr(d, 'sin'))
-        assert_(hasattr(a, 'sin'))
+        assert_(hasattr(d, "sin"))
+        assert_(hasattr(a, "sin"))
 
     def test_or(self):
         # concatenation of Parameter instances
-        a = Parameter(1, name='a')
-        b = Parameter(2, name='b')
-        c = Parameters(name='c')
+        a = Parameter(1, name="a")
+        b = Parameter(2, name="b")
+        c = Parameters(name="c")
         c.append(a)
         c.append(b)
 
@@ -179,7 +184,7 @@ class TestParameter(object):
     def test_constraint_analyser(self):
         a = Parameter(1)
         b = Parameter(2, constraint=a)
-        c = Parameter(2.)
+        c = Parameter(2.0)
 
         d = Parameter(3, constraint=np.cos(b + np.sin(a) + 2 * (a + b + c)))
         val = d.value
@@ -213,30 +218,29 @@ class TestParameter(object):
         assert_allclose(e.value, 2)
 
     def test_possibly_create_parameter(self):
-        p = Parameter(10, bounds=(1., 2.))
-        q = possibly_create_parameter(p, vary=True, bounds=(-1., 2.))
+        p = Parameter(10, bounds=(1.0, 2.0))
+        q = possibly_create_parameter(p, vary=True, bounds=(-1.0, 2.0))
         assert q is p
         assert_allclose(p.bounds.lb, 1)
         assert_allclose(p.bounds.ub, 2)
 
-        q = possibly_create_parameter(10, vary=True, bounds=(-1., 2.))
+        q = possibly_create_parameter(10, vary=True, bounds=(-1.0, 2.0))
         assert_allclose(q.value, 10)
         assert_allclose(q.bounds.lb, -1)
-        assert_allclose(q.bounds.ub, 2.)
+        assert_allclose(q.bounds.ub, 2.0)
         assert q.vary
 
 
 class TestParameters(object):
-
     def setup_method(self):
-        self.a = Parameter(1, name='a')
-        self.b = Parameter(2, name='b')
+        self.a = Parameter(1, name="a")
+        self.b = Parameter(2, name="b")
         self.m = Parameters()
         self.m.append(self.a)
         self.m.append(self.b)
 
     def test_retrieve_by_name(self):
-        p = self.m['a']
+        p = self.m["a"]
         assert_(p is self.a)
 
         # or by index
@@ -244,8 +248,8 @@ class TestParameters(object):
         assert_(p is self.a)
 
     def test_repr(self):
-        p = Parameter(value=5, vary=False, name='test')
-        g = Parameters(name='name')
+        p = Parameter(value=5, vary=False, name="test")
+        g = Parameters(name="name")
         f = Parameters()
         f.append(p)
         f.append(g)
@@ -257,15 +261,16 @@ class TestParameters(object):
         assert isinstance(q[1], Parameters)
 
     def test_set_by_name(self):
-        c = Parameter(3.)
-        self.m['a'] = c
+        c = Parameter(3.0)
+        self.m["a"] = c
         assert_(self.m[0] is c)
 
         # can't set an entry by name, if there isn't an existing name in this
         # Parameters instance.
         from pytest import raises
+
         with raises(ValueError):
-            self.m['abc'] = c
+            self.m["abc"] = c
 
     def test_parameters(self):
         # we've added two parameters
@@ -301,23 +306,23 @@ class TestParameters(object):
         assert_(c.flattened()[2] is self.b)
 
         # Parameters with Parameters
-        c = Parameters(name='c')
+        c = Parameters(name="c")
         d = c | self.m
-        assert_(d.name == 'c')
+        assert_(d.name == "c")
 
     def test_ior(self):
         # concatenation of Parameters
         # Parameters with Parameter
-        c = Parameters(name='c')
+        c = Parameters(name="c")
         c |= self.b
         assert_equal(len(c), 1)
         assert_equal(len(c.flattened()), 1)
         assert_(c.flattened()[0] is self.b)
 
         # Parameters with Parameters
-        c = Parameters(name='c')
+        c = Parameters(name="c")
         c |= self.m
-        assert_(c.name == 'c')
+        assert_(c.name == "c")
         assert_equal(len(c), 1)
         assert_equal(len(c.flattened()), 2)
         assert_(c.flattened()[1] is self.b)

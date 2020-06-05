@@ -5,9 +5,11 @@ Unpack event files
 from collections import namedtuple
 import numpy as np
 from refnx._lib import possibly_open_file
+
 HAVE_CEVENTS = False
 try:
     from refnx.reduce._cevent import _cevents
+
     HAVE_CEVENTS = True
 except ImportError:
     pass
@@ -72,11 +74,10 @@ def process_event_stream(events, frames, t_bins, y_bins, x_bins):
         reversed_y = True
 
     # create an (N, T, Y, X) detector image
-    detector = np.zeros((len(frames),
-                         len(t_bins) - 1,
-                         len(y_bins) - 1,
-                         len(x_bins) - 1),
-                        dtype=np.uint64)
+    detector = np.zeros(
+        (len(frames), len(t_bins) - 1, len(y_bins) - 1, len(x_bins) - 1),
+        dtype=np.uint64,
+    )
     frame_count = np.zeros(len(frames))
 
     for i, frame in enumerate(frames):
@@ -86,10 +87,9 @@ def process_event_stream(events, frames, t_bins, y_bins, x_bins):
         idxs = np.isin(t_events[:, 0], frame_numbers)
         filtered_events = t_events[idxs]
 
-        detector[i], edge = np.histogramdd(filtered_events[:, 1:],
-                                           bins=(localtbins,
-                                                 localybins,
-                                                 localxbins))
+        detector[i], edge = np.histogramdd(
+            filtered_events[:, 1:], bins=(localtbins, localybins, localxbins)
+        )
     if reversed_x:
         detector = detector[:, :, :, ::-1]
 
@@ -107,8 +107,11 @@ def framebins_to_frames(frame_bins):
 
     frames = []
     for idx in range(t_frame_bins.size - 1):
-        frames.append(np.arange(t_frame_bins[idx],
-                                t_frame_bins[idx + 1], dtype=np.uint64))
+        frames.append(
+            np.arange(
+                t_frame_bins[idx], t_frame_bins[idx + 1], dtype=np.uint64
+            )
+        )
 
     return frames
 
@@ -140,7 +143,8 @@ def events(f, end_last_event=127, max_frames=None):
         extract more events from the same file at a future date.
     """
     if HAVE_CEVENTS:
-        return _cevents(f, end_last_event=end_last_event,
-                        max_frames=max_frames)
+        return _cevents(
+            f, end_last_event=end_last_event, max_frames=max_frames
+        )
     else:
         raise RuntimeError("Event streaming code not available")
