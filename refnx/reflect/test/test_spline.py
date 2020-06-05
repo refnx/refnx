@@ -1,14 +1,12 @@
 import pickle
 import numpy as np
-from numpy.testing import (assert_allclose, assert_equal, assert_almost_equal,
-                           assert_)
+from numpy.testing import assert_allclose, assert_equal, assert_almost_equal, assert_
 from refnx.reflect import SLD, Slab, Structure, Spline, Linear
 from refnx.analysis import Parameter, Interval, Parameters
 from refnx._lib import flatten
 
 
 class TestSpline(object):
-
     def setup_method(self):
         self.left = SLD(1.5)(10, 3)
         self.right = SLD(2.5)(10, 3)
@@ -16,8 +14,7 @@ class TestSpline(object):
 
     def test_spline_smoke(self):
         # smoke test to make Spline at least gives us something
-        a = Spline(100, [2],
-                   [0.5], zgrad=False, microslab_max_thickness=1)
+        a = Spline(100, [2], [0.5], zgrad=False, microslab_max_thickness=1)
 
         s = self.left | a | self.right | self.solvent
         b = a.slabs(s)
@@ -30,8 +27,9 @@ class TestSpline(object):
         assert_equal(a(50, s), 2.0)
 
         # construct a structure
-        a = Spline(100, [2., 3., 4.],
-                   [0.25] * 3, zgrad=False, microslab_max_thickness=1)
+        a = Spline(
+            100, [2.0, 3.0, 4.0], [0.25] * 3, zgrad=False, microslab_max_thickness=1
+        )
 
         # s.solvent = None
         s = self.left | a | self.right | self.solvent
@@ -64,22 +62,20 @@ class TestSpline(object):
         s.reflectivity(q)
 
     def test_pickle(self):
-        a = Spline(100, [2, 3],
-                   [0.3, 0.3], zgrad=False, microslab_max_thickness=1)
+        a = Spline(100, [2, 3], [0.3, 0.3], zgrad=False, microslab_max_thickness=1)
 
         s = self.left | a | self.right | self.solvent
 
         # cause the spline to be evaluated
         s.sld_profile()
-        assert a._Spline__cached_interpolator['interp'] is not None
+        assert a._Spline__cached_interpolator["interp"] is not None
 
         pkl = pickle.dumps(s)
         r = pickle.loads(pkl)
         assert isinstance(r, Structure)
 
     def test_spline_solvation(self):
-        a = Spline(100, [2],
-                   [0.5], zgrad=False, microslab_max_thickness=1)
+        a = Spline(100, [2], [0.5], zgrad=False, microslab_max_thickness=1)
 
         front = SLD(0.1)
         air = SLD(0.0)
@@ -113,39 +109,39 @@ class TestSpline(object):
     def test_left_right_influence(self):
         # make sure that if the left and right components change, so does the
         # spline
-        a = Spline(100, [2],
-                   [0.5], zgrad=False, microslab_max_thickness=1)
+        a = Spline(100, [2], [0.5], zgrad=False, microslab_max_thickness=1)
 
         s = self.left | a | self.right | self.solvent
 
         # change the SLD of the left component, spline should respond
-        self.left.sld.real.value = 2.
+        self.left.sld.real.value = 2.0
         assert_almost_equal(a(0, s), 2)
 
         # check that the spline responds if it's a vfsolv that changes
         self.left.vfsolv.value = 0.5
-        assert_almost_equal(Structure.overall_sld(self.left.slabs(),
-                                                  self.solvent)[0, 1],
-                            6.)
-        assert_almost_equal(a(0, s), 6.)
+        assert_almost_equal(
+            Structure.overall_sld(self.left.slabs(), self.solvent)[0, 1], 6.0
+        )
+        assert_almost_equal(a(0, s), 6.0)
 
         # check that the right side responds.
-        self.right.sld.real.value = 5.
-        assert_almost_equal(a(100, s), 5.)
+        self.right.sld.real.value = 5.0
+        assert_almost_equal(a(100, s), 5.0)
 
         # the spline should respond if the knot SLD's are changed
-        a.vs[0].value = 3.
-        assert_almost_equal(a(50, s), 3.)
+        a.vs[0].value = 3.0
+        assert_almost_equal(a(50, s), 3.0)
 
         # spline responds if the interval knot spacing is changed
         a.dz[0].value = 0.9
-        assert_almost_equal(a(90, s), 3.)
+        assert_almost_equal(a(90, s), 3.0)
 
     def test_repr(self):
         # make sure that if the left and right components change, so does the
         # spline
-        a = Spline(100, [2, 3, 4],
-                   [0.1, 0.2, 0.3], zgrad=False, microslab_max_thickness=1)
+        a = Spline(
+            100, [2, 3, 4], [0.1, 0.2, 0.3], zgrad=False, microslab_max_thickness=1
+        )
 
         s = self.left | a | self.right | self.solvent
 
@@ -156,18 +152,17 @@ class TestSpline(object):
 
     def test_spline_repeat(self):
         # can't have two splines in a row.
-        a = Spline(100, [2],
-                   [0.5], zgrad=False, microslab_max_thickness=1)
+        a = Spline(100, [2], [0.5], zgrad=False, microslab_max_thickness=1)
 
         s = self.left | a | a | self.right | self.solvent
 
         from pytest import raises
+
         with raises(ValueError):
             s.slabs()
 
     def test_spine_interfaces(self):
-        a = Spline(100, [2, 3],
-                   [0.3, 0.3], zgrad=False, microslab_max_thickness=1)
+        a = Spline(100, [2, 3], [0.3, 0.3], zgrad=False, microslab_max_thickness=1)
 
         s = self.left | a | self.right | self.solvent
 

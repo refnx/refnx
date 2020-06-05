@@ -3,8 +3,7 @@ import numpy as np
 from scipy.interpolate import PchipInterpolator as Pchip
 
 from refnx.reflect import Structure, Component
-from refnx.analysis import (Parameter, Parameters,
-                            possibly_create_parameter)
+from refnx.analysis import Parameter, Parameters, possibly_create_parameter
 
 
 EPS = np.finfo(float).eps
@@ -59,29 +58,33 @@ class Spline(Component):
     A Spline component should not be used more than once in a given Structure.
     """
 
-    def __init__(self, extent, vs, dz, name='',
-                 interpolator=Pchip, zgrad=True, microslab_max_thickness=1):
+    def __init__(
+        self,
+        extent,
+        vs,
+        dz,
+        name="",
+        interpolator=Pchip,
+        zgrad=True,
+        microslab_max_thickness=1,
+    ):
         super(Spline, self).__init__()
         self.name = name
         self.microslab_max_thickness = microslab_max_thickness
 
-        self.extent = (
-            possibly_create_parameter(extent,
-                                      name='%s - spline extent' % name))
+        self.extent = possibly_create_parameter(
+            extent, name="%s - spline extent" % name
+        )
 
-        self.dz = Parameters(name='dz - spline')
+        self.dz = Parameters(name="dz - spline")
         for i, z in enumerate(dz):
-            p = possibly_create_parameter(
-                z,
-                name='%s - spline dz[%d]' % (name, i))
+            p = possibly_create_parameter(z, name="%s - spline dz[%d]" % (name, i))
             p.range(0, 1)
             self.dz.append(p)
 
-        self.vs = Parameters(name='vs - spline')
+        self.vs = Parameters(name="vs - spline")
         for i, v in enumerate(vs):
-            p = possibly_create_parameter(
-                v,
-                name='%s - spline vs[%d]' % (name, i))
+            p = possibly_create_parameter(v, name="%s - spline vs[%d]" % (name, i))
             self.vs.append(p)
 
         if len(self.vs) != len(self.dz):
@@ -90,14 +93,18 @@ class Spline(Component):
         self.zgrad = zgrad
         self.interpolator = interpolator
 
-        self.__cached_interpolator = {'zeds': np.array([]),
-                                      'vs': np.array([]),
-                                      'interp': None,
-                                      'extent': -1}
+        self.__cached_interpolator = {
+            "zeds": np.array([]),
+            "vs": np.array([]),
+            "interp": None,
+            "extent": -1,
+        }
 
     def __repr__(self):
-        s = ("Spline({extent!r}, {vs!r}, {dz!r}, name={name!r}, zgrad={zgrad},"
-             " microslab_max_thickness={microslab_max_thickness})")
+        s = (
+            "Spline({extent!r}, {vs!r}, {dz!r}, name={name!r}, zgrad={zgrad},"
+            " microslab_max_thickness={microslab_max_thickness})"
+        )
         return s.format(**self.__dict__)
 
     def _interpolator(self, structure):
@@ -122,23 +129,22 @@ class Spline(Component):
             left_component = structure[loc - 1]
             right_component = structure[(loc + 1) % len(structure)]
         except ValueError:
-            raise ValueError("Spline didn't appear to be part of a super"
-                             " Structure")
+            raise ValueError("Spline didn't appear to be part of a super" " Structure")
 
-        if (isinstance(left_component, Spline) or
-                isinstance(right_component, Spline)):
-            raise ValueError("Spline must be bracketed by Components that"
-                             " aren't Splines.")
+        if isinstance(left_component, Spline) or isinstance(right_component, Spline):
+            raise ValueError(
+                "Spline must be bracketed by Components that" " aren't Splines."
+            )
 
         vs = np.array(self.vs)
 
         left_sld = Structure.overall_sld(
-            np.atleast_2d(left_component.slabs(structure)[-1]),
-            structure.solvent)[..., 1]
+            np.atleast_2d(left_component.slabs(structure)[-1]), structure.solvent
+        )[..., 1]
 
         right_sld = Structure.overall_sld(
-            np.atleast_2d(right_component.slabs(structure)[0]),
-            structure.solvent)[..., 1]
+            np.atleast_2d(right_component.slabs(structure)[0]), structure.solvent
+        )[..., 1]
 
         if self.zgrad:
             zeds = np.concatenate([[-1.1, 0 - EPS], zeds, [1 + EPS, 2.1]])
@@ -148,23 +154,25 @@ class Spline(Component):
             vs = np.concatenate([left_sld, vs, right_sld])
 
         # cache the interpolator
-        cache_zeds = self.__cached_interpolator['zeds']
-        cache_vs = self.__cached_interpolator['vs']
-        cache_extent = self.__cached_interpolator['extent']
+        cache_zeds = self.__cached_interpolator["zeds"]
+        cache_vs = self.__cached_interpolator["vs"]
+        cache_extent = self.__cached_interpolator["extent"]
 
         # you don't need to recreate the interpolator
-        if (np.array_equal(zeds, cache_zeds) and
-                np.array_equal(vs, cache_vs) and
-                np.equal(self.extent, cache_extent)):
-            return self.__cached_interpolator['interp']
+        if (
+            np.array_equal(zeds, cache_zeds)
+            and np.array_equal(vs, cache_vs)
+            and np.equal(self.extent, cache_extent)
+        ):
+            return self.__cached_interpolator["interp"]
         else:
-            self.__cached_interpolator['zeds'] = zeds
-            self.__cached_interpolator['vs'] = vs
-            self.__cached_interpolator['extent'] = float(self.extent)
+            self.__cached_interpolator["zeds"] = zeds
+            self.__cached_interpolator["vs"] = vs
+            self.__cached_interpolator["extent"] = float(self.extent)
 
         # TODO make vfp zero for z > self.extent
         interpolator = self.interpolator(zeds, vs)
-        self.__cached_interpolator['interp'] = interpolator
+        self.__cached_interpolator["interp"] = interpolator
         return interpolator
 
     def __call__(self, z, structure):

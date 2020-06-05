@@ -12,12 +12,8 @@ import matplotlib
 
 from PyQt5 import QtCore, QtGui, QtWidgets, uic
 
-from matplotlib.backends.backend_qt5agg import (
-    FigureCanvasQTAgg as FigureCanvas,
-)
-from matplotlib.backends.backend_qt5agg import (
-    NavigationToolbar2QT as NavigationToolbar,
-)
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 from matplotlib.figure import Figure
 import matplotlib.artist as artist
 import matplotlib.lines as lines
@@ -111,19 +107,13 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
             self.link_equivalent_action
         )
         self.context_menu.unlink_action.triggered.connect(self.unlink_action)
-        self.context_menu.copy_from_action.triggered.connect(
-            self.copy_from_action
-        )
-        self.context_menu.add_mixed_area.triggered.connect(
-            self.add_mixed_area_action
-        )
+        self.context_menu.copy_from_action.triggered.connect(self.copy_from_action)
+        self.context_menu.add_mixed_area.triggered.connect(self.add_mixed_area_action)
         self.context_menu.remove_mixed_area.triggered.connect(
             self.remove_mixed_area_action
         )
         self.actionLink_Selected.triggered.connect(self.link_action)
-        self.actionUnlink_selected_Parameters.triggered.connect(
-            self.unlink_action
-        )
+        self.actionUnlink_selected_Parameters.triggered.connect(self.unlink_action)
         self.actionLink_Equivalent_Parameters.triggered.connect(
             self.link_equivalent_action
         )
@@ -388,16 +378,14 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
                         v = None
                         # check to see if a parameter.stderr already existed
                         if (
-                            hasattr(parameter, "stderr") and
-                                parameter.stderr is not None
+                            hasattr(parameter, "stderr")
+                            and parameter.stderr is not None
                         ):
                             v = parameter.stderr
                         parameter._stderr = v
 
                     bnd = parameter.bounds
-                    if isinstance(bnd, Interval) and not hasattr(
-                        bnd, "_logprob"
-                    ):
+                    if isinstance(bnd, Interval) and not hasattr(bnd, "_logprob"):
                         bnd._logprob = 0
                         bnd._set_bounds(bnd.lb, bnd.ub)
 
@@ -408,9 +396,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
     @QtCore.pyqtSlot()
     def on_actionLoad_File_triggered(self):
         experimentFileName, ok = QtWidgets.QFileDialog.getOpenFileName(
-            self,
-            caption="Select Experiment File",
-            filter="Experiment Files (*.mtft)",
+            self, caption="Select Experiment File", filter="Experiment Files (*.mtft)",
         )
         if not ok:
             return
@@ -448,12 +434,8 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
                 except Exception:
                     continue
 
-        loaded_data_objects = [
-            data_object.name for data_object in data_objects
-        ]
-        new_names = [
-            n for n in loaded_data_objects if n not in existing_data_objects
-        ]
+        loaded_data_objects = [data_object.name for data_object in data_objects]
+        new_names = [n for n in loaded_data_objects if n not in existing_data_objects]
 
         # give a newly loaded data object a simple model. You don't want to do
         # this for an object that's already been loaded.
@@ -468,9 +450,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
             data_object_node.set_reflect_model(model)
 
         # for the intersection of loaded and old, refresh the plot.
-        refresh_names = [
-            n for n in existing_data_objects if n in loaded_data_objects
-        ]
+        refresh_names = [n for n in existing_data_objects if n in loaded_data_objects]
 
         refresh_data_objects = [datastore[name] for name in refresh_names]
         self.redraw_data_object_graphs(refresh_data_objects)
@@ -567,9 +547,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
                 sld_curve = np.array(data_object.sld_profile).T
                 if sld_curve is not None:
                     # it may be None if it's a mixed area model
-                    sld_file_name = os.path.join(
-                        folder[0], "sld_" + name + ".dat"
-                    )
+                    sld_file_name = os.path.join(folder[0], "sld_" + name + ".dat")
                     np.savetxt(sld_file_name, sld_curve)
 
     def load_model(self, model_file_name):
@@ -670,10 +648,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
 
         with open(fname, "w", newline="") as csvfile:
             writer = csv.writer(
-                csvfile,
-                delimiter=",",
-                quotechar="|",
-                quoting=csv.QUOTE_MINIMAL,
+                csvfile, delimiter=",", quotechar="|", quoting=csv.QUOTE_MINIMAL,
             )
             for name in names:
                 model = datastore[name].model
@@ -946,9 +921,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
 
         # need to relimit graphs and display on a log scale if the transform
         # has changed
-        self.reflectivitygraphs.axes[0].autoscale(
-            axis="both", tight=False, enable=True
-        )
+        self.reflectivitygraphs.axes[0].autoscale(axis="both", tight=False, enable=True)
         self.reflectivitygraphs.axes[0].relim()
         if transform in ["lin", "YX2"]:
             self.reflectivitygraphs.axes[0].set_yscale("log")
@@ -966,10 +939,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
 
         text = [refnx.version.version]
         with open(
-            os.path.join(licence_dir, "about"),
-            "r",
-            encoding="utf-8",
-            errors="replace",
+            os.path.join(licence_dir, "about"), "r", encoding="utf-8", errors="replace",
         ) as f:
             text.append("".join(f.readlines()))
 
@@ -1010,8 +980,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
 
         if not selected_indices:
             return msg(
-                "Select a single row within a Structure to insert a"
-                " new Component."
+                "Select a single row within a Structure to insert a" " new Component."
             )
 
         index = selected_indices[0]
@@ -1112,9 +1081,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
             if (isinstance(i, ComponentNode) or isinstance(i, StackNode))
         ]
         if not _component:
-            return msg(
-                "Select a single Component within a Structure to" " remove"
-            )
+            return msg("Select a single Component within a Structure to" " remove")
 
         # work out which component you have.
         component = _component[0]
@@ -1395,9 +1362,9 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
                         if progress.wasCanceled():
                             raise StopIteration("Sampling aborted")
 
-                with open(
-                    os.path.join(folder, "steps.chain"), "w"
-                ) as f, get_context("spawn").Pool() as workers:
+                with open(os.path.join(folder, "steps.chain"), "w") as f, get_context(
+                    "spawn"
+                ).Pool() as workers:
                     fitter.sample(
                         nsteps,
                         f=f,
@@ -1487,9 +1454,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         only display fitted parameters
         """
         self.treeFilter.only_fitted = arg_1
-        self.treeFilter._fitted_datasets = (
-            self.currently_fitting_model.datasets
-        )
+        self.treeFilter._fitted_datasets = self.currently_fitting_model.datasets
         self.treeFilter.invalidateFilter()
 
     @QtCore.pyqtSlot(int)
@@ -1550,9 +1515,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         if not c["readyToChange"]:
             return
 
-        val = c["lowlim"] + (arg_1 / 1000.0) * np.fabs(
-            c["lowlim"] - c["hilim"]
-        )
+        val = c["lowlim"] + (arg_1 / 1000.0) * np.fabs(c["lowlim"] - c["hilim"])
 
         item.parameter.value = val
 
@@ -1684,9 +1647,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
             mstr_obj_node = find_data_object(node.index)
             # check that all data_objects have the same structure as the
             # selected parameter
-            if not is_same_structure(
-                [mstr_obj_node.data_object] + data_objects
-            ):
+            if not is_same_structure([mstr_obj_node.data_object] + data_objects):
                 return msg(
                     "All models must have equivalent structural"
                     " components and the same number of parameters for"
@@ -1698,9 +1659,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
 
             for data_object in data_objects:
                 # retrieve the similar parameter from row indices
-                row_indices[1] = self.treeModel.data_object_row(
-                    data_object.name
-                )
+                row_indices[1] = self.treeModel.data_object_row(data_object.name)
                 # now identify where the similar parameter is
                 pn = self.treeModel.node_from_row_indices(row_indices)
                 extra_pars.append(pn)
@@ -1778,9 +1737,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
             nodes.append(item.hierarchy())
 
         # filter out the data_object_nodes
-        data_object_nodes = [
-            n for n in flatten(nodes) if isinstance(n, DataObjectNode)
-        ]
+        data_object_nodes = [n for n in flatten(nodes) if isinstance(n, DataObjectNode)]
 
         # get unique data object nodes, these are the data objects whose
         # model you want to overwrite
@@ -1828,9 +1785,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
             copied_structure = deepcopy(structures[0])
 
         # add it to the list of structures, at the END
-        reflect_model_node.insert_structure(
-            len(structures) + 3, copied_structure
-        )
+        reflect_model_node.insert_structure(len(structures) + 3, copied_structure)
 
     @QtCore.pyqtSlot()
     def remove_mixed_area_action(self):
@@ -1854,8 +1809,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         reflect_model_node = data_object_node.child(1)
         if len(reflect_model_node.structures) == 1:
             return msg(
-                "Your model only contains a single Structure, removal"
-                " not possible"
+                "Your model only contains a single Structure, removal" " not possible"
             )
 
         reflect_model_node.remove_structure(item.row())
@@ -1873,9 +1827,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         self.ui.gridLayout_5.addWidget(self.reflectivitygraphs.mpl_toolbar)
         self.ui.gridLayout_4.addWidget(self.sldgraphs.mpl_toolbar)
 
-    def redraw_data_object_graphs(
-        self, data_objects, all=False, transform=True
-    ):
+    def redraw_data_object_graphs(self, data_objects, all=False, transform=True):
         """
         Asks the graphs to be redrawn, delegating generative calculation to
         reflectivitygraphs.redraw_data_objects
@@ -1943,9 +1895,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
                 idx2 = self.treeModel.index(row, 2, parent.index)
                 self.treeModel.dataChanged.emit(idx1, idx2)
 
-    def tree_model_data_changed(
-        self, top_left, bottom_right, role=QtCore.Qt.EditRole
-    ):
+    def tree_model_data_changed(self, top_left, bottom_right, role=QtCore.Qt.EditRole):
         # if you've just changed whether you want to hold or vary a parameter
         # there is no need to update the reflectivity plots
         if not top_left.isValid():
@@ -1957,9 +1907,9 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
             return
 
         if (
-            len(role) and
-                role[0] == QtCore.Qt.CheckStateRole and
-                isinstance(node, DataObjectNode)
+            len(role)
+            and role[0] == QtCore.Qt.CheckStateRole
+            and isinstance(node, DataObjectNode)
         ):
             # set visibility of data_object
             graph_properties = node.data_object.graph_properties
@@ -1972,20 +1922,20 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
 
         # redraw if you're altering a PropertyNode (edit or check)
         if (
-            top_left.column() == 1 and
-                len(role) and
-                role[0] in [QtCore.Qt.CheckStateRole, QtCore.Qt.EditRole] and
-                isinstance(node, PropertyNode)
+            top_left.column() == 1
+            and len(role)
+            and role[0] in [QtCore.Qt.CheckStateRole, QtCore.Qt.EditRole]
+            and isinstance(node, PropertyNode)
         ):
             wipe_update = [find_data_object(top_left).data_object]
 
         # only redraw if you're altering values
         # otherwise we'd be performing continual updates of the model
         if (
-            top_left.column() == 1 and
-                len(role) and
-                role[0] == QtCore.Qt.EditRole and
-                isinstance(node, ParNode)
+            top_left.column() == 1
+            and len(role)
+            and role[0] == QtCore.Qt.EditRole
+            and isinstance(node, ParNode)
         ):
             param = node.parameter
             wipe_update = [find_data_object(top_left).data_object]
@@ -2040,10 +1990,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
                 dataset_t = self.filter_neg_reflectivity(dataset_t)
 
             objective = Objective(
-                data_object.model,
-                dataset_t,
-                transform=t,
-                use_weights=useerrors,
+                data_object.model, dataset_t, transform=t, use_weights=useerrors,
             )
             chisqr = objective.chisqr()
             node = self.treeModel.data_object_node(data_object.name)
@@ -2227,10 +2174,7 @@ class MyReflectivityGraphs(FigureCanvas):
 
             graph_properties = data_object.graph_properties
 
-            if (
-                graph_properties.ax_data is None and
-                data_object.name != "theoretical"
-            ):
+            if graph_properties.ax_data is None and data_object.name != "theoretical":
                 yt = dataset.y
                 if transform is not None:
                     yt, edata = transform(dataset.x, dataset.y, dataset.y_err)
@@ -2252,8 +2196,7 @@ class MyReflectivityGraphs(FigureCanvas):
                 graph_properties["ax_data"] = line_instance[0]
                 if graph_properties["data_properties"]:
                     artist.setp(
-                        graph_properties.ax_data,
-                        **graph_properties["data_properties"]
+                        graph_properties.ax_data, **graph_properties["data_properties"]
                     )
 
             yfit_t = data_object.generative
@@ -2276,8 +2219,7 @@ class MyReflectivityGraphs(FigureCanvas):
                 )[0]
                 if graph_properties["fit_properties"]:
                     artist.setp(
-                        graph_properties.ax_fit,
-                        **graph_properties["fit_properties"]
+                        graph_properties.ax_fit, **graph_properties["fit_properties"]
                     )
 
             # if (dataObject.line2Dresiduals is None and
@@ -2381,10 +2323,7 @@ class MySLDGraphs(FigureCanvas):
             graph_properties = data_object.graph_properties
             visible = graph_properties.visible
 
-            if (
-                graph_properties.ax_sld_profile and
-                data_object.model is not None
-            ):
+            if graph_properties.ax_sld_profile and data_object.model is not None:
                 try:
                     sld_profile = data_object.model.structure.sld_profile()
 
@@ -2406,8 +2345,8 @@ class MySLDGraphs(FigureCanvas):
         for data_object in data_objects:
             graph_properties = data_object.graph_properties
             if (
-                graph_properties.ax_sld_profile is None and
-                data_object.sld_profile is not None
+                graph_properties.ax_sld_profile is None
+                and data_object.sld_profile is not None
             ):
 
                 color = "r"
@@ -2488,9 +2427,7 @@ class OpenMenu(QtWidgets.QMenu):
         )
         self.addSeparator()
         self.add_mixed_area = self.addAction("Mixed area - add a structure")
-        self.remove_mixed_area = self.addAction(
-            "Mixed area - remove a" " structure"
-        )
+        self.remove_mixed_area = self.addAction("Mixed area - remove a" " structure")
 
     def __call__(self, position):
         action = self.exec_(self._parent.mapToGlobal(position))
@@ -2563,9 +2500,7 @@ class CurrentlyFitting(QtCore.QAbstractListModel):
 
     def addItems(self, items):
         new_items = [
-            i
-            for i in items
-            if (i not in self.datasets) and (i != "theoretical")
+            i for i in items if (i not in self.datasets) and (i != "theoretical")
         ]
 
         n_current = len(self.datasets)

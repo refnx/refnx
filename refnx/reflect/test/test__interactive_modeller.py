@@ -4,27 +4,25 @@ import pickle
 
 import numpy as np
 
-from refnx.reflect import (SLD, Slab, ReflectModel, Motofit)
+from refnx.reflect import SLD, Slab, ReflectModel, Motofit
 from refnx.dataset import ReflectDataset
 
-from numpy.testing import (assert_almost_equal, assert_equal, assert_,
-                           assert_allclose)
+from numpy.testing import assert_almost_equal, assert_equal, assert_, assert_allclose
 
 
 class Test__InteractiveModeller(object):
-
     def setup_method(self):
         self.pth = os.path.dirname(os.path.abspath(__file__))
 
-        sio2 = SLD(3.47, name='SiO2')
-        air = SLD(0, name='air')
-        si = SLD(2.07, name='Si')
-        d2o = SLD(6.36, name='D2O')
-        polymer = SLD(1, name='polymer')
+        sio2 = SLD(3.47, name="SiO2")
+        air = SLD(0, name="air")
+        si = SLD(2.07, name="Si")
+        d2o = SLD(6.36, name="D2O")
+        polymer = SLD(1, name="polymer")
 
         self.structure = air | sio2(100, 2) | si(0, 3)
 
-        theoretical = np.loadtxt(os.path.join(self.pth, 'theoretical.txt'))
+        theoretical = np.loadtxt(os.path.join(self.pth, "theoretical.txt"))
         qvals, rvals = np.hsplit(theoretical, 2)
         self.qvals = qvals.flatten()
         self.rvals = rvals.flatten()
@@ -51,10 +49,12 @@ class Test__InteractiveModeller(object):
         self.structure361[2].sld.real.vary = True
         self.structure361[2].sld.real.range(0.2, 1.5)
 
-        self.e361 = ReflectDataset(os.path.join(self.pth, 'e361r.txt'))
-        self.qvals361, self.rvals361, self.evals361 = (self.e361.x,
-                                                       self.e361.y,
-                                                       self.e361.y_err)
+        self.e361 = ReflectDataset(os.path.join(self.pth, "e361r.txt"))
+        self.qvals361, self.rvals361, self.evals361 = (
+            self.e361.x,
+            self.e361.y,
+            self.e361.y_err,
+        )
         self.app = Motofit()
         self.app(self.e361, model=self.model361)
 

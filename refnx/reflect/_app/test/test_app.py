@@ -21,7 +21,7 @@ def mysetup(qtbot):
     return myapp, model
 
 
-@pytest.mark.usefixtures('no_data_directory')
+@pytest.mark.usefixtures("no_data_directory")
 def test_app_load_old_experiment_file(qtbot, data_directory):
     # tests loading old experiment files.
     # The main issue here is that newer code may have attributes which aren't
@@ -66,7 +66,7 @@ def test_myapp(qtbot, tmpdir):
     ###########################################
     # load a file
     pth = os.path.dirname(refd.__file__)
-    f = pjoin(pth, 'test', 'c_PLP0000708.dat')
+    f = pjoin(pth, "test", "c_PLP0000708.dat")
     myapp.load_data([f])
     assert len(model.datastore) == 2
 
@@ -80,7 +80,7 @@ def test_add_spline_save(qtbot, tmpdir):
     myapp, model = mysetup(qtbot)
 
     # get index of theoretical dataset --> structure --> slab1
-    data_object_node = model.data_object_node('theoretical')
+    data_object_node = model.data_object_node("theoretical")
     model_node = data_object_node.child(1)
     structure_node = model_node.child(3)
 
@@ -90,17 +90,17 @@ def test_add_spline_save(qtbot, tmpdir):
     #                        QtCore.QItemSelectionModel.Select)
 
     # add a Spline after the slab
-    component = Spline(50, [-1., -1.], [0.33, 0.33], name='spline')
+    component = Spline(50, [-1.0, -1.0], [0.33, 0.33], name="spline")
     structure_node.insert_component(1, component)
     save_and_reload_experiment(myapp, tmpdir)
 
 
 def save_and_reload_experiment(app, tmpdir):
     # save and reopen experiment.
-    sf = pjoin(str(tmpdir), 'experiment1.mtft')
+    sf = pjoin(str(tmpdir), "experiment1.mtft")
     # this is just to make sure that the file exists
-    with open(sf, 'wb') as f:
-        f.write(b'sksij')
+    with open(sf, "wb") as f:
+        f.write(b"sksij")
 
     app.settings.experiment_file_name = sf
     app.on_actionSave_File_triggered()

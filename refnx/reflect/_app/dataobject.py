@@ -16,17 +16,19 @@ class DataObject(object):
     """
 
     # remember how the object was visualised
-    _requiredgraphproperties = {'lw': float,
-                                'label': str,
-                                'linestyle': str,
-                                'fillstyle': str,
-                                'marker': str,
-                                'markersize': float,
-                                'markeredgecolor': str,
-                                'markerfacecolor': str,
-                                'zorder': int,
-                                'color': str,
-                                'visible': bool}
+    _requiredgraphproperties = {
+        "lw": float,
+        "label": str,
+        "linestyle": str,
+        "fillstyle": str,
+        "marker": str,
+        "markersize": float,
+        "markeredgecolor": str,
+        "markerfacecolor": str,
+        "zorder": int,
+        "color": str,
+        "visible": bool,
+    }
 
     def __init__(self, dataset, constantdq_q=True):
         self.dataset = dataset
@@ -81,13 +83,13 @@ class DataObject(object):
     def save_fit(self, filename):
         fit = self.generative
         if self.model is not None:
-            with open(filename, 'wb+') as f:
+            with open(filename, "wb+") as f:
                 if fit is not None:
                     np.savetxt(f, np.column_stack((self.dataset.x, fit)))
 
     def save_model(self, filename):
         if self.model is not None:
-            with open(filename, 'wb+') as f:
+            with open(filename, "wb+") as f:
                 pickle.dump(self.model, f)
 
     def refresh(self):

@@ -19,21 +19,23 @@ import numpy as np
 from scipy.stats import norm
 
 
-_SQRT3 = np.sqrt(3.)
-_SQRT2 = np.sqrt(2.)
-_GAMMA = np.pi / np.sqrt(np.pi * np.pi - 8.)
+_SQRT3 = np.sqrt(3.0)
+_SQRT2 = np.sqrt(2.0)
+_GAMMA = np.pi / np.sqrt(np.pi * np.pi - 8.0)
 
 
 class Interface(object):
     """
     Defines an Interfacial profile
     """
+
     def __init__(self):
         pass
 
     def __call__(self, z, scale=1, loc=0):
-        raise NotImplementedError("You can't use the Interface superclass to"
-                                  "calculate profiles")
+        raise NotImplementedError(
+            "You can't use the Interface superclass to" "calculate profiles"
+        )
 
 
 class Erf(Interface):
@@ -47,6 +49,7 @@ class Erf(Interface):
     multilayers from extreme ultraviolet and X-ray reflectivity data",
     Journal of Applied Crystallography, 2017, 50, 1428-1440
     """
+
     def __init__(self):
         super(Erf, self).__init__()
 
@@ -65,6 +68,7 @@ class Linear(Interface):
     -----
     Stearns, D. G. J. Appl. Phys., 1989, 65, 491–506.
     """
+
     def __init__(self):
         super(Linear, self).__init__()
 
@@ -87,6 +91,7 @@ class Exponential(Interface):
     -----
     Stearns, D. G. J. Appl. Phys., 1989, 65, 491–506.
     """
+
     def __init__(self):
         super(Exponential, self).__init__()
 
@@ -110,6 +115,7 @@ class Tanh(Interface):
     D. Bahr; W. Press; R. Jebasinski; S. Mantl,
     Phys. Rev. B,1993, 47 (8), 4385
     """
+
     def __init__(self):
         super(Tanh, self).__init__()
 
@@ -129,12 +135,13 @@ class Sinusoidal(Interface):
     -----
     Stearns, D. G. J. Appl. Phys., 1989, 65, 491–506.
     """
+
     def __init__(self):
         super(Sinusoidal, self).__init__()
 
     def __call__(self, z, scale=1, loc=0):
         new_z = z - loc
-        f = 0.5 + 0.5 * np.sin(np.pi * new_z / _GAMMA / 2. / scale)
+        f = 0.5 + 0.5 * np.sin(np.pi * new_z / _GAMMA / 2.0 / scale)
         f[new_z <= -_GAMMA * scale] = 0
         f[new_z >= _GAMMA * scale] = 1
         return f
@@ -154,6 +161,7 @@ class Step(Interface):
     multilayers from extreme ultraviolet and X-ray reflectivity data",
     Journal of Applied Crystallography, 2017, 50, 1428-1440
     """
+
     def __init__(self):
         super(Step, self).__init__()
 

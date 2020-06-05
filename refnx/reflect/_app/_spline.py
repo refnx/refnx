@@ -7,9 +7,8 @@ from refnx.reflect import Spline, SLD
 
 
 pth = os.path.dirname(os.path.abspath(__file__))
-UI_LOCATION = os.path.join(pth, 'ui')
-SplineDialogUI = uic.loadUiType(os.path.join(UI_LOCATION,
-                                             'spline.ui'))[0]
+UI_LOCATION = os.path.join(pth, "ui")
+SplineDialogUI = uic.loadUiType(os.path.join(UI_LOCATION, "spline.ui"))[0]
 
 
 class SplineDialog(QtWidgets.QDialog, SplineDialogUI):
@@ -18,8 +17,8 @@ class SplineDialog(QtWidgets.QDialog, SplineDialogUI):
         QtWidgets.QDialog.__init__(self, parent)
         self.setupUi(self)
 
-        self.knots.setHorizontalHeaderItem(0, QtWidgets.QTableWidgetItem('dz'))
-        self.knots.setHorizontalHeaderItem(1, QtWidgets.QTableWidgetItem('vs'))
+        self.knots.setHorizontalHeaderItem(0, QtWidgets.QTableWidgetItem("dz"))
+        self.knots.setHorizontalHeaderItem(1, QtWidgets.QTableWidgetItem("vs"))
         self.knots.setItem(0, 0, QtWidgets.QTableWidgetItem(str(0.5)))
         self.knots.setItem(0, 1, QtWidgets.QTableWidgetItem(str(-1)))
         self._dz_delegate = _dz_delegate()
@@ -45,12 +44,10 @@ class SplineDialog(QtWidgets.QDialog, SplineDialogUI):
             dz.append(float(self.knots.item(i, 0).text()))
             vs.append(float(self.knots.item(i, 1).text()))
 
-        return Spline(extent, vs, dz, name='spline',
-                      microslab_max_thickness=1.0)
+        return Spline(extent, vs, dz, name="spline", microslab_max_thickness=1.0)
 
 
 class _dz_delegate(QtWidgets.QItemDelegate):
-
     def createEditor(self, parent, option, index):
         d = QtWidgets.QDoubleSpinBox(parent)
         d.setRange(0, 1)
@@ -59,7 +56,6 @@ class _dz_delegate(QtWidgets.QItemDelegate):
 
 
 class _vs_delegate(QtWidgets.QItemDelegate):
-
     def createEditor(self, parent, option, index):
         d = QtWidgets.QDoubleSpinBox(parent)
         d.setRange(-4, 150)

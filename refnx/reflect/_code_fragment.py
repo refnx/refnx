@@ -2,14 +2,16 @@ import operator
 import numpy as np
 
 from refnx.analysis import GlobalObjective, Objective
-from refnx.analysis.parameter import (constraint_tree,
-                                      build_constraint_from_tree,
-                                      Constant)
+from refnx.analysis.parameter import (
+    constraint_tree,
+    build_constraint_from_tree,
+    Constant,
+)
 from refnx._lib import flatten
 import refnx
 
 
-_imports = ("""#!/bin/bash
+_imports = """#!/bin/bash
 
 '''
 Script exported by refnx for analysing NR/XRR data.
@@ -61,10 +63,10 @@ from refnx._lib import flatten
 
 import refnx
 # Script created by refnx version: {version}
-""")
+"""
 
 
-_main = (r"""
+_main = r"""
 
 def structure_plot(obj, samples=0):
     # plot sld profiles
@@ -237,7 +239,7 @@ if __name__ == "__main__":
     if args.n_cores == -1:
         args.n_cores = None
     main(args)
-""")
+"""
 
 
 def code_fragment(objective):
@@ -249,46 +251,58 @@ def code_fragment(objective):
     elif isinstance(objective, Objective):
         _objectives = [objective]
 
-    code.append('def objective():')
-    tab = '    '
+    code.append("def objective():")
+    tab = "    "
 
     if len(_objectives) == 1:
         code.append(tab + objective_fragment(0, _objectives[0]))
     else:
         global_objective = [tab]
-        global_objective.append('objective_0 = GlobalObjective([')
+        global_objective.append("objective_0 = GlobalObjective([")
 
         for i, o in enumerate(_objectives):
             code.append(tab + objective_fragment(i + 1, o))
-            global_objective.append('objective_{0}, '.format(i + 1))
+            global_objective.append("objective_{0}, ".format(i + 1))
 
-        global_objective.append('])')
+        global_objective.append("])")
 
-        code.append(''.join(global_objective))
+        code.append("".join(global_objective))
 
     code.extend(_calculate_constraints(0, objective))
 
-    code.append(tab + 'return objective_0')
+    code.append(tab + "return objective_0")
 
     # add main to make the script executable
     code.append(_main)
-    return '\n'.join(code)
+    return "\n".join(code)
 
 
 def objective_fragment(i, objective):
-    return 'objective_{0} = {1}'.format(i, repr(objective))
+    return "objective_{0} = {1}".format(i, repr(objective))
 
 
-operators = {operator.add: 'operator.add', operator.sub: 'operator.sub',
-             operator.mul: 'operator.mul',
-             operator.truediv: 'operator.truediv',
-             operator.floordiv: 'operator.floordiv', np.power: 'np.power',
-             operator.pow: 'operator.pow', operator.mod: 'operator.mod',
-             operator.neg: 'operator.neg', operator.abs: 'operator.abs',
-             np.sin: 'np.sin', np.tan: 'np.tan', np.cos: 'np.cos',
-             np.arcsin: 'np.arcsin', np.arctan: 'np.arctan',
-             np.arccos: 'np.arccos', np.log10: 'np.log10', np.log: 'np.log',
-             np.sqrt: 'np.sqrt', np.exp: 'np.exp'}
+operators = {
+    operator.add: "operator.add",
+    operator.sub: "operator.sub",
+    operator.mul: "operator.mul",
+    operator.truediv: "operator.truediv",
+    operator.floordiv: "operator.floordiv",
+    np.power: "np.power",
+    operator.pow: "operator.pow",
+    operator.mod: "operator.mod",
+    operator.neg: "operator.neg",
+    operator.abs: "operator.abs",
+    np.sin: "np.sin",
+    np.tan: "np.tan",
+    np.cos: "np.cos",
+    np.arcsin: "np.arcsin",
+    np.arctan: "np.arctan",
+    np.arccos: "np.arccos",
+    np.log10: "np.log10",
+    np.log: "np.log",
+    np.sqrt: "np.sqrt",
+    np.exp: "np.exp",
+}
 
 
 def _calculate_constraints(i, objective):
@@ -301,10 +315,11 @@ def _calculate_constraints(i, objective):
 
     # now get parameters with constraints
     con_pars = [par for par in non_var_pars if par.constraint is not None]
-    tab = '    '
+    tab = "    "
 
-    constrain_strings = [tab + "parameters = list(flatten("
-                         "objective_{}.parameters))".format(i)]
+    constrain_strings = [
+        tab + "parameters = list(flatten(" "objective_{}.parameters))".format(i)
+    ]
     for con_par in con_pars:
         idx = all_pars.index(con_par)
         con_tree = constraint_tree(con_par.constraint)
@@ -312,10 +327,10 @@ def _calculate_constraints(i, objective):
             if v in operators:
                 con_tree[j] = operators[v]
             elif v in all_pars:
-                con_tree[j] = 'parameters[{}]'.format(all_pars.index(v))
+                con_tree[j] = "parameters[{}]".format(all_pars.index(v))
             else:
                 con_tree[j] = repr(v)
-        s = ', '.join(con_tree)
+        s = ", ".join(con_tree)
         constraint = "build_constraint_from_tree([" + s + "])"
         item = tab + "parameters[{}].constraint = {}".format(idx, constraint)
 

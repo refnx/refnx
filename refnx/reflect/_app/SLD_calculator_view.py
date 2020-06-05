@@ -6,20 +6,15 @@ import pyparsing
 import numpy as np
 
 
-UI_LOCATION = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                           'ui')
+UI_LOCATION = os.path.join(os.path.dirname(os.path.abspath(__file__)), "ui")
 
 
 class SLDcalculatorView(QtWidgets.QDialog):
-
     def __init__(self, parent=None):
         super(SLDcalculatorView, self).__init__(parent)
 
-        self.ui = uic.loadUi(
-            os.path.join(UI_LOCATION,
-                         'SLDcalculator.ui'),
-            self)
-        self.last_formula = 'H[2]2O'
+        self.ui = uic.loadUi(os.path.join(UI_LOCATION, "SLDcalculator.ui"), self)
+        self.last_formula = "H[2]2O"
 
     def calculate(self):
         try:
@@ -39,43 +34,32 @@ class SLDcalculatorView(QtWidgets.QDialog):
 
         if self.ui.use_volume.isChecked():
             density = formula.molecular_mass / formula.volume(
-                a=molecular_volume,
-                b=1,
-                c=1)
+                a=molecular_volume, b=1, c=1
+            )
             self.ui.mass_density.setValue(density)
 
         elif self.ui.use_density.isChecked():
             try:
-                volume = (formula.mass / density /
-                          pt.constants.avogadro_number * 1e24)
+                volume = formula.mass / density / pt.constants.avogadro_number * 1e24
             except ZeroDivisionError:
                 volume = np.nan
             self.ui.molecular_volume.setValue(volume)
 
         try:
-            real, imag, mu = pt.neutron_sld(formula,
-                                            density=density,
-                                            wavelength=neutron_wavelength)
+            real, imag, mu = pt.neutron_sld(
+                formula, density=density, wavelength=neutron_wavelength
+            )
 
-            self.ui.neutron_SLD.setText(
-                '%.6g' %
-                real +
-                ' + ' +
-                '%.6g' %
-                imag +
-                'j')
+            self.ui.neutron_SLD.setText("%.6g" % real + " + " + "%.6g" % imag + "j")
         except Exception:
-            self.ui.neutron_SLD.setText('NaN')
+            self.ui.neutron_SLD.setText("NaN")
 
         try:
-            real, imag = pt.xray_sld(formula,
-                                     density=density,
-                                     energy=xray_energy)
+            real, imag = pt.xray_sld(formula, density=density, energy=xray_energy)
 
-            self.ui.xray_SLD.setText('%.6g' % real + ' + ' +
-                                     '%.6g' % imag + 'j')
+            self.ui.xray_SLD.setText("%.6g" % real + " + " + "%.6g" % imag + "j")
         except Exception:
-            self.ui.xray_SLD.setText('NaN')
+            self.ui.xray_SLD.setText("NaN")
             # sometimes the X-ray and neutron SLD calc can fail, if there are
             # no scattering factors
 

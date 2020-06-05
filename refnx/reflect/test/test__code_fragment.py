@@ -18,12 +18,12 @@ class TestCodeFragment(object):
         self.pth = os.path.dirname(os.path.abspath(__file__))
 
     def test_code_fragment(self):
-        e361 = ReflectDataset(os.path.join(self.pth, 'e361r.txt'))
+        e361 = ReflectDataset(os.path.join(self.pth, "e361r.txt"))
 
-        si = SLD(2.07, name='Si')
-        sio2 = SLD(3.47, name='SiO2')
-        d2o = SLD(6.36, name='D2O')
-        polymer = SLD(1, name='polymer')
+        si = SLD(2.07, name="Si")
+        sio2 = SLD(3.47, name="SiO2")
+        d2o = SLD(6.36, name="D2O")
+        polymer = SLD(1, name="polymer")
 
         # e361 is an older dataset, but well characterised
         self.structure361 = si | sio2(10, 4) | polymer(200, 3) | d2o(0, 3)
@@ -47,7 +47,7 @@ class TestCodeFragment(object):
         self.structure361[2].sld.real.vary = True
         self.structure361[2].sld.real.range(0.2, 1.5)
 
-        objective = Objective(self.model361, e361, transform=Transform('logY'))
+        objective = Objective(self.model361, e361, transform=Transform("logY"))
         objective2 = eval(repr(objective))
         assert_allclose(objective2.chisqr(), objective.chisqr())
 
@@ -58,9 +58,9 @@ class TestCodeFragment(object):
         # check that we can reproduce the objective from the repr
         self.structure361[2].thick.constraint = self.structure361[1].thick
         fragment = code_fragment(objective)
-        fragment = fragment + '\nobj = objective()\nresult = obj.chisqr()'
+        fragment = fragment + "\nobj = objective()\nresult = obj.chisqr()"
         d = {}
         # need to provide the globals dictionary to exec, so it can see imports
         # e.g. https://bit.ly/2RFOF7i (from stackoverflow)
         exec(fragment, globals(), d)
-        assert_allclose(d['result'], objective.chisqr())
+        assert_allclose(d["result"], objective.chisqr())
