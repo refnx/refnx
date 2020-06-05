@@ -1,4 +1,5 @@
 import numpy as np
+
 """
 A simple propagation of uncertainty module.
 # http://en.wikipedia.org/wiki/Propagation_of_uncertainty
@@ -12,21 +13,21 @@ def EPadd(a, da, b, db, covar=0):
     """
     C = A + B
     """
-    return (a + b), np.sqrt(da**2 + db**2 + 2 * covar)
+    return (a + b), np.sqrt(da ** 2 + db ** 2 + 2 * covar)
 
 
 def EPsub(a, da, b, db, covar=0):
     """
     C = A - B
     """
-    return a - b, np.sqrt(da**2 + db**2 - 2 * covar)
+    return a - b, np.sqrt(da ** 2 + db ** 2 - 2 * covar)
 
 
 def EPmul(a, da, b, db, covar=0):
     """
     C = A * B
     """
-    return a * b, np.sqrt((b * da)**2 + (a * db)**2 + 2 * a * b * covar)
+    return a * b, np.sqrt((b * da) ** 2 + (a * db) ** 2 + 2 * a * b * covar)
 
 
 def EPmulk(a, da, k):
@@ -40,9 +41,13 @@ def EPdiv(a, da, b, db, covar=0):
     """
     C = A / B
     """
-    return (a / b,
-            np.sqrt(((da / b)**2 + ((a**2) * (db**2) / (b**4))) -
-                    (2 * covar * a / (b**3))))
+    return (
+        a / b,
+        np.sqrt(
+            ((da / b) ** 2 + ((a ** 2) * (db ** 2) / (b ** 4)))
+            - (2 * covar * a / (b ** 3))
+        ),
+    )
 
 
 def EPpow(a, da, b, db, covar=0):
@@ -50,9 +55,11 @@ def EPpow(a, da, b, db, covar=0):
     C = A ** B
     """
     c = a ** b
-    dc = np.absolute(c) * np.sqrt(((da * b / a)**2) +
-                                  (np.log(a) * db)**2 +
-                                  2 * b * np.log(a) * covar / a)
+    dc = np.absolute(c) * np.sqrt(
+        ((da * b / a) ** 2)
+        + (np.log(a) * db) ** 2
+        + 2 * b * np.log(a) * covar / a
+    )
     return c, dc
 
 
@@ -60,8 +67,10 @@ def EPpowk(a, da, k, n=1):
     """
     C = pow(k, A * n)
     """
-    return (np.power(k, a * n),
-            np.absolute(np.power(k, a * n) * n * da * np.log(k)))
+    return (
+        np.power(k, a * n),
+        np.absolute(np.power(k, a * n) * n * da * np.log(k)),
+    )
 
 
 def EPlog(a, da, k=1, n=1):
@@ -103,4 +112,4 @@ def EPtan(a, da):
     """
     C = tan (A)
     """
-    return np.tan(a), np.absolute(da / (np.cos(a)**2))
+    return np.tan(a), np.absolute(da / (np.cos(a) ** 2))

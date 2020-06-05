@@ -29,7 +29,7 @@ def refplot(datasets):
         ax.plot(d.x, d.y)
 
     ax.autoscale(tight=True)
-    ax.set_yscale('log')
+    ax.set_yscale("log")
     ax.set_xlabel(u"Q /\u212B **-1")
-    ax.set_ylabel('reflectivity')
+    ax.set_ylabel("reflectivity")
     return fig

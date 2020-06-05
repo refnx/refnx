@@ -29,7 +29,7 @@ jobs:
         python -m pip install flake8 black
         # stop the build if there are Python syntax errors or undefined names
         flake8 --ignore=F401,W504,W503 --count --show-source --statistics --exclude=refnx/_lib/emcee,refnx/reflect/_app/resources_rc.py,refnx/analysis refnx
-        black --check refnx/analysis refnx/dataset -l 79
+        black --check refnx/analysis refnx/dataset refnx/reduce -l 79
     - name: Install dependencies
       run: |
         python -m pip install wheel

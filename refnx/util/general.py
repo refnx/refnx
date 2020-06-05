@@ -6,7 +6,7 @@ import numpy as np
 from scipy import stats, integrate, constants, optimize
 
 # h / m = 3956
-K = constants.h / constants.m_n * 1.e10
+K = constants.h / constants.m_n * 1.0e10
 
 
 def div(d1, d2, L12=2859):
@@ -40,8 +40,8 @@ def div(d1, d2, L12=2859):
     Physics Research A, 1995, 362, 434-453
     """
     divergence = 0.68 * 0.68 * (d1 ** 2 + d2 ** 2) / (L12 ** 2)
-    alpha = (d1 + d2) / 2. / L12
-    beta = abs(d1 - d2) / 2. / L12
+    alpha = (d1 + d2) / 2.0 / L12
+    beta = abs(d1 - d2) / 2.0 / L12
     return np.degrees(np.sqrt(divergence)), np.degrees(alpha), np.degrees(beta)
 
 
@@ -100,8 +100,12 @@ def q2(omega, twotheta, phi, wavelength):
     twotheta = np.radians(twotheta)
     phi = np.radians(phi)
 
-    qx = (2 * np.pi / wavelength * (np.cos(twotheta - omega) * np.cos(phi) -
-          np.cos(omega)))
+    qx = (
+        2
+        * np.pi
+        / wavelength
+        * (np.cos(twotheta - omega) * np.cos(phi) - np.cos(omega))
+    )
     qy = 2 * np.pi / wavelength * np.cos(twotheta - omega) * np.sin(phi)
     qz = 2 * np.pi / wavelength * (np.sin(twotheta - omega) + np.sin(omega))
 
@@ -124,7 +128,7 @@ def wavelength(q, angle):
     wavelength : float
         Wavelength of radiation (A)
     """
-    return 4. * np.pi * np.sin(angle * np.pi / 180.) / q
+    return 4.0 * np.pi * np.sin(angle * np.pi / 180.0) / q
 
 
 def angle(q, wavelength):
@@ -143,7 +147,7 @@ def angle(q, wavelength):
     angle : float
         angle of incidence (degrees)
     """
-    return np.arcsin((q * wavelength) / 4. / np.pi) * 180 / np.pi
+    return np.arcsin((q * wavelength) / 4.0 / np.pi) * 180 / np.pi
 
 
 def qcrit(SLD1, SLD2):
@@ -162,7 +166,7 @@ def qcrit(SLD1, SLD2):
     qc: float
         Critical Q vector for a reflectivity system.
     """
-    return np.sqrt(16. * np.pi * (SLD2 - SLD1) * 1.e-6)
+    return np.sqrt(16.0 * np.pi * (SLD2 - SLD1) * 1.0e-6)
 
 
 def tauC(wavelength, xsi=0, z0=0.358, freq=24):
@@ -295,8 +299,9 @@ def double_chopper_frequency(min_wavelength, max_wavelength, L, N=1):
     return K / ((max_wavelength - min_wavelength) * L * N)
 
 
-def resolution_double_chopper(wavelength, z0=0.358, R=0.35, freq=24,
-                              H=0.005, xsi=0, L=7.5, tau_da=0):
+def resolution_double_chopper(
+    wavelength, z0=0.358, R=0.35, freq=24, H=0.005, xsi=0, L=7.5, tau_da=0
+):
     """
     Calculates the fractional resolution of a double chopper pair, dl/l.
 
@@ -329,11 +334,14 @@ def resolution_double_chopper(wavelength, z0=0.358, R=0.35, freq=24,
     TOF = L / wavelength_velocity(wavelength)
     tc = tauC(wavelength, xsi=xsi, z0=z0, freq=freq)
     tau_h = H / R / (2 * np.pi * freq)
-    return 0.68 * np.sqrt((tc / TOF)**2 + (tau_h / TOF)**2 + (tau_da / TOF)**2)
+    return 0.68 * np.sqrt(
+        (tc / TOF) ** 2 + (tau_h / TOF) ** 2 + (tau_da / TOF) ** 2
+    )
 
 
-def resolution_single_chopper(wavelength, R=0.35, freq=24, H=0.005, phi=60,
-                              L=7.5):
+def resolution_single_chopper(
+    wavelength, R=0.35, freq=24, H=0.005, phi=60, L=7.5
+):
     """
     Calculates the fractional resolution of a single chopper, dl/l.
 
@@ -360,13 +368,14 @@ def resolution_single_chopper(wavelength, R=0.35, freq=24, H=0.005, phi=60,
         Transmission of a single chopper system.
     """
     TOF = L / wavelength_velocity(wavelength)
-    tauH = H / R / (2. * np.pi * freq)
-    tauC = np.radians(phi) / (2. * np.pi * freq)
-    return 0.68 * np.sqrt((tauC / TOF)**2 + (tauH / TOF)**2)
+    tauH = H / R / (2.0 * np.pi * freq)
+    tauC = np.radians(phi) / (2.0 * np.pi * freq)
+    return 0.68 * np.sqrt((tauC / TOF) ** 2 + (tauH / TOF) ** 2)
 
 
-def transmission_double_chopper(wavelength, z0=0.358, R=0.35, freq=24, N=1,
-                                H=0.005, xsi=0):
+def transmission_double_chopper(
+    wavelength, z0=0.358, R=0.35, freq=24, N=1, H=0.005, xsi=0
+):
     """
     Calculates the transmission of a double chopper pair
 
@@ -444,8 +453,8 @@ def _neutron_transmission_depth(material, wavelength):
         neutron wavelength in Angstrom
     """
     import periodictable as pt
-    return 10. * pt.neutron_scattering(material,
-                                       wavelength=wavelength)[-1]
+
+    return 10.0 * pt.neutron_scattering(material, wavelength=wavelength)[-1]
 
 
 def neutron_transmission(formula, density, wavelength, thickness):
@@ -470,6 +479,7 @@ def neutron_transmission(formula, density, wavelength, thickness):
         transmission of material
     """
     import periodictable as pt
+
     material = pt.formula(formula, density=density)
 
     _depth_fn = np.vectorize(_neutron_transmission_depth, excluded={0})
@@ -507,7 +517,7 @@ def penetration_depth(qq, rho):
     -------
     penetration_depth: float
     """
-    kk = 0.25 * qq ** 2.
+    kk = 0.25 * qq ** 2.0
     kk -= 4 * np.pi * rho
     temp = np.sqrt(kk + 0j)
     return np.abs(1 / temp.imag)
@@ -533,7 +543,9 @@ def beamfrac(FWHM, length, angle):
     """
     height_of_sample = length * np.sin(np.radians(angle))
     beam_sd = FWHM / 2 / np.sqrt(2 * np.log(2))
-    probability = 2. * (stats.norm.cdf(height_of_sample / 2. / beam_sd) - 0.5)
+    probability = 2.0 * (
+        stats.norm.cdf(height_of_sample / 2.0 / beam_sd) - 0.5
+    )
     return probability
 
 
@@ -559,11 +571,12 @@ def beamfrackernel(kernelx, kernely, length, angle):
     """
     height_of_sample = length * np.sin(np.radians(angle))
     total = integrate.simps(kernely, kernelx)
-    lowlimit = np.where(-height_of_sample / 2. >= kernelx)[0][-1]
-    hilimit = np.where(height_of_sample / 2. <= kernelx)[0][0]
+    lowlimit = np.where(-height_of_sample / 2.0 >= kernelx)[0][-1]
+    hilimit = np.where(height_of_sample / 2.0 <= kernelx)[0][0]
 
-    area = integrate.simps(kernely[lowlimit: hilimit + 1],
-                           kernelx[lowlimit: hilimit + 1])
+    area = integrate.simps(
+        kernely[lowlimit : hilimit + 1], kernelx[lowlimit : hilimit + 1]
+    )
     return area / total
 
 
@@ -597,13 +610,15 @@ def height_of_beam_after_dx(d1, d2, L12, distance):
 
     """
 
-    alpha = (d1 + d2) / 2. / L12
-    beta = abs(d1 - d2) / 2. / L12
+    alpha = (d1 + d2) / 2.0 / L12
+    beta = abs(d1 - d2) / 2.0 / L12
     if distance >= 0:
         return (beta * distance * 2) + d2, (alpha * distance * 2) + d2
     else:
-        return ((beta * abs(distance) * 2) + d1,
-                (alpha * abs(distance) * 2) + d1)
+        return (
+            (beta * abs(distance) * 2) + d1,
+            (alpha * abs(distance) * 2) + d1,
+        )
 
 
 def actual_footprint(d1, d2, L12, L2S, angle):
@@ -633,14 +648,16 @@ def actual_footprint(d1, d2, L12, L2S, angle):
     return umbra / np.radians(angle), penumbra / np.radians(angle)
 
 
-def slit_optimiser(footprint,
-                   resolution,
-                   angle=1.,
-                   L12=2859.5,
-                   L2S=180,
-                   LS3=290.5,
-                   LSD=2500,
-                   verbose=True):
+def slit_optimiser(
+    footprint,
+    resolution,
+    angle=1.0,
+    L12=2859.5,
+    L2S=180,
+    LS3=290.5,
+    LSD=2500,
+    verbose=True,
+):
     """
     Optimise slit settings for a given angular resolution, and a given
     footprint.
@@ -653,12 +670,12 @@ def slit_optimiser(footprint,
         angle of incidence in degrees
     """
     if verbose:
-        print('_____________________________________________')
-        print('FOOTPRINT calculator - Andrew Nelson 2013')
-        print('INPUT')
-        print('footprint:', footprint, 'mm')
-        print('fractional angular resolution (FWHM):', resolution)
-        print('theta:', angle, 'degrees')
+        print("_____________________________________________")
+        print("FOOTPRINT calculator - Andrew Nelson 2013")
+        print("INPUT")
+        print("footprint:", footprint, "mm")
+        print("fractional angular resolution (FWHM):", resolution)
+        print("theta:", angle, "degrees")
 
     def d1star(d2star):
         return np.sqrt(1 - np.power(d2star, 2))
@@ -666,15 +683,16 @@ def slit_optimiser(footprint,
     L1star = 0.68 * footprint / L12 / resolution
 
     def gseekfun(d2star):
-        return np.power((d2star + L2S / L12 * (d2star + d1star(d2star))) -
-                        L1star, 2)
+        return np.power(
+            (d2star + L2S / L12 * (d2star + d1star(d2star))) - L1star, 2
+        )
 
-    res = optimize.minimize_scalar(gseekfun, method='bounded', bounds=(0, 1))
-    if res['success'] is False:
-        print('ERROR: Couldnt find optimal solution, sorry')
+    res = optimize.minimize_scalar(gseekfun, method="bounded", bounds=(0, 1))
+    if res["success"] is False:
+        print("ERROR: Couldnt find optimal solution, sorry")
         return None
 
-    optimal_d2star = res['x']
+    optimal_d2star = res["x"]
     optimal_d1star = d1star(optimal_d2star)
     if optimal_d2star > optimal_d1star:
         # you found a minimum, but this may not be the optimum size of the
@@ -693,20 +711,25 @@ def slit_optimiser(footprint,
     tmp, _actual_footprint = actual_footprint(d1, d2, L12, L2S, angle)
 
     if verbose:
-        print('OUTPUT')
+        print("OUTPUT")
         if multfactor == 1:
-            print('Your desired resolution results in a smaller footprint than'
-                  ' the sample supports.')
+            print(
+                "Your desired resolution results in a smaller footprint than"
+                " the sample supports."
+            )
             suggested_resolution = resolution * footprint / _actual_footprint
-            print('You can increase flux using a resolution of',
-                  suggested_resolution, 'and still keep the same footprint.')
-        print('d1', d1, 'mm')
-        print('d2', d2, 'mm')
-        print('footprint:', _actual_footprint, 'mm')
-        print('height at S4:', height_at_S4, 'mm')
-        print('height at detector:', height_at_detector, 'mm')
-        print('[d2star', optimal_d2star, ']')
-        print('_____________________________________________')
+            print(
+                "You can increase flux using a resolution of",
+                suggested_resolution,
+                "and still keep the same footprint.",
+            )
+        print("d1", d1, "mm")
+        print("d2", d2, "mm")
+        print("footprint:", _actual_footprint, "mm")
+        print("height at S4:", height_at_S4, "mm")
+        print("height at detector:", height_at_detector, "mm")
+        print("[d2star", optimal_d2star, "]")
+        print("_____________________________________________")
 
     return d1, d2
 
@@ -736,8 +759,7 @@ def _dict_compare(d1, d2):
         return False
 
     for o in intersect_keys:
-        if (isinstance(d1[o], np.ndarray) and
-                isinstance(d2[o], np.ndarray)):
+        if isinstance(d1[o], np.ndarray) and isinstance(d2[o], np.ndarray):
             # both numpy arrays
             if not np.array_equal(d1[o], d2[o]):
                 return False

@@ -10,7 +10,7 @@ from scipy import stats, integrate, constants, optimize
 import refnx.util.general as general
 
 # h / m = 3956
-K = constants.h / constants.m_n * 1.e10
+K = constants.h / constants.m_n * 1.0e10
 
 
 """
@@ -19,7 +19,7 @@ ANGULAR COMPONENTS
 
 
 class P_Theta(object):
-    def __init__(self, d1, d2, L12=2859.):
+    def __init__(self, d1, d2, L12=2859.0):
         """
         Calculates the angular resolution for a two slit collimation
         system.
@@ -34,8 +34,8 @@ class P_Theta(object):
             distance between slits
         """
 
-        alpha = (d1 + d2) / 2. / L12
-        beta = abs(d1 - d2) / 2. / L12
+        alpha = (d1 + d2) / 2.0 / L12
+        beta = abs(d1 - d2) / 2.0 / L12
 
         self.alpha = alpha
         self.beta = beta
@@ -125,10 +125,11 @@ class P_Wavelength(object):
 
     def width(self, wavelength0):
         # burst width
-        tc = general.tauC(wavelength0, xsi=self.xsi, z0=self.z0 / 1000,
-                          freq=self.freq)
+        tc = general.tauC(
+            wavelength0, xsi=self.xsi, z0=self.z0 / 1000, freq=self.freq
+        )
         # time of flight
-        TOF = self.L / 1000. / general.wavelength_velocity(wavelength0)
+        TOF = self.L / 1000.0 / general.wavelength_velocity(wavelength0)
 
         width = tc / TOF * wavelength0
 
@@ -158,14 +159,14 @@ class P_Wavelength(object):
             Probability density function at `wavelength`
         """
         # burst time
-        tc = general.tauC(wavelength0, xsi=self.xsi, z0=self.z0 / 1000,
-                          freq=self.freq)
+        tc = general.tauC(
+            wavelength0, xsi=self.xsi, z0=self.z0 / 1000, freq=self.freq
+        )
         # time of flight
-        TOF = self.L / 1000. / general.wavelength_velocity(wavelength0)
+        TOF = self.L / 1000.0 / general.wavelength_velocity(wavelength0)
 
         width = tc / TOF * wavelength0
-        return stats.uniform.pdf(wavelength - wavelength0,
-                                 -width / 2, width)
+        return stats.uniform.pdf(wavelength - wavelength0, -width / 2, width)
 
     def da(self, wavelength0, wavelength, da=None):
         """
@@ -192,8 +193,7 @@ class P_Wavelength(object):
             width = da * wavelength0
         else:
             width = self._da * wavelength0
-        return stats.uniform.pdf(wavelength - wavelength0,
-                                 -width / 2, width)
+        return stats.uniform.pdf(wavelength - wavelength0, -width / 2, width)
 
     def crossing(self, wavelength0, wavelength):
         """
@@ -212,11 +212,10 @@ class P_Wavelength(object):
             Probability density function at `wavelength`
         """
         tau_h = self.H / self.R / (2 * np.pi * self.freq)
-        TOF = self.L / 1000. / general.wavelength_velocity(wavelength0)
+        TOF = self.L / 1000.0 / general.wavelength_velocity(wavelength0)
 
         width = tau_h / TOF * wavelength0
-        return stats.uniform.pdf(wavelength - wavelength0,
-                                 -width / 2, width)
+        return stats.uniform.pdf(wavelength - wavelength0, -width / 2, width)
 
 
 def pq_wavelength(p_wavelength, theta0, wavelength0, Q, spectrum=None):
@@ -254,8 +253,9 @@ def pq_wavelength(p_wavelength, theta0, wavelength0, Q, spectrum=None):
     return pdf
 
 
-def resolution_kernel(p_theta, p_wavelength, theta0, wavelength0,
-                      npnts=1001, spectrum=None):
+def resolution_kernel(
+    p_theta, p_wavelength, theta0, wavelength0, npnts=1001, spectrum=None
+):
     """
     Creates a full resolution kernel based on angular and wavelength components
 
@@ -286,14 +286,17 @@ def resolution_kernel(p_theta, p_wavelength, theta0, wavelength0,
     theta0_arr = np.asfarray(theta0).ravel()
     wavelength0_arr = np.asfarray(wavelength0).ravel()
     qpnts = max(theta0_arr.size, wavelength0_arr.size)
-    arr = [np.array(a) for a in np.broadcast_arrays(theta0_arr,
-                                                    wavelength0_arr)]
+    arr = [
+        np.array(a) for a in np.broadcast_arrays(theta0_arr, wavelength0_arr)
+    ]
     theta0_arr = arr[0]
     wavelength0_arr = arr[1]
 
     mean_q = general.q(theta0_arr, wavelength0_arr)
-    max_q = general.q(theta0_arr + p_theta.width,
-                      wavelength0_arr - p_wavelength.width(wavelength0_arr))
+    max_q = general.q(
+        theta0_arr + p_theta.width,
+        wavelength0_arr - p_wavelength.width(wavelength0_arr),
+    )
     width = max_q - mean_q
 
     kernel = np.zeros((qpnts, 2, npnts))
@@ -306,23 +309,30 @@ def resolution_kernel(p_theta, p_wavelength, theta0, wavelength0,
         pqt = pq_theta(p_theta, theta0_arr[i], wavelength0_arr[i], Q)
 
         # burst time component
-        pqb = pq_wavelength(p_wavelength.burst, theta0_arr[i],
-                            wavelength0_arr[i], Q, spectrum)
+        pqb = pq_wavelength(
+            p_wavelength.burst, theta0_arr[i], wavelength0_arr[i], Q, spectrum
+        )
 
         # crossing time component
-        pqc = pq_wavelength(p_wavelength.crossing, theta0_arr[i],
-                            wavelength0_arr[i], Q, spectrum)
+        pqc = pq_wavelength(
+            p_wavelength.crossing,
+            theta0_arr[i],
+            wavelength0_arr[i],
+            Q,
+            spectrum,
+        )
 
         # rebinning component
-        pqda = pq_wavelength(p_wavelength.da, theta0_arr[i],
-                             wavelength0_arr[i], Q, spectrum)
+        pqda = pq_wavelength(
+            p_wavelength.da, theta0_arr[i], wavelength0_arr[i], Q, spectrum
+        )
 
         spacing = np.diff(Q)[0]
 
-        p = np.convolve(pqt, pqb, 'same')
-        p = np.convolve(p, pqc, 'same')
-        p = np.convolve(p, pqda, 'same')
-        p *= spacing ** 3.
+        p = np.convolve(pqt, pqb, "same")
+        p = np.convolve(p, pqc, "same")
+        p = np.convolve(p, pqda, "same")
+        p *= spacing ** 3.0
 
         kernel[i, 1, :] = p / integrate.simps(p, Q)
 
