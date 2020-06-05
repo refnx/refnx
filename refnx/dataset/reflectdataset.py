@@ -1,6 +1,7 @@
 import string
 import time
 import re
+
 # from datetime import datetime
 
 try:
@@ -71,14 +72,13 @@ class ReflectDataset(Data1D):
         if np.all(self._mask):
             msk = None
 
-        d = {'filename': self.filename, 'msk': msk,
-             'data': self.data}
+        d = {"filename": self.filename, "msk": msk, "data": self.data}
         if self.filename is not None:
-            return ("ReflectDataset(data={filename!r},"
-                    " mask={msk!r})".format(**d))
+            return "ReflectDataset(data={filename!r}," " mask={msk!r})".format(
+                **d
+            )
         else:
-            return ("ReflectDataset(data={data!r},"
-                    " mask={msk!r})".format(**d))
+            return "ReflectDataset(data={data!r}," " mask={msk!r})".format(**d)
 
     def save_xml(self, f, start_time=0):
         """
@@ -93,22 +93,23 @@ class ReflectDataset(Data1D):
             Epoch time specifying when the sample started
         """
         s = string.Template(_template_ref_xml)
-        self.time = time.strftime('%Y-%m-%dT%H:%M:%S',
-                                  time.localtime(start_time))
+        self.time = time.strftime(
+            "%Y-%m-%dT%H:%M:%S", time.localtime(start_time)
+        )
         # self.time = time.strftime(
         # datetime.fromtimestamp(start_time).isoformat()
         # filename = 'c_PLP{:07d}_{:d}.xml'.format(self._rnumber[0], 0)
 
-        self._ydata = repr(self.y.tolist()).strip(',[]')
-        self._xdata = repr(self.x.tolist()).strip(',[]')
-        self._ydataSD = repr(self.y_err.tolist()).strip(',[]')
-        self._xdataSD = repr(self.x_err.tolist()).strip(',[]')
+        self._ydata = repr(self.y.tolist()).strip(",[]")
+        self._xdata = repr(self.x.tolist()).strip(",[]")
+        self._ydataSD = repr(self.y_err.tolist()).strip(",[]")
+        self._xdataSD = repr(self.x_err.tolist()).strip(",[]")
 
         thefile = s.safe_substitute(self.__dict__)
 
-        with possibly_open_file(f, 'wb') as g:
-            if 'b' in g.mode:
-                thefile = thefile.encode('utf-8')
+        with possibly_open_file(f, "wb") as g:
+            if "b" in g.mode:
+                thefile = thefile.encode("utf-8")
 
             g.write(thefile)
 
@@ -122,7 +123,7 @@ class ReflectDataset(Data1D):
             The file to load the spectrum from, or a str that specifies the
             file name
         """
-        if hasattr(f, 'name'):
+        if hasattr(f, "name"):
             fname = f.name
         else:
             fname = f
@@ -130,11 +131,11 @@ class ReflectDataset(Data1D):
             tree = ET.ElementTree()
             tree.parse(f)
 
-            delim = ', | |,'
-            qtext = re.split(delim, tree.find('.//Qz').text)
-            rtext = re.split(delim, tree.find('.//R').text)
-            drtext = re.split(delim, tree.find('.//dR').text)
-            dqtext = re.split(delim, tree.find('.//dQz').text)
+            delim = ", | |,"
+            qtext = re.split(delim, tree.find(".//Qz").text)
+            rtext = re.split(delim, tree.find(".//R").text)
+            drtext = re.split(delim, tree.find(".//dR").text)
+            dqtext = re.split(delim, tree.find(".//dQz").text)
 
             qvals = [float(val) for val in qtext if len(val)]
             rvals = [float(val) for val in rtext if len(val)]

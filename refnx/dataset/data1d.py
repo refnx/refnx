@@ -65,6 +65,7 @@ class Data1D(object):
         Information that should be retained with the dataset.
 
     """
+
     def __init__(self, data=None, mask=None, **kwds):
         self.filename = None
         self.name = None
@@ -77,7 +78,7 @@ class Data1D(object):
         self.weighted = False
 
         # if it's a file then open and load the file.
-        if hasattr(data, 'read') or type(data) is str:
+        if hasattr(data, "read") or type(data) is str:
             self.load(data)
         elif isinstance(data, Data1D):
             # copy a dataset (but not it's file info)
@@ -119,14 +120,11 @@ class Data1D(object):
         if np.all(self._mask):
             msk = None
 
-        d = {'filename': self.filename, 'msk': msk,
-             'data': self.data}
+        d = {"filename": self.filename, "msk": msk, "data": self.data}
         if self.filename is not None:
-            return ("Data1D(data={filename!r},"
-                    " mask={msk!r})".format(**d))
+            return "Data1D(data={filename!r}," " mask={msk!r})".format(**d)
         else:
-            return ("Data1D(data={data!r},"
-                    " mask={msk!r})".format(**d))
+            return "Data1D(data={data!r}," " mask={msk!r})".format(**d)
 
     @property
     def x(self):
@@ -219,10 +217,12 @@ class Data1D(object):
 
         """
         finite_loc = np.where(np.isfinite(self.y))
-        return (self.x[finite_loc],
-                self.y[finite_loc],
-                self.y_err[finite_loc],
-                self.x_err[finite_loc])
+        return (
+            self.x[finite_loc],
+            self.y[finite_loc],
+            self.y_err[finite_loc],
+            self.x_err[finite_loc],
+        )
 
     @data.setter
     def data(self, data_tuple):
@@ -256,7 +256,7 @@ class Data1D(object):
         self._mask = None
         self.sort()
 
-    def scale(self, scalefactor=1.):
+    def scale(self, scalefactor=1.0):
         """
         Scales the y and y_err data by dividing by `scalefactor`.
 
@@ -325,22 +325,21 @@ class Data1D(object):
         mask2 = np.full_like(data_tuple[0], True, bool)
 
         # which values in the first dataset overlap with the second
-        overlap_points = np.zeros_like(x, 'bool')
+        overlap_points = np.zeros_like(x, "bool")
 
         # go through and stitch them together.
-        scale = 1.
-        dscale = 0.
+        scale = 1.0
+        dscale = 0.0
         if requires_splice and len(self) > 1:
-            scale, dscale, overlap_points = (
-                get_scaling_in_overlap(x,
-                                       y,
-                                       y_err,
-                                       ax,
-                                       ay,
-                                       ay_err))
+            scale, dscale, overlap_points = get_scaling_in_overlap(
+                x, y, y_err, ax, ay, ay_err
+            )
 
-            if ((not np.isfinite(scale)) or (not np.isfinite(dscale)) or
-                    (not np.size(overlap_points, 0))):
+            if (
+                (not np.isfinite(scale))
+                or (not np.isfinite(dscale))
+                or (not np.size(overlap_points, 0))
+            ):
                 raise ValueError("No points in overlap region")
 
         if not trim_trailing:
@@ -354,16 +353,20 @@ class Data1D(object):
             dr = np.r_[y_err[~overlap_points], ay_err * scale]
         except (TypeError, ValueError):
             if (ay_err is not None) or (y_err is not None):
-                raise ValueError("Both the existing Data1D and the data you're"
-                                 " trying to add need to have y_err")
+                raise ValueError(
+                    "Both the existing Data1D and the data you're"
+                    " trying to add need to have y_err"
+                )
             dr = None
 
         try:
             dq = np.r_[x_err[~overlap_points], ax_err]
         except (TypeError, ValueError):
             if (ax_err is not None) or (x_err is not None):
-                raise ValueError("Both the existing Data1D and the data you're"
-                                 " trying to add need to have x_err")
+                raise ValueError(
+                    "Both the existing Data1D and the data you're"
+                    " trying to add need to have x_err"
+                )
             dq = None
 
         self.data = (qq, rr, dr, dq)
@@ -397,10 +400,8 @@ class Data1D(object):
 
         """
         np.savetxt(
-            f, np.column_stack((self._x,
-                                self._y,
-                                self._y_err,
-                                self._x_err)))
+            f, np.column_stack((self._x, self._y, self._y_err, self._x_err))
+        )
 
     def load(self, f):
         """
@@ -414,7 +415,7 @@ class Data1D(object):
         """
         # it would be nicer to simply use np.loadtxt, but this is an
         # attempt to auto ignore header lines.
-        with possibly_open_file(f, 'r') as g:
+        with possibly_open_file(f, "r") as g:
             lines = list(reversed(g.readlines()))
             x = list()
             y = list()
@@ -427,9 +428,11 @@ class Data1D(object):
                 try:
                     # parse a line for numerical tokens separated by whitespace
                     # or comma
-                    nums = [float(tok) for tok in
-                            re.split(r"\s|,", line)
-                            if len(tok)]
+                    nums = [
+                        float(tok)
+                        for tok in re.split(r"\s|,", line)
+                        if len(tok)
+                    ]
                     if len(nums) in [0, 1]:
                         # might be trailing newlines at the end of the file,
                         # just ignore those
@@ -458,8 +461,10 @@ class Data1D(object):
         x_err.reverse()
 
         if len(x) == 0:
-            raise RuntimeError("Datafile didn't appear to contain any data (or"
-                               " was the wrong format)")
+            raise RuntimeError(
+                "Datafile didn't appear to contain any data (or"
+                " was the wrong format)"
+            )
 
         if numcols < 3:
             y_err = None
@@ -468,7 +473,7 @@ class Data1D(object):
 
         self.data = (x, y, y_err, x_err)
 
-        if hasattr(f, 'read'):
+        if hasattr(f, "read"):
             fname = f.name
         else:
             fname = f
@@ -565,8 +570,9 @@ class Data1D(object):
             Specify `random_state` for repeatable synthesising.
         """
         if self._y_err is None:
-            raise RuntimeError("Can't synthesise new dataset without y_err"
-                               "uncertainties")
+            raise RuntimeError(
+                "Can't synthesise new dataset without y_err" "uncertainties"
+            )
 
         rng = check_random_state(random_state)
         gnoise = rng.standard_normal(size=self._y_err.shape)
