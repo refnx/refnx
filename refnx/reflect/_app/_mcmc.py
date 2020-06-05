@@ -14,13 +14,19 @@ from refnx.analysis import (
     Objective,
 )
 from refnx.reflect import Structure
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.backends.backend_qt5agg import (
+    FigureCanvasQTAgg as FigureCanvas,
+)
 from matplotlib.figure import Figure
 
 pth = os.path.dirname(os.path.abspath(__file__))
 UI_LOCATION = os.path.join(pth, "ui")
-ProcessMCMCDialogUI = uic.loadUiType(os.path.join(UI_LOCATION, "process_mcmc.ui"))[0]
-SampleMCMCDialogUI = uic.loadUiType(os.path.join(UI_LOCATION, "sample_mcmc.ui"))[0]
+ProcessMCMCDialogUI = uic.loadUiType(
+    os.path.join(UI_LOCATION, "process_mcmc.ui")
+)[0]
+SampleMCMCDialogUI = uic.loadUiType(
+    os.path.join(UI_LOCATION, "sample_mcmc.ui")
+)[0]
 
 
 class SampleMCMCDialog(QtWidgets.QDialog, SampleMCMCDialogUI):
@@ -61,7 +67,9 @@ class ProcessMCMCDialog(QtWidgets.QDialog, ProcessMCMCDialogUI):
         if len(self.chain.shape) == 3:
             steps, walkers, varys = self.chain.shape
             self.chain_size.setText(
-                "steps: {}, walkers: {}, varys: {}".format(steps, walkers, varys)
+                "steps: {}, walkers: {}, varys: {}".format(
+                    steps, walkers, varys
+                )
             )
         else:
             steps, temps, walkers, varys = self.chain.shape
@@ -173,7 +181,9 @@ def _plots(obj, nplot=0, folder=None):
                 for o in obj.objectives:
                     if hasattr(o.model, "structure"):
                         ax3.plot(
-                            *o.model.structure.sld_profile(), color="k", alpha=0.01
+                            *o.model.structure.sld_profile(),
+                            color="k",
+                            alpha=0.01
                         )
 
             # put back saved_params

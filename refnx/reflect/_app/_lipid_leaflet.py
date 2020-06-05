@@ -168,8 +168,12 @@ class LipidLeafletDialog(QtWidgets.QDialog, LipidDialog):
         phi_t = (tsolv + 0.56) / 6.92
 
         if self.radiation.currentText() == "neutrons":
-            scatlens_h = lipid.neutron_scattering_lengths(condition, vf_d_solvent=phi_h)
-            scatlens_t = lipid.neutron_scattering_lengths(condition, vf_d_solvent=phi_t)
+            scatlens_h = lipid.neutron_scattering_lengths(
+                condition, vf_d_solvent=phi_h
+            )
+            scatlens_t = lipid.neutron_scattering_lengths(
+                condition, vf_d_solvent=phi_t
+            )
             scatlens = (scatlens_h[0], scatlens_t[1])
         else:
             energy = self.xray_energy.value()
@@ -269,14 +273,22 @@ class Lipid(object):
     ):
         vh, vt = self.conditions[condition]
 
-        hf = exchange_protons_formula(self.hf, self.head_exchangable, vf_d_solvent)
-        tf = exchange_protons_formula(self.tf, self.tail_exchangable, vf_d_solvent)
+        hf = exchange_protons_formula(
+            self.hf, self.head_exchangable, vf_d_solvent
+        )
+        tf = exchange_protons_formula(
+            self.tf, self.tail_exchangable, vf_d_solvent
+        )
 
         h_density = calculate_density(hf, vh)
         t_density = calculate_density(tf, vt)
 
-        h_sld = pt.neutron_sld(hf, density=h_density, wavelength=neutron_wavelength)
-        t_sld = pt.neutron_sld(tf, density=t_density, wavelength=neutron_wavelength)
+        h_sld = pt.neutron_sld(
+            hf, density=h_density, wavelength=neutron_wavelength
+        )
+        t_sld = pt.neutron_sld(
+            tf, density=t_density, wavelength=neutron_wavelength
+        )
         h_scatlen = complex(*h_sld[0:2]) * vh / 1e6
         t_scatlen = complex(*t_sld[0:2]) * vt / 1e6
         return h_scatlen, t_scatlen

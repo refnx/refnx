@@ -78,13 +78,17 @@ class Spline(Component):
 
         self.dz = Parameters(name="dz - spline")
         for i, z in enumerate(dz):
-            p = possibly_create_parameter(z, name="%s - spline dz[%d]" % (name, i))
+            p = possibly_create_parameter(
+                z, name="%s - spline dz[%d]" % (name, i)
+            )
             p.range(0, 1)
             self.dz.append(p)
 
         self.vs = Parameters(name="vs - spline")
         for i, v in enumerate(vs):
-            p = possibly_create_parameter(v, name="%s - spline vs[%d]" % (name, i))
+            p = possibly_create_parameter(
+                v, name="%s - spline vs[%d]" % (name, i)
+            )
             self.vs.append(p)
 
         if len(self.vs) != len(self.dz):
@@ -129,21 +133,28 @@ class Spline(Component):
             left_component = structure[loc - 1]
             right_component = structure[(loc + 1) % len(structure)]
         except ValueError:
-            raise ValueError("Spline didn't appear to be part of a super" " Structure")
-
-        if isinstance(left_component, Spline) or isinstance(right_component, Spline):
             raise ValueError(
-                "Spline must be bracketed by Components that" " aren't Splines."
+                "Spline didn't appear to be part of a super" " Structure"
+            )
+
+        if isinstance(left_component, Spline) or isinstance(
+            right_component, Spline
+        ):
+            raise ValueError(
+                "Spline must be bracketed by Components that"
+                " aren't Splines."
             )
 
         vs = np.array(self.vs)
 
         left_sld = Structure.overall_sld(
-            np.atleast_2d(left_component.slabs(structure)[-1]), structure.solvent
+            np.atleast_2d(left_component.slabs(structure)[-1]),
+            structure.solvent,
         )[..., 1]
 
         right_sld = Structure.overall_sld(
-            np.atleast_2d(right_component.slabs(structure)[0]), structure.solvent
+            np.atleast_2d(right_component.slabs(structure)[0]),
+            structure.solvent,
         )[..., 1]
 
         if self.zgrad:

@@ -84,7 +84,9 @@ class GraphProperties(dict):
 
         if self.ax_residuals is not None:
             for key in _requiredgraphproperties:
-                self["residuals_properties"][key] = artist.getp(self.ax_residuals, key)
+                self["residuals_properties"][key] = artist.getp(
+                    self.ax_residuals, key
+                )
 
         if self.ax_sld_profile is not None:
             for key in _requiredgraphproperties:

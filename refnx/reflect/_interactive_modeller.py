@@ -91,7 +91,9 @@ class ReflectModelView(HasTraits):
 
         # got to listen to all the slab views
         for slab_view in slab_views:
-            slab_view.observe(self._on_slab_params_modified, names=["view_changed"])
+            slab_view.observe(
+                self._on_slab_params_modified, names=["view_changed"]
+            )
 
         # if you'd like to change the number of layers
         self.w_layers = widgets.BoundedIntText(
@@ -181,7 +183,9 @@ class ReflectModelView(HasTraits):
             widget.observe(self._on_model_limits_modified, names=["value"])
 
         # button to create default limits
-        self.default_limits_button = widgets.Button(description="Set default limits")
+        self.default_limits_button = widgets.Button(
+            description="Set default limits"
+        )
         self.default_limits_button.on_click(self.default_limits)
 
         # widgets for easy model change
@@ -192,8 +196,12 @@ class ReflectModelView(HasTraits):
         self.model_slider_min.layout = widgets.Layout(width="10%")
         self.model_slider_max = widgets.FloatText()
         self.model_slider_max.layout = widgets.Layout(width="10%")
-        self.model_slider_max.observe(self._on_slider_limits_modified, names=["value"])
-        self.model_slider_min.observe(self._on_slider_limits_modified, names=["value"])
+        self.model_slider_max.observe(
+            self._on_slider_limits_modified, names=["value"]
+        )
+        self.model_slider_min.observe(
+            self._on_slider_limits_modified, names=["value"]
+        )
         self.last_selected_param = None
 
         self.num_varying = len(self.model.parameters.varying_parameters())
@@ -228,7 +236,9 @@ class ReflectModelView(HasTraits):
                     # need to rebuild the limit widgets, achieved by redrawing
                     # box
                     # set the number of varying parameters
-                    self.num_varying = len(self.model.parameters.varying_parameters())
+                    self.num_varying = len(
+                        self.model.parameters.varying_parameters()
+                    )
 
                     self.view_redraw = time.time()
                     break
@@ -296,10 +306,15 @@ class ReflectModelView(HasTraits):
             if self.model_slider_link is not None:
                 self.model_slider_link.unlink()
             self.model_slider_link = widgets.link(
-                (self.last_selected_param, "value"), (self.model_slider, "value")
+                (self.last_selected_param, "value"),
+                (self.model_slider, "value"),
             )
-            self.model_slider_max.value = max(0, 2.0 * self.last_selected_param.value)
-            self.model_slider_min.value = min(0, 2.0 * self.last_selected_param.value)
+            self.model_slider_max.value = max(
+                0, 2.0 * self.last_selected_param.value
+            )
+            self.model_slider_min.value = min(
+                0, 2.0 * self.last_selected_param.value
+            )
 
     def _on_slider_limits_modified(self, change):
         """
@@ -308,7 +323,9 @@ class ReflectModelView(HasTraits):
         """
         self.model_slider.max = self.model_slider_max.value
         self.model_slider.min = self.model_slider_min.value
-        self.model_slider.step = (self.model_slider.max - self.model_slider.min) / 200.0
+        self.model_slider.step = (
+            self.model_slider.max - self.model_slider.min
+        ) / 200.0
 
     def _on_change_layers(self, change):
         self.ok_button = widgets.Button(description="OK")
@@ -320,7 +337,10 @@ class ReflectModelView(HasTraits):
         elif change["new"] < change["old"]:
             min_loc = 1
             max_loc = (
-                len(self.model.structure) - 2 - (change["old"] - change["new"]) + 1
+                len(self.model.structure)
+                - 2
+                - (change["old"] - change["new"])
+                + 1
             )
             description = "Remove from which layer?"
             self.ok_button.on_click(self._decrease_layers)
@@ -419,7 +439,12 @@ class ReflectModelView(HasTraits):
             self.bkg_low_limit,
             self.bkg_hi_limit,
         )
-        d[id(model.dq)] = (self.w_dq, self.c_dq, self.dq_low_limit, self.dq_hi_limit)
+        d[id(model.dq)] = (
+            self.w_dq,
+            self.c_dq,
+            self.dq_low_limit,
+            self.dq_hi_limit,
+        )
 
     def _cancel_layers(self, b):
         # disable the change layers widget to prevent recursion
@@ -462,13 +487,19 @@ class ReflectModelView(HasTraits):
             widgets.HBox([self.w_bkg, self.c_bkg]),
             self.structure_view.box,
             widgets.HBox(
-                [self.model_slider_min, self.model_slider, self.model_slider_max]
+                [
+                    self.model_slider_min,
+                    self.model_slider,
+                    self.model_slider_max,
+                ]
             ),
         ]
 
         if self._varying_layers:
             output.append(
-                widgets.HBox([self._location, self.ok_button, self.cancel_button])
+                widgets.HBox(
+                    [self._location, self.ok_button, self.cancel_button]
+                )
             )
 
         output.append(
@@ -950,7 +981,9 @@ class Motofit(object):
 
         # observe when the number of varying parameters changed. This
         # invalidates a curvefitter, and a new one has to be produced.
-        self.model_view.observe(self._on_num_varying_changed, names=["num_varying"])
+        self.model_view.observe(
+            self._on_num_varying_changed, names=["num_varying"]
+        )
 
         self.model_view.do_fit_button.on_click(self.do_fit)
         self.model_view.to_code_button.on_click(self._to_code)
@@ -1005,7 +1038,10 @@ class Motofit(object):
     def _update_analysis_objects(self):
         use_weights = self.use_weights.value == "Yes"
         self.objective = Objective(
-            self.model, self.dataset, transform=self.transform, use_weights=use_weights
+            self.model,
+            self.dataset,
+            transform=self.transform,
+            use_weights=use_weights,
         )
         self._curvefitter = None
 
@@ -1265,18 +1301,28 @@ class Motofit(object):
 
         if change["new"]:
             self.ax_residual.set_visible(True)
-            self.ax_data.set_position(self._gridspec1[0, 0].get_position(self.fig))
-            self.ax_sld.set_position(self._gridspec1[:, 1].get_position(self.fig))
+            self.ax_data.set_position(
+                self._gridspec1[0, 0].get_position(self.fig)
+            )
+            self.ax_sld.set_position(
+                self._gridspec1[:, 1].get_position(self.fig)
+            )
             plt.setp(self.ax_data.get_xticklabels(), visible=False)
         else:
             self.ax_residual.set_visible(False)
-            self.ax_data.set_position(self._gridspec2[:, 0].get_position(self.fig))
-            self.ax_sld.set_position(self._gridspec2[:, 1].get_position(self.fig))
+            self.ax_data.set_position(
+                self._gridspec2[:, 0].get_position(self.fig)
+            )
+            self.ax_sld.set_position(
+                self._gridspec2[:, 1].get_position(self.fig)
+            )
             plt.setp(self.ax_data.get_xticklabels(), visible=True)
 
     @property
     def _options_box(self):
-        return widgets.VBox([self.plot_type, self.use_weights, self.display_residuals])
+        return widgets.VBox(
+            [self.plot_type, self.use_weights, self.display_residuals]
+        )
 
     def _update_display_box(self, box):
         """

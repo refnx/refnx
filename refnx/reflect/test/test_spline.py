@@ -1,6 +1,11 @@
 import pickle
 import numpy as np
-from numpy.testing import assert_allclose, assert_equal, assert_almost_equal, assert_
+from numpy.testing import (
+    assert_allclose,
+    assert_equal,
+    assert_almost_equal,
+    assert_,
+)
 from refnx.reflect import SLD, Slab, Structure, Spline, Linear
 from refnx.analysis import Parameter, Interval, Parameters
 from refnx._lib import flatten
@@ -28,7 +33,11 @@ class TestSpline(object):
 
         # construct a structure
         a = Spline(
-            100, [2.0, 3.0, 4.0], [0.25] * 3, zgrad=False, microslab_max_thickness=1
+            100,
+            [2.0, 3.0, 4.0],
+            [0.25] * 3,
+            zgrad=False,
+            microslab_max_thickness=1,
         )
 
         # s.solvent = None
@@ -62,7 +71,9 @@ class TestSpline(object):
         s.reflectivity(q)
 
     def test_pickle(self):
-        a = Spline(100, [2, 3], [0.3, 0.3], zgrad=False, microslab_max_thickness=1)
+        a = Spline(
+            100, [2, 3], [0.3, 0.3], zgrad=False, microslab_max_thickness=1
+        )
 
         s = self.left | a | self.right | self.solvent
 
@@ -140,7 +151,11 @@ class TestSpline(object):
         # make sure that if the left and right components change, so does the
         # spline
         a = Spline(
-            100, [2, 3, 4], [0.1, 0.2, 0.3], zgrad=False, microslab_max_thickness=1
+            100,
+            [2, 3, 4],
+            [0.1, 0.2, 0.3],
+            zgrad=False,
+            microslab_max_thickness=1,
         )
 
         s = self.left | a | self.right | self.solvent
@@ -162,7 +177,9 @@ class TestSpline(object):
             s.slabs()
 
     def test_spine_interfaces(self):
-        a = Spline(100, [2, 3], [0.3, 0.3], zgrad=False, microslab_max_thickness=1)
+        a = Spline(
+            100, [2, 3], [0.3, 0.3], zgrad=False, microslab_max_thickness=1
+        )
 
         s = self.left | a | self.right | self.solvent
 

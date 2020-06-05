@@ -1,5 +1,10 @@
 import numpy as np
-from numpy.testing import assert_almost_equal, assert_equal, assert_, assert_allclose
+from numpy.testing import (
+    assert_almost_equal,
+    assert_equal,
+    assert_,
+    assert_allclose,
+)
 
 from refnx.reflect import SLD, Structure, Spline, Slab, LipidLeaflet
 from refnx.reflect.structure import _profile_slicer
@@ -54,7 +59,8 @@ class TestLipidLeaflet(object):
         self.leaflet.head_solvent = SLD(1.23)
         slabs = self.leaflet.slabs()
         assert_allclose(
-            slabs[0, 1], 1.23 * self.phi_solv_h + (1 - self.phi_solv_h) * self.rho_h
+            slabs[0, 1],
+            1.23 * self.phi_solv_h + (1 - self.phi_solv_h) * self.rho_h,
         )
         assert_allclose(slabs[0, 4], 0)
 
@@ -62,7 +68,8 @@ class TestLipidLeaflet(object):
         self.leaflet.tail_solvent = SLD(1.23)
         slabs = self.leaflet.slabs()
         assert_allclose(
-            slabs[1, 1], 1.23 * self.phi_solv_t + (1 - self.phi_solv_t) * self.rho_t
+            slabs[1, 1],
+            1.23 * self.phi_solv_t + (1 - self.phi_solv_t) * self.rho_t,
         )
         assert_allclose(slabs[1, 4], 0)
 
@@ -71,7 +78,15 @@ class TestLipidLeaflet(object):
         heads = SLD(6.01e-4 + 0j)
         tails = SLD(-2.92e-4 + 0j)
         new_leaflet = LipidLeaflet(
-            self.APM, heads, self.V_h, self.thick_h, tails, self.V_t, self.thick_t, 2, 3
+            self.APM,
+            heads,
+            self.V_h,
+            self.thick_h,
+            tails,
+            self.V_t,
+            self.thick_t,
+            2,
+            3,
         )
         slabs = self.leaflet.slabs()
         new_slabs = new_leaflet.slabs()

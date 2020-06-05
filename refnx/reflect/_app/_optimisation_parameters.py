@@ -11,7 +11,9 @@ class OptimisationParameterView(QtWidgets.QDialog):
     def __init__(self, parent=None):
         super(OptimisationParameterView, self).__init__(parent)
 
-        self.ui = uic.loadUi(os.path.join(UI_LOCATION, "optimisation.ui"), self)
+        self.ui = uic.loadUi(
+            os.path.join(UI_LOCATION, "optimisation.ui"), self
+        )
 
     def parameters(self, method):
         """
@@ -52,7 +54,9 @@ class OptimisationParameterView(QtWidgets.QDialog):
             kws["restart_temp_ratio"] = self.ui.da_restart_temp.value()
             kws["visit"] = self.ui.da_visit.value()
             kws["accept"] = self.ui.da_accept.value()
-            kws["no_local_search"] = self.ui.da_no_local_search.isChecked() is True
+            kws["no_local_search"] = (
+                self.ui.da_no_local_search.isChecked() is True
+            )
 
             target = self.ui.de_target.currentText()
             if target == "log-posterior":

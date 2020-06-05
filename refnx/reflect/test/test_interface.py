@@ -1,5 +1,10 @@
 import numpy as np
-from numpy.testing import assert_almost_equal, assert_equal, assert_, assert_allclose
+from numpy.testing import (
+    assert_almost_equal,
+    assert_equal,
+    assert_,
+    assert_allclose,
+)
 from scipy.stats import norm
 from refnx.reflect import Erf, Exponential, Step, Linear, Tanh, Sinusoidal
 

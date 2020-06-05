@@ -129,7 +129,9 @@ class LipidLeaflet(Component):
             The name for the component
         """
         super(LipidLeaflet, self).__init__()
-        self.apm = possibly_create_parameter(apm, "%s - area_per_molecule" % name)
+        self.apm = possibly_create_parameter(
+            apm, "%s - area_per_molecule" % name
+        )
 
         if isinstance(b_heads, complex):
             self.b_heads_real = possibly_create_parameter(
@@ -149,7 +151,9 @@ class LipidLeaflet(Component):
                 0, name="%s - b_heads_imag" % name
             )
 
-        self.vm_heads = possibly_create_parameter(vm_heads, name="%s - vm_heads" % name)
+        self.vm_heads = possibly_create_parameter(
+            vm_heads, name="%s - vm_heads" % name
+        )
 
         self.thickness_heads = possibly_create_parameter(
             thickness_heads, name="%s - thickness_heads" % name
@@ -173,7 +177,9 @@ class LipidLeaflet(Component):
                 0, name="%s - b_tails_imag" % name
             )
 
-        self.vm_tails = possibly_create_parameter(vm_tails, name="%s - vm_tails" % name)
+        self.vm_tails = possibly_create_parameter(
+            vm_tails, name="%s - vm_tails" % name
+        )
         self.thickness_tails = possibly_create_parameter(
             thickness_tails, name="%s - thickness_tails" % name
         )
@@ -238,7 +244,9 @@ class LipidLeaflet(Component):
 
         # volume fractions
         # head region
-        volfrac = self.vm_heads.value / (self.apm.value * self.thickness_heads.value)
+        volfrac = self.vm_heads.value / (
+            self.apm.value * self.thickness_heads.value
+        )
         layers[0, 4] = 1 - volfrac
         if self.head_solvent is not None:
             # we do the solvation here, not in Structure.slabs
@@ -246,7 +254,9 @@ class LipidLeaflet(Component):
             layers[0, 4] = 0
 
         # tail region
-        volfrac = self.vm_tails.value / (self.apm.value * self.thickness_tails.value)
+        volfrac = self.vm_tails.value / (
+            self.apm.value * self.thickness_tails.value
+        )
 
         layers[1, 4] = 1 - volfrac
         if self.tail_solvent is not None:
@@ -287,10 +297,14 @@ class LipidLeaflet(Component):
 
     def logp(self):
         # penalise unphysical volume fractions.
-        volfrac_h = self.vm_heads.value / (self.apm.value * self.thickness_heads.value)
+        volfrac_h = self.vm_heads.value / (
+            self.apm.value * self.thickness_heads.value
+        )
 
         # tail region
-        volfrac_t = self.vm_tails.value / (self.apm.value * self.thickness_tails.value)
+        volfrac_t = self.vm_tails.value / (
+            self.apm.value * self.thickness_tails.value
+        )
 
         if volfrac_h > 1 or volfrac_t > 1:
             return -np.inf

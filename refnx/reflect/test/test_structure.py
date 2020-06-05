@@ -1,7 +1,12 @@
 import pickle
 
 import numpy as np
-from numpy.testing import assert_almost_equal, assert_equal, assert_, assert_allclose
+from numpy.testing import (
+    assert_almost_equal,
+    assert_equal,
+    assert_,
+    assert_allclose,
+)
 from scipy.stats import cauchy
 from refnx._lib import flatten
 from refnx.reflect import (
@@ -34,7 +39,9 @@ class TestStructure(object):
         # test that the slab representation is correct
         assert_equal(
             self.s.slabs(),
-            np.array([[0, 0, 0, 0, 0], [100, 3.47, 0, 5, 0], [0, 6.36, 0, 4, 0]]),
+            np.array(
+                [[0, 0, 0, 0, 0], [100, 3.47, 0, 5, 0], [0, 6.36, 0, 4, 0]]
+            ),
         )
 
         self.s[1] = SLD(3.47 + 1j, name="sio2")(100, 5)
@@ -48,7 +55,9 @@ class TestStructure(object):
         sldi = 1 * 0.1 + 0.9 * 1.2
         assert_almost_equal(
             self.s.slabs(),
-            np.array([[0, 0, 0, 0, 0], [100, sld, sldi, 5, 0.9], [0, 6.36, 0, 4, 0]]),
+            np.array(
+                [[0, 0, 0, 0, 0], [100, sld, sldi, 5, 0.9], [0, 6.36, 0, 4, 0]]
+            ),
         )
 
         # when the structure._solvent is not None, but an SLD object, then
@@ -62,7 +71,9 @@ class TestStructure(object):
         sldi = 1 * 0.1
         assert_almost_equal(
             self.s.slabs(),
-            np.array([[0, 0, 0, 0, 0], [100, sld, sldi, 5, 0.9], [0, 6.36, 0, 4, 0]]),
+            np.array(
+                [[0, 0, 0, 0, 0], [100, sld, sldi, 5, 0.9], [0, 6.36, 0, 4, 0]]
+            ),
         )
 
         # by default solvation is done by backing medium, except when structure
@@ -72,7 +83,9 @@ class TestStructure(object):
         sldi = 0 * 0.9 + 1 * 0.1
         assert_almost_equal(
             self.s.slabs(),
-            np.array([[0, 6.36, 0, 0, 0], [100, sld, sldi, 4, 0.9], [0, 0, 0, 5, 0]]),
+            np.array(
+                [[0, 6.36, 0, 0, 0], [100, sld, sldi, 4, 0.9], [0, 0, 0, 5, 0]]
+            ),
         )
 
     def test_interface(self):
@@ -443,7 +456,9 @@ class TestStructure(object):
         assert isinstance(s, Structure)
         slabs = s.slabs()
         assert_equal(slabs[:, 0], [0, 10, 55, 110, 55, 110, 55, 110, 0])
-        assert_equal(slabs[:, 1], [2.07, 6.36, 3.47, 1.0, 3.47, 1.0, 3.47, 1.0, 6.36])
+        assert_equal(
+            slabs[:, 1], [2.07, 6.36, 3.47, 1.0, 3.47, 1.0, 3.47, 1.0, 6.36]
+        )
         assert_equal(slabs[:, 3], [0, 3, 4, 3.5, 4, 3.5, 4, 3.5, 0])
 
         # what are the interfaces of the Stack
@@ -458,14 +473,16 @@ class TestStructure(object):
 
         assert_equal(s.slabs()[:, 0], [0, 10, 55, 110, 55, 110, 55, 110, 0])
         assert_equal(
-            s.slabs()[:, 1], [2.07, 6.36, 3.47, 1.0, 3.47, 1.0, 3.47, 1.0, 6.36]
+            s.slabs()[:, 1],
+            [2.07, 6.36, 3.47, 1.0, 3.47, 1.0, 3.47, 1.0, 6.36],
         )
 
         q = repr(s)
         r = eval(q)
         assert_equal(r.slabs()[:, 0], [0, 10, 55, 110, 55, 110, 55, 110, 0])
         assert_equal(
-            r.slabs()[:, 1], [2.07, 6.36, 3.47, 1.0, 3.47, 1.0, 3.47, 1.0, 6.36]
+            r.slabs()[:, 1],
+            [2.07, 6.36, 3.47, 1.0, 3.47, 1.0, 3.47, 1.0, 6.36],
         )
 
         s |= stk

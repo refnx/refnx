@@ -44,7 +44,9 @@ class SplineDialog(QtWidgets.QDialog, SplineDialogUI):
             dz.append(float(self.knots.item(i, 0).text()))
             vs.append(float(self.knots.item(i, 1).text()))
 
-        return Spline(extent, vs, dz, name="spline", microslab_max_thickness=1.0)
+        return Spline(
+            extent, vs, dz, name="spline", microslab_max_thickness=1.0
+        )
 
 
 class _dz_delegate(QtWidgets.QItemDelegate):

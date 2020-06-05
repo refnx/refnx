@@ -34,7 +34,12 @@ import scipy
 from scipy.interpolate import splrep, splev
 
 
-from refnx.analysis import Parameters, Parameter, possibly_create_parameter, Transform
+from refnx.analysis import (
+    Parameters,
+    Parameter,
+    possibly_create_parameter,
+    Transform,
+)
 
 
 # some definitions for resolution smearing
@@ -135,7 +140,8 @@ def get_reflect_backend(backend="c"):
             import pyopencl as cl
         except (ImportError, ModuleNotFoundError):
             warnings.warn(
-                "Can't use the pyopencl abeles backend, you need" "to install pyopencl"
+                "Can't use the pyopencl abeles backend, you need"
+                " to install pyopencl"
             )
             return get_reflect_backend("c")
         try:
@@ -438,7 +444,9 @@ class ReflectModel(object):
         return self._parameters
 
 
-def reflectivity(q, slabs, scale=1.0, bkg=0.0, dq=5.0, quad_order=17, threads=-1):
+def reflectivity(
+    q, slabs, scale=1.0, bkg=0.0, dq=5.0, quad_order=17, threads=-1
+):
     r"""
     Abeles matrix formalism for calculating reflectivity from a stratified
     medium.
@@ -535,7 +543,9 @@ def reflectivity(q, slabs, scale=1.0, bkg=0.0, dq=5.0, quad_order=17, threads=-1
         return abeles(q, slabs, scale=scale, bkg=bkg, threads=threads)
     elif isinstance(dq, numbers.Real):
         dq = float(dq)
-        return (scale * _smeared_abeles_constant(q, slabs, dq, threads=threads)) + bkg
+        return (
+            scale * _smeared_abeles_constant(q, slabs, dq, threads=threads)
+        ) + bkg
 
     # point by point resolution smearing (each q point has different dq/q)
     if isinstance(dq, np.ndarray) and dq.size == q.size:
@@ -779,7 +789,11 @@ def _smeared_abeles_constant(q, w, resolution, threads=-1):
     start = np.log10(lowq) - 6 * resolution / _FWHM
     finish = np.log10(highq * (1 + 6 * resolution / _FWHM))
     interpnum = np.round(
-        np.abs(1 * (np.abs(start - finish)) / (1.7 * resolution / _FWHM / gaussgpoint))
+        np.abs(
+            1
+            * (np.abs(start - finish))
+            / (1.7 * resolution / _FWHM / gaussgpoint)
+        )
     )
     xtemp = _cached_linspace(start, finish, int(interpnum))
     xlin = np.power(10.0, xtemp)
@@ -889,7 +903,9 @@ class MixedReflectModel(object):
         if scales is not None and len(structures) == len(scales):
             tscales = scales
         elif scales is not None and len(structures) != len(scales):
-            raise ValueError("You need to supply scale factor for each" " structure")
+            raise ValueError(
+                "You need to supply scale factor for each" " structure"
+            )
         else:
             tscales = [1 / len(structures)] * len(structures)
 
@@ -1157,7 +1173,9 @@ class FresnelTransform(Transform):
         sld_fronting = complex(self.sld_fronting)
         sld_backing = complex(self.sld_backing)
 
-        slabs = np.array([[0, sld_fronting.real, 0, 0], [0, sld_backing.real, 0, 0]])
+        slabs = np.array(
+            [[0, sld_fronting.real, 0, 0], [0, sld_backing.real, 0, 0]]
+        )
 
         fresnel = reflectivity(x, slabs, dq=self.dq)
 

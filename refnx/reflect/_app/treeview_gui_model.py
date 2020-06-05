@@ -255,7 +255,9 @@ class ParametersNode(Node):
 class PropertyNode(Node):
     # an object that displays/edits some attribute of its parent node
     # it is not a ParNode.
-    def __init__(self, data, model, parent=QtCore.QModelIndex(), validators=()):
+    def __init__(
+        self, data, model, parent=QtCore.QModelIndex(), validators=()
+    ):
         super(PropertyNode, self).__init__(data, model, parent)
         # here self._data is the attribute name
         self.attribute_type = type(getattr(parent._data, data))
@@ -311,7 +313,9 @@ class PropertyNode(Node):
                 voutput = validator.validate(value, 1)
                 if voutput[0] == QtGui.QValidator.Acceptable:
                     setattr(
-                        self._parent._data, self._data, self.attribute_type(voutput[1])
+                        self._parent._data,
+                        self._data,
+                        self.attribute_type(voutput[1]),
                     )
                     return True
 
@@ -380,7 +384,9 @@ class StructureNode(Node):
     def __init__(self, data, model, parent=QtCore.QModelIndex()):
         super(StructureNode, self).__init__(data, model, parent)
         for component in data:
-            self.appendChild(component_class(component)(component, model, self))
+            self.appendChild(
+                component_class(component)(component, model, self)
+            )
 
     @property
     def structure(self):
@@ -559,7 +565,9 @@ class ReflectModelNode(Node):
                 new_structures, bkg=orig_model.bkg, dq=orig_model.dq
             )
             data_object.model = new_model
-            data_object_node.set_reflect_model(new_model, constdq_q=self.constantdq_q)
+            data_object_node.set_reflect_model(
+                new_model, constdq_q=self.constantdq_q
+            )
             return
 
         # already a mixed model
@@ -801,7 +809,9 @@ class ContainerNode(Node):
 
         # remove all dependent parameters (either in this dataset or elsewhere)
         # do this before the data_object is popped.
-        self._model.unlink_dependent_parameters(self._model.data_object_node(name))
+        self._model.unlink_dependent_parameters(
+            self._model.data_object_node(name)
+        )
 
         # remove from the backing datastore and pop from the nodelist
         self.datastore.remove_dataset(name)
@@ -862,7 +872,10 @@ class TreeModel(QtCore.QAbstractItemModel):
 
     def headerData(self, section, orientation, role):
         headers = ["Name", "value", "sigma", "lb", "ub", "constraint"]
-        if orientation == QtCore.Qt.Horizontal and role == QtCore.Qt.DisplayRole:
+        if (
+            orientation == QtCore.Qt.Horizontal
+            and role == QtCore.Qt.DisplayRole
+        ):
             return headers[section]
 
         return None
@@ -928,7 +941,8 @@ class TreeModel(QtCore.QAbstractItemModel):
         host_node = parent.internalPointer()
 
         if not (
-            isinstance(host_node, ComponentNode) or isinstance(host_node, StackNode)
+            isinstance(host_node, ComponentNode)
+            or isinstance(host_node, StackNode)
         ):
             return False
 
@@ -938,7 +952,9 @@ class TreeModel(QtCore.QAbstractItemModel):
         ba = data.data("application/vnd.treeviewdragdrop.list")
         index_info = pickle.loads(ba)
         dragged_nodes = list(
-            unique(self.node_from_row_indices(i["indices"]) for i in index_info)
+            unique(
+                self.node_from_row_indices(i["indices"]) for i in index_info
+            )
         )
 
         # order the dragged nodes
@@ -954,10 +970,9 @@ class TreeModel(QtCore.QAbstractItemModel):
             src_structure_node = dragged_node.parent()
             src_structure = src_structure_node._data
 
-            if isinstance(src_structure_node, StructureNode) and dragged_node.row() in [
-                0,
-                len(src_structure) - 1,
-            ]:
+            if isinstance(
+                src_structure_node, StructureNode
+            ) and dragged_node.row() in [0, len(src_structure) - 1,]:
                 continue
 
             # if (isinstance(dragged_node, SplineNode) and
@@ -1106,12 +1121,18 @@ class TreeFilter(QtCore.QSortFilterProxyModel):
 
         # filter out resolution parameter if the dataset has x_err
         # and constant dq/q wasn't requested.
-        if isinstance(item.parent(), ReflectModelNode) and isinstance(item, ParNode):
+        if isinstance(item.parent(), ReflectModelNode) and isinstance(
+            item, ParNode
+        ):
             data_object_node = find_data_object(item.index)
             dataset = data_object_node.data_object.dataset
             constantdq_q = data_object_node.data_object.constantdq_q
             # hard-coded the row for dq/q
-            if item.row() == 2 and not constantdq_q and dataset.x_err is not None:
+            if (
+                item.row() == 2
+                and not constantdq_q
+                and dataset.x_err is not None
+            ):
                 return False
 
         # filter out parameters for the fronting/backing media
@@ -1179,7 +1200,10 @@ class SplineNode(ComponentNode):
         validator = QtGui.QDoubleValidator()
         validator.setBottom(0)
         prop_node = PropertyNode(
-            "microslab_max_thickness", model, parent=self, validators=(validator,)
+            "microslab_max_thickness",
+            model,
+            parent=self,
+            validators=(validator,),
         )
         prop_node.attribute_type = float
         self.appendChild(prop_node)
@@ -1195,7 +1219,9 @@ class StackNode(Node):
         self.appendChild(pn)
 
         for component in data:
-            self.appendChild(component_class(component)(component, model, self))
+            self.appendChild(
+                component_class(component)(component, model, self)
+            )
 
     @property
     def stack(self):

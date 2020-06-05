@@ -75,7 +75,11 @@ class TestReflect(object):
         self.structure361[2].sld.real.range(0.2, 1.5)
 
         e361 = ReflectDataset(os.path.join(self.pth, "e361r.txt"))
-        self.qvals361, self.rvals361, self.evals361 = (e361.x, e361.y, e361.y_err)
+        self.qvals361, self.rvals361, self.evals361 = (
+            e361.x,
+            e361.y,
+            e361.y_err,
+        )
 
     def test_abeles(self):
         slabs = self.structure.slabs()[..., :4]
@@ -303,7 +307,12 @@ class TestReflect(object):
         # a = z.real ** 2 + z.imag ** 2
 
         layers = np.array(
-            [[0, 2.07, 0, 0], [100, 3.45, 0.1, 3], [200, 5.0, 0.01, 1], [0, 6.0, 0, 5]]
+            [
+                [0, 2.07, 0, 0],
+                [100, 3.45, 0.1, 3],
+                [200, 5.0, 0.01, 1],
+                [0, 6.0, 0, 5],
+            ]
         )
         x = np.linspace(0.005, 0.5, 1001)
         refl1d = np.load(os.path.join(self.pth, "refl1d.npy"))
@@ -404,7 +413,12 @@ class TestReflect(object):
         # test that parallel abeles work with a mapper
         q = np.linspace(0.01, 0.5, 1000).reshape(20, 50)
         p0 = np.array(
-            [[0, 2.07, 0, 0], [100, 3.47, 0, 3], [500, -0.5, 1e-3, 3], [0, 6.36, 0, 3]]
+            [
+                [0, 2.07, 0, 0],
+                [100, 3.47, 0, 3],
+                [500, -0.5, 1e-3, 3],
+                [0, 6.36, 0, 3],
+            ]
         )
 
         for backend in BACKENDS:
@@ -490,7 +504,9 @@ class TestReflect(object):
         assert len(objective.residuals().shape) == 1
 
         res = fitter.fit("least_squares")
-        res_mcmc = fitter.sample(steps=5, nthin=10, random_state=1, verbose=False)
+        res_mcmc = fitter.sample(
+            steps=5, nthin=10, random_state=1, verbose=False
+        )
 
         mcmc_val = [mcmc_result.median for mcmc_result in res_mcmc]
         assert_allclose(mcmc_val, res.x, rtol=0.05)
@@ -500,7 +516,9 @@ class TestReflect(object):
     def test_smearedabeles(self):
         # test smeared reflectivity calculation with values generated from
         # Motofit (quadrature precsion order = 13)
-        theoretical = np.loadtxt(os.path.join(self.pth, "smeared_theoretical.txt"))
+        theoretical = np.loadtxt(
+            os.path.join(self.pth, "smeared_theoretical.txt")
+        )
         qvals, rvals, dqvals = np.hsplit(theoretical, 3)
         """
         the order of the quadrature precision used to create these smeared
@@ -515,7 +533,9 @@ class TestReflect(object):
     def test_smearedabeles_reshape(self):
         # test smeared reflectivity calculation with values generated from
         # Motofit (quadrature precsion order = 13)
-        theoretical = np.loadtxt(os.path.join(self.pth, "smeared_theoretical.txt"))
+        theoretical = np.loadtxt(
+            os.path.join(self.pth, "smeared_theoretical.txt")
+        )
         qvals, rvals, dqvals = np.hsplit(theoretical, 3)
         """
         the order of the quadrature precision used to create these smeared
@@ -551,15 +571,25 @@ class TestReflect(object):
 
         # use constant dq/q for comparison
         const_R = reflectivity(
-            q, slabs, scale=1.01, bkg=1e-6, dq=0.05 * q, quad_order=101, threads=-1
+            q,
+            slabs,
+            scale=1.01,
+            bkg=1e-6,
+            dq=0.05 * q,
+            quad_order=101,
+            threads=-1,
         )
 
         # lets create a kernel.
         kernel = np.zeros((npnts, 2, 501), float)
         sd = 0.05 * q / (2 * np.sqrt(2 * np.log(2)))
         for i in range(npnts):
-            kernel[i, 0, :] = np.linspace(q[i] - 3.5 * sd[i], q[i] + 3.5 * sd[i], 501)
-            kernel[i, 1, :] = stats.norm.pdf(kernel[i, 0, :], loc=q[i], scale=sd[i])
+            kernel[i, 0, :] = np.linspace(
+                q[i] - 3.5 * sd[i], q[i] + 3.5 * sd[i], 501
+            )
+            kernel[i, 1, :] = stats.norm.pdf(
+                kernel[i, 0, :], loc=q[i], scale=sd[i]
+            )
 
         kernel_R = reflectivity(q, slabs, scale=1.01, bkg=1e-6, dq=kernel)
 
@@ -696,7 +726,9 @@ class TestReflect(object):
         q = np.linspace(0.01, 0.3, 1001)
 
         # use for spin channel PNR calculation
-        players = np.array([[0, 0, 0, 0, 0], [100, 3, 0, 1, 0], [0, 4, 0, 0, 0]])
+        players = np.array(
+            [[0, 0, 0, 0, 0], [100, 3, 0, 1, 0], [0, 4, 0, 0, 0]]
+        )
 
         # use for NSF calculation with abeles
         pp_layers = np.array([[0, 0, 0, 0], [100, 4.0, 0, 0], [0, 4, 0, 0]])

@@ -133,7 +133,12 @@ class Structure(UserList):
     """
 
     def __init__(
-        self, components=(), name="", solvent=None, reverse_structure=False, contract=0
+        self,
+        components=(),
+        name="",
+        solvent=None,
+        reverse_structure=False,
+        contract=0,
     ):
         super(Structure, self).__init__()
         self._name = name
@@ -193,7 +198,9 @@ class Structure(UserList):
             return
 
         if not isinstance(item, Component):
-            raise ValueError("You can only add Component objects to a" " structure")
+            raise ValueError(
+                "You can only add Component objects to a" " structure"
+            )
         super(Structure, self).append(item)
 
     @property
@@ -272,9 +279,12 @@ class Structure(UserList):
         if not len(self):
             return None
 
-        if not (isinstance(self.data[-1], Slab) and isinstance(self.data[0], Slab)):
+        if not (
+            isinstance(self.data[-1], Slab) and isinstance(self.data[0], Slab)
+        ):
             raise ValueError(
-                "The first and last Components in a Structure" " need to be Slabs"
+                "The first and last Components in a Structure"
+                " need to be Slabs"
             )
 
         # Each layer can be given a different type of roughness profile
@@ -516,7 +526,9 @@ class Structure(UserList):
         if align != 0:
             align = int(align)
             if align >= len(slabs) - 1 or align < -1 * len(slabs):
-                raise RuntimeError("abs(align) has to be less than " "len(slabs) - 1")
+                raise RuntimeError(
+                    "abs(align) has to be less than " "len(slabs) - 1"
+                )
             # to figure out the offset you need to know the cumulative distance
             # to the interface
             slabs[0, 0] = slabs[-1, 0] = 0.0
@@ -792,7 +804,9 @@ class SLD(Scatterer):
         self._parameters.extend([self.real, self.imag])
 
     def __repr__(self):
-        return "SLD([{real!r}, {imag!r}]," " name={name!r})".format(**self.__dict__)
+        return "SLD([{real!r}, {imag!r}]," " name={name!r})".format(
+            **self.__dict__
+        )
 
     def __complex__(self):
         sldc = complex(self.real.value, self.imag.value)
@@ -843,7 +857,9 @@ class MaterialSLD(Scatterer):
     >>> sio2.density.setp(vary=True, bounds=(2.1, 2.3))
     """
 
-    def __init__(self, formula, density, probe="neutron", wavelength=1.8, name=""):
+    def __init__(
+        self, formula, density, probe="neutron", wavelength=1.8, name=""
+    ):
         import periodictable as pt
 
         super(MaterialSLD, self).__init__(name=name)
@@ -888,11 +904,15 @@ class MaterialSLD(Scatterer):
 
         if self.probe == "neutron":
             sldc = pt.neutron_sld(
-                self.__formula, density=self.density.value, wavelength=self.wavelength
+                self.__formula,
+                density=self.density.value,
+                wavelength=self.wavelength,
             )
         elif self.probe == "x-ray":
             sldc = pt.xray_sld(
-                self.__formula, density=self.density.value, wavelength=self.wavelength
+                self.__formula,
+                density=self.density.value,
+                wavelength=self.wavelength,
             )
         return complex(sldc[0], sldc[1])
 
@@ -1054,7 +1074,9 @@ class Component(object):
         If a Component returns None, then it doesn't have any slabs.
         """
 
-        raise NotImplementedError("A component should override the slabs " "property")
+        raise NotImplementedError(
+            "A component should override the slabs " "property"
+        )
 
     def logp(self):
         """
@@ -1193,7 +1215,14 @@ class MixedSlab(Component):
     """
 
     def __init__(
-        self, thick, sld_list, vf_list, rough, name="", vfsolv=0, interface=None
+        self,
+        thick,
+        sld_list,
+        vf_list,
+        rough,
+        name="",
+        vfsolv=0,
+        interface=None,
     ):
         super(MixedSlab, self).__init__(name=name)
         self.thick = possibly_create_parameter(thick, name="%s - thick" % name)
@@ -1212,7 +1241,9 @@ class MixedSlab(Component):
 
             self._sld_parameters.append(self.sld[-1].parameters)
 
-            vf = possibly_create_parameter(v, name=f"vf{i} - {name}", bounds=(0.0, 1.0))
+            vf = possibly_create_parameter(
+                v, name=f"vf{i} - {name}", bounds=(0.0, 1.0)
+            )
             self.vf.append(vf)
             self._vf_parameters.append(vf)
             i += 1
@@ -1257,7 +1288,9 @@ class MixedSlab(Component):
         vfs = np.array(self._vf_parameters)
         sum_vfs = np.sum(vfs)
 
-        sldc = np.sum([complex(sld) * vf / sum_vfs for sld, vf in zip(self.sld, vfs)])
+        sldc = np.sum(
+            [complex(sld) * vf / sum_vfs for sld, vf in zip(self.sld, vfs)]
+        )
 
         return np.array(
             [
@@ -1315,7 +1348,9 @@ class Stack(Component, UserList):
             if isinstance(c, Component):
                 self.data.append(c)
             else:
-                raise ValueError("You can only initialise a Stack with" " Components")
+                raise ValueError(
+                    "You can only initialise a Stack with" " Components"
+                )
 
     def __setitem__(self, i, v):
         self.data[i] = v
@@ -1324,7 +1359,9 @@ class Stack(Component, UserList):
         s = list()
         s.append("{:=>80}".format(""))
 
-        s.append("Stack start: {} repeats".format(round(abs(self.repeats.value))))
+        s.append(
+            "Stack start: {} repeats".format(round(abs(self.repeats.value)))
+        )
         for component in self:
             s.append(str(component))
         s.append("Stack finish")
@@ -1353,7 +1390,9 @@ class Stack(Component, UserList):
             return
 
         if not isinstance(item, Component):
-            raise ValueError("You can only add Component objects to a" " structure")
+            raise ValueError(
+                "You can only add Component objects to a" " structure"
+            )
         self.data.append(item)
 
     def slabs(self, structure=None):
@@ -1376,7 +1415,9 @@ class Stack(Component, UserList):
 
         repeats = round(abs(self.repeats.value))
 
-        slabs = np.concatenate([c.slabs(structure=self) for c in self.components])
+        slabs = np.concatenate(
+            [c.slabs(structure=self) for c in self.components]
+        )
 
         if repeats > 1:
             slabs = np.concatenate([slabs] * repeats)
@@ -1506,7 +1547,8 @@ def _profile_slicer(z, sld_profile, slice_size=None):
     imags = imag_interp(zeds)
 
     slabs = [
-        Slab(slice_size, complex(real, imag), 0) for real, imag in zip(reals, imags)
+        Slab(slice_size, complex(real, imag), 0)
+        for real, imag in zip(reals, imags)
     ]
     structure = Structure(name="sliced sld profile")
     structure.extend(slabs)

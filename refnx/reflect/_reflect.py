@@ -134,7 +134,9 @@ class _Abeles_pyopencl:
 
         mf = cl.mem_flags
         with cl.CommandQueue(self.ctx) as queue:
-            q_g = cl.Buffer(self.ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=flatq)
+            q_g = cl.Buffer(
+                self.ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=flatq
+            )
             coefs_g = cl.Buffer(
                 self.ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=coefs
             )
