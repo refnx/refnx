@@ -1355,7 +1355,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
                 parent=self, caption="Select location to save MCMC output"
             )
             folder_dialog.setFileMode(QtWidgets.QFileDialog.Directory)
-            folder_dialog.setWindowModality(QtCore.Qt.WindowModal)
+            # folder_dialog.setWindowModality(QtCore.Qt.WindowModal)
             if folder_dialog.exec_():
                 folder = folder_dialog.selectedFiles()[0]
             else:
@@ -1391,13 +1391,17 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
                     completed[0] += 1
                     if (time.time() - last_time[0]) > 2:
                         last_time[0] = time.time()
-                        progress.setValue(completed[0])
+                        val = completed[0]
+                        if ntemps > 0:
+                            val /= nthin
+
+                        progress.setValue(val)
                         if progress.wasCanceled():
                             raise StopIteration("Sampling aborted")
 
                 with open(
                     os.path.join(folder, "steps.chain"), "w"
-                ) as f, get_context("spawn").Pool() as workers:
+                ) as f, get_context().Pool() as workers:
                     fitter.sample(
                         nsteps,
                         f=f,
