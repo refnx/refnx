@@ -61,7 +61,7 @@ class PTSampler(object):
             init_x = initial_state.coords
             rstate0 = initial_state.random_state
         else:
-            init_x = x
+            init_x = initial_state
             rstate0 = np.random.RandomState().get_state()
 
         if self._ptchain is None:
@@ -79,10 +79,11 @@ class PTSampler(object):
             self._ptchain.ensemble._mapper = mapper
 
         try:
-            with get_progress_bar(progress, iterations):
+            with get_progress_bar(progress, iterations * thin_by) as pbar:
                 for e in self._ptchain.iterate(iterations):
                     self._state = State(e.x, log_prob=e.logl + e.logP)
                     yield self._state
+                    pbar.update(thin_by)
         finally:
             self._ptchain.ensemble._mapper = map
 
