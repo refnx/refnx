@@ -67,8 +67,7 @@ class PTSampler(object):
         if self._ptchain is None:
             self._ptchain = self.sampler.chain(init_x, )
         else:
-            # TODO set last entry of chain
-            pass
+            self._ptchain.ensemble.x = init_x
 
         # set random state of stateful chain
         self.random_state = rstate0
