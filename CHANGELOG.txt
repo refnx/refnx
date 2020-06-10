@@ -255,3 +255,4 @@ in 0.1.13.
   size of the package.
 - Compensate for _stderr being added to Parameter (older .mtft files wouldn't
   load properly into GUI).
+- Fixed progress bar for parallel tempered sampling.
