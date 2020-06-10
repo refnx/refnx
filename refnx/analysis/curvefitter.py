@@ -33,6 +33,25 @@ MCMCResult = namedtuple(
 
 class PTSampler(object):
     def __init__(self, ntemps, nwalkers, ndim, logl, logp, **kwargs):
+        """
+        Shim class for a ptemcee.PTSampler.
+
+        Parameters
+        ----------
+        ntemps: int, np.array
+            Specifies the number of parallel tempering temperatures.
+            If an array specifies a ladder of Beta values.
+        nwalkers: int
+            Number of walkers
+        ndim: int
+            Dimensionality of the problem space
+        logl: callable
+            log-likelihood function
+        logp: callable
+            log-prior function
+        kwargs:
+            Other keyword arguments supplied to construct the ptemcee.Sampler.
+        """
         self.ntemps = ntemps
         self.nwalkers = nwalkers
         self.ndim = ndim
@@ -63,7 +82,29 @@ class PTSampler(object):
         mapper=None,
         **kwds
     ):
+        """
+        Runs the PTSampler for a given number of iterations.
 
+        Parameters
+        ----------
+        initial_state: emcee.state.State
+            Holds the coordinates of the initial state
+        iterations: int
+            Number of steps to save into the chain
+        thin_by: int
+            The saved steps are separated by this many discarded steps.
+        progress: bool
+            Display a progress bar.
+        mapper: map-like callable
+            For parallelisation
+        kwds: dict
+            Unknown keywords
+
+        Yields
+        -------
+        state: emcee.state.State
+            The coordinates of the current state
+        """
         if isinstance(initial_state, State):
             init_x = initial_state.coords
             rstate0 = initial_state.random_state
@@ -93,7 +134,7 @@ class PTSampler(object):
         finally:
             self._ptchain.ensemble._mapper = map
 
-    def log_evidence_estimate(self, fburnin=0.1):
+    def thermodynamic_integration_log_evidence(self, fburnin=0.1):
         if self._ptchain is not None:
             return self._ptchain.log_evidence_estimate(fburnin)
         return None, None
