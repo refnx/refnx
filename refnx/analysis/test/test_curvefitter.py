@@ -250,13 +250,13 @@ class TestCurveFitter(object):
         # test for reproducible operation
         self.objective.setp(x)
         mcfitter = CurveFitter(self.objective, ntemps=10, nwalkers=50)
-        mcfitter.initialise('jitter', random_state=1)
+        mcfitter.initialise("jitter", random_state=1)
         mcfitter.sample(steps=5, nthin=2, verbose=False, random_state=2)
         chain = np.copy(mcfitter.chain)
 
         self.objective.setp(x)
         mcfitter = CurveFitter(self.objective, ntemps=10, nwalkers=50)
-        mcfitter.initialise('jitter', random_state=1)
+        mcfitter.initialise("jitter", random_state=1)
         mcfitter.sample(steps=5, nthin=2, verbose=False, random_state=2)
         chain2 = np.copy(mcfitter.chain)
 
@@ -511,6 +511,18 @@ class TestFitterGauss(object):
         # chain = load_chain(checkpoint)
         # assert_(chain.shape == f.chain.shape)
         # assert_allclose(chain, f.chain)
+
+        # try reproducing best fit with parallel tempering
+        self.params[0].vary = True
+        f = CurveFitter(self.objective, nwalkers=100, ntemps=10)
+        f.fit("differential_evolution", seed=1)
+
+        f.sample(steps=401, random_state=1, verbose=False)
+        process_chain(self.objective, f.chain, nburn=50, nthin=15)
+        print(self.params[0].chain.shape, self.params[0].chain)
+
+        uncertainties = [param.stderr for param in self.params]
+        assert_allclose(uncertainties, self.best_weighted_errors, rtol=0.07)
 
     def test_best_unweighted(self):
         self.objective.weighted = False

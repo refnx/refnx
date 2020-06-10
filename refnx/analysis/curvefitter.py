@@ -45,7 +45,7 @@ class PTSampler(object):
             "nwalkers": nwalkers,
             "ndim": ndim,
             "logl": logl,
-            "logp": logp
+            "logp": logp,
         }
         sig.update(kwargs)
         self.sampler = _PTSampler(**sig)
@@ -54,8 +54,15 @@ class PTSampler(object):
         self._ptchain = None
         self._state = None
 
-    def sample(self, initial_state, iterations=1, thin_by=1, progress=False,
-               mapper=None, **kwds):
+    def sample(
+        self,
+        initial_state,
+        iterations=1,
+        thin_by=1,
+        progress=False,
+        mapper=None,
+        **kwds
+    ):
 
         if isinstance(initial_state, State):
             init_x = initial_state.coords
@@ -65,7 +72,7 @@ class PTSampler(object):
             rstate0 = np.random.RandomState().get_state()
 
         if self._ptchain is None:
-            self._ptchain = self.sampler.chain(init_x, )
+            self._ptchain = self.sampler.chain(init_x,)
         else:
             self._ptchain.ensemble.x = init_x
 
@@ -594,7 +601,7 @@ class CurveFitter(object):
                 else:
                     self.sampler.pool = g
             else:
-                kwargs['mapper'] = g
+                kwargs["mapper"] = g
 
             # new emcee arguments
             sampler_args = getargspec(self.sampler.sample).args
