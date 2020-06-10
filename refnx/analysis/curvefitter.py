@@ -21,9 +21,7 @@ from refnx._lib.util import getargspec
 
 from refnx._lib import emcee
 from refnx._lib.emcee.state import State
-from refnx._lib import ptemcee
 from refnx._lib.emcee.pbar import get_progress_bar
-from refnx._lib.ptemcee import Sampler as _PTSampler
 
 
 MCMCResult = namedtuple(
@@ -52,6 +50,8 @@ class PTSampler(object):
         kwargs:
             Other keyword arguments supplied to construct the ptemcee.Sampler.
         """
+        from refnx._lib.ptemcee import Sampler as _PTSampler
+
         self.ntemps = ntemps
         self.nwalkers = nwalkers
         self.ndim = ndim

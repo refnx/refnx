@@ -9,16 +9,16 @@ Monte Carlo to obtain posterior distributions for curvefitting problems.
 
 *refnx* has been tested on Python 3.5, 3.6 and 3.7. It requires the *numpy,
 scipy, cython, pandas, emcee* packages to work. Additional features require the
-*pytest, h5py, xlrd, ptemcee, tqdm, matplotlib, pymc3, theano* packages.
+*pytest, h5py, xlrd, attrs, tqdm, matplotlib, pymc3, theano* packages.
 To build the bleeding edge code you will need to have access to a C-compiler to
 build a couple of Python extensions. C-compilers should be installed on Linux.
 On OSX you will need to install Xcode and the command line tools. On Windows you
 will need to install the correct [Visual Studio compiler][Visual-studio-compiler]
 for your Python version.
 
-In the current version of *refnx* the *emcee* package is vendored by *refnx*. That
-is, *refnx* possesses it's own private copy of the package, and there is no need to
-install the *emcee* package separately.
+In the current version of *refnx* the *emcee* and *ptemcee* packages are
+vendored by *refnx*. That is, *refnx* possesses it's own private copy of the
+package, and there is no need to those packages separately.
 
 ## Installation into a *conda* environment
 
@@ -30,7 +30,7 @@ step is to create a *conda* environment.
  
   1) In a shell window create a conda environment and install the dependencies. The **-n** flag indicates that the environment is called *refnx*.
   
-  ```conda create -n refnx python=3.7 numpy scipy cython pandas h5py xlrd pytest tqdm```
+  ```conda create -n refnx python=3.7 numpy scipy cython pandas h5py xlrd pytest tqdm attrs```
 
   2) Activate the environment that we're going to be working in:
   
@@ -41,8 +41,6 @@ step is to create a *conda* environment.
   # on windows  
   conda activate refnx
   ```
-  3) Install the remaining dependencies:
-  ```pip install ptemcee```
  
 ### Installing into a conda environment from source
 
