@@ -21,26 +21,100 @@ from refnx._lib.util import getargspec
 
 from refnx._lib import emcee
 from refnx._lib.emcee.state import State
+from refnx._lib import ptemcee
 from refnx._lib.emcee.pbar import get_progress_bar
+from refnx._lib.ptemcee import Sampler as _PTSampler
 
-# PTSampler has been forked into a separate package. Try both places
-_HAVE_PTSAMPLER = False
-PTSampler = type(None)
-
-try:
-    from ptemcee.sampler import Sampler as PTSampler
-
-    _HAVE_PTSAMPLER = True
-except ImportError:
-    warnings.warn(
-        "PTSampler (parallel tempering) is not available,"
-        " please install the ptemcee package",
-        ImportWarning,
-    )
 
 MCMCResult = namedtuple(
     "MCMCResult", ["name", "param", "stderr", "chain", "median"]
 )
+
+
+class PTSampler(object):
+    def __init__(self, ntemps, nwalkers, ndim, logl, logp, **kwargs):
+        self.ntemps = ntemps
+        self.nwalkers = nwalkers
+        self.ndim = ndim
+        self.logl = logl
+        self.logp = logp
+        self.kwargs = kwargs
+
+        sig = {
+            "betas": ntemps,
+            "nwalkers": nwalkers,
+            "ndim": ndim,
+            "logl": logl,
+            "logp": logp
+        }
+        sig.update(kwargs)
+        self.sampler = _PTSampler(**sig)
+
+        # chain stepper
+        self._ptchain = None
+        self._state = None
+
+    def sample(self, initial_state, iterations=1, thin_by=1, progress=False,
+               mapper=None, **kwds):
+
+        if isinstance(initial_state, State):
+            init_x = initial_state.coords
+            rstate0 = initial_state.random_state
+        else:
+            init_x = x
+            rstate0 = np.random.RandomState().get_state()
+
+        if self._ptchain is None:
+            self._ptchain = self.sampler.chain(init_x, )
+        else:
+            # TODO set last entry of chain
+            pass
+
+        # set random state of stateful chain
+        self.random_state = rstate0
+
+        self._ptchain.thin_by = thin_by
+
+        if mapper is not None:
+            self._ptchain.ensemble._mapper = mapper
+
+        try:
+            with get_progress_bar(progress, iterations):
+                for e in self._ptchain.iterate(iterations):
+                    self._state = State(e.x, log_prob=e.logl + e.logP)
+                    yield self._state
+        finally:
+            self._ptchain.ensemble._mapper = map
+
+    def log_evidence_estimate(self, fburnin=0.1):
+        if self._ptchain is not None:
+            return self._ptchain.log_evidence_estimate(fburnin)
+        return None, None
+
+    def reset(self):
+        if self._state is not None:
+            self._ptchain = self.sampler.chain(self._state.coords)
+
+    def get_chain(self):
+        if self._ptchain is not None:
+            return self._ptchain.x
+        return None
+
+    @property
+    def chain(self):
+        if self._ptchain is not None:
+            return self._ptchain.x
+        return None
+
+    @property
+    def random_state(self):
+        if self._ptchain is not None:
+            self._ptchain.ensemble._random.get_state()
+
+    @random_state.setter
+    def random_state(self, rstate0):
+        if self._ptchain is not None:
+            self._ptchain.ensemble._random.set_state(rstate0)
 
 
 class CurveFitter(object):
@@ -174,26 +248,15 @@ class CurveFitter(object):
             )
         # Parallel Tempering was requested.
         else:
-            if not _HAVE_PTSAMPLER:
-                raise RuntimeError(
-                    "You need to install the 'ptemcee' package"
-                    " to use parallel tempering"
-                )
-
             sig = {
                 "ntemps": self._ntemps,
                 "nwalkers": self._nwalkers,
-                "dim": self.nvary,
+                "ndim": self.nvary,
                 "logl": self.objective.logl,
                 "logp": self.objective.logp,
             }
             sig.update(self.mcmc_kws)
             self.sampler = PTSampler(**sig)
-
-            # construction of the PTSampler creates an ntemps attribute.
-            # If it was constructed with ntemps = None, then ntemps will
-            # be an integer.
-            self._ntemps = self.sampler.ntemps
 
         self._state = None
 
@@ -383,9 +446,6 @@ class CurveFitter(object):
         The chain returned here has swapped axes compared to the
         `PTSampler.chain` and `EnsembleSampler.chain` attributes
         """
-        if isinstance(self.sampler, PTSampler):
-            return np.transpose(self.sampler.chain, axes=(2, 0, 1, 3))
-
         return self.sampler.get_chain()
 
     @property
@@ -485,34 +545,12 @@ class CurveFitter(object):
         if self._state is None:
             self.initialise(random_state=rng)
 
-        # set the random state of the sampler
-        # normally one could give this as an argument to the sample method
-        # but PTSampler didn't historically accept that...
-        if isinstance(rng, np.random.RandomState):
-            rstate0 = rng.get_state()
-            self._state.random_state = rstate0
-            if isinstance(self.sampler, PTSampler):
-                self.sampler._random = rng
-            else:
-                self.sampler.random_state = rstate0
-
-        self.__pt_iterations = 0
-        if isinstance(self.sampler, PTSampler):
-            steps *= nthin
-
         # for saving progress to file
         def _callback_wrapper(state, h=None):
             if callback is not None:
                 callback(state.coords, state.log_prob)
 
             if h is not None:
-                # if you're parallel tempering, then you only
-                # want to save every nthin
-                if isinstance(self.sampler, PTSampler):
-                    self.__pt_iterations += 1
-                    if self.__pt_iterations % nthin:
-                        return None
-
                 h.write(" ".join(map(str, state.coords.ravel())))
                 h.write("\n")
 
@@ -534,18 +572,29 @@ class CurveFitter(object):
                 h.write(", ".join(map(str, shape)))
                 h.write("\n")
 
+        # set the random state of the sampler
+        # normally one could give this as an argument to the sample method
+        # but PTSampler didn't historically accept that...
+        if isinstance(rng, np.random.RandomState):
+            rstate0 = rng.get_state()
+            self._state.random_state = rstate0
+            self.sampler.random_state = rstate0
+
         # using context manager means we kill off zombie pool objects
         # but does mean that the pool has to be specified each time.
         with MapWrapper(pool) as g, possibly_open_file(f, "a") as h:
-            # if you're not creating more than 1 thread, then don't bother with
-            # a pool.
-            if pool == 1:
-                self.sampler.pool = None
-            else:
-                self.sampler.pool = g
-
             # these kwargs are provided to the sampler.sample method
             kwargs = {"iterations": steps, "thin": nthin}
+
+            # if you're not creating more than 1 thread, then don't bother with
+            # a pool.
+            if isinstance(self.sampler, emcee.EnsembleSampler):
+                if pool == 1:
+                    self.sampler.pool = None
+                else:
+                    self.sampler.pool = g
+            else:
+                kwargs['mapper'] = g
 
             # new emcee arguments
             sampler_args = getargspec(self.sampler.sample).args
@@ -557,26 +606,13 @@ class CurveFitter(object):
                 kwargs["thin_by"] = nthin
                 kwargs.pop("thin", 0)
 
-            # ptemcee returns coords, logpost
-            # emcee returns a State object
-            if isinstance(self.sampler, PTSampler):
-                with get_progress_bar(verbose, total=steps) as pbar:
-                    for result in self.sampler.sample(
-                        self._state.coords, **kwargs
-                    ):
-                        self._state = State(
-                            result[0],
-                            log_prob=result[1] + result[2],
-                            random_state=self.sampler._random,
-                        )
-                        _callback_wrapper(self._state, h=h)
-                        pbar.update(1)
-            else:
-                for state in self.sampler.sample(self._state, **kwargs):
-                    self._state = state
-                    _callback_wrapper(state, h=h)
+            # perform the sampling
+            for state in self.sampler.sample(self._state, **kwargs):
+                self._state = state
+                _callback_wrapper(state, h=h)
 
-        self.sampler.pool = None
+        if isinstance(self.sampler, emcee.EnsembleSampler):
+            self.sampler.pool = None
 
         # sets parameter value and stderr
         return process_chain(self.objective, self.chain)

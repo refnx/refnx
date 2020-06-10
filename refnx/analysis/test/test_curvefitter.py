@@ -26,7 +26,7 @@ from refnx.analysis import (
     autocorrelation_chain,
     integrated_time,
 )
-from refnx.analysis.curvefitter import _HAVE_PTSAMPLER, bounds_list
+from refnx.analysis.curvefitter import bounds_list
 from refnx.dataset import Data1D
 from refnx._lib import emcee
 
@@ -229,18 +229,38 @@ class TestCurveFitter(object):
         assert_equal(chain1, chain2)
 
     def test_mcmc_pt(self):
-        if not _HAVE_PTSAMPLER:
-            return
-
         # smoke test for parallel tempering
+        x = np.array(self.objective.parameters)
+
         mcfitter = CurveFitter(self.objective, ntemps=10, nwalkers=50)
         assert_equal(mcfitter.sampler.ntemps, 10)
 
-        res = mcfitter.sample(steps=30, nthin=2, verbose=False, pool=0)
-        assert_equal(mcfitter.chain.shape, (30, 10, 50, 2))
-        assert_equal(res[0].chain.shape, (30, 50))
+        # check that the parallel sampling works
+        # and that chain shape is correct
+        res = mcfitter.sample(steps=5, nthin=2, verbose=False, pool=-1)
+        assert_equal(mcfitter.chain.shape, (5, 10, 50, 2))
+        assert_equal(res[0].chain.shape, (5, 50))
         assert_equal(mcfitter.chain[:, 0, :, 0], res[0].chain)
         assert_equal(mcfitter.chain[:, 0, :, 1], res[1].chain)
+        chain = np.copy(mcfitter.chain)
+
+        # try resetting the chain
+        mcfitter.reset()
+
+        # test for reproducible operation
+        self.objective.setp(x)
+        mcfitter = CurveFitter(self.objective, ntemps=10, nwalkers=50)
+        mcfitter.initialise('jitter', random_state=1)
+        mcfitter.sample(steps=5, nthin=2, verbose=False, random_state=2)
+        chain = np.copy(mcfitter.chain)
+
+        self.objective.setp(x)
+        mcfitter = CurveFitter(self.objective, ntemps=10, nwalkers=50)
+        mcfitter.initialise('jitter', random_state=1)
+        mcfitter.sample(steps=5, nthin=2, verbose=False, random_state=2)
+        chain2 = np.copy(mcfitter.chain)
+
+        assert_allclose(chain2, chain)
 
     def test_mcmc_init(self):
         # smoke test for sampler initialisation
@@ -281,8 +301,6 @@ class TestCurveFitter(object):
         mcfitter = CurveFitter(self.objective, nwalkers=100)
         mcfitter.initialise(chain)
 
-        if not _HAVE_PTSAMPLER:
-            return
         # initialise for Parallel tempering
         mcfitter = CurveFitter(self.objective, ntemps=20, nwalkers=100)
         mcfitter.initialise("covar")
