@@ -33,4 +33,4 @@ done
 cd /io
 
 mkdir -p /io/dist
-cp wheelhouse/refnx*manylinux2010*.whl dist/
+cp wheelhouse/refnx*"$PLAT"*.whl dist/
