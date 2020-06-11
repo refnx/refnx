@@ -2,10 +2,11 @@
 set -e -x
 
 # docker run --rm -v $(pwd):/io quay.io/pypa/manylinux2010_x86_64 /bin/bash /io/tools/build_manylinux_wheels.sh
-# you need to export PLAT so that auditwheel works
-export PLAT=manylinux2010_x86_64
-cd /io
 # bash build_manylinux_wheels.sh
+
+# you need to export PLAT so that auditwheel works
+# export PLAT=manylinux2010_x86_64
+cd /io
 
 # Compile wheels
 for PYBIN in /opt/python/cp3[6-8]-cp*/bin; do
