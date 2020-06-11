@@ -260,4 +260,5 @@ in 0.1.13.
 
 0.1.16
 ------
+- Build more Linux wheels.
 - Vendored ptemcee (bleeding edge), so it's no longer necessary to install it.
