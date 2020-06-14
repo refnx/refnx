@@ -18,8 +18,7 @@ class TestReduce(object):
     @pytest.mark.usefixtures("no_data_directory")
     @pytest.fixture(autouse=True)
     def setup_method(self, tmpdir, data_directory):
-        self.pth = os.path.dirname(__file__)
-
+        self.pth = pjoin(data_directory, "reduce")
         self.cwd = os.getcwd()
 
         self.tmpdir = tmpdir.strpath
@@ -106,7 +105,7 @@ class TestReductionCache(object):
         self._addentry(self.entries[-1], update=False)
         # the old entry is still in the list
         assert_equal(len(self.cache), 7)
-        assert_(self.cache.name("Sample D2"))
+        assert self.cache.name("Sample D2")
         # but the new entry should be visible searching by-row
         assert_equal(self.cache.row(7).name, "Sample D3")
 
@@ -152,25 +151,25 @@ class TestReductionCache(object):
 
     def test_str(self):
         # smoke test the __str__ method
-        assert_(str(self.cache) != "")
+        assert str(self.cache) != ""
 
     def test_persistence(self, tmpdir):
         # test persistence of cache in a local file
 
         # presence of this file would indicate a failure of
         # the previous persistent=False
-        assert_(not os.path.exists(self.cache._default_persistent_cache))
+        assert not os.path.exists(self.cache._default_persistent_cache)
 
         # make a new cache that has persistence with a default name
         cache = refnx.reduce.batchreduction.ReductionCache(persistent=True)
         self._addentry(self.entries[0], dest=cache)
         assert_equal(len(cache), 1)
         assert cache._cache_filename() == self.cache._default_persistent_cache
-        assert_(os.path.exists(cache._cache_filename()))
+        assert os.path.exists(cache._cache_filename())
 
         # check that the persistent cache has has been dropped
         cache.drop_cache()
-        assert_(not os.path.exists(cache._cache_filename()))
+        assert not os.path.exists(cache._cache_filename())
 
         # check that the cache filename can be set
         cachename = tmpdir.mkdir("test").join("redn-test.pickle").strpath
@@ -180,14 +179,14 @@ class TestReductionCache(object):
             persistent=cachename
         )
 
-        assert_(cache._cache_filename() == cachename)
+        assert cache._cache_filename() == cachename
 
         self._addentry(self.entries[0], dest=cache)
         assert_equal(len(cache), 1)
 
         # check that the persistent cache has been written
-        assert_(os.path.exists(cache._cache_filename()))
-        assert_(os.path.getsize(cache._cache_filename()) > 0)
+        assert os.path.exists(cache._cache_filename())
+        assert os.path.getsize(cache._cache_filename()) > 0
 
         # check that the persistent cache is loaded again
         cache2 = refnx.reduce.batchreduction.ReductionCache(
