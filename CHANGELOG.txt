@@ -257,3 +257,6 @@ in 0.1.13.
   load properly into GUI).
 - Fixed progress bar for parallel tempered sampling.
 - Make sdist
+
+0.1.16
+------
