@@ -54,6 +54,7 @@ jobs:
     - name: Make sdist
       if: ${{ matrix.python-version == '3.8' }}
       run: |
+        git clean -xdf
         python setup.py sdist
 
     - uses: actions/upload-artifact@v1
