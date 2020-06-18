@@ -51,6 +51,17 @@ jobs:
         # uses xvfb for GUI part of the test
         xvfb-run pytest
 
+    - name: Make sdist
+      if: ${{ matrix.python-version == '3.8' }}
+      run: |
+        python setup.py sdist
+
+    - uses: actions/upload-artifact@v1
+      if: ${{ matrix.python-version == '3.8' }}
+      with:
+        name: refnx-wheel
+        path: dist/
+
 
   linux_wheels:
 
