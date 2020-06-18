@@ -143,8 +143,8 @@ HAS_OPENMP = check_openmp_support()
 MAJOR = 0
 MINOR = 1
 MICRO = 15
-ISRELEASED = False
-VERSION = '%d.%d.%d' % (MAJOR, MINOR, MICRO)
+ISRELEASED = True
+VERSION = f"{MAJOR}.{MINOR}.{MICRO}"
 
 
 # are we on windows, darwin, etc?
