@@ -12,6 +12,7 @@ __pycache__
 .ipynb_checkpoints/
 refnx.egg-info/
 src/_cevent.c
+src/_cevent.cpp
 src/_creflect.c
 src/_creflect.cpp
 src/_cutil.c
