@@ -151,6 +151,7 @@ jobs:
 
         pushd tools/app
         pyinstaller motofit.spec
+        chmod u+x dist/motofit.app/Contents/MacOS/motofit
         mv dist/motofit.app ../../dist/
         popd
 
