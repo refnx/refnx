@@ -149,8 +149,10 @@ jobs:
         # if you are on Py3.7 you can just pip install pyinstaller
         pip install git+https://github.com/andyfaff/pyinstaller.git@gh4865
 
-        pyinstaller tools/app/motofit.spec
-        rm dist/motofit
+        pushd tools/app
+        pyinstaller motofit.spec
+        mv dist/motofit.app ../../dist/
+        popd
 
     - uses: actions/upload-artifact@v1
       with:
