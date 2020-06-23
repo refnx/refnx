@@ -143,8 +143,12 @@ jobs:
     - name: Make frozen GUI executable
       if: ${{ matrix.python-version == '3.8' }}
       run: |
-        pip uninstall -y pytest pytest-qt h5py pandas xlrd uncertainties
+        # make app in virtualenv
+        python -m venv app
+        source app/bin/activate
         pip install setuptools==44
+        pip install -y numpy cython periodictable corner matplotlib pyqt5 scipy tqdm
+        pip install .
 
         # fix for multiprocessing on Py3.8 is not merged in PyInstaller
         # if you are on Py3.7 you can just pip install pyinstaller
@@ -152,7 +156,6 @@ jobs:
 
         pushd tools/app
         pyinstaller motofit.spec
-        chmod u+x dist/motofit.app/Contents/MacOS/motofit
         mv dist/motofit.app ../../dist/
         popd
 
@@ -208,14 +211,20 @@ jobs:
     - name: Make frozen GUI executable
       if: ${{ matrix.python-version == '3.8' }}
       run: |
-        pip uninstall -y pytest pytest-qt h5py pandas xlrd uncertainties
+        # make app in virtualenv
+        python -m venv app
+        source app/bin/activate
         pip install setuptools==44
+        pip install -y numpy cython periodictable corner matplotlib pyqt5 scipy tqdm
+        pip install .
 
         # fix for multiprocessing on Py3.8 is not merged in PyInstaller
         # if you are on Py3.7 you can just pip install pyinstaller
         pip install git+https://github.com/andyfaff/pyinstaller.git@gh4865
 
-        pyinstaller tools/app/motofit.spec
+        cd tools/app
+        pyinstaller motofit.spec
+        move motofit.exe ..\..\dist\
 
     - uses: actions/upload-artifact@v1
       with:
