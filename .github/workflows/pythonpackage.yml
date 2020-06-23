@@ -121,7 +121,7 @@ jobs:
         python -m pip install wheel
         python -m pip install numpy scipy h5py cython pandas xlrd pytest ipywidgets IPython matplotlib traitlets pyqt5
         python -m pip install uncertainties attrs corner tqdm pytest-qt periodictable delocate pyopencl
-        python -m pip install git+https://github.com/pymc-devs/pymc3
+        #        python -m pip install git+https://github.com/pymc-devs/pymc3
 
     - name: Make wheel
       env:
@@ -192,7 +192,7 @@ jobs:
 
         python -m pip install numpy scipy h5py cython pandas xlrd pytest ipywidgets IPython matplotlib traitlets pyqt5
         python -m pip install uncertainties corner tqdm pytest-qt periodictable
-        python -m pip install git+https://github.com/pymc-devs/pymc3
+        #        python -m pip install git+https://github.com/pymc-devs/pymc3
 
         #        python -m pip install pytools mako cffi
         #        choco install opencl-intel-cpu-runtime
@@ -216,7 +216,7 @@ jobs:
       run: |
         # make app in virtualenv
         python -m venv app
-        app/bin/activate
+        app\Scripts\activate.bat
         python -m pip install setuptools==44
         python -m pip install numpy cython periodictable corner matplotlib pyqt5 scipy tqdm
         cd dist
