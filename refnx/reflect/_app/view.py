@@ -1392,8 +1392,6 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
                     if (time.time() - last_time[0]) > 2:
                         last_time[0] = time.time()
                         val = completed[0]
-                        if ntemps > 0:
-                            val /= nthin
 
                         progress.setValue(val)
                         if progress.wasCanceled():
