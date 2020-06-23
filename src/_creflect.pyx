@@ -91,6 +91,7 @@ cpdef cnp.ndarray abeles(cnp.ndarray x,
                          " shape (>2, 4)")
     if x.dtype != np.float64:
         raise ValueError("Q values for _creflect must be np.float64")
+
     cdef:
         int nlayers = w.shape[0] - 2
         int npoints = x.size
