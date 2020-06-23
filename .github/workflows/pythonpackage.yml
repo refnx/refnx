@@ -136,7 +136,7 @@ jobs:
         MPLBACKEND: agg
       run: |
         pushd dist
-        pip install --only-binary=refnx --no-index --find-links=. refnx
+        python -m pip install --only-binary=refnx --no-index --find-links=. refnx
         pytest --pyargs refnx
         popd
 
@@ -146,9 +146,11 @@ jobs:
         # make app in virtualenv
         python -m venv app
         source app/bin/activate
-        pip install setuptools==44
-        pip install -y numpy cython periodictable corner matplotlib pyqt5 scipy tqdm
-        pip install .
+        python -m pip install setuptools==44
+        python -m pip install numpy cython periodictable corner matplotlib pyqt5 scipy tqdm
+        pushd dist
+        python -m pip install --only-binary=refnx --no-index --find-links=. refnx
+        popd
 
         # fix for multiprocessing on Py3.8 is not merged in PyInstaller
         # if you are on Py3.7 you can just pip install pyinstaller
@@ -213,16 +215,18 @@ jobs:
       run: |
         # make app in virtualenv
         python -m venv app
-        source app/bin/activate
-        pip install setuptools==44
-        pip install -y numpy cython periodictable corner matplotlib pyqt5 scipy tqdm
-        pip install .
+        app/bin/activate
+        python -m pip install setuptools==44
+        python -m pip install numpy cython periodictable corner matplotlib pyqt5 scipy tqdm
+        cd dist
+        python -m pip install --only-binary=refnx --no-index --find-links=. refnx
+        cd ..
 
         # fix for multiprocessing on Py3.8 is not merged in PyInstaller
         # if you are on Py3.7 you can just pip install pyinstaller
         pip install git+https://github.com/andyfaff/pyinstaller.git@gh4865
 
-        cd tools/app
+        cd tools\app
         pyinstaller motofit.spec
         move motofit.exe ..\..\dist\
 
