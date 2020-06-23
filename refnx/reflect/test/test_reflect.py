@@ -322,6 +322,33 @@ class TestReflect(object):
                 calc = abeles(x, layers)
             assert_almost_equal(calc, refl1d)
 
+    def test_multilayer(self):
+        x = np.geomspace(0.005, 0.5, 101)
+        air = np.array([0, 0, 0, 0])
+        unit_cell = np.array([[30, -2., 0, 3],
+                              [70, 8., 0, 3]])
+        backing = np.array([0, 2.07, 0.0001, 3])
+
+        def get_w(repeats=1):
+            if repeats:
+                filling = np.vstack([unit_cell] * repeats)
+                return np.vstack([air, filling, backing])
+            else:
+                return np.vstack([air, backing])
+
+        backends = list(BACKENDS)
+        backends.remove('python')
+        f_python = reflect_model.get_reflect_backend('python')
+
+        for i in range(25):
+            w = get_w(i)
+            canonical_r = f_python(x, w)
+
+            for backend in backends:
+                with use_reflect_backend(backend) as abeles:
+                    calc = abeles(x, w)
+                assert_almost_equal(calc, canonical_r)
+
     def test_use_reflectivity_backend(self):
         import refnx.reflect._creflect as _creflect
         import refnx.reflect._reflect as _reflect
