@@ -158,7 +158,8 @@ jobs:
 
         pushd tools/app
         pyinstaller motofit.spec
-        mv dist/motofit.app ../../dist/
+        zip -r -X dist/motofit.app.zip dist/motofit.app/t
+        mv dist/motofit.app.zip ../../dist/
         popd
 
     - uses: actions/upload-artifact@v1
