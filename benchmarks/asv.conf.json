@@ -54,7 +54,6 @@
     "matrix": {
         "numpy": [],
         "Cython": [],
-        "pip+ptemcee": [],
     },
 
 
