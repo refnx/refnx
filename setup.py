@@ -368,7 +368,6 @@ def setup_package():
                     ]
                 )
                 f = ['src/refcalc.c']
-
             refcalc_obj = ccompiler.compile(f, extra_preargs=extra_preargs)
             print(refcalc_obj)
 

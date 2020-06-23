@@ -339,14 +339,20 @@ class TestReflect(object):
         backends.remove("python")
         f_python = reflect_model.get_reflect_backend("python")
 
-        for i in range(25):
+        for i in range(40):
             w = get_w(i)
             canonical_r = f_python(x, w)
 
             for backend in backends:
                 with use_reflect_backend(backend) as abeles:
                     calc = abeles(x, w)
-                assert_almost_equal(calc, canonical_r)
+                try:
+                    assert_allclose(
+                        calc, canonical_r, atol=5.0e-15, rtol=8.0e-15
+                    )
+                except AssertionError as e:
+                    print(backend, i)
+                    raise e
 
     def test_use_reflectivity_backend(self):
         import refnx.reflect._creflect as _creflect
