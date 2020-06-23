@@ -325,8 +325,7 @@ class TestReflect(object):
     def test_multilayer(self):
         x = np.geomspace(0.005, 0.5, 101)
         air = np.array([0, 0, 0, 0])
-        unit_cell = np.array([[30, -2., 0, 3],
-                              [70, 8., 0, 3]])
+        unit_cell = np.array([[30, -2.0, 0, 3], [70, 8.0, 0, 3]])
         backing = np.array([0, 2.07, 0.0001, 3])
 
         def get_w(repeats=1):
@@ -337,8 +336,8 @@ class TestReflect(object):
                 return np.vstack([air, backing])
 
         backends = list(BACKENDS)
-        backends.remove('python')
-        f_python = reflect_model.get_reflect_backend('python')
+        backends.remove("python")
+        f_python = reflect_model.get_reflect_backend("python")
 
         for i in range(25):
             w = get_w(i)
