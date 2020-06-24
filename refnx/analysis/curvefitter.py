@@ -154,6 +154,11 @@ class PTSampler(object):
             return self._ptchain.x
         return None
 
+    def get_log_prob(self):
+        if self._ptchain is not None:
+            return self._ptchain.logP
+        return None
+
     @property
     def random_state(self):
         if self._ptchain is not None:
@@ -501,9 +506,6 @@ class CurveFitter(object):
         """
         Log-probability for each of the entries in `self.chain`
         """
-        if isinstance(self.sampler, PTSampler):
-            return np.transpose(self.sampler.logprobability, axes=(2, 0, 1))
-
         return self.sampler.get_log_prob()
 
     def reset(self):
