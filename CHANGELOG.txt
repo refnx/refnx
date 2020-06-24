@@ -263,3 +263,4 @@ in 0.1.13.
 - Build more Linux wheels.
 - Vendored ptemcee (bleeding edge), so it's no longer necessary to install it.
 - Use -funsafe-math-optimizations for reflectivity calculation.
+- fixed bug when retrieving log-probabilities from PTMCMC sampling.
