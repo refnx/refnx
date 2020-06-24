@@ -244,6 +244,20 @@ class TestCurveFitter(object):
         assert_equal(mcfitter.chain[:, 0, :, 1], res[1].chain)
         chain = np.copy(mcfitter.chain)
 
+        # the sampler should store the probability
+        assert_equal(mcfitter.logpost.shape, (5, 10, 50))
+        assert_allclose(mcfitter.logpost, mcfitter.sampler._ptchain.logP)
+
+        logprobs = mcfitter.logpost
+        highest_prob_loc = np.argmax(logprobs[:, 0])
+        idx = np.unravel_index(highest_prob_loc, logprobs[:, 0].shape)
+        idx = list(idx)
+        idx.insert(1, 0)
+        idx = tuple(idx)
+        assert_equal(idx, mcfitter.index_max_prob)
+        pvals = mcfitter.chain[idx]
+        assert_allclose(logprobs[idx], self.objective.logpost(pvals))
+
         # try resetting the chain
         mcfitter.reset()
 
