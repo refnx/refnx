@@ -493,11 +493,6 @@ class CurveFitter(object):
         chain : array
             The MCMC chain with shape `(steps, nwalkers, ndim)` or
             `(steps, ntemps, nwalkers, ndim)`.
-
-        Notes
-        -----
-        The chain returned here has swapped axes compared to the
-        `PTSampler.chain` and `EnsembleSampler.chain` attributes
         """
         return self.sampler.get_chain()
 
@@ -507,6 +502,25 @@ class CurveFitter(object):
         Log-probability for each of the entries in `self.chain`
         """
         return self.sampler.get_log_prob()
+
+    @property
+    def index_max_prob(self):
+        """
+        The index of the highest log-probability for the samples
+        """
+        log_probs = self.sampler.get_log_prob()
+        if isinstance(self.sampler, PTSampler):
+            log_probs = log_probs[:, 0]
+
+        loc = np.argmax(log_probs)
+        idx = np.unravel_index(loc, log_probs.shape)
+
+        if isinstance(self.sampler, PTSampler):
+            idx = list(idx)
+            idx.insert(1, 0)
+            return tuple(idx)
+
+        return idx
 
     def reset(self):
         """

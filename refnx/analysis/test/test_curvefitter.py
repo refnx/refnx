@@ -254,6 +254,7 @@ class TestCurveFitter(object):
         idx = list(idx)
         idx.insert(1, 0)
         idx = tuple(idx)
+        assert_equal(idx, mcfitter.index_max_prob)
         pvals = mcfitter.chain[idx]
         assert_allclose(logprobs[idx], self.objective.logpost(pvals))
 
