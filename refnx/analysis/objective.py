@@ -1209,44 +1209,9 @@ class Transform(object):
             return yt, et
 
 
-class _pymc_objective_wrapper(object):
+def pymc3_model(objective):
     """
-    Wraps objective for pymc3
-
-    Parameters
-    ----------
-    objective: refnx.analysis.Objective
-
-    Notes
-    -----
-    This wrapper is required so that __call__ can receive a list of
-    pymc3 parameters and arrange them in a suitable form to dispatch to
-    the fitfunction.
-    """
-
-    def __init__(self, objective):
-        self.objective = objective
-        self.func = objective.model.model
-        # get as close to using fitfunc as possible
-        if objective.model.fitfunc is not None:
-            self.func = objective.model.fitfunc
-
-    def __name__(self):
-        return "objective"
-
-    def __call__(self, *args):
-        vals = self.func(
-            self.objective.data.x,
-            np.array(args),
-            x_err=self.objective.data.x_err,
-        )
-        return vals
-
-
-def pymc_objective(objective):
-    """
-    Creates a pymc3 model from an Objective. Will not be able to use the NUTS
-    sampler because gradients aren't evaluable.
+    Creates a pymc3 model from an Objective.
 
     Requires theano and pymc3 be installed. This is an experimental feature.
 
@@ -1265,12 +1230,10 @@ def pymc_objective(objective):
 
     """
     import pymc3 as pm
-    import theano.tensor as T
-    from theano.compile.ops import as_op
+    import theano.tensor as tt
+    from refnx._lib._pymc3 import _LogLikeWithGrad
 
     basic_model = pm.Model()
-
-    wrapped_obj = _pymc_objective_wrapper(objective)
 
     pars = objective.varying_parameters()
     wrapped_pars = []
@@ -1283,24 +1246,18 @@ def pymc_objective(objective):
 
         # Expected value of outcome
         try:
-            v = wrapped_obj(*wrapped_pars)
+            # Likelihood (sampling distribution) of observations
+            pm.Normal(
+                "y_obs",
+                mu=objective.generative,
+                sd=objective.data.y_err,
+                observed=objective.data.y,
+            )
         except Exception:
-            print(
-                "Falling back, theano autodiff won't work on function"
-                " object"
-            )
-            o = as_op(itypes=[T.dscalar] * len(pars), otypes=[T.dvector])(
-                wrapped_obj
-            )
-            v = o(*wrapped_pars)
-
-        # Likelihood (sampling distribution) of observations
-        y_obs = pm.Normal(
-            "Y_obs", mu=v, sd=objective.data.y_err, observed=objective.data.y
-        )
-
-        if not y_obs:
-            return None
+            # Falling back, theano autodiff won't work on function object
+            theta = tt.as_tensor_variable(wrapped_pars)
+            logl = _LogLikeWithGrad(objective.logl)
+            pm.Potential("log-likelihood", logl(theta))
 
     return basic_model
 
