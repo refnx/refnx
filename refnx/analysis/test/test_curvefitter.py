@@ -623,7 +623,7 @@ class TestFitterGauss(object):
             # can't run test if pymc3/theano not installed
             return
 
-        with pymc3_model(self.objective) as pm_model:
+        with pymc3_model(self.objective):
             s = pm.NUTS()
             trace = pm.sample(
                 500,
