@@ -187,16 +187,18 @@ class Catalogue(object):
         ][:]
         d["collimation_distance"] = d["slit3_distance"] - d["slit2_distance"]
         try:
-            d["scan_axis_name"] = (
+            san = (
                 h5d["entry1/data/hmm"].attrs["axes"].decode("utf8").split(":")[0]
             )
         except AttributeError:
-            # the attribute could be a string
-            d["scan_axis_name"] = (
+            # the attribute could be a string already
+            san = str(
                 h5d["entry1/data/hmm"].attrs["axes"]
-            )
+            ).split(":")[0]
+        finally:
+            d["scan_axis_name"] = san
 
-        d["scan_axis"] = h5d["entry1/data/%s" % d["scan_axis_name"]][:]
+        d["scan_axis"] = h5d[f"entry1/data/{d['scan_axis_name']}"][:]
 
         try:
             d["start_time"] = h5d["entry1/instrument/detector/start_time"][:]
@@ -1535,7 +1537,7 @@ class ReflectNexus(object):
         stream_filename = os.path.join(
             _eventpath,
             event_directory_name,
-            "DATASET_%d" % scanpoint,
+            f"DATASET_{scanpoint}",
             "EOS.bin",
         )
 
