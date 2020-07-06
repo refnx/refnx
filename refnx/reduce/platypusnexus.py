@@ -186,9 +186,16 @@ class Catalogue(object):
             "entry1/instrument/parameters/slit3_distance"
         ][:]
         d["collimation_distance"] = d["slit3_distance"] - d["slit2_distance"]
-        d["scan_axis_name"] = (
-            h5d["entry1/data/hmm"].attrs["axes"].decode("utf8").split(":")[0]
-        )
+        try:
+            d["scan_axis_name"] = (
+                h5d["entry1/data/hmm"].attrs["axes"].decode("utf8").split(":")[0]
+            )
+        except AttributeError:
+            # the attribute could be a string
+            d["scan_axis_name"] = (
+                h5d["entry1/data/hmm"].attrs["axes"]
+            )
+
         d["scan_axis"] = h5d["entry1/data/%s" % d["scan_axis_name"]][:]
 
         try:
