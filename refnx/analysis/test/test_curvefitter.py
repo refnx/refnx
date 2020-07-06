@@ -631,11 +631,11 @@ class TestFitterGauss(object):
                 step=s,
                 discard_tuned_samples=True,
                 compute_convergence_checks=False,
-                random_seed=1
+                random_seed=1,
             )
-            means = [np.mean(trace[f'p{i}']) for i in range(4)]
+            means = [np.mean(trace[f"p{i}"]) for i in range(4)]
             assert_allclose(means, self.best_weighted, rtol=0.04)
-            errors = [np.std(trace[f'p{i}']) for i in range(4)]
+            errors = [np.std(trace[f"p{i}"]) for i in range(4)]
             assert_allclose(errors, self.best_weighted_errors, atol=0.005)
 
 

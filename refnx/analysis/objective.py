@@ -1251,13 +1251,13 @@ def pymc3_model(objective):
                 "y_obs",
                 mu=objective.generative,
                 sd=objective.data.y_err,
-                observed=objective.data.y
+                observed=objective.data.y,
             )
         except Exception:
             # Falling back, theano autodiff won't work on function object
             theta = tt.as_tensor_variable(wrapped_pars)
             logl = _LogLikeWithGrad(objective.logl)
-            pm.Potential('log-likelihood', logl(theta))
+            pm.Potential("log-likelihood", logl(theta))
 
     return basic_model
 
