@@ -264,3 +264,4 @@ in 0.1.13.
 - Vendored ptemcee (bleeding edge), so it's no longer necessary to install it.
 - Use -funsafe-math-optimizations for reflectivity calculation.
 - fixed bug when retrieving log-probabilities from PTMCMC sampling.
+- fixed encoding call for Py3 (.decode doesn't exist for Py3).

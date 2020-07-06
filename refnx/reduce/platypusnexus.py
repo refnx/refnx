@@ -186,10 +186,20 @@ class Catalogue(object):
             "entry1/instrument/parameters/slit3_distance"
         ][:]
         d["collimation_distance"] = d["slit3_distance"] - d["slit2_distance"]
-        d["scan_axis_name"] = (
-            h5d["entry1/data/hmm"].attrs["axes"].decode("utf8").split(":")[0]
-        )
-        d["scan_axis"] = h5d["entry1/data/%s" % d["scan_axis_name"]][:]
+        try:
+            san = (
+                h5d["entry1/data/hmm"]
+                .attrs["axes"]
+                .decode("utf8")
+                .split(":")[0]
+            )
+        except AttributeError:
+            # the attribute could be a string already
+            san = str(h5d["entry1/data/hmm"].attrs["axes"]).split(":")[0]
+        finally:
+            d["scan_axis_name"] = san
+
+        d["scan_axis"] = h5d[f"entry1/data/{d['scan_axis_name']}"][:]
 
         try:
             d["start_time"] = h5d["entry1/instrument/detector/start_time"][:]
@@ -824,7 +834,7 @@ class ReflectNexus(object):
         normalise_bins=True,
         manual_beam_find=None,
         event_filter=None,
-        **kwds
+        **kwds,
     ):
         r"""
         Processes the ReflectNexus object to produce a time of flight spectrum.
@@ -1528,7 +1538,7 @@ class ReflectNexus(object):
         stream_filename = os.path.join(
             _eventpath,
             event_directory_name,
-            "DATASET_%d" % scanpoint,
+            f"DATASET_{scanpoint}",
             "EOS.bin",
         )
 
