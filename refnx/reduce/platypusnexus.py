@@ -188,13 +188,14 @@ class Catalogue(object):
         d["collimation_distance"] = d["slit3_distance"] - d["slit2_distance"]
         try:
             san = (
-                h5d["entry1/data/hmm"].attrs["axes"].decode("utf8").split(":")[0]
+                h5d["entry1/data/hmm"]
+                .attrs["axes"]
+                .decode("utf8")
+                .split(":")[0]
             )
         except AttributeError:
             # the attribute could be a string already
-            san = str(
-                h5d["entry1/data/hmm"].attrs["axes"]
-            ).split(":")[0]
+            san = str(h5d["entry1/data/hmm"].attrs["axes"]).split(":")[0]
         finally:
             d["scan_axis_name"] = san
 
@@ -833,7 +834,7 @@ class ReflectNexus(object):
         normalise_bins=True,
         manual_beam_find=None,
         event_filter=None,
-        **kwds
+        **kwds,
     ):
         r"""
         Processes the ReflectNexus object to produce a time of flight spectrum.
