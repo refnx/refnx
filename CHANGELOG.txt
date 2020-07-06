@@ -260,8 +260,11 @@ in 0.1.13.
 
 0.1.16
 ------
-- Build more Linux wheels.
-- Vendored ptemcee (bleeding edge), so it's no longer necessary to install it.
-- Use -funsafe-math-optimizations for reflectivity calculation.
+- bbuild more Linux wheels.
+- vendored ptemcee (bleeding edge), so it's no longer necessary to install it.
+- ise -funsafe-math-optimizations for reflectivity calculation.
 - fixed bug when retrieving log-probabilities from PTMCMC sampling.
 - fixed encoding call for Py3 (.decode doesn't exist for Py3).
+- improve pymc3 model creation. pymc3 offers different ways to carry out MCMC
+  sampling. This may lead to pymc3 being included as a sampling method in
+  Curvefitter.

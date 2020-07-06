@@ -482,7 +482,7 @@ class TestObjective(object):
         from refnx.analysis import pymc_objective
         from refnx.analysis.objective import _to_pymc3_distribution
 
-        mod = pymc_objective(self.objective)
+        mod = pymc_model(self.objective)
         with mod:
             pymc_logl = mod.logp(
                 {"p0": self.p[0].value, "p1": self.p[1].value}

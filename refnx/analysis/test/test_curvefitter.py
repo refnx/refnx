@@ -531,7 +531,7 @@ class TestFitterGauss(object):
         f = CurveFitter(self.objective, nwalkers=100, ntemps=10)
         f.fit("differential_evolution", seed=1)
 
-        f.sample(steps=401, random_state=1, verbose=False)
+        f.sample(steps=201, random_state=1, verbose=False)
         process_chain(self.objective, f.chain, nburn=50, nthin=15)
         print(self.params[0].chain.shape, self.params[0].chain)
 
@@ -613,6 +613,30 @@ class TestFitterGauss(object):
         # (before and after the fit) they should be the same because all
         # the parameters have uniform priors.
         assert_almost_equal(self.objective.logp(), logp0)
+
+    def test_pymc3_sample(self):
+        # test sampling with pymc3
+        try:
+            import pymc3 as pm
+            from refnx.analysis import pymc3_model
+        except (ModuleNotFoundError, ImportError, AttributeError):
+            # can't run test if pymc3/theano not installed
+            return
+
+        with pymc3_model(self.objective) as pm_model:
+            s = pm.NUTS()
+            trace = pm.sample(
+                500,
+                tune=500,
+                step=s,
+                discard_tuned_samples=True,
+                compute_convergence_checks=False,
+                random_seed=1
+            )
+            means = [np.mean(trace[f'p{i}']) for i in range(4)]
+            assert_allclose(means, self.best_weighted, rtol=0.04)
+            errors = [np.std(trace[f'p{i}']) for i in range(4)]
+            assert_allclose(errors, self.best_weighted_errors, atol=0.005)
 
 
 """
