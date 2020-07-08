@@ -22,6 +22,8 @@ Here is an incomplete list of published scientific studies that have used/cited 
   <https://doi.org/10.1107/S1600576719016789>`_
 * `McCluskey, Cooper, et al. (2020)
   <https://doi.org/10.1088/2632-2153/ab94c4>`_
+* `Freychet, Maret, et al. (2020)
+  <https://doi.org/10.1002/pol.20200196>`_
 
 Please `let us know <mailto:andyfaff+refnx@gmail.com>`_ if your work should be included
 in this list or `fork the repository <https://github.com/refnx/refnx>`_ and add
