@@ -195,6 +195,16 @@ class TestObjective(object):
             self.objective.logpost() + amend, -559.01078135444595
         )
 
+    def test_prior_transform(self):
+        self.p[0].bounds = PDF(stats.uniform(-10, 20))
+        self.p[1].bounds = PDF(stats.norm(loc=5, scale=10))
+        x = self.objective.prior_transform([0.1, 0.9])
+        assert_allclose(
+            x,
+            stats.uniform.ppf(0.1, -10, 20),
+            stats.norm.ppf(0.9, loc=5, scale=10),
+        )
+
     def test_chisqr(self):
         assert_almost_equal(self.objective.chisqr(), 1231.1096772954229)
 
