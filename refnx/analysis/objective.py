@@ -462,6 +462,43 @@ class Objective(BaseObjective):
             f" parameters ({len(_varying_parameters)})."
         )
 
+    def prior_transform(self, u):
+        """
+        Calculate the prior transform of the system.
+
+        Transforms uniform random variates in the unit hypercube,
+        `u ~ uniform[0.0, 1.0)`, to the parameter space of interest, according
+        to the priors on the varying parameters.
+
+        Parameters
+        ----------
+        u : array-like
+            Size of the varying parameters
+
+        Returns
+        -------
+        pvals : array-like
+            Scaled parameter values
+
+        Notes
+        -----
+        If a parameter has bounds, `x ~ Unif[-10, 10)` then the scaling from
+        `u` to `x` is done as follows:
+
+        .. code-block:: python
+
+            x = 2. * u - 1.  # scale and shift to [-1., 1.)
+            x *= 10.  # scale to [-10., 10.)
+
+        """
+        var_pars = self.varying_parameters()
+        pvals = np.empty(len(var_pars), dtype=np.float64)
+
+        for i, var_par in enumerate(var_pars):
+            pvals[i] = var_par.bounds.invcdf(u[i])
+
+        return pvals
+
     def logp(self, pvals=None):
         """
         Calculate the log-prior of the system
