@@ -464,11 +464,11 @@ class Objective(BaseObjective):
 
     def prior_transform(self, u):
         """
-        Calculate the prior transform of the system
+        Calculate the prior transform of the system.
 
-        Transforms uniform random variates `u ~ uniform[0.0, 1.0)` to the
-        parameter space of interest, according to the priors on the varying
-        parameters.
+        Transforms uniform random variates in the unit hypercube,
+        `u ~ uniform[0.0, 1.0)`, to the parameter space of interest, according
+        to the priors on the varying parameters.
 
         Parameters
         ----------
