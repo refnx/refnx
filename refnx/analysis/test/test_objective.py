@@ -234,11 +234,9 @@ class TestObjective(object):
         assert_equal(self.objective.residuals().size, residuals.size - 1)
 
     def test_logp_extra(self):
+        original_logl = self.objective.logl()
         self.objective.logp_extra = logp_extra
-
-        # repeat logp test
-        self.p[0].range(0, 10)
-        assert_almost_equal(self.objective.logp(), np.log(0.1) + 1)
+        assert_almost_equal(self.objective.logl(), original_logl + 1)
 
     def test_objective_pickle(self):
         # can you pickle the objective function?
