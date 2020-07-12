@@ -484,15 +484,6 @@ class Objective(BaseObjective):
 
             logp = np.sum(param.logp() for param in
                              self.varying_parameters())
-            logp += self.model.logp()
-            logp += self.logp_extra(self.model, self.data)
-
-        The major components of the log-prior probability are from the varying
-        parameters and the Model used to construct the Objective.
-        `self.model.logp` should not include any contributions from
-        `self.model.parameters` otherwise they'll be counted more than once.
-        The same argument applies to the user specifiable `logp_extra`
-        function.
 
         """
         self.setp(pvals)
@@ -509,19 +500,15 @@ class Objective(BaseObjective):
         if not np.isfinite(logp):
             return -np.inf
 
-        logp += self.model.logp()
-
-        if not np.isfinite(logp):
-            return -np.inf
-
-        if self.logp_extra is not None:
-            logp += self.logp_extra(self.model, self.data)
-
         return logp
 
     def logl(self, pvals=None):
         """
         Calculate the log-likelhood of the system
+
+        The major component of the log-likelhood probability is from the data.
+        Extra potential terms are added on from the Model, `self.model.logp`,
+        and the user specifiable `logp_extra` function.
 
         Parameters
         ----------
@@ -541,6 +528,8 @@ class Objective(BaseObjective):
 
             logl = -0.5 * np.sum(((y - model) / s_n)**2
                                  + np.log(2 * pi * s_n**2))
+            logp += self.model.logp()
+            logp += self.logp_extra(self.model, self.data)
 
         where
 
@@ -574,7 +563,13 @@ class Objective(BaseObjective):
         if np.isnan(logl).any():
             raise RuntimeError("Objective.logl encountered a NaN")
 
-        return -0.5 * np.sum(logl)
+        # add on extra 'potential' terms from the model.
+        extra_potential = self.model.logp()
+
+        if self.logp_extra is not None:
+            extra_potential += self.logp_extra(self.model, self.data)
+
+        return -0.5 * np.sum(logl) + extra_potential
 
     def nll(self, pvals=None):
         """

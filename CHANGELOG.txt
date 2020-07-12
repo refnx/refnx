@@ -270,3 +270,6 @@ in 0.1.13.
   Curvefitter.
 - implement `invcdf` method for Bounds objects. This will allow creation of
   prior transforms from [0, 1) to the original range specification.
+- BREAKING CHANGE: `objective.model.logp` and `Objective.logp_extra` are now
+  included in the log-likelihood (`Objective.logl`) instead of log-prior
+  (`Objective.logp`). This makes it easier to work with pymc3 and dynesty.
