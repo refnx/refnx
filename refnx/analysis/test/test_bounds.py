@@ -66,6 +66,12 @@ class TestBounds(object):
         assert_almost_equal(vals, 2 * interval.ub - x)
         assert_equal(interval.valid(1001), 1001)
 
+        # ppf for Interval
+        interval.lb = -10.0
+        interval.ub = 10.0
+        rando = np.random.uniform(size=10)
+        assert_equal(interval.invcdf(rando), uniform.ppf(rando, -10, 20))
+
     def test_repr(self):
         p = Interval(-5, 5)
         q = eval(repr(p))
@@ -99,6 +105,11 @@ class TestBounds(object):
         assert_equal(pdf.logp(2), np.log(1.0 / 9.0))
         assert_equal(pdf.logp(10.0), np.log(1.0 / 9.0))
 
+        # test the invcdf
+        rando = np.random.uniform(size=10)
+        pdf = PDF(truncnorm(-1, 1))
+        assert_equal(pdf.invcdf(rando), truncnorm.ppf(rando, -1, 1))
+
     def test_pickle(self):
         bounds = PDF(norm(1.0, 2.0))
         pkl = pickle.dumps(bounds)
@@ -126,3 +137,6 @@ class UserPDF(object):
 
     def rvs(self, size=1, random_state=None):
         return np.random.random(size)
+
+    def invcdf(self, q):
+        return 1

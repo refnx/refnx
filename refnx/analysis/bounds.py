@@ -70,6 +70,25 @@ class Bounds(object):
         """
         raise NotImplementedError
 
+    def invcdf(self, q):
+        """
+        Calculate the inverse of the cumulative distribution function for the
+        prior.
+
+        This is also known as the percent point function, or ppf.
+
+        Parameters
+        ----------
+        q : array-like
+            lower tail probability
+
+        Returns
+        -------
+        x : array-like
+            quantile corresponding to the lower tail probability q.
+        """
+        raise NotImplementedError
+
 
 class PDF(Bounds):
     """
@@ -169,6 +188,25 @@ class PDF(Bounds):
         """
         return self.rv.rvs(size=size, random_state=random_state)
 
+    def invcdf(self, q):
+        """
+        Calculate the inverse of the cumulative distribution function for the
+        uniform prior.
+
+        This is also known as the percent point function, or ppf.
+
+        Parameters
+        ----------
+        q : array-like
+            lower tail probability
+
+        Returns
+        -------
+        x : array-like
+            quantile corresponding to the lower tail probability q.
+        """
+        return self.rv.ppf(q)
+
 
 class Interval(Bounds):
     r"""
@@ -212,12 +250,14 @@ class Interval(Bounds):
         self._ub = ub
         self._logprob = 0
         self._closed_bounds = False
+        self._rv = None
         self._set_bounds(self._lb, self._ub)
 
     def _set_bounds(self, lb, ub):
         self._lb = float(min(lb, ub))
         self._ub = float(max(lb, ub))
         self._closed_bounds = False
+        self._rv = uniform(self._lb, self._ub - self._lb)
 
         if math.isnan(self._lb) or math.isnan(self._ub):
             raise ValueError("Can't set Interval with NaN")
@@ -228,14 +268,13 @@ class Interval(Bounds):
                 self._logprob = 0.0
             else:
                 self._logprob = math.log(1 / (self._ub - self._lb))
-
         else:
             self._logprob = 0.0
             self._closed_bounds = False
 
     @property
     def rv(self):
-        return uniform(self._lb, self._ub - self._lb)
+        return self._rv
 
     def __repr__(self):
         lb, ub = self.lb, self.ub
@@ -345,13 +384,28 @@ class Interval(Bounds):
 
     def rvs(self, size=1, random_state=None):
         if self._closed_bounds:
-            return uniform.rvs(
-                self._lb,
-                self._ub - self._lb,
-                size=size,
-                random_state=random_state,
-            )
+            rng = check_random_state(random_state)
+            return rng.uniform(self._lb, self._ub, size=size)
         else:
             raise RuntimeError(
                 "Can't ask for a random variate from a" " semi-closed interval"
             )
+
+    def invcdf(self, q):
+        """
+        Calculate the inverse of the cumulative distribution function for the
+        uniform prior.
+
+        This is also known as the percent point function, or ppf.
+
+        Parameters
+        ----------
+        q : array-like
+            lower tail probability
+
+        Returns
+        -------
+        x : array-like
+            quantile corresponding to the lower tail probability q.
+        """
+        return self._rv.ppf(q)
