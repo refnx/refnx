@@ -250,14 +250,12 @@ class Interval(Bounds):
         self._ub = ub
         self._logprob = 0
         self._closed_bounds = False
-        self._rv = None
         self._set_bounds(self._lb, self._ub)
 
     def _set_bounds(self, lb, ub):
         self._lb = float(min(lb, ub))
         self._ub = float(max(lb, ub))
         self._closed_bounds = False
-        self._rv = uniform(self._lb, self._ub - self._lb)
 
         if math.isnan(self._lb) or math.isnan(self._ub):
             raise ValueError("Can't set Interval with NaN")
@@ -274,7 +272,7 @@ class Interval(Bounds):
 
     @property
     def rv(self):
-        return self._rv
+        return uniform(self._lb, self._ub - self._lb)
 
     def __repr__(self):
         lb, ub = self.lb, self.ub
@@ -408,4 +406,11 @@ class Interval(Bounds):
         x : array-like
             quantile corresponding to the lower tail probability q.
         """
-        return self._rv.ppf(q)
+        if self._closed_bounds:
+            # this is what a ppf transform for stats.uniform does
+            scale = self._ub - self._lb
+            loc = self._lb
+
+            return scale * q + loc
+        else:
+            raise RuntimeError("Can only calculate invcdf with closed bounds")
