@@ -250,6 +250,10 @@ class Interval(Bounds):
         self._ub = ub
         self._logprob = 0
         self._closed_bounds = False
+        # IMPLEMENTATION NOTE - don't try to add frozen stats.uniform
+        # as an attribute to this class. The rv_frozen class takes
+        # a long time to pickle/unpickle. gh483 fixes a perf regression
+        # that did this.
         self._set_bounds(self._lb, self._ub)
 
     def _set_bounds(self, lb, ub):
