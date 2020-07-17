@@ -98,7 +98,7 @@ class PDF(Bounds):
     ----------
     rv : :class:`scipy.stats.rv_continuous` or Object
         A continuous probability distribution. If `rv` is not an
-        `rv_continuous`, then it must implement the `logpdf` and `rvs`
+        `rv_continuous`, then it must implement the `logpdf`, `rvs`, `ppf`
         methods.
 
     Examples
@@ -117,13 +117,23 @@ class PDF(Bounds):
     def __init__(self, rv):
         super(PDF, self).__init__()
         # we'll accept any object so long as it has logpdf and rvs methods
-        if hasattr(rv, "logpdf") and hasattr(rv, "rvs"):
+        if hasattr(rv, "logpdf") and hasattr(rv, "rvs") and hasattr(rv, "ppf"):
             self.rv = rv
         else:
             raise ValueError(
                 "You must initialise PDF with an object that has"
-                " logpdf and rvs methods"
+                " logpdf, rvs, and ppf methods"
             )
+        # pickling/unpickling np.random.Generator is much faster than
+        # RandomState
+        if hasattr(rv, "_random_state"):
+            # dealing with an unfrozen distribution
+            rv._random_state = np.random.default_rng()
+        try:
+            # dealing with a frozen distribution
+            rv.dist._random_state = np.random.default_rng()
+        except AttributeError:
+            pass
 
     def __repr__(self):
         return "PDF({rv!r})".format(**self.__dict__)
@@ -177,8 +187,9 @@ class PDF(Bounds):
         ----------
         size : int or tuple
             Specifies the number, or array shape, of random variates to return.
-        random_state : None, int, float or np.random.RandomState
-            For reproducible sampling
+        random_state : {None, int, float, np.random.RandomState,
+                        np.random.Generator}
+            For reproducible sampling.
 
         Returns
         -------
