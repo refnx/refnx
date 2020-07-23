@@ -275,3 +275,4 @@ in 0.1.13.
   (`Objective.logp`). This makes it easier to work with pymc3 and dynesty.
 - Add `Objective.prior_transform` that converts random variates in a unit
   hypercube to parameter values, according to their prior distributions.
+- manual_beam_find can be sent a name to be displayed on the window title.

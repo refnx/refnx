@@ -927,12 +927,14 @@ class ReflectNexus(object):
             with different rebin percentages.
         manual_beam_find : callable, optional
             A function which allows the location of the specular ridge to be
-            determined. Has the signature `f(detector, detector_err)` where
-            `detector` and `detector_err` is the detector image and its
-            uncertainty. `detector` and `detector_err` have shape
-            (n, t, {x, y}) where `n` is the number of detector images, `t` is
-            the number of time of flight bins and `x` or `y` is the number of
-            x or y pixels. The function should return a tuple,
+            determined. Has the signature `f(detector, detector_err, name)`
+            where `detector` and `detector_err` is the detector image and its
+            uncertainty, and name is a `str` specifying the name of
+            the dataset.
+            `detector` and `detector_err` have shape (n, t, {x, y}) where `n`
+            is the number of detector images, `t` is the number of
+            time-of-flight bins and `x` or `y` is the number of x or y pixels.
+            The function should return a tuple,
             `(centre, centre_sd, lopx, hipx, background_pixels)`. `centre`,
             `centre_sd`, `lopx`, `hipx` should be arrays of shape `(n, )`,
             specifying the beam centre, beam width (standard deviation), lowest
@@ -1194,7 +1196,9 @@ class ReflectNexus(object):
         # where is the specular ridge?
         if peak_pos == -1:
             # you always want to find the beam manually
-            ret = manual_beam_find(detector, detector_sd)
+            ret = manual_beam_find(
+                detector, detector_sd, os.path.basename(cat.filename)
+            )
             beam_centre, beam_sd, lopx, hipx, bp = ret
 
             full_backgnd_mask = np.zeros_like(detector, dtype=bool)
@@ -1208,6 +1212,7 @@ class ReflectNexus(object):
                 detector_sd,
                 tol=peak_pos_tol,
                 manual_beam_find=manual_beam_find,
+                name=os.path.basename(cat.filename),
             )
             beam_centre, beam_sd, lopx, hipx, full_backgnd_mask = ret
         else:
@@ -2218,6 +2223,7 @@ def find_specular_ridge(
     search_increment=50,
     tol=0.002,
     manual_beam_find=None,
+    name=None,
 ):
     """
     Find the specular ridges in a detector(n, t, {x, y}) plot.
@@ -2234,11 +2240,14 @@ def find_specular_ridge(
         specifies threshold of fractional change for beam centre to be found
     manual_beam_find : callable, optional
         A function which allows the location of the specular ridge to be
-        determined, IFF the autodetection of specular ridge fails.
-        Has the signature `f(detector, detector_sd)`. `detector` and
-        `detector_sd` have shape (n, t, {x, y}) where `n` is the number of
-        detector images, `t` is the number of time of flight bins and `x` or
-        `y` is the number of x or y pixels. The function should return a tuple,
+        determined. Has the signature `f(detector, detector_err, name)`
+        where `detector` and `detector_err` is the detector image and its
+        uncertainty, and name is a `str` specifying the name of
+        the dataset.
+        `detector` and `detector_err` have shape (n, t, {x, y}) where `n`
+        is the number of detector images, `t` is the number of
+        time-of-flight bins and `x` or `y` is the number of x or y pixels.
+        The function should return a tuple,
         `(centre, centre_sd, lopx, hipx, background_pixels)`. `centre`,
         `centre_sd`, `lopx`, `hipx` should be arrays of shape `(n, )`,
         specifying the beam centre, beam width (standard deviation), lowest
@@ -2246,7 +2255,8 @@ def find_specular_ridge(
         `background_pixels` is a list of length `n`. Each of the entries
         should contain arrays of pixel numbers that specify the background
         region for each of the detector images.
-
+    name: str
+            Name of the dataset
     Returns
     -------
     centre, SD, lopx, hipx, background_mask : np.ndarrays

@@ -78,7 +78,7 @@ class ManualBeamFinder(QtWidgets.QDialog):
             "button_release_event", self.on_cross_drag_release
         )
 
-    def __call__(self, detector, detector_err):
+    def __call__(self, detector, detector_err, name):
         """
         Start the manual beam find
 
@@ -89,6 +89,8 @@ class ManualBeamFinder(QtWidgets.QDialog):
             the first image is processed
         detector_err: np.ndarray
             uncertainties (sd) associated with detector image
+        name: str
+            Name of the dataset
 
         Returns
         -------
@@ -125,6 +127,11 @@ class ManualBeamFinder(QtWidgets.QDialog):
         self.integrate_width.setValue(self._integrate_width)
 
         self.recalculate_graphs()
+        # set the title of the window to give context about what dataset is
+        # being processed.
+        self.setWindowTitle("Manual beam finder")
+        if name is not None:
+            self.setWindowTitle("Manual beam finder: " + name)
 
         self.dialog.exec_()
 
