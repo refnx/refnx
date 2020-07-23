@@ -2333,7 +2333,7 @@ def find_specular_ridge(
                 RuntimeWarning,
             )
             if manual_beam_find is not None:
-                ret = manual_beam_find(detector[j], detector_sd[j])
+                ret = manual_beam_find(detector[j], detector_sd[j], name)
                 beam_centre[j], beam_sd[j], lopx[j], hipx[j], bp = ret
                 background_mask[j, :, bp[0]] = True
 
