@@ -248,7 +248,7 @@ class TestPlatypusNexus(object):
 
     def test_manual_beam_find(self):
         # you can specify a function that finds where the specular ridge is.
-        def manual_beam_find(detector, detector_sd):
+        def manual_beam_find(detector, detector_sd, name):
             beam_centre = np.zeros(len(detector))
             beam_sd = np.zeros(len(detector))
             beam_centre += 50

@@ -78,7 +78,7 @@ class ManualBeamFinder(QtWidgets.QDialog):
             "button_release_event", self.on_cross_drag_release
         )
 
-    def __call__(self, detector, detector_err, name=None):
+    def __call__(self, detector, detector_err, name):
         """
         Start the manual beam find
 

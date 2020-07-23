@@ -927,7 +927,7 @@ class ReflectNexus(object):
             with different rebin percentages.
         manual_beam_find : callable, optional
             A function which allows the location of the specular ridge to be
-            determined. Has the signature `f(detector, detector_err, name='')`
+            determined. Has the signature `f(detector, detector_err, name)`
             where `detector` and `detector_err` is the detector image and its
             uncertainty, and name is a `str` specifying the name of
             the dataset.
@@ -1197,7 +1197,7 @@ class ReflectNexus(object):
         if peak_pos == -1:
             # you always want to find the beam manually
             ret = manual_beam_find(
-                detector, detector_sd, name=os.path.basename(cat.filename)
+                detector, detector_sd, os.path.basename(cat.filename)
             )
             beam_centre, beam_sd, lopx, hipx, bp = ret
 
@@ -2240,7 +2240,7 @@ def find_specular_ridge(
         specifies threshold of fractional change for beam centre to be found
     manual_beam_find : callable, optional
         A function which allows the location of the specular ridge to be
-        determined. Has the signature `f(detector, detector_err, name='')`
+        determined. Has the signature `f(detector, detector_err, name)`
         where `detector` and `detector_err` is the detector image and its
         uncertainty, and name is a `str` specifying the name of
         the dataset.
@@ -2333,7 +2333,7 @@ def find_specular_ridge(
                 RuntimeWarning,
             )
             if manual_beam_find is not None:
-                ret = manual_beam_find(detector[j], detector_sd[j], name=name)
+                ret = manual_beam_find(detector[j], detector_sd[j])
                 beam_centre[j], beam_sd[j], lopx[j], hipx[j], bp = ret
                 background_mask[j, :, bp[0]] = True
 
