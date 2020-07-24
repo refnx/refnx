@@ -389,8 +389,8 @@ class BatchReducer:
             Reduction cache should be stored on disk to allow the reducer to
             be restarted without having to rereduce the data.
         trim_trailing : bool, optional
-            When datasets are spliced together do you want to remove points in the
-            overlap region from the preceding dataset?
+            When datasets are spliced together do you want to remove points in
+            the overlap region from the preceding dataset?
         reduction_options : dict, or sequence of dict, optional
             Options passed directly to `refnx.reduce.reduce_stitch`. Look at
             that docstring for complete specification of options.
