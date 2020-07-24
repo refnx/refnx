@@ -19,7 +19,7 @@ try:
 except ImportError:
     _have_ipython = False
 
-from refnx.reduce import reduce_stitch
+from refnx.reduce import reduce_stitch, ReductionOptions
 
 
 ReductionEntryTuple = collections.namedtuple(
@@ -364,7 +364,13 @@ class BatchReducer:
     """
 
     def __init__(
-        self, filename, data_folder=None, verbose=True, persistent=True, **kwds
+        self,
+        filename,
+        data_folder=None,
+        verbose=True,
+        persistent=True,
+        trim_trailing=True,
+        reduction_options=None,
     ):
         """
         Create a batch reducer using metadata from a spreadsheet
@@ -382,7 +388,10 @@ class BatchReducer:
         persistent : bool, optional
             Reduction cache should be stored on disk to allow the reducer to
             be restarted without having to rereduce the data.
-        kwds : dict, optional
+        trim_trailing : bool, optional
+            When datasets are spliced together do you want to remove points in the
+            overlap region from the preceding dataset?
+        reduction_options : dict, or sequence of dict, optional
             Options passed directly to `refnx.reduce.reduce_stitch`. Look at
             that docstring for complete specification of options.
         """
@@ -393,8 +402,8 @@ class BatchReducer:
         if data_folder is not None:
             self.data_folder = data_folder
 
-        self.kwds = kwds
-        self.kwds["data_folder"] = self.data_folder
+        self.trim_trailing = trim_trailing
+        self.reduction_options = reduction_options or ReductionOptions()
         self.verbose = verbose
 
     def _reduce_row(self, entry):
@@ -443,7 +452,13 @@ class BatchReducer:
             )
             return None, None
 
-        ds, fname = reduce_stitch(runs, directs, **self.kwds)
+        ds, fname = reduce_stitch(
+            runs,
+            directs,
+            trim_trailing=self.trim_trailing,
+            data_folder=self.data_folder,
+            reduction_options=self.reduction_options,
+        )
 
         return ds, fname
 

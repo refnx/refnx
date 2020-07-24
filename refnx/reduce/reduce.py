@@ -10,6 +10,7 @@ from refnx.reduce.platypusnexus import (
     number_datafile,
     basename_datafile,
     SpatzNexus,
+    ReductionOptions,
 )
 from refnx.util import ErrorProp as EP
 import refnx.util.general as general
@@ -68,10 +69,10 @@ class ReflectReduce(object):
 
         self.prefix = prefix
 
-    def __call__(self, reflect, scale=1, save=True, **kwds):
+    def __call__(self, reflect, scale=1.0, save=True, **kwds):
         return self.reduce(reflect, scale=scale, save=save, **kwds)
 
-    def reduce(self, reflect, scale=1.0, save=True, **kwds):
+    def reduce(self, reflect, scale=1.0, save=True, **reduction_options):
         """
         Reduction of a single dataset.
 
@@ -91,8 +92,8 @@ class ReflectReduce(object):
         save : bool, optional
             If `True` then the reduced dataset is saved to the current
             directory, with a name os.path.basename(reflect)
-        kwds : dict, optional
-            Options passed directly to `refnx.reduce.platypusnexus.process`,
+        reduction_options : dict, optional
+            Options passed directly to `refnx.reduce.PlatypusNexus.process`,
             for processing of individual spectra. Look at that method docstring
             for specification of options.
 
@@ -149,8 +150,8 @@ class ReflectReduce(object):
         ...                                      rebin_percent=3.)
 
         """
-        reflect_keywords = kwds.copy()
-        direct_keywords = kwds.copy()
+        reflect_keywords = reduction_options.copy()
+        direct_keywords = reduction_options.copy()
 
         # get the direct beam spectrum
         direct_keywords["direct"] = True
@@ -691,18 +692,17 @@ class SpatzReduce(ReflectReduce):
 def reduce_stitch(
     reflect_list,
     direct_list,
-    background_list=None,
-    norm_file_num=None,
     data_folder=None,
     prefix="PLP",
     trim_trailing=True,
     save=True,
-    **kwds
+    scale=1.0,
+    reduction_options=None,
 ):
     """
     Reduces a list of reflected beam run numbers and a list of corresponding
-    direct beam run numbers from the Platypus reflectometer. If there are
-    multiple reflectivity files they are spliced together.
+    direct beam run numbers from the Platypus/Spatz reflectometers. If there
+    are multiple reflectivity files they are spliced together.
 
     Parameters
     ----------
@@ -711,12 +711,6 @@ def reduce_stitch(
         708 corresponds to the file PLP0000708.nx.hdf.
     direct_list : list
         Direct beam run numbers, e.g. `[711, 711, 711]`
-    background_list : list, optional
-        List of `bool` to control whether background subtraction is used
-        for each reduction, e.g. `[False, True, True]`. The default is to do
-        a background subtraction on all runs.
-    norm_file_num : int, optional
-        The run number for the water flood field correction.
     data_folder : str, optional
         Where is the raw data stored?
     prefix : str, optional
@@ -727,10 +721,15 @@ def reduce_stitch(
     save : bool, optional
         If `True` then the spliced file is written to a file (in the working
         directory) with a name like: `c_PLP0000708.dat`.
-    kwds : dict, optional
-        Options passed directly to `refnx.reduce.platypusnexus.process`,
+    scale : float, optional
+        Scales the data by this value.
+    reduction_options : None, dict, or list of dict, optional
+        Options passed directly to `refnx.reduce.PlatypusNexus.process`,
         for processing of individual spectra. Look at that method docstring
-        for specification of options.
+        for specification of options. If an individual dict then the same
+        options are used to process all datasets. A list (or sequence) of
+        dict can be used to specify different options for each datasets. If
+        None, then a default set of reduction options will be used.
 
     Returns
     -------
@@ -740,7 +739,6 @@ def reduce_stitch(
 
     Notes
     -----
-    If `background` is in the supplied `kwds` it is ignored.
     The `prefix` is used to specify the run numbers to a filename.
     For example a run number of 10, and a prefix of `PLP` resolves to a
     NeXus filename of 'PLP0000010.nx.hdf'.
@@ -751,30 +749,30 @@ def reduce_stitch(
     >>> from refnx.reduce import reduce_stitch
     >>> dataset, fname = reduce_stitch([708, 709, 710],
     ...                                [711, 711, 711],
-    ...                                 rebin_percent=2)
+    ...                                reduction_options={"rebin_percent": 2})
 
     """
-
-    scale = kwds.get("scale", 1.0)
-
-    kwds_copy = {}
-    kwds_copy.update(kwds)
-    kwds_copy.pop("background", None)
-
-    if not background_list:
-        background_list = [True] * len(reflect_list)
+    options = [ReductionOptions()] * len(reflect_list)
+    try:
+        if reduction_options is not None:
+            options = []
+            for i in range(len(reflect_list)):
+                if isinstance(reduction_options[i], dict):
+                    options.append(reduction_options[i])
+                else:
+                    options.append(ReductionOptions())
+    except KeyError:
+        # reduction_options may be an individual dict
+        if isinstance(reduction_options, dict):
+            options = [reduction_options] * len(reflect_list)
 
     # now reduce all the files.
-    zipped = zip(reflect_list, direct_list, background_list)
+    zipped = zip(reflect_list, direct_list, options)
 
     combined_dataset = ReflectDataset()
 
     if data_folder is None:
         data_folder = os.getcwd()
-
-    if norm_file_num:
-        norm_datafile = number_datafile(norm_file_num, prefix=prefix)
-        kwds["h5norm"] = norm_datafile
 
     if prefix == "PLP":
         reducer_klass = PlatypusReduce
@@ -793,7 +791,7 @@ def reduce_stitch(
 
         reducer = reducer_klass(direct_datafile)
         datasets, fnames = reducer.reduce(
-            reflect_datafile, save=save, background=val[2], **kwds_copy
+            reflect_datafile, save=save, **val[2]
         )
 
         if not index:

@@ -276,3 +276,6 @@ in 0.1.13.
 - Add `Objective.prior_transform` that converts random variates in a unit
   hypercube to parameter values, according to their prior distributions.
 - manual_beam_find can be sent a name to be displayed on the window title.
+- ReductionOptions dict is now used for specifying options for reduction and
+  processing of reflectometry data. This will permit different settings to be
+  used for datasets measured in different configurations.

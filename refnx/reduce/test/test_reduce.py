@@ -7,7 +7,7 @@ import pytest
 from numpy.testing import assert_equal, assert_allclose
 import xml.etree.ElementTree as ET
 
-from refnx.reduce import reduce_stitch, PlatypusReduce
+from refnx.reduce import reduce_stitch, PlatypusReduce, ReductionOptions
 
 
 class TestReduce(object):
@@ -33,10 +33,24 @@ class TestReduce(object):
                 [708, 709, 710],
                 [711, 711, 711],
                 data_folder=self.pth,
-                rebin_percent=2,
+                reduction_options={"rebin_percent": 2},
             )
             a.save("test1.dat")
             assert os.path.isfile("./test1.dat")
+
+            # reduce_stitch should take a ReductionOptions dict
+            opts = ReductionOptions()
+            opts["rebin_percent"] = 2
+
+            a2, fname = reduce_stitch(
+                [708, 709, 710],
+                [711, 711, 711],
+                data_folder=self.pth,
+                reduction_options=[opts] * 3,
+            )
+            a2.save("test2.dat")
+            assert os.path.isfile("./test2.dat")
+            assert_allclose(a.y, a2.y)
 
     def test_reduction_method(self):
         # a quick smoke test to check that the reduction can occur

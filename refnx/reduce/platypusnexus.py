@@ -583,6 +583,178 @@ def datafile_number(fname, prefix="PLP"):
     return None
 
 
+class ReductionOptions(dict):
+    """
+    dict specifying the options for processing a Reflectometry dataset.
+
+    Parameters
+    ----------
+    h5norm : str or HDF5 NeXus file
+        If a str then `h5norm` is a path to the floodfield data, otherwise
+        it is a hdf5 file handle containing the floodfield data.
+    lo_wavelength : float
+        The low wavelength cutoff for the rebinned data (A).
+    hi_wavelength : float
+        The high wavelength cutoff for the rebinned data (A).
+    background : bool
+        Should a background subtraction be carried out?
+    direct : bool
+        Is it a direct beam you measured? This is so a gravity correction
+        can be applied (if the instrument needs one).
+    omega : float
+        Expected angle of incidence of beam. If this is None, then the
+        rough angle of incidence is obtained from the NeXus file.
+    twotheta : float
+        Expected two theta value of specular beam. If this is None then
+        the rough angle of incidence is obtained from the NeXus file.
+    rebin_percent : float
+        Specifies the rebinning percentage for the spectrum.  If
+        `rebin_percent is None`, then no rebinning is done.
+    wavelength_bins : array_like
+        The wavelength bins for rebinning.  If `wavelength_bins is not
+        None` then the `rebin_percent` parameter is ignored.
+    normalise : bool
+        Normalise by the monitor counts.
+    integrate : int
+        Specifies which scanpoints to use.
+
+         - integrate == -1
+           the spectrum is integrated over all the scanpoints.
+         - integrate >= 0
+           the individual spectra are calculated individually.
+           If `eventmode is not None`, or `event_filter is not None` then
+           integrate specifies which scanpoint to examine.
+
+    eventmode : None or array_like
+        If eventmode is `None` then the integrated detector image is used.
+        If eventmode is an array then the array specifies the integration
+        times (in seconds) for the detector image, e.g. [0, 20, 30] would
+        result in two spectra. The first would contain data for 0 s to 20s,
+        the second would contain data for 20 s to 30 s.  This option can
+        only be used when `integrate >= -1`.
+        If eventmode has zero length (e.g. []), then a single time interval
+        for the entire acquisition is used, [0, acquisition_time].  This
+        would source the image from the eventmode file, rather than the
+        NeXUS file. The two approaches will probably not give
+        identical results, because the eventmode method adjusts the total
+        acquisition time and beam monitor counts to the frame number of the
+        last event detected (which may be quite different if the count rate
+        is very low). This parameter is disregarded if `event_filter` is
+        provided.
+    event_folder : None or str
+        Specifies the path for the eventmode data. If
+        `event_folder is None` then the eventmode data is assumed to reside
+        in the same directory as the NeXUS file. If event_folder is a
+        string, then the string specifies the path to the eventmode data.
+    peak_pos : -1, None, or (float, float)
+        Options for finding specular peak position and peak standard
+        deviation.
+
+        - -1
+           use `manual_beam_find`.
+        - None
+           use the automatic beam finder, falling back to
+           `manual_beam_find` if it's provided.
+        - (float, float)
+           specify the peak and peak standard deviation.
+
+    peak_pos_tol : float
+        Convergence tolerance for the beam position and width to be
+        accepted from successive beam-finder calculations; see the
+        `tol` parameter in the `find_specular_ridge` function.
+    background_mask : array_like
+        An array of bool that specifies which y-pixels to use for
+        background subtraction.  Should be the same length as the number of
+        y pixels in the detector image.  Otherwise an automatic mask is
+        applied (if background is True).
+    normalise_bins : bool
+        Divides the intensity in each wavelength bin by the width of the
+        bin. This allows one to compare spectra even if they were processed
+        with different rebin percentages.
+    manual_beam_find : callable, optional
+        A function which allows the location of the specular ridge to be
+        determined. Has the signature `f(detector, detector_err, name)`
+        where `detector` and `detector_err` is the detector image and its
+        uncertainty, and name is a `str` specifying the name of
+        the dataset.
+        `detector` and `detector_err` have shape (n, t, {x, y}) where `n`
+        is the number of detector images, `t` is the number of
+        time-of-flight bins and `x` or `y` is the number of x or y pixels.
+        The function should return a tuple,
+        `(centre, centre_sd, lopx, hipx, background_pixels)`. `centre`,
+        `centre_sd`, `lopx`, `hipx` should be arrays of shape `(n, )`,
+        specifying the beam centre, beam width (standard deviation), lowest
+        pixel of foreground region, highest pixel of foreground region.
+        `background_pixels` is a list of length `n`. Each of the entries
+        should contain arrays of pixel numbers that specify the background
+        region for each of the detector images.
+    event_filter : callable, optional
+        A function, that processes the event stream, returning a `detector`
+        array, and a `frame_count` array. `detector` has shape
+        `(N, T, Y, X)`, where `N` is the number of detector images, `T` is
+        the number of time bins (`len(t_bins)`), etc. `frame_count` has
+        shape `(N,)` and contains the number of frames for each of the
+        detector images. The frame_count is used to determine what fraction
+        of the overall monitor counts should be ascribed to each detector
+        image (by dividing by the total number of frames). The function has
+        signature:
+
+        detector, frame_count = event_filter(loaded_events,
+                                             t_bins=None,
+                                             y_bins=None,
+                                             x_bins=None)
+
+        `loaded_events` is a 4-tuple of numpy arrays:
+        `(f_events, t_events, y_events, x_events)`, where `f_events`
+        contains the frame number for each neutron, landing at position
+        `x_events, y_events` on the detector, with time-of-flight
+        `t_events`.
+    """
+
+    def __init__(
+        self,
+        h5norm=None,
+        lo_wavelength=2.5,
+        hi_wavelength=19.0,
+        background=True,
+        direct=False,
+        omega=None,
+        twotheta=None,
+        rebin_percent=1.0,
+        wavelength_bins=None,
+        normalise=True,
+        integrate=-1,
+        eventmode=None,
+        event_folder=None,
+        peak_pos=None,
+        peak_pos_tol=0.0025,
+        background_mask=None,
+        normalise_bins=True,
+        manual_beam_find=None,
+        event_filter=None,
+    ):
+        super(ReductionOptions, self).__init__()
+        self["h5norm"] = h5norm
+        self["lo_wavelength"] = lo_wavelength
+        self["hi_wavelength"] = hi_wavelength
+        self["background"] = background
+        self["direct"] = direct
+        self["omega"] = omega
+        self["twotheta"] = twotheta
+        self["rebin_percent"] = rebin_percent
+        self["wavelength_bins"] = wavelength_bins
+        self["normalise"] = normalise
+        self["integrate"] = integrate
+        self["eventmode"] = eventmode
+        self["event_folder"] = event_folder
+        self["peak_pos"] = peak_pos
+        self["peak_pos_tol"] = peak_pos_tol
+        self["background_mask"] = background_mask
+        self["normalise_bins"] = normalise_bins
+        self["manual_beam_find"] = manual_beam_find
+        self["event_filter"] = event_filter
+
+
 class ReflectNexus(object):
     def __init__(self):
         self.cat = None
@@ -618,7 +790,6 @@ class ReflectNexus(object):
         val : bool
             Truth that __arguments is the same as self.__arguments
         """
-        _arguments.pop("self", None)
 
         return _dict_compare(_arguments, self._arguments)
 
@@ -814,27 +985,7 @@ class ReflectNexus(object):
         return detector, detector_sd, None
 
     def process(
-        self,
-        h5norm=None,
-        lo_wavelength=2.5,
-        hi_wavelength=19.0,
-        background=True,
-        direct=False,
-        omega=None,
-        twotheta=None,
-        rebin_percent=1.0,
-        wavelength_bins=None,
-        normalise=True,
-        integrate=-1,
-        eventmode=None,
-        event_folder=None,
-        peak_pos=None,
-        peak_pos_tol=0.0025,
-        background_mask=None,
-        normalise_bins=True,
-        manual_beam_find=None,
-        event_filter=None,
-        **kwds,
+        self, **reduction_options,
     ):
         r"""
         Processes the ReflectNexus object to produce a time of flight spectrum.
@@ -998,21 +1149,40 @@ class ReflectNexus(object):
             of wavelength, standard deviation of specular intensity
 
         """
+        options = ReductionOptions()
+        options.update(reduction_options)
+
+        h5norm = options["h5norm"]
+        lo_wavelength = options["lo_wavelength"]
+        hi_wavelength = options["hi_wavelength"]
+        background = options["background"]
+        direct = options["direct"]
+        omega = options["omega"]
+        twotheta = options["twotheta"]
+        rebin_percent = options["rebin_percent"]
+        wavelength_bins = options["wavelength_bins"]
+        normalise = options["normalise"]
+        integrate = options["integrate"]
+        eventmode = options["eventmode"]
+        event_folder = options["event_folder"]
+        peak_pos = options["peak_pos"]
+        peak_pos_tol = options["peak_pos_tol"]
+        background_mask = options["background_mask"]
+        normalise_bins = options["normalise_bins"]
+        manual_beam_find = options["manual_beam_find"]
+        event_filter = options["event_filter"]
 
         # it can be advantageous to save processing time if the arguments
         # haven't changed
-        _arguments = locals().copy()
-        _arguments.pop("_arguments", None)
-        _arguments.pop("self", None)
         # if you've already processed, then you may not need to process again
-        if self.processed_spectrum and self._short_circuit_process(_arguments):
+        if self.processed_spectrum and self._short_circuit_process(options):
             return (
                 self.processed_spectrum["m_lambda"],
                 self.processed_spectrum["m_spec"],
                 self.processed_spectrum["m_spec_sd"],
             )
         else:
-            self._arguments = _arguments
+            self._arguments = options
 
         cat = self.cat
 
