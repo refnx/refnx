@@ -69,8 +69,8 @@ class ReflectReduce(object):
 
         self.prefix = prefix
 
-    def __call__(self, reflect, scale=1.0, save=True, **kwds):
-        return self.reduce(reflect, scale=scale, save=save, **kwds)
+    def __call__(self, reflect, scale=1.0, save=True, **reduction_options):
+        return self.reduce(reflect, scale=scale, save=save, **reduction_options)
 
     def reduce(self, reflect, scale=1.0, save=True, **reduction_options):
         """
