@@ -8,6 +8,7 @@ from refnx.reduce.platypusnexus import (
     accumulate_HDF_files,
     Catalogue,
     SpatzNexus,
+    ReductionOptions,
 )
 from refnx.reduce.batchreduction import BatchReducer
 from refnx.reduce.xray import reduce_xrdml
