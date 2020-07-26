@@ -279,3 +279,5 @@ in 0.1.13.
 - ReductionOptions dict is now used for specifying options for reduction and
   processing of reflectometry data. This will permit different settings to be
   used for datasets measured in different configurations.
+- Add AutoReducer, an object that watches a directory for modified/created
+  files and automatically reduces them.

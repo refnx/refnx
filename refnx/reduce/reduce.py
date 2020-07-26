@@ -2,8 +2,14 @@ import string
 from copy import deepcopy
 import os.path
 from time import gmtime, strftime
+from multiprocessing import Queue
+from threading import Thread
+import time
 
 import numpy as np
+import pandas as pd
+import h5py
+
 from refnx.reduce.platypusnexus import (
     PlatypusNexus,
     ReflectNexus,
@@ -820,6 +826,246 @@ def reduce_stitch(
             combined_dataset.save_xml(f)
 
     return combined_dataset, fname_dat
+
+
+class AutoReducer(object):
+    """
+    Auto-reduces reflectometry data.
+
+    Watches a datafolder for new/modified NeXUS files and reduces them.
+
+    Parameters
+    ----------
+    direct_beams: list of {str, h5data}
+        list of str, or list of h5py file handles pointing to
+        direct beam runs
+
+    scale: float or array-like
+        Scale factors corresponding to each direct beam.
+
+    reduction_options: dict, or list of dict
+        Specifies the reduction options for each of the direct beams.
+        A default set of options is provided by
+        `refnx.reduce.ReductionOptions`.
+
+    data_folder: {str, Path}
+        Path to the data folder containing the data to be reduced.
+
+    Notes
+    -----
+    Requires that the 'watchdog' package be installed. Starts two threads that
+    are responsible for doing the reduction.
+    """
+
+    def __init__(
+        self, direct_beams, scale=1, reduction_options=None, data_folder="."
+    ):
+        from watchdog.observers import Observer
+        from refnx.reduce._auto_reduction import NXEH
+
+        self.data_folder = data_folder
+
+        # deal with reduction options first
+        options = [ReductionOptions()] * len(direct_beams)
+        try:
+            if reduction_options is not None:
+                options = []
+                for i in range(len(direct_beams)):
+                    if isinstance(reduction_options[i], dict):
+                        options.append(reduction_options[i])
+                    else:
+                        options.append(ReductionOptions())
+        except KeyError:
+            # reduction_options may be an individual dict
+            if isinstance(reduction_options, dict):
+                options = [reduction_options] * len(direct_beams)
+
+        # deal with scale factors
+        scale_factors = np.broadcast_to(scale, len(direct_beams))
+        scale_factors = scale_factors.astype(np.float)
+
+        zipped = zip(direct_beams, options, scale_factors)
+
+        # work out what type of instrument you have
+        d0 = direct_beams[0]
+        self.redn_klass = PlatypusReduce
+        self.reflect_klass = PlatypusNexus
+        if (isinstance(d0, str) and d0.startswith("SPZ")) or (
+            isinstance(d0, h5py.File) and d0.filename.startswith("SPZ")
+        ):
+            self.redn_klass = SpatzReduce
+            self.reflect_klass = SpatzNexus
+
+        self.direct_beams = {}
+        for direct_beam, ro, scale_factor in zipped:
+            rn = self.reflect_klass(direct_beam)
+            db = self.redn_klass(rn)
+            fname = os.path.basename(rn.cat.filename)
+            self.direct_beams[fname] = {
+                "reflectnexus": rn,
+                "reducer": db,
+                "collimation": np.r_[rn.cat.ss_coll1, rn.cat.ss_coll2],
+                "reduction_options": ro,
+                "scale": scale_factor,
+            }
+
+        self.redn_cache = {}
+        self._redn_cache_tbl = pd.DataFrame(
+            columns=["fname", "sample_name", "omega"]
+        )
+
+        # start watching the data_folder
+        self.queue = Queue()
+
+        event_handler = NXEH(self.queue)
+        observer = Observer()
+        observer.schedule(event_handler, path=self.data_folder)
+        observer.start()
+
+        self.worker = Thread(target=self)
+        self.worker.setDaemon(True)
+        self.worker.start()
+
+    def __call__(self):
+        while True:
+            if not self.queue.empty():
+                event = self.queue.get()
+                # print(event.src_path)
+                rb = self.reflect_klass(event.src_path)
+                fname = os.path.basename(rb.cat.filename)
+                db = self.match_direct_beam(rb)
+
+                if db is not None:
+                    # the reduction
+                    entry = self.direct_beams[db]
+                    reducer = entry["reducer"]
+                    opts = entry["reduction_options"]
+                    scale = entry["scale"]
+                    datasets, _ = reducer.reduce(rb, scale=scale, **opts)
+
+                    for i, dataset in enumerate(datasets):
+                        dataset.filename = f"{fname.rstrip('.nx.hdf')}_{i}.dat"
+
+                    # save the reduced files in a cache
+                    sample_name = rb.cat.sample_name.tobytes()
+                    sample_name = sample_name.decode("utf-8")[:-1]
+
+                    omega = float(rb.cat.omega[0])
+                    self.redn_cache[fname] = {
+                        "datasets": datasets,
+                        "sample_name": sample_name,
+                        "omega": omega,
+                    }
+                    data = {
+                        "fname": [fname],
+                        "sample_name": [sample_name],
+                        "omega": omega,
+                    }
+
+                    entry = pd.DataFrame(data=data)
+                    self._redn_cache_tbl = self._redn_cache_tbl.append(entry)
+                    print(f"Reduced: {fname}")
+
+                    # now splice matching datasets
+                    ds = self.match_datasets(data)
+                    if len(ds) > 1:
+                        c = self.splice_datasets(ds)
+                        print(
+                            f"Combined into: {c}, {[d.filename for d in ds]}"
+                        )
+            else:
+                time.sleep(10)
+
+    def match_direct_beam(self, rb):
+        """
+        Finds the direct beam associated with a reflection measurement.
+        Matching is done by finding identical collimation conditions.
+
+        Parameters
+        ----------
+        rb: {PlatypusNexus, SpatzNexus}
+            The reflectometry run.
+
+        Returns
+        -------
+        db: str
+            The direct beam file name that matches the reflection measurement
+            This is used to look up an entry in `AutoReducer.direct_beams`.
+        """
+        # the reflected-direct beam match is done via slit sizes
+        # (not infallible)
+        collimation = np.r_[rb.cat.ss_coll1, rb.cat.ss_coll2]
+        for k, v in self.direct_beams.items():
+            if np.allclose(collimation, v["collimation"], atol=0.01,):
+                return k
+        return None
+
+    def match_datasets(self, dct):
+        """
+        Finds all the datasets in `AutoReducer.redn_cache` that share an
+        *identical* `dct["sample_name"]`, but may have been measured at
+        different angles.
+
+        Parameters
+        ----------
+        dct: dict
+            dct.keys() = ["fname", "sample_name", "omega"]
+
+        Returns
+        -------
+        datasets: list of `refnx.dataset.Data1D`
+            Datasets that share the same sample_name as `dct['sample_name']`
+        """
+        tbl = self._redn_cache_tbl
+        # exact match
+        fnames = tbl.fname[
+            tbl.sample_name.str.match(f"^{dct['sample_name']}$")
+        ]
+        datasets = [self.redn_cache[fname]["datasets"][0] for fname in fnames]
+
+        return datasets
+
+    def splice_datasets(self, ds):
+        """
+        Combines datasets together.
+
+        Parameters
+        ----------
+        ds: list of `refnx.dataset.Data1D`
+            The datasets to splice together.
+
+        Returns
+        -------
+        fname: str
+            The name of the combined dataset
+
+        Notes
+        -----
+        The combined dataset is saved as `f"c_{d.filename}.dat"`,
+        where d is the dataset with the lowest average Q value
+        from ds.
+        """
+        appended_ds = ReflectDataset()
+
+        datasets = []
+        average_q = []
+        for d in ds:
+            dataset = ReflectDataset(d)
+            average_q.append(np.mean(dataset.x))
+            datasets.append(dataset)
+
+        idxs = np.argsort(average_q)
+        # sort datasets according to average Q.
+        datasets = [d for _, d in sorted(zip(idxs, datasets))]
+
+        for dataset in datasets:
+            appended_ds += dataset
+
+        fname = datasets[0].filename.rstrip(".dat")
+        fname = fname.split("_")[0]
+        fname = f"c_{fname}.dat"
+        appended_ds.save(fname)
+        return fname
 
 
 if __name__ == "__main__":
