@@ -1,4 +1,9 @@
-from refnx.reduce.reduce import PlatypusReduce, SpatzReduce, reduce_stitch
+from refnx.reduce.reduce import (
+    PlatypusReduce,
+    SpatzReduce,
+    reduce_stitch,
+    AutoReducer,
+)
 from refnx.reduce.platypusnexus import (
     catalogue,
     PlatypusNexus,
