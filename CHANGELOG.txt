@@ -281,3 +281,8 @@ in 0.1.13.
   used for datasets measured in different configurations.
 - Add AutoReducer, an object that watches a directory for modified/created
   files and automatically reduces them.
+
+0.1.17
+------
+- Drop Python 3.6 for new development (as per
+  https://numpy.org/neps/nep-0029-deprecation_policy.html)
