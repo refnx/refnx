@@ -22,7 +22,7 @@ General release instructions
 
 # tag the release and put it onto github
 - git tag -a vX.Y.Z
-- git push vX.Y.Z
+- git push refnx vX.Y.Z
 
 # make the sdist
 - python setup.py sdist
