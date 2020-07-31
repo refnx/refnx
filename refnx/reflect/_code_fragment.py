@@ -11,7 +11,7 @@ from refnx._lib import flatten
 import refnx
 
 
-_imports = """#!/bin/bash
+_imports = """#!/usr/bin/env python
 
 '''
 Script exported by refnx for analysing NR/XRR data.

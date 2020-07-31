@@ -956,18 +956,18 @@ class AutoReducer(object):
                         "sample_name": sample_name,
                         "omega": omega,
                     }
+
                     data = {
                         "fname": [fname],
                         "sample_name": [sample_name],
                         "omega": omega,
                     }
-
                     entry = pd.DataFrame(data=data)
                     self._redn_cache_tbl = self._redn_cache_tbl.append(entry)
                     print(f"Reduced: {fname}")
 
                     # now splice matching datasets
-                    ds = self.match_datasets(data)
+                    ds = self.match_datasets(self.redn_cache[fname])
                     if len(ds) > 1:
                         c = self.splice_datasets(ds)
                         print(
