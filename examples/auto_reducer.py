@@ -26,7 +26,7 @@ if __name__ == "__main__":
     files = args.file_list
     pth = args.path
     files = [os.path.join(pth, file) for file in files]
-
+    print(f"Path: {pth}")
     print(f"Reducing against: {files}, with scale: {args.scale}")
     ar = AutoReducer(files, data_folder=pth, scale=args.scale)
 
