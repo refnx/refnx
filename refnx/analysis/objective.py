@@ -1282,7 +1282,7 @@ def pymc3_model(objective):
             pm.Normal(
                 "y_obs",
                 mu=objective.generative,
-                sd=objective.data.y_err,
+                sigma=objective.data.y_err,
                 observed=objective.data.y,
             )
         except Exception:
