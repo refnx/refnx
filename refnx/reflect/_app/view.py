@@ -155,15 +155,16 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         sld = model.structure.sld_profile()
 
         graph_properties = theoretical.graph_properties
-        graph_properties["ax_fit"] = self.reflectivitygraphs.axes[0].plot(
+        line = self.reflectivitygraphs.axes[0].plot(
             dataset.x,
             fit,
             color="r",
             linestyle="-",
             lw=1,
             label="theoretical",
-            picker=5,
         )[0]
+        line.set_pickradius(5.0)
+        graph_properties["ax_fit"] = line
 
         graph_properties["ax_sld_profile"] = self.sldgraphs.axes[0].plot(
             sld[0], sld[1], linestyle="-", color="r"
@@ -2246,8 +2247,8 @@ class MyReflectivityGraphs(FigureCanvas):
                     linestyle="",
                     markeredgecolor=None,
                     label=dataset.name,
-                    picker=5,
                 )
+                line_instance[0].set_pickradius(5)
                 mfc = artist.getp(line_instance[0], "markerfacecolor")
                 artist.setp(line_instance[0], **{"markeredgecolor": mfc})
 
@@ -2267,15 +2268,17 @@ class MyReflectivityGraphs(FigureCanvas):
                 if graph_properties.ax_data is not None:
                     color = artist.getp(graph_properties.ax_data, "color")
                 # add the fit
-                graph_properties["ax_fit"] = self.axes[0].plot(
+                line = self.axes[0].plot(
                     dataset.x,
                     yfit_t,
                     linestyle="-",
                     color=color,
                     lw=1,
                     label="fit_" + data_object.name,
-                    picker=5,
                 )[0]
+                line.set_pickradius(5.0)
+                graph_properties["ax_fit"] = line
+
                 if graph_properties["fit_properties"]:
                     artist.setp(
                         graph_properties.ax_fit,
