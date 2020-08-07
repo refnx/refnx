@@ -149,7 +149,12 @@ class Catalogue(object):
         file_path = os.path.realpath(h5d.filename)
         d["path"] = os.path.dirname(file_path)
         d["filename"] = h5d.filename
-        d["end_time"] = h5d["entry1/end_time"][0]
+        try:
+            d["end_time"] = h5d["entry1/end_time"][0]
+        except KeyError:
+            # Autoreduce field tests show that this key may not be present in
+            # some files before final write.
+            d["end_time"] = ""
 
         d["detector"] = h5d["entry1/data/hmm"][:]
         d["t_bins"] = h5d["entry1/data/time_of_flight"][:].astype("float64")
