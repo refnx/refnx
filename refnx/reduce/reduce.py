@@ -929,6 +929,10 @@ class AutoReducer(object):
     def __call__(self):
         while True:
             if not self.queue.empty():
+                # file might still be being written by SICS? allow a bit of
+                # time for it to complete.
+                time.sleep(1.5)
+
                 event = self.queue.get()
                 # print(event.src_path)
                 rb = self.reflect_klass(event.src_path)
@@ -974,7 +978,7 @@ class AutoReducer(object):
                             f"Combined into: {c}, {[d.filename for d in ds]}"
                         )
             else:
-                time.sleep(10)
+                time.sleep(5.0)
 
     def match_direct_beam(self, rb):
         """
