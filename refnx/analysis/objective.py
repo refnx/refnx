@@ -1352,9 +1352,9 @@ def _to_pymc3_distribution(name, par):
         # norm from scipy.stats
         if isinstance(dist_gen, type(stats.norm)):
             if hasattr(dist.rv, "args"):
-                p = pm.Normal(name, mu=dist.rv.args[0], sd=dist.rv.args[1])
+                p = pm.Normal(name, mu=dist.rv.args[0], sigma=dist.rv.args[1])
             else:
-                p = pm.Normal(name, mu=0, sd=1)
+                p = pm.Normal(name, mu=0, sigma=1)
             return p
 
     # not open, uniform, or normal, so fall back to DensityDist.
