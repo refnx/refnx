@@ -941,7 +941,15 @@ class AutoReducer(object):
                     reducer = entry["reducer"]
                     opts = entry["reduction_options"]
                     scale = entry["scale"]
-                    datasets, _ = reducer.reduce(rb, scale=scale, **opts)
+                    try:
+                        datasets, _ = reducer.reduce(rb, scale=scale, **opts)
+                    except Exception as e:
+                        # don't want to stop reducing if there is an error
+                        # somewhere
+                        print(e)
+                        continue
+
+                    print(f"Reduced: {fname}")
 
                     for i, dataset in enumerate(datasets):
                         dataset.filename = f"{fname.rstrip('.nx.hdf')}_{i}.dat"
@@ -962,14 +970,22 @@ class AutoReducer(object):
                         "sample_name": [sample_name],
                         "omega": omega,
                     }
-                    entry = pd.DataFrame(data=data)
-                    self._redn_cache_tbl = self._redn_cache_tbl.append(entry)
-                    print(f"Reduced: {fname}")
+                    if not self._redn_cache_tbl.fname.str.match(fname).any():
+                        # see if the entry is already in the _redn_cache_tbl
+                        # if it is, then you don't want to add it again
+                        entry = pd.DataFrame(data=data)
+                        self._redn_cache_tbl = self._redn_cache_tbl.append(
+                            entry
+                        )
 
                     # now splice matching datasets
                     ds = self.match_datasets(self.redn_cache[fname])
                     if len(ds) > 1:
-                        c = self.splice_datasets(ds)
+                        try:
+                            c = self.splice_datasets(ds)
+                        except Exception as e:
+                            print(e)
+                            continue
                         print(
                             f"Combined into: {c}, {[d.filename for d in ds]}"
                         )
