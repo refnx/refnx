@@ -1016,7 +1016,7 @@ class AutoReducer(object):
         # (not infallible)
         collimation = np.r_[rb.cat.ss_coll1, rb.cat.ss_coll2]
         for k, v in self.direct_beams.items():
-            if np.allclose(collimation, v["collimation"], atol=0.01,):
+            if np.allclose(collimation, v["collimation"], atol=0.01):
                 return k
         return None
 

@@ -259,7 +259,7 @@ class ReductionState(object):
 
 class ReductionTableModel(QtCore.QAbstractTableModel):
     """
-        a model for displaying in a QtGui.QTableView
+    a model for displaying in a QtGui.QTableView
     """
 
     def __init__(self, reduction_state, parent=None):

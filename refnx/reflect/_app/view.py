@@ -894,7 +894,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
     @QtCore.pyqtSlot()
     def on_actionRefresh_Data_triggered(self):
         """
-            you are refreshing existing datasets
+        you are refreshing existing datasets
         """
         try:
             self.treeModel.refresh()

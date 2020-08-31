@@ -20,7 +20,7 @@ class SLDcalculatorView(QtWidgets.QDialog):
 
     def calculate(self):
         try:
-            formula = pt.formula(self.ui.chemical_formula.text(),)
+            formula = pt.formula(self.ui.chemical_formula.text())
 
         except (pyparsing.ParseException, TypeError, ValueError, KeyError):
             # a problem was experience during parsing of the formula.

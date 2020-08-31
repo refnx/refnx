@@ -989,9 +989,7 @@ class ReflectNexus(object):
         # default implementation is no gravity correction
         return detector, detector_sd, None
 
-    def process(
-        self, **reduction_options,
-    ):
+    def process(self, **reduction_options):
         r"""
         Processes the ReflectNexus object to produce a time of flight spectrum.
         The processed spectrum is stored in the `processed_spectrum` attribute.

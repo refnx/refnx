@@ -779,7 +779,7 @@ class TestReflect(object):
         p = SLD(0.0)
         q = SLD(2.07)
         s = p(0, 0) | q(0, 3)
-        model = ReflectModel(s, scale=0.99, bkg=1e-8,)
+        model = ReflectModel(s, scale=0.99, bkg=1e-8)
         r = eval(repr(model))
 
         x = np.linspace(0.005, 0.3, 1000)

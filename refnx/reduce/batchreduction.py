@@ -23,7 +23,7 @@ from refnx.reduce import reduce_stitch, ReductionOptions
 
 
 ReductionEntryTuple = collections.namedtuple(
-    "ReductionEntry", ["row", "ds", "name", "fname", "entry",]
+    "ReductionEntry", ["row", "ds", "name", "fname", "entry"]
 )
 
 
@@ -131,7 +131,7 @@ class ReductionCache(list):
         return data
 
     def delete_rows(self, row_numbers):
-        """ Delete a row from the reduction cache
+        """Delete a row from the reduction cache
 
         Parameters
         ----------
@@ -153,7 +153,7 @@ class ReductionCache(list):
             self.write_cache()
 
     def run(self, run_number):
-        """ select a single data set by run number
+        """select a single data set by run number
 
         Parameters
         ----------
@@ -163,7 +163,7 @@ class ReductionCache(list):
         return self[self.run_cache[run_number]]
 
     def runs(self, run_numbers):
-        """ select several data sets by run number
+        """select several data sets by run number
 
         Parameters
         ----------
@@ -173,7 +173,7 @@ class ReductionCache(list):
         return [self[self.run_cache[r]] for r in run_numbers]
 
     def row(self, row_number):
-        """ select a single data set by spreadsheet row number
+        """select a single data set by spreadsheet row number
 
         Parameters
         ----------
@@ -183,7 +183,7 @@ class ReductionCache(list):
         return self[self.row_cache[row_number]]
 
     def rows(self, row_numbers):
-        """ select several data sets by spreadsheet row number
+        """select several data sets by spreadsheet row number
 
         Parameters
         ----------
@@ -197,7 +197,7 @@ class ReductionCache(list):
         ]
 
     def name(self, name):
-        """ select a single data set by sample name
+        """select a single data set by sample name
 
         Parameters
         ----------
@@ -207,7 +207,7 @@ class ReductionCache(list):
         return self[self.name_cache[name]]
 
     def name_startswith(self, name):
-        """ select data sets by start of sample name
+        """select data sets by start of sample name
 
         Parameters
         ----------
@@ -222,7 +222,7 @@ class ReductionCache(list):
         return matches
 
     def name_search(self, search):
-        r""" select data sets by a regular expression on sample name
+        r"""select data sets by a regular expression on sample name
 
         The search pattern is a `regular expression`_ that is matched with
 
@@ -255,7 +255,7 @@ class ReductionCache(list):
         return matches
 
     def summary(self):
-        """ pretty print a list of all data sets
+        """pretty print a list of all data sets
 
         If available, the pandas pretty printer is used with IPython HTML
         display.
@@ -266,8 +266,7 @@ class ReductionCache(list):
             print(self)
 
     def _summary_dataframe(self):
-        """ construct a summary table of the data in the cache
-        """
+        """construct a summary table of the data in the cache"""
         df = pd.DataFrame(columns=self[0].entry.axes)
         for i, entry in enumerate(self):
             if entry is not None:
@@ -275,7 +274,7 @@ class ReductionCache(list):
         return df
 
     def write_cache(self, filename=None):
-        """ write a persistent cache of reduced data to disk
+        """write a persistent cache of reduced data to disk
 
         Parameters
         ----------
@@ -287,7 +286,7 @@ class ReductionCache(list):
             pickle.dump(self, fh)
 
     def drop_cache(self, filename=None):
-        """ delete the persistent cache of reduced data from disk
+        """delete the persistent cache of reduced data from disk
 
         Parameters
         ----------
@@ -298,7 +297,7 @@ class ReductionCache(list):
         os.remove(self._cache_filename(filename))
 
     def load_cache(self, filename=None):
-        """ load a persistent cache of reduced data from disk
+        """load a persistent cache of reduced data from disk
 
         Parameters
         ----------
@@ -407,7 +406,7 @@ class BatchReducer:
         self.verbose = verbose
 
     def _reduce_row(self, entry):
-        """ Process a single row using reduce_stitch
+        """Process a single row using reduce_stitch
 
         Parameters
         ----------
@@ -545,8 +544,7 @@ class BatchReducer:
         return self.cache
 
     def __call__(self):
-        """ run the reducer as the default action for the BatchReducer
-        """
+        """run the reducer as the default action for the BatchReducer"""
         return self.reduce()
 
 

@@ -62,12 +62,16 @@ class TestReduce(object):
 
             # try reduction with the reduce method
             a.reduce(
-                "PLP0000708.nx.hdf", data_folder=self.pth, rebin_percent=4,
+                "PLP0000708.nx.hdf",
+                data_folder=self.pth,
+                rebin_percent=4,
             )
 
             # try reduction with the __call__ method
             a(
-                "PLP0000708.nx.hdf", data_folder=self.pth, rebin_percent=4,
+                "PLP0000708.nx.hdf",
+                data_folder=self.pth,
+                rebin_percent=4,
             )
 
             # this should also have saved a couple of files in the current

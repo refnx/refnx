@@ -972,7 +972,10 @@ class TreeModel(QtCore.QAbstractItemModel):
 
             if isinstance(
                 src_structure_node, StructureNode
-            ) and dragged_node.row() in [0, len(src_structure) - 1,]:
+            ) and dragged_node.row() in [
+                0,
+                len(src_structure) - 1,
+            ]:
                 continue
 
             # if (isinstance(dragged_node, SplineNode) and

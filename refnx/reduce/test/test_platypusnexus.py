@@ -370,7 +370,14 @@ class TestSpatzNexus(object):
         assert_allclose(toff, 5.5555555555555)
 
         toff = self.f342.time_offset(
-            -25.90, 26, 25, 0.0, None, None, None, t_offset=1438.8888888888888,
+            -25.90,
+            26,
+            25,
+            0.0,
+            None,
+            None,
+            None,
+            t_offset=1438.8888888888888,
         )
         assert_allclose(toff, 0, atol=1e-12)
 

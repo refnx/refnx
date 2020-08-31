@@ -113,7 +113,7 @@ class PTSampler(object):
             rstate0 = np.random.RandomState().get_state()
 
         if self._ptchain is None:
-            self._ptchain = self.sampler.chain(init_x,)
+            self._ptchain = self.sampler.chain(init_x)
         else:
             self._ptchain.ensemble.x = init_x
 
