@@ -18,6 +18,7 @@ dependencies:
     - h5py
     - nbconvert
     - ipywidgets
+    - setuptools
     - cython
     - jupyter
     - matplotlib
