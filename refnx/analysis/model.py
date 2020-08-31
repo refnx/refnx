@@ -54,7 +54,7 @@ class Model(object):
         return (
             "Model({_parameters!r}, fitfunc={_fitfunc!r},"
             " fcn_args={fcn_args!r},"
-            " fcn_kwds={fcn_kwds!r})".format(**self.__dict_)
+            " fcn_kwds={fcn_kwds!r})".format(**self.__dict__)
         )
 
     def __call__(self, x, p=None, x_err=None):
