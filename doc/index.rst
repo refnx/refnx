@@ -46,6 +46,7 @@ contributions are welcomed.
     gui.rst
     reflectometry_global.ipynb
     inequality_constraints.ipynb
+    model_selection.ipynb
     lipid.ipynb
     faq
     testimonials
