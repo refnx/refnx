@@ -18,7 +18,9 @@ __email__ = "foreman.mackey@gmail.com"
 __license__ = "MIT"
 __description__ = "The Python ensemble sampling toolkit for MCMC"
 
-__version__ = 'dev'
+
+__version__ = "91bf7c2"
+
 # from .emcee_version import __version__  # isort:skip
 
 from . import autocorr, backends, moves
@@ -32,5 +34,5 @@ __all__ = [
     "moves",
     "autocorr",
     "backends",
-     "__version__",
+    "__version__",
 ]
