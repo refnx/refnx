@@ -1,6 +1,6 @@
 setuptools==46.2.0
 nbsphinx
-jupyter-sphinx
+jupyter-sphinx==0.2.4
 sphinx_rtd_theme
 tqdm
 corner
