@@ -1,3 +1,4 @@
+setuptools==46.2.0
 nbsphinx
 jupyter-sphinx
 sphinx_rtd_theme
