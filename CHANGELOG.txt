@@ -286,3 +286,8 @@ in 0.1.13.
 ------
 - Drop Python 3.6 for new development (as per
   https://numpy.org/neps/nep-0029-deprecation_policy.html)
+- Pin setuptools version on RTD to allow the docs to build.
+- Add a tutorial to the docs on model selection.
+- Update emcee vendored code.
+- Fix repr of Model
+- Fix several warnings during test run.
