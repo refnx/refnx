@@ -19,4 +19,3 @@ jupyter
 matplotlib
 pytest
 xlrd
-setuptools
