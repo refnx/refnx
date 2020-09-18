@@ -41,6 +41,22 @@ class TestPlatypusNexus(object):
             warnings.simplefilter("ignore", RuntimeWarning)
             self.f113 = PlatypusNexus(pjoin(self.pth, "PLP0011613.nx.hdf"))
             self.f641 = PlatypusNexus(pjoin(self.pth, "PLP0011641.nx.hdf"))
+
+            # These PNR datasets all have different flipper settings
+            # which should be read accurately.
+            self.f8861 = PlatypusNexus(
+                pjoin(self.pth, "PNR_files/PLP0008861.nx.hdf")
+            )
+            self.f8862 = PlatypusNexus(
+                pjoin(self.pth, "PNR_files/PLP0008862.nx.hdf")
+            )
+            self.f8863 = PlatypusNexus(
+                pjoin(self.pth, "PNR_files/PLP0008863.nx.hdf")
+            )
+            self.f8864 = PlatypusNexus(
+                pjoin(self.pth, "PNR_files/PLP0008864.nx.hdf")
+            )
+
         self.cwd = os.getcwd()
 
         self.tmpdir = tmpdir.strpath
@@ -327,6 +343,40 @@ class TestPlatypusNexus(object):
             norm, norm_sd = create_detector_norm(f, -3.5, 3.5, axis=3)
             assert_almost_equal(norm, test_norm, 6)
             assert_almost_equal(norm_sd, test_norm_sd, 6)
+
+    def test_PNR_metadata(self):
+        self.f8861.process()
+        self.f8862.process()
+        self.f8863.process()
+        self.f8864.process()
+
+        # Check that we can read all of the flipper statuses in files
+        # TODO: In datafiles, the flip_on parameter
+        # is always on regardless of whether the flipper is used.
+        # This would be nice to use intead of checking the
+        # current supplied to the flipper
+
+        # Flipper 1 on, flipper 2 on
+        assert_almost_equal(self.f8861.cat.cat["pol_flip_current"], 5.0)
+        assert_almost_equal(self.f8861.cat.cat["anal_flip_current"], 4.5)
+
+        # Flipper 1 on, flipper 2 off
+        assert_almost_equal(self.f8862.cat.cat["anal_flip_current"], 0)
+        assert_almost_equal(self.f8862.cat.cat["pol_flip_current"], 5.0)
+
+        # Flipper 1 off, flipper 2 on
+        assert_almost_equal(self.f8863.cat.cat["anal_flip_current"], 4.5)
+        assert_almost_equal(self.f8863.cat.cat["pol_flip_current"], 0)
+
+        # Flipper 1 off, flipper 2 off
+        assert_almost_equal(self.f8864.cat.cat["anal_flip_current"], 0)
+        assert_almost_equal(self.f8864.cat.cat["pol_flip_current"], 0)
+
+    def test_PNR_magnet_read(self):
+        self.f8861.process()
+        # Check magnetic field sensors
+        assert_almost_equal(self.f8861.cat.cat["magnet_current_set"], 0)
+        assert_almost_equal(self.f8861.cat.cat["magnet_output_current"], 0.001)
 
 
 class TestSpatzNexus(object):
