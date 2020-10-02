@@ -214,6 +214,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         try:
             loaded_names = self.load_data(urls_as_files)
         except Exception as e:
+            print(e)
             loaded_names = []
 
         # then try and load the remainder as models
