@@ -2255,12 +2255,13 @@ class MyReflectivityGraphs(FigureCanvas):
                 artist.setp(line_instance, **{"markeredgecolor": mfc})
 
                 graph_properties["ax_data"] = error_bar_container
-                if graph_properties["data_properties"]:
-                    for li in error_bar_container:
-                        artist.setp(
-                            li,
-                            **graph_properties["data_properties"]
-                        )
+                data_properties = graph_properties["data_properties"].copy()
+                if data_properties:
+                    artist.setp(error_bar_container[0], **data_properties)
+                    artist.setp(
+                        error_bar_container[-1],
+                        color=data_properties["color"]
+                    )
 
             yfit_t = data_object.generative
             if graph_properties.ax_fit is None and yfit_t is not None:
