@@ -77,7 +77,9 @@ class GraphProperties(dict):
         if self.ax_data is not None:
             for key in _requiredgraphproperties:
                 # ax_data is an ErrorbarContainer
-                self["data_properties"][key] = artist.getp(self.ax_data[0], key)
+                self["data_properties"][key] = artist.getp(
+                    self.ax_data[0], key
+                )
 
         if self.ax_fit is not None:
             for key in _requiredgraphproperties:
