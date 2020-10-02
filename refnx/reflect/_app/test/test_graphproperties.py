@@ -8,8 +8,8 @@ def test_graphproperties():
     gp = GraphProperties()
     fig = Figure()
     axes = fig.add_axes([0.06, 0.15, 0.9, 0.8])
-    line = axes.plot([0, 1, 2.0], [0, 1, 2.0])
-    gp.ax_data = line[0]
+    ebc = axes.errorbar([0, 1, 2.0], [0, 1, 2.0], [0, 1, 2.0])
+    gp.ax_data = ebc
     gp.save_graph_properties()
 
     pkl = pickle.dumps(gp)
