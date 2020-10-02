@@ -2260,8 +2260,7 @@ class MyReflectivityGraphs(FigureCanvas):
                 if data_properties:
                     artist.setp(error_bar_container[0], **data_properties)
                     artist.setp(
-                        error_bar_container[-1],
-                        color=data_properties["color"]
+                        error_bar_container[-1], color=data_properties["color"]
                     )
 
             yfit_t = data_object.generative
@@ -2681,10 +2680,14 @@ def errorbar_set_data(errobj, x, y, yerr=None, xerr=None):
         erry_bot.set_ydata(yerr_bot)
 
     if bars:
-        new_segments_y = [np.array([[x, yt], [x, yb]]) for
-                          x, yt, yb in zip(x_base, yerr_top, yerr_bot)]
-        new_segments_x = [np.array([[xt, y], [xb, y]]) for
-                          xt, xb, y in zip(xerr_top, xerr_bot, y_base)]
+        new_segments_y = [
+            np.array([[x, yt], [x, yb]])
+            for x, yt, yb in zip(x_base, yerr_top, yerr_bot)
+        ]
+        new_segments_x = [
+            np.array([[xt, y], [xb, y]])
+            for xt, xb, y in zip(xerr_top, xerr_bot, y_base)
+        ]
 
         bars[-1].set_segments(new_segments_y)
         if len(bars) > 1:
