@@ -9,7 +9,7 @@ set -e -x
 cd /io
 
 # Compile wheels
-for PYBIN in /opt/python/cp3[7-8]-cp*/bin; do
+for PYBIN in /opt/python/cp3[7-9]-cp*/bin; do
   "${PYBIN}/pip" install numpy cython
   "${PYBIN}/pip" wheel --no-deps -w wheelhouse/ .
 done
