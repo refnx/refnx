@@ -213,7 +213,8 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         # then try and load urls as data files
         try:
             loaded_names = self.load_data(urls_as_files)
-        except Exception:
+        except Exception as e:
+            print(e)
             loaded_names = []
 
         # then try and load the remainder as models
@@ -2239,24 +2240,27 @@ class MyReflectivityGraphs(FigureCanvas):
                     yt, edata = transform(dataset.x, dataset.y, dataset.y_err)
 
                 # add the dataset
-                line_instance = self.axes[0].plot(
+                error_bar_container = self.axes[0].errorbar(
                     dataset.x,
                     yt,
+                    yerr=edata,
                     markersize=3,
                     marker="o",
                     linestyle="",
                     markeredgecolor=None,
                     label=dataset.name,
                 )
-                line_instance[0].set_pickradius(5)
-                mfc = artist.getp(line_instance[0], "markerfacecolor")
-                artist.setp(line_instance[0], **{"markeredgecolor": mfc})
+                line_instance = error_bar_container[0]
+                line_instance.set_pickradius(5)
+                mfc = artist.getp(line_instance, "markerfacecolor")
+                artist.setp(line_instance, **{"markeredgecolor": mfc})
 
-                graph_properties["ax_data"] = line_instance[0]
-                if graph_properties["data_properties"]:
+                graph_properties["ax_data"] = error_bar_container
+                data_properties = graph_properties["data_properties"].copy()
+                if data_properties:
+                    artist.setp(error_bar_container[0], **data_properties)
                     artist.setp(
-                        graph_properties.ax_data,
-                        **graph_properties["data_properties"]
+                        error_bar_container[-1], color=data_properties["color"]
                     )
 
             yfit_t = data_object.generative
@@ -2266,7 +2270,7 @@ class MyReflectivityGraphs(FigureCanvas):
 
                 color = "b"
                 if graph_properties.ax_data is not None:
-                    color = artist.getp(graph_properties.ax_data, "color")
+                    color = artist.getp(graph_properties.ax_data[0], "color")
                 # add the fit
                 line = self.axes[0].plot(
                     dataset.x,
@@ -2313,8 +2317,9 @@ class MyReflectivityGraphs(FigureCanvas):
 
             if data_object.name != "theoretical":
                 y = dataset.y
+                e = dataset.y_err
                 if transform is not None:
-                    y, _ = transform(dataset.x, y)
+                    y, e = transform(dataset.x, y, e)
 
             if data_object.model is not None:
                 yfit = data_object.generative
@@ -2326,8 +2331,11 @@ class MyReflectivityGraphs(FigureCanvas):
             visible = graph_properties.visible
 
             if graph_properties.ax_data is not None:
-                graph_properties.ax_data.set_data(dataset.x, y)
-                graph_properties.ax_data.set_visible(visible)
+                # ax_data is an ErrorbarContainer, so set everything
+                ebc = graph_properties.ax_data
+                errorbar_set_data(ebc, dataset.x, y, e)
+                for line in flatten(ebc.lines):
+                    line.set_visible(visible)
             if graph_properties.ax_fit is not None:
                 graph_properties.ax_fit.set_data(dataset.x, yfit)
                 graph_properties.ax_fit.set_visible(visible)
@@ -2418,8 +2426,9 @@ class MySLDGraphs(FigureCanvas):
                 color = "r"
                 lw = 2
                 if graph_properties.ax_data:
-                    color = artist.getp(graph_properties.ax_data, "color")
-                    lw = artist.getp(graph_properties.ax_data, "lw")
+                    # ax_data is an ErrorbarContainer
+                    color = artist.getp(graph_properties.ax_data[0], "color")
+                    lw = artist.getp(graph_properties.ax_data[0], "lw")
 
                 try:
                     graph_properties["ax_sld_profile"] = self.axes[0].plot(
@@ -2625,3 +2634,61 @@ class CurrentlyFitting(QtCore.QAbstractListModel):
             return True
 
         return False
+
+
+def errorbar_set_data(errobj, x, y, yerr=None, xerr=None):
+    """
+    set_data for an errorbar plot
+
+    Parameters
+    ----------
+    errobj : ErrorbarContainer
+    x : array-like
+    y : array-like
+    yerr : array-like
+    xerr : array-like
+    """
+    ln, caps, bars = errobj
+
+    x_base = x
+    y_base = y
+
+    ln.set_data(x, y)
+
+    if xerr is None:
+        xerr = np.zeros_like(x)
+
+    if yerr is None:
+        yerr = np.zeros_like(y)
+
+    xerr_top = x_base + xerr
+    xerr_bot = x_base - xerr
+    yerr_top = y_base + yerr
+    yerr_bot = y_base - yerr
+
+    if caps:
+        errx_top, errx_bot, erry_top, erry_bot = caps
+
+        errx_top.set_xdata(xerr_top)
+        errx_bot.set_xdata(xerr_bot)
+        errx_top.set_ydata(y_base)
+        errx_bot.set_ydata(y_base)
+
+        erry_top.set_xdata(x_base)
+        erry_bot.set_xdata(x_base)
+        erry_top.set_ydata(yerr_top)
+        erry_bot.set_ydata(yerr_bot)
+
+    if bars:
+        new_segments_y = [
+            np.array([[x, yt], [x, yb]])
+            for x, yt, yb in zip(x_base, yerr_top, yerr_bot)
+        ]
+        new_segments_x = [
+            np.array([[xt, y], [xb, y]])
+            for xt, xb, y in zip(xerr_top, xerr_bot, y_base)
+        ]
+
+        bars[-1].set_segments(new_segments_y)
+        if len(bars) > 1:
+            bars[0].set_segments(new_segments_x)
