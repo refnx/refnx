@@ -166,6 +166,7 @@ class ReflectReduce(object):
         direct_keywords["integrate"] = -1
         if (
             "peak_pos" in direct_keywords
+            and hasattr(direct_keywords["peak_pos"], "len")
             and len(direct_keywords["peak_pos"]) == 2
         ):
             # don't use a user specified peak_pos for direct and reflected
