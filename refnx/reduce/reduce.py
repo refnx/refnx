@@ -164,6 +164,15 @@ class ReflectReduce(object):
         # get the direct beam spectrum
         direct_keywords["direct"] = True
         direct_keywords["integrate"] = -1
+        if (
+            "peak_pos" in direct_keywords
+            and len(direct_keywords["peak_pos"]) == 2
+        ):
+            # don't use a user specified peak_pos for direct and reflected
+            # beams, only for the reflected beam. Leave the computer to find
+            # the direct beam pos. Alternatively one can use the manual beam
+            # finder
+            direct_keywords.pop("peak_pos")
 
         if "eventmode" in direct_keywords:
             direct_keywords.pop("eventmode")
