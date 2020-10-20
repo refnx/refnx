@@ -383,6 +383,9 @@ class PlatypusCatalogue(Catalogue):
         d["sth"] = h5d["entry1/sample/sth"][:]
         d["mode"] = h5d["entry1/instrument/parameters/mode"][0].decode()
 
+#        if d["mode"] in ["POL", "POLANAL"]:
+#            self.cat = PolarisedCatalogue(h5d)
+
         master, slave, frequency, phase = self._chopper_values(h5d)
         d["master"] = master
         d["slave"] = slave
@@ -500,36 +503,31 @@ class PlatypusCatalogue(Catalogue):
 
 class PolarisedCatalogue(PlatypusCatalogue):
     """
-    Extract relevant parts of a polarised PLATYPUS NeXus file
-    for reflectometry reduction
+    Extract relevant parts of a polarised PLATYPUS
+    NeXus file for reflectometry reduction.
+    Access information via dict access, e.g. cat['pol_flip_freq'].
+
+    Parameters
+    ----------
+    h5d - HDF5 file handle
     """
 
     def __init__(self, h5d):
-        """
-        Extract relevant parts of a polarised PLATYPUS NeXus file
-        for reflectometry reduction
-        Access information via dict access, e.g. cat['pol_flip_freq'].
 
-        Parameters
-        ----------
-        h5d - HDF5 file handle
-        """
         super(PolarisedCatalogue, self).__init__(h5d)
         # Is there a magnet?
-        self.ismagnet = False
+        self.is_magnet = False
         # Is there a cryocooler?
-        self.iscryo = False
+        self.is_cryo = False
         # Is there a power supply?
-        self.isPS = False
+        self.is_power_supply = False
 
         d = self.cat
-
-        d = self._polarised_flippers(d, h5d)
+        d = self._polariser_flippers(d, h5d)
         d = self._analyser_flippers(d, h5d)
-        d = self._analyser_params(d, h5d)
         d = self._check_sample_environments(d, h5d)
 
-    def _polarised_flippers(self, d, h5d):
+    def _polariser_flippers(self, d, h5d):
         d["pol_flip_freq"] = h5d[
             "entry1/instrument/polarizer_flipper/flip_frequency"
         ][0]
@@ -565,15 +563,6 @@ class PolarisedCatalogue(PlatypusCatalogue):
         ][0]
         return d
 
-    def _analyser_params(self, d, h5d):
-        d["analyzer_base"] = h5d["entry1/instrument/polarizer/anal_base"][0]
-        d["analyser_dist"] = h5d["entry1/instrument/polarizer/anal_distance"][
-            0
-        ]
-        d["rotation"] = h5d["entry1/instrument/polarizer/rotation"][0]
-        d["z_trans"] = h5d["entry1/instrument/polarizer/z_translation"][0]
-        return d
-
     def _check_sample_environments(self, d, h5d):
         try:
             # Try adding temperature sensor values to dict
@@ -583,7 +572,7 @@ class PolarisedCatalogue(PlatypusCatalogue):
             d["temp_sensorD"] = h5d["entry1/sample/tc1/sensor/sensorValueD"][0]
             d["temp_setpt1"] = h5d["entry1/sample/tc1/sensor/setpoint1"][0]
             d["temp_setpt2"] = h5d["entry1/sample/tc1/sensor/setpoint2"][0]
-            self.iscryo = True
+            self.is_cryo = True
         except KeyError:
             # Temperature sensor not used in measurement - set to None
             d["temp_sensorA"] = None
@@ -592,7 +581,7 @@ class PolarisedCatalogue(PlatypusCatalogue):
             d["temp_sensorD"] = None
             d["temp_setpt1"] = None
             d["temp_setpt2"] = None
-            self.iscryo = False
+            self.is_cryo = False
 
         try:
             # Try adding voltage supply to dict
@@ -601,13 +590,13 @@ class PolarisedCatalogue(PlatypusCatalogue):
             ]
             d["pow_supply_current"] = h5d["entry1/sample/power_supply/amps"][0]
             d["pow_supply_relay"] = h5d["entry1/sample/power_supply/relay"][0]
-            self.isPS = True
+            self.is_power_supply = True
         except KeyError:
             # Voltage supply not used in measurement
             d["pow_supply_volts"] = None
             d["pow_supply_current"] = None
             d["pow_supply_relay"] = None
-            self.isPS = False
+            self.is_power_supply = False
 
         try:
             # Try adding magnetic field sensor to dict
@@ -623,14 +612,14 @@ class PolarisedCatalogue(PlatypusCatalogue):
             d["magnet_output_current"] = h5d[
                 "entry1/sample/ma1/sensor/nominal_outp_current"
             ][0]
-            self.ismagnet = True
+            self.is_magnet = True
         except KeyError:
             # Magnetic field sensor not used in measurement - set to None
             d["magnet_current_set"] = None
             d["magnet_set_field"] = None
             d["magnet_measured_field"] = None
             d["magnet_output_current"] = None
-            self.ismagnet = False
+            self.is_magnet = False
         return d
 
 
