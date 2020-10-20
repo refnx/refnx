@@ -137,6 +137,9 @@ class UserPDF(object):
 
     def rvs(self, size=1, random_state=None):
         return np.random.random(size)
+    
+    def ppf(self, q):
+        return 1
 
     def invcdf(self, q):
         return 1
