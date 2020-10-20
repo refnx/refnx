@@ -383,9 +383,6 @@ class PlatypusCatalogue(Catalogue):
         d["sth"] = h5d["entry1/sample/sth"][:]
         d["mode"] = h5d["entry1/instrument/parameters/mode"][0].decode()
 
-#        if d["mode"] in ["POL", "POLANAL"]:
-#            self.cat = PolarisedCatalogue(h5d)
-
         master, slave, frequency, phase = self._chopper_values(h5d)
         d["master"] = master
         d["slave"] = slave
