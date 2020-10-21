@@ -29,11 +29,12 @@ Here is an incomplete list of published scientific studies that have used/cited 
 * `Gerelli, Yuri (2020)
   <https://www.epj-conferences.org/articles/epjconf/abs/2020/12/epjconf_jdn24_04002/epjconf_jdn24_04002.html>`_
 * `Johnson, et. al. (2020)
-   <https://doi.org/10.1021/acs.langmuir.0c01502>`_
+  <https://doi.org/10.1021/acs.langmuir.0c01502>`_
 * `Andersson, et. al. (2020)
-   <https://doi.org/10.1016/j.ymeth.2020.09.005>`_
+  <https://doi.org/10.1016/j.ymeth.2020.09.005>`_
 * `Carmona-Loaiza (2020)
-   <https://arxiv.org/abs/2010.07634>`_
+  <https://arxiv.org/abs/2010.07634>`_
+
 
 Please `let us know <mailto:andyfaff+refnx@gmail.com>`_ if your work should be included
 in this list or `fork the repository <https://github.com/refnx/refnx>`_ and add
