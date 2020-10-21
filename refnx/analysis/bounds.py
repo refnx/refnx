@@ -59,7 +59,7 @@ class Bounds(object):
         ----------
         size : int or tuple
             Specifies the number, or array shape, of random variates to return.
-        random_state : None, int, float or np.random.RandomState
+        random_state : {None, int, float or :class:`numpy.random.RandomState`}
             For reproducible sampling
 
         Returns

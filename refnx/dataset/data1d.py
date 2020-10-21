@@ -43,20 +43,6 @@ class Data1D(object):
 
     Attributes
     ----------
-    data : tuple of np.ndarray
-        The data, (x, y, y_err, x_err)
-    finite_data : tuple of np.ndarray
-        Data points that are finite
-    x : np.ndarray
-        x data (possibly masked)
-    y : np.ndarray
-        y data (possibly masked)
-    y_err : np.ndarray
-        uncertainties on the y data (possibly masked)
-    x_err : np.ndarray
-        uncertainties on the x data (possibly masked)
-    mask : np.ndarray
-        mask
     filename : str or None
         The file the data was read from
     weighted : bool
@@ -129,7 +115,7 @@ class Data1D(object):
     @property
     def x(self):
         """
-        x
+        np.ndarray : x data (possibly masked)
         """
         if self._x.size > 0:
             return self._x[self.mask]
@@ -139,7 +125,7 @@ class Data1D(object):
     @property
     def y(self):
         """
-        y
+        np.ndarray : y data (possibly masked)
         """
         if self._y.size > 0:
             return self._y[self.mask]
@@ -149,7 +135,7 @@ class Data1D(object):
     @property
     def x_err(self):
         """
-        x_err
+        np.ndarray : x uncertainty (possibly masked)
         """
         if self._x_err is not None:
             return self._x_err[self.mask]
@@ -159,14 +145,14 @@ class Data1D(object):
     @x_err.setter
     def x_err(self, x_err):
         """
-        x_err
+        np.ndarray : y uncertainty (possibly masked)
         """
         self._x_err = x_err
 
     @property
     def y_err(self):
         """
-        y_err
+        uncertainties on the y data (possibly masked)
         """
         if self._y_err is not None:
             return self._y_err[self.mask]
@@ -196,7 +182,7 @@ class Data1D(object):
     @property
     def data(self):
         """
-        4-tuple containing the (x, y, y_err, x_err) data
+        4-tuple containing the (`x`, `y`, `y_err`, `x_err`) data
 
         """
         return self.x, self.y, self.y_err, self.x_err
@@ -212,7 +198,7 @@ class Data1D(object):
     @property
     def finite_data(self):
         """
-        4-tuple containing the (x, y, y_err, x_err) datapoints that are
+        4-tuple containing the (`x`, `y`, `y_err`, `x_err`) datapoints that are
         finite.
 
         """
@@ -504,7 +490,7 @@ class Data1D(object):
 
         Returns
         -------
-        fig, ax : :class:`matplotlib.Figure`, :class:`matplotlib.Axes`
+        fig, ax : :class:`matplotlib.figure.Figure`, :class:`matplotlib.Axes`
             `matplotlib` figure and axes objects.
 
         """
@@ -558,10 +544,10 @@ class Data1D(object):
 
         Returns
         -------
-        dataset : refnx.dataset.Data1D
+        dataset : :class:`Data1D`
             A new synthesised dataset
-        random_state : {int, `np.random.RandomState`, `np.random.Generator`}
-            If `random_state` is not specified the `~np.random.RandomState`
+        random_state : {int, :class:`numpy.random.RandomState`, :class:`numpy.random.Generator`}
+            If `random_state` is not specified the :class:`numpy.random.RandomState`
             singleton is used.
             If `random_state` is an int, a new ``RandomState`` instance is
             used, seeded with random_state.
