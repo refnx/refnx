@@ -111,6 +111,7 @@ jobs:
 
     - name: Install openmp
       run: |
+        brew uninstall openssl@1.0.2t
         brew update
         brew install libomp
 
