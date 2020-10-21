@@ -5,6 +5,8 @@ on:
   - pull_request
 
 jobs:
+  fail-fast: true
+
   test_linux:
 
     runs-on: ubuntu-latest
@@ -249,9 +251,10 @@ jobs:
 
     - name: Build documentation
       run: |
-        python -m pip install .
-        cd doc
         python -m pip install --upgrade pip
+        python -m pip install .
+        python -m pip install wheel
+        cd doc
         python -m pip install -r requirements.txt
         make html
 
