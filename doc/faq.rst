@@ -72,7 +72,7 @@ standalone motofit.app by right-clicking and selecting 'open'.
 
 Can I save models/objectives to file?
 -----------------------------------------
-I'm assuming that you have a `ReflectModel` or `Objective` that you'd like to
+I'm assuming that you have a :class:`refnx.reflect.ReflectModel` or :class:`refnx.analysis.Objective` that you'd like to
 save to file. The easiest way to do this is via serialisation to a Python
 pickle::
 
