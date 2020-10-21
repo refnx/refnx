@@ -242,6 +242,11 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
 
+    - name: setup apt dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install pandoc
+
     - name: Build documentation
       run: |
         python -m pip install .
@@ -265,6 +270,7 @@ jobs:
       uses: actions/setup-python@v2
       with:
         python-version: ${{ matrix.python-version }}
+
     - name: Lint with flake8 and black
       run: |
         python -m pip install flake8 black
