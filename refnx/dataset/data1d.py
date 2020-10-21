@@ -547,8 +547,8 @@ class Data1D(object):
         dataset : :class:`Data1D`
             A new synthesised dataset
         random_state : {int, :class:`numpy.random.RandomState`, :class:`numpy.random.Generator`}
-            If `random_state` is not specified the :class:`numpy.random.RandomState`
-            singleton is used.
+            If `random_state` is not specified the
+            :class:`numpy.random.RandomState` singleton is used.
             If `random_state` is an int, a new ``RandomState`` instance is
             used, seeded with random_state.
             If `random_state` is already a ``RandomState`` or a ``Generator``
