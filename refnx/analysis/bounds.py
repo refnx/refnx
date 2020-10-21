@@ -117,12 +117,12 @@ class PDF(Bounds):
     def __init__(self, rv):
         super(PDF, self).__init__()
         # we'll accept any object so long as it has logpdf and rvs methods
-        if hasattr(rv, "logpdf") and hasattr(rv, "rvs"):
+        if hasattr(rv, "logpdf") and hasattr(rv, "rvs") and hasattr(rv, "ppf"):
             self.rv = rv
         else:
             raise ValueError(
                 "You must initialise PDF with an object that has"
-                " logpdf and rvs methods"
+                " logpdf, rvs, and ppf methods"
             )
 
     def __repr__(self):
