@@ -111,7 +111,6 @@ jobs:
 
     - name: Install openmp
       run: |
-        brew update
         brew install libomp
 
     - name: Install dependencies
