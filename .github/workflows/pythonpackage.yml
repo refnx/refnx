@@ -14,9 +14,9 @@ jobs:
         python-version: [3.7, 3.8]
 
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v2
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v1
+      uses: actions/setup-python@v2
       with:
         python-version: ${{ matrix.python-version }}
 
@@ -73,7 +73,7 @@ jobs:
         PLAT: ["manylinux2010_x86_64", "manylinux2014_x86_64"]
 
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v2
     - name: Make Linux Wheel
       run: |
         docker run --rm -e="PLAT=${{ matrix.PLAT }}" -v $(pwd):/io quay.io/pypa/${{ matrix.PLAT }} /bin/bash /io/tools/build_manylinux_wheels.sh
@@ -101,7 +101,7 @@ jobs:
       DYLD_LIBRARY_PATH: /usr/local/opt/libomp/lib
 
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v2
 
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v1
@@ -175,10 +175,10 @@ jobs:
         python-version: [3.7, 3.8]
 
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v2
 
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v1
+      uses: actions/setup-python@v2
       with:
         python-version: ${{ matrix.python-version }}
     - run: mkdir -p dist
