@@ -1328,10 +1328,10 @@ class Stack(Component, UserList):
 
         - initialise the object with a list of Components
         - utilise list methods (`extend`, `append`, `insert`, etc)
-        - Add by `__ior__` (e.g. stack |= component)
+        - Add by `__ior__`  (e.g. `stack |= component`)
 
     You can't use `__or__` to add Components to a stack (e.g.
-    ``Stack() | component``) OR'ing a Stack with other Components will make a
+    ``Stack() | component``) ORing a Stack with other Components will make a
     Structure.
     """
 

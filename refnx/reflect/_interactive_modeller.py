@@ -784,12 +784,8 @@ class Motofit(object):
         (`model.Structure`).
     objective: :class:`refnx.analysis.Objective`
         The Objective that allows one to compare the model against the data.
-    curvefitter: :class:`refnx.analysis.CurveFitter`
-        Object for fitting the data based on the objective.
-    fig: :class:`matplotlib.Figure`
+    fig: :class:`matplotlib.figure.Figure`
         Graph displaying the data.
-    code: str
-        A Python code fragment capable of fitting the data.
 
     """
 
@@ -1186,6 +1182,10 @@ class Motofit(object):
 
     @property
     def curvefitter(self):
+        """
+        class:`CurveFitter` : Object for fitting the data based on the
+        objective.
+        """
         if self.objective is not None and self._curvefitter is None:
             self._curvefitter = CurveFitter(self.objective)
 
@@ -1255,6 +1255,7 @@ class Motofit(object):
     @property
     def code(self):
         """
+        str : A Python code fragment capable of fitting the data.
         Executable Python code fragment for the GUI model.
         """
         if self.objective is None:

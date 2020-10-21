@@ -692,16 +692,16 @@ class CurveFitter(object):
         method : str
             which method to use for the optimisation. One of:
 
-            - `'least_squares'`: `scipy.optimize.least_squares`.
-            - `'L-BFGS-B'`: L-BFGS-B
+            - `'least_squares'`: :func:`scipy.optimize.least_squares`.
+            - `'L-BFGS-B'`: L-BFGS-B.
             - `'differential_evolution'`:
-                `scipy.optimize.differential_evolution`
+              :func:`scipy.optimize.differential_evolution`
             - `'dual_annealing'`:
-                `scipy.optimize.dual_annealing` (SciPy >= 1.2.0)
-            - `'shgo'`: `scipy.optimize.shgo` (SciPy >= 1.2.0)
+              :func:`scipy.optimize.dual_annealing` (SciPy >= 1.2.0)
+            - `'shgo'`: :func:`scipy.optimize.shgo` (SciPy >= 1.2.0)
 
             You can also choose many of the minimizers from
-            ``scipy.optimize.minimize``.
+            :func:`scipy.optimize.minimize`.
 
         target : {'nll', 'nlpost'}, optional
             Minimize the negative log-likelihood (`'nll'`) or the negative
@@ -726,7 +726,7 @@ class CurveFitter(object):
 
         Returns
         -------
-        result, covar : OptimizeResult, np.ndarray
+        result, covar : :class:`scipy.optimize.OptimizeResult`, np.ndarray
             `result.x` contains the best fit parameters
             `result.covar` is the covariance matrix for the fit.
             `result.stderr` is the uncertainties on each of the fit parameters.

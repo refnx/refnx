@@ -5,6 +5,7 @@ on:
   - pull_request
 
 jobs:
+
   test_linux:
 
     runs-on: ubuntu-latest
@@ -25,16 +26,6 @@ jobs:
         sudo apt-get update
         sudo apt-get install xvfb qt5-default opencl-headers ocl-icd-opencl-dev libpocl2
         python -m pip install --upgrade pip
-
-    - name: Lint with flake8
-      if: ${{ matrix.python-version == '3.8' }}
-      run: |
-        python -m pip install flake8 black
-        # stop the build if there are Python syntax errors or undefined names
-        # the ignores are taken care of by black
-
-        flake8 --ignore=F401,W504,W503,E203,E231 --count --show-source --statistics --exclude=refnx/_lib/emcee,refnx/reflect/_app/resources_rc.py,refnx/_lib/ptemcee refnx
-        black --check --exclude="refnx/_lib/emcee/|refnx/_lib/ptemcee/" refnx -l 79
 
     - name: Install dependencies
       run: |
@@ -234,3 +225,59 @@ jobs:
       with:
         name: refnx-wheel
         path: dist/
+
+
+  build_doc:
+
+    runs-on: ubuntu-latest
+    strategy:
+      max-parallel: 1
+      matrix:
+        python-version: [3.8]
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: setup apt dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install pandoc
+
+    - name: Build documentation
+      run: |
+        python -m pip install --upgrade pip
+        python -m pip install .
+        python -m pip install wheel
+        cd doc
+        python -m pip install -r requirements.txt
+        make html
+
+  lint:
+
+    runs-on: ubuntu-latest
+    strategy:
+      max-parallel: 1
+      matrix:
+        python-version: [3.8]
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Lint with flake8 and black
+      run: |
+        python -m pip install flake8 black
+        # stop the build if there are Python syntax errors or undefined names
+        # the ignores are taken care of by black
+
+        flake8 --ignore=F401,E501,W504,W503,E203,E231 --count --show-source --statistics --exclude=refnx/_lib/emcee,refnx/reflect/_app/resources_rc.py,refnx/_lib/ptemcee refnx
+        black --check --exclude="refnx/_lib/emcee/|refnx/_lib/ptemcee/" refnx -l 79

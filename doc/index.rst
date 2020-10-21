@@ -54,4 +54,3 @@ contributions are welcomed.
 
 * :ref:`genindex`
 * :ref:`modindex`
-* :ref:`search`
