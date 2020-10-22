@@ -785,7 +785,7 @@ class ReductionOptions(dict):
         - (float, float)
            specify the peak and peak standard deviation.
 
-    peak_pos_tol : float
+    peak_pos_tol : None or (float, float)
         Convergence tolerance for the beam position and width to be
         accepted from successive beam-finder calculations; see the
         `tol` parameter in the `find_specular_ridge` function.
@@ -854,7 +854,7 @@ class ReductionOptions(dict):
         eventmode=None,
         event_folder=None,
         peak_pos=None,
-        peak_pos_tol=0.0025,
+        peak_pos_tol=None,
         background_mask=None,
         normalise_bins=True,
         manual_beam_find=None,
@@ -1188,7 +1188,7 @@ class ReflectNexus(object):
             - (float, float)
                specify the peak and peak standard deviation.
 
-        peak_pos_tol : float
+        peak_pos_tol : (float, float) or None
             Convergence tolerance for the beam position and width to be
             accepted from successive beam-finder calculations; see the
             `tol` parameter in the `find_specular_ridge` function.
@@ -1501,6 +1501,13 @@ class ReflectNexus(object):
                 full_backgnd_mask[i, :, v] = True
 
         elif peak_pos is None:
+            # absolute tolerance in beam pixel position for auto peak finding
+            # derived as a fraction of detector pixel size. 0.0142 mm at
+            # dy = 2512 corresponds to 0.0003 degrees.
+            atol = 0.0142 / self.cat.qz_pixel_size[0]
+            if peak_pos_tol is None:
+                peak_pos_tol = (atol, 0.015)
+
             # use the auto finder, falling back to manual_beam_find
             ret = find_specular_ridge(
                 detector,
@@ -2518,7 +2525,7 @@ def find_specular_ridge(
     detector,
     detector_sd,
     search_increment=50,
-    tol=0.002,
+    tol=(0.05, 0.015),
     manual_beam_find=None,
     name=None,
 ):
@@ -2533,8 +2540,12 @@ def find_specular_ridge(
         standard deviations of detector array
     search_increment : int
         specifies the search increment for the location process.
-    tol : float
-        specifies threshold of fractional change for beam centre to be found
+    tol : (float, float) tuple
+        specifies tolerances for finding the specular beam.
+        tol[0] is the absolute change (in pixels) in beam centre location
+        below which peak finding stops.
+        tol[1] is the relative change in beam width below which peak finding
+        stops.
     manual_beam_find : callable, optional
         A function which allows the location of the specular ridge to be
         determined. Has the signature `f(detector, detector_err, name)`
@@ -2576,6 +2587,9 @@ def find_specular_ridge(
     beam_centre = np.zeros(np.size(detector, 0))
     beam_sd = np.zeros_like(beam_centre)
 
+    # unpack the tolerances
+    atol, rtol = tol
+
     # lopx and hipx specify the foreground region to integrate over
     lopx = np.zeros_like(beam_centre, dtype=int)
     hipx = np.zeros_like(beam_centre, dtype=int)
@@ -2612,8 +2626,8 @@ def find_specular_ridge(
                 continue
 
             if (
-                abs((gauss_peak[0] - last_centre) / last_centre) < tol
-                and abs((gauss_peak[1] - last_sd) / last_sd) < tol
+                np.allclose(gauss_peak[0], last_centre, atol=atol)
+                and np.allclose(gauss_peak[1], last_sd, rtol=rtol, atol=0)
             ):
                 last_centre = gauss_peak[0]
                 last_sd = gauss_peak[1]
