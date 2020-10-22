@@ -292,3 +292,4 @@ in 0.1.13.
 - Fix repr of Model
 - Fix several warnings during test run.
 - Add error bar plotting to refnx GUI.
+- Improved the specular ridge finding methodology for data reduction.
