@@ -2630,10 +2630,9 @@ def find_specular_ridge(
             except RuntimeError:
                 continue
 
-            if (
-                np.allclose(gauss_peak[0], last_centre, atol=atol)
-                and np.allclose(gauss_peak[1], last_sd, rtol=rtol, atol=0)
-            ):
+            if np.allclose(
+                gauss_peak[0], last_centre, atol=atol
+            ) and np.allclose(gauss_peak[1], last_sd, rtol=rtol, atol=0):
                 last_centre = gauss_peak[0]
                 last_sd = gauss_peak[1]
                 converged = True
