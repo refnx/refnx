@@ -1504,15 +1504,20 @@ class ReflectNexus(object):
             # absolute tolerance in beam pixel position for auto peak finding
             # derived as a fraction of detector pixel size. 0.0142 mm at
             # dy = 2512 corresponds to 0.0003 degrees.
-            atol = 0.0142 / self.cat.qz_pixel_size[0]
-            if peak_pos_tol is None:
-                peak_pos_tol = (atol, 0.015)
+            try:
+                atol, rtol = peak_pos_tol
+            except (ValueError, TypeError):
+                # TypeError for unpacking None (currently the default option)
+                # ValueError for unpacking a single number (historical
+                # behaviour)
+                atol = 0.0142 / self.cat.qz_pixel_size[0]
+                rtol = 0.015
 
             # use the auto finder, falling back to manual_beam_find
             ret = find_specular_ridge(
                 detector,
                 detector_sd,
-                tol=peak_pos_tol,
+                tol=(atol, rtol),
                 manual_beam_find=manual_beam_find,
                 name=os.path.basename(cat.filename),
             )
