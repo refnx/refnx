@@ -293,3 +293,6 @@ in 0.1.13.
 - Fix several warnings during test run.
 - Add error bar plotting to refnx GUI.
 - Improved the specular ridge finding methodology for data reduction.
+
+0.1.18
+------
