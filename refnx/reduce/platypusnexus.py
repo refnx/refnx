@@ -865,6 +865,7 @@ class ReductionOptions(dict):
         normalise_bins=True,
         manual_beam_find=None,
         event_filter=None,
+        polarised=False,
     ):
         super(ReductionOptions, self).__init__()
         self["h5norm"] = h5norm
@@ -886,6 +887,7 @@ class ReductionOptions(dict):
         self["normalise_bins"] = normalise_bins
         self["manual_beam_find"] = manual_beam_find
         self["event_filter"] = event_filter
+        self["polarised"] = polarised
 
 
 class ReflectNexus(object):
@@ -1302,6 +1304,7 @@ class ReflectNexus(object):
         normalise_bins = options["normalise_bins"]
         manual_beam_find = options["manual_beam_find"]
         event_filter = options["event_filter"]
+        polarised = options["polarised"]
 
         # it can be advantageous to save processing time if the arguments
         # haven't changed
@@ -1736,6 +1739,10 @@ class ReflectNexus(object):
         d["n_spectra"] = n_spectra
         d["bm1_counts"] = bm1_counts
         d["m_spec"] = m_spec
+        # If polarised, add an entry for the polarisation 
+        # efficiency corrected spectra
+        if polarised is True:
+            self.processed_spectrum["m_spec_polcorr"] = np.zeros_like(mspec)
         d["m_spec_sd"] = m_spec_sd
         d["m_beampos"] = beam_centre
         d["m_beampos_sd"] = beam_sd
@@ -1906,7 +1913,7 @@ class PlatypusNexus(ReflectNexus):
         self.prefix = "PLP"
         with _possibly_open_hdf_file(h5data, "r") as f:
             self.cat = PlatypusCatalogue(f)
-            if self.cat.mode == "POLANAL":
+            if (self.cat.mode == "POL" or self.cat.mode == "POLANAL"):
                 self.cat = PolarisedCatalogue(f)
 
     def detector_average_unwanted_direction(self, detector):
