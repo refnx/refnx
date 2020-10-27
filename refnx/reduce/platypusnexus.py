@@ -1736,7 +1736,7 @@ class ReflectNexus(object):
         # If polarised, add an entry for the polarisation 
         # efficiency corrected spectra
         if polarised is True:
-            self.processed_spectrum["m_spec_polcorr"] = np.zeros_like(mspec)
+            d["m_spec_polcorr"] = np.zeros_like(m_spec)
         d["m_spec_sd"] = m_spec_sd
         d["m_beampos"] = beam_centre
         d["m_beampos_sd"] = beam_sd

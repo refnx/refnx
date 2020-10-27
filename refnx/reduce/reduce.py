@@ -158,6 +158,10 @@ class ReflectReduce(object):
         ...                                      rebin_percent=3.)
 
         """
+        # Ensure 'polarised' reduction option is initialized
+        if "polarised" not in reduction_options:
+            reduction_options["polarised"] = False
+
         reflect_keywords = reduction_options.copy()
         direct_keywords = reduction_options.copy()
 
@@ -181,7 +185,13 @@ class ReflectReduce(object):
         if "event_filter" in direct_keywords:
             direct_keywords.pop("event_filter")
 
-        self.direct_beam.process(**direct_keywords)
+        # If polarised, process direct beam but keep the corrected spectra
+        if direct_keywords["polarised"] == True:
+            polcorr = self.direct_beam.m_spec_polcorr
+            self.direct_beam.process(**direct_keywords)
+            self.direct_beam.m_spec_polcorr = polcorr
+        else:
+            self.direct_beam.process(**direct_keywords)
 
         # get the reflected beam spectrum
         reflect_keywords["direct"] = False
@@ -197,10 +207,17 @@ class ReflectReduce(object):
         # done this way around to save processing direct beam over and over
         reflect_keywords["wavelength_bins"] = self.direct_beam.m_lambda_hist[0]
 
-        self.reflected_beam.process(**reflect_keywords)
-
-        self.save = save
-        dataset, reduction = self._reduce_single_angle(scale)
+        # If polarised, process reflected beam but keep the corrected spectra
+        if reflect_keywords["polarised"] == True:
+            polcorr = self.reflected_beam.m_spec_polcorr
+            self.reflected_beam.process(**reflect_keywords)
+            self.reflected_beam.m_spec_polcorr = polcorr
+            self.save = save
+            dataset, reduction = self._reduce_single_angle(scale, pol=True)
+        else:
+            self.reflected_beam.process(**reflect_keywords)
+            self.save = save
+            dataset, reduction = self._reduce_single_angle(scale, pol=False)
         return dataset, reduction
 
     def data(self, scanpoint=0):
@@ -315,7 +332,7 @@ class PlatypusReduce(ReflectReduce):
             direct, "PLP", data_folder=data_folder
         )
 
-    def _reduce_single_angle(self, scale=1):
+    def _reduce_single_angle(self, scale=1, pol=False):
         """
         Reduce a single angle.
         """
@@ -449,8 +466,16 @@ class PlatypusReduce(ReflectReduce):
             self.direct_beam.m_spec,
             self.direct_beam.m_spec_sd,
         )
-        if self.reflected_beam.processed_spectrum['m_spec_polcorr'] is not None:
-            print('cats')
+        if pol == True:
+            print('Reducing polarisation-corrected data')
+            if not self.reflected_beam.m_spec_polcorr or not self.direct_beam.m_spec_polcorr:
+                AttributeError("Error: flagged as polarised but no corrected spectra in PlatypusNexus file!")
+            ydata, ydata_sd = EP.EPdiv(
+                self.reflected_beam.m_spec_polcorr,
+                self.reflected_beam.m_spec_sd,
+                self.direct_beam.m_spec_polcorr,
+                self.direct_beam.m_spec_sd,
+            )
         # calculate the 1D Qz values.
         xdata = general.q(omega_corrected, wavelengths)
         xdata_sd = (
@@ -1132,7 +1157,8 @@ def get_spin_channel(data):
 
 def polarised_correction(mm=None, mp=None, pm=None, pp=None):
     """
-    Applies polarisation efficiency correction to a set of polarised PlatypusNexus objects.
+    Applies polarisation efficiency correction to a 
+    set of polarised PlatypusNexus objects.
 
     Parameters
     ----------
@@ -1147,8 +1173,12 @@ def polarised_correction(mm=None, mp=None, pm=None, pp=None):
 
     Returns
     -------
-    I00, I01, I10, I11 : PlatypusNexus or None, PlatypusNexus or None,PlatypusNexus or None, PlatypusNexus or None
-        The corrected datasets within the PlatypusNexus object, if the spin channel was measured
+    I00, I01, I10, I11 : PlatypusNexus or None, 
+                        PlatypusNexus or None,
+                        PlatypusNexus or None, 
+                        PlatypusNexus or None
+    The corrected datasets within the PlatypusNexus 
+    object, if the spin channel was measured
     """
 
     # Check if R++ or R-- channel is missing
@@ -1193,10 +1223,10 @@ def polarised_correction(mm=None, mp=None, pm=None, pp=None):
         I10=raw10.processed_spectrum['m_spec'][0],
         I11=raw11.processed_spectrum['m_spec'][0])
 
-    raw00.processed_spectrum['m_spec_polcorr'] = [val[0] for val in I00]
-    raw01.processed_spectrum['m_spec_polcorr'] = [val[0] for val in I01]
-    raw10.processed_spectrum['m_spec_polcorr'] = [val[0] for val in I10]
-    raw11.processed_spectrum['m_spec_polcorr'] = [val[0] for val in I11]
+    raw00.processed_spectrum['m_spec_polcorr'] = np.asarray( [ [val[0] for val in I00]])
+    raw01.processed_spectrum['m_spec_polcorr'] = np.asarray( [[val[0] for val in I01]])
+    raw10.processed_spectrum['m_spec_polcorr'] = np.asarray( [[val[0] for val in I10]])
+    raw11.processed_spectrum['m_spec_polcorr'] = np.asarray( [[val[0] for val in I11]])
 
     return raw00, raw01, raw10, raw11
 

@@ -3,6 +3,10 @@ from refnx.reduce.reduce import (
     SpatzReduce,
     reduce_stitch,
     AutoReducer,
+    _check_spin_channel,
+    get_spin_channel,
+    polarised_correction,
+    correct_PA_efficiencies,
 )
 from refnx.reduce.platypusnexus import (
     catalogue,
