@@ -186,7 +186,7 @@ class ReflectReduce(object):
             direct_keywords.pop("event_filter")
 
         # If polarised, process direct beam but keep the corrected spectra
-        if direct_keywords["polarised"] == True:
+        if direct_keywords["polarised"] is True:
             polcorr = self.direct_beam.m_spec_polcorr
             self.direct_beam.process(**direct_keywords)
             self.direct_beam.m_spec_polcorr = polcorr
@@ -208,7 +208,7 @@ class ReflectReduce(object):
         reflect_keywords["wavelength_bins"] = self.direct_beam.m_lambda_hist[0]
 
         # If polarised, process reflected beam but keep the corrected spectra
-        if reflect_keywords["polarised"] == True:
+        if reflect_keywords["polarised"] is True:
             polcorr = self.reflected_beam.m_spec_polcorr
             self.reflected_beam.process(**reflect_keywords)
             self.reflected_beam.m_spec_polcorr = polcorr
@@ -466,10 +466,14 @@ class PlatypusReduce(ReflectReduce):
             self.direct_beam.m_spec,
             self.direct_beam.m_spec_sd,
         )
-        if pol == True:
-            print('Reducing polarisation-corrected data')
-            if not self.reflected_beam.m_spec_polcorr or not self.direct_beam.m_spec_polcorr:
-                AttributeError("Error: flagged as polarised but no corrected spectra in PlatypusNexus file!")
+        if pol is True:
+            print("Reducing polarisation-corrected data")
+            if (not self.reflected_beam.m_spec_polcorr
+                    or not self.direct_beam.m_spec_polcorr):
+                AttributeError(
+                    "Error: flagged as polarised but no "
+                    "corrected spectra in PlatypusNexus file!"
+                    )
             ydata, ydata_sd = EP.EPdiv(
                 self.reflected_beam.m_spec_polcorr,
                 self.reflected_beam.m_spec_sd,
@@ -1123,41 +1127,49 @@ class AutoReducer(object):
         appended_ds.save(fname)
         return fname
 
+
 def _check_spin_channel(data, channel):
     """
-    Checks that the data measured corresponds to the correct spin channel
+    Checks that the data measured corresponds
+    to the correct spin channel
 
     Parameters
     ----------
     data : PlatypusNexus object
         Polarised spectra for a given spin channel
-    channel : tuple 
+    channel : tuple
         nominal spin channel - (0,0), (0,1), (1,0), or (1,1)
 
-    Output: Boolean value. 
-        True if spin channel matches flipper settings in data, and false if not.
+    Output: Boolean value.
+        True if spin channel matches flipper settings
+        in data, and false if not.
     """
 
-    if ( (data.cat.pol_flip_status == channel[0]) and (data.cat.anal_flip_status == channel[1]) ):
+    if ((data.cat.pol_flip_status == channel[0]) and
+            (data.cat.anal_flip_status == channel[1])):
         print(data.cat.pol_flip_status)
         return True
     else:
         print(data.cat.pol_flip_status)
         return False
 
+
 def get_spin_channel(data):
     """
-    Returns measured spin channel based on the incident and reflected flipper statuses
+    Returns measured spin channel based on the incident
+    and reflected flipper statuses
 
     Input: PlatypusNexus object
 
-    Output: Tuple, (0,0), (0,1), (1,0), (1,1) based off flipper statuses
+    Output: Tuple, (0,0), (0,1), (1,0), (1,1)
+    based off flipper statuses
     """
     return (data.cat.pol_flip_status, data.cat.anal_flip_status)
 
+
 def polarised_correction(mm=None, mp=None, pm=None, pp=None):
     """
-    Applies polarisation efficiency correction to a 
+    Applies polarisation efficiency correction to a
     set of polarised PlatypusNexus objects.
 
     Parameters
@@ -1173,11 +1185,11 @@ def polarised_correction(mm=None, mp=None, pm=None, pp=None):
 
     Returns
     -------
-    I00, I01, I10, I11 : PlatypusNexus or None, 
+    I00, I01, I10, I11 : PlatypusNexus or None,
                         PlatypusNexus or None,
-                        PlatypusNexus or None, 
+                        PlatypusNexus or None,
                         PlatypusNexus or None
-    The corrected datasets within the PlatypusNexus 
+    The corrected datasets within the PlatypusNexus
     object, if the spin channel was measured
     """
 
@@ -1197,18 +1209,19 @@ def polarised_correction(mm=None, mp=None, pm=None, pp=None):
     elif pm is None and mp is None:
         print("No spin-flip channel detected. Assuming R+- = R-+ = 0")
 
-    # Check that the input spin channels match the flipper settings for those spin cross sections
-    if (pp is not None and _check_spin_channel(pp, (1,1)) == False):
-        print("Error: Your input for the ++ spin channel doesn't match the flipper statuses!")
+    # Check that the input spin channels match the
+    # flipper settings for those spin cross sections
+    if (pp is not None and _check_spin_channel(pp, (1, 1)) is False):
+        print("Error: Input for ++ channel doesn't match flipper statuses!")
         return -1
-    elif (mp is not None and _check_spin_channel(mp, (0,1)) == False):
-        print("Error: Your input for the -+ spin channel doesn't match the flipper statuses!")
+    elif (mp is not None and _check_spin_channel(mp, (0, 1)) is False):
+        print("Error: Input for -+ channel doesn't match flipper statuses!")
         return -1
-    elif (pm is not None and _check_spin_channel(pm, (1,0)) == False):
-        print("Error: Your input for the +- spin channel doesn't match the flipper statuses!")
+    elif (pm is not None and _check_spin_channel(pm, (1, 0)) is False):
+        print("Error: Input for +- channel doesn't match flipper statuses!")
         return -1
-    elif (mm is not None and _check_spin_channel(mm, (0,0)) == False):
-        print("Error: Your input for the -- spin channel doesn't match the flipper statuses!")
+    elif (mm is not None and _check_spin_channel(mm, (0, 0)) is False):
+        print("Error: Input for -- channel doesn't match flipper statuses!")
         return -1
 
     raw00 = mm
@@ -1223,16 +1236,24 @@ def polarised_correction(mm=None, mp=None, pm=None, pp=None):
         I10=raw10.processed_spectrum['m_spec'][0],
         I11=raw11.processed_spectrum['m_spec'][0])
 
-    raw00.processed_spectrum['m_spec_polcorr'] = np.asarray( [ [val[0] for val in I00]])
-    raw01.processed_spectrum['m_spec_polcorr'] = np.asarray( [[val[0] for val in I01]])
-    raw10.processed_spectrum['m_spec_polcorr'] = np.asarray( [[val[0] for val in I10]])
-    raw11.processed_spectrum['m_spec_polcorr'] = np.asarray( [[val[0] for val in I11]])
+    raw00.processed_spectrum['m_spec_polcorr'] = np.asarray(
+        [[val[0] for val in I00]])
+    raw01.processed_spectrum['m_spec_polcorr'] = np.asarray(
+        [[val[0] for val in I01]])
+    raw10.processed_spectrum['m_spec_polcorr'] = np.asarray(
+        [[val[0] for val in I10]])
+    raw11.processed_spectrum['m_spec_polcorr'] = np.asarray(
+        [[val[0] for val in I11]])
 
     return raw00, raw01, raw10, raw11
 
-def correct_PA_efficiencies( wavelength, I00=None, I01=None, I10=None, I11=None):
+
+def correct_PA_efficiencies(
+    wavelength, I00=None, I01=None, I10=None, I11=None
+):
     """
-    Applies matrix correction of polarisation inefficiencies to the measured spectra.
+    Applies matrix correction of polarisation
+    inefficiencies to the measured spectra.
 
     Parameters
     ----------
@@ -1247,7 +1268,8 @@ def correct_PA_efficiencies( wavelength, I00=None, I01=None, I10=None, I11=None)
 
     Returns
     -------
-    I00, I01, I10, I11 : PlatypusNexus object with the efficiency-corrected spectrum
+    I00, I01, I10, I11 : PlatypusNexus object
+    with the efficiency-corrected spectrum
     """
 
     p1a = 0.993
@@ -1262,7 +1284,7 @@ def correct_PA_efficiencies( wavelength, I00=None, I01=None, I10=None, I11=None)
 
     F1 = np.full((len(wavelength), 1), 0.003)
     F2 = np.full((len(wavelength), 1), 0.003)
-    
+
     if I01 is None and I10 is not None:
         # For the case when only one spin-flip channel is recorded
         I01 = I10
@@ -1277,66 +1299,77 @@ def correct_PA_efficiencies( wavelength, I00=None, I01=None, I10=None, I11=None)
 
     # Define polarised efficiency matrix
     polariser_eff_matrix = [
-        np.matrix([[(1-p1l),      0,     p1l,      0],\
-                    [     0, (1-p1l),      0,     p1l],\
-                    [    p1l,      0, (1-p1l),      0],\
-                    [     0,     p1l,      0, (1-p1l)]])
-                    for p1l in P1 ]
+        np.matrix(
+            [
+                [(1-p1l), 0, p1l, 0],
+                [0, (1-p1l), 0, p1l],
+                [p1l, 0, (1-p1l), 0],
+                [0, p1l, 0, (1-p1l)]
+                ], dtype='float') for p1l in P1]
 
     # Define analyser efficiency matrix
     analyser_eff_matrix = [
-        np.matrix( [[(1-p2l),     p2l,      0,      0],\
-                    [    p2l, (1-p2l),      0,      0],\
-                    [     0,      0, (1-p2l),     p2l],\
-                    [     0,      0,     p2l, (1-p2l)]],
-                    dtype='float') for p2l in P2 ]
+        np.matrix(
+            [
+                [(1-p2l), p2l, 0, 0],
+                [p2l, (1-p2l), 0, 0],
+                [0, 0, (1-p2l), p2l],
+                [0, 0, p2l, (1-p2l)]
+                ], dtype='float') for p2l in P2]
     # Define flipper 1 efficiency matrix
     flipper1_eff_matrix = [
-        np.matrix( [[ 1,  0,      0,      0],\
-                    [ 0,  1,      0,      0],\
-                    [f1l,  0, (1-f1l),      0],\
-                    [ 0, f1l,      0, (1-f1l)]],
-                    dtype='float') for f1l in F1 ]
+        np.matrix(
+            [
+                [1, 0, 0, 0],
+                [0, 1, 0, 0],
+                [f1l, 0, (1-f1l), 0],
+                [0, f1l, 0, (1-f1l)]
+                ], dtype='float') for f1l in F1]
     # Define flipper 2 efficiency matrix
     flipper2_eff_matrix = [
-        np.matrix(  [[ 1,  0,      0,      0],\
-                    [ 0,  1,      0,      0],\
-                    [f2l,  0, (1-f2l),      0],\
-                    [ 0, f2l,      0, (1-f2l)]],
-                    dtype='float') for f2l in F2 ]
-    # Create efficiency matrices from individual component efficiency matrices
-    efficiencies_matrix = [ 
+        np.matrix(
+            [
+                [1, 0, 0, 0],
+                [0, 1, 0, 0],
+                [f2l, 0, (1-f2l), 0],
+                [0, f2l, 0, (1-f2l)]
+                ], dtype='float') for f2l in F2]
+    # Create efficiency matrices from individual
+    # component efficiency matrices
+    efficiencies_matrix = [
         flip1 * flip2 * pol * anal for flip1, flip2, pol, anal in zip(
             flipper1_eff_matrix,
             flipper2_eff_matrix,
             polariser_eff_matrix,
-            analyser_eff_matrix) ]
+            analyser_eff_matrix)]
     # Invert efficiency matrices for each wavelength
     inv_eff_matrix = [
-        np.linalg.inv(eff_mat) for eff_mat in efficiencies_matrix ]
+        np.linalg.inv(eff_mat) for eff_mat in efficiencies_matrix]
     # Apply efficency matrices to processed PlatypusNexus spectra
     corrected_data = [
-        corr_matrix * [ [dd_pt],
-                        [du_pt],
-                        [ud_pt],
-                        [uu_pt] ] for (
-                            corr_matrix,
-                            dd_pt,
-                            du_pt,
-                            ud_pt,
-                            uu_pt) in zip(
-                                inv_eff_matrix,
-                                I00,
-                                I01,
-                                I10,
-                                I11 ) ]
+        corr_matrix * [
+            [dd_pt],
+            [du_pt],
+            [ud_pt],
+            [uu_pt]] for (
+                corr_matrix,
+                dd_pt,
+                du_pt,
+                ud_pt,
+                uu_pt) in zip(
+                    inv_eff_matrix,
+                    I00,
+                    I01,
+                    I10,
+                    I11)]
 
-    I00_polcorr = [ corr_pt[0] for corr_pt in np.array(corrected_data) ]
-    I01_polcorr = [ corr_pt[1] for corr_pt in np.array(corrected_data) ]
-    I10_polcorr = [ corr_pt[2] for corr_pt in np.array(corrected_data) ]
-    I11_polcorr = [ corr_pt[3] for corr_pt in np.array(corrected_data) ]
+    I00_polcorr = [corr_pt[0] for corr_pt in np.array(corrected_data)]
+    I01_polcorr = [corr_pt[1] for corr_pt in np.array(corrected_data)]
+    I10_polcorr = [corr_pt[2] for corr_pt in np.array(corrected_data)]
+    I11_polcorr = [corr_pt[3] for corr_pt in np.array(corrected_data)]
 
     return I00_polcorr, I01_polcorr, I10_polcorr, I11_polcorr
+
 
 if __name__ == "__main__":
     print(strftime("%a, %d %b %Y %H:%M:%S +0000", gmtime()))
