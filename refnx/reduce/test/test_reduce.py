@@ -12,6 +12,8 @@ from refnx.reduce import (
     PlatypusReduce,
     ReductionOptions,
     SpatzReduce,
+    PlatypusNexus,
+    polarised_correction,
 )
 
 
@@ -99,6 +101,57 @@ class TestPlatypusReduce(object):
         d1, r1 = a1.reduce(
             "PLP0038421.nx.hdf", data_folder=self.pth, rebin_percent=4
         )
+
+    def test_pnr_reduction(self):
+        # Load reflected beams
+        corrected_refs = polarised_correction(
+            mm=PlatypusNexus("PLP0012785.nx.hdf"),
+            mp=PlatypusNexus("PLP0012788.nx.hdf"),
+            pm=PlatypusNexus("PLP0012786.nx.hdf"),
+            pp=PlatypusNexus("PLP0012787.nx.hdf")
+            )
+        # Load reflected beams
+        corrected_dbs = polarised_correction(
+            mm=PlatypusNexus("PLP0012793.nx.hdf"),
+            mp=PlatypusNexus("PLP0012796.nx.hdf"),
+            pm=PlatypusNexus("PLP0012794.nx.hdf"),
+            pp=PlatypusNexus("PLP0012795.nx.hdf"))
+
+        # Make reducer for R--
+        reducer_dd = PlatypusReduce(corrected_dbs[0])
+        reducer_dd.reduce(
+            corrected_refs[0],
+            background=True,
+            lo_wavelength=2.5,
+            hi_wavelength=12.5,
+            polarised=True)
+
+        # Make reducer for R-+
+        reducer_du = PlatypusReduce(corrected_dbs[0])
+        reducer_du.reduce(
+            corrected_refs[1],
+            background=True,
+            lo_wavelength=2.5,
+            hi_wavelength=12.5,
+            polarised=True)
+
+        # Make reducer for R+-
+        reducer_ud = PlatypusReduce(corrected_dbs[-1])
+        reducer_ud.reduce(
+            corrected_refs[2],
+            background=True,
+            lo_wavelength=2.5,
+            hi_wavelength=12.5,
+            polarised=True)
+
+        # Make reducer for R++
+        reducer_uu = PlatypusReduce(corrected_dbs[-1])
+        reducer_uu.reduce(
+            corrected_refs[-1],
+            background=True,
+            lo_wavelength=2.5,
+            hi_wavelength=12.5,
+            polarised=True)
 
     def test_event_reduction(self):
         # check that eventmode reduction can occur, and that there are the

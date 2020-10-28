@@ -468,18 +468,19 @@ class PlatypusReduce(ReflectReduce):
         )
         if pol is True:
             print("Reducing polarisation-corrected data")
-            if (not self.reflected_beam.m_spec_polcorr
-                    or not self.direct_beam.m_spec_polcorr):
+            if (self.reflected_beam.m_spec_polcorr.all() == 0
+                    or self.direct_beam.m_spec_polcorr.all() == 0):
                 AttributeError(
                     "Error: flagged as polarised but no "
                     "corrected spectra in PlatypusNexus file!"
                     )
-            ydata, ydata_sd = EP.EPdiv(
-                self.reflected_beam.m_spec_polcorr,
-                self.reflected_beam.m_spec_sd,
-                self.direct_beam.m_spec_polcorr,
-                self.direct_beam.m_spec_sd,
-            )
+            else:
+                ydata, ydata_sd = EP.EPdiv(
+                    self.reflected_beam.m_spec_polcorr,
+                    self.reflected_beam.m_spec_sd,
+                    self.direct_beam.m_spec_polcorr,
+                    self.direct_beam.m_spec_sd,
+                )
         # calculate the 1D Qz values.
         xdata = general.q(omega_corrected, wavelengths)
         xdata_sd = (
@@ -1147,10 +1148,8 @@ def _check_spin_channel(data, channel):
 
     if ((data.cat.pol_flip_status == channel[0]) and
             (data.cat.anal_flip_status == channel[1])):
-        print(data.cat.pol_flip_status)
         return True
     else:
-        print(data.cat.pol_flip_status)
         return False
 
 
@@ -1167,7 +1166,9 @@ def get_spin_channel(data):
     return (data.cat.pol_flip_status, data.cat.anal_flip_status)
 
 
-def polarised_correction(mm=None, mp=None, pm=None, pp=None):
+def polarised_correction(
+    mm=None, mp=None, pm=None, pp=None, reduction_options=None
+):
     """
     Applies polarisation efficiency correction to a
     set of polarised PlatypusNexus objects.
@@ -1224,6 +1225,18 @@ def polarised_correction(mm=None, mp=None, pm=None, pp=None):
         print("Error: Input for -- channel doesn't match flipper statuses!")
         return -1
 
+    if reduction_options is None:
+        reduction_options = {
+            "background": True,
+            "lo_wavelength": 2.5,
+            "hi_wavelength": 12.5,
+            "polarised": True
+            }
+
+    for channel in [mm, mp, pm, pp]:
+        if not channel.processed_spectrum:
+            channel.process(**reduction_options)
+
     raw00 = mm
     raw01 = mp
     raw10 = pm
@@ -1271,17 +1284,25 @@ def correct_PA_efficiencies(
     I00, I01, I10, I11 : PlatypusNexus object
     with the efficiency-corrected spectrum
     """
+    # The values used below are from Thomas Saerbeck's initial 
+    # commissioning of the PLATYPUS polarisation system. 
+    # TODO: Create a workflow that automatically fits 
+    # commissioning data with an efficiency function to be used
+    # in the polarised_correction routine.
 
+    # Define polariser efficiency as function of wavelength
     p1a = 0.993
     p1b = 0.57
     p1c = 0.47
     P1 = p1a - p1b*p1c**(wavelength).astype('float')
 
+    # Define analyser efficiency as function of wavelength
     p2a = 0.993
     p2b = 0.57
     p2c = 0.51
     P2 = p2a - p2b*p2c**(wavelength).astype('float')
-
+    
+    # Define flipper1 and flipper2 efficiencies
     F1 = np.full((len(wavelength), 1), 0.003)
     F2 = np.full((len(wavelength), 1), 0.003)
 
