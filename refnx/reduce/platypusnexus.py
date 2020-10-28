@@ -1733,7 +1733,7 @@ class ReflectNexus(object):
         d["n_spectra"] = n_spectra
         d["bm1_counts"] = bm1_counts
         d["m_spec"] = m_spec
-        # If polarised, add an entry for the polarisation 
+        # If polarised, add an entry for the polarisation
         # efficiency corrected spectra
         if polarised is True:
             d["m_spec_polcorr"] = np.zeros_like(m_spec)
