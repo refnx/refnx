@@ -473,7 +473,7 @@ class PlatypusReduce(ReflectReduce):
                 AttributeError(
                     "Error: flagged as polarised but no "
                     "corrected spectra in PlatypusNexus file!"
-                    )
+                )
             else:
                 ydata, ydata_sd = EP.EPdiv(
                     self.reflected_beam.m_spec_polcorr,
@@ -1224,22 +1224,19 @@ def polarised_correction(
             "lo_wavelength": 2.5,
             "hi_wavelength": 12.5,
             "polarised": True
-            }
+        }
 
     for channel in _not_none(mm, mp, pm, pp):
         if not channel.processed_spectrum:
             channel.process(**reduction_options)
 
     # Check what combination of spin-flip channels were measured
-    if ((
-        mm is not None
-        ) and (
-            mp is not None
-            ) and (
-                pm is not None
-                ) and (
-                    pp is not None
-                    )):
+    if (
+        (mm is not None)
+        and (mp is not None)
+        and (pm is not None)
+        and (pp is not None)
+    ):
         raw00 = mm
         raw01 = mp
         raw10 = pm
@@ -1367,13 +1364,13 @@ def correct_POL_efficiencies(
     p1a = 0.993
     p1b = 0.57
     p1c = 0.47
-    P1 = p1a - p1b*p1c**(wavelength).astype('float')
+    P1 = p1a - p1b * p1c**(wavelength).astype('float')
 
     # Define analyser efficiency as function of wavelength
     p2a = 0.993
     p2b = 0.57
     p2c = 0.51
-    P2 = p2a - p2b*p2c**(wavelength).astype('float')
+    P2 = p2a - p2b * p2c**(wavelength).astype('float')
 
     # Define flipper1 and flipper2 efficiencies
     F1 = np.full((len(wavelength), 1), 0.003).astype('float')
@@ -1388,46 +1385,54 @@ def correct_POL_efficiencies(
         F2 = np.full((len(wavelength), 1), 0.000)
         P2 = np.full((len(wavelength), 1), 1.000)
 
-    P1 = (1 + P1)/2
-    P2 = (1 + P2)/2
+    P1 = (1 + P1) / 2
+    P2 = (1 + P2) / 2
 
     # Define polarised efficiency matrix
     polariser_eff_matrix = [
         np.array(
             [
-                [(1-p1l), 0, p1l, 0],
-                [0, (1-p1l), 0, p1l],
-                [p1l, 0, (1-p1l), 0],
-                [0, p1l, 0, (1-p1l)]
-                ]) for p1l in P1]
+                [(1 - p1l), 0, p1l, 0],
+                [0, (1 - p1l), 0, p1l],
+                [p1l, 0, (1 - p1l), 0],
+                [0, p1l, 0, (1 - p1l)]
+            ]
+        ) for p1l in P1
+    ]
 
     # Define analyser efficiency matrix
     analyser_eff_matrix = [
         np.array(
             [
-                [(1-p2l), p2l, 0, 0],
-                [p2l, (1-p2l), 0, 0],
-                [0, 0, (1-p2l), p2l],
-                [0, 0, p2l, (1-p2l)]
-                ]) for p2l in P2]
+                [(1 - p2l), p2l, 0, 0],
+                [p2l, (1 - p2l), 0, 0],
+                [0, 0, (1 - p2l), p2l],
+                [0, 0, p2l, (1 - p2l)]
+            ]
+        ) for p2l in P2
+    ]
     # Define flipper 1 efficiency matrix
     flipper1_eff_matrix = [
         np.array(
             [
                 [1, 0, 0, 0],
                 [0, 1, 0, 0],
-                [f1l, 0, (1-f1l), 0],
-                [0, f1l, 0, (1-f1l)]
-                ]).astype('float') for f1l in F1]
+                [f1l, 0, (1 - f1l), 0],
+                [0, f1l, 0, (1 - f1l)]
+            ]
+        ).astype('float') for f1l in F1
+    ]
     # Define flipper 2 efficiency matrix
     flipper2_eff_matrix = [
         np.array(
             [
                 [1, 0, 0, 0],
                 [0, 1, 0, 0],
-                [f2l, 0, (1-f2l), 0],
-                [0, f2l, 0, (1-f2l)]
-                ]).astype('float') for f2l in F2]
+                [f2l, 0, (1 - f2l), 0],
+                [0, f2l, 0, (1 - f2l)]
+            ]
+        ).astype('float') for f2l in F2
+    ]
 
     # Create efficiency matrices from individual
     # component efficiency matrices
@@ -1436,29 +1441,22 @@ def correct_POL_efficiencies(
             flipper1_eff_matrix,
             flipper2_eff_matrix,
             polariser_eff_matrix,
-            analyser_eff_matrix)]
+            analyser_eff_matrix
+        )
+    ]
 
     efficiencies_matrix = np.array(efficiencies_matrix)
     # Invert efficiency matrices for each wavelength
     inv_eff_matrix = [
-        np.linalg.inv(eff_mat) for eff_mat in efficiencies_matrix]
+        np.linalg.inv(eff_mat) for eff_mat in efficiencies_matrix
+    ]
     # Apply efficency matrices to processed PlatypusNexus spectra
     corrected_data = [
-        corr_matrix @ [
-            [dd_pt],
-            [du_pt],
-            [ud_pt],
-            [uu_pt]] for (
-                corr_matrix,
-                dd_pt,
-                du_pt,
-                ud_pt,
-                uu_pt) in zip(
-                    inv_eff_matrix,
-                    I00,
-                    I01,
-                    I10,
-                    I11)]
+        corr_matrix @ [[dd_pt], [du_pt], [ud_pt], [uu_pt]]
+        for (corr_matrix, dd_pt, du_pt, ud_pt, uu_pt) in zip(
+            inv_eff_matrix, I00, I01, I10, I11
+        )
+    ]
 
     I00_polcorr = [corr_pt[0] for corr_pt in np.array(corrected_data)]
     I01_polcorr = [corr_pt[1] for corr_pt in np.array(corrected_data)]

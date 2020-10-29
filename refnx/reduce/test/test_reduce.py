@@ -108,14 +108,14 @@ class TestReduce(object):
             mp=PlatypusNexus(pjoin(self.pth, "PNR_files/PLP0012788.nx.hdf")),
             pm=PlatypusNexus(pjoin(self.pth, "PNR_files/PLP0012786.nx.hdf")),
             pp=PlatypusNexus(pjoin(self.pth, "PNR_files/PLP0012787.nx.hdf"))
-            )
+        )
         # Load reflected beams
         corrected_dbs = polarised_correction(
             mm=PlatypusNexus(pjoin(self.pth, "PNR_files/PLP0012793.nx.hdf")),
             mp=PlatypusNexus(pjoin(self.pth, "PNR_files/PLP0012796.nx.hdf")),
             pm=PlatypusNexus(pjoin(self.pth, "PNR_files/PLP0012794.nx.hdf")),
             pp=PlatypusNexus(pjoin(self.pth, "PNR_files/PLP0012795.nx.hdf"))
-            )
+        )
 
         # Make reducer for R--
         reducer_dd = PlatypusReduce(corrected_dbs[0])
@@ -125,7 +125,7 @@ class TestReduce(object):
             lo_wavelength=2.5,
             hi_wavelength=12.5,
             polarised=True
-            )
+        )
 
         # Make reducer for R-+ (which same as R--. I only
         # need R-+ direct beam for polarisation correction)
@@ -136,7 +136,7 @@ class TestReduce(object):
             lo_wavelength=2.5,
             hi_wavelength=12.5,
             polarised=True
-            )
+        )
 
         # Make reducer for R+- (which same as R++. I only
         # need R+- direct beam for polarisation correction)
@@ -147,7 +147,7 @@ class TestReduce(object):
             lo_wavelength=2.5,
             hi_wavelength=12.5,
             polarised=True
-            )
+        )
 
         # Make reducer for R++
         reducer_uu = PlatypusReduce(corrected_dbs[-1])
@@ -157,7 +157,7 @@ class TestReduce(object):
             lo_wavelength=2.5,
             hi_wavelength=12.5,
             polarised=True
-            )
+        )
 
     def test_event_reduction(self):
         # check that eventmode reduction can occur, and that there are the
