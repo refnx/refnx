@@ -370,6 +370,7 @@ class BatchReducer:
         persistent=True,
         trim_trailing=True,
         reduction_options=None,
+        prefix="PLP"
     ):
         """
         Create a batch reducer using metadata from a spreadsheet
@@ -393,6 +394,7 @@ class BatchReducer:
         reduction_options : dict, or sequence of dict, optional
             Options passed directly to `refnx.reduce.reduce_stitch`. Look at
             that docstring for complete specification of options.
+        prefix : {'PLP', 'SPZ'}
         """
         self.cache = ReductionCache(persistent)
         self.filename = filename
@@ -404,6 +406,7 @@ class BatchReducer:
         self.trim_trailing = trim_trailing
         self.reduction_options = reduction_options or ReductionOptions()
         self.verbose = verbose
+        self.prefix = prefix
 
     def _reduce_row(self, entry):
         """Process a single row using reduce_stitch
@@ -457,6 +460,7 @@ class BatchReducer:
             trim_trailing=self.trim_trailing,
             data_folder=self.data_folder,
             reduction_options=self.reduction_options,
+            prefix=self.prefix
         )
 
         return ds, fname
