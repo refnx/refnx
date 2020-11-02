@@ -296,3 +296,4 @@ in 0.1.13.
 
 0.1.18
 ------
+- SPZ batch reduction
