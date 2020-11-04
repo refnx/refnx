@@ -2741,7 +2741,7 @@ def correct_for_gravity(
     lo_wavelength,
     hi_wavelength,
     theta=0,
-    qz_pixel_size=0.284,
+    qz_pixel_size=0.294,
 ):
     """
     Returns a gravity corrected yt plot, given the data, its associated errors,

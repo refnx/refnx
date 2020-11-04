@@ -7,10 +7,15 @@ import pytest
 from numpy.testing import assert_equal, assert_allclose
 import xml.etree.ElementTree as ET
 
-from refnx.reduce import reduce_stitch, PlatypusReduce, ReductionOptions
+from refnx.reduce import (
+    reduce_stitch,
+    PlatypusReduce,
+    ReductionOptions,
+    SpatzReduce,
+)
 
 
-class TestReduce(object):
+class TestPlatypusReduce(object):
     @pytest.mark.usefixtures("no_data_directory")
     @pytest.fixture(autouse=True)
     def setup_method(self, tmpdir, data_directory):
@@ -139,3 +144,73 @@ class TestReduce(object):
             #     integrate=0, rebin_percent=2,
             #     eventmode=[0, 25200, 27000, 30000])
             # assert_equal(a.ydata.shape[0], 3)
+
+
+class TestSpatzReduce(object):
+    @pytest.mark.usefixtures("no_data_directory")
+    @pytest.fixture(autouse=True)
+    def setup_method(self, tmpdir, data_directory):
+        self.pth = pjoin(data_directory, "reduce")
+
+        self.cwd = os.getcwd()
+        self.tmpdir = tmpdir.strpath
+        os.chdir(self.tmpdir)
+        return 0
+
+    def teardown_method(self):
+        os.chdir(self.cwd)
+
+    def test_smoke(self):
+        # a quick smoke test to check that the reduction can occur
+        # warnings filter for pixel size
+        a, fname = reduce_stitch(
+            [660, 661],
+            [658, 659],
+            data_folder=self.pth,
+            prefix="SPZ",
+            reduction_options={"rebin_percent": 2},
+        )
+        a.save("test1.dat")
+        assert os.path.isfile("./test1.dat")
+
+        # reduce_stitch should take a list of ReductionOptions dict,
+        # separate dicts are used for different angles
+        opts = ReductionOptions()
+        opts["rebin_percent"] = 2
+
+        a2, fname = reduce_stitch(
+            [660, 661],
+            [658, 659],
+            data_folder=self.pth,
+            prefix="SPZ",
+            reduction_options=[opts] * 2,
+        )
+        a2.save("test2.dat")
+        assert os.path.isfile("./test2.dat")
+        assert_allclose(a.y, a2.y)
+
+    def test_reduction_method(self):
+        # a quick smoke test to check that the reduction can occur
+        a = SpatzReduce("SPZ0000658.nx.hdf", data_folder=self.pth)
+
+        # try reduction with the reduce method
+        a.reduce(
+            "SPZ0000660.nx.hdf",
+            data_folder=self.pth,
+            rebin_percent=4,
+        )
+
+        # try reduction with the __call__ method
+        a(
+            "SPZ0000660.nx.hdf",
+            data_folder=self.pth,
+            rebin_percent=4,
+        )
+
+        # this should also have saved a couple of files in the current
+        # directory
+        assert os.path.isfile("./SPZ0000660_0.dat")
+        assert os.path.isfile("./SPZ0000660_0.xml")
+
+        # try writing offspecular data
+        a.write_offspecular("offspec.xml", 0)
