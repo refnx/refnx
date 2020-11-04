@@ -28,7 +28,7 @@ class TestReduce(object):
     def teardown_method(self):
         os.chdir(self.cwd)
 
-    def test_batch_reduce(self):
+    def test_batch_platypus_reduce(self):
         filename = pjoin(self.pth, "test_batch_reduction.xls")
         # warnings filter for pixel size
         with warnings.catch_warnings():
@@ -37,8 +37,18 @@ class TestReduce(object):
             b = BatchReducer(
                 filename, data_folder=self.pth, verbose=False, persistent=False
             )
-
             b.reduce(show=False)
+
+    def test_batch_spatz_reduce(self):
+        filename = pjoin(self.pth, "test_batch_spatz_reduction.xls")
+        b = BatchReducer(
+            filename,
+            data_folder=self.pth,
+            verbose=False,
+            persistent=False,
+            prefix="SPZ",
+        )
+        b.reduce(show=False)
 
     def test_batch_reduce_ipython(self):
         filename = pjoin(self.pth, "test_batch_reduction.xls")
