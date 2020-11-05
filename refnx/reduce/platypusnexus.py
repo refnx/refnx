@@ -284,7 +284,13 @@ class SpatzCatalogue(Catalogue):
         )
 
         # logical size (mm) of 1 pixel in the scattering plane
-        d["qz_pixel_size"] = np.array([0.294])
+        try:
+            d["qz_pixel_size"] = h5d[
+                "entry1/instrument/parameters/qz_pixel_size"
+            ][:]
+        except KeyError:
+            # older SPZ files didn't have qz_pixel_size
+            d["qz_pixel_size"] = np.array([0.326])
 
     def _chopper_values(self, h5data):
         """
