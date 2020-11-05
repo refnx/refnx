@@ -24,7 +24,7 @@ jobs:
     - name: setup apt dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install xvfb qt5-default opencl-headers ocl-icd-opencl-dev libpocl2 libhdf5-serial-dev
+        sudo apt-get install xvfb qt5-default opencl-headers ocl-icd-opencl-dev libpocl2 libhdf5-serial-dev libnetcdf-dev
         python -m pip install --upgrade pip
 
     - name: Install dependencies
