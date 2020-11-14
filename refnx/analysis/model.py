@@ -150,7 +150,7 @@ class Model(object):
     def fitfunc(self, fitfunc):
         self._fitfunc = fitfunc
         self._fitfunc_has_xerr = False
-        if "x_err" in getargspec(fitfunc).args:
+        if fitfunc is not None and "x_err" in getargspec(fitfunc).args:
             self._fitfunc_has_xerr = True
 
     @property
