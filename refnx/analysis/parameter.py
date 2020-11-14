@@ -672,8 +672,9 @@ class Parameter(BaseParameter):
 
     @value.setter
     def value(self, v):
-        value = float(v)
-
+        value = v
+        if isinstance(v, (BaseParameter, np.ndarray)):
+            value = float(v)
         self._value = value
 
     def _eval(self):
