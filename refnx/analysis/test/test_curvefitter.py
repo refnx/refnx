@@ -589,8 +589,7 @@ class TestFitterGauss(object):
         )
         assert_allclose(self.objective.nlpost(), -self.objective.logpost())
         assert_allclose(
-            self.objective.nlpost(self.p0),
-            -self.objective.logpost(self.p0)
+            self.objective.nlpost(self.p0), -self.objective.logpost(self.p0)
         )
 
         # if the priors are all uniform then the only difference between
