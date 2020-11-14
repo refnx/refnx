@@ -297,3 +297,5 @@ in 0.1.13.
 0.1.18
 ------
 - SPZ batch reduction
+- remove some roadblocks to JAXification (float casting in Parameter.value
+ setter)
