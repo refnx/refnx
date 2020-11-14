@@ -8,7 +8,7 @@ from numpy.testing import (
     assert_allclose,
 )
 
-from refnx.analysis import Parameter, Model
+from refnx.analysis import Parameter, Model, Parameters
 
 
 def line(x, params, *args, **kwds):
@@ -63,7 +63,23 @@ class TestModel(object):
         p = c | m
 
         fit_model = Model(p, fitfunc=line3)
-        assert_(fit_model._fitfunc_has_xerr is True)
+        assert fit_model._fitfunc_has_xerr is True
 
         fit_model = Model(p, fitfunc=line2)
-        assert_(fit_model._fitfunc_has_xerr is False)
+        assert fit_model._fitfunc_has_xerr is False
+
+    def test_model_subclass(self):
+        class Line(Model):
+            def __init__(self, parameters):
+                super(Line, self).__init__(parameters)
+
+            def model(self, x, p=None, x_err=None):
+                if p is not None:
+                    self._parameters = p
+                a, b = self._parameters
+                return a.value + x * b.value
+
+        a = Parameter(1.1)
+        b = Parameter(2.2)
+        p = Parameters([a, b])
+        Line(p)
