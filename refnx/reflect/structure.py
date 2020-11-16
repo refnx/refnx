@@ -715,7 +715,7 @@ class Scatterer(object):
     def parameters(self):
         raise NotImplementedError
 
-    def __call__(self, thick=0, rough=0):
+    def __call__(self, thick=0, rough=0, vfsolv=0):
         """
         Create a :class:`Slab`.
 
@@ -725,6 +725,8 @@ class Scatterer(object):
             Thickness of slab in Angstrom
         rough: refnx.analysis.Parameter or float
             Roughness of slab in Angstrom
+        vfsolv: refnx.analysis.Parameter or float
+            Volume fraction of water in slab
 
         Returns
         -------
@@ -740,7 +742,7 @@ class Scatterer(object):
         >>> sio2_layer = sio2(20, 3)
 
         """
-        return Slab(thick, self, rough, name=self.name)
+        return Slab(thick, self, rough, name=self.name, vfsolv=vfsolv)
 
     def __or__(self, other):
         # c = self | other

@@ -317,6 +317,20 @@ class TestStructure(object):
         assert_equal(float(p.real), 5)
         assert_equal(float(p.imag), 1)
 
+        # use SLD to make a Slab
+        thickness = Parameter(100)
+        roughness = Parameter(3.0)
+        vfsolv = Parameter(0.2)
+        s = p(thickness, roughness)
+        assert_equal(s.thick.value, thickness.value)
+        assert_equal(s.rough.value, roughness.value)
+        assert_equal(s.vfsolv.value, 0)
+
+        s = p(thickness, roughness, vfsolv)
+        assert_equal(s.thick.value, thickness.value)
+        assert_equal(s.rough.value, roughness.value)
+        assert_equal(s.vfsolv.value, vfsolv.value)
+
     def test_sld_slicer(self):
         q = np.linspace(0.005, 0.2, 100)
 

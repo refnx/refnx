@@ -299,3 +299,5 @@ in 0.1.13.
 - SPZ batch reduction
 - remove some roadblocks to JAXification (float casting in Parameter.value
  setter)
+- volume fraction of solvent can now be used when constructing a Slab from a
+ Scatterer.
