@@ -100,6 +100,18 @@ def available_backends():
         # failure to get an opencl platform would be cl._cl.LogicError
         pass
 
+    try:
+        import jax as jax
+        from jax.config import config
+
+        config.update("jax_enable_x64", True)
+        from refnx.reflect._jax_reflect import abeles_jax
+
+        backends.append("jax")
+    except Exception:
+        # importing jax would be a ModuleNotFoundError
+        pass
+
     return tuple(backends)
 
 
@@ -115,10 +127,11 @@ def get_reflect_backend(backend="c"):
 
     Parameters
     ----------
-    backend: {'python', 'cython', 'c', 'pyopencl'}, str
+    backend: {'python', 'cython', 'c', 'pyopencl', 'jax'}, str
         The module that calculates the reflectivity. Speed should go in the
-        order: c > pyopencl / cython > python. If a particular method is not
-        available the function falls back: cython/pyopencl --> c --> python.
+        order: c > pyopencl / cython > python > jax. If a particular method is
+        not available the function falls back:
+        cython/pyopencl --> c --> python.
 
     Returns
     -------
@@ -170,6 +183,15 @@ def get_reflect_backend(backend="c"):
         except ImportError:
             warnings.warn("Can't use the C abeles backend")
             return get_reflect_backend("python")
+    elif backend == "jax":
+        try:
+            from refnx.reflect import _jax_reflect
+
+            return _jax_reflect.abeles_jax
+        except ImportError:
+            warnings.warn("Can't use the jax abeles backend")
+            return get_reflect_backend("c")
+
     elif backend == "python":
         warnings.warn("Using the SLOW reflectivity calculation.")
 
@@ -190,7 +212,7 @@ def use_reflect_backend(backend="c"):
 
     Parameters
     ----------
-    backend: {'python', 'cython', 'c', 'pyopencl'}, str
+    backend: {'python', 'cython', 'c', 'pyopencl', 'jax'}, str
         The function that calculates the reflectivity. Speed should go in the
         order: c > pyopencl / cython > python. If a particular method is not
         available the function falls back: cython/pyopencl --> c --> python.
