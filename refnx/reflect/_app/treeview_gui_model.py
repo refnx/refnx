@@ -180,7 +180,7 @@ class ParNode(Node):
             p = self.parameter
             d = [
                 p.name,
-                p.value,
+                float(p.value),
                 p.stderr,
                 p.bounds.lb,
                 p.bounds.ub,
