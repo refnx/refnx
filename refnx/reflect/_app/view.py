@@ -1871,22 +1871,22 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         tb = self.sldgraphs.mpl_toolbar
         self.ui.gridLayout_4.removeWidget(tb)
         tb.deleteLater()
-        del(tb)
+        del tb
 
         self.sldgraphs.mpl_toolbar = None
         self.ui.gridLayout_4.removeWidget(self.sldgraphs)
         self.sldgraphs.deleteLater()
-        del(self.sldgraphs)
+        del self.sldgraphs
 
         tb = self.reflectivitygraphs.mpl_toolbar
         self.ui.gridLayout_5.removeWidget(tb)
         tb.deleteLater()
-        del(tb)
+        del tb
 
         self.reflectivitygraphs.mpl_toolbar = None
         self.ui.gridLayout_5.removeWidget(self.reflectivitygraphs)
         self.reflectivitygraphs.deleteLater()
-        del(self.reflectivitygraphs)
+        del self.reflectivitygraphs
 
     def attach_graphs_to_gui(self):
         """
