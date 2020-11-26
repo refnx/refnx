@@ -301,3 +301,4 @@ in 0.1.13.
  setter)
 - volume fraction of solvent can now be used when constructing a Slab from a
  Scatterer.
+- Fully remove traces from graph when opening new experiments
