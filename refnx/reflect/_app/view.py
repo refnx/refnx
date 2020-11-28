@@ -282,6 +282,10 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
             print("Couldn't load experiment")
             return
 
+        # remove and re-add datasets onto the GUI.
+        self.remove_graphs_from_gui()
+        self.attach_graphs_to_gui()
+
         try:
             self.ui.console_text_edit.setPlainText(state["history"])
             self.settings = state["settings"]
@@ -299,13 +303,10 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
             # older versions missing attributes saved in later versions.
             self.compensate_older_versions()
 
-            # remove and add datasetsToGraphs
-            self.remove_graphs_from_gui()
-            self.attach_graphs_to_gui()
             ds = [d for d in self.treeModel.datastore]
             self.add_data_objects_to_graphs(ds)
             self.update_gui_model(ds)
-            self.reflectivitygraphs.draw()
+            # self.reflectivitygraphs.draw()
         except Exception as e:
             version = state.get("refnx.version", "N/A")
             msg(
