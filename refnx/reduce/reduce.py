@@ -468,8 +468,10 @@ class PlatypusReduce(ReflectReduce):
         )
         if pol is True:
             print("Reducing polarisation-corrected data")
-            if (self.reflected_beam.m_spec_polcorr.all() == 0
-                    or self.direct_beam.m_spec_polcorr.all() == 0):
+            if (
+                self.reflected_beam.m_spec_polcorr.all() == 0
+                or self.direct_beam.m_spec_polcorr.all() == 0
+            ):
                 AttributeError(
                     "Error: flagged as polarised but no "
                     "corrected spectra in PlatypusNexus file!"
@@ -1146,8 +1148,9 @@ def _check_spin_channel(data, channel):
         in data, and false if not.
     """
 
-    if ((data.cat.pol_flip_status == channel[0]) and
-            (data.cat.anal_flip_status == channel[1])):
+    if (data.cat.pol_flip_status == channel[0]) and (
+        data.cat.anal_flip_status == channel[1]
+    ):
         return True
     else:
         return False
@@ -1196,16 +1199,16 @@ def polarised_correction(
 
     # Check that the input spin channels match the
     # flipper settings for those spin cross sections
-    if (pp is not None and _check_spin_channel(pp, (1, 1)) is False):
+    if pp is not None and _check_spin_channel(pp, (1, 1)) is False:
         print("Error: Input for ++ channel doesn't match flipper statuses!")
         return -1
-    elif (mp is not None and _check_spin_channel(mp, (0, 1)) is False):
+    elif mp is not None and _check_spin_channel(mp, (0, 1)) is False:
         print("Error: Input for -+ channel doesn't match flipper statuses!")
         return -1
-    elif (pm is not None and _check_spin_channel(pm, (1, 0)) is False):
+    elif pm is not None and _check_spin_channel(pm, (1, 0)) is False:
         print("Error: Input for +- channel doesn't match flipper statuses!")
         return -1
-    elif (mm is not None and _check_spin_channel(mm, (0, 0)) is False):
+    elif mm is not None and _check_spin_channel(mm, (0, 0)) is False:
         print("Error: Input for -- channel doesn't match flipper statuses!")
         return -1
 
@@ -1223,7 +1226,7 @@ def polarised_correction(
             "background": True,
             "lo_wavelength": 2.5,
             "hi_wavelength": 12.5,
-            "polarised": True
+            "polarised": True,
         }
 
     for channel in _not_none(mm, mp, pm, pp):
@@ -1242,20 +1245,24 @@ def polarised_correction(
         raw10 = pm
         raw11 = pp
         I00, I01, I10, I11 = correct_POL_efficiencies(
-            pp.processed_spectrum['m_lambda'][0],
-            I00=raw00.processed_spectrum['m_spec'][0],
-            I01=raw01.processed_spectrum['m_spec'][0],
-            I10=raw10.processed_spectrum['m_spec'][0],
-            I11=raw11.processed_spectrum['m_spec'][0]
+            pp.processed_spectrum["m_lambda"][0],
+            I00=raw00.processed_spectrum["m_spec"][0],
+            I01=raw01.processed_spectrum["m_spec"][0],
+            I10=raw10.processed_spectrum["m_spec"][0],
+            I11=raw11.processed_spectrum["m_spec"][0],
         )
-        raw00.processed_spectrum['m_spec_polcorr'] = np.asarray(
-            [[val[0] for val in I00]])
-        raw01.processed_spectrum['m_spec_polcorr'] = np.asarray(
-            [[val[0] for val in I01]])
-        raw10.processed_spectrum['m_spec_polcorr'] = np.asarray(
-            [[val[0] for val in I10]])
-        raw11.processed_spectrum['m_spec_polcorr'] = np.asarray(
-            [[val[0] for val in I11]])
+        raw00.processed_spectrum["m_spec_polcorr"] = np.asarray(
+            [[val[0] for val in I00]]
+        )
+        raw01.processed_spectrum["m_spec_polcorr"] = np.asarray(
+            [[val[0] for val in I01]]
+        )
+        raw10.processed_spectrum["m_spec_polcorr"] = np.asarray(
+            [[val[0] for val in I10]]
+        )
+        raw11.processed_spectrum["m_spec_polcorr"] = np.asarray(
+            [[val[0] for val in I11]]
+        )
     elif mp is None and pm is not None:
         print("One spin-flip channel detected. Assuming R+- = R-+.")
         mp = pm
@@ -1264,20 +1271,24 @@ def polarised_correction(
         raw10 = pm
         raw11 = pp
         I00, I01, I10, I11 = correct_POL_efficiencies(
-            pp.processed_spectrum['m_lambda'][0],
-            I00=raw00.processed_spectrum['m_spec'][0],
-            I01=raw01.processed_spectrum['m_spec'][0],
-            I10=raw10.processed_spectrum['m_spec'][0],
-            I11=raw11.processed_spectrum['m_spec'][0]
+            pp.processed_spectrum["m_lambda"][0],
+            I00=raw00.processed_spectrum["m_spec"][0],
+            I01=raw01.processed_spectrum["m_spec"][0],
+            I10=raw10.processed_spectrum["m_spec"][0],
+            I11=raw11.processed_spectrum["m_spec"][0],
         )
-        raw00.processed_spectrum['m_spec_polcorr'] = np.asarray(
-            [[val[0] for val in I00]])
-        raw01.processed_spectrum['m_spec_polcorr'] = np.asarray(
-            [[val[0] for val in I01]])
-        raw10.processed_spectrum['m_spec_polcorr'] = np.asarray(
-            [[val[0] for val in I10]])
-        raw11.processed_spectrum['m_spec_polcorr'] = np.asarray(
-            [[val[0] for val in I11]])
+        raw00.processed_spectrum["m_spec_polcorr"] = np.asarray(
+            [[val[0] for val in I00]]
+        )
+        raw01.processed_spectrum["m_spec_polcorr"] = np.asarray(
+            [[val[0] for val in I01]]
+        )
+        raw10.processed_spectrum["m_spec_polcorr"] = np.asarray(
+            [[val[0] for val in I10]]
+        )
+        raw11.processed_spectrum["m_spec_polcorr"] = np.asarray(
+            [[val[0] for val in I11]]
+        )
     elif pm is None and mp is not None:
         print("One spin-flip channel detected. Assuming R+- = R-+.")
         pm = mp
@@ -1286,41 +1297,47 @@ def polarised_correction(
         raw10 = pm
         raw11 = pp
         I00, I01, I10, I11 = correct_POL_efficiencies(
-            pp.processed_spectrum['m_lambda'][0],
-            I00=raw00.processed_spectrum['m_spec'][0],
-            I01=raw01.processed_spectrum['m_spec'][0],
-            I10=raw10.processed_spectrum['m_spec'][0],
-            I11=raw11.processed_spectrum['m_spec'][0]
+            pp.processed_spectrum["m_lambda"][0],
+            I00=raw00.processed_spectrum["m_spec"][0],
+            I01=raw01.processed_spectrum["m_spec"][0],
+            I10=raw10.processed_spectrum["m_spec"][0],
+            I11=raw11.processed_spectrum["m_spec"][0],
         )
-        raw00.processed_spectrum['m_spec_polcorr'] = np.asarray(
-            [[val[0] for val in I00]])
-        raw01.processed_spectrum['m_spec_polcorr'] = np.asarray(
-            [[val[0] for val in I01]])
-        raw10.processed_spectrum['m_spec_polcorr'] = np.asarray(
-            [[val[0] for val in I10]])
-        raw11.processed_spectrum['m_spec_polcorr'] = np.asarray(
-            [[val[0] for val in I11]])
+        raw00.processed_spectrum["m_spec_polcorr"] = np.asarray(
+            [[val[0] for val in I00]]
+        )
+        raw01.processed_spectrum["m_spec_polcorr"] = np.asarray(
+            [[val[0] for val in I01]]
+        )
+        raw10.processed_spectrum["m_spec_polcorr"] = np.asarray(
+            [[val[0] for val in I10]]
+        )
+        raw11.processed_spectrum["m_spec_polcorr"] = np.asarray(
+            [[val[0] for val in I11]]
+        )
     elif pm is None and mp is None:
         print("No spin-flip channel detected. Assuming R+- = R-+ = 0")
-        mp = np.zeros_like(pp.processed_spectrum['m_spec'][0])
-        pm = np.zeros_like(pp.processed_spectrum['m_spec'][0])
+        mp = np.zeros_like(pp.processed_spectrum["m_spec"][0])
+        pm = np.zeros_like(pp.processed_spectrum["m_spec"][0])
         raw00 = mm
         raw01 = mp
         raw10 = pm
         raw11 = pp
         I00, I01, I10, I11 = correct_POL_efficiencies(
-            pp.processed_spectrum['m_lambda'][0],
-            I00=raw00.processed_spectrum['m_spec'][0],
+            pp.processed_spectrum["m_lambda"][0],
+            I00=raw00.processed_spectrum["m_spec"][0],
             I01=raw01,
             I10=raw10,
-            I11=raw11.processed_spectrum['m_spec'][0]
+            I11=raw11.processed_spectrum["m_spec"][0],
         )
-        raw00.processed_spectrum['m_spec_polcorr'] = np.asarray(
-            [[val[0] for val in I00]])
+        raw00.processed_spectrum["m_spec_polcorr"] = np.asarray(
+            [[val[0] for val in I00]]
+        )
         raw01 = None
         raw10 = None
-        raw11.processed_spectrum['m_spec_polcorr'] = np.asarray(
-            [[val[0] for val in I11]])
+        raw11.processed_spectrum["m_spec_polcorr"] = np.asarray(
+            [[val[0] for val in I11]]
+        )
     return raw00, raw01, raw10, raw11
 
 
@@ -1364,17 +1381,17 @@ def correct_POL_efficiencies(
     p1a = 0.993
     p1b = 0.57
     p1c = 0.47
-    P1 = p1a - p1b * p1c**(wavelength).astype('float')
+    P1 = p1a - p1b * p1c ** (wavelength).astype("float")
 
     # Define analyser efficiency as function of wavelength
     p2a = 0.993
     p2b = 0.57
     p2c = 0.51
-    P2 = p2a - p2b * p2c**(wavelength).astype('float')
+    P2 = p2a - p2b * p2c ** (wavelength).astype("float")
 
     # Define flipper1 and flipper2 efficiencies
-    F1 = np.full((len(wavelength), 1), 0.003).astype('float')
-    F2 = np.full((len(wavelength), 1), 0.003).astype('float')
+    F1 = np.full((len(wavelength), 1), 0.003).astype("float")
+    F2 = np.full((len(wavelength), 1), 0.003).astype("float")
 
     if I01 is None and I10 is not None:
         # For the case when only one spin-flip channel is recorded
@@ -1395,9 +1412,10 @@ def correct_POL_efficiencies(
                 [(1 - p1l), 0, p1l, 0],
                 [0, (1 - p1l), 0, p1l],
                 [p1l, 0, (1 - p1l), 0],
-                [0, p1l, 0, (1 - p1l)]
+                [0, p1l, 0, (1 - p1l)],
             ]
-        ) for p1l in P1
+        )
+        for p1l in P1
     ]
 
     # Define analyser efficiency matrix
@@ -1407,9 +1425,10 @@ def correct_POL_efficiencies(
                 [(1 - p2l), p2l, 0, 0],
                 [p2l, (1 - p2l), 0, 0],
                 [0, 0, (1 - p2l), p2l],
-                [0, 0, p2l, (1 - p2l)]
+                [0, 0, p2l, (1 - p2l)],
             ]
-        ) for p2l in P2
+        )
+        for p2l in P2
     ]
     # Define flipper 1 efficiency matrix
     flipper1_eff_matrix = [
@@ -1418,9 +1437,10 @@ def correct_POL_efficiencies(
                 [1, 0, 0, 0],
                 [0, 1, 0, 0],
                 [f1l, 0, (1 - f1l), 0],
-                [0, f1l, 0, (1 - f1l)]
+                [0, f1l, 0, (1 - f1l)],
             ]
-        ).astype('float') for f1l in F1
+        ).astype("float")
+        for f1l in F1
     ]
     # Define flipper 2 efficiency matrix
     flipper2_eff_matrix = [
@@ -1429,19 +1449,21 @@ def correct_POL_efficiencies(
                 [1, 0, 0, 0],
                 [0, 1, 0, 0],
                 [f2l, 0, (1 - f2l), 0],
-                [0, f2l, 0, (1 - f2l)]
+                [0, f2l, 0, (1 - f2l)],
             ]
-        ).astype('float') for f2l in F2
+        ).astype("float")
+        for f2l in F2
     ]
 
     # Create efficiency matrices from individual
     # component efficiency matrices
     efficiencies_matrix = [
-        flip1 @ flip2 @ pol @ anal for flip1, flip2, pol, anal in zip(
+        flip1 @ flip2 @ pol @ anal
+        for flip1, flip2, pol, anal in zip(
             flipper1_eff_matrix,
             flipper2_eff_matrix,
             polariser_eff_matrix,
-            analyser_eff_matrix
+            analyser_eff_matrix,
         )
     ]
 
