@@ -1913,7 +1913,7 @@ class PlatypusNexus(ReflectNexus):
         self.prefix = "PLP"
         with _possibly_open_hdf_file(h5data, "r") as f:
             self.cat = PlatypusCatalogue(f)
-            if self.cat.mode == "POL" or self.cat.mode == "POLANAL":
+            if self.cat.mode in ["POL", "POLANAL"]:
                 self.cat = PolarisedCatalogue(f)
 
     def detector_average_unwanted_direction(self, detector):

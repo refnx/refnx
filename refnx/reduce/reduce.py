@@ -186,7 +186,7 @@ class ReflectReduce(object):
             direct_keywords.pop("event_filter")
 
         # If polarised, process direct beam but keep the corrected spectra
-        if direct_keywords["polarised"] is True:
+        if direct_keywords["polarised"]:
             polcorr = self.direct_beam.m_spec_polcorr
             self.direct_beam.process(**direct_keywords)
             self.direct_beam.m_spec_polcorr = polcorr
@@ -208,7 +208,7 @@ class ReflectReduce(object):
         reflect_keywords["wavelength_bins"] = self.direct_beam.m_lambda_hist[0]
 
         # If polarised, process reflected beam but keep the corrected spectra
-        if reflect_keywords["polarised"] is True:
+        if reflect_keywords["polarised"]:
             polcorr = self.reflected_beam.m_spec_polcorr
             self.reflected_beam.process(**reflect_keywords)
             self.reflected_beam.m_spec_polcorr = polcorr
@@ -466,7 +466,7 @@ class PlatypusReduce(ReflectReduce):
             self.direct_beam.m_spec,
             self.direct_beam.m_spec_sd,
         )
-        if pol is True:
+        if pol:
             print("Reducing polarisation-corrected data")
             if (
                 self.reflected_beam.m_spec_polcorr.all() == 0
