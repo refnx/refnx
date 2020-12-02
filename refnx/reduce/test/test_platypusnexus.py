@@ -188,6 +188,8 @@ class TestPlatypusNexus(object):
         # check that event mode reduction gives the same output as non-event
         # mode reduction.
         spectrum0 = self.f641.process(direct=False)
+        assert "reduction_options" in self.f641.processed_spectrum
+
         spectrum1 = self.f641.process(direct=False, eventmode=[], integrate=0)
         assert_allclose(spectrum0[1][0], spectrum1[1][0], rtol=0.001)
 
