@@ -92,12 +92,13 @@ class Data1D(object):
         if mask is not None:
             self._mask = np.broadcast_to(mask, self._y.shape)
 
-        if 0 in self.y or 0 in self._y_err:
+        if ((self.y is not None and 0 in self.y) or
+            (self.y_err is not None and 0 in self._y_err)):
             warnings.warn(
                 "y and/or y_err data contain zeros. It is recommended you"
                 " mask zero values to avoid NaNs in Objective.logl"
             )
-            
+
     def __len__(self):
         """
         the number of unmasked points in the dataset.
@@ -372,7 +373,13 @@ class Data1D(object):
         Masks any zero values in y and y_err data to avoid NaNs
         if calculating log-likelihood
         """
-        zero_mask = np.logical_and(self._y != 0, self._y_err != 0)
+        if self._y is None:
+            return
+
+        zero_mask = (self._y != 0)
+        if self._y_err is not None:
+            zero_mask = np.logical_and(zero_mask, self._y_err != 0)
+
         if self._mask is None:
             self.mask = zero_mask
         else:
