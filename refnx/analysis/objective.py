@@ -1225,6 +1225,12 @@ class Transform(object):
             et = np.copy(etemp)
         elif self.form == "logY":
             yt, et = EP.EPlog10(y, etemp)
+            if not np.isfinite(yt).all():
+                raise RuntimeError(
+                    "Some of the transformed data was non-finite."
+                    " Please check your datasets for points with zero or"
+                    " negative values."
+                )
         elif self.form == "YX4":
             yt = y * np.power(x, 4)
             et = etemp * np.power(x, 4)
