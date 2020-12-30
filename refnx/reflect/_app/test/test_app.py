@@ -88,7 +88,7 @@ def test_add_spline_save(qtbot, tmpdir):
     # get index of theoretical dataset --> structure --> slab1
     data_object_node = model.data_object_node("theoretical")
     model_node = data_object_node.child(1)
-    structure_node = model_node.child(3)
+    structure_node = model_node.child(4)
 
     # selection_model = myapp.ui.treeView.selectionModel()
     # slab_node = structure_node.child(1)
