@@ -43,11 +43,8 @@ contributions are welcomed.
 
     installation
     getting_started.ipynb
-    gui.rst
-    reflectometry_global.ipynb
-    inequality_constraints.ipynb
-    model_selection.ipynb
-    lipid.ipynb
+    gui
+    examples
     faq
     testimonials
     modules
