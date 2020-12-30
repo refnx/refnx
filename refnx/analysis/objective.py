@@ -1231,7 +1231,7 @@ class Transform(object):
                     "Some of the transformed data was non-finite."
                     " Please check your datasets for points with zero or"
                     " negative values.",
-                    RuntimeWarning
+                    RuntimeWarning,
                 )
         elif self.form == "YX4":
             yt = y * np.power(x, 4)
