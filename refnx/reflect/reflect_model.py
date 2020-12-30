@@ -281,6 +281,12 @@ class ReflectModel(object):
         `dq` keyword) is used. To use pointwise smearing the `x_err` keyword
         provided to `Objective.model` method must be an array, otherwise the
         smearing falls back to 'constant'.
+    q_offset: float or refnx.analysis.Parameter, optional
+        Compensates for uncertainties in the angle at which the measurement is
+        performed. A positive/negative `q_offset` corresponds to a situation
+        where the measured q values (incident angle) may have been under/over
+        estimated, and has the effect of shifting the calculated model to
+        lower/higher effective q values.
     """
 
     def __init__(
@@ -293,6 +299,7 @@ class ReflectModel(object):
         threads=-1,
         quad_order=17,
         dq_type="pointwise",
+        q_offset=0,
     ):
         self.name = name
         self._parameters = None
@@ -310,6 +317,8 @@ class ReflectModel(object):
         # x_err if supplied. There is therefore possibly no dependence on it.
         self._dq = possibly_create_parameter(dq, name="dq - resolution")
         self.dq_type = dq_type
+
+        self._q_offset = possibly_create_parameter(q_offset, name='q_offset')
 
         self._structure = None
         self.structure = structure
@@ -339,7 +348,8 @@ class ReflectModel(object):
             f"ReflectModel({self._structure!r}, name={self.name!r},"
             f" scale={self.scale!r}, bkg={self.bkg!r},"
             f" dq={self.dq!r}, threads={self.threads},"
-            f" quad_order={self.quad_order!r}, dq_type={self.dq_type!r})"
+            f" quad_order={self.quad_order!r}, dq_type={self.dq_type!r},"
+            f" q_offset={self.q_offset!r})"
         )
 
     @property
@@ -374,6 +384,19 @@ class ReflectModel(object):
     @scale.setter
     def scale(self, value):
         self._scale.value = value
+
+    @property
+    def q_offset(self):
+        r"""
+        :class:`refnx.analysis.Parameter` - compensates for any angular
+        misalignment during an experiment.
+
+        """
+        return self._q_offset
+
+    @q_offset.setter
+    def q_offset(self, value):
+        self._q_offset.value = value
 
     @property
     def bkg(self):
@@ -414,7 +437,7 @@ class ReflectModel(object):
             x_err = float(self.dq)
 
         return reflectivity(
-            x,
+            x + self.q_offset.value,
             self.structure.slabs()[..., :4],
             scale=self.scale.value,
             bkg=self.bkg.value,
@@ -450,7 +473,7 @@ class ReflectModel(object):
     def structure(self, structure):
         self._structure = structure
         p = Parameters(name="instrument parameters")
-        p.extend([self.scale, self.bkg, self.dq])
+        p.extend([self.scale, self.bkg, self.dq, self.q_offset])
 
         self._parameters = Parameters(name=self.name)
         self._parameters.extend([p, structure.parameters])
@@ -900,6 +923,12 @@ class MixedReflectModel(object):
         `dq` keyword) is used. To use pointwise smearing the `x_err` keyword
         provided to `Objective.model` method must be an array, otherwise the
         smearing falls back to 'constant'.
+    q_offset: float or refnx.analysis.Parameter, optional
+        Compensates for uncertainties in the angle at which the measurement is
+        performed. A positive/negative `q_offset` corresponds to a situation
+        where the measured q values (incident angle) may have been under/over
+        estimated, and has the effect of shifting the calculated model to
+        lower/higher effective q values.
     """
 
     def __init__(
@@ -912,6 +941,7 @@ class MixedReflectModel(object):
         threads=-1,
         quad_order=17,
         dq_type="pointwise",
+        q_offset=0.0,
     ):
         self.name = name
         self._parameters = None
@@ -943,6 +973,8 @@ class MixedReflectModel(object):
         self._dq = possibly_create_parameter(dq, name="dq - resolution")
         self.dq_type = dq_type
 
+        self._q_offset = possibly_create_parameter(q_offset, name='q_offset')
+
         self._structures = structures
 
     def __repr__(self):
@@ -951,7 +983,7 @@ class MixedReflectModel(object):
             f" scales={self._scales!r}, bkg={self._bkg!r},"
             f" name={self.name!r}, dq={self._dq!r},"
             f" threads={self.threads!r}, quad_order={self.quad_order!r},"
-            f" dq_type={self.dq_type!r})"
+            f" dq_type={self.dq_type!r}, q_offset={self.q_offset!r})"
         )
         return s
 
@@ -995,6 +1027,19 @@ class MixedReflectModel(object):
     @dq.setter
     def dq(self, value):
         self._dq.value = value
+
+    @property
+    def q_offset(self):
+        r"""
+        :class:`refnx.analysis.Parameter` - compensates for any angular
+        misalignment during an experiment.
+
+        """
+        return self._q_offset
+
+    @q_offset.setter
+    def q_offset(self, value):
+        self._q_offset.value = value
 
     @property
     def scales(self):
@@ -1047,7 +1092,7 @@ class MixedReflectModel(object):
 
         for scale, structure in zip(scales, self.structures):
             y += reflectivity(
-                x,
+                x + self.q_offset.value,
                 structure.slabs()[..., :4],
                 scale=scale,
                 dq=x_err,
@@ -1092,7 +1137,7 @@ class MixedReflectModel(object):
 
         """
         p = Parameters(name="instrument parameters")
-        p.extend([self.scales, self.bkg, self.dq])
+        p.extend([self.scales, self.bkg, self.dq, self.q_offset])
 
         self._parameters = Parameters(name=self.name)
         self._parameters.append([p])

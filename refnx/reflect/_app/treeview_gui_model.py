@@ -464,6 +464,8 @@ class ReflectModelNode(Node):
         self.appendChild(n)
         n = ParNode(data.dq, model, self)
         self.appendChild(n)
+        n = ParNode(data.q_offset, model, self)
+        self.appendChild(n)
 
         if isinstance(data, ReflectModel):
             n = StructureNode(data.structure, model, self)
