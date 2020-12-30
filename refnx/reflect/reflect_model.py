@@ -318,7 +318,7 @@ class ReflectModel(object):
         self._dq = possibly_create_parameter(dq, name="dq - resolution")
         self.dq_type = dq_type
 
-        self._q_offset = possibly_create_parameter(q_offset, name='q_offset')
+        self._q_offset = possibly_create_parameter(q_offset, name="q_offset")
 
         self._structure = None
         self.structure = structure
@@ -973,7 +973,7 @@ class MixedReflectModel(object):
         self._dq = possibly_create_parameter(dq, name="dq - resolution")
         self.dq_type = dq_type
 
-        self._q_offset = possibly_create_parameter(q_offset, name='q_offset')
+        self._q_offset = possibly_create_parameter(q_offset, name="q_offset")
 
         self._structures = structures
 
