@@ -447,6 +447,10 @@ class StructureNode(Node):
         self._model.endInsertRows()
 
 
+# the child note where structures start appearing in a ReflectModelNode
+STRUCT_OFFSET = 4
+
+
 class ReflectModelNode(Node):
     def __init__(self, data, model, parent=QtCore.QModelIndex()):
         super(ReflectModelNode, self).__init__(data, model, parent=parent)
@@ -477,7 +481,10 @@ class ReflectModelNode(Node):
 
     @property
     def structures(self):
-        return [self.child(i)._data for i in range(3, self.childCount())]
+        return [
+            self.child(i)._data
+            for i in range(STRUCT_OFFSET, self.childCount())
+        ]
 
     def data(self, column, role=QtCore.Qt.EditRole):
         if role == QtCore.Qt.CheckStateRole and column == 1:
@@ -497,7 +504,7 @@ class ReflectModelNode(Node):
 
     def remove_structure(self, row):
         # don't remove the last structure
-        if row < 3 or len(self.structures) < 2:
+        if row < STRUCT_OFFSET or len(self.structures) < 2:
             return
 
         # you have to be a mixedreflectmodel because there's more than one
@@ -516,8 +523,8 @@ class ReflectModelNode(Node):
             # do this before the Structure is popped.
             self._model.unlink_dependent_parameters(self.child(row))
 
-            structures.pop(row - 3)
-            scales.pop(row - 3)
+            structures.pop(row - STRUCT_OFFSET)
+            scales.pop(row - STRUCT_OFFSET)
             sf = possibly_create_parameter(scales[0], name="scale")
             new_model = ReflectModel(
                 structures[0], scale=sf, bkg=orig_model.bkg, dq=orig_model.dq
@@ -545,12 +552,14 @@ class ReflectModelNode(Node):
 
         # pop the structure and scale factor nodes
         self.popChild(row)
-        structures.pop(row - 3)
-        scales.pop(row - 3)
+        structures.pop(row - STRUCT_OFFSET)
+        scales.pop(row - STRUCT_OFFSET)
         self._model.endRemoveRows()
 
-        self._model.beginRemoveRows(self.child(0).index, row - 3, row - 3)
-        self.child(0).popChild(row - 3)
+        self._model.beginRemoveRows(
+            self.child(0).index, row - STRUCT_OFFSET, row - STRUCT_OFFSET
+        )
+        self.child(0).popChild(row - STRUCT_OFFSET)
         self._model.endRemoveRows()
 
     def insert_structure(self, row, structure):
@@ -573,24 +582,26 @@ class ReflectModelNode(Node):
             return
 
         # already a mixed model
-        # we can't insert at a lower place than the 3rd row
-        row = max(row, 3)
+        # we can't insert at a lower place than the 4rd row
+        row = max(row, 4)
         self._model.beginInsertRows(self.index, row, row)
 
         # insert the structure
-        orig_model.structures.insert(row - 3, structure)
+        orig_model.structures.insert(row - STRUCT_OFFSET, structure)
         v = 1 / len(orig_model.structures)
         sf = possibly_create_parameter(v, name="scale")
-        orig_model.scales.insert(row - 3, sf)
+        orig_model.scales.insert(row - STRUCT_OFFSET, sf)
 
         self.insertChild(row, n)
         self._model.endInsertRows()
 
         # insert a scale factor
-        self._model.beginInsertRows(self.child(0).index, row - 3, row - 3)
+        self._model.beginInsertRows(
+            self.child(0).index, row - STRUCT_OFFSET, row - STRUCT_OFFSET
+        )
         # add a scale factor
         n = ParNode(sf, self._model, self.child(0))
-        self.child(0).insertChild(row - 3, n)
+        self.child(0).insertChild(row - STRUCT_OFFSET, n)
         self._model.endInsertRows()
 
     def setData(self, column, value, role=QtCore.Qt.EditRole):
