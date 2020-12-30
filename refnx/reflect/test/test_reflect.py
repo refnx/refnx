@@ -779,11 +779,21 @@ class TestReflect(object):
         p = SLD(0.0)
         q = SLD(2.07)
         s = p(0, 0) | q(0, 3)
-        model = ReflectModel(s, scale=0.99, bkg=1e-8)
+        model = ReflectModel(s, scale=0.99, bkg=1e-8, q_offset=0.002)
         r = eval(repr(model))
 
         x = np.linspace(0.005, 0.3, 1000)
         assert_equal(r(x), model(x))
+
+    def test_q_offset(self):
+        p = SLD(0.0)
+        q = SLD(2.07)
+        s = p(0, 0) | q(0, 3)
+        model = ReflectModel(s, scale=0.99, bkg=1e-8, q_offset=0.002)
+        model2 = ReflectModel(s, scale=0.99, bkg=1e-8, q_offset=0.0)
+
+        x = np.linspace(0.01, 0.2, 3)
+        assert_equal(model(x - 0.002), model2(x))
 
     def test_FresnelTransform(self):
         t = FresnelTransform(2.07, 6.36, dq=5)
