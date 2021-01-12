@@ -9,6 +9,7 @@ from time import gmtime, strftime
 import string
 import warnings
 from contextlib import contextmanager
+from enum import Enum
 
 from scipy.optimize import leastsq, curve_fit
 from scipy.stats import t
@@ -618,6 +619,13 @@ class PolarisedCatalogue(PlatypusCatalogue):
             d["magnet_output_current"] = None
             self.is_magnet = False
         return d
+
+
+class SpinChannel(Enum):
+    UPUP = (1,1)
+    UPDOWN = (1,0)
+    DOWNUP = (0,1)
+    DOWNDOWN = (0,0)
 
 
 def basename_datafile(pth):
@@ -1907,8 +1915,21 @@ class PlatypusNexus(ReflectNexus):
         self.prefix = "PLP"
         with _possibly_open_hdf_file(h5data, "r") as f:
             self.cat = PlatypusCatalogue(f)
+            # If polarised, get polarised parameters 
             if (self.cat.mode == "POL" or self.cat.mode == "POLANAL"):
                 self.cat = PolarisedCatalogue(f)
+                # Set spin channels based of flipper statuses
+                if self.cat.pol_flip_status:
+                    if self.cat.anal_flip_status:
+                        self.spin_ch = SpinChannel.UPUP
+                    else:
+                        self.spin_ch = SpinChannel.UPDOWN
+                elif self.cat.anal_flip_status:
+                    self.spin_ch = SpinChannel.DOWNUP
+                else:
+                    self.spin_ch = SpinChannel.DOWNDOWN                
+
+        
 
     def detector_average_unwanted_direction(self, detector):
         """
