@@ -903,6 +903,7 @@ class ReflectNexus(object):
         # call process again, thereby saving time.
         self._arguments = {}
         self.prefix = None
+        self.spin_state = None
 
     def __getattr__(self, item):
         if item in self.__dict__:
@@ -1921,13 +1922,13 @@ class PlatypusNexus(ReflectNexus):
                 # Set spin channels based of flipper statuses
                 if self.cat.pol_flip_status:
                     if self.cat.anal_flip_status:
-                        self.spin_ch = SpinChannel.UPUP
+                        self.spin_state = SpinChannel.UPUP
                     else:
-                        self.spin_ch = SpinChannel.UPDOWN
+                        self.spin_state = SpinChannel.UPDOWN
                 elif self.cat.anal_flip_status:
-                    self.spin_ch = SpinChannel.DOWNUP
+                    self.spin_state = SpinChannel.DOWNUP
                 else:
-                    self.spin_ch = SpinChannel.DOWNDOWN                
+                    self.spin_state = SpinChannel.DOWNDOWN                
 
         
 
