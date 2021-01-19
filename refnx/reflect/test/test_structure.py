@@ -334,7 +334,6 @@ class TestStructure(object):
 
         # check that we can construct SLDs from a constrained par
         deut_par = Parameter(6.36)
-        deut_solvent = SLD(deut_par)
         h2o_solvent = SLD(-0.56)
 
         ms_val = 0.6 * deut_par + 0.4 * h2o_solvent.real
