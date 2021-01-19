@@ -306,3 +306,8 @@ in 0.1.13.
 - RuntimeError if a log transform creates non-finite numbers.
 - ReflectModels can now use a q_offset to correct for possible angular
   misalignments.
+- `possibly_create_parameter` and `is_parameter` now use `BaseParameter` for
+  their operation, rather than `Parameter`. Thus _BinaryOp and _UnaryOp can be
+  given to these operations and work. This enables construction of various
+  objects (SLD/Slab/etc) from constrained parameters, rather than setting a
+  constraint afterwards.

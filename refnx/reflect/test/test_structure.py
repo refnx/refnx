@@ -24,6 +24,7 @@ from refnx.reflect import (
 )
 from refnx.reflect.structure import _profile_slicer
 from refnx.analysis import Parameter, Interval, Parameters
+from refnx.analysis.parameter import _BinaryOp
 
 
 class TestStructure(object):
@@ -330,6 +331,21 @@ class TestStructure(object):
         assert_equal(s.thick.value, thickness.value)
         assert_equal(s.rough.value, roughness.value)
         assert_equal(s.vfsolv.value, vfsolv.value)
+
+        # check that we can construct SLDs from a constrained par
+        deut_par = Parameter(6.36)
+        deut_solvent = SLD(deut_par)
+        h2o_solvent = SLD(-0.56)
+
+        ms_val = 0.6 * deut_par + 0.4 * h2o_solvent.real
+        mixed_solvent = SLD(ms_val)
+        assert isinstance(mixed_solvent.real, _BinaryOp)
+        sld = complex(mixed_solvent)
+        assert_allclose(sld.real, 0.6 * 6.36 + 0.4 * -0.56)
+
+        deut_par.value = 5.0
+        sld = complex(mixed_solvent)
+        assert_allclose(sld.real, 0.6 * 5.0 + 0.4 * -0.56)
 
     def test_sld_slicer(self):
         q = np.linspace(0.005, 0.2, 100)
