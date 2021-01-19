@@ -283,7 +283,8 @@ class ManualBeamFinder(QtWidgets.QDialog):
         xs = xs[in_foreground]
 
         # calculate peak centre
-        self._true_centre, self._true_sd = peak_finder(xs, x=x)[1]
+        self._true_centre, _ = peak_finder(xs, x=x)[1]
+        self._true_sd = (hipx - lopx) / 4.0
 
         # redraw beam centre on detector image and cross section
         self.cross_section.l_bc.set_xdata(self._true_centre)

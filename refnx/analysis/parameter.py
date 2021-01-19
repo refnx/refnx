@@ -825,7 +825,7 @@ class _UnaryOp(BaseParameter):
 
 def is_parameter(x):
     """Test for Parameter-ness."""
-    return isinstance(x, Parameter)
+    return isinstance(x, BaseParameter)
 
 
 def is_parameters(x):
