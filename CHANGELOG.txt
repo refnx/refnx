@@ -311,3 +311,4 @@ in 0.1.13.
   given to these operations and work. This enables construction of various
   objects (SLD/Slab/etc) from constrained parameters, rather than setting a
   constraint afterwards.
+- MixedSlab is now allowed to be the first/last Component in a Structure.
