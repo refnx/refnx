@@ -281,7 +281,8 @@ class Structure(UserList):
             return None
 
         if not (
-            isinstance(self.data[-1], Slab) and isinstance(self.data[0], Slab)
+            isinstance(self.data[-1], (Slab, MixedSlab))
+            and isinstance(self.data[0], (Slab, MixedSlab))
         ):
             raise ValueError(
                 "The first and last Components in a Structure"
