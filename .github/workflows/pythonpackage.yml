@@ -12,7 +12,7 @@ jobs:
     strategy:
       max-parallel: 3
       matrix:
-        python-version: [3.7, 3.8]
+        python-version: [3.8, 3.9]
 
     steps:
     - uses: actions/checkout@v2
@@ -24,7 +24,7 @@ jobs:
     - name: setup apt dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install xvfb qt5-default opencl-headers ocl-icd-opencl-dev libpocl2
+        sudo apt-get install xvfb qt5-default opencl-headers ocl-icd-opencl-dev libpocl2 libhdf5-serial-dev libnetcdf-dev
         python -m pip install --upgrade pip
 
     - name: Install dependencies
@@ -81,7 +81,7 @@ jobs:
     strategy:
       max-parallel: 3
       matrix:
-        python-version: [3.7, 3.8]
+        python-version: [3.7, 3.8, 3.9]
 
     env:
       CC: /usr/bin/clang
@@ -95,7 +95,7 @@ jobs:
     - uses: actions/checkout@v2
 
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v1
+      uses: actions/setup-python@v2
       with:
         python-version: ${{ matrix.python-version }}
     - run: mkdir -p dist
@@ -121,6 +121,7 @@ jobs:
         delocate-wheel -v dist/*.whl
 
     - name: Install package and test with pytest
+      if: ${{ matrix.python-version == '3.8' }}
       env:
         MPLBACKEND: agg
       run: |
@@ -163,7 +164,7 @@ jobs:
     strategy:
       max-parallel: 3
       matrix:
-        python-version: [3.7, 3.8]
+        python-version: [3.7, 3.8, 3.9]
 
     steps:
     - uses: actions/checkout@v2
@@ -192,6 +193,7 @@ jobs:
         python setup.py bdist_wheel
 
     - name: Install package and test with pytest
+      if: ${{ matrix.python-version == '3.8' }}
       env:
         PYOPENCL_CTX: 0
       run: |

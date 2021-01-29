@@ -588,6 +588,9 @@ class TestFitterGauss(object):
             self.objective.logp() + self.objective.logl(),
         )
         assert_allclose(self.objective.nlpost(), -self.objective.logpost())
+        assert_allclose(
+            self.objective.nlpost(self.p0), -self.objective.logpost(self.p0)
+        )
 
         # if the priors are all uniform then the only difference between
         # logpost and logl is a constant. A minimiser should converge on the

@@ -672,8 +672,7 @@ class Parameter(BaseParameter):
 
     @value.setter
     def value(self, v):
-        value = float(v)
-
+        value = np.float64(v)
         self._value = value
 
     def _eval(self):

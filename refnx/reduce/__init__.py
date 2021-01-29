@@ -4,7 +4,6 @@ from refnx.reduce.reduce import (
     reduce_stitch,
     AutoReducer,
     polarised_correction,
-    SpinSet,
     PolarisedReduce,
 )
 from refnx.reduce.platypusnexus import (
@@ -18,6 +17,7 @@ from refnx.reduce.platypusnexus import (
     SpatzNexus,
     ReductionOptions,
     SpinChannel,
+    SpinSet,
 )
 from refnx.reduce.batchreduction import BatchReducer
 from refnx.reduce.xray import reduce_xrdml

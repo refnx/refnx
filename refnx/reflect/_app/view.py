@@ -139,7 +139,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         #######################################################################
 
         # attach the reflectivity graphs and the SLD profiles
-        self.modify_gui()
+        self.attach_graphs_to_gui()
 
         # holds miscellaneous information on program settings
         self.settings = ProgramSettings()
@@ -282,6 +282,10 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
             print("Couldn't load experiment")
             return
 
+        # remove and re-add datasets onto the GUI.
+        self.remove_graphs_from_gui()
+        self.attach_graphs_to_gui()
+
         try:
             self.ui.console_text_edit.setPlainText(state["history"])
             self.settings = state["settings"]
@@ -299,13 +303,10 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
             # older versions missing attributes saved in later versions.
             self.compensate_older_versions()
 
-            # remove and add datasetsToGraphs
-            self.reflectivitygraphs.remove_traces()
-            self.sldgraphs.remove_traces()
             ds = [d for d in self.treeModel.datastore]
             self.add_data_objects_to_graphs(ds)
             self.update_gui_model(ds)
-            self.reflectivitygraphs.draw()
+            # self.reflectivitygraphs.draw()
         except Exception as e:
             version = state.get("refnx.version", "N/A")
             msg(
@@ -1864,9 +1865,33 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
 
         reflect_model_node.remove_structure(item.row())
 
-    def modify_gui(self):
+    def remove_graphs_from_gui(self):
         """
-        Only called at program initialisation. Used to add the plots
+        Removes reflectivity and SLD graphs from GUI
+        """
+        tb = self.sldgraphs.mpl_toolbar
+        self.ui.gridLayout_4.removeWidget(tb)
+        tb.deleteLater()
+        del tb
+
+        self.sldgraphs.mpl_toolbar = None
+        self.ui.gridLayout_4.removeWidget(self.sldgraphs)
+        self.sldgraphs.deleteLater()
+        del self.sldgraphs
+
+        tb = self.reflectivitygraphs.mpl_toolbar
+        self.ui.gridLayout_5.removeWidget(tb)
+        tb.deleteLater()
+        del tb
+
+        self.reflectivitygraphs.mpl_toolbar = None
+        self.ui.gridLayout_5.removeWidget(self.reflectivitygraphs)
+        self.reflectivitygraphs.deleteLater()
+        del self.reflectivitygraphs
+
+    def attach_graphs_to_gui(self):
+        """
+        Used to add reflectivity and SLD graphs to GUI
         """
         self.sldgraphs = MySLDGraphs(self.ui.sld)
         self.ui.gridLayout_4.addWidget(self.sldgraphs)
@@ -2362,11 +2387,6 @@ class MyReflectivityGraphs(FigureCanvas):
             graph_properties.ax_residuals = None
         self.draw()
 
-    def remove_traces(self):
-        while len(self.axes[0].lines):
-            del self.axes[0].lines[0]
-        self.draw()
-
 
 class MySLDGraphs(FigureCanvas):
 
@@ -2457,12 +2477,6 @@ class MySLDGraphs(FigureCanvas):
     def remove_trace(self, data_object):
         if data_object.graph_properties.ax_sld_profile:
             data_object.graph_properties.ax_sld_profile.remove()
-        self.draw()
-
-    def remove_traces(self):
-        while len(self.axes[0].lines):
-            del self.axes[0].lines[0]
-
         self.draw()
 
 

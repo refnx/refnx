@@ -285,7 +285,13 @@ class SpatzCatalogue(Catalogue):
         )
 
         # logical size (mm) of 1 pixel in the scattering plane
-        d["qz_pixel_size"] = np.array([0.294])
+        try:
+            d["qz_pixel_size"] = h5d[
+                "entry1/instrument/parameters/qz_pixel_size"
+            ][:]
+        except KeyError:
+            # older SPZ files didn't have qz_pixel_size
+            d["qz_pixel_size"] = np.array([0.326])
 
     def _chopper_values(self, h5data):
         """
@@ -2005,8 +2011,7 @@ class PlatypusNexus(ReflectNexus):
         self.prefix = "PLP"
         with _possibly_open_hdf_file(h5data, "r") as f:
             self.cat = PlatypusCatalogue(f)
-            # If polarised, get polarised parameters 
-            if (self.cat.mode == "POL" or self.cat.mode == "POLANAL"):
+            if self.cat.mode in ["POL", "POLANAL"]:
                 self.cat = PolarisedCatalogue(f)
                 # Set spin channels based of flipper statuses
                 if self.cat.pol_flip_status:
@@ -2859,7 +2864,7 @@ def correct_for_gravity(
     lo_wavelength,
     hi_wavelength,
     theta=0,
-    qz_pixel_size=0.284,
+    qz_pixel_size=0.294,
 ):
     """
     Returns a gravity corrected yt plot, given the data, its associated errors,

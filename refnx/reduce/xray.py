@@ -38,7 +38,7 @@ def reduce_xrdml(f, bkg=None, scale=None, sample_length=None):
     spec = parse_xrdml_file(f)
 
     reflectivity = spec["intensities"] / spec["count_time"]
-    reflectivity_s = np.sqrt(reflectivity) / spec["count_time"]
+    reflectivity_s = np.sqrt(spec["intensities"]) / spec["count_time"]
 
     # do the background subtraction
     if bkg is not None:

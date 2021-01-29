@@ -1161,13 +1161,6 @@ class PolarisedReduce(object):
        
         self.direct_beams = SpinSet(direct_beams, direct=True)
 
-
-
-        if not pp or not mm:
-            raise ValueError(
-        "Need at least non-spin-flip channels for PolarisedReduce"
-            )
-
         # deal with reduction options first
         options = [ReductionOptions()] * len(direct_beams)
         try:
@@ -1250,8 +1243,13 @@ def polarised_correction(
         print("Error: Input for -- channel doesn't match flipper statuses!")
         return -1
 
-
-
+    # Check if R++ or R-- channel is missing
+    if I00 is None:
+        print("Error: Missing R-- channel")
+        return -1
+    elif I11 is None:
+        print("Error: Missing R++ channel")
+        return -1
 
     # Initialise reduction options if not passed to function
     if reduction_options is None:
