@@ -1131,52 +1131,6 @@ class AutoReducer(object):
         return fname
 
 
-class PolarisedReduce(object):
-    """
-    Corrects reflected spectra for polarisation efficiency, and
-    reduces the data with direct beams.
-
-    Parameters
-    ----------
-    direct_beams: list of {str, h5data}
-        list of str, or list of h5py file handles pointing to
-        direct beam runs for each spin channel at the first angle
-
-    scale: float or array-like
-        Scale factors corresponding to each direct beam.
-
-    reduction_options: dict, or list of dict
-        Specifies the reduction options for each of the direct beams.
-        A default set of options is provided by
-        `refnx.reduce.ReductionOptions`.
-
-    data_folder: {str, Path}
-        Path to the data folder containing the data to be reduced.
-
-    """
-
-    def __init__(self, direct_beams, reduction_options=None, data_folder=None):
-        
-        self.data_folder = data_folder
-       
-        self.direct_beams = SpinSet(direct_beams, direct=True)
-
-        # deal with reduction options first
-        options = [ReductionOptions()] * len(direct_beams)
-        try:
-            if reduction_options is not None:
-                options = []
-                for i in range(len(direct_beams)):
-                    if isinstance(reduction_options[i], dict):
-                        options.append(reduction_options[i])
-                    else:
-                        options.append(ReductionOptions())
-        except KeyError:
-            # reduction_options may be an individual dict
-            if isinstance(reduction_options, dict):
-                options = [reduction_options] * len(direct_beams)
-        
-
 def _check_spin_channel(data, channel):
     """
     Checks that the data measured corresponds
