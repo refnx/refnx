@@ -628,6 +628,9 @@ class PolarisedCatalogue(PlatypusCatalogue):
 
 
 class SpinChannel(Enum):
+    """
+    Describes the spin state of a polarised neutron beam. 
+    """
     UPUP = (1,1)
     UPDOWN = (1,0)
     DOWNUP = (0,1)
@@ -635,12 +638,23 @@ class SpinChannel(Enum):
 
 
 class SpinSet(object):
+    """
+    Describes a set of spin-channels at a given angle. 
 
+    TODO: implement polarisation efficiency correction in this class
+    
+    Parameters
+    ----------
+    list of {str, h5data}
+        list of str, or list of h5py file handles pointing to
+        a set of polarised neutron beam files
+
+    data_folder: {str, Path}
+        Path to the data folder containing the data to be reduced.
+    """
 
     def __init__(self, dataset, data_folder=None):
 
-
-        self.mm, self.mp, self.pm, self.pp = None, None, None, None
         # Currently only Platypus has polarisation elements
         self.reflect_klass = PlatypusNexus
 
@@ -651,49 +665,47 @@ class SpinSet(object):
             raise ValueError("Too few spin channels! Need at least R++ and R--.")
             
         if isinstance(dataset[0], PlatypusNexus):
-            beams = self.arrange_spin_channels(dataset)
+            self.beams = self.arrange_spin_channels(dataset)
         elif type(dataset[0]) is str:
             fnames = [os.path.join(self.data_folder, dset) for dset in dataset]
             PLPset = [self.reflect_klass(d) for d in fnames]
-            print(PLPset)
-            beams = self.arrange_spin_channels(*PLPset)
+
+            self.beams = self.arrange_spin_channels(*PLPset)
         else:
             print('hmm')
             #self.direct_beams = self.reflect_klass(dataset)
         
-        # Check beam spin channels are valid
-        for beam in beams:
-            if beam.spin_state is SpinChannel.UPUP:
-                self.pp = beam
-            if beam.spin_state is  SpinChannel.UPDOWN:
-                self.pm = beam
-            if beam.spin_state is  SpinChannel.DOWNUP:
-                self.mp = beam
-            if beam.spin_state is  SpinChannel.DOWNDOWN:
-                self.mm = beam
+        self.mm, self.mp, self.pm, self.pp = self.beams
+
 
     @property
     def spin_channels(self):
-
-        return (
-            self.mm.spin_state,
-            self.mp.spin_state,
-            self.pm.spin_state,
-            self.pp.spin_state
-        )
-
+        return [
+            s.spin_state.value if s is not None else None for s in [
+                self.mm, self.mp, self.pm, self.pp
+            ]
+        ]
+        
     def arrange_spin_channels(self, *data):
         """
         Function that takes a random input of spin channels at 
         a single angle and returns them arranged according to
-        --, -+, +-, ++
+        --, -+, +-, ++ and replaces the spin channel with None
+        if it was not measured.
         """
-        arranged = sorted(
-            data, key=lambda scan : int(
-                ''.join(map(str, scan.spin_state.value)),2
-            )
-        )
-        return arranged
+        states = [None]*4
+
+        for a in _not_none(*data):
+            if a.spin_state is SpinChannel.DOWNDOWN:
+                states[0] = a
+            elif a.spin_state is SpinChannel.DOWNUP:
+                states[1] = a
+            elif a.spin_state is SpinChannel.UPDOWN:
+                states[2] = a
+            elif a.spin_state is SpinChannel.UPUP:
+                states[3] = a
+
+        return states
 
     def process_beams(self, reduction_options=None):
 
@@ -707,20 +719,26 @@ class SpinSet(object):
         for beam in _not_none(self.mm, self.mp, self.pm, self.pp):
             beam.process(**reduction_options)
 
-
     def plot_spectra(self, **kwargs):
         """
         Plots the processed spectrums for each spin state in the SpinSet
 
         Requires matplotlib to be installed
         """
-        fig, ax = self.mm.plot(label=self.mm.spin_state)
+        fig, ax = self.mm.plot(**kwargs)
 
         for spinch in _not_none(self.mp, self.pm, self.pp):
-            fig, ax = spinch.plot(fig=fig, label=spinch.spin_state)
+            fig, ax = spinch.plot(fig=fig, **kwargs)
 
         fig.legend()
         return fig, ax 
+
+
+def _not_none(*arrays):
+    """
+    Returns input if input is not not None
+    """
+    return [array for array in arrays if array is not None]
 
 
 def basename_datafile(pth):

@@ -3,8 +3,6 @@ from refnx.reduce.reduce import (
     SpatzReduce,
     reduce_stitch,
     AutoReducer,
-    polarised_correction,
-    PolarisedReduce,
 )
 from refnx.reduce.platypusnexus import (
     catalogue,
@@ -13,6 +11,7 @@ from refnx.reduce.platypusnexus import (
     basename_datafile,
     datafile_number,
     accumulate_HDF_files,
+    _not_none,
     Catalogue,
     SpatzNexus,
     ReductionOptions,

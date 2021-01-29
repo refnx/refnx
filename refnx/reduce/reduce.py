@@ -17,6 +17,7 @@ from refnx.reduce.platypusnexus import (
     basename_datafile,
     SpatzNexus,
     ReductionOptions,
+    _not_none,
     SpinChannel,
     SpinSet,
 )
@@ -1298,13 +1299,6 @@ def polarised_correction(
         I11.processed_spectrum['m_spec_polcorr'] = np.asarray(
             [[val[0] for val in pp_spec]])
     return I00, I01, I10, I11
-
-
-def _not_none(*arrays):
-    """
-    Returns input if input is not not None
-    """
-    return [array for array in arrays if array is not None]
 
 
 def correct_POL_efficiencies(
