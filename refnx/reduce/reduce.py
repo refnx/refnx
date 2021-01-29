@@ -18,6 +18,7 @@ from refnx.reduce.platypusnexus import (
     SpatzNexus,
     ReductionOptions,
     SpinChannel,
+    SpinSet,
 )
 from refnx.util import ErrorProp as EP
 import refnx.util.general as general
@@ -1130,6 +1131,59 @@ class AutoReducer(object):
         return fname
 
 
+class PolarisedReduce(object):
+    """
+    Corrects reflected spectra for polarisation efficiency, and
+    reduces the data with direct beams.
+
+    Parameters
+    ----------
+    direct_beams: list of {str, h5data}
+        list of str, or list of h5py file handles pointing to
+        direct beam runs for each spin channel at the first angle
+
+    scale: float or array-like
+        Scale factors corresponding to each direct beam.
+
+    reduction_options: dict, or list of dict
+        Specifies the reduction options for each of the direct beams.
+        A default set of options is provided by
+        `refnx.reduce.ReductionOptions`.
+
+    data_folder: {str, Path}
+        Path to the data folder containing the data to be reduced.
+
+    """
+
+    def __init__(self, direct_beams, reduction_options=None, data_folder=None):
+        
+        self.data_folder = data_folder
+       
+        self.direct_beams = SpinSet(direct_beams, direct=True)
+
+
+
+        if not pp or not mm:
+            raise ValueError(
+        "Need at least non-spin-flip channels for PolarisedReduce"
+            )
+
+        # deal with reduction options first
+        options = [ReductionOptions()] * len(direct_beams)
+        try:
+            if reduction_options is not None:
+                options = []
+                for i in range(len(direct_beams)):
+                    if isinstance(reduction_options[i], dict):
+                        options.append(reduction_options[i])
+                    else:
+                        options.append(ReductionOptions())
+        except KeyError:
+            # reduction_options may be an individual dict
+            if isinstance(reduction_options, dict):
+                options = [reduction_options] * len(direct_beams)
+        
+
 def _check_spin_channel(data, channel):
     """
     Checks that the data measured corresponds
@@ -1162,13 +1216,13 @@ def polarised_correction(
 
     Parameters
     ----------
-    I11 : PlatypusNexus object
-        Polarised spectra for ++ spin channel
-    I10 : PlatypusNexus object
-        Polarised spectra for +- spin channel
-    I01 : PlatypusNexus object
-        Polarised spectra for -+ spin channel
     I00 : PlatypusNexus object
+        Polarised spectra for ++ spin channel
+    I01 : PlatypusNexus object or None
+        Polarised spectra for +- spin channel
+    I10 : PlatypusNexus object or None
+        Polarised spectra for -+ spin channel
+    I11 : PlatypusNexus object
         Polarised spectra for -- spin channel
 
     Returns
@@ -1196,13 +1250,8 @@ def polarised_correction(
         print("Error: Input for -- channel doesn't match flipper statuses!")
         return -1
 
-    # Check if R++ or R-- channel is missing
-    if I00 is None:
-        print("Error: Missing R-- channel")
-        return -1
-    elif I11 is None:
-        print("Error: Missing R++ channel")
-        return -1
+
+
 
     # Initialise reduction options if not passed to function
     if reduction_options is None:
@@ -1305,18 +1354,6 @@ def _not_none(*arrays):
     """
     return [array for array in arrays if array is not None]
 
-def arrange_spin_channels(*data):
-    """
-    Function that takes a random input of spin channels at 
-    a single angle and returns them arranged according to
-    --, -+, +-, ++
-    """
-    arranged = sorted(
-        data, key=lambda scan : int(
-            ''.join(map(str, scan.spin_state.value)),2
-        )
-    )
-    return arranged
 
 def correct_POL_efficiencies(
     wavelength, I00=None, I01=None, I10=None, I11=None
@@ -1451,106 +1488,6 @@ def correct_POL_efficiencies(
     I11_polcorr = [corr_pt[3] for corr_pt in np.array(corrected_data)]
 
     return I00_polcorr, I01_polcorr, I10_polcorr, I11_polcorr
-
-class PolarisedReduce(object):
-    """
-    Corrects reflected spectra for polarisation efficiency, and
-    reduces the data with direct beams.
-
-    Parameters
-    ----------
-    direct_beams: list of {str, h5data}
-        list of str, or list of h5py file handles pointing to
-        direct beam runs for each spin channel at the first angle
-
-    scale: float or array-like
-        Scale factors corresponding to each direct beam.
-
-    reduction_options: dict, or list of dict
-        Specifies the reduction options for each of the direct beams.
-        A default set of options is provided by
-        `refnx.reduce.ReductionOptions`.
-
-    data_folder: {str, Path}
-        Path to the data folder containing the data to be reduced.
-
-    """
-
-    def __init__(self, direct_beams, reduction_options=None, data_folder=None):
-        
-        self.data_folder = data_folder
-        self.pp = None
-        self.mm = None
-        self.pm = None
-        self.mp = None
-
-        
-        self.direct_beams = SpinSet(direct_beams)
-
-
-
-        if not pp or not mm:
-            raise ValueError(
-        "Need at least non-spin-flip channels for PolarisedReduce"
-            )
-
-        # deal with reduction options first
-        options = [ReductionOptions()] * len(direct_beams)
-        try:
-            if reduction_options is not None:
-                options = []
-                for i in range(len(direct_beams)):
-                    if isinstance(reduction_options[i], dict):
-                        options.append(reduction_options[i])
-                    else:
-                        options.append(ReductionOptions())
-        except KeyError:
-            # reduction_options may be an individual dict
-            if isinstance(reduction_options, dict):
-                options = [reduction_options] * len(direct_beams)
-        
-        
-class SpinSet(object):
-
-
-    def __init__(self, dataset, data_folder=None):
-        # Currently only Platypus has polarisation elements
-        self.reflect_klass = PlatypusNexus
-        self.data_folder = data_folder
-        if len(dataset)> 4:
-            raise ValueError("Too many spin channels!")
-        if len(dataset) < 2:
-            raise ValueError("Too few spin channels! Need at least R++ and R--.")
-            
-        if isinstance(dataset[0], PlatypusNexus):
-            self.direct_beams = arrange_spin_channels(dataset)
-        elif type(dataset[0]) is str:
-            dataset = [os.path.join(self.data_folder, dset) for dset in dataset]
-            print(np.shape(dataset))
-            self.direct_beams = arrange_spin_channels([self.reflect_klass(d) for d in dataset])
-        else:
-            print('hmm')
-            #self.direct_beams = self.reflect_klass(dataset)
-        
-        # Check direct beam spin channels are valid
-        for beam in self.direct_beams:
-            if isinstance(beam, SpinChannel.UPUP):
-                self.is_pp = True
-                self.pp = PlatypusReduce(beam)
-            if isinstance(beam, SpinChannel.UPDOWN):
-                self.is_pm = True
-                self.pm = PlatypusReduce(beam)
-            if isinstance(beam, SpinChannel.DOWNUP):
-                self.is_mp = True
-                self.mp = PlatypusReduce(beam)
-            if isinstance(beam, SpinChannel.DOWNDOWN):
-                self.is_mm = True
-                self.mm = PlatypusReduce(beam)
-
-
-
-
-
 
 
 if __name__ == "__main__":

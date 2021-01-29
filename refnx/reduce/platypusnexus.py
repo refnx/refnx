@@ -628,6 +628,95 @@ class SpinChannel(Enum):
     DOWNDOWN = (0,0)
 
 
+class SpinSet(object):
+
+
+    def __init__(self, dataset, data_folder=None):
+
+
+        self.mm, self.mp, self.pm, self.pp = None, None, None, None
+        # Currently only Platypus has polarisation elements
+        self.reflect_klass = PlatypusNexus
+
+        self.data_folder = data_folder
+        if len(dataset)> 4:
+            raise ValueError("Too many spin channels!")
+        if len(dataset) < 2:
+            raise ValueError("Too few spin channels! Need at least R++ and R--.")
+            
+        if isinstance(dataset[0], PlatypusNexus):
+            beams = self.arrange_spin_channels(dataset)
+        elif type(dataset[0]) is str:
+            fnames = [os.path.join(self.data_folder, dset) for dset in dataset]
+            PLPset = [self.reflect_klass(d) for d in fnames]
+            print(PLPset)
+            beams = self.arrange_spin_channels(*PLPset)
+        else:
+            print('hmm')
+            #self.direct_beams = self.reflect_klass(dataset)
+        
+        # Check beam spin channels are valid
+        for beam in beams:
+            if beam.spin_state is SpinChannel.UPUP:
+                self.pp = beam
+            if beam.spin_state is  SpinChannel.UPDOWN:
+                self.pm = beam
+            if beam.spin_state is  SpinChannel.DOWNUP:
+                self.mp = beam
+            if beam.spin_state is  SpinChannel.DOWNDOWN:
+                self.mm = beam
+
+    @property
+    def spin_channels(self):
+
+        return (
+            self.mm.spin_state,
+            self.mp.spin_state,
+            self.pm.spin_state,
+            self.pp.spin_state
+        )
+
+    def arrange_spin_channels(self, *data):
+        """
+        Function that takes a random input of spin channels at 
+        a single angle and returns them arranged according to
+        --, -+, +-, ++
+        """
+        arranged = sorted(
+            data, key=lambda scan : int(
+                ''.join(map(str, scan.spin_state.value)),2
+            )
+        )
+        return arranged
+
+    def process_beams(self, reduction_options=None):
+
+        if reduction_options is None:
+            reduction_options = {
+                "lo_wavelength" : 2.5,
+                "hi_wavelength" : 12.5,
+                "rebin_percent" : 3,
+                }
+
+        for beam in _not_none(self.mm, self.mp, self.pm, self.pp):
+            beam.process(**reduction_options)
+
+
+    def plot_spectra(self, **kwargs):
+        """
+        Plots the processed spectrums for each spin state in the SpinSet
+
+        Requires matplotlib to be installed
+        """
+        fig, ax = self.mm.plot(label=self.mm.spin_state)
+
+        for spinch in _not_none(self.mp, self.pm, self.pp):
+            fig, ax = spinch.plot(fig=fig, label=spinch.spin_state)
+
+        fig.legend()
+        return fig, ax 
+
+
 def basename_datafile(pth):
     """
     Given a NeXUS path return the basename minus the file extension.
