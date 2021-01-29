@@ -46,7 +46,13 @@ from ._spline import SplineDialog
 from ._mcmc import ProcessMCMCDialog, SampleMCMCDialog, _plots
 
 import refnx
-from refnx.analysis import CurveFitter, Objective, Transform, GlobalObjective
+from refnx.analysis import (
+    CurveFitter,
+    Objective,
+    Transform,
+    GlobalObjective,
+    Parameter,
+)
 from refnx.reflect import (
     SLD,
     ReflectModel,
@@ -297,11 +303,12 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
 
         try:
             self.treeModel._data = state["datastore"]
-            self.treeModel.rebuild()
 
             # amend the internal state to compensate for mtft files saved in
             # older versions missing attributes saved in later versions.
             self.compensate_older_versions()
+
+            self.treeModel.rebuild()
 
             ds = [d for d in self.treeModel.datastore]
             self.add_data_objects_to_graphs(ds)
@@ -373,6 +380,10 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         for do in self.treeModel.datastore:
             model = do.model
             model.dq_type = "pointwise"
+
+            if not hasattr(model, "_q_offset"):
+                model._q_offset = Parameter(0.0, name="q_offset")
+
             if isinstance(model, MixedReflectModel):
                 strcs = [model.structures]
             else:

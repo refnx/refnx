@@ -37,6 +37,7 @@ except ImportError:
 
 from refnx._lib import flatten
 from refnx.analysis import Parameters, Parameter, possibly_create_parameter
+from refnx.analysis.parameter import BaseParameter
 from refnx.reflect.interface import Interface, Erf, Step
 from refnx.reflect.reflect_model import get_reflect_backend
 
@@ -280,7 +281,8 @@ class Structure(UserList):
             return None
 
         if not (
-            isinstance(self.data[-1], Slab) and isinstance(self.data[0], Slab)
+            isinstance(self.data[-1], (Slab, MixedSlab))
+            and isinstance(self.data[0], (Slab, MixedSlab))
         ):
             raise ValueError(
                 "The first and last Components in a Structure"
@@ -792,12 +794,12 @@ class SLD(Scatterer):
         elif isinstance(value, SLD):
             self.real = value.real
             self.imag = value.imag
-        elif isinstance(value, Parameter):
+        elif isinstance(value, BaseParameter):
             self.real = value
         elif (
             hasattr(value, "__len__")
-            and isinstance(value[0], Parameter)
-            and isinstance(value[1], Parameter)
+            and isinstance(value[0], BaseParameter)
+            and isinstance(value[1], BaseParameter)
         ):
             self.real = value[0]
             self.imag = value[1]

@@ -14,6 +14,8 @@ from refnx.analysis.parameter import (
     constraint_tree,
     build_constraint_from_tree,
     possibly_create_parameter,
+    is_parameter,
+    _BinaryOp,
 )
 
 
@@ -73,6 +75,13 @@ class TestParameter(object):
 
         x.value = 10
         assert_equal(y.value, 2.0 + np.sin(10))
+
+    def test_is_parameter(self):
+        p = Parameter(1.0)
+        assert is_parameter(p)
+
+        assert isinstance(0.5 * p, _BinaryOp)
+        assert is_parameter(0.5 * p)
 
     def test_repr(self):
         p = Parameter(value=5, name="pop", vary=True)
@@ -229,6 +238,9 @@ class TestParameter(object):
         assert_allclose(q.bounds.lb, -1)
         assert_allclose(q.bounds.ub, 2.0)
         assert q.vary
+
+        q = possibly_create_parameter(0.5 * p)
+        assert isinstance(q, _BinaryOp)
 
 
 class TestParameters(object):

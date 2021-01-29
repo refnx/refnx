@@ -301,4 +301,14 @@ in 0.1.13.
  setter)
 - volume fraction of solvent can now be used when constructing a Slab from a
  Scatterer.
-- Fully remove traces from graph when opening new experiments
+- Fully remove traces from graph when opening new experiments.
+- Store reduction_options when processing spectra.
+- RuntimeError if a log transform creates non-finite numbers.
+- ReflectModels can now use a q_offset to correct for possible angular
+  misalignments.
+- `possibly_create_parameter` and `is_parameter` now use `BaseParameter` for
+  their operation, rather than `Parameter`. Thus _BinaryOp and _UnaryOp can be
+  given to these operations and work. This enables construction of various
+  objects (SLD/Slab/etc) from constrained parameters, rather than setting a
+  constraint afterwards.
+- MixedSlab is now allowed to be the first/last Component in a Structure.

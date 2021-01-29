@@ -1364,7 +1364,8 @@ class ReflectNexus(object):
         - m_beampos - beam_centre for each spectrum, (n_spectra, )
         - m_lambda - wavelengths for each spectrum, (n_spectra, TOF)
         - m_lambda_fwhm - corresponding FWHM of wavelength distribution
-        - m_lambda_hist - wavelength bins for each spectrum, (n_spectra, TOF)
+        - m_lambda_hist - wavelength bins for each spectrum,
+                          (n_spectra, TOF + 1)
         - m_spec_tof - TOF for each wavelength bin, (n_spectra, TOF)
         - mode - the experimental mode, e.g. FOC/MT/POL/POLANAL/SB/DB
         - detector_z - detector height or angle, (n_spectra, )
@@ -1372,6 +1373,7 @@ class ReflectNexus(object):
         - domega - collimation uncertainty
         - lopx - lowest extent of specular beam (in pixels), (n_spectra, )
         - hipx - highest extent of specular beam (in pixels), (n_spectra, )
+        - reduction_options - dict of options used to process the spectra
 
         Returns
         -------
@@ -1855,6 +1857,7 @@ class ReflectNexus(object):
         d["lopx"] = lopx
         d["hipx"] = hipx
         d["start_time"] = start_time
+        d["reduction_options"] = options
 
         self.processed_spectrum = d
         return m_lambda, m_spec, m_spec_sd

@@ -1,3 +1,4 @@
+import warnings
 import numpy as np
 from numpy.linalg import LinAlgError
 from scipy.optimize._numdiff import approx_derivative
@@ -593,8 +594,8 @@ class Objective(BaseObjective):
         logl += (y - model) ** 2 / var_y
 
         # nans play havoc
-        # if np.isnan(logl).any():
-        #     raise RuntimeError("Objective.logl encountered a NaN")
+        if np.isnan(logl).any():
+            raise RuntimeError("Objective.logl encountered a NaN.")
 
         # add on extra 'potential' terms from the model.
         extra_potential = self.model.logp()
@@ -1225,6 +1226,13 @@ class Transform(object):
             et = np.copy(etemp)
         elif self.form == "logY":
             yt, et = EP.EPlog10(y, etemp)
+            if not np.isfinite(yt).all():
+                warnings.warn(
+                    "Some of the transformed data was non-finite."
+                    " Please check your datasets for points with zero or"
+                    " negative values.",
+                    RuntimeWarning,
+                )
         elif self.form == "YX4":
             yt = y * np.power(x, 4)
             et = etemp * np.power(x, 4)
