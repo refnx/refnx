@@ -375,7 +375,6 @@ class TestPlatypusNexus(object):
         assert_almost_equal(self.f8864.cat.cat["anal_flip_current"], 0)
         assert_almost_equal(self.f8864.cat.cat["pol_flip_current"], 0)
 
-
         # Check SpinChannel for each file
         assert_(self.f8861.spin_state == SpinChannel.UPUP)
         assert_(self.f8862.spin_state == SpinChannel.UPDOWN)
