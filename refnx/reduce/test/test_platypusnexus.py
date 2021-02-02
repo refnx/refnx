@@ -429,11 +429,20 @@ class TestPlatypusNexus(object):
         assert_almost_equal(self.f8864.cat.cat["anal_flip_current"], 0)
         assert_almost_equal(self.f8864.cat.cat["pol_flip_current"], 0)
 
+<<<<<<< HEAD
         # Check SpinChannel for each file
         assert self.f8861.spin_state == SpinChannel.UP_UP
         assert self.f8862.spin_state == SpinChannel.UP_DOWN
         assert self.f8863.spin_state == SpinChannel.DOWN_UP
         assert self.f8864.spin_state == SpinChannel.DOWN_DOWN
+=======
+
+        # Check SpinChannel for each file
+        assert_(self.f8861.spin_state == SpinChannel.UPUP)
+        assert_(self.f8862.spin_state == SpinChannel.UPDOWN)
+        assert_(self.f8863.spin_state == SpinChannel.DOWNUP)
+        assert_(self.f8864.spin_state == SpinChannel.DOWNDOWN)
+>>>>>>> ADD: test SpinChannel
 
     def test_PNR_magnet_read(self):
         self.f8861.process()
