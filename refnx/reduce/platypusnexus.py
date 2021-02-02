@@ -631,10 +631,11 @@ class SpinChannel(Enum):
     """
     Describes the spin state of a polarised neutron beam.
     """
-    UPUP = (1,1)
-    UPDOWN = (1,0)
-    DOWNUP = (0,1)
-    DOWNDOWN = (0,0)
+
+    UPUP = (1, 1)
+    UPDOWN = (1, 0)
+    DOWNUP = (0, 1)
+    DOWNDOWN = (0, 0)
 
 
 class SpinSet(object):
@@ -662,7 +663,9 @@ class SpinSet(object):
         if len(dataset) > 4:
             raise ValueError("Too many spin channels!")
         if len(dataset) < 2:
-            raise ValueError("Too few spin channels! Need at least R++ and R--.")
+            raise ValueError(
+                "Too few spin channels! Need at least R++ and R--."
+            )
         if isinstance(dataset[0], PlatypusNexus):
             self.beams = self.arrange_spin_channels(dataset)
         elif type(dataset[0]) is str:
@@ -677,9 +680,8 @@ class SpinSet(object):
     @property
     def spin_channels(self):
         return [
-            s.spin_state.value if s is not None else None for s in [
-                self.mm, self.mp, self.pm, self.pp
-            ]
+            s.spin_state.value if s is not None else None
+            for s in [self.mm, self.mp, self.pm, self.pp]
         ]
 
     def arrange_spin_channels(self, *data):
@@ -707,9 +709,9 @@ class SpinSet(object):
 
         if reduction_options is None:
             reduction_options = {
-                "lo_wavelength" : 2.5,
-                "hi_wavelength" : 12.5,
-                "rebin_percent" : 3,
+                "lo_wavelength": 2.5,
+                "hi_wavelength": 12.5,
+                "rebin_percent": 3,
             }
 
         for beam in _not_none(self.mm, self.mp, self.pm, self.pp):
