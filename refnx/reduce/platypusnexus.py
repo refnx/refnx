@@ -663,7 +663,6 @@ class SpinSet(object):
             raise ValueError("Too many spin channels!")
         if len(dataset) < 2:
             raise ValueError("Too few spin channels! Need at least R++ and R--.")
-            
         if isinstance(dataset[0], PlatypusNexus):
             self.beams = self.arrange_spin_channels(dataset)
         elif type(dataset[0]) is str:
@@ -672,9 +671,7 @@ class SpinSet(object):
 
             self.beams = self.arrange_spin_channels(*PLPset)
         else:
-            print('hmm')
-            #self.direct_beams = self.reflect_klass(dataset)
-        
+            raise ValueError("Dataset should be list of PlatypusNexus or str")
         self.mm, self.mp, self.pm, self.pp = self.beams
 
     @property
@@ -684,15 +681,15 @@ class SpinSet(object):
                 self.mm, self.mp, self.pm, self.pp
             ]
         ]
-    
+
     def arrange_spin_channels(self, *data):
         """
-        Function that takes a random input of spin channels at 
+        Function that takes a random input of spin channels at
         a single angle and returns them arranged according to
         --, -+, +-, ++ and replaces the spin channel with None
         if it was not measured.
         """
-        states = [None]*4
+        states = [None] * 4
 
         for a in _not_none(*data):
             if a.spin_state is SpinChannel.DOWNDOWN:
@@ -713,7 +710,7 @@ class SpinSet(object):
                 "lo_wavelength" : 2.5,
                 "hi_wavelength" : 12.5,
                 "rebin_percent" : 3,
-                }
+            }
 
         for beam in _not_none(self.mm, self.mp, self.pm, self.pp):
             beam.process(**reduction_options)
@@ -730,7 +727,7 @@ class SpinSet(object):
             fig, ax = spinch.plot(fig=fig, **kwargs)
 
         fig.legend()
-        return fig, ax 
+        return fig, ax
 
 
 def _not_none(*arrays):
@@ -766,6 +763,10 @@ class SpinSet(object):
 
     Attributes
     ----------
+    dd      : refnx.reduce.PlatypusNexus
+    du      : refnx.reduce.PlatypusNexus or None
+    ud      : refnx.reduce.PlatypusNexus or None
+    uu      : refnx.reduce.PlatypusNexus
     dd_opts : refnx.reduce.ReductionOptions
     du_opts : refnx.reduce.ReductionOptions
     ud_opts : refnx.reduce.ReductionOptions
