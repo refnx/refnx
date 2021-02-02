@@ -9,6 +9,7 @@ from time import gmtime, strftime
 import string
 import warnings
 from contextlib import contextmanager
+from enum import Enum
 
 from scipy.optimize import leastsq, curve_fit
 from scipy.stats import t
@@ -625,6 +626,7 @@ class PolarisedCatalogue(PlatypusCatalogue):
             self.is_magnet = False
         return d
 
+
 class SpinChannel(Enum):
     """
     Describes the spin state of a polarised neutron beam. 
@@ -674,7 +676,6 @@ class SpinSet(object):
             #self.direct_beams = self.reflect_klass(dataset)
         
         self.mm, self.mp, self.pm, self.pp = self.beams
-
 
     @property
     def spin_channels(self):
