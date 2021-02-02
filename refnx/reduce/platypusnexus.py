@@ -629,7 +629,7 @@ class PolarisedCatalogue(PlatypusCatalogue):
 
 class SpinChannel(Enum):
     """
-    Describes the spin state of a polarised neutron beam. 
+    Describes the spin state of a polarised neutron beam.
     """
     UPUP = (1,1)
     UPDOWN = (1,0)
@@ -639,10 +639,10 @@ class SpinChannel(Enum):
 
 class SpinSet(object):
     """
-    Describes a set of spin-channels at a given angle. 
+    Describes a set of spin-channels at a given angle.
 
-    TODO: implement polarisation efficiency correction in this class
-    
+    TODO: implement polarisation efficiency correction within this class
+
     Parameters
     ----------
     list of {str, h5data}
@@ -659,7 +659,7 @@ class SpinSet(object):
         self.reflect_klass = PlatypusNexus
 
         self.data_folder = data_folder
-        if len(dataset)> 4:
+        if len(dataset) > 4:
             raise ValueError("Too many spin channels!")
         if len(dataset) < 2:
             raise ValueError("Too few spin channels! Need at least R++ and R--.")
@@ -684,7 +684,7 @@ class SpinSet(object):
                 self.mm, self.mp, self.pm, self.pp
             ]
         ]
-        
+    
     def arrange_spin_channels(self, *data):
         """
         Function that takes a random input of spin channels at 
