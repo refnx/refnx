@@ -183,7 +183,7 @@ def _plots(obj, nplot=0, folder=None):
                         ax3.plot(
                             *o.model.structure.sld_profile(),
                             color="k",
-                            alpha=0.01
+                            alpha=0.01,
                         )
 
             # put back saved_params
