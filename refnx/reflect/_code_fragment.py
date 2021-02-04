@@ -11,7 +11,7 @@ from refnx._lib import flatten
 import refnx
 
 
-_imports = """#!/usr/bin/env python
+_imports = f"""#!/usr/bin/env python
 
 '''
 Script exported by refnx for analysing NR/XRR data.
@@ -62,7 +62,7 @@ from refnx.reflect import ReflectModel, LipidLeaflet, MixedReflectModel, Spline
 from refnx._lib import flatten
 
 import refnx
-# Script created by refnx version: {version}
+# Script created by refnx version: {refnx.version.version}
 """
 
 
@@ -172,7 +172,7 @@ def main(args):
 
         print(str(obj))
         print('\n')
-        print('Duration (s): {}'.format(time.time() - start_time))
+        print(f"Duration (s): {time.time() - start_time}")
 
         try:
             # create graphs of reflectivity and SLD profiles
@@ -244,7 +244,7 @@ if __name__ == "__main__":
 
 def code_fragment(objective):
     code = []
-    code.append(_imports.format(version=refnx.version.version))
+    code.append(_imports)
 
     if isinstance(objective, GlobalObjective):
         _objectives = objective.objectives
@@ -262,7 +262,7 @@ def code_fragment(objective):
 
         for i, o in enumerate(_objectives):
             code.append(tab + objective_fragment(i + 1, o))
-            global_objective.append("objective_{0}, ".format(i + 1))
+            global_objective.append(f"objective_{i + 1}, ")
 
         global_objective.append("])")
 
@@ -278,7 +278,7 @@ def code_fragment(objective):
 
 
 def objective_fragment(i, objective):
-    return "objective_{0} = {1}".format(i, repr(objective))
+    return f"objective_{i} = {objective!r}"
 
 
 operators = {
@@ -318,8 +318,7 @@ def _calculate_constraints(i, objective):
     tab = "    "
 
     constrain_strings = [
-        tab + "parameters = list(flatten("
-        "objective_{}.parameters))".format(i)
+        tab + f"parameters = list(flatten(objective_{i}.parameters))"
     ]
     for con_par in con_pars:
         idx = all_pars.index(con_par)
@@ -328,12 +327,12 @@ def _calculate_constraints(i, objective):
             if v in operators:
                 con_tree[j] = operators[v]
             elif v in all_pars:
-                con_tree[j] = "parameters[{}]".format(all_pars.index(v))
+                con_tree[j] = f"parameters[{all_pars.index(v)}]"
             else:
                 con_tree[j] = repr(v)
         s = ", ".join(con_tree)
-        constraint = "build_constraint_from_tree([" + s + "])"
-        item = tab + "parameters[{}].constraint = {}".format(idx, constraint)
+        constraint = f"build_constraint_from_tree([{s}])"
+        item = tab + f"parameters[{idx}].constraint = {constraint}"
 
         constrain_strings.append(item)
 
