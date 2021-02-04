@@ -318,8 +318,7 @@ def _calculate_constraints(i, objective):
     tab = "    "
 
     constrain_strings = [
-        tab + f"parameters = list(flatten("
-        "objective_{i}.parameters))"
+        tab + f"parameters = list(flatten(objective_{i}.parameters))"
     ]
     for con_par in con_pars:
         idx = all_pars.index(con_par)
