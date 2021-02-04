@@ -215,4 +215,4 @@ def _plots(obj, nplot=0, folder=None):
         for j in range(nplot):
             ax.plot(vp.chain[:, j].flat)
 
-        fig.savefig(os.path.join(folder, f"steps_chain_{i}.png"))
+        fig.savefig(os.path.join(folder, f"steps_param_{i}.png"))
