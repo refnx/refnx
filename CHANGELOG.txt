@@ -312,3 +312,8 @@ in 0.1.13.
   objects (SLD/Slab/etc) from constrained parameters, rather than setting a
   constraint afterwards.
 - MixedSlab is now allowed to be the first/last Component in a Structure.
+
+0.1.19
+------
+- MCMC sampling in GUI now plots parameter value vs step number, so you can
+  see how many samples to burn
