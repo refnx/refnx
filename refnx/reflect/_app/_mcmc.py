@@ -183,7 +183,7 @@ def _plots(obj, nplot=0, folder=None):
                         ax3.plot(
                             *o.model.structure.sld_profile(),
                             color="k",
-                            alpha=0.01
+                            alpha=0.01,
                         )
 
             # put back saved_params
@@ -202,3 +202,17 @@ def _plots(obj, nplot=0, folder=None):
         fig3, ax3 = obj.model.structure.plot(samples=nplot, fig=fig3)
 
     fig3.savefig(os.path.join(folder, "steps_sld.png"), dpi=1000)
+
+    # plot the chains so one can see when parameters reach
+    # 'equilibrium values'
+    for i, vp in enumerate(obj.varying_parameters()):
+        label = vp.name
+        fig = Figure()
+        FigureCanvas(fig)
+        ax = fig.add_subplot(111)
+        ax.set_ylabel(label)
+
+        for j in range(nplot):
+            ax.plot(vp.chain[:, j].flat)
+
+        fig.savefig(os.path.join(folder, f"steps_chain_{i}.png"))
