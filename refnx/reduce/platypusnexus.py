@@ -657,36 +657,45 @@ class SpinSet(object):
     def __init__(
         self, down_down, up_up, down_up=None, up_down=None, data_folder=None
     ):
-
         # Currently only Platypus has polarisation elements
         self.reflect_klass = PlatypusNexus
         self.data_folder = data_folder
 
-        if all(
-            isinstance(channel, PlatypusNexus)
-            for channel in [down_down, up_up]
-        ):
+        channels = [down_down, up_up, down_up, up_down]
 
-            beams = self._arrange_spin_channels(
-                down_down, up_up, down_up, up_down
-            )
-        elif all(type(channel) is str for channel in [down_down, up_up]):
-            fnames = [
-                os.path.join(self.data_folder, f) if f is not None else None
-                for f in [down_down, up_up, down_up, up_down]
-            ]
+        # initialise spin channels
+        self.dd = self.du = self.ud = self.uu = None
 
-            PLPset = [
-                self.reflect_klass(d) if d is not None else None
-                for d in fnames
-            ]
+        for channel in channels:
+            if channel is None:
+                continue
+            elif isinstance(channel, self.reflect_klass):
+                pass
+            else:
+                try:
+                    channel = os.path.join(data_folder, channel)
+                except TypeError:
+                    # original channel is not a string
+                    pass
+                finally:
+                    # let's hope it's an h5 file
+                    channel = self.reflect_klass(channel)
 
-            beams = self._arrange_spin_channels(*PLPset)
-        else:
-            raise ValueError(
-                "All supplied datasets should be PlatypusNexus or str"
-            )
-        self.dd, self.du, self.ud, self.uu = beams
+            if channel.spin_state is SpinChannel.DOWN_DOWN:
+                self.dd = channel
+            elif channel.spin_state is SpinChannel.DOWN_UP:
+                self.du = channel
+            elif channel.spin_state is SpinChannel.UP_DOWN:
+                self.ud = channel
+            elif channel.spin_state is SpinChannel.UP_UP:
+                self.uu = channel
+
+        assert (
+            self.dd is not None
+        ), "down_down spin channel is not SpinChannel.DOWN_DOWN!"
+        assert (
+            self.uu is not None
+        ), "up_up spin channel is not SpinChannel.UP_UP!"
 
     @property
     def spin_channels(self):
@@ -694,36 +703,6 @@ class SpinSet(object):
             s.spin_state.value if s is not None else None
             for s in [self.dd, self.du, self.ud, self.uu]
         ]
-
-    def _arrange_spin_channels(self, *data):
-        """
-        Function that takes a random input of spin channels at
-        a single angle and returns them arranged according to
-        --, -+, +-, ++ and replaces the spin channel with None
-        if it was not measured.
-        """
-        states = [None] * 4
-
-        for a in data:
-            if a is None:
-                continue
-            if a.spin_state is SpinChannel.DOWN_DOWN:
-                states[0] = a
-            elif a.spin_state is SpinChannel.DOWN_UP:
-                states[1] = a
-            elif a.spin_state is SpinChannel.UP_DOWN:
-                states[2] = a
-            elif a.spin_state is SpinChannel.UP_UP:
-                states[3] = a
-
-        assert (
-            states[0] is not None
-        ), "down_down spin channel is not SpinChannel.DOWN_DOWN!"
-        assert (
-            states[3] is not None
-        ), "up_up spin channel is not SpinChannel.UP_UP!"
-
-        return states
 
     def process_beams(self, reduction_options=None):
         """
