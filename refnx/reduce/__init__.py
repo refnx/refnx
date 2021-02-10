@@ -16,7 +16,6 @@ from refnx.reduce.platypusnexus import (
     ReductionOptions,
     SpinChannel,
     SpinSet,
-    _not_none,
 )
 from refnx.reduce.batchreduction import BatchReducer
 from refnx.reduce.xray import reduce_xrdml

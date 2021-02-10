@@ -632,10 +632,10 @@ class SpinChannel(Enum):
     Describes the spin state of a polarised neutron beam.
     """
 
-    UPUP = (1, 1)
-    UPDOWN = (1, 0)
-    DOWNUP = (0, 1)
-    DOWNDOWN = (0, 0)
+    UP_UP = (1, 1)
+    UP_DOWN = (1, 0)
+    DOWN_UP = (0, 1)
+    DOWN_DOWN = (0, 0)
 
 
 class SpinSet(object):
@@ -654,37 +654,48 @@ class SpinSet(object):
         Path to the data folder containing the data to be reduced.
     """
 
-    def __init__(self, dataset, data_folder=None):
+    def __init__(
+        self, down_down, up_up, down_up=None, up_down=None, data_folder=None
+    ):
 
         # Currently only Platypus has polarisation elements
         self.reflect_klass = PlatypusNexus
-
         self.data_folder = data_folder
-        if len(dataset) > 4:
-            raise ValueError("Too many spin channels!")
-        if len(dataset) < 2:
-            raise ValueError(
-                "Too few spin channels! Need at least R++ and R--."
-            )
-        if isinstance(dataset[0], PlatypusNexus):
-            self.beams = self.arrange_spin_channels(dataset)
-        elif type(dataset[0]) is str:
-            fnames = [os.path.join(self.data_folder, dset) for dset in dataset]
-            PLPset = [self.reflect_klass(d) for d in fnames]
 
-            self.beams = self.arrange_spin_channels(*PLPset)
+        if all(
+            isinstance(channel, PlatypusNexus)
+            for channel in [down_down, up_up]
+        ):
+
+            beams = self._arrange_spin_channels(
+                down_down, up_up, down_up, up_down
+            )
+        elif all(type(channel) is str for channel in [down_down, up_up]):
+            fnames = [
+                os.path.join(self.data_folder, f) if f is not None else None
+                for f in [down_down, up_up, down_up, up_down]
+            ]
+
+            PLPset = [
+                self.reflect_klass(d) if d is not None else None
+                for d in fnames
+            ]
+
+            beams = self._arrange_spin_channels(*PLPset)
         else:
-            raise ValueError("Dataset should be list of PlatypusNexus or str")
-        self.mm, self.mp, self.pm, self.pp = self.beams
+            raise ValueError(
+                "All supplied datasets should be PlatypusNexus or str"
+            )
+        self.dd, self.du, self.ud, self.uu = beams
 
     @property
     def spin_channels(self):
         return [
             s.spin_state.value if s is not None else None
-            for s in [self.mm, self.mp, self.pm, self.pp]
+            for s in [self.dd, self.du, self.ud, self.uu]
         ]
 
-    def arrange_spin_channels(self, *data):
+    def _arrange_spin_channels(self, *data):
         """
         Function that takes a random input of spin channels at
         a single angle and returns them arranged according to
@@ -693,20 +704,42 @@ class SpinSet(object):
         """
         states = [None] * 4
 
-        for a in _not_none(*data):
-            if a.spin_state is SpinChannel.DOWNDOWN:
+        for a in data:
+            if a is None:
+                continue
+            if a.spin_state is SpinChannel.DOWN_DOWN:
                 states[0] = a
-            elif a.spin_state is SpinChannel.DOWNUP:
+            elif a.spin_state is SpinChannel.DOWN_UP:
                 states[1] = a
-            elif a.spin_state is SpinChannel.UPDOWN:
+            elif a.spin_state is SpinChannel.UP_DOWN:
                 states[2] = a
-            elif a.spin_state is SpinChannel.UPUP:
+            elif a.spin_state is SpinChannel.UP_UP:
                 states[3] = a
+
+        assert (
+            states[0] is not None
+        ), "down_down spin channel is not SpinChannel.DOWN_DOWN!"
+        assert (
+            states[3] is not None
+        ), "up_up spin channel is not SpinChannel.UP_UP!"
 
         return states
 
     def process_beams(self, reduction_options=None):
+        """
+        Process beams in SpinSet.
 
+        Assumes the same reduction_options for each spin state.
+        If you would like to use individual reduction_options for each
+        spin channel, you can process them individually, i.e.
+        `spinset.dd.process(**reduction_options_dd)`,
+        `spinset.du.process(**reduction_options_du)`, etc.
+
+        Parameters
+        ----------
+        reduction_options : dict
+            A single dict of options used to process all spectra
+        """
         if reduction_options is None:
             reduction_options = {
                 "lo_wavelength": 2.5,
@@ -714,8 +747,11 @@ class SpinSet(object):
                 "rebin_percent": 3,
             }
 
-        for beam in _not_none(self.mm, self.mp, self.pm, self.pp):
-            beam.process(**reduction_options)
+        for beam in [self.dd, self.du, self.ud, self.uu]:
+            if beam is None:
+                continue
+            else:
+                beam.process(**reduction_options)
 
     def plot_spectra(self, **kwargs):
         """
@@ -723,20 +759,19 @@ class SpinSet(object):
 
         Requires matplotlib to be installed
         """
-        fig, ax = self.mm.plot(**kwargs)
+        import matplotlib.pyplot as plt
 
-        for spinch in _not_none(self.mp, self.pm, self.pp):
-            fig, ax = spinch.plot(fig=fig, **kwargs)
+        fig, ax = plt.subplots()
+        ax.set(xlabel="Wavelength ($\\AA$)", ylabel="Intensity (a.u.)")
 
-        fig.legend()
+        for spinch in [self.dd, self.du, self.ud, self.uu]:
+            if spinch is None:
+                continue
+            x = spinch.processed_spectrum["m_lambda"][0]
+            y = spinch.processed_spectrum["m_spec"][0]
+            yerr = spinch.processed_spectrum["m_spec_sd"][0]
+            ax.errorbar(x, y, yerr, label=spinch.cat.sample_name)
         return fig, ax
-
-
-def _not_none(*arrays):
-    """
-    Returns input if input is not not None
-    """
-    return [array for array in arrays if array is not None]
 
 
 def basename_datafile(pth):
@@ -2026,15 +2061,23 @@ class PlatypusNexus(ReflectNexus):
                 self.cat = PolarisedCatalogue(f)
 
                 # Set spin channels based of flipper statuses
-                if self.cat.pol_flip_current:
-                    if self.cat.anal_flip_current:
-                        self.spin_state = SpinChannel.UPUP
-                    else:
-                        self.spin_state = SpinChannel.UPDOWN
-                elif self.cat.anal_flip_current:
-                    self.spin_state = SpinChannel.DOWNUP
-                else:
-                    self.spin_state = SpinChannel.DOWNDOWN
+                if self.cat.pol_flip_current and self.cat.anal_flip_current:
+                    self.spin_state = SpinChannel.UP_UP
+                elif (
+                    self.cat.pol_flip_current
+                    and not self.cat.anal_flip_current
+                ):
+                    self.spin_state = SpinChannel.UP_DOWN
+                elif (
+                    not self.cat.pol_flip_current
+                    and self.cat.anal_flip_current
+                ):
+                    self.spin_state = SpinChannel.DOWN_UP
+                elif (
+                    not self.cat.pol_flip_current
+                    and not self.cat.anal_flip_current
+                ):
+                    self.spin_state = SpinChannel.DOWN_DOWN
 
     def detector_average_unwanted_direction(self, detector):
         """
