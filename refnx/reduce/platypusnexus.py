@@ -726,6 +726,17 @@ class SpinSet(object):
                 "rebin_percent": 3,
             }
 
+        if self.ud is not None or self.du is not None:
+            print(
+                "Spin-flip channels detected. Consider using ManualBeamFinder"
+                " to locate weak reflected signals. i.e.\n"
+                "%gui qt\n"
+                "from refnx.reduce.manual_beam_finder import ManualBeamFinder\n"
+                "mbf = ManualBeamFinder()\n"
+                "options = ReductionOptions(manual_beam_find=mbf, sample_pos=-1)\n"
+                "reduction_options.update(options)"
+            )
+
         for beam in [self.dd, self.du, self.ud, self.uu]:
             if beam is None:
                 continue
