@@ -838,6 +838,12 @@ class ContainerNode(Node):
 
 
 class TreeModel(QtCore.QAbstractItemModel):
+    """
+    Parameters
+    ----------
+    data: refnx.reflect._app.datastore.DataStore
+    """
+
     def __init__(self, data, parent=None):
         super(TreeModel, self).__init__(parent)
         self._rootnode = ContainerNode(data, self)
@@ -1072,9 +1078,10 @@ class TreeModel(QtCore.QAbstractItemModel):
 
         # if the snapshot already exists then overwrite it.
         if snapshot_name in self.datastore.names:
-            row = self.datastore.index(snapshot_name)
-            self._rootnode.child[row].set_dataset(dataset)
-            self._rootnode.child[row].set_reflect_model(new_model)
+            row = self.data_object_row(snapshot_name)
+            self._rootnode.child(row).set_dataset(dataset)
+            self._rootnode.child(row).set_reflect_model(new_model)
+            data_object = self.data_object_node(snapshot_name).data_object
         else:
             # otherwise you have to add it.
             data_object = DataObject(dataset)
