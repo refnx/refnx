@@ -313,7 +313,6 @@ in 0.1.13.
   constraint afterwards.
 - MixedSlab is now allowed to be the first/last Component in a Structure.
 
-<<<<<<< HEAD
 0.1.19
 ------
 - MCMC sampling in GUI now plots parameter value vs step number, so you can
