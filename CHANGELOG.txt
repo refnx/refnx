@@ -313,9 +313,12 @@ in 0.1.13.
   constraint afterwards.
 - MixedSlab is now allowed to be the first/last Component in a Structure.
 
+<<<<<<< HEAD
 0.1.19
 ------
 - MCMC sampling in GUI now plots parameter value vs step number, so you can
   see how many samples to burn
 - Fixed GUI crash when trying to make a snapshot with a name that has already
   been used.
+- Give BaseObjective a default weighted attribute, enabling it to be used in
+  GlobalObjective.
