@@ -321,3 +321,6 @@ in 0.1.13.
   been used.
 - Give BaseObjective a default weighted attribute, enabling it to be used in
   GlobalObjective.
+- Fallback to numerical estimation of Hessian/Covariance matrix if an
+  Objective cannot calculate a residuals array (e.g. mixed use of
+  BaseObjective/Objective in a GlobalObjective).

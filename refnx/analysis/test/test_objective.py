@@ -459,11 +459,20 @@ class TestObjective(object):
         assert_allclose(covar, covar_least_squares)
 
         # check that objective.covar corresponds to the least_squares
-        # covariance matrix
+        # covariance matrix, J.T x J
         objective.setp(res.x)
-        _pvals = np.array(res.x)
         covar_objective = objective.covar()
         assert_allclose(covar_objective, covar_least_squares)
+
+        # sometimes the residuals method may not be usable, see if
+        # objective.covar calculated from a scalar works
+        objective.setp(res.x)
+        covar_objective = objective.covar("nll")
+        assert_allclose(
+            np.sqrt(np.diag(covar_objective)),
+            np.sqrt(np.diag(covar_least_squares)),
+            rtol=0.08,
+        )
 
         # now see what happens with a parameter that has no effect on residuals
         param = Parameter(1.234, name="dummy")

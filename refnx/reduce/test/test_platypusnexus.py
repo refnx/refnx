@@ -96,7 +96,7 @@ class TestPlatypusNexus(object):
         yvals += np.sqrt(yvals) * np.random.randn(yvals.size)
         yvals_sd = np.sqrt(yvals)
 
-        mask = np.zeros(201, np.bool)
+        mask = np.zeros(201, bool)
         mask[30:70] = True
         mask[130:160] = True
 
@@ -138,7 +138,7 @@ class TestPlatypusNexus(object):
         detector = detector.reshape(1, n_tbins, xvals.size)
         detector_sd = detector_sd.reshape(1, n_tbins, xvals.size)
 
-        mask = np.zeros((1, n_tbins, 201), np.bool)
+        mask = np.zeros((1, n_tbins, 201), bool)
         mask[:, :, 30:70] = True
         mask[:, :, 130:160] = True
 
