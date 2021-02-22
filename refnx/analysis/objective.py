@@ -23,7 +23,14 @@ class BaseObjective(object):
     """Don't necessarily have to use Parameters, could use np.array"""
 
     def __init__(
-        self, p, logl, logp=None, fcn_args=(), fcn_kwds=None, name=None
+        self,
+        p,
+        logl,
+        logp=None,
+        fcn_args=(),
+        fcn_kwds=None,
+        name=None,
+        weighted=True,
     ):
         self.name = name
         self.parameters = p
@@ -32,6 +39,9 @@ class BaseObjective(object):
         self._logp = logp
         self.fcn_args = fcn_args
         self.fcn_kwds = {}
+        # give the BaseObjective a default value, so that it can be used in a
+        # GlobalObjective
+        self.weighted = weighted
         if fcn_kwds is not None:
             self.fcn_kwds = fcn_kwds
 
