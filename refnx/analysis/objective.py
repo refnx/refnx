@@ -212,8 +212,8 @@ class BaseObjective(object):
             # is very similar to numdifftools.Hessian, or a chained version
             # of approx_derivative
             hess = approx_hess2(_pvals, fn)
-            covar = np.linalg.pinv(hess)
-        except:
+            covar = np.linalg.inv(hess)
+        except LinAlgError:
             sz = np.size(_pvals, 0)
             covar = np.full((sz, sz), np.inf)
         finally:
@@ -723,7 +723,7 @@ class Objective(BaseObjective):
         if target == "residuals":
             try:
                 covar = self._covar_from_residuals()
-            except:
+            except Exception:
                 # fallback to "nll"
                 target = "nll"
 
@@ -750,7 +750,8 @@ class Objective(BaseObjective):
 
         used_residuals_scaler = False
 
-        fn_scaler = lambda vals: np.squeeze(self.residuals(_pvals * vals))
+        def fn_scaler(vals):
+            return np.squeeze(self.residuals(_pvals * vals))
 
         try:
             # we should be able to calculate a Jacobian for a parameter whose
