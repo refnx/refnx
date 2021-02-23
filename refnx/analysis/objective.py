@@ -179,18 +179,46 @@ class BaseObjective(object):
         """
         return self.parameters
 
-    def covar(self):
+    def covar(self, target="nll"):
         """
+        Estimates a covariance matrix based on numerical differentiation
+        of either the negative log-likelihood or negative log-posterior
+        probabilities.
+
+        Parameters
+        ----------
+        target : str, {"nll", "nlpost"}
+
         Returns
         -------
         covar : np.ndarray
             The covariance matrix for the fitting system
 
+        Notes
+        -----
+        Estimation of a covariance matrix can be susceptible to numeric
+        instabilities. Critically evaluate the matrix before further use.
         """
         _pvals = np.array(self.varying_parameters())
-        hess = approx_hess2(_pvals, self.nll)
-        covar = np.linalg.inv(hess)
-        self.setp(_pvals)
+
+        if target == "nll":
+            fn = self.nll
+        elif target == "nlpost":
+            fn = self.nlpost
+
+        try:
+            # from statsmodels
+            # the output from this for the test in test_objective.covar
+            # is very similar to numdifftools.Hessian, or a chained version
+            # of approx_derivative
+            hess = approx_hess2(_pvals, fn)
+            covar = np.linalg.inv(hess)
+        except LinAlgError:
+            sz = np.size(_pvals, 0)
+            covar = np.full((sz, sz), np.inf)
+        finally:
+            self.setp(_pvals)
+
         return covar
 
 
@@ -665,21 +693,64 @@ class Objective(BaseObjective):
         logpost += self.logl()
         return logpost
 
-    def covar(self):
+    def covar(self, target="residuals"):
         """
-        Estimates the covariance matrix of the curvefitting system.
+        Estimates the covariance matrix of the Objective.
+
+        Parameters
+        ----------
+        target : {"residuals", "nll", "nlpost"}
+            Specifies what approach should be used to estimate covariance.
 
         Returns
         -------
         covar : np.ndarray
             Covariance matrix
 
+        Notes
+        -----
+        For most purposes the Jacobian of the `'residuals'` should be used to
+        calculate the covariance matrix, estimated as J.T x J.
+        If an Objective cannot calculate residuals then the covariance matrix
+        can be estimated by inverting a Hessian matrix created from either the
+        `'nll'` or `'nlpost'` methods.
+        The default `'residuals'` approach falls back to `'nll'` if a problem
+        is experienced.
+        The default `'residuals'` setting is preferred as the other settings
+        can sometimes experience instabilities during Hessian estimation with
+        numerical differentiation.
         """
+        if target == "residuals":
+            try:
+                covar = self._covar_from_residuals()
+            except Exception:
+                # fallback to "nll"
+                target = "nll"
+
+        if target in ["nll", "nlpost"]:
+            covar = super(Objective, self).covar(target)
+
+        pvar = np.diagonal(covar).copy()
+        psingular = np.where(pvar == 0)[0]
+
+        if len(psingular) > 0:
+            var_params = self.varying_parameters()
+            singular_params = [var_params[ps] for ps in psingular]
+
+            raise LinAlgError(
+                "The following Parameters have no effect on"
+                " Objective.residuals, please consider fixing"
+                " them.\n" + repr(singular_params)
+            )
+
+        return covar
+
+    def _covar_from_residuals(self):
         _pvals = np.array(self.varying_parameters())
 
         used_residuals_scaler = False
 
-        def residuals_scaler(vals):
+        def fn_scaler(vals):
             return np.squeeze(self.residuals(_pvals * vals))
 
         try:
@@ -690,7 +761,7 @@ class Objective(BaseObjective):
                 raise FloatingPointError()
 
             with np.errstate(invalid="raise"):
-                jac = approx_derivative(residuals_scaler, np.ones_like(_pvals))
+                jac = approx_derivative(fn_scaler, np.ones_like(_pvals))
             used_residuals_scaler = True
         except FloatingPointError:
             jac = approx_derivative(self.residuals, _pvals)
@@ -699,7 +770,7 @@ class Objective(BaseObjective):
             # parameters have to make sure they're set at the end
             self.setp(_pvals)
 
-        # need to create this because GlobalObjective does not have
+        # need to create this because GlobalObjective may not have
         # access to all the datapoints being fitted.
         n_datapoints = np.size(jac, 0)
 
@@ -716,19 +787,6 @@ class Objective(BaseObjective):
         if used_residuals_scaler:
             # unwind the scaling.
             covar = covar * np.atleast_2d(_pvals) * np.atleast_2d(_pvals).T
-
-        pvar = np.diagonal(covar).copy()
-        psingular = np.where(pvar == 0)[0]
-
-        if len(psingular) > 0:
-            var_params = self.varying_parameters()
-            singular_params = [var_params[ps] for ps in psingular]
-
-            raise LinAlgError(
-                "The following Parameters have no effect on"
-                " Objective.residuals, please consider fixing"
-                " them.\n" + repr(singular_params)
-            )
 
         scale = 1.0
         # scale by reduced chi2 if experimental uncertainties weren't used.

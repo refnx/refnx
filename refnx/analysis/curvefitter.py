@@ -872,7 +872,7 @@ def load_chain(f):
                 np.fromstring(l, dtype=float, count=chain_size, sep=" ")
             )
 
-        chain = np.frombuffer(read_arr, dtype=np.float, count=len(read_arr))
+        chain = np.frombuffer(read_arr, dtype=float, count=len(read_arr))
 
         if ntemps is not None:
             chain = np.reshape(chain, (i, ntemps, nwalkers, ndim))
