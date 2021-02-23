@@ -576,7 +576,7 @@ class TestFitterGauss(object):
         for method in methods:
             self.objective.setp(self.p0)
             res = f.fit(method=method)
-            assert_almost_equal(res.x, self.best_weighted, 3)
+            assert_almost_equal(res.x, self.best_weighted, 1)
 
         # smoke test to check that we can use nlpost
         self.objective.setp(self.p0)
