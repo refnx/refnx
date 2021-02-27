@@ -572,7 +572,7 @@ class TestFitterGauss(object):
             "L-BFGS-B",
             "least_squares",
             "shgo",
-            "dual_annealing"
+            "dual_annealing",
         ]
 
         for method in methods:
