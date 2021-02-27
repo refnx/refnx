@@ -567,16 +567,22 @@ class TestFitterGauss(object):
         """test minimisers against the Gaussian fit"""
         f = CurveFitter(self.objective)
 
-        methods = ["differential_evolution", "L-BFGS-B", "least_squares"]
-        if hasattr(sciopt, "shgo"):
-            methods.append("shgo")
-        if hasattr(sciopt, "dual_annealing"):
-            methods.append("dual_annealing")
+        methods = [
+            "differential_evolution",
+            "L-BFGS-B",
+            "least_squares",
+            "shgo",
+            "dual_annealing",
+        ]
 
         for method in methods:
             self.objective.setp(self.p0)
-            res = f.fit(method=method)
-            assert_almost_equal(res.x, self.best_weighted, 3)
+            opts = {}
+            if method in ["differential_evolution", "dual_annealing"]:
+                opts = {"seed": 1}
+
+            res = f.fit(method=method, **opts)
+            assert_allclose(res.x, self.best_weighted, rtol=0.005)
 
         # smoke test to check that we can use nlpost
         self.objective.setp(self.p0)
