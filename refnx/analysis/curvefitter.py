@@ -410,9 +410,9 @@ class CurveFitter(object):
         elif pos == "prior":
             arr = np.zeros((_ntemps, nwalkers, nvary))
             LHC = LatinHypercube(nvary, seed=random_state)
-            samples = LHC.random(
-                n=_ntemps * nwalkers
-            ).reshape(_ntemps, nwalkers, nvary)
+            samples = LHC.random(n=_ntemps * nwalkers).reshape(
+                _ntemps, nwalkers, nvary
+            )
 
             for i, param in enumerate(self._varying_parameters):
                 # bounds are not a closed interval, just jitter it.

@@ -12,10 +12,17 @@ import numpy as np
 import scipy.stats as stats
 
 
-__all__ = ['scale', 'discrepancy', 'update_discrepancy',
-           'QMCEngine', 'Halton',
-           'OrthogonalLatinHypercube', 'LatinHypercube',
-           'MultinomialQMC', 'MultivariateNormalQMC']
+__all__ = [
+    "scale",
+    "discrepancy",
+    "update_discrepancy",
+    "QMCEngine",
+    "Halton",
+    "OrthogonalLatinHypercube",
+    "LatinHypercube",
+    "MultinomialQMC",
+    "MultivariateNormalQMC",
+]
 
 
 # Based on scipy._lib._util.check_random_state
@@ -39,10 +46,12 @@ def check_random_state(seed=None):
 
     """
     if seed is None or isinstance(seed, (numbers.Integral, np.integer)):
-        if not hasattr(np.random, 'Generator'):
+        if not hasattr(np.random, "Generator"):
             # This can be removed once numpy 1.16 is dropped
-            msg = ("NumPy 1.16 doesn't have Generator, use either "
-                   "NumPy >= 1.17 or `seed=np.random.RandomState(seed)`")
+            msg = (
+                "NumPy 1.16 doesn't have Generator, use either "
+                "NumPy >= 1.17 or `seed=np.random.RandomState(seed)`"
+            )
             raise ValueError(msg)
         return np.random.default_rng(seed)
     elif isinstance(seed, np.random.RandomState):
@@ -51,8 +60,10 @@ def check_random_state(seed=None):
         # The two checks can be merged once numpy 1.16 is dropped
         return seed
     else:
-        raise ValueError('%r cannot be used to seed a numpy.random.Generator'
-                         ' instance' % seed)
+        raise ValueError(
+            "%r cannot be used to seed a numpy.random.Generator"
+            " instance" % seed
+        )
 
 
 def scale(sample, l_bounds, u_bounds, reverse=False):
@@ -114,31 +125,31 @@ def scale(sample, l_bounds, u_bounds, reverse=False):
 
     # Checking bounds and sample
     if not sample.ndim == 2:
-        raise ValueError('Sample is not a 2D array')
+        raise ValueError("Sample is not a 2D array")
 
     lower, upper = np.broadcast_arrays(lower, upper)
 
     if not np.all(lower < upper):
-        raise ValueError('Bounds are not consistent a < b')
+        raise ValueError("Bounds are not consistent a < b")
 
     if len(lower) != sample.shape[1]:
-        raise ValueError('Sample dimension is different than bounds dimension')
+        raise ValueError("Sample dimension is different than bounds dimension")
 
     if not reverse:
         # Checking that sample is within the hypercube
         if not (np.all(sample >= 0) and np.all(sample <= 1)):
-            raise ValueError('Sample is not in unit hypercube')
+            raise ValueError("Sample is not in unit hypercube")
 
         return sample * (upper - lower) + lower
     else:
         # Checking that sample is within the bounds
         if not (np.all(sample >= lower) and np.all(sample <= upper)):
-            raise ValueError('Sample is out of bounds')
+            raise ValueError("Sample is out of bounds")
 
         return (sample - lower) / (upper - lower)
 
 
-def discrepancy(sample, iterative=False, method='CD'):
+def discrepancy(sample, iterative=False, method="CD"):
     """Discrepancy of a given sample.
 
     Parameters
@@ -246,17 +257,17 @@ def discrepancy(sample, iterative=False, method='CD'):
 
     # Checking that sample is within the hypercube and 2D
     if not sample.ndim == 2:
-        raise ValueError('Sample is not a 2D array')
+        raise ValueError("Sample is not a 2D array")
 
     if not (np.all(sample >= 0) and np.all(sample <= 1)):
-        raise ValueError('Sample is not in unit hypercube')
+        raise ValueError("Sample is not in unit hypercube")
 
     n, d = sample.shape
 
     if iterative:
         n += 1
 
-    if method == 'CD':
+    if method == "CD":
         # reference [1], page 71 Eq (3.7)
         abs_ = abs(sample - 0.5)
         disc1 = np.sum(np.prod(1 + 0.5 * abs_ - 0.5 * abs_ ** 2, axis=1))
@@ -264,14 +275,16 @@ def discrepancy(sample, iterative=False, method='CD'):
         prod_arr = 1
         for i in range(d):
             s0 = sample[:, i]
-            prod_arr *= (1
-                         + 0.5 * abs(s0[:, None] - 0.5) + 0.5 * abs(s0 - 0.5)
-                         - 0.5 * abs(s0[:, None] - s0))
+            prod_arr *= (
+                1
+                + 0.5 * abs(s0[:, None] - 0.5)
+                + 0.5 * abs(s0 - 0.5)
+                - 0.5 * abs(s0[:, None] - s0)
+            )
         disc2 = prod_arr.sum()
 
-        return ((13.0 / 12.0) ** d - 2.0 / n * disc1 +
-                1.0 / (n ** 2) * disc2)
-    elif method == 'WD':
+        return (13.0 / 12.0) ** d - 2.0 / n * disc1 + 1.0 / (n ** 2) * disc2
+    elif method == "WD":
         # reference [1], page 73 Eq (3.8)
         prod_arr = 1
         for i in range(d):
@@ -280,20 +293,24 @@ def discrepancy(sample, iterative=False, method='CD'):
             prod_arr *= 3.0 / 2.0 - x_kikj + x_kikj ** 2
 
         # typo in the book sign missing: - (4.0 / 3.0) ** d
-        return - (4.0 / 3.0) ** d + 1.0 / (n ** 2) * prod_arr.sum()
-    elif method == 'MD':
+        return -((4.0 / 3.0) ** d) + 1.0 / (n ** 2) * prod_arr.sum()
+    elif method == "MD":
         # reference [2], page 290 Eq (18)
         abs_ = abs(sample - 0.5)
-        disc1 = np.sum(np.prod(5.0 / 3.0 - 0.25 * abs_ - 0.25 * abs_ ** 2,
-                               axis=1))
+        disc1 = np.sum(
+            np.prod(5.0 / 3.0 - 0.25 * abs_ - 0.25 * abs_ ** 2, axis=1)
+        )
 
         prod_arr = 1
         for i in range(d):
             s0 = sample[:, i]
-            prod_arr *= (15.0 / 8.0
-                         - 0.25 * abs(s0[:, None] - 0.5) - 0.25 * abs(s0 - 0.5)
-                         - 3.0 / 4.0 * abs(s0[:, None] - s0)
-                         + 0.5 * abs(s0[:, None] - s0) ** 2)
+            prod_arr *= (
+                15.0 / 8.0
+                - 0.25 * abs(s0[:, None] - 0.5)
+                - 0.25 * abs(s0 - 0.5)
+                - 3.0 / 4.0 * abs(s0[:, None] - s0)
+                + 0.5 * abs(s0[:, None] - s0) ** 2
+            )
         disc2 = prod_arr.sum()
 
         disc = (19.0 / 12.0) ** d
@@ -301,21 +318,24 @@ def discrepancy(sample, iterative=False, method='CD'):
         disc2 = 1.0 / (n ** 2) * disc2
 
         return disc - disc1 + disc2
-    elif method == 'L2-star':
+    elif method == "L2-star":
         # reference [1], page 69 Eq (3.5)
-        disc1 = np.sum(np.prod(1 - sample**2, axis=1))
+        disc1 = np.sum(np.prod(1 - sample ** 2, axis=1))
 
         xik = sample[None, :, :]
         xjk = sample[:, None, :]
-        disc2 = np.sum(np.sum(np.prod(1 - np.maximum(xik, xjk), axis=2),
-                              axis=1))
+        disc2 = np.sum(
+            np.sum(np.prod(1 - np.maximum(xik, xjk), axis=2), axis=1)
+        )
 
         return np.sqrt(
             3 ** (-d) - 1 / n * 2 ** (1 - d) * disc1 + 1 / (n ** 2) * disc2
         )
     else:
-        raise ValueError('{} is not a valid method. Options are '
-                         'CD, WD, MD, L2-star.'.format(method))
+        raise ValueError(
+            "{} is not a valid method. Options are "
+            "CD, WD, MD, L2-star.".format(method)
+        )
 
 
 def update_discrepancy(x_new, sample, initial_disc):
@@ -357,27 +377,36 @@ def update_discrepancy(x_new, sample, initial_disc):
 
     # Checking that sample is within the hypercube and 2D
     if not sample.ndim == 2:
-        raise ValueError('Sample is not a 2D array')
+        raise ValueError("Sample is not a 2D array")
 
     if not (np.all(sample >= 0) and np.all(sample <= 1)):
-        raise ValueError('Sample is not in unit hypercube')
+        raise ValueError("Sample is not in unit hypercube")
 
     # Checking that x_new is within the hypercube and 1D
     if not x_new.ndim == 1:
-        raise ValueError('x_new is not a 1D array')
+        raise ValueError("x_new is not a 1D array")
 
     if not (np.all(x_new >= 0) and np.all(x_new <= 1)):
-        raise ValueError('x_new is not in unit hypercube')
+        raise ValueError("x_new is not in unit hypercube")
 
     n = len(sample) + 1
     abs_ = abs(x_new - 0.5)
 
     # derivation from P.T. Roy (@tupui)
-    disc1 = - 2 / n * np.prod(1 + 1 / 2 * abs_ - 1 / 2 * abs_ ** 2)
-    disc2 = 2 / (n ** 2) * np.sum(np.prod(1 + 1 / 2 * abs_ +
-                                          1 / 2 * abs(sample - 0.5) -
-                                          1 / 2 * abs(x_new - sample),
-                                          axis=1))
+    disc1 = -2 / n * np.prod(1 + 1 / 2 * abs_ - 1 / 2 * abs_ ** 2)
+    disc2 = (
+        2
+        / (n ** 2)
+        * np.sum(
+            np.prod(
+                1
+                + 1 / 2 * abs_
+                + 1 / 2 * abs(sample - 0.5)
+                - 1 / 2 * abs(x_new - sample),
+                axis=1,
+            )
+        )
+    )
     disc3 = 1 / (n ** 2) * np.prod(1 + abs_)
 
     return initial_disc + disc1 + disc2 + disc3
@@ -407,8 +436,8 @@ def primes_from_2_to(n):
     sieve = np.ones(n // 3 + (n % 6 == 2), dtype=bool)
     for i in range(1, int(n ** 0.5) // 3 + 1):
         k = 3 * i + 1 | 1
-        sieve[k * k // 3::2 * k] = False
-        sieve[k * (k - 2 * (i & 1) + 4) // 3::2 * k] = False
+        sieve[k * k // 3 :: 2 * k] = False
+        sieve[k * (k - 2 * (i & 1) + 4) // 3 :: 2 * k] = False
     return np.r_[2, 3, ((3 * np.nonzero(sieve)[0][1:] + 1) | 1)]
 
 
@@ -426,23 +455,180 @@ def n_primes(n):
         List of primes.
 
     """
-    primes = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59,
-              61, 67, 71, 73, 79, 83, 89, 97, 101, 103, 107, 109, 113, 127,
-              131, 137, 139, 149, 151, 157, 163, 167, 173, 179, 181, 191, 193,
-              197, 199, 211, 223, 227, 229, 233, 239, 241, 251, 257, 263, 269,
-              271, 277, 281, 283, 293, 307, 311, 313, 317, 331, 337, 347, 349,
-              353, 359, 367, 373, 379, 383, 389, 397, 401, 409, 419, 421, 431,
-              433, 439, 443, 449, 457, 461, 463, 467, 479, 487, 491, 499, 503,
-              509, 521, 523, 541, 547, 557, 563, 569, 571, 577, 587, 593, 599,
-              601, 607, 613, 617, 619, 631, 641, 643, 647, 653, 659, 661, 673,
-              677, 683, 691, 701, 709, 719, 727, 733, 739, 743, 751, 757, 761,
-              769, 773, 787, 797, 809, 811, 821, 823, 827, 829, 839, 853, 857,
-              859, 863, 877, 881, 883, 887, 907, 911, 919, 929, 937, 941, 947,
-              953, 967, 971, 977, 983, 991, 997][:n]
+    primes = [
+        2,
+        3,
+        5,
+        7,
+        11,
+        13,
+        17,
+        19,
+        23,
+        29,
+        31,
+        37,
+        41,
+        43,
+        47,
+        53,
+        59,
+        61,
+        67,
+        71,
+        73,
+        79,
+        83,
+        89,
+        97,
+        101,
+        103,
+        107,
+        109,
+        113,
+        127,
+        131,
+        137,
+        139,
+        149,
+        151,
+        157,
+        163,
+        167,
+        173,
+        179,
+        181,
+        191,
+        193,
+        197,
+        199,
+        211,
+        223,
+        227,
+        229,
+        233,
+        239,
+        241,
+        251,
+        257,
+        263,
+        269,
+        271,
+        277,
+        281,
+        283,
+        293,
+        307,
+        311,
+        313,
+        317,
+        331,
+        337,
+        347,
+        349,
+        353,
+        359,
+        367,
+        373,
+        379,
+        383,
+        389,
+        397,
+        401,
+        409,
+        419,
+        421,
+        431,
+        433,
+        439,
+        443,
+        449,
+        457,
+        461,
+        463,
+        467,
+        479,
+        487,
+        491,
+        499,
+        503,
+        509,
+        521,
+        523,
+        541,
+        547,
+        557,
+        563,
+        569,
+        571,
+        577,
+        587,
+        593,
+        599,
+        601,
+        607,
+        613,
+        617,
+        619,
+        631,
+        641,
+        643,
+        647,
+        653,
+        659,
+        661,
+        673,
+        677,
+        683,
+        691,
+        701,
+        709,
+        719,
+        727,
+        733,
+        739,
+        743,
+        751,
+        757,
+        761,
+        769,
+        773,
+        787,
+        797,
+        809,
+        811,
+        821,
+        823,
+        827,
+        829,
+        839,
+        853,
+        857,
+        859,
+        863,
+        877,
+        881,
+        883,
+        887,
+        907,
+        911,
+        919,
+        929,
+        937,
+        941,
+        947,
+        953,
+        967,
+        971,
+        977,
+        983,
+        991,
+        997,
+    ][:n]
 
     if len(primes) < n:
         big_number = 2000
-        while 'Not enough primes':
+        while "Not enough primes":
             primes = primes_from_2_to(big_number)[:n]
             if len(primes) == n:
                 break
@@ -757,10 +943,16 @@ class Halton(QMCEngine):
         """
         # Generate a sample using a Van der Corput sequence per dimension.
         # important to have ``type(bdim) == int`` for performance reason
-        sample = [van_der_corput(n, int(bdim), self.num_generated,
-                                 scramble=self.scramble,
-                                 seed=copy.deepcopy(self.seed))
-                  for bdim in self.base]
+        sample = [
+            van_der_corput(
+                n,
+                int(bdim),
+                self.num_generated,
+                scramble=self.scramble,
+                seed=copy.deepcopy(self.seed),
+            )
+            for bdim in self.base
+        ]
 
         self.num_generated += n
         return np.array(sample).T.reshape(n, self.d)
@@ -955,7 +1147,7 @@ class LatinHypercube(QMCEngine):
         q = self.rg_integers(low=1, high=n, size=(n, self.d))
 
         self.num_generated += n
-        return 1. / n * (q - r)
+        return 1.0 / n * (q - r)
 
     def reset(self):
         """Reset the engine to base state.
@@ -1006,8 +1198,15 @@ class MultivariateNormalQMC(QMCEngine):
 
     """
 
-    def __init__(self, mean, cov=None, cov_root=None, inv_transform=True,
-                 engine=None, seed=None):
+    def __init__(
+        self,
+        mean,
+        cov=None,
+        cov_root=None,
+        inv_transform=True,
+        engine=None,
+        seed=None,
+    ):
         mean = np.array(mean, copy=False, ndmin=1)
         d = mean.shape[0]
         if cov is not None:
@@ -1016,8 +1215,9 @@ class MultivariateNormalQMC(QMCEngine):
             # check for square/symmetric cov matrix and mean vector has the
             # same d
             if not mean.shape[0] == cov.shape[0]:
-                raise ValueError("Dimension mismatch between mean and "
-                                 "covariance.")
+                raise ValueError(
+                    "Dimension mismatch between mean and " "covariance."
+                )
             if not np.allclose(cov, cov.transpose()):
                 raise ValueError("Covariance matrix is not symmetric.")
             # compute Cholesky decomp; if it fails, do the eigen decomposition
@@ -1033,8 +1233,9 @@ class MultivariateNormalQMC(QMCEngine):
             # root decomposition provided
             cov_root = np.atleast_2d(cov_root)
             if not mean.shape[0] == cov_root.shape[0]:
-                raise ValueError("Dimension mismatch between mean and "
-                                 "covariance.")
+                raise ValueError(
+                    "Dimension mismatch between mean and " "covariance."
+                )
         else:
             # corresponds to identity covariance matrix
             cov_root = None
@@ -1117,8 +1318,7 @@ class MultivariateNormalQMC(QMCEngine):
             thetas = 2 * math.pi * samples[:, 1 + even]
             cos = np.cos(thetas)
             sin = np.sin(thetas)
-            transf_samples = np.stack([Rs * cos, Rs * sin],
-                                      -1).reshape(n, -1)
+            transf_samples = np.stack([Rs * cos, Rs * sin], -1).reshape(n, -1)
             # make sure we only return the number of dimension requested
             return transf_samples[:, : self.d]
 
@@ -1151,9 +1351,9 @@ class MultinomialQMC(QMCEngine):
     def __init__(self, pvals, engine=None, seed=None):
         self.pvals = np.array(pvals, copy=False, ndmin=1)
         if np.min(pvals) < 0:
-            raise ValueError('Elements of pvals must be non-negative.')
+            raise ValueError("Elements of pvals must be non-negative.")
         if not np.isclose(np.sum(pvals), 1):
-            raise ValueError('Elements of pvals must sum to 1.')
+            raise ValueError("Elements of pvals must sum to 1.")
         if engine is None:
             engine = Sobol(d=1, scramble=True, seed=seed)
         self.engine = engine
