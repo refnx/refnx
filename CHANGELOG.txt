@@ -324,3 +324,6 @@ in 0.1.13.
 - Fallback to numerical estimation of Hessian/Covariance matrix if an
   Objective cannot calculate a residuals array (e.g. mixed use of
   BaseObjective/Objective in a GlobalObjective).
+- Vendor scipy.stats.qmc.
+- Use Latin Hyper Cube sampling to initialise MCMC walkers when initialising
+  with prior. This ensures a good distribution of walkers and no clustering.
