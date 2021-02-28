@@ -18,7 +18,7 @@ from refnx._lib import (
     flatten,
 )
 from refnx._lib.util import getargspec
-
+from refnx._lib._qmc import LatinHypercube
 from refnx._lib import emcee
 from refnx._lib.emcee.state import State
 from refnx._lib.emcee.pbar import get_progress_bar
@@ -339,7 +339,8 @@ class CurveFitter(object):
 
             - 'covar', use the estimated covariance of the system.
             - 'jitter', add a small amount of gaussian noise to each parameter
-            - 'prior', sample random locations from the prior
+            - 'prior', sample random locations from the prior using Latin
+                Squares.
             - pos, an array that specifies a snapshot of the walkers. Has shape
                 `(nwalkers, ndim)`, or `(ntemps, nwalkers, ndim)` if parallel
                  tempering is employed. You can also provide a previously
@@ -421,6 +422,7 @@ class CurveFitter(object):
                     vals *= param.value
                     arr[..., i] = vals
                 else:
+                    LHC = LatinHypercube(nvary, seed=random_state)
                     arr[..., i] = param.bounds.rvs(
                         size=(_ntemps, nwalkers), random_state=rng
                     )
