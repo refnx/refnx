@@ -1185,16 +1185,16 @@ def polarised_correction(
 
     # Check that the input spin channels match the
     # flipper settings for those spin cross sections
-    if (I11 is not None and _check_spin_channel(I11, SpinChannel.UPUP) is False):
+    if (I11 is not None and _check_spin_channel(I11, SpinChannel.UP_UP) is False):
         print("Error: Input for ++ channel doesn't match flipper statuses!")
         return -1
-    elif (I01 is not None and _check_spin_channel(I01, SpinChannel.DOWNUP) is False):
+    elif (I01 is not None and _check_spin_channel(I01, SpinChannel.DOWN_UP) is False):
         print("Error: Input for -+ channel doesn't match flipper statuses!")
         return -1
-    elif (I10 is not None and _check_spin_channel(I10, SpinChannel.UPDOWN) is False):
+    elif (I10 is not None and _check_spin_channel(I10, SpinChannel.UP_DOWN) is False):
         print("Error: Input for +- channel doesn't match flipper statuses!")
         return -1
-    elif (I00 is not None and _check_spin_channel(I00, SpinChannel.DOWNDOWN) is False):
+    elif (I00 is not None and _check_spin_channel(I00, SpinChannel.DOWN_DOWN) is False):
         print("Error: Input for -- channel doesn't match flipper statuses!")
         return -1
 
