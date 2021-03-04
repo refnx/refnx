@@ -629,20 +629,21 @@ class PolarisedCatalogue(PlatypusCatalogue):
 
 class SpinChannel(Enum):
     """
-    Describes the spin state of a polarised neutron beam. 
+    Describes the spin state of a polarised neutron beam.
     """
-    UPUP = (1,1)
-    UPDOWN = (1,0)
-    DOWNUP = (0,1)
-    DOWNDOWN = (0,0)
+
+    UP_UP = (1, 1)
+    UP_DOWN = (1, 0)
+    DOWN_UP = (0, 1)
+    DOWN_DOWN = (0, 0)
 
 
 class SpinSet(object):
     """
-    Describes a set of spin-channels at a given angle. 
+    Describes a set of spin-channels at a given angle.
 
-    TODO: implement polarisation efficiency correction in this class
-    
+    TODO: implement polarisation efficiency correction within this class
+
     Parameters
     ----------
     list of {str, h5data}
@@ -653,71 +654,94 @@ class SpinSet(object):
         Path to the data folder containing the data to be reduced.
     """
 
-    def __init__(self, dataset, data_folder=None):
-
+    def __init__(
+        self, down_down, up_up, down_up=None, up_down=None, data_folder=None
+    ):
         # Currently only Platypus has polarisation elements
         self.reflect_klass = PlatypusNexus
-
         self.data_folder = data_folder
-        if len(dataset)> 4:
-            raise ValueError("Too many spin channels!")
-        if len(dataset) < 2:
-            raise ValueError("Too few spin channels! Need at least R++ and R--.")
-            
-        if isinstance(dataset[0], PlatypusNexus):
-            self.beams = self.arrange_spin_channels(dataset)
-        elif type(dataset[0]) is str:
-            fnames = [os.path.join(self.data_folder, dset) for dset in dataset]
-            PLPset = [self.reflect_klass(d) for d in fnames]
 
-            self.beams = self.arrange_spin_channels(*PLPset)
-        else:
-            print('hmm')
-            #self.direct_beams = self.reflect_klass(dataset)
-        
-        self.mm, self.mp, self.pm, self.pp = self.beams
+        channels = [down_down, up_up, down_up, up_down]
 
+        # initialise spin channels
+        self.dd = self.du = self.ud = self.uu = None
+
+        for channel in channels:
+            if channel is None:
+                continue
+            elif isinstance(channel, self.reflect_klass):
+                pass
+            else:
+                try:
+                    channel = os.path.join(data_folder, channel)
+                except TypeError:
+                    # original channel is not a string
+                    pass
+                finally:
+                    # let's hope it's an h5 file
+                    channel = self.reflect_klass(channel)
+
+            if channel.spin_state is SpinChannel.DOWN_DOWN:
+                self.dd = channel
+            elif channel.spin_state is SpinChannel.DOWN_UP:
+                self.du = channel
+            elif channel.spin_state is SpinChannel.UP_DOWN:
+                self.ud = channel
+            elif channel.spin_state is SpinChannel.UP_UP:
+                self.uu = channel
+
+        assert (
+            self.dd is not None
+        ), "down_down spin channel is not SpinChannel.DOWN_DOWN!"
+        assert (
+            self.uu is not None
+        ), "up_up spin channel is not SpinChannel.UP_UP!"
 
     @property
     def spin_channels(self):
         return [
-            s.spin_state.value if s is not None else None for s in [
-                self.mm, self.mp, self.pm, self.pp
-            ]
+            s.spin_state.value if s is not None else None
+            for s in [self.dd, self.du, self.ud, self.uu]
         ]
-        
-    def arrange_spin_channels(self, *data):
-        """
-        Function that takes a random input of spin channels at 
-        a single angle and returns them arranged according to
-        --, -+, +-, ++ and replaces the spin channel with None
-        if it was not measured.
-        """
-        states = [None]*4
-
-        for a in _not_none(*data):
-            if a.spin_state is SpinChannel.DOWNDOWN:
-                states[0] = a
-            elif a.spin_state is SpinChannel.DOWNUP:
-                states[1] = a
-            elif a.spin_state is SpinChannel.UPDOWN:
-                states[2] = a
-            elif a.spin_state is SpinChannel.UPUP:
-                states[3] = a
-
-        return states
 
     def process_beams(self, reduction_options=None):
+        """
+        Process beams in SpinSet.
 
+        Assumes the same reduction_options for each spin state.
+        If you would like to use individual reduction_options for each
+        spin channel, you can process them individually, i.e.
+        `spinset.dd.process(**reduction_options_dd)`,
+        `spinset.du.process(**reduction_options_du)`, etc.
+
+        Parameters
+        ----------
+        reduction_options : dict
+            A single dict of options used to process all spectra
+        """
         if reduction_options is None:
             reduction_options = {
-                "lo_wavelength" : 2.5,
-                "hi_wavelength" : 12.5,
-                "rebin_percent" : 3,
-                }
+                "lo_wavelength": 2.5,
+                "hi_wavelength": 12.5,
+                "rebin_percent": 3,
+            }
 
-        for beam in _not_none(self.mm, self.mp, self.pm, self.pp):
-            beam.process(**reduction_options)
+        if self.ud is not None or self.du is not None:
+            print(
+                "Spin-flip channels detected. Consider using ManualBeamFinder"
+                " to locate weak reflected signals. i.e.\n"
+                "%gui qt\n"
+                "from refnx.reduce.manual_beam_finder import ManualBeamFinder\n"
+                "mbf = ManualBeamFinder()\n"
+                "options = ReductionOptions(manual_beam_find=mbf, sample_pos=-1)\n"
+                "reduction_options.update(options)"
+            )
+
+        for beam in [self.dd, self.du, self.ud, self.uu]:
+            if beam is None:
+                continue
+            else:
+                beam.process(**reduction_options)
 
     def plot_spectra(self, **kwargs):
         """
@@ -725,14 +749,19 @@ class SpinSet(object):
 
         Requires matplotlib to be installed
         """
-        fig, ax = self.mm.plot(**kwargs)
+        import matplotlib.pyplot as plt
 
-        for spinch in _not_none(self.mp, self.pm, self.pp):
-            fig, ax = spinch.plot(fig=fig, **kwargs)
+        fig, ax = plt.subplots()
+        ax.set(xlabel="Wavelength ($\\AA$)", ylabel="Intensity (a.u.)")
 
-        fig.legend()
-        return fig, ax 
-
+        for spinch in [self.dd, self.du, self.ud, self.uu]:
+            if spinch is None:
+                continue
+            x = spinch.processed_spectrum["m_lambda"][0]
+            y = spinch.processed_spectrum["m_spec"][0]
+            yerr = spinch.processed_spectrum["m_spec_sd"][0]
+            ax.errorbar(x, y, yerr, label=spinch.cat.sample_name)
+        return fig, ax
 
 def _not_none(*arrays):
     """
@@ -2037,13 +2066,13 @@ class PlatypusNexus(ReflectNexus):
                 # Set spin channels based of flipper statuses
                 if self.cat.pol_flip_status:
                     if self.cat.anal_flip_status:
-                        self.spin_state = SpinChannel.UPUP
+                        self.spin_state = SpinChannel.UP_UP
                     else:
-                        self.spin_state = SpinChannel.UPDOWN
+                        self.spin_state = SpinChannel.UP_DOWN
                 elif self.cat.anal_flip_status:
-                    self.spin_state = SpinChannel.DOWNUP
+                    self.spin_state = SpinChannel.DOWN_UP
                 else:
-                    self.spin_state = SpinChannel.DOWNDOWN                
+                    self.spin_state = SpinChannel.DOWN_DOWN                
 
         
 
