@@ -21,6 +21,8 @@ from refnx.reduce import (
     SpatzNexus,
     basename_datafile,
     catalogue,
+    SpinChannel,
+    SpinSet,
 )
 from refnx.reduce.peak_utils import gauss
 from refnx.reduce.platypusnexus import (
@@ -31,7 +33,64 @@ from refnx.reduce.platypusnexus import (
 )
 
 
-class TestPlatypusNexus:
+class TestSpinSet(object):
+    @pytest.mark.usefixtures("no_data_directory")
+    @pytest.fixture(autouse=True)
+    def setup_method(self, tmpdir, data_directory):
+        self.pth = pjoin(data_directory, "reduce", "PNR_files")
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", RuntimeWarning)
+
+            self.spinset = SpinSet(
+                down_down=pjoin(self.pth, "PLP0008864.nx.hdf"),
+                up_up=pjoin(self.pth, "PLP0008861.nx.hdf"),
+                down_up=pjoin(self.pth, "PLP0008863.nx.hdf"),
+                up_down=pjoin(self.pth, "PLP0008862.nx.hdf"),
+            )
+
+            self.spinset_3 = SpinSet(
+                down_down=pjoin(self.pth, "PLP0008864.nx.hdf"),
+                up_up=pjoin(self.pth, "PLP0008861.nx.hdf"),
+                down_up=pjoin(self.pth, "PLP0008863.nx.hdf"),
+            )
+            self.spinset_2 = SpinSet(
+                down_down=pjoin(self.pth, "PLP0008864.nx.hdf"),
+                up_up=pjoin(self.pth, "PLP0008861.nx.hdf"),
+            )
+
+        self.cwd = os.getcwd()
+
+        self.tmpdir = tmpdir.strpath
+        os.chdir(self.tmpdir)
+        return 0
+
+    def test_spin_channels(self):
+        assert self.spinset.spin_channels == [(0, 0), (0, 1), (1, 0), (1, 1)]
+        assert self.spinset_3.spin_channels == [(0, 0), (0, 1), None, (1, 1)]
+        assert self.spinset_2.spin_channels == [(0, 0), None, None, (1, 1)]
+
+    def test_process_beams(self):
+        self.spinset.process_beams()
+        assert self.spinset.dd.processed_spectrum
+        assert self.spinset.du.processed_spectrum
+        assert self.spinset.ud.processed_spectrum
+        assert self.spinset.uu.processed_spectrum
+
+        self.spinset_3.process_beams()
+        assert self.spinset_3.dd.processed_spectrum
+        assert self.spinset_3.du.processed_spectrum
+        assert self.spinset_3.ud is None
+        assert self.spinset_3.uu.processed_spectrum
+
+        self.spinset_2.process_beams()
+        assert self.spinset_2.dd.processed_spectrum
+        assert self.spinset_2.du is None
+        assert self.spinset_2.ud is None
+        assert self.spinset_2.uu.processed_spectrum
+
+
+class TestPlatypusNexus(object):
     @pytest.mark.usefixtures("no_data_directory")
     @pytest.fixture(autouse=True)
     def setup_method(self, tmpdir, data_directory):
@@ -353,10 +412,6 @@ class TestPlatypusNexus:
         self.f8864.process()
 
         # Check that we can read all of the flipper statuses in files
-        # TODO: In datafiles, the flip_on parameter
-        # is always on regardless of whether the flipper is used.
-        # This would be nice to use intead of checking the
-        # current supplied to the flipper
 
         # Flipper 1 on, flipper 2 on
         assert_almost_equal(self.f8861.cat.cat["pol_flip_current"], 5.0)
@@ -373,6 +428,12 @@ class TestPlatypusNexus:
         # Flipper 1 off, flipper 2 off
         assert_almost_equal(self.f8864.cat.cat["anal_flip_current"], 0)
         assert_almost_equal(self.f8864.cat.cat["pol_flip_current"], 0)
+
+        # Check SpinChannel for each file
+        assert self.f8861.spin_state == SpinChannel.UP_UP
+        assert self.f8862.spin_state == SpinChannel.UP_DOWN
+        assert self.f8863.spin_state == SpinChannel.DOWN_UP
+        assert self.f8864.spin_state == SpinChannel.DOWN_DOWN
 
     def test_PNR_magnet_read(self):
         self.f8861.process()

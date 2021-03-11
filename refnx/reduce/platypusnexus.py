@@ -9,6 +9,7 @@ from time import gmtime, strftime
 import string
 import warnings
 from contextlib import contextmanager
+from enum import Enum
 
 from scipy.optimize import leastsq, curve_fit
 from scipy.stats import t
@@ -624,6 +625,166 @@ class PolarisedCatalogue(PlatypusCatalogue):
             d["magnet_output_current"] = None
             self.is_magnet = False
         return d
+
+
+class SpinChannel(Enum):
+    """
+    Describes the spin state of a polarised neutron beam.
+    """
+
+    UP_UP = (1, 1)
+    UP_DOWN = (1, 0)
+    DOWN_UP = (0, 1)
+    DOWN_DOWN = (0, 0)
+
+
+class SpinSet(object):
+    """
+    Describes a set of spin-channels at a given angle.
+
+    TODO: implement polarisation efficiency correction within this class
+
+    Parameters
+    ----------
+    list of {str, h5data}
+        list of str, or list of h5py file handles pointing to
+        a set of polarised neutron beam files
+
+    data_folder: {str, Path}
+        Path to the data folder containing the data to be reduced.
+    """
+
+    def __init__(
+        self, down_down, up_up, down_up=None, up_down=None, data_folder=None
+    ):
+        # Currently only Platypus has polarisation elements
+        self.reflect_klass = PlatypusNexus
+        self.data_folder = data_folder
+
+        channels = [down_down, up_up, down_up, up_down]
+
+        # initialise spin channels
+        self.dd = self.du = self.ud = self.uu = None
+
+        # initialise reduction options for each spin channel
+        reduction_options = {
+            "lo_wavelength": 2.5,
+            "hi_wavelength": 12.5,
+            "rebin_percent": 3,
+        }
+        self.dd_opts = reduction_options.copy()
+        self.du_opts = reduction_options.copy()
+        self.ud_opts = reduction_options.copy()
+        self.uu_opts = reduction_options.copy()
+
+        for channel in channels:
+            if channel is None:
+                continue
+            elif isinstance(channel, self.reflect_klass):
+                pass
+            else:
+                try:
+                    channel = os.path.join(data_folder, channel)
+                except TypeError:
+                    # original channel is not a string
+                    pass
+                finally:
+                    # let's hope it's an h5 file
+                    channel = self.reflect_klass(channel)
+
+            if channel.spin_state is SpinChannel.DOWN_DOWN:
+                self.dd = channel
+            elif channel.spin_state is SpinChannel.DOWN_UP:
+                self.du = channel
+            elif channel.spin_state is SpinChannel.UP_DOWN:
+                self.ud = channel
+            elif channel.spin_state is SpinChannel.UP_UP:
+                self.uu = channel
+
+        assert (
+            self.dd is not None
+        ), "down_down spin channel is not SpinChannel.DOWN_DOWN!"
+        assert (
+            self.uu is not None
+        ), "up_up spin channel is not SpinChannel.UP_UP!"
+
+    @property
+    def spin_channels(self):
+        return [
+            s.spin_state.value if s is not None else None
+            for s in [self.dd, self.du, self.ud, self.uu]
+        ]
+
+    def process_beams(self, reduction_options=None):
+        """
+        Process beams in SpinSet.
+
+        Reduction options for each spin channel are specified by
+        self.dd_opts, self.du_opts, self.ud_opts, and self.uu_opts where
+        a standard set of options is provided when constructing the object.
+        To specify different options for each spin channel (such as using
+        the ManualBeamFinder for only spin-flip channels), update the
+        reduction options for the specific spin channel in SpinSet, then
+        process the beams. i.e.
+
+        from refnx.reduce.manual_beam_finder import ManualBeamFinder
+        mbf = ManualBeamFinder()
+
+        spinset = SpinSet(
+            "PLP0051296.nx.hdf",
+            "PLP0051294.nx.hdf",
+            up_down="PLP0051295.nx.hdf",
+            down_up="PLP0051297.nx.hdf",
+            data_folder=data_dir
+        )
+        spinset.du_opts.update({"manual_beam_find" : mbf, peak_pos : -1})
+        spinset.process_beams()
+
+        Parameters
+        ----------
+        reduction_options : dict
+            A single dict of options used to process all spectra. If
+            this is None, then process_beams will use individual dicts
+            for each spin channel
+        """
+
+        if reduction_options:
+            print(
+                "Applying the supplied reduction_options to all spin channels"
+            )
+            self.dd_opts = reduction_options.copy()
+            self.du_opts = reduction_options.copy()
+            self.ud_opts = reduction_options.copy()
+            self.uu_opts = reduction_options.copy()
+
+        for opts, beam in zip(
+            [self.dd_opts, self.du_opts, self.ud_opts, self.uu_opts],
+            [self.dd, self.du, self.ud, self.uu],
+        ):
+            if beam is None:
+                continue
+            else:
+                beam.process(**opts)
+
+    def plot_spectra(self, **kwargs):
+        """
+        Plots the processed spectrums for each spin state in the SpinSet
+
+        Requires matplotlib to be installed
+        """
+        import matplotlib.pyplot as plt
+
+        fig, ax = plt.subplots()
+        ax.set(xlabel="Wavelength ($\\AA$)", ylabel="Intensity (a.u.)")
+
+        for spinch in [self.dd, self.du, self.ud, self.uu]:
+            if spinch is None:
+                continue
+            x = spinch.processed_spectrum["m_lambda"][0]
+            y = spinch.processed_spectrum["m_spec"][0]
+            yerr = spinch.processed_spectrum["m_spec_sd"][0]
+            ax.errorbar(x, y, yerr, label=spinch.cat.sample_name)
+        return fig, ax
 
 
 def basename_datafile(pth):
@@ -1909,8 +2070,27 @@ class PlatypusNexus(ReflectNexus):
         self.prefix = "PLP"
         with _possibly_open_hdf_file(h5data, "r") as f:
             self.cat = PlatypusCatalogue(f)
-            if self.cat.mode == "POLANAL":
+            if self.cat.mode in ["POL", "POLANAL"]:
                 self.cat = PolarisedCatalogue(f)
+
+                # Set spin channels based of flipper statuses
+                if self.cat.pol_flip_current and self.cat.anal_flip_current:
+                    self.spin_state = SpinChannel.UP_UP
+                elif (
+                    self.cat.pol_flip_current
+                    and not self.cat.anal_flip_current
+                ):
+                    self.spin_state = SpinChannel.UP_DOWN
+                elif (
+                    not self.cat.pol_flip_current
+                    and self.cat.anal_flip_current
+                ):
+                    self.spin_state = SpinChannel.DOWN_UP
+                elif (
+                    not self.cat.pol_flip_current
+                    and not self.cat.anal_flip_current
+                ):
+                    self.spin_state = SpinChannel.DOWN_DOWN
 
     def detector_average_unwanted_direction(self, detector):
         """
