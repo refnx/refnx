@@ -52,19 +52,44 @@ Creating a conda environment
 
     ::
 
-     pip install uncertainties attrs periodictable
+     python -m pip install uncertainties attrs periodictable
+
+Installing with pip
+===================
+
+There are refnx wheels available for macOS/Windows/Linux on PyPI.
+
+    ::
+
+    python -m pip install refnx
+
+Installing into a conda environment from a released version
+===========================================================
+
+1. There are pre-built versions on *conda-forge*:
+
+   ::
+
+     conda install -c conda-forge refnx
+
+2. Start up a Python interpreter and make sure the tests run:
+
+    ::
+
+     >>> import refnx
+     >>> refnx.test()
 
 Installing from source
 =======================
 
-The latest source code can be obtained from `github`_. You can also build the
-package from within the refnx git repository (see later in this document).
+The latest source code can be obtained from `github`_. You can build the
+package from within the refnx git repository.
 
 1. [macOS only] If you wish to enable the parallelised calculation of
    reflectivity with OpenMP, then you will need to install *libomp*. This is
    easily achieved via `homebrew`_, and the setting of environment variables.
-   However, the alternate reflectivity calculation is also parallelised and is
-   only ~20% slower.
+   The refnx kernel that uses OpenMP is not normally any better than the
+   default C version.
 
     ::
 
@@ -89,19 +114,3 @@ package from within the refnx git repository (see later in this document).
     ::
 
      python setup.py test
-
-Installing into a conda environment from a released version
-===========================================================
-
-1. There are pre-built versions on *conda-forge*:
-
-   ::
-
-     conda install -c conda-forge refnx
-
-2. Start up a Python interpreter and make sure the tests run:
-
-    ::
-
-     >>> import refnx
-     >>> refnx.test()
