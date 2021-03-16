@@ -666,6 +666,18 @@ class SpinSet(object):
         # initialise spin channels
         self.dd = self.du = self.ud = self.uu = None
 
+        # initialise reduction options for each spin channel
+        reduction_options = {
+                "lo_wavelength": 2.5,
+                "hi_wavelength": 12.5,
+                "rebin_percent": 3,
+            }
+        self.dd_opts = reduction_options.copy()
+        self.du_opts = reduction_options.copy()
+        self.ud_opts = reduction_options.copy()
+        self.uu_opts = reduction_options.copy()
+
+
         for channel in channels:
             if channel is None:
                 continue
@@ -704,44 +716,58 @@ class SpinSet(object):
             for s in [self.dd, self.du, self.ud, self.uu]
         ]
 
-    def process_beams(self, reduction_options=None):
+    def process_beams(
+        self, reduction_options=None
+    ):
         """
         Process beams in SpinSet.
 
-        Assumes the same reduction_options for each spin state.
-        If you would like to use individual reduction_options for each
-        spin channel, you can process them individually, i.e.
-        `spinset.dd.process(**reduction_options_dd)`,
-        `spinset.du.process(**reduction_options_du)`, etc.
+        Reduction options for each spin channel are specified by
+        self.dd_opts, self.du_opts, self.ud_opts, and self.uu_opts where
+        a standard set of options is provided when constructing the object.
+        To specify different options for each spin channel (such as using
+        the ManualBeamFinder for only spin-flip channels), update the
+        reduction options for the specific spin channel in SpinSet, then
+        process the beams. i.e.
+
+        from refnx.reduce.manual_beam_finder import ManualBeamFinder
+        mbf = ManualBeamFinder()
+
+        spinset = SpinSet(
+            "PLP0051296.nx.hdf",
+            "PLP0051294.nx.hdf",
+            up_down="PLP0051295.nx.hdf",
+            down_up="PLP0051297.nx.hdf",
+            data_folder=data_dir
+        )
+        spinset.du_opts.update({"manual_beam_find" : mbf, peak_pos : -1})
+        spinset.process_beams()
 
         Parameters
         ----------
         reduction_options : dict
-            A single dict of options used to process all spectra
+            A single dict of options used to process all spectra. If
+            this is None, then process_beams will use individual dicts 
+            for each spin channel
         """
-        if reduction_options is None:
-            reduction_options = {
-                "lo_wavelength": 2.5,
-                "hi_wavelength": 12.5,
-                "rebin_percent": 3,
-            }
 
-        if self.ud is not None or self.du is not None:
+        if reduction_options:
             print(
-                "Spin-flip channels detected. Consider using ManualBeamFinder"
-                " to locate weak reflected signals. i.e.\n"
-                "%gui qt\n"
-                "from refnx.reduce.manual_beam_finder import ManualBeamFinder\n"
-                "mbf = ManualBeamFinder()\n"
-                "options = ReductionOptions(manual_beam_find=mbf, sample_pos=-1)\n"
-                "reduction_options.update(options)"
-            )
+                "Applying the supplied reduction_options to all spin channels"
+                )
+            self.dd_opts = reduction_options.copy()
+            self.du_opts = reduction_options.copy()
+            self.ud_opts = reduction_options.copy()
+            self.uu_opts = reduction_options.copy()
 
-        for beam in [self.dd, self.du, self.ud, self.uu]:
+        for opts, beam in zip(
+            [self.dd_opts, self.du_opts, self.ud_opts, self.uu_opts],
+            [self.dd, self.du, self.ud, self.uu]
+        ):
             if beam is None:
                 continue
             else:
-                beam.process(**reduction_options)
+                beam.process(**opts)
 
     def plot_spectra(self, **kwargs):
         """
