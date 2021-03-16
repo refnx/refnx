@@ -668,15 +668,14 @@ class SpinSet(object):
 
         # initialise reduction options for each spin channel
         reduction_options = {
-                "lo_wavelength": 2.5,
-                "hi_wavelength": 12.5,
-                "rebin_percent": 3,
-            }
+            "lo_wavelength": 2.5,
+            "hi_wavelength": 12.5,
+            "rebin_percent": 3,
+        }
         self.dd_opts = reduction_options.copy()
         self.du_opts = reduction_options.copy()
         self.ud_opts = reduction_options.copy()
         self.uu_opts = reduction_options.copy()
-
 
         for channel in channels:
             if channel is None:
@@ -716,9 +715,7 @@ class SpinSet(object):
             for s in [self.dd, self.du, self.ud, self.uu]
         ]
 
-    def process_beams(
-        self, reduction_options=None
-    ):
+    def process_beams(self, reduction_options=None):
         """
         Process beams in SpinSet.
 
@@ -747,14 +744,14 @@ class SpinSet(object):
         ----------
         reduction_options : dict
             A single dict of options used to process all spectra. If
-            this is None, then process_beams will use individual dicts 
+            this is None, then process_beams will use individual dicts
             for each spin channel
         """
 
         if reduction_options:
             print(
                 "Applying the supplied reduction_options to all spin channels"
-                )
+            )
             self.dd_opts = reduction_options.copy()
             self.du_opts = reduction_options.copy()
             self.ud_opts = reduction_options.copy()
@@ -762,7 +759,7 @@ class SpinSet(object):
 
         for opts, beam in zip(
             [self.dd_opts, self.du_opts, self.ud_opts, self.uu_opts],
-            [self.dd, self.du, self.ud, self.uu]
+            [self.dd, self.du, self.ud, self.uu],
         ):
             if beam is None:
                 continue
