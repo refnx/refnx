@@ -1,0 +1,1 @@
+For a detailed explanation of how brushes can be analysed with refnx please see https://github.com/refnx/refnx-models/tree/master/polymer_brushes
