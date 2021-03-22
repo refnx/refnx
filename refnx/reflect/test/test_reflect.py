@@ -35,7 +35,7 @@ from refnx._lib import MapWrapper
 BACKENDS = reflect_model.available_backends()
 
 
-class TestReflect(object):
+class TestReflect:
     def setup_method(self):
         self.pth = os.path.dirname(os.path.abspath(__file__))
 
@@ -822,7 +822,7 @@ class TestReflect(object):
         assert_almost_equal(rt, 1.0)
 
 
-class Wrapper_fn(object):
+class Wrapper_fn:
     def __init__(self, fn, w):
         self.fn = fn
         self.w = w
@@ -832,7 +832,7 @@ class Wrapper_fn(object):
         return self.fn(x, self.w, threads=1)
 
 
-class Wrapper_fn2(object):
+class Wrapper_fn2:
     def __init__(self, fn, w):
         self.fn = fn
         self.w = w

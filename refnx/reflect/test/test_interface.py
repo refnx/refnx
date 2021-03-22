@@ -9,7 +9,7 @@ from scipy.stats import norm
 from refnx.reflect import Erf, Exponential, Step, Linear, Tanh, Sinusoidal
 
 
-class TestStructure(object):
+class TestStructure:
     def setup_method(self):
         self.x = np.linspace(-5, 5, 1001)
 

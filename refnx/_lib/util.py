@@ -29,7 +29,7 @@ def preserve_cwd(function):
     return decorator
 
 
-class TemporaryDirectory(object):
+class TemporaryDirectory:
     """Create and return a temporary directory.  This has the same
     behavior as mkdtemp but can be used as a context manager.  For
     example:
@@ -203,7 +203,7 @@ def possibly_open_file(f, mode="wb"):
         g.close()
 
 
-class MapWrapper(object):
+class MapWrapper:
     """
     Parallelisation wrapper for working with map-like callables, such as
     `multiprocessing.Pool.map`.

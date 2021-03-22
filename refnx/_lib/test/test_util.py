@@ -10,7 +10,7 @@ from refnx._lib._cutil import c_flatten
 import numpy as np
 
 
-class TestUtil(object):
+class TestUtil:
     def setup_method(self):
         pass
 
@@ -31,7 +31,7 @@ class TestUtil(object):
         assert_equal(num_unique2, num_unique)
 
 
-class TestMapWrapper(object):
+class TestMapWrapper:
     def setup_method(self):
         self.input = np.arange(10.0)
         self.output = np.sin(self.input)

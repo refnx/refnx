@@ -260,7 +260,7 @@ class HDFBackend(Backend):
             g.attrs["iteration"] = iteration + 1
 
 
-class TempHDFBackend(object):
+class TempHDFBackend():
     def __init__(self, dtype=None, compression=None, compression_opts=None):
         self.dtype = dtype
         self.filename = None

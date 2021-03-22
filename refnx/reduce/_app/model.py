@@ -30,7 +30,7 @@ reducer_entry = [
 default_reducer_entry = {re[0]: re[1] for re in reducer_entry}
 
 
-class ReductionState(object):
+class ReductionState:
     """
     Reduces multiple reflectometry datafiles. Attributes control how the
     reduction proceeds.

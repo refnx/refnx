@@ -5,7 +5,7 @@ from scipy._lib._util import check_random_state
 import numpy as np
 
 
-class Bounds(object):
+class Bounds:
     """
     A base class that describes the probability distribution for a parameter
 

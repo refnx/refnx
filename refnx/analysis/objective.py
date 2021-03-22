@@ -19,7 +19,7 @@ from refnx.analysis import (
 )
 
 
-class BaseObjective(object):
+class BaseObjective:
     """Don't necessarily have to use Parameters, could use np.array"""
 
     def __init__(
@@ -1181,7 +1181,7 @@ class GlobalObjective(Objective):
         return fig, ax
 
 
-class Transform(object):
+class Transform:
     r"""
     Mathematical transforms of numeric data.
 

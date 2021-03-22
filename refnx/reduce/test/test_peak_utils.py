@@ -3,7 +3,7 @@ from numpy.testing import assert_almost_equal, assert_equal
 import refnx.reduce.peak_utils as peak_utils
 
 
-class TestPeakUtils(object):
+class TestPeakUtils:
     def setup_method(self):
         pass
 

@@ -18,7 +18,7 @@ ANGULAR COMPONENTS
 """
 
 
-class P_Theta(object):
+class P_Theta:
     def __init__(self, d1, d2, L12=2859.0):
         """
         Calculates the angular resolution for a two slit collimation
@@ -93,7 +93,7 @@ Wavelength components
 """
 
 
-class P_Wavelength(object):
+class P_Wavelength:
     def __init__(self, z0, L, freq, H, xsi=0, R=350, da=0.02):
         """
         Calculates the wavelength resolution for a double disc chopper system.

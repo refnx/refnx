@@ -237,7 +237,7 @@ def use_reflect_backend(backend="c"):
     abeles = f
 
 
-class ReflectModel(object):
+class ReflectModel:
     r"""
     Parameters
     ----------
@@ -869,7 +869,7 @@ def _cached_linspace(start, stop, num):
     return np.linspace(start, stop, num)
 
 
-class MixedReflectModel(object):
+class MixedReflectModel:
     r"""
     Calculates an incoherent average of reflectivities from a sequence of
     structures. Such a situation may occur if a sample is not uniform over its

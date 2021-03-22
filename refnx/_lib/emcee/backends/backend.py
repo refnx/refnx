@@ -8,7 +8,7 @@ from ..state import State
 __all__ = ["Backend"]
 
 
-class Backend(object):
+class Backend():
     """A simple default backend that stores the chain in memory"""
 
     def __init__(self, dtype=None):

@@ -38,7 +38,7 @@ def line(x, params, *args, **kwds):
     return p_arr[0] + x * p_arr[1]
 
 
-class TestCurveFitter(object):
+class TestCurveFitter:
     def setup_method(self):
         # Reproducible results!
         np.random.seed(123)
@@ -393,7 +393,7 @@ def gauss(x, p0):
     return p[0] + p[1] * np.exp(-(((x - p[2]) / p[3]) ** 2))
 
 
-class TestFitterGauss(object):
+class TestFitterGauss:
     # Test CurveFitter with a noisy gaussian, weighted and unweighted, to see
     # if the parameters and uncertainties come out correct
 

@@ -19,7 +19,7 @@ from refnx.reflect import Slab, SLD, ReflectModel
 SEED = 1
 
 
-class TestGlobalFitting(object):
+class TestGlobalFitting:
     def setup_method(self):
         self.pth = os.path.dirname(os.path.abspath(__file__))
 

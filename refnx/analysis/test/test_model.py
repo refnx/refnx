@@ -24,7 +24,7 @@ def line3(x, params, x_err=None):
     pass
 
 
-class TestModel(object):
+class TestModel:
     def setup_method(self):
         pass
 

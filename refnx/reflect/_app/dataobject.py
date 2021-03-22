@@ -10,7 +10,7 @@ import numpy as np
 from .graphproperties import GraphProperties
 
 
-class DataObject(object):
+class DataObject:
     """
     Everything to do with the lifecycle of a dataset.
     """

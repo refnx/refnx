@@ -19,7 +19,7 @@ from refnx.analysis.parameter import (
 )
 
 
-class TestParameter(object):
+class TestParameter:
     def setup_method(self):
         pass
 
@@ -243,7 +243,7 @@ class TestParameter(object):
         assert isinstance(q, _BinaryOp)
 
 
-class TestParameters(object):
+class TestParameters:
     def setup_method(self):
         self.a = Parameter(1, name="a")
         self.b = Parameter(2, name="b")

@@ -7,7 +7,7 @@ import refnx.util.nsplice as nsplice
 __author__ = "anz"
 
 
-class TestNSplice(object):
+class TestNSplice:
     def setup_method(self):
         self.path = os.path.dirname(os.path.abspath(__file__))
 

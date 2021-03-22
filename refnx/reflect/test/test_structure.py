@@ -27,7 +27,7 @@ from refnx.analysis import Parameter, Interval, Parameters
 from refnx.analysis.parameter import _BinaryOp
 
 
-class TestStructure(object):
+class TestStructure:
     def setup_method(self):
         self.air = SLD(0, name="air")
         self.sio2 = SLD(3.47, name="sio2")
