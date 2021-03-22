@@ -58,7 +58,7 @@ install:
 
     # Configure the VM.
     - activate test
-    - conda install --yes --quiet numpy scipy h5py cython traitlets ipywidgets xlrd pandas pytest pyqt
+    - conda install --yes --quiet -c conda-forge numpy scipy h5py cython traitlets ipywidgets xlrd pandas pytest pyqt
     - pip install corner uncertainties matplotlib IPython pytest-qt periodictable pyqt5 attrs
     # - pip install git+https://github.com/pymc-devs/pymc3
 
