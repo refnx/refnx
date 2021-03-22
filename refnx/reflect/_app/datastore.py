@@ -23,7 +23,7 @@ def zipper(dir, zip):
             zip.write(fullpath, archive_name)
 
 
-class DataStore():
+class DataStore:
     """
     A container for storing datasets
     """

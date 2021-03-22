@@ -36,7 +36,7 @@ def component_class(component):
         return StackNode
 
 
-class Node():
+class Node:
     def __init__(self, data, model, parent=QtCore.QModelIndex()):
         self._data = data
         self._children = []

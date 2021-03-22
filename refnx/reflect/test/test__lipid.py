@@ -11,7 +11,7 @@ from refnx.reflect.structure import _profile_slicer
 from refnx.analysis import Parameter, Interval
 
 
-class TestLipidLeaflet():
+class TestLipidLeaflet:
     def setup_method(self):
         self.b_h = 6.01e-4
         self.V_h = 319.0

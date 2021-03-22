@@ -697,7 +697,7 @@ class Structure(UserList):
         return fig, ax
 
 
-class Scatterer():
+class Scatterer:
     """
     Abstract base class for something that will have a scattering length
     density
@@ -925,7 +925,7 @@ class MaterialSLD(Scatterer):
         return self._parameters
 
 
-class Component():
+class Component:
     """
     A base class for describing the structure of a subset of an interface.
 

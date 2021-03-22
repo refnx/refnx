@@ -11,7 +11,7 @@ from refnx.analysis import Parameter, Interval, Parameters
 from refnx._lib import flatten
 
 
-class TestSpline():
+class TestSpline:
     def setup_method(self):
         self.left = SLD(1.5)(10, 3)
         self.right = SLD(2.5)(10, 3)

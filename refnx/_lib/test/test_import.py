@@ -3,7 +3,7 @@ import refnx
 import numpy as np
 
 
-class TestUtil():
+class TestUtil:
     def setup_method(self):
         pass
 

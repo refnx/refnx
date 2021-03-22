@@ -368,7 +368,7 @@ class Parameters(UserList):
             yield template_array
 
 
-class BaseParameter():
+class BaseParameter:
     __add__ = MAKE_BINARY(operator.add)
     __sub__ = MAKE_BINARY(operator.sub)
     __mul__ = MAKE_BINARY(operator.mul)

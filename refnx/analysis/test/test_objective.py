@@ -49,7 +49,7 @@ def logp_extra(model, data):
     return 1.0
 
 
-class TestObjective():
+class TestObjective:
     def setup_method(self):
         # Choose the "true" parameters.
 

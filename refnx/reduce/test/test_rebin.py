@@ -9,7 +9,7 @@ import uncertainties.unumpy as unp
 import refnx.reduce.rebin as rebin
 
 
-class TestRebin():
+class TestRebin:
     def setup_method(self):
         pass
 

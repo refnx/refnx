@@ -24,7 +24,7 @@ _SQRT2 = np.sqrt(2.0)
 _GAMMA = np.pi / np.sqrt(np.pi * np.pi - 8.0)
 
 
-class Interface():
+class Interface:
     """
     Defines an Interfacial profile
     """

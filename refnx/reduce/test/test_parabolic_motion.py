@@ -4,7 +4,7 @@ from scipy import constants
 import refnx.reduce.parabolic_motion as pm
 
 
-class TestParabolicMotion():
+class TestParabolicMotion:
     def setup_method(self):
         pass
 

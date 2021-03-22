@@ -2167,7 +2167,7 @@ class ProgressCallback(QtWidgets.QDialog):
         return self.abort_flag
 
 
-class ProgramSettings():
+class ProgramSettings:
     def __init__(self, **kwds):
         _members = {
             "fitting_algorithm": "DE",

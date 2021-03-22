@@ -10,7 +10,7 @@ def test_version():
     refnx.__version__
 
 
-class TestGeneral():
+class TestGeneral:
     def setup_method(self):
         self.pth = os.path.dirname(os.path.abspath(__file__))
 

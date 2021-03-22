@@ -10,7 +10,7 @@ def fitfunc(f):
     return f
 
 
-class Model():
+class Model:
     """
     Calculates a generative model (dependent variable), given parameters
     and independent variables.

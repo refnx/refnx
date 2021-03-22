@@ -56,7 +56,7 @@ def event_setup(data_directory):
     return stp
 
 
-class TestEvent():
+class TestEvent:
     @pytest.mark.usefixtures("no_data_directory")
     def test_events_smoke(self, event_setup):
         # check that the event.events function works

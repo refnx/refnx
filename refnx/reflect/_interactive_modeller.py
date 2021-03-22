@@ -539,7 +539,7 @@ class ReflectModelView(HasTraits):
         return widgets.VBox(hboxes)
 
 
-class StructureView():
+class StructureView:
     def __init__(self, structure):
         self.structure = structure
         self.slab_views = [SlabView(slab) for slab in structure]
@@ -746,7 +746,7 @@ class SlabView(HasTraits):
         return widgets.HBox(self._widget_list)
 
 
-class Motofit():
+class Motofit:
     """
     An interactive slab modeller (Jupyter/ipywidgets based) for Neutron and
     X-ray reflectometry data.

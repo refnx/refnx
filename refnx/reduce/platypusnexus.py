@@ -129,7 +129,7 @@ def catalogue(start, stop, data_folder=None, prefix="PLP"):
     return df
 
 
-class Catalogue():
+class Catalogue:
     """
     Extract relevant parts of a NeXus file for reflectometry reduction
     """
@@ -888,7 +888,7 @@ class ReductionOptions(dict):
         self["event_filter"] = event_filter
 
 
-class ReflectNexus():
+class ReflectNexus:
     def __init__(self):
         self.cat = None
 

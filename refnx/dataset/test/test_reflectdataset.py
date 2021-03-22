@@ -7,7 +7,7 @@ import numpy as np
 from numpy.testing import assert_equal, assert_
 
 
-class TestReflectDataset():
+class TestReflectDataset:
     @pytest.fixture(autouse=True)
     def setup_method(self, tmpdir):
         self.pth = os.path.dirname(os.path.abspath(__file__))
