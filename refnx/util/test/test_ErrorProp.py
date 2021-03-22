@@ -4,7 +4,7 @@ import os
 from numpy.testing import assert_equal, assert_array_almost_equal
 
 
-class TestErrorProp(object):
+class TestErrorProp():
     def setup_method(self):
         pass
 

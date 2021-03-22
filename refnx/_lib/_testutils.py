@@ -11,7 +11,7 @@ import sys
 __all__ = ["PytestTester"]
 
 
-class PytestTester(object):
+class PytestTester():
     """
     Pytest test runner entry point.
     """

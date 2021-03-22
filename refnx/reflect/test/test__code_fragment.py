@@ -13,7 +13,7 @@ from refnx.dataset import ReflectDataset
 from refnx._lib import flatten
 
 
-class TestCodeFragment(object):
+class TestCodeFragment():
     def setup_method(self):
         self.pth = os.path.dirname(os.path.abspath(__file__))
 

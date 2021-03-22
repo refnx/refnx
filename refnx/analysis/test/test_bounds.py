@@ -7,7 +7,7 @@ from numpy.testing import assert_equal, assert_, assert_almost_equal
 from scipy.stats import norm, truncnorm, uniform
 
 
-class TestBounds(object):
+class TestBounds():
     def setup_method(self):
         pass
 
@@ -128,7 +128,7 @@ class TestBounds(object):
         assert_equal(bounds.logp(1.0), 0)
 
 
-class UserPDF(object):
+class UserPDF():
     def __init__(self):
         pass
 

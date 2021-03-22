@@ -15,7 +15,7 @@ from refnx.reduce import (
 )
 
 
-class TestPlatypusReduce(object):
+class TestPlatypusReduce():
     @pytest.mark.usefixtures("no_data_directory")
     @pytest.fixture(autouse=True)
     def setup_method(self, tmpdir, data_directory):
@@ -146,7 +146,7 @@ class TestPlatypusReduce(object):
             # assert_equal(a.ydata.shape[0], 3)
 
 
-class TestSpatzReduce(object):
+class TestSpatzReduce():
     @pytest.mark.usefixtures("no_data_directory")
     @pytest.fixture(autouse=True)
     def setup_method(self, tmpdir, data_directory):

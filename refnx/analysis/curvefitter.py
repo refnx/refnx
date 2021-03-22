@@ -29,7 +29,7 @@ MCMCResult = namedtuple(
 )
 
 
-class PTSampler(object):
+class PTSampler():
     def __init__(self, ntemps, nwalkers, ndim, logl, logp, **kwargs):
         """
         Shim class for a ptemcee.PTSampler.
@@ -170,7 +170,7 @@ class PTSampler(object):
             self._ptchain.ensemble._random.set_state(rstate0)
 
 
-class CurveFitter(object):
+class CurveFitter():
     """
     Analyse a curvefitting system (with MCMC sampling)
 

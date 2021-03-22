@@ -49,7 +49,7 @@ spin="UNPOLARISED" dim="$_numpointsz:$_numpointsy">
 </REFroot>"""
 
 
-class ReflectReduce(object):
+class ReflectReduce():
     def __init__(self, direct, prefix, data_folder=None):
 
         self.data_folder = os.path.curdir
@@ -838,7 +838,7 @@ def reduce_stitch(
     return combined_dataset, fname_dat
 
 
-class AutoReducer(object):
+class AutoReducer():
     """
     Auto-reduces reflectometry data.
 

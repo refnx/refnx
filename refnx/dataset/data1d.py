@@ -10,7 +10,7 @@ from refnx.util.nsplice import get_scaling_in_overlap
 from refnx._lib import possibly_open_file
 
 
-class Data1D(object):
+class Data1D():
     r"""
     A basic representation of a 1D dataset.
 

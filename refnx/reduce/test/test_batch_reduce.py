@@ -14,7 +14,7 @@ from refnx.reduce import BatchReducer
 import refnx.reduce.batchreduction
 
 
-class TestReduce(object):
+class TestReduce():
     @pytest.mark.usefixtures("no_data_directory")
     @pytest.fixture(autouse=True)
     def setup_method(self, tmpdir, data_directory):
@@ -70,7 +70,7 @@ class TestReduce(object):
             b.reduce(show=False)
 
 
-class TestReductionCache(object):
+class TestReductionCache():
 
     entries = [
         # row, ds, name, fname, entry

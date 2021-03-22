@@ -15,7 +15,7 @@ from numpy.testing import (
 )
 
 
-class Test__InteractiveModeller(object):
+class Test__InteractiveModeller():
     def setup_method(self):
         self.pth = os.path.dirname(os.path.abspath(__file__))
 

@@ -220,7 +220,7 @@ class LipidLeafletDialog(QtWidgets.QDialog, LipidDialog):
         return leaflet
 
 
-class Lipid(object):
+class Lipid():
     def __init__(
         self,
         name,
