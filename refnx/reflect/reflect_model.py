@@ -237,7 +237,7 @@ def use_reflect_backend(backend="c"):
     abeles = f
 
 
-class ReflectModel(
+class ReflectModel():
     r"""
     Parameters
     ----------
