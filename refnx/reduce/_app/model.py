@@ -37,7 +37,7 @@ class ReductionState:
     """
 
     def __init__(self, manual_beam_finder=None):
-        super(ReductionState, self).__init__()
+        super().__init__()
 
         # Each entry specifies the scale factor, whether the file is used for
         # reduction and the reflected and direct beam runs
@@ -263,7 +263,7 @@ class ReductionTableModel(QtCore.QAbstractTableModel):
     """
 
     def __init__(self, reduction_state, parent=None):
-        super(ReductionTableModel, self).__init__(parent)
+        super().__init__(parent)
         self._reduction_state = reduction_state
 
     @property

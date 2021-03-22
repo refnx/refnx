@@ -128,7 +128,7 @@ class LipidLeaflet(Component):
         name: str, optional
             The name for the component
         """
-        super(LipidLeaflet, self).__init__()
+        super().__init__()
         self.apm = possibly_create_parameter(
             apm, "%s - area_per_molecule" % name
         )

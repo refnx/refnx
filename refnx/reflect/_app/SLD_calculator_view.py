@@ -11,7 +11,7 @@ UI_LOCATION = os.path.join(os.path.dirname(os.path.abspath(__file__)), "ui")
 
 class SLDcalculatorView(QtWidgets.QDialog):
     def __init__(self, parent=None):
-        super(SLDcalculatorView, self).__init__(parent)
+        super().__init__(parent)
 
         self.ui = uic.loadUi(
             os.path.join(UI_LOCATION, "SLDcalculator.ui"), self

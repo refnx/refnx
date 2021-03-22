@@ -35,7 +35,7 @@ class ManualBeamFinder(QtWidgets.QDialog):
 
     def __init__(self):
         """"""
-        super(ManualBeamFinder, self).__init__()
+        super().__init__()
         self.dialog = uic.loadUi(
             os.path.join(UI_LOCATION, "manual_beam.ui"), self
         )
@@ -407,7 +407,7 @@ class DetectorImage(FigureCanvas):
 
     def __init__(self, parent=None):
         self.figure = Figure()
-        super(DetectorImage, self).__init__(self.figure)
+        super().__init__(self.figure)
         self.setParent(parent)
 
         self.axes = self.figure.add_axes([0.08, 0.06, 0.9, 0.93])
@@ -498,7 +498,7 @@ class Cross_Section(FigureCanvas):
 
     def __init__(self, parent=None):
         self.figure = Figure()
-        super(Cross_Section, self).__init__(self.figure)
+        super().__init__(self.figure)
         self.setParent(parent)
 
         # information for dragging a line

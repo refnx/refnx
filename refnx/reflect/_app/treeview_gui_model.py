@@ -149,7 +149,7 @@ class Node:
 
 class ParNode(Node):
     def __init__(self, data, model, parent=QtCore.QModelIndex()):
-        super(ParNode, self).__init__(data, model, parent)
+        super().__init__(data, model, parent)
 
     @property
     def parameter(self):
@@ -224,7 +224,7 @@ class ParNode(Node):
 
 class ParametersNode(Node):
     def __init__(self, data, model, parent=QtCore.QModelIndex()):
-        super(ParametersNode, self).__init__(data, model, parent)
+        super().__init__(data, model, parent)
         for p in data:
             if isinstance(p, Parameters):
                 n = ParametersNode(p, model, self)
@@ -258,7 +258,7 @@ class PropertyNode(Node):
     def __init__(
         self, data, model, parent=QtCore.QModelIndex(), validators=()
     ):
-        super(PropertyNode, self).__init__(data, model, parent)
+        super().__init__(data, model, parent)
         # here self._data is the attribute name
         self.attribute_type = type(getattr(parent._data, data))
         self.validators = validators
@@ -331,7 +331,7 @@ class ComponentNode(Node):
             If `flat is True`, then this superclass will flatten out all
             the parameters in a model and append them as child items.
         """
-        super(ComponentNode, self).__init__(data, model, parent)
+        super().__init__(data, model, parent)
 
         if flat:
             for par in flatten(data.parameters):
@@ -382,7 +382,7 @@ class ComponentNode(Node):
 
 class StructureNode(Node):
     def __init__(self, data, model, parent=QtCore.QModelIndex()):
-        super(StructureNode, self).__init__(data, model, parent)
+        super().__init__(data, model, parent)
         for component in data:
             self.appendChild(
                 component_class(component)(component, model, self)
@@ -453,7 +453,7 @@ STRUCT_OFFSET = 4
 
 class ReflectModelNode(Node):
     def __init__(self, data, model, parent=QtCore.QModelIndex()):
-        super(ReflectModelNode, self).__init__(data, model, parent=parent)
+        super().__init__(data, model, parent=parent)
 
         self.constantdq_q = True
 
@@ -638,7 +638,7 @@ class ReflectModelNode(Node):
 
 class DatasetNode(Node):
     def __init__(self, data, model, parent=QtCore.QModelIndex()):
-        super(DatasetNode, self).__init__(data, model, parent)
+        super().__init__(data, model, parent)
 
     @property
     def dataset(self):
@@ -663,7 +663,7 @@ class DatasetNode(Node):
 
 class DataObjectNode(Node):
     def __init__(self, data_object, model, parent=QtCore.QModelIndex()):
-        super(DataObjectNode, self).__init__(data_object, model, parent=parent)
+        super().__init__(data_object, model, parent=parent)
 
         self.chi2 = float(np.nan)
         self.visible = data_object.graph_properties.visible
@@ -762,7 +762,7 @@ class DataObjectNode(Node):
 class ContainerNode(Node):
     # set up with a datastore
     def __init__(self, data, model, parent=None):
-        super(ContainerNode, self).__init__(data, model, parent)
+        super().__init__(data, model, parent)
         for data_object in data:
             n = DataObjectNode(data_object, model, parent=self)
             self.appendChild(n)
@@ -845,7 +845,7 @@ class TreeModel(QtCore.QAbstractItemModel):
     """
 
     def __init__(self, data, parent=None):
-        super(TreeModel, self).__init__(parent)
+        super().__init__(parent)
         self._rootnode = ContainerNode(data, self)
         self._data = data
 
@@ -1201,13 +1201,13 @@ def find_data_object(index):
 ###############################################################################
 class SlabNode(ComponentNode):
     def __init__(self, data, model, parent=QtCore.QModelIndex()):
-        super(SlabNode, self).__init__(data, model, parent)
+        super().__init__(data, model, parent)
 
 
 ###############################################################################
 class LipidLeafletNode(ComponentNode):
     def __init__(self, data, model, parent=QtCore.QModelIndex()):
-        super(LipidLeafletNode, self).__init__(data, model, parent)
+        super().__init__(data, model, parent)
 
         prop_node = PropertyNode("reverse_monolayer", model, parent=self)
         self.appendChild(prop_node)
@@ -1216,7 +1216,7 @@ class LipidLeafletNode(ComponentNode):
 ###############################################################################
 class SplineNode(ComponentNode):
     def __init__(self, data, model, parent=QtCore.QModelIndex()):
-        super(SplineNode, self).__init__(data, model, parent, flat=False)
+        super().__init__(data, model, parent, flat=False)
         prop_node = PropertyNode("zgrad", model, parent=self)
         self.appendChild(prop_node)
 
@@ -1235,7 +1235,7 @@ class SplineNode(ComponentNode):
 ###############################################################################
 class StackNode(Node):
     def __init__(self, data, model, parent=QtCore.QModelIndex()):
-        super(StackNode, self).__init__(data, model, parent)
+        super().__init__(data, model, parent)
 
         # append the number of repeats
         pn = ParNode(data.repeats, model, parent=self)

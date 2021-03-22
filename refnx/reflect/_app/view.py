@@ -76,7 +76,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
     """
 
     def __init__(self, parent=None):
-        super(MotofitMainWindow, self).__init__(parent)
+        super().__init__(parent)
 
         # load the GUI from the ui file
         self.ui = uic.loadUi(os.path.join(UI_LOCATION, "motofit.ui"), self)
@@ -2124,7 +2124,7 @@ class ProgressCallback(QtWidgets.QDialog):
         self.start = time.time()
         self.last_time = time.time()
         self.abort_flag = False
-        super(ProgressCallback, self).__init__(parent)
+        super().__init__(parent)
         self.parent = parent
         self.ui = uic.loadUi(os.path.join(UI_LOCATION, "progress.ui"), self)
         self.elapsed = 0.0
@@ -2513,7 +2513,7 @@ class OpenMenu(QtWidgets.QMenu):
     """
 
     def __init__(self, parent=None):
-        super(OpenMenu, self).__init__(parent)
+        super().__init__(parent)
         self._parent = parent
         self.copy_from_action = self.addAction("Copy a model to here")
         self.addSeparator()
@@ -2586,7 +2586,7 @@ class CurrentlyFitting(QtCore.QAbstractListModel):
     """
 
     def __init__(self, parent=None):
-        super(CurrentlyFitting, self).__init__(parent=parent)
+        super().__init__(parent=parent)
         self.datasets = []
 
     def rowCount(self, index):

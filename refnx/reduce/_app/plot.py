@@ -17,7 +17,7 @@ from refnx.dataset import ReflectDataset
 
 class SlimPlotWindow(QDialog):
     def __init__(self, parent=None):
-        super(SlimPlotWindow, self).__init__(parent)
+        super().__init__(parent)
 
         # a figure instance to plot on
         self.figure = Figure()
