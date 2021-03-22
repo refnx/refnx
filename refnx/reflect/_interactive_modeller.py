@@ -74,7 +74,7 @@ class ReflectModelView(HasTraits):
     num_varying = traitlets.Int(0)
 
     def __init__(self, reflect_model):
-        super(ReflectModelView, self).__init__()
+        super().__init__()
 
         self.model = reflect_model
         self.structure_view = StructureView(self.model.structure)

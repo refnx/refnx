@@ -728,7 +728,7 @@ class Objective(BaseObjective):
                 target = "nll"
 
         if target in ["nll", "nlpost"]:
-            covar = super(Objective, self).covar(target)
+            covar = super().covar(target)
 
         pvar = np.diagonal(covar).copy()
         psingular = np.where(pvar == 0)[0]

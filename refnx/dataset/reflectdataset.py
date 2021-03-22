@@ -63,7 +63,7 @@ class ReflectDataset(Data1D):
             If the tuple is 4 long then the fourth member is `dQ`.
             All arrays must have the same shape.
         """
-        super(ReflectDataset, self).__init__(data=data, **kwds)
+        super().__init__(data=data, **kwds)
         self.datafilenumber = list()
         self.sld_profile = None
 
@@ -146,4 +146,4 @@ class ReflectDataset(Data1D):
             self.name = os.path.splitext(os.path.basename(fname))[0]
             self.data = (qvals, rvals, drvals, dqvals)
         except ET.ParseError:
-            super(ReflectDataset, self).load(fname)
+            super().load(fname)

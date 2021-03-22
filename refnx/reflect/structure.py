@@ -141,7 +141,7 @@ class Structure(UserList):
         reverse_structure=False,
         contract=0,
     ):
-        super(Structure, self).__init__()
+        super().__init__()
         self._name = name
         self._solvent = solvent
 
@@ -202,7 +202,7 @@ class Structure(UserList):
             raise ValueError(
                 "You can only add Component objects to a" " structure"
             )
-        super(Structure, self).append(item)
+        super().append(item)
 
     @property
     def name(self):
@@ -783,7 +783,7 @@ class SLD(Scatterer):
     """
 
     def __init__(self, value, name=""):
-        super(SLD, self).__init__(name=name)
+        super().__init__(name=name)
 
         self.imag = Parameter(0, name="%s - isld" % name)
         if isinstance(value, numbers.Real):
@@ -866,7 +866,7 @@ class MaterialSLD(Scatterer):
     ):
         import periodictable as pt
 
-        super(MaterialSLD, self).__init__(name=name)
+        super().__init__(name=name)
 
         self.__formula = pt.formula(formula)
         self._compound = formula
@@ -1119,7 +1119,7 @@ class Slab(Component):
     """
 
     def __init__(self, thick, sld, rough, name="", vfsolv=0, interface=None):
-        super(Slab, self).__init__(name=name)
+        super().__init__(name=name)
         self.thick = possibly_create_parameter(thick, name=f"{name} - thick")
         if isinstance(sld, Scatterer):
             self.sld = sld
@@ -1228,7 +1228,7 @@ class MixedSlab(Component):
         vfsolv=0,
         interface=None,
     ):
-        super(MixedSlab, self).__init__(name=name)
+        super().__init__(name=name)
         self.thick = possibly_create_parameter(thick, name="%s - thick" % name)
 
         self.sld = []

@@ -18,7 +18,7 @@ class SlimWindow(QtWidgets.QMainWindow):
     """
 
     def __init__(self, parent=None):
-        super(SlimWindow, self).__init__(parent)
+        super().__init__(parent)
 
         self.ui = uic.loadUi(os.path.join(UI_LOCATION, "slim.ui"), self)
 

@@ -71,7 +71,7 @@ class TestModel:
     def test_model_subclass(self):
         class Line(Model):
             def __init__(self, parameters):
-                super(Line, self).__init__(parameters)
+                super().__init__(parameters)
 
             def model(self, x, p=None, x_err=None):
                 if p is not None:

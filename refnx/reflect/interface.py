@@ -51,7 +51,7 @@ class Erf(Interface):
     """
 
     def __init__(self):
-        super(Erf, self).__init__()
+        super().__init__()
 
     def __call__(self, z, scale=1, loc=0):
         return norm.cdf(z, scale=scale, loc=loc)
@@ -70,7 +70,7 @@ class Linear(Interface):
     """
 
     def __init__(self):
-        super(Linear, self).__init__()
+        super().__init__()
 
     def __call__(self, z, scale=1, loc=0):
         new_z = z - loc
@@ -93,7 +93,7 @@ class Exponential(Interface):
     """
 
     def __init__(self):
-        super(Exponential, self).__init__()
+        super().__init__()
 
     def __call__(self, z, scale=1, loc=0):
         new_z = z - loc
@@ -117,7 +117,7 @@ class Tanh(Interface):
     """
 
     def __init__(self):
-        super(Tanh, self).__init__()
+        super().__init__()
 
     def __call__(self, z, scale=1, loc=0):
         arg = np.sqrt(2 / np.pi) * (z - loc) / scale
@@ -137,7 +137,7 @@ class Sinusoidal(Interface):
     """
 
     def __init__(self):
-        super(Sinusoidal, self).__init__()
+        super().__init__()
 
     def __call__(self, z, scale=1, loc=0):
         new_z = z - loc
@@ -163,7 +163,7 @@ class Step(Interface):
     """
 
     def __init__(self):
-        super(Step, self).__init__()
+        super().__init__()
 
     def __call__(self, z, scale=1, loc=0):
         new_z = z - loc

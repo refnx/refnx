@@ -115,7 +115,7 @@ class PDF(Bounds):
     """
 
     def __init__(self, rv):
-        super(PDF, self).__init__()
+        super().__init__()
         # we'll accept any object so long as it has logpdf and rvs methods
         if hasattr(rv, "logpdf") and hasattr(rv, "rvs") and hasattr(rv, "ppf"):
             self.rv = rv
@@ -240,7 +240,7 @@ class Interval(Bounds):
     """
 
     def __init__(self, lb=-np.inf, ub=np.inf):
-        super(Interval, self).__init__()
+        super().__init__()
         if lb is None:
             lb = -np.inf
         if ub is None:

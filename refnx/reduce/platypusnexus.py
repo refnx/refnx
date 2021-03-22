@@ -238,7 +238,7 @@ class SpatzCatalogue(Catalogue):
         ----------
         h5d - HDF5 file handle
         """
-        super(SpatzCatalogue, self).__init__(h5d)
+        super().__init__(h5d)
         self.prefix = "SPZ"
 
         d = self.cat
@@ -376,7 +376,7 @@ class PlatypusCatalogue(Catalogue):
         ----------
         h5d - HDF5 file handle
         """
-        super(PlatypusCatalogue, self).__init__(h5d)
+        super().__init__(h5d)
         self.prefix = "PLP"
 
         d = self.cat
@@ -517,7 +517,7 @@ class PolarisedCatalogue(PlatypusCatalogue):
 
     def __init__(self, h5d):
 
-        super(PolarisedCatalogue, self).__init__(h5d)
+        super().__init__(h5d)
         # Is there a magnet?
         self.is_magnet = False
         # Is there a cryocooler?
@@ -866,7 +866,7 @@ class ReductionOptions(dict):
         manual_beam_find=None,
         event_filter=None,
     ):
-        super(ReductionOptions, self).__init__()
+        super().__init__()
         self["h5norm"] = h5norm
         self["lo_wavelength"] = lo_wavelength
         self["hi_wavelength"] = hi_wavelength
@@ -1905,7 +1905,7 @@ class PlatypusNexus(ReflectNexus):
         """
         Initialises the PlatypusNexus object.
         """
-        super(PlatypusNexus, self).__init__()
+        super().__init__()
         self.prefix = "PLP"
         with _possibly_open_hdf_file(h5data, "r") as f:
             self.cat = PlatypusCatalogue(f)
@@ -2229,7 +2229,7 @@ class SpatzNexus(ReflectNexus):
         """
         Initialises the SpatzNexus object.
         """
-        super(SpatzNexus, self).__init__()
+        super().__init__()
         self.prefix = "SPZ"
         with _possibly_open_hdf_file(h5data, "r") as f:
             self.cat = SpatzCatalogue(f)

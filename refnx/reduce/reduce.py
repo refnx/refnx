@@ -311,9 +311,7 @@ class PlatypusReduce(ReflectReduce):
 
     def __init__(self, direct, data_folder=None, **kwds):
 
-        super(PlatypusReduce, self).__init__(
-            direct, "PLP", data_folder=data_folder
-        )
+        super().__init__(direct, "PLP", data_folder=data_folder)
 
     def _reduce_single_angle(self, scale=1):
         """
@@ -555,9 +553,7 @@ class SpatzReduce(ReflectReduce):
     """
 
     def __init__(self, direct, data_folder=None, **kwds):
-        super(SpatzReduce, self).__init__(
-            direct, "SPZ", data_folder=data_folder
-        )
+        super().__init__(direct, "SPZ", data_folder=data_folder)
 
     def _reduce_single_angle(self, scale=1):
         """

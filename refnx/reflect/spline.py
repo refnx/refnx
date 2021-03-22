@@ -68,7 +68,7 @@ class Spline(Component):
         zgrad=True,
         microslab_max_thickness=1,
     ):
-        super(Spline, self).__init__()
+        super().__init__()
         self.name = name
         self.microslab_max_thickness = microslab_max_thickness
 

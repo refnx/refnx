@@ -90,7 +90,7 @@ class Parameters(UserList):
     """
 
     def __init__(self, data=(), name=None):
-        super(Parameters, self).__init__()
+        super().__init__()
         self.name = name
         self.data.extend(data)
 
@@ -517,7 +517,7 @@ class BaseParameter:
 
 class Constant(BaseParameter):
     def __init__(self, value=0.0, name=None):
-        super(Constant, self).__init__()
+        super().__init__()
         self.name = name
         self.value = value
         self._vary = False
@@ -605,7 +605,7 @@ class Parameter(BaseParameter):
         constraint : expression, optional
             Python expression used to constrain the value during the fit.
         """
-        super(Parameter, self).__init__()
+        super().__init__()
 
         self.name = name
 
@@ -799,7 +799,7 @@ class Parameter(BaseParameter):
 
 class _BinaryOp(BaseParameter):
     def __init__(self, op1, op2, operation):
-        super(_BinaryOp, self).__init__()
+        super().__init__()
         self.op1 = op1
         self.op2 = op2
         self.opn = operation
@@ -813,7 +813,7 @@ class _BinaryOp(BaseParameter):
 
 class _UnaryOp(BaseParameter):
     def __init__(self, op1, operation):
-        super(_UnaryOp, self).__init__()
+        super().__init__()
         self.op1 = op1
         self.opn = operation
         self._deps = []

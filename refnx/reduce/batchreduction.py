@@ -76,7 +76,7 @@ class ReductionCache(list):
             given, it is used as the filename for the persistent cache,
             otherwise, a default value is used.
         """
-        super(ReductionCache, self).__init__()
+        super().__init__()
         self.name_cache = {}
         self.run_cache = {}
         self.row_cache = {}
