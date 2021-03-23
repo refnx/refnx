@@ -35,7 +35,7 @@ jobs:
     - uses: actions/cache@v2
       with:
         path: ${{ steps.pip-cache.outputs.dir }}
-        key: ${{ hashFiles('setup.py') }}-${{ hashFiles('tox.ini') }}
+        key: ${{ hashFiles('setup.py') }}-${{ matrix.python-version }}-${{ hashFiles('tox.ini') }}
 
     - name: Install dependencies
       run: |
@@ -92,14 +92,6 @@ jobs:
       matrix:
         python-version: [3.7, 3.8, 3.9]
 
-    env:
-      CC: /usr/bin/clang
-      CXX: /usr/bin/clang++
-      CXXFLAGS: "-Xpreprocessor -fopenmp -I/usr/local/opt/libomp/include"
-      CFLAGS: "-Xpreprocessor -fopenmp -I/usr/local/opt/libomp/include"
-      LDFLAGS: "-L/usr/local/opt/libomp/lib -lomp"
-      DYLD_LIBRARY_PATH: /usr/local/opt/libomp/lib
-
     steps:
     - uses: actions/checkout@v2
 
@@ -121,7 +113,7 @@ jobs:
     - uses: actions/cache@v2
       with:
         path: ${{ steps.pip-cache.outputs.dir }}
-        key: ${{ hashFiles('setup.py') }}-macos-${{ hashFiles('tox.ini') }}
+        key: ${{ hashFiles('setup.py') }}-macos-${{ matrix.python-version }}-${{ hashFiles('tox.ini') }}
 
     - name: Install dependencies
       run: |
@@ -133,6 +125,12 @@ jobs:
     - name: Make wheel
       env:
         MACOSX_DEPLOYMENT_TARGET: 10.9
+        CC: /usr/bin/clang
+        CXX: /usr/bin/clang++
+        CXXFLAGS: "-Xpreprocessor -fopenmp -I/usr/local/opt/libomp/include"
+        CFLAGS: "-Xpreprocessor -fopenmp -I/usr/local/opt/libomp/include"
+        LDFLAGS: "-L/usr/local/opt/libomp/lib -lomp"
+        DYLD_LIBRARY_PATH: /usr/local/opt/libomp/lib
       run: |
         python setup.py bdist_wheel
         # so that libomp is distributed with wheel
@@ -201,7 +199,7 @@ jobs:
     - uses: actions/cache@v2
       with:
         path: ${{ steps.pip-cache.outputs.dir }}
-        key: ${{ hashFiles('setup.py') }}-win-${{ hashFiles('tox.ini') }}
+        key: ${{ hashFiles('setup.py') }}-win-${{ matrix.python-version }}-${{ hashFiles('tox.ini') }}
 
     - name: Install dependencies
       run: |
