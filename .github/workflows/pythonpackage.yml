@@ -27,16 +27,20 @@ jobs:
         sudo apt-get install xvfb qt5-default opencl-headers ocl-icd-opencl-dev libpocl2 libhdf5-serial-dev libnetcdf-dev
         python -m pip install --upgrade pip
 
+    - name: Get pip cache dir
+      id: pip-cache
+      run: |
+        echo "::set-output name=dir::$(pip cache dir)"
+
     - uses: actions/cache@v2
       with:
-        path: ~/.cache/pip
+        path: ${{ steps.pip-cache.outputs.dir }}
         key: ${{ hashFiles('setup.py') }}-${{ hashFiles('tox.ini') }}
 
     - name: Install dependencies
       run: |
         python -m pip install wheel
-        python -m pip install --upgrade --upgrade-strategy eager numpy scipy h5py cython pandas xlrd flake8 pytest ipywidgets IPython matplotlib traitlets pyqt5
-        python -m pip install --upgrade --upgrade-strategy eager uncertainties attrs corner tqdm pytest-qt periodictable pyopencl pymc3
+        python -m pip install --upgrade --upgrade-strategy eager numpy scipy h5py cython pandas xlrd flake8 pytest ipywidgets IPython matplotlib traitlets pyqt5 uncertainties attrs corner tqdm pytest-qt periodictable pyopencl pymc3
 
     - name: Test with pytest
       env:
@@ -109,17 +113,21 @@ jobs:
       run: |
         brew install libomp
 
+    - name: Get pip cache dir
+      id: pip-cache
+      run: |
+        echo "::set-output name=dir::$(pip cache dir)"
+
     - uses: actions/cache@v2
       with:
-        path: ~/.cache/pip
-        key: ${{ hashFiles('setup.py') }}-${{ hashFiles('tox.ini') }}
+        path: ${{ steps.pip-cache.outputs.dir }}
+        key: ${{ hashFiles('setup.py') }}-macos-${{ hashFiles('tox.ini') }}
 
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
         python -m pip install wheel
-        python -m pip install --upgrade --upgrade-strategy eager numpy scipy h5py cython pandas xlrd pytest ipywidgets IPython matplotlib traitlets pyqt5
-        python -m pip install --upgrade --upgrade-strategy eager uncertainties attrs corner tqdm pytest-qt periodictable delocate pyopencl
+        python -m pip install --upgrade --upgrade-strategy eager numpy scipy h5py cython pandas xlrd pytest ipywidgets IPython matplotlib traitlets pyqt5 uncertainties attrs corner tqdm pytest-qt periodictable delocate pyopencl
         #        python -m pip install git+https://github.com/pymc-devs/pymc3
 
     - name: Make wheel
@@ -185,18 +193,22 @@ jobs:
         python-version: ${{ matrix.python-version }}
     - run: mkdir -p dist
 
+    - name: Get pip cache dir
+      id: pip-cache
+      run: |
+        echo "::set-output name=dir::$(pip cache dir)"
+
     - uses: actions/cache@v2
       with:
-        path: ~/.cache/pip
-        key: ${{ hashFiles('setup.py') }}-${{ hashFiles('tox.ini') }}
+        path: ${{ steps.pip-cache.outputs.dir }}
+        key: ${{ hashFiles('setup.py') }}-win-${{ hashFiles('tox.ini') }}
 
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
         python -m pip install wheel
 
-        python -m pip install --upgrade --upgrade-strategy eager numpy scipy h5py cython pandas xlrd pytest ipywidgets IPython matplotlib traitlets pyqt5
-        python -m pip install --upgrade --upgrade-strategy eager uncertainties corner tqdm pytest-qt periodictable
+        python -m pip install --upgrade --upgrade-strategy eager numpy scipy h5py cython pandas xlrd pytest ipywidgets IPython matplotlib traitlets pyqt5 uncertainties corner tqdm pytest-qt periodictable
         #        python -m pip install git+https://github.com/pymc-devs/pymc3
 
         #        python -m pip install pytools mako cffi
