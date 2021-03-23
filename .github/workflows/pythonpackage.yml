@@ -135,7 +135,7 @@ jobs:
         # make app in virtualenv
         python -m venv app
         source app/bin/activate
-        python -m pip install setuptools==44
+        # python -m pip install setuptools==44
         python -m pip install numpy cython periodictable corner matplotlib pyqt5 scipy tqdm
         pushd dist
         python -m pip install --only-binary=refnx --no-index --find-links=. refnx
