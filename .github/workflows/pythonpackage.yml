@@ -27,11 +27,16 @@ jobs:
         sudo apt-get install xvfb qt5-default opencl-headers ocl-icd-opencl-dev libpocl2 libhdf5-serial-dev libnetcdf-dev
         python -m pip install --upgrade pip
 
+    - uses: actions/cache@v2
+      with:
+        path: ~/.cache/pip
+        key: ${{ hashFiles('setup.py') }}-${{ hashFiles('tox.ini') }}
+
     - name: Install dependencies
       run: |
         python -m pip install wheel
-        python -m pip install numpy scipy h5py cython pandas xlrd flake8 pytest ipywidgets IPython matplotlib traitlets pyqt5
-        python -m pip install uncertainties attrs corner tqdm pytest-qt periodictable pyopencl pymc3
+        python -m pip install --upgrade --upgrade-strategy eager numpy scipy h5py cython pandas xlrd flake8 pytest ipywidgets IPython matplotlib traitlets pyqt5
+        python -m pip install --upgrade --upgrade-strategy eager uncertainties attrs corner tqdm pytest-qt periodictable pyopencl pymc3
 
     - name: Test with pytest
       env:
@@ -104,12 +109,17 @@ jobs:
       run: |
         brew install libomp
 
+    - uses: actions/cache@v2
+      with:
+        path: ~/.cache/pip
+        key: ${{ hashFiles('setup.py') }}-${{ hashFiles('tox.ini') }}
+
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
         python -m pip install wheel
-        python -m pip install numpy scipy h5py cython pandas xlrd pytest ipywidgets IPython matplotlib traitlets pyqt5
-        python -m pip install uncertainties attrs corner tqdm pytest-qt periodictable delocate pyopencl
+        python -m pip install --upgrade --upgrade-strategy eager numpy scipy h5py cython pandas xlrd pytest ipywidgets IPython matplotlib traitlets pyqt5
+        python -m pip install --upgrade --upgrade-strategy eager uncertainties attrs corner tqdm pytest-qt periodictable delocate pyopencl
         #        python -m pip install git+https://github.com/pymc-devs/pymc3
 
     - name: Make wheel
@@ -136,7 +146,7 @@ jobs:
         python -m venv app
         source app/bin/activate
         # python -m pip install setuptools==44
-        python -m pip install numpy cython periodictable corner matplotlib pyqt5 scipy tqdm
+        python -m pip install --upgrade --upgrade-strategy eager numpy cython periodictable corner matplotlib pyqt5 scipy tqdm
         pushd dist
         python -m pip install --only-binary=refnx --no-index --find-links=. refnx
         popd
@@ -175,13 +185,18 @@ jobs:
         python-version: ${{ matrix.python-version }}
     - run: mkdir -p dist
 
+    - uses: actions/cache@v2
+      with:
+        path: ~/.cache/pip
+        key: ${{ hashFiles('setup.py') }}-${{ hashFiles('tox.ini') }}
+
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
         python -m pip install wheel
 
-        python -m pip install numpy scipy h5py cython pandas xlrd pytest ipywidgets IPython matplotlib traitlets pyqt5
-        python -m pip install uncertainties corner tqdm pytest-qt periodictable
+        python -m pip install --upgrade --upgrade-strategy eager numpy scipy h5py cython pandas xlrd pytest ipywidgets IPython matplotlib traitlets pyqt5
+        python -m pip install --upgrade --upgrade-strategy eager uncertainties corner tqdm pytest-qt periodictable
         #        python -m pip install git+https://github.com/pymc-devs/pymc3
 
         #        python -m pip install pytools mako cffi
@@ -209,7 +224,7 @@ jobs:
         python -m venv app
         app\Scripts\activate.bat
         python -m pip install setuptools==44
-        python -m pip install numpy cython periodictable corner matplotlib pyqt5 scipy tqdm
+        python -m pip install --upgrade --upgrade-strategy eager numpy cython periodictable corner matplotlib pyqt5 scipy tqdm
         cd dist
         python -m pip install --only-binary=refnx --no-index --find-links=. refnx
         cd ..
