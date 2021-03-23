@@ -121,7 +121,6 @@ jobs:
         delocate-wheel -v dist/*.whl
 
     - name: Install package and test with pytest
-      if: ${{ matrix.python-version == '3.8' }}
       env:
         MPLBACKEND: agg
       run: |
@@ -144,7 +143,8 @@ jobs:
 
         # fix for multiprocessing on Py3.8 is not merged in PyInstaller
         # if you are on Py3.7 you can just pip install pyinstaller
-        pip install git+https://github.com/andyfaff/pyinstaller.git@gh4865
+        python -m pip install pyinstaller
+        # pip install git+https://github.com/andyfaff/pyinstaller.git@gh4865
 
         pushd tools/app
         pyinstaller motofit.spec
