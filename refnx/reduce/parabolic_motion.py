@@ -205,6 +205,9 @@ def parabola_line_intersection_point(
     ) ** 2
     x_prime = np.sqrt(distance)
 
+    if intersection_x < flight_length:
+        x_prime *= -1.0
+
     # calculate the elevation
     elev = elevation(initial_trajectory, speed, flight_length)
 
