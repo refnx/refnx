@@ -552,7 +552,7 @@ def reflectivity(
         - `dq.ndim == q.ndim + 2` and `q.shape == dq[..., -3].shape`
            an individual resolution kernel is applied to each measurement
            point. This resolution kernel is a probability distribution function
-           (PDF). `dqvals` will have the shape (qvals.shape, 2, M).  There are
+           (PDF). `dq` will have the shape (qvals.shape, 2, M).  There are
            `M` points in the kernel. `dq[:, 0, :]` holds the q values for the
            kernel, `dq[:, 1, :]` gives the corresponding probability.
     quad_order: int, optional
