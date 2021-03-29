@@ -15,16 +15,25 @@ from refnx.reflect._app import resources_rc
 from refnx.reflect import Spline, Structure
 
 
+try:
+    import pytestqt.qtbot as qtbot_module
+    QTBOT_MISSING = False
+except ModuleNotFoundError:
+    QTBOT_MISSING = True
+
+
 def mysetup(qtbot):
     # app = QtWidgets.QApplication([])
     # app.setWindowIcon(QtGui.QIcon(':icons/scattering.png'))
-    myapp = MotofitMainWindow()
-    model = myapp.treeModel
-    qtbot.add_widget(myapp)
+    if QTBOT:
+        myapp = MotofitMainWindow()
+        model = myapp.treeModel
+        qtbot.add_widget(myapp)
 
-    return myapp, model
+        return myapp, model
 
 
+@pytest.mark.skipif(QTBOT_MISSING, reason="pytest-qt not installed")
 @pytest.mark.usefixtures("no_data_directory")
 def test_app_load_old_experiment_file(qtbot, data_directory):
     # tests loading old experiment files.
@@ -68,6 +77,7 @@ def test_app_load_old_experiment_file(qtbot, data_directory):
                 raise e
 
 
+@pytest.mark.skipif(QTBOT_MISSING, reason="pytest-qt not installed")
 def test_myapp(qtbot, tmpdir):
     myapp, model = mysetup(qtbot)
 
@@ -85,6 +95,7 @@ def test_myapp(qtbot, tmpdir):
     assert len(model2.datastore) == 2
 
 
+@pytest.mark.skipif(QTBOT_MISSING, reason="pytest-qt not installed")
 def test_add_spline_save(qtbot, tmpdir):
     # test if we can add a spline to a model and save an experiment
     myapp, model = mysetup(qtbot)
@@ -112,6 +123,7 @@ def test_add_spline_save(qtbot, tmpdir):
     save_and_reload_experiment(myapp, tmpdir)
 
 
+@pytest.mark.skipif(QTBOT_MISSING, reason="pytest-qt not installed")
 def save_and_reload_experiment(app, tmpdir):
     # save and reopen experiment.
     sf = pjoin(str(tmpdir), "experiment1.mtft")
