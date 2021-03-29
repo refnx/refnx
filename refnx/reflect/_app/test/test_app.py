@@ -25,12 +25,11 @@ except ModuleNotFoundError:
 def mysetup(qtbot):
     # app = QtWidgets.QApplication([])
     # app.setWindowIcon(QtGui.QIcon(':icons/scattering.png'))
-    if QTBOT:
-        myapp = MotofitMainWindow()
-        model = myapp.treeModel
-        qtbot.add_widget(myapp)
+    myapp = MotofitMainWindow()
+    model = myapp.treeModel
+    qtbot.add_widget(myapp)
 
-        return myapp, model
+    return myapp, model
 
 
 @pytest.mark.skipif(QTBOT_MISSING, reason="pytest-qt not installed")
