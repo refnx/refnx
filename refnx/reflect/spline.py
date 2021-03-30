@@ -81,7 +81,7 @@ class Spline(Component):
             p = possibly_create_parameter(
                 z, name="%s - spline dz[%d]" % (name, i)
             )
-            p.range(0, 1)
+            p.range(0.0000001, 1)
             self.dz.append(p)
 
         self.vs = Parameters(name="vs - spline")
