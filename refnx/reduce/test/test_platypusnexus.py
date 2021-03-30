@@ -71,19 +71,19 @@ class TestSpinSet(object):
         assert self.spinset_2.spin_channels == [(0, 0), None, None, (1, 1)]
 
     def test_process_beams(self):
-        self.spinset.process_beams()
+        self.spinset._process_beams()
         assert self.spinset.dd.processed_spectrum
         assert self.spinset.du.processed_spectrum
         assert self.spinset.ud.processed_spectrum
         assert self.spinset.uu.processed_spectrum
 
-        self.spinset_3.process_beams()
+        self.spinset_3._process_beams()
         assert self.spinset_3.dd.processed_spectrum
         assert self.spinset_3.du.processed_spectrum
         assert self.spinset_3.ud is None
         assert self.spinset_3.uu.processed_spectrum
 
-        self.spinset_2.process_beams()
+        self.spinset_2._process_beams()
         assert self.spinset_2.dd.processed_spectrum
         assert self.spinset_2.du is None
         assert self.spinset_2.ud is None
