@@ -14,6 +14,8 @@ from refnx.reduce.platypusnexus import (
     Catalogue,
     SpatzNexus,
     ReductionOptions,
+    SpinChannel,
+    SpinSet,
 )
 from refnx.reduce.batchreduction import BatchReducer
 from refnx.reduce.xray import reduce_xrdml
