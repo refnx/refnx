@@ -640,7 +640,39 @@ class SpinChannel(Enum):
 
 class SpinSet(object):
     """
-    Describes a set of spin-channels at a given angle.
+    Describes a set of spin-channels at a given angle of incidence. For
+    each spin channel, creates a standard set of reduction_options as an
+    attribute:
+
+    - SpinSet.dd_opts
+    - SpinSet.du_opts
+    - SpinSet.ud_opts 
+    - SpinSet.uu_opts
+    
+    To add or change options to a specific spin channel,
+    update the reduction options attribute. e.g.
+
+        from refnx.reduce.manual_beam_finder import ManualBeamFinder
+        mbf = ManualBeamFinder()
+
+        spinset = SpinSet(
+            "PLP0051296.nx.hdf",
+            "PLP0051294.nx.hdf",
+            up_down="PLP0051295.nx.hdf",
+            down_up="PLP0051297.nx.hdf",
+            data_folder=data_dir
+        )
+        spinset.du_opts.update({"manual_beam_find" : mbf, peak_pos : -1})
+        spinset.process()
+        
+    The following reduction options must be consistent and identical 
+    across all spin channels so as to maintain the same wavelength 
+    axis across the datasets:
+
+    - lo_wavelength
+    - hi_wavelength
+    - rebin_percent
+    - wavelength_bins
 
     TODO: implement polarisation efficiency correction within this class
 
@@ -665,17 +697,13 @@ class SpinSet(object):
 
         # initialise spin channels
         self.dd = self.du = self.ud = self.uu = None
-
+        self.dd_opts = self.du_opts = self.ud_opts = self.uu_opts = None
         # initialise reduction options for each spin channel
-        reduction_options = {
-            "lo_wavelength": 2.5,
-            "hi_wavelength": 12.5,
-            "rebin_percent": 3,
-        }
-        self.dd_opts = reduction_options.copy()
-        self.du_opts = reduction_options.copy()
-        self.ud_opts = reduction_options.copy()
-        self.uu_opts = reduction_options.copy()
+        reduction_options = ReductionOptions(
+            lo_wavelength = 2.5,
+            hi_wavelength = 12.5,
+            rebin_percent = 3,
+        )
 
         for channel in channels:
             if channel is None:
@@ -694,12 +722,16 @@ class SpinSet(object):
 
             if channel.spin_state is SpinChannel.DOWN_DOWN:
                 self.dd = channel
+                self.dd_opts = reduction_options.copy()
             elif channel.spin_state is SpinChannel.DOWN_UP:
                 self.du = channel
+                self.du_opts = reduction_options.copy()
             elif channel.spin_state is SpinChannel.UP_DOWN:
                 self.ud = channel
+                self.ud_opts = reduction_options.copy()
             elif channel.spin_state is SpinChannel.UP_UP:
                 self.uu = channel
+                self.uu_opts = reduction_options.copy()
 
         assert (
             self.dd is not None
@@ -715,40 +747,24 @@ class SpinSet(object):
             for s in [self.dd, self.du, self.ud, self.uu]
         ]
 
-    def process_beams(self, reduction_options=None):
+    def process(self, reduction_options=None):
         """
         Process beams in SpinSet.
 
-        Reduction options for each spin channel are specified by
-        self.dd_opts, self.du_opts, self.ud_opts, and self.uu_opts where
-        a standard set of options is provided when constructing the object.
-        To specify different options for each spin channel (such as using
-        the ManualBeamFinder for only spin-flip channels), update the
-        reduction options for the specific spin channel in SpinSet, then
-        process the beams. i.e.
-
-        from refnx.reduce.manual_beam_finder import ManualBeamFinder
-        mbf = ManualBeamFinder()
-
-        spinset = SpinSet(
-            "PLP0051296.nx.hdf",
-            "PLP0051294.nx.hdf",
-            up_down="PLP0051295.nx.hdf",
-            down_up="PLP0051297.nx.hdf",
-            data_folder=data_dir
-        )
-        spinset.du_opts.update({"manual_beam_find" : mbf, peak_pos : -1})
-        spinset.process_beams()
+        If reduction_options is None, the reduction options for each spin
+        channel are specified by SpinSet.dd_opts, SpinSet.du_opts,
+        SpinSet.ud_opts, and SpinSet.uu_opts, which are initialised to the
+        standard options when constructing the object. If `reduction_options`
+        is not None, then SpinSet.process() will use these options for all
+        spin channels.
 
         Parameters
         ----------
         reduction_options : dict
-            A single dict of options used to process all spectra. If
-            this is None, then process_beams will use individual dicts
-            for each spin channel
+            A single dict of options used to process all spectra. 
         """
 
-        if reduction_options:
+        if reduction_options is not None:
             print(
                 "Applying the supplied reduction_options to all spin channels"
             )
@@ -756,6 +772,31 @@ class SpinSet(object):
             self.du_opts = reduction_options.copy()
             self.ud_opts = reduction_options.copy()
             self.uu_opts = reduction_options.copy()
+
+        # Check important reduction options are the same across all
+        # spin channels to ensure the same wavelength axis
+        #if reduction_options is None:
+        for key in [
+            "lo_wavelength", 
+            "hi_wavelength", 
+            "rebin_percent", 
+            "wavelength_bins"
+        ]:
+            for option in [
+                self.dd_opts, self.du_opts, self.ud_opts, self.uu_opts
+            ]:
+                if option is None:
+                    continue
+                elif not (option[key] == self.dd_opts[key]
+                    == self.du_opts[key] == self.ud_opts[key]
+                    == self.uu_opts[key]):
+                    raise ValueError(
+                    "Reduction options `lo_wavelength`, "
+                    "`hi_wavelength`, `rebin_percent`, and "
+                    "`wavelength_bins` must be identical across "
+                    "spin channels to preserve a common "
+                    "wavelength axis."
+                    )
 
         for opts, beam in zip(
             [self.dd_opts, self.du_opts, self.ud_opts, self.uu_opts],

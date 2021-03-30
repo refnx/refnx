@@ -89,6 +89,30 @@ class TestSpinSet(object):
         assert self.spinset_2.ud is None
         assert self.spinset_2.uu.processed_spectrum
 
+    def test_processing_different_reduction_options(self):
+       # Check every combination of spin channel and reduction option that
+       # determines the resulting wavelength axis to make sure errors
+       # are raised appropriately
+ 
+       for spin_channel in [
+           self.spinset.dd, self.spinset.du, self.spinset.ud, self.spinset.uu
+        ]:
+            for option in [
+                "lo_wavelength",
+                "hi_wavelength",
+                "rebin_percent",
+                "wavelength_bins"
+            ]:
+                spin_channel.update({option : 5})
+                with pytest.warns(ValueError):
+                    spin_channel.process()
+                # Reset dd_opts
+                spin_channel.dd_opts.update({option : 2.5})
+
+
+
+        
+
 
 class TestPlatypusNexus(object):
     @pytest.mark.usefixtures("no_data_directory")
@@ -102,7 +126,6 @@ class TestPlatypusNexus(object):
             self.f641 = PlatypusNexus(pjoin(self.pth, "PLP0011641.nx.hdf"))
 
             # These PNR datasets all have different flipper settings
-            # which should be read accurately.
             self.f8861 = PlatypusNexus(
                 pjoin(self.pth, "PNR_files/PLP0008861.nx.hdf")
             )
