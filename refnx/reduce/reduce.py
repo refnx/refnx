@@ -419,7 +419,7 @@ class PlatypusReduce(ReflectReduce):
         # calculate omega and two_theta depending on the mode.
         mode = self.reflected_beam.mode
 
-        # we'll need the wavelengths to calculate Q.
+        # we'll need the wavelengths to calculate gravity effects.
         wavelengths = self.reflected_beam.m_lambda
         m_twotheta = np.zeros((n_spectra, n_tpixels, n_ypixels))
 
@@ -564,8 +564,6 @@ class SpatzReduce(ReflectReduce):
         n_tpixels = np.size(self.reflected_beam.m_topandtail, 1)
         n_xpixels = np.size(self.reflected_beam.m_topandtail, 2)
 
-        # we'll need the wavelengths to calculate Q.
-        wavelengths = self.reflected_beam.m_lambda
         m_twotheta = np.zeros((n_spectra, n_tpixels, n_xpixels))
 
         detrot_difference = (
