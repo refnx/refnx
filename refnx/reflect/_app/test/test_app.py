@@ -123,7 +123,6 @@ def test_add_spline_save(qtbot, tmpdir):
     save_and_reload_experiment(myapp, tmpdir)
 
 
-@pytest.mark.skipif(QTBOT_MISSING, reason="pytest-qt not installed")
 def save_and_reload_experiment(app, tmpdir):
     # save and reopen experiment.
     sf = pjoin(str(tmpdir), "experiment1.mtft")

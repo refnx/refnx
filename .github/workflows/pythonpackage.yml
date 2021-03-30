@@ -206,7 +206,7 @@ jobs:
         python -m pip install --upgrade pip
         python -m pip install wheel
 
-        python -m pip install --upgrade --upgrade-strategy eager numpy scipy h5py cython pandas xlrd pytest ipywidgets IPython matplotlib traitlets pyqt5 uncertainties corner tqdm periodictable pytest-qt
+        python -m pip install --upgrade --upgrade-strategy eager numpy scipy h5py cython pandas xlrd pytest ipywidgets IPython matplotlib traitlets pyqt5 uncertainties corner tqdm periodictable
         #        python -m pip install git+https://github.com/pymc-devs/pymc3
 
         #        python -m pip install pytools mako cffi
