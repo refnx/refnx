@@ -642,8 +642,6 @@ class SpinSet(object):
     """
     Describes a set of spin-channels at a given angle.
 
-    TODO: implement polarisation efficiency correction within this class
-
     Parameters
     ----------
     list of {str, h5data}
@@ -652,6 +650,18 @@ class SpinSet(object):
 
     data_folder: {str, Path}
         Path to the data folder containing the data to be reduced.
+
+    Attributes
+    ----------
+    dd_opts : refnx.reduce.ReductionOptions
+    du_opts : refnx.reduce.ReductionOptions
+    ud_opts : refnx.reduce.ReductionOptions
+    uu_opts : refnx.reduce.ReductionOptions
+
+    Notes
+    -----
+    Each of the `ReductionOptions` specified in `dd_opts,` etc, is used
+    to specify
     """
 
     def __init__(
@@ -715,15 +725,15 @@ class SpinSet(object):
             for s in [self.dd, self.du, self.ud, self.uu]
         ]
 
-    def process_beams(self, reduction_options=None):
+    def _process_beams(self, reduction_options=None):
         """
         Process beams in SpinSet.
 
         Reduction options for each spin channel are specified by
-        self.dd_opts, self.du_opts, self.ud_opts, and self.uu_opts where
-        a standard set of options is provided when constructing the object.
-        To specify different options for each spin channel (such as using
-        the ManualBeamFinder for only spin-flip channels), update the
+        SpinSet.dd_opts, SpinSet.du_opts, SpinSet.ud_opts, and SpinSet.uu_opts
+        where a standard set of options is provided when constructing the
+        object. To specify different options for each spin channel (such as
+        using the ManualBeamFinder for only spin-flip channels), update the
         reduction options for the specific spin channel in SpinSet, then
         process the beams. i.e.
 
@@ -747,7 +757,8 @@ class SpinSet(object):
             this is None, then process_beams will use individual dicts
             for each spin channel
         """
-
+        # TODO consider removing this method, not clear how it's going to be
+        # used.
         if reduction_options:
             print(
                 "Applying the supplied reduction_options to all spin channels"
