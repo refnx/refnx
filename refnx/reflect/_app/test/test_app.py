@@ -17,6 +17,7 @@ from refnx.reflect import Spline, Structure
 
 try:
     import pytestqt.qtbot as qtbot_module
+
     QTBOT_MISSING = False
 except ModuleNotFoundError:
     QTBOT_MISSING = True
