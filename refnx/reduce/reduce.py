@@ -200,8 +200,103 @@ class ReflectReduce:
         self.reflected_beam.process(**reflect_keywords)
 
         self.save = save
-        dataset, reduction = self._reduce_single_angle(scale)
-        return dataset, reduction
+        self._reduce_single_angle(scale)
+
+        """
+        --Specular Reflectivity--
+        Use the (constant wavelength) spectra that have already been integrated
+        over 2theta (in processnexus) to calculate the specular reflectivity.
+        Beware: this is because m_topandtail has already been divided through
+        by monitor counts and error propagated (at the end of processnexus).
+        Thus, the 2theta pixels are correlated to some degree. If we use the 2D
+        plot to calculate reflectivity
+        (sum {Iref_{2theta, lambda}}/I_direct_{lambda}) then the error bars in
+        the reflectivity turn out much larger than they should be.
+        """
+        ydata, ydata_sd = EP.EPdiv(
+            self.reflected_beam.m_spec,
+            self.reflected_beam.m_spec_sd,
+            self.direct_beam.m_spec,
+            self.direct_beam.m_spec_sd,
+        )
+
+        # calculate the 1D Qz values.
+        xdata = general.q(self.omega_corrected, self.reflected_beam.m_lambda)
+        xdata_sd = (
+            self.reflected_beam.m_lambda_fwhm / self.reflected_beam.m_lambda
+        ) ** 2
+        xdata_sd += (
+            self.reflected_beam.domega[:, np.newaxis] / self.omega_corrected
+        ) ** 2
+        xdata_sd = np.sqrt(xdata_sd) * xdata
+
+        """
+        ---Offspecular reflectivity---
+        normalise the counts in the reflected beam by the direct beam
+        spectrum this gives a reflectivity. Also propagate the errors,
+        leaving the fractional variance (dr/r)^2.
+        --Note-- that adjacent y-pixels (same wavelength) are correlated in
+        this treatment, so you can't just sum over them.
+        i.e. (c_0 / d) + ... + c_n / d) != (c_0 + ... + c_n) / d
+        """
+        m_ref, m_ref_sd = EP.EPdiv(
+            self.reflected_beam.m_topandtail,
+            self.reflected_beam.m_topandtail_sd,
+            self.direct_beam.m_spec[:, :, np.newaxis],
+            self.direct_beam.m_spec_sd[:, :, np.newaxis],
+        )
+
+        # you may have had divide by zero's.
+        m_ref = np.where(np.isinf(m_ref), 0, m_ref)
+        m_ref_sd = np.where(np.isinf(m_ref_sd), 0, m_ref_sd)
+
+        # calculate the Q values for the detector pixels.  Each pixel has
+        # different 2theta and different wavelength, ASSUME that they have the
+        # same angle of incidence
+        qx, qy, qz = general.q2(
+            self.omega_corrected[:, :, np.newaxis],
+            self.m_twotheta,
+            0,
+            self.reflected_beam.m_lambda[:, :, np.newaxis],
+        )
+
+        reduction = {}
+        reduction["x"] = self.x = xdata
+        reduction["x_err"] = self.x_err = xdata_sd
+        reduction["y"] = self.y = ydata / scale
+        reduction["y_err"] = self.y_err = ydata_sd / scale
+        reduction["m_ref"] = self.m_ref = m_ref
+        reduction["m_ref_err"] = self.m_ref_err = m_ref_sd
+        reduction["qz"] = self.m_qz = qz
+        reduction["qx"] = self.m_qx = qx
+        reduction["nspectra"] = self.n_spectra
+        reduction["start_time"] = self.reflected_beam.start_time
+        reduction[
+            "datafile_number"
+        ] = self.datafile_number = self.reflected_beam.datafile_number
+
+        fnames = []
+        datasets = []
+        datafilename = self.reflected_beam.datafilename
+        datafilename = os.path.basename(datafilename.split(".nx.hdf")[0])
+
+        for i in range(self.n_spectra):
+            data_tup = self.data(scanpoint=i)
+            datasets.append(ReflectDataset(data_tup))
+
+        if self.save:
+            for i, dataset in enumerate(datasets):
+                fname = f"{datafilename}_{i}.dat"
+                fnames.append(fname)
+                with open(fname, "wb") as f:
+                    dataset.save(f)
+
+                fname = f"{datafilename}_{i}.xml"
+                with open(fname, "wb") as f:
+                    dataset.save_xml(f, start_time=reduction["start_time"][i])
+
+        reduction["fname"] = fnames
+        return datasets, deepcopy(reduction)
 
     def data(self, scanpoint=0):
         """
@@ -430,103 +525,9 @@ class PlatypusReduce(ReflectReduce):
             omega_corrected = np.degrees(omega)[:, np.newaxis]
             m_twotheta = np.degrees(m_twotheta)
 
-        """
-        --Specular Reflectivity--
-        Use the (constant wavelength) spectra that have already been integrated
-        over 2theta (in processnexus) to calculate the specular reflectivity.
-        Beware: this is because m_topandtail has already been divided through
-        by monitor counts and error propagated (at the end of processnexus).
-        Thus, the 2theta pixels are correlated to some degree. If we use the 2D
-        plot to calculate reflectivity
-        (sum {Iref_{2theta, lambda}}/I_direct_{lambda}) then the error bars in
-        the reflectivity turn out much larger than they should be.
-        """
-        ydata, ydata_sd = EP.EPdiv(
-            self.reflected_beam.m_spec,
-            self.reflected_beam.m_spec_sd,
-            self.direct_beam.m_spec,
-            self.direct_beam.m_spec_sd,
-        )
-
-        # calculate the 1D Qz values.
-        xdata = general.q(omega_corrected, wavelengths)
-        xdata_sd = (
-            self.reflected_beam.m_lambda_fwhm / self.reflected_beam.m_lambda
-        ) ** 2
-        xdata_sd += (
-            self.reflected_beam.domega[:, np.newaxis] / omega_corrected
-        ) ** 2
-        xdata_sd = np.sqrt(xdata_sd) * xdata
-
-        """
-        ---Offspecular reflectivity---
-        normalise the counts in the reflected beam by the direct beam
-        spectrum this gives a reflectivity. Also propagate the errors,
-        leaving the fractional variance (dr/r)^2.
-        --Note-- that adjacent y-pixels (same wavelength) are correlated in
-        this treatment, so you can't just sum over them.
-        i.e. (c_0 / d) + ... + c_n / d) != (c_0 + ... + c_n) / d
-        """
-        m_ref, m_ref_sd = EP.EPdiv(
-            self.reflected_beam.m_topandtail,
-            self.reflected_beam.m_topandtail_sd,
-            self.direct_beam.m_spec[:, :, np.newaxis],
-            self.direct_beam.m_spec_sd[:, :, np.newaxis],
-        )
-
-        # you may have had divide by zero's.
-        m_ref = np.where(np.isinf(m_ref), 0, m_ref)
-        m_ref_sd = np.where(np.isinf(m_ref_sd), 0, m_ref_sd)
-
-        # calculate the Q values for the detector pixels.  Each pixel has
-        # different 2theta and different wavelength, ASSUME that they have the
-        # same angle of incidence
-        qx, qy, qz = general.q2(
-            omega_corrected[:, :, np.newaxis],
-            m_twotheta,
-            0,
-            wavelengths[:, :, np.newaxis],
-        )
-
-        reduction = {}
-        reduction["x"] = self.x = xdata
-        reduction["x_err"] = self.x_err = xdata_sd
-        reduction["y"] = self.y = ydata / scale
-        reduction["y_err"] = self.y_err = ydata_sd / scale
-        reduction["omega"] = omega_corrected
-        reduction["m_twotheta"] = m_twotheta
-        reduction["m_ref"] = self.m_ref = m_ref
-        reduction["m_ref_err"] = self.m_ref_err = m_ref_sd
-        reduction["qz"] = self.m_qz = qz
-        reduction["qx"] = self.m_qx = qx
-        reduction["nspectra"] = self.n_spectra = n_spectra
-        reduction["start_time"] = self.reflected_beam.start_time
-        reduction[
-            "datafile_number"
-        ] = self.datafile_number = self.reflected_beam.datafile_number
-
-        fnames = []
-        datasets = []
-        datafilename = self.reflected_beam.datafilename
-        datafilename = os.path.basename(datafilename.split(".nx.hdf")[0])
-
-        for i in range(n_spectra):
-            data_tup = self.data(scanpoint=i)
-            datasets.append(ReflectDataset(data_tup))
-
-        if self.save:
-            for i, dataset in enumerate(datasets):
-                fname = "{0}_{1}.dat".format(datafilename, i)
-                fnames.append(fname)
-                with open(fname, "wb") as f:
-                    dataset.save(f)
-
-                fname = "{0}_{1}.xml".format(datafilename, i)
-                with open(fname, "wb") as f:
-                    dataset.save_xml(f, start_time=reduction["start_time"][i])
-
-        reduction["fname"] = fnames
-        return datasets, deepcopy(reduction)
+        self.omega_corrected = omega_corrected
+        self.m_twotheta = m_twotheta
+        self.n_spectra = n_spectra
 
 
 class SpatzReduce(ReflectReduce):
@@ -604,103 +605,9 @@ class SpatzReduce(ReflectReduce):
         m_twotheta *= upside_down[:, np.newaxis, np.newaxis]
         omega_corrected *= upside_down[:, np.newaxis]
 
-        """
-        --Specular Reflectivity--
-        Use the (constant wavelength) spectra that have already been integrated
-        over 2theta (in processnexus) to calculate the specular reflectivity.
-        Beware: this is because m_topandtail has already been divided through
-        by monitor counts and error propagated (at the end of processnexus).
-        Thus, the 2theta pixels are correlated to some degree. If we use the 2D
-        plot to calculate reflectivity
-        (sum {Iref_{2theta, lambda}}/I_direct_{lambda}) then the error bars in
-        the reflectivity turn out much larger than they should be.
-        """
-        ydata, ydata_sd = EP.EPdiv(
-            self.reflected_beam.m_spec,
-            self.reflected_beam.m_spec_sd,
-            self.direct_beam.m_spec,
-            self.direct_beam.m_spec_sd,
-        )
-
-        # calculate the 1D Qz values.
-        xdata = general.q(omega_corrected, wavelengths)
-        xdata_sd = (
-            self.reflected_beam.m_lambda_fwhm / self.reflected_beam.m_lambda
-        ) ** 2
-        xdata_sd += (
-            self.reflected_beam.domega[:, np.newaxis] / omega_corrected
-        ) ** 2
-        xdata_sd = np.sqrt(xdata_sd) * xdata
-
-        """
-        ---Offspecular reflectivity---
-        normalise the counts in the reflected beam by the direct beam
-        spectrum this gives a reflectivity. Also propagate the errors,
-        leaving the fractional variance (dr/r)^2.
-        --Note-- that adjacent y-pixels (same wavelength) are correlated in
-        this treatment, so you can't just sum over them.
-        i.e. (c_0 / d) + ... + c_n / d) != (c_0 + ... + c_n) / d
-        """
-        m_ref, m_ref_sd = EP.EPdiv(
-            self.reflected_beam.m_topandtail,
-            self.reflected_beam.m_topandtail_sd,
-            self.direct_beam.m_spec[:, :, np.newaxis],
-            self.direct_beam.m_spec_sd[:, :, np.newaxis],
-        )
-
-        # you may have had divide by zero's.
-        m_ref = np.where(np.isinf(m_ref), 0, m_ref)
-        m_ref_sd = np.where(np.isinf(m_ref_sd), 0, m_ref_sd)
-
-        # calculate the Q values for the detector pixels.  Each pixel has
-        # different 2theta and different wavelength, ASSUME that they have the
-        # same angle of incidence
-        qx, qy, qz = general.q2(
-            omega_corrected[:, :, np.newaxis],
-            m_twotheta,
-            0,
-            wavelengths[:, :, np.newaxis],
-        )
-
-        reduction = {}
-        reduction["x"] = self.x = xdata
-        reduction["x_err"] = self.x_err = xdata_sd
-        reduction["y"] = self.y = ydata / scale
-        reduction["y_err"] = self.y_err = ydata_sd / scale
-        reduction["omega"] = omega_corrected
-        reduction["m_twotheta"] = m_twotheta
-        reduction["m_ref"] = self.m_ref = m_ref
-        reduction["m_ref_err"] = self.m_ref_err = m_ref_sd
-        reduction["qz"] = self.m_qz = qz
-        reduction["qx"] = self.m_qx = qx
-        reduction["nspectra"] = self.n_spectra = n_spectra
-        reduction["start_time"] = self.reflected_beam.start_time
-        reduction[
-            "datafile_number"
-        ] = self.datafile_number = self.reflected_beam.datafile_number
-
-        fnames = []
-        datasets = []
-        datafilename = self.reflected_beam.datafilename
-        datafilename = os.path.basename(datafilename.split(".nx.hdf")[0])
-
-        for i in range(n_spectra):
-            data_tup = self.data(scanpoint=i)
-            datasets.append(ReflectDataset(data_tup))
-
-        if self.save:
-            for i, dataset in enumerate(datasets):
-                fname = "{0}_{1}.dat".format(datafilename, i)
-                fnames.append(fname)
-                with open(fname, "wb") as f:
-                    dataset.save(f)
-
-                fname = "{0}_{1}.xml".format(datafilename, i)
-                with open(fname, "wb") as f:
-                    dataset.save_xml(f, start_time=reduction["start_time"][i])
-
-        reduction["fname"] = fnames
-        return datasets, deepcopy(reduction)
+        self.omega_corrected = omega_corrected
+        self.m_twotheta = m_twotheta
+        self.n_spectra = n_spectra
 
 
 def reduce_stitch(
