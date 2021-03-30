@@ -40,7 +40,7 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install wheel
-        python -m pip install --upgrade --upgrade-strategy eager numpy scipy h5py cython pandas xlrd flake8 pytest ipywidgets IPython matplotlib traitlets pyqt5==5.15.2 uncertainties attrs corner tqdm periodictable pyopencl pymc3
+        python -m pip install --upgrade --upgrade-strategy eager numpy scipy h5py cython pandas xlrd flake8 pytest ipywidgets IPython matplotlib traitlets pyqt5==5.15.2 uncertainties attrs corner tqdm periodictable pyopencl pymc3 pytest-qt
 
     - name: Test with pytest
       env:

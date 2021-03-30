@@ -375,6 +375,9 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         # added Parameter._stderr
         # v0.1.13
 
+        # removes picker key from graphproperties (matplotlib 3.4.0 causes
+        # issues)
+
         from refnx.analysis.bounds import Interval
 
         for do in self.treeModel.datastore:
@@ -414,6 +417,15 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
                     ):
                         bnd._logprob = 0
                         bnd._set_bounds(bnd.lb, bnd.ub)
+
+                # pop picker attribute from graphproperties
+                gp = do.graph_properties
+                for line in [
+                    "data_properties",
+                    "fit_properties",
+                    "sld_profile_properties",
+                ]:
+                    gp[line].pop("picker", None)
 
     def apply_settings_to_params(self, params):
         for key in self.settings.__dict__:

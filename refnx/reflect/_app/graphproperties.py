@@ -17,7 +17,6 @@ _requiredgraphproperties = {
     "zorder": int,
     "color": str,
     "visible": bool,
-    "picker": float,
 }
 
 _lines = {

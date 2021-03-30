@@ -73,6 +73,12 @@ def test_app_load_old_experiment_file(qtbot, data_directory):
             if str(e) == "'Figure' object has no attribute '_remove_ax'":
                 # matplotlib 3.3 introduces _remove_ax which 3.2.1 didn't have
                 continue
+            elif str(e) == (
+                "'CallbackRegistry' object has no attribute" " 'callbacks'"
+            ):
+                # matplotlib 3.4.0 is expecting CallbackRegistry to have
+                # a callbacks method, which older versions don't have
+                continue
             else:
                 raise e
 
