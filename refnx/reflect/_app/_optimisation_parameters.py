@@ -74,6 +74,8 @@ class OptimisationParameterView(QtWidgets.QDialog):
             kws["target"] = target
         elif method == "SHGO":
             target = self.ui.shgo_target.currentText()
+            kws["n"] = self.ui.shgo_n.value()
+            kws["iters"] = self.ui.shgo_iters.value()
             if target == "log-posterior":
                 target = "nlpost"
             else:

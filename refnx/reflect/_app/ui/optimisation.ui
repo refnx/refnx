@@ -10,7 +10,7 @@
     <x>0</x>
     <y>0</y>
     <width>639</width>
-    <height>354</height>
+    <height>328</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -605,6 +605,22 @@
        <string>SHGO</string>
       </attribute>
       <layout class="QGridLayout" name="gridLayout_5">
+       <item row="1" column="0">
+        <widget class="QSpinBox" name="shgo_n">
+         <property name="prefix">
+          <string>n: </string>
+         </property>
+         <property name="minimum">
+          <number>1</number>
+         </property>
+         <property name="maximum">
+          <number>2000</number>
+         </property>
+         <property name="value">
+          <number>100</number>
+         </property>
+        </widget>
+       </item>
        <item row="0" column="0">
         <widget class="QComboBox" name="shgo_target">
          <property name="toolTip">
@@ -628,7 +644,7 @@
          </item>
         </widget>
        </item>
-       <item row="1" column="0">
+       <item row="3" column="0">
         <widget class="QLabel" name="label_4">
          <property name="text">
           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;a href=&quot;https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.shgo.html#scipy.optimize.shgo&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#0000ff;&quot;&gt;scipy.optimize.shgo&lt;/span&gt;&lt;/a&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
@@ -647,6 +663,22 @@
          </property>
          <property name="textInteractionFlags">
           <set>Qt::TextBrowserInteraction</set>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="0">
+        <widget class="QSpinBox" name="shgo_iters">
+         <property name="prefix">
+          <string>iters: </string>
+         </property>
+         <property name="minimum">
+          <number>1</number>
+         </property>
+         <property name="maximum">
+          <number>1000</number>
+         </property>
+         <property name="value">
+          <number>5</number>
          </property>
         </widget>
        </item>
