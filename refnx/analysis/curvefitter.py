@@ -791,6 +791,13 @@ class CurveFitter:
         # bounds
         elif method in ["differential_evolution", "dual_annealing", "shgo"]:
             mini = getattr(sciopt, method)
+
+            if method == "shgo":
+                if "n" not in _min_kws:
+                    _min_kws["n"] = 100
+                if "iters" not in kws:
+                    _min_kws["iters"] = 5
+
             with get_progress_bar(verbose, None) as pbar:
                 _min_kws["callback"] = _callback_wrapper(
                     _min_kws["callback"], pbar
