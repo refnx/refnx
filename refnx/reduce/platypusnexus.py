@@ -640,41 +640,8 @@ class SpinChannel(Enum):
 
 class SpinSet(object):
     """
-    Describes a set of spin-channels at a given angle of incidence. For
-    each spin channel, creates a standard set of reduction_options as an
-    attribute:
-
-    - SpinSet.dd_opts
-    - SpinSet.du_opts
-    - SpinSet.ud_opts 
-    - SpinSet.uu_opts
-    
-    To add or change options to a specific spin channel,
-    update the reduction options attribute. e.g.
-
-        from refnx.reduce.manual_beam_finder import ManualBeamFinder
-        mbf = ManualBeamFinder()
-
-        spinset = SpinSet(
-            "PLP0051296.nx.hdf",
-            "PLP0051294.nx.hdf",
-            up_down="PLP0051295.nx.hdf",
-            down_up="PLP0051297.nx.hdf",
-            data_folder=data_dir
-        )
-        spinset.du_opts.update({"manual_beam_find" : mbf, peak_pos : -1})
-        spinset.process()
-        
-    The following reduction options must be consistent and identical 
-    across all spin channels so as to maintain the same wavelength 
-    axis across the datasets:
-
-    - lo_wavelength
-    - hi_wavelength
-    - rebin_percent
-    - wavelength_bins
-
-    TODO: implement polarisation efficiency correction within this class
+    Describes a set of spin-channels at a given angle of incidence,
+    and can process beams with individual reduction options.
 
     Parameters
     ----------
@@ -684,6 +651,40 @@ class SpinSet(object):
 
     data_folder: {str, Path}
         Path to the data folder containing the data to be reduced.
+
+    Attributes
+    ----------
+    dd      : refnx.reduce.PlatypusNexus
+        R-- spin channel
+    du      : refnx.reduce.PlatypusNexus or None
+        R-+ spin channel (if measured)
+    ud      : refnx.reduce.PlatypusNexus or None
+        R+- spin channel (if measured)
+    uu      : refnx.reduce.PlatypusNexus
+        R++ spin channel
+    dd_opts : refnx.reduce.ReductionOptions
+        Reduction options for R-- spin channel
+    du_opts : refnx.reduce.ReductionOptions
+        Reduction options for R-- spin channel
+    ud_opts : refnx.reduce.ReductionOptions
+        Reduction options for R-- spin channel
+    uu_opts : refnx.reduce.ReductionOptions
+        Reduction options for R-- spin channel
+
+    Notes
+    -----
+    Each of the `ReductionOptions` specified in `dd_opts,` etc, is used
+    to specify the options used to reduce each spin channel. The following
+    reduction options must be consistent and identical across all
+    spin channels so as to maintain the same wavelength axis across
+    the datasets:
+
+    lo_wavelength    : key in refnx.reduce.ReductionOptions
+    hi_wavelength    : key in refnx.reduce.ReductionOptions
+    rebin_percent    : key in refnx.reduce.ReductionOptions
+    wavelength_bins  : key in refnx.reduce.ReductionOptions
+
+    TODO: implement polarisation efficiency correction within this class
     """
 
     def __init__(
@@ -700,9 +701,9 @@ class SpinSet(object):
         self.dd_opts = self.du_opts = self.ud_opts = self.uu_opts = None
         # initialise reduction options for each spin channel
         reduction_options = ReductionOptions(
-            lo_wavelength = 2.5,
-            hi_wavelength = 12.5,
-            rebin_percent = 3,
+            lo_wavelength=2.5,
+            hi_wavelength=12.5,
+            rebin_percent=3,
         )
 
         for channel in channels:
@@ -761,7 +762,7 @@ class SpinSet(object):
         Parameters
         ----------
         reduction_options : dict
-            A single dict of options used to process all spectra. 
+            A single dict of options used to process all spectra.
         """
 
         if reduction_options is not None:
@@ -775,28 +776,37 @@ class SpinSet(object):
 
         # Check important reduction options are the same across all
         # spin channels to ensure the same wavelength axis
-        #if reduction_options is None:
+
         for key in [
-            "lo_wavelength", 
-            "hi_wavelength", 
-            "rebin_percent", 
-            "wavelength_bins"
+            "lo_wavelength",
+            "hi_wavelength",
+            "rebin_percent",
+            "wavelength_bins",
         ]:
-            for option in [
-                self.dd_opts, self.du_opts, self.ud_opts, self.uu_opts
+            for option1 in [
+                self.dd_opts,
+                self.du_opts,
+                self.ud_opts,
+                self.uu_opts,
             ]:
-                if option is None:
-                    continue
-                elif not (option[key] == self.dd_opts[key]
-                    == self.du_opts[key] == self.ud_opts[key]
-                    == self.uu_opts[key]):
-                    raise ValueError(
-                    "Reduction options `lo_wavelength`, "
-                    "`hi_wavelength`, `rebin_percent`, and "
-                    "`wavelength_bins` must be identical across "
-                    "spin channels to preserve a common "
-                    "wavelength axis."
-                    )
+                for option2 in [
+                    self.dd_opts,
+                    self.du_opts,
+                    self.ud_opts,
+                    self.uu_opts,
+                ]:
+                    if option1 is None:
+                        continue
+                    elif option2 is None:
+                        continue
+                    elif option1[key] != option2[key]:
+                        raise ValueError(
+                            "Reduction options `lo_wavelength`, "
+                            "`hi_wavelength`, `rebin_percent`, and "
+                            "`wavelength_bins` must be identical across "
+                            "spin channels to preserve a common "
+                            "wavelength axis."
+                        )
 
         for opts, beam in zip(
             [self.dd_opts, self.du_opts, self.ud_opts, self.uu_opts],
