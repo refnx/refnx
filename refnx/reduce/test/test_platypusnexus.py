@@ -90,28 +90,43 @@ class TestSpinSet(object):
         assert self.spinset_2.uu.processed_spectrum
 
     def test_processing_different_reduction_options(self):
-       # Check every combination of spin channel and reduction option that
-       # determines the resulting wavelength axis to make sure errors
-       # are raised appropriately
- 
-       for spin_channel in [
-           self.spinset.dd, self.spinset.du, self.spinset.ud, self.spinset.uu
-        ]:
-            for option in [
-                "lo_wavelength",
-                "hi_wavelength",
-                "rebin_percent",
-                "wavelength_bins"
-            ]:
-                spin_channel.update({option : 5})
-                with pytest.warns(ValueError):
-                    spin_channel.process()
-                # Reset dd_opts
-                spin_channel.dd_opts.update({option : 2.5})
+        # Check every combination of spin channel and reduction option that
+        # determines the resulting wavelength axis to make sure errors
+        # are raised appropriately
 
-
-
-        
+        standard_opts = dict(
+            lo_wavelength=2.5,
+            hi_wavelength=12.5,
+            rebin_percent=3,
+        )
+        for spin_set in [self.spinset, self.spinset_3, self.spinset_2]:
+            for reduction_opt, spin_channel in zip(
+                [
+                    spin_set.dd_opts,
+                    spin_set.du_opts,
+                    spin_set.ud_opts,
+                    spin_set.uu_opts,
+                ],
+                [
+                    spin_set.dd,
+                    spin_set.du,
+                    spin_set.ud,
+                    spin_set.uu,
+                ],
+            ):
+                if spin_channel is None:
+                    continue
+                else:
+                    for option in [
+                        "lo_wavelength",
+                        "hi_wavelength",
+                        "rebin_percent",
+                    ]:
+                        reduction_opt.update({option: 5})
+                        with pytest.raises(ValueError):
+                            spin_set.process()
+                        # Reset dd_opts
+                        reduction_opt.update(standard_opts)
 
 
 class TestPlatypusNexus(object):
