@@ -277,7 +277,7 @@ class ReductionTableModel(QtCore.QAbstractTableModel):
         return len(reducer_entry)
 
     def headerData(self, section, orientation, role=QtCore.Qt.DisplayRole):
-        """ Set the headers to be displayed. """
+        """Set the headers to be displayed."""
         if role != QtCore.Qt.DisplayRole:
             return None
 

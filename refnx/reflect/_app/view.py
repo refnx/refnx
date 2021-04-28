@@ -2334,7 +2334,7 @@ class MyReflectivityGraphs(FigureCanvas):
                 if graph_properties["fit_properties"]:
                     artist.setp(
                         graph_properties.ax_fit,
-                        **graph_properties["fit_properties"]
+                        **graph_properties["fit_properties"],
                     )
 
             # if (dataObject.line2Dresiduals is None and
@@ -2442,7 +2442,9 @@ class MySLDGraphs(FigureCanvas):
                 and data_object.model is not None
             ):
                 try:
-                    sld_profile = data_object.model.structure.sld_profile()
+                    sld_profile = data_object.model.structure.sld_profile(
+                        max_delta_z=1.0
+                    )
 
                     graph_properties.ax_sld_profile.set_data(
                         sld_profile[0], sld_profile[1]
@@ -2490,7 +2492,7 @@ class MySLDGraphs(FigureCanvas):
                 if graph_properties["sld_profile_properties"]:
                     artist.setp(
                         graph_properties.ax_sld_profile,
-                        **graph_properties["sld_profile_properties"]
+                        **graph_properties["sld_profile_properties"],
                     )
 
         self.axes[0].relim()

@@ -34,7 +34,7 @@ class ManualBeamFinder(QtWidgets.QDialog):
     """
 
     def __init__(self):
-        """"""
+        """ """
         super().__init__()
         self.dialog = uic.loadUi(
             os.path.join(UI_LOCATION, "manual_beam.ui"), self

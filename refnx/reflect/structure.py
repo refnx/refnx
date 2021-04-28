@@ -486,7 +486,7 @@ class Structure(UserList):
         abeles = get_reflect_backend()
         return abeles(q, self.slabs()[..., :4], threads=threads)
 
-    def sld_profile(self, z=None, align=0):
+    def sld_profile(self, z=None, align=0, max_delta_z=None):
         """
         Calculates an SLD profile, as a function of distance through the
         interface.
@@ -500,6 +500,9 @@ class Structure(UserList):
             Places a specified interface in the slab representation of a
             Structure at z = 0. Python indexing is allowed, e.g. supplying -1
             will place the backing medium at z = 0.
+        max_delta_z : {None, float}, optional
+            If specified this will control the maximum spacing between SLD
+            points. Only used if `z is None`.
 
         Returns
         -------
@@ -522,7 +525,7 @@ class Structure(UserList):
                 " Slabs in order to calculate."
             )
 
-        zed, sld = sld_profile(slabs, z)
+        zed, sld = sld_profile(slabs, z=z, max_delta_z=max_delta_z)
 
         offset = 0
         if align != 0:
@@ -1560,16 +1563,37 @@ def _profile_slicer(z, sld_profile, slice_size=None):
     return structure
 
 
-def sld_profile(slabs, z=None):
+def sld_profile(slabs, z=None, max_delta_z=None):
     """
     Calculates an SLD profile, as a function of distance through the
     interface.
 
     Parameters
     ----------
-    z : float
-        Interfacial distance (Angstrom) measured from interface between the
-        fronting medium and the first layer.
+    slabs : :class:`np.ndarray`
+        Slab representation of this structure.
+        Has shape (N, 5).
+
+        - slab[N, 0]
+           thickness of layer N
+        - slab[N, 1]
+           *overall* SLD.real of layer N (material AND solvent)
+        - slab[N, 2]
+           *overall* SLD.imag of layer N (material AND solvent)
+        - slab[N, 3]
+           roughness between layer N and N-1
+        - slab[N, 4]
+           volume fraction of solvent in layer N, *ignored* for this function
+
+    z : {None, `np.ndarray`}, optional
+        If `z is None` then the SLD profile will have 500 points (unless
+        `max_delta_z` is specified).
+        If `z` is an array, then the array specifies the interfacial locations
+        at which the SLD will be evaluated.
+
+    max_delta_z : {None, float}, optional
+        If specified this will control the maximum spacing between SLD points.
+        Only used if `z is None`.
 
     Returns
     -------
@@ -1591,13 +1615,18 @@ def sld_profile(slabs, z=None):
 
     # distance of each interface from the fronting interface
     dist = np.cumsum(layers[:-1, 0])
+    zstart = -5 - 4 * np.fabs(slabs[1, 3])
+    zend = 5 + dist[-1] + 4 * layers[-1, 3]
 
     # workout how much space the SLD profile should encompass
     # (if z array not provided)
     if z is None:
-        zstart = -5 - 4 * np.fabs(slabs[1, 3])
-        zend = 5 + dist[-1] + 4 * layers[-1, 3]
-        zed = np.linspace(zstart, zend, num=500)
+        npnts = 500
+        if max_delta_z is not None:
+            max_delta_z = float(max_delta_z)
+            npnts = int(np.ceil((zend - zstart) / max_delta_z)) + 1
+
+        zed = np.linspace(zstart, zend, num=npnts)
     else:
         zed = np.asfarray(z)
 
