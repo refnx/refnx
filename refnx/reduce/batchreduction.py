@@ -321,7 +321,7 @@ class ReductionCache(list):
             print("On-disk cache not found")
 
     def _cache_filename(self, filename=None):
-        """ return the filename for the persistent cache if it is in use """
+        """return the filename for the persistent cache if it is in use"""
         if not self.persistent:
             return None
 
