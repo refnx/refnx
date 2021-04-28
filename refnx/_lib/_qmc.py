@@ -18,15 +18,14 @@ __all__ = [
     "update_discrepancy",
     "QMCEngine",
     "Halton",
-    "OrthogonalLatinHypercube",
     "LatinHypercube",
 ]
 
 
 # Based on scipy._lib._util.check_random_state
+# Based on scipy._lib._util.check_random_state
 def check_random_state(seed=None):
     """Turn `seed` into a `numpy.random.Generator` instance.
-
     Parameters
     ----------
     seed : {None, int, `numpy.random.Generator`,
@@ -36,20 +35,16 @@ def check_random_state(seed=None):
         seeded with `seed`.
         If `seed` is already a ``Generator`` or ``RandomState`` instance then
         that instance is used.
-
     Returns
     -------
     seed : {`numpy.random.Generator`, `numpy.random.RandomState`}
         Random number generator.
-
     """
     if seed is None or isinstance(seed, (numbers.Integral, np.integer)):
-        if not hasattr(np.random, "Generator"):
+        if not hasattr(np.random, 'Generator'):
             # This can be removed once numpy 1.16 is dropped
-            msg = (
-                "NumPy 1.16 doesn't have Generator, use either "
-                "NumPy >= 1.17 or `seed=np.random.RandomState(seed)`"
-            )
+            msg = ("NumPy 1.16 doesn't have Generator, use either "
+                   "NumPy >= 1.17 or `seed=np.random.RandomState(seed)`")
             raise ValueError(msg)
         return np.random.default_rng(seed)
     elif isinstance(seed, np.random.RandomState):
@@ -58,23 +53,17 @@ def check_random_state(seed=None):
         # The two checks can be merged once numpy 1.16 is dropped
         return seed
     else:
-        raise ValueError(
-            "%r cannot be used to seed a numpy.random.Generator"
-            " instance" % seed
-        )
+        raise ValueError('%r cannot be used to seed a numpy.random.Generator'
+                         ' instance' % seed)
 
 
 def scale(sample, l_bounds, u_bounds, reverse=False):
     r"""Sample scaling from unit hypercube to different bounds.
-
     To convert a sample from :math:`[0, 1)` to :math:`[a, b), b>a`,
     with :math:`a` the lower bounds and :math:`b` the upper bounds.
     The following transformation is used:
-
     .. math::
-
         (b - a) \cdot \text{sample} + a
-
     Parameters
     ----------
     sample : array_like (n, d)
@@ -86,16 +75,13 @@ def scale(sample, l_bounds, u_bounds, reverse=False):
     reverse : bool, optional
         Reverse the transformation from different bounds to the unit hypercube.
         Default is False.
-
     Returns
     -------
     sample : array_like (n, d)
         Scaled sample.
-
     Examples
     --------
     Transform 3 samples in the unit hypercube to bounds:
-
     >>> from scipy.stats import qmc
     >>> l_bounds = [-2, 0]
     >>> u_bounds = [6, 5]
@@ -107,15 +93,12 @@ def scale(sample, l_bounds, u_bounds, reverse=False):
     array([[2.  , 3.75],
            [2.  , 2.5 ],
            [4.  , 1.25]])
-
     And convert back to the unit hypercube:
-
     >>> sample_ = qmc.scale(sample_scaled, l_bounds, u_bounds, reverse=True)
     >>> sample_
     array([[0.5 , 0.75],
            [0.5 , 0.5 ],
            [0.75, 0.25]])
-
     """
     sample = np.asarray(sample)
     lower = np.atleast_1d(l_bounds)
@@ -123,26 +106,26 @@ def scale(sample, l_bounds, u_bounds, reverse=False):
 
     # Checking bounds and sample
     if not sample.ndim == 2:
-        raise ValueError("Sample is not a 2D array")
+        raise ValueError('Sample is not a 2D array')
 
     lower, upper = np.broadcast_arrays(lower, upper)
 
     if not np.all(lower < upper):
-        raise ValueError("Bounds are not consistent a < b")
+        raise ValueError('Bounds are not consistent a < b')
 
     if len(lower) != sample.shape[1]:
-        raise ValueError("Sample dimension is different than bounds dimension")
+        raise ValueError('Sample dimension is different than bounds dimension')
 
     if not reverse:
         # Checking that sample is within the hypercube
         if not (np.all(sample >= 0) and np.all(sample <= 1)):
-            raise ValueError("Sample is not in unit hypercube")
+            raise ValueError('Sample is not in unit hypercube')
 
         return sample * (upper - lower) + lower
     else:
         # Checking that sample is within the bounds
         if not (np.all(sample >= lower) and np.all(sample <= upper)):
-            raise ValueError("Sample is out of bounds")
+            raise ValueError('Sample is out of bounds')
 
         return (sample - lower) / (upper - lower)
 
@@ -412,221 +395,59 @@ def update_discrepancy(x_new, sample, initial_disc):
 
 def primes_from_2_to(n):
     """Prime numbers from 2 to *n*.
-
-    Taken from [1]_ by P.T. Roy, licensed under
-    `CC-BY-SA 4.0 <https://creativecommons.org/licenses/by-sa/4.0/>`_.
-
     Parameters
     ----------
     n : int
         Sup bound with ``n >= 6``.
-
     Returns
     -------
     primes : list(int)
         Primes in ``2 <= p < n``.
-
+    Notes
+    -----
+    Taken from [1]_ by P.T. Roy, written consent given on 23.04.2021
+    by the original author, Bruno Astrolino, for free use in SciPy under
+    the 3-clause BSD.
     References
     ----------
     .. [1] `StackOverflow <https://stackoverflow.com/questions/2068372>`_.
-
     """
     sieve = np.ones(n // 3 + (n % 6 == 2), dtype=bool)
     for i in range(1, int(n ** 0.5) // 3 + 1):
         k = 3 * i + 1 | 1
-        sieve[k * k // 3 :: 2 * k] = False
-        sieve[k * (k - 2 * (i & 1) + 4) // 3 :: 2 * k] = False
+        sieve[k * k // 3::2 * k] = False
+        sieve[k * (k - 2 * (i & 1) + 4) // 3::2 * k] = False
     return np.r_[2, 3, ((3 * np.nonzero(sieve)[0][1:] + 1) | 1)]
 
 
 def n_primes(n):
     """List of the n-first prime numbers.
-
     Parameters
     ----------
     n : int
         Number of prime numbers wanted.
-
     Returns
     -------
     primes : list(int)
         List of primes.
-
     """
-    primes = [
-        2,
-        3,
-        5,
-        7,
-        11,
-        13,
-        17,
-        19,
-        23,
-        29,
-        31,
-        37,
-        41,
-        43,
-        47,
-        53,
-        59,
-        61,
-        67,
-        71,
-        73,
-        79,
-        83,
-        89,
-        97,
-        101,
-        103,
-        107,
-        109,
-        113,
-        127,
-        131,
-        137,
-        139,
-        149,
-        151,
-        157,
-        163,
-        167,
-        173,
-        179,
-        181,
-        191,
-        193,
-        197,
-        199,
-        211,
-        223,
-        227,
-        229,
-        233,
-        239,
-        241,
-        251,
-        257,
-        263,
-        269,
-        271,
-        277,
-        281,
-        283,
-        293,
-        307,
-        311,
-        313,
-        317,
-        331,
-        337,
-        347,
-        349,
-        353,
-        359,
-        367,
-        373,
-        379,
-        383,
-        389,
-        397,
-        401,
-        409,
-        419,
-        421,
-        431,
-        433,
-        439,
-        443,
-        449,
-        457,
-        461,
-        463,
-        467,
-        479,
-        487,
-        491,
-        499,
-        503,
-        509,
-        521,
-        523,
-        541,
-        547,
-        557,
-        563,
-        569,
-        571,
-        577,
-        587,
-        593,
-        599,
-        601,
-        607,
-        613,
-        617,
-        619,
-        631,
-        641,
-        643,
-        647,
-        653,
-        659,
-        661,
-        673,
-        677,
-        683,
-        691,
-        701,
-        709,
-        719,
-        727,
-        733,
-        739,
-        743,
-        751,
-        757,
-        761,
-        769,
-        773,
-        787,
-        797,
-        809,
-        811,
-        821,
-        823,
-        827,
-        829,
-        839,
-        853,
-        857,
-        859,
-        863,
-        877,
-        881,
-        883,
-        887,
-        907,
-        911,
-        919,
-        929,
-        937,
-        941,
-        947,
-        953,
-        967,
-        971,
-        977,
-        983,
-        991,
-        997,
-    ][:n]
+    primes = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59,
+              61, 67, 71, 73, 79, 83, 89, 97, 101, 103, 107, 109, 113, 127,
+              131, 137, 139, 149, 151, 157, 163, 167, 173, 179, 181, 191, 193,
+              197, 199, 211, 223, 227, 229, 233, 239, 241, 251, 257, 263, 269,
+              271, 277, 281, 283, 293, 307, 311, 313, 317, 331, 337, 347, 349,
+              353, 359, 367, 373, 379, 383, 389, 397, 401, 409, 419, 421, 431,
+              433, 439, 443, 449, 457, 461, 463, 467, 479, 487, 491, 499, 503,
+              509, 521, 523, 541, 547, 557, 563, 569, 571, 577, 587, 593, 599,
+              601, 607, 613, 617, 619, 631, 641, 643, 647, 653, 659, 661, 673,
+              677, 683, 691, 701, 709, 719, 727, 733, 739, 743, 751, 757, 761,
+              769, 773, 787, 797, 809, 811, 821, 823, 827, 829, 839, 853, 857,
+              859, 863, 877, 881, 883, 887, 907, 911, 919, 929, 937, 941, 947,
+              953, 967, 971, 977, 983, 991, 997][:n]
 
     if len(primes) < n:
         big_number = 2000
-        while "Not enough primes":
+        while 'Not enough primes':
             primes = primes_from_2_to(big_number)[:n]
             if len(primes) == n:
                 break
@@ -637,13 +458,10 @@ def n_primes(n):
 
 def van_der_corput(n, base=2, start_index=0, scramble=False, seed=None):
     """Van der Corput sequence.
-
     Pseudo-random number generator based on a b-adic expansion.
-
     Scrambling uses permutations of the remainders (see [1]_). Multiple
     permutations are applied to construct a point. The sequence of
     permutations has to be the same for all points of the sequence.
-
     Parameters
     ----------
     n : int
@@ -661,17 +479,14 @@ def van_der_corput(n, base=2, start_index=0, scramble=False, seed=None):
         seeded with `seed`.
         If `seed` is already a ``Generator`` instance then that instance is
         used.
-
     Returns
     -------
     sequence : list (n,)
         Sequence of Van der Corput.
-
     References
     ----------
     .. [1] A. B. Owen. "A randomized Halton algorithm in R",
        arXiv:1706.02808, 2017.
-
     """
     rng = check_random_state(seed)
     sequence = np.zeros(n)
@@ -696,10 +511,8 @@ def van_der_corput(n, base=2, start_index=0, scramble=False, seed=None):
 
 class QMCEngine(ABC):
     """A generic Quasi-Monte Carlo sampler class meant for subclassing.
-
     QMCEngine is a base class to construct a specific Quasi-Monte Carlo
     sampler. It cannot be used directly as a sampler.
-
     Parameters
     ----------
     d : int
@@ -710,43 +523,36 @@ class QMCEngine(ABC):
         seeded with `seed`.
         If `seed` is already a ``Generator`` instance then that instance is
         used.
-
     Notes
     -----
     By convention samples are distributed over the half-open interval
     ``[0, 1)``. Instances of the class can access the attributes: ``d`` for
     the dimension; and ``rng`` for the random number generator (used for the
     ``seed``).
-
     **Subclassing**
-
     When subclassing `QMCEngine` to create a new sampler,  ``__init__`` and
     ``random`` must be redefined.
-
     * ``__init__(d, seed=None)``: at least fix the dimension. If the sampler
       does not take advantage of a ``seed`` (deterministic methods like
       Halton), this parameter can be omitted.
-    * ``random(n)``: draw ``n`` from the engine.
-
+    * ``random(n)``: draw ``n`` from the engine and increase the counter
+      ``num_generated`` by ``n``.
     Optionally, two other methods can be overwritten by subclasses:
-
     * ``reset``: Reset the engine to it's original state.
     * ``fast_forward``: If the sequence is deterministic (like Halton
       sequence), then ``fast_forward(n)`` is skipping the ``n`` first draw.
-
     Examples
     --------
     To create a random sampler based on ``np.random.random``, we would do the
     following:
-
     >>> from scipy.stats import qmc
     >>> class RandomEngine(qmc.QMCEngine):
-    ...     def __init__(self, d, seed):
+    ...     def __init__(self, d, seed=None):
     ...         super().__init__(d=d, seed=seed)
-    ...         self.rng_seed = seed
     ...
     ...
     ...     def random(self, n=1):
+    ...         self.num_generated += n
     ...         return self.rng.random((n, self.d))
     ...
     ...
@@ -756,34 +562,32 @@ class QMCEngine(ABC):
     ...
     ...
     ...     def fast_forward(self, n):
-    ...         self.rng.random((n, self.d))
+    ...         self.random(n)
     ...         return self
-
     After subclassing `QMCEngine` to define the sampling strategy we want to
     use, we can create an instance to sample from.
-
-    >>> engine = RandomEngine(2, seed=12345)
+    >>> engine = RandomEngine(2)
     >>> engine.random(5)
-    array([[0.22733602, 0.31675834],
+    array([[0.22733602, 0.31675834],  # random
            [0.79736546, 0.67625467],
            [0.39110955, 0.33281393],
            [0.59830875, 0.18673419],
            [0.67275604, 0.94180287]])
-
     We can also reset the state of the generator and resample again.
-
     >>> _ = engine.reset()
     >>> engine.random(5)
-    array([[0.22733602, 0.31675834],
+    array([[0.22733602, 0.31675834],  # random
            [0.79736546, 0.67625467],
            [0.39110955, 0.33281393],
            [0.59830875, 0.18673419],
            [0.67275604, 0.94180287]])
-
     """
 
     @abstractmethod
     def __init__(self, d, seed=None):
+        if not np.issubdtype(type(d), np.integer):
+            raise ValueError('d must be an integer value')
+
         self.d = d
         self.rng = check_random_state(seed)
         self.rng_seed = copy.deepcopy(seed)
@@ -792,60 +596,51 @@ class QMCEngine(ABC):
     @abstractmethod
     def random(self, n=1):
         """Draw `n` in the half-open interval ``[0, 1)``.
-
         Parameters
         ----------
         n : int, optional
             Number of samples to generate in the parameter space.
             Default is 1.
-
         Returns
         -------
         sample : array_like (n, d)
             QMC sample.
-
         """
         # self.num_generated += n
 
     def reset(self):
         """Reset the engine to base state.
-
         Returns
         -------
         engine : QMCEngine
             Engine reset to its base state.
-
         """
-        self.rng = check_random_state(self.rng_seed)
+        seed = copy.deepcopy(self.rng_seed)
+        self.rng = check_random_state(seed)
         self.num_generated = 0
         return self
 
     def fast_forward(self, n):
         """Fast-forward the sequence by `n` positions.
-
         Parameters
         ----------
         n : int
             Number of points to skip in the sequence.
-
         Returns
         -------
         engine : QMCEngine
             Engine reset to its base state.
-
         """
-        self.num_generated += n
+        self.random(n=n)
         return self
 
 
 class Halton(QMCEngine):
     """Halton sequence.
-
     Pseudo-random number generator that generalize the Van der Corput sequence
     for multiple dimensions. The Halton sequence uses the base-two Van der
     Corput sequence for the first dimension, base-three for its second and
     base-:math:`n` for its n-dimension.
-
     Parameters
     ----------
     d : int
@@ -859,14 +654,12 @@ class Halton(QMCEngine):
         seeded with `seed`.
         If `seed` is already a ``Generator`` instance then that instance is
         used.
-
     Notes
     -----
     The Halton sequence has severe striping artifacts for even modestly
     large dimensions. These can be ameliorated by scrambling. Scrambling
     also supports replication-based error estimates and extends
     applicabiltiy to unbounded integrands.
-
     References
     ----------
     .. [1] Halton, "On the efficiency of certain quasi-random sequences of
@@ -874,11 +667,9 @@ class Halton(QMCEngine):
        Mathematik, 1960.
     .. [2] A. B. Owen. "A randomized Halton algorithm in R",
        arXiv:1706.02808, 2017.
-
     Examples
     --------
     Generate samples from a low discrepancy sequence of Halton.
-
     >>> from scipy.stats import qmc
     >>> sampler = qmc.Halton(d=2, scramble=False)
     >>> sample = sampler.random(n=5)
@@ -888,15 +679,11 @@ class Halton(QMCEngine):
            [0.25      , 0.66666667],
            [0.75      , 0.11111111],
            [0.125     , 0.44444444]])
-
     Compute the quality of the sample using the discrepancy criterion.
-
     >>> qmc.discrepancy(sample)
     0.088893711419753
-
     If some wants to continue an existing design, extra points can be obtained
     by calling again `random`. Alternatively, you can skip some points like:
-
     >>> _ = sampler.fast_forward(5)
     >>> sample_continued = sampler.random(n=5)
     >>> sample_continued
@@ -905,9 +692,7 @@ class Halton(QMCEngine):
            [0.1875    , 0.14814815],
            [0.6875    , 0.48148148],
            [0.4375    , 0.81481481]])
-
     Finally, samples can be scaled to bounds.
-
     >>> l_bounds = [0, 2]
     >>> u_bounds = [10, 5]
     >>> qmc.scale(sample_continued, l_bounds, u_bounds)
@@ -916,7 +701,6 @@ class Halton(QMCEngine):
            [1.875     , 2.44444444],
            [6.875     , 3.44444444],
            [4.375     , 4.44444444]])
-
     """
 
     def __init__(self, d, scramble=True, seed=None):
@@ -927,116 +711,21 @@ class Halton(QMCEngine):
 
     def random(self, n=1):
         """Draw `n` in the half-open interval ``[0, 1)``.
-
         Parameters
         ----------
         n : int, optional
             Number of samples to generate in the parameter space. Default is 1.
-
         Returns
         -------
         sample : array_like (n, d)
             QMC sample.
-
         """
         # Generate a sample using a Van der Corput sequence per dimension.
         # important to have ``type(bdim) == int`` for performance reason
-        sample = [
-            van_der_corput(
-                n,
-                int(bdim),
-                self.num_generated,
-                scramble=self.scramble,
-                seed=copy.deepcopy(self.seed),
-            )
-            for bdim in self.base
-        ]
-
-        self.num_generated += n
-        return np.array(sample).T.reshape(n, self.d)
-
-
-class OrthogonalLatinHypercube(QMCEngine):
-    """Orthogonal array-based Latin hypercube sampling (OA-LHS).
-
-    In addition to the constraints from the Latin Hypercube, an orthogonal
-    array of size `n` is defined and only one point is allowed per subspace.
-
-    Parameters
-    ----------
-    d : int
-        Dimension of the parameter space.
-    seed : {None, int, `numpy.random.Generator`}, optional
-        If `seed` is None the `numpy.random.Generator` singleton is used.
-        If `seed` is an int, a new ``Generator`` instance is used,
-        seeded with `seed`.
-        If `seed` is already a ``Generator`` instance then that instance is
-        used.
-
-    References
-    ----------
-    .. [1] Art B. Owen, "Orthogonal arrays for computer experiments,
-       integration and visualization", Statistica Sinica, 1992.
-
-    Examples
-    --------
-    Generate samples from an orthogonal latin hypercube generator.
-
-    >>> from scipy.stats import qmc
-    >>> sampler = qmc.OrthogonalLatinHypercube(d=2, seed=12345)
-    >>> sample = sampler.random(n=5)
-    >>> sample
-    array([[0.0454672 , 0.58836057],
-           [0.55947309, 0.03734684],
-           [0.26335167, 0.98977623],
-           [0.87822191, 0.33455121],
-           [0.73525093, 0.64964914]])
-
-    Compute the quality of the sample using the discrepancy criterion.
-
-    >>> qmc.discrepancy(sample)
-    0.02050567122966518
-
-    Finally, samples can be scaled to bounds.
-
-    >>> l_bounds = [0, 2]
-    >>> u_bounds = [10, 5]
-    >>> qmc.scale(sample, l_bounds, u_bounds)
-    array([[0.45467204, 3.76508172],
-           [5.59473091, 2.11204051],
-           [2.63351668, 4.96932869],
-           [8.7822191 , 3.00365363],
-           [7.35250934, 3.94894743]])
-
-    """
-
-    def __init__(self, d, seed=None):
-        super().__init__(d=d, seed=seed)
-
-    def random(self, n=1):
-        """Draw `n` in the half-open interval ``[0, 1)``.
-
-        Parameters
-        ----------
-        n : int, optional
-            Number of samples to generate in the parameter space. Default is 1.
-
-        Returns
-        -------
-        sample : array_like (n, d)
-            OLHS sample.
-
-        """
-        sample = []
-        step = 1.0 / n
-
-        for _ in range(self.d):
-            # Enforce a unique point per grid
-            j = np.arange(n) * step
-            temp = j + self.rng.uniform(low=0, high=step, size=n)
-            self.rng.shuffle(temp)
-
-            sample.append(temp)
+        sample = [van_der_corput(n, int(bdim), self.num_generated,
+                                 scramble=self.scramble,
+                                 seed=copy.deepcopy(self.seed))
+                  for bdim in self.base]
 
         self.num_generated += n
         return np.array(sample).T.reshape(n, self.d)
@@ -1044,7 +733,6 @@ class OrthogonalLatinHypercube(QMCEngine):
 
 class LatinHypercube(QMCEngine):
     """Latin hypercube sampling (LHS).
-
     A Latin hypercube sample [1]_ generates :math:`n` points in
     :math:`[0,1)^{d}`. Each univariate marginal distribution is stratified,
     placing exactly one point in :math:`[j/n, (j+1)/n)` for
@@ -1053,7 +741,6 @@ class LatinHypercube(QMCEngine):
     LHS on :math:`n` points never has more variance than plain MC on
     :math:`n-1` points [3]_. There is a central limit theorem for LHS [4]_,
     but not necessarily for optimized LHS.
-
     Parameters
     ----------
     d : int
@@ -1066,7 +753,6 @@ class LatinHypercube(QMCEngine):
         seeded with `seed`.
         If `seed` is already a ``Generator`` instance then that instance is
         used.
-
     References
     ----------
     .. [1] Mckay et al., "A Comparison of Three Methods for Selecting Values
@@ -1078,83 +764,67 @@ class LatinHypercube(QMCEngine):
        SIAM Journal on Numerical Analysis 34, no. 5: 1884-1910, 1997
     .. [4]  Loh, W.-L. "On Latin hypercube sampling." The annals of statistics
        24, no. 5: 2058-2080, 1996.
-
     Examples
     --------
     Generate samples from a Latin hypercube generator.
-
     >>> from scipy.stats import qmc
-    >>> sampler = qmc.LatinHypercube(d=2, seed=12345)
+    >>> sampler = qmc.LatinHypercube(d=2)
     >>> sample = sampler.random(n=5)
     >>> sample
-    array([[0.5545328 , 0.13664833],
-           [0.64052691, 0.66474907],
-           [0.52177809, 0.53343721],
-           [0.08033825, 0.16265316],
-           [0.26544879, 0.21163943]])
-
+    array([[0.1545328 , 0.53664833],  # random
+           [0.84052691, 0.06474907],
+           [0.52177809, 0.93343721],
+           [0.68033825, 0.36265316],
+           [0.26544879, 0.61163943]])
     Compute the quality of the sample using the discrepancy criterion.
-
     >>> qmc.discrepancy(sample)
-    0.07254149611314986
-
+    0.019558034794794565  # random
     Finally, samples can be scaled to bounds.
-
     >>> l_bounds = [0, 2]
     >>> u_bounds = [10, 5]
     >>> qmc.scale(sample, l_bounds, u_bounds)
-    array([[5.54532796, 2.409945  ],
-           [6.40526909, 3.9942472 ],
-           [5.2177809 , 3.60031164],
-           [0.80338249, 2.48795949],
-           [2.65448791, 2.63491828]])
-
+    array([[1.54532796, 3.609945  ],  # random
+           [8.40526909, 2.1942472 ],
+           [5.2177809 , 4.80031164],
+           [6.80338249, 3.08795949],
+           [2.65448791, 3.83491828]])
     """
 
     def __init__(self, d, centered=False, seed=None):
         super().__init__(d=d, seed=seed)
         self.centered = centered
 
-        # This can be removed once numpy 1.16 is dropped
-        try:
-            self.rg_integers = self.rng.randint
-            self.rg_sample = self.rng.random_sample
-        except AttributeError:
-            self.rg_integers = self.rng.integers
-            self.rg_sample = self.rng.random
-
     def random(self, n=1):
         """Draw `n` in the half-open interval ``[0, 1)``.
-
         Parameters
         ----------
         n : int, optional
             Number of samples to generate in the parameter space. Default is 1.
-
         Returns
         -------
         sample : array_like (n, d)
             LHS sample.
-
         """
         if self.centered:
-            r = 0.5
+            samples = 0.5
         else:
-            r = self.rg_sample((n, self.d))
+            samples = self.rng.uniform(size=(n, self.d))
 
-        q = self.rg_integers(low=1, high=n, size=(n, self.d))
+        perms = np.tile(np.arange(1, n + 1), (self.d, 1))
+        for i in range(self.d):
+            self.rng.shuffle(perms[i, :])
+        perms = perms.T
 
+        samples = (perms - samples) / n
         self.num_generated += n
-        return 1.0 / n * (q - r)
+        return samples
 
     def reset(self):
         """Reset the engine to base state.
-
         Returns
         -------
         engine : LatinHypercube
             Engine reset to its base state.
-
         """
         self.__init__(d=self.d, centered=self.centered, seed=self.rng_seed)
         self.num_generated = 0
