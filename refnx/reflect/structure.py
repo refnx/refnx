@@ -1624,7 +1624,7 @@ def sld_profile(slabs, z=None, max_delta_z=None):
         npnts = 500
         if max_delta_z is not None:
             max_delta_z = float(max_delta_z)
-            npnts = int(np.ceil((zend - zstart) / max_delta_z))
+            npnts = int(np.ceil((zend - zstart) / max_delta_z)) + 1
 
         zed = np.linspace(zstart, zend, num=npnts)
     else:
