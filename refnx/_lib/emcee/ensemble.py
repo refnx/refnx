@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
 
+import warnings
+
 import numpy as np
+from itertools import count
 
 from .backends import Backend
 from .model import Model
@@ -216,7 +219,8 @@ class EnsembleSampler(object):
             initial_state (State or ndarray[nwalkers, ndim]): The initial
                 :class:`State` or positions of the walkers in the
                 parameter space.
-            iterations (Optional[int]): The number of steps to generate.
+            iterations (Optional[int or NoneType]): The number of steps to generate.
+                ``None`` generates an infinite stream (requires ``store=False``).
             tune (Optional[bool]): If ``True``, the parameters of some moves
                 will be automatically tuned.
             thin_by (Optional[int]): If you only want to store and yield every
@@ -243,6 +247,8 @@ class EnsembleSampler(object):
         :class:`State` of the ensemble.
 
         """
+        if iterations is None and store:
+            raise ValueError("'store' must be False when 'iterations' is None")
         # Interpret the input as a walker state and check the dimensions.
         state = State(initial_state, copy=True)
         if np.shape(state.coords) != (self.nwalkers, self.ndim):
@@ -304,7 +310,6 @@ class EnsembleSampler(object):
 
             yield_step = 1
             checkpoint_step = thin
-            iterations = int(iterations)
             if store:
                 nsaves = iterations // checkpoint_step
                 self.backend.grow(nsaves, state.blobs)
@@ -317,7 +322,6 @@ class EnsembleSampler(object):
 
             yield_step = thin_by
             checkpoint_step = thin_by
-            iterations = int(iterations)
             if store:
                 self.backend.grow(iterations, state.blobs)
 
@@ -331,10 +335,10 @@ class EnsembleSampler(object):
         )
 
         # Inject the progress bar
-        total = iterations * yield_step
+        total = None if iterations is None else iterations * yield_step
         with get_progress_bar(progress, total) as pbar:
             i = 0
-            for _ in range(iterations):
+            for _ in count() if iterations is None else range(iterations):
                 for _ in range(yield_step):
                     # Choose a random move
                     move = self._random.choice(self._moves, p=self._weights)
@@ -439,8 +443,24 @@ class EnsembleSampler(object):
                 dt = self.blobs_dtype
             else:
                 try:
-                    dt = np.atleast_1d(blob[0]).dtype
+                    with warnings.catch_warnings(record=True):
+                        warnings.simplefilter("error",
+                                              np.VisibleDeprecationWarning)
+                        try:
+                            dt = np.atleast_1d(blob[0]).dtype
+                        except Warning:
+                            deprecation_warning(
+                                "You have provided blobs that are not all the "
+                                "same shape or size. This means they must be "
+                                "placed in an object array. Numpy has "
+                                "deprecated this automatic detection, so "
+                                "please specify "
+                                "blobs_dtype=np.dtype('object')")
+                            dt = np.dtype("object")
                 except ValueError:
+                    dt = np.dtype("object")
+                if dt.kind in "US":
+                    # Strings need to be object arrays or we risk truncation
                     dt = np.dtype("object")
             blob = np.array(blob, dtype=dt)
 

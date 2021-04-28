@@ -8,13 +8,13 @@ from ..state import State
 __all__ = ["Backend"]
 
 
-class Backend():
+class Backend(object):
     """A simple default backend that stores the chain in memory"""
 
     def __init__(self, dtype=None):
         self.initialized = False
         if dtype is None:
-            dtype = float
+            dtype = np.float64
         self.dtype = dtype
 
     def reset(self, nwalkers, ndim):
@@ -166,7 +166,7 @@ class Backend():
 
         Args:
             ngrow (int): The number of steps to grow the chain.
-            blobs: The current list of blobs. This is used to compute the
+            blobs: The current array of blobs. This is used to compute the
                 dtype for the blobs array.
 
         """
@@ -177,7 +177,7 @@ class Backend():
         a = np.empty((i, self.nwalkers), dtype=self.dtype)
         self.log_prob = np.concatenate((self.log_prob, a), axis=0)
         if blobs is not None:
-            dt = np.dtype((blobs[0].dtype, blobs[0].shape))
+            dt = np.dtype((blobs.dtype, blobs.shape[1:]))
             a = np.empty((i, self.nwalkers), dtype=dt)
             if self.blobs is None:
                 self.blobs = a
