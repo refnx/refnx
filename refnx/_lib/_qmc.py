@@ -41,10 +41,12 @@ def check_random_state(seed=None):
         Random number generator.
     """
     if seed is None or isinstance(seed, (numbers.Integral, np.integer)):
-        if not hasattr(np.random, 'Generator'):
+        if not hasattr(np.random, "Generator"):
             # This can be removed once numpy 1.16 is dropped
-            msg = ("NumPy 1.16 doesn't have Generator, use either "
-                   "NumPy >= 1.17 or `seed=np.random.RandomState(seed)`")
+            msg = (
+                "NumPy 1.16 doesn't have Generator, use either "
+                "NumPy >= 1.17 or `seed=np.random.RandomState(seed)`"
+            )
             raise ValueError(msg)
         return np.random.default_rng(seed)
     elif isinstance(seed, np.random.RandomState):
@@ -53,8 +55,10 @@ def check_random_state(seed=None):
         # The two checks can be merged once numpy 1.16 is dropped
         return seed
     else:
-        raise ValueError('%r cannot be used to seed a numpy.random.Generator'
-                         ' instance' % seed)
+        raise ValueError(
+            "%r cannot be used to seed a numpy.random.Generator"
+            " instance" % seed
+        )
 
 
 def scale(sample, l_bounds, u_bounds, reverse=False):
@@ -106,26 +110,26 @@ def scale(sample, l_bounds, u_bounds, reverse=False):
 
     # Checking bounds and sample
     if not sample.ndim == 2:
-        raise ValueError('Sample is not a 2D array')
+        raise ValueError("Sample is not a 2D array")
 
     lower, upper = np.broadcast_arrays(lower, upper)
 
     if not np.all(lower < upper):
-        raise ValueError('Bounds are not consistent a < b')
+        raise ValueError("Bounds are not consistent a < b")
 
     if len(lower) != sample.shape[1]:
-        raise ValueError('Sample dimension is different than bounds dimension')
+        raise ValueError("Sample dimension is different than bounds dimension")
 
     if not reverse:
         # Checking that sample is within the hypercube
         if not (np.all(sample >= 0) and np.all(sample <= 1)):
-            raise ValueError('Sample is not in unit hypercube')
+            raise ValueError("Sample is not in unit hypercube")
 
         return sample * (upper - lower) + lower
     else:
         # Checking that sample is within the bounds
         if not (np.all(sample >= lower) and np.all(sample <= upper)):
-            raise ValueError('Sample is out of bounds')
+            raise ValueError("Sample is out of bounds")
 
         return (sample - lower) / (upper - lower)
 
@@ -415,8 +419,8 @@ def primes_from_2_to(n):
     sieve = np.ones(n // 3 + (n % 6 == 2), dtype=bool)
     for i in range(1, int(n ** 0.5) // 3 + 1):
         k = 3 * i + 1 | 1
-        sieve[k * k // 3::2 * k] = False
-        sieve[k * (k - 2 * (i & 1) + 4) // 3::2 * k] = False
+        sieve[k * k // 3 :: 2 * k] = False
+        sieve[k * (k - 2 * (i & 1) + 4) // 3 :: 2 * k] = False
     return np.r_[2, 3, ((3 * np.nonzero(sieve)[0][1:] + 1) | 1)]
 
 
@@ -431,23 +435,180 @@ def n_primes(n):
     primes : list(int)
         List of primes.
     """
-    primes = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59,
-              61, 67, 71, 73, 79, 83, 89, 97, 101, 103, 107, 109, 113, 127,
-              131, 137, 139, 149, 151, 157, 163, 167, 173, 179, 181, 191, 193,
-              197, 199, 211, 223, 227, 229, 233, 239, 241, 251, 257, 263, 269,
-              271, 277, 281, 283, 293, 307, 311, 313, 317, 331, 337, 347, 349,
-              353, 359, 367, 373, 379, 383, 389, 397, 401, 409, 419, 421, 431,
-              433, 439, 443, 449, 457, 461, 463, 467, 479, 487, 491, 499, 503,
-              509, 521, 523, 541, 547, 557, 563, 569, 571, 577, 587, 593, 599,
-              601, 607, 613, 617, 619, 631, 641, 643, 647, 653, 659, 661, 673,
-              677, 683, 691, 701, 709, 719, 727, 733, 739, 743, 751, 757, 761,
-              769, 773, 787, 797, 809, 811, 821, 823, 827, 829, 839, 853, 857,
-              859, 863, 877, 881, 883, 887, 907, 911, 919, 929, 937, 941, 947,
-              953, 967, 971, 977, 983, 991, 997][:n]
+    primes = [
+        2,
+        3,
+        5,
+        7,
+        11,
+        13,
+        17,
+        19,
+        23,
+        29,
+        31,
+        37,
+        41,
+        43,
+        47,
+        53,
+        59,
+        61,
+        67,
+        71,
+        73,
+        79,
+        83,
+        89,
+        97,
+        101,
+        103,
+        107,
+        109,
+        113,
+        127,
+        131,
+        137,
+        139,
+        149,
+        151,
+        157,
+        163,
+        167,
+        173,
+        179,
+        181,
+        191,
+        193,
+        197,
+        199,
+        211,
+        223,
+        227,
+        229,
+        233,
+        239,
+        241,
+        251,
+        257,
+        263,
+        269,
+        271,
+        277,
+        281,
+        283,
+        293,
+        307,
+        311,
+        313,
+        317,
+        331,
+        337,
+        347,
+        349,
+        353,
+        359,
+        367,
+        373,
+        379,
+        383,
+        389,
+        397,
+        401,
+        409,
+        419,
+        421,
+        431,
+        433,
+        439,
+        443,
+        449,
+        457,
+        461,
+        463,
+        467,
+        479,
+        487,
+        491,
+        499,
+        503,
+        509,
+        521,
+        523,
+        541,
+        547,
+        557,
+        563,
+        569,
+        571,
+        577,
+        587,
+        593,
+        599,
+        601,
+        607,
+        613,
+        617,
+        619,
+        631,
+        641,
+        643,
+        647,
+        653,
+        659,
+        661,
+        673,
+        677,
+        683,
+        691,
+        701,
+        709,
+        719,
+        727,
+        733,
+        739,
+        743,
+        751,
+        757,
+        761,
+        769,
+        773,
+        787,
+        797,
+        809,
+        811,
+        821,
+        823,
+        827,
+        829,
+        839,
+        853,
+        857,
+        859,
+        863,
+        877,
+        881,
+        883,
+        887,
+        907,
+        911,
+        919,
+        929,
+        937,
+        941,
+        947,
+        953,
+        967,
+        971,
+        977,
+        983,
+        991,
+        997,
+    ][:n]
 
     if len(primes) < n:
         big_number = 2000
-        while 'Not enough primes':
+        while "Not enough primes":
             primes = primes_from_2_to(big_number)[:n]
             if len(primes) == n:
                 break
@@ -586,7 +747,7 @@ class QMCEngine(ABC):
     @abstractmethod
     def __init__(self, d, seed=None):
         if not np.issubdtype(type(d), np.integer):
-            raise ValueError('d must be an integer value')
+            raise ValueError("d must be an integer value")
 
         self.d = d
         self.rng = check_random_state(seed)
@@ -722,10 +883,16 @@ class Halton(QMCEngine):
         """
         # Generate a sample using a Van der Corput sequence per dimension.
         # important to have ``type(bdim) == int`` for performance reason
-        sample = [van_der_corput(n, int(bdim), self.num_generated,
-                                 scramble=self.scramble,
-                                 seed=copy.deepcopy(self.seed))
-                  for bdim in self.base]
+        sample = [
+            van_der_corput(
+                n,
+                int(bdim),
+                self.num_generated,
+                scramble=self.scramble,
+                seed=copy.deepcopy(self.seed),
+            )
+            for bdim in self.base
+        ]
 
         self.num_generated += n
         return np.array(sample).T.reshape(n, self.d)
