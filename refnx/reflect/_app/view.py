@@ -2442,7 +2442,9 @@ class MySLDGraphs(FigureCanvas):
                 and data_object.model is not None
             ):
                 try:
-                    sld_profile = data_object.model.structure.sld_profile()
+                    sld_profile = data_object.model.structure.sld_profile(
+                        max_delta_z=1.0
+                    )
 
                     graph_properties.ax_sld_profile.set_data(
                         sld_profile[0], sld_profile[1]

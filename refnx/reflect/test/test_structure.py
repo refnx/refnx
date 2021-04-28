@@ -200,6 +200,11 @@ class TestStructure:
     def test_sld_profile(self):
         # check that it runs
         z, sld_profile = self.s.sld_profile()
+        assert_equal(np.size(z), 500)
+
+        z, sld_profile = self.s.sld_profile(max_delta_z=0.251)
+        delta_z = np.ediff1d(z)
+        assert delta_z[0] <= 0.25
 
         z, sld_profile = self.s.sld_profile(np.linspace(-100, 100, 100))
         assert_equal(min(z), -100)

@@ -333,3 +333,5 @@ in 0.1.13.
 - Make default Spline.dz.bounds.lb > 0, so that crashes aren't experienced
   when a dz is set to 0. GH549
 - Add the shgo keyword parameters 'n' and 'iters'.
+- Add max_delta_z to sld_profile so that the point density in an SLD plot
+  can be changed.
