@@ -58,7 +58,7 @@ class DataObject:
     @property
     def sld_profile(self):
         try:
-            return self.model.structure.sld_profile()
+            return self.model.structure.sld_profile(max_delta_z=1.0)
         except AttributeError:
             # if self.model is None, or if self.model doesn't have a structure
             # (e.g. MixedReflectModel)

@@ -578,7 +578,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         # saves an SLD curve as a text file
         datastore = self.treeModel.datastore
 
-        self.data_object_selector.setWindowTitle("Select fits to save")
+        self.data_object_selector.setWindowTitle("Select SLD plots to save")
         ok = self.data_object_selector.exec_()
         if not ok:
             return
