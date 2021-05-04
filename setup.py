@@ -12,7 +12,7 @@ import textwrap
 import subprocess
 
 try:
-    from Cython.Distutils import build_ext
+    from Cython.Build import cythonize
 except ImportError:
     USE_CYTHON = False
     warnings.warn(
@@ -427,8 +427,7 @@ def setup_package():
                 for mod in ext_modules:
                     mod.extra_compile_args.append('-mmacosx-version-min=10.9')
 
-            info['cmdclass'].update({'build_ext': build_ext})
-            info['ext_modules'] = ext_modules
+            info['ext_modules'] = cythonize(ext_modules)
             info['zip_safe'] = False
 
     try:
