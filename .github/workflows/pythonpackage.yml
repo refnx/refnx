@@ -234,7 +234,7 @@ jobs:
         python -m venv app
         app\Scripts\activate.bat
         python -m pip install setuptools==44
-        python -m pip install --upgrade --upgrade-strategy eager numpy cython periodictable corner matplotlib pyqt5 scipy tqdm
+        python -m pip install --upgrade --upgrade-strategy eager numpy cython periodictable corner matplotlib pyqt5 scipy
         cd dist
         python -m pip install --only-binary=refnx --no-index --find-links=. refnx
         cd ..

@@ -1329,6 +1329,10 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         # obtain optimisation parameters (maxiter, etc)
         kws = self.optimisation_parameters.parameters(alg)
 
+        if sys.stderr is None:
+            # for pythonw, sys.stderr = None
+            kws["verbose"] = False
+
         if methods[alg] != "MCMC":
             fitter = CurveFitter(objective)
             progress = ProgressCallback(self, objective=objective)
