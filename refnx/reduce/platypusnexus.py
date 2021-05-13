@@ -565,6 +565,10 @@ class PolarisedCatalogue(PlatypusCatalogue):
         d["anal_guide_current"] = h5d[
             "entry1/instrument/analyzer_flipper/guide_current"
         ][0]
+        d["analyzer_base"] = h5d["entry1/instrument/polarizer/anal_base"][0]
+        d["analyser_dist"] = h5d["entry1/instrument/polarizer/anal_distance"][0]
+        d["rotation"] = h5d["entry1/instrument/polarizer/rotation"][0]
+        d["z_trans"] = h5d["entry1/instrument/polarizer/z_translation"][0]
         return d
 
     def _check_sample_environments(self, d, h5d):
@@ -662,14 +666,8 @@ class SpinSet(object):
         R+- spin channel (if measured)
     uu      : refnx.reduce.PlatypusNexus
         R++ spin channel
-    dd_opts : refnx.reduce.ReductionOptions
-        Reduction options for R-- spin channel
-    du_opts : refnx.reduce.ReductionOptions
-        Reduction options for R-- spin channel
-    ud_opts : refnx.reduce.ReductionOptions
-        Reduction options for R-- spin channel
-    uu_opts : refnx.reduce.ReductionOptions
-        Reduction options for R-- spin channel
+    sc_opts : dict of refnx.reduce.ReductionOptions
+        Reduction options for each spin channel ("dd", "du", "ud", "uu)
 
     Notes
     -----
@@ -694,58 +692,75 @@ class SpinSet(object):
         self.reflect_klass = PlatypusNexus
         self.data_folder = data_folder
 
-        channels = [down_down, up_up, down_up, up_down]
+        self.channels = {
+            "dd" : None,
+            "du" : None,
+            "ud" : None,
+            "uu" : None,
+        }
 
         # initialise spin channels
         self.dd = self.du = self.ud = self.uu = None
-        self.dd_opts = self.du_opts = self.ud_opts = self.uu_opts = None
+
+        self.sc_opts = {
+            "dd" : None,
+            "du" : None,
+            "ud" : None,
+            "uu" : None,
+        }
+
         # initialise reduction options for each spin channel
         reduction_options = ReductionOptions(
             lo_wavelength=2.5,
             hi_wavelength=12.5,
             rebin_percent=3,
         )
+        # Put things into a dictionary to iterate over
+        input_params = {
+            "dd" : down_down,
+            "du" : down_up,
+            "ud" : up_down,
+            "uu" : up_up,
+        }
+        spin_chans = {
+            "dd" : SpinChannel.DOWN_DOWN,
+            "du" : SpinChannel.DOWN_UP,
+            "ud" : SpinChannel.UP_DOWN,
+            "uu" : SpinChannel.UP_UP,
+        }
 
-        for channel in channels:
-            if channel is None:
+        # Load the files and check spin channels and flipper config
+        for sc in ["dd", "du", "ud", "uu"]:
+            if sc is None:
                 continue
-            elif isinstance(channel, self.reflect_klass):
+            elif isinstance(sc, self.reflect_klass):
                 pass
             else:
                 try:
-                    channel = os.path.join(data_folder, channel)
+                    fpath = os.path.join(data_folder, input_params[sc])
                 except TypeError:
                     # original channel is not a string
                     pass
                 finally:
                     # let's hope it's an h5 file
-                    channel = self.reflect_klass(channel)
-
-            if channel.spin_state is SpinChannel.DOWN_DOWN:
-                self.dd = channel
-                self.dd_opts = reduction_options.copy()
-            elif channel.spin_state is SpinChannel.DOWN_UP:
-                self.du = channel
-                self.du_opts = reduction_options.copy()
-            elif channel.spin_state is SpinChannel.UP_DOWN:
-                self.ud = channel
-                self.ud_opts = reduction_options.copy()
-            elif channel.spin_state is SpinChannel.UP_UP:
-                self.uu = channel
-                self.uu_opts = reduction_options.copy()
-
-        assert (
-            self.dd is not None
-        ), "down_down spin channel is not SpinChannel.DOWN_DOWN!"
-        assert (
-            self.uu is not None
-        ), "up_up spin channel is not SpinChannel.UP_UP!"
+                    channel = self.reflect_klass(fpath)
+            if channel.spin_state is spin_chans[sc]:
+                self.channels[sc] = channel
+                self.sc_opts[sc] = reduction_options.copy()
+            else:
+                RuntimeError(
+                    f"Supplied spin channel {spin_chans[sc]} does not match flipper status"
+                )
+        self.dd = self.channels["dd"]
+        self.du = self.channels["du"]
+        self.ud = self.channels["ud"]
+        self.uu = self.channels["uu"]
 
     @property
     def spin_channels(self):
         return [
             s.spin_state.value if s is not None else None
-            for s in [self.dd, self.du, self.ud, self.uu]
+            for s in self.channels
         ]
 
     def process(self, reduction_options=None):
@@ -753,8 +768,7 @@ class SpinSet(object):
         Process beams in SpinSet.
 
         If reduction_options is None, the reduction options for each spin
-        channel are specified by SpinSet.dd_opts, SpinSet.du_opts,
-        SpinSet.ud_opts, and SpinSet.uu_opts, which are initialised to the
+        channel are specified by the dictionary of spin channel reduction options SpinSet.sc_opts which are initialised to the
         standard options when constructing the object. If `reduction_options`
         is not None, then SpinSet.process() will use these options for all
         spin channels.
@@ -769,10 +783,8 @@ class SpinSet(object):
             print(
                 "Applying the supplied reduction_options to all spin channels"
             )
-            self.dd_opts = reduction_options.copy()
-            self.du_opts = reduction_options.copy()
-            self.ud_opts = reduction_options.copy()
-            self.uu_opts = reduction_options.copy()
+            for sc in self.sc_opts:
+                sc = reduction_options.copy()
 
         # Check important reduction options are the same across all
         # spin channels to ensure the same wavelength axis
@@ -783,21 +795,11 @@ class SpinSet(object):
             "rebin_percent",
             "wavelength_bins",
         ]:
-            for option1 in [
-                self.dd_opts,
-                self.du_opts,
-                self.ud_opts,
-                self.uu_opts,
-            ]:
-                for option2 in [
-                    self.dd_opts,
-                    self.du_opts,
-                    self.ud_opts,
-                    self.uu_opts,
-                ]:
-                    if option1 is None:
+            for option1 in ["dd", "du", "ud", "uu"]:
+                for option2 in ["dd", "du", "ud", "uu"]:
+                    if self.sc_opts[option1] is None:
                         continue
-                    elif option2 is None:
+                    elif self.sc_opts[option2] is None:
                         continue
                     elif option1[key] != option2[key]:
                         raise ValueError(
@@ -808,14 +810,11 @@ class SpinSet(object):
                             "wavelength axis."
                         )
 
-        for opts, beam in zip(
-            [self.dd_opts, self.du_opts, self.ud_opts, self.uu_opts],
-            [self.dd, self.du, self.ud, self.uu],
-        ):
-            if beam is None:
+        for sc in ["dd", "du", "ud", "uu"]:
+            if self.channels[sc] is None:
                 continue
             else:
-                beam.process(**opts)
+                self.channels[sc].process(**self.sc_opts[sc])
 
     def plot_spectra(self, **kwargs):
         """
