@@ -565,8 +565,8 @@ class PolarisedCatalogue(PlatypusCatalogue):
         d["anal_guide_current"] = h5d[
             "entry1/instrument/analyzer_flipper/guide_current"
         ][0]
-        d["analyzer_base"] = h5d["entry1/instrument/polarizer/anal_base"][0]
-        d["analyser_dist"] = h5d["entry1/instrument/polarizer/anal_distance"][0]
+        d["anal_base"] = h5d["entry1/instrument/polarizer/anal_base"][0]
+        d["anal_dist"] = h5d["entry1/instrument/polarizer/anal_distance"][0]
         d["rotation"] = h5d["entry1/instrument/polarizer/rotation"][0]
         d["z_trans"] = h5d["entry1/instrument/polarizer/z_translation"][0]
         return d
@@ -693,20 +693,20 @@ class SpinSet(object):
         self.data_folder = data_folder
 
         self.channels = {
-            "dd" : None,
-            "du" : None,
-            "ud" : None,
-            "uu" : None,
+            "dd": None,
+            "du": None,
+            "ud": None,
+            "uu": None,
         }
 
         # initialise spin channels
         self.dd = self.du = self.ud = self.uu = None
 
         self.sc_opts = {
-            "dd" : None,
-            "du" : None,
-            "ud" : None,
-            "uu" : None,
+            "dd": None,
+            "du": None,
+            "ud": None,
+            "uu": None,
         }
 
         # initialise reduction options for each spin channel
@@ -717,16 +717,16 @@ class SpinSet(object):
         )
         # Put things into a dictionary to iterate over
         input_params = {
-            "dd" : down_down,
-            "du" : down_up,
-            "ud" : up_down,
-            "uu" : up_up,
+            "dd": down_down,
+            "du": down_up,
+            "ud": up_down,
+            "uu": up_up,
         }
         spin_chans = {
-            "dd" : SpinChannel.DOWN_DOWN,
-            "du" : SpinChannel.DOWN_UP,
-            "ud" : SpinChannel.UP_DOWN,
-            "uu" : SpinChannel.UP_UP,
+            "dd": SpinChannel.DOWN_DOWN,
+            "du": SpinChannel.DOWN_UP,
+            "ud": SpinChannel.UP_DOWN,
+            "uu": SpinChannel.UP_UP,
         }
 
         # Load the files and check spin channels and flipper config
@@ -801,7 +801,7 @@ class SpinSet(object):
                         continue
                     elif self.sc_opts[option2] is None:
                         continue
-                    elif option1[key] != option2[key]:
+                    elif self.sc_opts[option1] != self.sc_opts[option2]:
                         raise ValueError(
                             "Reduction options `lo_wavelength`, "
                             "`hi_wavelength`, `rebin_percent`, and "
