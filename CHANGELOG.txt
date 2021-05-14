@@ -336,3 +336,6 @@ in 0.1.13.
 - Add max_delta_z to sld_profile so that the point density in an SLD plot
   can be changed.
 - Don't use tqdm progress bar when fitting in GUI if sys.stderr is None.
+
+0.1.21
+------
