@@ -559,6 +559,204 @@ class PlatypusReduce(ReflectReduce):
         self.n_spectra = n_spectra
 
 
+class PolarisationEfficiency:
+    """
+    Describes the polarisation efficiency of a neutron scattering system
+    with the option of having a polariser, flipper-1, flipper-2, and
+    analyser in the system.
+
+    The dimensions of processed spectra are (n_spectra, TOF). Since 
+    we expect that our efficiencies are purely wavelength dependent
+    and not dependent upon the spectra within a Nexus file, we neglect the
+    n_spectra axis when dealing with polarisation efficiencies. 
+
+    Parameters
+    ----------
+    wavelength_axis :   numpy.array
+                    Array of wavelength bins to initialise the length of the
+                    (T,4,4) efficiency matrices.
+
+    config          :   str, "full", "PF"
+                    Indication of polariser/analyser configuration. If
+                    "full" is used, all polarising and flipping elements are
+                    taken into account. If "PA" is used, only the polariser
+                    and flipper are taken into account.
+    """
+
+    def __init__(self, wavelength_axis, config="full"):
+        # Define sizes matrices to be (4,4,N) where N is the number of
+        # wavelength bins
+        self.wl = wavelength_axis
+        self.pol_eff = np.empty(len(self.wl[0]))
+        self.ana_eff = np.empty(len(self.wl[0]))
+        self.flipper1_eff = np.empty(len(self.wl[0]))
+        self.flipper2_eff = np.empty(len(self.wl[0]))
+        self.polariser_matrix = np.zeros((len(self.wl[0]), 4, 4))
+        self.analyser_matrix = np.zeros((len(self.wl[0]), 4, 4))
+        self.flipper1_matrix = np.zeros((len(self.wl[0]), 4, 4))
+        self.flipper2_matrix = np.zeros((len(self.wl[0]), 4, 4))
+        self.combined_efficiency_matrix = np.empty((len(self.wl[0]), 4, 4))
+
+        print(np.shape(self.pol_eff))
+
+        # Initialise standard values
+        self.standard_efficiencies(config=config)
+
+    def standard_efficiencies(self, config):
+        """
+        Define PLATYPUS polarisation efficiency matrices as described in
+        the invited article in Rev. Sci. Instr. 83, 081301 (2012)
+        `Polarization "Down Under": The polarized time-of-flight neutron
+        reflectometer PLATYPUS' (https://doi.org/10.1063/1.4738579).
+
+        Parameters
+        ----------
+        config      :   str "full" or "PF"
+        """
+
+        # Define polariser efficiency as function of wavelength
+        p1a = 0.993
+        p1b = 0.57
+        p1c = 0.47
+        self.pol_eff = p1a - p1b * p1c ** (self.wl[0])
+
+        # Define analyser efficiency as function of wavelength
+        # This definition
+        p2a = 0.993
+        p2b = 0.57
+        p2c = 0.51
+        self.ana_eff = p2a - p2b * p2c ** (self.wl[0])
+
+        # Define flipper1 and flipper2 efficiencies
+        self.flipper1_eff = np.full(len(self.wl[0]), 0.003)
+        self.flipper2_eff = np.full(len(self.wl[0]), 0.003)
+
+        # In Thomas Saerbeck's Igor code, when only NSF channels are present
+        # the efficiency correction assumes a perfect analyser efficiency.
+        # This is the case if the analyser is left out of the beam,
+        # but if the analyser is still in the beam then this needs to be taken
+        # into account.
+
+        # Convert efficiencies to the form where:
+        # P = 0 implies total spin polarisation in the down direction
+        # P = 1/2 implies zero net spin polarisation
+        # P = 1 implies total spin polarisation in the up direction
+        P1 = (1 + self.pol_eff) / 2
+        P2 = (1 + self.ana_eff) / 2
+
+        F1 = self.flipper1_eff
+        F2 = self.flipper2_eff
+
+        # Check analyser position. If out of the beam, assume analyser and
+        # flipper2 efficiency is perfect.
+        if config is "PF":
+            F2 = np.full(len(self.wl[0]), 1.000)
+            P2 = np.full(len(self.wl[0]), 1.000)
+
+        # Fill a 4x4 matrix for the polariser, analyser, flipper1,
+        # and flipper2 efficiencies for each wavelength bin. Then
+        # multiply them together for the combined efficiency, and invert
+        # this to
+        """
+        self.polariser_matrix = np.array(
+            [
+                [(1 - P1), 0, P1, 0],
+                [0, (1 - P1), 0, P1],
+                [P1, 0, (1 - P1), 0],
+                [0, P1, 0, (1 - P1)],
+            ]
+        )
+        
+        self.analyser_matrix = np.array(
+            [
+                [(1 - P2), P2, 0, 0],
+                [P2, (1 - P2), 0, 0],
+                [0, 0, (1 - P2), P2],
+                [0, 0, P2, (1 - P2)],
+            ]
+        )
+
+        self.flipper1_matrix = np.array(
+            [
+                [1, 0, 0, 0],
+                [0, 1, 0, 0],
+                [F1, 0, (1 - F1), 0],
+                [0, F1, 0, (1 - F1)],
+            ]
+        )
+
+        self.flipper1_matrix = np.array(
+            [
+                [1, 0, 0, 0],
+                [0, 1, 0, 0],
+                [F1, 0, (1 - F1), 0],
+                [0, F1, 0, (1 - F1)],
+            ]
+        )
+
+        self.flipper2_matrix = np.array(
+            [
+                [1, 0, 0, 0],
+                [F2, (1 - F2), 0, 0],
+                [0, 0, 1, 0],
+                [0, 0, F2, (1 - F2)],
+            ]
+        )
+
+        # Matrix multiplication of efficiency matrices
+        self.combined_efficiency_matrix = (
+            self.flipper1_matrix
+            @ self.flipper2_matrix
+            @ self.polariser_matrix
+            @ self.analyser_matrix
+        )
+
+        """
+        for idx in range(len(self.wl[0])):
+            # Polariser efficiency matrix
+            self.polariser_matrix[idx, :, :] = [
+                [(1 - P1[idx]), 0, P1[idx], 0],
+                [0, (1 - P1[idx]), 0, P1[idx]],
+                [P1[idx], 0, (1 - P1[idx]), 0],
+                [0, P1[idx], 0, (1 - P1[idx])],
+            ]
+            # Analyser efficiency matrix
+            self.analyser_matrix[idx, :, :] = [
+                [(1 - P2[idx]), P2[idx], 0, 0],
+                [P2[idx], (1 - P2[idx]), 0, 0],
+                [0, 0, (1 - P2[idx]), P2[idx]],
+                [0, 0, P2[idx], (1 - P2[idx])],
+            ]
+            # Flipper 1 efficiency matrix
+            self.flipper1_matrix[idx, :, :] = [
+                [1, 0, 0, 0],
+                [0, 1, 0, 0],
+                [F1[idx], 0, (1 - F1[idx]), 0],
+                [0, F1[idx], 0, (1 - F1[idx])],
+            ]
+            # Flipper 2 efficiency matrix
+            self.flipper2_matrix[idx, :, :] = [
+                [1, 0, 0, 0],
+                [F2[idx], (1 - F2[idx]), 0, 0],
+                [0, 0, 1, 0],
+                [0, 0, F2[idx], (1 - F2[idx])],
+            ]
+            # Matrix multiplication of efficiency matrices
+            self.combined_efficiency_matrix[idx, :, :] = (
+                self.flipper1_matrix[idx, :, :]
+                @ self.flipper2_matrix[idx, :, :]
+                @ self.polariser_matrix[idx, :, :]
+                @ self.analyser_matrix[idx, :, :]
+            )
+
+    def custom_efficiencies(self, config):
+        """
+        Define custom efficiency function for polariser, analyser,
+        and flippers to reduce data. Recommended only for advanced users.
+        """
+        raise NotImplementedError
+
+
 class PolarisedReduce:
     """
     Reduces a direct beam and reflected beam spinset to produce
@@ -568,12 +766,33 @@ class PolarisedReduce:
 
     Parameters
     ----------
-    spin_set_direct :   refnx.reduce.SpinSet
-                    SpinSet object of direct beams in experiment
+    spin_set_direct :   refnx.reduce.SpinSet 
+        Direct beam runs from a PNR experiment. 
+    poleff          :   refnx.reduce.PolarisationEfficiency, optional
+        Polarisation efficiency matrices for the polarisation elements
+        used in the experiment. If None, reverts to default values.
+
+    Examples
+    --------
+
+    >>> from refnx.reduce import SpinSet, PolarisedReduce
+    >>> direct_beams = SpinSet(
+    ...     down_down = 'PLP0012793.nx.hdf',
+    ...     up_up = 'PLP0012795.nx.hdf',
+    ...     up_down = 'PLP0012794.nx.hdf',
+    ...     down_up = 'PLP0012796.nx.hdf'
+    ... )
+    >>> refl_beams = SpinSet(
+    ...     down_down = 'PLP0012785.nx.hdf',
+    ...     up_up = 'PLP0012787.nx.hdf',
+    ...     up_down = 'PLP0012786.nx.hdf',
+    ...     down_up = 'PLP0012788.nx.hdf'
+    ... )
+    >>> reducer = PolarisedReduce(direct_beams)
+    >>> datasets, reduced = reducer.reduce(refl_beams)
 
     """
-
-    def __init__(self, spin_set_direct):
+    def __init__(self, spin_set_direct, verbose=False):
         self.spin_set_direct = spin_set_direct
         self.reducers = {}
         for sc in ["dd", "du"]:
@@ -581,7 +800,7 @@ class PolarisedReduce:
         for sc in ["uu", "ud"]:
             self.reducers[sc] = PlatypusReduce(spin_set_direct.uu)
 
-    def reduce(self, spin_set_reflect, **reduction_options):
+    def reduce(self, spin_set_reflect, poleff=None, verbose=False, **reduction_options):
         # get a default set of reduction options
         options = ReductionOptions()
         options.update(reduction_options)
@@ -611,6 +830,7 @@ class PolarisedReduce:
             rb = getattr(spin_set_reflect, sc)
             if rb is not None:
                 db.reduce(rb, save=False, **rdo)
+                getattr(self.spin_set_direct, sc).process(**rdo)
                 reduced_successfully.append(sc)
             else:
                 # no reflected beam for a spin channel
@@ -625,15 +845,15 @@ class PolarisedReduce:
         # self.reducers["dd"].direct_beam.m_spec
         # self.reducers["dd"].direct_beam.m_spec_sd
         # THIS IS WHERE THE MAGIC HAPPENS
-        self.reducers = self.efficiency_correction(self.reducers)
+        self._efficiency_correction(poleff=poleff, verbose=verbose)
 
         # once the wavelength spectra have been corrected/overwritten then the
         # reflectivities need to be recalculated.
         # this doesn't correct the offspecular
         for sc in reduced_successfully:
             reducer = self.reducers[sc]
-            # TODO call something polcorr?
-            reducer.ycorr, reducer.ycorr_err = EP.EPdiv(
+            # Add ycorr to reducer from 
+            reducer.y_corr, reducer.y_corr_err = EP.EPdiv(
                 reducer.reflected_beam.m_spec_polcorr,
                 reducer.reflected_beam.m_spec_sd,
                 reducer.direct_beam.m_spec_polcorr,
@@ -655,7 +875,7 @@ class PolarisedReduce:
                     with open(fname, "wb") as f:
                         dataset.save(f)
 
-    def efficiency_correction(self, reducers):
+    def _efficiency_correction(self, poleff=None, verbose=False):
         """
         Applies efficiency correction to raw spectra. The relationship
         between raw spectra from each spin channel and the efficiency-corrected
@@ -663,8 +883,8 @@ class PolarisedReduce:
 
         I = F1 * F2 * P * A * R
 
-        where I and R are the raw spectra and corrected reflectivity, and
-        F1, F2, P, and A are the 4x4 efficiency matrices from the RF flippers,
+        where I and R are the (4,1) raw spectra and corrected reflectivity, and
+        F1, F2, P, and A are the (4,4) efficiency matrices from the RF flippers,
         polariser and analyser. For time-of-flight instruments, this matrix
         is also a function of neutron wavelength and we therefore need to
         solve this matrix equation for each wavelength bin used.
@@ -674,128 +894,115 @@ class PolarisedReduce:
         reducers : dict of PlatypusReduce objects
             reducer objects for each spin channel
 
+        poleff  :   optional, refnx.reduce.PolarisationEfficiency object
+            Describes the polarisation efficiency of PLATYPUS. If None, 
+            then will initialise the standard efficiency during the 
+            correction process. *advanced users only* 
+
         Returns
         ----------
-        corrected_reducers :
+        corrected_reducers  :   dict of PlatypusReduce objects
+            reducer objects for each spin channel that have spectra with
+            the suffix "_polcorr" that has been corrected for the
+            polarisation efficiency of the PLATYPUS setup.
         """
-
+    
         # If only one spin-flip channel is recorded, assume both
         # spin-flip channels are identical
-        if not hasattr(reducers["du"], "reflected_beam") and hasattr(
-            reducers["ud"], "reflected_beam"
+        if not hasattr(self.reducers["du"], "reflected_beam") and hasattr(
+            self.reducers["ud"], "reflected_beam"
         ):
-            reducers["du"].reflected_beam = reducers["ud"].reflected_beam
-        elif hasattr(reducers["du"], "reflected_beam") and not hasattr(
-            reducers["ud"], "reflected_beam"
+            self.reducers["du"].reflected_beam = self.reducers["ud"].reflected_beam
+        elif hasattr(self.reducers["du"], "reflected_beam") and not hasattr(
+            self.reducers["ud"], "reflected_beam"
         ):
-            reducers["ud"].reflected_beam = reducers["du"].reflected_beam
+            self.reducers["ud"].reflected_beam = self.reducers["du"].reflected_beam
 
-        # Define sizes matrices to be (4,4,N) where N is the number of
-        # wavelength bins
-        wl = reducers["dd"].reflected_beam.m_lambda[0]
-        pol_eff = np.empty(len(wl))
-        ana_eff = np.empty(len(wl))
-        self.polariser_matrix = np.zeros((4, 4, len(wl)))
-        self.analyser_matrix = np.zeros((4, 4, len(wl)))
-        self.flipper1_matrix = np.zeros((4, 4, len(wl)))
-        self.flipper2_matrix = np.zeros((4, 4, len(wl)))
-        self.combined_efficiency_matrix = np.empty((4, 4, len(wl)))
-        inverted_combined_efficiency_matrix = np.empty((4, 4, len(wl)))
-        corrected_db = np.empty((4, len(wl)))
-        corrected_rb = np.empty((4, len(wl)))
+        # Determine if the analyser was used in the measurement of NSF
+        # channel
+        # Check whether mode is POLANAL or just POL instead of this
+        if self.reducers["dd"].reflected_beam.cat.mode == "POL":
+            # if out of the beam, polarisation config only uses
+            # polariser and flipper1
+            config = "PF"
+        elif self.reducers["dd"].reflected_beam.cat.mode == "POLANAL":
+            # if in the beam, polarisation config uses all elements.
+            config = "full"
+
+        if poleff is None:
+            # Define polarisation efficiency of PLATYPUS
+            poleff = PolarisationEfficiency(
+                self.reducers["dd"].reflected_beam.m_lambda,
+                config=config
+            )
+
+        # Define sizes of corrected beam spectra (N, 4,T) and 
+        # inverted combined efficiency matrix to be (4,4,N) 
+        # where N is the number of wavelength bins
+        wl = self.reducers["dd"].reflected_beam.m_lambda
+
+        inverted_combined_efficiency_matrix = np.empty((len(wl[0]),4, 4))
+        corrected_db = np.empty((np.shape(wl)[0], np.shape(wl)[1], 4))
+        corrected_rb = np.empty((np.shape(wl)[0], np.shape(wl)[1], 4))
 
         # Create dict of direct and reflected beam spectra
         rb_spectra = {}
         db_spectra = {}
-        for sc in ["dd", "du", "ud", "uu"]:
+        for sc in self.reducers:
+            print(sc)
             try:
-                db_spectra[sc] = reducers[sc].direct_beam.m_spec
-                rb_spectra[sc] = reducers[sc].reflected_beam.m_spec
+                # Try assigning reflected beam spectra via reducer
+                rb_spectra[sc] = self.reducers[sc].reflected_beam.m_spec
+                db_spectra[sc] = self.reducers[sc].direct_beam.m_spec
+                if sc in ["du", "ud"]:
+                    # Need to get spin-flip direct beams from SpinSet
+                    db_spectra[sc] = getattr(self.spin_set_direct, f"{sc}.m_spec")
             except AttributeError:
                 # if spin channel not measured, assumed
                 # intensity values are zero
-                db_spectra[sc] = [np.zeros(np.shape(wl))]
-                rb_spectra[sc] = [np.zeros(np.shape(wl))]
-        # Define polariser efficiency as function of wavelength
-        p1a = 0.993
-        p1b = 0.57
-        p1c = 0.47
-        pol_eff = p1a - p1b * p1c ** (wl)
+                db_spectra[sc] = np.zeros(np.shape(wl))
+                rb_spectra[sc] = np.zeros(np.shape(wl))
 
-        # Define analyser efficiency as function of wavelength
-        # This definition
-        p2a = 0.993
-        p2b = 0.57
-        p2c = 0.51
-        ana_eff = p2a - p2b * p2c ** (wl)
+        # Invert and apply the refnx.reduce.PolarisationEfficiency parameters
+        # to the raw spectra to correct for efficiencies. 
+        if verbose:
+            print(np.shape(inverted_combined_efficiency_matrix))
 
-        # In Thomas Saerbeck's Igor code, when only NSF channels are present
-        # the efficiency correction assumes a perfect analyser efficiency.
-        # This is the case if the analyser is left out of the beam,
-        # but if the analyser is still in the beam then this needs to be taken
-        # into account.
-
-        # Convert efficiencies to the form where:
-        # P = 0 implies total spin polarisation in the down direction
-        # P = 1/2 implies zero net spin polarisation
-        # P = 1 implies total spin polarisation in the up direction
-        P1 = (1 + pol_eff) / 2
-        P2 = (1 + ana_eff) / 2
-
-        # Define flipper1 and flipper2 efficiencies
-        F1 = np.full(np.shape(wl), 0.003)
-        F2 = np.full(np.shape(wl), 0.003)
-
-        # Check analyser position. If out of the beam, assume analyser and
-        # flipper2 efficiency is perfect.
-        if reducers["dd"].reflected_beam.cat.z_trans < -10:
-            F2 = np.full(np.shape(wl), 0.000)
-            P2 = np.full(np.shape(wl), 1.000)
-
-        # Fill a 4x4 matrix for the polariser, analyser, flipper1,
-        # and flipper2 efficiencies for each wavelength bin. Then
-        # multiply them together for the combined efficiency, and invert
-        # this to
-        for idx in range(len(wl)):
-            # Polariser efficiency matrix
-            self.polariser_matrix[:, :, idx] = [
-                [(1 - P1[idx]), 0, P1[idx], 0],
-                [0, (1 - P1[idx]), 0, P1[idx]],
-                [P1[idx], 0, (1 - P1[idx]), 0],
-                [0, P1[idx], 0, (1 - P1[idx])],
+        inverted_combined_efficiency_matrix = np.linalg.inv(
+            poleff.combined_efficiency_matrix
+        )
+        # Create numpy arrays with shape=(T,S) to broadcast with array of
+        # efficiency matrices
+        raw_db = np.array(
+            [
+                db_spectra["uu"],
+                db_spectra["ud"],
+                db_spectra["du"],
+                db_spectra["dd"],
             ]
-            # Analyser efficiency matrix
-            self.analyser_matrix[:, :, idx] = [
-                [(1 - P2[idx]), P2[idx], 0, 0],
-                [P2[idx], (1 - P2[idx]), 0, 0],
-                [0, 0, (1 - P2[idx]), P2[idx]],
-                [0, 0, P2[idx], (1 - P2[idx])],
+        ).reshape(len(wl[0]), 4)
+
+        raw_rb = np.array(
+            [
+                rb_spectra["uu"],
+                rb_spectra["ud"],
+                rb_spectra["du"],
+                rb_spectra["dd"],
             ]
-            # Flipper 1 efficiency matrix
-            self.flipper1_matrix[:, :, idx] = [
-                [1, 0, 0, 0],
-                [0, 1, 0, 0],
-                [F1[idx], 0, (1 - F1[idx]), 0],
-                [0, F1[idx], 0, (1 - F1[idx])],
-            ]
-            # Flipper 2 efficiency matrix
-            self.flipper2_matrix[:, :, idx] = [
-                [1, 0, 0, 0],
-                [F2[idx], (1 - F2[idx]), 0, 0],
-                [0, 0, 1, 0],
-                [0, 0, F2[idx], (1 - F2[idx])],
-            ]
-            # Matrix multiplication of efficiency matrices
-            self.combined_efficiency_matrix[:, :, idx] = (
-                self.flipper1_matrix[:, :, idx]
-                @ self.flipper2_matrix[:, :, idx]
-                @ self.polariser_matrix[:, :, idx]
-                @ self.analyser_matrix[:, :, idx]
-            )
+        ).reshape(len(wl[0]), 4)
+
+        print(np.shape(inverted_combined_efficiency_matrix))
+        print(np.shape(raw_db))
+        corrected_db = inverted_combined_efficiency_matrix @ raw_db
+
+        corrected_rb = inverted_combined_efficiency_matrix @ raw_rb
+        """
+        for idx in range(len(wl[0,:])):
+            # vectorise this for loop for efficiency. Look at how inverses are broadcast
 
             # Invert product of efficiency matrices
             inverted_combined_efficiency_matrix[:, :, idx] = np.linalg.inv(
-                self.combined_efficiency_matrix[:, :, idx]
+                poleff.combined_efficiency_matrix[:, :, idx]
             )
 
             raw_db = np.array(
@@ -815,7 +1022,6 @@ class PolarisedReduce:
                     rb_spectra["dd"][0, idx],
                 ]
             )
-
             # Apply inverse efficiency matrix (4,4,N) to (4,N)
             # matrix of direct and reflected beam curves
             # TODO: reducer doesn't hold direct beam SF channels. Need
@@ -825,25 +1031,24 @@ class PolarisedReduce:
             # corrected_db[:,idx] = (
             #     inverted_combined_efficiency_matrix[:,:,idx] @ raw_db
             # )
-
             corrected_rb[:, idx] = (
                 inverted_combined_efficiency_matrix[:, :, idx] @ raw_rb
             )
-
+        """
         # Assign corrected spectra to m_spec_polcorr
         # TODO handle uncertainties as well!
         for idx, sc in enumerate(["dd", "du", "ud", "uu"]):
             try:
-                reducers[sc].direct_beam.m_spec_polcorr = corrected_db[
+                self.reducers[sc].direct_beam.m_spec_polcorr = corrected_db[
                     idx, :
                 ].reshape(1, -1)
-                reducers[sc].reflected_beam.m_spec_polcorr = corrected_rb[
+                self.reducers[sc].reflected_beam.m_spec_polcorr = corrected_rb[
                     idx, :
                 ].reshape(1, -1)
             except AttributeError:
+                # Spin channel not used
                 continue
 
-        return reducers
 
 
 class SpatzReduce(ReflectReduce):

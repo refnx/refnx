@@ -43,20 +43,23 @@ class TestSpinSet(object):
             warnings.simplefilter("ignore", RuntimeWarning)
 
             self.spinset = SpinSet(
-                down_down=pjoin(self.pth, "PLP0008864.nx.hdf"),
-                up_up=pjoin(self.pth, "PLP0008861.nx.hdf"),
-                down_up=pjoin(self.pth, "PLP0008863.nx.hdf"),
-                up_down=pjoin(self.pth, "PLP0008862.nx.hdf"),
+                down_down="PLP0008864.nx.hdf",
+                up_up="PLP0008861.nx.hdf",
+                down_up="PLP0008863.nx.hdf",
+                up_down="PLP0008862.nx.hdf",
+                data_folder=self.pth,
             )
 
             self.spinset_3 = SpinSet(
-                down_down=pjoin(self.pth, "PLP0008864.nx.hdf"),
-                up_up=pjoin(self.pth, "PLP0008861.nx.hdf"),
-                down_up=pjoin(self.pth, "PLP0008863.nx.hdf"),
+                down_down="PLP0008864.nx.hdf",
+                up_up="PLP0008861.nx.hdf",
+                down_up="PLP0008863.nx.hdf",
+                data_folder=self.pth,
             )
             self.spinset_2 = SpinSet(
-                down_down=pjoin(self.pth, "PLP0008864.nx.hdf"),
-                up_up=pjoin(self.pth, "PLP0008861.nx.hdf"),
+                down_down="PLP0008864.nx.hdf",
+                up_up="PLP0008861.nx.hdf",
+                data_folder=self.pth,
             )
 
         self.cwd = os.getcwd()
@@ -100,21 +103,8 @@ class TestSpinSet(object):
             rebin_percent=3,
         )
         for spin_set in [self.spinset, self.spinset_3, self.spinset_2]:
-            for reduction_opt, spin_channel in zip(
-                [
-                    spin_set.dd_opts,
-                    spin_set.du_opts,
-                    spin_set.ud_opts,
-                    spin_set.uu_opts,
-                ],
-                [
-                    spin_set.dd,
-                    spin_set.du,
-                    spin_set.ud,
-                    spin_set.uu,
-                ],
-            ):
-                if spin_channel is None:
+            for sc in ["dd", "du", "ud", "uu"]:
+                if spin_set.channels[sc] is None:
                     continue
                 else:
                     for option in [
@@ -122,11 +112,11 @@ class TestSpinSet(object):
                         "hi_wavelength",
                         "rebin_percent",
                     ]:
-                        reduction_opt.update({option: 5})
+                        spin_set.sc_opts[sc].update({option: 5})
                         with pytest.raises(ValueError):
                             spin_set.process()
                         # Reset dd_opts
-                        reduction_opt.update(standard_opts)
+                        spin_set.sc_opts[sc].update(standard_opts)
 
 
 class TestPlatypusNexus(object):

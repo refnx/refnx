@@ -633,7 +633,7 @@ class PolarisedCatalogue(PlatypusCatalogue):
 
 class SpinChannel(Enum):
     """
-    Describes the spin state of a polarised neutron beam.
+    Describes the incident and scattered spin state of a polarised neutron beam.
     """
 
     UP_UP = (1, 1)
@@ -715,7 +715,7 @@ class SpinSet(object):
             hi_wavelength=12.5,
             rebin_percent=3,
         )
-        # Put things into a dictionary to iterate over
+        # Put inputs into a dictionary to iterate over
         input_params = {
             "dd": down_down,
             "du": down_up,
@@ -731,19 +731,17 @@ class SpinSet(object):
 
         # Load the files and check spin channels and flipper config
         for sc in ["dd", "du", "ud", "uu"]:
-            if sc is None:
+            if input_params[sc] is None:
+                # Spin channel not measured
                 continue
-            elif isinstance(sc, self.reflect_klass):
-                pass
+            elif isinstance(input_params[sc], self.reflect_klass):
+                # Spin channel inputted as PlatypusNexus object
+                channel = input_params[sc]
             else:
-                try:
-                    fpath = os.path.join(data_folder, input_params[sc])
-                except TypeError:
-                    # original channel is not a string
-                    pass
-                finally:
-                    # let's hope it's an h5 file
-                    channel = self.reflect_klass(fpath)
+                print(input_params[sc])
+                # Spin channel inputted as file string
+                fpath = os.path.join(data_folder, input_params[sc])
+                channel = self.reflect_klass(fpath)
             if channel.spin_state is spin_chans[sc]:
                 self.channels[sc] = channel
                 self.sc_opts[sc] = reduction_options.copy()
@@ -759,8 +757,7 @@ class SpinSet(object):
     @property
     def spin_channels(self):
         return [
-            s.spin_state.value if s is not None else None
-            for s in self.channels
+            self.channels[sc].spin_state.value if self.channels[sc] is not None else None for sc in self.channels
         ]
 
     def process(self, reduction_options=None):

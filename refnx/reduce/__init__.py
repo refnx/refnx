@@ -4,6 +4,7 @@ from refnx.reduce.reduce import (
     PolarisedReduce,
     reduce_stitch,
     AutoReducer,
+    PolarisationEfficiency,
 )
 from refnx.reduce.platypusnexus import (
     catalogue,

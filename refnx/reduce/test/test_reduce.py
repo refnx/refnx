@@ -218,3 +218,61 @@ class TestSpatzReduce:
 
         # try writing offspecular data
         a.write_offspecular("offspec.xml", 0)
+
+
+class TestPolarisedReduce:
+    @pytest.mark.usefixtures("no_data_directory")
+    @pytest.fixture(autouse=True)
+    def setup_method(self, tmpdir, data_directory):
+        self.pth = pjoin(data_directory, "reduce", "PNR_files")
+
+        self.cwd = os.getcwd()
+        self.tmpdir = tmpdir.strpath
+        os.chdir(self.tmpdir)
+        return 0
+
+    def teardown_method(self):
+        os.chdir(self.cwd)
+
+    def test_polarised_reduction_method(self):
+        # a quick smoke test to check that the reduction can occur
+        # warnings filter for pixel size
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", RuntimeWarning)
+
+            a = PlatypusReduce("PLP0012787.nx.hdf", data_folder=self.pth)
+
+            # try reduction with the reduce method
+            a.reduce(
+                "PLP0000708.nx.hdf",
+                data_folder=self.pth,
+                rebin_percent=4,
+            )
+
+            # try reduction with the __call__ method
+            a(
+                "PLP0000708.nx.hdf",
+                data_folder=self.pth,
+                rebin_percent=4,
+            )
+
+            # this should also have saved a couple of files in the current
+            # directory
+            assert os.path.isfile("./PLP0000708_0.dat")
+            assert os.path.isfile("./PLP0000708_0.xml")
+
+            # try writing offspecular data
+            a.write_offspecular("offspec.xml", 0)
+
+    def test_free_liquids(self):
+        # smoke test for free liquids
+        a0 = PlatypusReduce("PLP0038418.nx.hdf", data_folder=self.pth)
+        a1 = PlatypusReduce("PLP0038417.nx.hdf", data_folder=self.pth)
+
+        # try reduction with the reduce method
+        d0, r0 = a0.reduce(
+            "PLP0038420.nx.hdf", data_folder=self.pth, rebin_percent=4
+        )
+        d1, r1 = a1.reduce(
+            "PLP0038421.nx.hdf", data_folder=self.pth, rebin_percent=4
+        )
