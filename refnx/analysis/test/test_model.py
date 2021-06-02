@@ -24,6 +24,15 @@ def line3(x, params, x_err=None):
     pass
 
 
+def line_ND(x, params):
+    # for testing that Model can return two arrays not one.
+    p_arr = np.array(params)
+    y0 = p_arr[0] + x[0] * p_arr[1]
+    y1 = p_arr[0] + x[1] * p_arr[1]
+    print(y0.shape, y1.shape)
+    return np.vstack((y0, y1))
+
+
 class TestModel:
     def setup_method(self):
         pass
@@ -83,3 +92,29 @@ class TestModel:
         b = Parameter(2.2)
         p = Parameters([a, b])
         Line(p)
+
+    def test_ND_model(self):
+        # Check that ND data can be passed to/from a model
+        # Here we see if x can be multidimensional, and that y can return
+        # multidimensional data.
+        # It should be up to the user to ensure that the Data/Model/Objective
+        # stack is returning something consistent with each other.
+        # e.g. the Model output should return something with the same shape as
+        # Data.y.
+        rng = np.random.default_rng()
+        x = rng.uniform(size=100).reshape(2, 50)
+
+        c = Parameter(1.0, name="c")
+        m = Parameter(2.0, name="m")
+        p = c | m
+
+        # check that the function is returning what it's supposed to before
+        # we test Model
+        y0 = line(x[0], p)
+        y1 = line(x[1], p)
+        desired = np.vstack((y0, y1))
+        assert_allclose(line_ND(x, p), desired)
+
+        fit_model = Model(p, fitfunc=line_ND)
+        y = fit_model(x)
+        assert_allclose(y, desired)
