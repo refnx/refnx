@@ -272,7 +272,7 @@ class TestReflectDataset:
         assert_equal(len(b), len(a))
 
 
-class TestData1D():
+class TestData1D:
     @pytest.fixture(autouse=True)
     def setup_method(self, tmpdir):
         self.pth = os.path.dirname(os.path.abspath(__file__))
