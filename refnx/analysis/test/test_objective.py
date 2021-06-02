@@ -562,4 +562,4 @@ class TestObjective:
         objective.logl()
         objective.logpost()
         covar = objective.covar()
-        assert covar.shape == (2, 3)
+        assert covar.shape == (2, 2)
