@@ -360,6 +360,13 @@ class Objective(BaseObjective):
         return p
 
     def _data_transform(self, model=None):
+        """
+        Returns
+        -------
+        y, y_err, model: tuple of np.ndarray
+            The y data, its uncertainties, and the model, all put through the
+             transform.
+        """
         x = self.data.x
         y = self.data.y
 
@@ -426,7 +433,7 @@ class Objective(BaseObjective):
         else:
             s_n = y_err
 
-        return np.squeeze((y - model) / s_n)
+        return (y - model) / s_n
 
     def chisqr(self, pvals=None):
         """
@@ -446,7 +453,7 @@ class Objective(BaseObjective):
         # TODO reduced chisqr? include z-scores for parameters? DOF?
         self.setp(pvals)
         res = self.residuals(None)
-        return np.dot(res, res)
+        return np.sum(res * res)
 
     @property
     def parameters(self):
