@@ -49,6 +49,14 @@ def logp_extra(model, data):
     return 1.0
 
 
+def line_ND(x, params):
+    # a fit function for testing multidimensionality
+    p_arr = np.array(params)
+    y0 = p_arr[0] + x[:, 0] * p_arr[1]
+    y1 = p_arr[0] + x[:, 1] * p_arr[1]
+    return np.c_[y0, y1]
+
+
 class TestObjective:
     def setup_method(self):
         # Choose the "true" parameters.
@@ -530,3 +538,28 @@ class TestObjective:
             p = Parameter(1, bounds=PDF(stats.norm(1, 10)))
             d = _to_pymc3_distribution("e", p)
             assert_almost_equal(d.distribution.logp(2).eval(), p.logp(2))
+
+    def test_multidimensionality(self):
+        # Check that ND data can be used with an objective/model/data
+        # (or at least it doesn't stand in the way)
+        rng = np.random.default_rng()
+        x = rng.uniform(size=100).reshape(50, 2)
+
+        desired = line_ND(x, self.p)
+        assert desired.shape == (50, 2)
+        data = Data1D((x, desired))
+
+        model = Model(self.p, fitfunc=line_ND)
+        y = model(x)
+        assert_allclose(y, desired)
+
+        objective = Objective(model, data)
+        assert_allclose(objective.chisqr(), 0)
+        assert_allclose(objective.generative(), desired)
+        assert_allclose(objective.residuals(), 0)
+        assert objective.residuals().shape == (50, 2)
+
+        objective.logl()
+        objective.logpost()
+        covar = objective.covar()
+        assert covar.shape == (2, 3)

@@ -29,7 +29,6 @@ def line_ND(x, params):
     p_arr = np.array(params)
     y0 = p_arr[0] + x[0] * p_arr[1]
     y1 = p_arr[0] + x[1] * p_arr[1]
-    print(y0.shape, y1.shape)
     return np.vstack((y0, y1))
 
 
