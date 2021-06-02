@@ -339,3 +339,5 @@ in 0.1.13.
 
 0.1.21
 ------
+- check that refnx/analysis doesn't get in the way of handling
+  multidimensional data.
