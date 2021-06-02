@@ -117,30 +117,31 @@ class Data1D:
         """
         np.ndarray : x data (possibly masked)
         """
-        if self._x.size > 0:
+        if self._mask is not None and self._x.size:
             return self._x[self.mask]
-        else:
-            return self._x
+        return self._x
 
     @property
     def y(self):
         """
         np.ndarray : y data (possibly masked)
         """
-        if self._y.size > 0:
+        if self._mask is not None and self._y.size:
             return self._y[self.mask]
-        else:
-            return self._y
+        return self._y
 
     @property
     def x_err(self):
         """
         np.ndarray : x uncertainty (possibly masked)
         """
-        if self._x_err is not None:
+        if (
+            self._x_err is not None
+            and self._mask is not None
+            and self._x_err.size
+        ):
             return self._x_err[self.mask]
-        else:
-            return self._x_err
+        return self._x_err
 
     @x_err.setter
     def x_err(self, x_err):
@@ -154,10 +155,13 @@ class Data1D:
         """
         uncertainties on the y data (possibly masked)
         """
-        if self._y_err is not None:
+        if (
+            self._y_err is not None
+            and self._mask is not None
+            and self._y_err.size
+        ):
             return self._y_err[self.mask]
-        else:
-            return self._y_err
+        return self._y_err
 
     @property
     def mask(self):

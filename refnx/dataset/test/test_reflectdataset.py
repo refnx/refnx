@@ -146,7 +146,7 @@ class TestReflectDataset:
         y2 = 2 * x2 + 2
         data.add_data((x2, y2), requires_splice=True)
 
-        assert_(len(data) == 13)
+        assert len(data) == 13
 
         # 3 columns
         data = Data1D()
@@ -161,7 +161,7 @@ class TestReflectDataset:
         e2 = np.ones_like(x2)
         data.add_data((x2, y2, e2), requires_splice=True)
 
-        assert_(len(data) == 13)
+        assert len(data) == 13
 
         # 4 columns
         data = Data1D()
@@ -179,7 +179,7 @@ class TestReflectDataset:
 
         data.add_data((x2, y2, e2, dx2), requires_splice=True)
 
-        assert_(len(data) == 13)
+        assert len(data) == 13
 
         # test addition of datasets.
         x1 = np.linspace(0, 10, 5)
@@ -195,11 +195,11 @@ class TestReflectDataset:
         data2 = Data1D((x2, y2, e2, dx2))
 
         data3 = data + data2
-        assert_(len(data3) == 13)
+        assert len(data3) == 13
 
         # test iadd of datasets
         data += data2
-        assert_(len(data) == 13)
+        assert len(data) == 13
 
     def test_add_non_overlapping(self):
         # check that splicing of non-overlapping datasets raises ValueError
@@ -270,3 +270,59 @@ class TestReflectDataset:
         b = eval(repr(a))
         assert_equal(len(b), len(a))
         assert_equal(len(b), len(a))
+
+
+class TestData1D():
+    @pytest.fixture(autouse=True)
+    def setup_method(self, tmpdir):
+        self.pth = os.path.dirname(os.path.abspath(__file__))
+        self.cwd = os.getcwd()
+        self.tmpdir = tmpdir.strpath
+        os.chdir(self.tmpdir)
+
+    def teardown_method(self):
+        os.chdir(self.cwd)
+
+    def test_2D_data(self):
+        # despite the class being called Data1D it should be possible to
+        # store ND data in it
+
+        # try with multidimensional x data
+        x = np.linspace(0.01, 0.5, 100).reshape(50, 2)
+        y = np.arange(50, dtype=float)
+
+        data = Data1D((x, y))
+        assert len(data) == 50
+
+        assert_equal(data.x, x)
+        assert_equal(data.y, y)
+
+        mask = np.ones_like(y, bool)
+        mask[1] = False
+        data.mask = mask
+        assert len(data) == 49
+        assert_equal(data.y, np.r_[y[0], y[2:]])
+        assert_equal(data.x, np.concatenate((x[0][np.newaxis, :], x[2:])))
+
+        # try with storing multiple channels for y as well
+        # this might happen with something like ellipsometry data where you'd
+        # have (delta, xsi) as the y data, and (lambda, aoi) as the x data
+        # NOTE THAT MASKING WON'T WORK, FOR ND YDATA. This is because the class
+        # is using fancy indexing with booleans to remove entries that are
+        # unwanted. Could mark as NaN instead?
+        x = np.linspace(0.01, 0.5, 50).reshape(50)
+        y = np.arange(100, dtype=float).reshape(50, 2)
+
+        data = Data1D((x, y))
+        assert len(data) == 100
+
+        assert_equal(data.x, x)
+        assert_equal(data.y, y)
+
+        x = np.linspace(0.01, 0.5, 100).reshape(50, 2)
+
+        data = Data1D((x, y))
+        assert len(data) == 100
+
+        assert_equal(data.x, x)
+        assert_equal(data.y, y)
