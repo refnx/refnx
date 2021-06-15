@@ -86,7 +86,7 @@ class TestPlatypusReduce:
             assert os.path.isfile("./PLP0000708_0.xml")
 
             # can we read the file
-            b = ReflectDataset("./PLP0000708_0.dat")
+            ReflectDataset("./PLP0000708_0.dat")
 
             # try writing offspecular data
             a.write_offspecular("offspec.xml", 0)
