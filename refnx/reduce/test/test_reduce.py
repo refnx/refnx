@@ -13,6 +13,7 @@ from refnx.reduce import (
     ReductionOptions,
     SpatzReduce,
 )
+from refnx.dataset import ReflectDataset
 
 
 class TestPlatypusReduce:
@@ -83,6 +84,9 @@ class TestPlatypusReduce:
             # directory
             assert os.path.isfile("./PLP0000708_0.dat")
             assert os.path.isfile("./PLP0000708_0.xml")
+
+            # can we read the file
+            b = ReflectDataset("./PLP0000708_0.dat")
 
             # try writing offspecular data
             a.write_offspecular("offspec.xml", 0)
