@@ -399,7 +399,7 @@ class Data1D:
         np.savetxt(
             f,
             np.column_stack((self._x, self._y, self._y_err, self._x_err)),
-            header=_header
+            header=_header,
         )
 
     def load(self, f):

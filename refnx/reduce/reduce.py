@@ -384,7 +384,9 @@ class ReflectReduce:
 
     def _create_metadata_header(self):
         header = []
-        header.append(f"reflected_beam_number: {self.reflected_beam.datafilename}")
+        header.append(
+            f"reflected_beam_number: {self.reflected_beam.datafilename}"
+        )
         header.append(f"direct_run_number: {self.direct_beam.datafilename}")
         header.append(f"samplename: {self.reflected_beam.cat.sample_name}")
 
@@ -399,8 +401,9 @@ class ReflectReduce:
         header.append(f"lo_wavelength: {rdo['lo_wavelength']}")
         header.append(f"hi_wavelength: {rdo['hi_wavelength']}")
 
-        header.append("Warning: the format of this header may change at any"
-                      " time. Do not rely on it staying constant"
+        header.append(
+            "Warning: the format of this header may change at any"
+            " time. Do not rely on it staying constant"
         )
         header.append("Q (1/A), R, dR (sigma), dQ (1/A, FWHM)")
         return "\n".join(header)
