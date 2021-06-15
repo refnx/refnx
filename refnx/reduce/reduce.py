@@ -280,6 +280,8 @@ class ReflectReduce:
         datafilename = self.reflected_beam.datafilename
         datafilename = os.path.basename(datafilename.split(".nx.hdf")[0])
 
+        header = self._create_metadata_header()
+
         for i in range(self.n_spectra):
             data_tup = self.data(scanpoint=i)
             datasets.append(ReflectDataset(data_tup))
@@ -289,7 +291,7 @@ class ReflectReduce:
                 fname = f"{datafilename}_{i}.dat"
                 fnames.append(fname)
                 with open(fname, "wb") as f:
-                    dataset.save(f)
+                    dataset.save(f, header=header)
 
                 fname = f"{datafilename}_{i}.xml"
                 with open(fname, "wb") as f:
@@ -379,6 +381,32 @@ class ReflectReduce:
 
             g.write(thefile)
             g.truncate()
+
+    def _create_metadata_header(self):
+        header = []
+        header.append(
+            f"reflected_beam_number: {self.reflected_beam.datafilename}"
+        )
+        header.append(f"direct_run_number: {self.direct_beam.datafilename}")
+        header.append(f"samplename: {self.reflected_beam.cat.sample_name}")
+
+        ps_dct = self.reflected_beam.processed_spectrum
+        header.append(f"beam_centre: {ps_dct['m_beampos']}")
+        header.append(f"beam_sd: {ps_dct['m_beampos_sd']}")
+        header.append(f"lopx: {ps_dct['hipx']}")
+        header.append(f"hipx: {ps_dct['lopx']}")
+        rdo = ps_dct["reduction_options"]
+        header.append(f"rebin_percent: {rdo['rebin_percent']}")
+        header.append(f"background: {rdo['background']}")
+        header.append(f"lo_wavelength: {rdo['lo_wavelength']}")
+        header.append(f"hi_wavelength: {rdo['hi_wavelength']}")
+
+        header.append(
+            "Warning: the format of this header may change at any"
+            " time. Do not rely on it staying constant"
+        )
+        header.append("Q (1/A), R, dR (sigma), dQ (1/A, FWHM)")
+        return "\n".join(header)
 
 
 class PlatypusReduce(ReflectReduce):

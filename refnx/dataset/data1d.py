@@ -379,7 +379,7 @@ class Data1D:
         if self.x_err is not None:
             self._x_err = self.x_err[sorted]
 
-    def save(self, f):
+    def save(self, f, header=None):
         """
         Saves the data to file. Saves the data as 4 column ASCII.
 
@@ -389,8 +389,17 @@ class Data1D:
             File to save the dataset to.
 
         """
+        if header is not None:
+            _header = header
+        elif len(self.metadata):
+            _header = str(self.metadata)
+        else:
+            _header = ""
+
         np.savetxt(
-            f, np.column_stack((self._x, self._y, self._y_err, self._x_err))
+            f,
+            np.column_stack((self._x, self._y, self._y_err, self._x_err)),
+            header=_header,
         )
 
     def load(self, f):
