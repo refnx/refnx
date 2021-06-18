@@ -757,7 +757,10 @@ class SpinSet(object):
     @property
     def spin_channels(self):
         return [
-            self.channels[sc].spin_state.value if self.channels[sc] is not None else None for sc in self.channels
+            self.channels[sc].spin_state.value
+            if self.channels[sc] is not None
+            else None
+            for sc in self.channels
         ]
 
     def process(self, reduction_options=None):
