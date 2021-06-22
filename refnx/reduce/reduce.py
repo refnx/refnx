@@ -794,7 +794,7 @@ class PolarisedReduce:
         # self.reducers["dd"].direct_beam.m_spec
         # self.reducers["dd"].direct_beam.m_spec_sd
         # THIS IS WHERE THE MAGIC HAPPENS
-        self._efficiency_correction(poleff=poleff, verbose=verbose)
+        self._efficiency_correction(poleff=poleff)
 
         # once the wavelength spectra have been corrected/overwritten then the
         # reflectivities need to be recalculated.
@@ -824,7 +824,7 @@ class PolarisedReduce:
                     with open(fname, "wb") as f:
                         dataset.save(f)
 
-    def _efficiency_correction(self, poleff=None, verbose=False):
+    def _efficiency_correction(self, poleff=None):
         """
         Applies efficiency correction to raw spectra. The relationship
         between raw spectra from each spin channel and the
@@ -926,15 +926,6 @@ class PolarisedReduce:
         inverted_combined_efficiency_matrix = np.linalg.inv(
             poleff.combined_efficiency_matrix
         )
-
-        if verbose:
-            print(np.shape(inverted_combined_efficiency_matrix))
-            print(np.shape(db_spectra["dd"]))
-            import matplotlib.pyplot as plt
-
-            for sc in db_spectra:
-                plt.plot(db_spectra[sc][0], label=sc)
-                plt.legend()
         # Create numpy arrays with shape (T,S,N) (Time-of-flight,
         # spin-channel, dataset_number) to broadcast with array of
         # efficiency matrices
@@ -952,23 +943,8 @@ class PolarisedReduce:
         raw_rb[:, 2, 0] = rb_spectra["ud"][0]
         raw_rb[:, 3, 0] = rb_spectra["uu"][0]
 
-        if verbose:
-            print(np.shape(inverted_combined_efficiency_matrix))
-            print(np.shape(raw_db))
-
         corrected_db = np.matmul(inverted_combined_efficiency_matrix, raw_db)
         corrected_rb = np.matmul(inverted_combined_efficiency_matrix, raw_rb)
-
-        if verbose:
-            print(f"corrected shape is {corrected_db.shape}")
-            import matplotlib.pyplot as plt
-
-            plt.figure()
-            for idx, sc in enumerate(["dd", "du", "ud", "uu"]):
-                plt.plot(raw_rb[:, idx, 0], label=f"raw {sc}")
-                plt.plot(corrected_rb[:, idx, 0], ".", label=f"corr {sc}")
-                plt.yscale("log")
-                plt.legend()
 
         # Assign corrected spectra to m_spec_polcorr
         # TODO handle uncertainties as well!
