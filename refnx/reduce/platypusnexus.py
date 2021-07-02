@@ -649,25 +649,40 @@ class SpinSet(object):
 
     Parameters
     ----------
-    list of {str, h5data}
-        list of str, or list of h5py file handles pointing to
-        a set of polarised neutron beam files
+    down_down   :   str or refnx.reduce.PlatypusNexus
+        Input filename or PlatypusNexus object for the R-- spin
+        channel.
+    up_up       :   str or refnx.reduce.PlatypusNexus
+        Input filename or PlatypusNexus object for the R++ spin
+        channel.
+    down_up     :   str or refnx.reduce.PlatypusNexus, optional
+        Input filename or PlatypusNexus object for the R-+ spin
+        channel.
+    up_down     :   str or refnx.reduce.PlatypusNexus, optional
+        Input filename or PlatypusNexus object for the R+- spin
+        channel.
 
-    data_folder: {str, Path}
+    data_folder: {str, Path}, optional
         Path to the data folder containing the data to be reduced.
 
     Attributes
     ----------
-    dd      : refnx.reduce.PlatypusNexus
-        R-- spin channel
-    du      : refnx.reduce.PlatypusNexus or None
-        R-+ spin channel (if measured)
-    ud      : refnx.reduce.PlatypusNexus or None
-        R+- spin channel (if measured)
-    uu      : refnx.reduce.PlatypusNexus
-        R++ spin channel
-    sc_opts : dict of refnx.reduce.ReductionOptions
+    channels    :   dict
+        Dictionary of each measured spin channel
+            "dd"    :   refnx.reduce.PlatypusNexus (R--)
+            "du"    :   refnx.reduce.PlatypusNexus or None (R-+)
+            "ud"    :   refnx.reduce.PlatypusNexus or None (R+-)
+            "uu"    :   refnx.reduce.PlatypusNexus (R++)
+    sc_opts     :   dict of refnx.reduce.ReductionOptions
         Reduction options for each spin channel ("dd", "du", "ud", "uu)
+    dd          :   refnx.reduce.PlatypusNexus
+        R-- spin channel
+    uu          :   refnx.reduce.PlatypusNexus
+        R++ spin channel
+    du          :   refnx.reduce.PlatypusNexus or None
+        R-+ spin channel
+    ud          :   refnx.reduce.PlatypusNexus or None
+        R+- spin channel
 
     Notes
     -----
@@ -681,8 +696,6 @@ class SpinSet(object):
     hi_wavelength    : key in refnx.reduce.ReductionOptions
     rebin_percent    : key in refnx.reduce.ReductionOptions
     wavelength_bins  : key in refnx.reduce.ReductionOptions
-
-    TODO: implement polarisation efficiency correction within this class
     """
 
     def __init__(

@@ -731,7 +731,6 @@ class PolarisedReduce:
     ... )
     >>> reducer = PolarisedReduce(direct_beams)
     >>> datasets, reduced = reducer.reduce(refl_beams)
-
     """
 
     def __init__(self, spin_set_direct, verbose=False):
@@ -747,9 +746,23 @@ class PolarisedReduce:
     def __call__(self, spin_set_reflect, poleff=None, **reduction_options):
         return self.reduce(spin_set_reflect, poleff=None, **reduction_options)
 
-    def reduce(
-        self, spin_set_reflect, poleff=None, verbose=False, **reduction_options
-    ):
+    def reduce(self, spin_set_reflect, poleff=None, **reduction_options):
+        """
+        Reduce a refnx.reduce.SpinSet of polarised neutron reflected beams,
+        and correct for the efficiency of the polariser system.
+
+        Parameters
+        ----------
+        spin_set_reflect    :   refnx.reduce.SpinSet
+            Spinset of reflected beams
+        poleff              :   refnx.reduce.PolarisationEfficiency, optional
+            Input a defined polarisation efficiency of the
+            polariser - flipper 1 - flipper 2 - analyser system.
+        reduction_options   :   dict, optional
+            Reduction options to apply to every spin channel being reduced.
+            This will override any individually defined reduction options
+            for each spin channel
+        """
         # get a default set of reduction options
         options = ReductionOptions()
         options.update(reduction_options)
