@@ -331,6 +331,7 @@ class ReflectModel:
         ----------
         x : float or np.ndarray
             q values for the calculation.
+            Units = Angstrom**-1
         p : refnx.analysis.Parameters, optional
             parameters required to calculate the model
         x_err : np.ndarray
@@ -419,6 +420,7 @@ class ReflectModel:
         ----------
         x : float or np.ndarray
             q values for the calculation.
+            Units = Angstrom**-1
         p : refnx.analysis.Parameters, optional
             parameters required to calculate the model
         x_err : np.ndarray
