@@ -807,6 +807,7 @@ class SLD(Scatterer):
             self.real = value[0]
             self.imag = value[1]
 
+        self.real.units = self.imag.units = "10**-6 Å**-2"
         self._parameters = Parameters(name=name)
         self._parameters.extend([self.real, self.imag])
 
@@ -873,7 +874,9 @@ class MaterialSLD(Scatterer):
 
         self.__formula = pt.formula(formula)
         self._compound = formula
-        self.density = possibly_create_parameter(density, name="density")
+        self.density = possibly_create_parameter(
+            density, name="density", units="g / cm**3"
+        )
         if probe.lower() not in ["x-ray", "neutron"]:
             raise RuntimeError("'probe' must be one of 'x-ray' or 'neutron'")
         self.probe = probe.lower()
@@ -1123,12 +1126,16 @@ class Slab(Component):
 
     def __init__(self, thick, sld, rough, name="", vfsolv=0, interface=None):
         super().__init__(name=name)
-        self.thick = possibly_create_parameter(thick, name=f"{name} - thick")
+        self.thick = possibly_create_parameter(
+            thick, name=f"{name} - thick", units="Å"
+        )
         if isinstance(sld, Scatterer):
             self.sld = sld
         else:
             self.sld = SLD(sld)
-        self.rough = possibly_create_parameter(rough, name=f"{name} - rough")
+        self.rough = possibly_create_parameter(
+            rough, name=f"{name} - rough", units="Å"
+        )
         self.vfsolv = possibly_create_parameter(
             vfsolv, name=f"{name} - volfrac solvent", bounds=(0.0, 1.0)
         )
@@ -1232,7 +1239,9 @@ class MixedSlab(Component):
         interface=None,
     ):
         super().__init__(name=name)
-        self.thick = possibly_create_parameter(thick, name="%s - thick" % name)
+        self.thick = possibly_create_parameter(
+            thick, name="%s - thick" % name, units="Å"
+        )
 
         self.sld = []
         self.vf = []
@@ -1258,7 +1267,9 @@ class MixedSlab(Component):
         self.vfsolv = possibly_create_parameter(
             vfsolv, name=f"{name} - volfrac solvent", bounds=(0.0, 1.0)
         )
-        self.rough = possibly_create_parameter(rough, name=f"{name} - rough")
+        self.rough = possibly_create_parameter(
+            rough, name=f"{name} - rough", units="Å"
+        )
 
         p = Parameters(name=self.name)
         p.append(self.thick)

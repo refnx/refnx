@@ -73,7 +73,7 @@ class Spline(Component):
         self.microslab_max_thickness = microslab_max_thickness
 
         self.extent = possibly_create_parameter(
-            extent, name="%s - spline extent" % name
+            extent, name="%s - spline extent" % name, units="Å"
         )
 
         self.dz = Parameters(name="dz - spline")
@@ -87,7 +87,7 @@ class Spline(Component):
         self.vs = Parameters(name="vs - spline")
         for i, v in enumerate(vs):
             p = possibly_create_parameter(
-                v, name="%s - spline vs[%d]" % (name, i)
+                v, name="%s - spline vs[%d]" % (name, i), units="10**-6 Å**-2"
             )
             self.vs.append(p)
 

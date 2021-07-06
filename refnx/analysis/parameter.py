@@ -530,7 +530,7 @@ class Constant(BaseParameter):
 
 
 def possibly_create_parameter(
-    value, name="", bounds=None, vary=False, constraint=None
+    value, name="", bounds=None, vary=False, constraint=None, units=None
 ):
     """
     If supplied with a Parameter return it. If supplied with float, wrap it in
@@ -550,6 +550,8 @@ def possibly_create_parameter(
         Whether the Parameter is fixed during a fit.
     constraint : expression, optional
         Python expression used to constrain the value during the fit.
+    units : str
+        Units for the Parameter.
 
     Returns
     -------
@@ -560,7 +562,12 @@ def possibly_create_parameter(
         return value
     else:
         return Parameter(
-            value, name=name, bounds=bounds, vary=vary, constraint=constraint
+            value,
+            name=name,
+            bounds=bounds,
+            vary=vary,
+            constraint=constraint,
+            units=units,
         )
 
 
@@ -585,7 +592,13 @@ class Parameter(BaseParameter):
     """
 
     def __init__(
-        self, value=0.0, name=None, bounds=None, vary=False, constraint=None
+        self,
+        value=0.0,
+        name=None,
+        bounds=None,
+        vary=False,
+        constraint=None,
+        units=None,
     ):
         """
         Class for specifying a variable.
@@ -604,6 +617,8 @@ class Parameter(BaseParameter):
             Whether the Parameter is fixed during a fit.
         constraint : expression, optional
             Python expression used to constrain the value during the fit.
+        units : str, optional
+            units for the Parameter
         """
         super().__init__()
 
@@ -620,6 +635,7 @@ class Parameter(BaseParameter):
 
         self._constraint = None
         self.constraint = constraint
+        self.units = units
 
     def __repr__(self):
         # repr does not include stderr because that can't be used to

@@ -382,6 +382,9 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         # removes picker key from graphproperties (matplotlib 3.4.0 causes
         # issues)
 
+        # adds Parameter.units attribute
+        # v0.1.21
+
         from refnx.analysis.bounds import Interval
 
         for do in self.treeModel.datastore:
@@ -414,6 +417,9 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
                         ):
                             v = parameter.stderr
                         parameter._stderr = v
+
+                    if not hasattr(parameter, "units"):
+                        parameter.units = None
 
                     bnd = parameter.bounds
                     if isinstance(bnd, Interval) and not hasattr(

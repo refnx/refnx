@@ -175,6 +175,9 @@ class ParNode(Node):
                     return QtCore.Qt.Unchecked
             else:
                 return None
+        elif role == QtCore.Qt.ToolTipRole:
+            p = self.parameter
+            return getattr(p, "units", None)
 
         if role == QtCore.Qt.DisplayRole:
             p = self.parameter
