@@ -2239,7 +2239,7 @@ class MyReflectivityGraphs(FigureCanvas):
         self.axes.append(ax)
 
         self.axes[0].autoscale(axis="both", tight=False, enable=True)
-        self.axes[0].set_xlabel("Q")
+        self.axes[0].set_xlabel("Q / $\AA^{-1}$")
         self.axes[0].set_ylabel("R")
         # self.axes[0].set_yscale('log')
 
