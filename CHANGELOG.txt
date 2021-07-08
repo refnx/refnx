@@ -342,3 +342,4 @@ in 0.1.13.
 - check that refnx/analysis doesn't get in the way of handling
   multidimensional data.
 - add a header to datafiles during reduction.
+- make requirements.txt available in the refnx GUI.

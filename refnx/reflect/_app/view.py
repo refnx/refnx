@@ -252,6 +252,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
 
         fit_list = self.currently_fitting_model
         state["currently_fitting"] = fit_list.datasets
+        state["requirements.txt"] = self.requirements()
 
         with open(os.path.join(experiment_file_name), "wb") as f:
             pickle.dump(state, f, -1)
@@ -299,6 +300,9 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
             self.restore_settings()
         except KeyError as e:
             print(repr(e))
+            print("\n-------------------------------------------------------")
+            print("\nThese are the packages used when the file was saved:\n")
+            print(state.get("requirements.txt", ""))
             return
 
         try:
@@ -1013,6 +1017,22 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         QtGui.QDesktopServices.openUrl(
             QtCore.QUrl("https://refnx.readthedocs.io/en/latest/")
         )
+
+    @QtCore.pyqtSlot()
+    def on_actionPython_Packages_triggered(self):
+        aboutui = uic.loadUi(os.path.join(UI_LOCATION, "about.ui"))
+        text = self.requirements()
+        aboutui.textBrowser.setText(text)
+        aboutui.exec_()
+
+    def requirements(self):
+        # returns a string of the packages used in the GUI Python environment
+        import sys
+        import subprocess
+
+        reqs = subprocess.check_output([sys.executable, "-m", "pip", "freeze"])
+        reqs = "".join(reqs.decode())
+        return reqs
 
     @QtCore.pyqtSlot()
     def on_actionAutoscale_graph_triggered(self):
