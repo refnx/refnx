@@ -1015,6 +1015,21 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         )
 
     @QtCore.pyqtSlot()
+    def on_actionPython_Packages_triggered(self):
+        aboutui = uic.loadUi(os.path.join(UI_LOCATION, "about.ui"))
+        text = self.requirements()
+        aboutui.textBrowser.setText(text)
+        aboutui.exec_()
+
+    def requirements(self):
+        # returns a string of the packages used in the GUI Python environment
+        import sys
+        import subprocess
+        reqs = subprocess.check_output([sys.executable, '-m', 'pip', 'freeze'])
+        reqs = "".join(reqs.decode())
+        return reqs
+
+    @QtCore.pyqtSlot()
     def on_actionAutoscale_graph_triggered(self):
         self.reflectivitygraphs.autoscale()
 
