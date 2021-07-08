@@ -902,6 +902,9 @@
              <height>16777215</height>
             </size>
            </property>
+           <property name="toolTip">
+            <string>List of datasets to be fitted</string>
+           </property>
            <property name="editTriggers">
             <set>QAbstractItemView::NoEditTriggers</set>
            </property>

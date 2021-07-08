@@ -130,7 +130,7 @@ class LipidLeaflet(Component):
         """
         super().__init__()
         self.apm = possibly_create_parameter(
-            apm, "%s - area_per_molecule" % name
+            apm, "%s - area_per_molecule" % name, units="Å**2"
         )
 
         if isinstance(b_heads, complex):
@@ -151,12 +151,14 @@ class LipidLeaflet(Component):
                 0, name="%s - b_heads_imag" % name
             )
 
+        self.b_heads_real.units = self.b_heads_imag.units = "Å"
+
         self.vm_heads = possibly_create_parameter(
-            vm_heads, name="%s - vm_heads" % name
+            vm_heads, name="%s - vm_heads" % name, units="Å**3"
         )
 
         self.thickness_heads = possibly_create_parameter(
-            thickness_heads, name="%s - thickness_heads" % name
+            thickness_heads, name="%s - thickness_heads" % name, units="Å"
         )
 
         if isinstance(b_tails, complex):
@@ -176,18 +178,21 @@ class LipidLeaflet(Component):
             self.b_tails_imag = possibly_create_parameter(
                 0, name="%s - b_tails_imag" % name
             )
+        self.b_tails_real.units = self.b_tails_imag.units = "Å"
 
         self.vm_tails = possibly_create_parameter(
-            vm_tails, name="%s - vm_tails" % name
+            vm_tails, name="%s - vm_tails" % name, units="Å**3"
         )
         self.thickness_tails = possibly_create_parameter(
-            thickness_tails, name="%s - thickness_tails" % name
+            thickness_tails, name="%s - thickness_tails" % name, units="Å"
         )
         self.rough_head_tail = possibly_create_parameter(
-            rough_head_tail, name="%s - rough_head_tail" % name
+            rough_head_tail, name="%s - rough_head_tail" % name, units="Å"
         )
         self.rough_preceding_mono = possibly_create_parameter(
-            rough_preceding_mono, name="%s - rough_fronting_mono" % name
+            rough_preceding_mono,
+            name="%s - rough_fronting_mono" % name,
+            units="Å",
         )
 
         self.head_solvent = self.tail_solvent = None
