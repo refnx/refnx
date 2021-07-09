@@ -798,6 +798,9 @@
            <property name="contextMenuPolicy">
             <enum>Qt::PreventContextMenu</enum>
            </property>
+           <property name="toolTip">
+            <string>Select a parameter then use this slider to vary it</string>
+           </property>
            <property name="maximum">
             <number>999</number>
            </property>
@@ -1070,6 +1073,9 @@ limits</string>
          </item>
          <item row="4" column="2">
           <widget class="QCheckBox" name="use_errors_checkbox">
+           <property name="toolTip">
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Use the measurement uncertainties for weighting the fit&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+           </property>
            <property name="text">
             <string>Use
 errors?</string>
