@@ -760,9 +760,11 @@ class DataObjectNode(Node):
             if column == 1:
                 return "Show or hide the dataset from the graphs"
             elif column == 3:
-                return ("((y<sub>i,data</sub>-y<sub>i,model</sub>)"
-                        "/y<sub>i,err</sub>)<sup>2</sup> summed over all "
-                        "datapoints")
+                return (
+                    "((y<sub>i,data</sub>-y<sub>i,model</sub>)"
+                    "/y<sub>i,err</sub>)<sup>2</sup> summed over all "
+                    "datapoints"
+                )
 
     def flags(self, column):
         flags = QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled
