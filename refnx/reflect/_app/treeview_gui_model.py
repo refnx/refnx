@@ -176,8 +176,13 @@ class ParNode(Node):
             else:
                 return None
         elif role == QtCore.Qt.ToolTipRole:
-            p = self.parameter
-            return getattr(p, "units", None)
+            if column in [1, 2]:
+                p = self.parameter
+                return getattr(p, "units", None)
+            elif column == 3:
+                return "Lower limit for the parameter"
+            elif column == 4:
+                return "Upper limit for the parameter"
 
         if role == QtCore.Qt.DisplayRole:
             p = self.parameter
@@ -751,6 +756,15 @@ class DataObjectNode(Node):
                 return "points: %d" % len(self._data.dataset)
             elif column == 3:
                 return "chi2: %g" % self.chi2
+        elif role == QtCore.Qt.ToolTipRole:
+            if column == 1:
+                return "Show or hide the dataset from the graphs"
+            elif column == 3:
+                return (
+                    "((y<sub>i,data</sub>-y<sub>i,model</sub>)"
+                    "/y<sub>i,err</sub>)<sup>2</sup> summed over all "
+                    "datapoints"
+                )
 
     def flags(self, column):
         flags = QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled
