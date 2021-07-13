@@ -344,3 +344,5 @@ in 0.1.13.
 - add a header to datafiles during reduction.
 - make requirements.txt available in the refnx GUI.
 - add units attribute to Parameter. This is displayed as a tooltip in the GUI.
+- GUI and refnx command line entry point now reads sys.argv to see if GUI
+  should open an experiment file.
