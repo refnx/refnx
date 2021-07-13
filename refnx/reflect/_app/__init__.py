@@ -1,5 +1,4 @@
 import sys
-import os.path
 
 
 def gui(expt_file=None):
@@ -36,8 +35,8 @@ def gui(expt_file=None):
     fnt.setPointSize(12)
     app.setFont(fnt)
 
-    if expt_file is not None and os.path.isfile(expt_file):
-        myapp._restore_state(expt_file)
+    if expt_file is not None:
+        myapp._load_files_different_types(expt_file)
 
     myapp.show()
     myapp.raise_()
@@ -46,7 +45,12 @@ def gui(expt_file=None):
     return v
 
 
-def main(expt_file=None):
+def main(args=None):
+    if args is None:
+        expt_file = sys.argv[1:]
+    else:
+        expt_file = args
+
     sys.exit(gui(expt_file=expt_file))
 
 
