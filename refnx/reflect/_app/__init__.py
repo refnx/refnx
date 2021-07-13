@@ -46,7 +46,13 @@ def gui(expt_file=None):
     return v
 
 
-def main(expt_file=None):
+def main(args=None):
+    expt_file = None
+    if args is None and len(sys.argv) > 1 and os.path.isfile(sys.argv[1]):
+        expt_file = sys.argv[1]
+    elif args is not None:
+        expt_file = args
+
     sys.exit(gui(expt_file=expt_file))
 
 
