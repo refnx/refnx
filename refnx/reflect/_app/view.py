@@ -207,7 +207,9 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
 
         # convert url's to files
         urls_as_files = [url.toLocalFile() for url in urls]
+        self._load_files_different_type(urls_as_files)
 
+    def _load_files_different_types(self, urls_as_files):
         # if you've only got one url then try and load it as an experiment
         if len(urls_as_files) == 1:
             try:
