@@ -1,6 +1,4 @@
 import sys
-import os.path
-from copy import deepcopy
 
 
 def gui(expt_file=None):
