@@ -48,7 +48,6 @@ def gui(expt_file=None):
 
 
 def main(args=None):
-    expt_file = None
     if args is None:
         expt_file = sys.argv[1:]
     else:
