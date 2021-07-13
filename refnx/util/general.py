@@ -782,6 +782,11 @@ def _dict_compare_keys(d1, d2, *keys):
     d2      :   dict
     keys    :   list of str
         list of keys to check are equal between the dicts
+
+    Returns
+    -------
+    True if the key-value pairs are the same between `d1` and `d2`,
+    otherwise False.
     """
     for k in keys:
         if isinstance(d1[k], np.ndarray) and isinstance(d2[k], np.ndarray):

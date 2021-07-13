@@ -716,10 +716,10 @@ class SpinSet(object):
         self.dd = self.du = self.ud = self.uu = None
 
         self.sc_opts = {
-            "dd": None,
-            "du": None,
-            "ud": None,
-            "uu": None,
+            "dd": {},
+            "du": {},
+            "ud": {},
+            "uu": {},
         }
 
         # initialise reduction options for each spin channel
@@ -735,7 +735,7 @@ class SpinSet(object):
             "ud": up_down,
             "uu": up_up,
         }
-        spin_chans = {
+        _spin_channels = {
             "dd": SpinChannel.DOWN_DOWN,
             "du": SpinChannel.DOWN_UP,
             "ud": SpinChannel.UP_DOWN,
@@ -743,24 +743,23 @@ class SpinSet(object):
         }
 
         # Load the files and check spin channels and flipper config
-        for sc in ["dd", "du", "ud", "uu"]:
-            if input_params[sc] is None:
+        for sc, input_param in input_params.items():
+            if input_param is None:
                 # Spin channel not measured
                 continue
-            elif isinstance(input_params[sc], self.reflect_klass):
+            elif isinstance(input_param, self.reflect_klass):
                 # Spin channel inputted as PlatypusNexus object
-                channel = input_params[sc]
+                channel = input_param
             else:
-                print(input_params[sc])
                 # Spin channel inputted as file string
-                fpath = os.path.join(data_folder, input_params[sc])
+                fpath = os.path.join(data_folder, input_param)
                 channel = self.reflect_klass(fpath)
-            if channel.spin_state is spin_chans[sc]:
+            if channel.spin_state is _spin_channels[sc]:
                 self.channels[sc] = channel
                 self.sc_opts[sc] = reduction_options.copy()
             else:
                 RuntimeError(
-                    f"Supplied spin channel {spin_chans[sc]} does not match flipper status"
+                    f"Supplied spin channel {_spin_channels[sc]} does not match flipper status"
                 )
         self.dd = self.channels["dd"]
         self.du = self.channels["du"]
@@ -769,6 +768,15 @@ class SpinSet(object):
 
     @property
     def spin_channels(self):
+        """
+        Gives a quick indication of what spin channels were measured and
+        are present in this SpinSet.
+
+        Returns
+        -------
+        list of refnx.reduce.SpinChannel Enum values or None, depending on
+        if the spin channel was measured.
+        """
         return [
             self.channels[sc].spin_state.value
             if self.channels[sc] is not None
@@ -781,53 +789,59 @@ class SpinSet(object):
         Process beams in SpinSet.
 
         If reduction_options is None, the reduction options for each spin
-        channel are specified by the dictionary of spin channel reduction options SpinSet.sc_opts which are initialised to the
-        standard options when constructing the object. If `reduction_options`
+        channel are specified by the dictionary of spin channel reduction
+        options `SpinSet.sc_opts` which are initialised to the
+        standard options when constructing the object.
+
+        If you wish to have unique reduction options for each spin channel,
+        you need to ensure that the wavelength bins between each spin channel
+        remain identical, otherwise a ValueError will be raised.
+
+        If `reduction_options`
         is not None, then SpinSet.process() will use these options for all
         spin channels.
 
         Parameters
         ----------
-        reduction_options : dict
+        reduction_options : dict, optional
             A single dict of options used to process all spectra.
         """
 
         if reduction_options is not None:
-            print(
-                "Applying the supplied reduction_options to all spin channels"
-            )
             for sc in self.sc_opts:
-                sc = reduction_options.copy()
+                self.sc_opts[sc] = reduction_options.copy()
 
-        # Check important reduction options are the same across all
+        # Check specific reduction options are the same across all
         # spin channels to ensure the same wavelength axis
 
-        for key in [
+        _wavelength_keys = [
             "lo_wavelength",
             "hi_wavelength",
             "rebin_percent",
             "wavelength_bins",
-        ]:
-            for option1 in ["dd", "du", "ud", "uu"]:
-                for option2 in ["dd", "du", "ud", "uu"]:
-                    if self.sc_opts[option1] is None:
-                        continue
-                    elif self.sc_opts[option2] is None:
-                        continue
-                    elif self.sc_opts[option1] != self.sc_opts[option2]:
-                        raise ValueError(
-                            "Reduction options `lo_wavelength`, "
-                            "`hi_wavelength`, `rebin_percent`, and "
-                            "`wavelength_bins` must be identical across "
-                            "spin channels to preserve a common "
-                            "wavelength axis."
-                        )
+        ]
 
-        for sc in ["dd", "du", "ud", "uu"]:
-            if self.channels[sc] is None:
+        # For each spin channel, if it is not empty (i.e. channel not
+        # measured) then check that its reduction options are the same as down_down
+        # reduction options for the keys in _wavelength_keys.
+
+        for sc in self.sc_opts:
+            if self.sc_opts[sc]:
+                if not general._dict_compare_keys(
+                    self.sc_opts["dd"], self.sc_opts[sc], *_wavelength_keys
+                ):
+                    raise ValueError(
+                        "Reduction options `lo_wavelength`, `hi_wavelength`,"
+                        " `rebin_percent`, and `wavelength_bins` must be"
+                        "identical across spin channels to preserve a common"
+                        "wavelength axis."
+                    )
+
+        for sc, channel in self.channels:
+            if channel is None:
                 continue
             else:
-                self.channels[sc].process(**self.sc_opts[sc])
+                channel.process(**self.sc_opts[sc])
 
     def plot_spectra(self, **kwargs):
         """
