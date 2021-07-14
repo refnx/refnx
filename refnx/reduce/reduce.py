@@ -5,6 +5,7 @@ from time import gmtime, strftime
 from multiprocessing import Queue
 from threading import Thread
 import time
+from collections import OrderedDict
 
 import numpy as np
 import pandas as pd
@@ -774,7 +775,7 @@ class PolarisedReduce:
 
     def __init__(self, spin_set_direct):
         self.spin_set_direct = spin_set_direct
-        self.reducers = {}
+        self.reducers = OrderedDict()
         # Note: order of dd, du, ud, uu matters here since we iterate
         # over these later on
         for sc in ["dd", "du"]:
@@ -785,7 +786,14 @@ class PolarisedReduce:
     def __call__(self, spin_set_reflect, pol_eff=None, **reduction_options):
         return self.reduce(spin_set_reflect, pol_eff=None, **reduction_options)
 
-    def reduce(self, spin_set_reflect, pol_eff=None, **reduction_options):
+    def reduce(
+        self,
+        spin_set_reflect,
+        pol_eff=None,
+        save=True,
+        scale=1.0,
+        **reduction_options,
+    ):
         """
         Reduce a `refnx.reduce.SpinSet` of polarised neutron reflected beams,
         and correct for the efficiency of the polariser system.
@@ -823,7 +831,7 @@ class PolarisedReduce:
         reduced_successfully = []
 
         # go through each spin channel and reduce it
-        for sc in ["dd", "du", "ud", "uu"]:
+        for sc, reducer in self.reducers.items():
             # first get the correct reduction options
             rdo = spin_set_reflect.sc_opts[sc]
             if rdo is None:
@@ -831,25 +839,27 @@ class PolarisedReduce:
             else:
                 # overwrite properties that need to be common
                 rdo["wavelength_bins"] = options["wavelength_bins"]
+                rdo["lo_wavelength"] = options["lo_wavelength"]
+                rdo["hi_wavelength"] = options["hi_wavelength"]
+                rdo["rebin_percent"] = options["rebin_percent"]
 
-            db = self.reducers[sc]
+            db = reducer
             rb = getattr(spin_set_reflect, sc)
             if rb is not None:
-                db.reduce(rb, save=False, **rdo)
+                db.reduce(rb, save=save, scale=scale, **rdo)
                 getattr(self.spin_set_direct, sc).process(**rdo)
                 reduced_successfully.append(sc)
             else:
                 # no reflected beam for a spin channel
                 continue
 
-        # by this point an unpolarised reduction has been done. But we need to
+        # by this point an unpolarised reduction has been done, but we need to
         # correct the spectra for PNR. The following spectra (N, T) should be
         # overwritten:
-        # TODO
-        # self.reducers["dd"].reflected_beam.m_spec
-        # self.reducers["dd"].reflected_beam.m_spec_sd
-        # self.reducers["dd"].direct_beam.m_spec
-        # self.reducers["dd"].direct_beam.m_spec_sd
+        # self.reducers[sc].reflected_beam.m_spec
+        # self.reducers[sc].reflected_beam.m_spec_sd
+        # self.reducers[sc].direct_beam.m_spec
+        # self.reducers[sc].direct_beam.m_spec_sd
         # THIS IS WHERE THE MAGIC HAPPENS
         self._efficiency_correction(pol_eff=pol_eff)
 
@@ -858,34 +868,41 @@ class PolarisedReduce:
         # this doesn't correct the offspecular
         for sc in reduced_successfully:
             reducer = self.reducers[sc]
-            # Add ycorr to reducer attributes
+            # Add ycorr to reducer attributes and divide
+            # by the corrected reflected beams by direct beams
             reducer.y_corr, reducer.y_corr_err = EP.EPdiv(
                 reducer.reflected_beam.m_spec_polcorr,
                 reducer.reflected_beam.m_spec_sd,
                 reducer.direct_beam.m_spec_polcorr,
                 reducer.direct_beam.m_spec_sd,
             )
-            # now write out the corrected reflectivity files
-            fnames = []
-            datasets = []
-            datafilename = reducer.reflected_beam.datafilename
-            datafilename = os.path.basename(datafilename.split(".nx.hdf")[0])
-
-            for i in range(np.size(reducer.y_corr, 0)):
-                data = reducer.data(scanpoint=i)
-                data_tup = (
-                    data[0],
-                    reducer.y_corr[i],
-                    reducer.y_corr_err[i],
-                    data[-1],
+            # Apply scale to reduced data
+            reducer.y_corr /= scale
+            reducer.y_corr_err /= scale
+            if save:
+                # now write out the corrected reflectivity files
+                fnames = []
+                datasets = []
+                datafilename = reducer.reflected_beam.datafilename
+                datafilename = os.path.basename(
+                    datafilename.split(".nx.hdf")[0]
                 )
-                datasets.append(ReflectDataset(data_tup))
 
-                for i, dataset in enumerate(datasets):
-                    fname = f"{datafilename}_{i}_POLCORR.dat"
-                    fnames.append(fname)
-                    with open(fname, "wb") as f:
-                        dataset.save(f)
+                for i in range(np.size(reducer.y_corr, 0)):
+                    data = reducer.data(scanpoint=i)
+                    data_tup = (
+                        data[0],
+                        reducer.y_corr[i],
+                        reducer.y_corr_err[i],
+                        data[-1],
+                    )
+                    datasets.append(ReflectDataset(data_tup))
+
+                    for i, dataset in enumerate(datasets):
+                        fname = f"{datafilename}_{i}_PolCorr.dat"
+                        fnames.append(fname)
+                        with open(fname, "wb") as f:
+                            dataset.save(f)
 
     def _efficiency_correction(self, pol_eff=None):
         """
@@ -931,14 +948,16 @@ class PolarisedReduce:
         elif not hasattr(
             self.reducers["du"], "reflected_beam"
         ) and not hasattr(self.reducers["ud"], "reflected_beam"):
+            # Create reflected beam and fill m_spec with zeros
+            self.reducers["ud"].reflected_beam = PlatypusNexus
             self.reducers["ud"].reflected_beam.m_spec = np.zeros_like(m_spec)
+            self.reducers["du"].reflected_beam = PlatypusNexus
             self.reducers["du"].reflected_beam.m_spec = np.zeros_like(m_spec)
 
-        # In Thomas Saerbeck's Igor code, when only NSF channels are present
-        # the efficiency correction assumes a perfect analyser efficiency.
-        # This is the case if the analyser is left out of the beam,
-        # but if the analyser is still in the beam then this needs to be taken
-        # into account:
+        # If the analyser is out of the beam and the mode is POL, then
+        # we assume that the analyser and flipper 2 have a perfect
+        # efficiency. Otherwise if analyser is in the beam and the mode
+        # is POLANAL, then use real efficiencies.
 
         # Check whether mode is POLANAL or just POL instead of this
         if self.reducers["dd"].reflected_beam.cat.mode == "POL":
@@ -953,7 +972,7 @@ class PolarisedReduce:
         if pol_eff is None:
             # Define polarisation efficiency of PLATYPUS
             pol_eff = PolarisationEfficiency(
-                self.reducers["dd"].reflected_beam.m_lambda, config=config
+                self.reducers["dd"].reflected_beam.m_lambda[0], config=config
             )
 
         # Define sizes of corrected beam spectra (T,S,N) and
@@ -1011,7 +1030,7 @@ class PolarisedReduce:
         # Assign corrected spectra to m_spec_polcorr, and reshape to (N, T, 4).
         # Need to reverse the order of `reducer.items()` because I00 channel
         # corresponds to the R++ channel in the matrix formulation.
-        # TODO handle uncertainties as well!
+        # TODO handle uncertainties
         for idx, (sc, reducer) in enumerate(reversed(self.reducers.items())):
             try:
                 reducer.direct_beam.m_spec_polcorr = corrected_db[

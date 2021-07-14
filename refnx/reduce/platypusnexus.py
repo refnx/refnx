@@ -784,7 +784,7 @@ class SpinSet(object):
             for sc in self.channels
         ]
 
-    def process(self, reduction_options=None):
+    def process(self, **reduction_options):
         """
         Process beams in SpinSet.
 
@@ -809,7 +809,7 @@ class SpinSet(object):
 
         if reduction_options is not None:
             for sc in self.sc_opts:
-                self.sc_opts[sc] = reduction_options.copy()
+                self.sc_opts[sc].update(reduction_options)
 
         # Check specific reduction options are the same across all
         # spin channels to ensure the same wavelength axis
@@ -837,7 +837,7 @@ class SpinSet(object):
                         "wavelength axis."
                     )
 
-        for sc, channel in self.channels:
+        for sc, channel in self.channels.items():
             if channel is None:
                 continue
             else:
