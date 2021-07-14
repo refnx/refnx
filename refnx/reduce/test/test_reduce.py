@@ -63,6 +63,7 @@ class TestPlatypusReduce:
             assert_allclose(a.y, a2.y)
 
     def test_reduction_method(self):
+
         # a quick smoke test to check that the reduction can occur
         # warnings filter for pixel size
         with warnings.catch_warnings():
@@ -243,6 +244,7 @@ class TestPolarisedReduce:
         # warnings filter for pixel size
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", RuntimeWarning)
+
             spinset_rb = SpinSet(
                 down_down="PLP0012785.nx.hdf",
                 up_up="PLP0012787.nx.hdf",
@@ -278,16 +280,24 @@ class TestPolarisedReduce:
 
             # this should also have saved a couple of files in the current
             # directory
-            assert os.path.isfile("./PLP0012785_0_POLCORR.dat")
-            assert os.path.isfile("./PLP0012786_0_POLCORR.dat")
-            assert os.path.isfile("./PLP0012787_0_POLCORR.dat")
-            assert os.path.isfile("./PLP0012788_0_POLCORR.dat")
+            assert os.path.isfile("./PLP0012785_0_PolCorr.dat")
+            assert os.path.isfile("./PLP0012786_0_PolCorr.dat")
+            assert os.path.isfile("./PLP0012787_0_PolCorr.dat")
+            assert os.path.isfile("./PLP0012788_0_PolCorr.dat")
+
+            for reducer in a.reducers.values():
+                with pytest.raises(AssertionError):
+                    assert_equal(
+                        reducer.reflected_beam.m_spec,
+                        reducer.reflected_beam.m_spec_polcorr,
+                    )
 
     def test_polarised_reduction_method_3sc(self):
         # a quick smoke test to check that the reduction can occur
         # warnings filter for pixel size
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", RuntimeWarning)
+
             spinset_rb = SpinSet(
                 down_down="PLP0012785.nx.hdf",
                 up_up="PLP0012787.nx.hdf",
@@ -322,15 +332,16 @@ class TestPolarisedReduce:
 
             # this should also have saved a couple of files in the current
             # directory
-            assert os.path.isfile("./PLP0012785_0_POLCORR.dat")
-            assert os.path.isfile("./PLP0012786_0_POLCORR.dat")
-            assert os.path.isfile("./PLP0012787_0_POLCORR.dat")
+            assert os.path.isfile("./PLP0012785_0_PolCorr.dat")
+            assert os.path.isfile("./PLP0012786_0_PolCorr.dat")
+            assert os.path.isfile("./PLP0012787_0_PolCorr.dat")
 
     def test_polarised_reduction_method_2sc(self):
         # a quick smoke test to check that the reduction can occur
         # warnings filter for pixel size
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", RuntimeWarning)
+
             spinset_rb = SpinSet(
                 down_down="PLP0012785.nx.hdf",
                 up_up="PLP0012787.nx.hdf",
@@ -346,25 +357,112 @@ class TestPolarisedReduce:
             # try reduction with the reduce method
             a.reduce(
                 spinset_rb,
-                data_folder=self.pth,
                 lo_wavelength=2.5,
                 hi_wavelength=12.5,
-                rebin_percent=4,
+                rebin_percent=3,
             )
 
             # try reduction with the __call__ method
             a(
                 spinset_rb,
-                data_folder=self.pth,
                 lo_wavelength=2.5,
                 hi_wavelength=12.5,
-                rebin_percent=4,
+                rebin_percent=3,
             )
 
             # this should also have saved a couple of files in the current
             # directory
-            assert os.path.isfile("./PLP0012785_0_POLCORR.dat")
-            assert os.path.isfile("./PLP0012787_0_POLCORR.dat")
+            assert os.path.isfile("./PLP0012785_0_PolCorr.dat")
+            assert os.path.isfile("./PLP0012787_0_PolCorr.dat")
+
+    def test_correction_changes(self):
+        # warnings filter for pixel size
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", RuntimeWarning)
+
+            spinset_rb = SpinSet(
+                down_down="PLP0012785.nx.hdf",
+                up_up="PLP0012787.nx.hdf",
+                up_down="PLP0012786.nx.hdf",
+                down_up="PLP0012788.nx.hdf",
+                data_folder=self.pth,
+            )
+            spinset_db = SpinSet(
+                down_down="PLP0012793.nx.hdf",
+                up_up="PLP0012795.nx.hdf",
+                up_down="PLP0012794.nx.hdf",
+                down_up="PLP0012796.nx.hdf",
+                data_folder=self.pth,
+            )
+            a = PolarisedReduce(spinset_db)
+
+            # correct and reduce spectra
+            a.reduce(
+                spinset_rb,
+                data_folder=self.pth,
+                lo_wavelength=2.5,
+                hi_wavelength=12.5,
+                rebin_percent=3,
+            )
+
+            for reducer in a.reducers.values():
+                with pytest.raises(AssertionError):
+                    assert_equal(
+                        reducer.reflected_beam.m_spec,
+                        reducer.reflected_beam.m_spec_polcorr,
+                    )
+
+    def test_file_output(self):
+        # warnings filter for pixel size
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", RuntimeWarning)
+            spinset_rb = SpinSet(
+                down_down="PLP0012785.nx.hdf",
+                up_up="PLP0012787.nx.hdf",
+                up_down="PLP0012786.nx.hdf",
+                down_up="PLP0012788.nx.hdf",
+                data_folder=self.pth,
+            )
+            spinset_db = SpinSet(
+                down_down="PLP0012793.nx.hdf",
+                up_up="PLP0012795.nx.hdf",
+                up_down="PLP0012794.nx.hdf",
+                down_up="PLP0012796.nx.hdf",
+                data_folder=self.pth,
+            )
+            a = PolarisedReduce(spinset_db)
+
+            # reduce data
+            a.reduce(
+                spinset_rb,
+                lo_wavelength=2.5,
+                hi_wavelength=12.5,
+                rebin_percent=3,
+            )
+
+            # this should also have saved a few files in the current
+            # directory
+            assert os.path.isfile("./PLP0012785_0_PolCorr.dat")
+            assert os.path.isfile("./PLP0012787_0_PolCorr.dat")
+            assert os.path.isfile("./PLP0012786_0_PolCorr.dat")
+            assert os.path.isfile("./PLP0012788_0_PolCorr.dat")
+
+            # can we read the file
+            dd = ReflectDataset("./PLP0012785_0_PolCorr.dat")
+            uu = ReflectDataset("./PLP0012787_0_PolCorr.dat")
+            ud = ReflectDataset("./PLP0012786_0_PolCorr.dat")
+            du = ReflectDataset("./PLP0012788_0_PolCorr.dat")
+
+            # check if the written data is the same as what is in the reducers
+            assert_equal(dd.x, list(reversed(a.reducers["dd"].x[0])))
+            assert_equal(du.x, list(reversed(a.reducers["du"].x[0])))
+            assert_equal(ud.x, list(reversed(a.reducers["ud"].x[0])))
+            assert_equal(uu.x, list(reversed(a.reducers["uu"].x[0])))
+
+            assert_equal(dd.y, list(reversed(a.reducers["dd"].y_corr[0])))
+            assert_equal(du.y, list(reversed(a.reducers["du"].y_corr[0])))
+            assert_equal(ud.y, list(reversed(a.reducers["ud"].y_corr[0])))
+            assert_equal(uu.y, list(reversed(a.reducers["uu"].y_corr[0])))
 
 
 class TestPolarisationEfficiency:
@@ -389,3 +487,25 @@ class TestPolarisationEfficiency:
         assert peff.combined_efficiency_matrix.shape == tuple(
             [len(wavelength_axis), 4, 4]
         )
+
+    def test_config_difference(self):
+        wavelength_axis = calculate_wavelength_bins(2.5, 12.5, 3)
+
+        p_PF = PolarisationEfficiency(wavelength_axis, config="PF")
+        p_full = PolarisationEfficiency(wavelength_axis, config="full")
+
+        with pytest.raises(AssertionError):
+            assert_equal(
+                p_PF.combined_efficiency_matrix,
+                p_full.combined_efficiency_matrix,
+            )
+
+    def test_input(self):
+        wavelength_axis = calculate_wavelength_bins(2.5, 12.5, 3).reshape(
+            1, -1
+        )
+
+        with pytest.raises(ValueError):
+            peff = PolarisationEfficiency(wavelength_axis)
+
+            assert peff

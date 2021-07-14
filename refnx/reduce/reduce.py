@@ -587,6 +587,10 @@ class PolarisationEfficiency:
     def __init__(self, wavelength_axis, config="full"):
         # Define sizes matrices to be (T,4,4) where T is the number of
         # wavelength bins
+        if np.ndim(wavelength_axis) != 1:
+            raise ValueError(
+                "Number of dimensions of wavelength axis must be 1"
+            )
         self.wl = wavelength_axis
         self.pol_eff = np.empty_like(self.wl)
         self.ana_eff = np.empty_like(self.wl)
@@ -996,7 +1000,6 @@ class PolarisedReduce:
                     ).m_spec
 
             except AttributeError:
-                print(f"{sc} not measured")
                 # if spin channel not measured, assumed
                 # intensity values are zero
                 db_spectra[sc] = np.zeros_like(wl)
