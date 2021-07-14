@@ -29,7 +29,10 @@ lipid_data = (
     pjoin("..", "..", "refnx", "reflect", "_app", "lipids.json"),
     pjoin("refnx", "reflect", "_app"),
 )
-periodic_table = (pjoin(periodictable_loc, "xsf", "*.*"), pjoin("periodictable", "xsf"))
+periodic_table = (
+    pjoin(periodictable_loc, "xsf", "*.*"),
+    pjoin("periodictable", "xsf"),
+)
 
 
 a = Analysis(
@@ -90,6 +93,13 @@ if sys.platform == "darwin":
             "NSHighResolutionCapable": "True",
             "CFBundleShortVersionString": refnx_version,
             "LSBackgroundOnly": "False",
+            "CFBundleDocumentTypes": [
+                {
+                    "CFBundleTypeName": "refnx experiment file",
+                    "CFBundleTypeExtensions": ("mtft",),
+                    "CFBundleTypeIconFile": "Motofit.icns",
+                }
+            ],
         },
     )
 
