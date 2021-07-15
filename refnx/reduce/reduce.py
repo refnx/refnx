@@ -5,7 +5,6 @@ from time import gmtime, strftime
 from multiprocessing import Queue
 from threading import Thread
 import time
-from collections import OrderedDict
 
 import numpy as np
 import pandas as pd
@@ -887,33 +886,6 @@ class PolarisedReduce:
         # THIS IS WHERE THE MAGIC HAPPENS
         self._efficiency_correction(pol_eff=pol_eff)
 
-        for sc in self._reduced_successfully:
-            reducer = self.reducers[sc]
-            assert (
-                reducer.reflected_beam.m_spec_polcorr.shape
-                == reducer.reflected_beam.m_spec_sd.shape
-            )
-            assert (
-                reducer.direct_beam.m_spec_polcorr.shape
-                == reducer.direct_beam.m_spec_sd.shape
-            )
-            assert (
-                reducer.direct_beam.m_spec_polcorr.shape
-                == reducer.reflected_beam.m_spec_polcorr.shape
-            )
-            assert (
-                reducer.reflected_beam.m_spec.shape
-                == reducer.reflected_beam.m_spec_sd.shape
-            )
-            assert (
-                reducer.direct_beam.m_spec.shape
-                == reducer.direct_beam.m_spec_sd.shape
-            )
-            assert (
-                reducer.direct_beam.m_spec.shape
-                == reducer.reflected_beam.m_spec.shape
-            )
-
         # once the wavelength spectra have been corrected/overwritten then the
         # reflectivities need to be recalculated.
         # this doesn't correct the offspecular
@@ -966,7 +938,7 @@ class PolarisedReduce:
         reducers : dict of PlatypusReduce objects
             reducer objects for each spin channel
 
-        poleff  :   optional, refnx.reduce.PolarisationEfficiency object
+        pol_eff  :   optional, refnx.reduce.PolarisationEfficiency object
             Describes the polarisation efficiency of PLATYPUS. If None,
             then will initialise the standard efficiency during the
             correction process. *advanced users only*
@@ -1015,7 +987,7 @@ class PolarisedReduce:
                     # you measured the spin channel
                     rb_spectra[sc] = reducer.reflected_beam.m_spec
                 elif measured.intersection(sf):
-                    # you don't have the spin set, but you have the other
+                    # you don't have the spin channel, but you have the other
                     it = measured.intersection(sf).pop()
                     rb_spectra[sc] = self.reducers[it].reflected_beam.m_spec
                 else:
