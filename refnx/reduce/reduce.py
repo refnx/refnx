@@ -953,7 +953,6 @@ class PolarisedReduce:
 
         # If only one spin-flip channel is recorded, assume both
         # spin-flip channels are identical
-        wl = self.reducers["dd"].reflected_beam.m_lambda
         m_spec = self.reducers["dd"].reflected_beam.m_spec
 
         measured = set(self._reduced_successfully)
