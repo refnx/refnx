@@ -705,15 +705,13 @@ class SpinSet(object):
         self.reflect_klass = PlatypusNexus
         self.data_folder = data_folder
 
+        # initialise spin channels
         self.channels = {
             "dd": None,
             "du": None,
             "ud": None,
             "uu": None,
         }
-
-        # initialise spin channels
-        self.dd = self.du = self.ud = self.uu = None
 
         self.sc_opts = {
             "dd": {},
@@ -761,10 +759,22 @@ class SpinSet(object):
                 RuntimeError(
                     f"Supplied spin channel {_spin_channels[sc]} does not match flipper status"
                 )
-        self.dd = self.channels["dd"]
-        self.du = self.channels["du"]
-        self.ud = self.channels["ud"]
-        self.uu = self.channels["uu"]
+
+    @property
+    def dd(self):
+        return self.channels["dd"]
+
+    @property
+    def du(self):
+        return self.channels["du"]
+
+    @property
+    def ud(self):
+        return self.channels["ud"]
+
+    @property
+    def uu(self):
+        return self.channels["uu"]
 
     @property
     def spin_channels(self):
