@@ -493,7 +493,7 @@ class TestPolarisedReduce:
 
             # can we read the file
             dd = ReflectDataset("./PLP0012785_0_PolCorr.dat")
-            uu = ReflectDataset("./PLP0012788_0_PolCorr.dat")
+            uu = ReflectDataset("./PLP0012787_0_PolCorr.dat")
 
             # check if the written data is the same as what is in the reducers
             assert_equal(dd.x, list(reversed(a.reducers["dd"].x[0])))
