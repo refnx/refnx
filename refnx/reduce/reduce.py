@@ -779,7 +779,7 @@ class PolarisedReduce:
 
     def __init__(self, spin_set_direct):
         self.spin_set_direct = spin_set_direct
-        self.reducers = OrderedDict()
+        self.reducers = {}
         # Note: order of dd, du, ud, uu matters here since we iterate
         # over these later on
         for sc in ["dd", "du"]:
@@ -856,6 +856,13 @@ class PolarisedReduce:
             else:
                 # no reflected beam for a spin channel
                 continue
+            
+            #assert reducer.reflected_beam.m_spec_polcorr.shape == reducer.reflected_beam.m_spec_sd.shape
+            #assert reducer.direct_beam.m_spec_polcorr.shape == reducer.direct_beam.m_spec_sd.shape
+            #assert reducer.direct_beam.m_spec_polcorr.shape == reducer.reflected_beams.m_spec_polcorr.shape
+            assert reducer.reflected_beam.m_spec.shape == reducer.reflected_beam.m_spec_sd.shape
+            assert reducer.direct_beam.m_spec.shape == reducer.direct_beam.m_spec_sd.shape
+            assert reducer.direct_beam.m_spec.shape == reducer.reflected_beam.m_spec.shape
 
         # by this point an unpolarised reduction has been done, but we need to
         # correct the spectra for PNR. The following spectra (N, T) should be
@@ -866,6 +873,14 @@ class PolarisedReduce:
         # self.reducers[sc].direct_beam.m_spec_sd
         # THIS IS WHERE THE MAGIC HAPPENS
         self._efficiency_correction(pol_eff=pol_eff)
+
+        for reducer in self.reducers.values():
+            assert reducer.reflected_beam.m_spec_polcorr.shape == reducer.reflected_beam.m_spec_sd.shape
+            assert reducer.direct_beam.m_spec_polcorr.shape == reducer.direct_beam.m_spec_sd.shape
+            assert reducer.direct_beam.m_spec_polcorr.shape == reducer.reflected_beam.m_spec_polcorr.shape
+            assert reducer.reflected_beam.m_spec.shape == reducer.reflected_beam.m_spec_sd.shape
+            assert reducer.direct_beam.m_spec.shape == reducer.direct_beam.m_spec_sd.shape
+            assert reducer.direct_beam.m_spec.shape == reducer.reflected_beam.m_spec.shape
 
         # once the wavelength spectra have been corrected/overwritten then the
         # reflectivities need to be recalculated.
@@ -1034,7 +1049,7 @@ class PolarisedReduce:
         # Need to reverse the order of `reducer.items()` because I00 channel
         # corresponds to the R++ channel in the matrix formulation.
         # TODO handle uncertainties
-        for idx, (sc, reducer) in enumerate(reversed(self.reducers.items())):
+        for idx, (sc, reducer) in enumerate(reversed(list(self.reducers.items()))):
             try:
                 reducer.direct_beam.m_spec_polcorr = corrected_db[
                     :, :, idx, 0

@@ -402,7 +402,7 @@ class TestPolarisedReduce:
                 data_folder=self.pth,
                 lo_wavelength=2.5,
                 hi_wavelength=12.5,
-                rebin_percent=3,
+                rebin_percent=4,
             )
 
             for reducer in a.reducers.values():
