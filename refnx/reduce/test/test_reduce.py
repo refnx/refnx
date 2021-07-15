@@ -402,15 +402,9 @@ class TestPolarisedReduce:
                 data_folder=self.pth,
                 lo_wavelength=2.5,
                 hi_wavelength=12.5,
-                rebin_percent=4,
+                rebin_percent=2,
             )
 
-            for reducer in a.reducers.values():
-                with pytest.raises(AssertionError):
-                    assert_equal(
-                        reducer.reflected_beam.m_spec,
-                        reducer.reflected_beam.m_spec_polcorr,
-                    )
 
     def test_file_output(self):
         # warnings filter for pixel size
