@@ -62,8 +62,6 @@ class ProcessMCMCDialog(QtWidgets.QDialog, ProcessMCMCDialogUI):
                 print(repr(e))
                 return
 
-        self.chain = chain
-
         if len(self.chain.shape) == 3:
             steps, walkers, varys = self.chain.shape
             self.chain_size.setText(
