@@ -2035,8 +2035,14 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         if not top_left.isValid():
             return
 
+        # enumerations of the roles are at:
+        # https://doc.qt.io/qt-5/qt.html#ItemDataRole-enum
+
         # find out which data_object / model we're adjusting
         node = top_left.internalPointer()
+        # row = top_left.row()
+        col = top_left.column()
+
         if node is None:
             return
 
@@ -2045,7 +2051,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
             and role[0] == QtCore.Qt.CheckStateRole
             and isinstance(node, DataObjectNode)
         ):
-            # set visibility of data_object
+            # you're setting the visibility of a data_object
             graph_properties = node.data_object.graph_properties
             graph_properties.visible = node.visible is True
             self.redraw_data_object_graphs([node.data_object])
@@ -2055,18 +2061,19 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         wipe_update = []
 
         # redraw if you're altering a PropertyNode (edit or check)
+        # also does constant dq/q <--> pointwise
         if (
-            top_left.column() == 1
+            col == 1
             and len(role)
             and role[0] in [QtCore.Qt.CheckStateRole, QtCore.Qt.EditRole]
-            and isinstance(node, PropertyNode)
+            and isinstance(node, (PropertyNode, ReflectModelNode))
         ):
             wipe_update = [find_data_object(top_left).data_object]
 
         # only redraw if you're altering values
         # otherwise we'd be performing continual updates of the model
         if (
-            top_left.column() == 1
+            col == 1
             and len(role)
             and role[0] == QtCore.Qt.EditRole
             and isinstance(node, ParNode)
