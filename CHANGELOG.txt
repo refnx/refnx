@@ -349,3 +349,5 @@ in 0.1.13.
 - Associate the mtft file extension on macOS with the GUI app, meaning you can
   double click on a mtft file and it'll open with the app. The mtft files also
   display with the GUI icon.
+- BUG: an error was experienced whilst reprocessing an existing chain in the
+  refnx GUI.
