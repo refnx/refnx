@@ -463,7 +463,11 @@ class ReflectModelNode(Node):
     def __init__(self, data, model, parent=QtCore.QModelIndex()):
         super().__init__(data, model, parent=parent)
 
-        self.constantdq_q = True
+        # pointwise/constant dq/q choice is kept in the ReflectModel
+        if data.dq_type == "constant":
+            self.constantdq_q = True
+        elif data.dq_type == "pointwise":
+            self.constantdq_q = False
 
         # deal with scale factors
         if isinstance(data, ReflectModel):
@@ -620,13 +624,13 @@ class ReflectModelNode(Node):
             data_object = data_object_node.data_object
             data_object.constantdq_q = self.constantdq_q
 
-            # TODO emit signal for recalculation of chi2. Do this by saying
-            # TODO parnode for constant dq/q has changed.
-
             # need to not let the dq parameter vary if there's resolution
             # information in the dataset
             if not self.constantdq_q:
+                data_object_node.data_object.model.dq_type = "pointwise"
                 data_object_node.data_object.model.dq.vary = False
+            else:
+                data_object_node.data_object.model.dq_type = "constant"
 
             lindex = self._model.index(2, 0, self.index)
             rindex = self._model.index(2, 4, self.index)
