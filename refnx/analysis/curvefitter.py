@@ -876,22 +876,15 @@ def load_chain(f):
         else:
             raise ValueError("Couldn't read header line of chain file")
 
-        # make an array that's the appropriate size
-        read_arr = array.array("d")
+    # make an array that's the appropriate size
+    chain = np.loadtxt(f)
 
-        for i, l in enumerate(g, 1):
-            read_arr.extend(
-                np.fromstring(l, dtype=float, count=chain_size, sep=" ")
-            )
+    if ntemps is not None:
+        chain = np.reshape(chain, (-1, ntemps, nwalkers, ndim))
+    else:
+        chain = np.reshape(chain, (-1, nwalkers, ndim))
 
-        chain = np.frombuffer(read_arr, dtype=float, count=len(read_arr))
-
-        if ntemps is not None:
-            chain = np.reshape(chain, (i, ntemps, nwalkers, ndim))
-        else:
-            chain = np.reshape(chain, (i, nwalkers, ndim))
-
-        return chain
+    return chain
 
 
 def process_chain(objective, chain, nburn=0, nthin=1, flatchain=False):

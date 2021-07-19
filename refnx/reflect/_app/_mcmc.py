@@ -65,16 +65,13 @@ class ProcessMCMCDialog(QtWidgets.QDialog, ProcessMCMCDialogUI):
         if len(self.chain.shape) == 3:
             steps, walkers, varys = self.chain.shape
             self.chain_size.setText(
-                "steps: {}, walkers: {}, varys: {}".format(
-                    steps, walkers, varys
-                )
+                f"steps: {steps}, walkers: {walkers}, varys: {varys}"
             )
         else:
             steps, temps, walkers, varys = self.chain.shape
             self.chain_size.setText(
-                "steps: {}, temps: {}, walkers: {}, varys: {}".format(
-                    steps, temps, walkers, varys
-                )
+                f"steps: {steps}, temps: {temps}, "
+                f"walkers: {walkers}, varys: {varys}"
             )
 
         self.total_samples.setText("Total samples: {}".format(steps * walkers))
@@ -85,7 +82,7 @@ class ProcessMCMCDialog(QtWidgets.QDialog, ProcessMCMCDialogUI):
         acfs = autocorrelation_chain(self.chain)
         time = integrated_time(acfs, tol=1, quiet=True)
         self.autocorrelation_time.setText(
-            "Estimated Autocorrelation Time: {}".format(time)
+            f"Estimated Autocorrelation Time: {time}"
         )
 
     @QtCore.pyqtSlot(int)
@@ -107,12 +104,12 @@ class ProcessMCMCDialog(QtWidgets.QDialog, ProcessMCMCDialogUI):
         else:
             steps, temps, walkers, varys = lchain.shape
 
-        self.total_samples.setText("Total samples: {}".format(steps * walkers))
+        self.total_samples.setText(f"Total samples: {steps * walkers}")
 
         acfs = autocorrelation_chain(lchain)
         time = integrated_time(acfs, tol=1, quiet=True)
         self.autocorrelation_time.setText(
-            "Estimated Autocorrelation Time: {}".format(time)
+            f"Estimated Autocorrelation Time: {time}"
         )
         self.nplot.setMaximum(steps * walkers)
 
