@@ -351,3 +351,6 @@ in 0.1.13.
   display with the GUI icon.
 - BUG: an error was experienced whilst reprocessing an existing chain in the
   refnx GUI.
+- BUG: fix gh336, remember the dq/q choice on reloading an experiment file.
+  Previously the GUI reverted to constant dq/q on a reload, even if it was
+  deselected.
