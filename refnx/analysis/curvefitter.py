@@ -868,15 +868,12 @@ def load_chain(f):
         if matches:
             if len(matches) == 3:
                 ntemps, nwalkers, ndim = map(int, matches)
-                chain_size = ntemps * nwalkers * ndim
             elif len(matches) == 2:
                 ntemps = None
                 nwalkers, ndim = map(int, matches)
-                chain_size = nwalkers * ndim
         else:
             raise ValueError("Couldn't read header line of chain file")
 
-    # make an array that's the appropriate size
     chain = np.loadtxt(f)
 
     if ntemps is not None:
