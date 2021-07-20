@@ -43,7 +43,7 @@ from .treeview_gui_model import (
 from ._lipid_leaflet import LipidLeafletDialog
 from ._optimisation_parameters import OptimisationParameterView
 from ._spline import SplineDialog
-from ._mcmc import ProcessMCMCDialog, SampleMCMCDialog, _plots
+from ._mcmc import ProcessMCMCDialog, SampleMCMCDialog, _plots, _process_chain
 
 import refnx
 from refnx.analysis import (
@@ -178,9 +178,10 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
 
         self.restore_settings()
 
+        self.sample_mcmc_dialog = SampleMCMCDialog(self)
         self.spline_dialog = SplineDialog(self)
         self.sld_calculator = SLDcalculatorView(self)
-        self.lipid_leaflet = LipidLeafletDialog(self)
+        self.lipid_leaflet_dialog = LipidLeafletDialog(self)
         self.optimisation_parameters = OptimisationParameterView(self)
         self.data_object_selector = DataObjectSelectorDialog(self)
 
@@ -1056,7 +1057,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
 
     @QtCore.pyqtSlot()
     def on_actionLipid_browser_triggered(self):
-        self.lipid_leaflet.show()
+        self.lipid_leaflet_dialog.show()
 
     @QtCore.pyqtSlot()
     def on_add_layer_clicked(self):
@@ -1119,11 +1120,11 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         if which_type == "Slab":
             c = _default_slab(parent=self)
         elif which_type == "LipidLeaflet":
-            self.lipid_leaflet.hide()
-            ok = self.lipid_leaflet.exec_()
+            self.lipid_leaflet_dialog.hide()
+            ok = self.lipid_leaflet_dialog.exec_()
             if not ok:
                 return
-            c = self.lipid_leaflet.component()
+            c = self.lipid_leaflet_dialog.component()
         elif which_type == "Spline":
             # if isinstance(host, StackNode):
             #     msg("Can't add Splines to a Stack")
@@ -1322,13 +1323,25 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
 
         return objective
 
-    def fit_data_objects(self, data_objects):
+    def fit_data_objects(
+        self, data_objects, alg=None, opt_kws=None, mcmc_kws=None
+    ):
         """
         Simultaneously fits a sequence of datasets
 
         Parameters
         ----------
         data_objects: list of DataObjects
+
+        alg: str
+            One of the fitting algorithms. If None then queries the GUI state
+            for the algorithm to use.
+
+        opt_kws: dict
+            Specify options for the optimisation
+
+        mcmc_kws: dict
+            Specify options for the MCMC sampling
 
         Returns
         -------
@@ -1337,8 +1350,6 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         """
 
         objective = self.create_objective(data_objects)
-
-        alg = self.settings.fitting_algorithm
 
         # figure out how many varying parameters
         vp = objective.varying_parameters()
@@ -1354,8 +1365,14 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
             "MCMC": "MCMC",
         }
 
+        if alg not in methods:
+            alg = self.settings.fitting_algorithm
+
         # obtain optimisation parameters (maxiter, etc)
-        kws = self.optimisation_parameters.parameters(alg)
+        if opt_kws is None:
+            kws = self.optimisation_parameters.parameters(alg)
+        else:
+            kws = {}.update(opt_kws)
 
         if sys.stderr is None:
             # for pythonw, sys.stderr = None
@@ -1405,28 +1422,37 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
 
             progress.close()
         else:
-            dialog = SampleMCMCDialog(parent=self)
-            if not dialog.exec_():
-                return []
+            if mcmc_kws is None:
+                ok = self.sample_mcmc_dialog.exec_()
+                if not ok:
+                    return []
+                nwalkers = self.sample_mcmc_dialog.walkers.value()
+                init = self.sample_mcmc_dialog.init.currentText()
+                nsteps = self.sample_mcmc_dialog.steps.value()
+                nthin = self.sample_mcmc_dialog.thin.value()
+                ntemps = self.sample_mcmc_dialog.temps.value()
 
-            folder_dialog = QtWidgets.QFileDialog(
-                parent=self, caption="Select location to save MCMC output"
-            )
-            folder_dialog.setFileMode(QtWidgets.QFileDialog.Directory)
-            # folder_dialog.setWindowModality(QtCore.Qt.WindowModal)
-            if folder_dialog.exec_():
-                folder = folder_dialog.selectedFiles()[0]
+                folder_dialog = QtWidgets.QFileDialog(
+                    parent=self, caption="Select location to save MCMC output"
+                )
+                folder_dialog.setFileMode(QtWidgets.QFileDialog.Directory)
+                # folder_dialog.setWindowModality(QtCore.Qt.WindowModal)
+                if folder_dialog.exec_():
+                    folder = folder_dialog.selectedFiles()[0]
+                else:
+                    return []
             else:
-                return []
+                nwalkers = mcmc_kws.get("nwalkers", 200)
+                init = mcmc_kws.get("init", "jitter")
+                nsteps = mcmc_kws.get("nsteps", 100)
+                nthin = mcmc_kws.get("nthin", 1)
+                ntemps = mcmc_kws.get("ntemps", -1)
+                folder = mcmc_kws.get("folder", ".")
+                nplot = mcmc_kws.get("nplot", 200)
+                nburn = mcmc_kws.get("nburn", 0)
 
-            nwalkers = dialog.walkers.value()
-            init = dialog.init.currentText()
-            nsteps = dialog.steps.value()
-            nthin = dialog.thin.value()
-            ntemps = dialog.temps.value()
             if ntemps in [-1, 0, 1]:
                 ntemps = -1
-            dialog.close()
 
             fitter = CurveFitter(objective, ntemps=ntemps, nwalkers=nwalkers)
 
@@ -1477,16 +1503,28 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
             progress.close()
 
             # process the samples
+            def close(dialog=None):
+                if hasattr(dialog, "close"):
+                    dialog.close()
+
             try:
-                dialog = ProcessMCMCDialog(
-                    objective, fitter.chain, folder=folder, parent=self
-                )
-                dialog.exec_()
-                dialog.close()
+                if mcmc_kws is None:
+                    dialog = ProcessMCMCDialog(
+                        objective, fitter.chain, folder=folder, parent=self
+                    )
+                    dialog.exec_()
+                    close(dialog)
+                    nplot = dialog.nplot.value()
+                else:
+                    dialog = None
+                    _process_chain(
+                        objective, fitter.chain, nburn, nthin, folder=folder
+                    )
+
                 # create MCMC graphs
-                _plots(objective, nplot=dialog.nplot.value(), folder=folder)
+                _plots(objective, nplot=nplot, folder=folder)
             except Exception as e:
-                dialog.close()
+                close(dialog)
                 msg(repr(e))
                 print(repr(e))
                 return []
