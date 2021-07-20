@@ -1036,12 +1036,12 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
 
     def requirements(self):
         # returns a string of the packages used in the GUI Python environment
-        import sys
-        import subprocess
+        try:
+            from pip._internal.operations import freeze
+        except ImportError:
+            return ""
 
-        reqs = subprocess.check_output([sys.executable, "-m", "pip", "freeze"])
-        reqs = "".join(reqs.decode())
-        return reqs
+        return "\n".join(list(freeze.freeze()))
 
     @QtCore.pyqtSlot()
     def on_actionAutoscale_graph_triggered(self):
