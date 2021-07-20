@@ -1,6 +1,7 @@
 import os.path
 import glob
 from os.path import join as pjoin
+import pickle
 
 import pytest
 from PyQt5 import QtWidgets, QtCore, QtGui
@@ -12,7 +13,8 @@ from refnx.reflect._app.treeview_gui_model import (
     StructureNode,
 )
 from refnx.reflect._app import resources_rc
-from refnx.reflect import Spline, Structure
+from refnx.reflect import Spline, Structure, SLD, ReflectModel
+import refnx.analysis
 
 
 try:
@@ -142,3 +144,47 @@ def save_and_reload_experiment(app, tmpdir):
     myapp2 = MotofitMainWindow()
     myapp2._restore_state(sf)
     return myapp2
+
+
+@pytest.mark.skipif(QTBOT_MISSING, reason="pytest-qt not installed")
+def test_mcmc_fit_and_reprocess(qtbot, tmpdir):
+    # test if we can add a spline to a model and save an experiment
+    myapp, model = mysetup(qtbot)
+
+    # load a dataset
+    pth = os.path.dirname(os.path.abspath(refnx.analysis.__file__))
+    f_data = pjoin(pth, "test", "e361r.txt")
+    myapp.load_data([f_data])
+
+    fit_list = myapp.currently_fitting_model
+    fit_list.addItems(["e361r"])
+
+    # make a model and save it to pkl so we can load it
+    si = SLD(2.07)
+    sio2 = SLD(3.47)
+    polymer = SLD(1.0)
+    d2o = SLD(6.36)
+
+    s = si | sio2(15, 3) | polymer(210, 3) | d2o(0, 3)
+    rmodel = ReflectModel(s)
+    rmodel.name = "e361r"
+    rmodel.bkg.setp(vary=True, bounds=(1.0e-6, 5e-6))
+    s[-2].thick.setp(vary=True, bounds=(200, 300))
+    s[-2].sld.real.setp(vary=True, bounds=(0.0, 2.0))
+    mod_file_name = pjoin(tmpdir, "model.pkl")
+
+    with open(mod_file_name, "wb") as f:
+        pickle.dump(rmodel, f)
+
+    # load the model
+    myapp.load_model(mod_file_name)
+
+    # do an MCMC
+    myapp.select_fitting_algorithm("MCMC")
+    names_to_fit = myapp.currently_fitting_model.datasets
+    datastore = model.datastore
+    data_objects = [datastore[name] for name in names_to_fit]
+
+    kwds = {"nsteps": 5, "folder": tmpdir, "nplot": 20}
+    myapp.fit_data_objects(data_objects, mcmc_kws=kwds)
+    assert os.path.isfile(pjoin(tmpdir, "steps_corner.png"))

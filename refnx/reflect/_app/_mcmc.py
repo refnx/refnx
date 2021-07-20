@@ -117,20 +117,29 @@ class ProcessMCMCDialog(QtWidgets.QDialog, ProcessMCMCDialogUI):
     def on_buttonBox_accepted(self):
         nthin = self.thin.value()
         nburn = self.burn.value()
+        _process_chain(
+            self.objective, self.chain, nburn, nthin, folder=self.folder
+        )
 
-        process_chain(self.objective, self.chain, nburn=nburn, nthin=nthin)
 
-        # plot the Autocorrelation function of the chain
-        acfs = autocorrelation_chain(self.chain, nburn=nburn, nthin=nthin)
+def _process_chain(objective, chain, nburn, nthin, folder=None):
+    # processes the chain for the ProcessMCMCDialog
+    if folder is None:
+        folder = os.getcwd()
 
-        fig = Figure()
-        FigureCanvas(fig)
+    process_chain(objective, chain, nburn=nburn, nthin=nthin)
 
-        ax = fig.add_subplot(111)
-        ax.plot(acfs)
-        ax.set_ylabel("autocorrelation")
-        ax.set_xlabel("step")
-        fig.savefig(os.path.join(self.folder, "steps-autocorrelation.png"))
+    # plot the Autocorrelation function of the chain
+    acfs = autocorrelation_chain(chain, nburn=nburn, nthin=nthin)
+
+    fig = Figure()
+    FigureCanvas(fig)
+
+    ax = fig.add_subplot(111)
+    ax.plot(acfs)
+    ax.set_ylabel("autocorrelation")
+    ax.set_xlabel("step")
+    fig.savefig(os.path.join(folder, "steps-autocorrelation.png"))
 
 
 def _plots(obj, nplot=0, folder=None):
