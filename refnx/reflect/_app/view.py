@@ -1456,7 +1456,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
             if ntemps in [-1, 0, 1]:
                 ntemps = -1
 
-            verbose = verbose and sys.stderr != None
+            verbose = verbose and sys.stderr is not None
 
             fitter = CurveFitter(objective, ntemps=ntemps, nwalkers=nwalkers)
 
