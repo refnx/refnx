@@ -1374,10 +1374,6 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         else:
             kws = {}.update(opt_kws)
 
-        if sys.stderr is None:
-            # for pythonw, sys.stderr = None
-            kws["verbose"] = False
-
         if methods[alg] != "MCMC":
             fitter = CurveFitter(objective)
             progress = ProgressCallback(self, objective=objective)
@@ -1389,6 +1385,10 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
             if alg != "LM":
                 progress.show()
                 kws["callback"] = progress.callback
+
+            if sys.stderr is None:
+                # for pythonw, sys.stderr = None
+                kws["verbose"] = False
 
             try:
                 # workers is added to differential evolution in scipy 1.2
@@ -1431,6 +1431,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
                 nsteps = self.sample_mcmc_dialog.steps.value()
                 nthin = self.sample_mcmc_dialog.thin.value()
                 ntemps = self.sample_mcmc_dialog.temps.value()
+                verbose = True
 
                 folder_dialog = QtWidgets.QFileDialog(
                     parent=self, caption="Select location to save MCMC output"
@@ -1450,9 +1451,12 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
                 folder = mcmc_kws.get("folder", ".")
                 nplot = mcmc_kws.get("nplot", 200)
                 nburn = mcmc_kws.get("nburn", 0)
+                verbose = mcmc_kws.get("verbose", True)
 
             if ntemps in [-1, 0, 1]:
                 ntemps = -1
+
+            verbose = verbose and sys.stderr is not None
 
             fitter = CurveFitter(objective, ntemps=ntemps, nwalkers=nwalkers)
 
@@ -1487,7 +1491,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
                     fitter.sample(
                         nsteps,
                         f=f,
-                        verbose=True,
+                        verbose=verbose,
                         nthin=nthin,
                         callback=callback,
                         pool=workers.map,
