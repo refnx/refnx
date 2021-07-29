@@ -692,9 +692,7 @@ class SpinSet(object):
     wavelength_bins  : key in refnx.reduce.ReductionOptions
     """
 
-    def __init__(
-        self, down_down, up_up, down_up=None, up_down=None
-    ):
+    def __init__(self, down_down, up_up, down_up=None, up_down=None):
         # Currently only Platypus has polarisation elements
         self.reflect_klass = PlatypusNexus
 
