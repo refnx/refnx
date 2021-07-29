@@ -2153,23 +2153,33 @@ class PlatypusNexus(ReflectNexus):
                 self.cat = PolarisedCatalogue(f)
 
                 # Set spin channels based of flipper statuses
-                if self.cat.pol_flip_current and self.cat.anal_flip_current:
-                    self.spin_state = SpinChannel.UP_UP
-                elif (
-                    self.cat.pol_flip_current
-                    and not self.cat.anal_flip_current
-                ):
-                    self.spin_state = SpinChannel.UP_DOWN
-                elif (
-                    not self.cat.pol_flip_current
-                    and self.cat.anal_flip_current
-                ):
-                    self.spin_state = SpinChannel.DOWN_UP
-                elif (
-                    not self.cat.pol_flip_current
-                    and not self.cat.anal_flip_current
-                ):
-                    self.spin_state = SpinChannel.DOWN_DOWN
+                if self.cat.mode == "POL":
+                    if self.cat.pol_flip_current > 0.1:
+                        self.spin_state = SpinChannel.UP_UP
+                    else:
+                        self.spin_state = SpinChannel.DOWN_DOWN
+
+                if self.cat.mode == "POLANAL":
+                    if (
+                        self.cat.pol_flip_current > 0.1
+                        and self.cat.anal_flip_current > 0.1
+                    ):
+                        self.spin_state = SpinChannel.UP_UP
+                    elif (
+                        self.cat.pol_flip_current > 0.1
+                        and self.cat.anal_flip_current < 0.1
+                    ):
+                        self.spin_state = SpinChannel.UP_DOWN
+                    elif (
+                        self.cat.pol_flip_current < 0.1
+                        and self.cat.anal_flip_current > 0.1
+                    ):
+                        self.spin_state = SpinChannel.DOWN_UP
+                    elif (
+                        self.cat.pol_flip_current < 0.1
+                        and self.cat.anal_flip_current < 0.1
+                    ):
+                        self.spin_state = SpinChannel.DOWN_DOWN
 
     def detector_average_unwanted_direction(self, detector):
         """

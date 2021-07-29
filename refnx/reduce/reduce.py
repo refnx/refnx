@@ -784,7 +784,6 @@ class PolarisedReduce:
         for sc in ["dd", "du"]:
             self.reducers[sc] = PlatypusReduce(spin_set_direct.dd)
         for sc in ["ud", "uu"]:
-            print(spin_set_direct.uu)
             self.reducers[sc] = PlatypusReduce(spin_set_direct.uu)
 
     def __call__(self, spin_set_reflect, pol_eff=None, **reduction_options):
