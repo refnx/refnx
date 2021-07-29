@@ -463,12 +463,17 @@ class TestPlatypusNexus(object):
         assert self.f8863.spin_state == SpinChannel.DOWN_UP
         assert self.f8864.spin_state == SpinChannel.DOWN_DOWN
 
+        # test spin channel setting
+        # non spin analysed. The polariser flipper is on, analyser flipper off
+        # but the experimental mode is POL and z_trans is -200.
+        pn = PlatypusNexus(pjoin(self.pth, "PLP0016427.nx.hdf"))
+        assert pn.spin_state == SpinChannel.UP_UP
+
     def test_PNR_magnet_read(self):
         self.f8861.process()
         # Check magnetic field sensors
         assert_almost_equal(self.f8861.cat.cat["magnet_current_set"], 0)
         assert_almost_equal(self.f8861.cat.cat["magnet_output_current"], 0.001)
-
 
 class TestSpatzNexus:
     @pytest.mark.usefixtures("no_data_directory")
