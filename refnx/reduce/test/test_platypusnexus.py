@@ -39,27 +39,26 @@ class TestSpinSet(object):
     def setup_method(self, tmpdir, data_directory):
         self.pth = pjoin(data_directory, "reduce", "PNR_files")
 
+        fpath = lambda f: pjoin(self.pth, f)
+
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", RuntimeWarning)
 
             self.spinset = SpinSet(
-                down_down="PLP0008864.nx.hdf",
-                up_up="PLP0008861.nx.hdf",
-                down_up="PLP0008863.nx.hdf",
-                up_down="PLP0008862.nx.hdf",
-                data_folder=self.pth,
+                down_down=fpath("PLP0008864.nx.hdf"),
+                up_up=fpath("PLP0008861.nx.hdf"),
+                down_up=fpath("PLP0008863.nx.hdf"),
+                up_down=fpath("PLP0008862.nx.hdf"),
             )
 
             self.spinset_3 = SpinSet(
-                down_down="PLP0008864.nx.hdf",
-                up_up="PLP0008861.nx.hdf",
-                down_up="PLP0008863.nx.hdf",
-                data_folder=self.pth,
+                down_down=fpath("PLP0008864.nx.hdf"),
+                up_up=fpath("PLP0008861.nx.hdf"),
+                down_up=fpath("PLP0008863.nx.hdf"),
             )
             self.spinset_2 = SpinSet(
-                down_down="PLP0008864.nx.hdf",
-                up_up="PLP0008861.nx.hdf",
-                data_folder=self.pth,
+                down_down=fpath("PLP0008864.nx.hdf"),
+                up_up=fpath("PLP0008861.nx.hdf"),
             )
 
         self.cwd = os.getcwd()

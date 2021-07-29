@@ -527,9 +527,9 @@ class PolarisedCatalogue(PlatypusCatalogue):
         self.is_power_supply = False
 
         d = self.cat
-        d = self._polariser_flippers(d, h5d)
-        d = self._analyser_flippers(d, h5d)
-        d = self._check_sample_environments(d, h5d)
+        self._polariser_flippers(d, h5d)
+        self._analyser_flippers(d, h5d)
+        self._check_sample_environments(d, h5d)
 
     def _polariser_flippers(self, d, h5d):
         d["pol_flip_freq"] = h5d[
@@ -547,7 +547,6 @@ class PolarisedCatalogue(PlatypusCatalogue):
         d["pol_guide_current"] = h5d[
             "entry1/instrument/polarizer_flipper/guide_current"
         ][0]
-        return d
 
     def _analyser_flippers(self, d, h5d):
         d["anal_flip_freq"] = h5d[
@@ -569,7 +568,6 @@ class PolarisedCatalogue(PlatypusCatalogue):
         d["anal_dist"] = h5d["entry1/instrument/polarizer/anal_distance"][0]
         d["rotation"] = h5d["entry1/instrument/polarizer/rotation"][0]
         d["z_trans"] = h5d["entry1/instrument/polarizer/z_translation"][0]
-        return d
 
     def _check_sample_environments(self, d, h5d):
         try:
@@ -628,7 +626,6 @@ class PolarisedCatalogue(PlatypusCatalogue):
             d["magnet_measured_field"] = None
             d["magnet_output_current"] = None
             self.is_magnet = False
-        return d
 
 
 class SpinChannel(Enum):
@@ -661,9 +658,6 @@ class SpinSet(object):
     up_down     :   str or refnx.reduce.PlatypusNexus, optional
         Input filename or PlatypusNexus object for the R+- spin
         channel.
-
-    data_folder: {str, Path}, optional
-        Path to the data folder containing the data to be reduced.
 
     Attributes
     ----------
@@ -699,11 +693,10 @@ class SpinSet(object):
     """
 
     def __init__(
-        self, down_down, up_up, down_up=None, up_down=None, data_folder=None
+        self, down_down, up_up, down_up=None, up_down=None
     ):
         # Currently only Platypus has polarisation elements
         self.reflect_klass = PlatypusNexus
-        self.data_folder = data_folder
 
         # initialise spin channels
         self.channels = {
@@ -750,8 +743,9 @@ class SpinSet(object):
                 channel = input_param
             else:
                 # Spin channel inputted as file string
-                fpath = os.path.join(data_folder, input_param)
-                channel = self.reflect_klass(fpath)
+                channel = self.reflect_klass(input_param)
+
+            print(sc, input_param, channel.spin_state, _spin_channels[sc])
             if channel.spin_state is _spin_channels[sc]:
                 self.channels[sc] = channel
                 self.sc_opts[sc] = reduction_options.copy()
