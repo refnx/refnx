@@ -464,10 +464,11 @@ class TestPlatypusNexus(object):
         assert self.f8864.spin_state == SpinChannel.DOWN_DOWN
 
         # test spin channel setting
-        # non spin analysed. The polariser flipper is on, analyser flipper off
-        # but the experimental mode is POL and z_trans is -200.
+        # non spin analysed. mode is POL, not POLANAL
         pn = PlatypusNexus(pjoin(self.pth, "PLP0016427.nx.hdf"))
         assert pn.spin_state == SpinChannel.UP_UP
+        pn = PlatypusNexus(pjoin(self.pth, "PLP0016426.nx.hdf"))
+        assert pn.spin_state == SpinChannel.DOWN_DOWN
 
     def test_PNR_magnet_read(self):
         self.f8861.process()
