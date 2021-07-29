@@ -21,10 +21,10 @@ def refplot(datasets):
     ax = fig.add_subplot(111)
 
     for dataset in datasets:
-        if isinstance(dataset, refnx.data.Data1D):
+        if isinstance(dataset, refnx.dataset.Data1D):
             d = dataset
         else:
-            d = refnx.data.ReflectDataset()
+            d = refnx.dataset.ReflectDataset()
             d.load(dataset)
         ax.plot(d.x, d.y)
 

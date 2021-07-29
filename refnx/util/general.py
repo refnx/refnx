@@ -769,3 +769,33 @@ def _dict_compare(d1, d2):
             return False
 
     return True
+
+
+def _dict_compare_keys(d1, d2, *keys):
+    """
+    Check to see if specific key value pairs are the same within
+    two different dictionaries.
+
+    Parameters
+    ----------
+    d1      :   dict
+    d2      :   dict
+    keys    :   list of str
+        list of keys to check are equal between the dicts
+
+    Returns
+    -------
+    True if the key-value pairs are the same between `d1` and `d2`,
+    otherwise False.
+    """
+    for k in keys:
+        if isinstance(d1[k], np.ndarray) and isinstance(d2[k], np.ndarray):
+            # both numpy arrays
+            if not np.array_equal(d1[k], d2[k]):
+                return False
+            continue
+
+        if not isinstance(d1[k], d2[k].__class__) or d1[k] != d2[k]:
+            return False
+
+    return True

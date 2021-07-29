@@ -565,6 +565,10 @@ class PolarisedCatalogue(PlatypusCatalogue):
         d["anal_guide_current"] = h5d[
             "entry1/instrument/analyzer_flipper/guide_current"
         ][0]
+        d["anal_base"] = h5d["entry1/instrument/polarizer/anal_base"][0]
+        d["anal_dist"] = h5d["entry1/instrument/polarizer/anal_distance"][0]
+        d["rotation"] = h5d["entry1/instrument/polarizer/rotation"][0]
+        d["z_trans"] = h5d["entry1/instrument/polarizer/z_translation"][0]
         return d
 
     def _check_sample_environments(self, d, h5d):
@@ -629,7 +633,7 @@ class PolarisedCatalogue(PlatypusCatalogue):
 
 class SpinChannel(Enum):
     """
-    Describes the spin state of a polarised neutron beam.
+    Describes the incident and scattered spin state of a polarised neutron beam.
     """
 
     UP_UP = (1, 1)
@@ -640,28 +644,58 @@ class SpinChannel(Enum):
 
 class SpinSet(object):
     """
-    Describes a set of spin-channels at a given angle.
+    Describes a set of spin-channels at a given angle of incidence,
+    and can process beams with individual reduction options.
 
     Parameters
     ----------
-    list of {str, h5data}
-        list of str, or list of h5py file handles pointing to
-        a set of polarised neutron beam files
+    down_down   :   str or refnx.reduce.PlatypusNexus
+        Input filename or PlatypusNexus object for the R-- spin
+        channel.
+    up_up       :   str or refnx.reduce.PlatypusNexus
+        Input filename or PlatypusNexus object for the R++ spin
+        channel.
+    down_up     :   str or refnx.reduce.PlatypusNexus, optional
+        Input filename or PlatypusNexus object for the R-+ spin
+        channel.
+    up_down     :   str or refnx.reduce.PlatypusNexus, optional
+        Input filename or PlatypusNexus object for the R+- spin
+        channel.
 
-    data_folder: {str, Path}
+    data_folder: {str, Path}, optional
         Path to the data folder containing the data to be reduced.
 
     Attributes
     ----------
-    dd_opts : refnx.reduce.ReductionOptions
-    du_opts : refnx.reduce.ReductionOptions
-    ud_opts : refnx.reduce.ReductionOptions
-    uu_opts : refnx.reduce.ReductionOptions
+    channels    :   dict
+        Dictionary of each measured spin channel
+            "dd"    :   refnx.reduce.PlatypusNexus (R--)
+            "du"    :   refnx.reduce.PlatypusNexus or None (R-+)
+            "ud"    :   refnx.reduce.PlatypusNexus or None (R+-)
+            "uu"    :   refnx.reduce.PlatypusNexus (R++)
+    sc_opts     :   dict of refnx.reduce.ReductionOptions
+        Reduction options for each spin channel ("dd", "du", "ud", "uu)
+    dd          :   refnx.reduce.PlatypusNexus
+        R-- spin channel
+    uu          :   refnx.reduce.PlatypusNexus
+        R++ spin channel
+    du          :   refnx.reduce.PlatypusNexus or None
+        R-+ spin channel
+    ud          :   refnx.reduce.PlatypusNexus or None
+        R+- spin channel
 
     Notes
     -----
     Each of the `ReductionOptions` specified in `dd_opts,` etc, is used
-    to specify
+    to specify the options used to reduce each spin channel. The following
+    reduction options must be consistent and identical across all
+    spin channels so as to maintain the same wavelength axis across
+    the datasets:
+
+    lo_wavelength    : key in refnx.reduce.ReductionOptions
+    hi_wavelength    : key in refnx.reduce.ReductionOptions
+    rebin_percent    : key in refnx.reduce.ReductionOptions
+    wavelength_bins  : key in refnx.reduce.ReductionOptions
     """
 
     def __init__(
@@ -671,111 +705,153 @@ class SpinSet(object):
         self.reflect_klass = PlatypusNexus
         self.data_folder = data_folder
 
-        channels = [down_down, up_up, down_up, up_down]
-
         # initialise spin channels
-        self.dd = self.du = self.ud = self.uu = None
+        self.channels = {
+            "dd": None,
+            "du": None,
+            "ud": None,
+            "uu": None,
+        }
+
+        self.sc_opts = {
+            "dd": {},
+            "du": {},
+            "ud": {},
+            "uu": {},
+        }
 
         # initialise reduction options for each spin channel
-        reduction_options = {
-            "lo_wavelength": 2.5,
-            "hi_wavelength": 12.5,
-            "rebin_percent": 3,
+        reduction_options = ReductionOptions(
+            lo_wavelength=2.5,
+            hi_wavelength=12.5,
+            rebin_percent=3,
+        )
+        # Put inputs into a dictionary to iterate over
+        input_params = {
+            "dd": down_down,
+            "du": down_up,
+            "ud": up_down,
+            "uu": up_up,
         }
-        self.dd_opts = reduction_options.copy()
-        self.du_opts = reduction_options.copy()
-        self.ud_opts = reduction_options.copy()
-        self.uu_opts = reduction_options.copy()
+        _spin_channels = {
+            "dd": SpinChannel.DOWN_DOWN,
+            "du": SpinChannel.DOWN_UP,
+            "ud": SpinChannel.UP_DOWN,
+            "uu": SpinChannel.UP_UP,
+        }
 
-        for channel in channels:
-            if channel is None:
+        # Load the files and check spin channels and flipper config
+        for sc, input_param in input_params.items():
+            if input_param is None:
+                # Spin channel not measured
                 continue
-            elif isinstance(channel, self.reflect_klass):
-                pass
+            elif isinstance(input_param, self.reflect_klass):
+                # Spin channel inputted as PlatypusNexus object
+                channel = input_param
             else:
-                try:
-                    channel = os.path.join(data_folder, channel)
-                except TypeError:
-                    # original channel is not a string
-                    pass
-                finally:
-                    # let's hope it's an h5 file
-                    channel = self.reflect_klass(channel)
+                # Spin channel inputted as file string
+                fpath = os.path.join(data_folder, input_param)
+                channel = self.reflect_klass(fpath)
+            if channel.spin_state is _spin_channels[sc]:
+                self.channels[sc] = channel
+                self.sc_opts[sc] = reduction_options.copy()
+            else:
+                RuntimeError(
+                    f"Supplied spin channel {_spin_channels[sc]} does not match flipper status"
+                )
 
-            if channel.spin_state is SpinChannel.DOWN_DOWN:
-                self.dd = channel
-            elif channel.spin_state is SpinChannel.DOWN_UP:
-                self.du = channel
-            elif channel.spin_state is SpinChannel.UP_DOWN:
-                self.ud = channel
-            elif channel.spin_state is SpinChannel.UP_UP:
-                self.uu = channel
+    @property
+    def dd(self):
+        return self.channels["dd"]
 
-        assert (
-            self.dd is not None
-        ), "down_down spin channel is not SpinChannel.DOWN_DOWN!"
-        assert (
-            self.uu is not None
-        ), "up_up spin channel is not SpinChannel.UP_UP!"
+    @property
+    def du(self):
+        return self.channels["du"]
+
+    @property
+    def ud(self):
+        return self.channels["ud"]
+
+    @property
+    def uu(self):
+        return self.channels["uu"]
 
     @property
     def spin_channels(self):
+        """
+        Gives a quick indication of what spin channels were measured and
+        are present in this SpinSet.
+
+        Returns
+        -------
+        list of refnx.reduce.SpinChannel Enum values or None, depending on
+        if the spin channel was measured.
+        """
         return [
-            s.spin_state.value if s is not None else None
-            for s in [self.dd, self.du, self.ud, self.uu]
+            self.channels[sc].spin_state.value
+            if self.channels[sc] is not None
+            else None
+            for sc in self.channels
         ]
 
-    def _process_beams(self, reduction_options=None):
+    def process(self, **reduction_options):
         """
         Process beams in SpinSet.
 
-        Reduction options for each spin channel are specified by
-        SpinSet.dd_opts, SpinSet.du_opts, SpinSet.ud_opts, and SpinSet.uu_opts
-        where a standard set of options is provided when constructing the
-        object. To specify different options for each spin channel (such as
-        using the ManualBeamFinder for only spin-flip channels), update the
-        reduction options for the specific spin channel in SpinSet, then
-        process the beams. i.e.
+        If reduction_options is None, the reduction options for each spin
+        channel are specified by the dictionary of spin channel reduction
+        options `SpinSet.sc_opts` which are initialised to the
+        standard options when constructing the object.
 
-        from refnx.reduce.manual_beam_finder import ManualBeamFinder
-        mbf = ManualBeamFinder()
+        If you wish to have unique reduction options for each spin channel,
+        you need to ensure that the wavelength bins between each spin channel
+        remain identical, otherwise a ValueError will be raised.
 
-        spinset = SpinSet(
-            "PLP0051296.nx.hdf",
-            "PLP0051294.nx.hdf",
-            up_down="PLP0051295.nx.hdf",
-            down_up="PLP0051297.nx.hdf",
-            data_folder=data_dir
-        )
-        spinset.du_opts.update({"manual_beam_find" : mbf, peak_pos : -1})
-        spinset.process_beams()
+        If `reduction_options`
+        is not None, then SpinSet.process() will use these options for all
+        spin channels.
 
         Parameters
         ----------
-        reduction_options : dict
-            A single dict of options used to process all spectra. If
-            this is None, then process_beams will use individual dicts
-            for each spin channel
+        reduction_options : dict, optional
+            A single dict of options used to process all spectra.
         """
-        # TODO consider removing this method, not clear how it's going to be
-        # used.
-        if reduction_options:
-            print(
-                "Applying the supplied reduction_options to all spin channels"
-            )
-            self.dd_opts = reduction_options.copy()
-            self.du_opts = reduction_options.copy()
-            self.ud_opts = reduction_options.copy()
-            self.uu_opts = reduction_options.copy()
 
-        for opts, beam in zip(
-            [self.dd_opts, self.du_opts, self.ud_opts, self.uu_opts],
-            [self.dd, self.du, self.ud, self.uu],
-        ):
-            if beam is None:
+        if reduction_options is not None:
+            for sc in self.sc_opts:
+                self.sc_opts[sc].update(reduction_options)
+
+        # Check specific reduction options are the same across all
+        # spin channels to ensure the same wavelength axis
+
+        _wavelength_keys = [
+            "lo_wavelength",
+            "hi_wavelength",
+            "rebin_percent",
+            "wavelength_bins",
+        ]
+
+        # For each spin channel, if it is not empty (i.e. channel not
+        # measured) then check that its reduction options are the same as down_down
+        # reduction options for the keys in _wavelength_keys.
+
+        for sc in self.sc_opts:
+            if self.sc_opts[sc]:
+                if not general._dict_compare_keys(
+                    self.sc_opts["dd"], self.sc_opts[sc], *_wavelength_keys
+                ):
+                    raise ValueError(
+                        "Reduction options `lo_wavelength`, `hi_wavelength`,"
+                        " `rebin_percent`, and `wavelength_bins` must be"
+                        "identical across spin channels to preserve a common"
+                        "wavelength axis."
+                    )
+
+        for sc, channel in self.channels.items():
+            if channel is None:
                 continue
             else:
-                beam.process(**opts)
+                channel.process(**self.sc_opts[sc])
 
     def plot_spectra(self, **kwargs):
         """

@@ -43,20 +43,23 @@ class TestSpinSet(object):
             warnings.simplefilter("ignore", RuntimeWarning)
 
             self.spinset = SpinSet(
-                down_down=pjoin(self.pth, "PLP0008864.nx.hdf"),
-                up_up=pjoin(self.pth, "PLP0008861.nx.hdf"),
-                down_up=pjoin(self.pth, "PLP0008863.nx.hdf"),
-                up_down=pjoin(self.pth, "PLP0008862.nx.hdf"),
+                down_down="PLP0008864.nx.hdf",
+                up_up="PLP0008861.nx.hdf",
+                down_up="PLP0008863.nx.hdf",
+                up_down="PLP0008862.nx.hdf",
+                data_folder=self.pth,
             )
 
             self.spinset_3 = SpinSet(
-                down_down=pjoin(self.pth, "PLP0008864.nx.hdf"),
-                up_up=pjoin(self.pth, "PLP0008861.nx.hdf"),
-                down_up=pjoin(self.pth, "PLP0008863.nx.hdf"),
+                down_down="PLP0008864.nx.hdf",
+                up_up="PLP0008861.nx.hdf",
+                down_up="PLP0008863.nx.hdf",
+                data_folder=self.pth,
             )
             self.spinset_2 = SpinSet(
-                down_down=pjoin(self.pth, "PLP0008864.nx.hdf"),
-                up_up=pjoin(self.pth, "PLP0008861.nx.hdf"),
+                down_down="PLP0008864.nx.hdf",
+                up_up="PLP0008861.nx.hdf",
+                data_folder=self.pth,
             )
 
         self.cwd = os.getcwd()
@@ -70,24 +73,50 @@ class TestSpinSet(object):
         assert self.spinset_3.spin_channels == [(0, 0), (0, 1), None, (1, 1)]
         assert self.spinset_2.spin_channels == [(0, 0), None, None, (1, 1)]
 
-    def test_process_beams(self):
-        self.spinset._process_beams()
+    def test_process(self):
+        self.spinset.process()
         assert self.spinset.dd.processed_spectrum
         assert self.spinset.du.processed_spectrum
         assert self.spinset.ud.processed_spectrum
         assert self.spinset.uu.processed_spectrum
 
-        self.spinset_3._process_beams()
+        self.spinset_3.process()
         assert self.spinset_3.dd.processed_spectrum
         assert self.spinset_3.du.processed_spectrum
         assert self.spinset_3.ud is None
         assert self.spinset_3.uu.processed_spectrum
 
-        self.spinset_2._process_beams()
+        self.spinset_2.process()
         assert self.spinset_2.dd.processed_spectrum
         assert self.spinset_2.du is None
         assert self.spinset_2.ud is None
         assert self.spinset_2.uu.processed_spectrum
+
+    def test_processing_different_reduction_options(self):
+        # Check every combination of spin channel and reduction option that
+        # determines the resulting wavelength axis to make sure errors
+        # are raised appropriately
+
+        standard_opts = dict(
+            lo_wavelength=2.5,
+            hi_wavelength=12.5,
+            rebin_percent=3,
+        )
+        for spin_set in [self.spinset, self.spinset_3, self.spinset_2]:
+            for sc in ["dd", "du", "ud", "uu"]:
+                if spin_set.channels[sc] is None:
+                    continue
+                else:
+                    for option in [
+                        "lo_wavelength",
+                        "hi_wavelength",
+                        "rebin_percent",
+                    ]:
+                        spin_set.sc_opts[sc].update({option: 5})
+                        with pytest.raises(ValueError):
+                            spin_set.process()
+                        # Reset dd_opts
+                        spin_set.sc_opts[sc].update(standard_opts)
 
 
 class TestPlatypusNexus(object):
@@ -102,7 +131,6 @@ class TestPlatypusNexus(object):
             self.f641 = PlatypusNexus(pjoin(self.pth, "PLP0011641.nx.hdf"))
 
             # These PNR datasets all have different flipper settings
-            # which should be read accurately.
             self.f8861 = PlatypusNexus(
                 pjoin(self.pth, "PNR_files/PLP0008861.nx.hdf")
             )
