@@ -39,7 +39,8 @@ class TestSpinSet(object):
     def setup_method(self, tmpdir, data_directory):
         self.pth = pjoin(data_directory, "reduce", "PNR_files")
 
-        fpath = lambda f: pjoin(self.pth, f)
+        def fpath(f):
+            return pjoin(self.pth, f)
 
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", RuntimeWarning)
