@@ -246,18 +246,16 @@ class TestPolarisedReduce:
             warnings.simplefilter("ignore", RuntimeWarning)
 
             spinset_rb = SpinSet(
-                down_down="PLP0012785.nx.hdf",
-                up_up="PLP0012787.nx.hdf",
-                up_down="PLP0012786.nx.hdf",
-                down_up="PLP0012788.nx.hdf",
-                data_folder=self.pth,
+                down_down=pjoin(self.pth, "PLP0012785.nx.hdf"),
+                up_up=pjoin(self.pth, "PLP0012787.nx.hdf"),
+                up_down=pjoin(self.pth, "PLP0012786.nx.hdf"),
+                down_up=pjoin(self.pth, "PLP0012788.nx.hdf"),
             )
             spinset_db = SpinSet(
-                down_down="PLP0012793.nx.hdf",
-                up_up="PLP0012795.nx.hdf",
-                up_down="PLP0012794.nx.hdf",
-                down_up="PLP0012796.nx.hdf",
-                data_folder=self.pth,
+                down_down=pjoin(self.pth, "PLP0012793.nx.hdf"),
+                up_up=pjoin(self.pth, "PLP0012795.nx.hdf"),
+                up_down=pjoin(self.pth, "PLP0012794.nx.hdf"),
+                down_up=pjoin(self.pth, "PLP0012796.nx.hdf"),
             )
             a = PolarisedReduce(spinset_db)
 
@@ -354,16 +352,14 @@ class TestPolarisedReduce:
             warnings.simplefilter("ignore", RuntimeWarning)
 
             spinset_rb = SpinSet(
-                down_down="PLP0012785.nx.hdf",
-                up_up="PLP0012787.nx.hdf",
-                up_down="PLP0012786.nx.hdf",
-                data_folder=self.pth,
+                down_down=pjoin(self.pth, "PLP0012785.nx.hdf"),
+                up_up=pjoin(self.pth, "PLP0012787.nx.hdf"),
+                up_down=pjoin(self.pth, "PLP0012786.nx.hdf"),
             )
             spinset_db = SpinSet(
-                down_down="PLP0012793.nx.hdf",
-                up_up="PLP0012795.nx.hdf",
-                up_down="PLP0012794.nx.hdf",
-                data_folder=self.pth,
+                down_down=pjoin(self.pth, "PLP0012793.nx.hdf"),
+                up_up=pjoin(self.pth, "PLP0012795.nx.hdf"),
+                up_down=pjoin(self.pth, "PLP0012794.nx.hdf"),
             )
             a = PolarisedReduce(spinset_db)
 
@@ -459,14 +455,12 @@ class TestPolarisedReduce:
             warnings.simplefilter("ignore", RuntimeWarning)
 
             spinset_rb = SpinSet(
-                down_down="PLP0012785.nx.hdf",
-                up_up="PLP0012787.nx.hdf",
-                data_folder=self.pth,
+                down_down=pjoin(self.pth, "PLP0012785.nx.hdf"),
+                up_up=pjoin(self.pth, "PLP0012787.nx.hdf"),
             )
             spinset_db = SpinSet(
-                down_down="PLP0012793.nx.hdf",
-                up_up="PLP0012795.nx.hdf",
-                data_folder=self.pth,
+                down_down=pjoin(self.pth, "PLP0012793.nx.hdf"),
+                up_up=pjoin(self.pth, "PLP0012795.nx.hdf"),
             )
             a = PolarisedReduce(spinset_db)
 
@@ -557,14 +551,12 @@ class TestPolarisedReduce:
             warnings.simplefilter("ignore", RuntimeWarning)
 
             spinset_rb = SpinSet(
-                down_down="PLP0012785.nx.hdf",
-                up_up="PLP0012787.nx.hdf",
-                data_folder=self.pth,
+                down_down=pjoin(self.pth, "PLP0012785.nx.hdf"),
+                up_up=pjoin(self.pth, "PLP0012787.nx.hdf"),
             )
             spinset_db = SpinSet(
-                down_down="PLP0012793.nx.hdf",
-                up_up="PLP0012795.nx.hdf",
-                data_folder=self.pth,
+                down_down=pjoin(self.pth, "PLP0012793.nx.hdf"),
+                up_up=pjoin(self.pth, "PLP0012795.nx.hdf"),
             )
             a = PolarisedReduce(spinset_db)
 
@@ -647,14 +639,12 @@ class TestPolarisationEfficiency:
 
             # Create SpinSets, PolarisedReduce object and ReductionOptions
             spinset_rb = SpinSet(
-                down_down="PLP0012785.nx.hdf",
-                up_up="PLP0012787.nx.hdf",
-                data_folder=self.pth,
+                down_down=pjoin(self.pth, "PLP0012785.nx.hdf"),
+                up_up=pjoin(self.pth, "PLP0012787.nx.hdf"),
             )
             spinset_db = SpinSet(
-                down_down="PLP0012793.nx.hdf",
-                up_up="PLP0012795.nx.hdf",
-                data_folder=self.pth,
+                down_down=pjoin(self.pth, "PLP0012793.nx.hdf"),
+                up_up=pjoin(self.pth, "PLP0012795.nx.hdf"),
             )
             a = PolarisedReduce(spinset_db)
 
