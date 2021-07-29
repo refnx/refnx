@@ -745,7 +745,7 @@ class SpinSet(object):
                 # Spin channel inputted as file string
                 channel = self.reflect_klass(input_param)
 
-            print(sc, input_param, channel.spin_state, _spin_channels[sc])
+            # print(sc, input_param, channel.spin_state, _spin_channels[sc])
             if channel.spin_state is _spin_channels[sc]:
                 self.channels[sc] = channel
                 self.sc_opts[sc] = reduction_options.copy()
