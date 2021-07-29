@@ -475,6 +475,7 @@ class TestPlatypusNexus(object):
         assert_almost_equal(self.f8861.cat.cat["magnet_current_set"], 0)
         assert_almost_equal(self.f8861.cat.cat["magnet_output_current"], 0.001)
 
+
 class TestSpatzNexus:
     @pytest.mark.usefixtures("no_data_directory")
     @pytest.fixture(autouse=True)
