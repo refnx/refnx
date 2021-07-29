@@ -357,3 +357,4 @@ in 0.1.13.
 
 0.1.22
 ------
+- Added polarisation reduction (Oliver Paull)
