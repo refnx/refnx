@@ -1075,7 +1075,7 @@ class Component:
             - slab[N, 1]
                SLD.real of layer N (not including solvent)
             - slab[N, 2]
-               *overall* SLD.imag of layer N (not including solvent)
+               SLD.imag of layer N (not including solvent)
             - slab[N, 3]
                roughness between layer N and N-1
             - slab[N, 4]
