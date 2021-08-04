@@ -34,7 +34,7 @@ class Interface:
 
     def __call__(self, z, scale=1, loc=0):
         raise NotImplementedError(
-            "You can't use the Interface superclass to" "calculate profiles"
+            "You can't use the Interface superclass to calculate profiles"
         )
 
 
