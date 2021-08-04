@@ -478,8 +478,10 @@ class Objective(BaseObjective):
         """
         if is_parameter(self.lnsigma):
             return self.lnsigma | self.auxiliary_params | self.model.parameters
-        else:
+        elif len(self.auxiliary_params):
             return self.auxiliary_params | self.model.parameters
+        else:
+            return self.model.parameters
 
     def setp(self, pvals):
         """
