@@ -189,6 +189,18 @@ class TestObjective:
         # if we supply a value outside the range it should return -inf
         assert_equal(self.objective.logp([-1, 2]), -np.inf)
 
+        # are auxiliary parameters included in log?
+        assert_almost_equal(self.objective.logp([8, 2]), np.log(0.1))
+        p = Parameter(2.0, bounds=(1.0, 3.0))
+        self.objective.auxiliary_params = Parameters([p])
+        assert len(self.objective.varying_parameters()) == 2
+        assert_equal(self.objective.logp(), np.log(0.1))
+        assert p in self.objective.parameters.flattened()
+        p.vary = True
+        assert len(self.objective.varying_parameters()) == 3
+        assert_equal(self.objective.logp(), np.log(0.1) + np.log(0.5))
+        assert p in self.objective.varying_parameters().flattened()
+
     def test_logpost(self):
         # http://dan.iel.fm/emcee/current/user/line/
         assert_almost_equal(self.objective.logp(), 0)

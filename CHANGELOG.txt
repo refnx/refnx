@@ -358,3 +358,7 @@ in 0.1.13.
 0.1.22
 ------
 - Added polarisation reduction (Oliver Paull)
+- Introduce Objective.auxiliary_params. These are extra parameters that are
+  modified during the calculation of Objective statistics, and are varied
+  during a fit, but may not be directly part of Model calculating a signal.
+  Their main purpose is to aid in creating constraints.

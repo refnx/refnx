@@ -28,7 +28,7 @@ from refnx.analysis import (
 )
 from refnx.analysis.curvefitter import bounds_list
 from refnx.dataset import Data1D
-from refnx._lib import emcee
+from refnx._lib import emcee, flatten
 
 from NISTModels import NIST_runner, NIST_Models
 
@@ -235,6 +235,7 @@ class TestCurveFitter:
         mcfitter = CurveFitter(self.objective, ntemps=10, nwalkers=50)
         assert_equal(mcfitter.sampler.ntemps, 10)
 
+        assert len(list(flatten(self.objective.parameters))) == 2
         # check that the parallel sampling works
         # and that chain shape is correct
         res = mcfitter.sample(steps=5, nthin=2, verbose=False, pool=-1)
@@ -243,6 +244,8 @@ class TestCurveFitter:
         assert_equal(mcfitter.chain[:, 0, :, 0], res[0].chain)
         assert_equal(mcfitter.chain[:, 0, :, 1], res[1].chain)
         chain = np.copy(mcfitter.chain)
+
+        assert len(list(flatten(self.objective.parameters))) == 2
 
         # the sampler should store the probability
         assert_equal(mcfitter.logpost.shape, (5, 10, 50))

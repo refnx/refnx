@@ -322,6 +322,9 @@ class TestParameters:
         d = c | self.m
         assert_(d.name == "c")
 
+        # c and d should not be the same object
+        assert c is not d
+
     def test_ior(self):
         # concatenation of Parameters
         # Parameters with Parameter
