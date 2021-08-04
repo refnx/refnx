@@ -170,9 +170,9 @@ class Parameters(UserList):
                 "Can only concatenate a Parameter with another"
                 " Parameter or Parameters instance"
             )
-
-        self.append(other)
-        return self
+        c = Parameters(self.data, self.name)
+        c.append(other)
+        return c
 
     def logp(self):
         """

@@ -259,6 +259,10 @@ class Objective(BaseObjective):
         `logp_extra(model, data)`. The `model` will already possess
         updated parameters. Beware of including the same log-probability
         terms more than once.
+    auxiliary_params : {sequence, Parameters}, optional
+        Extra Parameter objects that are involved with curvefitting, but
+        aren't directly included as part of the `model`. See notes for more
+        details.
     name : str
         Name for the objective.
 
@@ -266,6 +270,10 @@ class Objective(BaseObjective):
     -----
     For parallelisation `logp_extra` needs to be picklable.
 
+    `auxiliary_params` are included in calculating the `Objective.logp`
+    term, are present in `Objective.varying_parameters()`, and are modified by
+    Curvefitter during an analysis. Their main purpose is to aid in making
+    constraints in models.
     """
 
     def __init__(
@@ -276,6 +284,7 @@ class Objective(BaseObjective):
         use_weights=True,
         transform=None,
         logp_extra=None,
+        auxiliary_params=(),
         name=None,
     ):
         self.model = model
@@ -288,6 +297,11 @@ class Objective(BaseObjective):
         self.lnsigma = lnsigma
         if lnsigma is not None:
             self.lnsigma = possibly_create_parameter(lnsigma, "lnsigma")
+
+        if isinstance(auxiliary_params, Parameters):
+            self.auxiliary_params = auxiliary_params
+        else:
+            self.auxiliary_params = Parameters(auxiliary_params)
 
         self._use_weights = use_weights
         self.transform = transform
@@ -463,7 +477,9 @@ class Objective(BaseObjective):
 
         """
         if is_parameter(self.lnsigma):
-            return self.lnsigma | self.model.parameters
+            return self.lnsigma | self.auxiliary_params | self.model.parameters
+        elif len(self.auxiliary_params):
+            return self.auxiliary_params | self.model.parameters
         else:
             return self.model.parameters
 
@@ -492,6 +508,9 @@ class Objective(BaseObjective):
         # values supplied are enough to specify all parameter values
         # even those that are repeated
         flattened_parameters = list(flatten(self.parameters))
+        # print(len(flattened_parameters))
+        print(self.auxiliary_params)
+        print(len(list(flatten(self.auxiliary_params))))
         if len(pvals) == len(flattened_parameters):
             for idx, param in enumerate(flattened_parameters):
                 param.value = pvals[idx]
