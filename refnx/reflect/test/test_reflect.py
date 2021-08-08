@@ -91,6 +91,7 @@ class TestReflect:
         )
 
     @pytest.mark.parametrize("backend", BACKENDS)
+    @pytest.mark.filterwarnings("ignore:Using the SLOW")
     def test_abeles(self, backend):
         slabs = self.structure.slabs()[..., :4]
 
@@ -100,6 +101,7 @@ class TestReflect:
         assert_almost_equal(calc, self.rvals)
 
     @pytest.mark.parametrize("backend", BACKENDS)
+    @pytest.mark.filterwarnings("ignore:Using the SLOW")
     def test_noncontig_abeles(self, backend):
         # test for non-contiguous Q values
         tempq = self.qvals[0::5]
@@ -112,6 +114,7 @@ class TestReflect:
             assert_almost_equal(calc, self.rvals[0::5])
 
     @pytest.mark.parametrize("backend", BACKENDS)
+    @pytest.mark.filterwarnings("ignore:Using the SLOW")
     def test_abeles_multithreaded(self, backend):
         slabs = self.structure.slabs()[..., :4]
 
@@ -134,6 +137,7 @@ class TestReflect:
             assert _creflect.__file__ != _cyreflect.__file__
 
     @pytest.mark.parametrize("backend", BACKENDS)
+    @pytest.mark.filterwarnings("ignore:Using the SLOW")
     def test_first_principles(self, backend):
         # Test a first principles reflectivity calculation, rather than
         # relying on a previous calculation from Motofit code.
@@ -177,6 +181,7 @@ class TestReflect:
         with use_reflect_backend(backend) as abeles:
             assert_allclose(abeles(q, slabs), reflectivity, rtol=1e-14)
 
+    @pytest.mark.filterwarnings("ignore:Using the SLOW")
     def test_scale_bkg_abeles(self):
         s = self.structure.slabs()[..., :4]
 
@@ -230,6 +235,7 @@ class TestReflect:
     """
 
     @pytest.mark.parametrize("backend", BACKENDS)
+    @pytest.mark.filterwarnings("ignore:Using the SLOW")
     def test_compare_abeles0(self, backend):
         # test one layer system against the python implementation
         layer0 = np.array([[0, 2.07, 0.01, 3], [0, 6.36, 0.1, 3]])
@@ -249,6 +255,7 @@ class TestReflect:
         assert_almost_equal(calc1, calc2)
 
     @pytest.mark.parametrize("backend", BACKENDS)
+    @pytest.mark.filterwarnings("ignore:Using the SLOW")
     def test_compare_abeles2(self, backend):
         # test two layer system against the python implementation
         layer2 = np.array(
@@ -267,6 +274,7 @@ class TestReflect:
         assert_almost_equal(calc1, calc2)
 
     @pytest.mark.parametrize("backend", BACKENDS)
+    @pytest.mark.filterwarnings("ignore:Using the SLOW")
     def test_abeles_absorption(self, backend):
         # https://github.com/andyfaff/refl1d_analysis/tree/master/notebooks
         q = np.linspace(0.008, 0.05, 500)
@@ -285,6 +293,7 @@ class TestReflect:
         assert_almost_equal(calc1, calc2)
 
     @pytest.mark.parametrize("backend", BACKENDS)
+    @pytest.mark.filterwarnings("ignore:Using the SLOW")
     def test_abeles_absorption2(self, backend):
         # https://github.com/andyfaff/refl1d_analysis/tree/master/notebooks
         # this has an appreciable notch just below the critical edge
@@ -303,6 +312,7 @@ class TestReflect:
         assert_almost_equal(calc, refl1d[1])
 
     @pytest.mark.parametrize("backend", BACKENDS)
+    @pytest.mark.filterwarnings("ignore:Using the SLOW")
     def test_compare_refl1d(self, backend):
         # refl1d calculated with:
         # from refl1d import abeles
@@ -329,6 +339,7 @@ class TestReflect:
             calc = abeles(x, layers)
         assert_almost_equal(calc, refl1d)
 
+    @pytest.mark.filterwarnings("ignore:Using the SLOW")
     def test_multilayer(self):
         x = np.geomspace(0.005, 0.5, 101)
         air = np.array([0, 0, 0, 0])
@@ -390,6 +401,7 @@ class TestReflect:
         assert_almost_equal(calc, self.rvals)
 
     @pytest.mark.parametrize("backend", BACKENDS)
+    @pytest.mark.filterwarnings("ignore:Using the SLOW")
     def test_abeles_reshape(self, backend):
         # reflectivity should be able to deal with multidimensional input
         s = self.structure.slabs()[..., :4]
@@ -449,6 +461,7 @@ class TestReflect:
         )
 
     @pytest.mark.parametrize("backend", BACKENDS)
+    @pytest.mark.filterwarnings("ignore:Using the SLOW")
     def test_parallel_calculator(self, backend):
         # test that parallel abeles work with a mapper
         q = np.linspace(0.01, 0.5, 1000).reshape(20, 50)
