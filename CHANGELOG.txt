@@ -365,3 +365,6 @@ in 0.1.13.
 - Add example to show how to co-refine non-spinflip NR data.
 - Silenced warning during test from slow reflectivity calculation, which
   erroneously gave the impression that the C based kernel wasn't available.
+
+0.1.23
+------
