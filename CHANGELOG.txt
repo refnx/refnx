@@ -362,4 +362,6 @@ in 0.1.13.
   modified during the calculation of Objective statistics, and are varied
   during a fit, but may not be directly part of Model calculating a signal.
   Their main purpose is to aid in creating constraints.
- - Add example to show how to co-refine non-spinflip NR data.
+- Add example to show how to co-refine non-spinflip NR data.
+- Silenced warning during test from slow reflectivity calculation, which
+  erroneously gave the impression that the C based kernel wasn't available.
