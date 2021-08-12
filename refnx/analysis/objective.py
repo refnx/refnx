@@ -508,9 +508,6 @@ class Objective(BaseObjective):
         # values supplied are enough to specify all parameter values
         # even those that are repeated
         flattened_parameters = list(flatten(self.parameters))
-        # print(len(flattened_parameters))
-        print(self.auxiliary_params)
-        print(len(list(flatten(self.auxiliary_params))))
         if len(pvals) == len(flattened_parameters):
             for idx, param in enumerate(flattened_parameters):
                 param.value = pvals[idx]
