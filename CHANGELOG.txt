@@ -371,3 +371,6 @@ in 0.1.13.
 - bugfix: remove printing of auxiliary parameters in Objective.setp. A remnant
   print function was in that method. However, those parameters aren't present
   in a global objective, which caused an AttributeError.
+
+0.1.24
+------
