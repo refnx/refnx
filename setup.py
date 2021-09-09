@@ -295,7 +295,7 @@ info = {
     "packages": packages,
     "include_package_data": True,
     "setup_requires": ["numpy", "cython"],
-    "python_requires": ">=3.7",
+    "python_requires": ">=3.8",
     "install_requires": ["numpy", "scipy"],
     "extras_require": {
         "all": [

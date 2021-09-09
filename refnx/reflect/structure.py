@@ -1377,9 +1377,7 @@ class Stack(Component, UserList):
         s = list()
         s.append("{:=>80}".format(""))
 
-        s.append(
-            "Stack start: {} repeats".format(round(abs(self.repeats.value)))
-        )
+        s.append(f"Stack start: {int(round(abs(self.repeats.value)))} repeats")
         for component in self:
             s.append(str(component))
         s.append("Stack finish")
@@ -1431,7 +1429,7 @@ class Stack(Component, UserList):
         if structure is not None:
             self.solvent = structure.solvent
 
-        repeats = round(abs(self.repeats.value))
+        repeats = int(round(abs(self.repeats.value)))
 
         slabs = np.concatenate(
             [c.slabs(structure=self) for c in self.components]
@@ -1446,7 +1444,7 @@ class Stack(Component, UserList):
         return slabs
 
     def _interfaces_get(self):
-        repeats = round(abs(self.repeats.value))
+        repeats = int(round(abs(self.repeats.value)))
         interfaces = list(flatten([i.interfaces for i in self.data]))
 
         if repeats > 1:

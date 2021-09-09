@@ -131,6 +131,7 @@ cpdef cnp.ndarray abeles(cnp.ndarray x,
     return y
 
 
+@cython.boundscheck(False)
 cpdef _contract_by_area(cnp.ndarray[cnp.float64_t, ndim=2] slabs, dA=0.5):
     newslabs = np.copy(slabs)[::-1]
 
