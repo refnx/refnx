@@ -374,3 +374,8 @@ in 0.1.13.
 
 0.1.24
 ------
+- use oldest-supported-numpy to ensure that older numpy versions are used to
+  build refnx wheels. This will allow refnx to be used with more recent
+  versions as well as the oldest version supported on a given Python version.
+  Previously refnx wheels were built with the newest numpy available at
+  build time, and were probably not compatible with older numpy versions.
