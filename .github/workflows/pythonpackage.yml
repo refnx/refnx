@@ -127,7 +127,7 @@ jobs:
         LDFLAGS: "-L/usr/local/opt/libomp/lib -lomp"
         DYLD_LIBRARY_PATH: /usr/local/opt/libomp/lib
       run: |
-        python -m pip wheel . -w dist
+        python -m pip wheel . --no-deps -w dist
         # so that libomp is distributed with wheel
         delocate-wheel -v dist/refnx*.whl
 
@@ -203,8 +203,7 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         python -m pip install wheel
-
-        python -m pip wheel . -w dist
+        python -m pip wheel . --no-deps -w dist
 
     - name: Install package and test with pytest
       if: ${{ matrix.python-version == '3.8' }}
@@ -212,6 +211,7 @@ jobs:
         PYOPENCL_CTX: 0
       run: |
         cd dist
+        python -m pip install numpy scipy
         python -m pip install --only-binary=refnx --no-index --find-links=. refnx
         python -m pip install --upgrade --upgrade-strategy eager h5py cython pandas xlrd pytest ipywidgets IPython matplotlib traitlets pyqt5 uncertainties corner tqdm periodictable pytest-qt
         #        python -m pip install git+https://github.com/pymc-devs/pymc3
