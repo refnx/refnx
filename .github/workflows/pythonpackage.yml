@@ -12,7 +12,7 @@ jobs:
     strategy:
       max-parallel: 3
       matrix:
-        python-version: [3.8, 3.9]
+        python-version: [3.7, 3.8, 3.9]
 
     steps:
     - uses: actions/checkout@v2
@@ -37,18 +37,14 @@ jobs:
         path: ${{ steps.pip-cache.outputs.dir }}
         key: ${{ hashFiles('setup.py') }}-${{ matrix.python-version }}-${{ hashFiles('tox.ini') }}
 
-    - name: Install dependencies
-      run: |
-        python -m pip install wheel
-        python -m pip install numpy scipy oldest-supported-numpy h5py cython pandas xlrd flake8 pytest ipywidgets IPython matplotlib traitlets pyqt5==5.15.2 uncertainties attrs corner tqdm periodictable pyopencl pymc3 pytest-qt
-
     - name: Test with pytest
       env:
         MPLBACKEND: agg
       run: |
-        python setup.py build_ext --inplace
-        # python -m pip install -e .
-        python -m pip install pytest
+        python -m pip install --upgrade pip
+        python -m pip install wheel
+        python -m pip install -e .[all]
+        python -m pip install pytest pyqt5==5.15.2 uncertainties pyopencl pymc3 pytest-qt
         # uses xvfb for GUI part of the test
         xvfb-run pytest
 
@@ -91,7 +87,7 @@ jobs:
     strategy:
       max-parallel: 3
       matrix:
-        python-version: [3.8, 3.9]
+        python-version: [3.7, 3.8, 3.9]
 
     steps:
     - uses: actions/checkout@v2
@@ -119,9 +115,7 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        python -m pip install wheel
-        python -m pip install --upgrade --upgrade-strategy eager numpy scipy oldest-supported-numpy h5py cython pandas xlrd pytest ipywidgets IPython matplotlib traitlets pyqt5 uncertainties attrs corner tqdm periodictable delocate pyopencl
-        #        python -m pip install git+https://github.com/pymc-devs/pymc3
+        python -m pip install wheel delocate
 
     - name: Make wheel
       env:
@@ -133,7 +127,7 @@ jobs:
         LDFLAGS: "-L/usr/local/opt/libomp/lib -lomp"
         DYLD_LIBRARY_PATH: /usr/local/opt/libomp/lib
       run: |
-        python setup.py bdist_wheel
+        python -m pip wheel .
         # so that libomp is distributed with wheel
         delocate-wheel -v dist/*.whl
 
@@ -142,7 +136,10 @@ jobs:
         MPLBACKEND: agg
       run: |
         pushd dist
+        python -m pip install numpy scipy
         python -m pip install --only-binary=refnx --no-index --find-links=. refnx
+        python -m pip install --upgrade --upgrade-strategy eager h5py pandas xlrd pytest ipywidgets IPython matplotlib traitlets pyqt5 uncertainties attrs corner tqdm periodictable pyopencl pytest-qt
+        #        python -m pip install git+https://github.com/pymc-devs/pymc3
         pytest --pyargs refnx
         popd
 
@@ -181,7 +178,7 @@ jobs:
     strategy:
       max-parallel: 3
       matrix:
-        python-version: [3.8, 3.9]
+        python-version: [3.7, 3.8, 3.9]
 
     steps:
     - uses: actions/checkout@v2
@@ -202,21 +199,12 @@ jobs:
         path: ${{ steps.pip-cache.outputs.dir }}
         key: ${{ hashFiles('setup.py') }}-win-${{ matrix.python-version }}-${{ hashFiles('tox.ini') }}
 
-    - name: Install dependencies
+    - name: Make wheel
       run: |
         python -m pip install --upgrade pip
         python -m pip install wheel
 
-        python -m pip install --upgrade --upgrade-strategy eager numpy scipy oldest-supported-numpy h5py cython pandas xlrd pytest ipywidgets IPython matplotlib traitlets pyqt5 uncertainties corner tqdm periodictable
-        #        python -m pip install git+https://github.com/pymc-devs/pymc3
-
-        #        python -m pip install pytools mako cffi
-        #        choco install opencl-intel-cpu-runtime
-        #        python -m pip install --only-binary=pyopencl --find-links http://www.silx.org/pub/wheelhouse/ --trusted-host www.silx.org pyopencl
-
-    - name: Make wheel
-      run: |
-        python setup.py bdist_wheel
+        python -m pip wheel .
 
     - name: Install package and test with pytest
       if: ${{ matrix.python-version == '3.8' }}
@@ -224,7 +212,15 @@ jobs:
         PYOPENCL_CTX: 0
       run: |
         cd dist
+        python -m pip install numpy scipy
         python -m pip install --only-binary=refnx --no-index --find-links=. refnx
+        python -m pip install --upgrade --upgrade-strategy eager h5py cython pandas xlrd pytest ipywidgets IPython matplotlib traitlets pyqt5 uncertainties corner tqdm periodictable pytest-qt
+        #        python -m pip install git+https://github.com/pymc-devs/pymc3
+
+        #        python -m pip install pytools mako cffi
+        #        choco install opencl-intel-cpu-runtime
+        #        python -m pip install --only-binary=pyopencl --find-links http://www.silx.org/pub/wheelhouse/ --trusted-host www.silx.org pyopencl
+
         pytest --pyargs refnx
         cd ..
 

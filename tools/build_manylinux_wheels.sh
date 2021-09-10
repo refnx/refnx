@@ -10,12 +10,7 @@ cd /io
 
 # Compile wheels
 for PYBIN in /opt/python/cp3[8-9]-cp*/bin; do
-  "${PYBIN}/pip" install numpy cython oldest-supported-numpy
-  "${PYBIN}/python" setup.py bdist_wheel -d wheelhouse
-  # used to use the following command but pip automatically installs
-  # a newer numpy during the build (something wrong in setup.py?). By
-  # using bdist_wheel the build uses installed versions.
-  # "${PYBIN}/pip" wheel --no-deps -w wheelhouse/ .
+  "${PYBIN}/pip" wheel --no-deps -w wheelhouse/ .
 done
 
 # Bundle external shared libraries into the wheels
@@ -31,7 +26,7 @@ done
 cd /home
 
 for PYBIN in /opt/python/cp3[8-9]-cp*/bin; do
-  "${PYBIN}/pip" install scipy matplotlib pytest corner
+  "${PYBIN}/pip" install scipy matplotlib pytest corner numpy
   "${PYBIN}/pip" install --pre --only-binary refnx --no-index --find-links /io/wheelhouse refnx
   "${PYBIN}/pytest" --pyargs refnx.reflect.test.test_reflect refnx.analysis
 done
