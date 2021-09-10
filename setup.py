@@ -261,65 +261,16 @@ class PyTest(TestCommand):
         sys.exit(errno)
 
 
-with open("README.md", "r") as fh:
-    long_description = fh.read()
-
 # refnx setup
 info = {
-    "name": "refnx",
-    "description": "Neutron and X-ray Reflectometry Analysis",
-    "long_description": long_description,
-    "long_description_content_type": "text/markdown",
-    "author": "Andrew Nelson",
-    "author_email": "andyfaff+refnx@gmail.com",
-    "license": "BSD",
-    "url": "https://github.com/refnx/refnx",
     "project_urls": {
         "Bug Tracker": "https://github.com/refnx/refnx/issues",
         "Documentation": "https://refnx.readthedocs.io/en/latest/",
         "Source Code": "https://github.com/refnx/refnx",
     },
-    "platforms": ["Windows", "Linux", "Solaris", "Mac OS-X", "Unix"],
-    "classifiers": [
-        "Development Status :: 4 - Beta",
-        "Environment :: Console",
-        "Intended Audience :: Science/Research",
-        "License :: Public Domain",
-        "Operating System :: OS Independent",
-        # 'Programming Language :: Python',
-        "Programming Language :: Python :: 3",
-        "Topic :: Scientific/Engineering",
-        "Topic :: Scientific/Engineering :: Chemistry",
-        "Topic :: Scientific/Engineering :: Physics",
-    ],
     "packages": packages,
     "include_package_data": True,
-    "setup_requires": ["numpy", "cython"],
-    "python_requires": ">=3.8",
-    "install_requires": ["numpy", "scipy"],
-    "extras_require": {
-        "all": [
-            "IPython",
-            "ipywidgets",
-            "traitlets",
-            "matplotlib",
-            "xlrd",
-            "h5py",
-            "tqdm",
-            "pymc3",
-            "theano",
-            "attrs",
-            "pandas",
-            "pyparsing",
-            "periodictable",
-            "pyqt",
-        ]
-    },
-    "tests_require": ["pytest", "uncertainties"],
     "cmdclass": {"test": PyTest},
-    "entry_points": {
-        "gui_scripts": ["refnx = refnx.reflect:main", "slim = refnx.reduce:main"]
-    },
 }
 
 ####################################################################

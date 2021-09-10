@@ -1,6 +1,6 @@
 name: Lint + Test
 
-on: 
+on:
   - push
   - pull_request
 
@@ -37,18 +37,14 @@ jobs:
         path: ${{ steps.pip-cache.outputs.dir }}
         key: ${{ hashFiles('setup.py') }}-${{ matrix.python-version }}-${{ hashFiles('tox.ini') }}
 
-    - name: Install dependencies
-      run: |
-        python -m pip install wheel
-        python -m pip install numpy scipy oldest-supported-numpy h5py cython pandas xlrd flake8 pytest ipywidgets IPython matplotlib traitlets pyqt5==5.15.2 uncertainties attrs corner tqdm periodictable pyopencl pymc3 pytest-qt
-
     - name: Test with pytest
       env:
         MPLBACKEND: agg
       run: |
-        python setup.py build_ext --inplace
-        # python -m pip install -e .
-        python -m pip install pytest
+        python -m pip install --upgrade pip
+        python -m pip install wheel
+        python -m pip install -e .[all]
+        python -m pip install pytest pyqt5==5.15.2 uncertainties pyopencl pymc3 pytest-qt
         # uses xvfb for GUI part of the test
         xvfb-run pytest
 
@@ -65,24 +61,24 @@ jobs:
         path: dist/
 
 
-  linux_wheels:
-
-    runs-on: ubuntu-latest
-    strategy:
-      max-parallel: 2
-      matrix:
-        PLAT: ["manylinux2010_x86_64", "manylinux2014_x86_64"]
-
-    steps:
-    - uses: actions/checkout@v2
-    - name: Make Linux Wheel
-      run: |
-        docker run --rm -e="PLAT=${{ matrix.PLAT }}" -v $(pwd):/io quay.io/pypa/${{ matrix.PLAT }} /bin/bash /io/tools/build_manylinux_wheels.sh
-
-    - uses: actions/upload-artifact@v1
-      with:
-        name: refnx-wheel
-        path: dist/
+#  linux_wheels:
+#
+#    runs-on: ubuntu-latest
+#    strategy:
+#      max-parallel: 2
+#      matrix:
+#        PLAT: ["manylinux2010_x86_64", "manylinux2014_x86_64"]
+#
+#    steps:
+#    - uses: actions/checkout@v2
+#    - name: Make Linux Wheel
+#      run: |
+#        docker run --rm -e="PLAT=${{ matrix.PLAT }}" -v $(pwd):/io quay.io/pypa/${{ matrix.PLAT }} /bin/bash /io/tools/build_manylinux_wheels.sh
+#
+#    - uses: actions/upload-artifact@v1
+#      with:
+#        name: refnx-wheel
+#        path: dist/
 
 
   test_macos:
@@ -116,13 +112,6 @@ jobs:
         path: ${{ steps.pip-cache.outputs.dir }}
         key: ${{ hashFiles('setup.py') }}-macos-${{ matrix.python-version }}-${{ hashFiles('tox.ini') }}
 
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        python -m pip install wheel
-        python -m pip install --upgrade --upgrade-strategy eager numpy scipy oldest-supported-numpy h5py cython pandas xlrd pytest ipywidgets IPython matplotlib traitlets pyqt5 uncertainties attrs corner tqdm periodictable delocate pyopencl
-        #        python -m pip install git+https://github.com/pymc-devs/pymc3
-
     - name: Make wheel
       env:
         MACOSX_DEPLOYMENT_TARGET: 10.9
@@ -133,46 +122,52 @@ jobs:
         LDFLAGS: "-L/usr/local/opt/libomp/lib -lomp"
         DYLD_LIBRARY_PATH: /usr/local/opt/libomp/lib
       run: |
-        python setup.py bdist_wheel
+        python -m pip install --upgrade pip
+        python -m pip install wheel delocate
+
+        python -m pip wheel . --no-deps -w dist
         # so that libomp is distributed with wheel
-        delocate-wheel -v dist/*.whl
+        delocate-wheel -v dist/refnx*.whl
 
     - name: Install package and test with pytest
       env:
         MPLBACKEND: agg
       run: |
         pushd dist
+        python -m pip install numpy scipy
         python -m pip install --only-binary=refnx --no-index --find-links=. refnx
+        python -m pip install --upgrade --upgrade-strategy eager h5py pandas xlrd pytest ipywidgets IPython matplotlib traitlets pyqt5 uncertainties attrs corner tqdm periodictable pyopencl
+        #        python -m pip install git+https://github.com/pymc-devs/pymc3
         pytest --pyargs refnx
         popd
 
-    - name: Make frozen GUI executable
-      if: ${{ matrix.python-version == '3.8' }}
-      run: |
-        # make app in virtualenv
-        python -m venv app
-        source app/bin/activate
-        # python -m pip install setuptools==44
-        python -m pip install --upgrade --upgrade-strategy eager numpy cython periodictable corner matplotlib pyqt5 scipy tqdm
-        pushd dist
-        python -m pip install --only-binary=refnx --no-index --find-links=. refnx
-        popd
-
-        # fix for multiprocessing on Py3.8 is not merged in PyInstaller
-        # if you are on Py3.7 you can just pip install pyinstaller
-        python -m pip install pyinstaller
-        # pip install git+https://github.com/andyfaff/pyinstaller.git@gh4865
-
-        pushd tools/app
-        pyinstaller motofit.spec
-        zip -r -X dist/motofit.app.zip dist/motofit.app/
-        mv dist/motofit.app.zip ../../dist/
-        popd
-
-    - uses: actions/upload-artifact@v1
-      with:
-        name: refnx-wheel
-        path: dist/
+#    - name: Make frozen GUI executable
+#      if: ${{ matrix.python-version == '3.8' }}
+#      run: |
+#        # make app in virtualenv
+#        python -m venv app
+#        source app/bin/activate
+#        # python -m pip install setuptools==44
+#        python -m pip install --upgrade --upgrade-strategy eager numpy cython periodictable corner matplotlib pyqt5 scipy tqdm
+#        pushd dist
+#        python -m pip install --only-binary=refnx --no-index --find-links=. refnx
+#        popd
+#
+#        # fix for multiprocessing on Py3.8 is not merged in PyInstaller
+#        # if you are on Py3.7 you can just pip install pyinstaller
+#        python -m pip install pyinstaller
+#        # pip install git+https://github.com/andyfaff/pyinstaller.git@gh4865
+#
+#        pushd tools/app
+#        pyinstaller motofit.spec
+#        zip -r -X dist/motofit.app.zip dist/motofit.app/
+#        mv dist/motofit.app.zip ../../dist/
+#        popd
+#
+#    - uses: actions/upload-artifact@v1
+#      with:
+#        name: refnx-wheel
+#        path: dist/
 
 
   test_win:
@@ -202,21 +197,11 @@ jobs:
         path: ${{ steps.pip-cache.outputs.dir }}
         key: ${{ hashFiles('setup.py') }}-win-${{ matrix.python-version }}-${{ hashFiles('tox.ini') }}
 
-    - name: Install dependencies
+    - name: Make wheel
       run: |
         python -m pip install --upgrade pip
         python -m pip install wheel
-
-        python -m pip install --upgrade --upgrade-strategy eager numpy scipy oldest-supported-numpy h5py cython pandas xlrd pytest ipywidgets IPython matplotlib traitlets pyqt5 uncertainties corner tqdm periodictable
-        #        python -m pip install git+https://github.com/pymc-devs/pymc3
-
-        #        python -m pip install pytools mako cffi
-        #        choco install opencl-intel-cpu-runtime
-        #        python -m pip install --only-binary=pyopencl --find-links http://www.silx.org/pub/wheelhouse/ --trusted-host www.silx.org pyopencl
-
-    - name: Make wheel
-      run: |
-        python setup.py bdist_wheel
+        python -m pip wheel . --no-deps -w dist
 
     - name: Install package and test with pytest
       if: ${{ matrix.python-version == '3.8' }}
@@ -224,35 +209,43 @@ jobs:
         PYOPENCL_CTX: 0
       run: |
         cd dist
+        python -m pip install numpy scipy
         python -m pip install --only-binary=refnx --no-index --find-links=. refnx
+        python -m pip install --upgrade --upgrade-strategy eager h5py cython pandas xlrd pytest ipywidgets IPython matplotlib traitlets pyqt5 uncertainties corner tqdm periodictable pytest-qt
+        #        python -m pip install git+https://github.com/pymc-devs/pymc3
+
+        #        python -m pip install pytools mako cffi
+        #        choco install opencl-intel-cpu-runtime
+        #        python -m pip install --only-binary=pyopencl --find-links http://www.silx.org/pub/wheelhouse/ --trusted-host www.silx.org pyopencl
+
         pytest --pyargs refnx
         cd ..
 
-    - name: Make frozen GUI executable
-      if: ${{ matrix.python-version == '3.8' }}
-      run: |
-        # make app in virtualenv
-        python -m venv app
-        app\Scripts\activate.bat
-        python -m pip install setuptools==44
-        python -m pip install --upgrade --upgrade-strategy eager numpy cython periodictable corner matplotlib pyqt5 scipy
-        cd dist
-        python -m pip install --only-binary=refnx --no-index --find-links=. refnx
-        cd ..
-
-        # fix for multiprocessing on Py3.8 is not merged in PyInstaller
-        # if you are on Py3.7 you can just pip install pyinstaller
-        pip install git+https://github.com/andyfaff/pyinstaller.git@gh4865
-
-        cd tools\app
-        pyinstaller motofit.spec
-        move dist\motofit.exe ..\..\dist\
-        cd ..\..
-
-    - uses: actions/upload-artifact@v1
-      with:
-        name: refnx-wheel
-        path: dist/
+#    - name: Make frozen GUI executable
+#      if: ${{ matrix.python-version == '3.8' }}
+#      run: |
+#        # make app in virtualenv
+#        python -m venv app
+#        app\Scripts\activate.bat
+#        python -m pip install setuptools==44
+#        python -m pip install --upgrade --upgrade-strategy eager numpy cython periodictable corner matplotlib pyqt5 scipy
+#        cd dist
+#        python -m pip install --only-binary=refnx --no-index --find-links=. refnx
+#        cd ..
+#
+#        # fix for multiprocessing on Py3.8 is not merged in PyInstaller
+#        # if you are on Py3.7 you can just pip install pyinstaller
+#        pip install git+https://github.com/andyfaff/pyinstaller.git@gh4865
+#
+#        cd tools\app
+#        pyinstaller motofit.spec
+#        move dist\motofit.exe ..\..\dist\
+#        cd ..\..
+#
+#    - uses: actions/upload-artifact@v1
+#      with:
+#        name: refnx-wheel
+#        path: dist/
 
 
   build_doc:
