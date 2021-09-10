@@ -263,11 +263,6 @@ class PyTest(TestCommand):
 
 # refnx setup
 info = {
-    "project_urls": {
-        "Bug Tracker": "https://github.com/refnx/refnx/issues",
-        "Documentation": "https://refnx.readthedocs.io/en/latest/",
-        "Source Code": "https://github.com/refnx/refnx",
-    },
     "packages": packages,
     "include_package_data": True,
     "cmdclass": {"test": PyTest},
