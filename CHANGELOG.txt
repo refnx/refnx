@@ -380,3 +380,6 @@ in 0.1.13.
   Previously refnx wheels were built with the newest numpy available at
   build time, and were probably not compatible with older numpy versions.
 - Rejig the build process to make macOS universal wheels.
+
+0.1.25
+------
