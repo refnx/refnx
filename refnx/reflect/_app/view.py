@@ -1014,7 +1014,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
 
         for licence in licences:
             fname = os.path.join(licence_dir, licence)
-            with open(fname, "r", encoding="utf-8", errors="replace") as f:
+            with open(fname, "r", encoding="utf-8") as f:
                 text.append("".join(f.readlines()))
 
         display_text = "\n_______________________________________\n".join(text)
