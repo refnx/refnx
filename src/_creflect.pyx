@@ -26,8 +26,7 @@ DEALINGS IN THIS SOFTWARE.
 """
 from multiprocessing import cpu_count
 import numpy as np
-
-cimport numpy as cnp
+cimport numpy as np
 cimport cython
 
 cdef extern from "refcaller.h" nogil:
@@ -36,8 +35,7 @@ cdef extern from "refcaller.h" nogil:
     void reflectMT(int numcoefs, const double *coefP, int npoints, double *yP,
                    const double *xP, int threads)
 
-DTYPE = np.float64
-ctypedef cnp.float64_t DTYPE_t
+ctypedef np.float64_t float64_t
 
 
 # figure out CPU count
@@ -46,11 +44,13 @@ cdef int NCPU = cpu_count()
 
 @cython.boundscheck(False)
 @cython.cdivision(True)
-cpdef cnp.ndarray abeles(cnp.ndarray x,
-                         double[:, :] w,
-                         double scale=1.0,
-                         double bkg=0.,
-                         int threads=-1):
+cpdef np.ndarray abeles(
+    np.ndarray x,
+    double[:, :] w,
+    double scale=1.0,
+    double bkg=0.,
+    int threads=-1
+):
     """Abeles matrix formalism for calculating reflectivity from a stratified
     medium.
 
@@ -95,13 +95,19 @@ cpdef cnp.ndarray abeles(cnp.ndarray x,
     cdef:
         int nlayers = w.shape[0] - 2
         int npoints = x.size
-        cnp.ndarray[DTYPE_t, ndim=1] coefs = np.empty(4*nlayers + 8,
-                                                      DTYPE)
+        np.ndarray[float64_t, ndim=1] coefs = np.empty(4*nlayers + 8,
+                                                       np.float64)
         double[::1] coefs_view = coefs
-        cnp.ndarray y = np.empty_like(x, DTYPE)
-
+        np.ndarray y = np.empty_like(x, np.float64)
+        double *x_data
+        double *y_data
+        double *coefs_data
     if not x.flags['C_CONTIGUOUS']:
-        x = np.ascontiguousarray(x, dtype=DTYPE)
+        x = np.ascontiguousarray(x, dtype=np.float64)
+
+    x_data = <float64_t *>np.PyArray_DATA(x)
+    y_data = <float64_t *>np.PyArray_DATA(y)
+    coefs_data = <float64_t *>np.PyArray_DATA(coefs)
 
     with nogil:
         if threads == -1:
@@ -122,17 +128,28 @@ cpdef cnp.ndarray abeles(cnp.ndarray x,
             coefs_view[11::4] = w[1:-1, 3]
 
         if threads > 1:
-            reflectMT(4*nlayers + 8, <const double*>coefs.data, npoints,
-                      <double*>y.data, <const double*>x.data, threads)
+            reflectMT(
+                4*nlayers + 8,
+                coefs_data,
+                npoints,
+                y_data,
+                x_data,
+                threads
+            )
         else:
-            reflect(4*nlayers + 8, <const double*>coefs.data, npoints,
-                    <double*>y.data, <const double*>x.data)
+            reflect(
+                4*nlayers + 8,
+                coefs_data,
+                npoints,
+                y_data,
+                x_data
+            )
 
     return y
 
 
 @cython.boundscheck(False)
-cpdef _contract_by_area(cnp.ndarray[cnp.float64_t, ndim=2] slabs, dA=0.5):
+cpdef _contract_by_area(np.ndarray[np.float64_t, ndim=2] slabs, dA=0.5):
     newslabs = np.copy(slabs)[::-1]
 
     cdef:

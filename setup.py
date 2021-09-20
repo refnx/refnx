@@ -301,6 +301,7 @@ def setup_package():
                 sources=["src/_cevent.pyx"],
                 include_dirs=[numpy_include],
                 language="c++",
+                define_macros=[("NPY_NO_DEPRECATED_API", "NPY_1_7_API_VERSION")],
                 # libraries=
                 # extra_compile_args = "...".split(),
             )
@@ -357,6 +358,7 @@ def setup_package():
                 include_dirs=[numpy_include],
                 language="c++",
                 extra_compile_args=["-std=c++11"],
+                define_macros=[("NPY_NO_DEPRECATED_API", "NPY_1_7_API_VERSION")],
                 extra_objects=refcalc_obj,
             )
             ext_modules.append(_creflect)
