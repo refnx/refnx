@@ -25,6 +25,7 @@ DEALINGS IN THIS SOFTWARE.
 
 """
 from multiprocessing import cpu_count
+from cpython.mem cimport PyMem_Malloc, PyMem_Free
 import numpy as np
 cimport numpy as np
 cimport cython
@@ -94,56 +95,62 @@ cpdef np.ndarray abeles(
 
     cdef:
         int nlayers = w.shape[0] - 2
+        int i
         int npoints = x.size
-        np.ndarray[float64_t, ndim=1] coefs = np.empty(4*nlayers + 8,
-                                                       np.float64)
-        double[::1] coefs_view = coefs
         np.ndarray y = np.empty_like(x, np.float64)
         double *x_data
         double *y_data
-        double *coefs_data
     if not x.flags['C_CONTIGUOUS']:
         x = np.ascontiguousarray(x, dtype=np.float64)
 
     x_data = <float64_t *>np.PyArray_DATA(x)
     y_data = <float64_t *>np.PyArray_DATA(y)
-    coefs_data = <float64_t *>np.PyArray_DATA(coefs)
 
-    with nogil:
-        if threads == -1:
-            threads = NCPU
-        elif threads == 0:
-            threads = 1
+    coefs = <double*> PyMem_Malloc((4*nlayers + 8) * sizeof(double))
+    if not coefs:
+        raise MemoryError()
 
-        coefs_view[0] = nlayers
-        coefs_view[1] = scale
-        coefs_view[2:4] = w[0, 1: 3]
-        coefs_view[4: 6] = w[-1, 1: 3]
-        coefs_view[6] = bkg
-        coefs_view[7] = w[-1, 3]
-        if nlayers:
-            coefs_view[8::4] = w[1:-1, 0]
-            coefs_view[9::4] = w[1:-1, 1]
-            coefs_view[10::4] = w[1:-1, 2]
-            coefs_view[11::4] = w[1:-1, 3]
+    cdef double [:] coefs_view = <double[:4*nlayers + 8]>coefs
 
-        if threads > 1:
-            reflectMT(
-                4*nlayers + 8,
-                coefs_data,
-                npoints,
-                y_data,
-                x_data,
-                threads
-            )
-        else:
-            reflect(
-                4*nlayers + 8,
-                coefs_data,
-                npoints,
-                y_data,
-                x_data
-            )
+    try:
+        with nogil:
+            if threads == -1:
+                threads = NCPU
+            elif threads == 0:
+                threads = 1
+
+            coefs_view[0] = nlayers
+            coefs_view[1] = scale
+            coefs_view[2:4] = w[0, 1: 3]
+            coefs_view[4: 6] = w[-1, 1: 3]
+            coefs_view[6] = bkg
+            coefs_view[7] = w[-1, 3]
+
+            if nlayers:
+                coefs_view[8::4] = w[1:-1, 0]
+                coefs_view[9::4] = w[1:-1, 1]
+                coefs_view[10::4] = w[1:-1, 2]
+                coefs_view[11::4] = w[1:-1, 3]
+
+            if threads > 1:
+                reflectMT(
+                    4*nlayers + 8,
+                    coefs,
+                    npoints,
+                    y_data,
+                    x_data,
+                    threads
+                )
+            else:
+                reflect(
+                    4*nlayers + 8,
+                    coefs,
+                    npoints,
+                    y_data,
+                    x_data
+                )
+    finally:
+        PyMem_Free(coefs)
 
     return y
 
