@@ -25,9 +25,9 @@ DEALINGS IN THIS SOFTWARE.
 
 """
 from multiprocessing import cpu_count
+from cpython.mem cimport PyMem_Malloc, PyMem_Free
 import numpy as np
-
-cimport numpy as cnp
+cimport numpy as np
 cimport cython
 
 cdef extern from "refcaller.h" nogil:
@@ -36,8 +36,7 @@ cdef extern from "refcaller.h" nogil:
     void reflectMT(int numcoefs, const double *coefP, int npoints, double *yP,
                    const double *xP, int threads)
 
-DTYPE = np.float64
-ctypedef cnp.float64_t DTYPE_t
+ctypedef np.float64_t float64_t
 
 
 # figure out CPU count
@@ -46,11 +45,13 @@ cdef int NCPU = cpu_count()
 
 @cython.boundscheck(False)
 @cython.cdivision(True)
-cpdef cnp.ndarray abeles(cnp.ndarray x,
-                         double[:, :] w,
-                         double scale=1.0,
-                         double bkg=0.,
-                         int threads=-1):
+cpdef np.ndarray abeles(
+    np.ndarray x,
+    double[:, :] w,
+    double scale=1.0,
+    double bkg=0.,
+    int threads=-1
+):
     """Abeles matrix formalism for calculating reflectivity from a stratified
     medium.
 
@@ -94,45 +95,68 @@ cpdef cnp.ndarray abeles(cnp.ndarray x,
 
     cdef:
         int nlayers = w.shape[0] - 2
+        int i
         int npoints = x.size
-        cnp.ndarray[DTYPE_t, ndim=1] coefs = np.empty(4*nlayers + 8,
-                                                      DTYPE)
-        double[::1] coefs_view = coefs
-        cnp.ndarray y = np.empty_like(x, DTYPE)
-
+        np.ndarray y = np.empty_like(x, np.float64)
+        double *x_data
+        double *y_data
     if not x.flags['C_CONTIGUOUS']:
-        x = np.ascontiguousarray(x, dtype=DTYPE)
+        x = np.ascontiguousarray(x, dtype=np.float64)
 
-    with nogil:
-        if threads == -1:
-            threads = NCPU
-        elif threads == 0:
-            threads = 1
+    x_data = <float64_t *>np.PyArray_DATA(x)
+    y_data = <float64_t *>np.PyArray_DATA(y)
 
-        coefs_view[0] = nlayers
-        coefs_view[1] = scale
-        coefs_view[2:4] = w[0, 1: 3]
-        coefs_view[4: 6] = w[-1, 1: 3]
-        coefs_view[6] = bkg
-        coefs_view[7] = w[-1, 3]
-        if nlayers:
-            coefs_view[8::4] = w[1:-1, 0]
-            coefs_view[9::4] = w[1:-1, 1]
-            coefs_view[10::4] = w[1:-1, 2]
-            coefs_view[11::4] = w[1:-1, 3]
+    coefs = <double*> PyMem_Malloc((4*nlayers + 8) * sizeof(double))
+    if not coefs:
+        raise MemoryError()
 
-        if threads > 1:
-            reflectMT(4*nlayers + 8, <const double*>coefs.data, npoints,
-                      <double*>y.data, <const double*>x.data, threads)
-        else:
-            reflect(4*nlayers + 8, <const double*>coefs.data, npoints,
-                    <double*>y.data, <const double*>x.data)
+    cdef double [:] coefs_view = <double[:4*nlayers + 8]>coefs
+
+    try:
+        with nogil:
+            if threads == -1:
+                threads = NCPU
+            elif threads == 0:
+                threads = 1
+
+            coefs_view[0] = nlayers
+            coefs_view[1] = scale
+            coefs_view[2:4] = w[0, 1: 3]
+            coefs_view[4: 6] = w[-1, 1: 3]
+            coefs_view[6] = bkg
+            coefs_view[7] = w[-1, 3]
+
+            if nlayers:
+                coefs_view[8::4] = w[1:-1, 0]
+                coefs_view[9::4] = w[1:-1, 1]
+                coefs_view[10::4] = w[1:-1, 2]
+                coefs_view[11::4] = w[1:-1, 3]
+
+            if threads > 1:
+                reflectMT(
+                    4*nlayers + 8,
+                    coefs,
+                    npoints,
+                    y_data,
+                    x_data,
+                    threads
+                )
+            else:
+                reflect(
+                    4*nlayers + 8,
+                    coefs,
+                    npoints,
+                    y_data,
+                    x_data
+                )
+    finally:
+        PyMem_Free(coefs)
 
     return y
 
 
 @cython.boundscheck(False)
-cpdef _contract_by_area(cnp.ndarray[cnp.float64_t, ndim=2] slabs, dA=0.5):
+cpdef _contract_by_area(np.ndarray[np.float64_t, ndim=2] slabs, dA=0.5):
     newslabs = np.copy(slabs)[::-1]
 
     cdef:
