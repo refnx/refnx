@@ -386,3 +386,4 @@ in 0.1.13.
 - Add NPY_NO_DEPRECATED_API=NPY_1_7_API_VERSION define to cython extension
   building to remove warnings. This requires a different mode of access to
   the array data.
+- Fixed drag and drop of datasets onto refnx GUI
