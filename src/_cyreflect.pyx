@@ -1,14 +1,15 @@
 # cython: language_level=3, boundscheck=False
 
 import numpy as np
-cimport numpy as cnp
+cimport numpy as np
 cimport cython
 cimport openmp
 from cython.parallel import prange
 
 
+np.import_array()
 DTYPE = np.float64
-ctypedef cnp.float64_t DTYPE_t
+ctypedef np.float64_t DTYPE_t
 TINY = 1e-30
 
 
@@ -22,7 +23,7 @@ cdef extern from "<math.h>" nogil:
     double fabs(double)
 
 
-cpdef abeles(x, cnp.ndarray[DTYPE_t, ndim=2] w,
+cpdef abeles(x, np.ndarray[DTYPE_t, ndim=2] w,
              double scale=1.0, double bkg=0., int threads=-1):
 
     # we need the abscissae in a contiguous block of memory
@@ -45,7 +46,7 @@ cpdef abeles(x, cnp.ndarray[DTYPE_t, ndim=2] w,
 @cython.boundscheck(False)
 @cython.cdivision(True)
 cdef _abeles(double[:] x,
-             cnp.ndarray[cnp.float64_t, ndim=2] w,
+             np.ndarray[np.float64_t, ndim=2] w,
              double scale=1.0, double bkg=0., int num_threads=1):
 
     cdef:
@@ -58,12 +59,12 @@ cdef _abeles(double[:] x,
         double complex rj, k, k_next, q2, rough, mi00, mi01, mi10, mi11, thick
         double complex mrtot00, mrtot01, mrtot10, mrtot11, p0, p1, beta, arg
 
-        cnp.ndarray[cnp.complex128_t, ndim=1] y = np.zeros(npoints,
+        np.ndarray[np.complex128_t, ndim=1] y = np.zeros(npoints,
                                                            np.complex128)
-        cnp.ndarray[cnp.complex128_t, ndim=1] roughsqr = np.empty(
+        np.ndarray[np.complex128_t, ndim=1] roughsqr = np.empty(
             nlayers + 1, np.complex128)
 
-        cnp.ndarray[cnp.complex128_t, ndim=1] SLD = np.zeros(
+        np.ndarray[np.complex128_t, ndim=1] SLD = np.zeros(
             (w.shape[0]), np.complex128)
 
         double[:, :] wbuf = w
