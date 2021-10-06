@@ -2,11 +2,13 @@
 from collections import namedtuple
 import numpy as np
 
-cimport numpy as cnp
+cimport numpy as np
 cimport cython
 from libc.stdint cimport uint32_t, int64_t, int32_t, uint8_t
 import mmap
 
+
+np.import_array()
 ii32 = np.iinfo(np.int32)
 
 
@@ -229,15 +231,15 @@ cpdef packed_buffer(buffer,
         Py_ssize_t filepos = 0
         Py_ssize_t buflen = len(buffer)
 
-        cnp.ndarray[cnp.int32_t, ndim=1] x_events = np.empty((buflen,),
+        np.ndarray[np.int32_t, ndim=1] x_events = np.empty((buflen,),
                                                              dtype=np.int32)
-        cnp.ndarray[cnp.int32_t, ndim=1] y_events = np.empty((buflen,),
+        np.ndarray[np.int32_t, ndim=1] y_events = np.empty((buflen,),
                                                              dtype=np.int32)
-        cnp.ndarray[cnp.int32_t, ndim=1] t_events = np.empty((buflen,),
+        np.ndarray[np.int32_t, ndim=1] t_events = np.empty((buflen,),
                                                              dtype=np.int32)
-        cnp.ndarray[cnp.uint32_t, ndim=1] f_events = np.empty((buflen,),
+        np.ndarray[np.uint32_t, ndim=1] f_events = np.empty((buflen,),
                                                               dtype=np.uint32)
-        cnp.ndarray[cnp.uint32_t, ndim=1] end_events = np.empty((buflen,),
+        np.ndarray[np.uint32_t, ndim=1] end_events = np.empty((buflen,),
                                                                 dtype=np.uint32)
 
         int[:] x_neutrons_buf = x_events
@@ -585,11 +587,11 @@ cpdef unpacked_buffer(buffer,
         Py_ssize_t filepos = 0
         Py_ssize_t buflen = len(buffer)
 
-        cnp.ndarray[cnp.int32_t, ndim=1] x_events = np.empty((buflen,), dtype=np.int32)
-        cnp.ndarray[cnp.int32_t, ndim=1] y_events = np.empty((buflen,), dtype=np.int32)
-        cnp.ndarray[cnp.int32_t, ndim=1] t_events = np.empty((buflen,), dtype=np.int32)
-        cnp.ndarray[cnp.uint32_t, ndim=1] f_events = np.empty((buflen,), dtype=np.uint32)
-        cnp.ndarray[cnp.uint32_t, ndim=1] end_events = np.empty((buflen,), dtype=np.uint32)
+        np.ndarray[np.int32_t, ndim=1] x_events = np.empty((buflen,), dtype=np.int32)
+        np.ndarray[np.int32_t, ndim=1] y_events = np.empty((buflen,), dtype=np.int32)
+        np.ndarray[np.int32_t, ndim=1] t_events = np.empty((buflen,), dtype=np.int32)
+        np.ndarray[np.uint32_t, ndim=1] f_events = np.empty((buflen,), dtype=np.uint32)
+        np.ndarray[np.uint32_t, ndim=1] end_events = np.empty((buflen,), dtype=np.uint32)
 
         int[:] x_neutrons_buf = x_events
         int[:] y_neutrons_buf = y_events
