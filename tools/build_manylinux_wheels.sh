@@ -26,7 +26,7 @@ done
 cd /home
 
 for PYBIN in /opt/python/cp3[8-9]-cp*/bin; do
-  "${PYBIN}/pip" install scipy matplotlib pytest corner numpy
+  "${PYBIN}/pip" install scipy matplotlib pytest corner numpy orsopy
   "${PYBIN}/pip" install --pre --only-binary refnx --no-index --find-links /io/wheelhouse refnx
   "${PYBIN}/pytest" --pyargs refnx.reflect.test.test_reflect refnx.analysis
 done
