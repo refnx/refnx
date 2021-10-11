@@ -25,7 +25,7 @@ jobs:
   - script: |
       python -m pip install --upgrade pip
       python -m pip install wheel
-      pip install numpy scipy cython traitlets ipython ipywidgets pandas h5py xlrd pytest tqdm corner uncertainties matplotlib pyqt5 pytest-qt periodictable attrs
+      pip install numpy scipy orsopy cython traitlets ipython ipywidgets pandas h5py xlrd pytest tqdm corner uncertainties matplotlib pyqt5 pytest-qt periodictable attrs
   # - script: pip install git+https://github.com/pymc-devs/pymc3
 
     displayName: 'Install dependencies'
