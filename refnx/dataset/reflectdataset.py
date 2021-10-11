@@ -10,7 +10,7 @@ try:
 except ImportError:
     import xml.etree.ElementTree as ET
 import numpy as np
-from orsopy.fileio import load_orso, OrsoDataset
+from orsopy.fileio import load_orso
 
 from refnx.dataset import Data1D
 from refnx._lib import possibly_open_file

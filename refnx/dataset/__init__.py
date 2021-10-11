@@ -32,7 +32,7 @@ def load_data(f):
     try:
         d = ReflectDataset(f)
         return d
-    except:
+    except Exception:
         pass
 
     d = Data1D(f)
