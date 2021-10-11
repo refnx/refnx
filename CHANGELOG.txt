@@ -387,3 +387,4 @@ in 0.1.13.
   building to remove warnings. This requires a different mode of access to
   the array data.
 - Fixed drag and drop of datasets onto refnx GUI
+- Add OrsoDataset and a generalised load_data function
