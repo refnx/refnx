@@ -18,7 +18,7 @@ jobs:
         env:
           CIBW_ARCHS_MACOS: "x86_64 universal2"
           CIBW_PRERELEASE_PYTHONS: False
-          CIBW_SKIP: cp310-* pp*
+          CIBW_SKIP: cp310-* pp* cp36-* cp37-*
           CIBW_TEST_COMMAND: python -c "from refnx.reflect import available_backends; b = available_backends(); assert 'c' in b"
 
       - uses: actions/upload-artifact@v2

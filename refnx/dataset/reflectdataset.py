@@ -3,16 +3,18 @@ import time
 import re
 
 # from datetime import datetime
+import os.path
 
 try:
     import xml.etree.cElementTree as ET
 except ImportError:
     import xml.etree.ElementTree as ET
-import os.path
+import numpy as np
+from orsopy.fileio import load_orso
+
 from refnx.dataset import Data1D
 from refnx._lib import possibly_open_file
 
-import numpy as np
 
 _template_ref_xml = """<?xml version="1.0"?>
 <REFroot xmlns="">
@@ -147,3 +149,48 @@ class ReflectDataset(Data1D):
             self.data = (qvals, rvals, drvals, dqvals)
         except ET.ParseError:
             super().load(fname)
+
+
+class OrsoDataset(Data1D):
+    """
+    A thinly wrapped version of an ORSODataset
+
+    Parameters
+    ----------
+    data : {str, file-like}
+
+    Notes
+    -----
+    Multiplies the resolution information contained in the fourth column
+    of the ORSO dataset to convert from standard deviation to FWHM.
+    """
+
+    def __init__(self, data, **kwds):
+        super().__init__(data=data, **kwds)
+        self.orso = None
+
+    def load(self, f):
+        """
+        Parameters
+        ----------
+        f : str or file-like
+            The file to load the spectrum from, or a str that specifies the
+            file name
+        """
+        if hasattr(f, "name"):
+            fname = f.name
+        else:
+            fname = f
+
+        with possibly_open_file(f, "r") as g:
+            self.orso = load_orso(g)
+
+        _data = self.orso[0].data[:, :4].T
+        # ORSO files save resolution information as SD,
+        # internally refnx uses FWHM
+        if _data.shape[1] > 3:
+            _data[3] *= 2.3548
+
+        self.data = _data
+        self.filename = fname
+        self.name = os.path.splitext(os.path.basename(fname))[0]

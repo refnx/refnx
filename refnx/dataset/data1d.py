@@ -404,7 +404,8 @@ class Data1D:
 
     def load(self, f):
         """
-        Loads a dataset from file. Must be 2 to 4 column ASCII.
+        Loads a dataset from file, and overwrites existing data.
+        Must be 2 to 4 column ASCII.
 
         Parameters
         ----------

@@ -134,7 +134,7 @@ jobs:
         MPLBACKEND: agg
       run: |
         pushd dist
-        python -m pip install numpy scipy
+        python -m pip install numpy scipy orsopy
         python -m pip install --only-binary=refnx --no-index --find-links=. refnx
         python -m pip install --upgrade --upgrade-strategy eager h5py pandas xlrd pytest ipywidgets IPython matplotlib traitlets pyqt5 uncertainties attrs corner tqdm periodictable pyopencl
         #        python -m pip install git+https://github.com/pymc-devs/pymc3
@@ -209,7 +209,7 @@ jobs:
         PYOPENCL_CTX: 0
       run: |
         cd dist
-        python -m pip install numpy scipy
+        python -m pip install numpy scipy orsopy
         python -m pip install --only-binary=refnx --no-index --find-links=. refnx
         python -m pip install --upgrade --upgrade-strategy eager h5py cython pandas xlrd pytest ipywidgets IPython matplotlib traitlets pyqt5 uncertainties corner tqdm periodictable pytest-qt
         #        python -m pip install git+https://github.com/pymc-devs/pymc3
