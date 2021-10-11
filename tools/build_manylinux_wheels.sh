@@ -10,6 +10,7 @@ cd /io
 
 # Compile wheels
 for PYBIN in /opt/python/cp3[8-9]-cp*/bin; do
+  "${PYBIN}/pip" install orsopy
   "${PYBIN}/pip" wheel --no-deps -w wheelhouse/ .
 done
 
