@@ -1,14 +1,8 @@
 import os.path
 from collections import OrderedDict
-
-try:
-    import xml.etree.cElementTree as ET
-except ImportError:
-    import xml.etree.ElementTree as ET
-
 import numpy as np
 from refnx.reflect import SLD, Structure, ReflectModel
-from refnx.dataset import ReflectDataset
+from refnx.dataset import ReflectDataset, load_data
 
 from .dataobject import DataObject
 
@@ -98,7 +92,7 @@ class DataStore:
         return do
 
     def load(self, filename):
-        dataset = ReflectDataset(filename)
+        dataset = load_data(filename)
         data_object = self.add(dataset)
         return data_object
 

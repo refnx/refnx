@@ -1,10 +1,4 @@
 import pickle
-
-try:
-    import xml.etree.cElementTree as ET
-except ImportError:
-    import xml.etree.ElementTree as ET
-
 import numpy as np
 
 from .graphproperties import GraphProperties
