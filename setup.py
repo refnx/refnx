@@ -76,8 +76,10 @@ def check_openmp_support():
     """Check whether OpenMP test code can be compiled and run"""
 
     try:
-        from numpy.distutils.ccompiler import new_compiler
-        from distutils.sysconfig import customize_compiler
+        from setuptools._distutils.ccompiler import new_compiler
+        from setuptools._distutils.sysconfig import customize_compiler
+        # from numpy.distutils.ccompiler import new_compiler
+        # from distutils.sysconfig import customize_compiler
         from distutils.errors import CompileError, LinkError
     except ImportError:
         return False
@@ -323,8 +325,10 @@ def setup_package():
             # It's not possible to do this in an Extension object because
             # the `-std=c++11` compile arg and C99 C code are incompatible
             # (at least on Darwin).
-            from numpy.distutils.ccompiler import new_compiler
-            from distutils.sysconfig import customize_compiler
+            from setuptools._distutils.ccompiler import new_compiler
+            from setuptools._distutils.sysconfig import customize_compiler
+            # from numpy.distutils.ccompiler import new_compiler
+            # from distutils.sysconfig import customize_compiler
 
             ccompiler = new_compiler()
             customize_compiler(ccompiler)
@@ -350,7 +354,7 @@ def setup_package():
                 )
                 f = ["src/refcalc.c"]
             refcalc_obj = ccompiler.compile(f, extra_preargs=extra_preargs)
-            print(refcalc_obj)
+            # print(refcalc_obj)
 
             _creflect = Extension(
                 name="refnx.reflect._creflect",
