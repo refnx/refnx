@@ -4,6 +4,7 @@ from setuptools import setup, Extension, find_packages
 from setuptools.command.test import test as TestCommand
 import os
 import subprocess
+import platform
 import sys
 import warnings
 import glob
@@ -18,6 +19,11 @@ except ImportError:
     warnings.warn("Cython was not found. Slow reflectivity calculations will be used.")
 else:
     USE_CYTHON = True
+
+
+if platform.system() == "Darwin":
+    os.environ.setdefault("MACOSX_DEPLOYMENT_TARGET", "10.9")
+
 
 ###############################################################################
 """
