@@ -114,7 +114,6 @@ jobs:
 
     - name: Make wheel
       env:
-        MACOSX_DEPLOYMENT_TARGET: 10.9
         CC: /usr/bin/clang
         CXX: /usr/bin/clang++
         CXXFLAGS: "-Xpreprocessor -fopenmp -I/usr/local/opt/libomp/include"
