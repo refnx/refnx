@@ -21,10 +21,6 @@ else:
     USE_CYTHON = True
 
 
-if platform.system() == "Darwin":
-    os.environ.setdefault("MACOSX_DEPLOYMENT_TARGET", "10.9")
-
-
 ###############################################################################
 """
 Is openMP usable?
@@ -83,9 +79,9 @@ def check_openmp_support():
 
     try:
         from setuptools._distutils.ccompiler import new_compiler
-        # from setuptools._distutils.sysconfig import customize_compiler
+        from setuptools._distutils.sysconfig import customize_compiler
         # from numpy.distutils.ccompiler import new_compiler
-        from distutils.sysconfig import customize_compiler
+        # from distutils.sysconfig import customize_compiler
         from distutils.errors import CompileError, LinkError
     except ImportError:
         return False
@@ -333,9 +329,9 @@ def setup_package():
             # the `-std=c++11` compile arg and C99 C code are incompatible
             # (at least on Darwin).
             from setuptools._distutils.ccompiler import new_compiler
-            # from setuptools._distutils.sysconfig import customize_compiler
+            from setuptools._distutils.sysconfig import customize_compiler
             # from numpy.distutils.ccompiler import new_compiler
-            from distutils.sysconfig import customize_compiler
+            # from distutils.sysconfig import customize_compiler
 
             ccompiler = new_compiler()
             customize_compiler(ccompiler)
