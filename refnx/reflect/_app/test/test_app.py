@@ -188,3 +188,10 @@ def test_mcmc_fit_and_reprocess(qtbot, tmpdir):
     kwds = {"nsteps": 5, "folder": tmpdir, "nplot": 20}
     myapp.fit_data_objects(data_objects, mcmc_kws=kwds)
     assert os.path.isfile(pjoin(tmpdir, "steps_corner.png"))
+
+
+@pytest.mark.skipif(QTBOT_MISSING, reason="pytest-qt not installed")
+def test_requirements(qtbot, tmpdir):
+    # test if we can add a spline to a model and save an experiment
+    myapp, model = mysetup(qtbot)
+    assert len(myapp.requirements())

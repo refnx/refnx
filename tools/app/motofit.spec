@@ -4,6 +4,7 @@ import os
 import sys
 import periodictable
 import refnx
+import pip
 
 block_cipher = None
 
@@ -11,6 +12,7 @@ block_cipher = None
 refnx_version = refnx.version.version
 
 periodictable_loc = os.path.dirname(periodictable.__file__)
+pip_loc = os.path.dirname(pip.__file__)
 
 pathex = pjoin(".", "")
 uiloc = (
@@ -34,13 +36,13 @@ periodic_table = (
     pjoin("periodictable", "xsf"),
 )
 
-
 a = Analysis(
     ["motofit.py"],
     pathex=[os.getcwd()],
     binaries=[],
     datas=[uiloc, icons, licences, lipid_data, periodic_table],
     hiddenimports=[
+        "pkg_resources",
         "periodictable",
         "refnx",
         "refnx.analysis",
@@ -53,7 +55,6 @@ a = Analysis(
         "scipy.special.cython_special",
         "scipy.spatial.transform._rotation_groups",
         "refnx.reflect._app",
-        "pkg_resources",
     ],
     hookspath=[],
     runtime_hooks=[],

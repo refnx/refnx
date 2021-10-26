@@ -8,7 +8,9 @@ import csv
 from multiprocessing import get_context
 
 import numpy as np
+import scipy
 import matplotlib
+import periodictable
 
 from PyQt5 import QtCore, QtGui, QtWidgets, uic
 
@@ -1036,12 +1038,12 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
 
     def requirements(self):
         # returns a string of the packages used in the GUI Python environment
-        try:
-            from pip._internal.operations import freeze
-        except ImportError:
-            return ""
+        pkgs = [refnx, np, scipy, matplotlib, periodictable]
+        versions = []
+        for pkg in pkgs:
+            versions.append(f"{pkg.__name__}=={pkg.__version__}")
 
-        return "\n".join(list(freeze.freeze()))
+        return "\n".join(versions)
 
     @QtCore.pyqtSlot()
     def on_actionAutoscale_graph_triggered(self):
