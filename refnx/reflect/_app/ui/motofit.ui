@@ -966,6 +966,9 @@ QTreeView::branch:open:has-children:has-siblings  {
         image: url(:/icons/branch-open.png);
 }</string>
            </property>
+           <property name="horizontalScrollBarPolicy">
+            <enum>Qt::ScrollBarAlwaysOff</enum>
+           </property>
            <property name="editTriggers">
             <set>QAbstractItemView::AnyKeyPressed|QAbstractItemView::DoubleClicked|QAbstractItemView::EditKeyPressed</set>
            </property>
