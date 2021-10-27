@@ -390,3 +390,6 @@ in 0.1.13.
 - Add OrsoDataset and a generalised load_data function.
 - refnx GUI removes horizontal scrollbar.
 - Fixed crash when trying to access version numbers when saving expt file.
+
+0.1.26
+------
