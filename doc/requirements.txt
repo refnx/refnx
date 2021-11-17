@@ -1,4 +1,4 @@
-setuptools
+setuptools==58.5.3
 nbsphinx
 jupyter-sphinx
 sphinxcontrib-bibtex<2.0.0
