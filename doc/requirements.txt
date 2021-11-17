@@ -1,6 +1,6 @@
-setuptools==46.2.0
+setuptools
 nbsphinx
-jupyter-sphinx==0.2.4
+jupyter-sphinx
 sphinxcontrib-bibtex<2.0.0
 sphinx_rtd_theme
 tqdm
