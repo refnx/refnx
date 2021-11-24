@@ -4,3 +4,20 @@ build-backend = "setuptools.build_meta"
 
 [project]
 requires-python = ">=3.7"
+
+
+
+[tool.cibuildwheel]
+skip = "pp* cp36-* cp37-*"
+test-command = "python -c \"from refnx.reflect import available_backends; b = available_backends(); assert 'c' in b\""
+manylinux-x86_64-image = "manylinux2014"
+
+[tool.cibuildwheel.macos]
+archs = ["x86_64", "universal2", "arm64"]
+
+# On an Linux Intel runner with qemu installed, build Intel and ARM wheels
+[tool.cibuildwheel.linux]
+archs = ["x86_64"]
+
+[tool.cibuildwheel.windows]
+archs = ["AMD64"]

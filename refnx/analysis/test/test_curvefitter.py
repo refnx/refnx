@@ -381,14 +381,10 @@ class TestCurveFitter:
         assert_("covar" in res0)
         assert_("stderr" in res0)
 
-    def test_NIST(self):
+    @pytest.mark.parametrize("model", NIST_Models)
+    def test_NIST(self, model):
         # Run all the NIST standard tests with leastsq
-        for model in NIST_Models:
-            try:
-                NIST_runner(model)
-            except Exception:
-                print(model)
-                raise
+        NIST_runner(model)
 
 
 def gauss(x, p0):

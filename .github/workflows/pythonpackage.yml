@@ -12,7 +12,7 @@ jobs:
     strategy:
       max-parallel: 3
       matrix:
-        python-version: [3.8, 3.9]
+        python-version: [3.8, 3.9, '3.10']
 
     steps:
     - uses: actions/checkout@v2
@@ -87,7 +87,7 @@ jobs:
     strategy:
       max-parallel: 3
       matrix:
-        python-version: [3.8, 3.9]
+        python-version: [3.8, 3.9, '3.10']
 
     steps:
     - uses: actions/checkout@v2
@@ -140,28 +140,23 @@ jobs:
         pytest --pyargs refnx
         popd
 
-#    - name: Make frozen GUI executable
-#      if: ${{ matrix.python-version == '3.8' }}
-#      run: |
-#        # make app in virtualenv
-#        python -m venv app
-#        source app/bin/activate
-#        # python -m pip install setuptools==44
-#        python -m pip install --upgrade --upgrade-strategy eager numpy cython periodictable corner matplotlib pyqt5 scipy tqdm
-#        pushd dist
-#        python -m pip install --only-binary=refnx --no-index --find-links=. refnx
-#        popd
-#
-#        # fix for multiprocessing on Py3.8 is not merged in PyInstaller
-#        # if you are on Py3.7 you can just pip install pyinstaller
-#        python -m pip install pyinstaller
-#        # pip install git+https://github.com/andyfaff/pyinstaller.git@gh4865
-#
-#        pushd tools/app
-#        pyinstaller motofit.spec
-#        zip -r -X dist/motofit.app.zip dist/motofit.app/
-#        mv dist/motofit.app.zip ../../dist/
-#        popd
+    - name: Make frozen GUI executable
+      if: ${{ matrix.python-version == '3.8' }}
+      run: |
+        # make app in virtualenv
+        python -m venv app
+        source app/bin/activate
+        python -m pip install --upgrade --upgrade-strategy eager -r tools/app/requirements.txt
+        pushd dist
+        python -m pip install --only-binary=refnx --no-index --find-links=. refnx
+        popd
+        python -m pip install pyinstaller
+
+        pushd tools/app
+        pyinstaller motofit.spec
+        zip -r -X dist/motofit.app.zip dist/motofit.app/
+        mv dist/motofit.app.zip ../../dist/
+        popd
 
     - uses: actions/upload-artifact@v1
       with:
@@ -175,7 +170,7 @@ jobs:
     strategy:
       max-parallel: 3
       matrix:
-        python-version: [3.8, 3.9]
+        python-version: [3.8, 3.9, '3.10']
 
     steps:
     - uses: actions/checkout@v2
