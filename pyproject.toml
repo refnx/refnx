@@ -4,3 +4,13 @@ build-backend = "setuptools.build_meta"
 
 [project]
 requires-python = ">=3.7"
+
+
+
+[tool.cibuildwheel]
+skip = "pp* cp36-* cp37-*"
+test-command = "python -c \"from refnx.reflect import available_backends; b = available_backends(); assert 'c' in b\""
+
+[[tool.cibuildwheel.overrides]]
+select = "cp310-*"
+manylinux-x86_64-image = "manylinux2014"
