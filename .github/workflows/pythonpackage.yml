@@ -150,10 +150,14 @@ jobs:
         pushd dist
         python -m pip install --only-binary=refnx --no-index --find-links=. refnx
         popd
-        python -m pip install pyinstaller
+        python -m pip install pyinstaller psutil
 
         pushd tools/app
         pyinstaller motofit.spec
+
+        # check to see that the app starts
+        python check_app_starts.py dist/motofit.app/Contents/MacOS/motofit
+
         zip -r -X dist/motofit.app.zip dist/motofit.app/
         mv dist/motofit.app.zip ../../dist/
         popd

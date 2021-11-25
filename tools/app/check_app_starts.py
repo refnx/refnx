@@ -6,7 +6,7 @@ import subprocess
 
 if __name__ == "__main__":
     # provide the path to the executable that you wish to check
-    print(sys.argv[1:])
+    # print(sys.argv[1:])
     try:
         proc = subprocess.run(sys.argv[1:], timeout=(10.))
     except subprocess.TimeoutExpired:
