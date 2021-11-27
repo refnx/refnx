@@ -151,6 +151,8 @@ jobs:
         python -m pip install --only-binary=refnx --no-index --find-links=. refnx
         popd
         python -m pip install pyinstaller psutil
+        # compileall in an effort to speedup pyinstaller GUI start
+        python -m compileall
 
         pushd tools/app
         pyinstaller motofit.spec
