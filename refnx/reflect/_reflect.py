@@ -25,6 +25,8 @@ DEALINGS IN THIS SOFTWARE.
 """
 import os.path
 import numpy as np
+import numpy.typing as npt
+from typing import Optional
 
 # TINY = np.finfo(np.float64).tiny
 TINY = 1e-30
@@ -152,7 +154,13 @@ class _Abeles_pyopencl:
 abeles_pyopencl = _Abeles_pyopencl()
 
 
-def abeles(q, layers, scale=1.0, bkg=0, threads=0):
+def abeles(
+    q: npt.ArrayLike,
+    layers: npt.ArrayLike,
+    scale: Optional[float] = 1.0,
+    bkg: Optional[float] = 0,
+    threads: Optional[int] = 0,
+) -> np.array:
     """
     Abeles matrix formalism for calculating reflectivity from a stratified
     medium.
