@@ -1,0 +1,18 @@
+# Downloads the latest commit on github and runs all pytests with xvfb.
+
+FROM ubuntu:latest
+ARG DEBIAN_FRONTEND=noninteractive
+ENV MPLBACKEND=agg
+
+RUN apt-get update
+RUN apt-get install git -y
+RUN git clone https://github.com/refnx/refnx
+WORKDIR /refnx
+RUN apt-get install python3 python3-pip pypy3 xvfb qt5-default opencl-headers ocl-icd-opencl-dev libpocl2 libhdf5-serial-dev libnetcdf-dev -y
+
+RUN python3 -m pip install --upgrade pip
+RUN python3 -m pip install wheel
+RUN python3 -m pip install --ignore-installed -e .[all]
+RUN python3 -m pip install pytest pyqt5==5.15.2 uncertainties pyopencl pymc3 pytest-qt
+
+RUN xvfb-run pytest /refnx
