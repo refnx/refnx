@@ -395,3 +395,4 @@ in 0.1.13.
 ------
 - change wheel builder to make 3.10 wheels.
 - check that pyinstaller based macOS standalone app runs in CI.
+- update install documentation

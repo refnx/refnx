@@ -9,10 +9,11 @@ Installation
 .. _github: https://github.com/refnx/refnx
 .. _homebrew: https://brew.sh/
 
-*refnx* has been tested on Python 3.7, 3.8 and 3.9. It requires the
+*refnx* has been tested on Python 3.7, 3.8, 3.9, and 3.10. It requires the
 *numpy, scipy, cython* packages to work. Additional features
 require the *pytest, h5py, xlrd, uncertainties, attrs, matplotlib, Jupyter,*
-*ipywidgets, traitlets, tqdm, pandas, pyqt5, periodictable, pymc3* packages.
+*ipywidgets, traitlets, tqdm, pandas, pyqt5, periodictable, pymc3, corner*
+packages.
 To build the bleeding edge code you will need to have access to a C-compiler to
 build a couple of Python extensions. C-compilers should be installed on Linux.
 On OSX you will need to install Xcode and the command line tools. On Windows
@@ -30,13 +31,14 @@ step is to create a *conda* environment.
 Creating a conda environment
 ============================
 
-1. In a shell window create a conda environment and install the
-   dependencies. The **-n** flag indicates that the environment is called
-   *refnx*.
+1. In a shell window create a conda environment and install the dependencies.
+   Note that not all of these dependencies are essential, but they are required
+   to run the full refnx test suite. The **-n** flag indicates that the
+   environment is called *refnx*.
 
     ::
 
-     conda create -n refnx python=3.7 numpy scipy cython pandas h5py xlrd pytest pyqt matplotlib
+     conda create -n refnx python=3.9 numpy scipy cython pandas h5py xlrd pytest pyqt matplotlib ipywidgets jupyter
 
 2. Activate the environment that we're going to be working in:
 
@@ -52,7 +54,7 @@ Creating a conda environment
 
     ::
 
-     python -m pip install uncertainties attrs periodictable
+     python -m pip install uncertainties attrs periodictable corner theano pymc3
 
 Installing with pip
 ===================
