@@ -125,6 +125,8 @@ class ReflectReduce:
                 Uncertainty in specular reflectivity (SD), shape (N, T)
             - 'omega' : np.ndarray
                 Angle of incidence, shape (N, T)
+            - 'm_lambda' : np.ndarray
+                Wavelength, shape (N, T)
             - 'm_ref' : np.ndarray
                 Offspecular reflectivity map, shape (N, T, Y)
             - 'm_ref_err' : np.ndarray
@@ -139,6 +141,10 @@ class ReflectReduce:
                 run number for the reflected beam
             - 'fname' : list
                 the saved filenames
+            - 'direct_beam' : ReflectNexus
+                Direct Beam object
+            - 'reflected_beam' : ReflectNexus
+                Reflected Beam object
 
         N corresponds to the number of spectra
         T corresponds to the number of Q (wavelength) bins
@@ -270,11 +276,15 @@ class ReflectReduce:
         reduction["m_ref_err"] = self.m_ref_err = m_ref_sd
         reduction["qz"] = self.m_qz = qz
         reduction["qx"] = self.m_qx = qx
+        reduction["omega"] = self.omega_corrected
+        reduction["m_lambda"] = self.reflected_beam.m_lambda
         reduction["nspectra"] = self.n_spectra
         reduction["start_time"] = self.reflected_beam.start_time
         reduction[
             "datafile_number"
         ] = self.datafile_number = self.reflected_beam.datafile_number
+        reduction["direct_beam"] = self.direct_beam
+        reduction["reflected_beam"] = self.reflected_beam
 
         fnames = []
         datasets = []
