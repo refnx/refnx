@@ -218,7 +218,12 @@ class Catalogue:
         self.cat = d
 
     def __getattr__(self, item):
-        return self.cat[item]
+        if item in self.__dict__:
+            return self.__dict__[item]
+        elif item in self.cat:
+            return self.cat[item]
+        else:
+            return None
 
     @property
     def datafile_number(self):
