@@ -213,17 +213,22 @@ class Catalogue:
             # start times don't exist in this file
             d["start_time"] = None
 
-        d["original_file_name"] = h5d["entry1/experiment/file_name"]
+        d["original_file_name"] = h5d["entry1/experiment/file_name"][:]
         d["sample_name"] = h5d["entry1/sample/name"][:]
         self.cat = d
 
     def __getattr__(self, item):
-        if item in self.__dict__:
-            return self.__dict__[item]
-        elif item in self.cat:
+        try:
             return self.cat[item]
-        else:
-            return None
+        except KeyError:
+            raise AttributeError
+
+    def __getstate__(self):
+        return self.__dict__
+
+    def __setstate__(self, state):
+        self.cat = state["cat"]
+        self.prefix = state["prefix"]
 
     @property
     def datafile_number(self):
@@ -1153,6 +1158,12 @@ class ReflectNexus:
         else:
             raise AttributeError
 
+    def __getstate__(self):
+        return self.__dict__
+
+    def __setstate__(self, state):
+        self.__dict__.update(state)
+
     def _short_circuit_process(self, _arguments):
         """
         Returns the truth that two sets of arguments from successive calls to
@@ -1964,7 +1975,7 @@ class ReflectNexus:
 
         try:
             mode = cat.mode
-        except KeyError:
+        except AttributeError:
             # no mode for SPZ
             mode = None
 
