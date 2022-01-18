@@ -26,14 +26,7 @@ from refnx.reduce import (
     SpinSet,
 )
 from refnx.reduce.peak_utils import gauss
-from refnx.reduce.platypusnexus import (
-    fore_back_region,
-    EXTENT_MULT,
-    PIXEL_OFFSET,
-    create_detector_norm,
-    Catalogue,
-    PlatypusCatalogue
-)
+from refnx.reduce.platypusnexus import fore_back_region, EXTENT_MULT, PIXEL_OFFSET, create_detector_norm, Catalogue, PlatypusCatalogue
 
 
 class TestSpinSet(object):
@@ -134,18 +127,10 @@ class TestPlatypusNexus(object):
             self.f641 = PlatypusNexus(pjoin(self.pth, "PLP0011641.nx.hdf"))
 
             # These PNR datasets all have different flipper settings
-            self.f8861 = PlatypusNexus(
-                pjoin(self.pth, "PNR_files/PLP0008861.nx.hdf")
-            )
-            self.f8862 = PlatypusNexus(
-                pjoin(self.pth, "PNR_files/PLP0008862.nx.hdf")
-            )
-            self.f8863 = PlatypusNexus(
-                pjoin(self.pth, "PNR_files/PLP0008863.nx.hdf")
-            )
-            self.f8864 = PlatypusNexus(
-                pjoin(self.pth, "PNR_files/PLP0008864.nx.hdf")
-            )
+            self.f8861 = PlatypusNexus(pjoin(self.pth, "PNR_files/PLP0008861.nx.hdf"))
+            self.f8862 = PlatypusNexus(pjoin(self.pth, "PNR_files/PLP0008862.nx.hdf"))
+            self.f8863 = PlatypusNexus(pjoin(self.pth, "PNR_files/PLP0008863.nx.hdf"))
+            self.f8864 = PlatypusNexus(pjoin(self.pth, "PNR_files/PLP0008864.nx.hdf"))
 
         self.cwd = os.getcwd()
 
@@ -190,9 +175,7 @@ class TestPlatypusNexus(object):
         mask[30:70] = True
         mask[130:160] = True
 
-        profile, profile_sd = plp.background_subtract_line(
-            yvals, yvals_sd, mask
-        )
+        profile, profile_sd = plp.background_subtract_line(yvals, yvals_sd, mask)
 
         verified_data = np.load(pjoin(self.pth, "background_subtract.npy"))
 
@@ -203,11 +186,17 @@ class TestPlatypusNexus(object):
         yvals = np.ceil(gauss(xvals, 0, 1000, 0, 1))
         detector = np.repeat(yvals[:, np.newaxis], 1000, axis=1).T
         detector_sd = np.sqrt(detector)
-        output = plp.find_specular_ridge(
-            detector[np.newaxis, :], detector_sd[np.newaxis, :]
-        )
+        output = plp.find_specular_ridge(detector[np.newaxis, :], detector_sd[np.newaxis, :])
         assert_(len(output) == 5)
         assert_almost_equal(output[0][0], 100)
+
+    def test_pickle(self):
+        # can we pickle a PlatypusNexus object?
+        self.f8864.process()
+        pkl = pickle.dumps(self.f8864)
+        o = pickle.loads(pkl)
+        ops, f8864 = o.processed_spectrum, self.f8864.processed_spectrum
+        assert_allclose(ops["m_spec"], f8864["m_spec"])
 
     def test_background_subtract(self):
         # create some test data
@@ -222,9 +211,7 @@ class TestPlatypusNexus(object):
         # now make an (N, T, Y) detector image
         n_tbins = 10
         detector = np.repeat(yvals, n_tbins).reshape(xvals.size, n_tbins).T
-        detector_sd = (
-            np.repeat(yvals_sd, n_tbins).reshape(xvals.size, n_tbins).T
-        )
+        detector_sd = np.repeat(yvals_sd, n_tbins).reshape(xvals.size, n_tbins).T
         detector = detector.reshape(1, n_tbins, xvals.size)
         detector_sd = detector_sd.reshape(1, n_tbins, xvals.size)
 
@@ -232,9 +219,7 @@ class TestPlatypusNexus(object):
         mask[:, :, 30:70] = True
         mask[:, :, 130:160] = True
 
-        det_bkg, detSD_bkg = plp.background_subtract(
-            detector, detector_sd, mask
-        )
+        det_bkg, detSD_bkg = plp.background_subtract(detector, detector_sd, mask)
 
         # each of the (N, T) entries should have the same background subtracted
         # entries
@@ -260,9 +245,7 @@ class TestPlatypusNexus(object):
         assert_(np.size(out[1], axis=0) == 2)
 
     def test_event_folder(self):
-        self.f641.process(
-            eventmode=[0, 900, 1800], integrate=0, event_folder=self.pth
-        )
+        self.f641.process(eventmode=[0, 900, 1800], integrate=0, event_folder=self.pth)
 
     def test_multiple_acquisitions(self):
         """
@@ -285,10 +268,7 @@ class TestPlatypusNexus(object):
 
         # check that the wavelength resolution is roughly right, between 7 and
         # 8%.
-        res = (
-            self.f641.processed_spectrum["m_lambda_fwhm"][0]
-            / self.f641.processed_spectrum["m_lambda"][0]
-        )
+        res = self.f641.processed_spectrum["m_lambda_fwhm"][0] / self.f641.processed_spectrum["m_lambda"][0]
         assert_array_less(res, np.ones_like(res) * 0.08)
         assert_array_less(np.ones_like(res) * 0.07, res)
 
@@ -342,15 +322,11 @@ class TestPlatypusNexus(object):
             # it should also be reduceable
             reducer = PlatypusReduce(pjoin(self.pth, "PLP0000711.nx.hdf"))
 
-            datasets, reduced = reducer.reduce(
-                pjoin(os.getcwd(), "ADD_PLP0000708.nx.hdf")
-            )
+            datasets, reduced = reducer.reduce(pjoin(os.getcwd(), "ADD_PLP0000708.nx.hdf"))
             assert_("y" in reduced)
 
             # the error bars should be smaller
-            datasets2, reduced2 = reducer.reduce(
-                pjoin(self.pth, "PLP0000708.nx.hdf")
-            )
+            datasets2, reduced2 = reducer.reduce(pjoin(self.pth, "PLP0000708.nx.hdf"))
 
             assert_(np.all(reduced["y_err"] < reduced2["y_err"]))
 
@@ -393,14 +369,10 @@ class TestPlatypusNexus(object):
         assert_equal(hipx, calc_higher)
 
         y1 = np.atleast_1d(np.round(lopx - PIXEL_OFFSET).astype("int"))
-        y0 = np.atleast_1d(
-            np.round(lopx - PIXEL_OFFSET - EXTENT_MULT * sd).astype("int")
-        )
+        y0 = np.atleast_1d(np.round(lopx - PIXEL_OFFSET - EXTENT_MULT * sd).astype("int"))
 
         y2 = np.atleast_1d(np.round(hipx + PIXEL_OFFSET).astype("int"))
-        y3 = np.atleast_1d(
-            np.round(hipx + PIXEL_OFFSET + EXTENT_MULT * sd).astype("int")
-        )
+        y3 = np.atleast_1d(np.round(hipx + PIXEL_OFFSET + EXTENT_MULT * sd).astype("int"))
 
         bp = np.r_[np.arange(y0[0], y1[0] + 1), np.arange(y2[0], y3[0] + 1)]
 
@@ -418,12 +390,8 @@ class TestPlatypusNexus(object):
         # check that flood field calculation works
         # the values were worked out by hand on a randomly
         # generated array
-        test_norm = np.array(
-            [1.12290503, 1.23743017, 0.8603352, 0.70111732, 1.07821229]
-        )
-        test_norm_sd = np.array(
-            [0.05600541, 0.05879208, 0.04902215, 0.04425413, 0.05487956]
-        )
+        test_norm = np.array([1.12290503, 1.23743017, 0.8603352, 0.70111732, 1.07821229])
+        test_norm_sd = np.array([0.05600541, 0.05879208, 0.04902215, 0.04425413, 0.05487956])
 
         fname = os.path.join(self.pth, "flood.h5")
         with h5py.File(fname, "r") as f:
