@@ -2,6 +2,7 @@ import os
 from os.path import join as pjoin
 import numbers
 import warnings
+import pickle
 
 import pytest
 import numpy as np
@@ -30,6 +31,8 @@ from refnx.reduce.platypusnexus import (
     EXTENT_MULT,
     PIXEL_OFFSET,
     create_detector_norm,
+    Catalogue,
+    PlatypusCatalogue,
 )
 
 
@@ -205,6 +208,14 @@ class TestPlatypusNexus(object):
         )
         assert_(len(output) == 5)
         assert_almost_equal(output[0][0], 100)
+
+    def test_pickle(self):
+        # can we pickle a PlatypusNexus object?
+        self.f8864.process()
+        pkl = pickle.dumps(self.f8864)
+        o = pickle.loads(pkl)
+        ops, f8864 = o.processed_spectrum, self.f8864.processed_spectrum
+        assert_allclose(ops["m_spec"], f8864["m_spec"])
 
     def test_background_subtract(self):
         # create some test data
@@ -532,6 +543,19 @@ class TestSpatzNexus:
 
 @pytest.mark.usefixtures("no_data_directory")
 def test_catalogue(data_directory):
-    pth = os.path.dirname(pjoin(data_directory, "reduce"))
+    pth = pjoin(data_directory, "reduce")
     catalogue(0, 10000000, data_folder=pth, prefix="PLP")
     catalogue(0, 10000000, data_folder=pth, prefix="SPZ")
+
+
+@pytest.mark.usefixtures("no_data_directory")
+def test_Catalogue_pickle(data_directory):
+    pth = pjoin(data_directory, "reduce")
+    f113 = pjoin(pth, "PLP0011613.nx.hdf")
+    with h5py.File(f113) as f:
+        c = PlatypusCatalogue(f)
+
+    assert c.datafile_number == 11613
+    assert c.prefix == "PLP"
+    pkl = pickle.dumps(c)
+    pickle.loads(pkl)
