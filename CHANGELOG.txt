@@ -396,3 +396,6 @@ in 0.1.13.
 - change wheel builder to make 3.10 wheels.
 - check that pyinstaller based macOS standalone app runs in CI.
 - update install documentation
+- workaround for difficulty using orsopy on Python 3.10
+- added fields to ReflectReduce output dict, including omega, reflected_beam,
+  direct_beam.
