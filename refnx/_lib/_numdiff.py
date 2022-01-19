@@ -15,7 +15,7 @@ import numpy as np
 
 
 # NOTE: we only do double precision internally so far
-EPS = np.MachAr().eps
+EPS = np.finfo(np.float64).eps
 
 
 def _get_epsilon(x, s, epsilon, n):
