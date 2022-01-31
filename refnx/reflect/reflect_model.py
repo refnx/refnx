@@ -828,7 +828,7 @@ def _smeared_abeles_constant(q, w, resolution, threads=-1):
     gaussgpoint = (gaussnum - 1) / 2
 
     def gauss(x, s):
-        return 1.0 / s / np.sqrt(2 * np.pi) * np.exp(-0.5 * x ** 2 / s / s)
+        return 1.0 / s / np.sqrt(2 * np.pi) * np.exp(-0.5 * x**2 / s / s)
 
     lowq = np.min(q)
     highq = np.max(q)

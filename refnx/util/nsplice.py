@@ -63,7 +63,7 @@ def get_scaling_in_overlap(x0, y0, dy0, x1, y1, dy1):
             + ((newi * tdy1[:num2]) ** 2) / ty1[:num2] ** 4
         )
 
-        w_dscalefactor = 1 / (w_dscalefactor ** 2)
+        w_dscalefactor = 1 / (w_dscalefactor**2)
     else:
         w_dscalefactor = 1.0
 

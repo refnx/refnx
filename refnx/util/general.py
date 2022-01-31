@@ -39,7 +39,7 @@ def div(d1, d2, L12=2859):
     neutron reflectometer at IRI Delft Nuclear Instruments and Methods in
     Physics Research A, 1995, 362, 434-453
     """
-    divergence = 0.68 * 0.68 * (d1 ** 2 + d2 ** 2) / (L12 ** 2)
+    divergence = 0.68 * 0.68 * (d1**2 + d2**2) / (L12**2)
     alpha = (d1 + d2) / 2.0 / L12
     beta = abs(d1 - d2) / 2.0 / L12
     return np.degrees(np.sqrt(divergence)), np.degrees(alpha), np.degrees(beta)
@@ -252,8 +252,8 @@ def wavelength_energy(wavelength):
         Energy in meV.
 
     """
-    c = 0.5e23 / constants.eV * constants.h ** 2 / constants.m_n
-    return c / wavelength ** 2
+    c = 0.5e23 / constants.eV * constants.h**2 / constants.m_n
+    return c / wavelength**2
 
 
 def energy_wavelength(energy):
@@ -270,7 +270,7 @@ def energy_wavelength(energy):
     wavelength : float
         Wavelength in Angstrom.
     """
-    c = 0.5e23 / constants.eV * constants.h ** 2 / constants.m_n
+    c = 0.5e23 / constants.eV * constants.h**2 / constants.m_n
     return np.sqrt(c / energy)
 
 
@@ -517,7 +517,7 @@ def penetration_depth(qq, rho):
     -------
     penetration_depth: float
     """
-    kk = 0.25 * qq ** 2.0
+    kk = 0.25 * qq**2.0
     kk -= 4 * np.pi * rho
     temp = np.sqrt(kk + 0j)
     return np.abs(1 / temp.imag)

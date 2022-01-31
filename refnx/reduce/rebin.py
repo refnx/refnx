@@ -162,7 +162,7 @@ def rebin(x1, y1, x2, y1_sd=None):
         y1_sd_temp = np.zeros_like(y1)
 
     # Need to work with variances
-    y1_var_temp = y1_sd_temp ** 2
+    y1_var_temp = y1_sd_temp**2
 
     # the fractional bin locations of the new bins in the old bins
     i_place = np.interp(x2, x1, np.arange(len(x1)))

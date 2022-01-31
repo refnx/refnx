@@ -2240,7 +2240,7 @@ class PlatypusNexus(ReflectNexus):
         # use average of umb and penumb, the calc assumes a rectangular
         # distribution
         penumb = (
-            np.sqrt((0.289 * 0.5 * (umb + penumb)) ** 2.0 + 2.2 ** 2)
+            np.sqrt((0.289 * 0.5 * (umb + penumb)) ** 2.0 + 2.2**2)
             * EXTENT_MULT
             * 2
         )
@@ -2562,7 +2562,7 @@ class SpatzNexus(ReflectNexus):
         # use average of umb and penumb, the calc assumes a rectangular
         # distribution
         penumb = (
-            np.sqrt((0.289 * 0.5 * (umb + penumb)) ** 2.0 + 2.2 ** 2)
+            np.sqrt((0.289 * 0.5 * (umb + penumb)) ** 2.0 + 2.2**2)
             * EXTENT_MULT
             * 2
         )
@@ -2796,7 +2796,7 @@ def background_subtract_line(profile, profile_sd, background_mask):
             pcovmat[0, 0]
             + pcovmat[1, 0] * xx
             + pcovmat[0, 1] * xx
-            + pcovmat[1, 1] * (xx ** 2)
+            + pcovmat[1, 1] * (xx**2)
         )
 
     bkgd = f(np.arange(np.size(profile, 0)), popt[0], popt[1])
@@ -2915,7 +2915,7 @@ def find_specular_ridge(
             # Uncertainties code takes a while to run
             # total_y = np.sum(det_subset, axis=0)
             y_cross = np.sum(det_subset, axis=0)
-            y_cross_sd = np.sqrt(np.sum(det_sd_subset ** 2.0, axis=0))
+            y_cross_sd = np.sqrt(np.sum(det_sd_subset**2.0, axis=0))
 
             # find the centroid and gauss peak in the last sections of the TOF
             # plot

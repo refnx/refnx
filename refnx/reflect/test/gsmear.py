@@ -10,7 +10,7 @@ def res(qq, layer, resolution=5):
     gaussgpoint = (gaussnum - 1) / 2
 
     def gauss(x, s):
-        return 1.0 / s / np.sqrt(2 * np.pi) * np.exp(-0.5 * x ** 2 / s / s)
+        return 1.0 / s / np.sqrt(2 * np.pi) * np.exp(-0.5 * x**2 / s / s)
 
     lowQ = np.min(qq)
     highQ = np.max(qq)

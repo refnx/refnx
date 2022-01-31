@@ -646,7 +646,7 @@ class Objective(BaseObjective):
                 y_err * y_err + np.exp(2 * float(self.lnsigma)) * model * model
             )
         else:
-            var_y = y_err ** 2
+            var_y = y_err**2
 
         # TODO do something sensible if data isn't weighted
         if self.weighted:
@@ -805,7 +805,7 @@ class Objective(BaseObjective):
         threshold = np.finfo(float).eps * max(jac.shape) * s[0]
         s = s[s > threshold]
         VT = VT[: s.size]
-        covar = np.dot(VT.T / s ** 2, VT)
+        covar = np.dot(VT.T / s**2, VT)
 
         if used_residuals_scaler:
             # unwind the scaling.

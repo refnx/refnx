@@ -255,7 +255,7 @@ def discrepancy(sample, iterative=False, method="CD"):
     if method == "CD":
         # reference [1], page 71 Eq (3.7)
         abs_ = abs(sample - 0.5)
-        disc1 = np.sum(np.prod(1 + 0.5 * abs_ - 0.5 * abs_ ** 2, axis=1))
+        disc1 = np.sum(np.prod(1 + 0.5 * abs_ - 0.5 * abs_**2, axis=1))
 
         prod_arr = 1
         for i in range(d):
@@ -268,22 +268,22 @@ def discrepancy(sample, iterative=False, method="CD"):
             )
         disc2 = prod_arr.sum()
 
-        return (13.0 / 12.0) ** d - 2.0 / n * disc1 + 1.0 / (n ** 2) * disc2
+        return (13.0 / 12.0) ** d - 2.0 / n * disc1 + 1.0 / (n**2) * disc2
     elif method == "WD":
         # reference [1], page 73 Eq (3.8)
         prod_arr = 1
         for i in range(d):
             s0 = sample[:, i]
             x_kikj = abs(s0[:, None] - s0)
-            prod_arr *= 3.0 / 2.0 - x_kikj + x_kikj ** 2
+            prod_arr *= 3.0 / 2.0 - x_kikj + x_kikj**2
 
         # typo in the book sign missing: - (4.0 / 3.0) ** d
-        return -((4.0 / 3.0) ** d) + 1.0 / (n ** 2) * prod_arr.sum()
+        return -((4.0 / 3.0) ** d) + 1.0 / (n**2) * prod_arr.sum()
     elif method == "MD":
         # reference [2], page 290 Eq (18)
         abs_ = abs(sample - 0.5)
         disc1 = np.sum(
-            np.prod(5.0 / 3.0 - 0.25 * abs_ - 0.25 * abs_ ** 2, axis=1)
+            np.prod(5.0 / 3.0 - 0.25 * abs_ - 0.25 * abs_**2, axis=1)
         )
 
         prod_arr = 1
@@ -300,12 +300,12 @@ def discrepancy(sample, iterative=False, method="CD"):
 
         disc = (19.0 / 12.0) ** d
         disc1 = 2.0 / n * disc1
-        disc2 = 1.0 / (n ** 2) * disc2
+        disc2 = 1.0 / (n**2) * disc2
 
         return disc - disc1 + disc2
     elif method == "L2-star":
         # reference [1], page 69 Eq (3.5)
-        disc1 = np.sum(np.prod(1 - sample ** 2, axis=1))
+        disc1 = np.sum(np.prod(1 - sample**2, axis=1))
 
         xik = sample[None, :, :]
         xjk = sample[:, None, :]
@@ -314,7 +314,7 @@ def discrepancy(sample, iterative=False, method="CD"):
         )
 
         return np.sqrt(
-            3 ** (-d) - 1 / n * 2 ** (1 - d) * disc1 + 1 / (n ** 2) * disc2
+            3 ** (-d) - 1 / n * 2 ** (1 - d) * disc1 + 1 / (n**2) * disc2
         )
     else:
         raise ValueError(
@@ -378,10 +378,10 @@ def update_discrepancy(x_new, sample, initial_disc):
     abs_ = abs(x_new - 0.5)
 
     # derivation from P.T. Roy (@tupui)
-    disc1 = -2 / n * np.prod(1 + 1 / 2 * abs_ - 1 / 2 * abs_ ** 2)
+    disc1 = -2 / n * np.prod(1 + 1 / 2 * abs_ - 1 / 2 * abs_**2)
     disc2 = (
         2
-        / (n ** 2)
+        / (n**2)
         * np.sum(
             np.prod(
                 1
@@ -392,7 +392,7 @@ def update_discrepancy(x_new, sample, initial_disc):
             )
         )
     )
-    disc3 = 1 / (n ** 2) * np.prod(1 + abs_)
+    disc3 = 1 / (n**2) * np.prod(1 + abs_)
 
     return initial_disc + disc1 + disc2 + disc3
 
@@ -417,7 +417,7 @@ def primes_from_2_to(n):
     .. [1] `StackOverflow <https://stackoverflow.com/questions/2068372>`_.
     """
     sieve = np.ones(n // 3 + (n % 6 == 2), dtype=bool)
-    for i in range(1, int(n ** 0.5) // 3 + 1):
+    for i in range(1, int(n**0.5) // 3 + 1):
         k = 3 * i + 1 | 1
         sieve[k * k // 3 :: 2 * k] = False
         sieve[k * (k - 2 * (i & 1) + 4) // 3 :: 2 * k] = False

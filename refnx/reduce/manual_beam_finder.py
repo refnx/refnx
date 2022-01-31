@@ -397,7 +397,7 @@ def get_cross_section(
 
     # sum over time bins
     xs = np.sum(det, axis=0)
-    xs_err = np.sqrt(np.sum(det_err ** 2, axis=0))
+    xs_err = np.sqrt(np.sum(det_err**2, axis=0))
 
     return x, xs, xs_err
 

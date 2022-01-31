@@ -68,14 +68,14 @@ def Gauss(x, b):
 
 def Hahn1(x, b):
     b = read_params(b)
-    return (b[0] + b[1] * x + b[2] * x ** 2 + b[3] * x ** 3) / (
-        1 + b[4] * x + b[5] * x ** 2 + b[6] * x ** 3
+    return (b[0] + b[1] * x + b[2] * x**2 + b[3] * x**3) / (
+        1 + b[4] * x + b[5] * x**2 + b[6] * x**3
     )
 
 
 def Kirby(x, b):
     b = read_params(b)
-    return (b[0] + b[1] * x + b[2] * x ** 2) / (1 + b[3] * x + b[4] * x ** 2)
+    return (b[0] + b[1] * x + b[2] * x**2) / (1 + b[3] * x + b[4] * x**2)
 
 
 def Lanczos(x, b):
@@ -87,7 +87,7 @@ def Lanczos(x, b):
 
 def MGH09(x, b):
     b = read_params(b)
-    return b[0] * (x ** 2 + x * b[1]) / (x ** 2 + x * b[2] + b[3])
+    return b[0] * (x**2 + x * b[1]) / (x**2 + x * b[2] + b[3])
 
 
 def MGH10(x, b):
@@ -144,8 +144,8 @@ def Roszman1(x, b):
 
 def Thurber(x, b):
     b = read_params(b)
-    return (b[0] + b[1] * x + b[2] * x ** 2 + b[3] * x ** 3) / (
-        1 + b[4] * x + b[5] * x ** 2 + b[6] * x ** 3
+    return (b[0] + b[1] * x + b[2] * x**2 + b[3] * x**3) / (
+        1 + b[4] * x + b[5] * x**2 + b[6] * x**3
     )
 
 
