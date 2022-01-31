@@ -51,7 +51,7 @@ def reduce_xrdml(f, bkg=None, scale=None, sample_length=None):
                 for bkgd in bkgds
             ]
         ]
-        bkgd_refs_var = bkgd_refs_s ** 2
+        bkgd_refs_var = bkgd_refs_s**2
         weights = 1.0 / bkgd_refs_var
         numerator = np.sum(bkgd_refs * weights, axis=0)
         denominator = np.sum(weights, axis=0)

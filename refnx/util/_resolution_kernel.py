@@ -332,7 +332,7 @@ def resolution_kernel(
         p = np.convolve(pqt, pqb, "same")
         p = np.convolve(p, pqc, "same")
         p = np.convolve(p, pqda, "same")
-        p *= spacing ** 3.0
+        p *= spacing**3.0
 
         kernel[i, 1, :] = p / integrate.simps(p, Q)
 

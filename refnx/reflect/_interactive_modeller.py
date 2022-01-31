@@ -1017,7 +1017,7 @@ class Motofit:
             # if there's a dataset loaded then residuals_plot
             # should exist
             residuals = self.objective.residuals()
-            self.chisqr.value = np.sum(residuals ** 2)
+            self.chisqr.value = np.sum(residuals**2)
 
             self.residuals_plot.set_data(self.dataset.x, residuals)
             self.ax_residual.relim()

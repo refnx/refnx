@@ -1187,7 +1187,8 @@ class Slab(Component):
                     self.rough.value,
                     self.vfsolv.value,
                 ]
-            ], dtype=float
+            ],
+            dtype=float,
         )
 
 
