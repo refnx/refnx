@@ -147,6 +147,8 @@ jobs:
         python -m venv app
         source app/bin/activate
         python -m pip install --upgrade --upgrade-strategy eager -r tools/app/requirements.txt
+        # pin scipy 1.7.3 because of pyinstaller doesn't like arm64 bing in libgfortran.dylib
+        python -m pip install scipy==1.7.3
         pushd dist
         python -m pip install --only-binary=refnx --no-index --find-links=. refnx
         popd
