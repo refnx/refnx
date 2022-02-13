@@ -399,3 +399,6 @@ in 0.1.13.
 - workaround for difficulty using orsopy on Python 3.10
 - added fields to ReflectReduce output dict, including omega, reflected_beam,
   direct_beam.
+
+ 0.1.27
+ ------
