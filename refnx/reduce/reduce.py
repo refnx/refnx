@@ -717,7 +717,7 @@ class PolarisationEfficiency:
         # Shape of F2 is (T,)
         # Flipper 2 matrix shape is (4, 4, T). Transpose dimensions to be (T, 4, 4)
         self.flipper2_matrix = [
-            [one, z, one, z],
+            [one, z, z, z],
             [F2, (1 - F2), z, z],
             [z, z, one, z],
             [z, z, F2, (1 - F2)],
