@@ -390,6 +390,10 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         # adds Parameter.units attribute
         # v0.1.21
 
+        # try and compensate for energy dispersive machinery. This won't be
+        # able to compensate for all possible fails.
+        # v0.1.27
+
         from refnx.analysis.bounds import Interval
 
         for do in self.treeModel.datastore:
@@ -405,7 +409,15 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
                 strcs = [model.structure]
 
             for s in strcs:
+                if not hasattr(s, "wavelength"):
+                    s.wavelength = None
+
                 for component in s:
+                    if isinstance(component, Slab) and isinstance(
+                        component.sld, SLD
+                    ):
+                        component.sld.dispersive = False
+
                     if not hasattr(component, "_interfaces"):
                         component._interfaces = None
 

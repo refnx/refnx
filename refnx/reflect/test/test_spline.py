@@ -131,7 +131,7 @@ class TestSpline:
         # check that the spline responds if it's a vfsolv that changes
         self.left.vfsolv.value = 0.5
         assert_almost_equal(
-            Structure.overall_sld(self.left.slabs(), self.solvent)[0, 1], 6.0
+            s.overall_sld(self.left.slabs(), self.solvent)[0, 1], 6.0
         )
         assert_almost_equal(a(0, s), 6.0)
 
