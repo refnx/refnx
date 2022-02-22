@@ -294,7 +294,7 @@ class Structure(UserList):
                 "The first and last Components in a Structure"
                 " need to be Slabs"
             )
-        
+
         # over-ride the wavelength
         if "wavelength" in kwds:
             self.wavelength = float(kwds["wavelength"])

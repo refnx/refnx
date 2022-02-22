@@ -273,10 +273,10 @@ class TestStructure:
 
         p = s.parameters
         assert len(list(flatten(p))) == 5 + 4 + 4
-        
+
         # check that energy dispersive calculation works
         au = MaterialSLD(
-            "Au", density=19.33, name="Gold", probe='x-ray', wavelength=1.54
+            "Au", density=19.33, name="Gold", probe="x-ray", wavelength=1.54
         )
         si = SLD(20.1)
         s = air | au(100, 3) | si(0, 3)
@@ -285,7 +285,7 @@ class TestStructure:
         au_sld = complex(slabs[1, 1], slabs[1, 2])
 
         au_check = MaterialSLD(
-            "Au", density=19.33, name="Gold", probe='x-ray', wavelength=0.5
+            "Au", density=19.33, name="Gold", probe="x-ray", wavelength=0.5
         )
         assert_allclose(au_sld, complex(au_check))
 
