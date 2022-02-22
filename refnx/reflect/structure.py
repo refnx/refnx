@@ -294,6 +294,10 @@ class Structure(UserList):
                 "The first and last Components in a Structure"
                 " need to be Slabs"
             )
+        
+        # over-ride the wavelength
+        if "wavelength" in kwds:
+            self.wavelength = float(kwds["wavelength"])
 
         # Each layer can be given a different type of roughness profile
         # that defines transition between successive layers.

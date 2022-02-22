@@ -273,6 +273,24 @@ class TestStructure:
 
         p = s.parameters
         assert len(list(flatten(p))) == 5 + 4 + 4
+        
+        # check that energy dispersive calculation works
+        au = MaterialSLD(
+            "Au", density=19.33, name="Gold", probe='x-ray', wavelength=1.54
+        )
+        si = SLD(20.1)
+        s = air | au(100, 3) | si(0, 3)
+        slabs = s.slabs(wavelength=0.5)
+        assert_allclose(s.wavelength, 0.5)
+        au_sld = complex(slabs[1, 1], slabs[1, 2])
+
+        au_check = MaterialSLD(
+            "Au", density=19.33, name="Gold", probe='x-ray', wavelength=0.5
+        )
+        assert_allclose(au_sld, complex(au_check))
+
+        # check that the Scatterer.complex method works as intended
+        assert_allclose(au.complex(0.5), complex(au_check))
 
     def test_repr_slab(self):
         p = SLD(5 + 1j)
