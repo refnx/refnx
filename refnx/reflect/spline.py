@@ -147,12 +147,12 @@ class Spline(Component):
 
         vs = np.array(self.vs)
 
-        left_sld = Structure.overall_sld(
+        left_sld = structure.overall_sld(
             np.atleast_2d(left_component.slabs(structure)[-1]),
             structure.solvent,
         )[..., 1]
 
-        right_sld = Structure.overall_sld(
+        right_sld = structure.overall_sld(
             np.atleast_2d(right_component.slabs(structure)[0]),
             structure.solvent,
         )[..., 1]

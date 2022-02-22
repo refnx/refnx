@@ -400,5 +400,15 @@ in 0.1.13.
 - added fields to ReflectReduce output dict, including omega, reflected_beam,
   direct_beam.
 
- 0.1.27
- ------
+0.1.27
+------
+- Add a little machinery for energy dispersive calculations. This is
+  implemented by adding a wavelength attribute to Structure. The
+  Structure.slabs method then works out the Slab representation for that
+  particular wavelength. The wavelength attribute should be used by the
+  Component.slabs method when asking for the SLD of a Scatterer. The Slab and
+  MixedSlab Components have been altered to permit this. User provided
+  components should work as they currently do, but probably have to be
+  rewritten to permit energy dispersive operation.
+  For energy dispersive operation classes that inherit Scatterer should
+  override the newly introduced Scatterer.complex() method.

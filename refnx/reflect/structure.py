@@ -733,6 +733,7 @@ class Scatterer:
 
     def __init__(self, name=""):
         self.name = name
+        # by default energy dispersive scatterers are not energy dispersive
         self.dispersive = False
 
     def __str__(self):
@@ -749,6 +750,10 @@ class Scatterer:
         Parameters
         ----------
         wavelength : float
+
+        Returns
+        -------
+        sldc : complex
         """
         return complex(self)
 
@@ -1234,7 +1239,11 @@ class Slab(Component):
         """
         Slab representation of this component. See :class:`Component.slabs`
         """
-        sldc = self.sld.complex(getattr(structure, "wavelength", None))
+        # speculative shortcut to prevent a number of attribute retrievals
+        if self.sld.dispersive:
+            sldc = self.sld.complex(getattr(structure, "wavelength", None))
+        else:
+            sldc = complex(self.sld)
 
         return np.array(
             [
