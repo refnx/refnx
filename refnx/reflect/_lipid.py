@@ -5,6 +5,7 @@ Component for studying lipid membranes at an interface
 import numpy as np
 from refnx.reflect import Component, SLD, ReflectModel, Structure
 from refnx.analysis import possibly_create_parameter, Parameters, Parameter
+from refnx.reflect.structure import overall_sld
 
 
 class LipidLeaflet(Component):
@@ -253,9 +254,13 @@ class LipidLeaflet(Component):
             self.apm.value * self.thickness_heads.value
         )
         layers[0, 4] = 1 - volfrac
+
         if self.head_solvent is not None:
+            _head_solvent = self.head_solvent.complex(
+                getattr(structure, "wavelength", None)
+            )
             # we do the solvation here, not in Structure.slabs
-            layers[0] = Structure.overall_sld(layers[0], self.head_solvent)
+            layers[0] = overall_sld(layers[0], _head_solvent)
             layers[0, 4] = 0
 
         # tail region
@@ -265,8 +270,11 @@ class LipidLeaflet(Component):
 
         layers[1, 4] = 1 - volfrac
         if self.tail_solvent is not None:
+            _tail_solvent = self.tail_solvent.complex(
+                getattr(structure, "wavelength", None)
+            )
             # we do the solvation here, not in Structure.slabs
-            layers[1] = Structure.overall_sld(layers[1], self.tail_solvent)
+            layers[1] = overall_sld(layers[1], _tail_solvent)
             layers[1, 4] = 0
 
         if self.reverse_monolayer:

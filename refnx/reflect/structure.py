@@ -72,6 +72,8 @@ class Structure(UserList):
         representation is made. Use larger values for coarser
         profiles (and vice versa). A typical starting value to try might
         be 1.0.
+    wavelength : float, None
+        Wavelength the sample was measured at.
 
     Notes
     -----
@@ -140,6 +142,7 @@ class Structure(UserList):
         solvent=None,
         reverse_structure=False,
         contract=0,
+        wavelength=None,
     ):
         super().__init__()
         self._name = name
@@ -150,6 +153,9 @@ class Structure(UserList):
         #: slab representation is made. Use larger values for coarser profiles
         #: (and vice versa). A typical starting value to try might be 1.0.
         self.contract = contract
+
+        # used for energy dispersive measurements.
+        self.wavelength = wavelength
 
         # if you provide a list of components to start with, then initialise
         # the structure from that
@@ -429,8 +435,7 @@ class Structure(UserList):
         """
         return [c.interfaces for c in self.components]
 
-    @staticmethod
-    def overall_sld(slabs, solvent):
+    def overall_sld(self, slabs, solvent):
         """
         Performs a volume fraction weighted average of the material SLD in a
         layer and the solvent in a layer.
@@ -449,12 +454,9 @@ class Structure(UserList):
         """
         solv = solvent
         if isinstance(solvent, Scatterer):
-            solv = complex(solvent)
+            solv = solvent.complex(self.wavelength)
 
-        slabs[..., 1:3] *= (1 - slabs[..., 4])[..., np.newaxis]
-        slabs[..., 1] += solv.real * slabs[..., 4]
-        slabs[..., 2] += solv.imag * slabs[..., 4]
-        return slabs
+        return overall_sld(slabs, solv)
 
     def reflectivity(self, q, threads=0):
         """
@@ -700,6 +702,29 @@ class Structure(UserList):
         return fig, ax
 
 
+def overall_sld(slabs, solvent):
+    """
+    Performs a volume fraction weighted average of the material SLD in a
+    layer and the solvent in a layer.
+
+    Parameters
+    ----------
+    slabs : np.ndarray
+        Slab representation of the layers to be averaged.
+    solvent : complex or reflect.Scatterer
+        SLD of solvating material.
+
+    Returns
+    -------
+    averaged_slabs : np.ndarray
+        the averaged slabs.
+    """
+    slabs[..., 1:3] *= (1 - slabs[..., 4])[..., np.newaxis]
+    slabs[..., 1] += solvent.real * slabs[..., 4]
+    slabs[..., 2] += solvent.imag * slabs[..., 4]
+    return slabs
+
+
 class Scatterer:
     """
     Abstract base class for something that will have a scattering length
@@ -708,6 +733,7 @@ class Scatterer:
 
     def __init__(self, name=""):
         self.name = name
+        self.dispersive = False
 
     def __str__(self):
         sld = complex(self)
@@ -715,6 +741,16 @@ class Scatterer:
 
     def __complex__(self):
         raise NotImplementedError
+
+    def complex(self, wavelength):
+        """
+        Wavelength dispersive evaluation of a Scatterer SLD/RI
+
+        Parameters
+        ----------
+        wavelength : float
+        """
+        return complex(self)
 
     @property
     def parameters(self):
@@ -884,6 +920,7 @@ class MaterialSLD(Scatterer):
 
         self._parameters = Parameters(name=name)
         self._parameters.extend([self.density])
+        self.dispersive = True
 
     def __repr__(self):
         d = {
@@ -925,6 +962,26 @@ class MaterialSLD(Scatterer):
                 wavelength=self.wavelength,
             )
         return complex(sldc[0], sldc[1])
+
+    def complex(self, wavelength):
+        """
+        Wavelength dispersive evaluation of a Scatterer SLD/RI
+
+        Parameters
+        ----------
+        wavelength : float
+
+        Returns
+        -------
+        sldc : complex
+        """
+        if wavelength is not None:
+            bak = self.wavelength
+            self.wavelength = wavelength
+            sldc = complex(self)
+            self.wavelength = bak
+            return sldc
+        return complex(self)
 
     @property
     def parameters(self):
@@ -1177,7 +1234,8 @@ class Slab(Component):
         """
         Slab representation of this component. See :class:`Component.slabs`
         """
-        sldc = complex(self.sld)
+        sldc = self.sld.complex(getattr(structure, "wavelength", None))
+
         return np.array(
             [
                 [
@@ -1308,7 +1366,12 @@ class MixedSlab(Component):
         sum_vfs = np.sum(vfs)
 
         sldc = np.sum(
-            [complex(sld) * vf / sum_vfs for sld, vf in zip(self.sld, vfs)]
+            [
+                sld.complex(getattr(structure, "wavelength", None))
+                * vf
+                / sum_vfs
+                for sld, vf in zip(self.sld, vfs)
+            ]
         )
 
         return np.array(
