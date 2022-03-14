@@ -36,7 +36,6 @@ def mysetup(qtbot):
 
 
 @pytest.mark.skipif(QTBOT_MISSING, reason="pytest-qt not installed")
-@pytest.mark.usefixtures("no_data_directory")
 def test_app_load_old_experiment_file(qtbot, data_directory):
     # tests loading old experiment files.
     # The main issue here is that newer code may have attributes which aren't

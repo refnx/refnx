@@ -37,7 +37,6 @@ from refnx.reduce.platypusnexus import (
 
 
 class TestSpinSet(object):
-    @pytest.mark.usefixtures("no_data_directory")
     @pytest.fixture(autouse=True)
     def setup_method(self, tmpdir, data_directory):
         self.pth = pjoin(data_directory, "reduce", "PNR_files")
@@ -123,7 +122,6 @@ class TestSpinSet(object):
 
 
 class TestPlatypusNexus(object):
-    @pytest.mark.usefixtures("no_data_directory")
     @pytest.fixture(autouse=True)
     def setup_method(self, tmpdir, data_directory):
         self.pth = pjoin(data_directory, "reduce")
@@ -489,7 +487,6 @@ class TestPlatypusNexus(object):
 
 
 class TestSpatzNexus:
-    @pytest.mark.usefixtures("no_data_directory")
     @pytest.fixture(autouse=True)
     def setup_method(self, tmpdir, data_directory):
         self.pth = pjoin(data_directory, "reduce")
@@ -541,14 +538,12 @@ class TestSpatzNexus:
         assert_allclose(toff, 0, atol=1e-12)
 
 
-@pytest.mark.usefixtures("no_data_directory")
 def test_catalogue(data_directory):
     pth = pjoin(data_directory, "reduce")
     catalogue(0, 10000000, data_folder=pth, prefix="PLP")
     catalogue(0, 10000000, data_folder=pth, prefix="SPZ")
 
 
-@pytest.mark.usefixtures("no_data_directory")
 def test_Catalogue_pickle(data_directory):
     pth = pjoin(data_directory, "reduce")
     f113 = pjoin(pth, "PLP0011613.nx.hdf")

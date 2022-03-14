@@ -39,10 +39,7 @@ def data_directory(tmpdir_factory):
     except urllib.error.URLError:
         data_dir = None
 
-    return data_dir
-
-
-@pytest.fixture(scope="session")
-def no_data_directory(data_directory):
-    if data_directory is None:
+    if data_dir is None:
         pytest.skip("No data directory available")
+    else:
+        return data_dir

@@ -3,7 +3,6 @@ import pytest
 import refnx.reduce.xray as xray
 
 
-@pytest.mark.usefixtures("no_data_directory")
 def test_reduction_runs(data_directory):
     # just ensure that the reduction occurs without raising an Exception.
     # We're not testing for correctness here (yet)

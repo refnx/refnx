@@ -15,7 +15,6 @@ import refnx.reduce.batchreduction
 
 
 class TestReduce:
-    @pytest.mark.usefixtures("no_data_directory")
     @pytest.fixture(autouse=True)
     def setup_method(self, tmpdir, data_directory):
         self.pth = pjoin(data_directory, "reduce")

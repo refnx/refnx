@@ -22,7 +22,7 @@ else:
 @pytest.fixture(scope="class")
 def event_setup(data_directory):
     if data_directory is None:
-        return None
+        pytest.skip("No data directory available")
 
     Event_Setup = namedtuple(
         "Event_Setup",
@@ -57,16 +57,13 @@ def event_setup(data_directory):
 
 
 class TestEvent:
-    @pytest.mark.usefixtures("no_data_directory")
     def test_events_smoke(self, event_setup):
         # check that the event.events function works
         event.events(event_setup.event_file_path)
 
-    @pytest.mark.usefixtures("no_data_directory")
     def test_num_events(self, event_setup):
         assert_equal(event_setup.x.size, 783982)
 
-    @pytest.mark.usefixtures("no_data_directory")
     def test_max_frames(self, event_setup):
         # test reading only a certain number of frames
 
@@ -86,7 +83,6 @@ class TestEvent:
             max_f = np.max(cyf)
             assert_equal(9, max_f)
 
-    @pytest.mark.usefixtures("no_data_directory")
     def test_event_same_as_detector(self, event_setup):
         # the detector file should be the same as the event file
         # warnings filter for pixel size
@@ -112,7 +108,6 @@ class TestEvent:
         det, fc, bm = orig_file.process_event_stream(frame_bins=[])
         assert_equal(det, orig_det)
 
-    @pytest.mark.usefixtures("no_data_directory")
     def test_open_with_path(self, event_setup):
         # give the event reader a file path
         event_list, fpos = _cevent._cevents(
@@ -122,7 +117,6 @@ class TestEvent:
         max_f = np.max(f)
         assert_equal(9, max_f)
 
-    @pytest.mark.usefixtures("no_data_directory")
     def test_values(self, event_setup):
         # We know the values of all the events in the file from another program
         # test that a set of random events are correct.
@@ -136,7 +130,6 @@ class TestEvent:
         assert_equal(event_setup.y[-1], 16)
         assert_equal(event_setup.x[-1], 13)
 
-    @pytest.mark.usefixtures("no_data_directory")
     def test_process_event_stream(self, event_setup):
         x_bins = np.array([60.5, -60.5])
         y_bins = np.linspace(110.5, -110.5, 222)
@@ -168,7 +161,6 @@ class TestEvent:
         #                                              x_bins)
         # assert_equal(np.size(detector, 0), 1)
 
-    @pytest.mark.usefixtures("no_data_directory")
     def test_monobloc_events(self, event_setup):
         # the event file changed when the ILL monobloc detector was installed
         pth = pjoin(event_setup.data_directory, "reduce")
