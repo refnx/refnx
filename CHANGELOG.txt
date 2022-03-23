@@ -412,3 +412,6 @@ in 0.1.13.
   rewritten to permit energy dispersive operation.
   For energy dispersive operation classes that inherit Scatterer should
   override the newly introduced Scatterer.complex() method.
+
+0.1.28
+------
