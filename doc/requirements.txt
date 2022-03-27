@@ -1,7 +1,7 @@
-setuptools==58.5.3
 nbsphinx
 jupyter-sphinx
 sphinxcontrib-bibtex<2.0.0
+jinja2<3.1.0  # temporary fix for jinja2/nbconvert bug
 sphinx_rtd_theme
 tqdm
 corner
