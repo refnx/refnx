@@ -307,7 +307,6 @@ class ReflectReduce:
                 fname = f"{datafilename}_{i}.xml"
                 with open(fname, "wb") as f:
                     dataset.save_xml(f, start_time=reduction["start_time"][i])
-
         reduction["fname"] = fnames
         return datasets, deepcopy(reduction)
 

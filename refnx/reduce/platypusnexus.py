@@ -1159,7 +1159,9 @@ class ReflectNexus:
             raise AttributeError
 
     def __getstate__(self):
-        return self.__dict__
+        dct = self.__dict__
+        dct["_arguments"].pop("manual_beam_find")
+        return dct
 
     def __setstate__(self, state):
         self.__dict__.update(state)
@@ -1504,8 +1506,7 @@ class ReflectNexus:
 
         Notes
         -----
-        After processing this object contains the following the following
-        attributes:
+        After processing this object contains the following attributes:
 
         - path - path to the data file
         - datafilename - name of the datafile
