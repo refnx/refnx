@@ -1334,5 +1334,5 @@ class StackNode(Node):
 
         self._model.beginInsertRows(self.index, row, row)
         self.insertChild(row, n)
-        self.stack.insert(row, component)
+        self.stack.insert(row - 1, component)
         self._model.endInsertRows()
