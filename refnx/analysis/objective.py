@@ -964,10 +964,21 @@ class GlobalObjective(Objective):
     objectives : list
         list of :class:`refnx.analysis.Objective` objects
 
+    lambdas : array-like
+        Lagrangian multipliers for each of the objective terms that contribute
+        to the log-likelihood. Broadcast against the list of objectives. This
+        array-like *may* become a list of Parameters in the future.
     """
 
-    def __init__(self, objectives):
+    def __init__(self, objectives, lambdas=None):
         self.objectives = objectives
+
+        nobj = len(objectives)
+        if lambdas is not None:
+            self.lambdas = np.broadcast_to(lambdas, (nobj,)).astype(float)
+        else:
+            self.lambdas = np.ones(nobj)
+
         weighted = [objective.weighted for objective in objectives]
 
         self._weighted = np.array(weighted, dtype=bool)
@@ -987,7 +998,7 @@ class GlobalObjective(Objective):
         return "\n".join(s)
 
     def __repr__(self):
-        return "GlobalObjective({0})".format(repr(self.objectives))
+        return f"GlobalObjective({self.objectives!r}, lambdas={list(self.lambdas)!r})"
 
     @property
     def weighted(self):
@@ -1024,12 +1035,18 @@ class GlobalObjective(Objective):
         residuals : np.ndarray
             Concatenated :meth:`refnx.analysis.Objective.residuals`
 
+        Notes
+        -----
+        The Lagrangian multipliers contained in the ``lambdas`` attribute are
+        also included in the calculation of these residual arrays, to permit
+        least squares analyses. If you would like to view un-modified
+        residuals you should calculate them from the individual objectives.
         """
         self.setp(pvals)
 
         residuals = []
-        for objective in self.objectives:
-            residual = objective.residuals()
+        for objective, _lambda in zip(self.objectives, self.lambdas):
+            residual = _lambda * objective.residuals()
             residuals.append(residual)
 
         return np.concatenate(residuals)
@@ -1077,7 +1094,7 @@ class GlobalObjective(Objective):
 
     def logl(self, pvals=None):
         """
-        Calculate the log-likelhood of the system
+        Calculate the combined log-likelhood of the system.
 
         Parameters
         ----------
@@ -1089,12 +1106,18 @@ class GlobalObjective(Objective):
         logl : float
             log-likelihood probability
 
+        Notes
+        -----
+        The log-likelihood of each of the objectives is multiplied by the
+        respective Lagrangian multiplier in ``GlobalObjective.lambdas``.
+        The purpose of this multiplier is to allow the user to weight certain
+        datasets more heavily (e.g. to make each of the contributions equal).
         """
         self.setp(pvals)
         logl = 0.0
 
-        for objective in self.objectives:
-            logl += objective.logl()
+        for objective, _lambda in zip(self.objectives, self.lambdas):
+            logl += _lambda * objective.logl()
 
         return logl
 

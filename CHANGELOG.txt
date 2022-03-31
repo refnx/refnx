@@ -425,3 +425,6 @@ in 0.1.13.
   Inserting a Component into the middle of the Stack appeared to put it in the
   correct place in the GUI, but inserted it in the wrong place in the
   Structure.
+- Added Lagrangian multipliers to GlobalObjective, allowing the user to
+  modulate the contribution of individual log-likelihoods to the whole. This
+  may be of use when co-refining Neutron/X-ray/Ellipsometry datasets.

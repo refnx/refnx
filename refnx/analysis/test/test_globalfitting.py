@@ -54,6 +54,13 @@ class TestGlobalFitting:
         residuals = self.global_objective.residuals()
         assert_equal(residuals.size, len(self.dataset))
 
+    def test_lambdas(self):
+        assert np.size(self.global_objective.lambdas) == 1
+        self.global_objective.lambdas[0] = 5.0
+        assert_allclose(
+            self.global_objective.logl(), self.objective.logl() * 5.0
+        )
+
     def test_globalfitting(self):
         # smoke test for can the global fitting run?
         # also tests that global fitting gives same output as
@@ -165,3 +172,13 @@ class TestGlobalFitting:
         )
 
         repr(global_objective)
+
+        # test lagrangian multipliers
+        global_objective.lambdas = np.array([1.1, 2.2, 3.3])
+        assert_allclose(
+            global_objective.logl(),
+            1.1 * objective361.logl()
+            + 2.2 * objective365.logl()
+            + 3.3 * objective366.logl(),
+        )
+        global_objective.lambdas = np.ones(3)
