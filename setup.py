@@ -152,8 +152,8 @@ HAS_OPENMP = check_openmp_support()
 # versioning
 MAJOR = 0
 MINOR = 1
-MICRO = 29
-ISRELEASED = True
+MICRO = 30
+ISRELEASED = False
 VERSION = f"{MAJOR}.{MINOR}.{MICRO}"
 
 
