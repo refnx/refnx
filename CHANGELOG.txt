@@ -428,3 +428,6 @@ in 0.1.13.
 - Added Lagrangian multipliers to GlobalObjective, allowing the user to
   modulate the contribution of individual log-likelihoods to the whole. This
   may be of use when co-refining Neutron/X-ray/Ellipsometry datasets.
+
+0.1.30
+------
