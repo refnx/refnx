@@ -854,7 +854,6 @@ class SLD(Scatterer):
 
         self.real.units = self.imag.units = "10**-6 Å**-2"
         self._parameters = Parameters(name=name)
-        self._parameters.extend([self.real, self.imag])
 
     def __repr__(self):
         return "SLD([{real!r}, {imag!r}]," " name={name!r})".format(
@@ -926,7 +925,6 @@ class MaterialSLD(Scatterer):
         self.wavelength = wavelength
 
         self._parameters = Parameters(name=name)
-        self._parameters.extend([self.density])
         self.dispersive = True
 
     def __repr__(self):
@@ -992,7 +990,7 @@ class MaterialSLD(Scatterer):
 
     @property
     def parameters(self):
-        self._parameters.data[0] = self.density
+        self._parameters.data = [self.density]
         return self._parameters
 
 
@@ -1205,12 +1203,7 @@ class Slab(Component):
             vfsolv, name=f"{name} - volfrac solvent", bounds=(0.0, 1.0)
         )
 
-        p = Parameters(name=self.name)
-        p.extend([self.thick])
-        p.extend(self.sld.parameters)
-        p.extend([self.rough, self.vfsolv])
-
-        self._parameters = p
+        self._parameters = Parameters(name=self.name)
         self.interfaces = interface
 
     def __repr__(self):
