@@ -872,10 +872,8 @@ class SLD(Scatterer):
 
         """
         self._parameters.name = self.name
+        self._parameters.data = [self.real, self.imag]
         return self._parameters
-        # p = Parameters(name=self.name)
-        # p.extend([self.real, self.imag])
-        # return p
 
 
 class MaterialSLD(Scatterer):
@@ -994,6 +992,7 @@ class MaterialSLD(Scatterer):
 
     @property
     def parameters(self):
+        self._parameters.data[0] = self.density
         return self._parameters
 
 
@@ -1237,6 +1236,12 @@ class Slab(Component):
 
         """
         self._parameters.name = self.name
+        self._parameters.data = [
+            self.thick,
+            self.sld.parameters,
+            self.rough,
+            self.vfsolv,
+        ]
         return self._parameters
 
     def slabs(self, structure=None):
@@ -1327,13 +1332,10 @@ class MixedSlab(Component):
             else:
                 self.sld.append(SLD(s))
 
-            self._sld_parameters.append(self.sld[-1].parameters)
-
             vf = possibly_create_parameter(
                 v, name=f"vf{i} - {name}", bounds=(0.0, 1.0)
             )
             self.vf.append(vf)
-            self._vf_parameters.append(vf)
             i += 1
 
         self.vfsolv = possibly_create_parameter(
@@ -1344,11 +1346,6 @@ class MixedSlab(Component):
         )
 
         p = Parameters(name=self.name)
-        p.append(self.thick)
-        p.extend(self._sld_parameters)
-        p.extend(self._vf_parameters)
-        p.extend([self.vfsolv, self.rough])
-
         self._parameters = p
         self.interfaces = interface
 
@@ -1368,14 +1365,22 @@ class MixedSlab(Component):
         :class:`refnx.analysis.Parameters` associated with this component
 
         """
-        self._parameters.name = self.name
-        return self._parameters
+        p = self._parameters
+        p.name = self.name
+        self._sld_parameters.data = [s.parameters for s in self.sld]
+        self._vf_parameters.data = [vf.parameters for vf in self.vf]
+
+        p.data = [self.thick]
+        p.data.extend(self._sld_parameters)
+        p.data.extend(self._vf_parameters)
+        p.data.extend([self.vfsolv, self.rough])
+        return p
 
     def slabs(self, structure=None):
         """
         Slab representation of this component. See :class:`Component.slabs`
         """
-        vfs = np.array(self._vf_parameters)
+        vfs = np.array([vf.value for vf in self.vf])
         sum_vfs = np.sum(vfs)
 
         sldc = np.sum(

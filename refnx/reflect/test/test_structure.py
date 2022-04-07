@@ -543,3 +543,33 @@ class TestStructure:
 
         with pytest.raises(ValueError):
             s.slabs()
+
+    def test_attribute_setting(self):
+        # perhaps people replace the attributes in Components themselves
+        o = SLD(2.07 + 1 * 1j)
+        r = Parameter(3.0)
+        i = Parameter(2.0)
+        o.real = r
+        o.imag = i
+        pars = o.parameters
+        assert id(pars[0]) == id(r)
+        assert id(pars[1]) == id(i)
+
+        o = MaterialSLD("SiO2", 2.2)
+        o.density = r
+        pars = o.parameters
+        assert id(pars[0]) == id(r)
+
+        o = Slab(1, 2 + 3j, 4, vfsolv=5)
+        replace = [Parameter(x) for x in range(5)]
+        o.thick = replace[0]
+        o.sld.real = replace[1]
+        o.sld.imag = replace[2]
+        o.rough = replace[3]
+        o.vfsolv = replace[4]
+        pars = o.parameters
+        assert id(pars[0]) == id(replace[0])
+        assert id(pars[1][0]) == id(replace[1])
+        assert id(pars[1][1]) == id(replace[2])
+        assert id(pars[2]) == id(replace[3])
+        assert id(pars[3]) == id(replace[4])
