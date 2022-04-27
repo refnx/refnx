@@ -868,7 +868,7 @@ class Parameter(BaseParameter):
 
             # check return value can be coerced to a float
             # an Exception will probably be raised if that's the case
-            v = float(constraint(*args))
+            float(constraint(*args))
 
             # at this point the constraint function should be ok.
             self._constraint = constraint
