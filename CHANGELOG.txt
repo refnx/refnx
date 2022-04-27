@@ -431,3 +431,9 @@ in 0.1.13.
 
 0.1.30
 ------
+- First appearance of Parameter.set_constraint().
+- Previously Parameter constraints were limited to algebraic Python
+  expressions. Now Parameter.set_constraint can be given a callable which
+  is evaluated at runtime, allowing more sophisticated constraints to be
+  developed. (N.B this is separate to the inequality constraints that can
+  be made during curvefitting using the NonLinearConstraint machinery).

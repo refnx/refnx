@@ -1,5 +1,6 @@
 import pickle
 
+import pytest
 import numpy as np
 from numpy.testing import (
     assert_almost_equal,
@@ -109,9 +110,10 @@ class TestParameter:
         y = Parameter(1.0)
         y.constraint = x * 2.0
         y.constraint = None
-        assert_(y.vary is False)
+        assert y.vary is False
         assert_equal(y.value, 10)
-        assert_(y._constraint is None)
+        assert y._constraint is None
+        assert y._constraint_args is None
 
     def test_parameter_bounds(self):
         x = Parameter(4, bounds=Interval(-4, 4))
@@ -225,6 +227,27 @@ class TestParameter:
         e = Parameter(1)
         e.constraint = 2
         assert_allclose(e.value, 2)
+
+    def test_function_constraint(self):
+        a = Parameter(1)
+        b = Parameter(2)
+        c = Parameter(3)
+        a.set_constraint(np.sin(2 * b))
+        assert_allclose(a.value, -0.7568024953079282)
+
+        def f(*args):
+            return np.sin(args[0] * args[1][0])
+
+        a.set_constraint(f, args=(2, [b, c]))
+        assert_allclose(a.value, -0.7568024953079282)
+        assert b in a._deps
+        assert b in a.dependencies()
+        assert c in a._deps
+        assert a.constraint is f
+
+        # this should be a problem as the parameter is in the list of args
+        with pytest.raises(ValueError):
+            a.set_constraint(f, args=(2, b, a))
 
     def test_possibly_create_parameter(self):
         p = Parameter(10, bounds=(1.0, 2.0))

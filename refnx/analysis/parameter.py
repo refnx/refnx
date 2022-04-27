@@ -634,6 +634,7 @@ class Parameter(BaseParameter):
         self._vary = vary
 
         self._constraint = None
+        self._constraint_args = None
         self.constraint = constraint
         self.units = units
 
@@ -680,7 +681,10 @@ class Parameter(BaseParameter):
         The numeric value of the :class:`Parameter`
         """
         if self._constraint is not None:
-            retval = self._constraint._eval()
+            if callable(self._constraint):
+                retval = float(self._constraint(*self._constraint_args))
+            else:
+                retval = self._constraint._eval()
         else:
             retval = self._value
 
@@ -775,16 +779,105 @@ class Parameter(BaseParameter):
         if expr is None:
             value = self.value
             self._constraint = None
+            self._constraint_args = None
             self.value = value
             return
         _expr = asMagicNumber(expr)
         if id(self) in [id(dep) for dep in flatten(_expr.dependencies())]:
             raise ValueError("Your constraint contains a circular dependency")
         self._constraint = _expr
+        self._constraint_args = None
         if isinstance(expr, Parameter):
             self._deps.append(expr)
         self._deps.extend(flatten(_expr.dependencies()))
         self._vary = False
+
+    def set_constraint(self, constraint, args=()):
+        """
+        Constrains the Parameter.
+
+        Parameters
+        ----------
+        constraint : {None, expression, callable}
+            One of:
+
+            - None, remove all constraints on this Parameter.
+            - expression, an algebraic Python expression used to constrain the
+             Parameter value.
+            - callable, a Python function, ``constraint(*args)`` that returns
+             a float value for the Parameter value.
+             The callable should not use this Parameter in any of its
+             calculations; nor should the callable use any Parameter in its
+             calculations that possesses a constraint that would eventually
+             lead back to this Parameter. If these conditions aren't met then
+             circular dependencies with undefined side effects will be
+             created. *A Parameter cannot ultimately depend on itself*.
+
+        args : tuple
+            a sequence of arguments given to `constraint` if it is a callable.
+            This sequence can contain other Parameters, numbers, arrays,
+            objects, etc. It is *strongly recommended* that this sequence is
+            not nested. This is because ``args`` is searched for other
+            Parameter objects, which are stored internally within this object
+            as dependencies. Any constraints that these dependencies may have
+            are evaluated before they are provided to the callable.
+            If the callable uses Parameters that are not immediately
+            retrievable from ``args`` (e.g. stored as attributes in an object),
+            and those Parameters have constraints themselves, then those
+            Parameters will likely have stale values, resulting in undefined
+            behaviour.
+
+        Examples
+        --------
+        >>> from refnx.analysis import Parameter
+        >>> a = Parameter(1)
+        >>> b = Parameter(2)
+        >>> a.set_constraint(np.sin(2*b))
+        >>> print(a.value)
+        -0.7568024953079282
+
+        >>> def c(*args):
+        ...     return np.sin(args[0] * args[1])
+
+        >>> a.set_constraint(c, args=(2, b))
+        >>> print(a.value)
+        -0.7568024953079282
+        """
+        if constraint is None:
+            # clear the constraint
+            self.constraint = None
+        elif callable(constraint):
+            deps = []
+            for arg in flatten(args):
+                if id(arg) == id(self):
+                    raise ValueError(
+                        "Your constraint contains a circular dependency"
+                    )
+
+                if isinstance(arg, BaseParameter):
+                    expr = asMagicNumber(arg)
+                    if id(self) in [
+                        id(dep) for dep in flatten(expr.dependencies())
+                    ]:
+                        raise ValueError(
+                            "Your constraint contains a circular dependency"
+                        )
+                    if isinstance(expr, Parameter):
+                        deps.append(expr)
+                    deps.extend(flatten(expr.dependencies()))
+
+            # check return value can be coerced to a float
+            # an Exception will probably be raised if that's the case
+            v = float(constraint(*args))
+
+            # at this point the constraint function should be ok.
+            self._constraint = constraint
+            self._constraint_args = args
+            self._deps = deps
+            print(self._deps)
+            self._vary = False
+        else:
+            self.constraint = constraint
 
     def setp(self, value=None, vary=None, bounds=None, constraint=None):
         """
