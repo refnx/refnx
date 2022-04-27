@@ -874,7 +874,6 @@ class Parameter(BaseParameter):
             self._constraint = constraint
             self._constraint_args = args
             self._deps = deps
-            print(self._deps)
             self._vary = False
         else:
             self.constraint = constraint
