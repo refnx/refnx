@@ -61,24 +61,24 @@ jobs:
         path: dist/
 
 
-  linux_wheels:
-
-    runs-on: ubuntu-latest
-    strategy:
-      max-parallel: 2
-      matrix:
-        PLAT: ["manylinux2014_x86_64"]
-
-    steps:
-    - uses: actions/checkout@v2
-    - name: Make Linux Wheel
-      run: |
-        docker run --rm -e="PLAT=${{ matrix.PLAT }}" -v $(pwd):/io quay.io/pypa/${{ matrix.PLAT }} /bin/bash /io/tools/build_manylinux_wheels.sh
-
-    - uses: actions/upload-artifact@v1
-      with:
-        name: refnx-wheel
-        path: dist/
+#  linux_wheels:
+#
+#    runs-on: ubuntu-latest
+#    strategy:
+#      max-parallel: 2
+#      matrix:
+#        PLAT: ["manylinux2014_x86_64"]
+#
+#    steps:
+#    - uses: actions/checkout@v2
+#    - name: Make Linux Wheel
+#      run: |
+#        docker run --rm -e="PLAT=${{ matrix.PLAT }}" -v $(pwd):/io quay.io/pypa/${{ matrix.PLAT }} /bin/bash /io/tools/build_manylinux_wheels.sh
+#
+#    - uses: actions/upload-artifact@v1
+#      with:
+#        name: refnx-wheel
+#        path: dist/
 
 
   test_macos:
