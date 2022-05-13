@@ -94,8 +94,15 @@ Parallelised
 void reflectMT(int numcoefs, const double *coefP, int npoints, double *yP,
                const double *xP, int threads);
 
+void parrattMT(int numcoefs, const double *coefP, int npoints, double *yP,
+               const double *xP, int threads);
+
+
 /*
 Non parallelised
 */
 void reflect(int numcoefs, const double *coefP, int npoints, double *yP,
+             const double *xP);
+
+void wrapper_parratt(int numcoefs, const double *coefP, int npoints, double *yP,
              const double *xP);

@@ -42,12 +42,17 @@ extern "C" {
 using namespace std;
 
 
-void abeles_wrapper(int numcoefs,
-                    const double *coefP,
-                    int npoints,
-                    double *yP,
-                    const double *xP,
-                    int workers){
+// function pointer for a reflectometry calculator
+typedef void (*ref_calculator)(int, const double *, int, double *, const double *xP);
+
+
+void MT_wrapper(ref_calculator fn,
+                int numcoefs,
+                const double *coefP,
+                int npoints,
+                double *yP,
+                const double *xP,
+                int workers){
 
     std::vector<std::thread> threads;
 
@@ -65,7 +70,7 @@ void abeles_wrapper(int numcoefs,
 
     for (int ii = 0; ii < workers; ii++){
         if(ii < workers - 1){
-            threads.emplace_back(std::thread(abeles,
+            threads.emplace_back(std::thread(fn,
                                              numcoefs,
                                              coefP,
                                              pointsEachThread,
@@ -74,7 +79,7 @@ void abeles_wrapper(int numcoefs,
             pointsRemaining -= pointsEachThread;
             pointsConsumed += pointsEachThread;
         } else {
-            threads.emplace_back(std::thread(abeles,
+            threads.emplace_back(std::thread(fn,
                                              numcoefs,
                                              coefP,
                                              pointsRemaining,
@@ -93,26 +98,45 @@ void abeles_wrapper(int numcoefs,
 /*
 Parallelised version
 */
-void reflectMT(int numcoefs,
-               const double *coefP,
-               int npoints,
-               double *yP,
-               const double *xP,
-               int threads){
-    /*
-    choose between the mode of calculation, depending on whether pthreads or omp.h
-    is present for parallelisation.
-    */
-    abeles_wrapper(numcoefs, coefP, npoints, yP, xP, threads);
+void reflectMT(
+    int numcoefs,
+    const double *coefP,
+    int npoints,
+    double *yP,
+    const double *xP,
+    int threads
+){
+    MT_wrapper(abeles, numcoefs, coefP, npoints, yP, xP, threads);
+}
+
+void parrattMT(
+    int numcoefs,
+    const double *coefP,
+    int npoints,
+    double *yP,
+    const double *xP,
+    int threads
+){
+    MT_wrapper(parratt, numcoefs, coefP, npoints, yP, xP, threads);
 }
 
 /*
 Non parallelised version
 */
-void reflect(int numcoefs,
-            const double *coefP,
-            int npoints,
-            double *yP,
-            const double *xP){
+void reflect(
+    int numcoefs,
+    const double *coefP,
+    int npoints,
+    double *yP,
+    const double *xP){
     abeles(numcoefs, coefP, npoints, yP, xP);
+}
+
+void wrapper_parratt(
+    int numcoefs,
+    const double *coefP,
+    int npoints,
+    double *yP,
+    const double *xP){
+    parratt(numcoefs, coefP, npoints, yP, xP);
 }

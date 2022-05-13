@@ -213,6 +213,7 @@ void parratt(int numcoefs,
         complex<double> super;
         complex<double> sub;
         complex<double> qq2;
+        complex<double> oneC = complex<double>(1., 0.);
         complex<double> *SLD = NULL;
         complex<double> *thickness = NULL;
         double *rough_sqr = NULL;
@@ -268,7 +269,7 @@ void parratt(int numcoefs,
                     RRJ = rj;
                 } else {
                     beta = std::exp(-2.0 * kn * thickness[ii]);
-                    RRJ = (rj + RRJ_1 * beta) / (1 + RRJ_1 * beta * rj);
+                    RRJ = (rj + RRJ_1 * beta) / (oneC + RRJ_1 * beta * rj);
                 }
                 kn_next = kn;
                 RRJ_1 = RRJ;
