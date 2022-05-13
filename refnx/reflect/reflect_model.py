@@ -199,6 +199,7 @@ def get_reflect_backend(backend="c"):
     elif backend == "c_parratt":
         try:
             from refnx.reflect import _creflect as _c
+
             return _c.parratt
         except ImportError:
             warnings.warn("Can't use the c_parratt backend")
