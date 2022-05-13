@@ -78,6 +78,7 @@ def available_backends():
         import refnx.reflect._creflect as _creflect
 
         backends.append("c")
+        backends.append("c_parratt")
     except ImportError:
         pass
 
@@ -100,6 +101,13 @@ def available_backends():
         # failure to get an opencl platform would be cl._cl.LogicError
         pass
 
+    try:
+        from refnx.reflect._reflect import parratt as py_parratt
+
+        backends.append("py_parratt")
+    except ImportError:
+        pass
+
     # try:
     #     import jax as jax
     #     from jax.config import config
@@ -117,7 +125,7 @@ def available_backends():
 
 def get_reflect_backend(backend="c"):
     r"""
-    Obtain an 'abeles' function used for calculating reflectivity.
+    Obtain an 'abeles'/'parratt' function used for calculating reflectivity.
 
     It does not change the function used by ReflectModel to calculate
     reflectivity. In order to change this you should change the
@@ -127,11 +135,12 @@ def get_reflect_backend(backend="c"):
 
     Parameters
     ----------
-    backend: {'python', 'cython', 'c', 'pyopencl'}, str
+    backend: {'python', 'cython', 'c', 'pyopencl', 'py_parratt', 'c_parratt'}
         The module that calculates the reflectivity. Speed should go in the
-        order: c > pyopencl / cython > python. If a particular method is
-        not available the function falls back:
-        cython/pyopencl --> c --> python.
+        order: c > pyopencl / cython > py_parratt > python. If a particular
+        method is not available the function falls back:
+        cython/pyopencl --> c --> --> python.
+        c_parratt --> py_parratt.
 
     Returns
     -------
@@ -183,6 +192,19 @@ def get_reflect_backend(backend="c"):
         except ImportError:
             warnings.warn("Can't use the C abeles backend")
             return get_reflect_backend("python")
+    elif backend == "py_parratt":
+        from refnx.reflect._reflect import parratt
+
+        return parratt
+    elif backend == "c_parratt":
+        try:
+            from refnx.reflect import _creflect as _c
+
+            return _c.parratt
+        except ImportError:
+            warnings.warn("Can't use the c_parratt backend")
+            return get_reflect_backend("py_parratt")
+
     # elif backend == "jax":
     #     try:
     #         from refnx.reflect import _jax_reflect
@@ -497,7 +519,7 @@ def reflectivity(
     q, slabs, scale=1.0, bkg=0.0, dq=5.0, quad_order=17, threads=-1
 ):
     r"""
-    Abeles matrix formalism for calculating reflectivity from a stratified
+    Abeles/Parratt formalism for calculating reflectivity from a stratified
     medium.
 
     Parameters

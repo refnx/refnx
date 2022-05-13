@@ -27,8 +27,12 @@ DEALINGS IN THIS SOFTWARE.
 */
 
 /*
-    AbelesCalc_ImagAll uses the Abeles matrix method to calculate specular
+    abeles uses the Abeles matrix method to calculate specular
     reflectivity.
+
+    parratt uses the Parratt recursion formula to calculate specular
+    reflectivity.
+
     The system is assumed to consist of a series of uniformly dense layers
     (slabs). The radiation is incident through the fronting medium, leaving
     through the backing medium.
@@ -85,10 +89,16 @@ DEALINGS IN THIS SOFTWARE.
 #ifndef REFCALC_H
 #define REFCALC_H
 
-void AbelesCalc_ImagAll(int numcoefs,
-                        const double *coefP,
-                        int npoints,
-                        double *yP,
-                        const double *xP);
+void abeles(int numcoefs,
+            const double *coefP,
+            int npoints,
+            double *yP,
+            const double *xP);
+
+void parratt(int numcoefs,
+             const double *coefP,
+             int npoints,
+             double *yP,
+             const double *xP);
 
 #endif

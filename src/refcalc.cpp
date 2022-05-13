@@ -97,11 +97,11 @@ matmul(complex<double> a[2][2], complex<double> b[2][2], complex<double> c[2][2]
 }
 
 
-void AbelesCalc_ImagAll(int numcoefs,
-                        const double *coefP,
-                        int npoints,
-                        double *yP,
-                        const double *xP){
+void abeles(int numcoefs,
+            const double *coefP,
+            int npoints,
+            double *yP,
+            const double *xP){
         int j;
         double scale, bkg;
         double num = 0, den = 0, answer = 0;
@@ -199,6 +199,93 @@ void AbelesCalc_ImagAll(int numcoefs,
         if(rough_sqr)
             delete[] rough_sqr;
     }
+
+
+void parratt(int numcoefs,
+             const double *coefP,
+             int npoints,
+             double *yP,
+             const double *xP){
+        int j;
+        double scale, bkg;
+        double num = 0, den = 0, answer = 0;
+
+        complex<double> super;
+        complex<double> sub;
+        complex<double> qq2;
+        complex<double> oneC = complex<double>(1., 0.);
+        complex<double> *SLD = NULL;
+        complex<double> *thickness = NULL;
+        double *rough_sqr = NULL;
+
+        int nlayers = (int) coefP[0];
+
+        try {
+            SLD = new complex<double>[nlayers + 2];
+            thickness = new complex<double>[nlayers];
+            rough_sqr = new double[nlayers + 1];
+        } catch(...) {
+            goto done;
+        }
+
+        scale = coefP[1];
+        bkg = coefP[6];
+        sub = complex<double>(coefP[4], fabs(coefP[5]) + TINY);
+        super = complex<double>(coefP[2], 0);
+
+        // fill out all the SLD's for all the layers
+        for(int ii = 1; ii < nlayers + 1; ii += 1){
+            SLD[ii] = 4e-6 * PI * (complex<double>(coefP[4 * ii + 5], fabs(coefP[4 * ii + 6]) + TINY)
+                                   - super);
+
+            thickness[ii - 1] = complex<double>(0, fabs(coefP[4 * ii + 4]));
+            rough_sqr[ii - 1] = -2 * coefP[4 * ii + 7] * coefP[4 * ii + 7];
+        }
+
+        SLD[0] = complex<double>(0, 0);
+        SLD[nlayers + 1] = 4e-6 * PI * (sub - super);
+        rough_sqr[nlayers] = -2 * coefP[7] * coefP[7];
+
+        for (j = 0; j < npoints; j++) {
+            complex<double> beta, rj;
+            complex<double> kn, kn_next, RRJ, RRJ_1;
+
+            qq2 = complex<double>(xP[j] * xP[j] / 4, 0);
+
+            // now calculate reflectivities and wavevectors
+            // start from subphase
+	    	kn_next = std::sqrt(qq2 - SLD[nlayers + 1]);
+
+            for(int ii = nlayers ; ii > -1 ; ii--){
+                // wavevector in the layer
+                kn = std::sqrt(qq2 - SLD[ii]);
+
+                // reflectance of the interface
+                rj = (kn - kn_next)/(kn + kn_next)
+                      * std::exp(kn * kn_next * rough_sqr[ii]);
+
+                if (ii == nlayers){
+                    // characteristic matrix for first interface
+                    RRJ = rj;
+                } else {
+                    beta = std::exp(-2.0 * kn_next * thickness[ii]);
+                    RRJ = (rj + RRJ_1 * beta) / (oneC + RRJ_1 * beta * rj);
+                }
+                kn_next = kn;
+                RRJ_1 = RRJ;
+            }
+            yP[j] = (scale * std::norm(RRJ)) + bkg;
+        }
+
+    done:
+        if(SLD)
+            delete[] SLD;
+        if(thickness)
+            delete[] thickness;
+        if(rough_sqr)
+            delete[] rough_sqr;
+    }
+
 
 #ifdef __cplusplus
     }

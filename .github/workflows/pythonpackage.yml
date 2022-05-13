@@ -223,26 +223,26 @@ jobs:
         pytest --pyargs refnx
         cd ..
 
-#    - name: Make frozen GUI executable
-#      if: ${{ matrix.python-version == '3.8' }}
-#      run: |
-#        # make app in virtualenv
-#        python -m venv app
-#        app\Scripts\activate.bat
-#        python -m pip install setuptools==44
-#        python -m pip install --upgrade --upgrade-strategy eager numpy cython periodictable corner matplotlib pyqt5 scipy
-#        cd dist
-#        python -m pip install --only-binary=refnx --no-index --find-links=. refnx
-#        cd ..
-#
-#        # fix for multiprocessing on Py3.8 is not merged in PyInstaller
-#        # if you are on Py3.7 you can just pip install pyinstaller
-#        pip install git+https://github.com/andyfaff/pyinstaller.git@gh4865
-#
-#        cd tools\app
-#        pyinstaller motofit.spec
-#        move dist\motofit.exe ..\..\dist\
-#        cd ..\..
+    - name: Make frozen GUI executable
+      if: ${{ matrix.python-version == '3.8' }}
+      run: |
+        # make app in virtualenv
+        python -m venv app
+        app\Scripts\activate.bat
+        #        python -m pip install setuptools==44
+        python -m pip install --upgrade --upgrade-strategy eager -r tools/app/requirements.txt
+        cd dist
+        python -m pip install --only-binary=refnx --no-index --find-links=. refnx
+        cd ..
+
+        # fix for multiprocessing on Py3.8 is not merged in PyInstaller
+        # if you are on Py3.7 you can just pip install pyinstaller
+        # pip install git+https://github.com/andyfaff/pyinstaller.git@gh4865
+
+        cd tools\app
+        pyinstaller motofit.spec
+        move dist\motofit.exe ..\..\dist\
+        cd ..\..
 
     - uses: actions/upload-artifact@v1
       with:

@@ -257,6 +257,94 @@ def abeles(
     return np.real(np.reshape(reflectivity, qvals.shape))
 
 
+def parratt(
+    q,
+    layers,
+    scale=1.0,
+    bkg=0,
+    threads=0,
+) -> np.array:
+    """
+    Parratt recursion formula for calculating reflectivity from a stratified
+    medium.
+
+    Parameters
+    ----------
+    q: array_like
+        the q values required for the calculation.
+        Q = 4 * Pi / lambda * sin(omega).
+        Units = Angstrom**-1
+    layers: np.ndarray
+        coefficients required for the calculation, has shape (2 + N, 4),
+        where N is the number of layers
+        layers[0, 1] - SLD of fronting (/1e-6 Angstrom**-2)
+        layers[0, 2] - iSLD of fronting (/1e-6 Angstrom**-2)
+        layers[N, 0] - thickness of layer N
+        layers[N, 1] - SLD of layer N (/1e-6 Angstrom**-2)
+        layers[N, 2] - iSLD of layer N (/1e-6 Angstrom**-2)
+        layers[N, 3] - roughness between layer N-1/N
+        layers[-1, 1] - SLD of backing (/1e-6 Angstrom**-2)
+        layers[-1, 2] - iSLD of backing (/1e-6 Angstrom**-2)
+        layers[-1, 3] - roughness between backing and last layer
+    scale: float
+        Multiply all reflectivities by this value.
+    bkg: float
+        Linear background to be added to all reflectivities
+    threads: int, optional
+        <THIS OPTION IS CURRENTLY IGNORED>
+
+    Returns
+    -------
+    Reflectivity: np.ndarray
+        Calculated reflectivity values for each q value.
+    """
+    qvals = np.asfarray(q)
+    flatq = qvals.ravel()
+
+    nlayers = layers.shape[0] - 2
+    npnts = flatq.size
+
+    kn = np.zeros((npnts, nlayers + 2), np.complex128)
+    sld = np.zeros(nlayers + 2, np.complex128)
+
+    # addition of TINY is to ensure the correct branch cut
+    # in the complex sqrt calculation of kn.
+    sld[1:] += (
+        (layers[1:, 1] - layers[0, 1]) + 1j * (np.abs(layers[1:, 2]) + TINY)
+    ) * 1.0e-6
+
+    # calculate wavevector in each layer, for each Q point.
+    # kn.shape = (npnts, nlayers)
+    kn[:] = np.sqrt(flatq[:, np.newaxis] ** 2.0 / 4.0 - 4.0 * np.pi * sld)
+
+    # reflectances for each layer
+    # rj.shape = (npnts, nlayers + 1)
+    rj = kn[:, :-1] - kn[:, 1:]
+    rj /= kn[:, :-1] + kn[:, 1:]
+    rj *= np.exp(-2.0 * kn[:, :-1] * kn[:, 1:] * layers[1:, 3] ** 2)
+
+    beta = np.exp(
+        -2.0
+        * kn[:, 1 : nlayers + 1]
+        * 1j
+        * np.fabs(layers[1 : nlayers + 1, 0])
+    )
+    beta_rj = beta * rj[:, 0:nlayers]
+
+    RRJ_1 = rj[:, -1]
+    for idx in range(nlayers - 1, -1, -1):
+        # RRJ = (rj[:, idx] + RRJ_1 * beta[:, idx]) / (1 + rj[:, idx] * RRJ_1 * beta[:, idx])
+        RRJ = (rj[:, idx] + RRJ_1 * beta[:, idx]) / (
+            1 + RRJ_1 * beta_rj[:, idx]
+        )
+        RRJ_1 = RRJ
+
+    reflectivity = RRJ_1 * np.conj(RRJ_1)
+    reflectivity *= scale
+    reflectivity += bkg
+    return np.real(np.reshape(reflectivity, qvals.shape))
+
+
 # The following slab contraction code was translated from C code in
 # the refl1d project.
 def _contract_by_area(slabs, dA=0.5):

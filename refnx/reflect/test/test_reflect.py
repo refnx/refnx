@@ -126,6 +126,8 @@ class TestReflect:
     def test_available_backends(self):
         assert "python" in BACKENDS
         assert "c" in BACKENDS
+        assert "py_parratt" in BACKENDS
+        assert "c_parratt" in BACKENDS
         import refnx.reflect._creflect as _creflect
         import refnx.reflect._reflect as _reflect
 
