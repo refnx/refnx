@@ -101,7 +101,7 @@ def available_backends():
         pass
 
     try:
-        import refnx.reflect._reflect.parratt as py_parratt
+        from refnx.reflect._reflect import parratt as py_parratt
 
         backends.append("py_parratt")
     except:
@@ -124,7 +124,7 @@ def available_backends():
 
 def get_reflect_backend(backend="c"):
     r"""
-    Obtain an 'abeles' function used for calculating reflectivity.
+    Obtain an 'abeles'/'parratt' function used for calculating reflectivity.
 
     It does not change the function used by ReflectModel to calculate
     reflectivity. In order to change this you should change the
