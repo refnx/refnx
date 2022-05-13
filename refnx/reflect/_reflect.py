@@ -305,9 +305,6 @@ def parratt(
     npnts = flatq.size
 
     kn = np.zeros((npnts, nlayers + 2), np.complex128)
-    RRJ = np.zeros(npnts, np.complex128)
-    RRJ_1 = np.zeros(npnts, np.complex128)
-
     sld = np.zeros(nlayers + 2, np.complex128)
 
     # addition of TINY is to ensure the correct branch cut
@@ -326,7 +323,6 @@ def parratt(
     rj /= kn[:, :-1] + kn[:, 1:]
     rj *= np.exp(-2.0 * kn[:, :-1] * kn[:, 1:] * layers[1:, 3] ** 2)
 
-    RRJ_1 = rj[:, -1]
     beta = np.exp(
         -2.0
         * kn[:, 1 : nlayers + 1]
@@ -335,12 +331,13 @@ def parratt(
     )
     beta_rj = beta * rj[:, 0:nlayers]
 
+    RRJ_1 = rj[:, -1]
     for idx in range(nlayers - 1, -1, -1):
         # RRJ = (rj[:, idx] + RRJ_1 * beta[:, idx]) / (1 + rj[:, idx] * RRJ_1 * beta[:, idx])
         RRJ = (rj[:, idx] + RRJ_1 * beta[:, idx]) / (
             1 + RRJ_1 * beta_rj[:, idx]
         )
-        RRJ_1[:] = RRJ[:]
+        RRJ_1 = RRJ
 
     reflectivity = RRJ_1 * np.conj(RRJ_1)
     reflectivity *= scale

@@ -95,4 +95,10 @@ void abeles(int numcoefs,
             double *yP,
             const double *xP);
 
+void parratt(int numcoefs,
+             const double *coefP,
+             int npoints,
+             double *yP,
+             const double *xP);
+
 #endif
