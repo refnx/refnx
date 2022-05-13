@@ -91,18 +91,18 @@ DEALINGS IN THIS SOFTWARE.
 /*
 Parallelised
 */
-void reflectMT(int numcoefs, const double *coefP, int npoints, double *yP,
+void abeles_wrapper_MT(int numcoefs, const double *coefP, int npoints, double *yP,
                const double *xP, int threads);
 
-void parrattMT(int numcoefs, const double *coefP, int npoints, double *yP,
+void parratt_wrapper_MT(int numcoefs, const double *coefP, int npoints, double *yP,
                const double *xP, int threads);
 
 
 /*
 Non parallelised
 */
-void reflect(int numcoefs, const double *coefP, int npoints, double *yP,
+void abeles_wrapper(int numcoefs, const double *coefP, int npoints, double *yP,
              const double *xP);
 
-void wrapper_parratt(int numcoefs, const double *coefP, int npoints, double *yP,
+void parratt_wrapper(int numcoefs, const double *coefP, int npoints, double *yP,
              const double *xP);

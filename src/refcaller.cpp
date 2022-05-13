@@ -98,7 +98,7 @@ void MT_wrapper(ref_calculator fn,
 /*
 Parallelised version
 */
-void reflectMT(
+void abeles_wrapper_MT(
     int numcoefs,
     const double *coefP,
     int npoints,
@@ -109,7 +109,7 @@ void reflectMT(
     MT_wrapper(abeles, numcoefs, coefP, npoints, yP, xP, threads);
 }
 
-void parrattMT(
+void parratt_wrapper_MT(
     int numcoefs,
     const double *coefP,
     int npoints,
@@ -123,7 +123,7 @@ void parrattMT(
 /*
 Non parallelised version
 */
-void reflect(
+void abeles_wrapper(
     int numcoefs,
     const double *coefP,
     int npoints,
@@ -132,7 +132,7 @@ void reflect(
     abeles(numcoefs, coefP, npoints, yP, xP);
 }
 
-void wrapper_parratt(
+void parratt_wrapper(
     int numcoefs,
     const double *coefP,
     int npoints,

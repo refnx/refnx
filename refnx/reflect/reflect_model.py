@@ -78,6 +78,7 @@ def available_backends():
         import refnx.reflect._creflect as _creflect
 
         backends.append("c")
+        backends.append("c_parratt")
     except ImportError:
         pass
 
@@ -134,11 +135,12 @@ def get_reflect_backend(backend="c"):
 
     Parameters
     ----------
-    backend: {'python', 'cython', 'c', 'pyopencl', 'py_parratt}, str
+    backend: {'python', 'cython', 'c', 'pyopencl', 'py_parratt', 'c_parratt'}
         The module that calculates the reflectivity. Speed should go in the
         order: c > pyopencl / cython > py_parratt > python. If a particular
         method is not available the function falls back:
         cython/pyopencl --> c --> --> python.
+        c_parratt --> py_parratt.
 
     Returns
     -------
@@ -194,6 +196,14 @@ def get_reflect_backend(backend="c"):
         from refnx.reflect._reflect import parratt
 
         return parratt
+    elif backend == "c_parratt":
+        try:
+            from refnx.reflect import _creflect as _c
+            return _c.parratt
+        except ImportError:
+            warnings.warn("Can't use the c_parratt backend")
+            return get_reflect_backend("py_parratt")
+
     # elif backend == "jax":
     #     try:
     #         from refnx.reflect import _jax_reflect

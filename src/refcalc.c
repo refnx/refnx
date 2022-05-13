@@ -219,6 +219,7 @@ void parratt(int numcoefs,
     double complex _t;
     _Complex double *SLD = NULL;
     _Complex double *thickness = NULL;
+    double complex oneC = CMPLX(1., 0.);
     double complex qq2;
     double *rough_sqr = NULL;
 
@@ -246,7 +247,7 @@ void parratt(int numcoefs,
         _t = CMPLX(coefP[4 * ii + 5], fabs(coefP[4 * ii + 6]) + TINY);
         SLD[ii] = 4e-6 * PI * (_t - super);
 
-        thickness[ii - 1] = CMPLX(0, fabs(coefP[4 * ii + 4]));
+        thickness[ii - 1] = CMPLX(0, -2.0 * fabs(coefP[4 * ii + 4]));
         rough_sqr[ii - 1] = -2 * coefP[4 * ii + 7] * coefP[4 * ii + 7];
     }
 
@@ -270,6 +271,7 @@ void parratt(int numcoefs,
             kn = csqrt(qq2 - SLD[ii]);
 
             // reflectance of the interface
+            // factor of 2 is already incorporated in rough_sqr
             rj = (kn - kn_next)/(kn + kn_next)
                   * cexp(kn * kn_next * rough_sqr[ii]);
 
@@ -277,7 +279,8 @@ void parratt(int numcoefs,
                 // characteristic matrix for first interface
                 RRJ = rj;
             } else {
-                beta = cexp(-2.0 * kn * thickness[ii]);
+                // factor of 2i is alread incorporated in thickness
+                beta = cexp(kn_next * thickness[ii]);
                 RRJ = (rj + RRJ_1 * beta) / (1 + RRJ_1 * beta * rj);
             }
             kn_next = kn;
