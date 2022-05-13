@@ -8,6 +8,7 @@ from refnx.reflect.reflect_model import (
     choose_dq_type,
     use_reflect_backend,
     available_backends,
+    abeles
 )
 from refnx.reflect.structure import (
     Structure,

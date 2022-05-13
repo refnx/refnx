@@ -100,6 +100,12 @@ def available_backends():
         # failure to get an opencl platform would be cl._cl.LogicError
         pass
 
+    try:
+        import refnx.reflect._reflect.parratt as py_parratt
+        backends.append("py_parratt")
+    except:
+        pass
+
     # try:
     #     import jax as jax
     #     from jax.config import config
@@ -127,11 +133,11 @@ def get_reflect_backend(backend="c"):
 
     Parameters
     ----------
-    backend: {'python', 'cython', 'c', 'pyopencl'}, str
+    backend: {'python', 'cython', 'c', 'pyopencl', 'py_parratt}, str
         The module that calculates the reflectivity. Speed should go in the
-        order: c > pyopencl / cython > python. If a particular method is
-        not available the function falls back:
-        cython/pyopencl --> c --> python.
+        order: c > pyopencl / cython > py_parratt > python. If a particular
+        method is not available the function falls back:
+        cython/pyopencl --> c --> --> python.
 
     Returns
     -------
@@ -183,6 +189,9 @@ def get_reflect_backend(backend="c"):
         except ImportError:
             warnings.warn("Can't use the C abeles backend")
             return get_reflect_backend("python")
+    elif backend == "py_parratt":
+        from refnx.reflect._reflect import parratt
+        return parratt
     # elif backend == "jax":
     #     try:
     #         from refnx.reflect import _jax_reflect
@@ -497,7 +506,7 @@ def reflectivity(
     q, slabs, scale=1.0, bkg=0.0, dq=5.0, quad_order=17, threads=-1
 ):
     r"""
-    Abeles matrix formalism for calculating reflectivity from a stratified
+    Abeles/Parratt formalism for calculating reflectivity from a stratified
     medium.
 
     Parameters
