@@ -342,7 +342,7 @@ def parratt(
         )
         RRJ_1[:] = RRJ[:]
 
-    reflectivity = RRJ * np.conj(RRJ)
+    reflectivity = RRJ_1 * np.conj(RRJ_1)
     reflectivity *= scale
     reflectivity += bkg
     return np.real(np.reshape(reflectivity, qvals.shape))

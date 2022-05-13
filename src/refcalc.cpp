@@ -97,11 +97,11 @@ matmul(complex<double> a[2][2], complex<double> b[2][2], complex<double> c[2][2]
 }
 
 
-void AbelesCalc_ImagAll(int numcoefs,
-                        const double *coefP,
-                        int npoints,
-                        double *yP,
-                        const double *xP){
+void abeles(int numcoefs,
+            const double *coefP,
+            int npoints,
+            double *yP,
+            const double *xP){
         int j;
         double scale, bkg;
         double num = 0, den = 0, answer = 0;

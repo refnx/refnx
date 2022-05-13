@@ -42,12 +42,12 @@ extern "C" {
 using namespace std;
 
 
-void AbelesCalc_Imag(int numcoefs,
-                  const double *coefP,
-                   int npoints,
+void abeles_wrapper(int numcoefs,
+                    const double *coefP,
+                    int npoints,
                     double *yP,
-                     const double *xP,
-                      int workers){
+                    const double *xP,
+                    int workers){
 
     std::vector<std::thread> threads;
 
@@ -65,7 +65,7 @@ void AbelesCalc_Imag(int numcoefs,
 
     for (int ii = 0; ii < workers; ii++){
         if(ii < workers - 1){
-            threads.emplace_back(std::thread(AbelesCalc_ImagAll,
+            threads.emplace_back(std::thread(abeles,
                                              numcoefs,
                                              coefP,
                                              pointsEachThread,
@@ -74,7 +74,7 @@ void AbelesCalc_Imag(int numcoefs,
             pointsRemaining -= pointsEachThread;
             pointsConsumed += pointsEachThread;
         } else {
-            threads.emplace_back(std::thread(AbelesCalc_ImagAll,
+            threads.emplace_back(std::thread(abeles,
                                              numcoefs,
                                              coefP,
                                              pointsRemaining,
@@ -103,7 +103,7 @@ void reflectMT(int numcoefs,
     choose between the mode of calculation, depending on whether pthreads or omp.h
     is present for parallelisation.
     */
-    AbelesCalc_Imag(numcoefs, coefP, npoints, yP, xP, threads);
+    abeles_wrapper(numcoefs, coefP, npoints, yP, xP, threads);
 }
 
 /*
@@ -114,5 +114,5 @@ void reflect(int numcoefs,
             int npoints,
             double *yP,
             const double *xP){
-    AbelesCalc_ImagAll(numcoefs, coefP, npoints, yP, xP);
+    abeles(numcoefs, coefP, npoints, yP, xP);
 }
