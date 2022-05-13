@@ -104,7 +104,7 @@ def available_backends():
         from refnx.reflect._reflect import parratt as py_parratt
 
         backends.append("py_parratt")
-    except:
+    except ImportError:
         pass
 
     # try:
