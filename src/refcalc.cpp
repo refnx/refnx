@@ -268,7 +268,7 @@ void parratt(int numcoefs,
                     // characteristic matrix for first interface
                     RRJ = rj;
                 } else {
-                    beta = std::exp(-2.0 * kn * thickness[ii]);
+                    beta = std::exp(-2.0 * kn_next * thickness[ii]);
                     RRJ = (rj + RRJ_1 * beta) / (oneC + RRJ_1 * beta * rj);
                 }
                 kn_next = kn;
