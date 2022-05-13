@@ -258,14 +258,14 @@ def abeles(
 
 
 def parratt(
-        q,
-        layers,
-        scale=1.0,
-        bkg=0,
-        threads=0,
+    q,
+    layers,
+    scale=1.0,
+    bkg=0,
+    threads=0,
 ) -> np.array:
     """
-    Abeles matrix formalism for calculating reflectivity from a stratified
+    Parratt recursion formula for calculating reflectivity from a stratified
     medium.
 
     Parameters
@@ -313,8 +313,8 @@ def parratt(
     # addition of TINY is to ensure the correct branch cut
     # in the complex sqrt calculation of kn.
     sld[1:] += (
-                       (layers[1:, 1] - layers[0, 1]) + 1j * (np.abs(layers[1:, 2]) + TINY)
-               ) * 1.0e-6
+        (layers[1:, 1] - layers[0, 1]) + 1j * (np.abs(layers[1:, 2]) + TINY)
+    ) * 1.0e-6
 
     # calculate wavevector in each layer, for each Q point.
     # kn.shape = (npnts, nlayers)
@@ -327,12 +327,19 @@ def parratt(
     rj *= np.exp(-2.0 * kn[:, :-1] * kn[:, 1:] * layers[1:, 3] ** 2)
 
     RRJ_1 = rj[:, -1]
-    beta = np.exp(-2.0 * kn[:, 1:nlayers + 1] * 1j * np.fabs(layers[1:nlayers + 1, 0]))
+    beta = np.exp(
+        -2.0
+        * kn[:, 1 : nlayers + 1]
+        * 1j
+        * np.fabs(layers[1 : nlayers + 1, 0])
+    )
     beta_rj = beta * rj[:, 0:nlayers]
 
     for idx in range(nlayers - 1, -1, -1):
         # RRJ = (rj[:, idx] + RRJ_1 * beta[:, idx]) / (1 + rj[:, idx] * RRJ_1 * beta[:, idx])
-        RRJ = (rj[:, idx] + RRJ_1 * beta[:, idx]) / (1 + RRJ_1 * beta_rj[:, idx])
+        RRJ = (rj[:, idx] + RRJ_1 * beta[:, idx]) / (
+            1 + RRJ_1 * beta_rj[:, idx]
+        )
         RRJ_1[:] = RRJ[:]
 
     reflectivity = RRJ * np.conj(RRJ)

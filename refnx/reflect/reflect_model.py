@@ -102,6 +102,7 @@ def available_backends():
 
     try:
         import refnx.reflect._reflect.parratt as py_parratt
+
         backends.append("py_parratt")
     except:
         pass
@@ -191,6 +192,7 @@ def get_reflect_backend(backend="c"):
             return get_reflect_backend("python")
     elif backend == "py_parratt":
         from refnx.reflect._reflect import parratt
+
         return parratt
     # elif backend == "jax":
     #     try:
