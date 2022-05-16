@@ -108,6 +108,13 @@ def available_backends():
     except ImportError:
         pass
 
+    try:
+        from refnx.reflect import _cyreflect as _cy
+
+        backends.append("cython_parratt")
+    except ImportError:
+        pass
+
     # try:
     #     import jax as jax
     #     from jax.config import config
@@ -204,6 +211,14 @@ def get_reflect_backend(backend="c"):
         except ImportError:
             warnings.warn("Can't use the c_parratt backend")
             return get_reflect_backend("py_parratt")
+    elif backend == "cython_parratt":
+        try:
+            from refnx.reflect import _cyreflect as _c
+
+            return _c.parratt
+        except ImportError:
+            warnings.warn("Can't use the cython_parratt backend")
+            return get_reflect_backend("c_parratt")
 
     # elif backend == "jax":
     #     try:

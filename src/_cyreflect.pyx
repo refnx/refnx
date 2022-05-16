@@ -76,8 +76,8 @@ cdef _abeles(double[:] x,
         int layer, i, m
         double complex M_4PI = 4 * np.pi
         double complex I = 1j
-        double complex rj, k, k_next, q2, rough, thick
-        double complex p0, p1, beta, arg
+        double complex rj, k, k_next, q2, rough, mi00, mi01, mi10, mi11, thick
+        double complex mrtot00, mrtot01, mrtot10, mrtot11, p0, p1, beta, arg
 
         np.ndarray[np.complex128_t, ndim=1] y = np.zeros(npoints,
                                                          np.complex128)
@@ -153,8 +153,8 @@ cdef _parratt(double[:] x,
         int layer, i, m
         double complex M_4PI = 4 * np.pi
         double complex I = 1j
-        double complex rj, k, k_next, q2, rough, mi00, mi01, mi10, mi11, thick
-        double complex mrtot00, mrtot01, mrtot10, mrtot11, p0, p1, beta, arg
+        double complex rj, kn, k_next, qq2, rough, thick
+        double complex beta, arg, RRJ, RRJ_1
 
         np.ndarray[np.complex128_t, ndim=1] y = np.zeros(npoints,
                                                            np.complex128)
@@ -168,50 +168,39 @@ cdef _parratt(double[:] x,
         double complex[:] SLDbuf = SLD
         double complex[:] roughbuf = roughsqr
 
-    for i in range(1, nlayers + 2):
-        SLDbuf[i] = M_4PI * (wbuf[i, 1] - wbuf[0, 1] +
-                             1j * (fabs(wbuf[i, 2]) + TINY)) * 1.e-6
-        roughbuf[i - 1] = -2. * wbuf[i, 3] * wbuf[i, 3]
+    for idx in range(1, nlayers + 2):
+        SLDbuf[idx] = M_4PI * (wbuf[idx, 1] - wbuf[0, 1] +
+                             1j * (fabs(wbuf[idx, 2]) + TINY)) * 1.e-6
+        roughbuf[idx - 1] = -2. * wbuf[idx, 3] * wbuf[idx, 3]
 
     for i in prange(npoints, nogil=True, num_threads=_num_threads):
-        q2 = x[i] * x[i] / 4.
-        k = x[i] / 2.
-        for m in range(0, nlayers + 1):
-            k_next = sqrt(q2 - SLDbuf[m + 1])
-            rj = (k - k_next) / (k + k_next) * exp(k * k_next * roughbuf[m])
+        qq2 = x[i] * x[i] / 4.
 
-            if not m:
+        # start from subphase
+		kn_next = sqrt(qq2 - SLD[nlayers + 1])
+
+        for idx in range(nlayers - 1, -1, -1):
+            # wavevector in the layer
+            kn = sqrt(qq2 - SLD[idx])
+
+            # reflectance of the interface
+            # factor of 2 is already incorporated in rough_sqr
+            rj = (kn - kn_next)/(kn + kn_next)
+                  * exp(kn * kn_next * rough_sqr[idx]);
+
+            if (idx == nlayers){
                 # characteristic matrix for first interface
-                mrtot00 = 1.
-                mrtot01 = rj
-                mrtot11 = 1.
-                mrtot10 = rj
-            else:
-                # work out the beta for the layer
-                thick = wbuf[m, 0]
-                beta = exp(k * thick * I)
-                # this is the characteristic matrix of a layer
-                mi00 = beta
-                mi11 = 1. / beta
-                mi10 = rj * mi00
-                mi01 = rj * mi11
-
-                # matrix multiply
-                p0 = mrtot00 * mi00 + mrtot10 * mi01
-                p1 = mrtot00 * mi10 + mrtot10 * mi11
-                mrtot00 = p0
-                mrtot10 = p1
-
-                p0 = mrtot01 * mi00 + mrtot11 * mi01
-                p1 = mrtot01 * mi10 + mrtot11 * mi11
-
-                mrtot01 = p0
-                mrtot11 = p1
-
-            k = k_next
+                RRJ = rj;
+            } else {
+                thick = fabs(wbuf[m, 0])
+                beta = exp(-2 * I * kn_next * thick)
+                RRJ = (rj + RRJ_1 * beta) / (1 + RRJ_1 * beta * rj)
+            }
+            kn_next = kn
+            RRJ_1 = RRJ
 
         y[i] = (mrtot01 / mrtot00)
-        y[i] = y[i] * conj(y[i])
+        y[i] = RRJ_1 * conj(RRJ_1)
         y[i] *= scale
         y[i] += bkg
     return y.real
