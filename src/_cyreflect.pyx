@@ -153,11 +153,11 @@ cdef _parratt(double[:] x,
         int layer, i, idx
         double complex M_4PI = 4 * np.pi
         double complex I = 1j
-        double complex rj, kn, k_next, qq2, rough, thick
+        double complex rj, kn, kn_next, qq2, rough
         double complex beta, arg, RRJ, RRJ_1
 
         np.ndarray[np.complex128_t, ndim=1] y = np.zeros(npoints,
-                                                           np.complex128)
+                                                         np.complex128)
         np.ndarray[np.complex128_t, ndim=1] roughsqr = np.empty(
             nlayers + 1, np.complex128)
 
@@ -170,7 +170,7 @@ cdef _parratt(double[:] x,
 
     for idx in range(1, nlayers + 2):
         SLDbuf[idx] = M_4PI * (wbuf[idx, 1] - wbuf[0, 1] +
-                             1j * (fabs(wbuf[idx, 2]) + TINY)) * 1.e-6
+                               I * (fabs(wbuf[idx, 2]) + TINY)) * 1.e-6
         roughbuf[idx - 1] = -2. * wbuf[idx, 3] * wbuf[idx, 3]
 
     for i in prange(npoints, nogil=True, num_threads=_num_threads):
@@ -179,27 +179,25 @@ cdef _parratt(double[:] x,
         # start from subphase
         kn_next = sqrt(qq2 - SLD[nlayers + 1])
 
-        for idx in range(nlayers - 1, -1, -1):
+        for idx in range(nlayers, -1, -1):
             # wavevector in the layer
             kn = sqrt(qq2 - SLD[idx])
 
             # reflectance of the interface
             # factor of 2 is already incorporated in rough_sqr
             rj = ((kn - kn_next)/(kn + kn_next)
-                  * exp(kn * kn_next * rough_sqr[idx]))
+                  * exp(kn * kn_next * roughbuf[idx]))
 
-            if (idx == nlayers){
+            if (idx == nlayers):
                 # characteristic matrix for first interface
                 RRJ = rj
-            } else {
-                thick = fabs(wbuf[m, 0])
-                beta = exp(-2 * I * kn_next * thick)
+            else:
+                beta = exp(-2.0 * I * kn_next * fabs(wbuf[idx + 1, 0]))
                 RRJ = (rj + RRJ_1 * beta) / (1 + RRJ_1 * beta * rj)
-            }
+
             kn_next = kn
             RRJ_1 = RRJ
 
-        y[i] = (mrtot01 / mrtot00)
         y[i] = RRJ_1 * conj(RRJ_1)
         y[i] *= scale
         y[i] += bkg
