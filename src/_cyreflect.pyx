@@ -185,12 +185,12 @@ cdef _parratt(double[:] x,
 
             # reflectance of the interface
             # factor of 2 is already incorporated in rough_sqr
-            rj = (kn - kn_next)/(kn + kn_next)
-                  * exp(kn * kn_next * rough_sqr[idx]);
+            rj = ((kn - kn_next)/(kn + kn_next)
+                  * exp(kn * kn_next * rough_sqr[idx]))
 
             if (idx == nlayers){
                 # characteristic matrix for first interface
-                RRJ = rj;
+                RRJ = rj
             } else {
                 thick = fabs(wbuf[m, 0])
                 beta = exp(-2 * I * kn_next * thick)
