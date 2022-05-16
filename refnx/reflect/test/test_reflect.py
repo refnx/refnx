@@ -92,35 +92,35 @@ class TestReflect:
 
     @pytest.mark.parametrize("backend", BACKENDS)
     @pytest.mark.filterwarnings("ignore:Using the SLOW")
-    def test_abeles(self, backend):
+    def test_kernel(self, backend):
         slabs = self.structure.slabs()[..., :4]
 
         # test reflectivity calculation with values generated from Motofit
-        with use_reflect_backend(backend) as abeles:
-            calc = abeles(self.qvals, slabs)
+        with use_reflect_backend(backend) as kernel:
+            calc = kernel(self.qvals, slabs)
         assert_almost_equal(calc, self.rvals)
 
     @pytest.mark.parametrize("backend", BACKENDS)
     @pytest.mark.filterwarnings("ignore:Using the SLOW")
-    def test_noncontig_abeles(self, backend):
+    def test_noncontig_kernel(self, backend):
         # test for non-contiguous Q values
         tempq = self.qvals[0::5]
         slabs = self.structure.slabs()[..., :4]
 
         assert tempq.flags["C_CONTIGUOUS"] is False
 
-        with use_reflect_backend(backend) as abeles:
-            calc = abeles(tempq, slabs)
+        with use_reflect_backend(backend) as kernel:
+            calc = kernel(tempq, slabs)
             assert_almost_equal(calc, self.rvals[0::5])
 
     @pytest.mark.parametrize("backend", BACKENDS)
     @pytest.mark.filterwarnings("ignore:Using the SLOW")
-    def test_abeles_multithreaded(self, backend):
+    def test_kernel_multithreaded(self, backend):
         slabs = self.structure.slabs()[..., :4]
 
         # test reflectivity calculation with values generated from Motofit
-        with use_reflect_backend(backend) as abeles:
-            calc = abeles(self.qvals, slabs, threads=4)
+        with use_reflect_backend(backend) as kernel:
+            calc = kernel(self.qvals, slabs, threads=4)
         assert_almost_equal(calc, self.rvals)
 
     def test_available_backends(self):
@@ -128,6 +128,7 @@ class TestReflect:
         assert "c" in BACKENDS
         assert "py_parratt" in BACKENDS
         assert "c_parratt" in BACKENDS
+        assert "cython_parratt" in BACKENDS
         import refnx.reflect._creflect as _creflect
         import refnx.reflect._reflect as _reflect
 
@@ -168,8 +169,8 @@ class TestReflect:
         # now from refnx code
         struct = SLD(sld1)(0, 0) | SLD(sld2)(0, 0)
         slabs = struct.slabs()[..., :4]
-        with use_reflect_backend(backend) as abeles:
-            assert_allclose(abeles(q, slabs), reflectivity, rtol=1e-14)
+        with use_reflect_backend(backend) as kernel:
+            assert_allclose(kernel(q, slabs), reflectivity, rtol=1e-14)
 
         # reverse the direction
         kf = kn(q, sld2, sld2)
@@ -180,33 +181,33 @@ class TestReflect:
         # now from refnx code
         struct = SLD(sld2)(0, 0) | SLD(sld1)(0, 0)
         slabs = struct.slabs()[..., :4]
-        with use_reflect_backend(backend) as abeles:
-            assert_allclose(abeles(q, slabs), reflectivity, rtol=1e-14)
+        with use_reflect_backend(backend) as kernel:
+            assert_allclose(kernel(q, slabs), reflectivity, rtol=1e-14)
 
     @pytest.mark.filterwarnings("ignore:Using the SLOW")
-    def test_scale_bkg_abeles(self):
+    def test_scale_bkg_kernel(self):
         s = self.structure.slabs()[..., :4]
 
         calcs = []
         for backend in BACKENDS:
-            with use_reflect_backend(backend) as abeles:
-                calc = abeles(self.qvals, s, scale=2.0)
+            with use_reflect_backend(backend) as kernel:
+                calc = kernel(self.qvals, s, scale=2.0)
                 calcs.append(calc)
         for calc in calcs[1:]:
             assert_allclose(calc, calcs[0])
 
         calcs = []
         for backend in BACKENDS:
-            with use_reflect_backend(backend) as abeles:
-                calc = abeles(self.qvals, s, scale=0.5, bkg=0.1)
+            with use_reflect_backend(backend) as kernel:
+                calc = kernel(self.qvals, s, scale=0.5, bkg=0.1)
                 calcs.append(calc)
         for calc in calcs[1:]:
             assert_allclose(calc, calcs[0])
 
         calcs = []
         for backend in BACKENDS:
-            with use_reflect_backend(backend) as abeles:
-                calc = abeles(self.qvals, s, scale=0.5, bkg=0.1, threads=2)
+            with use_reflect_backend(backend) as kernel:
+                calc = kernel(self.qvals, s, scale=0.5, bkg=0.1, threads=2)
                 calcs.append(calc)
         for calc in calcs[1:]:
             assert_allclose(calc, calcs[0])
@@ -238,27 +239,27 @@ class TestReflect:
 
     @pytest.mark.parametrize("backend", BACKENDS)
     @pytest.mark.filterwarnings("ignore:Using the SLOW")
-    def test_compare_abeles0(self, backend):
+    def test_compare_kernel0(self, backend):
         # test one layer system against the python implementation
         layer0 = np.array([[0, 2.07, 0.01, 3], [0, 6.36, 0.1, 3]])
-        with use_reflect_backend("python") as abeles:
-            calc1 = abeles(self.qvals, layer0, scale=0.99, bkg=1e-8)
+        with use_reflect_backend("python") as kernel:
+            calc1 = kernel(self.qvals, layer0, scale=0.99, bkg=1e-8)
 
-        with use_reflect_backend(backend) as abeles:
-            calc2 = abeles(self.qvals, layer0, scale=0.99, bkg=1e-8)
+        with use_reflect_backend(backend) as kernel:
+            calc2 = kernel(self.qvals, layer0, scale=0.99, bkg=1e-8)
         assert_almost_equal(calc1, calc2)
 
         # test a negative background
-        with use_reflect_backend("python") as abeles:
-            calc1 = abeles(self.qvals, layer0, scale=0.99, bkg=-5e-7)
+        with use_reflect_backend("python") as kernel:
+            calc1 = kernel(self.qvals, layer0, scale=0.99, bkg=-5e-7)
 
-        with use_reflect_backend(backend) as abeles:
-            calc2 = abeles(self.qvals, layer0, scale=0.99, bkg=-5e-7)
+        with use_reflect_backend(backend) as kernel:
+            calc2 = kernel(self.qvals, layer0, scale=0.99, bkg=-5e-7)
         assert_almost_equal(calc1, calc2)
 
     @pytest.mark.parametrize("backend", BACKENDS)
     @pytest.mark.filterwarnings("ignore:Using the SLOW")
-    def test_compare_abeles2(self, backend):
+    def test_compare_kernel2(self, backend):
         # test two layer system against the python implementation
         layer2 = np.array(
             [
@@ -268,16 +269,16 @@ class TestReflect:
                 [0, 6.36, 0.1, 3],
             ]
         )
-        with use_reflect_backend("python") as abeles:
-            calc1 = abeles(self.qvals, layer2, scale=0.99, bkg=1e-8)
+        with use_reflect_backend("python") as kernel:
+            calc1 = kernel(self.qvals, layer2, scale=0.99, bkg=1e-8)
 
-        with use_reflect_backend(backend) as abeles:
-            calc2 = abeles(self.qvals, layer2, scale=0.99, bkg=1e-8)
+        with use_reflect_backend(backend) as kernel:
+            calc2 = kernel(self.qvals, layer2, scale=0.99, bkg=1e-8)
         assert_almost_equal(calc1, calc2)
 
     @pytest.mark.parametrize("backend", BACKENDS)
     @pytest.mark.filterwarnings("ignore:Using the SLOW")
-    def test_abeles_absorption(self, backend):
+    def test_kernel_absorption(self, backend):
         # https://github.com/andyfaff/refl1d_analysis/tree/master/notebooks
         q = np.linspace(0.008, 0.05, 500)
         depth = [0, 850, 0]
@@ -287,16 +288,16 @@ class TestReflect:
 
         w_zero = np.c_[depth, rho, irho_zero, refnx_sigma]
 
-        with use_reflect_backend("python") as abeles:
-            calc1 = abeles(q, w_zero)
+        with use_reflect_backend("python") as kernel:
+            calc1 = kernel(q, w_zero)
 
-        with use_reflect_backend(backend) as abeles:
-            calc2 = abeles(q, w_zero)
+        with use_reflect_backend(backend) as kernel:
+            calc2 = kernel(q, w_zero)
         assert_almost_equal(calc1, calc2)
 
     @pytest.mark.parametrize("backend", BACKENDS)
     @pytest.mark.filterwarnings("ignore:Using the SLOW")
-    def test_abeles_absorption2(self, backend):
+    def test_kernel_absorption2(self, backend):
         # https://github.com/andyfaff/refl1d_analysis/tree/master/notebooks
         # this has an appreciable notch just below the critical edge
         refl1d = np.load(os.path.join(self.pth, "absorption.npy"))
@@ -309,8 +310,8 @@ class TestReflect:
 
         slabs = np.c_[depth, rho, irho, refnx_sigma]
 
-        with use_reflect_backend(backend) as abeles:
-            calc = abeles(q, slabs)
+        with use_reflect_backend(backend) as kernel:
+            calc = kernel(q, slabs)
         assert_almost_equal(calc, refl1d[1])
 
     @pytest.mark.parametrize("backend", BACKENDS)
@@ -337,8 +338,8 @@ class TestReflect:
         x = np.linspace(0.005, 0.5, 1001)
         refl1d = np.load(os.path.join(self.pth, "refl1d.npy"))
 
-        with use_reflect_backend(backend) as abeles:
-            calc = abeles(x, layers)
+        with use_reflect_backend(backend) as kernel:
+            calc = kernel(x, layers)
         assert_almost_equal(calc, refl1d)
 
     @pytest.mark.filterwarnings("ignore:Using the SLOW")
@@ -364,8 +365,8 @@ class TestReflect:
             canonical_r = f_python(x, w)
 
             for backend in backends:
-                with use_reflect_backend(backend) as abeles:
-                    calc = abeles(x, w)
+                with use_reflect_backend(backend) as kernel:
+                    calc = kernel(x, w)
                 try:
                     assert_allclose(
                         calc, canonical_r, atol=5.0e-15, rtol=8.0e-15
@@ -378,12 +379,12 @@ class TestReflect:
         import refnx.reflect._creflect as _creflect
         import refnx.reflect._reflect as _reflect
 
-        reflect_model.abeles = _reflect.abeles
+        reflect_model.kernel = _reflect.abeles
 
         with use_reflect_backend("c") as f:
             assert f == _creflect.abeles
-            assert reflect_model.abeles == _creflect.abeles
-        assert reflect_model.abeles == _reflect.abeles
+            assert reflect_model.kernel == _creflect.abeles
+        assert reflect_model.kernel == _reflect.abeles
 
         # this shouldn't error if pyopencl is not installed
         # it should just fall back to 'c'
@@ -404,14 +405,14 @@ class TestReflect:
 
     @pytest.mark.parametrize("backend", BACKENDS)
     @pytest.mark.filterwarnings("ignore:Using the SLOW")
-    def test_abeles_reshape(self, backend):
+    def test_kernel_reshape(self, backend):
         # reflectivity should be able to deal with multidimensional input
         s = self.structure.slabs()[..., :4]
         reshaped_q = np.reshape(self.qvals, (2, 250))
         reshaped_r = self.rvals.reshape(2, 250)
 
-        with use_reflect_backend(backend) as abeles:
-            calc = abeles(reshaped_q, s)
+        with use_reflect_backend(backend) as kernel:
+            calc = kernel(reshaped_q, s)
         assert_equal(calc.shape, reshaped_r.shape)
         assert_almost_equal(calc, reshaped_r, 15)
 
@@ -465,7 +466,7 @@ class TestReflect:
     @pytest.mark.parametrize("backend", BACKENDS)
     @pytest.mark.filterwarnings("ignore:Using the SLOW")
     def test_parallel_calculator(self, backend):
-        # test that parallel abeles work with a mapper
+        # test that parallel kernel work with a mapper
         q = np.linspace(0.01, 0.5, 1000).reshape(20, 50)
         p0 = np.array(
             [
@@ -480,8 +481,8 @@ class TestReflect:
             # can't do pyopencl in a multiprocessing.Pool
             return
 
-        with use_reflect_backend(backend) as abeles:
-            wf = Wrapper_fn(abeles, p0)
+        with use_reflect_backend(backend) as kernel:
+            wf = Wrapper_fn(kernel, p0)
             y = map(wf, q)
             with MapWrapper(2) as f:
                 z = f(wf, q)
@@ -567,7 +568,7 @@ class TestReflect:
         # mcmc_stderr = [mcmc_result.stderr for mcmc_result in res_mcmc]
         # assert_allclose(mcmc_stderr[1:], res.stderr[1:], rtol=0.25)
 
-    def test_smearedabeles(self):
+    def test_smearedkernel(self):
         # test smeared reflectivity calculation with values generated from
         # Motofit (quadrature precsion order = 13)
         theoretical = np.loadtxt(
@@ -584,7 +585,7 @@ class TestReflect:
 
         assert_almost_equal(rvals.flatten(), calc)
 
-    def test_smearedabeles_reshape(self):
+    def test_smearedkernel_reshape(self):
         # test smeared reflectivity calculation with values generated from
         # Motofit (quadrature precsion order = 13)
         theoretical = np.loadtxt(
@@ -784,7 +785,7 @@ class TestReflect:
             [[0, 0, 0, 0, 0], [100, 3, 0, 1, 0], [0, 4, 0, 0, 0]]
         )
 
-        # use for NSF calculation with abeles
+        # use for NSF calculation with kernel
         pp_layers = np.array([[0, 0, 0, 0], [100, 4.0, 0, 0], [0, 4, 0, 0]])
 
         mm_layers = np.array([[0, 0, 0, 0], [100, 2, 0, 0], [0, 4, 0, 0]])

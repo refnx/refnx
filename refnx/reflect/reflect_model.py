@@ -50,7 +50,7 @@ _INTLIMIT = 3.5
 """
 Implementation notes
 --------------------
-1. For _smeared_abeles_fixed I investigated calculating a master curve,
+1. For _smeared_kernel_fixed I investigated calculating a master curve,
    adjacent data points have overlapping resolution kernels. So instead of
    using e.g. an oversampling factor of 17, one could get away with using
    a factor of 6. This is because the calculated points can be used to smear
@@ -108,6 +108,13 @@ def available_backends():
     except ImportError:
         pass
 
+    try:
+        from refnx.reflect import _cyreflect as _cy
+
+        backends.append("cython_parratt")
+    except ImportError:
+        pass
+
     # try:
     #     import jax as jax
     #     from jax.config import config
@@ -129,7 +136,7 @@ def get_reflect_backend(backend="c"):
 
     It does not change the function used by ReflectModel to calculate
     reflectivity. In order to change this you should change the
-    refnx.reflect.reflect_model.abeles module variable to point to a different
+    refnx.reflect.reflect_model.kernel module variable to point to a different
     function, or use the refnx.reflect.reflect_model.use_reflect_backend
     context manager.
 
@@ -144,7 +151,7 @@ def get_reflect_backend(backend="c"):
 
     Returns
     -------
-    abeles: callable
+    kernel: callable
         The callable that calculates the reflectivity
 
     Notes
@@ -204,6 +211,14 @@ def get_reflect_backend(backend="c"):
         except ImportError:
             warnings.warn("Can't use the c_parratt backend")
             return get_reflect_backend("py_parratt")
+    elif backend == "cython_parratt":
+        try:
+            from refnx.reflect import _cyreflect as _c
+
+            return _c.parratt
+        except ImportError:
+            warnings.warn("Can't use the cython_parratt backend")
+            return get_reflect_backend("c_parratt")
 
     # elif backend == "jax":
     #     try:
@@ -224,7 +239,8 @@ def get_reflect_backend(backend="c"):
 
 
 # this function is used to calculate reflectivity
-abeles = get_reflect_backend("c")
+kernel = get_reflect_backend("c")
+abeles = kernel
 
 
 @contextmanager
@@ -241,7 +257,7 @@ def use_reflect_backend(backend="c"):
 
     Yields
     ------
-    abeles: callable
+    kernel: callable
         A callable that calculates the reflectivity
 
     Notes
@@ -252,11 +268,11 @@ def use_reflect_backend(backend="c"):
     only included for completeness. The 'pyopencl' backend is also harder to
     use with multiprocessing-based parallelism.
     """
-    global abeles
-    f = abeles
-    abeles = get_reflect_backend(backend)
-    yield abeles
-    abeles = f
+    global kernel
+    f = kernel
+    kernel = get_reflect_backend(backend)
+    yield kernel
+    kernel = f
 
 
 class ReflectModel:
@@ -611,11 +627,11 @@ def reflectivity(
     """
     # constant dq/q smearing
     if isinstance(dq, numbers.Real) and float(dq) == 0:
-        return abeles(q, slabs, scale=scale, bkg=bkg, threads=threads)
+        return kernel(q, slabs, scale=scale, bkg=bkg, threads=threads)
     elif isinstance(dq, numbers.Real):
         dq = float(dq)
         return (
-            scale * _smeared_abeles_constant(q, slabs, dq, threads=threads)
+            scale * _smeared_kernel_constant(q, slabs, dq, threads=threads)
         ) + bkg
 
     # point by point resolution smearing (each q point has different dq/q)
@@ -627,7 +643,7 @@ def reflectivity(
         if quad_order == "ultimate":
             smeared_rvals = (
                 scale
-                * _smeared_abeles_adaptive(
+                * _smeared_kernel_adaptive(
                     qvals_flat, slabs, dqvals_flat, threads=threads
                 )
                 + bkg
@@ -637,7 +653,7 @@ def reflectivity(
         else:
             smeared_rvals = (
                 scale
-                * _smeared_abeles_pointwise(
+                * _smeared_kernel_pointwise(
                     qvals_flat,
                     slabs,
                     dqvals_flat,
@@ -657,7 +673,7 @@ def reflectivity(
 
         qvals_for_res = dq[:, 0, :]
         # work out the reflectivity at the kernel evaluation points
-        smeared_rvals = abeles(qvals_for_res, slabs, threads=threads)
+        smeared_rvals = kernel(qvals_for_res, slabs, threads=threads)
 
         # multiply by probability
         smeared_rvals *= dq[:, 1, :]
@@ -686,7 +702,7 @@ def gauss_legendre(n):
     return scipy.special.p_roots(n)
 
 
-def _smearkernel(x, w, q, dq, threads):
+def _smear_kernel(x, w, q, dq, threads):
     """
     Adaptive Gaussian quadrature integration
 
@@ -711,10 +727,10 @@ def _smearkernel(x, w, q, dq, threads):
     prefactor = 1 / np.sqrt(2 * np.pi)
     gauss = prefactor * np.exp(-0.5 * x * x)
     localq = q + x * dq / _FWHM
-    return abeles(localq, w, threads=threads) * gauss
+    return kernel(localq, w, threads=threads) * gauss
 
 
-def _smeared_abeles_adaptive(qvals, w, dqvals, threads=-1):
+def _smeared_kernel_adaptive(qvals, w, dqvals, threads=-1):
     """
     Resolution smearing that uses adaptive Gaussian quadrature integration
     for the convolution.
@@ -737,6 +753,7 @@ def _smeared_abeles_adaptive(qvals, w, dqvals, threads=-1):
     -------
     reflectivity : np.ndarray
         The smeared reflectivity
+
     Notes
     -----
     The integration is adaptive meaning it keeps going until it reaches an
@@ -746,7 +763,7 @@ def _smeared_abeles_adaptive(qvals, w, dqvals, threads=-1):
     warnings.simplefilter("ignore", Warning)
     for idx, val in enumerate(qvals):
         smeared_rvals[idx], err = scipy.integrate.quadrature(
-            _smearkernel,
+            _smear_kernel,
             -_INTLIMIT,
             _INTLIMIT,
             tol=2 * np.finfo(np.float64).eps,
@@ -758,7 +775,7 @@ def _smeared_abeles_adaptive(qvals, w, dqvals, threads=-1):
     return smeared_rvals
 
 
-def _smeared_abeles_pointwise(qvals, w, dqvals, quad_order=17, threads=-1):
+def _smeared_kernel_pointwise(qvals, w, dqvals, quad_order=17, threads=-1):
     """
     Resolution smearing that uses fixed order Gaussian quadrature integration
     for the convolution.
@@ -811,7 +828,7 @@ def _smeared_abeles_pointwise(qvals, w, dqvals, quad_order=17, threads=-1):
     vb = vb[:, np.newaxis]
 
     qvals_for_res = (np.atleast_2d(abscissa) * (vb - va) + vb + va) / 2.0
-    smeared_rvals = abeles(qvals_for_res, w, threads=threads)
+    smeared_rvals = kernel(qvals_for_res, w, threads=threads)
 
     smeared_rvals = np.reshape(smeared_rvals, (qvals.size, abscissa.size))
 
@@ -819,7 +836,7 @@ def _smeared_abeles_pointwise(qvals, w, dqvals, quad_order=17, threads=-1):
     return np.sum(smeared_rvals, 1) * _INTLIMIT
 
 
-def _smeared_abeles_constant(q, w, resolution, threads=-1):
+def _smeared_kernel_constant(q, w, resolution, threads=-1):
     """
     Fast resolution smearing for constant dQ/Q.
 
@@ -843,7 +860,7 @@ def _smeared_abeles_constant(q, w, resolution, threads=-1):
     """
 
     if resolution < 0.5:
-        return abeles(q, w, threads=threads)
+        return kernel(q, w, threads=threads)
 
     resolution /= 100
     gaussnum = 51
@@ -873,7 +890,7 @@ def _smeared_abeles_constant(q, w, resolution, threads=-1):
     gauss_x = _cached_linspace(-1.7 * resolution, 1.7 * resolution, gaussnum)
     gauss_y = gauss(gauss_x, resolution / _FWHM)
 
-    rvals = abeles(xlin, w, threads=threads)
+    rvals = kernel(xlin, w, threads=threads)
     smeared_rvals = np.convolve(rvals, gauss_y, mode="same")
     smeared_rvals *= gauss_x[1] - gauss_x[0]
 
@@ -889,7 +906,7 @@ def _smeared_abeles_constant(q, w, resolution, threads=-1):
 
 @lru_cache(maxsize=128)
 def _cached_linspace(start, stop, num):
-    # calculates linspace for _smeared_abeles_constant
+    # calculates linspace for _smeared_kernel_constant
     # this deserves a cache because it's called a lot with
     # the same parameters
     return np.linspace(start, stop, num)

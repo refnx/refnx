@@ -219,7 +219,6 @@ void parratt(int numcoefs,
     double complex _t;
     _Complex double *SLD = NULL;
     _Complex double *thickness = NULL;
-    double complex oneC = CMPLX(1., 0.);
     double complex qq2;
     double *rough_sqr = NULL;
 

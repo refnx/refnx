@@ -43,6 +43,26 @@ cpdef abeles(x, np.ndarray[DTYPE_t, ndim=2] w,
     return y
 
 
+cpdef parratt(x, np.ndarray[DTYPE_t, ndim=2] w,
+             double scale=1.0, double bkg=0., int threads=-1):
+
+    # we need the abscissae in a contiguous block of memory
+    cdef double[:] xtemp = np.ascontiguousarray(x, dtype=DTYPE).flatten()
+
+    if w.shape[1] != 4 or w.shape[0] < 2:
+        raise ValueError("Parameters for reflection must have shape (>2, 4)")
+
+    if threads > 0:
+        num_threads = int(threads)
+    else:
+        num_threads = openmp.omp_get_max_threads()
+
+    y = _parratt(xtemp, w, scale, bkg, num_threads)
+
+    y = np.reshape(y, x.shape)
+    return y
+
+
 @cython.boundscheck(False)
 @cython.cdivision(True)
 cdef _abeles(double[:] x,
@@ -60,7 +80,7 @@ cdef _abeles(double[:] x,
         double complex mrtot00, mrtot01, mrtot10, mrtot11, p0, p1, beta, arg
 
         np.ndarray[np.complex128_t, ndim=1] y = np.zeros(npoints,
-                                                           np.complex128)
+                                                         np.complex128)
         np.ndarray[np.complex128_t, ndim=1] roughsqr = np.empty(
             nlayers + 1, np.complex128)
 
@@ -115,6 +135,70 @@ cdef _abeles(double[:] x,
 
         y[i] = (mrtot01 / mrtot00)
         y[i] = y[i] * conj(y[i])
+        y[i] *= scale
+        y[i] += bkg
+    return y.real
+
+
+@cython.boundscheck(False)
+@cython.cdivision(True)
+cdef _parratt(double[:] x,
+              np.ndarray[np.float64_t, ndim=2] w,
+              double scale=1.0, double bkg=0., int num_threads=1):
+
+    cdef:
+        int _num_threads = num_threads
+        int nlayers = w.shape[0] - 2
+        int npoints = x.shape[0]
+        int layer, i, idx
+        double complex M_4PI = 4 * np.pi
+        double complex I = 1j
+        double complex rj, kn, kn_next, qq2, rough
+        double complex beta, arg, RRJ, RRJ_1
+
+        np.ndarray[np.complex128_t, ndim=1] y = np.zeros(npoints,
+                                                         np.complex128)
+        np.ndarray[np.complex128_t, ndim=1] roughsqr = np.empty(
+            nlayers + 1, np.complex128)
+
+        np.ndarray[np.complex128_t, ndim=1] SLD = np.zeros(
+            (w.shape[0]), np.complex128)
+
+        double[:, :] wbuf = w
+        double complex[:] SLDbuf = SLD
+        double complex[:] roughbuf = roughsqr
+
+    for idx in range(1, nlayers + 2):
+        SLDbuf[idx] = M_4PI * (wbuf[idx, 1] - wbuf[0, 1] +
+                               I * (fabs(wbuf[idx, 2]) + TINY)) * 1.e-6
+        roughbuf[idx - 1] = -2. * wbuf[idx, 3] * wbuf[idx, 3]
+
+    for i in prange(npoints, nogil=True, num_threads=_num_threads):
+        qq2 = x[i] * x[i] / 4.
+
+        # start from subphase
+        kn_next = sqrt(qq2 - SLD[nlayers + 1])
+
+        for idx in range(nlayers, -1, -1):
+            # wavevector in the layer
+            kn = sqrt(qq2 - SLD[idx])
+
+            # reflectance of the interface
+            # factor of 2 is already incorporated in rough_sqr
+            rj = ((kn - kn_next)/(kn + kn_next)
+                  * exp(kn * kn_next * roughbuf[idx]))
+
+            if (idx == nlayers):
+                # characteristic matrix for first interface
+                RRJ = rj
+            else:
+                beta = exp(-2.0 * I * kn_next * fabs(wbuf[idx + 1, 0]))
+                RRJ = (rj + RRJ_1 * beta) / (1 + RRJ_1 * beta * rj)
+
+            kn_next = kn
+            RRJ_1 = RRJ
+
+        y[i] = RRJ_1 * conj(RRJ_1)
         y[i] *= scale
         y[i] += bkg
     return y.real

@@ -437,5 +437,5 @@ in 0.1.13.
   is evaluated at runtime, allowing more sophisticated constraints to be
   developed. (N.B this is separate to the inequality constraints that can
   be made during curvefitting using the NonLinearConstraint machinery).
-- Add a Parratt recursion for calculating reflectivity.
-
+- Add a Parratt recursion for calculating reflectivity, it seems to be a
+  little faster.

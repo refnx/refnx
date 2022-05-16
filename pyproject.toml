@@ -5,6 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "refnx"
 requires-python = ">=3.7"
+dynamic=["version", "description", "readme", "license", "classifiers", "urls", "authors", "entry-points"]
 
 
 
