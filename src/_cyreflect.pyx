@@ -150,7 +150,7 @@ cdef _parratt(double[:] x,
         int _num_threads = num_threads
         int nlayers = w.shape[0] - 2
         int npoints = x.shape[0]
-        int layer, i, m
+        int layer, i, idx
         double complex M_4PI = 4 * np.pi
         double complex I = 1j
         double complex rj, kn, k_next, qq2, rough, thick
@@ -177,7 +177,7 @@ cdef _parratt(double[:] x,
         qq2 = x[i] * x[i] / 4.
 
         # start from subphase
-		kn_next = sqrt(qq2 - SLD[nlayers + 1])
+        kn_next = sqrt(qq2 - SLD[nlayers + 1])
 
         for idx in range(nlayers - 1, -1, -1):
             # wavevector in the layer

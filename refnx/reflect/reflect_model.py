@@ -631,7 +631,7 @@ def reflectivity(
     elif isinstance(dq, numbers.Real):
         dq = float(dq)
         return (
-                       scale * _smeared_kernel_constant(q, slabs, dq, threads=threads)
+            scale * _smeared_kernel_constant(q, slabs, dq, threads=threads)
         ) + bkg
 
     # point by point resolution smearing (each q point has different dq/q)
@@ -642,25 +642,25 @@ def reflectivity(
         # adaptive quadrature
         if quad_order == "ultimate":
             smeared_rvals = (
-                    scale
-                    * _smeared_kernel_adaptive(
+                scale
+                * _smeared_kernel_adaptive(
                     qvals_flat, slabs, dqvals_flat, threads=threads
                 )
-                    + bkg
+                + bkg
             )
             return smeared_rvals.reshape(q.shape)
         # fixed order quadrature
         else:
             smeared_rvals = (
-                    scale
-                    * _smeared_kernel_pointwise(
+                scale
+                * _smeared_kernel_pointwise(
                     qvals_flat,
                     slabs,
                     dqvals_flat,
                     quad_order=quad_order,
                     threads=threads,
                 )
-                    + bkg
+                + bkg
             )
             return np.reshape(smeared_rvals, q.shape)
 
