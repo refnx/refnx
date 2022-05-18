@@ -440,6 +440,47 @@ def transmission_single_chopper(R=0.35, phi=60, N=1, H=0.005):
     return N * (np.radians(phi) * R + H) / (2 * np.pi * R)
 
 
+def transmission_collimation(d1, d2, w1, w2, L12, alpha_h=None, alpha_v=None):
+    """
+    Calculates the transmission of a collimation system
+
+    Parameters
+    ----------
+    d1: float
+        opening of slit 1 height (mm)
+    d2: float
+        opening of slit 2 height (mm)
+    w1: float
+        opening of slit 1 width (mm)
+    w2: float
+        opening of slit 2 width (mm)
+    L12: float
+        distance between slits (mm)
+    alpha_w: float
+        FWHM horizontal divergence (rad) of beam incident on slit 1
+    alpha_v: float
+        FWHM vertical divergence (rad) of beam incident on slit 1
+
+    See equation 10 in de Haan. If alpha_h, alpha_v aren't specified, then
+    the acceptance of the slit system is assumed to be filled by the
+    divergence contained in the beam incident on the first slit.
+
+    References
+    ----------
+    [1] de Haan, V.-O.; de Blois, J.; van der Ende, P.; Fredrikze, H.;
+    van der Graaf, A.; Schipper, M.; van Well, A. A. & J., v. d. Z. ROG, the
+    neutron reflectometer at IRI Delft Nuclear Instruments and Methods in
+    Physics Research A, 1995, 362, 434-453
+    """
+    alpha_v = alpha_v or 1
+    alpha_h = alpha_h or 1
+
+    V = np.clip(d2 / L12 / alpha_v, None, 1)
+    H = np.clip(w2 / L12 / alpha_h, None, 1)
+    I = d1 * w1 * V * H
+    return I
+
+
 def _neutron_transmission_depth(material, wavelength):
     """
     Calculate the penetration depth for a material with a given neutron
