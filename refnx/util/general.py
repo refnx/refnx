@@ -477,8 +477,8 @@ def transmission_collimation(d1, d2, w1, w2, L12, alpha_h=None, alpha_v=None):
 
     V = np.clip(d2 / L12 / alpha_v, None, 1)
     H = np.clip(w2 / L12 / alpha_h, None, 1)
-    I = d1 * w1 * V * H
-    return I
+    _I = d1 * w1 * V * H
+    return _I
 
 
 def _neutron_transmission_depth(material, wavelength):
