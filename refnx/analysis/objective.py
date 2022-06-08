@@ -1359,11 +1359,11 @@ class Transform:
             return yt, et
 
 
-def pymc3_model(objective):
+def pymc_model(objective):
     """
-    Creates a pymc3 model from an Objective.
+    Creates a pymc model from an Objective.
 
-    Requires theano and pymc3 be installed. This is an experimental feature.
+    Requires aesara and pymc be installed. This is an experimental feature.
 
     Parameters
     ----------
@@ -1371,7 +1371,7 @@ def pymc3_model(objective):
 
     Returns
     -------
-    model: pymc3.Model
+    model: pymc.Model
 
     Notes
     -----
@@ -1379,9 +1379,9 @@ def pymc3_model(objective):
     that all parameters have their own unique name.
 
     """
-    import pymc3 as pm
-    import theano.tensor as tt
-    from refnx._lib._pymc3 import _LogLikeWithGrad
+    import pymc as pm
+    import aesara.tensor as tt
+    from refnx._lib._pymc import _LogLikeWithGrad
 
     basic_model = pm.Model()
 
@@ -1391,7 +1391,7 @@ def pymc3_model(objective):
         # Priors for unknown model parameters
         for i, par in enumerate(pars):
             name = "p%d" % i
-            p = _to_pymc3_distribution(name, par)
+            p = _to_pymc_distribution(name, par)
             wrapped_pars.append(p)
 
         # Expected value of outcome
@@ -1412,7 +1412,7 @@ def pymc3_model(objective):
     return basic_model
 
 
-def _to_pymc3_distribution(name, par):
+def _to_pymc_distribution(name, par):
     """
     Create a pymc3 continuous distribution from a Bounds object.
 
@@ -1429,9 +1429,9 @@ def _to_pymc3_distribution(name, par):
         The pymc3 distribution
 
     """
-    import pymc3 as pm
-    import theano.tensor as T
-    from theano.compile.ops import as_op
+    import pymc as pm
+    import aesara.tensor as T
+    from aesara.compile.ops import as_op
 
     dist = par.bounds
     # interval and both lb, ub are finite

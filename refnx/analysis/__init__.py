@@ -11,7 +11,7 @@ from refnx.analysis.objective import (
     BaseObjective,
     GlobalObjective,
     Transform,
-    pymc3_model,
+    pymc_model,
 )
 from refnx.analysis.curvefitter import (
     CurveFitter,
