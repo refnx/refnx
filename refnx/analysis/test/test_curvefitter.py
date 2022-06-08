@@ -622,16 +622,16 @@ class TestFitterGauss:
         # the parameters have uniform priors.
         assert_almost_equal(self.objective.logp(), logp0)
 
-    def test_pymc3_sample(self):
-        # test sampling with pymc3
+    def test_pymc_sample(self):
+        # test sampling with pymc
         try:
-            import pymc3 as pm
-            from refnx.analysis import pymc3_model
+            import pymc as pm
+            from refnx.analysis import pymc_model
         except (ModuleNotFoundError, ImportError, AttributeError):
-            # can't run test if pymc3/theano not installed
+            # can't run test if pymc/aesara not installed
             return
 
-        with pymc3_model(self.objective):
+        with pymc_model(self.objective):
             s = pm.NUTS()
             pm.sample(
                 200,
@@ -650,12 +650,12 @@ class TestFitterGauss:
 
 
 """
-        The Gaussian example sampling can also be performed with pymc3.
-        The above results from emcee have been verified against pymc3 - the
+        The Gaussian example sampling can also be performed with pymc.
+        The above results from emcee have been verified against pymc - the
         unweighted sampling statistics are the same.
 
-        from pymc3 import (Model, Normal, HalfNormal, Flat, Uniform,
-                           find_MAP, NUTS, sample, summary, traceplot)
+        from pymc import (Model, Normal, HalfNormal, Flat, Uniform,
+                          find_MAP, NUTS, sample, summary, traceplot)
 
         basic_model = Model()
 

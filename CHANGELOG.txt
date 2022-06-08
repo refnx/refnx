@@ -439,3 +439,5 @@ in 0.1.13.
   be made during curvefitting using the NonLinearConstraint machinery).
 - Add a Parratt recursion for calculating reflectivity, it seems to be a
   little faster.
+- Ported the pymc wrapper from pymc3 --> pymc (v4), which was released in
+  Jun2022.

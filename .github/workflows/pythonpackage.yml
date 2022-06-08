@@ -44,7 +44,7 @@ jobs:
         python -m pip install --upgrade pip
         python -m pip install wheel
         python -m pip install -e .[all]
-        python -m pip install pytest pyqt5==5.15.2 uncertainties pyopencl pymc3 pytest-qt
+        python -m pip install pytest pyqt5==5.15.2 uncertainties pyopencl pymc pytest-qt
         # uses xvfb for GUI part of the test
         xvfb-run pytest
 

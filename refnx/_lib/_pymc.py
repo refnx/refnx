@@ -1,9 +1,9 @@
-# log-likelihoods for pymc3.
-# requires theano
+# log-likelihoods for pymc.
+# requires aesara
 
 import numpy as np
 from scipy.optimize._numdiff import approx_derivative
-import theano.tensor as tt
+import aesara.tensor as tt
 
 
 class _LogLikeWithGrad(tt.Op):
