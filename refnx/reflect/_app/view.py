@@ -294,6 +294,17 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
             print("Couldn't load experiment")
             return
 
+        # we've successfully loaded a pickle, but it may not be a MTFT file
+        # do some rudimentary checks
+        if (
+            isinstance(state, dict)
+            and "history" in state
+            and "datastore" in state
+        ):
+            pass
+        else:
+            raise ValueError("Not an experiment file")
+
         # remove and re-add datasets onto the GUI.
         self.remove_graphs_from_gui()
         self.attach_graphs_to_gui()
@@ -468,7 +479,10 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         if not ok:
             return
 
-        self._restore_state(experimentFileName)
+        try:
+            self._restore_state(experimentFileName)
+        except Exception:
+            pass
 
     def load_data(self, files):
         """
