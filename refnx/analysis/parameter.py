@@ -803,15 +803,16 @@ class Parameter(BaseParameter):
 
             - None, remove all constraints on this Parameter.
             - expression, an algebraic Python expression used to constrain the
-             Parameter value.
+               Parameter value.
             - callable, a Python function, ``constraint(*args)`` that returns
-             a float value for the Parameter value.
-             The callable should not use this Parameter in any of its
-             calculations; nor should the callable use any Parameter in its
-             calculations that possesses a constraint that would eventually
-             lead back to this Parameter. If these conditions aren't met then
-             circular dependencies with undefined side effects will be
-             created. *A Parameter cannot ultimately depend on itself*.
+               a float value for the Parameter value.
+
+            The callable should not use this Parameter in any of its
+            calculations; nor should the callable use any Parameter in its
+            calculations that possesses a constraint that would eventually
+            lead back to this Parameter. If these conditions aren't met then
+            circular dependencies with undefined side effects will be
+            created. *A Parameter cannot ultimately depend on itself*.
 
         args : tuple
             a sequence of arguments given to `constraint` if it is a callable.

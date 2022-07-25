@@ -9,7 +9,7 @@ periodictable
 pandoc
 scipy
 numpy
-sphinx
+sphinx==5.02
 pandas
 numpydoc
 h5py

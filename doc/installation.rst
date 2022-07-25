@@ -63,7 +63,7 @@ There are refnx wheels available for macOS/Windows/Linux on PyPI.
 
     ::
 
-    python -m pip install refnx
+     python -m pip install refnx
 
 Installing into a conda environment from a released version
 ===========================================================
