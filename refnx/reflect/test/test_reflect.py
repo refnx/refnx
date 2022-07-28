@@ -135,6 +135,7 @@ class TestReflect:
 
         if "cython" in BACKENDS:
             import refnx.reflect._cyreflect as _cyreflect
+
             assert "cython_parratt" in BACKENDS
             assert _creflect.__file__ != _cyreflect.__file__
 

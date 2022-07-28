@@ -78,9 +78,7 @@ class Spline(Component):
 
         self.dz = Parameters(name="dz - spline")
         for i, z in enumerate(dz):
-            p = possibly_create_parameter(
-                z, name=f"{name} - spline dz[{i}]"
-            )
+            p = possibly_create_parameter(z, name=f"{name} - spline dz[{i}]")
             p.range(0.0000001, 1)
             self.dz.append(p)
 
