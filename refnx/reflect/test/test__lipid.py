@@ -6,7 +6,7 @@ from numpy.testing import (
     assert_,
     assert_allclose,
 )
-import refnx, scipy
+import refnx
 
 # the analysis module contains the curvefitting engine
 from refnx.analysis import CurveFitter, Objective
@@ -191,7 +191,7 @@ def test_lipid_leaflet_example():
     sio2_slab.thick.setp(vary=True, bounds=(2, 30))
     sio2_slab.thick.name = "sio2 thickness"
     sio2_slab.rough.setp(vary=True, bounds=(0, 7))
-    sio2_slab.rough.name = name = "sio2 roughness"
+    sio2_slab.rough.name = "sio2 roughness"
     sio2_slab.vfsolv.setp(0.1, vary=True, bounds=(0.0, 0.5))
     sio2_slab.vfsolv.name = "sio2 solvation"
 
