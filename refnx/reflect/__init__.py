@@ -30,7 +30,7 @@ from refnx.reflect.interface import (
     Step,
 )
 from refnx.reflect.spline import Spline
-from refnx.reflect._lipid import LipidLeaflet
+from refnx.reflect._lipid import LipidLeaflet, make_lipid_leaflet_constraint
 from refnx._lib._testutils import PytestTester
 from refnx.reflect._app import gui, main
 
