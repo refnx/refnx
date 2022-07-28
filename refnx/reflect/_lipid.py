@@ -3,6 +3,7 @@ Component for studying lipid membranes at an interface
 """
 
 import numpy as np
+from scipy.optimize import NonlinearConstraint
 from refnx.reflect import Component, SLD, ReflectModel, Structure
 from refnx.analysis import possibly_create_parameter, Parameters, Parameter
 from refnx.reflect.structure import overall_sld
@@ -250,10 +251,7 @@ class LipidLeaflet(Component):
 
         # volume fractions
         # head region
-        volfrac = self.vm_heads.value / (
-            self.apm.value * self.thickness_heads.value
-        )
-        layers[0, 4] = 1 - volfrac
+        layers[0, 4] = 1 - self.volfrac_h
 
         if self.head_solvent is not None:
             _head_solvent = self.head_solvent.complex(
@@ -264,11 +262,7 @@ class LipidLeaflet(Component):
             layers[0, 4] = 0
 
         # tail region
-        volfrac = self.vm_tails.value / (
-            self.apm.value * self.thickness_tails.value
-        )
-
-        layers[1, 4] = 1 - volfrac
+        layers[1, 4] = 1 - self.volfrac_t
         if self.tail_solvent is not None:
             _tail_solvent = self.tail_solvent.complex(
                 getattr(structure, "wavelength", None)
@@ -310,16 +304,51 @@ class LipidLeaflet(Component):
 
     def logp(self):
         # penalise unphysical volume fractions.
-        volfrac_h = self.vm_heads.value / (
-            self.apm.value * self.thickness_heads.value
-        )
-
-        # tail region
-        volfrac_t = self.vm_tails.value / (
-            self.apm.value * self.thickness_tails.value
-        )
-
-        if volfrac_h > 1 or volfrac_t > 1:
+        if self.volfrac_h > 1 or self.volfrac_t > 1:
             return -np.inf
 
         return 0
+
+    @property
+    def volfrac_h(self):
+        # Volume fraction of head group in head group region
+        return self.vm_heads.value / (
+            self.apm.value * self.thickness_heads.value
+        )
+
+    @property
+    def volfrac_t(self):
+        # Volume fraction of tail group in tail group region
+        return self.vm_tails.value / (
+            self.apm.value * self.thickness_tails.value
+        )
+
+    def make_constraint(self, objective):
+        """
+        Creates a NonlinearConstraint for a LipidLeaflet, ensuring that volume
+        fraction of lipid in the head+tail regions lies in [0, 1]. Suitable for
+        use by differential_evolution.
+
+        Parameters
+        ----------
+        objective: refnx.analysis.Objective
+            Objective containing the LipidLeaflet. Must be the Objective that is
+            being minimised by differential_evolution.
+
+        Returns
+        -------
+        nlc: NonlinearConstraint
+
+        Notes
+        -----
+        You must create separate constraints for each LipidLeaflet object in your
+        system.
+        The Objective you supply must be for the overall curve fitting system.
+        i.e. possibly a GlobalObjective.
+        """
+
+        def con(x):
+            objective.setp(x)
+            return self.volfrac_h, self.volfrac_t
+
+        return NonlinearConstraint(con, 0, 1)
