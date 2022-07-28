@@ -345,6 +345,13 @@ class LipidLeaflet(Component):
         system.
         The Objective you supply must be for the overall curve fitting system.
         i.e. possibly a GlobalObjective.
+
+        Examples
+        --------
+        >>> # leaflet is a LipidLeaflet, used in an Objective, obj
+        >>> con = leaflet.make_constraint(obj)
+        >>> fitter = CurveFitter(obj)
+        >>> fitter.fit("differential_evolution", constraints=(con,))
         """
 
         def con(x):
