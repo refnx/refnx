@@ -128,7 +128,6 @@ class TestReflect:
         assert "c" in BACKENDS
         assert "py_parratt" in BACKENDS
         assert "c_parratt" in BACKENDS
-        assert "cython_parratt" in BACKENDS
         import refnx.reflect._creflect as _creflect
         import refnx.reflect._reflect as _reflect
 
@@ -136,7 +135,7 @@ class TestReflect:
 
         if "cython" in BACKENDS:
             import refnx.reflect._cyreflect as _cyreflect
-
+            assert "cython_parratt" in BACKENDS
             assert _creflect.__file__ != _cyreflect.__file__
 
     @pytest.mark.parametrize("backend", BACKENDS)

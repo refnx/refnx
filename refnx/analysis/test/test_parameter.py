@@ -17,6 +17,7 @@ from refnx.analysis.parameter import (
     possibly_create_parameter,
     is_parameter,
     _BinaryOp,
+    sequence_to_parameters,
 )
 
 
@@ -364,3 +365,10 @@ class TestParameters:
         assert_equal(len(c), 1)
         assert_equal(len(c.flattened()), 2)
         assert_(c.flattened()[1] is self.b)
+
+    def test_sequence_conversion(self):
+        a = Parameter(1)
+        b = Parameter(2)
+        p = sequence_to_parameters([a, [1, 2, 3, [b]]])
+        assert isinstance(p, Parameters)
+        assert len(p) == 5
