@@ -323,35 +323,32 @@ class LipidLeaflet(Component):
             self.apm.value * self.thickness_tails.value
         )
 
+    def make_constraint(self, objective):
+        """
+        Creates a NonlinearConstraint for a LipidLeaflet, ensuring that volume
+        fraction of lipid in the head+tail regions lies in [0, 1]. Suitable for
+        use by differential_evolution.
 
-def make_lipid_leaflet_constraint(lipid_leaflet, objective):
-    """
-    Creates a NonlinearConstraint for a LipidLeaflet, ensuring that volume
-    fraction of lipid in the head+tail regions lies in [0, 1]. Suitable for
-    use by differential_evolution.
+        Parameters
+        ----------
+        objective: refnx.analysis.Objective
+            Objective containing the LipidLeaflet. Must be the Objective that is
+            being minimised by differential_evolution.
 
-    Parameters
-    ----------
-    lipid_leaflet: refnx.reflect.LipidLeaflet
-        Leaflet to apply the constraint to.
-    objective: refnx.analysis.Objective
-        Objective containing the LipidLeaflet. Must be the Objective that is
-        being minimised by differential_evolution.
+        Returns
+        -------
+        nlc: NonlinearConstraint
 
-    Returns
-    -------
-    nlc: NonlinearConstraint
+        Notes
+        -----
+        You must create separate constraints for each LipidLeaflet object in your
+        system.
+        The Objective you supply must be for the overall curve fitting system.
+        i.e. possibly a GlobalObjective.
+        """
 
-    Notes
-    -----
-    You must create separate constraints for each LipidLeaflet object in your
-    system.
-    The Objective you supply must be for the overall curve fitting system.
-    i.e. possibly a GlobalObjective.
-    """
+        def con(x):
+            objective.setp(x)
+            return self.volfrac_h, self.volfrac_t
 
-    def con(x):
-        objective.setp(x)
-        return lipid_leaflet.volfrac_h, lipid_leaflet.volfrac_t
-
-    return NonlinearConstraint(con, 0, 1)
+        return NonlinearConstraint(con, 0, 1)

@@ -6,6 +6,7 @@ from numpy.testing import (
     assert_,
     assert_allclose,
 )
+from scipy.optimize._constraints import PreparedConstraint
 import refnx
 
 # the analysis module contains the curvefitting engine
@@ -18,7 +19,6 @@ from refnx.reflect import (
     Spline,
     Slab,
     LipidLeaflet,
-    make_lipid_leaflet_constraint,
 )
 from refnx.reflect.structure import _profile_slicer
 from refnx.analysis import Parameter, Interval
@@ -208,8 +208,8 @@ def test_lipid_leaflet_example():
     model_d2o.bkg.setp(vary=True, bounds=(-1e-6, 1e-6))
     objective_d2o = Objective(model_d2o, data_d2o)
 
-    con_inner = make_lipid_leaflet_constraint(inner_leaflet, objective_d2o)
-    con_outer = make_lipid_leaflet_constraint(outer_leaflet, objective_d2o)
+    con_inner = inner_leaflet.make_constraint(objective_d2o)
+    con_outer = outer_leaflet.make_constraint(objective_d2o)
 
     fitter = CurveFitter(objective_d2o)
 
@@ -225,3 +225,12 @@ def test_lipid_leaflet_example():
     assert outer_leaflet.volfrac_h <= 1
     assert outer_leaflet.volfrac_t <= 1
 
+    arr = np.array(objective_d2o.parameters)
+    pc = PreparedConstraint(con_inner, arr)
+    v1 = pc.violation(arr)
+    apm.value = 20.0
+    arr = np.array(objective_d2o.parameters)
+    v2 = pc.violation(arr)
+    assert (v2 > 0).all()
+
+    assert not np.allclose(v1, v2)

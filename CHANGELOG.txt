@@ -442,4 +442,4 @@ in 0.1.13.
 - Ported the pymc wrapper from pymc3 --> pymc (v4), which was released in
   Jun2022.
 - added sequence_to_parameters function.
-- added make_lipid_leaflet_constraint.
+- added LipidLeaflet.make_constraint.
