@@ -220,6 +220,8 @@ def test_lipid_leaflet_example():
         popsize=10,
     )
     assert inner_leaflet.volfrac_h <= 1
-    assert outer_leaflet.volfrac_h <= 1
     assert inner_leaflet.volfrac_t <= 1
+
     assert outer_leaflet.volfrac_h <= 1
+    assert outer_leaflet.volfrac_t <= 1
+
