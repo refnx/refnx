@@ -571,6 +571,24 @@ def possibly_create_parameter(
         )
 
 
+def sequence_to_parameters(seq):
+    """
+    Flattens and converts sequence of float/Parameter to a Parameters instance.
+
+    Parameters
+    ----------
+    seq: sequence
+        Sequence (possibly nested) of float/Parameter
+
+    Returns
+    -------
+    params: `refnx.analysis.Parameters
+    """
+    flat_seq = flatten(seq)
+    pars = [possibly_create_parameter(p) for p in flat_seq]
+    return Parameters(pars)
+
+
 class Parameter(BaseParameter):
     """
     Class for specifying a variable.

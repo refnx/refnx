@@ -5,6 +5,7 @@ from refnx.analysis.parameter import (
     is_parameters,
     is_parameter,
     possibly_create_parameter,
+    sequence_to_parameters,
 )
 from refnx.analysis.objective import (
     Objective,
