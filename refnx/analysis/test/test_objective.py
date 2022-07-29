@@ -15,7 +15,6 @@ from scipy.optimize._numdiff import approx_derivative
 import scipy.stats as stats
 
 from numpy.testing import (
-    assert_almost_equal,
     assert_equal,
     assert_,
     assert_allclose,
@@ -147,7 +146,7 @@ class TestObjective:
     def test_model(self):
         # test that the line data produced by our model is the same as the
         # test data
-        assert_almost_equal(self.model(self.data.x), self.mod)
+        assert_allclose(self.model(self.data.x), self.mod)
 
     def test_synthetic_data(self):
         # test that we create the correct synthetic data by performing a least
@@ -160,8 +159,8 @@ class TestObjective:
         cov = np.linalg.inv(np.dot(A.T, np.linalg.solve(C, A)))
         b_ls, m_ls = np.dot(cov, np.dot(A.T, np.linalg.solve(C, y)))
 
-        assert_almost_equal(b_ls, self.b_ls)
-        assert_almost_equal(m_ls, self.m_ls)
+        assert_allclose(b_ls, self.b_ls)
+        assert_allclose(m_ls, self.m_ls)
 
     def test_setp(self):
         # check that we can set parameters
@@ -180,7 +179,7 @@ class TestObjective:
 
     def test_logp(self):
         self.p[0].range(0, 10)
-        assert_almost_equal(self.objective.logp(), np.log(0.1))
+        assert_allclose(self.objective.logp(), np.log(0.1))
 
         # logp should set parameters
         self.objective.logp([8, 2])
@@ -190,7 +189,7 @@ class TestObjective:
         assert_equal(self.objective.logp([-1, 2]), -np.inf)
 
         # are auxiliary parameters included in log?
-        assert_almost_equal(self.objective.logp([8, 2]), np.log(0.1))
+        assert_allclose(self.objective.logp([8, 2]), np.log(0.1))
         p = Parameter(2.0, bounds=(1.0, 3.0))
         self.objective.auxiliary_params = Parameters([p])
         assert len(self.objective.varying_parameters()) == 2
@@ -203,15 +202,15 @@ class TestObjective:
 
     def test_logpost(self):
         # http://dan.iel.fm/emcee/current/user/line/
-        assert_almost_equal(self.objective.logp(), 0)
+        assert_allclose(self.objective.logp(), 0)
 
-        assert_almost_equal(self.objective.nlpost(), -self.objective.logpost())
+        assert_allclose(self.objective.nlpost(), -self.objective.logpost())
 
         # the uncertainties are underestimated in this example...
         # amendment factor because dfm emcee example does not include 2pi
         amend = 0.5 * self.objective.npoints * np.log(2 * np.pi)
-        assert_almost_equal(self.objective.logl() + amend, -559.01078135444595)
-        assert_almost_equal(
+        assert_allclose(self.objective.logl() + amend, -559.01078135444595)
+        assert_allclose(
             self.objective.logpost() + amend, -559.01078135444595
         )
 
@@ -226,11 +225,11 @@ class TestObjective:
         )
 
     def test_chisqr(self):
-        assert_almost_equal(self.objective.chisqr(), 1231.1096772954229)
+        assert_allclose(self.objective.chisqr(), 1231.1096772954229)
 
     def test_residuals(self):
         # weighted, with and without transform
-        assert_almost_equal(
+        assert_allclose(
             self.objective.residuals(),
             (self.data.y - self.mod) / self.data.y_err,
         )
@@ -238,13 +237,13 @@ class TestObjective:
         objective = Objective(
             self.model, self.data, transform=Transform("lin")
         )
-        assert_almost_equal(
+        assert_allclose(
             objective.residuals(), (self.data.y - self.mod) / self.data.y_err
         )
 
         # unweighted, with and without transform
         objective = Objective(self.model, self.data, use_weights=False)
-        assert_almost_equal(objective.residuals(), self.data.y - self.mod)
+        assert_allclose(objective.residuals(), self.data.y - self.mod)
 
         objective = Objective(
             self.model,
@@ -252,7 +251,7 @@ class TestObjective:
             use_weights=False,
             transform=Transform("lin"),
         )
-        assert_almost_equal(objective.residuals(), self.data.y - self.mod)
+        assert_allclose(objective.residuals(), self.data.y - self.mod)
 
     def test_masked_dataset(self):
         residuals = self.objective.residuals()
@@ -266,7 +265,7 @@ class TestObjective:
     def test_logp_extra(self):
         original_logl = self.objective.logl()
         self.objective.logp_extra = logp_extra
-        assert_almost_equal(self.objective.logl(), original_logl + 1)
+        assert_allclose(self.objective.logl(), original_logl + 1)
 
     def test_objective_pickle(self):
         # can you pickle the objective function?
@@ -375,9 +374,9 @@ class TestObjective:
         bo = BaseObjective(theta, logl, logp=logp, fcn_args=(x, y, yerr))
 
         # test that the wrapper gives the same logl as the direct function
-        assert_almost_equal(bo.logl(theta), logl(theta, x, y, yerr))
-        assert_almost_equal(bo.logl(theta), -bo.nll(theta))
-        assert_almost_equal(bo.nll(theta), 12.8885352412)
+        assert_allclose(bo.logl(theta), logl(theta, x, y, yerr))
+        assert_allclose(bo.logl(theta), -bo.nll(theta))
+        assert_allclose(bo.nll(theta), 12.8885352412)
 
         # Find the maximum likelihood value.
         result = minimize(bo.nll, theta)
@@ -415,7 +414,7 @@ class TestObjective:
         # covariance from objective._covar should be almost equal to
         # the covariance matrix from sampling
         covar2 = np.cov(samples.T)
-        assert_almost_equal(np.sqrt(np.diag(covar2))[:2], uncertainties[:2], 2)
+        assert_allclose(np.sqrt(np.diag(covar2))[:2], uncertainties[:2], rtol=0.04)
 
         # check covariance of self.objective
         # TODO
@@ -426,7 +425,7 @@ class TestObjective:
         # self.objective.parameters.pvals = var_arr
         # covar3 = self.objective.covar()
         # uncertainties3 = np.sqrt(np.diag(covar3))
-        # assert_almost_equal(uncertainties3, uncertainties)
+        # assert_allclose(uncertainties3, uncertainties)
         # assert(False)
 
     def test_covar(self):
@@ -531,25 +530,25 @@ class TestObjective:
         with pm.Model():
             p = Parameter(1, bounds=(1, 10))
             d = _to_pymc_distribution("a", p)
-            assert_almost_equal(d.distribution.logp(2).eval(), p.logp(2))
+            assert_allclose(d.distribution.logp(2).eval(), p.logp(2))
             assert_(np.isneginf(d.distribution.logp(-1).eval()))
 
             q = Parameter(1, bounds=PDF(stats.uniform(1, 9)))
             d = _to_pymc_distribution("b", q)
-            assert_almost_equal(d.distribution.logp(2).eval(), q.logp(2))
+            assert_allclose(d.distribution.logp(2).eval(), q.logp(2))
             assert_(np.isneginf(d.distribution.logp(-1).eval()))
 
             p = Parameter(1, bounds=PDF(stats.uniform))
             d = _to_pymc_distribution("c", p)
-            assert_almost_equal(d.distribution.logp(0.5).eval(), p.logp(0.5))
+            assert_allclose(d.distribution.logp(0.5).eval(), p.logp(0.5))
 
             p = Parameter(1, bounds=PDF(stats.norm))
             d = _to_pymc_distribution("d", p)
-            assert_almost_equal(d.distribution.logp(2).eval(), p.logp(2))
+            assert_allclose(d.distribution.logp(2).eval(), p.logp(2))
 
             p = Parameter(1, bounds=PDF(stats.norm(1, 10)))
             d = _to_pymc_distribution("e", p)
-            assert_almost_equal(d.distribution.logp(2).eval(), p.logp(2))
+            assert_allclose(d.distribution.logp(2).eval(), p.logp(2))
 
     def test_multidimensionality(self):
         # Check that ND data can be used with an objective/model/data
