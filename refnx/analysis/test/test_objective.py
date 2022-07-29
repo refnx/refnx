@@ -413,7 +413,7 @@ class TestObjective:
         # the covariance matrix from sampling
         covar2 = np.cov(samples.T)
         assert_allclose(
-            np.sqrt(np.diag(covar2))[:2], uncertainties[:2], rtol=0.04
+            np.sqrt(np.diag(covar2))[:2], uncertainties[:2], rtol=0.06
         )
 
         # check covariance of self.objective
