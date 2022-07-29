@@ -146,7 +146,7 @@ class TestObjective:
     def test_model(self):
         # test that the line data produced by our model is the same as the
         # test data
-        assert_allclose(self.model(self.data.x), self.mod)
+        assert_allclose(self.model(self.data.x), self.mod, rtol=1e-6)
 
     def test_synthetic_data(self):
         # test that we create the correct synthetic data by performing a least
