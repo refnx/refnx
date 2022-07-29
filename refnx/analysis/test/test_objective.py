@@ -210,9 +210,7 @@ class TestObjective:
         # amendment factor because dfm emcee example does not include 2pi
         amend = 0.5 * self.objective.npoints * np.log(2 * np.pi)
         assert_allclose(self.objective.logl() + amend, -559.01078135444595)
-        assert_allclose(
-            self.objective.logpost() + amend, -559.01078135444595
-        )
+        assert_allclose(self.objective.logpost() + amend, -559.01078135444595)
 
     def test_prior_transform(self):
         self.p[0].bounds = PDF(stats.uniform(-10, 20))
@@ -414,7 +412,9 @@ class TestObjective:
         # covariance from objective._covar should be almost equal to
         # the covariance matrix from sampling
         covar2 = np.cov(samples.T)
-        assert_allclose(np.sqrt(np.diag(covar2))[:2], uncertainties[:2], rtol=0.04)
+        assert_allclose(
+            np.sqrt(np.diag(covar2))[:2], uncertainties[:2], rtol=0.04
+        )
 
         # check covariance of self.objective
         # TODO
