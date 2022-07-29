@@ -97,8 +97,8 @@ class TestBounds:
 
         # obtain a random value of a bounds instance
         vals = pdf.rvs(size=1000)
-        assert_(np.min(vals) >= -1)
-        assert_(np.min(vals) <= 1)
+        assert np.min(vals) >= -1
+        assert np.min(vals) <= 1
 
         # test a uniform distribution
         pdf = PDF(uniform(1, 9))
