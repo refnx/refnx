@@ -268,7 +268,6 @@ class PyTest(TestCommand):
 
 # refnx setup
 info = {
-    "packages": packages,
     "include_package_data": True,
     "cmdclass": {"test": PyTest},
 }
