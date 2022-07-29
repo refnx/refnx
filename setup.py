@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 # System imports
-from setuptools import setup, Extension, find_packages
+from setuptools import setup, Extension
 from setuptools.command.test import test as TestCommand
 import os
 import subprocess
@@ -159,19 +159,19 @@ VERSION = f"{MAJOR}.{MINOR}.{MICRO}"
 
 # are we on windows, darwin, etc?
 platform = sys.platform
-packages = find_packages()
-try:
-    idx = packages.index("benchmarks")
-    if idx >= 0:
-        packages.pop(idx)
-    idx = packages.index("benchmarks.benchmarks")
-    if idx >= 0:
-        packages.pop(idx)
-    idx = packages.index("motofit")
-    if idx >= 0:
-        packages.pop(idx)
-except ValueError:
-    pass
+# packages = find_packages()
+# try:
+#     idx = packages.index("benchmarks")
+#     if idx >= 0:
+#         packages.pop(idx)
+#     idx = packages.index("benchmarks.benchmarks")
+#     if idx >= 0:
+#         packages.pop(idx)
+#     idx = packages.index("motofit")
+#     if idx >= 0:
+#         packages.pop(idx)
+# except ValueError:
+#     pass
 
 
 # Return the git revision as a string
@@ -268,7 +268,6 @@ class PyTest(TestCommand):
 
 # refnx setup
 info = {
-    "packages": packages,
     "include_package_data": True,
     "cmdclass": {"test": PyTest},
 }
