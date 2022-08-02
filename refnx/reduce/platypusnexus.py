@@ -64,7 +64,7 @@ def catalogue(start, stop, data_folder=None, prefix="PLP"):
         start cataloguing from this run number
     stop : int
         stop cataloguing at this run number
-    data_folder : str, optional
+    data_folder : {str, Path}, optional
         path specifying location of NeXUS files
     prefix : {'PLP', 'SPZ'}, optional
         str specifying whether you want to catalogue Platypus or Spatz files
@@ -1024,11 +1024,12 @@ class ReductionOptions(dict):
         last event detected (which may be quite different if the count rate
         is very low). This parameter is disregarded if `event_filter` is
         provided.
-    event_folder : None or str
+    event_folder : {None, str, Path}
         Specifies the path for the eventmode data. If
         `event_folder is None` then the eventmode data is assumed to reside
         in the same directory as the NeXUS file. If event_folder is a
-        string, then the string specifies the path to the eventmode data.
+        string or Path, then the string specifies the path to the eventmode
+        data.
     peak_pos : -1, None, or (float, float)
         Options for finding specular peak position and peak standard
         deviation.
@@ -2039,7 +2040,7 @@ class ReflectNexus:
             specifies the y bins required in the image
         scanpoint : int, optional
             Scanpoint you are interested in
-        event_folder : None or str
+        event_folder : {None, str, Path}
             Specifies the path for the eventmode data. If
             `event_folder is None` then the eventmode data is assumed to reside
             in the same directory as the NeXUS file. If event_folder is a
@@ -2153,8 +2154,8 @@ class PlatypusNexus(ReflectNexus):
 
     Parameters
     ----------
-    h5data : HDF5 NeXus file or str
-        An HDF5 NeXus file for Platypus, or a `str` containing the path
+    h5data : {HDF5 NeXus file, str, Path}
+        An HDF5 NeXus file for Platypus, or a str/Path specifying the path
         to one
     """
 
@@ -2506,7 +2507,7 @@ class SpatzNexus(ReflectNexus):
 
     Parameters
     ----------
-    h5data : HDF5 NeXus file or str
+    h5data : {HDF5 NeXus file, str, Path}
         An HDF5 NeXus file for Spatz, or a `str` containing the path
         to one
     """
@@ -3292,7 +3293,7 @@ def _possibly_open_hdf_file(f, mode="r"):
 
     Parameters
     ----------
-    f : file-like or str
+    f : {file-like, str, Path}
         If `f` is a file, then yield the file. If `f` is a str then open the
         file and yield the newly opened file.
         On leaving this context manager the file is closed, if it was opened

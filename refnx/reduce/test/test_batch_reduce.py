@@ -1,6 +1,7 @@
 import os
 import os.path
 from os.path import join as pjoin
+from pathlib import Path
 import warnings
 import pandas
 import tempfile
@@ -29,13 +30,14 @@ class TestReduce:
         os.chdir(self.cwd)
 
     def test_batch_platypus_reduce(self):
-        filename = pjoin(self.pth, "test_batch_reduction.xls")
+        filename = Path(self.pth) / "test_batch_reduction.xls"
+        df = Path(self.pth)
         # warnings filter for pixel size
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", RuntimeWarning)
 
             b = BatchReducer(
-                filename, data_folder=self.pth, verbose=False, persistent=False
+                filename, data_folder=df, verbose=False, persistent=False
             )
             b.reduce(show=False)
 

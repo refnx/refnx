@@ -2,7 +2,7 @@
 A basic representation of a 1D dataset
 """
 import os.path
-from pathlib import Path
+from pathlib import Path, PurePath
 import re
 
 import numpy as np
@@ -68,7 +68,7 @@ class Data1D:
         if (
             hasattr(data, "read")
             or type(data) is str
-            or isinstance(data, Path)
+            or isinstance(data, PurePath)
         ):
             self.load(data)
         elif isinstance(data, Data1D):

@@ -3,6 +3,7 @@ from os.path import join as pjoin
 import numbers
 import warnings
 import pickle
+from pathlib import Path
 
 import pytest
 import numpy as np
@@ -131,7 +132,10 @@ class TestPlatypusNexus(object):
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", RuntimeWarning)
             self.f113 = PlatypusNexus(pjoin(self.pth, "PLP0011613.nx.hdf"))
-            self.f641 = PlatypusNexus(pjoin(self.pth, "PLP0011641.nx.hdf"))
+
+            # to ensure that file can be opened with a Path
+            pth = Path(self.pth) / "PLP0011641.nx.hdf"
+            self.f641 = PlatypusNexus(pth)
 
             # These PNR datasets all have different flipper settings
             self.f8861 = PlatypusNexus(
@@ -270,6 +274,10 @@ class TestPlatypusNexus(object):
     def test_event_folder(self):
         self.f641.process(
             eventmode=[0, 900, 1800], integrate=0, event_folder=self.pth
+        )
+        pth = Path(self.pth)
+        self.f641.process(
+            eventmode=[0, 900, 1800], integrate=0, event_folder=pth
         )
 
     def test_multiple_acquisitions(self):
@@ -496,7 +504,8 @@ class TestSpatzNexus:
 
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", RuntimeWarning)
-            self.f342 = SpatzNexus(pjoin(self.pth, "SPZ0000342.nx.hdf"))
+            pth = Path(self.pth) / "SPZ0000342.nx.hdf"
+            self.f342 = SpatzNexus(pth)
         self.cwd = os.getcwd()
 
         self.tmpdir = tmpdir.strpath
@@ -546,6 +555,9 @@ def test_catalogue(data_directory):
     pth = pjoin(data_directory, "reduce")
     catalogue(0, 10000000, data_folder=pth, prefix="PLP")
     catalogue(0, 10000000, data_folder=pth, prefix="SPZ")
+
+    pth = Path(data_directory) / "reduce"
+    catalogue(0, 10000000, data_folder=pth, prefix="PLP")
 
 
 @pytest.mark.usefixtures("no_data_directory")
