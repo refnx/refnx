@@ -93,8 +93,6 @@ class TestGlobalFitting:
         data365 = ReflectDataset(os.path.join(self.pth, "e365r.txt"))
         data366 = ReflectDataset(os.path.join(self.pth, "e366r.txt"))
 
-        print(len(data361), len(data365), len(data366))
-
         si = SLD(2.07, name="Si")
         sio2 = SLD(3.47, name="SiO2")
         d2o = SLD(6.36, name="d2o")
