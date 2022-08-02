@@ -125,9 +125,7 @@ class TestEvent:
 
         # use a Path object to open file
         pth = Path(event_setup.event_file_path)
-        event_list, fpos = _cevent._cevents(
-            pth, max_frames=10
-        )
+        event_list, fpos = _cevent._cevents(pth, max_frames=10)
         f, t, y, x = event_list
         max_f = np.max(f)
         assert_equal(9, max_f)
