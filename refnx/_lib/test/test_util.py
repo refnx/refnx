@@ -1,5 +1,6 @@
 from multiprocessing import Pool
 from multiprocessing.pool import Pool as PWL
+from pathlib import Path
 
 from pytest import raises as assert_raises
 from numpy.testing import assert_equal, assert_
