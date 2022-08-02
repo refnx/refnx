@@ -390,7 +390,7 @@ class Data1D:
 
         Parameters
         ----------
-        f : file-handle or string
+        f : {file-like, str, Path}
             File to save the dataset to.
 
         """

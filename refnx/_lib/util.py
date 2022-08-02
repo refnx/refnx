@@ -171,7 +171,7 @@ def unique(seq, idfun=id):
 
 
 @contextmanager
-def possibly_open_file(f, mode="wb"):
+def possibly_open_file(f, mode="r"):
     """
     Context manager for files.
 
