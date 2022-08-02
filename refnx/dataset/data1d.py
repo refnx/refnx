@@ -2,6 +2,7 @@
 A basic representation of a 1D dataset
 """
 import os.path
+from pathlib import Path
 import re
 
 import numpy as np
@@ -16,10 +17,10 @@ class Data1D:
 
     Parameters
     ----------
-    data : str, file-like or tuple of np.ndarray, optional
-        `data` can be a string or file-like object referring to a File to load
-        the dataset from. The file should be plain text and have 2 to 4
-        columns separated by space, comma or tab. The columns represent
+    data : {str, file-like, Path, tuple of np.ndarray}, optional
+        `data` can be a string, file-like, or Path object referring to a File
+        to load the dataset from. The file should be plain text and have
+        2 to 4 columns separated by space, comma or tab. The columns represent
         `x, y [y_err [, x_err]]`.
 
         Alternatively it is a tuple containing the data from which the dataset
@@ -43,7 +44,7 @@ class Data1D:
 
     Attributes
     ----------
-    filename : str or None
+    filename : {str, Path, None}
         The file the data was read from
     weighted : bool
         Whether the y data has uncertainties
@@ -64,7 +65,11 @@ class Data1D:
         self.weighted = False
 
         # if it's a file then open and load the file.
-        if hasattr(data, "read") or type(data) is str:
+        if (
+            hasattr(data, "read")
+            or type(data) is str
+            or isinstance(data, Path)
+        ):
             self.load(data)
         elif isinstance(data, Data1D):
             # copy a dataset (but not it's file info)
@@ -409,7 +414,7 @@ class Data1D:
 
         Parameters
         ----------
-        f : file-handle or string
+        f : {file-like, string, Path}
             File to load the dataset from.
 
         """

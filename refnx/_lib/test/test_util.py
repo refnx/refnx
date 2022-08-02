@@ -4,7 +4,8 @@ from multiprocessing.pool import Pool as PWL
 from pytest import raises as assert_raises
 from numpy.testing import assert_equal, assert_
 
-from refnx._lib.util import flatten, unique, MapWrapper
+import refnx
+from refnx._lib.util import flatten, unique, MapWrapper, possibly_open_file
 from refnx._lib._cutil import c_flatten
 
 import numpy as np
@@ -29,6 +30,11 @@ class TestUtil:
         num_unique = np.unique(ints).size
         num_unique2 = len(list(unique(ints)))
         assert_equal(num_unique2, num_unique)
+
+    def test_possibly_open_file(self):
+        datadir = Path(refnx.__file__).parent / "analysis" / "test"
+        with possibly_open_file(datadir) as f:
+            assert hasattr(f, "read")
 
 
 class TestMapWrapper:

@@ -56,8 +56,8 @@ class ReflectDataset(Data1D):
 
         Parameters
         ----------
-        data : str, file-like or tuple of np.ndarray, optional
-            `data` can be a string or file-like object referring to a File to
+        data : {str, file-like, Path, tuple of np.ndarray} optional
+            `data` can be a string, file-like, or Path object referring to a File to
             load the dataset from.
 
             Alternatively it is a tuple containing the data from which the
@@ -130,7 +130,7 @@ class ReflectDataset(Data1D):
 
         Parameters
         ----------
-        f : str or file-like
+        f : {str, file-like, Path}
             The file to load the spectrum from, or a str that specifies the
             file name
         """
@@ -166,7 +166,7 @@ class OrsoDataset(Data1D):
 
     Parameters
     ----------
-    data : {str, file-like}
+    data : {str, file-like. Path}
 
     Notes
     -----
@@ -182,9 +182,9 @@ class OrsoDataset(Data1D):
         """
         Parameters
         ----------
-        f : str or file-like
-            The file to load the spectrum from, or a str that specifies the
-            file name
+        f : {str, file-like, Path}
+            The file to load the spectrum from, or a str/Path that specifies
+            the file name
         """
         if hasattr(f, "name"):
             fname = f.name

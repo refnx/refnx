@@ -177,11 +177,11 @@ def possibly_open_file(f, mode="wb"):
 
     Parameters
     ----------
-    f : file-like or str
-        If `f` is a file, then yield the file. If `f` is a str then open the
-        file and yield the newly opened file.
+    f : {file-like, Path, str}
+        If `f` is a file, then yield the file. If `f` is a str or Path then
+        open the file and yield the newly opened file.
         On leaving this context manager the file is closed, if it was opened
-        by this context manager (i.e. `f` was a string).
+        by this context manager (i.e. `f` was a str or Path).
     mode : str, optional
         mode is an optional string that specifies the mode in which the file
         is opened.
