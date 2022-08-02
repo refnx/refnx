@@ -34,7 +34,7 @@ class TestUtil:
 
     def test_possibly_open_file(self):
         datadir = Path(refnx.__file__).parent / "analysis" / "test"
-        with possibly_open_file(datadir) as f:
+        with possibly_open_file(datadir / "e361r.txt") as f:
             assert hasattr(f, "read")
 
 
