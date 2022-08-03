@@ -377,10 +377,10 @@ class BatchReducer:
 
         Parameters
         ----------
-        filename : str
+        filename : {str, Path}
             The filename of the spreadsheet to be used. Must be readable by
             `pandas.read_excel` (`.xls` and `.xlsx` files).
-        data_folder : str, None
+        data_folder : {str, Path, None}
             Filesystem path for the raw data files. If `data_folder is None`
             then the current working directory is used.
         verbose : bool, optional

@@ -1,5 +1,5 @@
 import os.path
-
+from pathlib import Path
 import pytest
 import glob
 
@@ -24,6 +24,7 @@ class TestReflectDataset:
         f = os.path.join(self.pth, "ORSO_data.ort")
         try:
             load_orso(f)
+            load_orso(Path(f))
         except ImportError:
             # load_orso had problems on Python 3.10, so bypass the test
             return
@@ -42,3 +43,4 @@ class TestReflectDataset:
 
         for f in fs:
             load_data(f)
+            load_data(Path(f))

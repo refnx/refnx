@@ -124,7 +124,7 @@ def events(f, end_last_event=127, max_frames=None):
     Parameters
     ----------
 
-    f : file-like or str
+    f : {file-like, str, Path}
         The file to read the data from. If `f` is not file-like then f is
         assumed to be a path pointing to the event file.
     end_last_event : uint

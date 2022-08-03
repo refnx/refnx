@@ -1,4 +1,5 @@
 from os.path import join as pjoin
+from pathlib import Path
 import os
 import warnings
 from collections import namedtuple
@@ -118,6 +119,13 @@ class TestEvent:
         event_list, fpos = _cevent._cevents(
             event_setup.event_file_path, max_frames=10
         )
+        f, t, y, x = event_list
+        max_f = np.max(f)
+        assert_equal(9, max_f)
+
+        # use a Path object to open file
+        pth = Path(event_setup.event_file_path)
+        event_list, fpos = _cevent._cevents(pth, max_frames=10)
         f, t, y, x = event_list
         max_f = np.max(f)
         assert_equal(9, max_f)
