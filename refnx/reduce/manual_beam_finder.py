@@ -451,7 +451,7 @@ class DetectorImage(FigureCanvas):
             pixels_to_include,
             width,
             fill=False,
-            color="yellow",
+            color="green",
         )
         self.axes.add_patch(rect)
 
