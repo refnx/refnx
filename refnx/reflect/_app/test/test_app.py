@@ -55,7 +55,7 @@ def test_app_load_old_experiment_file(qtbot, data_directory):
         qtbot.mouseClick(ok_button, QtCore.Qt.LeftButton, delay=1)
 
     # get a reference to the dialog and handle it here
-    QtCore.QTimer.singleShot(2500, handle_dialog)
+    QtCore.QTimer.singleShot(5000, handle_dialog)
 
     tdir = pjoin(data_directory, "reflect", "_app")
     files = glob.glob(pjoin(tdir, "*.mtft"))
