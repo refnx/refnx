@@ -15,27 +15,20 @@ jobs:
         python-version: [3.8, 3.9, '3.10']
 
     steps:
-    - uses: actions/checkout@v2
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v4.3.0
+
+    - uses: actions/checkout@v3
+
+    - uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python-version }}
+        cache: 'pip' # caching pip dependencies
+    - run: pip install -r .requirements.txt
 
     - name: setup apt dependencies
       run: |
         sudo apt-get update
         sudo apt-get install xvfb qt5-default opencl-headers ocl-icd-opencl-dev libpocl2 libhdf5-serial-dev libnetcdf-dev
         python -m pip install --upgrade pip
-
-    - name: Get pip cache dir
-      id: pip-cache
-      run: |
-        echo "dir=$(pip cache dir)" >> $GITHUB_OUTPUT
-
-    - uses: actions/cache@v3
-      with:
-        path: ${{ steps.pip-cache.outputs.dir }}
-        key: ${{ hashFiles('setup.py') }}-${{ matrix.python-version }}-${{ hashFiles('tox.ini') }}
 
     - name: Test with pytest
       env:
@@ -44,7 +37,6 @@ jobs:
         python -m pip install --upgrade pip
         python -m pip install wheel
         python -m pip install -e .[all]
-        python -m pip install pytest pyqt5==5.15.2 uncertainties pyopencl pymc pytest-qt
         # uses xvfb for GUI part of the test
         xvfb-run pytest
 
