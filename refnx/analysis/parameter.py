@@ -305,10 +305,15 @@ class Parameters(UserList):
         p : list
             Unique list of varying parameters
         """
-        p = [param for param in f_unique(flatten(self.data)) if param.vary]
-        q = Parameters()
-        q.data = p
-        return q
+        lst = []
+        for p in flatten(self.data):
+            if p.vary:
+                lst.append(p)
+                continue
+            if len(p._deps):
+                lst.extend([_p for _p in p.dependencies() if _p.vary])
+        # should already be totally flattened by this point
+        return Parameters(f_unique(lst))
 
     def pgen(self, ngen=1000, nburn=0, nthin=1):
         """
@@ -488,7 +493,10 @@ class BaseParameter:
                     dep_list.append(_dep)
             if isinstance(_dep, (_UnaryOp, _BinaryOp)):
                 dep_list.append(_dep.dependencies())
-        return list(flatten(dep_list))
+        return list(f_unique(flatten(dep_list)))
+
+    def has_dependencies(self):
+        return len(self._deps) > 0
 
     def __str__(self):
         """Returns printable representation of a Parameter object."""
