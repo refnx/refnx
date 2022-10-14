@@ -82,27 +82,20 @@ jobs:
         python-version: [3.8, 3.9, '3.10']
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
 
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v4.3.0
+    - uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python-version }}
+        cache: 'pip' # caching pip dependencies
+
+    - run: pip install -r .requirements.txt
+
     - run: mkdir -p dist
 
     - name: Install openmp
       run: |
         brew install libomp
-
-    - name: Get pip cache dir
-      id: pip-cache
-      run: |
-        echo "dir=$(pip cache dir)" >> $GITHUB_OUTPUT
-
-    - uses: actions/cache@v3
-      with:
-        path: ${{ steps.pip-cache.outputs.dir }}
-        key: ${{ hashFiles('setup.py') }}-macos-${{ matrix.python-version }}-${{ hashFiles('tox.ini') }}
 
     - name: Make wheel
       env:
@@ -125,10 +118,7 @@ jobs:
         MPLBACKEND: agg
       run: |
         pushd dist
-        python -m pip install numpy scipy orsopy
         python -m pip install --only-binary=refnx --no-index --find-links=. refnx
-        python -m pip install --upgrade --upgrade-strategy eager h5py pandas xlrd pytest ipywidgets IPython matplotlib traitlets pyqt5 uncertainties attrs corner tqdm periodictable pyopencl
-        #        python -m pip install git+https://github.com/pymc-devs/pymc3
         pytest --pyargs refnx
         popd
 
@@ -173,12 +163,15 @@ jobs:
         python-version: [3.8, 3.9, '3.10']
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
 
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v4.3.0
+    - uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python-version }}
+        cache: 'pip' # caching pip dependencies
+
+    - run: pip install -r .requirements.txt
+
     - run: mkdir -p dist
 
     - name: Make wheel
@@ -193,10 +186,7 @@ jobs:
         PYOPENCL_CTX: 0
       run: |
         cd dist
-        python -m pip install numpy scipy orsopy
         python -m pip install --only-binary=refnx --no-index --find-links=. refnx
-        python -m pip install --upgrade --upgrade-strategy eager h5py cython pandas xlrd pytest ipywidgets IPython matplotlib traitlets pyqt5 uncertainties corner tqdm periodictable pytest-qt
-        #        python -m pip install git+https://github.com/pymc-devs/pymc3
 
         #        python -m pip install pytools mako cffi
         #        choco install opencl-intel-cpu-runtime
