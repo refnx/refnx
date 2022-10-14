@@ -267,8 +267,8 @@ class TestParameter:
         assert isinstance(q, _BinaryOp)
 
     def test_dependencies(self):
-        p1 = Parameter(1, 'p1', vary=True)
-        p2 = Parameter(2, 'p2', vary=False)
+        p1 = Parameter(1, "p1", vary=True)
+        p2 = Parameter(2, "p2", vary=False)
 
         p_dep = p1 + p2
         p_dep2 = p1 + p_dep
@@ -337,10 +337,10 @@ class TestParameters:
         assert_equal(len(p.varying_parameters()), 2)
 
     def test_varying_parameters_with_dependencies(self):
-        p1 = Parameter(1, 'p1', vary=True)
-        p2 = Parameter(2, 'p2', vary=False)
-        p3 = Parameter(3, 'p3', vary=False)
-        p4 = Parameter(4, 'p4', vary=True)
+        p1 = Parameter(1, "p1", vary=True)
+        p2 = Parameter(2, "p2", vary=False)
+        p3 = Parameter(3, "p3", vary=False)
+        p4 = Parameter(4, "p4", vary=True)
 
         p_dep = p1 + p2
         pars = Parameters([p2, p3, p4, p_dep])
