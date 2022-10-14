@@ -369,9 +369,15 @@ class Objective(BaseObjective):
         """
         # create and return a Parameters object because it has the
         # __array__ method, which allows one to quickly get numerical values.
-        p = Parameters()
-        p.data = list(f_unique(p for p in flatten(self.parameters) if p.vary))
-        return p
+        l = []
+        for p in flatten(self.parameters):
+            if p.vary:
+                l.append(p)
+                continue
+            if len(p._deps):
+                l.extend([_p for _p in p.dependencies() if _p.vary])
+        # should already be totally flattened by this point
+        return Parameters(f_unique(l))
 
     def _data_transform(self, model=None):
         """
