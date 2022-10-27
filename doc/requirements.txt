@@ -1,6 +1,6 @@
 nbsphinx
 jupyter-sphinx
-sphinxcontrib-bibtex<2.0.0
+sphinxcontrib-bibtex
 jinja2
 sphinx_rtd_theme
 tqdm
@@ -9,7 +9,7 @@ periodictable
 pandoc
 scipy
 numpy
-sphinx==5.0.2
+sphinx
 pandas
 numpydoc
 h5py
