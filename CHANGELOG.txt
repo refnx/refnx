@@ -451,3 +451,6 @@ in 0.1.13.
 - When a Parameters object contains a _UnaryOp or _BinaryOp the dependencies
   of those objects are queried for varying parameters when asking for
   Parameters.varying_parameters()
+
+0.1.32
+-------
