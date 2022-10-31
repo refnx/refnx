@@ -18,7 +18,7 @@ jobs:
         env:
           CIBW_ARCHS_MACOS: "x86_64 universal2"
           CIBW_PRERELEASE_PYTHONS: False
-          CIBW_TEST_COMMAND: python -c "from refnx.reflect import available_backends; b = available_backends(); assert 'c' in b"
+          CIBW_TEST_COMMAND: pytest --pyargs refnx.reflect.test.test_reflect
 
       - uses: actions/upload-artifact@v2
         with:

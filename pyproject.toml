@@ -11,7 +11,7 @@ dynamic=["version", "description", "readme", "license", "classifiers", "urls", "
 
 [tool.cibuildwheel]
 skip = "pp* cp36-* cp37-*"
-test-command = "python -c \"from refnx.reflect import available_backends; b = available_backends(); assert 'c' in b\""
+test-command = "pytest --pyargs refnx.reflect.test.test_reflect"
 manylinux-x86_64-image = "manylinux2014"
 
 [tool.cibuildwheel.macos]
