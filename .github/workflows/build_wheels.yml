@@ -16,8 +16,8 @@ jobs:
       - name: build wheels
         uses: pypa/cibuildwheel@v2.11.2
         env:
+          CIBW_TEST_COMMAND: pytest --pyargs refnx.reflect.test.test_reflect
           CIBW_ARCHS_MACOS: "x86_64 arm64"
-          CIBW_TEST_COMMAND: python -c "from refnx.reflect import available_backends; b = available_backends(); assert 'c' in b"
 
       - uses: actions/upload-artifact@v2
         with:
