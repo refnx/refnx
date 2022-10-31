@@ -447,3 +447,10 @@ in 0.1.13.
 0.1.31
 ------
 - Amend setup.py package discovery
+- Change the manual beam finder box to green
+- When a Parameters object contains a _UnaryOp or _BinaryOp the dependencies
+  of those objects are queried for varying parameters when asking for
+  Parameters.varying_parameters()
+
+0.1.32
+-------

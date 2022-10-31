@@ -43,6 +43,8 @@ extensions = [
     'sphinxcontrib.bibtex',
 ]
 
+bibtex_bibfiles = ["../testimonials.bib"]
+
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
 
@@ -59,7 +61,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'refnx'
-copyright = '2015-2019, Andrew Nelson'
+copyright = '2015-2022, Andrew Nelson'
 author = 'Andrew Nelson'
 
 # The version info for the project you're documenting, acts as replacement for

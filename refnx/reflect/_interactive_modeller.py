@@ -848,9 +848,6 @@ class Motofit:
         self.display_box = widgets.VBox()
 
         self.tab = widgets.Tab()
-        self.tab.set_title(0, "Model")
-        self.tab.set_title(1, "Limits")
-        self.tab.set_title(2, "Options")
         self.tab.observe(self._on_tab_changed, names="selected_index")
 
         # an output area for messages.
@@ -1339,6 +1336,9 @@ class Motofit:
             self.model_view.limits_box,
             self._options_box,
         ]
+        self.tab.set_title(0, "Model")
+        self.tab.set_title(1, "Limits")
+        self.tab.set_title(2, "Options")
 
         vbox_widgets.append(self.tab)
         vbox_widgets.append(self.output)

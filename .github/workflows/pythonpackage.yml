@@ -15,27 +15,20 @@ jobs:
         python-version: [3.8, 3.9, '3.10']
 
     steps:
-    - uses: actions/checkout@v2
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v2
+
+    - uses: actions/checkout@v3
+
+    - uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python-version }}
+        cache: 'pip' # caching pip dependencies
+    - run: pip install -r .requirements.txt
 
     - name: setup apt dependencies
       run: |
         sudo apt-get update
         sudo apt-get install xvfb qt5-default opencl-headers ocl-icd-opencl-dev libpocl2 libhdf5-serial-dev libnetcdf-dev
         python -m pip install --upgrade pip
-
-    - name: Get pip cache dir
-      id: pip-cache
-      run: |
-        echo "::set-output name=dir::$(pip cache dir)"
-
-    - uses: actions/cache@v2
-      with:
-        path: ${{ steps.pip-cache.outputs.dir }}
-        key: ${{ hashFiles('setup.py') }}-${{ matrix.python-version }}-${{ hashFiles('tox.ini') }}
 
     - name: Test with pytest
       env:
@@ -44,7 +37,6 @@ jobs:
         python -m pip install --upgrade pip
         python -m pip install wheel
         python -m pip install -e .[all]
-        python -m pip install pytest pyqt5==5.15.2 uncertainties pyopencl pymc pytest-qt
         # uses xvfb for GUI part of the test
         xvfb-run pytest
 
@@ -90,27 +82,20 @@ jobs:
         python-version: [3.8, 3.9, '3.10']
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
 
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v2
+    - uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python-version }}
+        cache: 'pip' # caching pip dependencies
+
+    - run: pip install -r .requirements.txt
+
     - run: mkdir -p dist
 
     - name: Install openmp
       run: |
         brew install libomp
-
-    - name: Get pip cache dir
-      id: pip-cache
-      run: |
-        echo "::set-output name=dir::$(pip cache dir)"
-
-    - uses: actions/cache@v2
-      with:
-        path: ${{ steps.pip-cache.outputs.dir }}
-        key: ${{ hashFiles('setup.py') }}-macos-${{ matrix.python-version }}-${{ hashFiles('tox.ini') }}
 
     - name: Make wheel
       env:
@@ -133,10 +118,7 @@ jobs:
         MPLBACKEND: agg
       run: |
         pushd dist
-        python -m pip install numpy scipy orsopy
         python -m pip install --only-binary=refnx --no-index --find-links=. refnx
-        python -m pip install --upgrade --upgrade-strategy eager h5py pandas xlrd pytest ipywidgets IPython matplotlib traitlets pyqt5 uncertainties attrs corner tqdm periodictable pyopencl
-        #        python -m pip install git+https://github.com/pymc-devs/pymc3
         pytest --pyargs refnx
         popd
 
@@ -181,23 +163,16 @@ jobs:
         python-version: [3.8, 3.9, '3.10']
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
 
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v2
+    - uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python-version }}
+        cache: 'pip' # caching pip dependencies
+
+    - run: pip install -r .requirements.txt
+
     - run: mkdir -p dist
-
-    - name: Get pip cache dir
-      id: pip-cache
-      run: |
-        echo "::set-output name=dir::$(pip cache dir)"
-
-    - uses: actions/cache@v2
-      with:
-        path: ${{ steps.pip-cache.outputs.dir }}
-        key: ${{ hashFiles('setup.py') }}-win-${{ matrix.python-version }}-${{ hashFiles('tox.ini') }}
 
     - name: Make wheel
       run: |
@@ -211,10 +186,7 @@ jobs:
         PYOPENCL_CTX: 0
       run: |
         cd dist
-        python -m pip install numpy scipy orsopy
         python -m pip install --only-binary=refnx --no-index --find-links=. refnx
-        python -m pip install --upgrade --upgrade-strategy eager h5py cython pandas xlrd pytest ipywidgets IPython matplotlib traitlets pyqt5 uncertainties corner tqdm periodictable pytest-qt
-        #        python -m pip install git+https://github.com/pymc-devs/pymc3
 
         #        python -m pip install pytools mako cffi
         #        choco install opencl-intel-cpu-runtime
@@ -224,12 +196,12 @@ jobs:
         cd ..
 
     - name: Make frozen GUI executable
-      if: ${{ matrix.python-version == '3.8' }}
+      if: ${{ matrix.python-version == '3.10' }}
       run: |
         # make app in virtualenv
+        pip uninstall -y h5py
         python -m venv app
         app\Scripts\activate.bat
-        #        python -m pip install setuptools==44
         python -m pip install --upgrade --upgrade-strategy eager -r tools/app/requirements.txt
         cd dist
         python -m pip install --only-binary=refnx --no-index --find-links=. refnx
@@ -256,13 +228,13 @@ jobs:
     strategy:
       max-parallel: 1
       matrix:
-        python-version: [3.8]
+        python-version: ["3.10"]
 
     steps:
     - uses: actions/checkout@v2
 
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v4.3.0
       with:
         python-version: ${{ matrix.python-version }}
 
@@ -286,13 +258,13 @@ jobs:
     strategy:
       max-parallel: 1
       matrix:
-        python-version: [3.8]
+        python-version: ["3.10"]
 
     steps:
     - uses: actions/checkout@v2
 
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v4.3.0
       with:
         python-version: ${{ matrix.python-version }}
 

@@ -11,14 +11,13 @@ jobs:
         os: [ubuntu-20.04, windows-2019, macos-10.15]
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: build wheels
-        uses: pypa/cibuildwheel@v2.1.1
+        uses: pypa/cibuildwheel@v2.11.2
         env:
-          CIBW_ARCHS_MACOS: "x86_64 universal2"
-          CIBW_PRERELEASE_PYTHONS: False
           CIBW_TEST_COMMAND: pytest --pyargs refnx.reflect.test.test_reflect
+          CIBW_ARCHS_MACOS: "x86_64 arm64"
 
       - uses: actions/upload-artifact@v2
         with:
