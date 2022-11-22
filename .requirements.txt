@@ -12,6 +12,7 @@ matplotlib
 traitlets
 pyqt5
 uncertainties
+setuptools<=65.5.1
 attrs
 corner
 tqdm
