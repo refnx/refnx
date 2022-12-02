@@ -199,7 +199,7 @@ cpdef packed_buffer(buffer,
                     hdr_packed,
                     int end_last_event=127,
                     max_frames=None,
-                    def_clock_scale=1, use_tx_chopper=False):
+                    def_clock_scale=None, use_tx_chopper=False):
     """
     Unpacks event data from PACKED binary bytearray format for the ANSTO
     Platypus instrument
@@ -257,19 +257,24 @@ cpdef packed_buffer(buffer,
     written to the header and need not be specified, unless some alternate
     scale is needed. clock_scale converts from hardware ticks to
     nano-seconds.
-    BUG - 
-    TODO - DEC2019, CLOCK_SCALE is not being set correctly in the event file.
     This is the responsibility of the DAE histogram server.
+
+    Denex event files have a clock scale of 1. This wasn't recorded in the
+    header, so if the clock_scale is 0, then give a default of 1.
+
     With the new CAEN digitiser CLOCK_SCALE should be 16, which is the number
     of ns per hardware time step (tick).
+    Older CAEN event files have a bogus clock-scale in them, which means that
+    an older version of the reduction software is required to read them. Newer
+    files have the correct clock scale saved in them.
     """
-    if not hdr_base.clock_scale:
-        # old eventfile format did not have clock_scale...
-        scale_time = def_clock_scale
+    # older Denex detector files didn't have a clock scale defined
+    if hdr_base.clock_scale == 0:
+        clock_scale = 1
     else:
-        # scale_time = 1 / hdr_base.clock_scale
-        # FAKE the CLOCK_SCALE until bug is fixed.
-        scale_time = 16
+        clock_scale = hdr_base.clock_scale
+
+    scale_time = def_clock_scale or clock_scale
 
     # the initial time is not set correctly so wait until primary and auxillary
     # time have been reset before sending events
