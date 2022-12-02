@@ -121,7 +121,6 @@ class TestEvent:
                 event_list, fpos = _cevent._cevents(g, max_frames=1111)
                 cyf, cyt, cyy, cyx = event_list
 
-            max_f = np.max(cyf)
             assert np.max(cyf) < 1111
 
             event_list, fpos = _cevent._cevents(
