@@ -454,3 +454,4 @@ in 0.1.13.
 
 0.1.32
 -------
+- event mode reduction for SPZ
