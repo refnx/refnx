@@ -3,14 +3,14 @@
 
 import numpy as np
 from scipy.optimize._numdiff import approx_derivative
-import aesara.tensor as tt
+import pytensor.tensor as pt
 
 
-class _LogLikeWithGrad(tt.Op):
+class _LogLikeWithGrad(pt.Op):
     # Theano op for calculating a log-likelihood
 
-    itypes = [tt.dvector]  # expects a vector of parameter values when called
-    otypes = [tt.dscalar]  # outputs a single scalar value (the log likelihood)
+    itypes = [pt.dvector]  # expects a vector of parameter values when called
+    otypes = [pt.dscalar]  # outputs a single scalar value (the log likelihood)
 
     def __init__(self, loglike):
         # add inputs as class attributes
@@ -36,10 +36,10 @@ class _LogLikeWithGrad(tt.Op):
         return [g[0] * self.logpgrad(theta)]
 
 
-class _LogLikeGrad(tt.Op):
+class _LogLikeGrad(pt.Op):
     # Theano op for calculating the gradient of a log-likelihood
-    itypes = [tt.dvector]
-    otypes = [tt.dvector]
+    itypes = [pt.dvector]
+    otypes = [pt.dvector]
 
     def __init__(self, loglike):
         # add inputs as class attributes
