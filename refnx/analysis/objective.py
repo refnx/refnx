@@ -1401,19 +1401,19 @@ def pymc_model(objective):
             wrapped_pars.append(p)
 
         # Expected value of outcome
-        try:
-            # Likelihood (sampling distribution) of observations
-            pm.Normal(
-                "y_obs",
-                mu=objective.generative,
-                sigma=objective.data.y_err,
-                observed=objective.data.y,
-            )
-        except Exception:
+        # try:
+        #     # Likelihood (sampling distribution) of observations
+        #     pm.Normal(
+        #         "y_obs",
+        #         mu=objective.generative,
+        #         sigma=objective.data.y_err,
+        #         observed=objective.data.y,
+        #     )
+        # except Exception:
             # Falling back, theano autodiff won't work on function object
-            theta = tt.as_tensor_variable(wrapped_pars)
-            logl = _LogLikeWithGrad(objective.logl)
-            pm.Potential("log-likelihood", logl(theta))
+        theta = tt.as_tensor_variable(wrapped_pars)
+        logl = _LogLikeWithGrad(objective.logl)
+        pm.Potential("log-likelihood", logl(theta))
 
     return basic_model
 
