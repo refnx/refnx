@@ -415,7 +415,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
                 model._q_offset = Parameter(0.0, name="q_offset")
 
             if isinstance(model, MixedReflectModel):
-                strcs = [model.structures]
+                strcs = model.structures
             else:
                 strcs = [model.structure]
 
@@ -631,12 +631,12 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
             folder = dialog.selectedFiles()
             for name in names:
                 data_object = datastore[name]
-                sld_curve = np.array(data_object.sld_profile).T
-                if sld_curve is not None:
+                if data_object.sld_profile is not None:
                     # it may be None if it's a mixed area model
                     sld_file_name = os.path.join(
                         folder[0], "sld_" + name + ".dat"
                     )
+                    sld_curve = np.array(data_object.sld_profile).T
                     np.savetxt(sld_file_name, sld_curve)
 
     def load_model(self, model_file_name):
@@ -871,6 +871,9 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
             self.redraw_data_object_graphs([data_object])
         else:
             self.add_data_objects_to_graphs([data_object])
+
+        # add newly loads to the data object selector dialogue
+        self.data_object_selector.addItems([snapshotname])
 
     @QtCore.pyqtSlot()
     def on_actionResolution_smearing_triggered(self):
@@ -2551,9 +2554,14 @@ class MySLDGraphs(FigureCanvas):
                 and data_object.model is not None
             ):
                 try:
-                    sld_profile = data_object.model.structure.sld_profile(
-                        max_delta_z=1.0
-                    )
+                    if isinstance(data_object.model, MixedReflectModel):
+                        sld_profile = data_object.model.structures[
+                            0
+                        ].sld_profile(max_delta_z=1.0)
+                    else:
+                        sld_profile = data_object.model.structure.sld_profile(
+                            max_delta_z=1.0
+                        )
 
                     graph_properties.ax_sld_profile.set_data(
                         sld_profile[0], sld_profile[1]
