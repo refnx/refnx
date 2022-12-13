@@ -1482,8 +1482,8 @@ def _to_pymc_distribution(name, par):
             return p
 
     # not open, uniform, or normal, so fall back to DensityDist.
-    d = as_op(itypes=[pt.dscalar], otypes=[T.dscalar])(dist.logp)
-    r = as_op(itypes=[pt.dscalar], otypes=[T.dscalar])(dist.rvs)
+    d = as_op(itypes=[pt.dscalar], otypes=[pt.dscalar])(dist.logp)
+    r = as_op(itypes=[pt.dscalar], otypes=[pt.dscalar])(dist.rvs)
     p = pm.DensityDist(name, d, random=r)
 
     return p
