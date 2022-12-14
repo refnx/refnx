@@ -626,6 +626,7 @@ class TestFitterGauss:
     @pytest.mark.xfail(
         sys.platform == "win32"
         and (sys.version.major, sys.version_info.minor) == (3, 8),
+        run=False,
         reason="doesn't work on cp38",
     )
     def test_pymc_sample(self):
