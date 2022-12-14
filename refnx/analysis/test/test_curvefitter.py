@@ -623,8 +623,10 @@ class TestFitterGauss:
         # the parameters have uniform priors.
         assert_almost_equal(self.objective.logp(), logp0)
 
-    @pytest.mark.xfail(sys.platform == "win32" and sys.version_info == (3, 8),
-                       reason="doesn't work on cp38")
+    @pytest.mark.xfail(
+        sys.platform == "win32" and sys.version_info == (3, 8),
+        reason="doesn't work on cp38",
+    )
     def test_pymc_sample(self):
         # test sampling with pymc
         try:
