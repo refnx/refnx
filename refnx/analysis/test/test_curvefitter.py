@@ -1,5 +1,6 @@
 import os.path
 import pickle
+import sys
 
 import numpy as np
 import scipy.optimize as sciopt
@@ -622,6 +623,12 @@ class TestFitterGauss:
         # the parameters have uniform priors.
         assert_almost_equal(self.objective.logp(), logp0)
 
+    @pytest.mark.xfail(
+        sys.platform == "win32"
+        and (sys.version_info.major, sys.version_info.minor) == (3, 8),
+        run=False,
+        reason="doesn't work on cp38",
+    )
     def test_pymc_sample(self):
         # test sampling with pymc
         try:

@@ -1386,7 +1386,7 @@ def pymc_model(objective):
 
     """
     import pymc as pm
-    import aesara.tensor as tt
+    import pytensor.tensor as pt
     from refnx._lib._pymc import _LogLikeWithGrad
 
     basic_model = pm.Model()
@@ -1400,20 +1400,20 @@ def pymc_model(objective):
             p = _to_pymc_distribution(name, par)
             wrapped_pars.append(p)
 
-        # Expected value of outcome
-        try:
-            # Likelihood (sampling distribution) of observations
-            pm.Normal(
-                "y_obs",
-                mu=objective.generative,
-                sigma=objective.data.y_err,
-                observed=objective.data.y,
-            )
-        except Exception:
-            # Falling back, theano autodiff won't work on function object
-            theta = tt.as_tensor_variable(wrapped_pars)
-            logl = _LogLikeWithGrad(objective.logl)
-            pm.Potential("log-likelihood", logl(theta))
+        # # Expected value of outcome
+        # try:
+        #     # Likelihood (sampling distribution) of observations
+        #     pm.Normal(
+        #         "y_obs",
+        #         mu=objective.generative,
+        #         sigma=objective.data.y_err,
+        #         observed=objective.data.y,
+        #     )
+        # except Exception:
+        #     # Falling back, theano autodiff won't work on function object
+        theta = pt.as_tensor_variable(wrapped_pars)
+        logl = _LogLikeWithGrad(objective.logl)
+        pm.Potential("log-likelihood", logl(theta))
 
     return basic_model
 
@@ -1436,8 +1436,8 @@ def _to_pymc_distribution(name, par):
 
     """
     import pymc as pm
-    import aesara.tensor as T
-    from aesara.compile.ops import as_op
+    from pytensor import tensor as pt
+    from pytensor.compile.ops import as_op
 
     dist = par.bounds
     # interval and both lb, ub are finite
@@ -1482,8 +1482,8 @@ def _to_pymc_distribution(name, par):
             return p
 
     # not open, uniform, or normal, so fall back to DensityDist.
-    d = as_op(itypes=[T.dscalar], otypes=[T.dscalar])(dist.logp)
-    r = as_op(itypes=[T.dscalar], otypes=[T.dscalar])(dist.rvs)
+    d = as_op(itypes=[pt.dscalar], otypes=[pt.dscalar])(dist.logp)
+    r = as_op(itypes=[pt.dscalar], otypes=[pt.dscalar])(dist.rvs)
     p = pm.DensityDist(name, d, random=r)
 
     return p

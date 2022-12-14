@@ -12,8 +12,8 @@ Installation
 *refnx* has been tested on Python 3.7, 3.8, 3.9, and 3.10. It requires the
 *numpy, scipy, cython* packages to work. Additional features
 require the *pytest, h5py, xlrd, uncertainties, attrs, matplotlib, Jupyter,*
-*ipywidgets, traitlets, tqdm, pandas, pyqt5, periodictable, pymc3, corner*
-packages.
+*ipywidgets, traitlets, tqdm, pandas, pyqt5, periodictable, pymc, pytensor,*
+*corner* packages.
 To build the bleeding edge code you will need to have access to a C-compiler to
 build a couple of Python extensions. C-compilers should be installed on Linux.
 On OSX you will need to install Xcode and the command line tools. On Windows
@@ -54,7 +54,7 @@ Creating a conda environment
 
     ::
 
-     python -m pip install uncertainties attrs periodictable corner theano pymc3
+     python -m pip install uncertainties attrs periodictable corner pytensor pymc
 
 Installing with pip
 ===================
