@@ -35,8 +35,6 @@ def mysetup(qtbot):
     return myapp, model
 
 
-
-
 @pytest.mark.skipif(QTBOT_MISSING, reason="pytest-qt not installed")
 def test_myapp(qtbot, tmpdir):
     myapp, model = mysetup(qtbot)
