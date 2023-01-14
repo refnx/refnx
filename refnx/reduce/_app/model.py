@@ -3,7 +3,8 @@ import os
 import logging
 from copy import copy
 
-from PyQt5 import QtCore
+from PyQt6 import QtCore
+from PyQt6.QtCore import Qt
 import numpy as np
 
 from refnx._lib import preserve_cwd
@@ -276,15 +277,17 @@ class ReductionTableModel(QtCore.QAbstractTableModel):
     def columnCount(self, parent=QtCore.QModelIndex()):
         return len(reducer_entry)
 
-    def headerData(self, section, orientation, role=QtCore.Qt.DisplayRole):
+    def headerData(
+        self, section, orientation, role=Qt.ItemDataRole.DisplayRole
+    ):
         """Set the headers to be displayed."""
-        if role != QtCore.Qt.DisplayRole:
+        if role != Qt.ItemDataRole.DisplayRole:
             return None
 
-        if orientation == QtCore.Qt.Vertical:
+        if orientation == Qt.Orientation.Vertical:
             return None
 
-        if orientation == QtCore.Qt.Horizontal:
+        if orientation == Qt.Orientation.Horizontal:
             return reducer_entry[section][0]
 
         return None
@@ -293,15 +296,15 @@ class ReductionTableModel(QtCore.QAbstractTableModel):
         # row = index.row()
         col = index.column()
         if not col:
-            return QtCore.Qt.ItemIsUserCheckable | QtCore.Qt.ItemIsEnabled
+            return Qt.ItemFlag.ItemIsUserCheckable | Qt.ItemFlag.ItemIsEnabled
 
         return (
-            QtCore.Qt.ItemIsEditable
-            | QtCore.Qt.ItemIsEnabled
-            | QtCore.Qt.ItemIsSelectable
+            Qt.ItemFlag.ItemIsEditable
+            | Qt.ItemFlag.ItemIsEnabled
+            | Qt.ItemFlag.ItemIsSelectable
         )
 
-    def data(self, index, role=QtCore.Qt.DisplayRole):
+    def data(self, index, role=Qt.ItemDataRole.DisplayRole):
         if not index.isValid():
             return False
 
@@ -318,19 +321,19 @@ class ReductionTableModel(QtCore.QAbstractTableModel):
 
         value = entry[attr_name]
 
-        if role == QtCore.Qt.CheckStateRole:
+        if role == Qt.ItemDataRole.CheckStateRole:
             if not col and value:
-                return QtCore.Qt.Checked
+                return Qt.CheckState.Checked
             elif not col:
-                return QtCore.Qt.Unchecked
+                return Qt.CheckState.Unchecked
 
-        if role == QtCore.Qt.DisplayRole and col:
+        if role == Qt.ItemDataRole.DisplayRole and col:
             if attr_name == "scale":
                 return str(float(value))
             else:
                 return value
 
-    def setData(self, index, value, role=QtCore.Qt.EditRole):
+    def setData(self, index, value, role=Qt.ItemDataRole.EditRole):
         row = index.row()
         col = index.column()
 
@@ -346,13 +349,13 @@ class ReductionTableModel(QtCore.QAbstractTableModel):
             entry = {re[0]: re[1] for re in reducer_entry}
             state.reduction_entries[row] = entry
 
-        if role == QtCore.Qt.CheckStateRole and col == 0:
-            entry["use"] = value == QtCore.Qt.Checked
+        if role == Qt.ItemDataRole.CheckStateRole and col == 0:
+            entry["use"] = value == Qt.CheckState.Checked
 
-        if role == QtCore.Qt.EditRole:
+        if role == Qt.ItemDataRole.EditRole:
             if col == 0:
                 save_value = False
-                if value == QtCore.Qt.Checked:
+                if value == Qt.CheckState.Checked:
                     save_value = True
             elif col == 1:
                 try:

@@ -1,7 +1,7 @@
 import os.path
 import json
 
-from PyQt5 import QtCore, QtGui, QtWidgets, uic
+from PyQt6 import QtCore, QtGui, QtWidgets, uic
 
 from refnx.reflect import Spline, SLD
 

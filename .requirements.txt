@@ -10,7 +10,7 @@ ipywidgets
 IPython
 matplotlib
 traitlets
-pyqt5
+pyqt6
 uncertainties
 setuptools<=65.5.1
 attrs

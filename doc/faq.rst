@@ -87,3 +87,10 @@ pickle::
 
 The saved pickle files are in a binary format, and are not human readable.
 It may also be useful to save the representation, :code:`repr(objective)`.
+
+How do I install pyqt6?
+-----------------------
+PyQt6 is needed for the refnx GUI. The `pyqt6` package is currently available
+from PyPI and can be installed as `pip install pyqt6`. However, pyqt6 is not
+currently available via conda-forge. You can use conda to install most of the
+refnx dependencies, but you will need to use `pip` to install pyqt6.

@@ -6,7 +6,7 @@ matplotlib
 tqdm
 corner
 periodictable
-pyqt5
+pyqt6
 cython
 attrs
 orsopy

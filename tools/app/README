@@ -6,7 +6,7 @@ From trial and error I've found that the most reliable way to build is to:
 3) Don't use conda, numpy/scipy/matplotlib/pyqt automatically want to install
    mkl, which isn't GPL compatible
 4) Install with pip all the requirements into the python.org distribution
-   (periodictable, numpy, scipy, cython, pyinstaller, matplotlib, pyqt5,
+   (periodictable, numpy, scipy, cython, pyinstaller, matplotlib, pyqt6,
     corner, ptemcee)
 5) pip install refnx
 6) pyinstall.

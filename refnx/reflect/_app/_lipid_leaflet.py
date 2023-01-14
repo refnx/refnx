@@ -1,7 +1,8 @@
 import os.path
 import json
 
-from PyQt5 import QtCore, QtGui, QtWidgets, uic
+from PyQt6 import QtCore, QtGui, QtWidgets, uic
+from PyQt6.QtCore import Qt
 
 import periodictable as pt
 from refnx.reflect import LipidLeaflet, SLD
@@ -83,7 +84,7 @@ class LipidLeafletDialog(QtWidgets.QDialog, LipidDialog):
         self.chemical_structure.setScene(self._scene)
         self.chemical_structure.show()
         self.chemical_structure.fitInView(
-            self._scene.itemsBoundingRect(), QtCore.Qt.KeepAspectRatio
+            self._scene.itemsBoundingRect(), Qt.AspectRatioMode.KeepAspectRatio
         )
         self._scene.update()
 

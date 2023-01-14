@@ -4,7 +4,7 @@ Deals with GUI aspects of MCMC
 import os
 
 import numpy as np
-from PyQt5 import QtCore, QtGui, QtWidgets, uic
+from PyQt6 import QtCore, QtGui, QtWidgets, uic
 from refnx.analysis import (
     load_chain,
     process_chain,

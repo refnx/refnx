@@ -9,7 +9,7 @@ GUI
 
 *refnx* offers a sophisticated *PyQt* graphical user interface to analyse data,
 with pre-built executables available on `github`_. The gui can also be
-started from the interpreter (requiring the *pyqt5, periodictable, matplotlib*
+started from the interpreter (requiring the *pyqt6, periodictable, matplotlib*
 packages to be installed):
 
     ::

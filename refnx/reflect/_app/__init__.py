@@ -2,7 +2,7 @@ import sys
 
 
 def gui(expt_file=None):
-    from PyQt5 import QtGui, QtWidgets, QtCore
+    from PyQt6 import QtGui, QtWidgets, QtCore
 
     # should enable high resolution on 4k desktops??
     # "https://coad.ca/2017/05/15/
@@ -24,8 +24,8 @@ def gui(expt_file=None):
     # used to make sure that only decimal point is used for
     # entering floats (3.1), rejecting commas (3,1).
     # This reduces confusion for international users
-    lo = QtCore.QLocale(QtCore.QLocale.C)
-    lo.setNumberOptions(QtCore.QLocale.RejectGroupSeparator)
+    lo = QtCore.QLocale.c()
+    lo.setNumberOptions(QtCore.QLocale.NumberOption.RejectGroupSeparator)
     QtCore.QLocale.setDefault(lo)
 
     app.setWindowIcon(QtGui.QIcon(":icons/scattering.png"))
@@ -41,7 +41,7 @@ def gui(expt_file=None):
     myapp.show()
     myapp.raise_()
 
-    v = app.exec_()
+    v = app.exec()
     return v
 
 

@@ -1381,7 +1381,7 @@ def pymc_model(objective):
 
     Notes
     -----
-    The varying parameters are renamed 'p0', 'p1', etc, as it's vital in pymc3
+    The varying parameters are renamed 'p0', 'p1', etc, as it's vital in pymc
     that all parameters have their own unique name.
 
     """
@@ -1420,7 +1420,7 @@ def pymc_model(objective):
 
 def _to_pymc_distribution(name, par):
     """
-    Create a pymc3 continuous distribution from a Bounds object.
+    Create a pymc continuous distribution from a Bounds object.
 
     Parameters
     ----------
@@ -1431,8 +1431,8 @@ def _to_pymc_distribution(name, par):
 
     Returns
     -------
-    d : pymc3.Distribution
-        The pymc3 distribution
+    d : pymc.Distribution
+        The pymc distribution
 
     """
     import pymc as pm

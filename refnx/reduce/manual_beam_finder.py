@@ -1,7 +1,7 @@
 import os.path
 
-from PyQt5 import QtCore, QtWidgets, uic
-from PyQt5.QtCore import pyqtSlot
+from PyQt6 import QtCore, QtWidgets, uic
+from PyQt6.QtCore import pyqtSlot
 import numpy as np
 
 import matplotlib
@@ -33,7 +33,7 @@ class ManualBeamFinder(QtWidgets.QDialog):
     Otherwise the ipython kernel will crash immediately.
     """
 
-    def __init__(self):
+    def __init__(self, parent=None):
         """ """
         super().__init__()
         self.dialog = uic.loadUi(
@@ -132,7 +132,7 @@ class ManualBeamFinder(QtWidgets.QDialog):
         if name is not None:
             self.setWindowTitle("Manual beam finder: " + name)
 
-        self.dialog.exec_()
+        self.dialog.exec()
 
         y1 = int(round(self._low_px - PIXEL_OFFSET))
         y2 = int(round(self._high_px + PIXEL_OFFSET))

@@ -464,3 +464,5 @@ in 0.1.13.
 
 0.1.33
 ------
+- upgrade to pyqt6. pyqt6 is currently only available as a wheel from PyPI,
+  to be installed by e.g. pip. There are currently no conda packages for pyqt6.

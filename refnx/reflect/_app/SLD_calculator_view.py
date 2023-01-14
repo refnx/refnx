@@ -1,6 +1,6 @@
 import os.path
-from PyQt5 import QtWidgets, uic
-from PyQt5.QtCore import pyqtSlot
+from PyQt6 import QtWidgets, uic
+from PyQt6.QtCore import pyqtSlot
 import periodictable as pt
 import pyparsing
 import numpy as np

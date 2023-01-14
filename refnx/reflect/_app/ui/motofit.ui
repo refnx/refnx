@@ -1155,7 +1155,7 @@ varying?</string>
     <string>Ctrl+L</string>
    </property>
    <property name="shortcutContext">
-    <enum>Qt::ApplicationShortcut</enum>
+    <enum>Qt::ShortcutContext::ApplicationShortcut</enum>
    </property>
   </action>
   <action name="actionSave_Fit">
