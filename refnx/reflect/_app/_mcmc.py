@@ -14,7 +14,7 @@ from refnx.analysis import (
     Objective,
 )
 from refnx.reflect import Structure
-from matplotlib.backends.backend_qt5agg import (
+from matplotlib.backends.backend_qtagg import (
     FigureCanvasQTAgg as FigureCanvas,
 )
 from matplotlib.figure import Figure

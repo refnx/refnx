@@ -215,9 +215,9 @@ class ParNode(Node):
                 validator = QtGui.QDoubleValidator()
                 voutput = validator.validate(value, 1)
             else:
-                voutput = [QtGui.QValidator.Acceptable, float(value)]
+                voutput = [QtGui.QValidator.State.Acceptable, float(value)]
 
-            if voutput[0] == QtGui.QValidator.Acceptable:
+            if voutput[0] == QtGui.QValidator.State.Acceptable:
                 p = self.parameter
                 if column == 1:
                     p.value = float(voutput[1])
@@ -323,7 +323,7 @@ class PropertyNode(Node):
         ):
             for validator in self.validators:
                 voutput = validator.validate(value, 1)
-                if voutput[0] == QtGui.QValidator.Acceptable:
+                if voutput[0] == QtGui.QValidator.State.Acceptable:
                     setattr(
                         self._parent._data,
                         self._data,

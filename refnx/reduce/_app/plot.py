@@ -3,10 +3,10 @@ import sys
 from PyQt6.QtWidgets import QDialog, QPushButton, QVBoxLayout, QApplication
 from PyQt6 import QtWidgets
 from PyQt6.QtCore import pyqtSlot
-from matplotlib.backends.backend_qt5agg import (
+from matplotlib.backends.backend_qtagg import (
     FigureCanvasQTAgg as FigureCanvas,
 )
-from matplotlib.backends.backend_qt5agg import (
+from matplotlib.backends.backend_qtagg import (
     NavigationToolbar2QT as NavigationToolbar,
 )
 from matplotlib.figure import Figure

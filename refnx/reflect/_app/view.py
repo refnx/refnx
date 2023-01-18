@@ -15,10 +15,10 @@ import periodictable
 from PyQt6 import QtCore, QtGui, QtWidgets, uic
 from PyQt6.QtCore import Qt
 
-from matplotlib.backends.backend_qt5agg import (
+from matplotlib.backends.backend_qtagg import (
     FigureCanvasQTAgg as FigureCanvas,
 )
-from matplotlib.backends.backend_qt5agg import (
+from matplotlib.backends.backend_qtagg import (
     NavigationToolbar2QT as NavigationToolbar,
 )
 from matplotlib.figure import Figure
@@ -69,7 +69,7 @@ from refnx.reflect._code_fragment import code_fragment
 from refnx._lib import unique, flatten, MapWrapper
 
 
-# matplotlib.use('Qt5Agg')
+# matplotlib.use('QtAgg')
 UI_LOCATION = os.path.join(os.path.dirname(os.path.abspath(__file__)), "ui")
 
 
