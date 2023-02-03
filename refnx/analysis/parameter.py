@@ -964,7 +964,7 @@ class Parameter(BaseParameter):
             linestyle=["dashed", "solid", "dashed"],
         )
         ax.set_xlabel(f"{self.name} / {self.units}")
-        ax.annotate(f"{med:.6g} $\pm$ {sigma:.6g}", (med, np.max(s[0])))
+        ax.annotate(f"{med:.6g} $\\pm$ {sigma:.6g}", (med, np.max(s[0])))
         return fig, ax
 
 
