@@ -308,7 +308,6 @@ class PropertyNode(Node):
             and column == 1
             and self.attribute_type is bool
         ):
-
             if value == QtCore.Qt.Checked:
                 setattr(self._parent._data, self._data, True)
             else:
@@ -1181,7 +1180,6 @@ class TreeFilter(QtCore.QSortFilterProxyModel):
 
         # filter out parameters for the fronting/backing media
         if isinstance(item.parent(), SlabNode) and isinstance(item, ParNode):
-
             # component
             parent = item.parent()
             struc = parent.parent()
@@ -1218,6 +1216,7 @@ def find_data_object(index):
 
 ###############################################################################
 # Classes for the Node structure of different Components
+
 
 ###############################################################################
 class SlabNode(ComponentNode):

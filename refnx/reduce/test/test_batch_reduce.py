@@ -73,7 +73,6 @@ class TestReduce:
 
 
 class TestReductionCache:
-
     entries = [
         # row, ds, name, fname, entry
         [1, None, "Sample A", "a.dat", (1, 2, 3)],

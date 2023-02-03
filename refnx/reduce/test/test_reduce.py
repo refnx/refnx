@@ -63,7 +63,6 @@ class TestPlatypusReduce:
             assert_allclose(a.y, a2.y)
 
     def test_reduction_method(self):
-
         # a quick smoke test to check that the reduction can occur
         # warnings filter for pixel size
         with warnings.catch_warnings():

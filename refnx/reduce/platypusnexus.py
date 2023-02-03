@@ -527,7 +527,6 @@ class PolarisedCatalogue(PlatypusCatalogue):
     """
 
     def __init__(self, h5d):
-
         super().__init__(h5d)
         # Is there a magnet?
         self.is_magnet = False
@@ -1613,9 +1612,7 @@ class ReflectNexus:
 
             # integrate over all spectra
             if integrate == -1:
-                detector = np.sum(detector, 0)[
-                    np.newaxis,
-                ]
+                detector = np.sum(detector, 0)[np.newaxis,]
                 bm1_counts[:] = np.sum(bm1_counts)
 
             start_time = np.zeros(np.size(detector, 0))
@@ -1863,12 +1860,8 @@ class ReflectNexus:
         detector_sd = np.array(output_sd)
 
         if len(detector.shape) == 2:
-            detector = detector[
-                np.newaxis,
-            ]
-            detector_sd = detector_sd[
-                np.newaxis,
-            ]
+            detector = detector[np.newaxis,]
+            detector_sd = detector_sd[np.newaxis,]
 
         # (1, T)
         m_lambda_hist = np.atleast_2d(rebinning)

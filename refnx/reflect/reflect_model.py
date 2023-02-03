@@ -670,7 +670,6 @@ def reflectivity(
         and dq.ndim == q.ndim + 2
         and dq.shape[0 : q.ndim] == q.shape
     ):
-
         qvals_for_res = dq[:, 0, :]
         # work out the reflectivity at the kernel evaluation points
         smeared_rvals = kernel(qvals_for_res, slabs, threads=threads)

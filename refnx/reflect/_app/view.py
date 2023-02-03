@@ -2584,7 +2584,6 @@ class MySLDGraphs(FigureCanvas):
                 graph_properties.ax_sld_profile is None
                 and data_object.sld_profile is not None
             ):
-
                 color = "r"
                 lw = 2
                 if graph_properties.ax_data:

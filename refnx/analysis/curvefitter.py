@@ -80,7 +80,7 @@ class PTSampler:
         thin_by=1,
         progress=False,
         mapper=None,
-        **kwds
+        **kwds,
     ):
         """
         Runs the PTSampler for a given number of iterations.
@@ -297,7 +297,7 @@ class CurveFitter:
                 self._nwalkers,
                 self.nvary,
                 self.objective.logpost,
-                **self.mcmc_kws
+                **self.mcmc_kws,
             )
         # Parallel Tempering was requested.
         else:
