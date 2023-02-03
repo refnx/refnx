@@ -931,6 +931,42 @@ class Parameter(BaseParameter):
         if constraint is not None:
             self.constraint = constraint
 
+    def corner(self):
+        """
+        Plots a histogram of the Parameter posterior.
+
+        Requires matplotlib be installed.
+
+        Returns
+        -------
+        fig, ax : :class:`matplotlib.Figure`, :class:`matplotlib.Axes`
+            `matplotlib` figure and axes objects.
+        """
+        if self.chain is None:
+            raise RuntimeError(
+                "Parameter.chain is not present try sampling first"
+            )
+        import matplotlib.pyplot as plt
+
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+        lb, med, ub = np.percentile(self.chain, [15.87, 50, 84.13])
+        sigma = 0.5 * (ub - lb)
+
+        s = ax.hist(
+            self.chain.flatten(), bins=100, density=True, histtype="step"
+        )
+        ax.vlines(
+            [med - sigma, med, med + sigma],
+            0,
+            1.1 * np.max(s[0]),
+            colors="r",
+            linestyle=["dashed", "solid", "dashed"],
+        )
+        ax.set_xlabel(f"{self.name} / {self.units}")
+        ax.annotate(f"{med:.6g} $\\pm$ {sigma:.6g}", (med, np.max(s[0])))
+        return fig, ax
+
 
 class _BinaryOp(BaseParameter):
     def __init__(self, op1, op2, operation):

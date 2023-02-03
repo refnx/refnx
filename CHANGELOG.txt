@@ -458,3 +458,5 @@ in 0.1.13.
 - Display SLD profile for first structure in MixedReflectModel
 - Github: changed the default branch from master to main. This is done to
   match other repositories behaviour and to reduce cognitive load.
+- Added a Parameter.corner method to plot the posterior distribution for a
+  given Parameter.

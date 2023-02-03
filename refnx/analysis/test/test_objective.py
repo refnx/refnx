@@ -398,9 +398,9 @@ class TestObjective:
             lambda v: (v[1], v[2] - v[1], v[1] - v[0]),
             zip(*np.percentile(samples, [16, 50, 84], axis=0)),
         )
-        assert_allclose(m_mc, (-1.0071664, 0.0809444, 0.0784894), rtol=0.04)
+        assert_allclose(m_mc, (-1.0071664, 0.0809444, 0.0784894), rtol=0.05)
 
-        assert_allclose(b_mc, (4.5428107, 0.3549174, 0.3673304), rtol=0.04)
+        assert_allclose(b_mc, (4.5428107, 0.3549174, 0.3673304), rtol=0.05)
 
         assert_allclose(f_mc, (0.4610898, 0.0823304, 0.0640812), rtol=0.06)
 

@@ -525,7 +525,6 @@ class Cross_Section(FigureCanvas):
     def display_cross_section(
         self, x, xs, beam_centre, low_px, high_px, low_bkg, high_bkg
     ):
-
         self._beam_centre = beam_centre
         self._low_px = low_px
         self._high_px = high_px

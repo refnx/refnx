@@ -52,7 +52,6 @@ spin="UNPOLARISED" dim="$_numpointsz:$_numpointsy">
 
 class ReflectReduce:
     def __init__(self, direct, prefix, data_folder=None):
-
         self.data_folder = os.path.curdir
         if data_folder is not None:
             self.data_folder = data_folder
@@ -443,7 +442,6 @@ class PlatypusReduce(ReflectReduce):
     """
 
     def __init__(self, direct, data_folder=None, **kwds):
-
         super().__init__(direct, "PLP", data_folder=data_folder)
 
     def _reduce_single_angle(self, scale=1):
