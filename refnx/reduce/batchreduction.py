@@ -270,7 +270,7 @@ class ReductionCache(list):
         df = pd.DataFrame(columns=self[0].entry.axes)
         for i, entry in enumerate(self):
             if entry is not None:
-                df.loc[i] = entry.entry
+                df.loc[i] = list(entry.entry)
         return df
 
     def write_cache(self, filename=None):
