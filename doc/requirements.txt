@@ -1,6 +1,7 @@
 nbsphinx
 jupyter-sphinx
 sphinxcontrib-bibtex
+sphinxcontrib-jquery
 jinja2
 sphinx_rtd_theme
 tqdm
