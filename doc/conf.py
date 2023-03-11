@@ -42,6 +42,7 @@ extensions = [
     'jupyter_sphinx',
     'sphinxcontrib.bibtex',
     'sphinxcontrib.jquery',
+    'sphinx_rtd_theme',
 ]
 
 bibtex_bibfiles = ["../testimonials.bib"]
