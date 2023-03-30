@@ -143,6 +143,8 @@ class TestStructure:
         assert_allclose(slabs[0, 4], 0.1)
 
         assert_equal(float(q.vfsolv), 0.1)
+        # access parameters
+        m.parameters
 
     def test_micro_slab(self):
         # test micro-slab representation by calculating reflectivity from a

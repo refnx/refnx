@@ -1361,7 +1361,7 @@ class MixedSlab(Component):
         p = self._parameters
         p.name = self.name
         self._sld_parameters.data = [s.parameters for s in self.sld]
-        self._vf_parameters.data = [vf.parameters for vf in self.vf]
+        self._vf_parameters.data = [vf for vf in self.vf]
 
         p.data = [self.thick]
         p.data.extend(self._sld_parameters)
