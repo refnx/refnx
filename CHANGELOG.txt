@@ -461,3 +461,6 @@ in 0.1.13.
 - Added a Parameter.corner method to plot the posterior distribution for a
   given Parameter.
 - Fixed a bug in MixedSlab
+
+0.1.33
+------
