@@ -460,3 +460,4 @@ in 0.1.13.
   match other repositories behaviour and to reduce cognitive load.
 - Added a Parameter.corner method to plot the posterior distribution for a
   given Parameter.
+- Fixed a bug in MixedSlab
