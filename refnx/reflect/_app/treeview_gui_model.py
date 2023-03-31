@@ -29,7 +29,7 @@ def component_class(component):
     """
     if isinstance(component, Slab):
         return SlabNode
-    elif isinstance(component, LipidLƒeaflet):
+    elif isinstance(component, LipidLeaflet):
         return LipidLeafletNode
     elif isinstance(component, Spline):
         return SplineNode
