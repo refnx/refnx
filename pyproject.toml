@@ -9,7 +9,7 @@ dynamic=["version", "description", "readme", "license", "classifiers", "urls", "
 
 
 [tool.cibuildwheel]
-skip = "pp* cp36-* cp37-*"
+skip = "pp* cp36-* cp37-* *-musllinux*"
 test-requires = ["pytest"]
 test-command = "pytest --pyargs refnx.reflect.test.test_reflect"
 manylinux-x86_64-image = "manylinux2014"
