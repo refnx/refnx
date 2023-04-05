@@ -4,8 +4,8 @@ import pickle
 from operator import itemgetter
 
 import numpy as np
-from PyQt6 import QtCore, QtGui, QtWidgets, uic
-from PyQt6.QtCore import Qt
+from qtpy import QtCore, QtGui, QtWidgets, uic
+from qtpy.QtCore import Qt
 
 from refnx._lib import flatten, unique
 from refnx.analysis import Parameter, Parameters, possibly_create_parameter

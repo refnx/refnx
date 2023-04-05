@@ -1,7 +1,7 @@
 import os.path
 import json
 
-from PyQt6 import QtCore, QtGui, QtWidgets, uic
+from qtpy import QtCore, QtGui, QtWidgets, uic
 
 from refnx.reflect import Spline, SLD
 
@@ -26,7 +26,7 @@ class SplineDialog(QtWidgets.QDialog, SplineDialogUI):
         self.knots.setItemDelegateForColumn(0, self._dz_delegate)
         self.knots.setItemDelegateForColumn(1, self._vs_delegate)
 
-    @QtCore.pyqtSlot(int)
+    @QtCore.Slot(int)
     def on_num_knots_valueChanged(self, val):
         oldrows = self.knots.rowCount()
         self.knots.setRowCount(val)

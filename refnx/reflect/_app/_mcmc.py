@@ -4,7 +4,9 @@ Deals with GUI aspects of MCMC
 import os
 
 import numpy as np
-from PyQt6 import QtCore, QtGui, QtWidgets, uic
+from qtpy import QtCore, QtGui, QtWidgets, uic
+from qtpy.compat import getopenfilename
+
 from refnx.analysis import (
     load_chain,
     process_chain,
@@ -48,9 +50,7 @@ class ProcessMCMCDialog(QtWidgets.QDialog, ProcessMCMCDialogUI):
             self.folder = os.getcwd()
 
         if self.chain is None:
-            model_file_name, ok = QtWidgets.QFileDialog.getOpenFileName(
-                self, "Select chain file"
-            )
+            model_file_name, ok = getopenfilename(self, "Select chain file")
             if not ok:
                 return
             self.folder = os.path.dirname(model_file_name)
@@ -85,11 +85,11 @@ class ProcessMCMCDialog(QtWidgets.QDialog, ProcessMCMCDialogUI):
             f"Estimated Autocorrelation Time: {time}"
         )
 
-    @QtCore.pyqtSlot(int)
+    @QtCore.Slot(int)
     def on_burn_valueChanged(self, val):
         self.recalculate()
 
-    @QtCore.pyqtSlot(int)
+    @QtCore.Slot(int)
     def on_thin_valueChanged(self, val):
         self.recalculate()
 
@@ -113,7 +113,7 @@ class ProcessMCMCDialog(QtWidgets.QDialog, ProcessMCMCDialogUI):
         )
         self.nplot.setMaximum(steps * walkers)
 
-    @QtCore.pyqtSlot()
+    @QtCore.Slot()
     def on_buttonBox_accepted(self):
         nthin = self.thin.value()
         nburn = self.burn.value()

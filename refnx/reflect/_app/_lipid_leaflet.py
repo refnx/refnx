@@ -1,8 +1,8 @@
 import os.path
 import json
 
-from PyQt6 import QtCore, QtGui, QtWidgets, uic
-from PyQt6.QtCore import Qt
+from qtpy import QtCore, QtGui, QtWidgets, uic
+from qtpy.QtCore import Qt
 
 import periodictable as pt
 from refnx.reflect import LipidLeaflet, SLD
@@ -35,7 +35,7 @@ class LipidLeafletDialog(QtWidgets.QDialog, LipidDialog):
         self.lipid_selector.addItem("")
         self.lipid_selector.addItems(self.lipids.keys())
 
-    @QtCore.pyqtSlot(str)
+    @QtCore.Slot(str)
     def on_lipid_selector_currentIndexChanged(self, text):
         if text == "":
             # clear everything
@@ -88,7 +88,7 @@ class LipidLeafletDialog(QtWidgets.QDialog, LipidDialog):
         )
         self._scene.update()
 
-    @QtCore.pyqtSlot(str)
+    @QtCore.Slot(str)
     def on_condition_currentIndexChanged(self, text):
         name = self.lipid_selector.currentText()
 
@@ -101,15 +101,15 @@ class LipidLeafletDialog(QtWidgets.QDialog, LipidDialog):
             self.V_t.setValue(lipid.conditions[text][1])
             self.calculate()
 
-    @QtCore.pyqtSlot(str)
+    @QtCore.Slot(str)
     def on_radiation_currentIndexChanged(self, text):
         self.calculate()
 
-    @QtCore.pyqtSlot(float)
+    @QtCore.Slot(float)
     def on_xray_energy_valueChanged(self, value):
         self.calculate()
 
-    @QtCore.pyqtSlot(float)
+    @QtCore.Slot(float)
     def on_APM_valueChanged(self, value):
         name = self.lipid_selector.currentText()
         if name not in self.lipids:
@@ -120,7 +120,7 @@ class LipidLeafletDialog(QtWidgets.QDialog, LipidDialog):
         self.thick_h.setValue(V_h / value)
         self.thick_t.setValue(V_t / value)
 
-    @QtCore.pyqtSlot(float)
+    @QtCore.Slot(float)
     def on_thick_t_valueChanged(self, value):
         name = self.lipid_selector.currentText()
         if name not in self.lipids:
@@ -132,7 +132,7 @@ class LipidLeafletDialog(QtWidgets.QDialog, LipidDialog):
         self.APM.setValue(APM)
         self.thick_h.setValue(V_h / APM)
 
-    @QtCore.pyqtSlot(float)
+    @QtCore.Slot(float)
     def on_thick_h_valueChanged(self, value):
         name = self.lipid_selector.currentText()
         if name not in self.lipids:
@@ -144,11 +144,11 @@ class LipidLeafletDialog(QtWidgets.QDialog, LipidDialog):
         self.APM.setValue(APM)
         self.thick_t.setValue(V_t / APM)
 
-    @QtCore.pyqtSlot(float)
+    @QtCore.Slot(float)
     def on_head_solvent_valueChanged(self, value):
         self.calculate()
 
-    @QtCore.pyqtSlot(float)
+    @QtCore.Slot(float)
     def on_tail_solvent_valueChanged(self, value):
         self.calculate()
 

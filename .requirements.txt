@@ -11,6 +11,7 @@ IPython
 matplotlib
 traitlets
 pyqt6
+qtpy
 uncertainties
 setuptools<=65.5.1
 attrs

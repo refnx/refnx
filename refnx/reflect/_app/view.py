@@ -12,8 +12,9 @@ import scipy
 import matplotlib
 import periodictable
 
-from PyQt6 import QtCore, QtGui, QtWidgets, uic
-from PyQt6.QtCore import Qt
+from qtpy.compat import getopenfilename, getopenfilenames, getsavefilename
+from qtpy import QtCore, QtGui, QtWidgets, uic
+from qtpy.QtCore import Qt
 
 from matplotlib.backends.backend_qtagg import (
     FigureCanvasQTAgg as FigureCanvas,
@@ -189,6 +190,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         self.lipid_leaflet_dialog = LipidLeafletDialog(self)
         self.optimisation_parameters = OptimisationParameterView(self)
         self.data_object_selector = DataObjectSelectorDialog(self)
+        self.data_object_selector.addItems(["theoretical"])
 
         self.ui.treeView.setColumnWidth(0, 200)
         h = self.ui.treeView.header()
@@ -206,7 +208,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         # Restore sys.stdout
         sys.stdout = sys.__stdout__
 
-    @QtCore.pyqtSlot(QtGui.QDropEvent)
+    @QtCore.Slot(QtGui.QDropEvent)
     def dropEvent(self, event):
         m = event.mimeData()
         urls = m.urls()
@@ -240,7 +242,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
             except Exception:
                 pass
 
-    @QtCore.pyqtSlot(QtGui.QDragEnterEvent)
+    @QtCore.Slot(QtGui.QDragEnterEvent)
     def dragEnterEvent(self, event):
         m = event.mimeData()
         if m.hasUrls():
@@ -269,16 +271,16 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
 
         self.setWindowTitle("Motofit - " + experiment_file_name)
 
-    @QtCore.pyqtSlot()
+    @QtCore.Slot()
     def on_actionSave_File_triggered(self):
         if os.path.isfile(self.settings.experiment_file_name):
             self._saveState(self.settings.experiment_file_name)
         else:
             self.on_actionSave_File_As_triggered()
 
-    @QtCore.pyqtSlot()
+    @QtCore.Slot()
     def on_actionSave_File_As_triggered(self):
-        experiment_file_name, ok = QtWidgets.QFileDialog.getSaveFileName(
+        experiment_file_name, ok = getsavefilename(
             self, "Save experiment as:", "experiment.mtft"
         )
 
@@ -474,12 +476,12 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         for key in self.settings.__dict__:
             params[key] = self.settings[key]
 
-    @QtCore.pyqtSlot()
+    @QtCore.Slot()
     def on_actionLoad_File_triggered(self):
-        experimentFileName, ok = QtWidgets.QFileDialog.getOpenFileName(
+        experimentFileName, ok = getopenfilename(
             self,
             caption="Select Experiment File",
-            filter="Experiment Files (*.mtft)",
+            filters="Experiment Files (*.mtft)",
         )
         if not ok:
             return
@@ -557,19 +559,17 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         self.data_object_selector.addItems(new_names)
         return fnames
 
-    @QtCore.pyqtSlot()
+    @QtCore.Slot()
     def on_actionLoad_Data_triggered(self):
         """
         you load data
         """
-        files = QtWidgets.QFileDialog.getOpenFileNames(
-            self, caption="Select Reflectivity Files"
-        )
+        files = getopenfilenames(self, caption="Select Reflectivity Files")
 
         if files:
             self.load_data(files[0])
 
-    @QtCore.pyqtSlot()
+    @QtCore.Slot()
     def on_actionRemove_Data_triggered(self):
         """
         you remove data
@@ -600,7 +600,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
             # remove from data object selector
             self.data_object_selector.removeItem(which_dataset)
 
-    @QtCore.pyqtSlot()
+    @QtCore.Slot()
     def on_actionSave_Fit_triggered(self):
         datastore = self.treeModel.datastore
 
@@ -619,7 +619,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
                     os.path.join(folder[0], "fit_" + name + ".dat")
                 )
 
-    @QtCore.pyqtSlot()
+    @QtCore.Slot()
     def on_actionSave_SLD_Curve_triggered(self):
         # saves an SLD curve as a text file
         datastore = self.treeModel.datastore
@@ -662,17 +662,15 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
             data_object_node.set_reflect_model(model)
         self.update_gui_model([data_object_node.data_object])
 
-    @QtCore.pyqtSlot()
+    @QtCore.Slot()
     def on_actionLoad_Model_triggered(self):
         # load a model from a pickle file
-        model_file_name, ok = QtWidgets.QFileDialog.getOpenFileName(
-            self, "Select Model File"
-        )
+        model_file_name, ok = getopenfilename(self, "Select Model File")
         if not ok:
             return
         self.load_model(model_file_name)
 
-    @QtCore.pyqtSlot()
+    @QtCore.Slot()
     def on_actionSave_Model_triggered(self):
         # save a model to a pickle file
         # which model are you saving?
@@ -696,7 +694,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
                 model = datastore[name]
                 model.save_model(fname)
 
-    @QtCore.pyqtSlot()
+    @QtCore.Slot()
     def on_actionProcess_MCMC_triggered(self):
         """
         Process an MCMC chain. Can only do against current fitting setup though
@@ -721,7 +719,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
                 " processed against the fitting setup that created it."
             )
 
-    @QtCore.pyqtSlot()
+    @QtCore.Slot()
     def on_actionExport_parameters_triggered(self):
         # save all parameter values to a text file
         datastore = self.treeModel.datastore
@@ -734,7 +732,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         names = [item.text() for item in items]
 
         suggested_name = os.path.join(os.getcwd(), "coefficients.csv")
-        fname, ok = QtWidgets.QFileDialog.getSaveFileName(
+        fname, ok = getsavefilename(
             self, "Exported file name:", suggested_name
         )
         if not ok:
@@ -754,7 +752,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
                 writer.writerow([p.value for p in flatten(model.parameters)])
                 writer.writerow([p.stderr for p in flatten(model.parameters)])
 
-    @QtCore.pyqtSlot()
+    @QtCore.Slot()
     def on_actionExport_Code_Fragment_triggered(self):
         # exports an executable script for the current fitting system.
         # this script can be used for e.g. MCMC sampling.
@@ -771,7 +769,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         code = code_fragment(objective)
 
         suggested_name = os.path.join(os.getcwd(), "mcmc.py")
-        modelFileName, ok = QtWidgets.QFileDialog.getSaveFileName(
+        modelFileName, ok = getsavefilename(
             self, "Save code fragment as:", suggested_name
         )
         if not ok:
@@ -798,27 +796,27 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         for k, v in meth.items():
             v.setChecked(False)
 
-    @QtCore.pyqtSlot()
+    @QtCore.Slot()
     def on_actionDifferential_Evolution_triggered(self):
         self.select_fitting_algorithm("DE")
 
-    @QtCore.pyqtSlot()
+    @QtCore.Slot()
     def on_actionMCMC_triggered(self):
         self.select_fitting_algorithm("MCMC")
 
-    @QtCore.pyqtSlot()
+    @QtCore.Slot()
     def on_actionDual_Annealing_triggered(self):
         self.select_fitting_algorithm("dual_annealing")
 
-    @QtCore.pyqtSlot()
+    @QtCore.Slot()
     def on_actionSHGO_triggered(self):
         self.select_fitting_algorithm("SHGO")
 
-    @QtCore.pyqtSlot()
+    @QtCore.Slot()
     def on_actionLevenberg_Marquardt_triggered(self):
         self.select_fitting_algorithm("LM")
 
-    @QtCore.pyqtSlot()
+    @QtCore.Slot()
     def on_actionL_BFGS_B_triggered(self):
         self.select_fitting_algorithm("L-BFGS-B")
 
@@ -834,7 +832,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         data_object_node.set_dataset(dataset)
         self.update_gui_model([theoretical])
 
-    @QtCore.pyqtSlot()
+    @QtCore.Slot()
     def on_actionChange_Q_range_triggered(self):
         datastore = self.treeModel.datastore
         theoretical = datastore["theoretical"]
@@ -859,7 +857,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
                 qrangeGUI.numpnts.value(),
             )
 
-    @QtCore.pyqtSlot()
+    @QtCore.Slot()
     def on_actionTake_Snapshot_triggered(self):
         snapshotname, ok = QtWidgets.QInputDialog.getText(
             self, "Take a snapshot", "snapshot name"
@@ -880,7 +878,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         # add newly loads to the data object selector dialogue
         self.data_object_selector.addItems([snapshotname])
 
-    @QtCore.pyqtSlot()
+    @QtCore.Slot()
     def on_actionResolution_smearing_triggered(self):
         currentVal = self.settings.quad_order
         value, ok = QtWidgets.QInputDialog.getInt(
@@ -895,7 +893,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         self.settings.quad_order = value
         self.update_gui_model([])
 
-    @QtCore.pyqtSlot()
+    @QtCore.Slot()
     def on_actionBatch_Fit_triggered(self):
         datastore = self.treeModel.datastore
         if len(datastore) < 2:
@@ -965,7 +963,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
             self.update_gui_fitted_data_objects(gui_update_list)
             progress.close()
 
-    @QtCore.pyqtSlot()
+    @QtCore.Slot()
     def on_actionRefresh_Data_triggered(self):
         """
         you are refreshing existing datasets
@@ -983,19 +981,19 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
                 "their original location"
             )
 
-    @QtCore.pyqtSlot()
+    @QtCore.Slot()
     def on_actionlogY_vs_X_triggered(self):
         self.settransformoption("logY")
 
-    @QtCore.pyqtSlot()
+    @QtCore.Slot()
     def on_actionY_vs_X_triggered(self):
         self.settransformoption("lin")
 
-    @QtCore.pyqtSlot()
+    @QtCore.Slot()
     def on_actionYX4_vs_X_triggered(self):
         self.settransformoption("YX4")
 
-    @QtCore.pyqtSlot()
+    @QtCore.Slot()
     def on_actionYX2_vs_X_triggered(self):
         self.settransformoption("YX2")
 
@@ -1031,7 +1029,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
             self.reflectivitygraphs.axes[0].set_yscale("linear")
         self.reflectivitygraphs.draw()
 
-    @QtCore.pyqtSlot()
+    @QtCore.Slot()
     def on_actionAbout_triggered(self):
         aboutui = uic.loadUi(os.path.join(UI_LOCATION, "about.ui"))
 
@@ -1057,13 +1055,13 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         aboutui.textBrowser.setText(display_text)
         aboutui.exec()
 
-    @QtCore.pyqtSlot()
+    @QtCore.Slot()
     def on_actiondocumentation_triggered(self):
         QtGui.QDesktopServices.openUrl(
             QtCore.QUrl("https://refnx.readthedocs.io/en/latest/")
         )
 
-    @QtCore.pyqtSlot()
+    @QtCore.Slot()
     def on_actionPython_Packages_triggered(self):
         aboutui = uic.loadUi(os.path.join(UI_LOCATION, "about.ui"))
         text = self.requirements()
@@ -1079,23 +1077,23 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
 
         return "\n".join(versions)
 
-    @QtCore.pyqtSlot()
+    @QtCore.Slot()
     def on_actionAutoscale_graph_triggered(self):
         self.reflectivitygraphs.autoscale()
 
-    @QtCore.pyqtSlot()
+    @QtCore.Slot()
     def on_actionSLD_calculator_triggered(self):
         self.sld_calculator.show()
 
-    @QtCore.pyqtSlot()
+    @QtCore.Slot()
     def on_actionOptimisation_parameters_triggered(self):
         self.optimisation_parameters.show()
 
-    @QtCore.pyqtSlot()
+    @QtCore.Slot()
     def on_actionLipid_browser_triggered(self):
         self.lipid_leaflet_dialog.show()
 
-    @QtCore.pyqtSlot()
+    @QtCore.Slot()
     def on_add_layer_clicked(self):
         selected_indices = self.ui.treeView.selectedIndexes()
 
@@ -1176,7 +1174,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
 
         host.insert_component(idx + 1, c)
 
-    @QtCore.pyqtSlot()
+    @QtCore.Slot()
     def on_remove_layer_clicked(self):
         selected_indices = self.ui.treeView.selectedIndexes()
 
@@ -1219,7 +1217,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         # all checking done, remove a layer
         host.remove_component(idx)
 
-    @QtCore.pyqtSlot()
+    @QtCore.Slot()
     def on_auto_limits_button_clicked(self):
         names_to_fit = self.currently_fitting_model.datasets
 
@@ -1253,7 +1251,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
                 idx2 = self.treeModel.index(row, 4, parent.index)
                 self.treeModel.dataChanged.emit(idx1, idx2)
 
-    @QtCore.pyqtSlot()
+    @QtCore.Slot()
     def on_add_to_fit_button_clicked(self):
         selected_indices = self.ui.treeView.selectedIndexes()
 
@@ -1273,7 +1271,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
 
         fit_list.addItems(unique(to_be_added))
 
-    @QtCore.pyqtSlot()
+    @QtCore.Slot()
     def on_remove_from_fit_button_clicked(self):
         # work out what datasets are selected in the listwidget
         # remove all those that are selected
@@ -1302,7 +1300,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
 
         fit_list.removeItems(list(unique(to_remove)))
 
-    @QtCore.pyqtSlot()
+    @QtCore.Slot()
     def on_do_fit_button_clicked(self):
         """
         you should do a fit
@@ -1619,7 +1617,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         # calculates chi2 and redraws generative model
         self.update_gui_model(data_objects)
 
-    @QtCore.pyqtSlot(int)
+    @QtCore.Slot(int)
     def on_only_fitted_stateChanged(self, arg_1):
         """
         only display fitted parameters
@@ -1630,7 +1628,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         )
         self.treeFilter.invalidateFilter()
 
-    @QtCore.pyqtSlot(int)
+    @QtCore.Slot(int)
     def on_use_errors_checkbox_stateChanged(self, arg_1):
         """
         want to weight by error bars, recalculate chi2
@@ -1648,7 +1646,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         # converts a model index in the filter model to the original model
         return self.treeFilter.mapToSource(index)
 
-    @QtCore.pyqtSlot(QtCore.QModelIndex)
+    @QtCore.Slot(QtCore.QModelIndex)
     def on_treeView_clicked(self, index):
         index = self.mapToSource(index)
         if not index.isValid():
@@ -1676,7 +1674,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         self.currentCell["hilim"] = hilim
         self.currentCell["readyToChange"] = True
 
-    @QtCore.pyqtSlot(int)
+    @QtCore.Slot(int)
     def on_paramsSlider_valueChanged(self, arg_1):
         # short circuit if the treeview hasn't been clicked yet
         if not hasattr(self, "currentCell"):
@@ -1703,7 +1701,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
             index, index, [Qt.ItemDataRole.EditRole]
         )
 
-    @QtCore.pyqtSlot()
+    @QtCore.Slot()
     def on_paramsSlider_sliderReleased(self):
         try:
             self.currentCell["readyToChange"] = False
@@ -1943,7 +1941,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
             self._hold_updating = False
             self.update_gui_model(do)
 
-    @QtCore.pyqtSlot()
+    @QtCore.Slot()
     def add_mixed_area_action(self):
         selected_indices = self.ui.treeView.selectedIndexes()
 
@@ -1972,7 +1970,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
             len(structures) + 3, copied_structure
         )
 
-    @QtCore.pyqtSlot()
+    @QtCore.Slot()
     def remove_mixed_area_action(self):
         selected_indices = self.ui.treeView.selectedIndexes()
 
@@ -2635,7 +2633,7 @@ class MySLDGraphs(FigureCanvas):
 class EmittingStream(QtCore.QObject):
     # a class for rewriting stdout to a console window
 
-    textWritten = QtCore.pyqtSignal(str)
+    textWritten = QtCore.Signal(str)
 
     def __init__(self):
         QtCore.QObject.__init__(self)
