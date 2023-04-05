@@ -564,9 +564,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         """
         you load data
         """
-        files = getopenfilenames(
-            self, caption="Select Reflectivity Files"
-        )
+        files = getopenfilenames(self, caption="Select Reflectivity Files")
 
         if files:
             self.load_data(files[0])
@@ -667,9 +665,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
     @QtCore.Slot()
     def on_actionLoad_Model_triggered(self):
         # load a model from a pickle file
-        model_file_name, ok = getopenfilename(
-            self, "Select Model File"
-        )
+        model_file_name, ok = getopenfilename(self, "Select Model File")
         if not ok:
             return
         self.load_model(model_file_name)

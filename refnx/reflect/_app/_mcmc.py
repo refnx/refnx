@@ -50,9 +50,7 @@ class ProcessMCMCDialog(QtWidgets.QDialog, ProcessMCMCDialogUI):
             self.folder = os.getcwd()
 
         if self.chain is None:
-            model_file_name, ok = getopenfilename(
-                self, "Select chain file"
-            )
+            model_file_name, ok = getopenfilename(self, "Select chain file")
             if not ok:
                 return
             self.folder = os.path.dirname(model_file_name)
