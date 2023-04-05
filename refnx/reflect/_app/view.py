@@ -2702,7 +2702,9 @@ class DataObjectSelectorDialog(QtWidgets.QDialog):
     def __init__(self, parent=None):
         # persistent data object selector dlg
         QtWidgets.QDialog.__init__(self, parent)
-        self.ui = uic.loadUi(os.path.join(UI_LOCATION, "data_object_selector.ui"), self)
+        self.ui = uic.loadUi(
+            os.path.join(UI_LOCATION, "data_object_selector.ui"), self
+        )
 
     def addItems(self, items):
         self.data_objects.addItems(items)

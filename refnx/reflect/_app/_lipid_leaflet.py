@@ -17,7 +17,9 @@ class LipidLeafletDialog(QtWidgets.QDialog):
         # persistent lipid leaflet dlg
         QtWidgets.QDialog.__init__(self, parent)
         # load the GUI from the ui file
-        self.ui = uic.loadUi(os.path.join(UI_LOCATION, "lipid_leaflet.ui"), self)
+        self.ui = uic.loadUi(
+            os.path.join(UI_LOCATION, "lipid_leaflet.ui"), self
+        )
 
         dvalidator = QtGui.QDoubleValidator(-2.0e-10, 5, 6)
         self.b_h_real.setValidator(dvalidator)

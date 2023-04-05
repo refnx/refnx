@@ -34,7 +34,9 @@ class SampleMCMCDialog(QtWidgets.QDialog):
 class ProcessMCMCDialog(QtWidgets.QDialog):
     def __init__(self, objective, chain, folder=None, parent=None):
         QtWidgets.QDialog.__init__(self, parent)
-        self.ui = uic.loadUi(os.path.join(UI_LOCATION, "process_mcmc.ui"), self)
+        self.ui = uic.loadUi(
+            os.path.join(UI_LOCATION, "process_mcmc.ui"), self
+        )
 
         self.objective = objective
         self.folder = folder
