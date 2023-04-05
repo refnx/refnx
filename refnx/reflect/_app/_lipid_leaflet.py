@@ -10,7 +10,6 @@ from refnx.reflect import LipidLeaflet, SLD
 
 pth = os.path.dirname(os.path.abspath(__file__))
 UI_LOCATION = os.path.join(pth, "ui")
-# LipidDialog = uic.loadUiType(os.path.join(UI_LOCATION, "lipid_leaflet.ui"))[0]
 
 
 class LipidLeafletDialog(QtWidgets.QDialog):
