@@ -8,14 +8,13 @@ from refnx.reflect import Spline, SLD
 
 pth = os.path.dirname(os.path.abspath(__file__))
 UI_LOCATION = os.path.join(pth, "ui")
-SplineDialogUI = uic.loadUiType(os.path.join(UI_LOCATION, "spline.ui"))[0]
 
 
-class SplineDialog(QtWidgets.QDialog, SplineDialogUI):
+class SplineDialog(QtWidgets.QDialog):
     def __init__(self, parent=None):
         # persistent lipid leaflet dlg
         QtWidgets.QDialog.__init__(self, parent)
-        self.setupUi(self)
+        self.ui = uic.loadUi(os.path.join(UI_LOCATION, "spline.ui"), self)
 
         self.knots.setHorizontalHeaderItem(0, QtWidgets.QTableWidgetItem("dz"))
         self.knots.setHorizontalHeaderItem(1, QtWidgets.QTableWidgetItem("vs"))

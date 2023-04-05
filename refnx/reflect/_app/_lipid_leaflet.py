@@ -10,14 +10,17 @@ from refnx.reflect import LipidLeaflet, SLD
 
 pth = os.path.dirname(os.path.abspath(__file__))
 UI_LOCATION = os.path.join(pth, "ui")
-LipidDialog = uic.loadUiType(os.path.join(UI_LOCATION, "lipid_leaflet.ui"))[0]
 
 
-class LipidLeafletDialog(QtWidgets.QDialog, LipidDialog):
+class LipidLeafletDialog(QtWidgets.QDialog):
     def __init__(self, parent=None):
         # persistent lipid leaflet dlg
         QtWidgets.QDialog.__init__(self, parent)
-        self.setupUi(self)
+        # load the GUI from the ui file
+        self.ui = uic.loadUi(
+            os.path.join(UI_LOCATION, "lipid_leaflet.ui"), self
+        )
+
         dvalidator = QtGui.QDoubleValidator(-2.0e-10, 5, 6)
         self.b_h_real.setValidator(dvalidator)
         self.b_h_imag.setValidator(dvalidator)
@@ -35,8 +38,9 @@ class LipidLeafletDialog(QtWidgets.QDialog, LipidDialog):
         self.lipid_selector.addItem("")
         self.lipid_selector.addItems(self.lipids.keys())
 
-    @QtCore.Slot(str)
-    def on_lipid_selector_currentIndexChanged(self, text):
+    @QtCore.Slot(int)
+    def on_lipid_selector_currentIndexChanged(self, idx):
+        text = self.ui.lipid_selector.currentText()
         if text == "":
             # clear everything
             self.condition.clear()
@@ -88,9 +92,10 @@ class LipidLeafletDialog(QtWidgets.QDialog, LipidDialog):
         )
         self._scene.update()
 
-    @QtCore.Slot(str)
-    def on_condition_currentIndexChanged(self, text):
+    @QtCore.Slot(int)
+    def on_condition_currentIndexChanged(self, val):
         name = self.lipid_selector.currentText()
+        text = self.condition.currentText()
 
         if name not in self.lipids:
             return
@@ -101,8 +106,8 @@ class LipidLeafletDialog(QtWidgets.QDialog, LipidDialog):
             self.V_t.setValue(lipid.conditions[text][1])
             self.calculate()
 
-    @QtCore.Slot(str)
-    def on_radiation_currentIndexChanged(self, text):
+    @QtCore.Slot(int)
+    def on_radiation_currentIndexChanged(self, idx):
         self.calculate()
 
     @QtCore.Slot(float)
