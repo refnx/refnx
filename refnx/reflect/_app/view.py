@@ -2698,16 +2698,11 @@ def _default_slab(parent=None):
     return c
 
 
-_DataObjectDialog = uic.loadUiType(
-    os.path.join(UI_LOCATION, "data_object_selector.ui")
-)[0]
-
-
-class DataObjectSelectorDialog(QtWidgets.QDialog, _DataObjectDialog):
+class DataObjectSelectorDialog(QtWidgets.QDialog):
     def __init__(self, parent=None):
         # persistent data object selector dlg
         QtWidgets.QDialog.__init__(self, parent)
-        self.setupUi(self)
+        self.ui = uic.loadUi(os.path.join(UI_LOCATION, "data_object_selector.ui"), self)
 
     def addItems(self, items):
         self.data_objects.addItems(items)

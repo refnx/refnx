@@ -23,24 +23,18 @@ from matplotlib.figure import Figure
 
 pth = os.path.dirname(os.path.abspath(__file__))
 UI_LOCATION = os.path.join(pth, "ui")
-ProcessMCMCDialogUI = uic.loadUiType(
-    os.path.join(UI_LOCATION, "process_mcmc.ui")
-)[0]
-SampleMCMCDialogUI = uic.loadUiType(
-    os.path.join(UI_LOCATION, "sample_mcmc.ui")
-)[0]
 
 
-class SampleMCMCDialog(QtWidgets.QDialog, SampleMCMCDialogUI):
+class SampleMCMCDialog(QtWidgets.QDialog):
     def __init__(self, parent=None):
         QtWidgets.QDialog.__init__(self, parent)
-        self.setupUi(self)
+        self.ui = uic.loadUi(os.path.join(UI_LOCATION, "sample_mcmc.ui"), self)
 
 
-class ProcessMCMCDialog(QtWidgets.QDialog, ProcessMCMCDialogUI):
+class ProcessMCMCDialog(QtWidgets.QDialog):
     def __init__(self, objective, chain, folder=None, parent=None):
         QtWidgets.QDialog.__init__(self, parent)
-        self.setupUi(self)
+        self.ui = uic.loadUi(os.path.join(UI_LOCATION, "process_mcmc.ui"), self)
 
         self.objective = objective
         self.folder = folder
