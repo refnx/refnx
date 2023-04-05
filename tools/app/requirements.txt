@@ -8,5 +8,6 @@ corner
 periodictable
 pyqt6
 cython
+qtpy
 attrs
 orsopy

@@ -2,7 +2,7 @@ import sys
 
 
 def gui(expt_file=None):
-    from PyQt6 import QtGui, QtWidgets, QtCore
+    from qtpy import QtGui, QtWidgets, QtCore
 
     # should enable high resolution on 4k desktops??
     # "https://coad.ca/2017/05/15/

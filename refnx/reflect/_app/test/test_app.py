@@ -4,7 +4,7 @@ from os.path import join as pjoin
 import pickle
 
 import pytest
-from PyQt6 import QtWidgets, QtCore, QtGui
+from qtpy import QtWidgets, QtCore, QtGui
 
 from refnx.reflect._app.view import MotofitMainWindow
 import refnx.dataset as refd

@@ -1,6 +1,6 @@
 import os.path
-from PyQt6 import QtWidgets, uic
-from PyQt6.QtCore import pyqtSlot
+from qtpy import QtWidgets, uic
+from qtpy.QtCore import Slot
 import periodictable as pt
 import pyparsing
 import numpy as np
@@ -76,22 +76,22 @@ class SLDcalculatorView(QtWidgets.QDialog):
             # sometimes the X-ray and neutron SLD calc can fail, if there are
             # no scattering factors
 
-    @pyqtSlot(float)
+    @Slot(float)
     def on_mass_density_valueChanged(self, arg_1):
         self.calculate()
 
-    @pyqtSlot(float)
+    @Slot(float)
     def on_molecular_volume_valueChanged(self, arg_1):
         self.calculate()
 
-    @pyqtSlot(float)
+    @Slot(float)
     def on_neutron_wavelength_valueChanged(self, arg_1):
         self.calculate()
 
-    @pyqtSlot(float)
+    @Slot(float)
     def on_xray_energy_valueChanged(self, arg_1):
         self.calculate()
 
-    @pyqtSlot(str)
+    @Slot(str)
     def on_chemical_formula_textChanged(self, arg_1):
         self.calculate()
