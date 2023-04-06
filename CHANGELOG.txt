@@ -464,3 +464,10 @@ in 0.1.13.
 
 0.1.33
 ------
+- upgrade to PyQt6. PyQt6 is currently only available as a wheel from PyPI,
+  to be installed by e.g. pip. There are currently no conda packages for PyQt6.
+  PyQt6 enables the gui to be used on macosx_arm64, there are no PyQt5 wheels
+  available on that platform.
+- further modification to use qtpy. qtpy is a shim that allows either
+  PyQt6 or Pyside6 to be used to run the refnx GUI. qtpy is a new dependency
+  for running the GUI.

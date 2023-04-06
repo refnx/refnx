@@ -1,12 +1,12 @@
 import sys
 
-from PyQt5.QtWidgets import QDialog, QPushButton, QVBoxLayout, QApplication
-from PyQt5 import QtWidgets
-from PyQt5.QtCore import pyqtSlot
-from matplotlib.backends.backend_qt5agg import (
+from PyQt6.QtWidgets import QDialog, QPushButton, QVBoxLayout, QApplication
+from PyQt6 import QtWidgets
+from PyQt6.QtCore import pyqtSlot
+from matplotlib.backends.backend_qtagg import (
     FigureCanvasQTAgg as FigureCanvas,
 )
-from matplotlib.backends.backend_qt5agg import (
+from matplotlib.backends.backend_qtagg import (
     NavigationToolbar2QT as NavigationToolbar,
 )
 from matplotlib.figure import Figure
@@ -142,4 +142,4 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
     ex = SlimPlotWindow()
     ex.show()
-    sys.exit(app.exec_())
+    sys.exit(app.exec())

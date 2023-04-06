@@ -4,7 +4,7 @@ from os.path import join as pjoin
 import pickle
 
 import pytest
-from PyQt5 import QtWidgets, QtCore, QtGui
+from qtpy import QtWidgets, QtCore, QtGui
 
 from refnx.reflect._app.view import MotofitMainWindow
 import refnx.dataset as refd
@@ -33,56 +33,6 @@ def mysetup(qtbot):
     qtbot.add_widget(myapp)
 
     return myapp, model
-
-
-# @pytest.mark.skipif(QTBOT_MISSING, reason="pytest-qt not installed")
-# @pytest.mark.usefixtures("no_data_directory")
-# def test_app_load_old_experiment_file(qtbot, data_directory):
-#     # tests loading old experiment files.
-#     # The main issue here is that newer code may have attributes which aren't
-#     # in an experiment pickle file saved by older versions of the gui. When
-#     # trying to _restore_state this causes various Exceptions.
-#     # compensate_older_versions is supposed to fix that, but we test for it
-#     # here.
-#     myapp, model = mysetup(qtbot)
-#
-#     def handle_dialog():
-#         messagebox = QtWidgets.QApplication.activeWindow()
-#         if messagebox is None:
-#             return
-#
-#         ok_button = messagebox.button(QtWidgets.QMessageBox.Ok)
-#         qtbot.mouseClick(ok_button, QtCore.Qt.LeftButton, delay=1)
-#
-#     # get a reference to the dialog and handle it here
-#     QtCore.QTimer.singleShot(5000, handle_dialog)
-#
-#     tdir = pjoin(data_directory, "reflect", "_app")
-#     files = glob.glob(pjoin(tdir, "*.mtft"))
-#     assert len(files) > 0
-#
-#     for file in files:
-#         try:
-#             myapp._restore_state(file)
-#         except ValueError as e:
-#             if str(e) == "unsupported pickle protocol: 5":
-#                 # if you're on older versions of python
-#                 # the tests wouldn't be expected to work
-#                 continue
-#             else:
-#                 raise e
-#         except AttributeError as e:
-#             if str(e) == "'Figure' object has no attribute '_remove_ax'":
-#                 # matplotlib 3.3 introduces _remove_ax which 3.2.1 didn't have
-#                 continue
-#             elif str(e) == (
-#                 "'CallbackRegistry' object has no attribute" " 'callbacks'"
-#             ):
-#                 # matplotlib 3.4.0 is expecting CallbackRegistry to have
-#                 # a callbacks method, which older versions don't have
-#                 continue
-#             else:
-#                 raise e
 
 
 @pytest.mark.skipif(QTBOT_MISSING, reason="pytest-qt not installed")

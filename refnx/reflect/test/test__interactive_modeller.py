@@ -8,10 +8,8 @@ from refnx.reflect import SLD, Slab, ReflectModel, Motofit
 from refnx.dataset import ReflectDataset
 
 from numpy.testing import (
-    assert_almost_equal,
     assert_equal,
     assert_,
-    assert_allclose,
 )
 
 

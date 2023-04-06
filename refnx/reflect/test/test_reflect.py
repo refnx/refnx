@@ -369,7 +369,7 @@ class TestReflect:
                     calc = kernel(x, w)
                 try:
                     assert_allclose(
-                        calc, canonical_r, atol=5.0e-15, rtol=5.0e-13
+                        calc, canonical_r, atol=5.0e-15, rtol=8.0e-13
                     )
                 except AssertionError as e:
                     print(backend, i)

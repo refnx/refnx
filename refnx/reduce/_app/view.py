@@ -2,8 +2,8 @@ import pickle
 import os.path
 import logging
 
-from PyQt5 import QtCore, QtWidgets, uic
-from PyQt5.QtCore import pyqtSlot
+from PyQt6 import QtCore, QtWidgets, uic
+from PyQt6.QtCore import pyqtSlot, Qt
 from refnx.reduce.manual_beam_finder import ManualBeamFinder
 from .plot import SlimPlotWindow
 from .model import ReductionTableModel, ReductionState
@@ -22,9 +22,6 @@ class SlimWindow(QtWidgets.QMainWindow):
 
         self.ui = uic.loadUi(os.path.join(UI_LOCATION, "slim.ui"), self)
 
-        # the manual beam finder instance
-        self.manual_beam_finder = ManualBeamFinder()
-
         # event dialogue
         self.event_dialog = EventDialog(self)
 
@@ -34,9 +31,7 @@ class SlimWindow(QtWidgets.QMainWindow):
         # reduction state contains all the file numbers to be reduced
         # and all the reduction options information. You could pickle this file
         # to save the state of the program
-        self._reduction_state = ReductionState(
-            manual_beam_finder=self.manual_beam_finder
-        )
+        self._reduction_state = ReductionState()
 
         self.ReductionTable = ReductionTableModel(
             self.reduction_state, parent=self
@@ -77,9 +72,9 @@ class SlimWindow(QtWidgets.QMainWindow):
 
             if val[1] is bool:
                 if state_element:
-                    gui_element.setCheckState(QtCore.Qt.Checked)
+                    gui_element.setCheckState(Qt.CheckState.Checked)
                 else:
-                    gui_element.setCheckState(QtCore.Qt.Unchecked)
+                    gui_element.setCheckState(Qt.CheckState.Unchecked)
 
             elif val[1] is float:
                 gui_element.setValue(state_element)
@@ -100,12 +95,17 @@ class SlimWindow(QtWidgets.QMainWindow):
         Performs a reduction in response to the reduce plot_button being
         clicked
         """
+        if self.reduction_state.manual_beam_finder is None:
+            mbf = ManualBeamFinder()
+            self.manual_beam_finder = mbf
+            self._reduction_state.manual_beam_finder = mbf
+
         redn_state = self._reduction_state
 
         # if you're doing event mode you need to know how long
         # each time slice is
         if redn_state.streamed_reduction:
-            ok = self.event_dialog.exec_()
+            ok = self.event_dialog.exec()
             if not ok:
                 return
 
@@ -117,7 +117,7 @@ class SlimWindow(QtWidgets.QMainWindow):
         progress = QtWidgets.QProgressDialog(
             "Reducing files...", "Cancel", 0, 100, self
         )
-        progress.setWindowModality(QtCore.Qt.ApplicationModal)
+        progress.setWindowModality(Qt.WindowModality.ApplicationModal)
         progress.show()
         progress.raise_()
         progress.setValue(0)
@@ -138,7 +138,7 @@ class SlimWindow(QtWidgets.QMainWindow):
         """
         Present a dialogue to the user to change reduction options
         """
-        ok = self.reduction_options_dialog.exec_()
+        ok = self.reduction_options_dialog.exec()
         if not ok:
             return
 

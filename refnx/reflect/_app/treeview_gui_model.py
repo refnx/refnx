@@ -4,7 +4,8 @@ import pickle
 from operator import itemgetter
 
 import numpy as np
-from PyQt5 import QtCore, QtGui, QtWidgets, uic
+from qtpy import QtCore, QtGui, QtWidgets, uic
+from qtpy.QtCore import Qt
 
 from refnx._lib import flatten, unique
 from refnx.analysis import Parameter, Parameters, possibly_create_parameter
@@ -68,15 +69,15 @@ class Node:
         # vary will be displayed in a checkbox with value
         return 6
 
-    def data(self, column, role=QtCore.Qt.DisplayRole):
+    def data(self, column, role=Qt.ItemDataRole.DisplayRole):
         return None
 
-    def setData(self, col, val, role=QtCore.Qt.EditRole):
+    def setData(self, col, val, role=Qt.ItemDataRole.EditRole):
         # TreeModel emits the dataChanged Signal, not the node.
         return False
 
     def flags(self, column):
-        flags = QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled
+        flags = Qt.ItemFlag.ItemIsSelectable | Qt.ItemFlag.ItemIsEnabled
         return flags
 
     def parent(self):
@@ -156,26 +157,26 @@ class ParNode(Node):
         return self._data
 
     def flags(self, column):
-        flags = QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled
+        flags = Qt.ItemFlag.ItemIsSelectable | Qt.ItemFlag.ItemIsEnabled
         if column in [1, 3, 4]:
-            flags |= QtCore.Qt.ItemIsEditable
+            flags |= Qt.ItemFlag.ItemIsEditable
 
         if column == 1:
-            flags |= QtCore.Qt.ItemIsUserCheckable
+            flags |= Qt.ItemFlag.ItemIsUserCheckable
 
         return flags
 
-    def data(self, column, role=QtCore.Qt.DisplayRole):
-        if role == QtCore.Qt.CheckStateRole:
+    def data(self, column, role=Qt.ItemDataRole.DisplayRole):
+        if role == Qt.ItemDataRole.CheckStateRole:
             if column == 1:
                 p = self.parameter
                 if p.vary:
-                    return QtCore.Qt.Checked
+                    return Qt.CheckState.Checked
                 else:
-                    return QtCore.Qt.Unchecked
+                    return Qt.CheckState.Unchecked
             else:
                 return None
-        elif role == QtCore.Qt.ToolTipRole:
+        elif role == Qt.ItemDataRole.ToolTipRole:
             if column in [1, 2]:
                 p = self.parameter
                 return getattr(p, "units", None)
@@ -184,7 +185,7 @@ class ParNode(Node):
             elif column == 4:
                 return "Upper limit for the parameter"
 
-        if role == QtCore.Qt.DisplayRole:
+        if role == Qt.ItemDataRole.DisplayRole:
             p = self.parameter
             d = [
                 p.name,
@@ -196,12 +197,12 @@ class ParNode(Node):
             ]
             return d[column]
 
-    def setData(self, column, value, role=QtCore.Qt.EditRole):
+    def setData(self, column, value, role=Qt.ItemDataRole.EditRole):
         # we want to use a checkbox to say if a parameter is varying
-        if role == QtCore.Qt.CheckStateRole and column == 1:
+        if role == Qt.ItemDataRole.CheckStateRole and column == 1:
             try:
                 p = self.parameter
-                p.vary = value == QtCore.Qt.Checked
+                p.vary = value == Qt.CheckState.Checked
             except RuntimeError:
                 # can't try and hold a parameter that has a constraint
                 False
@@ -209,14 +210,14 @@ class ParNode(Node):
             return True
 
         # parse and fill out parameter values/limits
-        if role == QtCore.Qt.EditRole:
+        if role == Qt.ItemDataRole.EditRole:
             if type(value) is str:
                 validator = QtGui.QDoubleValidator()
                 voutput = validator.validate(value, 1)
             else:
-                voutput = [QtGui.QValidator.Acceptable, float(value)]
+                voutput = [QtGui.QValidator.State.Acceptable, float(value)]
 
-            if voutput[0] == QtGui.QValidator.Acceptable:
+            if voutput[0] == QtGui.QValidator.State.Acceptable:
                 p = self.parameter
                 if column == 1:
                     p.value = float(voutput[1])
@@ -245,12 +246,12 @@ class ParametersNode(Node):
         return self._data
 
     def flags(self, column):
-        flags = QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled
+        flags = Qt.ItemFlag.ItemIsSelectable | Qt.ItemFlag.ItemIsEnabled
 
         return flags
 
-    def data(self, column, role=QtCore.Qt.DisplayRole):
-        if role == QtCore.Qt.DisplayRole:
+    def data(self, column, role=Qt.ItemDataRole.DisplayRole):
+        if role == Qt.ItemDataRole.DisplayRole:
             if column == 0:
                 name = self._data.name
                 if not name:
@@ -272,53 +273,57 @@ class PropertyNode(Node):
         self.validators = validators
 
     def flags(self, column):
-        flags = QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled
+        flags = Qt.ItemFlag.ItemIsSelectable | Qt.ItemFlag.ItemIsEnabled
         if column == 1:
-            flags |= QtCore.Qt.ItemIsEditable
+            flags |= Qt.ItemFlag.ItemIsEditable
 
             if self.attribute_type is bool:
-                flags |= QtCore.Qt.ItemIsUserCheckable
+                flags |= Qt.ItemFlag.ItemIsUserCheckable
 
         return flags
 
-    def data(self, column, role=QtCore.Qt.DisplayRole):
+    def data(self, column, role=Qt.ItemDataRole.DisplayRole):
         if (
-            role == QtCore.Qt.CheckStateRole
+            role == Qt.ItemDataRole.CheckStateRole
             and column == 1
             and self.attribute_type is bool
         ):
             d = getattr(self._parent._data, self._data)
 
             if d:
-                return QtCore.Qt.Checked
+                return Qt.CheckState.Checked
             else:
-                return QtCore.Qt.Unchecked
+                return Qt.CheckState.Unchecked
 
-        if role == QtCore.Qt.DisplayRole and column == 1:
+        if role == Qt.ItemDataRole.DisplayRole and column == 1:
             return getattr(self._parent._data, self._data)
-        if role == QtCore.Qt.DisplayRole and column == 0:
+        if role == Qt.ItemDataRole.DisplayRole and column == 0:
             return self._data
 
     def columnCount(self):
         return 2
 
-    def setData(self, column, value, role=QtCore.Qt.EditRole):
+    def setData(self, column, value, role=Qt.ItemDataRole.EditRole):
         if (
-            role == QtCore.Qt.CheckStateRole
+            role == Qt.ItemDataRole.CheckStateRole
             and column == 1
             and self.attribute_type is bool
         ):
-            if value == QtCore.Qt.Checked:
+            if value == Qt.CheckState.Checked:
                 setattr(self._parent._data, self._data, True)
             else:
                 setattr(self._parent._data, self._data, False)
             return True
 
         # parse and fill out parameter values/limits
-        if role == QtCore.Qt.EditRole and len(self.validators) and column == 1:
+        if (
+            role == Qt.ItemDataRole.EditRole
+            and len(self.validators)
+            and column == 1
+        ):
             for validator in self.validators:
                 voutput = validator.validate(value, 1)
-                if voutput[0] == QtGui.QValidator.Acceptable:
+                if voutput[0] == QtGui.QValidator.State.Acceptable:
                     setattr(
                         self._parent._data,
                         self._data,
@@ -357,26 +362,26 @@ class ComponentNode(Node):
         return self._data
 
     def flags(self, column):
-        flags = QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled
+        flags = Qt.ItemFlag.ItemIsSelectable | Qt.ItemFlag.ItemIsEnabled
         if column == 0:
-            flags |= QtCore.Qt.ItemIsEditable
+            flags |= Qt.ItemFlag.ItemIsEditable
 
         # say that you want the Components to be draggable
-        flags |= QtCore.Qt.ItemIsDragEnabled | QtCore.Qt.ItemIsDropEnabled
+        flags |= Qt.ItemFlag.ItemIsDragEnabled | Qt.ItemFlag.ItemIsDropEnabled
 
         return flags
 
-    def data(self, column, role=QtCore.Qt.EditRole):
-        if role == QtCore.Qt.CheckStateRole:
+    def data(self, column, role=Qt.ItemDataRole.EditRole):
+        if role == Qt.ItemDataRole.CheckStateRole:
             return None
 
         if column > 0:
             return None
-        if role == QtCore.Qt.DisplayRole:
+        if role == Qt.ItemDataRole.DisplayRole:
             return self._data.name
 
-    def setData(self, column, value, role=QtCore.Qt.EditRole):
-        if role == QtCore.Qt.CheckStateRole:
+    def setData(self, column, value, role=Qt.ItemDataRole.EditRole):
+        if role == Qt.ItemDataRole.CheckStateRole:
             return False
 
         if column:
@@ -399,8 +404,8 @@ class StructureNode(Node):
     def structure(self):
         return self._data
 
-    def data(self, column, role=QtCore.Qt.EditRole):
-        if role == QtCore.Qt.CheckStateRole:
+    def data(self, column, role=Qt.ItemDataRole.EditRole):
+        if role == Qt.ItemDataRole.CheckStateRole:
             return None
 
         if column > 0:
@@ -497,14 +502,14 @@ class ReflectModelNode(Node):
             for i in range(STRUCT_OFFSET, self.childCount())
         ]
 
-    def data(self, column, role=QtCore.Qt.EditRole):
-        if role == QtCore.Qt.CheckStateRole and column == 1:
+    def data(self, column, role=Qt.ItemDataRole.EditRole):
+        if role == Qt.ItemDataRole.CheckStateRole and column == 1:
             if self.constantdq_q:
-                return QtCore.Qt.Checked
+                return Qt.CheckState.Checked
             else:
-                return QtCore.Qt.Unchecked
+                return Qt.CheckState.Unchecked
 
-        if role == QtCore.Qt.DisplayRole:
+        if role == Qt.ItemDataRole.DisplayRole:
             if column == 0:
                 # structures name
                 return "model"
@@ -615,10 +620,10 @@ class ReflectModelNode(Node):
         self.child(0).insertChild(row - STRUCT_OFFSET, n)
         self._model.endInsertRows()
 
-    def setData(self, column, value, role=QtCore.Qt.EditRole):
+    def setData(self, column, value, role=Qt.ItemDataRole.EditRole):
         # currently this only deals with constant dq/q
-        if role == QtCore.Qt.CheckStateRole and column == 1:
-            self.constantdq_q = value == QtCore.Qt.Checked
+        if role == Qt.ItemDataRole.CheckStateRole and column == 1:
+            self.constantdq_q = value == Qt.CheckState.Checked
             data_object_node = find_data_object(self.index)
             data_object = data_object_node.data_object
             data_object.constantdq_q = self.constantdq_q
@@ -640,9 +645,9 @@ class ReflectModelNode(Node):
         return True
 
     def flags(self, column):
-        flags = QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled
+        flags = Qt.ItemFlag.ItemIsSelectable | Qt.ItemFlag.ItemIsEnabled
         if column == 1:
-            flags |= QtCore.Qt.ItemIsUserCheckable
+            flags |= Qt.ItemFlag.ItemIsUserCheckable
 
         return flags
 
@@ -659,14 +664,14 @@ class DatasetNode(Node):
         self.dataset.refresh()
 
     def flags(self, column):
-        flags = QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled
+        flags = Qt.ItemFlag.ItemIsSelectable | Qt.ItemFlag.ItemIsEnabled
         return flags
 
-    def data(self, column, role=QtCore.Qt.EditRole):
-        if role == QtCore.Qt.CheckStateRole:
+    def data(self, column, role=Qt.ItemDataRole.EditRole):
+        if role == Qt.ItemDataRole.CheckStateRole:
             return None
 
-        if role == QtCore.Qt.DisplayRole:
+        if role == QtCore.Qt.ItemDataRole.DisplayRole:
             if column == 0:
                 return self._data.name
             return None
@@ -736,21 +741,21 @@ class DataObjectNode(Node):
     def columnCount(self):
         return 4
 
-    def setData(self, column, value, role=QtCore.Qt.EditRole):
-        if role == QtCore.Qt.CheckStateRole and column == 1:
-            self.visible = value == QtCore.Qt.Checked
+    def setData(self, column, value, role=QtCore.Qt.ItemDataRole.EditRole):
+        if role == QtCore.Qt.ItemDataRole.CheckStateRole and column == 1:
+            self.visible = value == QtCore.Qt.CheckState.Checked
             return True
 
         return True
 
-    def data(self, column, role=QtCore.Qt.DisplayRole):
-        if role == QtCore.Qt.CheckStateRole and column == 1:
+    def data(self, column, role=QtCore.Qt.ItemDataRole.DisplayRole):
+        if role == QtCore.Qt.ItemDataRole.CheckStateRole and column == 1:
             if self.visible:
-                return QtCore.Qt.Checked
+                return QtCore.Qt.CheckState.Checked
             else:
-                return QtCore.Qt.Unchecked
+                return QtCore.Qt.CheckState.Unchecked
 
-        if role == QtCore.Qt.DisplayRole:
+        if role == QtCore.Qt.ItemDataRole.DisplayRole:
             if column == 0:
                 return self._data.name
             elif column == 1:
@@ -759,7 +764,7 @@ class DataObjectNode(Node):
                 return "points: %d" % len(self._data.dataset)
             elif column == 3:
                 return "chi2: %g" % self.chi2
-        elif role == QtCore.Qt.ToolTipRole:
+        elif role == QtCore.Qt.ItemDataRole.ToolTipRole:
             if column == 1:
                 return "Show or hide the dataset from the graphs"
             elif column == 3:
@@ -770,12 +775,15 @@ class DataObjectNode(Node):
                 )
 
     def flags(self, column):
-        flags = QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled
+        flags = (
+            QtCore.Qt.ItemFlag.ItemIsSelectable
+            | QtCore.Qt.ItemFlag.ItemIsEnabled
+        )
         if column == 1:
-            flags |= QtCore.Qt.ItemIsUserCheckable
+            flags |= QtCore.Qt.ItemFlag.ItemIsUserCheckable
 
         # want to drop dataobject onto currently_fitting
-        flags |= QtCore.Qt.ItemIsDragEnabled
+        flags |= QtCore.Qt.ItemFlag.ItemIsDragEnabled
         return flags
 
 
@@ -886,7 +894,7 @@ class TreeModel(QtCore.QAbstractItemModel):
         item = index.internalPointer()
         return item.data(index.column(), role=role)
 
-    def setData(self, index, value, role=QtCore.Qt.EditRole):
+    def setData(self, index, value, role=QtCore.Qt.ItemDataRole.EditRole):
         if not index.isValid():
             return None
 
@@ -912,8 +920,8 @@ class TreeModel(QtCore.QAbstractItemModel):
     def headerData(self, section, orientation, role):
         headers = ["Name", "value", "sigma", "lb", "ub", "constraint"]
         if (
-            orientation == QtCore.Qt.Horizontal
-            and role == QtCore.Qt.DisplayRole
+            orientation == QtCore.Qt.Orientation.Horizontal
+            and role == QtCore.Qt.ItemDataRole.DisplayRole
         ):
             return headers[section]
 
@@ -1271,23 +1279,29 @@ class StackNode(Node):
         return self._data
 
     def flags(self, column):
-        flags = QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled
+        flags = (
+            QtCore.Qt.ItemFlag.ItemIsSelectable
+            | QtCore.Qt.ItemFlag.ItemIsEnabled
+        )
         if column == 0:
-            flags |= QtCore.Qt.ItemIsEditable
+            flags |= QtCore.Qt.ItemFlag.ItemIsEditable
 
         # say that you want the Components to be draggable
-        flags |= QtCore.Qt.ItemIsDragEnabled | QtCore.Qt.ItemIsDropEnabled
+        flags |= (
+            QtCore.Qt.ItemFlag.ItemIsDragEnabled
+            | QtCore.Qt.ItemFlag.ItemIsDropEnabled
+        )
 
         return flags
 
-    def data(self, column, role=QtCore.Qt.EditRole):
-        if role == QtCore.Qt.CheckStateRole:
+    def data(self, column, role=QtCore.Qt.ItemDataRole.EditRole):
+        if role == QtCore.Qt.ItemDataRole.CheckStateRole:
             return None
 
         if column > 0:
             return None
 
-        if role == QtCore.Qt.DisplayRole:
+        if role == QtCore.Qt.ItemDataRole.DisplayRole:
             return self._data.name
 
     def remove_component(self, row):

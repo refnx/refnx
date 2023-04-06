@@ -1,6 +1,6 @@
 import os.path
-from PyQt5 import QtWidgets, uic
-from PyQt5.QtCore import pyqtSlot
+from qtpy import QtWidgets, uic
+from qtpy.QtCore import Slot
 import numpy as np
 
 

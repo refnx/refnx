@@ -1,16 +1,16 @@
 import os.path
 
-from PyQt5 import QtCore, QtWidgets, uic
-from PyQt5.QtCore import pyqtSlot
+from PyQt6 import QtCore, QtWidgets, uic
+from PyQt6.QtCore import pyqtSlot
 import numpy as np
 
 import matplotlib
-from matplotlib.backends.backend_qt5agg import (
+from matplotlib.backends.backend_qtagg import (
     FigureCanvasQTAgg as FigureCanvas,
 )
 from matplotlib.figure import Figure
 from matplotlib import patches
-from matplotlib.backends.backend_qt5agg import (
+from matplotlib.backends.backend_qtagg import (
     NavigationToolbar2QT as NavigationToolbar,
 )
 
@@ -18,7 +18,7 @@ from refnx.reduce.peak_utils import peak_finder, centroid
 from refnx.reduce.platypusnexus import fore_back_region, PIXEL_OFFSET
 import refnx.reduce._app as floc
 
-matplotlib.use("Qt5Agg")
+matplotlib.use("QtAgg")
 
 
 UI_LOCATION = os.path.join(os.path.dirname(floc.__file__), "ui")
@@ -33,7 +33,7 @@ class ManualBeamFinder(QtWidgets.QDialog):
     Otherwise the ipython kernel will crash immediately.
     """
 
-    def __init__(self):
+    def __init__(self, parent=None):
         """ """
         super().__init__()
         self.dialog = uic.loadUi(
@@ -132,7 +132,7 @@ class ManualBeamFinder(QtWidgets.QDialog):
         if name is not None:
             self.setWindowTitle("Manual beam finder: " + name)
 
-        self.dialog.exec_()
+        self.dialog.exec()
 
         y1 = int(round(self._low_px - PIXEL_OFFSET))
         y2 = int(round(self._high_px + PIXEL_OFFSET))

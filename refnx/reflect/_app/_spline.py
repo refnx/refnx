@@ -1,21 +1,20 @@
 import os.path
 import json
 
-from PyQt5 import QtCore, QtGui, QtWidgets, uic
+from qtpy import QtCore, QtGui, QtWidgets, uic
 
 from refnx.reflect import Spline, SLD
 
 
 pth = os.path.dirname(os.path.abspath(__file__))
 UI_LOCATION = os.path.join(pth, "ui")
-SplineDialogUI = uic.loadUiType(os.path.join(UI_LOCATION, "spline.ui"))[0]
 
 
-class SplineDialog(QtWidgets.QDialog, SplineDialogUI):
+class SplineDialog(QtWidgets.QDialog):
     def __init__(self, parent=None):
         # persistent lipid leaflet dlg
         QtWidgets.QDialog.__init__(self, parent)
-        self.setupUi(self)
+        self.ui = uic.loadUi(os.path.join(UI_LOCATION, "spline.ui"), self)
 
         self.knots.setHorizontalHeaderItem(0, QtWidgets.QTableWidgetItem("dz"))
         self.knots.setHorizontalHeaderItem(1, QtWidgets.QTableWidgetItem("vs"))
@@ -26,7 +25,7 @@ class SplineDialog(QtWidgets.QDialog, SplineDialogUI):
         self.knots.setItemDelegateForColumn(0, self._dz_delegate)
         self.knots.setItemDelegateForColumn(1, self._vs_delegate)
 
-    @QtCore.pyqtSlot(int)
+    @QtCore.Slot(int)
     def on_num_knots_valueChanged(self, val):
         oldrows = self.knots.rowCount()
         self.knots.setRowCount(val)

@@ -5,7 +5,7 @@ import os.path
 
 
 def gui():
-    from PyQt5 import QtWidgets
+    from PyQt6 import QtWidgets
     from refnx.reduce._app.view import SlimWindow
 
     time_str = time.strftime("%Y%m%d-%H%M%S")
@@ -23,7 +23,7 @@ def gui():
     myapp = SlimWindow()
 
     myapp.show()
-    v = app.exec_()
+    v = app.exec()
     return v
 
 

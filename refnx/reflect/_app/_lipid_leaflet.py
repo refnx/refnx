@@ -1,7 +1,8 @@
 import os.path
 import json
 
-from PyQt5 import QtCore, QtGui, QtWidgets, uic
+from qtpy import QtCore, QtGui, QtWidgets, uic
+from qtpy.QtCore import Qt
 
 import periodictable as pt
 from refnx.reflect import LipidLeaflet, SLD
@@ -9,14 +10,17 @@ from refnx.reflect import LipidLeaflet, SLD
 
 pth = os.path.dirname(os.path.abspath(__file__))
 UI_LOCATION = os.path.join(pth, "ui")
-LipidDialog = uic.loadUiType(os.path.join(UI_LOCATION, "lipid_leaflet.ui"))[0]
 
 
-class LipidLeafletDialog(QtWidgets.QDialog, LipidDialog):
+class LipidLeafletDialog(QtWidgets.QDialog):
     def __init__(self, parent=None):
         # persistent lipid leaflet dlg
         QtWidgets.QDialog.__init__(self, parent)
-        self.setupUi(self)
+        # load the GUI from the ui file
+        self.ui = uic.loadUi(
+            os.path.join(UI_LOCATION, "lipid_leaflet.ui"), self
+        )
+
         dvalidator = QtGui.QDoubleValidator(-2.0e-10, 5, 6)
         self.b_h_real.setValidator(dvalidator)
         self.b_h_imag.setValidator(dvalidator)
@@ -34,8 +38,9 @@ class LipidLeafletDialog(QtWidgets.QDialog, LipidDialog):
         self.lipid_selector.addItem("")
         self.lipid_selector.addItems(self.lipids.keys())
 
-    @QtCore.pyqtSlot(str)
-    def on_lipid_selector_currentIndexChanged(self, text):
+    @QtCore.Slot(int)
+    def on_lipid_selector_currentIndexChanged(self, idx):
+        text = self.ui.lipid_selector.currentText()
         if text == "":
             # clear everything
             self.condition.clear()
@@ -83,13 +88,14 @@ class LipidLeafletDialog(QtWidgets.QDialog, LipidDialog):
         self.chemical_structure.setScene(self._scene)
         self.chemical_structure.show()
         self.chemical_structure.fitInView(
-            self._scene.itemsBoundingRect(), QtCore.Qt.KeepAspectRatio
+            self._scene.itemsBoundingRect(), Qt.AspectRatioMode.KeepAspectRatio
         )
         self._scene.update()
 
-    @QtCore.pyqtSlot(str)
-    def on_condition_currentIndexChanged(self, text):
+    @QtCore.Slot(int)
+    def on_condition_currentIndexChanged(self, val):
         name = self.lipid_selector.currentText()
+        text = self.condition.currentText()
 
         if name not in self.lipids:
             return
@@ -100,15 +106,15 @@ class LipidLeafletDialog(QtWidgets.QDialog, LipidDialog):
             self.V_t.setValue(lipid.conditions[text][1])
             self.calculate()
 
-    @QtCore.pyqtSlot(str)
-    def on_radiation_currentIndexChanged(self, text):
+    @QtCore.Slot(int)
+    def on_radiation_currentIndexChanged(self, idx):
         self.calculate()
 
-    @QtCore.pyqtSlot(float)
+    @QtCore.Slot(float)
     def on_xray_energy_valueChanged(self, value):
         self.calculate()
 
-    @QtCore.pyqtSlot(float)
+    @QtCore.Slot(float)
     def on_APM_valueChanged(self, value):
         name = self.lipid_selector.currentText()
         if name not in self.lipids:
@@ -119,7 +125,7 @@ class LipidLeafletDialog(QtWidgets.QDialog, LipidDialog):
         self.thick_h.setValue(V_h / value)
         self.thick_t.setValue(V_t / value)
 
-    @QtCore.pyqtSlot(float)
+    @QtCore.Slot(float)
     def on_thick_t_valueChanged(self, value):
         name = self.lipid_selector.currentText()
         if name not in self.lipids:
@@ -131,7 +137,7 @@ class LipidLeafletDialog(QtWidgets.QDialog, LipidDialog):
         self.APM.setValue(APM)
         self.thick_h.setValue(V_h / APM)
 
-    @QtCore.pyqtSlot(float)
+    @QtCore.Slot(float)
     def on_thick_h_valueChanged(self, value):
         name = self.lipid_selector.currentText()
         if name not in self.lipids:
@@ -143,11 +149,11 @@ class LipidLeafletDialog(QtWidgets.QDialog, LipidDialog):
         self.APM.setValue(APM)
         self.thick_t.setValue(V_t / APM)
 
-    @QtCore.pyqtSlot(float)
+    @QtCore.Slot(float)
     def on_head_solvent_valueChanged(self, value):
         self.calculate()
 
-    @QtCore.pyqtSlot(float)
+    @QtCore.Slot(float)
     def on_tail_solvent_valueChanged(self, value):
         self.calculate()
 
