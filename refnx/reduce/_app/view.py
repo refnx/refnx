@@ -2,8 +2,9 @@ import pickle
 import os.path
 import logging
 
-from PyQt6 import QtCore, QtWidgets, uic
-from PyQt6.QtCore import pyqtSlot, Qt
+from qtpy.compat import getopenfilename, getsavefilename
+from qtpy import QtCore, QtWidgets, uic
+from qtpy.QtCore import Qt
 from refnx.reduce.manual_beam_finder import ManualBeamFinder
 from .plot import SlimPlotWindow
 from .model import ReductionTableModel, ReductionState
@@ -44,6 +45,7 @@ class SlimWindow(QtWidgets.QMainWindow):
             self._plot.data_directory_changed
         )
 
+    @property
     def reduction_state(self):
         return self._reduction_state
 
@@ -89,7 +91,7 @@ class SlimWindow(QtWidgets.QMainWindow):
         # just use default manual beam finder dialog
         self._reduction_state.manual_beam_finder = self.manual_beam_finder
 
-    @pyqtSlot()
+    @QtCore.Slot()
     def on_reduce_clicked(self):
         """
         Performs a reduction in response to the reduce plot_button being
@@ -133,7 +135,7 @@ class SlimWindow(QtWidgets.QMainWindow):
 
         progress.setValue(100)
 
-    @pyqtSlot()
+    @QtCore.Slot()
     def on_reducer_variables_clicked(self):
         """
         Present a dialogue to the user to change reduction options
@@ -153,14 +155,14 @@ class SlimWindow(QtWidgets.QMainWindow):
                 value = getattr(rod, key).value()
             setattr(self._reduction_state, key, value)
 
-    @pyqtSlot()
+    @QtCore.Slot()
     def on_change_data_directory_clicked(self):
         directory = QtWidgets.QFileDialog.getExistingDirectory(self)
         if directory:
             self.ui.data_directory.setText(directory)
             self._reduction_state.data_directory = directory
 
-    @pyqtSlot()
+    @QtCore.Slot()
     def on_data_directory_editingFinished(self):
         directory = self.ui.data_directory.text()
         if os.path.isdir(directory):
@@ -170,14 +172,14 @@ class SlimWindow(QtWidgets.QMainWindow):
                 self._reduction_state.data_directory
             )
 
-    @pyqtSlot()
+    @QtCore.Slot()
     def on_change_streamed_directory_clicked(self):
         directory = QtWidgets.QFileDialog.getExistingDirectory(self)
         if directory:
             self.ui.streamed_directory.setText(directory)
             self._reduction_state.streamed_directory = directory
 
-    @pyqtSlot()
+    @QtCore.Slot()
     def on_streamed_directory_editingFinished(self):
         directory = self.ui.streamed_directory.text()
         if os.path.isdir(directory):
@@ -187,14 +189,14 @@ class SlimWindow(QtWidgets.QMainWindow):
                 self._reduction_state.streamed_directory
             )
 
-    @pyqtSlot()
+    @QtCore.Slot()
     def on_change_output_directory_clicked(self):
         directory = QtWidgets.QFileDialog.getExistingDirectory(self)
         if directory:
             self.ui.output_directory.setText(directory)
             self._reduction_state.output_directory = directory
 
-    @pyqtSlot()
+    @QtCore.Slot()
     def on_output_directory_editingFinished(self):
         directory = self.ui.output_directory.text()
         if os.path.isdir(directory):
@@ -204,7 +206,7 @@ class SlimWindow(QtWidgets.QMainWindow):
                 self._reduction_state.output_directory
             )
 
-    @pyqtSlot()
+    @QtCore.Slot()
     def on_actionSave_triggered(self):
         path = self._reduction_state.save_state_path
         if path is not None:
@@ -213,15 +215,15 @@ class SlimWindow(QtWidgets.QMainWindow):
         else:
             self.on_actionSave_As_triggered()
 
-    @pyqtSlot()
+    @QtCore.Slot()
     def on_actionSave_As_triggered(self):
         path = self._reduction_state.save_state_path
         initial_dir = "~/"
         if path is not None and os.path.isfile(path):
             initial_dir = os.path.dirname(path)
 
-        fpath = QtWidgets.QFileDialog.getSaveFileName(
-            directory=initial_dir, filter="slim files (*.slim)"
+        fpath = getsavefilename(
+            basedir=initial_dir, filters="slim files (*.slim)"
         )
 
         if fpath[0]:
@@ -230,15 +232,15 @@ class SlimWindow(QtWidgets.QMainWindow):
             self._reduction_state.save_state_path = fpath
             self.on_actionSave_triggered()
 
-    @pyqtSlot()
+    @QtCore.Slot()
     def on_actionLoad_triggered(self):
         path = self._reduction_state.save_state_path
         initial_dir = "~/"
         if path is not None and os.path.isfile(path):
             initial_dir = os.path.dirname(path)
 
-        fpath = QtWidgets.QFileDialog.getOpenFileName(
-            self, directory=initial_dir, filter="slim files (*.slim)"
+        fpath = getopenfilename(
+            self, basedir=initial_dir, filters="slim files (*.slim)"
         )
 
         if os.path.isfile(fpath[0]):
@@ -252,26 +254,20 @@ class SlimWindow(QtWidgets.QMainWindow):
                 except (pickle.UnpicklingError, EOFError) as e:
                     logging.info(repr(e))
 
-    @pyqtSlot()
+    @QtCore.Slot()
     def on_plot_clicked(self):
         self._plot.show()
 
 
-EventDialogClass = uic.loadUiType(os.path.join(UI_LOCATION, "event.ui"))[0]
-
-
-class EventDialog(QtWidgets.QDialog, EventDialogClass):
+class EventDialog(QtWidgets.QDialog):
     def __init__(self, parent=None):
         QtWidgets.QDialog.__init__(self, parent)
-        self.setupUi(self)
+        self.ui = uic.loadUi(os.path.join(UI_LOCATION, "event.ui"), self)
 
 
-ReductionOptionsClass = uic.loadUiType(
-    os.path.join(UI_LOCATION, "reduction_options.ui")
-)[0]
-
-
-class ReductionOptionsDialog(QtWidgets.QDialog, ReductionOptionsClass):
+class ReductionOptionsDialog(QtWidgets.QDialog):
     def __init__(self, parent=None):
         QtWidgets.QDialog.__init__(self, parent)
-        self.setupUi(self)
+        self.ui = uic.loadUi(
+            os.path.join(UI_LOCATION, "reduction_options.ui"), self
+        )

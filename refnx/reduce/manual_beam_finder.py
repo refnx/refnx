@@ -1,7 +1,6 @@
 import os.path
 
-from PyQt6 import QtCore, QtWidgets, uic
-from PyQt6.QtCore import pyqtSlot
+from qtpy import QtCore, QtWidgets, uic
 import numpy as np
 
 import matplotlib
@@ -307,7 +306,7 @@ class ManualBeamFinder(QtWidgets.QDialog):
         self.true_fwhm.setValue(self._true_sd * 2.3548)
         self.true_fwhm.valueChanged.connect(self.on_true_fwhm_valueChanged)
 
-    @pyqtSlot(float)
+    @QtCore.Slot(float)
     def on_true_centre_valueChanged(self, val):
         self._true_centre = val
 
@@ -326,7 +325,7 @@ class ManualBeamFinder(QtWidgets.QDialog):
 
         self.redraw_cross_section_regions()
 
-    @pyqtSlot(float)
+    @QtCore.Slot(float)
     def on_true_fwhm_valueChanged(self, val):
         self._true_sd = val / 2.3548
 
@@ -337,17 +336,17 @@ class ManualBeamFinder(QtWidgets.QDialog):
 
         self.redraw_cross_section_regions()
 
-    @pyqtSlot(int)
+    @QtCore.Slot(int)
     def on_pixels_to_include_valueChanged(self, val):
         self._pixels_to_include = val
         self.recalculate_graphs()
 
-    @pyqtSlot(int)
+    @QtCore.Slot(int)
     def on_integrate_width_valueChanged(self, val):
         self._integrate_width = val
         self.recalculate_graphs()
 
-    @pyqtSlot(int)
+    @QtCore.Slot(int)
     def on_integrate_position_valueChanged(self, val):
         self._integrate_position = val
         self.recalculate_graphs()
