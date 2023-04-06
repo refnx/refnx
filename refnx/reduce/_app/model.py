@@ -3,8 +3,8 @@ import os
 import logging
 from copy import copy
 
-from PyQt6 import QtCore
-from PyQt6.QtCore import Qt
+from qtpy import QtCore
+from qtpy.QtCore import Qt
 import numpy as np
 
 from refnx._lib import preserve_cwd
@@ -269,7 +269,7 @@ class ReductionTableModel(QtCore.QAbstractTableModel):
 
     @property
     def reduction_state(self):
-        return self._reduction_state()
+        return self._reduction_state
 
     def rowCount(self, parent=QtCore.QModelIndex()):
         return 200

@@ -1,8 +1,8 @@
 import sys
 
-from PyQt6.QtWidgets import QDialog, QPushButton, QVBoxLayout, QApplication
-from PyQt6 import QtWidgets
-from PyQt6.QtCore import pyqtSlot
+from qtpy.compat import getopenfilenames
+from qtpy import QtCore, QtWidgets
+from qtpy.QtWidgets import QDialog, QPushButton, QVBoxLayout, QApplication
 from matplotlib.backends.backend_qtagg import (
     FigureCanvasQTAgg as FigureCanvas,
 )
@@ -65,7 +65,7 @@ class SlimPlotWindow(QDialog):
 
         self.canvas.draw()
 
-    @pyqtSlot(str)
+    @QtCore.Slot(str)
     def data_directory_changed(self, directory):
         """
         This receives a signal from the main slim window to notify
@@ -81,11 +81,11 @@ class SlimPlotWindow(QDialog):
             filenames to display in the plot window
         """
         if not files_to_display:
-            files = QtWidgets.QFileDialog.getOpenFileNames(
+            files = getopenfilenames(
                 self,
-                "Select reflectometry data files to plot",
-                directory=self.data_directory,
-                filter="Reflectometry files (*.xml *.dat)",
+                caption="Select reflectometry data files to plot",
+                basedir=self.data_directory,
+                filters="Reflectometry files (*.xml *.dat)",
             )
             files_to_display = files[0]
 
