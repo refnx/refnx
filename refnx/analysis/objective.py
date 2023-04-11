@@ -849,6 +849,37 @@ class Objective(BaseObjective):
         """
         yield from self.parameters.pgen(ngen=ngen, nburn=nburn, nthin=nthin)
 
+    def _generate_generative_mcmc(self, ngen=1000, nburn=0, nthin=1):
+        """
+        Yield generative curves from the MCMC samples. The objective state
+        is altered during generation, but should be restored when the
+        generator exits. If this generator is not exhausted then the
+        Objective state will not be restored!
+
+        Parameters
+        ----------
+        ngen : int, optional
+            the number of samples to yield. The actual number of samples
+            yielded is `min(ngen, chain.size)`
+        nburn : int, optional
+            discard this many steps from the start of the chain
+        nthin : int, optional
+            only accept every `nthin` samples from the chain
+
+        Yields
+        ------
+        generative : np.ndarray
+            `Objective.generative` points for each of the samples.
+        """
+        saved_params = np.array(self.varying_parameters())
+        _pgen = self.pgen(ngen=ngen, nburn=nburn, nthin=nthin)
+        try:
+            while True:
+                pars = next(_pgen)
+                yield self.generative(pars)
+        finally:
+            self.setp(saved_params)
+
     def plot(self, pvals=None, samples=0, parameter=None, fig=None):
         """
         Plot the data/model.
@@ -904,18 +935,14 @@ class Objective(BaseObjective):
             ax.scatter(self.data.x, y, color="blue", s=3, label=self.data.name)
 
         if samples > 0:
-            saved_params = np.array(self.parameters)
             # Get a number of chains, chosen randomly, set the objective,
             # and plot the model.
-            for pvec in self.pgen(ngen=samples):
+            for curve in self._generate_generative_mcmc(ngen=samples):
                 y, y_err, model = self._data_transform(
-                    model=self.generative(pvec)
+                    model=curve
                 )
 
                 ax.plot(self.data.x, model, color="k", alpha=0.01)
-
-            # put back saved_params
-            self.setp(saved_params)
 
         # add the fit
         generative_plot = ax.plot(self.data.x, model, color="red", zorder=20)
