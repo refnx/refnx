@@ -874,8 +874,7 @@ class Objective(BaseObjective):
         saved_params = np.array(self.varying_parameters())
         _pgen = self.pgen(ngen=ngen, nburn=nburn, nthin=nthin)
         try:
-            while True:
-                pars = next(_pgen)
+            for pars in _pgen:
                 yield self.generative(pars)
         finally:
             self.setp(saved_params)
