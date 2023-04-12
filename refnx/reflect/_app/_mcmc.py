@@ -140,6 +140,9 @@ def _process_chain(objective, chain, nburn, nthin, folder=None):
 
 def _plots(obj, nplot=0, folder=None):
     # create graphs of reflectivity and SLD profiles
+    # steps.png, steps_corner.png, steps_sld.png, steps_param_{i}.png
+    # Also writes out arrays:
+    #      steps.npy, steps_sld.npy
     if folder is None:
         folder = os.getcwd()
 
@@ -150,6 +153,13 @@ def _plots(obj, nplot=0, folder=None):
     ax.set_ylabel("R")
     ax.set_xlabel("Q / $\\AA$")
     fig.savefig(os.path.join(folder, "steps.png"), dpi=1000)
+
+    rng = np.random.default_rng(1)
+
+    # write out a file with the reflectivities
+    g = obj._generate_generative_mcmc(ngen=nplot, random_state=rng)
+    arr = np.vstack([a for a in g])
+    np.save(os.path.join(folder, "steps.npy"), arr)
 
     # corner plot
     try:
@@ -175,19 +185,17 @@ def _plots(obj, nplot=0, folder=None):
         ax3 = fig3.add_subplot(111)
 
         if nplot > 0:
-            savedparams = np.array(obj.parameters)
-            for pvec in obj.parameters.pgen(ngen=nplot):
-                obj.setp(pvec)
-                for o in obj.objectives:
-                    if hasattr(o.model, "structure"):
-                        ax3.plot(
-                            *o.model.structure.sld_profile(),
-                            color="k",
-                            alpha=0.01,
-                        )
+            for idx, o in enumerate(obj.objectives):
+                if hasattr(o.model, "structure"):
+                    o.model.structure.plot(samples=nplot, fig=fig3)
 
-            # put back saved_params
-            obj.setp(savedparams)
+                # write out all the data for the SLD profiles
+                rng = np.random.default_rng(1)
+                g = o.model.structure._generate_sld_profile_mcmc(
+                    samples=nplot, random_state=rng
+                )
+                arr = np.vstack([a for a in g])
+                np.save(os.path.join(folder, f"steps_sld_{idx}.npy"), arr)
 
         for o in obj.objectives:
             if hasattr(o.model, "structure"):
@@ -201,6 +209,14 @@ def _plots(obj, nplot=0, folder=None):
         FigureCanvas(fig3)
         fig3, ax3 = obj.model.structure.plot(samples=nplot, fig=fig3)
 
+        # write out all the data for the SLD profiles
+        rng = np.random.default_rng(1)
+        g = obj.model.structure._generate_sld_profile_mcmc(
+            samples=nplot, random_state=rng
+        )
+        arr = np.vstack([a for a in g])
+        np.save(os.path.join(folder, "steps_sld.npy"), arr)
+
     fig3.savefig(os.path.join(folder, "steps_sld.png"), dpi=1000)
 
     # plot the chains so one can see when parameters reach
@@ -212,7 +228,7 @@ def _plots(obj, nplot=0, folder=None):
         ax = fig.add_subplot(111)
         ax.set_ylabel(label)
 
-        for j in range(nplot):
+        for j in range(100):
             ax.plot(vp.chain[:, j].flat)
 
         fig.savefig(os.path.join(folder, f"steps_param_{i}.png"))

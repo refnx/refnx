@@ -645,7 +645,7 @@ class Structure(UserList):
         return logp
 
     def _generate_sld_profile_mcmc(
-        self, samples=0, z=None, max_delta_z=None, align=0
+        self, samples=0, z=None, max_delta_z=None, align=0, random_state=None
     ):
         """
         Yield SLD profiles from the MCMC samples contained within the varying
@@ -667,6 +667,8 @@ class Structure(UserList):
         max_delta_z : {None, float}, optional
             If specified this will control the maximum spacing between SLD
             points. Only used if `z is None`.
+        random_state : {int, np.random.Generator, None}
+            random number generator that picks the samples
 
         Yields
         ------
@@ -676,7 +678,7 @@ class Structure(UserList):
         parameters = self.parameters.varying_parameters()
         saved_pars = np.array(parameters)
 
-        _pgen = parameters.pgen(ngen=samples)
+        _pgen = parameters.pgen(ngen=samples, random_state=random_state)
         try:
             for pars in _pgen:
                 parameters.pvals = pars
