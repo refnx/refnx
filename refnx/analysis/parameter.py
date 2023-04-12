@@ -315,7 +315,7 @@ class Parameters(UserList):
         # should already be totally flattened by this point
         return Parameters(f_unique(lst))
 
-    def pgen(self, ngen=1000, nburn=0, nthin=1):
+    def pgen(self, ngen=1000, nburn=0, nthin=1, random_state=None):
         """
         Yield random parameter vectors from MCMC samples.
 
@@ -328,6 +328,8 @@ class Parameters(UserList):
             discard this many steps from the start of the chain
         nthin : int, optional
             only accept every `nthin` samples from the chain
+        random_state : {int, np.random.Generator, None}
+            random number generator that picks the samples
 
         Yields
         ------
@@ -362,7 +364,9 @@ class Parameters(UserList):
 
         samples = np.arange(np.size(chains, 1))
 
-        choices = np.random.choice(
+        rng = np.random.default_rng(random_state)
+
+        choices = rng.choice(
             samples, size=(min(ngen, samples.size),), replace=False
         )
 

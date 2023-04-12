@@ -471,3 +471,7 @@ in 0.1.13.
 - further modification to use qtpy. qtpy is a shim that allows either
   PyQt6 or Pyside6 to be used to run the refnx GUI. qtpy is a new dependency
   for running the GUI.
+- add Objective._generate_generative_mcmc to yield fit curves corresponding
+  to MCMC samples.
+- add Structure._generate_sld_profile_mcmc to yield sld profiles corresponding
+  to MCMC samples.

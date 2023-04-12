@@ -171,6 +171,7 @@ class TestCurveFitter:
         assert_equal(self.mcfitter.nvary, 2)
 
         # smoke test for corner plot
+        # for some reason GHA-linux doesn't like this
         self.mcfitter.objective.corner()
 
         # we're not doing Parallel Tempering here.

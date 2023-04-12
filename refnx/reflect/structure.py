@@ -644,6 +644,50 @@ class Structure(UserList):
 
         return logp
 
+    def _generate_sld_profile_mcmc(
+        self, samples=0, z=None, max_delta_z=None, align=0, random_state=None
+    ):
+        """
+        Yield SLD profiles from the MCMC samples contained within the varying
+        parameters. The parameter state is altered during generation, but
+        should be restored when the generator exits. If this generator is not
+        exhausted then the parameter state will not be restored!
+
+        Parameters
+        ----------
+        samples: int
+            How many SLD profiles to generate
+        z : float
+            Interfacial distance (Angstrom) measured from interface between the
+            fronting medium and the first layer.
+        align: int, optional
+            Places a specified interface in the slab representation of a
+            Structure at z = 0. Python indexing is allowed, e.g. supplying -1
+            will place the backing medium at z = 0.
+        max_delta_z : {None, float}, optional
+            If specified this will control the maximum spacing between SLD
+            points. Only used if `z is None`.
+        random_state : {int, np.random.Generator, None}
+            random number generator that picks the samples
+
+        Yields
+        ------
+        sld_profile : np.ndarray
+            `Structure.sld_profile` points for each of the samples.
+        """
+        parameters = self.parameters.varying_parameters()
+        saved_pars = np.array(parameters)
+
+        _pgen = parameters.pgen(ngen=samples, random_state=random_state)
+        try:
+            for pars in _pgen:
+                parameters.pvals = pars
+                yield self.sld_profile(
+                    z=z, max_delta_z=max_delta_z, align=align
+                )
+        finally:
+            parameters.pvals = saved_pars
+
     def plot(self, pvals=None, samples=0, fig=None, align=0):
         """
         Plot the structure.
@@ -689,15 +733,11 @@ class Structure(UserList):
             ax = fig.gca()
 
         if samples > 0:
-            saved_params = np.array(params)
             # Get a number of chains, chosen randomly, and plot the model.
-            for pvec in self.parameters.pgen(ngen=samples):
-                params.pvals = pvec
-
-                ax.plot(*self.sld_profile(align=align), color="k", alpha=0.01)
-
-            # put back saved_params
-            params.pvals = saved_params
+            for sld_profile in self._generate_sld_profile_mcmc(
+                samples=samples, align=align
+            ):
+                ax.plot(*sld_profile, color="k", alpha=0.01)
 
         ax.plot(*self.sld_profile(align=align), color="red", zorder=20)
         ax.set_ylabel("SLD / 1e-6 $\\AA^{-2}$")

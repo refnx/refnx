@@ -826,7 +826,7 @@ class Objective(BaseObjective):
 
         return covar * scale
 
-    def pgen(self, ngen=1000, nburn=0, nthin=1):
+    def pgen(self, ngen=1000, nburn=0, nthin=1, random_state=None):
         """
         Yield random parameter vectors from the MCMC samples. The objective
         state is not altered.
@@ -840,6 +840,8 @@ class Objective(BaseObjective):
             discard this many steps from the start of the chain
         nthin : int, optional
             only accept every `nthin` samples from the chain
+        random_state : {int, np.random.Generator, None}
+            random number generator that picks the samples
 
         Yields
         ------
@@ -847,7 +849,45 @@ class Objective(BaseObjective):
             A randomly chosen parameter vector
 
         """
-        yield from self.parameters.pgen(ngen=ngen, nburn=nburn, nthin=nthin)
+        yield from self.parameters.pgen(
+            ngen=ngen, nburn=nburn, nthin=nthin, random_state=random_state
+        )
+
+    def _generate_generative_mcmc(
+        self, ngen=1000, nburn=0, nthin=1, random_state=None
+    ):
+        """
+        Yield generative curves from the MCMC samples. The objective state
+        is altered during generation, but should be restored when the
+        generator exits. If this generator is not exhausted then the
+        Objective state will not be restored!
+
+        Parameters
+        ----------
+        ngen : int, optional
+            the number of samples to yield. The actual number of samples
+            yielded is `min(ngen, chain.size)`
+        nburn : int, optional
+            discard this many steps from the start of the chain
+        nthin : int, optional
+            only accept every `nthin` samples from the chain
+        random_state : {int, np.random.Generator, None}
+            random number generator that picks the samples
+
+        Yields
+        ------
+        generative : np.ndarray
+            `Objective.generative` points for each of the samples.
+        """
+        saved_params = np.array(self.varying_parameters())
+        _pgen = self.pgen(
+            ngen=ngen, nburn=nburn, nthin=nthin, random_state=random_state
+        )
+        try:
+            for pars in _pgen:
+                yield self.generative(pars)
+        finally:
+            self.setp(saved_params)
 
     def plot(self, pvals=None, samples=0, parameter=None, fig=None):
         """
@@ -904,18 +944,12 @@ class Objective(BaseObjective):
             ax.scatter(self.data.x, y, color="blue", s=3, label=self.data.name)
 
         if samples > 0:
-            saved_params = np.array(self.parameters)
             # Get a number of chains, chosen randomly, set the objective,
             # and plot the model.
-            for pvec in self.pgen(ngen=samples):
-                y, y_err, model = self._data_transform(
-                    model=self.generative(pvec)
-                )
+            for curve in self._generate_generative_mcmc(ngen=samples):
+                y, y_err, model = self._data_transform(model=curve)
 
                 ax.plot(self.data.x, model, color="k", alpha=0.01)
-
-            # put back saved_params
-            self.setp(saved_params)
 
         # add the fit
         generative_plot = ax.plot(self.data.x, model, color="red", zorder=20)
@@ -1025,6 +1059,27 @@ class GlobalObjective(Objective):
         for objective in self.objectives:
             npoints += objective.npoints
         return npoints
+
+    def generative(self, pvals=None):
+        """
+        Concatenated generative curves for the
+        :meth:`refnx.analysis.Objective.generative`.
+
+        Parameters
+        ----------
+        pvals : array-like or refnx.analysis.Parameters
+            values for the varying or entire set of parameters
+
+        Returns
+        -------
+        generative : np.ndarray
+            Concatenated :meth:`refnx.analysis.Objective.generative`
+        """
+        self.setp(pvals)
+
+        generative = np.hstack([o.generative() for o in self.objectives])
+
+        return generative
 
     def residuals(self, pvals=None):
         """
