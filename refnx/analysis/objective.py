@@ -938,9 +938,7 @@ class Objective(BaseObjective):
             # Get a number of chains, chosen randomly, set the objective,
             # and plot the model.
             for curve in self._generate_generative_mcmc(ngen=samples):
-                y, y_err, model = self._data_transform(
-                    model=curve
-                )
+                y, y_err, model = self._data_transform(model=curve)
 
                 ax.plot(self.data.x, model, color="k", alpha=0.01)
 
