@@ -475,3 +475,6 @@ in 0.1.13.
   to MCMC samples.
 - add Structure._generate_sld_profile_mcmc to yield sld profiles corresponding
   to MCMC samples.
+
+0.1.34
+------
