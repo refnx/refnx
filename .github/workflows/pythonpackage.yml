@@ -42,6 +42,9 @@ jobs:
         # uses xvfb for GUI part of the test
         xvfb-run pytest
 
+        # check that refnx gui starts
+        python tools/app/check_app_starts.py refnx
+
     - name: Make sdist
       if: ${{ matrix.python-version == '3.8' }}
       run: |
@@ -121,7 +124,12 @@ jobs:
       run: |
         pushd dist
         python -m pip install --only-binary=refnx --no-index --find-links=. refnx
+
         pytest --pyargs refnx
+
+        # check that refnx gui starts
+        python tools/app/check_app_starts.py refnx
+
         popd
 
     - name: Make frozen GUI executable
@@ -195,6 +203,10 @@ jobs:
         #        python -m pip install --only-binary=pyopencl --find-links http://www.silx.org/pub/wheelhouse/ --trusted-host www.silx.org pyopencl
 
         pytest --pyargs refnx
+
+        # check that refnx gui starts
+        python tools/app/check_app_starts.py refnx
+
         cd ..
 
     - name: Make frozen GUI executable
