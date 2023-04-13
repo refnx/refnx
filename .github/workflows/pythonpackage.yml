@@ -12,7 +12,7 @@ jobs:
     strategy:
       max-parallel: 3
       matrix:
-        python-version: [3.8, 3.9, '3.10']
+        python-version: [3.9, '3.10', '3.11']
 
     steps:
 
@@ -42,14 +42,17 @@ jobs:
         # uses xvfb for GUI part of the test
         xvfb-run pytest
 
+        # check that refnx gui starts
+        python tools/app/check_app_starts.py refnx
+
     - name: Make sdist
-      if: ${{ matrix.python-version == '3.8' }}
+      if: ${{ matrix.python-version == '3.9' }}
       run: |
         git clean -xdf
         python setup.py sdist
 
     - uses: actions/upload-artifact@v1
-      if: ${{ matrix.python-version == '3.8' }}
+      if: ${{ matrix.python-version == '3.9' }}
       with:
         name: refnx-wheel
         path: dist/
@@ -81,7 +84,7 @@ jobs:
     strategy:
       max-parallel: 3
       matrix:
-        python-version: [3.8, 3.9, '3.10']
+        python-version: [3.9, '3.10', '3.11']
 
     steps:
     - uses: actions/checkout@v3
@@ -121,11 +124,13 @@ jobs:
       run: |
         pushd dist
         python -m pip install --only-binary=refnx --no-index --find-links=. refnx
+
         pytest --pyargs refnx
+
         popd
 
     - name: Make frozen GUI executable
-      if: ${{ matrix.python-version == '3.8' }}
+      if: ${{ matrix.python-version == '3.9' }}
       run: |
         # make app in virtualenv
         python -m venv app
@@ -162,7 +167,7 @@ jobs:
     strategy:
       max-parallel: 3
       matrix:
-        python-version: [3.8, 3.9, '3.10']
+        python-version: [3.9, '3.10', '3.11']
 
     steps:
     - uses: actions/checkout@v3
@@ -183,7 +188,7 @@ jobs:
         python -m pip wheel . --no-deps -w dist
 
     - name: Install package and test with pytest
-      if: ${{ matrix.python-version == '3.8' }}
+      if: ${{ matrix.python-version == '3.9' }}
       env:
         PYOPENCL_CTX: 0
       run: |
@@ -197,6 +202,9 @@ jobs:
         pytest --pyargs refnx
         cd ..
 
+        # check that refnx gui starts
+        python tools/app/check_app_starts.py refnx
+
     - name: Make frozen GUI executable
       if: ${{ matrix.python-version == '3.10' }}
       run: |
@@ -209,7 +217,7 @@ jobs:
         python -m pip install --only-binary=refnx --no-index --find-links=. refnx
         cd ..
 
-        # fix for multiprocessing on Py3.8 is not merged in PyInstaller
+        # fix for multiprocessing on Py3.9 is not merged in PyInstaller
         # if you are on Py3.7 you can just pip install pyinstaller
         # pip install git+https://github.com/andyfaff/pyinstaller.git@gh4865
 
