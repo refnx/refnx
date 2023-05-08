@@ -121,7 +121,9 @@ class ManualBeamFinder(QtWidgets.QDialog):
         # guess peak centre from centroid.
         xs = np.sum(self.detector, axis=0)
         self._integrate_position, _ = centroid(xs)
-        self.integrate_position.setValue(self._integrate_position)
+        self.integrate_position.setValue(
+            int(np.round(self._integrate_position))
+        )
         self.integrate_width.setValue(self._integrate_width)
 
         self.recalculate_graphs()
@@ -609,7 +611,7 @@ class Cross_Section(FigureCanvas):
             attr, line = found
             dx = x - xpress
             # dy = y - ypress
-            new_loc = int(round(loc + dx))
+            new_loc = int(np.round(loc + dx))
 
             # TODO make sure lopx and high px cant cross
             # TODO recalc backgrounds and beam centre after plot_button release
