@@ -202,7 +202,7 @@ class ParNode(Node):
         if role == Qt.ItemDataRole.CheckStateRole and column == 1:
             try:
                 p = self.parameter
-                p.vary = value == Qt.CheckState.Checked
+                p.vary = value == Qt.CheckState.Checked.value
             except RuntimeError:
                 # can't try and hold a parameter that has a constraint
                 False
@@ -309,7 +309,7 @@ class PropertyNode(Node):
             and column == 1
             and self.attribute_type is bool
         ):
-            if value == Qt.CheckState.Checked:
+            if value == Qt.CheckState.Checked.value:
                 setattr(self._parent._data, self._data, True)
             else:
                 setattr(self._parent._data, self._data, False)
@@ -623,7 +623,7 @@ class ReflectModelNode(Node):
     def setData(self, column, value, role=Qt.ItemDataRole.EditRole):
         # currently this only deals with constant dq/q
         if role == Qt.ItemDataRole.CheckStateRole and column == 1:
-            self.constantdq_q = value == Qt.CheckState.Checked
+            self.constantdq_q = value == Qt.CheckState.Checked.value
             data_object_node = find_data_object(self.index)
             data_object = data_object_node.data_object
             data_object.constantdq_q = self.constantdq_q
@@ -743,7 +743,7 @@ class DataObjectNode(Node):
 
     def setData(self, column, value, role=QtCore.Qt.ItemDataRole.EditRole):
         if role == QtCore.Qt.ItemDataRole.CheckStateRole and column == 1:
-            self.visible = value == QtCore.Qt.CheckState.Checked
+            self.visible = value == QtCore.Qt.CheckState.Checked.value
             return True
 
         return True
