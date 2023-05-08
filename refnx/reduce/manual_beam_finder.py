@@ -121,7 +121,9 @@ class ManualBeamFinder(QtWidgets.QDialog):
         # guess peak centre from centroid.
         xs = np.sum(self.detector, axis=0)
         self._integrate_position, _ = centroid(xs)
-        self.integrate_position.setValue(int(np.round(self._integrate_position)))
+        self.integrate_position.setValue(
+            int(np.round(self._integrate_position))
+        )
         self.integrate_width.setValue(self._integrate_width)
 
         self.recalculate_graphs()
