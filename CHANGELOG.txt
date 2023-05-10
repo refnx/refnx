@@ -480,3 +480,6 @@ in 0.1.13.
 ------
 - Fix bug in ManualBeamFinder
 - Fix bug in refnx GUI regarding checkbox selection.
+
+0.1.35
+------
