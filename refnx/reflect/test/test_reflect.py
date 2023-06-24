@@ -486,7 +486,7 @@ class TestReflect:
             y = map(wf, q)
             with MapWrapper(2) as f:
                 z = f(wf, q)
-            assert_allclose(z, np.array(list(y))
+            assert_allclose(z, np.array(list(y)))
 
     def test_parallel_objective(self):
         # check that a parallel objective works without issue
