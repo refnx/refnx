@@ -267,8 +267,16 @@ class Data1D:
     def copy(self):
         """
         Copies the dataset and parameters, including file info.
+        Metadata attribute is shallow copied.
         """
-        clone = Data1D(data=self) #pass Data1D Obj back to constructor to copy.
+        myData = self.data #tuple
+        copyData = tuple([a.copy() for a in myData]) #copy arrays
+        clone = Data1D(data=copyData)
+        clone.name = self.name
+        clone.filename = self.filename
+        clone.metadata = self.metadata
+        clone.weighted = self.weighted
+        clone._mask = self._mask.copy() if self._mask!=None else None
         return clone
 
     def add_data(self, data_tuple, requires_splice=False, trim_trailing=True):
