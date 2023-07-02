@@ -376,6 +376,115 @@ class Data1D:
 
         self.sort()
 
+    def blend_data(self, other):
+        """
+        Similar to add_data, but instead of truncating/overlapping, data is statistically combined using weighted yerrs.
+        This can be useful in combining datasets where (scaled) reflectivity at higher Q can have lower noise when measured at higher Omega.
+
+        Parameters
+        ----------
+        other : Data1D
+            Additional dataset. Point spacing in Q should match existing dataset, so overlapping points can be combined.
+        
+        Notes
+        -----
+        Raises `AttributeError` if different data density in overlap reigon.
+        Raises `AttributeError` if neither dataset has a y_err attribute.
+        Raises `ValueError` if no overlap in x; should use add_data.
+        
+        Returns
+        -------
+        Data1D: Concatenation of non-overlap and combined overlap reigons.
+        """
+        
+        #Check for necessary y_err data:
+        if self.y_err == None:
+            raise AttributeError("self does not have y_err data.")
+        elif other.y_err == None:
+            raise AttributeError("other does not have y_err data.")
+        
+        # Create clone objects so data can be sorted without modifying original objects
+        RD1 = self.copy()
+        RD2 = other.copy()
+        # Sort data, ensuring point indexing aligns.
+        RD1.sort()
+        RD2.sort()
+        # Get Raw data
+        x, y, yerr, xerr = RD1.data
+        ax, ay, ayerr, axerr = RD2.data
+        # Calculate overlap and scale difference
+        scale, dscale, overlap_points = get_scaling_in_overlap(
+            x, y, yerr, ax, ay, ayerr)
+        # Raise ValueError if no overlap between datasets.
+        if len(overlap_points) == 0:
+            raise ValueError("No overlap between datasets. Use add_data method instead.")
+        
+        # Adjust new scale of second dataset
+        RD2.scale(1/scale)
+        bx, by, byerr, bxerr = RD2.data
+
+        # Check overlap in points - Are Q values the same?
+        # Assume not. Point spacing also goes logarithmic in x.
+        Qmin = np.min(x[overlap_points])
+        Qmax = np.max(x[overlap_points])
+        rd1_len = np.sum(overlap_points)  # number of points overlapping
+        rd2_overlap = (bx < Qmax) & (bx >= Qmin) #Use one bound with equality to ensure n-1 points if x values are identitcal.
+        rd2_len = np.sum(rd2_overlap)
+
+        # Restrict to overlap (ovlp) region for calculations
+        xovlp = x[overlap_points]
+        yovlp = y[overlap_points]
+        yerrovlp = yerr[overlap_points]
+        xerrovlp = xerr[overlap_points]
+        bxovlp = bx[rd2_overlap]
+        byovlp = by[rd2_overlap]
+        byerrovlp = byerr[rd2_overlap]
+        bxerrovlp = bxerr[rd2_overlap]
+
+        # If spaced linearly in LogQ, points should overlap.
+        # All RD2 should be within the RD1 domain.
+        if rd2_len == rd1_len-1:
+            # Calculate weightings for RD1 to closest relevant x (Q) value
+            xdif1 = np.abs(bxovlp - xovlp[:-1])  # proximity to x0
+            xdif2 = np.abs(bxovlp - xovlp[1:])  # proximity to x1
+
+            # Calculate new interpolation of RD1 based on x-deltas to RD2 x values.
+            # val = val1 * prox_to_val2 + val2*prox_to_val1 / (prox_to_val1 + prox_to_val2)
+            x_new = (xdif2 * xovlp[:-1] + xdif1 * xovlp[1:]) / (xdif1 + xdif2)
+            y_new = (xdif2 * yovlp[:-1] + xdif1 * yovlp[1:]) / (xdif1 + xdif2)
+            # f=ax + by / (a+b), Unc(f) = 1/abs(a+b) * sqrt((a uncx)^2 + (b uncy)^2)
+            xerr_new = np.sqrt(
+                (xdif2 * xerrovlp[:-1])**2 + (xdif1 * xerrovlp[1:])**2) / np.abs(xdif1 + xdif2)
+            yerr_new = np.sqrt(
+                (xdif2 * yerrovlp[:-1])**2 + (xdif1 * yerrovlp[1:])**2) / np.abs(xdif1 + xdif2)
+
+            # Calculate new combination of RD1 and RD2 based on yerr weightings.
+            # val = val1 * yerr2 + val2 * yerr1 / (yerr1 + yerr2) --> value of smaller error dominates
+            yerr_tot = yerr_new + byerrovlp
+            wx = (x_new * byerrovlp + bxovlp * yerr_new) / yerr_tot
+            wy = (y_new * byerrovlp + byovlp * yerr_new) / yerr_tot
+            # f=(a*x + b*y) / (a+b), Unc(f) = 1/abs(a+b) * sqrt((a*uncx)^2 + (b*uncy)^2)
+            wxerr = np.sqrt((xerr_new * byerrovlp)**2 +
+                            (bxerrovlp * yerr_new)**2) / yerr_tot
+            wyerr = np.sqrt((yerr_new * byerrovlp)**2 +
+                            (byerrovlp * yerr_new)**2) / yerr_tot
+            RDoverlap_contrib_data = (wx, wy, wyerr, wxerr)
+
+            # Generate new dataset
+            RD1_points = ~overlap_points
+            RD2_points = ~rd2_overlap
+            RD1_contrib_data = (x[RD1_points], y[RD1_points],
+                                yerr[RD1_points], xerr[RD1_points])
+            RD2_contrib_data = (bx[RD2_points], by[RD2_points],
+                                byerr[RD2_points], bxerr[RD2_points])
+            RDconcat = Data1D(data=RD1_contrib_data)
+            RDconcat.add_data(RDoverlap_contrib_data)
+            RDconcat.add_data(RD2_contrib_data)
+            return RDconcat
+        else:
+            raise AttributeError(
+                "Overlap points have different data density in Log(Q); Self:"+str(rd1_len) + ", Other:" + str(rd2_len) + " between Q=("+str(Qmin)+","+str(Qmax)+")")
+    
     def sort(self):
         """
         Sorts the data in ascending order
