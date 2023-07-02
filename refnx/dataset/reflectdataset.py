@@ -78,6 +78,15 @@ class ReflectDataset(Data1D):
         self.datafilenumber = list()
         self.sld_profile = None
 
+    def copy(self):
+        """
+        Copies the ReflectDataset object.
+        """
+        clone = super().copy()
+        clone.datafilenumber = self.datafilenumber
+        clone.sld_profile = self.sld_profile
+        return clone
+
     def __repr__(self):
         msk = self._mask
         if np.all(self._mask):
@@ -178,6 +187,15 @@ class OrsoDataset(Data1D):
         super().__init__(data=data, **kwds)
         self.orso = None
 
+
+    def copy(self):
+        """
+        Copies the OrsoDataset object.
+        """
+        clone = super().copy()
+        clone.orso = self.orso
+        return clone
+        
     def load(self, f):
         """
         Parameters

@@ -72,7 +72,7 @@ class Data1D:
         ):
             self.load(data)
         elif isinstance(data, Data1D):
-            # copy a dataset (but not it's file info)
+            # copy a dataset
             self.name = data.name
             self.filename = data.filename
             self.metadata = data.metadata
@@ -91,10 +91,10 @@ class Data1D:
 
             if len(data) > 3:
                 self._x_err = np.array(data[3], dtype=float)
-
-        self._mask = None
         if mask is not None:
             self._mask = np.broadcast_to(mask, self._y.shape)
+        elif not hasattr(self, "_mask"):
+            self._mask = None #set mask to none if not copied or provided.
 
     def __len__(self):
         """
@@ -263,6 +263,13 @@ class Data1D:
         """
         self._y /= scalefactor
         self._y_err /= scalefactor
+
+    def copy(self):
+        """
+        Copies the dataset and parameters, including file info.
+        """
+        clone = Data1D(data=self) #pass Data1D Obj back to constructor to copy.
+        return clone
 
     def add_data(self, data_tuple, requires_splice=False, trim_trailing=True):
         """
