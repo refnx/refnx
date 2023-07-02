@@ -394,7 +394,7 @@ class Data1D:
         
         Returns
         -------
-        Data1D: Concatenation of non-overlap and combined overlap reigons.
+        RDconcat: :class:`refnx.dataset.data1d.Data1D` New dataset with concatenation of non-overlap and combined overlap reigons.
         """
         
         #Check for necessary y_err data:
