@@ -269,14 +269,17 @@ class Data1D:
         Copies the dataset and parameters, including file info.
         Metadata attribute is shallow copied.
         """
-        myData = self.data #tuple
-        copyData = tuple([a.copy() for a in myData]) #copy arrays
-        clone = Data1D(data=copyData)
+        myData = self.data #tuple, returns witih None values.
+        copyData = [] 
+        for a in myData:  # Copy arrays, and exclude None values.
+            if not a is None:
+                copyData.append(a.copy())
+        clone = Data1D(data=tuple(copyData))
         clone.name = self.name
         clone.filename = self.filename
         clone.metadata = self.metadata
         clone.weighted = self.weighted
-        clone._mask = self._mask.copy() if self._mask!=None else None
+        clone._mask = None if self._mask is None else self._mask.copy()
         return clone
 
     def add_data(self, data_tuple, requires_splice=False, trim_trailing=True):
@@ -406,9 +409,9 @@ class Data1D:
         """
         
         #Check for necessary y_err data:
-        if self.y_err == None:
+        if self.y_err is None:
             raise AttributeError("self does not have y_err data.")
-        elif other.y_err == None:
+        elif other.y_err is None:
             raise AttributeError("other does not have y_err data.")
         
         # Create clone objects so data can be sorted without modifying original objects
@@ -443,11 +446,11 @@ class Data1D:
         xovlp = x[overlap_points]
         yovlp = y[overlap_points]
         yerrovlp = yerr[overlap_points]
-        xerrovlp = xerr[overlap_points]
+        xerrovlp = None if xerr is None else xerr[overlap_points]
         bxovlp = bx[rd2_overlap]
         byovlp = by[rd2_overlap]
         byerrovlp = byerr[rd2_overlap]
-        bxerrovlp = bxerr[rd2_overlap]
+        bxerrovlp = None if bxerr is None else bxerr[rd2_overlap]
 
         # If spaced linearly in LogQ, points should overlap.
         # All RD2 should be within the RD1 domain.
@@ -461,7 +464,7 @@ class Data1D:
             x_new = (xdif2 * xovlp[:-1] + xdif1 * xovlp[1:]) / (xdif1 + xdif2)
             y_new = (xdif2 * yovlp[:-1] + xdif1 * yovlp[1:]) / (xdif1 + xdif2)
             # f=ax + by / (a+b), Unc(f) = 1/abs(a+b) * sqrt((a uncx)^2 + (b uncy)^2)
-            xerr_new = np.sqrt(
+            xerr_new = None if xerrovlp is None else np.sqrt(
                 (xdif2 * xerrovlp[:-1])**2 + (xdif1 * xerrovlp[1:])**2) / np.abs(xdif1 + xdif2)
             yerr_new = np.sqrt(
                 (xdif2 * yerrovlp[:-1])**2 + (xdif1 * yerrovlp[1:])**2) / np.abs(xdif1 + xdif2)
@@ -472,7 +475,7 @@ class Data1D:
             wx = (x_new * byerrovlp + bxovlp * yerr_new) / yerr_tot
             wy = (y_new * byerrovlp + byovlp * yerr_new) / yerr_tot
             # f=(a*x + b*y) / (a+b), Unc(f) = 1/abs(a+b) * sqrt((a*uncx)^2 + (b*uncy)^2)
-            wxerr = np.sqrt((xerr_new * byerrovlp)**2 +
+            wxerr = None if (xerr_new is None or bxerr is None) else np.sqrt((xerr_new * byerrovlp)**2 +
                             (bxerrovlp * yerr_new)**2) / yerr_tot
             wyerr = np.sqrt((yerr_new * byerrovlp)**2 +
                             (byerrovlp * yerr_new)**2) / yerr_tot

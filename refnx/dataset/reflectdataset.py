@@ -84,8 +84,11 @@ class ReflectDataset(Data1D):
         Metadata, sld_profile and datafilenumber attributes are shallow copied.
         """
         myData = self.data  # tuple
-        copyData = tuple([a.copy() for a in myData])
-        clone = ReflectDataset(data=copyData)
+        copyData = []
+        for a in myData:  # Copy arrays, and exclude None values.
+            if not a is None:
+                copyData.append(a.copy())
+        clone = ReflectDataset(data=tuple(copyData))
         clone.name = self.name
         clone.filename = self.filename
         clone.metadata = self.metadata
@@ -201,8 +204,11 @@ class OrsoDataset(Data1D):
         Copies the OrsoDataset base object data. Orso and metadata attributes are shallow copied.
         """
         myData = self.data  # tuple
-        copyData = tuple([a.copy() for a in myData])
-        clone = OrsoDataset(data=copyData)
+        copyData = []
+        for a in myData:  # Copy arrays, and exclude None values.
+            if not a is None:
+                copyData.append(a.copy())
+        clone = OrsoDataset(data=tuple(copyData))
         clone.name = self.name
         clone.filename = self.filename
         clone.metadata = self.metadata
