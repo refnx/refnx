@@ -399,6 +399,7 @@ class Data1D:
         
         Notes
         -----
+        self.x is interpolated to match other.x in overlap reigon, before blending.
         Raises `AttributeError` if different data density in overlap reigon.
         Raises `AttributeError` if neither dataset has a y_err attribute.
         Raises `ValueError` if no overlap in x; should use add_data.
