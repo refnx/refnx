@@ -395,12 +395,15 @@ class Data1D:
         Parameters
         ----------
         other : Data1D
-            Additional dataset. Point spacing in Q should match existing dataset, so overlapping points can be combined.
+            Additional dataset. Point spacing in Q can be different.
         
         Notes
         -----
-        self.x is interpolated to match other.x in overlap reigon, before blending.
-        Raises `AttributeError` if different data density in overlap reigon.
+        Overlap points are calculated for each dataset.
+        The shorter overlap dataset is interpolated to match the larger overlap dataset.
+        Then a weighted average of dataset values are calculated, favoring smaller y-error values.
+        Errors are also propogated throughout calculations.
+        
         Raises `AttributeError` if neither dataset has a y_err attribute.
         Raises `ValueError` if no overlap in x; should use add_data.
         
@@ -426,25 +429,29 @@ class Data1D:
         ax, ay, ayerr, axerr = RD2.data
         # Calculate overlap and scale difference
         scale, dscale, overlap_points = get_scaling_in_overlap(
-            x, y, yerr, ax, ay, ayerr)
+            x, y, yerr, ax, ay, ayerr)  # note, this only finds values ax < x[-1], garanteeing x[-1] is a limit value.
+
         # Raise ValueError if no overlap between datasets.
         if len(overlap_points) == 0:
-            raise ValueError("No overlap between datasets. Use add_data method instead.")
-        
+            raise ValueError(
+                "No overlap between datasets. Use add_data method instead.")
+
         # Adjust new scale of second dataset
         RD2.scale(1/scale)
         bx, by, byerr, bxerr = RD2.data
 
-        # Check overlap in points - Are Q values the same?
-        # Assume not. Point spacing also goes logarithmic in x.
-        Qmin = np.min(x[overlap_points])
-        Qmax = np.max(x[overlap_points])
+        # Check overlap in points:
+        #   Assume Q values are not the same,
+        #   and perhaps density is different between data..
+        xovlp = x[overlap_points]  # 1st obj restricted domain
+        Qmin = np.min(xovlp)
+        Qmax = x[-1]  # largest value.
         rd1_len = np.sum(overlap_points)  # number of points overlapping
-        rd2_overlap = (bx < Qmax) & (bx >= Qmin) #Use one bound with equality to ensure n-1 points if x values are identitcal.
+        # Use one bound with equality to ensure n-1 points if x values are identitcal.
+        rd2_overlap = (bx < Qmax) & (bx >= Qmin)
         rd2_len = np.sum(rd2_overlap)
 
-        # Restrict to overlap (ovlp) region for calculations
-        xovlp = x[overlap_points]
+        # Restrict objs to overlap (ovlp) region for calculations.
         yovlp = y[overlap_points]
         yerrovlp = yerr[overlap_points]
         xerrovlp = None if xerr is None else xerr[overlap_points]
@@ -453,49 +460,112 @@ class Data1D:
         byerrovlp = byerr[rd2_overlap]
         bxerrovlp = None if bxerr is None else bxerr[rd2_overlap]
 
-        # If spaced linearly in LogQ, points should overlap.
-        # All RD2 should be within the RD1 domain.
-        if rd2_len == rd1_len-1:
-            # Calculate weightings for RD1 to closest relevant x (Q) value
-            xdif1 = np.abs(bxovlp - xovlp[:-1])  # proximity to x0
-            xdif2 = np.abs(bxovlp - xovlp[1:])  # proximity to x1
+        # Instead of assuming exact point overlap, and same number of points (likely)
+        # Use np.interp to interpolate any extra points not covered.
+        # Check which array is smaller,
+        if rd2_len >= rd1_len:
+            # RD1 needs extending, or is the same length.
+            s_x = xovlp  # smaller x
+            s_y = yovlp
+            s_xerr = xerrovlp
+            s_yerr = yerrovlp
+            l_x = bxovlp
+            l_y = byovlp
+            l_xerr = bxerrovlp
+            l_yerr = byerrovlp
+        elif rd2_len < rd1_len:
+            # RD2 needs extending
+            s_x = bxovlp  # smaller x
+            s_y = byovlp
+            s_xerr = bxerrovlp
+            s_yerr = byerrovlp
+            l_x = xovlp
+            l_y = yovlp
+            l_xerr = xerrovlp
+            l_yerr = yerrovlp
+        # then interpolate small values (s_y) onto l_x domain.
+        si_x = l_x  # small-interpolated x now matches longer x.
+        # si_y = np.interp(l_x, s_x, s_y) #extend s_y
 
-            # Calculate new interpolation of RD1 based on x-deltas to RD2 x values.
-            # val = val1 * prox_to_val2 + val2*prox_to_val1 / (prox_to_val1 + prox_to_val2)
-            x_new = (xdif2 * xovlp[:-1] + xdif1 * xovlp[1:]) / (xdif1 + xdif2)
-            y_new = (xdif2 * yovlp[:-1] + xdif1 * yovlp[1:]) / (xdif1 + xdif2)
-            # f=ax + by / (a+b), Unc(f) = 1/abs(a+b) * sqrt((a uncx)^2 + (b uncy)^2)
-            xerr_new = None if xerrovlp is None else np.sqrt(
-                (xdif2 * xerrovlp[:-1])**2 + (xdif1 * xerrovlp[1:])**2) / np.abs(xdif1 + xdif2)
-            yerr_new = np.sqrt(
-                (xdif2 * yerrovlp[:-1])**2 + (xdif1 * yerrovlp[1:])**2) / np.abs(xdif1 + xdif2)
+        # calculate updated error values for interpolation function:
+        # f=ax + by / (a+b),
+        # Unc(f) = 1/abs(a+b) * sqrt((a uncx)^2 + (b uncy)^2)
+        si_y = np.zeros(si_x.shape)
+        si_xerr = np.zeros(si_x.shape) if not s_xerr is None else None
+        si_yerr = np.zeros(si_x.shape)
+        # This calc to be done for each interpolated index,
+        # with quadratic factors,
+        # so no point using np.interp.
+        for i in range(len(si_x)):
+            x0 = si_x[i]  # get the target interpolated x
 
-            # Calculate new combination of RD1 and RD2 based on yerr weightings.
-            # val = val1 * yerr2 + val2 * yerr1 / (yerr1 + yerr2) --> value of smaller error dominates
-            yerr_tot = yerr_new + byerrovlp
-            wx = (x_new * byerrovlp + bxovlp * yerr_new) / yerr_tot
-            wy = (y_new * byerrovlp + byovlp * yerr_new) / yerr_tot
-            # f=(a*x + b*y) / (a+b), Unc(f) = 1/abs(a+b) * sqrt((a*uncx)^2 + (b*uncy)^2)
-            wxerr = None if (xerr_new is None or bxerr is None) else np.sqrt((xerr_new * byerrovlp)**2 +
-                            (bxerrovlp * yerr_new)**2) / yerr_tot
-            wyerr = np.sqrt((yerr_new * byerrovlp)**2 +
-                            (byerrovlp * yerr_new)**2) / yerr_tot
-            RDoverlap_contrib_data = (wx, wy, wyerr, wxerr)
+            # find spacing to each x in uninterpolated list
+            diff = np.abs(s_x - x0)  # find abs spacing from x0 value for all s_x.
+            j = np.argmin(diff)
+            # check where index lies relative in x_s
+            if j == 0 and x0 <= s_x[0]:  # interpolation at/beyond left edge.
+                # Set interpolation value to left edge value.
+                si_y[i] = s_y[0]
+                si_yerr[i] = s_yerr[0]
+                if not si_xerr is None:
+                    si_xerr[i] = s_xerr[0]
+            # interpolation at/beyond right edge.
+            elif j == len(s_x)-1 and x0 >= s_x[j]:
+                # Set interpolation value to right edge value.
+                si_y[i] = s_y[j]
+                si_yerr[i] = s_yerr[j]
+                if not si_xerr is None:
+                    si_xerr[i] = s_xerr[j]
+            else:
+                # Interpolation between two points, calculate the deltas
+                if j == 0:  # left limit edge
+                    dj = 1
+                elif j == len(s_x)-1:  # right limit edge
+                    dj = -1
+                else:  # inbetween data.
+                    dj = 1 if diff[j+1] < diff[j-1] else -1
+                dx1 = diff[j]
+                dx2 = diff[j + dj]
+                # f=(ax + by) / (a+b)
+                si_y[i] = ((dx2 * s_y[j]) + (dx1 * s_y[j+dj])) / (dx1 + dx2)
+                # Unc(f) = sqrt((a uncx)^2 + (b uncy)^2) / (abs(a)+abs(b)))
+                si_yerr[i] = np.sqrt((dx2 * s_yerr[j])**2 +
+                                    (dx1 * s_yerr[j + dj])**2) / (dx1 + dx2)
+                if not si_xerr is None:
+                    si_xerr[i] = np.sqrt((dx2 * s_xerr[j])**2 +
+                                        (dx1 * s_xerr[j + dj])**2) / (dx1 + dx2)
 
-            # Generate new dataset
-            RD1_points = ~overlap_points
-            RD2_points = ~rd2_overlap
+        # Now that indexes are matched, peform calculations to blend datasets.
+        # Use yerr weights to mix values at same x value.
+        # val = val1 * yerr2 + val2 * yerr1 / (yerr1 + yerr2) --> value of smaller error dominates
+        w_x = si_x
+        yerr_tot = l_yerr + si_yerr  # sum of yerrs in overlap reigon
+        w_y = (l_y * si_yerr + si_y * l_yerr) / (yerr_tot)
+        # Just as before, uncertainty goes as:
+        # f=(a*x + b*y) / (a+b), Unc(f) = 1/abs(a+b) * sqrt((a*uncx)^2 + (b*uncy)^2)
+        w_yerr = np.sqrt((2*(l_yerr * si_yerr)**2)) / yerr_tot
+        if not si_xerr is None:
+            w_xerr = np.sqrt(
+                ((si_xerr * l_yerr)**2 + (l_xerr * si_yerr)**2)) / yerr_tot
+
+        # Generate new dataset
+        RD1_points = ~overlap_points
+        RD2_points = ~rd2_overlap
+        if not si_xerr is None:
+            RDoverlap_contrib_data = (w_x, w_y, w_yerr, w_xerr)
             RD1_contrib_data = (x[RD1_points], y[RD1_points],
                                 yerr[RD1_points], xerr[RD1_points])
             RD2_contrib_data = (bx[RD2_points], by[RD2_points],
                                 byerr[RD2_points], bxerr[RD2_points])
-            RDconcat = Data1D(data=RD1_contrib_data)
-            RDconcat.add_data(RDoverlap_contrib_data)
-            RDconcat.add_data(RD2_contrib_data)
-            return RDconcat
         else:
-            raise AttributeError(
-                "Overlap points have different data density in Log(Q); Self:"+str(rd1_len) + ", Other:" + str(rd2_len) + " between Q=("+str(Qmin)+","+str(Qmax)+")")
+            RDoverlap_contrib_data = (w_x, w_y, w_yerr)
+            RD1_contrib_data = (x[RD1_points], y[RD1_points], yerr[RD1_points])
+            RD2_contrib_data = (bx[RD2_points], by[RD2_points], byerr[RD2_points])
+
+        RDconcat = type(self)(data=RD1_contrib_data)
+        RDconcat.add_data(RDoverlap_contrib_data)
+        RDconcat.add_data(RD2_contrib_data)
+        return RDconcat
     
     def sort(self):
         """
