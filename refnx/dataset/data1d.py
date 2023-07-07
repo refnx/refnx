@@ -444,11 +444,12 @@ class Data1D:
         #   Assume Q values are not the same,
         #   and perhaps density is different between data..
         xovlp = x[overlap_points]  # 1st obj restricted domain
-        Qmin = np.min(xovlp)
+        # Qmin = np.min(xovlp) #Minimum Q in overlap reigon.
         Qmax = x[-1]  # largest value.
         rd1_len = np.sum(overlap_points)  # number of points overlapping
         # Use one bound with equality to ensure n-1 points if x values are identitcal.
-        rd2_overlap = (bx < Qmax) & (bx >= Qmin)
+        rd2_overlap = (bx < Qmax) #Assume all Q < Qmax are valid in overlap.
+        # rd2_overlap = (bx < Qmax) & (bx >= Qmin) #Commented as sometimes bx[0].x < Qmin.
         rd2_len = np.sum(rd2_overlap)
 
         # Restrict objs to overlap (ovlp) region for calculations.
