@@ -37,7 +37,7 @@ Creating a conda environment
 
     ::
 
-     conda create -n refnx python=3.9 numpy scipy cython pandas h5py xlrd pytest matplotlib ipywidgets jupyter
+     conda create -n refnx python=3.9
 
 2. Activate the environment that we're going to be working in:
 
@@ -53,15 +53,21 @@ Creating a conda environment
 
     ::
 
-     python -m pip install uncertainties attrs periodictable corner pytensor pymc pyqt6 qtpy
+     python -m pip install refnx[all]
 
 Installing with pip
 ===================
 
-There are refnx wheels available for macOS/Windows/Linux on PyPI.
+There are refnx wheels available for macOS/Windows/Linux on PyPI. Using the
+[all] modifier means that all refnx's optional dependencies will also be
+installed.
 
     ::
 
+     # install refnx and all optional dependencies
+     python -m pip install refnx[all]
+
+     # alternatively just install refnx itself
      python -m pip install refnx
 
 Installing into a conda environment from a released version
