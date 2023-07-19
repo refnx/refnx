@@ -510,10 +510,10 @@ cpdef packed_buffer(buffer,
                         if evt_stg_xy_signed:
                             # if x and y are signed then convert from uint32
                             # to int32
-                            if x & (2**(nbits_val_neutron[0] - 1)):
+                            if x & <int64_t>(2**(nbits_val_neutron[0] - 1)):
                                 signed_x = - (<uint32_t>0x100000000 -
                                               (x | <uint32_t>0xFFFFFC00))
-                            if y & (2**(nbits_val_neutron[1] - 1)):
+                            if y & <int64_t>(2**(nbits_val_neutron[1] - 1)):
                                 signed_y = - (<uint32_t>0x100000000 -
                                               (y | <uint32_t>0xFFFFFC00))
                         # add to the list
