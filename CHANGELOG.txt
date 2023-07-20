@@ -483,3 +483,6 @@ in 0.1.13.
 
 0.1.35
 ------
+- only extract requested keys from catalogue
+- enable cython3 operations
+- change install docs to recommend use of refnx[all]
