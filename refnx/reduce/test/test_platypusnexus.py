@@ -559,6 +559,11 @@ def test_catalogue(data_directory):
     pth = Path(data_directory) / "reduce"
     catalogue(0, 10000000, data_folder=pth, prefix="PLP")
 
+    # check that you can supply a sequence of keys to return
+    df = catalogue(0, 1000000, data_folder=pth, keys=["omega"])
+    assert df.columns.size == 1
+    assert df.columns[0] == "omega"
+
 
 @pytest.mark.usefixtures("no_data_directory")
 def test_Catalogue_pickle(data_directory):

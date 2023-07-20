@@ -54,7 +54,7 @@ spectrum_template = """<?xml version="1.0"?>
 </REFroot>"""
 
 
-def catalogue(start, stop, data_folder=None, prefix="PLP"):
+def catalogue(start, stop, data_folder=None, prefix="PLP", keys=None):
     """
     Extract interesting information from Platypus NeXUS files.
 
@@ -68,11 +68,21 @@ def catalogue(start, stop, data_folder=None, prefix="PLP"):
         path specifying location of NeXUS files
     prefix : {'PLP', 'SPZ'}, optional
         str specifying whether you want to catalogue Platypus or Spatz files
+    keys : sequence of str, optional
+        specifies the keys to be extracted from each catalogue. Overrides the
+        default set of keys.
 
     Returns
     -------
     catalog : pd.DataFrame
         Dataframe containing interesting parameters from Platypus Nexus files
+
+    Notes
+    -----
+    The default set of keys is:
+    `["filename", "end_time", "sample_name", "ss1vg", "ss2vg", "ss3vg",
+      "ss4vg", "omega", "twotheta", "total_counts", "bm1_counts", "time",
+      "daq_dirname", "start_time"]`
     """
     info = ["filename", "end_time", "sample_name"]
 
@@ -90,6 +100,9 @@ def catalogue(start, stop, data_folder=None, prefix="PLP"):
         "daq_dirname",
         "start_time",
     ]
+
+    if keys is not None:
+        info = list(keys)
 
     run_number = []
     d = {key: [] for key in info}
