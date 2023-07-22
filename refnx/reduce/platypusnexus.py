@@ -302,10 +302,23 @@ class SpatzCatalogue(Catalogue):
         d["dz"] = d["twotheta"]
 
         # detector longitudinal translation from sample
-        d["dy"] = (
-            h5d["entry1/instrument/detector/detector_distance/pos"][:]
-            - d["sample_distance"]
-        )
+        d["dy"] = None
+        try:
+            d["dy"] = (
+                h5d["entry1/instrument/detector/detector_distance/pos"][:]
+                - d["sample_distance"]
+            )
+        except:
+            # entry was renamed after detector translation was added in 12268
+            pass
+        try:
+            d["dy"] = (
+                h5d["entry1/instrument/detector/longitudinal_translation"][:]
+            )
+        except:
+            pass
+        if d["dy"] is None:
+            raise ValueError("SPZ: dy is not present in the dataset")
 
         # logical size (mm) of 1 pixel in the scattering plane
         try:

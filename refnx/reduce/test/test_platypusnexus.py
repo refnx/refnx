@@ -549,6 +549,11 @@ class TestSpatzNexus:
         )
         assert_allclose(toff, 0, atol=1e-12)
 
+    def test_detector_translation(self):
+        f = SpatzNexus(self.pth / "SPZ0012268.nx.hdf")
+        dy = f.cat.cat.dy
+        assert_allclose(dy, 864.0)
+
 
 @pytest.mark.usefixtures("no_data_directory")
 def test_catalogue(data_directory):
