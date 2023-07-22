@@ -315,9 +315,9 @@ class SpatzCatalogue(Catalogue):
             pass
 
         try:
-            d["dy"] = (
-                h5d["entry1/instrument/detector/longitudinal_translation"][:]
-            )
+            d["dy"] = h5d[
+                "entry1/instrument/detector/longitudinal_translation"
+            ][:]
         except KeyError:
             pass
         if d["dy"] is None:
