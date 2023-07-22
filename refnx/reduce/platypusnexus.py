@@ -301,21 +301,24 @@ class SpatzCatalogue(Catalogue):
         d["detrot"] = d["twotheta"]
         d["dz"] = d["twotheta"]
 
+        ###############################################
         # detector longitudinal translation from sample
+        ###############################################
         d["dy"] = None
         try:
             d["dy"] = (
                 h5d["entry1/instrument/detector/detector_distance/pos"][:]
                 - d["sample_distance"]
             )
-        except:
+        except KeyError:
             # entry was renamed after detector translation was added in 12268
             pass
+
         try:
             d["dy"] = (
                 h5d["entry1/instrument/detector/longitudinal_translation"][:]
             )
-        except:
+        except KeyError:
             pass
         if d["dy"] is None:
             raise ValueError("SPZ: dy is not present in the dataset")
