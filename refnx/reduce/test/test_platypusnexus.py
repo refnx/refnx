@@ -500,11 +500,11 @@ class TestSpatzNexus:
     @pytest.mark.usefixtures("no_data_directory")
     @pytest.fixture(autouse=True)
     def setup_method(self, tmpdir, data_directory):
-        self.pth = pjoin(data_directory, "reduce")
+        self.pth = Path(data_directory) / "reduce"
 
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", RuntimeWarning)
-            pth = Path(self.pth) / "SPZ0000342.nx.hdf"
+            pth = self.pth / "SPZ0000342.nx.hdf"
             self.f342 = SpatzNexus(pth)
         self.cwd = os.getcwd()
 
