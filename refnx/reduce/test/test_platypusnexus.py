@@ -551,7 +551,7 @@ class TestSpatzNexus:
 
     def test_detector_translation(self):
         f = SpatzNexus(self.pth / "SPZ0012268.nx.hdf")
-        dy = f.cat.cat.dy
+        dy = f.cat.cat["dy"]
         assert_allclose(dy, 864.0137)
 
 
