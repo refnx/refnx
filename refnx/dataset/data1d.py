@@ -591,3 +591,54 @@ class Data1D:
         dataset.data = data
 
         return dataset
+
+
+def _data1D_to_hdf(fname, data):
+    """
+    Writes a Data1D object to rudimentary HDF.
+
+    Parameters
+    ----------
+    fname: str, BytesIO
+        Filename to write to
+
+    data: Data1D
+        dataset to write to file
+    """
+    import h5py
+
+    with h5py.File(fname, "w") as f:
+        f.create_group("entry1/data")
+        for attr in ["x", "y", "y_err", "x_err"]:
+            v = getattr(data, attr)
+            if v is not None:
+                f.create_dataset(f"entry1/data/{attr}", data=v)
+
+
+def _hdf_to_data1d(fname):
+    """
+    Reads a rudimentary HDF file into a Data1D object.
+
+    Parameters
+    ----------
+    fname: str, BytesIO
+        File to read from
+
+    Returns
+    -------
+    data: Data1D
+        dataset read from file
+    """
+    import h5py
+
+    d = []
+    with h5py.File(fname, "r") as f:
+        for attr in ["x", "y", "y_err", "x_err"]:
+            try:
+                d.append(f[f"entry1/data/{attr}"][:])
+            except KeyError:
+                pass
+
+    data = Data1D(data=d)
+    data.filename = fname
+    return data

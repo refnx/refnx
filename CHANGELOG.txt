@@ -490,3 +490,5 @@ in 0.1.13.
 
 0.1.36
 ------
+- rudimentary HDF <-> Data1D interconversion. This is functionality that might
+  be subject to change, so the functions are prefixed by "_".
