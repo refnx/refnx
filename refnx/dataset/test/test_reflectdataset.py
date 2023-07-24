@@ -2,12 +2,8 @@ import os.path
 from io import BytesIO
 import pytest
 
-from refnx.dataset import (
-    ReflectDataset,
-    Data1D,
-    _data1D_to_hdf,
-    _hdf_to_data1d,
-)
+from refnx.dataset import ReflectDataset, Data1D
+from refnx.dataset.data1d import _data1D_to_hdf, _hdf_to_data1d
 import numpy as np
 from numpy.testing import assert_equal
 
