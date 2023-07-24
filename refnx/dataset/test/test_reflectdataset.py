@@ -1,10 +1,11 @@
 import os.path
-
+from io import BytesIO
 import pytest
 
 from refnx.dataset import ReflectDataset, Data1D
+from refnx.dataset.data1d import _data1D_to_hdf, _hdf_to_data1d
 import numpy as np
-from numpy.testing import assert_equal, assert_
+from numpy.testing import assert_equal
 
 
 class TestReflectDataset:
@@ -326,3 +327,18 @@ class TestData1D:
 
         assert_equal(data.x, x)
         assert_equal(data.y, y)
+
+    def test_rudimentry_HDF(self):
+        rng = np.random.default_rng()
+        x = np.linspace(0, 100, 101)
+        y = rng.random(101)
+        dy = rng.random(101)
+        dx = rng.random((101, 2, 40))
+
+        data = Data1D((x, y, dy, dx))
+
+        f = BytesIO()
+        _data1D_to_hdf(f, data)
+        _data = _hdf_to_data1d(f)
+        assert len(_data) == 101
+        assert _data.x_err.shape == (101, 2, 40)
