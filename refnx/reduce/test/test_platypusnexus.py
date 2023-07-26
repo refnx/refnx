@@ -1,5 +1,4 @@
 import os
-from os.path import join as pjoin
 import numbers
 import warnings
 import pickle
@@ -34,6 +33,7 @@ from refnx.reduce.platypusnexus import (
     create_detector_norm,
     Catalogue,
     PlatypusCatalogue,
+    create_reflect_nexus
 )
 
 
@@ -41,10 +41,10 @@ class TestSpinSet(object):
     @pytest.mark.usefixtures("no_data_directory")
     @pytest.fixture(autouse=True)
     def setup_method(self, tmpdir, data_directory):
-        self.pth = pjoin(data_directory, "reduce", "PNR_files")
+        self.pth = Path(data_directory) / "reduce" / "PNR_files"
 
         def fpath(f):
-            return pjoin(self.pth, f)
+            return self.pth / f
 
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", RuntimeWarning)
@@ -127,11 +127,11 @@ class TestPlatypusNexus(object):
     @pytest.mark.usefixtures("no_data_directory")
     @pytest.fixture(autouse=True)
     def setup_method(self, tmpdir, data_directory):
-        self.pth = pjoin(data_directory, "reduce")
+        self.pth = Path(data_directory) / "reduce"
 
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", RuntimeWarning)
-            self.f113 = PlatypusNexus(pjoin(self.pth, "PLP0011613.nx.hdf"))
+            self.f113 = PlatypusNexus(self.pth / "PLP0011613.nx.hdf")
 
             # to ensure that file can be opened with a Path
             pth = Path(self.pth) / "PLP0011641.nx.hdf"
@@ -139,21 +139,21 @@ class TestPlatypusNexus(object):
 
             # These PNR datasets all have different flipper settings
             self.f8861 = PlatypusNexus(
-                pjoin(self.pth, "PNR_files/PLP0008861.nx.hdf")
+                self.pth / "PNR_files/PLP0008861.nx.hdf"
             )
             self.f8862 = PlatypusNexus(
-                pjoin(self.pth, "PNR_files/PLP0008862.nx.hdf")
+                self.pth / "PNR_files/PLP0008862.nx.hdf"
             )
             self.f8863 = PlatypusNexus(
-                pjoin(self.pth, "PNR_files/PLP0008863.nx.hdf")
+                self.pth / "PNR_files/PLP0008863.nx.hdf"
             )
             self.f8864 = PlatypusNexus(
-                pjoin(self.pth, "PNR_files/PLP0008864.nx.hdf")
+                self.pth / "PNR_files/PLP0008864.nx.hdf"
             )
 
         self.cwd = os.getcwd()
 
-        self.tmpdir = tmpdir.strpath
+        self.tmpdir = Path(tmpdir.strpath)
         os.chdir(self.tmpdir)
         return 0
 
@@ -198,7 +198,7 @@ class TestPlatypusNexus(object):
             yvals, yvals_sd, mask
         )
 
-        verified_data = np.load(pjoin(self.pth, "background_subtract.npy"))
+        verified_data = np.load(self.pth / "background_subtract.npy")
 
         assert_almost_equal(verified_data, np.c_[profile, profile_sd])
 
@@ -250,7 +250,7 @@ class TestPlatypusNexus(object):
 
         # each of the (N, T) entries should have the same background subtracted
         # entries
-        verified_data = np.load(pjoin(self.pth, "background_subtract.npy"))
+        verified_data = np.load(self.pth / "background_subtract.npy")
 
         it = np.nditer(detector, flags=["multi_index"])
         it.remove_axis(2)
@@ -313,23 +313,23 @@ class TestPlatypusNexus(object):
         self.f113.process()
 
         # can save the spectra by supplying a filename
-        self.f113.write_spectrum_xml(pjoin(self.tmpdir, "test.xml"))
-        self.f113.write_spectrum_dat(pjoin(self.tmpdir, "test.dat"))
+        self.f113.write_spectrum_xml(self.tmpdir / "test.xml")
+        self.f113.write_spectrum_dat(self.tmpdir / "test.dat")
 
         # can save by supplying file handle:
-        with open(pjoin(self.tmpdir, "test.xml"), "wb") as f:
+        with open(self.tmpdir / "test.xml", "wb") as f:
             self.f113.write_spectrum_xml(f)
 
     def test_accumulate_files(self):
         fnames = ["PLP0000708.nx.hdf", "PLP0000709.nx.hdf"]
-        pths = [pjoin(self.pth, fname) for fname in fnames]
+        pths = [self.pth / fname for fname in fnames]
         plp.accumulate_HDF_files(pths)
         f8, f9, fadd = None, None, None
 
         try:
-            f8 = h5py.File(pjoin(self.pth, "PLP0000708.nx.hdf"), "r")
-            f9 = h5py.File(pjoin(self.pth, "PLP0000709.nx.hdf"), "r")
-            fadd = h5py.File(pjoin(self.tmpdir, "ADD_PLP0000708.nx.hdf"), "r")
+            f8 = h5py.File(self.pth / "PLP0000708.nx.hdf", "r")
+            f9 = h5py.File(self.pth / "PLP0000709.nx.hdf"), "r")
+            fadd = h5py.File(self.tmpdir / "ADD_PLP0000708.nx.hdf"), "r")
 
             f8d = f8["entry1/data/hmm"][0]
             f9d = f9["entry1/data/hmm"][0]
@@ -346,26 +346,26 @@ class TestPlatypusNexus(object):
     def test_accumulate_files_reduce(self):
         # test by adding a file to itself. Should have smaller stats
         fnames = ["PLP0000708.nx.hdf", "PLP0000708.nx.hdf"]
-        pths = [pjoin(self.pth, fname) for fname in fnames]
+        pths = [self.pth / fname for fname in fnames]
         plp.accumulate_HDF_files(pths)
 
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", RuntimeWarning)
             # it should be processable
-            fadd = PlatypusNexus(pjoin(os.getcwd(), "ADD_PLP0000708.nx.hdf"))
+            fadd = PlatypusNexus(Path(os.getcwd()) / "ADD_PLP0000708.nx.hdf")
             fadd.process()
 
             # it should also be reduceable
-            reducer = PlatypusReduce(pjoin(self.pth, "PLP0000711.nx.hdf"))
+            reducer = PlatypusReduce(self.pth / "PLP0000711.nx.hdf")
 
             datasets, reduced = reducer.reduce(
-                pjoin(os.getcwd(), "ADD_PLP0000708.nx.hdf")
+                Path(os.getcwd()) / "ADD_PLP0000708.nx.hdf"
             )
             assert_("y" in reduced)
 
             # the error bars should be smaller
             datasets2, reduced2 = reducer.reduce(
-                pjoin(self.pth, "PLP0000708.nx.hdf")
+                self.pth / "PLP0000708.nx.hdf"
             )
 
             assert_(np.all(reduced["y_err"] < reduced2["y_err"]))
@@ -484,9 +484,9 @@ class TestPlatypusNexus(object):
 
         # test spin channel setting
         # non spin analysed. mode is POL, not POLANAL
-        pn = PlatypusNexus(pjoin(self.pth, "PLP0016427.nx.hdf"))
+        pn = PlatypusNexus(self.pth / "PLP0016427.nx.hdf")
         assert pn.spin_state == SpinChannel.UP_UP
-        pn = PlatypusNexus(pjoin(self.pth, "PLP0016426.nx.hdf"))
+        pn = PlatypusNexus(self.pth / "PLP0016426.nx.hdf")
         assert pn.spin_state == SpinChannel.DOWN_DOWN
 
     def test_PNR_magnet_read(self):
@@ -557,7 +557,7 @@ class TestSpatzNexus:
 
 @pytest.mark.usefixtures("no_data_directory")
 def test_catalogue(data_directory):
-    pth = pjoin(data_directory, "reduce")
+    pth = Path(data_directory) / "reduce"
     catalogue(0, 10000000, data_folder=pth, prefix="PLP")
     catalogue(0, 10000000, data_folder=pth, prefix="SPZ")
 
@@ -572,8 +572,8 @@ def test_catalogue(data_directory):
 
 @pytest.mark.usefixtures("no_data_directory")
 def test_Catalogue_pickle(data_directory):
-    pth = pjoin(data_directory, "reduce")
-    f113 = pjoin(pth, "PLP0011613.nx.hdf")
+    pth = Path(data_directory) / "reduce"
+    f113 = pth / "PLP0011613.nx.hdf"
     with h5py.File(f113) as f:
         c = PlatypusCatalogue(f)
 
@@ -581,3 +581,11 @@ def test_Catalogue_pickle(data_directory):
     assert c.prefix == "PLP"
     pkl = pickle.dumps(c)
     pickle.loads(pkl)
+
+
+@pytest.mark.usefixtures("no_data_directory")
+def test_create_nexus(data_directory):
+    pth = Path(data_directory) / "reduce"
+    f113 = pth / "PLP0011613.nx.hdf"
+    f = create_reflect_nexus(f113)
+    assert isinstance(f, PlatypusNexus)
