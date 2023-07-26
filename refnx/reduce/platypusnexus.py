@@ -1,6 +1,7 @@
 import io
 import os
 import os.path
+from pathlib import Path
 import glob
 import argparse
 import re
@@ -1773,8 +1774,8 @@ class ReflectNexus:
         m_lambda = 0.5 * (m_lambda_hist[:, 1:] + m_lambda_hist[:, :-1])
         TOF -= t_offset
 
-        # gravity correction if direct beam
-        if direct:
+        # gravity correction if direct beam, but only if you're on Platypus
+        if direct and isinstance(self, PlatypusNexus):
             # TODO: Correlated Uncertainties?
             detector, detector_sd, m_gravcorrcoefs = self.correct_for_gravity(
                 detector, detector_sd, m_lambda, lo_wavelength, hi_wavelength
@@ -2167,6 +2168,36 @@ class ReflectNexus:
         )
 
         return detector, frame_count, bm1_counts
+
+
+def create_reflect_nexus(h5data):
+    """
+    Creates a ReflectNexus object from an HDF file
+
+    Parameters
+    ----------
+    h5data : {ReflectNexus, HDF5 NeXus file, str, Path}
+        A ReflectNexus object, an HDF5 NeXus file for Platypus/Spatz, or a
+        str/Path specifying the path to one
+    """
+    if isinstance(h5data, ReflectNexus):
+        return h5data
+
+    with _possibly_open_hdf_file(h5data, "r") as f:
+        fname = _check_HDF_file(f)
+        if not fname:
+            raise ValueError(f"{h5data!r} is not a valid HDF5 file")
+        pth = Path(fname)
+        instrument = pth.name[:3]
+
+        if instrument == "PLP":
+            return PlatypusNexus(f)
+        elif instrument == "SPZ":
+            return SpatzNexus(f)
+        else:
+            raise ValueError(
+                f"{h5data!r} doesn't appear to be a Spatz or Platypus file"
+            )
 
 
 class PlatypusNexus(ReflectNexus):
