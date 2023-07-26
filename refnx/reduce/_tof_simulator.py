@@ -62,7 +62,9 @@ class SpectrumDist(rv_continuous):
     def _cdf(self, x):
         xflat = x.ravel()
 
-        f = lambda x: self.spl.integral(self.a, x) / self.fudge_factor
+        def f(x):
+            return self.spl.integral(self.a, x) / self.fudge_factor
+
         v = map(f, xflat)
 
         r = np.fromiter(v, dtype=float).reshape(x.shape)
