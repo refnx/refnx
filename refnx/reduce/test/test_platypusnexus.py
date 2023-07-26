@@ -328,8 +328,8 @@ class TestPlatypusNexus(object):
 
         try:
             f8 = h5py.File(self.pth / "PLP0000708.nx.hdf", "r")
-            f9 = h5py.File(self.pth / "PLP0000709.nx.hdf"), "r")
-            fadd = h5py.File(self.tmpdir / "ADD_PLP0000708.nx.hdf"), "r")
+            f9 = h5py.File(self.pth / "PLP0000709.nx.hdf", "r")
+            fadd = h5py.File(self.tmpdir / "ADD_PLP0000708.nx.hdf", "r")
 
             f8d = f8["entry1/data/hmm"][0]
             f9d = f9["entry1/data/hmm"][0]
