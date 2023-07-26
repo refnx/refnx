@@ -33,7 +33,7 @@ from refnx.reduce.platypusnexus import (
     create_detector_norm,
     Catalogue,
     PlatypusCatalogue,
-    create_reflect_nexus
+    create_reflect_nexus,
 )
 
 
