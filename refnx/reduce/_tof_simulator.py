@@ -15,6 +15,7 @@ from scipy._lib._util import check_random_state
 from refnx.reduce.platypusnexus import (
     calculate_wavelength_bins,
     create_reflect_nexus,
+    PlatypusNexus
 )
 from refnx.reduce import parabolic_motion as pm
 from refnx.util import general, ErrorProp
