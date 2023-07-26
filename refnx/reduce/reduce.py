@@ -86,7 +86,7 @@ class ReflectReduce:
 
         The reduction uses the direct beam specified during construction of
         this object. This method reduces all the spectra present in the
-        reflected beam file (see platypusnexus.PlatypusNexus.process for
+        reflected beam file (see platypusnexus.ReflectNexus.process for
         eventmode specification and other related options), but aggregates
         all data in the direct beam spectrum.
 
@@ -101,7 +101,7 @@ class ReflectReduce:
             If `True` then the reduced dataset is saved to the current
             directory, with a name os.path.basename(reflect)
         reduction_options : dict, optional
-            Options passed directly to `refnx.reduce.PlatypusNexus.process`,
+            Options passed directly to `refnx.reduce.ReflectNexus.process`,
             for processing of individual spectra. Look at that method docstring
             for specification of options.
 
@@ -168,7 +168,8 @@ class ReflectReduce:
         direct_keywords = reduction_options.copy()
 
         # get the direct beam spectrum
-        direct_keywords["direct"] = True
+        if isinstance(self, PlatypusReduce):
+            direct_keywords["direct"] = True
         direct_keywords["integrate"] = -1
         if (
             "peak_pos" in direct_keywords
@@ -252,7 +253,7 @@ class ReflectReduce:
             self.direct_beam.m_spec_sd[:, :, np.newaxis],
         )
 
-        # you may have had divide by zero's.
+        # you may have had divide by zeros.
         m_ref = np.where(np.isinf(m_ref), 0, m_ref)
         m_ref_sd = np.where(np.isinf(m_ref_sd), 0, m_ref_sd)
 

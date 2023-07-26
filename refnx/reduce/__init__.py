@@ -8,6 +8,7 @@ from refnx.reduce.reduce import (
 )
 from refnx.reduce.platypusnexus import (
     catalogue,
+    create_reflect_nexus,
     PlatypusNexus,
     number_datafile,
     basename_datafile,
