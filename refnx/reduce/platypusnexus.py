@@ -81,9 +81,9 @@ def catalogue(start, stop, data_folder=None, prefix="PLP", keys=None):
     Notes
     -----
     The default set of keys is:
-    `["filename", "end_time", "sample_name", "ss1vg", "ss2vg", "ss3vg",
+    ["filename", "end_time", "sample_name", "ss1vg", "ss2vg", "ss3vg",
       "ss4vg", "omega", "twotheta", "total_counts", "bm1_counts", "time",
-      "daq_dirname", "start_time"]`
+      "daq_dirname", "start_time"]
     """
     info = ["filename", "end_time", "sample_name"]
 

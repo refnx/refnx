@@ -594,7 +594,7 @@ def sequence_to_parameters(seq):
 
     Returns
     -------
-    params: `refnx.analysis.Parameters
+    params: `refnx.analysis.Parameters`
     """
     flat_seq = flatten(seq)
     pars = [possibly_create_parameter(p) for p in flat_seq]
