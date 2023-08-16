@@ -9,7 +9,7 @@ import os
 import pytest
 
 import numpy as np
-from numpy.linalg import LinAlgError
+from scipy.linalg import LinAlgWarning
 from scipy.optimize import minimize, least_squares
 from scipy.optimize._numdiff import approx_derivative
 import scipy.stats as stats
@@ -498,9 +498,9 @@ class TestObjective:
         param.vary = True
         params.append(param)
 
-        from pytest import raises
+        from pytest import warns
 
-        with raises(LinAlgError):
+        with warns(LinAlgWarning):
             objective.covar()
 
     @pytest.mark.xfail

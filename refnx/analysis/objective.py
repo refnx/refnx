@@ -1,6 +1,7 @@
 import warnings
 import numpy as np
 from numpy.linalg import LinAlgError
+from scipy.linalg import LinAlgWarning
 from scipy.optimize._numdiff import approx_derivative
 import scipy.stats as stats
 
@@ -766,10 +767,11 @@ class Objective(BaseObjective):
             var_params = self.varying_parameters()
             singular_params = [var_params[ps] for ps in psingular]
 
-            raise LinAlgError(
+            warnings.warn(
                 "The following Parameters have no effect on"
                 " Objective.residuals, please consider fixing"
-                " them.\n" + repr(singular_params)
+                " them.\n" + repr(singular_params),
+                LinAlgWarning,
             )
 
         return covar
