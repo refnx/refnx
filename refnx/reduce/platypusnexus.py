@@ -1707,10 +1707,8 @@ class ReflectNexus:
             """
             estimated beam width in pixels at detector
             """
-            estimated_beam_width[idx] = self.estimated_beam_width_at_detector(
-                scanpoint
-            )
-
+            v = self.estimated_beam_width_at_detector(scanpoint)
+            estimated_beam_width[idx] = np.squeeze(v)
             """
             work out the total flight length
             IMPORTANT: this varies as a function of twotheta. This is
@@ -1723,7 +1721,8 @@ class ReflectNexus:
             if twotheta is None:
                 twotheta = cat.twotheta[scanpoint]
             output = self.chod(omega, twotheta, scanpoint=scanpoint)
-            flight_distance[idx], d_cx[idx] = output
+            flight_distance[idx] = np.squeeze(output[0])
+            d_cx[idx] = output[1]
 
             # calculate nominal phase openings
             phase_angle[idx], master_opening = self.phase_angle(scanpoint)
@@ -2386,10 +2385,11 @@ class PlatypusNexus(ReflectNexus):
             # as such you need to decrease their tof by increasing the
             # t_offset
             master_corr = -np.degrees(np.arctan(h_c1 / DISCRADIUS))
-            corr_t_offset[i] += (master_phase_offset + master_corr) / (
+            _offset = (master_phase_offset + master_corr) / (
                 2.0 * 360.0 * freq
             )
-            corr_t_offset[i] -= (phase_angle + angle_corr) / (360 * 2 * freq)
+            _offset -= (phase_angle + angle_corr) / (360 * 2 * freq)
+            corr_t_offset[i] += np.squeeze(_offset)
         corr_t_offset *= 1e6
 
         return corr_t_offset
@@ -2549,7 +2549,6 @@ class PlatypusNexus(ReflectNexus):
                 chod += cat.dy[scanpoint] / np.cos(np.radians(twotheta - 4.8))
             else:
                 chod += cat.dy[scanpoint] / np.cos(np.radians(4.8 - twotheta))
-
         return chod, d_cx
 
 
