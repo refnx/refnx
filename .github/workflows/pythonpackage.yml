@@ -203,6 +203,7 @@ jobs:
         cd ..
 
         # check that refnx gui starts
+        pip install psutil
         python tools/app/check_app_starts.py refnx
 
     - name: Make frozen GUI executable
