@@ -1707,9 +1707,7 @@ class ReflectNexus:
             """
             estimated beam width in pixels at detector
             """
-            v = self.estimated_beam_width_at_detector(
-                scanpoint
-            )
+            v = self.estimated_beam_width_at_detector(scanpoint)
             estimated_beam_width[idx] = np.squeeze(v)
             """
             work out the total flight length
