@@ -767,10 +767,11 @@ class Objective(BaseObjective):
             var_params = self.varying_parameters()
             singular_params = [var_params[ps] for ps in psingular]
 
-            warnings.warn("The following Parameters have no effect on"
+            warnings.warn(
+                "The following Parameters have no effect on"
                 " Objective.residuals, please consider fixing"
                 " them.\n" + repr(singular_params),
-                LinAlgWarning
+                LinAlgWarning,
             )
 
         return covar
