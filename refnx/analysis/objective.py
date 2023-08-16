@@ -1,6 +1,6 @@
 import warnings
 import numpy as np
-from np.linalg import LinAlgError
+from numpy.linalg import LinAlgError
 from scipy.linalg import LinAlgWarning
 from scipy.optimize._numdiff import approx_derivative
 import scipy.stats as stats
