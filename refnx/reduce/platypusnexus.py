@@ -3329,11 +3329,11 @@ def accumulate_HDF_files(files):
 def _check_HDF_file(h5data):
     # If a file is an HDF5 file, then return the filename.
     # otherwise return False
-    if type(h5data) == h5py.File:
+    if isinstance(h5data, h5py.File):
         return h5data.filename
     else:
         with h5py.File(h5data, "r") as h5data:
-            if type(h5data) == h5py.File:
+            if isinstance(h5data, h5py.File):
                 return h5data.filename
 
     return False
@@ -3362,7 +3362,7 @@ def _possibly_open_hdf_file(f, mode="r"):
         this context manager.
     """
     close_file = False
-    if type(f) == h5py.File:
+    if isinstance(f, h5py.File):
         g = f
     else:
         g = h5py.File(f, mode)
