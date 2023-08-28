@@ -779,7 +779,7 @@ class CurveFitter:
                 if callback_func is None:
                     return None
                 else:
-                    return callback_func(*args, **kwds)
+                    return callback_func(intermediate_result, *args, **kwds)
 
             return callback
 
