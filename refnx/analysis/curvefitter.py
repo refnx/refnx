@@ -767,12 +767,19 @@ class CurveFitter:
 
         # a decorator for the progress bar updater
         def _callback_wrapper(callback_func, pbar):
-            def callback(*args, **kwds):
+            def callback(intermediate_result, *args, **kwds):
                 pbar.update(1)
+                if hasattr(pbar, "set_description"):
+                    if hasattr(intermediate_result, "fun"):
+                        _stat = intermediate_result.fun
+                    elif isinstance(intermediate_result, np.ndarray):
+                        _stat = cost(intermediate_result)
+                    pbar.set_description(f"{_stat}")
+
                 if callback_func is None:
                     return None
                 else:
-                    return callback_func(*args, **kwds)
+                    return callback_func(intermediate_result, *args, **kwds)
 
             return callback
 
