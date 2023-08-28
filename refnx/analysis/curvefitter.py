@@ -773,7 +773,7 @@ class CurveFitter:
                     if hasattr(intermediate_result, "fun"):
                         _stat = intermediate_result.fun
                     elif isinstance(intermediate_result, np.ndarray):
-                        _stat = cost(args[0])
+                        _stat = cost(intermediate_result)
                     pbar.set_description(f"{_stat}")
 
                 if callback_func is None:
