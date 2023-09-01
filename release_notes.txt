@@ -3,8 +3,8 @@ General release instructions
 
 # make sure we're up to data
 - git fetch refnx
-- git checkout master
-- git rebase refnx/master
+- git checkout main
+- git rebase refnx/main
 - git clean -xdf (no detritus left over)
 
 # a feature branch for the release
@@ -17,20 +17,17 @@ General release instructions
 # once the CI has passed
 - merge the feature branch
 - git fetch refnx
-- git checkout master
-- git rebase refnx/master
+- git checkout main
+- git rebase refnx/main
 
 # tag the release and put it onto github
+# with the automated release process this should be done automatically
 - git tag -a vX.Y.Z
 - git push refnx vX.Y.Z
 
-# make the sdist
-- python setup.py sdist
-- twine upload dist/*.tar.gz
-
 # Epilogue
-- git checkout master
+- git checkout main
 - make sure ISRELEASED is False in setup.py, bump version number, create new
   section in CHANGELOG.
 - git commit -a -m'MAINT: bump version number [ci skip]'
-- git push refnx master
+- git push refnx main

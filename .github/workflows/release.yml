@@ -4,7 +4,7 @@ name: PyPI/Github Release
 on:
   push:
     tags:
-      - "R*"
+      - "v*"
 
 jobs:
   build_wheels:
@@ -66,7 +66,7 @@ jobs:
         cd dist
         RNX_VERSION="$(python -c "import refnx;print(refnx.version.release)")"
         cd ..
-        if  [ $RNX_VERSION == "False" ]; then
+        if  [ $RNX_VERSION == "True" ]; then
           echo "It's a release version of refnx"
           else
             echo "This is not a release version of refnx"
@@ -79,8 +79,8 @@ jobs:
     runs-on: ubuntu-latest
     needs: [check-version]
     environment:
-      name: testpypi
-      url: https://test.pypi.org/p/refnx
+      name: pypi
+      url: https://pypi.org/p/refnx
     permissions:
       id-token: write  # IMPORTANT: this permission is mandatory for trusted publishing
 
@@ -93,5 +93,5 @@ jobs:
     - name: Upload to PyPI
       uses: pypa/gh-action-pypi-publish@release/v1
       with:
-        repository-url: https://test.pypi.org/legacy/
+        # repository-url: https://test.pypi.org/legacy/
         skip_existing: true
