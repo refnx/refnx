@@ -56,12 +56,13 @@ jobs:
         python-version: 3.11
     - uses: actions/download-artifact@v3
       with:
+        name: artifact
         path: dist
     - name: Check version
       run: |
         python -m pip install numpy scipy orsopy
         ls dist
-        python -m pip install --only-binary=refnx --no-index --find-links=dist/artifact refnx
+        python -m pip install --only-binary=refnx --no-index --find-links=dist refnx
         cd dist
         RNX_VERSION="$(python -c "import refnx;print(refnx.version.release)")"
         cd ..
@@ -86,6 +87,7 @@ jobs:
     steps:
     - uses: actions/download-artifact@v3
       with:
+        name: artifact
         path: dist
 
     - name: Upload to PyPI
