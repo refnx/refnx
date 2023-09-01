@@ -20,7 +20,6 @@ jobs:
       - name: build wheels
         uses: pypa/cibuildwheel@v2.15.0
         env:
-          CIBW_SKIP: cp312-*
           CIBW_TEST_COMMAND: pytest --pyargs refnx.reflect.test.test_reflect
           CIBW_ARCHS_MACOS: "x86_64 arm64"
           CIBW_ENVIRONMENT_MACOS: MACOSX_DEPLOYMENT_TARGET="10.13"
