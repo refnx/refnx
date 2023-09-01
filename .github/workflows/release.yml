@@ -62,8 +62,9 @@ jobs:
         python -m pip install numpy scipy orsopy
         ls dist
         python -m pip install --only-binary=refnx --no-index --find-links=dist/artifact refnx
-
+        cd dist
         RNX_VERSION="$(python -c "import refnx;print(refnx.version.release)")"
+        cd ..
         if  [ $RNX_VERSION == "False" ]; then
           echo "It's a release version of refnx"
           else
