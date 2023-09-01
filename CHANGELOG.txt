@@ -497,3 +497,4 @@ in 0.1.13.
 
 0.1.37
 ------
+- made automated GHA release to PyPI.
