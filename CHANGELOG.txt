@@ -497,4 +497,5 @@ in 0.1.13.
 
 0.1.37
 ------
-- made automated GHA release to PyPI.
+- automated the release to PyPI via Github Actions.
+- removed setup.cfg, transferring all information to pyproject.toml.
