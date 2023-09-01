@@ -2,3 +2,4 @@
 recursive-include refnx *
 recursive-include src *
 exclude src/refcalc.o
+prune */__pycache__
