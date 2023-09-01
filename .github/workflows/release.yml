@@ -2,13 +2,9 @@
 name: PyPI/Github Release
 
 on:
-  pull_request:
-    branches:
-      - main
   push:
     tags:
       - "R*"
-
 
 jobs:
   build_wheels:
