@@ -81,10 +81,11 @@ def get_version_info():
     elif os.path.exists("refnx/version.py"):
         # must be a source distribution, use existing version file
         # load it as a separate module to not load refnx/__init__.py
-        import imp
-
-        version = imp.load_source("refnx.version", "refnx/version.py")
-        GIT_REVISION = version.git_revision
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("version", "refnx/version.py")
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        GIT_REVISION = module.git_revision
     else:
         GIT_REVISION = "Unknown"
 
