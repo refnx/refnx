@@ -7,6 +7,7 @@ import warnings
 import pytest
 
 from numpy.testing import assert_equal, assert_allclose
+
 # import xml.etree.ElementTree as ET
 
 from refnx.reduce import (
