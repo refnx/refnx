@@ -21,7 +21,7 @@ def centroid(y, x=None, dx=1.0):
     This is not really all that good of an algorithm, unless the peak is much
     higher than the background
     """
-    yt = np.asfarray(y)
+    yt = np.asarray(y).astype(float, copy=False)
 
     if x is None:
         x = np.arange(yt.size, dtype="float") * dx
@@ -56,7 +56,7 @@ def median(y, x=None, dx=1.0):
         Centroid and standard deviation of the data.
 
     """
-    yt = np.asfarray(y)
+    yt = np.asarray(y).astype(float, copy=False)
 
     if x is None:
         x = np.arange(yt.size, dtype="float") * dx

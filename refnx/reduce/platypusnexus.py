@@ -2148,7 +2148,7 @@ class ReflectNexus:
             loaded_events, end_events = events(f, max_frames=last_frame)
 
         # convert frame_bins to list of filter frames
-        frames = framebins_to_frames(np.asfarray(frame_bins) * frequency)
+        frames = framebins_to_frames(np.asarray(frame_bins).astype(float, copy=False) * frequency)
 
         if event_filter is not None:
             output = event_filter(loaded_events, t_bins, y_bins, x_bins)

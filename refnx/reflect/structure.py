@@ -1651,7 +1651,7 @@ def _profile_slicer(z, sld_profile, slice_size=None):
     final structures is on the order of fractions of a percent, with the
     largest difference around the critical edge.
     """
-    sld = np.asfarray(sld_profile, dtype=complex)
+    sld = np.asarray(sld_profile).astype(complex)
     if len(sld.shape) > 1 and sld.shape[1] == 2:
         sld[:, 0].imag = sld[:, 1].real
         sld = sld[:, 0]
@@ -1754,7 +1754,7 @@ def sld_profile(slabs, z=None, max_delta_z=None):
 
         zed = np.linspace(zstart, zend, num=npnts)
     else:
-        zed = np.asfarray(z)
+        zed = np.asarray(z).astype(float, copy=False)
 
     # the output array
     sld = np.ones_like(zed, dtype=float) * layers[0, 1]

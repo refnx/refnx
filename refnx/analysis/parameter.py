@@ -374,7 +374,7 @@ class Parameters(UserList):
 
         for choice in choices:
             template_array[chain_pars] = chains[..., choice]
-            yield np.asfarray(template_array)
+            yield np.asarray(template_array).astype(float, copy=False)
 
 
 class BaseParameter:
