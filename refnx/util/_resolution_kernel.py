@@ -283,8 +283,8 @@ def resolution_kernel(
         kernel[:, 0, :] and kernel[:, 1, :] correspond to `Q` and `PDF(Q)` for
         each of the data points in the first dimension.
     """
-    theta0_arr = np.asfarray(theta0).ravel()
-    wavelength0_arr = np.asfarray(wavelength0).ravel()
+    theta0_arr = np.asarray(theta0).astype(float, copy=False).ravel()
+    wavelength0_arr = np.asarray(wavelength0).astype(float, copy=False).ravel()
     qpnts = max(theta0_arr.size, wavelength0_arr.size)
     arr = [
         np.array(a) for a in np.broadcast_arrays(theta0_arr, wavelength0_arr)

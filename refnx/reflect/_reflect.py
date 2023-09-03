@@ -117,7 +117,7 @@ class _Abeles_pyopencl:
                 src = f.read()
             self.prg = cl.Program(self.ctx, src).build()
 
-        qvals = np.asfarray(q)
+        qvals = np.asarray(q).astype(float)
         flatq = qvals.ravel()
 
         nlayers = len(w) - 2
@@ -195,7 +195,7 @@ def abeles(
     Reflectivity: np.ndarray
         Calculated reflectivity values for each q value.
     """
-    qvals = np.asfarray(q)
+    qvals = np.asarray(q).astype(float, copy=False)
     flatq = qvals.ravel()
 
     nlayers = layers.shape[0] - 2
@@ -298,7 +298,7 @@ def parratt(
     Reflectivity: np.ndarray
         Calculated reflectivity values for each q value.
     """
-    qvals = np.asfarray(q)
+    qvals = np.asarray(q).astype(float, copy=False)
     flatq = qvals.ravel()
 
     nlayers = layers.shape[0] - 2
@@ -621,7 +621,7 @@ def pnr(q, layers):
          probe of magnetic films and multilayers', Phys. Rev. B, (1992), 46,
          3391.
     """
-    xx = np.asfarray(q).astype(np.complex128).ravel()
+    xx = np.asarray(q).astype(np.complex128).ravel()
 
     thetas = np.radians(layers[:, 4])
     thetas = np.diff(thetas)
