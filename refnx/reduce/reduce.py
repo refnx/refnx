@@ -304,9 +304,10 @@ class ReflectReduce:
                 with open(fname, "wb") as f:
                     dataset.save(f, header=header)
 
-                fname = f"{datafilename}_{i}.xml"
-                with open(fname, "wb") as f:
-                    dataset.save_xml(f, start_time=reduction["start_time"][i])
+                # fname = f"{datafilename}_{i}.xml"
+                # with open(fname, "wb") as f:
+                #     dataset.save_xml(f, start_time=reduction["start_time"][i])
+
         reduction["fname"] = fnames
         return datasets, deepcopy(reduction)
 
@@ -1287,12 +1288,13 @@ def reduce_stitch(
         # now chop off .nx.hdf extension
         fname = basename_datafile(fname)
 
-        fname_dat = "c_{0}.dat".format(fname)
+        fname_dat = f"c_{fname}.dat"
         with open(fname_dat, "wb") as f:
             combined_dataset.save(f)
-        fname_xml = "c_{0}.xml".format(fname)
-        with open(fname_xml, "wb") as f:
-            combined_dataset.save_xml(f)
+
+        # fname_xml = "c_{0}.xml".format(fname)
+        # with open(fname_xml, "wb") as f:
+        #     combined_dataset.save_xml(f)
 
     return combined_dataset, fname_dat
 

@@ -7,7 +7,8 @@ import warnings
 import pytest
 
 from numpy.testing import assert_equal, assert_allclose
-import xml.etree.ElementTree as ET
+
+# import xml.etree.ElementTree as ET
 
 from refnx.reduce import (
     reduce_stitch,
@@ -87,7 +88,7 @@ class TestPlatypusReduce:
             # this should also have saved a couple of files in the current
             # directory
             assert os.path.isfile("./PLP0000708_0.dat")
-            assert os.path.isfile("./PLP0000708_0.xml")
+            # assert os.path.isfile("./PLP0000708_0.xml")
 
             # can we read the file
             ReflectDataset("./PLP0000708_0.dat")
@@ -137,8 +138,8 @@ class TestPlatypusReduce:
             )
 
             # check that the (right?) timestamps are written into the datafile
-            tree = ET.parse(pjoin(os.getcwd(), "PLP0011641_1.xml"))
-            tree.find(".//REFentry").attrib["time"]
+            # tree = ET.parse(pjoin(os.getcwd(), "PLP0011641_1.xml"))
+            # tree.find(".//REFentry").attrib["time"]
             # TODO, timestamp is created in the local time stamp of the testing
             # machine. The following works if reduced with a computer in
             # Australian EST.
@@ -218,7 +219,7 @@ class TestSpatzReduce:
         # this should also have saved a couple of files in the current
         # directory
         assert os.path.isfile("./SPZ0000660_0.dat")
-        assert os.path.isfile("./SPZ0000660_0.xml")
+        # assert os.path.isfile("./SPZ0000660_0.xml")
 
         # try writing offspecular data
         a.write_offspecular("offspec.xml", 0)
