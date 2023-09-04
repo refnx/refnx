@@ -46,7 +46,7 @@ class TestPlatypusReduce:
                 reduction_options={"rebin_percent": 2},
             )
             a.save("test1.dat")
-            assert (self.tmpdir /"test1.dat").is_file()
+            assert (self.tmpdir / "test1.dat").is_file()
 
             # reduce_stitch should take a ReductionOptions dict
             opts = ReductionOptions()
@@ -59,7 +59,7 @@ class TestPlatypusReduce:
                 reduction_options=[opts] * 3,
             )
             a2.save("test2.dat")
-            assert (self.tmpdir /"test2.dat").is_file()
+            assert (self.tmpdir / "test2.dat").is_file()
             assert_allclose(a.y, a2.y)
 
     def test_reduction_method(self):
