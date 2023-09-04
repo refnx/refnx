@@ -19,9 +19,7 @@ __license__ = "MIT"
 __description__ = "The Python ensemble sampling toolkit for MCMC"
 
 
-__version__ = "91bf7c2"
-
-# from .emcee_version import __version__  # isort:skip
+from .emcee_version import __version__  # isort:skip
 
 from . import autocorr, backends, moves
 from .ensemble import EnsembleSampler, walkers_independent
