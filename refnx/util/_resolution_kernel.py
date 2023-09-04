@@ -84,7 +84,7 @@ def pq_theta(p_theta, theta0, wavelength0, Q):
     """
     theta = np.radians(general.angle(Q, wavelength0) - theta0)
     pdf = wavelength0 / 4 / np.pi / np.cos(theta) * p_theta(theta)
-    pdf /= integrate.simps(pdf, x=Q)
+    pdf /= integrate.simpson(pdf, x=Q)
     return pdf
 
 
@@ -248,7 +248,7 @@ def pq_wavelength(p_wavelength, theta0, wavelength0, Q, spectrum=None):
     pdf *= f(wavelength) / Q / Q
 
     # spectrum function may not be normalised.
-    pdf /= integrate.simps(pdf, Q)
+    pdf /= integrate.simpson(pdf, x=Q)
 
     return pdf
 
@@ -334,6 +334,6 @@ def resolution_kernel(
         p = np.convolve(p, pqda, "same")
         p *= spacing**3.0
 
-        kernel[i, 1, :] = p / integrate.simps(p, Q)
+        kernel[i, 1, :] = p / integrate.simpson(p, x=Q)
 
     return kernel

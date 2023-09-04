@@ -6,7 +6,7 @@ __copyright__ = "Copyright 2019, Andrew Nelson"
 __license__ = "3 clause BSD"
 
 import numpy as np
-from scipy.integrate import simps
+from scipy.integrate import simpson
 from scipy.interpolate import InterpolatedUnivariateSpline as IUS
 from scipy.stats import rv_continuous, trapz, norm, uniform
 from scipy.optimize import brentq
@@ -40,7 +40,7 @@ class SpectrumDist(rv_continuous):
         self._x = x
 
         # normalise the distribution
-        area = simps(y, x)
+        area = simpson(y, x=x)
         y /= area
         self._y = y
 
@@ -408,7 +408,7 @@ class ReflectSimulator(object):
             len(self._res_kernel)
             and np.min([len(v) for v in self._res_kernel.values()]) > 100000
         ):
-            raise ValueError
+            return
 
         bin_loc = np.digitize(jittered_wavelengths, self.wavelength_bins)
         for i in range(1, len(self.wavelength_bins)):

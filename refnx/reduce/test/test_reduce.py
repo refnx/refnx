@@ -105,7 +105,7 @@ class TestPlatypusReduce:
                 rebin_percent=4,
                 detailed_kernel=True,
             )
-            assert (self.pth / "PLP0000708_0.hdf").is_file()
+            assert (self.tmpdir / "PLP0000708_0.hdf").is_file()
 
     def test_free_liquids(self):
         # smoke test for free liquids
@@ -240,7 +240,7 @@ class TestPolarisedReduce:
     @pytest.mark.usefixtures("no_data_directory")
     @pytest.fixture(autouse=True)
     def setup_method(self, tmpdir, data_directory):
-        self.pth = Path(data_directory) / "reduce"
+        self.pth = Path(data_directory) / "reduce" / "PNR_files"
 
         self.cwd = os.getcwd()
         self.tmpdir = Path(tmpdir.strpath)

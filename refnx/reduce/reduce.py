@@ -1,6 +1,7 @@
 import string
 from copy import deepcopy
 import os.path
+from pathlib import Path
 from time import gmtime, strftime
 from multiprocessing import Queue
 from threading import Thread
@@ -56,9 +57,9 @@ spin="UNPOLARISED" dim="$_numpointsz:$_numpointsy">
 
 class ReflectReduce:
     def __init__(self, direct, prefix, data_folder=None):
-        self.data_folder = os.path.curdir
+        self.data_folder = Path(os.path.curdir)
         if data_folder is not None:
-            self.data_folder = data_folder
+            self.data_folder = Path(data_folder)
 
         if prefix == "PLP":
             self.reflect_klass = PlatypusNexus
@@ -69,27 +70,14 @@ class ReflectReduce:
                 "Instrument prefix not known. Must be one of" " ['PLP']"
             )
 
-        self.direct_beam = create_reflect_nexus(direct)
+        if isinstance(direct, ReflectNexus):
+            self.direct_beam = direct
+        elif type(direct) is str:
+            direct = self.data_folder / direct
+            self.direct_beam = self.reflect_klass(direct)
+        else:
+            self.direct_beam = self.reflect_klass(direct)
         self.prefix = prefix
-
-        # spectrum_dist is a callable that returns a probability distribution
-        # for the wavelength distribution.
-        _a = create_reflect_nexus(direct)
-        _direct = False
-        if isinstance(_a, PlatypusNexus):
-            _direct = True
-
-        q, i, di = _a.process(
-            normalise=False,
-            normalise_bins=False,
-            rebin_percent=0.5,
-            lo_wavelength=0.5,
-            hi_wavelength=25.0,
-            direct=_direct,
-        )
-        q = q.squeeze()
-        i = i.squeeze()
-        self._spectrum_dist = SpectrumDist(q, i)
 
     def __call__(self, reflect, scale=1.0, save=True, **reduction_options):
         return self.reduce(
@@ -182,6 +170,31 @@ class ReflectReduce:
         """
         reflect_keywords = reduction_options.copy()
         direct_keywords = reduction_options.copy()
+
+        # spectrum_dist is a callable that returns a probability distribution
+        # for the wavelength distribution.
+        detailed_kernel = reflect_keywords.get("detailed_kernel", False)
+        if detailed_kernel and not hasattr(self, "_spectrum_dist"):
+            _direct = False
+            if isinstance(self.direct_beam, PlatypusNexus):
+                _direct = True
+
+            q, i, di = self.direct_beam.process(
+                normalise=False,
+                normalise_bins=False,
+                rebin_percent=0.5,
+                lo_wavelength=0.5,
+                hi_wavelength=25.0,
+                direct=_direct,
+            )
+            q = np.clip(q, 0.5, 25).squeeze()
+            i = i.squeeze()
+            _sd = SpectrumDist(q, i)
+
+            def _spectrum_dist(x):
+                return _sd.pdf(x)
+
+            self._spectrum_dist = _spectrum_dist
 
         # get the direct beam spectrum
         if isinstance(self, PlatypusReduce):
@@ -283,7 +296,6 @@ class ReflectReduce:
             self.reflected_beam.m_lambda[:, :, np.newaxis],
         )
 
-        detailed_kernel = reflect_keywords.get("detailed_kernel", False)
         if detailed_kernel:
             res_kernels = []
 
