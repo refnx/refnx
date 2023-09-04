@@ -28,7 +28,8 @@ from refnx.reduce.parabolic_motion import (
     parabola_line_intersection_point,
     find_trajectory,
 )
-from refnx.dataset import ReflectDataset
+from refnx.dataset import ReflectDataset, Data1D
+from refnx.dataset.data1d import _data1D_to_hdf
 from refnx._lib import possibly_open_file
 
 
@@ -82,7 +83,7 @@ class ReflectReduce:
             normalise=False,
             normalise_bins=False,
             rebin_percent=0.5,
-            lo_wavelength=0.0,
+            lo_wavelength=0.5,
             hi_wavelength=25.0,
             direct=_direct,
         )
@@ -282,7 +283,8 @@ class ReflectReduce:
             self.reflected_beam.m_lambda[:, :, np.newaxis],
         )
 
-        if reflect_keywords.get("detailed_kernel", False):
+        detailed_kernel = reflect_keywords.get("detailed_kernel", False)
+        if detailed_kernel:
             res_kernels = []
 
             for i in range(self.n_spectra):
@@ -349,6 +351,12 @@ class ReflectReduce:
                 fnames.append(fname)
                 with open(fname, "wb") as f:
                     dataset.save(f, header=header)
+
+                if detailed_kernel:
+                    _d = list(dataset.data)
+                    _d[-1] = res_kernels[i]
+                    fname = f"{datafilename}_{i}.hdf"
+                    _data1D_to_hdf(fname, Data1D(_d))
 
                 # fname = f"{datafilename}_{i}.xml"
                 # with open(fname, "wb") as f:

@@ -1,6 +1,5 @@
 import os
-from os.path import join as pjoin
-import os.path
+from pathlib import Path
 from refnx.reduce.platypusnexus import calculate_wavelength_bins
 from refnx.reduce.reduce import PolarisationEfficiency
 import warnings
@@ -25,10 +24,10 @@ class TestPlatypusReduce:
     @pytest.mark.usefixtures("no_data_directory")
     @pytest.fixture(autouse=True)
     def setup_method(self, tmpdir, data_directory):
-        self.pth = pjoin(data_directory, "reduce")
+        self.pth = Path(data_directory) / "reduce"
 
         self.cwd = os.getcwd()
-        self.tmpdir = tmpdir.strpath
+        self.tmpdir = Path(tmpdir.strpath)
         os.chdir(self.tmpdir)
         return 0
 
@@ -47,7 +46,7 @@ class TestPlatypusReduce:
                 reduction_options={"rebin_percent": 2},
             )
             a.save("test1.dat")
-            assert os.path.isfile("./test1.dat")
+            assert (self.tmpdir /"test1.dat").is_file()
 
             # reduce_stitch should take a ReductionOptions dict
             opts = ReductionOptions()
@@ -60,7 +59,7 @@ class TestPlatypusReduce:
                 reduction_options=[opts] * 3,
             )
             a2.save("test2.dat")
-            assert os.path.isfile("./test2.dat")
+            assert (self.tmpdir /"test2.dat").is_file()
             assert_allclose(a.y, a2.y)
 
     def test_reduction_method(self):
@@ -87,7 +86,7 @@ class TestPlatypusReduce:
 
             # this should also have saved a couple of files in the current
             # directory
-            assert os.path.isfile("./PLP0000708_0.dat")
+            assert (self.tmpdir / "PLP0000708_0.dat").is_file()
             # assert os.path.isfile("./PLP0000708_0.xml")
 
             # can we read the file
@@ -95,6 +94,18 @@ class TestPlatypusReduce:
 
             # try writing offspecular data
             a.write_offspecular("offspec.xml", 0)
+
+    def test_detailed_kernel(self):
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", RuntimeWarning)
+            a = PlatypusReduce("PLP0000711.nx.hdf", data_folder=self.pth)
+            a.reduce(
+                "PLP0000708.nx.hdf",
+                data_folder=self.pth,
+                rebin_percent=4,
+                detailed_kernel=True,
+            )
+            assert (self.pth / "PLP0000708_0.hdf").is_file()
 
     def test_free_liquids(self):
         # smoke test for free liquids
@@ -117,10 +128,10 @@ class TestPlatypusReduce:
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", RuntimeWarning)
 
-            a = PlatypusReduce(pjoin(self.pth, "PLP0011613.nx.hdf"))
+            a = PlatypusReduce(self.pth / "PLP0011613.nx.hdf")
 
             a.reduce(
-                pjoin(self.pth, "PLP0011641.nx.hdf"),
+                self.pth / "PLP0011641.nx.hdf",
                 integrate=0,
                 rebin_percent=2,
                 eventmode=[0, 900, 1800],
@@ -129,8 +140,8 @@ class TestPlatypusReduce:
             assert_equal(a.y.shape[0], 2)
 
             # check that two datasets are written out.
-            assert os.path.isfile("PLP0011641_0.dat")
-            assert os.path.isfile("PLP0011641_1.dat")
+            assert (self.tmpdir / "PLP0011641_0.dat").is_file()
+            assert (self.tmpdir / "PLP0011641_1.dat").is_file()
 
             # check that the resolutions are pretty much the same
             assert_allclose(
@@ -159,10 +170,10 @@ class TestSpatzReduce:
     @pytest.mark.usefixtures("no_data_directory")
     @pytest.fixture(autouse=True)
     def setup_method(self, tmpdir, data_directory):
-        self.pth = pjoin(data_directory, "reduce")
+        self.pth = Path(data_directory) / "reduce"
 
         self.cwd = os.getcwd()
-        self.tmpdir = tmpdir.strpath
+        self.tmpdir = Path(tmpdir.strpath)
         os.chdir(self.tmpdir)
         return 0
 
@@ -195,7 +206,7 @@ class TestSpatzReduce:
             reduction_options=[opts] * 2,
         )
         a2.save("test2.dat")
-        assert os.path.isfile("./test2.dat")
+        assert (self.tmpdir / "test2.dat").is_file()
         assert_allclose(a.y, a2.y)
 
     def test_reduction_method(self):
@@ -218,7 +229,7 @@ class TestSpatzReduce:
 
         # this should also have saved a couple of files in the current
         # directory
-        assert os.path.isfile("./SPZ0000660_0.dat")
+        assert (self.tmpdir / "SPZ0000660_0.dat").is_file()
         # assert os.path.isfile("./SPZ0000660_0.xml")
 
         # try writing offspecular data
@@ -229,10 +240,10 @@ class TestPolarisedReduce:
     @pytest.mark.usefixtures("no_data_directory")
     @pytest.fixture(autouse=True)
     def setup_method(self, tmpdir, data_directory):
-        self.pth = pjoin(data_directory, "reduce", "PNR_files")
+        self.pth = Path(data_directory) / "reduce"
 
         self.cwd = os.getcwd()
-        self.tmpdir = tmpdir.strpath
+        self.tmpdir = Path(tmpdir.strpath)
         os.chdir(self.tmpdir)
         return 0
 
@@ -246,16 +257,16 @@ class TestPolarisedReduce:
             warnings.simplefilter("ignore", RuntimeWarning)
 
             spinset_rb = SpinSet(
-                down_down=pjoin(self.pth, "PLP0012785.nx.hdf"),
-                up_up=pjoin(self.pth, "PLP0012787.nx.hdf"),
-                up_down=pjoin(self.pth, "PLP0012786.nx.hdf"),
-                down_up=pjoin(self.pth, "PLP0012788.nx.hdf"),
+                down_down=self.pth / "PLP0012785.nx.hdf",
+                up_up=self.pth / "PLP0012787.nx.hdf",
+                up_down=self.pth / "PLP0012786.nx.hdf",
+                down_up=self.pth / "PLP0012788.nx.hdf",
             )
             spinset_db = SpinSet(
-                down_down=pjoin(self.pth, "PLP0012793.nx.hdf"),
-                up_up=pjoin(self.pth, "PLP0012795.nx.hdf"),
-                up_down=pjoin(self.pth, "PLP0012794.nx.hdf"),
-                down_up=pjoin(self.pth, "PLP0012796.nx.hdf"),
+                down_down=self.pth / "PLP0012793.nx.hdf",
+                up_up=self.pth / "PLP0012795.nx.hdf",
+                up_down=self.pth / "PLP0012794.nx.hdf",
+                down_up=self.pth / "PLP0012796.nx.hdf",
             )
             a = PolarisedReduce(spinset_db)
 
@@ -278,10 +289,10 @@ class TestPolarisedReduce:
 
             # this should also have saved a couple of files in the current
             # directory
-            assert os.path.isfile("./PLP0012785_0_PolCorr.dat")
-            assert os.path.isfile("./PLP0012786_0_PolCorr.dat")
-            assert os.path.isfile("./PLP0012787_0_PolCorr.dat")
-            assert os.path.isfile("./PLP0012788_0_PolCorr.dat")
+            assert (self.tmpdir / "PLP0012785_0_PolCorr.dat").is_file()
+            assert (self.tmpdir / "PLP0012786_0_PolCorr.dat").is_file()
+            assert (self.tmpdir / "PLP0012787_0_PolCorr.dat").is_file()
+            assert (self.tmpdir / "PLP0012788_0_PolCorr.dat").is_file()
 
             # can we read the file
             dd = ReflectDataset("./PLP0012785_0_PolCorr.dat")
@@ -352,14 +363,14 @@ class TestPolarisedReduce:
             warnings.simplefilter("ignore", RuntimeWarning)
 
             spinset_rb = SpinSet(
-                down_down=pjoin(self.pth, "PLP0012785.nx.hdf"),
-                up_up=pjoin(self.pth, "PLP0012787.nx.hdf"),
-                up_down=pjoin(self.pth, "PLP0012786.nx.hdf"),
+                down_down=self.pth / "PLP0012785.nx.hdf",
+                up_up=self.pth / "PLP0012787.nx.hdf",
+                up_down=self.pth / "PLP0012786.nx.hdf",
             )
             spinset_db = SpinSet(
-                down_down=pjoin(self.pth, "PLP0012793.nx.hdf"),
-                up_up=pjoin(self.pth, "PLP0012795.nx.hdf"),
-                up_down=pjoin(self.pth, "PLP0012794.nx.hdf"),
+                down_down=self.pth / "PLP0012793.nx.hdf",
+                up_up=self.pth / "PLP0012795.nx.hdf",
+                up_down=self.pth / "PLP0012794.nx.hdf",
             )
             a = PolarisedReduce(spinset_db)
 
@@ -383,9 +394,9 @@ class TestPolarisedReduce:
 
             # this should also have saved a couple of files in the current
             # directory
-            assert os.path.isfile("./PLP0012785_0_PolCorr.dat")
-            assert os.path.isfile("./PLP0012786_0_PolCorr.dat")
-            assert os.path.isfile("./PLP0012787_0_PolCorr.dat")
+            assert (self.tmpdir / "PLP0012785_0_PolCorr.dat").is_file()
+            assert (self.tmpdir / "PLP0012786_0_PolCorr.dat").is_file()
+            assert (self.tmpdir / "PLP0012787_0_PolCorr.dat").is_file()
 
             # can we read the file
             dd = ReflectDataset("./PLP0012785_0_PolCorr.dat")
@@ -455,12 +466,12 @@ class TestPolarisedReduce:
             warnings.simplefilter("ignore", RuntimeWarning)
 
             spinset_rb = SpinSet(
-                down_down=pjoin(self.pth, "PLP0012785.nx.hdf"),
-                up_up=pjoin(self.pth, "PLP0012787.nx.hdf"),
+                down_down=self.pth / "PLP0012785.nx.hdf",
+                up_up=self.pth / "PLP0012787.nx.hdf",
             )
             spinset_db = SpinSet(
-                down_down=pjoin(self.pth, "PLP0012793.nx.hdf"),
-                up_up=pjoin(self.pth, "PLP0012795.nx.hdf"),
+                down_down=self.pth / "PLP0012793.nx.hdf",
+                up_up=self.pth / "PLP0012795.nx.hdf",
             )
             a = PolarisedReduce(spinset_db)
 
@@ -482,8 +493,8 @@ class TestPolarisedReduce:
 
             # this should also have saved a couple of files in the current
             # directory
-            assert os.path.isfile("./PLP0012785_0_PolCorr.dat")
-            assert os.path.isfile("./PLP0012787_0_PolCorr.dat")
+            assert (self.tmpdir / "PLP0012785_0_PolCorr.dat").is_file()
+            assert (self.tmpdir / "PLP0012787_0_PolCorr.dat").is_file()
 
             # can we read the file
             dd = ReflectDataset("./PLP0012785_0_PolCorr.dat")
@@ -551,12 +562,12 @@ class TestPolarisedReduce:
             warnings.simplefilter("ignore", RuntimeWarning)
 
             spinset_rb = SpinSet(
-                down_down=pjoin(self.pth, "PLP0012785.nx.hdf"),
-                up_up=pjoin(self.pth, "PLP0012787.nx.hdf"),
+                down_down=self.pth / "PLP0012785.nx.hdf",
+                up_up=self.pth / "PLP0012787.nx.hdf",
             )
             spinset_db = SpinSet(
-                down_down=pjoin(self.pth, "PLP0012793.nx.hdf"),
-                up_up=pjoin(self.pth, "PLP0012795.nx.hdf"),
+                down_down=self.pth / "PLP0012793.nx.hdf",
+                up_up=self.pth / "PLP0012795.nx.hdf",
             )
             a = PolarisedReduce(spinset_db)
 
@@ -587,10 +598,10 @@ class TestPolarisationEfficiency:
     @pytest.mark.usefixtures("no_data_directory")
     @pytest.fixture(autouse=True)
     def setup_method(self, tmpdir, data_directory):
-        self.pth = pjoin(data_directory, "reduce", "PNR_files")
+        self.pth = Path(data_directory) / "reduce" / "PNR_files"
 
         self.cwd = os.getcwd()
-        self.tmpdir = tmpdir.strpath
+        self.tmpdir = Path(tmpdir.strpath)
         os.chdir(self.tmpdir)
         return 0
 
@@ -639,12 +650,12 @@ class TestPolarisationEfficiency:
 
             # Create SpinSets, PolarisedReduce object and ReductionOptions
             spinset_rb = SpinSet(
-                down_down=pjoin(self.pth, "PLP0012785.nx.hdf"),
-                up_up=pjoin(self.pth, "PLP0012787.nx.hdf"),
+                down_down=self.pth / "PLP0012785.nx.hdf",
+                up_up=self.pth / "PLP0012787.nx.hdf",
             )
             spinset_db = SpinSet(
-                down_down=pjoin(self.pth, "PLP0012793.nx.hdf"),
-                up_up=pjoin(self.pth, "PLP0012795.nx.hdf"),
+                down_down=self.pth / "PLP0012793.nx.hdf",
+                up_up=self.pth / "PLP0012795.nx.hdf",
             )
             a = PolarisedReduce(spinset_db)
 
