@@ -367,8 +367,10 @@ class ReflectReduce:
                 if detailed_kernel:
                     _d = list(dataset.data)
                     _d[-1] = res_kernels[i]
+                    _data = Data1D(_d)
+                    _data.sort()
                     fname = f"{datafilename}_{i}.hdf"
-                    _data1D_to_hdf(fname, Data1D(_d))
+                    _data1D_to_hdf(fname, Data1D(_data))
 
                 # fname = f"{datafilename}_{i}.xml"
                 # with open(fname, "wb") as f:
