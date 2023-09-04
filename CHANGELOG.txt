@@ -499,3 +499,9 @@ in 0.1.13.
 ------
 - automated the release to PyPI via Github Actions.
 - removed setup.cfg, transferring all information to pyproject.toml.
+- fixed various scipy DeprecationWarnings related to keyword only arguments.
+- converted various os.path to pathlib.Path
+- stopped writing xml output (nobody uses it?)
+- added detailed resolution kernel calculation (writes out an HDF file)
+- removed np.asfarray usage, it's deprecated.
+- updated emcee vendored code.

@@ -26,16 +26,16 @@ def centroid(y, x=None, dx=1.0):
     if x is None:
         x = np.arange(yt.size, dtype="float") * dx
 
-    normaliser = simpson(yt, x)
+    normaliser = simpson(yt, x=x)
 
     if normaliser == 0:
         return np.nan, np.nan
 
-    centroid = simpson(x * yt, x)
+    centroid = simpson(x * yt, x=x)
 
     centroid /= normaliser
 
-    var = simpson((x - centroid) ** 2 * yt, x) / normaliser
+    var = simpson((x - centroid) ** 2 * yt, x=x) / normaliser
 
     return centroid, np.sqrt(var)
 

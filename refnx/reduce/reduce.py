@@ -1,6 +1,7 @@
 import string
 from copy import deepcopy
 import os.path
+from pathlib import Path
 from time import gmtime, strftime
 from multiprocessing import Queue
 from threading import Thread
@@ -18,14 +19,18 @@ from refnx.reduce.platypusnexus import (
     SpatzNexus,
     ReductionOptions,
     calculate_wavelength_bins,
+    create_reflect_nexus,
 )
 from refnx.util import ErrorProp as EP
+import refnx.util._resolution_kernel as rk
+from refnx.reduce._tof_simulator import SpectrumDist
 import refnx.util.general as general
 from refnx.reduce.parabolic_motion import (
     parabola_line_intersection_point,
     find_trajectory,
 )
-from refnx.dataset import ReflectDataset
+from refnx.dataset import ReflectDataset, Data1D
+from refnx.dataset.data1d import _data1D_to_hdf
 from refnx._lib import possibly_open_file
 
 
@@ -52,9 +57,9 @@ spin="UNPOLARISED" dim="$_numpointsz:$_numpointsy">
 
 class ReflectReduce:
     def __init__(self, direct, prefix, data_folder=None):
-        self.data_folder = os.path.curdir
+        self.data_folder = Path(os.path.curdir)
         if data_folder is not None:
-            self.data_folder = data_folder
+            self.data_folder = Path(data_folder)
 
         if prefix == "PLP":
             self.reflect_klass = PlatypusNexus
@@ -68,11 +73,10 @@ class ReflectReduce:
         if isinstance(direct, ReflectNexus):
             self.direct_beam = direct
         elif type(direct) is str:
-            direct = os.path.join(self.data_folder, direct)
+            direct = self.data_folder / direct
             self.direct_beam = self.reflect_klass(direct)
         else:
             self.direct_beam = self.reflect_klass(direct)
-
         self.prefix = prefix
 
     def __call__(self, reflect, scale=1.0, save=True, **reduction_options):
@@ -166,6 +170,31 @@ class ReflectReduce:
         """
         reflect_keywords = reduction_options.copy()
         direct_keywords = reduction_options.copy()
+
+        # spectrum_dist is a callable that returns a probability distribution
+        # for the wavelength distribution.
+        detailed_kernel = reflect_keywords.get("detailed_kernel", False)
+        if detailed_kernel and not hasattr(self, "_spectrum_dist"):
+            _direct = False
+            if isinstance(self.direct_beam, PlatypusNexus):
+                _direct = True
+
+            q, i, di = self.direct_beam.process(
+                normalise=False,
+                normalise_bins=False,
+                rebin_percent=0.5,
+                lo_wavelength=0.5,
+                hi_wavelength=25.0,
+                direct=_direct,
+            )
+            q = np.clip(q, 0.5, 25).squeeze()
+            i = i.squeeze()
+            _sd = SpectrumDist(q, i)
+
+            def _spectrum_dist(x):
+                return _sd.pdf(x)
+
+            self._spectrum_dist = _spectrum_dist
 
         # get the direct beam spectrum
         if isinstance(self, PlatypusReduce):
@@ -267,6 +296,37 @@ class ReflectReduce:
             self.reflected_beam.m_lambda[:, :, np.newaxis],
         )
 
+        if detailed_kernel:
+            res_kernels = []
+
+            for i in range(self.n_spectra):
+                cat = self.reflected_beam.cat
+                p_theta = rk.P_Theta(
+                    cat.ss_coll1[i],
+                    cat.ss_coll2[i],
+                    cat.collimation_distance[0],
+                )
+                da = reflect_keywords.get("rebin_percent", 1.0) / 100.0
+                pa, _ = self.reflected_beam.phase_angle(i)
+
+                chod, d_cx = self.reflected_beam.chod(scanpoint=i)
+                p_lambda = rk.P_Wavelength(
+                    d_cx,
+                    chod,
+                    cat.frequency[i],
+                    cat.ss_coll1[i],
+                    xsi=pa,
+                    da=da,
+                )
+                res_kernel = rk.resolution_kernel(
+                    p_theta,
+                    p_lambda,
+                    self.omega_corrected[i],
+                    self.reflected_beam.m_lambda[i],
+                    spectrum=self._spectrum_dist,
+                )
+                res_kernels.append(res_kernel)
+
         reduction = {}
         reduction["x"] = self.x = xdata
         reduction["x_err"] = self.x_err = xdata_sd
@@ -303,6 +363,14 @@ class ReflectReduce:
                 fnames.append(fname)
                 with open(fname, "wb") as f:
                     dataset.save(f, header=header)
+
+                if detailed_kernel:
+                    _d = list(dataset.data)
+                    _d[-1] = res_kernels[i]
+                    _data = Data1D(_d)
+                    _data.sort()
+                    fname = f"{datafilename}_{i}.hdf"
+                    _data1D_to_hdf(fname, Data1D(_data))
 
                 # fname = f"{datafilename}_{i}.xml"
                 # with open(fname, "wb") as f:
