@@ -30,6 +30,7 @@ from refnx.analysis import (
 from refnx.analysis.curvefitter import bounds_list
 from refnx.dataset import Data1D
 from refnx._lib import emcee, flatten
+from refnx._lib.emcee.moves import DEMove, DESnookerMove
 
 from NISTModels import NIST_runner, NIST_Models
 
@@ -209,6 +210,14 @@ class TestCurveFitter:
         # can fix by making the sampler again
         self.mcfitter.make_sampler()
         self.mcfitter.sample(1)
+
+    def test_moves(self):
+        # check that we can provide non-default moves
+        m0 = DEMove()
+        m1 = DESnookerMove()
+        moves = [(m0, 0.8), (m1, 0.2)]
+        mcfitter = CurveFitter(self.objective, moves=moves)
+        mcfitter.sample(10)
 
     def test_random_seed(self):
         # check that MCMC sampling is reproducible
