@@ -1122,6 +1122,8 @@ class ReductionOptions(dict):
         contains the frame number for each neutron, landing at position
         `x_events, y_events` on the detector, with time-of-flight
         `t_events`.
+    detailed_kernel : bool
+        whether a detailed resolution kernel is calculating during reduction.
     """
 
     def __init__(
@@ -1145,6 +1147,7 @@ class ReductionOptions(dict):
         normalise_bins=True,
         manual_beam_find=None,
         event_filter=None,
+        detailed_kernel=False,
     ):
         super().__init__()
         self["h5norm"] = h5norm
@@ -1166,6 +1169,7 @@ class ReductionOptions(dict):
         self["normalise_bins"] = normalise_bins
         self["manual_beam_find"] = manual_beam_find
         self["event_filter"] = event_filter
+        self["detailed_kernel"] = detailed_kernel
 
 
 class ReflectNexus:

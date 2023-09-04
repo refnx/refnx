@@ -18,8 +18,11 @@ from refnx.reduce.platypusnexus import (
     SpatzNexus,
     ReductionOptions,
     calculate_wavelength_bins,
+    create_reflect_nexus,
 )
 from refnx.util import ErrorProp as EP
+import refnx.util._resolution_kernel as rk
+from refnx.reduce._tof_simulator import SpectrumDist
 import refnx.util.general as general
 from refnx.reduce.parabolic_motion import (
     parabola_line_intersection_point,
@@ -65,15 +68,27 @@ class ReflectReduce:
                 "Instrument prefix not known. Must be one of" " ['PLP']"
             )
 
-        if isinstance(direct, ReflectNexus):
-            self.direct_beam = direct
-        elif type(direct) is str:
-            direct = os.path.join(self.data_folder, direct)
-            self.direct_beam = self.reflect_klass(direct)
-        else:
-            self.direct_beam = self.reflect_klass(direct)
-
+        self.direct_beam = create_reflect_nexus(direct)
         self.prefix = prefix
+
+        # spectrum_dist is a callable that returns a probability distribution
+        # for the wavelength distribution.
+        _a = create_reflect_nexus(direct)
+        _direct = False
+        if isinstance(_a, PlatypusNexus):
+            _direct = True
+
+        q, i, di = _a.process(
+            normalise=False,
+            normalise_bins=False,
+            rebin_percent=0.5,
+            lo_wavelength=0.0,
+            hi_wavelength=25.0,
+            direct=_direct,
+        )
+        q = q.squeeze()
+        i = i.squeeze()
+        self._spectrum_dist = SpectrumDist(q, i)
 
     def __call__(self, reflect, scale=1.0, save=True, **reduction_options):
         return self.reduce(
@@ -266,6 +281,37 @@ class ReflectReduce:
             0,
             self.reflected_beam.m_lambda[:, :, np.newaxis],
         )
+
+        if reflect_keywords.get("detailed_kernel", False):
+            res_kernels = []
+
+            for i in range(self.n_spectra):
+                cat = self.reflected_beam.cat
+                p_theta = rk.P_Theta(
+                    cat.ss_coll1[i],
+                    cat.ss_coll2[i],
+                    cat.collimation_distance[0],
+                )
+                da = reflect_keywords.get("rebin_percent", 1.0) / 100.0
+                pa, _ = self.reflected_beam.phase_angle(i)
+
+                chod, d_cx = self.reflected_beam.chod(scanpoint=i)
+                p_lambda = rk.P_Wavelength(
+                    d_cx,
+                    chod,
+                    cat.frequency[i],
+                    cat.ss_coll1[i],
+                    xsi=pa,
+                    da=da,
+                )
+                res_kernel = rk.resolution_kernel(
+                    p_theta,
+                    p_lambda,
+                    self.omega_corrected[i],
+                    self.reflected_beam.m_lambda[i],
+                    spectrum=self._spectrum_dist,
+                )
+                res_kernels.append(res_kernel)
 
         reduction = {}
         reduction["x"] = self.x = xdata
