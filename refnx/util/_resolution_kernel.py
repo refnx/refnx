@@ -50,6 +50,7 @@ class P_Theta(AngularDivergence):
     L12 : float
         distance between slits
     """
+
     def __init__(self, d1, d2, L12=2859.0):
         div, alpha, beta = general.div(d1, d2, L12=L12)
 
@@ -94,6 +95,7 @@ class P_Theta_Optimized(P_Theta):
     angle: float, optional
         angle of incidence in degrees
     """
+
     def __init__(self, footprint, dtheta, theta, L12=2859.0, L2S=120.0):
         self.footprint = footprint
         self.dtheta = theta

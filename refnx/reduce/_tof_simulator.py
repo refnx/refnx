@@ -375,7 +375,7 @@ class ReflectSimulator(object):
         # bins skip
         if (
             len(self._res_kernel)
-            and np.min([len(v) for v in self._res_kernel.values()]) > 100000
+            and np.min([len(v) for v in self._res_kernel.values()]) > 1000000
         ):
             return
 
