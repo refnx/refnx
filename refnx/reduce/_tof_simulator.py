@@ -284,7 +284,6 @@ class ReflectSimulator(object):
         self._res_kernel = {}
         self._min_samples = 0
 
-        self.dtheta = p_theta.dtheta / angle
         self.angle = angle
         self.L12 = p_theta.L12
         self.L2S = L2S

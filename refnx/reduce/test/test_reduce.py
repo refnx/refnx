@@ -115,7 +115,7 @@ class TestPlatypusReduce:
         # a smoke test to see if the simulator works
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", RuntimeWarning)
-            a = PlatypusNexus("PLP0000711.nx.hdf", data_folder=self.pth)
+            a = PlatypusNexus(self.pth / "PLP0000711.nx.hdf")
 
         air = SLD(0)
         si = SLD(2.07)
