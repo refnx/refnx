@@ -508,3 +508,4 @@ in 0.1.13.
 - updated emcee vendored code.
 - silence RuntimeWarning if the foreground width is found to be wider than
   predicted.
+- fix pandas warnings in batchreduction.
