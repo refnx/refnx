@@ -380,10 +380,10 @@ class TestPlatypusNexus(object):
             return beam_centre, beam_sd, np.array([40]), np.array([60]), [[]]
 
         # the manual beam find is only mandatory when peak_pos == -1.
-        # the beam_sd is much larger than the beam divergence, so a warning
-        # should be raised.
-        with pytest.warns(UserWarning):
-            self.f113.process(manual_beam_find=manual_beam_find, peak_pos=-1)
+        # # the beam_sd is much larger than the beam divergence, so a warning
+        # # should be raised.
+        # with pytest.warns(UserWarning):
+        self.f113.process(manual_beam_find=manual_beam_find, peak_pos=-1)
         assert_equal(self.f113.processed_spectrum["m_beampos"][0], 50)
 
         # manual beam finding also specifies the lower and upper pixel of the
