@@ -229,10 +229,10 @@ class ReflectSimulator(object):
         if gravity:
             speeds = general.wavelength_velocity(bin_centre)
             # trajectories through slits for different wavelengths
-            trajectories = pm.find_trajectory(L12 / 1000.0, 0, speeds)
+            trajectories = pm.find_trajectory(p_theta.L12 / 1000.0, 0, speeds)
             # elevation at sample
             elevations = pm.elevation(
-                trajectories, speeds, (L12 + L2S) / 1000.0
+                trajectories, speeds, (p_theta.L12 + L2S) / 1000.0
             )
 
         # nominal Q values
