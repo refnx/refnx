@@ -6,6 +6,7 @@ github.com/refnx/refnx-models/blob/master/platypus-simulate/tof_simulator.py
 """
 import numpy as np
 from scipy import stats, integrate, constants, optimize
+from scipy._lib._util import check_random_state
 
 import refnx.util.general as general
 
@@ -18,41 +19,63 @@ ANGULAR COMPONENTS
 """
 
 
-class P_Theta:
+class AngularDivergence:
+    rv = None
+    width = None
+    alpha = None
+    beta = None
+    dtheta = None
+    L12 = None
+
+    def pdf(self, theta):
+        raise NotImplementedError
+
+    def rvs(self, size=1, random_state=None):
+        # grab a random number generator
+        rng = check_random_state(random_state)
+        return self.rv.rvs(size=size, random_state=rng)
+
+
+class P_Theta(AngularDivergence):
+    """
+    Calculates the angular resolution for a two slit collimation
+    system.
+
+    Parameters
+    ----------
+    d1 : float
+        slit 1 opening
+    d2 : float
+        slit 2 opening
+    L12 : float
+        distance between slits
+    """
+
     def __init__(self, d1, d2, L12=2859.0):
-        """
-        Calculates the angular resolution for a two slit collimation
-        system.
-
-        Parameters
-        ----------
-        d1 : float
-            slit 1 opening
-        d2 : float
-            slit 2 opening
-        L12 : float
-            distance between slits
-        """
-
-        alpha = (d1 + d2) / 2.0 / L12
-        beta = abs(d1 - d2) / 2.0 / L12
+        div, alpha, beta = general.div(d1, d2, L12=L12)
+        # alpha = (d1 + d2) / 2.0 / L12
+        # beta = abs(d1 - d2) / 2.0 / L12
 
         self.alpha = alpha
         self.beta = beta
+        self.dtheta = div
+        self.L12 = L12
+        self.d1 = d1
+        self.d2 = d2
 
         c = (alpha - beta) / 2 / alpha
         d = (alpha + beta) / 2 / alpha
         self.rv = stats.trapz(c, d, -alpha, 2 * alpha)
         self.width = alpha
 
-    def __call__(self, theta):
+    def pdf(self, theta):
         """
         Calculates pdf(theta) for the collimation system
 
         Parameters
         ----------
         theta: float
-            quantiles, in radians
+            quantiles, in *degrees*
 
         Returns
         -------
@@ -60,6 +83,29 @@ class P_Theta:
             Probability density function at theta
         """
         return self.rv.pdf(theta)
+
+
+class P_Theta_Optimized(P_Theta):
+    """
+    Optimise slit settings for a given angular resolution, and a given
+    footprint.
+
+    footprint: float
+        maximum footprint onto sample (mm)
+    resolution: float
+        fractional dtheta/theta resolution (FWHM)
+    angle: float, optional
+        angle of incidence in degrees
+    """
+
+    def __init__(self, footprint, dtheta, theta, L12=2859.0, L2S=120.0):
+        self.footprint = footprint
+        self.dtheta = theta
+        self.theta = theta
+        d1, d2 = general.slit_optimiser(
+            footprint, dtheta, angle=theta, L12=L12, L2S=L2S, verbose=False
+        )
+        super(P_Theta_Optimized, self).__init__(d1, d2, L12=L12)
 
 
 def pq_theta(p_theta, theta0, wavelength0, Q):
@@ -83,7 +129,13 @@ def pq_theta(p_theta, theta0, wavelength0, Q):
         Probability density function of resolution function at Q.
     """
     theta = np.radians(general.angle(Q, wavelength0) - theta0)
-    pdf = wavelength0 / 4 / np.pi / np.cos(theta) * p_theta(theta)
+    pdf = (
+        wavelength0
+        / 4
+        / np.pi
+        / np.cos(theta)
+        * p_theta.pdf(np.degrees(theta))
+    )
     pdf /= integrate.simpson(pdf, x=Q)
     return pdf
 

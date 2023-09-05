@@ -19,6 +19,7 @@ from refnx.reduce.platypusnexus import (
 )
 from refnx.reduce import parabolic_motion as pm
 from refnx.util import general, ErrorProp
+from refnx.util._resolution_kernel import AngularDivergence
 from refnx.reflect import Slab, Structure, SLD, ReflectModel
 from refnx.dataset import ReflectDataset
 
@@ -132,58 +133,50 @@ class ReflectSimulator(object):
 
     Parameters
     ----------
-    model: refnx.reflect.ReflectModel
+    model : refnx.reflect.ReflectModel
 
-    angle: float
+    angle : float
         Angle of incidence (degrees)
 
-    direct_spectrum: str, ReflectNexus, h5 handle
+    p_theta : AngularDivergence
+
+    L2S : float
+        Distance from pre-sample slit to sample
+
+    direct_spectrum : str, ReflectNexus, h5 handle
         Contains the direct beam spectrum. Processed using ReflectNexus
 
-    L12: float
-        distance between collimation slits (mm)
-
-    footprint: float
-        beam footprint onto the sample (mm)
-
-    L2S: float
-        distance from pre-sample slit to sample (mm)
-
-    dtheta: float
-        Angular resolution expressed as a percentage (FWHM of the Gaussian
-        approximation of a trapezoid)
-
-    lo_wavelength: float
+    lo_wavelength : float
         smallest wavelength used from the generated neutron spectrum
 
-    hi_wavelength: float
+    hi_wavelength : float
         longest wavelength used from the generated neutron spectrum
 
-    dlambda: float
+    dlambda : float
         Wavelength resolution expressed as a percentage. dlambda=3.3
         corresponds to using disk choppers 1+3 on *PLATYPUS*.
         (FWHM of the Gaussian approximation of a trapezoid)
 
-    rebin: float
+    rebin : float
         Rebinning expressed as a percentage. The width of a wavelength bin is
         `rebin / 100 * lambda`. You have to multiply by 0.68 to get its
         fractional contribution to the overall resolution smearing.
 
-    gravity: bool
+    gravity : bool
         Apply gravity during simulation? Turn gravity off if `angle` is
         already an array of incident angles due to gravity.
 
-    force_gaussian: bool
+    force_gaussian : bool
         Instead of using trapzeoidal and uniform distributions for angular
         and wavelength resolution, use a Gaussian distribution (doesn't apply
         to the rebinning contribution).
 
-    force_uniform_wavelength: bool
+    force_uniform_wavelength : bool
         Instead of using a wavelength spectrum representative of a
         time-of-flight reflectometer generate wavelengths from a uniform
         distribution.
 
-    only_resolution: bool
+    only_resolution : bool
         Set to `True` if this class is only going to be used to calculate
         detailed resolution kernels.
 
@@ -196,11 +189,9 @@ class ReflectSimulator(object):
         self,
         model,
         angle,
+        p_theta,
+        L2S=120.0,
         direct_spectrum=None,
-        L12=2859,
-        footprint=60,
-        L2S=120,
-        dtheta=3.3,
         lo_wavelength=2.8,
         hi_wavelength=18,
         dlambda=3.3,
@@ -214,6 +205,8 @@ class ReflectSimulator(object):
 
         self.bkg = model.bkg.value
         self.angle = angle
+        self.p_theta = p_theta
+        assert isinstance(p_theta, AngularDivergence)
 
         # dlambda refers to the FWHM of the gaussian approximation to a uniform
         # distribution. The full width of the uniform distribution is
@@ -236,10 +229,10 @@ class ReflectSimulator(object):
         if gravity:
             speeds = general.wavelength_velocity(bin_centre)
             # trajectories through slits for different wavelengths
-            trajectories = pm.find_trajectory(L12 / 1000.0, 0, speeds)
+            trajectories = pm.find_trajectory(p_theta.L12 / 1000.0, 0, speeds)
             # elevation at sample
             elevations = pm.elevation(
-                trajectories, speeds, (L12 + L2S) / 1000.0
+                trajectories, speeds, (p_theta.L12 + L2S) / 1000.0
             )
 
         # nominal Q values
@@ -291,31 +284,17 @@ class ReflectSimulator(object):
         self._res_kernel = {}
         self._min_samples = 0
 
-        self.dtheta = dtheta / 100.0
-        self.footprint = footprint
         self.angle = angle
+        self.L12 = p_theta.L12
         self.L2S = L2S
-        self.L12 = L12
-        s1, s2 = general.slit_optimiser(
-            footprint,
-            self.dtheta,
-            angle=angle,
-            L2S=L2S,
-            L12=L12,
-            verbose=False,
-        )
-        div, alpha, beta = general.div(s1, s2, L12=L12)
-        self.div, self.s1, self.s2 = s1, s2, div
+        self.div = p_theta.dtheta
+        self.s1 = p_theta.d1
+        self.s2 = p_theta.d2
 
         if force_gaussian:
-            self.angular_dist = norm(scale=div / 2.3548)
+            self.angular_dist = norm(scale=self.div / 2.3548)
         else:
-            self.angular_dist = trapz(
-                c=(alpha - beta) / 2.0 / alpha,
-                d=(alpha + beta) / 2.0 / alpha,
-                loc=-alpha,
-                scale=2 * alpha,
-            )
+            self.angular_dist = p_theta.rv
 
     def sample(self, samples, random_state=None):
         """
@@ -395,18 +374,17 @@ class ReflectSimulator(object):
         # update reflected beam counts. Rebin smearing
         # is taken into account due to the finite size of the wavelength
         # bins.
-        if not self.only_resolution:
-            hist = np.histogram(
-                jittered_wavelengths[accepted], self.wavelength_bins
-            )
-            self.reflected_beam += hist[0]
-            self.bmon_reflect += float(samples)
+        hist = np.histogram(
+            jittered_wavelengths[accepted], self.wavelength_bins
+        )
+        self.reflected_beam += hist[0]
+        self.bmon_reflect += float(samples)
 
         # update resolution kernel. If we have more than 100000 in all
         # bins skip
         if (
             len(self._res_kernel)
-            and np.min([len(v) for v in self._res_kernel.values()]) > 100000
+            and np.min([len(v) for v in self._res_kernel.values()]) > 1000000
         ):
             return
 
@@ -507,10 +485,8 @@ class ReflectSimulator(object):
         ierr = np.sqrt(self.direct_beam)
         bmon_direct_err = np.sqrt(self.bmon_direct)
 
-        dx = np.sqrt(
-            (self.dlambda) ** 2 + self.dtheta**2 + (0.68 * self.rebin) ** 2
-        )
-        dx *= self.q
+        # reverse the resolution kernel, because that's output in sorted order
+        dx = self.resolution_kernel[::-1]
 
         # divide reflectivity signal by bmon
         ref, rerr = ErrorProp.EPdiv(
@@ -528,7 +504,7 @@ class ReflectSimulator(object):
         mask = rerr != 0
 
         dataset = ReflectDataset(
-            data=(self.q[mask], ref[mask], rerr[mask], dx[mask])
+            data=(self.q[mask], ref[mask], rerr[mask], dx)
         )
 
         dataset.sort()

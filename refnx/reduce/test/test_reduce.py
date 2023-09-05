@@ -12,12 +12,16 @@ from numpy.testing import assert_equal, assert_allclose
 from refnx.reduce import (
     reduce_stitch,
     PlatypusReduce,
+    PlatypusNexus,
     ReductionOptions,
     SpatzReduce,
     SpinSet,
     PolarisedReduce,
 )
 from refnx.dataset import ReflectDataset
+from refnx.reduce import _tof_simulator as ts
+from refnx.util._resolution_kernel import P_Theta_Optimized
+from refnx.reflect import SLD, ReflectModel
 
 
 class TestPlatypusReduce:
@@ -106,6 +110,25 @@ class TestPlatypusReduce:
                 detailed_kernel=True,
             )
             assert (self.tmpdir / "PLP0000708_0.hdf").is_file()
+
+    def test_tof_simulator(self):
+        # a smoke test to see if the simulator works
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", RuntimeWarning)
+            a = PlatypusNexus(self.pth / "PLP0000711.nx.hdf")
+
+        air = SLD(0)
+        si = SLD(2.07)
+        sio2 = SLD(3.47)
+
+        s = air | sio2(15, 3) | si(0, 3)
+        model = ReflectModel(s)
+
+        ptheta = P_Theta_Optimized(60, 0.033, 0.65)
+        sim = ts.ReflectSimulator(model, 0.65, ptheta, direct_spectrum=a)
+        sim.sample(10000000)
+        kernel = sim.resolution_kernel
+        assert kernel.ndim == 3
 
     def test_free_liquids(self):
         # smoke test for free liquids
