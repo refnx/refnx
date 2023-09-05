@@ -374,12 +374,11 @@ class ReflectSimulator(object):
         # update reflected beam counts. Rebin smearing
         # is taken into account due to the finite size of the wavelength
         # bins.
-        if not self.only_resolution:
-            hist = np.histogram(
-                jittered_wavelengths[accepted], self.wavelength_bins
-            )
-            self.reflected_beam += hist[0]
-            self.bmon_reflect += float(samples)
+        hist = np.histogram(
+            jittered_wavelengths[accepted], self.wavelength_bins
+        )
+        self.reflected_beam += hist[0]
+        self.bmon_reflect += float(samples)
 
         # update resolution kernel. If we have more than 100000 in all
         # bins skip
