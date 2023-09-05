@@ -502,6 +502,9 @@ in 0.1.13.
 - fixed various scipy DeprecationWarnings related to keyword only arguments.
 - converted various os.path to pathlib.Path
 - stopped writing xml output (nobody uses it?)
-- added detailed resolution kernel calculation (writes out an HDF file)
+- added detailed resolution kernel calculation (writes out an HDF file).
+  Refactor detailed kernel calculator.
 - removed np.asfarray usage, it's deprecated.
 - updated emcee vendored code.
+- silence RuntimeWarning if the foreground width is found to be wider than
+  predicted.

@@ -1834,13 +1834,14 @@ class ReflectNexus:
         # Warning if the beam appears to be much broader than the divergence
         # would predict. The use of 30% tolerance is a guess. This might happen
         # if the beam finder includes incoherent background region by mistake.
-        if not np.allclose(estimated_beam_width, hipx - lopx + 1, rtol=0.3):
-            warnings.warn(
-                "The foreground width (%s) estimate"
-                " does not match the divergence of the beam (%s)."
-                " Consider checking with manual beam finder."
-                % (str(hipx - lopx + 1), str(estimated_beam_width))
-            )
+
+        # if not np.allclose(estimated_beam_width, hipx - lopx + 1, rtol=0.3):
+        #     warnings.warn(
+        #         "The foreground width (%s) estimate"
+        #         " does not match the divergence of the beam (%s)."
+        #         " Consider checking with manual beam finder."
+        #         % (str(hipx - lopx + 1), str(estimated_beam_width))
+        #     )
 
         if np.size(beam_centre) != n_spectra:
             raise RuntimeError(
