@@ -324,6 +324,7 @@ class ReflectReduce:
                     self.omega_corrected[i],
                     self.reflected_beam.m_lambda[i],
                     spectrum=self._spectrum_dist,
+                    npnts=50,
                 )
                 res_kernels.append(res_kernel)
 
