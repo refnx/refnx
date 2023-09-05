@@ -487,9 +487,9 @@ class PlatypusCatalogue(Catalogue):
         except KeyError:
             # older PLP files didn't have y_pixels_per_mm, so use built in
             # value
-            warnings.warn(
-                "Setting default pixel size to 1.177", RuntimeWarning
-            )
+            # warnings.warn(
+            #     "Setting default pixel size to 1.177", RuntimeWarning
+            # )
             d["qz_pixel_size"] = np.array([1.177])
 
     def _chopper_values(self, h5data):
