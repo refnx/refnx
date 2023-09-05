@@ -15,7 +15,7 @@ jobs:
         os: [ubuntu-22.04, windows-2019, macos-11]
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: build wheels
         uses: pypa/cibuildwheel@v2.15.0
@@ -33,7 +33,7 @@ jobs:
     name: Make sdist
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - name: Build sdist
       run: pipx run build --sdist
@@ -48,7 +48,7 @@ jobs:
     needs: [build_wheels, make_sdist]
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - name: Set up Python
       uses: actions/setup-python@v4

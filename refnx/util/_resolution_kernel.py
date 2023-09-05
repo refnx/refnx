@@ -53,6 +53,8 @@ class P_Theta(AngularDivergence):
 
     def __init__(self, d1, d2, L12=2859.0):
         div, alpha, beta = general.div(d1, d2, L12=L12)
+        # alpha = (d1 + d2) / 2.0 / L12
+        # beta = abs(d1 - d2) / 2.0 / L12
 
         self.alpha = alpha
         self.beta = beta
@@ -73,7 +75,7 @@ class P_Theta(AngularDivergence):
         Parameters
         ----------
         theta: float
-            quantiles, in radians
+            quantiles, in *degrees*
 
         Returns
         -------
@@ -127,7 +129,7 @@ def pq_theta(p_theta, theta0, wavelength0, Q):
         Probability density function of resolution function at Q.
     """
     theta = np.radians(general.angle(Q, wavelength0) - theta0)
-    pdf = wavelength0 / 4 / np.pi / np.cos(theta) * p_theta.pdf(theta)
+    pdf = wavelength0 / 4 / np.pi / np.cos(theta) * p_theta.pdf(np.degrees(theta))
     pdf /= integrate.simpson(pdf, x=Q)
     return pdf
 
