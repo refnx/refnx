@@ -129,7 +129,13 @@ def pq_theta(p_theta, theta0, wavelength0, Q):
         Probability density function of resolution function at Q.
     """
     theta = np.radians(general.angle(Q, wavelength0) - theta0)
-    pdf = wavelength0 / 4 / np.pi / np.cos(theta) * p_theta.pdf(np.degrees(theta))
+    pdf = (
+        wavelength0
+        / 4
+        / np.pi
+        / np.cos(theta)
+        * p_theta.pdf(np.degrees(theta))
+    )
     pdf /= integrate.simpson(pdf, x=Q)
     return pdf
 
