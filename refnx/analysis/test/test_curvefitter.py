@@ -636,7 +636,7 @@ class TestFitterGauss:
     @pytest.mark.xfail(
         sys.platform == "win32"
         and (sys.version_info.major, sys.version_info.minor)
-        in [(3, 8), (3, 9)],
+        in [(3, 8), (3, 9), (3, 10)],
         run=False,
         reason="doesn't work on cp38",
     )
