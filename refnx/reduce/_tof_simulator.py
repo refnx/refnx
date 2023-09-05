@@ -146,6 +146,17 @@ class ReflectSimulator(object):
     direct_spectrum : str, ReflectNexus, h5 handle
         Contains the direct beam spectrum. Processed using ReflectNexus
 
+    lo_wavelength : float
+        smallest wavelength used from the generated neutron spectrum
+
+    hi_wavelength : float
+        longest wavelength used from the generated neutron spectrum
+
+    dlambda : float
+        Wavelength resolution expressed as a percentage. dlambda=3.3
+        corresponds to using disk choppers 1+3 on *PLATYPUS*.
+        (FWHM of the Gaussian approximation of a trapezoid)
+
     rebin : float
         Rebinning expressed as a percentage. The width of a wavelength bin is
         `rebin / 100 * lambda`. You have to multiply by 0.68 to get its

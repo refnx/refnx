@@ -128,7 +128,7 @@ def pq_theta(p_theta, theta0, wavelength0, Q):
     """
     theta = np.radians(general.angle(Q, wavelength0) - theta0)
     pdf = wavelength0 / 4 / np.pi / np.cos(theta) * p_theta.pdf(theta)
-    pdf /= integrate.simps(pdf, x=Q)
+    pdf /= integrate.simpson(pdf, x=Q)
     return pdf
 
 
