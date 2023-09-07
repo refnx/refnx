@@ -269,7 +269,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         with open(experiment_file_name, "wb") as f:
             pickle.dump(state, f, -1)
 
-        self.setWindowTitle("Motofit - " + experiment_file_name)
+        self.setWindowTitle("Motofit - " + str(experiment_file_name))
 
     @QtCore.Slot()
     def on_actionSave_File_triggered(self):
@@ -371,8 +371,8 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         applies the program settings to the GUI
         """
         title = "Motofit"
-        if len(self.settings.experiment_file_name):
-            title += " - " + self.settings.experiment_file_name
+        if len(str(self.settings.experiment_file_name)):
+            title += " - " + str(self.settings.experiment_file_name)
         self.setWindowTitle(title)
 
         self.select_fitting_algorithm(self.settings.fitting_algorithm)
