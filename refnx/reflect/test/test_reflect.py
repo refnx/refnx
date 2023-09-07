@@ -1,6 +1,5 @@
 import sys
-import os.path
-import os
+from pathlib import Path
 import pickle
 import time
 import numpy as np
@@ -46,7 +45,7 @@ if sys.platform == "darwin":
 
 class TestReflect:
     def setup_method(self):
-        self.pth = os.path.dirname(os.path.abspath(__file__))
+        self.pth = Path(__file__).absolute().parent
 
         sio2 = SLD(3.47, name="SiO2")
         air = SLD(0, name="air")
@@ -56,7 +55,7 @@ class TestReflect:
 
         self.structure = air | sio2(100, 2) | si(0, 3)
 
-        theoretical = np.loadtxt(os.path.join(self.pth, "theoretical.txt"))
+        theoretical = np.loadtxt(self.pth / "theoretical.txt")
         qvals, rvals = np.hsplit(theoretical, 2)
         self.qvals = qvals.flatten()
         self.rvals = rvals.flatten()
@@ -83,7 +82,7 @@ class TestReflect:
         self.structure361[2].sld.real.vary = True
         self.structure361[2].sld.real.range(0.2, 1.5)
 
-        e361 = ReflectDataset(os.path.join(self.pth, "e361r.txt"))
+        e361 = ReflectDataset(self.pth / "e361r.txt")
         self.qvals361, self.rvals361, self.evals361 = (
             e361.x,
             e361.y,
@@ -300,7 +299,7 @@ class TestReflect:
     def test_kernel_absorption2(self, backend):
         # https://github.com/andyfaff/refl1d_analysis/tree/master/notebooks
         # this has an appreciable notch just below the critical edge
-        refl1d = np.load(os.path.join(self.pth, "absorption.npy"))
+        refl1d = np.load(self.pth / "absorption.npy")
 
         q = np.geomspace(0.005, 0.3, 201)
         depth = [0, 1200, 0]
@@ -336,7 +335,7 @@ class TestReflect:
             ]
         )
         x = np.linspace(0.005, 0.5, 1001)
-        refl1d = np.load(os.path.join(self.pth, "refl1d.npy"))
+        refl1d = np.load(self.pth / "refl1d.npy")
 
         with use_reflect_backend(backend) as kernel:
             calc = kernel(x, layers)
@@ -571,9 +570,7 @@ class TestReflect:
     def test_smearedkernel(self):
         # test smeared reflectivity calculation with values generated from
         # Motofit (quadrature precsion order = 13)
-        theoretical = np.loadtxt(
-            os.path.join(self.pth, "smeared_theoretical.txt")
-        )
+        theoretical = np.loadtxt(self.pth / "smeared_theoretical.txt")
         qvals, rvals, dqvals = np.hsplit(theoretical, 3)
         """
         the order of the quadrature precision used to create these smeared
@@ -588,9 +585,7 @@ class TestReflect:
     def test_smearedkernel_reshape(self):
         # test smeared reflectivity calculation with values generated from
         # Motofit (quadrature precsion order = 13)
-        theoretical = np.loadtxt(
-            os.path.join(self.pth, "smeared_theoretical.txt")
-        )
+        theoretical = np.loadtxt(self.pth / "smeared_theoretical.txt")
         qvals, rvals, dqvals = np.hsplit(theoretical, 3)
         """
         the order of the quadrature precision used to create these smeared
@@ -653,7 +648,7 @@ class TestReflect:
     def test_sld_profile(self):
         # test SLD profile with SLD profile from Motofit.
         np.seterr(invalid="raise")
-        profile = np.loadtxt(os.path.join(self.pth, "sld_theoretical_R.txt"))
+        profile = np.loadtxt(self.pth / "sld_theoretical_R.txt")
         z, rho = np.split(profile, 2)
 
         rff = ReflectModel(self.structure)
@@ -663,7 +658,7 @@ class TestReflect:
     def test_modelvals_degenerate_layers(self):
         # try fitting dataset with a deposited layer split into two degenerate
         # layers
-        fname = os.path.join(self.pth, "c_PLP0011859_q.txt")
+        fname = self.pth / "c_PLP0011859_q.txt"
         dataset = ReflectDataset(fname)
 
         sio2 = SLD(3.47, name="SiO2")
@@ -702,7 +697,7 @@ class TestReflect:
         assert_equal(slabs[2, 3], slabs[3, 3])
 
     def test_resolution_speed_comparator(self):
-        fname = os.path.join(self.pth, "c_PLP0011859_q.txt")
+        fname = self.pth / "c_PLP0011859_q.txt"
         dataset = ReflectDataset(fname)
 
         sio2 = SLD(3.47, name="SiO2")

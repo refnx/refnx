@@ -1,4 +1,4 @@
-import os.path
+from pathlib import Path
 import operator
 
 import numpy as np
@@ -15,10 +15,10 @@ from refnx._lib import flatten
 
 class TestCodeFragment:
     def setup_method(self):
-        self.pth = os.path.dirname(os.path.abspath(__file__))
+        self.pth = Path(__file__).absolute().parent
 
     def test_code_fragment(self):
-        e361 = ReflectDataset(os.path.join(self.pth, "e361r.txt"))
+        e361 = ReflectDataset(self.pth / "e361r.txt")
 
         si = SLD(2.07, name="Si")
         sio2 = SLD(3.47, name="SiO2")

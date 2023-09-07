@@ -1,4 +1,4 @@
-import os.path
+from pathlib import Path
 import os
 import logging
 from copy import copy
@@ -105,13 +105,13 @@ class ReductionState:
             data_directory = "./"
 
         def full_path(fname):
-            f = os.path.join(data_directory, fname)
+            f = Path(data_directory) / fname
             return f
 
         # if the streamed directory isn't mentioned then assume it's the same
         # as the data directory
         streamed_directory = self.streamed_directory
-        if not os.path.isdir(streamed_directory):
+        if not Path(streamed_directory).is_dir():
             self.streamed_directory = data_directory
 
         logging.info(
@@ -166,8 +166,8 @@ class ReductionState:
                 direct = val[db]
 
                 # if the file doesn't exist there's no point continuing
-                if (not os.path.isfile(full_path(reflect))) or (
-                    not os.path.isfile(full_path(direct))
+                if (not full_path(reflect).is_file()) or (
+                    not full_path(direct).is_file()
                 ):
                     continue
 
@@ -215,12 +215,8 @@ class ReductionState:
                     combined_dataset = ReflectDataset()
 
                     fname = basename_datafile(reflect)
-                    fname_dat = os.path.join(
-                        self.output_directory, "c_{0}.dat".format(fname)
-                    )
-                    fname_xml = os.path.join(
-                        self.output_directory, "c_{0}.xml".format(fname)
-                    )
+                    fname_dat = Path(self.output_directory) / f"c_{fname}.dat"
+                    fname_xml = Path(self.output_directory) / f"c_{fname}.xml"
 
                 try:
                     combined_dataset.add_data(

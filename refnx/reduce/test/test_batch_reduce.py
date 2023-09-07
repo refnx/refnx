@@ -18,12 +18,12 @@ import refnx.reduce.batchreduction
 class TestReduce:
     @pytest.mark.usefixtures("no_data_directory")
     @pytest.fixture(autouse=True)
-    def setup_method(self, tmpdir, data_directory):
-        self.pth = Path(data_directory) / "reduce"
-        self.cwd = os.getcwd()
+    def setup_method(self, tmp_path, data_directory):
+        self.pth = data_directory / "reduce"
+        self.cwd = Path(".")
 
-        self.tmpdir = Path(tmpdir.strpath)
-        os.chdir(self.tmpdir)
+        self.tmp_path = tmp_path
+        os.chdir(self.tmp_path)
         return 0
 
     def teardown_method(self):
@@ -163,7 +163,7 @@ class TestReductionCache:
         # smoke test the __str__ method
         assert str(self.cache) != ""
 
-    def test_persistence(self, tmpdir):
+    def test_persistence(self, tmp_path):
         # test persistence of cache in a local file
 
         # presence of this file would indicate a failure of
@@ -182,14 +182,15 @@ class TestReductionCache:
         assert not Path(cache._cache_filename()).exists()
 
         # check that the cache filename can be set
-        cachename = tmpdir.mkdir("test") / ("redn-test.pickle")
+        (tmp_path / "test").mkdir()
+        cachename = tmp_path / "test" / "redn-test.pickle"
 
         # make a new cache that has persistence with specified filename
         cache = refnx.reduce.batchreduction.ReductionCache(
             persistent=str(cachename)
         )
 
-        assert cache._cache_filename() == cachename
+        assert cache._cache_filename() == str(cachename)
 
         self._addentry(self.entries[0], dest=cache)
         assert_equal(len(cache), 1)

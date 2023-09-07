@@ -1,4 +1,4 @@
-import os.path
+from pathlib import Path
 from copy import deepcopy
 import pickle
 import os
@@ -71,7 +71,7 @@ from refnx._lib import unique, flatten, MapWrapper
 
 
 # matplotlib.use('QtAgg')
-UI_LOCATION = os.path.join(os.path.dirname(os.path.abspath(__file__)), "ui")
+UI_LOCATION = Path(__file__).absolute().parent / "ui"
 
 
 class MotofitMainWindow(QtWidgets.QMainWindow):
@@ -83,7 +83,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         super().__init__(parent)
 
         # load the GUI from the ui file
-        self.ui = uic.loadUi(os.path.join(UI_LOCATION, "motofit.ui"), self)
+        self.ui = uic.loadUi(UI_LOCATION / "motofit.ui", self)
 
         self.error_handler = QtWidgets.QErrorMessage()
 
@@ -266,14 +266,14 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         state["currently_fitting"] = fit_list.datasets
         state["requirements.txt"] = self.requirements()
 
-        with open(os.path.join(experiment_file_name), "wb") as f:
+        with open(experiment_file_name, "wb") as f:
             pickle.dump(state, f, -1)
 
         self.setWindowTitle("Motofit - " + experiment_file_name)
 
     @QtCore.Slot()
     def on_actionSave_File_triggered(self):
-        if os.path.isfile(self.settings.experiment_file_name):
+        if Path(self.settings.experiment_file_name).is_file():
             self._saveState(self.settings.experiment_file_name)
         else:
             self.on_actionSave_File_As_triggered()
@@ -287,9 +287,9 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         if not ok:
             return
 
-        path, ext = os.path.splitext(experiment_file_name)
-        if ext != ".mtft":
-            experiment_file_name = path + ".mtft"
+        efp = Path(experiment_file_name)
+        if efp.suffix != ".mtft":
+            experiment_file_name = efp.parent / (efp.stem + ".mtft")
 
         self._saveState(experiment_file_name)
 
@@ -513,7 +513,8 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         data_objects = []
         fnames = []
         for file in files:
-            if os.path.isfile(file):
+            file = Path(file)
+            if file.is_file():
                 try:
                     data_object = self.treeModel.load_data(file)
                     if data_object is not None:
@@ -613,11 +614,9 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         dialog = QtWidgets.QFileDialog(self)
         dialog.setFileMode(QtWidgets.QFileDialog.Directory)
         if dialog.exec():
-            folder = dialog.selectedFiles()
+            folder = Path(dialog.selectedFiles()[0])
             for name in names:
-                datastore[name].save_fit(
-                    os.path.join(folder[0], "fit_" + name + ".dat")
-                )
+                datastore[name].save_fit(folder / f"fit_{name}.dat")
 
     @QtCore.Slot()
     def on_actionSave_SLD_Curve_triggered(self):
@@ -633,14 +632,12 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         dialog = QtWidgets.QFileDialog(self)
         dialog.setFileMode(QtWidgets.QFileDialog.Directory)
         if dialog.exec():
-            folder = dialog.selectedFiles()
+            folder = Path(dialog.selectedFiles()[0])
             for name in names:
                 data_object = datastore[name]
                 if data_object.sld_profile is not None:
                     # it may be None if it's a mixed area model
-                    sld_file_name = os.path.join(
-                        folder[0], "sld_" + name + ".dat"
-                    )
+                    sld_file_name = folder / f"sld_{name}.dat"
                     sld_curve = np.array(data_object.sld_profile).T
                     np.savetxt(sld_file_name, sld_curve)
 
@@ -687,10 +684,10 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         dialog.setFileMode(QtWidgets.QFileDialog.Directory)
         dialog.setWindowTitle("Where do you want to save the models?")
         if dialog.exec():
-            folder = dialog.selectedFiles()
+            folder = Path(dialog.selectedFiles()[0])
 
             for name in names:
-                fname = os.path.join(folder[0], "coef_" + name + ".pkl")
+                fname = folder / f"coef_{name}.pkl"
                 model = datastore[name]
                 model.save_model(fname)
 
@@ -731,7 +728,8 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         items = self.data_object_selector.data_objects.selectedItems()
         names = [item.text() for item in items]
 
-        suggested_name = os.path.join(os.getcwd(), "coefficients.csv")
+        cwd = Path(".").resolve()
+        suggested_name = cwd / "coefficients.csv"
         fname, ok = getsavefilename(
             self, "Exported file name:", suggested_name
         )
@@ -768,9 +766,10 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         objective = self.create_objective(data_objects)
         code = code_fragment(objective)
 
-        suggested_name = os.path.join(os.getcwd(), "mcmc.py")
+        cwd = Path(".").resolve()
+        suggested_name = cwd / "mcmc.py"
         modelFileName, ok = getsavefilename(
-            self, "Save code fragment as:", suggested_name
+            self, "Save code fragment as:", str(suggested_name)
         )
         if not ok:
             return
@@ -842,7 +841,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
 
         dvalidator = QtGui.QDoubleValidator(-2.0e-308, 2.0e308, 6)
 
-        qrangeGUI = uic.loadUi(os.path.join(UI_LOCATION, "qrangedialog.ui"))
+        qrangeGUI = uic.loadUi(UI_LOCATION / "qrangedialog.ui")
         qrangeGUI.numpnts.setValue(numpnts)
         qrangeGUI.qmin.setValidator(dvalidator)
         qrangeGUI.qmax.setValidator(dvalidator)
@@ -1031,15 +1030,14 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
 
     @QtCore.Slot()
     def on_actionAbout_triggered(self):
-        aboutui = uic.loadUi(os.path.join(UI_LOCATION, "about.ui"))
+        aboutui = uic.loadUi(UI_LOCATION / "about.ui")
 
-        licence_dir = os.path.join(UI_LOCATION, "licences")
-        licences = os.listdir(licence_dir)
-        licences.remove("about")
+        licence_dir = UI_LOCATION / "licences"
+        licences = licence_dir.iterdir()
 
         text = [refnx.version.version]
         with open(
-            os.path.join(licence_dir, "about"),
+            licence_dir / "about",
             "r",
             encoding="utf-8",
             errors="replace",
@@ -1047,8 +1045,10 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
             text.append("".join(f.readlines()))
 
         for licence in licences:
-            fname = os.path.join(licence_dir, licence)
-            with open(fname, "r", encoding="utf-8") as f:
+            if licence.name == "about":
+                continue
+
+            with open(licence, "r", encoding="utf-8") as f:
                 text.append("".join(f.readlines()))
 
         display_text = "\n_______________________________________\n".join(text)
@@ -1063,7 +1063,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
 
     @QtCore.Slot()
     def on_actionPython_Packages_triggered(self):
-        aboutui = uic.loadUi(os.path.join(UI_LOCATION, "about.ui"))
+        aboutui = uic.loadUi(UI_LOCATION / "about.ui")
         text = self.requirements()
         aboutui.textBrowser.setText(text)
         aboutui.exec()
@@ -1473,7 +1473,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
                 folder_dialog.setFileMode(QtWidgets.QFileDialog.Directory)
                 # folder_dialog.setWindowModality(Qt.WindowModality.WindowModal)
                 if folder_dialog.exec():
-                    folder = folder_dialog.selectedFiles()[0]
+                    folder = Path(folder_dialog.selectedFiles()[0])
                 else:
                     return []
             else:
@@ -1520,7 +1520,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
                             raise StopIteration("Sampling aborted")
 
                 with open(
-                    os.path.join(folder, "steps.chain"), "w"
+                    folder / "steps.chain", "w"
                 ) as f, get_context().Pool() as workers:
                     fitter.sample(
                         nsteps,
@@ -2259,7 +2259,7 @@ class ProgressCallback(QtWidgets.QDialog):
         self.abort_flag = False
         super().__init__(parent)
         self.parent = parent
-        self.ui = uic.loadUi(os.path.join(UI_LOCATION, "progress.ui"), self)
+        self.ui = uic.loadUi(UI_LOCATION / "progress.ui", self)
         self.elapsed = 0.0
         self.chi2 = 1.0e308
         self.ui.timer.display(float(self.elapsed))
@@ -2702,9 +2702,7 @@ class DataObjectSelectorDialog(QtWidgets.QDialog):
     def __init__(self, parent=None):
         # persistent data object selector dlg
         QtWidgets.QDialog.__init__(self, parent)
-        self.ui = uic.loadUi(
-            os.path.join(UI_LOCATION, "data_object_selector.ui"), self
-        )
+        self.ui = uic.loadUi(UI_LOCATION / "data_object_selector.ui", self)
 
     def addItems(self, items):
         self.data_objects.addItems(items)

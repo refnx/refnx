@@ -1,7 +1,7 @@
 """
 Deals with GUI aspects of MCMC
 """
-import os
+from pathlib import Path
 
 import numpy as np
 from qtpy import QtCore, QtGui, QtWidgets, uic
@@ -21,35 +21,33 @@ from matplotlib.backends.backend_qtagg import (
 )
 from matplotlib.figure import Figure
 
-pth = os.path.dirname(os.path.abspath(__file__))
-UI_LOCATION = os.path.join(pth, "ui")
+pth = Path(__file__).absolute().parent
+UI_LOCATION = pth / "ui"
 
 
 class SampleMCMCDialog(QtWidgets.QDialog):
     def __init__(self, parent=None):
         QtWidgets.QDialog.__init__(self, parent)
-        self.ui = uic.loadUi(os.path.join(UI_LOCATION, "sample_mcmc.ui"), self)
+        self.ui = uic.loadUi(UI_LOCATION / "sample_mcmc.ui", self)
 
 
 class ProcessMCMCDialog(QtWidgets.QDialog):
     def __init__(self, objective, chain, folder=None, parent=None):
         QtWidgets.QDialog.__init__(self, parent)
-        self.ui = uic.loadUi(
-            os.path.join(UI_LOCATION, "process_mcmc.ui"), self
-        )
+        self.ui = uic.loadUi(UI_LOCATION / "process_mcmc.ui", self)
 
         self.objective = objective
         self.folder = folder
         self.chain = chain
 
         if folder is None:
-            self.folder = os.getcwd()
+            self.folder = Path(".").resolve()
 
         if self.chain is None:
             model_file_name, ok = getopenfilename(self, "Select chain file")
             if not ok:
                 return
-            self.folder = os.path.dirname(model_file_name)
+            self.folder = Path(model_file_name).parent
             try:
                 self.chain = load_chain(model_file_name)
             except Exception as e:
@@ -121,7 +119,7 @@ class ProcessMCMCDialog(QtWidgets.QDialog):
 def _process_chain(objective, chain, nburn, nthin, folder=None):
     # processes the chain for the ProcessMCMCDialog
     if folder is None:
-        folder = os.getcwd()
+        folder = Path(".").resolve()
 
     process_chain(objective, chain, nburn=nburn, nthin=nthin)
 
@@ -135,7 +133,7 @@ def _process_chain(objective, chain, nburn, nthin, folder=None):
     ax.plot(acfs)
     ax.set_ylabel("autocorrelation")
     ax.set_xlabel("step")
-    fig.savefig(os.path.join(folder, "steps-autocorrelation.png"))
+    fig.savefig(folder / "steps-autocorrelation.png")
 
 
 def _plots(obj, nplot=0, folder=None):
@@ -144,7 +142,7 @@ def _plots(obj, nplot=0, folder=None):
     # Also writes out arrays:
     #      steps.npy, steps_sld.npy
     if folder is None:
-        folder = os.getcwd()
+        folder = Path(".").resolve()
 
     fig = Figure()
     FigureCanvas(fig)
@@ -152,14 +150,14 @@ def _plots(obj, nplot=0, folder=None):
     _, ax = obj.plot(samples=nplot, fig=fig)
     ax.set_ylabel("R")
     ax.set_xlabel("Q / $\\AA$")
-    fig.savefig(os.path.join(folder, "steps.png"), dpi=1000)
+    fig.savefig(folder / "steps.png", dpi=1000)
 
     rng = np.random.default_rng(1)
 
     # write out a file with the reflectivities
     g = obj._generate_generative_mcmc(ngen=nplot, random_state=rng)
     arr = np.vstack([a for a in g])
-    np.save(os.path.join(folder, "steps.npy"), arr)
+    np.save(folder / "steps.npy", arr)
 
     # corner plot
     try:
@@ -174,7 +172,7 @@ def _plots(obj, nplot=0, folder=None):
         kwds["quantiles"] = [0.16, 0.5, 0.84]
         fig2 = corner.corner(chain, **kwds)
 
-        fig2.savefig(os.path.join(folder, "steps_corner.png"))
+        fig2.savefig(folder / "steps_corner.png")
     except ImportError:
         pass
 
@@ -195,7 +193,7 @@ def _plots(obj, nplot=0, folder=None):
                     samples=nplot, random_state=rng
                 )
                 arr = np.vstack([a for a in g])
-                np.save(os.path.join(folder, f"steps_sld_{idx}.npy"), arr)
+                np.save(folder / f"steps_sld_{idx}.npy", arr)
 
         for o in obj.objectives:
             if hasattr(o.model, "structure"):
@@ -215,9 +213,9 @@ def _plots(obj, nplot=0, folder=None):
             samples=nplot, random_state=rng
         )
         arr = np.vstack([a for a in g])
-        np.save(os.path.join(folder, "steps_sld.npy"), arr)
+        np.save(folder / "steps_sld.npy", arr)
 
-    fig3.savefig(os.path.join(folder, "steps_sld.png"), dpi=1000)
+    fig3.savefig(folder / "steps_sld.png", dpi=1000)
 
     # plot the chains so one can see when parameters reach
     # 'equilibrium values'
@@ -231,4 +229,4 @@ def _plots(obj, nplot=0, folder=None):
         for j in range(100):
             ax.plot(vp.chain[:, j].flat)
 
-        fig.savefig(os.path.join(folder, f"steps_param_{i}.png"))
+        fig.savefig(folder / f"steps_param_{i}.png")

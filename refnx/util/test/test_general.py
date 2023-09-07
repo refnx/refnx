@@ -1,7 +1,7 @@
 import refnx.util.general as general
 import refnx
 import numpy as np
-import os
+from pathlib import Path
 from numpy.testing import assert_almost_equal, assert_, assert_allclose
 
 
@@ -12,7 +12,7 @@ def test_version():
 
 class TestGeneral:
     def setup_method(self):
-        self.pth = os.path.dirname(os.path.abspath(__file__))
+        self.pth = Path(__file__).absolute().parent
 
     def test_q(self):
         q = general.q(1.0, 2.0)

@@ -1,9 +1,9 @@
 """"
 A basic representation of a 1D dataset
 """
-import os.path
 from pathlib import Path, PurePath
 import re
+import io
 
 import numpy as np
 from scipy._lib._util import check_random_state
@@ -111,7 +111,7 @@ class Data1D:
         if np.all(self._mask):
             msk = None
 
-        d = {"filename": self.filename, "msk": msk, "data": self.data}
+        d = {"filename": str(self.filename), "msk": msk, "data": self.data}
         if self.filename is not None:
             return "Data1D(data={filename!r}," " mask={msk!r})".format(**d)
         else:
@@ -478,13 +478,18 @@ class Data1D:
 
         self.data = (x, y, y_err, x_err)
 
-        if hasattr(f, "read"):
-            fname = f.name
+        if hasattr(f, "read") and hasattr(f, "write"):
+            if hasattr(f, "name"):
+                # file-like ?
+                fname = f.name
+            else:
+                # BytesIO/ StringIO?
+                fname = ""
         else:
             fname = f
 
         self.filename = fname
-        self.name = os.path.splitext(os.path.basename(fname))[0]
+        self.name = Path(fname).stem
 
     def refresh(self):
         """

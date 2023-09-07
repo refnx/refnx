@@ -4,7 +4,7 @@ from http://dan.iel.fm/emcee/current/user/line/
 """
 import pickle
 from multiprocessing.reduction import ForkingPickler
-import os
+from pathlib import Path
 
 import pytest
 
@@ -16,7 +16,6 @@ import scipy.stats as stats
 
 from numpy.testing import (
     assert_equal,
-    assert_,
     assert_allclose,
 )
 
@@ -58,6 +57,7 @@ def line_ND(x, params):
 
 class TestObjective:
     def setup_method(self):
+        self.pth = Path(__file__).absolute().parent
         # Choose the "true" parameters.
 
         # Reproducible results!
@@ -151,7 +151,7 @@ class TestObjective:
     def test_synthetic_data(self):
         # test that we create the correct synthetic data by performing a least
         # squares fit on it
-        assert_(self.data.y_err is not None)
+        assert self.data.y_err is not None
 
         x, y, y_err, _ = self.data.data
         A = np.vstack((np.ones_like(x), x)).T
@@ -166,7 +166,7 @@ class TestObjective:
         # check that we can set parameters
         self.p[0].vary = False
 
-        assert_(len(self.objective.varying_parameters()) == 1)
+        assert len(self.objective.varying_parameters()) == 1
         self.objective.setp(np.array([1.23]))
         assert_equal(self.p[1].value, 1.23)
         self.objective.setp(np.array([1.234, 1.23]))
@@ -291,9 +291,7 @@ class TestObjective:
         pickle.loads(pkl)
 
     def test_transform(self):
-        pth = os.path.dirname(os.path.abspath(__file__))
-
-        fname = os.path.join(pth, "c_PLP0011859_q.txt")
+        fname = self.pth / "c_PLP0011859_q.txt"
         data = ReflectDataset(fname)
         t = Transform("logY")
 
@@ -430,9 +428,7 @@ class TestObjective:
 
     def test_covar(self):
         # checks objective.covar against optimize.least_squares covariance.
-        path = os.path.dirname(os.path.abspath(__file__))
-
-        theoretical = np.loadtxt(os.path.join(path, "gauss_data.txt"))
+        theoretical = np.loadtxt(self.pth / "gauss_data.txt")
         xvals, yvals, evals = np.hsplit(theoretical, 3)
         xvals = xvals.flatten()
         yvals = yvals.flatten()
@@ -531,12 +527,12 @@ class TestObjective:
             p = Parameter(1, bounds=(1, 10))
             d = _to_pymc_distribution("a", p)
             assert_allclose(d.distribution.logp(2).eval(), p.logp(2))
-            assert_(np.isneginf(d.distribution.logp(-1).eval()))
+            assert np.isneginf(d.distribution.logp(-1).eval())
 
             q = Parameter(1, bounds=PDF(stats.uniform(1, 9)))
             d = _to_pymc_distribution("b", q)
             assert_allclose(d.distribution.logp(2).eval(), q.logp(2))
-            assert_(np.isneginf(d.distribution.logp(-1).eval()))
+            assert np.isneginf(d.distribution.logp(-1).eval())
 
             p = Parameter(1, bounds=PDF(stats.uniform))
             d = _to_pymc_distribution("c", p)

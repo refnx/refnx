@@ -27,12 +27,12 @@ from refnx.reflect import SLD, ReflectModel
 class TestPlatypusReduce:
     @pytest.mark.usefixtures("no_data_directory")
     @pytest.fixture(autouse=True)
-    def setup_method(self, tmpdir, data_directory):
-        self.pth = Path(data_directory) / "reduce"
+    def setup_method(self, tmp_path, data_directory):
+        self.pth = data_directory / "reduce"
 
-        self.cwd = os.getcwd()
-        self.tmpdir = Path(tmpdir.strpath)
-        os.chdir(self.tmpdir)
+        self.cwd = Path(".").resolve()
+        self.tmp_path = tmp_path
+        os.chdir(self.tmp_path)
         return 0
 
     def teardown_method(self):
@@ -50,7 +50,7 @@ class TestPlatypusReduce:
                 reduction_options={"rebin_percent": 2},
             )
             a.save("test1.dat")
-            assert (self.tmpdir / "test1.dat").is_file()
+            assert (self.tmp_path / "test1.dat").is_file()
 
             # reduce_stitch should take a ReductionOptions dict
             opts = ReductionOptions()
@@ -63,7 +63,7 @@ class TestPlatypusReduce:
                 reduction_options=[opts] * 3,
             )
             a2.save("test2.dat")
-            assert (self.tmpdir / "test2.dat").is_file()
+            assert (self.tmp_path / "test2.dat").is_file()
             assert_allclose(a.y, a2.y)
 
     def test_reduction_method(self):
@@ -90,7 +90,7 @@ class TestPlatypusReduce:
 
             # this should also have saved a couple of files in the current
             # directory
-            assert (self.tmpdir / "PLP0000708_0.dat").is_file()
+            assert (self.tmp_path / "PLP0000708_0.dat").is_file()
             # assert os.path.isfile("./PLP0000708_0.xml")
 
             # can we read the file
@@ -109,7 +109,7 @@ class TestPlatypusReduce:
                 rebin_percent=4,
                 detailed_kernel=True,
             )
-            assert (self.tmpdir / "PLP0000708_0.hdf").is_file()
+            assert (self.tmp_path / "PLP0000708_0.hdf").is_file()
 
     def test_tof_simulator(self):
         # a smoke test to see if the simulator works
@@ -163,8 +163,8 @@ class TestPlatypusReduce:
             assert_equal(a.y.shape[0], 2)
 
             # check that two datasets are written out.
-            assert (self.tmpdir / "PLP0011641_0.dat").is_file()
-            assert (self.tmpdir / "PLP0011641_1.dat").is_file()
+            assert (self.tmp_path / "PLP0011641_0.dat").is_file()
+            assert (self.tmp_path / "PLP0011641_1.dat").is_file()
 
             # check that the resolutions are pretty much the same
             assert_allclose(
@@ -192,12 +192,12 @@ class TestPlatypusReduce:
 class TestSpatzReduce:
     @pytest.mark.usefixtures("no_data_directory")
     @pytest.fixture(autouse=True)
-    def setup_method(self, tmpdir, data_directory):
-        self.pth = Path(data_directory) / "reduce"
+    def setup_method(self, tmp_path, data_directory):
+        self.pth = data_directory / "reduce"
 
-        self.cwd = os.getcwd()
-        self.tmpdir = Path(tmpdir.strpath)
-        os.chdir(self.tmpdir)
+        self.cwd = Path(".").resolve()
+        self.tmp_path = tmp_path
+        os.chdir(self.tmp_path)
         return 0
 
     def teardown_method(self):
@@ -214,7 +214,7 @@ class TestSpatzReduce:
             reduction_options={"rebin_percent": 2},
         )
         a.save("test1.dat")
-        assert os.path.isfile("./test1.dat")
+        assert (self.tmp_path / "test1.dat").is_file()
 
         # reduce_stitch should take a list of ReductionOptions dict,
         # separate dicts are used for different angles
@@ -229,7 +229,7 @@ class TestSpatzReduce:
             reduction_options=[opts] * 2,
         )
         a2.save("test2.dat")
-        assert (self.tmpdir / "test2.dat").is_file()
+        assert (self.tmp_path / "test2.dat").is_file()
         assert_allclose(a.y, a2.y)
 
     def test_reduction_method(self):
@@ -252,7 +252,7 @@ class TestSpatzReduce:
 
         # this should also have saved a couple of files in the current
         # directory
-        assert (self.tmpdir / "SPZ0000660_0.dat").is_file()
+        assert (self.tmp_path / "SPZ0000660_0.dat").is_file()
         # assert os.path.isfile("./SPZ0000660_0.xml")
 
         # try writing offspecular data
@@ -262,12 +262,12 @@ class TestSpatzReduce:
 class TestPolarisedReduce:
     @pytest.mark.usefixtures("no_data_directory")
     @pytest.fixture(autouse=True)
-    def setup_method(self, tmpdir, data_directory):
-        self.pth = Path(data_directory) / "reduce" / "PNR_files"
+    def setup_method(self, tmp_path, data_directory):
+        self.pth = data_directory / "reduce" / "PNR_files"
 
-        self.cwd = os.getcwd()
-        self.tmpdir = Path(tmpdir.strpath)
-        os.chdir(self.tmpdir)
+        self.cwd = Path(".").resolve()
+        self.tmp_path = tmp_path
+        os.chdir(self.tmp_path)
         return 0
 
     def teardown_method(self):
@@ -312,10 +312,10 @@ class TestPolarisedReduce:
 
             # this should also have saved a couple of files in the current
             # directory
-            assert (self.tmpdir / "PLP0012785_0_PolCorr.dat").is_file()
-            assert (self.tmpdir / "PLP0012786_0_PolCorr.dat").is_file()
-            assert (self.tmpdir / "PLP0012787_0_PolCorr.dat").is_file()
-            assert (self.tmpdir / "PLP0012788_0_PolCorr.dat").is_file()
+            assert (self.tmp_path / "PLP0012785_0_PolCorr.dat").is_file()
+            assert (self.tmp_path / "PLP0012786_0_PolCorr.dat").is_file()
+            assert (self.tmp_path / "PLP0012787_0_PolCorr.dat").is_file()
+            assert (self.tmp_path / "PLP0012788_0_PolCorr.dat").is_file()
 
             # can we read the file
             dd = ReflectDataset("./PLP0012785_0_PolCorr.dat")
@@ -417,9 +417,9 @@ class TestPolarisedReduce:
 
             # this should also have saved a couple of files in the current
             # directory
-            assert (self.tmpdir / "PLP0012785_0_PolCorr.dat").is_file()
-            assert (self.tmpdir / "PLP0012786_0_PolCorr.dat").is_file()
-            assert (self.tmpdir / "PLP0012787_0_PolCorr.dat").is_file()
+            assert (self.tmp_path / "PLP0012785_0_PolCorr.dat").is_file()
+            assert (self.tmp_path / "PLP0012786_0_PolCorr.dat").is_file()
+            assert (self.tmp_path / "PLP0012787_0_PolCorr.dat").is_file()
 
             # can we read the file
             dd = ReflectDataset("./PLP0012785_0_PolCorr.dat")
@@ -516,8 +516,8 @@ class TestPolarisedReduce:
 
             # this should also have saved a couple of files in the current
             # directory
-            assert (self.tmpdir / "PLP0012785_0_PolCorr.dat").is_file()
-            assert (self.tmpdir / "PLP0012787_0_PolCorr.dat").is_file()
+            assert (self.tmp_path / "PLP0012785_0_PolCorr.dat").is_file()
+            assert (self.tmp_path / "PLP0012787_0_PolCorr.dat").is_file()
 
             # can we read the file
             dd = ReflectDataset("./PLP0012785_0_PolCorr.dat")
@@ -620,12 +620,12 @@ class TestPolarisedReduce:
 class TestPolarisationEfficiency:
     @pytest.mark.usefixtures("no_data_directory")
     @pytest.fixture(autouse=True)
-    def setup_method(self, tmpdir, data_directory):
-        self.pth = Path(data_directory) / "reduce" / "PNR_files"
+    def setup_method(self, tmp_path, data_directory):
+        self.pth = data_directory / "reduce" / "PNR_files"
 
-        self.cwd = os.getcwd()
-        self.tmpdir = Path(tmpdir.strpath)
-        os.chdir(self.tmpdir)
+        self.cwd = Path(".").resolve()
+        self.tmp_path = tmp_path
+        os.chdir(self.tmp_path)
         return 0
 
     def teardown_method(self):

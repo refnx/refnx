@@ -1,5 +1,8 @@
-import os.path
-from io import BytesIO
+import io
+from pathlib import Path
+import os
+
+from io import BytesIO, StringIO
 import pytest
 
 from refnx.dataset import ReflectDataset, Data1D
@@ -10,8 +13,8 @@ from numpy.testing import assert_equal
 
 class TestReflectDataset:
     @pytest.fixture(autouse=True)
-    def setup_method(self, tmpdir):
-        self.pth = os.path.dirname(os.path.abspath(__file__))
+    def setup_method(self, tmp_path):
+        self.pth = Path(__file__).absolute().parent
 
         data = ReflectDataset()
 
@@ -22,9 +25,9 @@ class TestReflectDataset:
         data.add_data((x1, y1, e1, dx1))
         self.data = data
 
-        self.cwd = os.getcwd()
-        self.tmpdir = tmpdir.strpath
-        os.chdir(self.tmpdir)
+        self.cwd = Path(".").resolve()
+        self.tmp_path = tmp_path
+        os.chdir(self.tmp_path)
 
     def teardown_method(self):
         os.chdir(self.cwd)
@@ -32,7 +35,7 @@ class TestReflectDataset:
     def test_load(self):
         # load dataset from XML, via file handle
         dataset = ReflectDataset()
-        with open(os.path.join(self.pth, "c_PLP0000708.xml")) as f:
+        with open(self.pth / "c_PLP0000708.xml") as f:
             dataset.load(f)
 
         assert_equal(len(dataset), 90)
@@ -40,20 +43,20 @@ class TestReflectDataset:
 
         # load dataset from XML, via string
         dataset = ReflectDataset()
-        dataset.load(os.path.join(self.pth, "c_PLP0000708.xml"))
+        dataset.load(self.pth / "c_PLP0000708.xml")
 
         assert_equal(len(dataset), 90)
         assert_equal(90, np.size(dataset.x))
 
         # load dataset from XML, via string
-        dataset = ReflectDataset(os.path.join(self.pth, "c_PLP0000708.xml"))
+        dataset = ReflectDataset(self.pth / "c_PLP0000708.xml")
 
         assert_equal(len(dataset), 90)
         assert_equal(90, np.size(dataset.x))
 
         # load dataset from .dat, via file handle
         dataset1 = ReflectDataset()
-        with open(os.path.join(self.pth, "c_PLP0000708.dat")) as f:
+        with open(self.pth / "c_PLP0000708.dat") as f:
             dataset1.load(f)
 
         assert_equal(len(dataset1), 90)
@@ -61,7 +64,7 @@ class TestReflectDataset:
 
         # load dataset from .dat, via string
         dataset2 = ReflectDataset()
-        dataset2.load(os.path.join(self.pth, "c_PLP0000708.dat"))
+        dataset2.load(self.pth / "c_PLP0000708.dat")
 
         assert_equal(len(dataset2), 90)
         assert_equal(90, np.size(dataset2.x))
@@ -69,29 +72,29 @@ class TestReflectDataset:
     def test_dot(self):
         # test with file formats from http://www.reflectometry.net/refdata.htm
         dataset1 = ReflectDataset()
-        with open(os.path.join(self.pth, "dot.dat")) as f:
+        with open(self.pth / "dot.dat") as f:
             dataset1.load(f)
         assert_equal(len(dataset1), 31)
         assert dataset1.y_err is not None
         assert dataset1.x_err is None
 
-        with open(os.path.join(self.pth, "dot.aft")) as f:
+        with open(self.pth / "dot.aft") as f:
             dataset1.load(f)
         assert_equal(len(dataset1), 36)
         assert dataset1.y_err is not None
 
-        with open(os.path.join(self.pth, "dot.refl")) as f:
+        with open(self.pth / "dot.refl") as f:
             dataset1.load(f)
         assert_equal(len(dataset1), 59)
         assert dataset1.y_err is not None
 
-        with open(os.path.join(self.pth, "dot.out")) as f:
+        with open(self.pth / "dot.out") as f:
             dataset1.load(f)
         assert_equal(len(dataset1), 1122)
         assert dataset1.y_err is not None
         assert dataset1.x_err is not None
 
-        with open(os.path.join(self.pth, "dot.mft")) as f:
+        with open(self.pth / "dot.mft") as f:
             dataset1.load(f)
         assert_equal(len(dataset1), 213)
         assert dataset1.y_err is not None
@@ -99,14 +102,15 @@ class TestReflectDataset:
 
     def test_load_dat_with_header(self):
         # check that the file load works with a header
-        a = ReflectDataset(os.path.join(self.pth, "c_PLP0000708.dat"))
-        b = ReflectDataset(os.path.join(self.pth, "c_PLP0000708_header.dat"))
-        c = ReflectDataset(os.path.join(self.pth, "c_PLP0000708_header2.dat"))
+        a = ReflectDataset(self.pth / "c_PLP0000708.dat")
+        b = ReflectDataset(self.pth / "c_PLP0000708_header.dat")
+        c = ReflectDataset(self.pth / "c_PLP0000708_header2.dat")
         assert_equal(len(a), len(b))
         assert_equal(len(a), len(c))
 
     def test_GH236(self):
-        a = ReflectDataset(os.path.join(self.pth, "c_PLP0033831.txt"))
+        assert (self.pth / "c_PLP0033831.txt").exists()
+        a = ReflectDataset(self.pth / "c_PLP0033831.txt")
         assert_equal(len(a), 166)
 
     def test_loading_junk(self):
@@ -115,18 +119,26 @@ class TestReflectDataset:
         from pytest import raises
 
         with raises(RuntimeError):
-            ReflectDataset(os.path.join(self.pth, "../__init__.py"))
+            ReflectDataset(self.pth / "../__init__.py")
+
+    def test_bytes(self):
+        with open(self.pth / "c_PLP0033831.txt", "rb") as f:
+            data = f.read()
+        s = data.decode().replace("\r", "\n")
+        b = io.StringIO(s)
+        d = Data1D()
+        d.load(b)
 
     def test_construction(self):
         # test we can construct a dataset directly from a file.
-        pth = os.path.join(self.pth, "c_PLP0000708.xml")
+        pth = self.pth / "c_PLP0000708.xml"
 
         ReflectDataset(pth)
 
-        with open(os.path.join(self.pth, "c_PLP0000708.xml")) as f:
+        with open(self.pth / "c_PLP0000708.xml") as f:
             ReflectDataset(f)
 
-        ReflectDataset(os.path.join(self.pth, "d_a.txt"))
+        ReflectDataset(str(self.pth / "d_a.txt"))
 
     def test_init_with_data1d(self):
         # test we can construct a dataset from a dataset (i.e. a copy)
@@ -261,13 +273,13 @@ class TestReflectDataset:
         assert_equal(len(self.data), self.data._y.size)
 
     def test_repr(self):
-        a = Data1D(os.path.join(self.pth, "c_PLP0033831.txt"))
+        a = Data1D(self.pth / "c_PLP0033831.txt")
         b = eval(repr(a))
         assert_equal(len(a), 166)
         assert_equal(len(b), 166)
 
         # load dataset from XML, via string
-        a = ReflectDataset(os.path.join(self.pth, "c_PLP0000708.xml"))
+        a = ReflectDataset(str(self.pth / "c_PLP0000708.xml"))
         b = eval(repr(a))
         assert_equal(len(b), len(a))
         assert_equal(len(b), len(a))
@@ -275,11 +287,11 @@ class TestReflectDataset:
 
 class TestData1D:
     @pytest.fixture(autouse=True)
-    def setup_method(self, tmpdir):
-        self.pth = os.path.dirname(os.path.abspath(__file__))
-        self.cwd = os.getcwd()
-        self.tmpdir = tmpdir.strpath
-        os.chdir(self.tmpdir)
+    def setup_method(self, tmp_path):
+        self.pth = Path(__file__).absolute().parent
+        self.cwd = Path(".").resolve()
+        self.tmp_path = tmp_path
+        os.chdir(self.tmp_path)
 
     def teardown_method(self):
         os.chdir(self.cwd)

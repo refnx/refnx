@@ -10,7 +10,7 @@ import refnx
 
 
 @pytest.fixture(scope="session")
-def data_directory(tmpdir_factory):
+def data_directory(tmp_path_factory):
     """
     Retrieves the refnx-testdata repository, placing it in a temporary
     directory, for use in pytest fixtures
@@ -22,7 +22,7 @@ def data_directory(tmpdir_factory):
         returned. If the retrieval fails then None is returned.
     """
     url = "https://github.com/refnx/refnx-testdata/archive/master.zip"
-    tmpdir = Path(tmpdir_factory.mktemp("data"))
+    tmpdir = tmp_path_factory.mktemp("data")
 
     try:
         # grab the test data
