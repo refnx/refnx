@@ -82,7 +82,7 @@ def test_add_spline_save(qtbot, tmpdir):
 
 def save_and_reload_experiment(app, tmpdir):
     # save and reopen experiment.
-    sf = Path(str(tmpdir)) / "experiment1.mtft"
+    sf = Path(tmpdir) / "experiment1.mtft"
     # this is just to make sure that the file exists
     with open(sf, "wb") as f:
         f.write(b"sksij")
@@ -91,7 +91,7 @@ def save_and_reload_experiment(app, tmpdir):
     app.on_actionSave_File_triggered()
 
     myapp2 = MotofitMainWindow()
-    myapp2._restore_state(sf)
+    myapp2._restore_state(str(sf))
     return myapp2
 
 
