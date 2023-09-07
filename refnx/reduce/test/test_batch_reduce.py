@@ -127,8 +127,7 @@ class TestReductionCache:
     def test_runs(self):
         assert_equal(len(self.cache.runs((2, 12))), 2)
         assert isinstance(
-            self.cache.runs([2])[0],
-            refnx.reduce.batchreduction.ReductionEntry
+            self.cache.runs([2])[0], refnx.reduce.batchreduction.ReductionEntry
         )
 
     def test_row(self):
