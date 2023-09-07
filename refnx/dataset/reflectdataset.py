@@ -3,7 +3,7 @@ import time
 import re
 
 # from datetime import datetime
-import os.path
+from pathlib import Path
 
 try:
     import xml.etree.cElementTree as ET
@@ -83,7 +83,7 @@ class ReflectDataset(Data1D):
         if np.all(self._mask):
             msk = None
 
-        d = {"filename": self.filename, "msk": msk, "data": self.data}
+        d = {"filename": str(self.filename), "msk": msk, "data": self.data}
         if self.filename is not None:
             return "ReflectDataset(data={filename!r}," " mask={msk!r})".format(
                 **d
@@ -134,8 +134,12 @@ class ReflectDataset(Data1D):
             The file to load the spectrum from, or a str that specifies the
             file name
         """
-        if hasattr(f, "name"):
-            fname = f.name
+        if hasattr(f, "read") and hasattr(f, "write"):
+            if hasattr(f, "name"):
+                # file-like ?
+                fname = f.name
+            else:
+                fname = ""
         else:
             fname = f
         try:
@@ -154,7 +158,7 @@ class ReflectDataset(Data1D):
             dqvals = [float(val) for val in dqtext if len(val)]
 
             self.filename = fname
-            self.name = os.path.splitext(os.path.basename(fname))[0]
+            self.name = Path(fname).stem
             self.data = (qvals, rvals, drvals, dqvals)
         except ET.ParseError:
             super().load(fname)
@@ -186,8 +190,12 @@ class OrsoDataset(Data1D):
             The file to load the spectrum from, or a str/Path that specifies
             the file name
         """
-        if hasattr(f, "name"):
-            fname = f.name
+        if hasattr(f, "read") and hasattr(f, "write"):
+            if hasattr(f, "name"):
+                # file-like ?
+                fname = f.name
+            else:
+                fname = ""
         else:
             fname = f
 
@@ -202,4 +210,4 @@ class OrsoDataset(Data1D):
 
         self.data = _data
         self.filename = fname
-        self.name = os.path.splitext(os.path.basename(fname))[0]
+        self.name = Path(fname).stem

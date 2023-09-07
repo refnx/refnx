@@ -23,7 +23,7 @@ FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THIS SOFTWARE.
 
 """
-import os.path
+from pathlib import Path
 import numpy as np
 import numpy.typing as npt
 from typing import Optional
@@ -112,8 +112,8 @@ class _Abeles_pyopencl:
 
         if self.ctx is None or self.prg is None:
             self.ctx = cl.create_some_context(interactive=False)
-            pth = os.path.dirname(os.path.abspath(__file__))
-            with open(os.path.join(pth, "abeles_pyopencl.cl"), "r") as f:
+            pth = Path(__file__).absolute().parent
+            with open(pth / "abeles_pyopencl.cl", "r") as f:
                 src = f.read()
             self.prg = cl.Program(self.ctx, src).build()
 

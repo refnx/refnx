@@ -1,5 +1,4 @@
-import os.path
-
+from pathlib import Path
 from qtpy import QtCore, QtWidgets, uic
 import numpy as np
 
@@ -20,7 +19,7 @@ import refnx.reduce._app as floc
 matplotlib.use("QtAgg")
 
 
-UI_LOCATION = os.path.join(os.path.dirname(floc.__file__), "ui")
+UI_LOCATION = Path(floc.__file__).parent / "ui"
 
 
 class ManualBeamFinder(QtWidgets.QDialog):
@@ -35,9 +34,7 @@ class ManualBeamFinder(QtWidgets.QDialog):
     def __init__(self, parent=None):
         """ """
         super().__init__()
-        self.dialog = uic.loadUi(
-            os.path.join(UI_LOCATION, "manual_beam.ui"), self
-        )
+        self.dialog = uic.loadUi(UI_LOCATION / "manual_beam.ui", self)
 
         # values for spinboxes
         self._true_centre = 500.0

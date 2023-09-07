@@ -1,4 +1,4 @@
-import os.path
+from pathlib import Path
 import pickle
 import sys
 
@@ -408,11 +408,11 @@ class TestFitterGauss:
     # if the parameters and uncertainties come out correct
 
     @pytest.fixture(autouse=True)
-    def setup_method(self, tmpdir):
-        self.path = os.path.dirname(os.path.abspath(__file__))
-        self.tmpdir = tmpdir.strpath
+    def setup_method(self, tmp_path):
+        self.path = Path(__file__).absolute().parent
+        self.tmp_path = tmp_path
 
-        theoretical = np.loadtxt(os.path.join(self.path, "gauss_data.txt"))
+        theoretical = np.loadtxt(self.path / "gauss_data.txt")
         xvals, yvals, evals = np.hsplit(theoretical, 3)
         xvals = xvals.flatten()
         yvals = yvals.flatten()
@@ -491,7 +491,7 @@ class TestFitterGauss:
         assert_allclose(uncertainties, self.best_weighted_errors, rtol=0.005)
 
         # we're also going to try the checkpointing here.
-        checkpoint = os.path.join(self.tmpdir, "checkpoint.txt")
+        checkpoint = self.tmp_path / "checkpoint.txt"
 
         # compare samples to best_weighted_errors
         np.random.seed(1)

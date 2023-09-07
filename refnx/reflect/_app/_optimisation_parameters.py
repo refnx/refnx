@@ -1,19 +1,17 @@
-import os.path
+from pathlib import Path
 from qtpy import QtWidgets, uic
 from qtpy.QtCore import Slot
 import numpy as np
 
 
-UI_LOCATION = os.path.join(os.path.dirname(os.path.abspath(__file__)), "ui")
+UI_LOCATION = Path(__file__).absolute().parent / "ui"
 
 
 class OptimisationParameterView(QtWidgets.QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
 
-        self.ui = uic.loadUi(
-            os.path.join(UI_LOCATION, "optimisation.ui"), self
-        )
+        self.ui = uic.loadUi(UI_LOCATION / "optimisation.ui", self)
 
     def parameters(self, method):
         """

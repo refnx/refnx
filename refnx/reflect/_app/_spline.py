@@ -1,4 +1,4 @@
-import os.path
+from pathlib import Path
 import json
 
 from qtpy import QtCore, QtGui, QtWidgets, uic
@@ -6,15 +6,15 @@ from qtpy import QtCore, QtGui, QtWidgets, uic
 from refnx.reflect import Spline, SLD
 
 
-pth = os.path.dirname(os.path.abspath(__file__))
-UI_LOCATION = os.path.join(pth, "ui")
+pth = Path(__file__).absolute().parent
+UI_LOCATION = pth / "ui"
 
 
 class SplineDialog(QtWidgets.QDialog):
     def __init__(self, parent=None):
         # persistent lipid leaflet dlg
         QtWidgets.QDialog.__init__(self, parent)
-        self.ui = uic.loadUi(os.path.join(UI_LOCATION, "spline.ui"), self)
+        self.ui = uic.loadUi(UI_LOCATION / "spline.ui", self)
 
         self.knots.setHorizontalHeaderItem(0, QtWidgets.QTableWidgetItem("dz"))
         self.knots.setHorizontalHeaderItem(1, QtWidgets.QTableWidgetItem("vs"))

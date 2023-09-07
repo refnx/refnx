@@ -1,13 +1,12 @@
-import os
-
+from pathlib import Path
 import numpy as np
 from numpy import exp, sin, cos, arctan, array, pi
-from numpy.testing import assert_allclose, assert_
+from numpy.testing import assert_allclose
 
 from refnx.analysis import CurveFitter, Objective, Parameter, Parameters, Model
 
-thisdir, thisfile = os.path.split(__file__)
-NIST_DIR = os.path.join(thisdir, "NIST_STRD")
+
+NIST_DIR = Path(__file__).parent / "NIST_STRD"
 
 
 def ndig(a, b):
@@ -219,7 +218,7 @@ def ReadNistData(dataset, start="start2"):
     NIST STRD data is in a simple, fixed format with line numbers being
     significant!
     """
-    with open(os.path.join(NIST_DIR, "%s.dat" % dataset), "r") as finp:
+    with open(NIST_DIR / f"{dataset}.dat", "r") as finp:
         lines = [line[:-1] for line in finp.readlines()]
 
     model_lines = lines[30:39]

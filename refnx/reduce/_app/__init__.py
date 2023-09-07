@@ -1,7 +1,7 @@
 import sys
 import logging
 import time
-import os.path
+from pathlib import Path
 
 
 def gui():
@@ -10,7 +10,7 @@ def gui():
 
     time_str = time.strftime("%Y%m%d-%H%M%S")
     log_filename = "slim_" + time_str + ".log"
-    log_filename = os.path.join(os.path.expanduser("~"), log_filename)
+    log_filename = Path.home() / log_filename
 
     logging.basicConfig(
         filename=log_filename,

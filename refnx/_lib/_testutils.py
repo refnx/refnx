@@ -3,7 +3,7 @@ Generic test utilities.
 AMENDED FROM scipy version Aug17
 """
 
-import os
+from pathlib import Path
 import re
 import sys
 
@@ -31,7 +31,7 @@ class PytestTester:
         import pytest
 
         module = sys.modules[self.module_name]
-        module_path = os.path.abspath(module.__path__[0])
+        module_path = Path(module.__path__[0]).absolute()
 
         pytest_args = ["-l"]
 

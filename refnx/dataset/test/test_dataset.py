@@ -1,7 +1,7 @@
-import os.path
 from pathlib import Path
+import os
+
 import pytest
-import glob
 
 from refnx.dataset import ReflectDataset, Data1D, load_data, OrsoDataset
 from refnx.dataset.reflectdataset import load_orso
@@ -11,20 +11,21 @@ from numpy.testing import assert_equal
 
 class TestReflectDataset:
     @pytest.fixture(autouse=True)
-    def setup_method(self, tmpdir):
-        self.pth = os.path.dirname(os.path.abspath(__file__))
-        self.cwd = os.getcwd()
-        self.tmpdir = tmpdir.strpath
-        os.chdir(self.tmpdir)
+    def setup_method(self, tmp_path):
+        self.pth = Path(__file__).absolute().parent
+        self.cwd = Path.cwd()
+        self.tmp_path = tmp_path
+        os.chdir(self.tmp_path)
 
     def teardown_method(self):
         os.chdir(self.cwd)
 
     def test_ort_load(self):
-        f = os.path.join(self.pth, "ORSO_data.ort")
+        f = self.pth / "ORSO_data.ort"
+        assert f.exists()
         try:
+            load_orso(str(f))
             load_orso(f)
-            load_orso(Path(f))
         except ImportError:
             # load_orso had problems on Python 3.10, so bypass the test
             return
@@ -37,7 +38,7 @@ class TestReflectDataset:
     def test_load_data(self):
         # test the load_data function by trying to load all the files in the
         # test directory
-        fs = glob.glob("*.*")
+        fs = Path.cwd().glob("*.*")
         fs = [f for f in fs if not f.endswith(".py")]
         fs = [f for f in fs if not f.startswith("coef_")]
 

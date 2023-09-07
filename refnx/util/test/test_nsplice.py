@@ -1,5 +1,4 @@
-import os.path
-
+from pathlib import Path
 import numpy as np
 from numpy.testing import assert_almost_equal, assert_, assert_equal
 import refnx.util.nsplice as nsplice
@@ -9,14 +8,14 @@ __author__ = "anz"
 
 class TestNSplice:
     def setup_method(self):
-        self.path = os.path.dirname(os.path.abspath(__file__))
+        self.path = Path(__file__).absolute().parent
 
-        fname0 = os.path.join(self.path, "PLP0000708.dat")
+        fname0 = self.path / "PLP0000708.dat"
         self.qv0, self.rv0, self.drv0 = np.loadtxt(
             fname0, usecols=(0, 1, 2), unpack=True, skiprows=1
         )
 
-        fname1 = os.path.join(self.path, "PLP0000709.dat")
+        fname1 = self.path / "PLP0000709.dat"
         self.qv1, self.rv1, self.drv1 = np.loadtxt(
             fname1, usecols=(0, 1, 2), unpack=True, skiprows=1
         )

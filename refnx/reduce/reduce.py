@@ -1,6 +1,5 @@
 import string
 from copy import deepcopy
-import os.path
 from pathlib import Path
 from time import gmtime, strftime
 from multiprocessing import Queue
@@ -57,7 +56,7 @@ spin="UNPOLARISED" dim="$_numpointsz:$_numpointsy">
 
 class ReflectReduce:
     def __init__(self, direct, prefix, data_folder=None):
-        self.data_folder = Path(os.path.curdir)
+        self.data_folder = Path.cwd()
         if data_folder is not None:
             self.data_folder = Path(data_folder)
 
@@ -224,7 +223,7 @@ class ReflectReduce:
         if isinstance(reflect, ReflectNexus):
             self.reflected_beam = reflect
         elif type(reflect) is str:
-            reflect = os.path.join(self.data_folder, reflect)
+            reflect = self.data_folder / reflect
             self.reflected_beam = self.reflect_klass(reflect)
         else:
             self.reflected_beam = self.reflect_klass(reflect)
@@ -349,8 +348,8 @@ class ReflectReduce:
 
         fnames = []
         datasets = []
-        datafilename = self.reflected_beam.datafilename
-        datafilename = os.path.basename(datafilename.split(".nx.hdf")[0])
+        datafilename = Path(self.reflected_beam.datafilename).name
+        datafilename = datafilename.split(".nx.hdf")[0]
 
         header = self._create_metadata_header()
 
@@ -984,10 +983,8 @@ class PolarisedReduce:
                 # now write out the corrected reflectivity files
                 fnames = []
                 datasets = []
-                datafilename = reducer.reflected_beam.datafilename
-                datafilename = os.path.basename(
-                    datafilename.split(".nx.hdf")[0]
-                )
+                datafilename = Path(reducer.reflected_beam.datafilename).name
+                datafilename = datafilename.split(".nx.hdf")[0]
 
                 for i in range(np.size(reducer.y_corr, 0)):
                     data = reducer.data(scanpoint=i)
@@ -1319,7 +1316,7 @@ def reduce_stitch(
     combined_dataset = ReflectDataset()
 
     if data_folder is None:
-        data_folder = os.getcwd()
+        data_folder = Path.cwd()
 
     if prefix == "PLP":
         reducer_klass = PlatypusReduce
@@ -1329,12 +1326,8 @@ def reduce_stitch(
         raise ValueError("Incorrect prefix specified")
 
     for index, val in enumerate(zipped):
-        reflect_datafile = os.path.join(
-            data_folder, number_datafile(val[0], prefix=prefix)
-        )
-        direct_datafile = os.path.join(
-            data_folder, number_datafile(val[1], prefix=prefix)
-        )
+        reflect_datafile = data_folder / number_datafile(val[0], prefix=prefix)
+        direct_datafile = data_folder / number_datafile(val[1], prefix=prefix)
 
         reducer = reducer_klass(direct_datafile)
         datasets, fnames = reducer.reduce(
@@ -1440,7 +1433,7 @@ class AutoReducer:
         for direct_beam, ro, scale_factor in zipped:
             rn = self.reflect_klass(direct_beam)
             db = self.redn_klass(rn)
-            fname = os.path.basename(rn.cat.filename)
+            fname = Path(rn.cat.filename).name
             self.direct_beams[fname] = {
                 "reflectnexus": rn,
                 "reducer": db,
@@ -1476,7 +1469,7 @@ class AutoReducer:
                 event = self.queue.get()
                 # print(event.src_path)
                 rb = self.reflect_klass(event.src_path)
-                fname = os.path.basename(rb.cat.filename)
+                fname = Path(rb.cat.filename).name
                 db = self.match_direct_beam(rb)
 
                 if db is not None:

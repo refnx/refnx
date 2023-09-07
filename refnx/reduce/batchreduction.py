@@ -5,6 +5,7 @@ Batch reduction of reflectometry data based on a spreadsheet
 """
 import collections
 import numpy as np
+import os
 import os.path
 import pandas as pd
 import pickle

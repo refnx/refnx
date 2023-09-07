@@ -1,8 +1,6 @@
 import io
 import os
-import os.path
 from pathlib import Path
-import glob
 import argparse
 import re
 import shutil
@@ -111,7 +109,8 @@ def catalogue(start, stop, data_folder=None, prefix="PLP", keys=None):
     if data_folder is None:
         data_folder = "."
 
-    files = glob.glob(os.path.join(data_folder, prefix + "*.nx.hdf"))
+    files = Path(data_folder).glob(f"{prefix}*.nx.hdf")
+    files = list(files)
     files.sort()
     files = [
         file
@@ -161,8 +160,8 @@ class Catalogue:
         self.prefix = None
 
         d = {}
-        file_path = os.path.realpath(h5d.filename)
-        d["path"] = os.path.dirname(file_path)
+        file_path = Path(h5d.filename).resolve()
+        d["path"] = Path(file_path).parent
         d["filename"] = h5d.filename
         try:
             d["end_time"] = h5d["entry1/end_time"][0]
@@ -922,7 +921,7 @@ def basename_datafile(pth):
     'c'
     """
 
-    basename = os.path.basename(pth)
+    basename = Path(pth).name
     return basename.split(".nx.hdf")[0]
 
 
@@ -986,7 +985,7 @@ def datafile_number(fname, prefix="PLP"):
     rstr = ".*" + prefix + "([0-9]{7}).nx.hdf"
     regex = re.compile(rstr)
 
-    _fname = os.path.basename(fname)
+    _fname = Path(fname).name
     r = regex.search(_fname)
 
     if r:
@@ -1788,7 +1787,7 @@ class ReflectNexus:
         if peak_pos == -1:
             # you always want to find the beam manually
             ret = manual_beam_find(
-                detector, detector_sd, os.path.basename(cat.filename)
+                detector, detector_sd, Path(cat.filename).name
             )
             beam_centre, beam_sd, lopx, hipx, bp = ret
 
@@ -1815,7 +1814,7 @@ class ReflectNexus:
                 detector_sd,
                 tol=(atol, rtol),
                 manual_beam_find=manual_beam_find,
-                name=os.path.basename(cat.filename),
+                name=Path(cat.filename).name,
             )
             beam_centre, beam_sd, lopx, hipx, full_backgnd_mask = ret
         else:
@@ -2141,11 +2140,11 @@ class ReflectNexus:
         if event_folder is not None:
             _eventpath = event_folder
 
-        stream_filename = os.path.join(
-            _eventpath,
-            event_directory_name,
-            f"DATASET_{scanpoint}",
-            "EOS.bin",
+        stream_filename = (
+            Path(_eventpath)
+            / event_directory_name
+            / f"DATASET_{scanpoint}"
+            / "EOS.bin"
         )
 
         with io.open(stream_filename, "rb") as f:
@@ -3306,11 +3305,11 @@ def accumulate_HDF_files(files):
     if not pth:
         raise ValueError("All files must refer to an hdf5 file")
 
-    new_name = "ADD_" + os.path.basename(pth)
+    new_name = "ADD_" + Path(pth).name
 
-    shutil.copy(pth, os.path.join(os.getcwd(), new_name))
+    shutil.copy(pth, Path(".") / new_name)
 
-    master_file = os.path.join(os.getcwd(), new_name)
+    master_file = Path(".") / new_name
     with h5py.File(master_file, "r+") as h5master:
         # now go through each file and accumulate numbers:
         for file in files[1:]:
@@ -3443,8 +3442,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     for file in args.file_list:
-        fname = "PLP%07d.nx.hdf" % file
-        path = os.path.join(args.bdir, fname)
+        fname = f"PLP{file:07d}.nx.hdf"
+        path = Path(args.bdir) / fname
         try:
             a = PlatypusNexus(path)
             a.process(
@@ -3456,7 +3455,7 @@ if __name__ == "__main__":
             )
 
             fname = "PLP%07d.spectrum" % file
-            out_fname = os.path.join(args.bdir, fname)
+            out_fname = path / fname
 
             integrate = args.integrate
             if args.integrate < 0:

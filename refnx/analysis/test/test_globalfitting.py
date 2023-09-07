@@ -2,7 +2,7 @@
 Test co-refinement of datasets by fitting 3 neutron reflectivity datasets. The
 overall construction of the models can be done in a few different ways.
 """
-import os.path
+from pathlib import Path
 
 import numpy as np
 from numpy.testing import (
@@ -21,7 +21,7 @@ SEED = 1
 
 class TestGlobalFitting:
     def setup_method(self):
-        self.pth = os.path.dirname(os.path.abspath(__file__))
+        self.pth = Path(__file__).absolute().parent
 
         self.si = SLD(2.07, name="Si")
         self.sio2 = SLD(3.47, name="SiO2")
@@ -37,7 +37,7 @@ class TestGlobalFitting:
             self.si | self.sio2_l | self.polymer_l | self.d2o(0, 3)
         )
 
-        fname = os.path.join(self.pth, "c_PLP0011859_q.txt")
+        fname = self.pth / "c_PLP0011859_q.txt"
 
         self.dataset = ReflectDataset(fname)
         self.model = ReflectModel(self.structure, bkg=2e-7)
@@ -89,9 +89,9 @@ class TestGlobalFitting:
 
     def test_multipledataset_corefinement(self):
         # test corefinement of three datasets
-        data361 = ReflectDataset(os.path.join(self.pth, "e361r.txt"))
-        data365 = ReflectDataset(os.path.join(self.pth, "e365r.txt"))
-        data366 = ReflectDataset(os.path.join(self.pth, "e366r.txt"))
+        data361 = ReflectDataset(self.pth / "e361r.txt")
+        data365 = ReflectDataset(self.pth / "e365r.txt")
+        data366 = ReflectDataset(self.pth / "e366r.txt")
 
         si = SLD(2.07, name="Si")
         sio2 = SLD(3.47, name="SiO2")

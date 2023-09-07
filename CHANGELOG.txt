@@ -509,3 +509,5 @@ in 0.1.13.
 - silence RuntimeWarning if the foreground width is found to be wider than
   predicted.
 - fix pandas warnings in batchreduction.
+- wholesale conversion of os.path to pathlib.Path. Hopefully not too many
+  bugs introduced as a result of this.

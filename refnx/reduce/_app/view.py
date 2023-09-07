@@ -1,5 +1,5 @@
 import pickle
-import os.path
+from pathlib import Path
 import logging
 
 from qtpy.compat import getopenfilename, getsavefilename
@@ -10,7 +10,7 @@ from .plot import SlimPlotWindow
 from .model import ReductionTableModel, ReductionState
 
 
-UI_LOCATION = os.path.join(os.path.dirname(os.path.abspath(__file__)), "ui")
+UI_LOCATION = Path(__file__).absolute().parent / "ui"
 
 
 class SlimWindow(QtWidgets.QMainWindow):
@@ -21,7 +21,7 @@ class SlimWindow(QtWidgets.QMainWindow):
     def __init__(self, parent=None):
         super().__init__(parent)
 
-        self.ui = uic.loadUi(os.path.join(UI_LOCATION, "slim.ui"), self)
+        self.ui = uic.loadUi(UI_LOCATION / "slim.ui", self)
 
         # event dialogue
         self.event_dialog = EventDialog(self)
@@ -165,7 +165,7 @@ class SlimWindow(QtWidgets.QMainWindow):
     @QtCore.Slot()
     def on_data_directory_editingFinished(self):
         directory = self.ui.data_directory.text()
-        if os.path.isdir(directory):
+        if Path(directory).is_dir():
             self._reduction_state.data_directory = directory
         else:
             self.ui.data_directory.setText(
@@ -182,7 +182,7 @@ class SlimWindow(QtWidgets.QMainWindow):
     @QtCore.Slot()
     def on_streamed_directory_editingFinished(self):
         directory = self.ui.streamed_directory.text()
-        if os.path.isdir(directory):
+        if Path(directory).is_dir():
             self._reduction_state.streamed_directory = directory
         else:
             self.ui.streamed_directory.setText(
@@ -199,7 +199,7 @@ class SlimWindow(QtWidgets.QMainWindow):
     @QtCore.Slot()
     def on_output_directory_editingFinished(self):
         directory = self.ui.output_directory.text()
-        if os.path.isdir(directory):
+        if Path(directory).is_dir():
             self._reduction_state.output_directory = directory
         else:
             self.output_directory.setText(
@@ -219,16 +219,17 @@ class SlimWindow(QtWidgets.QMainWindow):
     def on_actionSave_As_triggered(self):
         path = self._reduction_state.save_state_path
         initial_dir = "~/"
-        if path is not None and os.path.isfile(path):
-            initial_dir = os.path.dirname(path)
+        if path is not None and Path(path).is_file():
+            initial_dir = Path(path).parent
 
         fpath = getsavefilename(
             basedir=initial_dir, filters="slim files (*.slim)"
         )
 
         if fpath[0]:
-            root, ext = os.path.splitext(fpath[0])
-            fpath = root + ".slim"
+            pth = Path(fpath[0])
+            fpath = str(pth.parent / pth.stem) + ".slim"
+
             self._reduction_state.save_state_path = fpath
             self.on_actionSave_triggered()
 
@@ -236,14 +237,14 @@ class SlimWindow(QtWidgets.QMainWindow):
     def on_actionLoad_triggered(self):
         path = self._reduction_state.save_state_path
         initial_dir = "~/"
-        if path is not None and os.path.isfile(path):
-            initial_dir = os.path.dirname(path)
+        if path is not None and Path(path).is_file():
+            initial_dir = Path(path).parent
 
         fpath = getopenfilename(
             self, basedir=initial_dir, filters="slim files (*.slim)"
         )
 
-        if os.path.isfile(fpath[0]):
+        if Path(fpath[0]).is_file():
             with open(fpath[0], "rb") as f:
                 try:
                     state = pickle.load(f)
@@ -262,12 +263,10 @@ class SlimWindow(QtWidgets.QMainWindow):
 class EventDialog(QtWidgets.QDialog):
     def __init__(self, parent=None):
         QtWidgets.QDialog.__init__(self, parent)
-        self.ui = uic.loadUi(os.path.join(UI_LOCATION, "event.ui"), self)
+        self.ui = uic.loadUi(UI_LOCATION / "event.ui", self)
 
 
 class ReductionOptionsDialog(QtWidgets.QDialog):
     def __init__(self, parent=None):
         QtWidgets.QDialog.__init__(self, parent)
-        self.ui = uic.loadUi(
-            os.path.join(UI_LOCATION, "reduction_options.ui"), self
-        )
+        self.ui = uic.loadUi(UI_LOCATION / "reduction_options.ui", self)

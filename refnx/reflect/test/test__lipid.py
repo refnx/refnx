@@ -1,9 +1,8 @@
 import numpy as np
-import os.path
+from pathlib import Path
 from numpy.testing import (
     assert_almost_equal,
     assert_equal,
-    assert_,
     assert_allclose,
 )
 from scipy.optimize._constraints import PreparedConstraint
@@ -116,9 +115,9 @@ class TestLipidLeaflet:
 
 
 def test_lipid_leaflet_example():
-    pth = os.path.join(os.path.dirname(refnx.__file__), "analysis", "test")
+    pth = Path(refnx.__file__).parent / "analysis" / "test"
 
-    data_d2o = ReflectDataset(os.path.join(pth, "c_PLP0016596.dat"))
+    data_d2o = ReflectDataset(pth / "c_PLP0016596.dat")
     data_d2o.name = "d2o"
 
     si = SLD(2.07 + 0j)

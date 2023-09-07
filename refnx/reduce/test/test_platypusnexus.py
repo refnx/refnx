@@ -40,8 +40,8 @@ from refnx.reduce.platypusnexus import (
 class TestSpinSet(object):
     @pytest.mark.usefixtures("no_data_directory")
     @pytest.fixture(autouse=True)
-    def setup_method(self, tmpdir, data_directory):
-        self.pth = Path(data_directory) / "reduce" / "PNR_files"
+    def setup_method(self, tmp_path, data_directory):
+        self.pth = data_directory / "reduce" / "PNR_files"
 
         def fpath(f):
             return self.pth / f
@@ -66,10 +66,10 @@ class TestSpinSet(object):
                 up_up=fpath("PLP0008861.nx.hdf"),
             )
 
-        self.cwd = os.getcwd()
+        self.cwd = Path.cwd()
 
-        self.tmpdir = tmpdir.strpath
-        os.chdir(self.tmpdir)
+        self.tmp_path = tmp_path
+        os.chdir(self.tmp_path)
         return 0
 
     def test_spin_channels(self):
@@ -126,15 +126,15 @@ class TestSpinSet(object):
 class TestPlatypusNexus(object):
     @pytest.mark.usefixtures("no_data_directory")
     @pytest.fixture(autouse=True)
-    def setup_method(self, tmpdir, data_directory):
-        self.pth = Path(data_directory) / "reduce"
+    def setup_method(self, tmp_path, data_directory):
+        self.pth = data_directory / "reduce"
 
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", RuntimeWarning)
             self.f113 = PlatypusNexus(self.pth / "PLP0011613.nx.hdf")
 
             # to ensure that file can be opened with a Path
-            pth = Path(self.pth) / "PLP0011641.nx.hdf"
+            pth = self.pth / "PLP0011641.nx.hdf"
             self.f641 = PlatypusNexus(pth)
 
             # These PNR datasets all have different flipper settings
@@ -151,10 +151,10 @@ class TestPlatypusNexus(object):
                 self.pth / "PNR_files/PLP0008864.nx.hdf"
             )
 
-        self.cwd = os.getcwd()
+        self.cwd = Path.cwd()
 
-        self.tmpdir = Path(tmpdir.strpath)
-        os.chdir(self.tmpdir)
+        self.tmp_path = tmp_path
+        os.chdir(self.tmp_path)
         return 0
 
     def teardown_method(self):
@@ -313,11 +313,11 @@ class TestPlatypusNexus(object):
         self.f113.process()
 
         # can save the spectra by supplying a filename
-        self.f113.write_spectrum_xml(self.tmpdir / "test.xml")
-        self.f113.write_spectrum_dat(self.tmpdir / "test.dat")
+        self.f113.write_spectrum_xml(self.tmp_path / "test.xml")
+        self.f113.write_spectrum_dat(self.tmp_path / "test.dat")
 
         # can save by supplying file handle:
-        with open(self.tmpdir / "test.xml", "wb") as f:
+        with open(self.tmp_path / "test.xml", "wb") as f:
             self.f113.write_spectrum_xml(f)
 
     def test_accumulate_files(self):
@@ -329,7 +329,7 @@ class TestPlatypusNexus(object):
         try:
             f8 = h5py.File(self.pth / "PLP0000708.nx.hdf", "r")
             f9 = h5py.File(self.pth / "PLP0000709.nx.hdf", "r")
-            fadd = h5py.File(self.tmpdir / "ADD_PLP0000708.nx.hdf", "r")
+            fadd = h5py.File(self.tmp_path / "ADD_PLP0000708.nx.hdf", "r")
 
             f8d = f8["entry1/data/hmm"][0]
             f9d = f9["entry1/data/hmm"][0]
@@ -352,14 +352,14 @@ class TestPlatypusNexus(object):
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", RuntimeWarning)
             # it should be processable
-            fadd = PlatypusNexus(Path(os.getcwd()) / "ADD_PLP0000708.nx.hdf")
+            fadd = PlatypusNexus(Path.cwd() / "ADD_PLP0000708.nx.hdf")
             fadd.process()
 
             # it should also be reduceable
             reducer = PlatypusReduce(self.pth / "PLP0000711.nx.hdf")
 
             datasets, reduced = reducer.reduce(
-                Path(os.getcwd()) / "ADD_PLP0000708.nx.hdf"
+                Path.cwd() / "ADD_PLP0000708.nx.hdf"
             )
             assert_("y" in reduced)
 
@@ -441,7 +441,7 @@ class TestPlatypusNexus(object):
             [0.05600541, 0.05879208, 0.04902215, 0.04425413, 0.05487956]
         )
 
-        fname = os.path.join(self.pth, "flood.h5")
+        fname = self.pth / "flood.h5"
         with h5py.File(fname, "r") as f:
             norm, norm_sd = create_detector_norm(f, 3.5, -3.5, axis=3)
 
@@ -499,17 +499,17 @@ class TestPlatypusNexus(object):
 class TestSpatzNexus:
     @pytest.mark.usefixtures("no_data_directory")
     @pytest.fixture(autouse=True)
-    def setup_method(self, tmpdir, data_directory):
-        self.pth = Path(data_directory) / "reduce"
+    def setup_method(self, tmp_path, data_directory):
+        self.pth = data_directory / "reduce"
 
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", RuntimeWarning)
             pth = self.pth / "SPZ0000342.nx.hdf"
             self.f342 = SpatzNexus(pth)
-        self.cwd = os.getcwd()
+        self.cwd = Path.cwd()
 
-        self.tmpdir = tmpdir.strpath
-        os.chdir(self.tmpdir)
+        self.tmp_path = tmp_path
+        os.chdir(self.tmp_path)
         return 0
 
     def teardown_method(self):

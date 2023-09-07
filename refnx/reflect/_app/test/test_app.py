@@ -1,6 +1,5 @@
-import os.path
 import glob
-from os.path import join as pjoin
+from pathlib import Path
 import pickle
 
 import pytest
@@ -36,25 +35,25 @@ def mysetup(qtbot):
 
 
 @pytest.mark.skipif(QTBOT_MISSING, reason="pytest-qt not installed")
-def test_myapp(qtbot, tmpdir):
+def test_myapp(qtbot, tmp_path):
     myapp, model = mysetup(qtbot)
 
     # test if we can load a known-good datafile, and save and load the
     # an experiment
     ###########################################
     # load a file
-    pth = os.path.dirname(refd.__file__)
-    f = pjoin(pth, "test", "c_PLP0000708.dat")
+    pth = Path(refd.__file__).parent
+    f = pth / "test" / "c_PLP0000708.dat"
     myapp.load_data([f])
     assert len(model.datastore) == 2
 
-    myapp2 = save_and_reload_experiment(myapp, tmpdir)
+    myapp2 = save_and_reload_experiment(myapp, tmp_path)
     model2 = myapp2.treeModel
     assert len(model2.datastore) == 2
 
 
 @pytest.mark.skipif(QTBOT_MISSING, reason="pytest-qt not installed")
-def test_add_spline_save(qtbot, tmpdir):
+def test_add_spline_save(qtbot, tmp_path):
     # test if we can add a spline to a model and save an experiment
     myapp, model = mysetup(qtbot)
 
@@ -78,12 +77,12 @@ def test_add_spline_save(qtbot, tmpdir):
     # add a Spline after the slab
     component = Spline(50, [-1.0, -1.0], [0.33, 0.33], name="spline")
     structure_node.insert_component(1, component)
-    save_and_reload_experiment(myapp, tmpdir)
+    save_and_reload_experiment(myapp, tmp_path)
 
 
-def save_and_reload_experiment(app, tmpdir):
+def save_and_reload_experiment(app, tmp_path):
     # save and reopen experiment.
-    sf = pjoin(str(tmpdir), "experiment1.mtft")
+    sf = tmp_path / "experiment1.mtft"
     # this is just to make sure that the file exists
     with open(sf, "wb") as f:
         f.write(b"sksij")
@@ -97,13 +96,13 @@ def save_and_reload_experiment(app, tmpdir):
 
 
 @pytest.mark.skipif(QTBOT_MISSING, reason="pytest-qt not installed")
-def test_mcmc_fit_and_reprocess(qtbot, tmpdir):
+def test_mcmc_fit_and_reprocess(qtbot, tmp_path):
     # test if we can add a spline to a model and save an experiment
     myapp, model = mysetup(qtbot)
 
     # load a dataset
-    pth = os.path.dirname(os.path.abspath(refnx.analysis.__file__))
-    f_data = pjoin(pth, "test", "e361r.txt")
+    pth = Path(refnx.analysis.__file__).absolute().parent
+    f_data = pth / "test" / "e361r.txt"
     myapp.load_data([f_data])
 
     fit_list = myapp.currently_fitting_model
@@ -121,7 +120,7 @@ def test_mcmc_fit_and_reprocess(qtbot, tmpdir):
     rmodel.bkg.setp(vary=True, bounds=(1.0e-6, 5e-6))
     s[-2].thick.setp(vary=True, bounds=(200, 300))
     s[-2].sld.real.setp(vary=True, bounds=(0.0, 2.0))
-    mod_file_name = pjoin(tmpdir, "model.pkl")
+    mod_file_name = tmp_path / "model.pkl"
 
     with open(mod_file_name, "wb") as f:
         pickle.dump(rmodel, f)
@@ -135,13 +134,13 @@ def test_mcmc_fit_and_reprocess(qtbot, tmpdir):
     datastore = model.datastore
     data_objects = [datastore[name] for name in names_to_fit]
 
-    kwds = {"nsteps": 5, "folder": tmpdir, "nplot": 20}
+    kwds = {"nsteps": 5, "folder": tmp_path, "nplot": 20}
     myapp.fit_data_objects(data_objects, mcmc_kws=kwds)
-    assert os.path.isfile(pjoin(tmpdir, "steps_corner.png"))
+    assert (tmp_path / "steps_corner.png").exists()
 
 
 @pytest.mark.skipif(QTBOT_MISSING, reason="pytest-qt not installed")
-def test_requirements(qtbot, tmpdir):
+def test_requirements(qtbot, tmp_path):
     # test if we can add a spline to a model and save an experiment
     myapp, model = mysetup(qtbot)
     assert len(myapp.requirements())
