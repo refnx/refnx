@@ -1,6 +1,5 @@
-import os.path
 import glob
-from os.path import join as pjoin
+from pathlib import Path
 import pickle
 
 import pytest
@@ -43,8 +42,8 @@ def test_myapp(qtbot, tmpdir):
     # an experiment
     ###########################################
     # load a file
-    pth = os.path.dirname(refd.__file__)
-    f = pjoin(pth, "test", "c_PLP0000708.dat")
+    pth = Path(refd.__file__).parent
+    f = pth / "test" / "c_PLP0000708.dat"
     myapp.load_data([f])
     assert len(model.datastore) == 2
 
@@ -83,7 +82,7 @@ def test_add_spline_save(qtbot, tmpdir):
 
 def save_and_reload_experiment(app, tmpdir):
     # save and reopen experiment.
-    sf = pjoin(str(tmpdir), "experiment1.mtft")
+    sf = Path(str(tmpdir)) / "experiment1.mtft"
     # this is just to make sure that the file exists
     with open(sf, "wb") as f:
         f.write(b"sksij")
@@ -102,8 +101,8 @@ def test_mcmc_fit_and_reprocess(qtbot, tmpdir):
     myapp, model = mysetup(qtbot)
 
     # load a dataset
-    pth = os.path.dirname(os.path.abspath(refnx.analysis.__file__))
-    f_data = pjoin(pth, "test", "e361r.txt")
+    pth = Path(refnx.analysis.__file__).absolute().parent
+    f_data = pth / "test" / "e361r.txt"
     myapp.load_data([f_data])
 
     fit_list = myapp.currently_fitting_model
@@ -121,7 +120,7 @@ def test_mcmc_fit_and_reprocess(qtbot, tmpdir):
     rmodel.bkg.setp(vary=True, bounds=(1.0e-6, 5e-6))
     s[-2].thick.setp(vary=True, bounds=(200, 300))
     s[-2].sld.real.setp(vary=True, bounds=(0.0, 2.0))
-    mod_file_name = pjoin(tmpdir, "model.pkl")
+    mod_file_name = Path(tmpdir) / "model.pkl"
 
     with open(mod_file_name, "wb") as f:
         pickle.dump(rmodel, f)
@@ -137,7 +136,7 @@ def test_mcmc_fit_and_reprocess(qtbot, tmpdir):
 
     kwds = {"nsteps": 5, "folder": tmpdir, "nplot": 20}
     myapp.fit_data_objects(data_objects, mcmc_kws=kwds)
-    assert os.path.isfile(pjoin(tmpdir, "steps_corner.png"))
+    assert (Path(tmpdir) / "steps_corner.png").exists()
 
 
 @pytest.mark.skipif(QTBOT_MISSING, reason="pytest-qt not installed")

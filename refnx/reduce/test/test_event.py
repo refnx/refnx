@@ -1,4 +1,3 @@
-from os.path import join as pjoin
 from pathlib import Path
 import mmap
 import os

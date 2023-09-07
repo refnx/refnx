@@ -1,12 +1,12 @@
 import os
+
 import os.path
-from os.path import join as pjoin
 from pathlib import Path
 import warnings
 import pandas
 import tempfile
 
-from numpy.testing import assert_equal, assert_
+from numpy.testing import assert_equal
 import pytest
 
 from refnx.reduce import BatchReducer
@@ -19,10 +19,10 @@ class TestReduce:
     @pytest.mark.usefixtures("no_data_directory")
     @pytest.fixture(autouse=True)
     def setup_method(self, tmpdir, data_directory):
-        self.pth = pjoin(data_directory, "reduce")
+        self.pth = Path(data_directory) / "reduce"
         self.cwd = os.getcwd()
 
-        self.tmpdir = tmpdir.strpath
+        self.tmpdir = Path(tmpdir.strpath)
         os.chdir(self.tmpdir)
         return 0
 
@@ -30,8 +30,8 @@ class TestReduce:
         os.chdir(self.cwd)
 
     def test_batch_platypus_reduce(self):
-        filename = Path(self.pth) / "test_batch_reduction.xls"
-        df = Path(self.pth)
+        filename = self.pth / "test_batch_reduction.xls"
+        df = self.pth
         # warnings filter for pixel size
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", RuntimeWarning)
@@ -42,7 +42,7 @@ class TestReduce:
             b.reduce(show=False)
 
     def test_batch_spatz_reduce(self):
-        filename = pjoin(self.pth, "test_batch_spatz_reduction.xls")
+        filename = self.pth / "test_batch_spatz_reduction.xls"
         b = BatchReducer(
             filename,
             data_folder=self.pth,
@@ -53,7 +53,7 @@ class TestReduce:
         b.reduce(show=False)
 
     def test_batch_reduce_ipython(self):
-        filename = pjoin(self.pth, "test_batch_reduction.xls")
+        filename = self.pth / "test_batch_reduction.xls"
 
         # warnings filter for pixel size
         with warnings.catch_warnings():
@@ -126,9 +126,9 @@ class TestReductionCache:
 
     def test_runs(self):
         assert_equal(len(self.cache.runs((2, 12))), 2)
-        assert_(
-            type(self.cache.runs([2])[0])
-            is refnx.reduce.batchreduction.ReductionEntry
+        assert isinstance(
+            self.cache.runs([2])[0],
+            refnx.reduce.batchreduction.ReductionEntry
         )
 
     def test_row(self):
@@ -169,25 +169,25 @@ class TestReductionCache:
 
         # presence of this file would indicate a failure of
         # the previous persistent=False
-        assert not os.path.exists(self.cache._default_persistent_cache)
+        assert not Path(self.cache._default_persistent_cache).exists()
 
         # make a new cache that has persistence with a default name
         cache = refnx.reduce.batchreduction.ReductionCache(persistent=True)
         self._addentry(self.entries[0], dest=cache)
         assert_equal(len(cache), 1)
         assert cache._cache_filename() == self.cache._default_persistent_cache
-        assert os.path.exists(cache._cache_filename())
+        assert Path(cache._cache_filename()).exists()
 
         # check that the persistent cache has has been dropped
         cache.drop_cache()
-        assert not os.path.exists(cache._cache_filename())
+        assert not Path(cache._cache_filename()).exists()
 
         # check that the cache filename can be set
-        cachename = tmpdir.mkdir("test").join("redn-test.pickle").strpath
+        cachename = tmpdir.mkdir("test") / ("redn-test.pickle")
 
         # make a new cache that has persistence with specified filename
         cache = refnx.reduce.batchreduction.ReductionCache(
-            persistent=cachename
+            persistent=str(cachename)
         )
 
         assert cache._cache_filename() == cachename
@@ -196,7 +196,7 @@ class TestReductionCache:
         assert_equal(len(cache), 1)
 
         # check that the persistent cache has been written
-        assert os.path.exists(cache._cache_filename())
+        assert Path(cache._cache_filename()).exists()
         assert os.path.getsize(cache._cache_filename()) > 0
 
         # check that the persistent cache is loaded again
