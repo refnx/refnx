@@ -728,7 +728,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         items = self.data_object_selector.data_objects.selectedItems()
         names = [item.text() for item in items]
 
-        cwd = Path(".").resolve()
+        cwd = Path.cwd()
         suggested_name = cwd / "coefficients.csv"
         fname, ok = getsavefilename(
             self, "Exported file name:", suggested_name
@@ -766,7 +766,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         objective = self.create_objective(data_objects)
         code = code_fragment(objective)
 
-        cwd = Path(".").resolve()
+        cwd = Path.cwd()
         suggested_name = cwd / "mcmc.py"
         modelFileName, ok = getsavefilename(
             self, "Save code fragment as:", str(suggested_name)

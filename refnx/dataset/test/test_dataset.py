@@ -1,5 +1,4 @@
 from pathlib import Path
-import glob
 import os
 
 import pytest
@@ -14,7 +13,7 @@ class TestReflectDataset:
     @pytest.fixture(autouse=True)
     def setup_method(self, tmp_path):
         self.pth = Path(__file__).absolute().parent
-        self.cwd = Path(".").resolve()
+        self.cwd = Path.cwd()
         self.tmp_path = tmp_path
         os.chdir(self.tmp_path)
 
@@ -39,7 +38,7 @@ class TestReflectDataset:
     def test_load_data(self):
         # test the load_data function by trying to load all the files in the
         # test directory
-        fs = glob.glob("*.*")
+        fs = Path.cwd().glob("*.*")
         fs = [f for f in fs if not f.endswith(".py")]
         fs = [f for f in fs if not f.startswith("coef_")]
 

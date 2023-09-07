@@ -1,7 +1,6 @@
 import io
 import os
 from pathlib import Path
-import glob
 import argparse
 import re
 import shutil
@@ -110,7 +109,8 @@ def catalogue(start, stop, data_folder=None, prefix="PLP", keys=None):
     if data_folder is None:
         data_folder = "."
 
-    files = glob.glob(str(Path(data_folder) / f"{prefix}*.nx.hdf"))
+    files = Path(data_folder).glob(f"{prefix}*.nx.hdf")
+    files = list(files)
     files.sort()
     files = [
         file

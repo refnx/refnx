@@ -66,7 +66,7 @@ class TestSpinSet(object):
                 up_up=fpath("PLP0008861.nx.hdf"),
             )
 
-        self.cwd = Path(".").resolve()
+        self.cwd = Path.cwd()
 
         self.tmp_path = tmp_path
         os.chdir(self.tmp_path)
@@ -151,7 +151,7 @@ class TestPlatypusNexus(object):
                 self.pth / "PNR_files/PLP0008864.nx.hdf"
             )
 
-        self.cwd = Path(".").resolve()
+        self.cwd = Path.cwd()
 
         self.tmp_path = tmp_path
         os.chdir(self.tmp_path)
@@ -352,14 +352,14 @@ class TestPlatypusNexus(object):
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", RuntimeWarning)
             # it should be processable
-            fadd = PlatypusNexus(Path(".").resolve() / "ADD_PLP0000708.nx.hdf")
+            fadd = PlatypusNexus(Path.cwd() / "ADD_PLP0000708.nx.hdf")
             fadd.process()
 
             # it should also be reduceable
             reducer = PlatypusReduce(self.pth / "PLP0000711.nx.hdf")
 
             datasets, reduced = reducer.reduce(
-                Path(".").resolve() / "ADD_PLP0000708.nx.hdf"
+                Path.cwd() / "ADD_PLP0000708.nx.hdf"
             )
             assert_("y" in reduced)
 
@@ -506,7 +506,7 @@ class TestSpatzNexus:
             warnings.simplefilter("ignore", RuntimeWarning)
             pth = self.pth / "SPZ0000342.nx.hdf"
             self.f342 = SpatzNexus(pth)
-        self.cwd = Path(".").resolve()
+        self.cwd = Path.cwd()
 
         self.tmp_path = tmp_path
         os.chdir(self.tmp_path)

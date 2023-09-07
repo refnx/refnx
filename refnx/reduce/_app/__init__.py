@@ -10,7 +10,7 @@ def gui():
 
     time_str = time.strftime("%Y%m%d-%H%M%S")
     log_filename = "slim_" + time_str + ".log"
-    log_filename = Path("~").expanduser() / log_filename
+    log_filename = Path.home() / log_filename
 
     logging.basicConfig(
         filename=log_filename,

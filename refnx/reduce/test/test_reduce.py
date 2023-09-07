@@ -30,7 +30,7 @@ class TestPlatypusReduce:
     def setup_method(self, tmp_path, data_directory):
         self.pth = data_directory / "reduce"
 
-        self.cwd = Path(".").resolve()
+        self.cwd = Path.cwd()
         self.tmp_path = tmp_path
         os.chdir(self.tmp_path)
         return 0
@@ -195,7 +195,7 @@ class TestSpatzReduce:
     def setup_method(self, tmp_path, data_directory):
         self.pth = data_directory / "reduce"
 
-        self.cwd = Path(".").resolve()
+        self.cwd = Path.cwd()
         self.tmp_path = tmp_path
         os.chdir(self.tmp_path)
         return 0
@@ -265,7 +265,7 @@ class TestPolarisedReduce:
     def setup_method(self, tmp_path, data_directory):
         self.pth = data_directory / "reduce" / "PNR_files"
 
-        self.cwd = Path(".").resolve()
+        self.cwd = Path.cwd()
         self.tmp_path = tmp_path
         os.chdir(self.tmp_path)
         return 0
@@ -623,7 +623,7 @@ class TestPolarisationEfficiency:
     def setup_method(self, tmp_path, data_directory):
         self.pth = data_directory / "reduce" / "PNR_files"
 
-        self.cwd = Path(".").resolve()
+        self.cwd = Path.cwd()
         self.tmp_path = tmp_path
         os.chdir(self.tmp_path)
         return 0

@@ -56,7 +56,7 @@ spin="UNPOLARISED" dim="$_numpointsz:$_numpointsy">
 
 class ReflectReduce:
     def __init__(self, direct, prefix, data_folder=None):
-        self.data_folder = Path(".").resolve()
+        self.data_folder = Path.cwd()
         if data_folder is not None:
             self.data_folder = Path(data_folder)
 
@@ -1316,7 +1316,7 @@ def reduce_stitch(
     combined_dataset = ReflectDataset()
 
     if data_folder is None:
-        data_folder = Path(".").resolve()
+        data_folder = Path.cwd()
 
     if prefix == "PLP":
         reducer_klass = PlatypusReduce

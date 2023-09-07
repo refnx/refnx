@@ -41,7 +41,7 @@ class ProcessMCMCDialog(QtWidgets.QDialog):
         self.chain = chain
 
         if folder is None:
-            self.folder = Path(".").resolve()
+            self.folder = Path.cwd()
 
         if self.chain is None:
             model_file_name, ok = getopenfilename(self, "Select chain file")
@@ -119,7 +119,7 @@ class ProcessMCMCDialog(QtWidgets.QDialog):
 def _process_chain(objective, chain, nburn, nthin, folder=None):
     # processes the chain for the ProcessMCMCDialog
     if folder is None:
-        folder = Path(".").resolve()
+        folder = Path.cwd()
 
     process_chain(objective, chain, nburn=nburn, nthin=nthin)
 
@@ -142,7 +142,7 @@ def _plots(obj, nplot=0, folder=None):
     # Also writes out arrays:
     #      steps.npy, steps_sld.npy
     if folder is None:
-        folder = Path(".").resolve()
+        folder = Path.cwd()
 
     fig = Figure()
     FigureCanvas(fig)

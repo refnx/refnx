@@ -25,7 +25,7 @@ class TestReflectDataset:
         data.add_data((x1, y1, e1, dx1))
         self.data = data
 
-        self.cwd = Path(".").resolve()
+        self.cwd = Path.cwd()
         self.tmp_path = tmp_path
         os.chdir(self.tmp_path)
 
@@ -289,7 +289,7 @@ class TestData1D:
     @pytest.fixture(autouse=True)
     def setup_method(self, tmp_path):
         self.pth = Path(__file__).absolute().parent
-        self.cwd = Path(".").resolve()
+        self.cwd = Path.cwd()
         self.tmp_path = tmp_path
         os.chdir(self.tmp_path)
 
