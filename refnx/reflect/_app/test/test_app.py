@@ -87,7 +87,7 @@ def save_and_reload_experiment(app, tmpdir):
     with open(sf, "wb") as f:
         f.write(b"sksij")
 
-    app.settings.experiment_file_name = sf
+    app.settings.experiment_file_name = str(sf)
     app.on_actionSave_File_triggered()
 
     myapp2 = MotofitMainWindow()
