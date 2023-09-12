@@ -511,3 +511,6 @@ in 0.1.13.
 - fix pandas warnings in batchreduction.
 - wholesale conversion of os.path to pathlib.Path. Hopefully not too many
   bugs introduced as a result of this.
+
+0.1.38
+------
