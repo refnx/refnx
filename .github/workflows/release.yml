@@ -95,3 +95,23 @@ jobs:
       with:
         # repository-url: https://test.pypi.org/legacy/
         skip_existing: true
+
+
+  release-github:
+    runs-on: ubuntu-latest
+    needs: [ pypi-publish ]
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - uses: actions/download-artifact@v3
+      with:
+        name: artifact
+        path: dist
+
+    - uses: ncipollo/release-action@v1
+      with:
+        artifacts: "dist/refnx*.tar.gz"
+        token: ${{ secrets.GITHUB_TOKEN }}
+        allowUpdates: true
+        generateReleaseNotes: true
