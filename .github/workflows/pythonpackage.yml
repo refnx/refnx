@@ -21,6 +21,8 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
         cache: 'pip' # caching pip dependencies
+        allow-prereleases: true
+
     - run: pip install -r .requirements.txt
 
     - name: setup apt dependencies
@@ -92,6 +94,7 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
         cache: 'pip' # caching pip dependencies
+        allow-prereleases: true
 
     - run: pip install -r .requirements.txt
 
@@ -175,6 +178,7 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
         cache: 'pip' # caching pip dependencies
+        allow-prereleases: true
 
     - run: pip install -r .requirements.txt
 
