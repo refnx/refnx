@@ -479,13 +479,14 @@ class ReflectModel:
             x_err = float(self.dq)
 
         return reflectivity(
-            x + self.q_offset.value,
+            x,
             self.structure.slabs()[..., :4],
             scale=self.scale.value,
             bkg=self.bkg.value,
             dq=x_err,
             threads=self.threads,
             quad_order=self.quad_order,
+            q_offset=self.q_offset,
         )
 
     def logp(self):
@@ -532,7 +533,14 @@ class ReflectModel:
 
 
 def reflectivity(
-    q, slabs, scale=1.0, bkg=0.0, dq=5.0, quad_order=17, threads=-1
+    q,
+    slabs,
+    scale=1.0,
+    bkg=0.0,
+    dq=5.0,
+    quad_order=17,
+    threads=-1,
+    q_offset=0,
 ):
     r"""
     Abeles/Parratt formalism for calculating reflectivity from a stratified
@@ -612,6 +620,12 @@ def reflectivity(
         module. The option is ignored if using the pure python calculator,
         ``_reflect``. If `threads == -1` then all available processors are
         used.
+    q_offset: float or refnx.analysis.Parameter, optional
+        Compensates for uncertainties in the angle at which the measurement is
+        performed. A positive/negative `q_offset` corresponds to a situation
+        where the measured q values (incident angle) may have been under/over
+        estimated, and has the effect of shifting the calculated model to
+        lower/higher effective q values.
 
     Example
     -------
@@ -625,13 +639,21 @@ def reflectivity(
     >>> print(reflectivity(q, slabs))
 
     """
+    # cast q_offset to float, if it's a Parameter
+    q_offset = float(q_offset)
+
     # constant dq/q smearing
     if isinstance(dq, numbers.Real) and float(dq) == 0:
-        return kernel(q, slabs, scale=scale, bkg=bkg, threads=threads)
+        return kernel(
+            q + q_offset, slabs, scale=scale, bkg=bkg, threads=threads
+        )
     elif isinstance(dq, numbers.Real):
         dq = float(dq)
         return (
-            scale * _smeared_kernel_constant(q, slabs, dq, threads=threads)
+            scale
+            * _smeared_kernel_constant(
+                q + q_offset, slabs, dq, threads=threads
+            )
         ) + bkg
 
     # point by point resolution smearing (each q point has different dq/q)
@@ -644,7 +666,7 @@ def reflectivity(
             smeared_rvals = (
                 scale
                 * _smeared_kernel_adaptive(
-                    qvals_flat, slabs, dqvals_flat, threads=threads
+                    qvals_flat + q_offset, slabs, dqvals_flat, threads=threads
                 )
                 + bkg
             )
@@ -654,7 +676,7 @@ def reflectivity(
             smeared_rvals = (
                 scale
                 * _smeared_kernel_pointwise(
-                    qvals_flat,
+                    qvals_flat + q_offset,
                     slabs,
                     dqvals_flat,
                     quad_order=quad_order,
@@ -670,7 +692,7 @@ def reflectivity(
         and dq.ndim == q.ndim + 2
         and dq.shape[0 : q.ndim] == q.shape
     ):
-        qvals_for_res = dq[:, 0, :]
+        qvals_for_res = dq[:, 0, :] + q_offset
         # work out the reflectivity at the kernel evaluation points
         smeared_rvals = kernel(qvals_for_res, slabs, threads=threads)
 
@@ -678,7 +700,7 @@ def reflectivity(
         smeared_rvals *= dq[:, 1, :]
 
         # now do simpson integration
-        rvals = scipy.integrate.simps(smeared_rvals, x=dq[:, 0, :])
+        rvals = scipy.integrate.simpson(smeared_rvals, x=qvals_for_res)
 
         return scale * rvals + bkg
 

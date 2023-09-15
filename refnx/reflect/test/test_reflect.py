@@ -645,6 +645,23 @@ class TestReflect:
 
         assert_allclose(kernel_R, const_R, rtol=0.002)
 
+        # check that it works with a q_offset
+        const_R = reflectivity(
+            q,
+            slabs,
+            scale=1.01,
+            bkg=1e-6,
+            dq=0.05 * q,
+            quad_order=101,
+            threads=-1,
+            q_offset=0.002,
+        )
+
+        kernel_R = reflectivity(
+            q, slabs, scale=1.01, bkg=1e-6, dq=kernel, q_offset=0.002
+        )
+        assert_allclose(kernel_R, const_R, rtol=0.002)
+
     def test_sld_profile(self):
         # test SLD profile with SLD profile from Motofit.
         np.seterr(invalid="raise")
