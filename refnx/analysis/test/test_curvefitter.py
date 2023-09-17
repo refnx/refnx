@@ -32,7 +32,7 @@ from refnx.dataset import Data1D
 from refnx._lib import emcee, flatten
 from refnx._lib.emcee.moves import DEMove, DESnookerMove
 
-from NISTModels import NIST_runner, NIST_Models
+from .NISTModels import NIST_runner, NIST_Models
 
 
 def line(x, params, *args, **kwds):
