@@ -425,7 +425,9 @@ class TestPlatypusNexus(object):
     def test_lopx_hipx(self):
         # we should be able to specify the exact pixel numbers we want to
         # integrate
-        rdo = ReductionOptions(lopx_hipx=(50, 60), background=False, peak_pos=(55, 2))
+        rdo = ReductionOptions(
+            lopx_hipx=(50, 60), background=False, peak_pos=(55, 2)
+        )
         _, m_spec, _ = self.f113.process(**rdo)
 
         m_topandtail = self.f113.m_topandtail

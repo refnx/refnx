@@ -1979,9 +1979,9 @@ class ReflectNexus:
 
         # assert that none of the lopx/hipx regions overlap with the
         # background mask
-        msk = np.sum(full_backgnd_mask, axis=0) # (N, T, Y) -> (T, Y)
+        msk = np.sum(full_backgnd_mask, axis=0)  # (N, T, Y) -> (T, Y)
         msk = np.sum(msk, axis=0)  # (T, Y) -> (Y,)
-        msk = np.sum(msk[lopx[0]: hipx[0] + 1])
+        msk = np.sum(msk[lopx[0] : hipx[0] + 1])
         if msk > 0:
             raise RuntimeError(
                 "At some point the background mask overlaps with the"
