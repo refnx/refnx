@@ -8,7 +8,6 @@ import pytest
 import numpy as np
 from numpy.testing import (
     assert_almost_equal,
-    assert_,
     assert_equal,
     assert_array_less,
     assert_allclose,
@@ -34,6 +33,7 @@ from refnx.reduce.platypusnexus import (
     Catalogue,
     PlatypusCatalogue,
     create_reflect_nexus,
+    ReductionOptions,
 )
 
 
@@ -210,7 +210,7 @@ class TestPlatypusNexus(object):
         output = plp.find_specular_ridge(
             detector[np.newaxis, :], detector_sd[np.newaxis, :]
         )
-        assert_(len(output) == 5)
+        assert len(output) == 5
         assert_almost_equal(output[0][0], 100)
 
     def test_pickle(self):
@@ -269,7 +269,7 @@ class TestPlatypusNexus(object):
         # When you use event mode processing, make sure the right amount of
         # spectra are created
         out = self.f641.process(eventmode=[0, 900, 1800], integrate=0)
-        assert_(np.size(out[1], axis=0) == 2)
+        assert np.size(out[1], axis=0) == 2
 
     def test_event_folder(self):
         self.f641.process(
@@ -361,14 +361,14 @@ class TestPlatypusNexus(object):
             datasets, reduced = reducer.reduce(
                 Path.cwd() / "ADD_PLP0000708.nx.hdf"
             )
-            assert_("y" in reduced)
+            assert "y" in reduced
 
             # the error bars should be smaller
             datasets2, reduced2 = reducer.reduce(
                 self.pth / "PLP0000708.nx.hdf"
             )
 
-            assert_(np.all(reduced["y_err"] < reduced2["y_err"]))
+            assert np.all(reduced["y_err"] < reduced2["y_err"])
 
     def test_manual_beam_find(self):
         # you can specify a function that finds where the specular ridge is.
@@ -397,11 +397,11 @@ class TestPlatypusNexus(object):
         sd = np.array([5.0, 11.5])
         lopx, hipx, background_pixels = fore_back_region(centres, sd)
 
-        assert_(len(lopx) == 2)
-        assert_(len(hipx) == 2)
-        assert_(len(background_pixels) == 2)
-        assert_(isinstance(lopx[0], numbers.Integral))
-        assert_(isinstance(hipx[0], numbers.Integral))
+        assert len(lopx) == 2
+        assert len(hipx) == 2
+        assert len(background_pixels) == 2
+        assert isinstance(lopx[0], numbers.Integral)
+        assert isinstance(hipx[0], numbers.Integral)
 
         calc_lower = np.floor(centres - sd * EXTENT_MULT)
         assert_equal(lopx, calc_lower)
@@ -422,13 +422,27 @@ class TestPlatypusNexus(object):
 
         assert_equal(bp, background_pixels[0])
 
+    def test_lopx_hipx(self):
+        # we should be able to specify the exact pixel numbers we want to
+        # integrate
+        rdo = ReductionOptions(
+            lopx_hipx=(50, 60), background=False, peak_pos=(55, 2)
+        )
+        _, m_spec, _ = self.f113.process(**rdo)
+
+        m_topandtail = self.f113.m_topandtail
+        assert self.f113.lopx[0] == 50
+        assert self.f113.hipx[0] == 60
+        check = np.sum(m_topandtail[..., 50:61], axis=-1)[0]
+        assert_allclose(m_spec[0], check)
+
     def test_basename_datafile(self):
         # check that the right basename is returned
         pth = "a/b/c.nx.hdf"
-        assert_(basename_datafile(pth) == "c")
+        assert basename_datafile(pth) == "c"
 
         pth = "c.nx.hdf"
-        assert_(basename_datafile(pth) == "c")
+        assert basename_datafile(pth) == "c"
 
     def test_floodfield_correction(self):
         # check that flood field calculation works

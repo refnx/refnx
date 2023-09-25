@@ -1068,7 +1068,9 @@ class ReductionOptions(dict):
            use the automatic beam finder, falling back to
            `manual_beam_find` if it's provided.
         - (float, float)
-           specify the peak and peak standard deviation.
+           specify the peak and peak standard deviation. The peak standard
+           deviation is used to calculate the width of the foreground region,
+           unless `lopx_hipx` is specified.
 
     peak_pos_tol : None or (float, float)
         Convergence tolerance for the beam position and width to be
@@ -1123,6 +1125,9 @@ class ReductionOptions(dict):
         `t_events`.
     detailed_kernel : bool
         whether a detailed resolution kernel is calculating during reduction.
+    lopx_hipx : tuple
+        A two-tuple specifying the foreground region. For example, use of
+        (120, 123) would use pixels 120, 121, 122, 123.
     """
 
     def __init__(
@@ -1147,6 +1152,7 @@ class ReductionOptions(dict):
         manual_beam_find=None,
         event_filter=None,
         detailed_kernel=False,
+        lopx_hipx=None,
     ):
         super().__init__()
         self["h5norm"] = h5norm
@@ -1169,6 +1175,7 @@ class ReductionOptions(dict):
         self["manual_beam_find"] = manual_beam_find
         self["event_filter"] = event_filter
         self["detailed_kernel"] = detailed_kernel
+        self["lopx_hipx"] = lopx_hipx
 
 
 class ReflectNexus:
@@ -1478,12 +1485,14 @@ class ReflectNexus:
             deviation.
 
             - -1
-               use `manual_beam_find`.
+                use `manual_beam_find`.
             - None
-               use the automatic beam finder, falling back to
+                use the automatic beam finder, falling back to
                `manual_beam_find` if it's provided.
             - (float, float)
-               specify the peak and peak standard deviation.
+                specify the peak and peak standard deviation. The peak standard
+                deviation is used to calculate the width of the foreground
+                region, unless `lopx_hipx` is specified.
 
         peak_pos_tol : (float, float) or None
             Convergence tolerance for the beam position and width to be
@@ -1536,6 +1545,15 @@ class ReflectNexus:
             contains the frame number for each neutron, landing at position
             `x_events, y_events` on the detector, with time-of-flight
             `t_events`.
+        detailed_kernel : bool
+            whether a detailed resolution kernel is calculating during reduction.
+        lopx_hipx : tuple
+            A two-tuple specifying the foreground region for integration of the
+            specular ridge. For example, use of (120, 123) would sum pixels
+            120, 121, 122, 123.
+            If specified this keyword overrides the specular width calculated
+            from the peak standard deviation calculated (or specified) in
+            `peak_pos`. The peak centre must lie between ``lopx`` and ``hipx``.
 
         Notes
         -----
@@ -1594,6 +1612,7 @@ class ReflectNexus:
         normalise_bins = options["normalise_bins"]
         manual_beam_find = options["manual_beam_find"]
         event_filter = options["event_filter"]
+        lopx_hipx = options["lopx_hipx"]
 
         # it can be advantageous to save processing time if the arguments
         # haven't changed
@@ -1830,6 +1849,20 @@ class ReflectNexus:
         lopx = lopx.astype(int)
         hipx = hipx.astype(int)
 
+        print(type(lopx_hipx), lopx_hipx)
+        if lopx_hipx is not None:
+            print(lopx_hipx)
+            lopx = np.ones(n_spectra, dtype=int) * int(lopx_hipx[0])
+            hipx = np.ones(n_spectra, dtype=int) * int(lopx_hipx[1])
+            for i in range(n_spectra):
+                try:
+                    assert lopx[i] <= beam_centre[i] <= hipx[i]
+                except AssertionError:
+                    raise RuntimeError(
+                        "One of the beam centres does not lie in the"
+                        " manually specified lopx/hipx region."
+                    )
+
         # Warning if the beam appears to be much broader than the divergence
         # would predict. The use of 30% tolerance is a guess. This might happen
         # if the beam finder includes incoherent background region by mistake.
@@ -1942,6 +1975,17 @@ class ReflectNexus:
             # TODO: Correlated Uncertainties?
             detector, detector_sd = background_subtract(
                 detector, detector_sd, full_backgnd_mask
+            )
+
+        # assert that none of the lopx/hipx regions overlap with the
+        # background mask
+        msk = np.sum(full_backgnd_mask, axis=0)  # (N, T, Y) -> (T, Y)
+        msk = np.sum(msk, axis=0)  # (T, Y) -> (Y,)
+        msk = np.sum(msk[lopx[0] : hipx[0] + 1])
+        if msk > 0:
+            raise RuntimeError(
+                "At some point the background mask overlaps with the"
+                " foreground region"
             )
 
         """

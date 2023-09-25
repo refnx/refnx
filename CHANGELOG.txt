@@ -515,3 +515,5 @@ in 0.1.13.
 0.1.38
 ------
 - allow detailed Q resolution kernel to work with q_offset.
+- added lopx_hipx to ReductionOptions to allow one to specify the foreground
+  region.
