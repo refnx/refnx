@@ -41,6 +41,15 @@ class TestReduce:
             )
             b.reduce(show=False)
 
+            # now the same, but with str not Path
+            b = BatchReducer(
+                str(filename),
+                data_folder=str(df),
+                verbose=False,
+                persistent=False,
+            )
+            b.reduce(show=False)
+
     def test_batch_spatz_reduce(self):
         filename = self.pth / "test_batch_spatz_reduction.xls"
         b = BatchReducer(
