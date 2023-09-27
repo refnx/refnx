@@ -1255,7 +1255,7 @@ def reduce_stitch(
         708 corresponds to the file PLP0000708.nx.hdf.
     direct_list : list
         Direct beam run numbers, e.g. `[711, 711, 711]`
-    data_folder : str, optional
+    data_folder : {str, Path}, optional
         Where is the raw data stored?
     prefix : str, optional
         The instrument filename prefix.
@@ -1317,6 +1317,8 @@ def reduce_stitch(
 
     if data_folder is None:
         data_folder = Path.cwd()
+    else:
+        data_folder = Path(data_folder)
 
     if prefix == "PLP":
         reducer_klass = PlatypusReduce

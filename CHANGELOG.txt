@@ -517,3 +517,4 @@ in 0.1.13.
 - allow detailed Q resolution kernel to work with q_offset.
 - added lopx_hipx to ReductionOptions to allow one to specify the foreground
   region.
+- fix path concatenation issue in reduce_stitch, str or Path should be allowed.
