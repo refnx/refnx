@@ -518,3 +518,6 @@ in 0.1.13.
 - added lopx_hipx to ReductionOptions to allow one to specify the foreground
   region.
 - fix path concatenation issue in reduce_stitch, str or Path should be allowed.
+
+0.1.39
+------
