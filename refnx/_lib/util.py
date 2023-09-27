@@ -48,7 +48,7 @@ class TemporaryDirectory:
         self.name = mkdtemp(suffix, prefix, dir)
 
     def __repr__(self):
-        return "<{} {!r}>".format(self.__class__.__name__, self.name)
+        return f"<{self.__class__.__name__} {self.name!r}>"
 
     def __enter__(self):
         return self.name
@@ -64,7 +64,7 @@ class TemporaryDirectory:
                 if "None" not in str(ex):
                     raise
                 print(
-                    "ERROR: {!r} while cleaning up {!r}".format(ex, self),
+                    f"ERROR: {ex!r} while cleaning up {self!r}",
                     file=_sys.stderr,
                 )
                 return
@@ -72,8 +72,8 @@ class TemporaryDirectory:
             if _warn:
                 # ResourceWarning
                 self._warn(
-                    "ResourceWarning: Implicitly cleaning"
-                    " up {!r}".format(self)
+                    f"ResourceWarning: Implicitly cleaning"
+                    f" up {self!r}"
                 )
 
     def __exit__(self, exc, value, tb):

@@ -126,7 +126,7 @@ class PDF(Bounds):
             )
 
     def __repr__(self):
-        return "PDF({rv!r})".format(**self.__dict__)
+        return f"PDF({self.rv!r})"
 
     def logp(self, val):
         """

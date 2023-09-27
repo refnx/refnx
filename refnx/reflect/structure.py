@@ -171,11 +171,11 @@ class Structure(UserList):
 
     def __str__(self):
         s = list()
-        s.append("{:_>80}".format(""))
-        s.append("Structure: {0: ^15}".format(str(self.name)))
-        s.append("solvent: {0}".format(repr(self._solvent)))
-        s.append("reverse structure: {0}".format(str(self.reverse_structure)))
-        s.append("contract: {0}\n".format(str(self.contract)))
+        s.append(f"{_:>80}")
+        s.append(f"Structure: {self.name: ^15}")
+        s.append(f"solvent: {(self._solvent)!r}")
+        s.append(f"reverse structure: {self.reverse_structure}")
+        s.append(f"contract: {self.contract}\n")
 
         for component in self:
             s.append(str(component))
@@ -184,11 +184,11 @@ class Structure(UserList):
 
     def __repr__(self):
         return (
-            "Structure(components={data!r},"
-            " name={_name!r},"
-            " solvent={_solvent!r},"
-            " reverse_structure={_reverse_structure},"
-            " contract={contract})".format(**self.__dict__)
+            f"Structure(components={self.data!r},"
+            f" name={self._name!r},"
+            f" solvent={self._solvent!r},"
+            f" reverse_structure={self._reverse_structure},"
+            f" contract={self.contract})"
         )
 
     def append(self, item):
@@ -1502,9 +1502,9 @@ class Stack(Component, UserList):
 
     def __repr__(self):
         return (
-            "Stack(name={name!r},"
-            " components={data!r},"
-            " repeats={repeats!r})".format(**self.__dict__)
+            f"Stack(name={self.name!r},"
+            f" components={self.data!r},"
+            f" repeats={self.repeats!r})"
         )
 
     def append(self, item):
@@ -1591,7 +1591,7 @@ class Stack(Component, UserList):
         this structure.
 
         """
-        p = Parameters(name="Stack - {0}".format(self.name))
+        p = Parameters(name=f"Stack - {self.name}")
         p.append(self.repeats)
         p.extend([component.parameters for component in self.components])
         return p
