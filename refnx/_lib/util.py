@@ -72,7 +72,7 @@ class TemporaryDirectory:
             if _warn:
                 # ResourceWarning
                 self._warn(
-                    f"ResourceWarning: Implicitly cleaning" f" up {self!r}"
+                    f"ResourceWarning: Implicitly cleaning up {self!r}"
                 )
 
     def __exit__(self, exc, value, tb):
