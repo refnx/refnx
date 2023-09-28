@@ -344,10 +344,10 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         except Exception as e:
             version = state.get("refnx.version", "N/A")
             msg(
-                "Failed to load experiment. It may have been saved in a"
-                " previous refnx version ({}). Please use that version to"
-                " continue with analysis, refnx will now"
-                " close.".format(version)
+                f"Failed to load experiment. It may have been saved in a"
+                f" previous refnx version ({version}). Please use that"
+                f" version to continue with analysis, refnx will now"
+                f" close."
             )
             raise e
 
@@ -1202,7 +1202,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         ]
         if not _component:
             return msg(
-                "Select a single Component within a Structure to" " remove"
+                "Select a single Component within a Structure to remove"
             )
 
         # work out which component you have.
@@ -1777,7 +1777,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         datastore = self.treeModel.datastore
 
         self.data_object_selector.setWindowTitle(
-            "Select equivalent datasets" " to link"
+            "Select equivalent datasets to link"
         )
         ok = self.data_object_selector.exec()
         if not ok:
@@ -2288,8 +2288,9 @@ class ProgressCallback(QtWidgets.QDialog):
             self.ui.timer.display(float(self.elapsed))
             self.last_time = new_time
 
-            text = "Chi2 : {}\nIterations : {}".format(
-                self.objective.chisqr(xk), self.iterations
+            text = (
+                f"Chi2 : {self.objective.chisqr(xk)}\n"
+                f"Iterations : {self.iterations}"
             )
 
             self.ui.values.setPlainText(text)
@@ -2667,7 +2668,7 @@ class OpenMenu(QtWidgets.QMenu):
         self.addSeparator()
         self.add_mixed_area = self.addAction("Mixed area - add a structure")
         self.remove_mixed_area = self.addAction(
-            "Mixed area - remove a" " structure"
+            "Mixed area - remove a structure"
         )
 
     def __call__(self, position):

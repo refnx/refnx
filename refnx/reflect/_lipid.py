@@ -207,21 +207,25 @@ class LipidLeaflet(Component):
         self.name = name
 
     def __repr__(self):
-        d = {}
-        d.update(self.__dict__)
         sld_bh = SLD([self.b_heads_real, self.b_heads_imag])
         sld_bt = SLD([self.b_tails_real, self.b_tails_imag])
-        d["bh"] = sld_bh
-        d["bt"] = sld_bt
-
         s = (
-            "LipidLeaflet({apm!r}, {bh!r}, {vm_heads!r}, {thickness_heads!r},"
-            " {bt!r}, {vm_tails!r}, {thickness_tails!r}, {rough_head_tail!r},"
-            " {rough_preceding_mono!r}, head_solvent={head_solvent!r},"
-            " tail_solvent={tail_solvent!r},"
-            " reverse_monolayer={reverse_monolayer}, name={name!r})"
+            f"LipidLeaflet("
+            f"{self.apm!r}, "
+            f"{sld_bh!r}, "
+            f"{self.vm_heads!r}, "
+            f"{self.thickness_heads!r}, "
+            f"{sld_bt!r}, "
+            f"{self.vm_tails!r}, "
+            f"{self.thickness_tails!r}, "
+            f"{self.rough_head_tail!r}, "
+            f"{self.rough_preceding_mono!r}, "
+            f"head_solvent={self.head_solvent!r}, "
+            f"tail_solvent={self.tail_solvent!r}, "
+            f"reverse_monolayer={self.reverse_monolayer}, "
+            f"name={self.name!r})"
         )
-        return s.format(**d)
+        return s
 
     def slabs(self, structure=None):
         """

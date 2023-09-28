@@ -68,7 +68,7 @@ class ProcessMCMCDialog(QtWidgets.QDialog):
                 f"walkers: {walkers}, varys: {varys}"
             )
 
-        self.total_samples.setText("Total samples: {}".format(steps * walkers))
+        self.total_samples.setText(f"Total samples: {steps * walkers}")
 
         self.burn.setMaximum(steps - 1)
         self.thin.setMaximum(steps - 1)

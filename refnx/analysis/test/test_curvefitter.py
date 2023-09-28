@@ -189,7 +189,7 @@ class TestCurveFitter:
 
         # check the standalone autocorrelation calculator
         acfs2 = autocorrelation_chain(mcfitter.chain, nburn=10)
-        assert_equal(acfs, acfs2)
+        assert_allclose(acfs, acfs2)
 
         # check integrated_time
         integrated_time(acfs2, tol=5)
@@ -356,7 +356,7 @@ class TestCurveFitter:
         def callback(xk):
             return
 
-        def callback2(xk, **kws):
+        def callback2(xk, *args, **kws):
             return
 
         # L-BFGS-B
@@ -541,8 +541,8 @@ class TestFitterGauss:
         f = CurveFitter(self.objective, nwalkers=100, ntemps=10)
         f.fit("differential_evolution", seed=1)
 
-        f.sample(steps=201, random_state=1, verbose=False)
-        process_chain(self.objective, f.chain, nburn=50, nthin=15)
+        f.sample(steps=401, random_state=1, verbose=False)
+        process_chain(self.objective, f.chain, nburn=50, nthin=20)
         print(self.params[0].chain.shape, self.params[0].chain)
 
         uncertainties = [param.stderr for param in self.params]

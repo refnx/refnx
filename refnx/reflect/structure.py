@@ -171,11 +171,11 @@ class Structure(UserList):
 
     def __str__(self):
         s = list()
-        s.append("{:_>80}".format(""))
-        s.append("Structure: {0: ^15}".format(str(self.name)))
-        s.append("solvent: {0}".format(repr(self._solvent)))
-        s.append("reverse structure: {0}".format(str(self.reverse_structure)))
-        s.append("contract: {0}\n".format(str(self.contract)))
+        s.append(f"{'':_>80}")
+        s.append(f"Structure: {self.name: ^15}")
+        s.append(f"solvent: {(self._solvent)!r}")
+        s.append(f"reverse structure: {self.reverse_structure}")
+        s.append(f"contract: {self.contract}\n")
 
         for component in self:
             s.append(str(component))
@@ -184,11 +184,11 @@ class Structure(UserList):
 
     def __repr__(self):
         return (
-            "Structure(components={data!r},"
-            " name={_name!r},"
-            " solvent={_solvent!r},"
-            " reverse_structure={_reverse_structure},"
-            " contract={contract})".format(**self.__dict__)
+            f"Structure(components={self.data!r},"
+            f" name={self._name!r},"
+            f" solvent={self._solvent!r},"
+            f" reverse_structure={self._reverse_structure},"
+            f" contract={self.contract})"
         )
 
     def append(self, item):
@@ -206,7 +206,7 @@ class Structure(UserList):
 
         if not isinstance(item, Component):
             raise ValueError(
-                "You can only add Component objects to a" " structure"
+                "You can only add Component objects to a structure"
             )
         super().append(item)
 
@@ -538,7 +538,7 @@ class Structure(UserList):
             align = int(align)
             if align >= len(slabs) - 1 or align < -1 * len(slabs):
                 raise RuntimeError(
-                    "abs(align) has to be less than " "len(slabs) - 1"
+                    "abs(align) has to be less than len(slabs) - 1"
                 )
             # to figure out the offset you need to know the cumulative distance
             # to the interface
@@ -621,7 +621,7 @@ class Structure(UserList):
         this structure.
 
         """
-        p = Parameters(name="Structure - {0}".format(self.name))
+        p = Parameters(name=f"Structure - {self.name}")
         p.extend([component.parameters for component in self.components])
         if self._solvent is not None:
             p.append(self.solvent.parameters)
@@ -782,7 +782,7 @@ class Scatterer:
 
     def __str__(self):
         sld = complex(self)
-        return "SLD = {0} x10**-6 Å**-2".format(sld)
+        return f"SLD = {sld} x10**-6 Å**-2"
 
     def __complex__(self):
         raise NotImplementedError
@@ -896,9 +896,7 @@ class SLD(Scatterer):
         self._parameters = Parameters(name=name)
 
     def __repr__(self):
-        return "SLD([{real!r}, {imag!r}]," " name={name!r})".format(
-            **self.__dict__
-        )
+        return f"SLD([{self.real!r}, {self.imag!r}], name={self.name!r})"
 
     def __complex__(self):
         sldc = complex(self.real.value, self.imag.value)
@@ -968,16 +966,12 @@ class MaterialSLD(Scatterer):
         self.dispersive = True
 
     def __repr__(self):
-        d = {
-            "compound": self._compound,
-            "density": self.density,
-            "wavelength": self.wavelength,
-            "probe": self.probe,
-            "name": self.name,
-        }
         return (
-            "MaterialSLD({compound!r}, {density!r}, probe={probe!r},"
-            " wavelength={wavelength!r}, name={name!r})".format(**d)
+            f"MaterialSLD({self._compound!r}, "
+            f"{self.density!r}, "
+            f"probe={self.probe!r}, "
+            f"wavelength={self.wavelength!r}, "
+            f"name={self.name!r})"
         )
 
     @property
@@ -1117,7 +1111,7 @@ class Component:
         :class:`refnx.analysis.Parameters` associated with this component
         """
         raise NotImplementedError(
-            "A component should override the parameters " "property"
+            "A component should override the parameters property"
         )
 
     @property
@@ -1188,7 +1182,7 @@ class Component:
         """
 
         raise NotImplementedError(
-            "A component should override the slabs " "property"
+            "A component should override the slabs property"
         )
 
     def logp(self):
@@ -1482,7 +1476,7 @@ class Stack(Component, UserList):
                 self.data.append(c)
             else:
                 raise ValueError(
-                    "You can only initialise a Stack with" " Components"
+                    "You can only initialise a Stack with Components"
                 )
 
     def __setitem__(self, i, v):
@@ -1490,21 +1484,21 @@ class Stack(Component, UserList):
 
     def __str__(self):
         s = list()
-        s.append("{:=>80}".format(""))
+        s.append(f"{'' :=>80}")
 
         s.append(f"Stack start: {int(round(abs(self.repeats.value)))} repeats")
         for component in self:
             s.append(str(component))
         s.append("Stack finish")
-        s.append("{:=>80}".format(""))
+        s.append(f"{'' :=>80}")
 
         return "\n".join(s)
 
     def __repr__(self):
         return (
-            "Stack(name={name!r},"
-            " components={data!r},"
-            " repeats={repeats!r})".format(**self.__dict__)
+            f"Stack(name={self.name!r},"
+            f" components={self.data!r},"
+            f" repeats={self.repeats!r})"
         )
 
     def append(self, item):
@@ -1522,7 +1516,7 @@ class Stack(Component, UserList):
 
         if not isinstance(item, Component):
             raise ValueError(
-                "You can only add Component objects to a" " structure"
+                "You can only add Component objects to a structure"
             )
         self.data.append(item)
 
@@ -1591,7 +1585,7 @@ class Stack(Component, UserList):
         this structure.
 
         """
-        p = Parameters(name="Stack - {0}".format(self.name))
+        p = Parameters(name=f"Stack - {self.name}")
         p.append(self.repeats)
         p.extend([component.parameters for component in self.components])
         return p

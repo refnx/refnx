@@ -953,7 +953,7 @@ def number_datafile(run_number, prefix="PLP"):
     try:
         num = abs(int(run_number))
         # you got given a run number
-        return "{0}{1:07d}.nx.hdf".format(prefix, num)
+        return f"{prefix}{num:07d}.nx.hdf"
     except ValueError:
         # you may have been given full filename
         if run_number.endswith(".nx.hdf"):
@@ -1290,7 +1290,7 @@ class ReflectNexus:
         dlmda = m_lambda_fwhm[:, sorted]
         dr = m_spec_sd[:, sorted]
         d["n_spectra"] = self.processed_spectrum["n_spectra"]
-        d["runnumber"] = "PLP{:07d}".format(self.cat.datafile_number)
+        d["runnumber"] = f"{self.prefix}{self.cat.datafile_number:07d}"
 
         d["r"] = repr(r[scanpoint].tolist()).strip(",[]")
         d["dr"] = repr(dr[scanpoint].tolist()).strip(",[]")

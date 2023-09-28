@@ -52,9 +52,9 @@ class Model:
 
     def __repr__(self):
         return (
-            "Model({_parameters!r}, fitfunc={_fitfunc!r},"
-            " fcn_args={fcn_args!r},"
-            " fcn_kwds={fcn_kwds!r})".format(**self.__dict__)
+            f"Model({self._parameters!r}, fitfunc={self._fitfunc!r},"
+            f" fcn_args={self.fcn_args!r},"
+            f" fcn_kwds={self.fcn_kwds!r})"
         )
 
     def __call__(self, x, p=None, x_err=None):

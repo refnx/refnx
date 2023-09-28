@@ -267,17 +267,11 @@ class CurveFitter:
         # attempt to get a minimum repr for a CurveFitter. However,
         # it has so much state when the sampling has been done, that
         # will be ignored.
-        d = {
-            "objective": self.objective,
-            "_nwalkers": self._nwalkers,
-            "_ntemps": self._ntemps,
-            "mcmc_kws": self.mcmc_kws,
-        }
         return (
-            "CurveFitter({objective!r},"
-            " nwalkers={_nwalkers},"
-            " ntemps={_ntemps},"
-            " {mcmc_kws!r})".format(**d)
+            f"CurveFitter({self.objective!r},"
+            f" nwalkers={self._nwalkers},"
+            f" ntemps={self._ntemps},"
+            f" {self.mcmc_kws!r})"
         )
 
     def make_sampler(self):
@@ -434,7 +428,7 @@ class CurveFitter:
 
         else:
             raise RuntimeError(
-                "Didn't use any known method for " "CurveFitter.initialise"
+                "Didn't use any known method for CurveFitter.initialise"
             )
 
         # if you're not doing parallel tempering then remove the first

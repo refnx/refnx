@@ -71,7 +71,7 @@ def rebin_along_axis(y1, x1, x2, axis=0, y1_sd=None):
 
     if np.size(y1, axis) != np.size(x1) - 1:
         raise ValueError(
-            "The original number of xbins does not match the axis" "size"
+            "The original number of xbins does not match the axis size"
         )
 
     odtype = np.dtype("float")

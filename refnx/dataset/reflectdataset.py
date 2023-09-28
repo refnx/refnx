@@ -83,13 +83,10 @@ class ReflectDataset(Data1D):
         if np.all(self._mask):
             msk = None
 
-        d = {"filename": str(self.filename), "msk": msk, "data": self.data}
         if self.filename is not None:
-            return "ReflectDataset(data={filename!r}," " mask={msk!r})".format(
-                **d
-            )
+            return f"ReflectDataset(data={str(self.filename)!r}, mask={msk!r})"
         else:
-            return "ReflectDataset(data={data!r}," " mask={msk!r})".format(**d)
+            return f"ReflectDataset(data={self.data!r}, mask={msk!r})"
 
     def save_xml(self, f, start_time=0):
         """

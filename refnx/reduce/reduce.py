@@ -66,7 +66,7 @@ class ReflectReduce:
             self.reflect_klass = SpatzNexus
         else:
             raise ValueError(
-                "Instrument prefix not known. Must be one of" " ['PLP']"
+                "Instrument prefix not known. Must be one of ['PLP', 'SPZ']"
             )
 
         if isinstance(direct, ReflectNexus):

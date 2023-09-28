@@ -118,14 +118,12 @@ class Parameters(UserList):
             self.data[i] = v
 
     def __repr__(self):
-        return "Parameters(data={data!r}," " name={name!r})".format(
-            **self.__dict__
-        )
+        return f"Parameters(data={self.data!r}, name={self.name!r})"
 
     def __str__(self):
         s = list()
-        s.append("{:_>80}".format(""))
-        s.append("Parameters: {0: ^15}".format(repr(self.name)))
+        s.append(f"{'':_>80}")
+        s.append(f"Parameters: {self.name!r: ^15}")
 
         for el in self._pprint():
             s.append(el)
@@ -448,7 +446,7 @@ class BaseParameter:
 
     def logp(self):
         raise NotImplementedError(
-            "Subclass of BaseParameter should override" " this method"
+            "Subclass of BaseParameter should override this method"
         )
 
     def __float__(self):
@@ -504,27 +502,22 @@ class BaseParameter:
 
     def __str__(self):
         """Returns printable representation of a Parameter object."""
-        s = (
-            "<Parameter:{name:^15s}, value={value:g}{fixed: ^10}, {bounds}"
-            "{constraint}>"
-        )
-
-        d = {
-            "name": repr(self.name),
-            "value": self.value,
-            "fixed": "",
-            "constraint": "",
-        }
+        constraint = ""
+        if self.constraint is not None:
+            constraint = f", constraint={self.constraint}"
 
         if not self.vary and self.constraint is None:
-            d["fixed"] = "(fixed)"
+            fixed = " (fixed)"
         elif self.stderr is not None:
-            d["fixed"] = " +/- {0:0.3g}".format(self.stderr)
+            fixed = f" +/- {self.stderr:0.3g}"
 
-        d["bounds"] = "bounds={0}".format(str(self.bounds))
-        if self.constraint is not None:
-            d["constraint"] = ", constraint={}".format(self.constraint)
-        return s.format(**d)
+        s = (
+            f"<Parameter:{self.name!r:^15}"
+            f", value={self.value:g}{fixed: ^10}"
+            f", bounds={str(self.bounds)}"
+            f"{constraint}>"
+        )
+        return s
 
 
 class Constant(BaseParameter):
@@ -535,7 +528,7 @@ class Constant(BaseParameter):
         self._vary = False
 
     def __repr__(self):
-        return "Constant(value={value}, name={name!r})".format(**self.__dict__)
+        return f"Constant(value={self.value}, name={self.name!r})"
 
     def _eval(self):
         return self._value
@@ -671,20 +664,15 @@ class Parameter(BaseParameter):
     def __repr__(self):
         # repr does not include stderr because that can't be used to
         # create a Parameter
-        d = {
-            "kls": self.__class__.__name__,
-            "value": float(self.value),
-            "name": self.name,
-            "vary": self.vary,
-            "bounds": self._bounds,
-            "constraint": self._constraint,
-        }
-        return (
-            "{kls}(value={value},"
-            " name={name!r}, vary={vary!r},"
-            " bounds={bounds!r},"
-            " constraint={constraint!r})".format(**d)
+        s = (
+            f"{self.__class__.__name__}("
+            f"value={float(self.value)},"
+            f" name={self.name!r},"
+            f" vary={self.vary!r},"
+            f" bounds={self._bounds!r},"
+            f" constraint={self._constraint!r})"
         )
+        return s
 
     def logp(self, pval=None):
         """

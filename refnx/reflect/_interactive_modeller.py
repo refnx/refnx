@@ -1386,7 +1386,7 @@ print(refnx.version.version)
     code = [header]
 
     # the dataset
-    code.append('data = ReflectDataset("{0}")'.format(objective.data.filename))
+    code.append(f"data = ReflectDataset('{objective.data.filename}'")
 
     # make some SLD's and slabs
     slds = ["\n# set up the SLD objects for each layer"]
@@ -1404,29 +1404,29 @@ print(refnx.version.version)
         ]
 
         slds.append(
-            "sld{0} = SLD({1} + {2}j, name='{3}')".format(
-                i, sld.real.value, sld.imag.value, slab.name
-            )
+            f"sld{i} = SLD("
+            f"{sld.real.value} + {sld.imag.value}j, name='{slab.name}')"
         )
 
         slabs.append(
-            "slab{0} = Slab({1}, sld{0}, {2}, name='{3}')".format(
-                i, slab.thick.value, slab.rough.value, slab.name
-            )
+            f"slab{i} = Slab("
+            f"{slab.thick.value}, sld{i}, {slab.rough.value}, "
+            f"name='{slab.name}')"
         )
 
         for p, temp in lims:
             if p.vary:
                 limits.append(
-                    (temp + ".setp(vary=True, bounds=({1}, {2}))").format(
-                        i, p.bounds.lb, p.bounds.ub
+                    (
+                        temp
+                        + f".setp(vary=True, bounds=({p.bounds.lb}, {p.bounds.ub}))"
                     )
                 )
 
         if not i:
-            structure += "slab{0}".format(i)
+            structure += f"slab{i}"
         else:
-            structure += " | slab{0}".format(i)
+            structure += f" | slab{i}"
 
     code.extend(slds)
     code.extend(slabs)
@@ -1440,9 +1440,11 @@ print(refnx.version.version)
     model = objective.model
     code.append("\n# make the reflectometry model")
     code.append(
-        "model = ReflectModel(structure, scale={0}, bkg={1}, dq={2})".format(
-            model.scale.value, model.bkg.value, model.dq.value
-        )
+        f"model = ReflectModel("
+        f"structure, "
+        f"scale={model.scale.value}, "
+        f"bkg={model.bkg.value}, "
+        f"dq={model.dq.value})"
     )
 
     lims = [
@@ -1454,16 +1456,15 @@ print(refnx.version.version)
     for p, temp in lims:
         if p.vary:
             code.append(
-                (temp + ".setp(vary=True, bounds=({0}, {1}))").format(
-                    p.bounds.lb, p.bounds.ub
-                )
+                temp
+                + f".setp(vary=True, bounds=({p.bounds.lb}, {p.bounds.ub}))"
             )
 
     code.append("\n# make the objective")
-    code.append("transform = {}".format(repr(objective.transform)))
+    code.append(f"transform = {objective.transform!r}")
     code.append(
-        "objective = Objective(model, data, transform=transform,"
-        " use_weights={})".format(objective.weighted)
+        f"objective = Objective(model, data, transform=transform,"
+        f" use_weights={objective.weighted})"
     )
 
     code.append("\n# make the curvefitter")

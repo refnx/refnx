@@ -249,13 +249,16 @@ class Lipid:
 
     def __repr__(self):
         s = (
-            "Lipid({name!r}, {head_formula!r}, {tail_formula!r},"
-            " head_exchangable={head_exchangable!r},"
-            " tail_exchangable={tail_exchangable!r},"
-            " references={references!r},"
-            " conditions={conditions!r}, chemical_name={chemical_name!r}"
+            f"Lipid({self.name!r}, "
+            f"{self.head_formula!r}, "
+            f"{self.tail_formula!r}, "
+            f"head_exchangable={self.head_exchangable!r}, "
+            f"tail_exchangable={self.tail_exchangable!r}, "
+            f"references={self.references!r},"
+            f"conditions={self.conditions!r}, "
+            f"chemical_name={self.chemical_name!r}"
         )
-        return s.format(**self.__dict__)
+        return s
 
     def add_condition(self, descriptor, vh, vt):
         self.conditions[descriptor] = (vh, vt)

@@ -117,3 +117,11 @@ class TestModel:
         fit_model = Model(p, fitfunc=line_ND)
         y = fit_model(x)
         assert_allclose(y, desired)
+
+    def test_repr(self):
+        c = Parameter(1.0, name="c")
+        m = Parameter(2.0, name="m")
+        p = c | m
+
+        fit_model = Model(p, fitfunc=line)
+        repr(fit_model)
