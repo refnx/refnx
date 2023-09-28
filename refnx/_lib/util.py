@@ -71,9 +71,7 @@ class TemporaryDirectory:
             self._closed = True
             if _warn:
                 # ResourceWarning
-                self._warn(
-                    f"ResourceWarning: Implicitly cleaning up {self!r}"
-                )
+                self._warn(f"ResourceWarning: Implicitly cleaning up {self!r}")
 
     def __exit__(self, exc, value, tb):
         self.cleanup()
