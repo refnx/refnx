@@ -124,4 +124,4 @@ class TestModel:
         p = c | m
 
         fit_model = Model(p, fitfunc=line)
-        r = repr(fit_model)
+        repr(fit_model)

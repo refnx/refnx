@@ -171,7 +171,7 @@ class Structure(UserList):
 
     def __str__(self):
         s = list()
-        s.append(f"{_:>80}")
+        s.append(f"{'':_>80}")
         s.append(f"Structure: {self.name: ^15}")
         s.append(f"solvent: {(self._solvent)!r}")
         s.append(f"reverse structure: {self.reverse_structure}")
@@ -966,16 +966,12 @@ class MaterialSLD(Scatterer):
         self.dispersive = True
 
     def __repr__(self):
-        d = {
-            "compound": self._compound,
-            "density": self.density,
-            "wavelength": self.wavelength,
-            "probe": self.probe,
-            "name": self.name,
-        }
         return (
-            f"MaterialSLD({self._compound!r}, {self.density!r}, probe={self.probe!r},"
-            f" wavelength={self.wavelength!r}, name={self.name!r})"
+            f"MaterialSLD({self._compound!r}, "
+            f"{self.density!r}, "
+            f"probe={self.probe!r}, "
+            f"wavelength={self.wavelength!r}, "
+            f"name={self.name!r})"
         )
 
     @property
