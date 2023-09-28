@@ -133,7 +133,7 @@ class Spline(Component):
             right_component = structure[(loc + 1) % len(structure)]
         except ValueError:
             raise ValueError(
-                "Spline didn't appear to be part of a super" " Structure"
+                "Spline didn't appear to be part of a super Structure"
             )
 
         if isinstance(left_component, Spline) or isinstance(

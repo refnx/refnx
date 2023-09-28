@@ -206,7 +206,7 @@ class Structure(UserList):
 
         if not isinstance(item, Component):
             raise ValueError(
-                "You can only add Component objects to a" " structure"
+                "You can only add Component objects to a structure"
             )
         super().append(item)
 
@@ -538,7 +538,7 @@ class Structure(UserList):
             align = int(align)
             if align >= len(slabs) - 1 or align < -1 * len(slabs):
                 raise RuntimeError(
-                    "abs(align) has to be less than " "len(slabs) - 1"
+                    "abs(align) has to be less than len(slabs) - 1"
                 )
             # to figure out the offset you need to know the cumulative distance
             # to the interface
@@ -1115,7 +1115,7 @@ class Component:
         :class:`refnx.analysis.Parameters` associated with this component
         """
         raise NotImplementedError(
-            "A component should override the parameters " "property"
+            "A component should override the parameters property"
         )
 
     @property
@@ -1186,7 +1186,7 @@ class Component:
         """
 
         raise NotImplementedError(
-            "A component should override the slabs " "property"
+            "A component should override the slabs property"
         )
 
     def logp(self):
@@ -1480,7 +1480,7 @@ class Stack(Component, UserList):
                 self.data.append(c)
             else:
                 raise ValueError(
-                    "You can only initialise a Stack with" " Components"
+                    "You can only initialise a Stack with Components"
                 )
 
     def __setitem__(self, i, v):
@@ -1520,7 +1520,7 @@ class Stack(Component, UserList):
 
         if not isinstance(item, Component):
             raise ValueError(
-                "You can only add Component objects to a" " structure"
+                "You can only add Component objects to a structure"
             )
         self.data.append(item)
 

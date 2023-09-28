@@ -580,7 +580,7 @@ class Data1D:
         """
         if self._y_err is None:
             raise RuntimeError(
-                "Can't synthesise new dataset without y_err" "uncertainties"
+                "Can't synthesise new dataset without y_err uncertainties"
             )
 
         rng = check_random_state(random_state)

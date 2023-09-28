@@ -136,7 +136,7 @@ def parse_xrdml_file(f):
         "/xrdml:endPosition",
         "omega_start": ".//xrdml:positions[@axis='Omega']"
         "/xrdml:startPosition",
-        "omega_end": ".//xrdml:positions[@axis='Omega']" "/xrdml:endPosition",
+        "omega_end": ".//xrdml:positions[@axis='Omega']/xrdml:endPosition",
         "cnt_time": ".//xrdml:commonCountingTime",
         "kAlpha1": ".//xrdml:kAlpha1",
         "kAlpha2": ".//xrdml:kAlpha2",
@@ -191,7 +191,7 @@ def process_offspec(f):
         "/xrdml:endPosition",
         "omega_start": ".//xrdml:positions[@axis='Omega']"
         "/xrdml:startPosition",
-        "omega_end": ".//xrdml:positions[@axis='Omega']" "/xrdml:endPosition",
+        "omega_end": ".//xrdml:positions[@axis='Omega']/xrdml:endPosition",
         "cnt_time": ".//xrdml:commonCountingTime",
         "kAlpha1": ".//xrdml:kAlpha1",
         "kAlpha2": ".//xrdml:kAlpha2",

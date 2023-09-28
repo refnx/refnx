@@ -446,7 +446,7 @@ class BaseParameter:
 
     def logp(self):
         raise NotImplementedError(
-            "Subclass of BaseParameter should override" " this method"
+            "Subclass of BaseParameter should override this method"
         )
 
     def __float__(self):

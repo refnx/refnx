@@ -428,7 +428,7 @@ class CurveFitter:
 
         else:
             raise RuntimeError(
-                "Didn't use any known method for " "CurveFitter.initialise"
+                "Didn't use any known method for CurveFitter.initialise"
             )
 
         # if you're not doing parallel tempering then remove the first

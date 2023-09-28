@@ -1020,7 +1020,7 @@ class MixedReflectModel:
             tscales = scales
         elif scales is not None and len(structures) != len(scales):
             raise ValueError(
-                "You need to supply scale factor for each" " structure"
+                "You need to supply scale factor for each structure"
             )
         else:
             tscales = [1 / len(structures)] * len(structures)

@@ -1202,7 +1202,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         ]
         if not _component:
             return msg(
-                "Select a single Component within a Structure to" " remove"
+                "Select a single Component within a Structure to remove"
             )
 
         # work out which component you have.
@@ -1777,7 +1777,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         datastore = self.treeModel.datastore
 
         self.data_object_selector.setWindowTitle(
-            "Select equivalent datasets" " to link"
+            "Select equivalent datasets to link"
         )
         ok = self.data_object_selector.exec()
         if not ok:
@@ -2668,7 +2668,7 @@ class OpenMenu(QtWidgets.QMenu):
         self.addSeparator()
         self.add_mixed_area = self.addAction("Mixed area - add a structure")
         self.remove_mixed_area = self.addAction(
-            "Mixed area - remove a" " structure"
+            "Mixed area - remove a structure"
         )
 
     def __call__(self, position):
