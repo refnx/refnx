@@ -1461,7 +1461,7 @@ print(refnx.version.version)
             )
 
     code.append("\n# make the objective")
-    code.append(f"transform = {objective.transform!r}"
+    code.append(f"transform = {objective.transform!r}")
     code.append(
         f"objective = Objective(model, data, transform=transform,"
         f" use_weights={objective.weighted})"

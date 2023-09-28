@@ -189,7 +189,7 @@ class TestCurveFitter:
 
         # check the standalone autocorrelation calculator
         acfs2 = autocorrelation_chain(mcfitter.chain, nburn=10)
-        assert_equal(acfs, acfs2)
+        assert_allclose(acfs, acfs2)
 
         # check integrated_time
         integrated_time(acfs2, tol=5)

@@ -344,10 +344,10 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         except Exception as e:
             version = state.get("refnx.version", "N/A")
             msg(
-                "Failed to load experiment. It may have been saved in a"
-                " previous refnx version ({}). Please use that version to"
-                " continue with analysis, refnx will now"
-                " close.".format(version)
+                f"Failed to load experiment. It may have been saved in a"
+                f" previous refnx version ({version}). Please use that"
+                f" version to continue with analysis, refnx will now"
+                f" close."
             )
             raise e
 
@@ -2288,8 +2288,9 @@ class ProgressCallback(QtWidgets.QDialog):
             self.ui.timer.display(float(self.elapsed))
             self.last_time = new_time
 
-            text = "Chi2 : {}\nIterations : {}".format(
-                self.objective.chisqr(xk), self.iterations
+            text = (
+                f"Chi2 : {self.objective.chisqr(xk)}\n"
+                f"Iterations : {self.iterations}"
             )
 
             self.ui.values.setPlainText(text)
