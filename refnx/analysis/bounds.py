@@ -284,10 +284,10 @@ class Interval(Bounds):
             lb = "-np.inf"
         if np.isinf(self.ub):
             ub = "np.inf"
-        return "Interval(lb={}, ub={})".format(lb, ub)
+        return f"Interval(lb={lb}, ub={ub})"
 
     def __str__(self):
-        return "[{0}, {1}]".format(self.lb, self.ub)
+        return f"[{self.lb}, {self.ub}]"
 
     @property
     def lb(self):

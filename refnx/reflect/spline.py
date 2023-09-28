@@ -104,10 +104,11 @@ class Spline(Component):
 
     def __repr__(self):
         s = (
-            "Spline({extent!r}, {vs!r}, {dz!r}, name={name!r}, zgrad={zgrad},"
-            " microslab_max_thickness={microslab_max_thickness})"
+            f"Spline({self.extent!r}, {self.vs!r}, {self.dz!r},"
+            f" name={self.name!r}, zgrad={self.zgrad},"
+            f" microslab_max_thickness={self.microslab_max_thickness})"
         )
-        return s.format(**self.__dict__)
+        return s
 
     def _interpolator(self, structure):
         dz = np.array(self.dz)

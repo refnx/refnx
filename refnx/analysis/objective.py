@@ -312,31 +312,31 @@ class Objective(BaseObjective):
             self.name = id(self)
 
     def __str__(self):
-        s = ["{:_>80}".format("")]
-        s.append("Objective - {0}".format(self.name))
+        s = [f"{'':_>80}"]
+        s.append(f"Objective - {self.name}")
 
         # dataset name
         if self.data.name is None:
-            s.append("Dataset = {0}".format(self.data))
+            s.append(f"Dataset = {self.data}")
         else:
-            s.append("Dataset = {0}".format(self.data.name))
+            s.append(f"Dataset = {self.data.name}")
 
-        s.append("datapoints = {0}".format(self.npoints))
-        s.append("chi2 = {0}".format(self.chisqr()))
-        s.append("Weighted = {0}".format(self.weighted))
-        s.append("Transform = {0}".format(self.transform))
+        s.append(f"datapoints = {self.npoints}")
+        s.append(f"chi2 = {self.chisqr()}")
+        s.append(f"Weighted = {self.weighted}")
+        s.append(f"Transform = {self.transform}")
         s.append(str(self.parameters))
 
         return "\n".join(s)
 
     def __repr__(self):
         return (
-            "Objective({model!r}, {data!r},"
-            " lnsigma={lnsigma!r},"
-            " use_weights={_use_weights},"
-            " transform={transform!r},"
-            " logp_extra={logp_extra!r},"
-            " name={name!r})".format(**self.__dict__)
+            f"Objective({self.model!r}, {self.data!r},"
+            f" lnsigma={self.lnsigma!r},"
+            f" use_weights={self._use_weights},"
+            f" transform={self.transform!r},"
+            f" logp_extra={self.logp_extra!r},"
+            f" name={self.name!r})"
         )
 
     @property
@@ -1032,7 +1032,7 @@ class GlobalObjective(Objective):
             )
 
     def __str__(self):
-        s = ["{:_>80}".format("\n")]
+        s = [f"{'':_>80}", "\n"]
         s.append("--Global Objective--")
         for obj in self.objectives:
             s.append(str(obj))
@@ -1340,7 +1340,7 @@ class Transform:
             )
 
     def __repr__(self):
-        return "Transform({0})".format(repr(self.form))
+        return f"Transform({self.form!r})"
 
     def __call__(self, x, y, y_err=None):
         """

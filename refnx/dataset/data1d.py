@@ -104,18 +104,17 @@ class Data1D:
         return self.y.size
 
     def __str__(self):
-        return "<{0}>, {1} points".format(self.name, len(self))
+        return f"<{self.name}>, {len(self)} points"
 
     def __repr__(self):
         msk = self._mask
         if np.all(self._mask):
             msk = None
 
-        d = {"filename": str(self.filename), "msk": msk, "data": self.data}
         if self.filename is not None:
-            return "Data1D(data={filename!r}," " mask={msk!r})".format(**d)
+            return f"Data1D(data={str(self.filename)!r}, mask={msk!r})"
         else:
-            return "Data1D(data={data!r}," " mask={msk!r})".format(**d)
+            return f"Data1D(data={self.data!r}, mask={msk!r})"
 
     @property
     def x(self):
