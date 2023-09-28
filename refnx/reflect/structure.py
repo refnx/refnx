@@ -621,7 +621,7 @@ class Structure(UserList):
         this structure.
 
         """
-        p = Parameters(name="Structure - {0}".format(self.name))
+        p = Parameters(name=f"Structure - {self.name}")
         p.extend([component.parameters for component in self.components])
         if self._solvent is not None:
             p.append(self.solvent.parameters)
@@ -782,7 +782,7 @@ class Scatterer:
 
     def __str__(self):
         sld = complex(self)
-        return "SLD = {0} x10**-6 Å**-2".format(sld)
+        return f"SLD = {sld} x10**-6 Å**-2"
 
     def __complex__(self):
         raise NotImplementedError
@@ -896,9 +896,7 @@ class SLD(Scatterer):
         self._parameters = Parameters(name=name)
 
     def __repr__(self):
-        return "SLD([{real!r}, {imag!r}]," " name={name!r})".format(
-            **self.__dict__
-        )
+        return f"SLD([{self.real!r}, {self.imag!r}], name={self.name!r})"
 
     def __complex__(self):
         sldc = complex(self.real.value, self.imag.value)
@@ -976,8 +974,8 @@ class MaterialSLD(Scatterer):
             "name": self.name,
         }
         return (
-            "MaterialSLD({compound!r}, {density!r}, probe={probe!r},"
-            " wavelength={wavelength!r}, name={name!r})".format(**d)
+            f"MaterialSLD({self._compound!r}, {self.density!r}, probe={self.probe!r},"
+            f" wavelength={self.wavelength!r}, name={self.name!r})"
         )
 
     @property
@@ -1490,13 +1488,13 @@ class Stack(Component, UserList):
 
     def __str__(self):
         s = list()
-        s.append("{:=>80}".format(""))
+        s.append(f"{'' :=>80}")
 
         s.append(f"Stack start: {int(round(abs(self.repeats.value)))} repeats")
         for component in self:
             s.append(str(component))
         s.append("Stack finish")
-        s.append("{:=>80}".format(""))
+        s.append(f"{'' :=>80}")
 
         return "\n".join(s)
 
