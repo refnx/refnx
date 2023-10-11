@@ -18,6 +18,6 @@ attrs
 corner
 tqdm
 periodictable
-pytensor
-pymc
+pytensor; python_version != "3.12"
+pymc; python_version != "3.12"
 pytest-qt
