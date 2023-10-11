@@ -1,5 +1,5 @@
 [build-system]
-requires = [ "setuptools<=65.5.1", "cython", "wheel", "numpy", "oldest-supported-numpy"]
+requires = [ "setuptools", "cython", "wheel", "numpy", "oldest-supported-numpy"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -43,8 +43,8 @@ all = [
     "h5py",
     "jupyter",
     "tqdm",
-    "pymc",
-    "pytensor",
+    "pymc; python_version != '3.12'",
+    "pytensor; python_version != '3.12'",
     "attrs",
     "pandas",
     "pyparsing",
