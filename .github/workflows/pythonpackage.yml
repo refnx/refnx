@@ -9,9 +9,10 @@ jobs:
 
     runs-on: ubuntu-22.04
     strategy:
+      fail-fast: true
       max-parallel: 3
       matrix:
-        python-version: [3.9, '3.10', '3.11']
+        python-version: [3.9, '3.10', '3.11', '3.12']
 
     steps:
 
@@ -21,6 +22,8 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
         cache: 'pip' # caching pip dependencies
+        allow-prereleases: true
+
     - run: pip install -r .requirements.txt
 
     - name: setup apt dependencies
@@ -81,9 +84,10 @@ jobs:
 
     runs-on: macos-latest
     strategy:
+      fail-fast: true
       max-parallel: 3
       matrix:
-        python-version: [3.9, '3.10', '3.11']
+        python-version: ['3.10', '3.11', '3.12']
 
     steps:
     - uses: actions/checkout@v4
@@ -92,6 +96,7 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
         cache: 'pip' # caching pip dependencies
+        allow-prereleases: true
 
     - run: pip install -r .requirements.txt
 
@@ -164,9 +169,10 @@ jobs:
 
     runs-on: windows-latest
     strategy:
+      fail-fast: true
       max-parallel: 3
       matrix:
-        python-version: [3.9, '3.10', '3.11']
+        python-version: ['3.10', '3.11', '3.12']
 
     steps:
     - uses: actions/checkout@v4
@@ -175,6 +181,7 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
         cache: 'pip' # caching pip dependencies
+        allow-prereleases: true
 
     - run: pip install -r .requirements.txt
 

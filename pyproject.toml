@@ -1,5 +1,5 @@
 [build-system]
-requires = [ "setuptools<=65.5.1", "cython", "wheel", "numpy", "oldest-supported-numpy"]
+requires = [ "setuptools", "cython", "wheel", "numpy", "oldest-supported-numpy"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -43,8 +43,8 @@ all = [
     "h5py",
     "jupyter",
     "tqdm",
-    "pymc",
-    "pytensor",
+    "pymc; python_version != '3.12'",
+    "pytensor; python_version != '3.12'",
     "attrs",
     "pandas",
     "pyparsing",
@@ -94,7 +94,7 @@ packages = [
 
 
 [tool.cibuildwheel]
-skip = "pp* cp36-* cp37-* *-musllinux* cp312-*"
+skip = "pp* cp36-* cp37-* cp38-*"
 test-requires = ["pytest"]
 test-command = "pytest --pyargs refnx.reflect.test.test_reflect"
 manylinux-x86_64-image = "manylinux2014"
@@ -105,7 +105,7 @@ archs = ["x86_64", "arm64"]
 # On an Linux Intel runner with qemu installed, build Intel and ARM wheels
 [tool.cibuildwheel.linux]
 manylinux-x86_64-image = "manylinux2014"
-archs = ["x86_64"]
+archs = ["x86_64", "aarch64"]
 
 [tool.cibuildwheel.windows]
 archs = ["AMD64"]

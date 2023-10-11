@@ -13,12 +13,11 @@ traitlets
 pyqt6
 qtpy
 uncertainties
-setuptools<=65.5.1
+setuptools
 attrs
 corner
 tqdm
 periodictable
-pyopencl
-pytensor
-pymc
+pytensor; python_version != "3.12"
+pymc; python_version != "3.12"
 pytest-qt
