@@ -521,3 +521,6 @@ in 0.1.13.
 
 0.1.39
 ------
+- remove roadblocks for building wheels for cp312.
+- update vendored emcee.
+- change str.format to f-strings.
