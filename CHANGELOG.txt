@@ -519,7 +519,7 @@ in 0.1.13.
   region.
 - fix path concatenation issue in reduce_stitch, str or Path should be allowed.
 
-0.1.39
+0.1.40
 ------
 - remove roadblocks for building wheels for cp312.
 - update vendored emcee.
