@@ -1,5 +1,10 @@
 [build-system]
-requires = [ "setuptools", "cython", "wheel", "numpy", "oldest-supported-numpy"]
+requires = [
+    "setuptools",
+    "cython",
+    "wheel",
+    "numpy>=1.25.0",
+]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -8,7 +13,7 @@ authors = [{name="Andrew Nelson", email="andyfaff+refnx@gmail.com"}]
 description = "Neutron and X-ray Reflectometry Analysis"
 license = {text = "BSD-3-Clause"}
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 dynamic = ["version"]
 classifiers = [
     "Development Status :: 4 - Beta",
