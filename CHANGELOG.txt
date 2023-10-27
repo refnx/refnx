@@ -527,3 +527,5 @@ in 0.1.13.
 
 0.1.41
 ------
+- bump minimum Python version to 3.9.
+- remove oldest-supported-numpy from list of build requirements.
