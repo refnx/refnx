@@ -45,7 +45,7 @@ os.environ.setdefault("KMP_DUPLICATE_LIB_OK", "True")
 try:
     import numba
     # set the threading layer before any parallel target compilation
-    numba.config.THREADING_LAYER = 'forksafe'
+    numba.config.THREADING_LAYER = "forksafe"
 except ImportError:
     pass
 
