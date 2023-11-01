@@ -43,6 +43,13 @@ from refnx.reflect._app import gui, main
 os.environ.setdefault("KMP_DUPLICATE_LIB_OK", "True")
 
 try:
+    import numba
+    # set the threading layer before any parallel target compilation
+    numba.config.THREADING_LAYER = 'forksafe'
+except ImportError:
+    pass
+
+try:
     from refnx.reflect._interactive_modeller import Motofit
 except ImportError:
 

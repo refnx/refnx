@@ -38,7 +38,7 @@ def numba_parratt(
         numba.float64,
     ),
     nopython=True,
-    parallel=True,
+    parallel=False,
     cache=True,
 )
 def _numba_kernel(q, d, sldr, sldi, sigma, scale, bkg):
