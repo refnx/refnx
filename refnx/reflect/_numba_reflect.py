@@ -18,10 +18,8 @@ def numba_parratt(
 
     qvals = np.asarray(q).astype(float, copy=False)
     flatq = np.ravel(qvals)
-    sld = slabs[:, 2] * 1j
-    sld += slabs[:, 1]
     reflectivity = _numba_kernel(
-        flatq, slabs[:, 0], sld, slabs[:, -1], scale, bkg
+        flatq, slabs[:, 0], slabs[:, 1], slabs[:, 2], slabs[:, 3], scale, bkg
     )
 
     numba.set_num_threads(current_threads)
@@ -33,7 +31,8 @@ def numba_parratt(
     numba.float64[:](
         numba.float64[:],
         numba.float64[:],
-        numba.complex128[:],
+        numba.float64[:],
+        numba.float64[:],
         numba.float64[:],
         numba.float64,
         numba.float64,
@@ -42,13 +41,17 @@ def numba_parratt(
     parallel=True,
     cache=True,
 )
-def _numba_kernel(q, d, sld, sigma, scale, bkg):
+def _numba_kernel(q, d, sldr, sldi, sigma, scale, bkg):
     nlayers = d.shape[0] - 2
     points = q.shape[0]
 
     R = np.empty_like(q)
 
-    sld = np.pi * 4e-6 * (sld - sld[0])
+    sld = 1j * (np.abs(sldi) + 1e-30)
+    sld += sldr - sldr[0]
+    sld[0] = 0.0
+    sld *= np.pi * 4e-6
+
     for qi in numba.prange(points):
         q2 = 0.25 * q[qi] ** 2
         kn = cmath.sqrt(q2 - sld[-2])
