@@ -57,7 +57,7 @@ all = [
     "pyqt6",
     "qtpy",
     "corner",
-    "numba",
+    "numba; python_version != '3.12'",
 ]
 
 test = [

@@ -1,5 +1,5 @@
 numpy
-numba
+numba; python_version != "3.12"
 cython
 scipy
 orsopy
