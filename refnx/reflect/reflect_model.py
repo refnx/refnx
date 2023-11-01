@@ -115,6 +115,13 @@ def available_backends():
     except ImportError:
         pass
 
+    try:
+        from refnx.reflect import _numba_reflect as _nr
+
+        backends.append("numba_parratt")
+    except ImportError:
+        pass
+
     # try:
     #     import jax as jax
     #     from jax.config import config
@@ -142,10 +149,13 @@ def get_reflect_backend(backend="c"):
 
     Parameters
     ----------
-    backend: {'python', 'cython', 'c', 'pyopencl', 'py_parratt', 'c_parratt'}
+    backend: {'python', 'cython', 'c', 'pyopencl', 'py_parratt', 'c_parratt',
+              'numba_parratt'}
         The module that calculates the reflectivity. Speed should go in the
-        order: c > pyopencl / cython > py_parratt > python. If a particular
-        method is not available the function falls back:
+        order:
+        numba_parratt > c_parratt > c > pyopencl / cython > py_parratt > python.
+
+        If a particular method is not available the function falls back:
         cython/pyopencl --> c --> --> python.
         c_parratt --> py_parratt.
 
@@ -199,6 +209,16 @@ def get_reflect_backend(backend="c"):
         except ImportError:
             warnings.warn("Can't use the C abeles backend")
             return get_reflect_backend("python")
+    elif backend == "numba_parratt":
+        try:
+            from refnx.reflect._numba_reflect import numba_parratt
+
+            return numba_parratt
+        except ImportError:
+            warnings.warn(
+                "Can't use the numba_parratt backend, requires numba be installed"
+            )
+            return get_reflect_backend("c_parratt")
     elif backend == "py_parratt":
         from refnx.reflect._reflect import parratt
 
@@ -250,10 +270,12 @@ def use_reflect_backend(backend="c"):
 
     Parameters
     ----------
-    backend: {'python', 'cython', 'c', 'pyopencl'}, str
+    backend: {'python', 'cython', 'c', 'pyopencl', 'py_parratt', 'c_parratt',
+              'numba_parratt'}, str
         The function that calculates the reflectivity. Speed should go in the
-        order: c > pyopencl / cython > python. If a particular method is not
-        available the function falls back: cython/pyopencl --> c --> python.
+        order: numba_parratt > c_parratt > c > pyopencl / cython > python. If a
+        particular method is not available the function falls back to another
+        option.
 
     Yields
     ------
@@ -262,7 +284,8 @@ def use_reflect_backend(backend="c"):
 
     Notes
     -----
-    'c' is preferred for most circumstances.
+    'c' is preferred for most circumstances, because it's pretty much
+    guaranteed to be present.
     'pyopencl' uses a GPU to calculate reflectivity and requires that pyopencl
     be installed. It may not as accurate as the other options. 'pyopencl' is
     only included for completeness. The 'pyopencl' backend is also harder to
