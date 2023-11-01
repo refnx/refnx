@@ -13,7 +13,7 @@ def numba_parratt(
     current_threads = numba.get_num_threads()
     if threads == -1:
         threads = numba.config.NUMBA_DEFAULT_NUM_THREADS
-
+    threads = np.clip(threads, 1, numba.config.NUMBA_DEFAULT_NUM_THREADS)
     numba.set_num_threads(threads)
 
     qvals = np.asarray(q).astype(float, copy=False)
