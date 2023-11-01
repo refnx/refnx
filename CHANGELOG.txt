@@ -529,3 +529,6 @@ in 0.1.13.
 ------
 - bump minimum Python version to 3.9.
 - remove oldest-supported-numpy from list of build requirements.
+- add "numba_parratt" reflectometry kernel. If numba is installed this kernel
+  has greater calculation speed (in calculating the reflectivity) under some
+  circumstances.
