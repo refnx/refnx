@@ -532,3 +532,4 @@ in 0.1.13.
 - add "numba_parratt" reflectometry kernel. If numba is installed this kernel
   has greater calculation speed (in calculating the reflectivity) under some
   circumstances.
+- fixed bug when exporting parameters from refnx GUI.
