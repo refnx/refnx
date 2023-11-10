@@ -731,7 +731,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         cwd = Path.cwd()
         suggested_name = cwd / "coefficients.csv"
         fname, ok = getsavefilename(
-            self, "Exported file name:", suggested_name
+            self, "Exported file name:", str(suggested_name)
         )
         if not ok:
             return
