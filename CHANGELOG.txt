@@ -533,3 +533,5 @@ in 0.1.13.
   has greater calculation speed (in calculating the reflectivity) under some
   circumstances.
 - fixed bug when exporting parameters from refnx GUI.
+- use optionally installed black to format code fragment exported from refnx
+  GUI.
