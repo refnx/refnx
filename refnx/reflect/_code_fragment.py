@@ -278,6 +278,7 @@ def code_fragment(objective):
 
     try:
         from black import format_str, FileMode
+
         code_str = format_str(code_str, mode=FileMode())
     except ImportError:
         pass
