@@ -274,7 +274,16 @@ def code_fragment(objective):
 
     # add main to make the script executable
     code.append(_main)
-    return "\n".join(code)
+    code_str = "\n".join(code)
+
+    try:
+        from black import format_str, FileMode
+
+        code_str = format_str(code_str, mode=FileMode())
+    except ImportError:
+        pass
+    finally:
+        return code_str
 
 
 def objective_fragment(i, objective):
