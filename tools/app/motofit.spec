@@ -44,6 +44,7 @@ a = Analysis(
     hiddenimports=[
         "pkg_resources",
         "periodictable",
+        "black",
         "refnx",
         "refnx.analysis",
         "refnx.dataset",
