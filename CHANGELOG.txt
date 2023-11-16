@@ -536,3 +536,6 @@ in 0.1.13.
 - use optionally installed black to format code fragment exported from refnx
   GUI.
 - update jax reflectivity kernel to fix deprecated functions.
+
+0.1.42
+------
