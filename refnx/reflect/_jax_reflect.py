@@ -27,12 +27,16 @@ from functools import reduce
 
 import jax.numpy as jnp
 from jax import jit
-from jax.ops import index, index_add, index_update
 
 TINY = 1e-30
 
 
 def jabeles(q, layers, scale=1.0, bkg=0, threads=0):
+    # Note, this code must have 64 bit operation enabled before it is used
+    # You can do this with:
+    # from jax import config
+    # config.update("jax_enable_x64", True)
+
     qvals = q.astype(jnp.float64)
     flatq = qvals.ravel()
 
@@ -45,12 +49,11 @@ def jabeles(q, layers, scale=1.0, bkg=0, threads=0):
 
     # addition of TINY is to ensure the correct branch cut
     # in the complex sqrt calculation of kn.
-    sld = index_add(
-        sld,
-        index[1:],
+    sld = sld.at[1:].add(
         ((layers[1:, 1] - layers[0, 1]) + 1j * (jnp.abs(layers[1:, 2]) + TINY))
-        * 1.0e-6,
+        * 1.0e-6
     )
+
     kn = jnp.sqrt(flatq[:, jnp.newaxis] ** 2.0 / 4.0 - 4.0 * jnp.pi * sld)
     # reflectances for each layer
     # rj.shape = (npnts, nlayers + 1)
@@ -60,10 +63,8 @@ def jabeles(q, layers, scale=1.0, bkg=0, threads=0):
     # characteristic matrices for each layer
     # miNN.shape = (npnts, nlayers + 1)
     if nlayers:
-        mi00 = index_update(
-            mi00,
-            index[:, 1:],
-            jnp.exp(kn[:, 1:-1] * 1j * jnp.fabs(layers[1:-1, 0])),
+        mi00 = mi00.at[:, 1:].set(
+            jnp.exp(kn[:, 1:-1] * 1j * jnp.fabs(layers[1:-1, 0]))
         )
     mi11 = 1.0 / mi00
     mi10 = rj * mi11
@@ -71,33 +72,17 @@ def jabeles(q, layers, scale=1.0, bkg=0, threads=0):
 
     mi = jnp.zeros((npnts, nlayers + 1, 2, 2), jnp.complex128)
 
-    mi = index_update(
-        mi,
-        index[:, :, 0, 0],
-        mi00,
-    )
-    mi = index_update(
-        mi,
-        index[:, :, 0, 1],
-        mi01,
-    )
-    mi = index_update(
-        mi,
-        index[:, :, 1, 1],
-        mi11,
-    )
-    mi = index_update(
-        mi,
-        index[:, :, 1, 0],
-        mi10,
-    )
+    mi = mi.at[:, :, 0, 0].set(mi00)
+    mi = mi.at[:, :, 0, 1].set(mi01)
+    mi = mi.at[:, :, 1, 1].set(mi11)
+    mi = mi.at[:, :, 1, 0].set(mi10)
 
     sub = [jnp.squeeze(v) for v in jnp.hsplit(mi, nlayers + 1)]
     mrtot = reduce(jnp.matmul, sub[1:], sub[0])
 
     r = mrtot[:, 1, 0] / mrtot[:, 0, 0]
     reflectivity = r * jnp.conj(r) * scale
-    reflectivity = index_add(reflectivity, ..., bkg)
+    reflectivity = reflectivity.at[...].add(bkg)
 
     return jnp.real(jnp.reshape(reflectivity, qvals.shape))
 
