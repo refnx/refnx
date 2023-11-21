@@ -32,6 +32,7 @@ from refnx.reduce.event import (
 )
 from refnx.reduce.rebin import rebin, rebin_along_axis
 from refnx._lib import possibly_open_file
+from refnx.reflect import SpinChannel
 
 
 EXTENT_MULT = 2
@@ -664,17 +665,6 @@ class PolarisedCatalogue(PlatypusCatalogue):
             d["magnet_measured_field"] = None
             d["magnet_output_current"] = None
             self.is_magnet = False
-
-
-class SpinChannel(Enum):
-    """
-    Describes the incident and scattered spin state of a polarised neutron beam.
-    """
-
-    UP_UP = (1, 1)
-    UP_DOWN = (1, 0)
-    DOWN_UP = (0, 1)
-    DOWN_DOWN = (0, 0)
 
 
 class SpinSet(object):

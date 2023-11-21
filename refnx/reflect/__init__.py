@@ -9,6 +9,7 @@ from refnx.reflect.reflect_model import (
     use_reflect_backend,
     available_backends,
     abeles,
+    SpinChannel,
 )
 from refnx.reflect.structure import (
     Structure,
