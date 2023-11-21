@@ -24,7 +24,7 @@ DEALINGS IN THIS SOFTWARE.
 
 from collections import UserList
 import numbers
-import operator
+import operator as op
 
 import numpy as np
 from scipy.stats import norm
@@ -39,7 +39,7 @@ from refnx._lib import flatten
 from refnx.analysis import Parameters, Parameter, possibly_create_parameter
 from refnx.analysis.parameter import BaseParameter
 from refnx.reflect.interface import Interface, Erf, Step
-from refnx.reflect.reflect_model import get_reflect_backend
+from refnx.reflect.reflect_model import get_reflect_backend, SpinChannel
 
 # contracting the SLD profile can greatly speed a reflectivity calculation up.
 contract_by_area = refcalc._contract_by_area
@@ -160,6 +160,10 @@ class Structure(UserList):
         # if you provide a list of components to start with, then initialise
         # the structure from that
         self.data = [c for c in components if isinstance(c, Component)]
+
+        # private attribute for future work. Users should not count on this
+        # staying around.
+        self._spin = None
 
     def __copy__(self):
         s = Structure(name=self.name, solvent=self._solvent)
@@ -1092,7 +1096,7 @@ class Component:
             The created Structure
         """
         # convert to integer, should raise an error if there's a problem
-        n = operator.index(n)
+        n = op.index(n)
         if n < 1:
             return Structure()
         elif n == 1:
@@ -1208,7 +1212,7 @@ class Slab(Component):
     thick : refnx.analysis.Parameter or float
         thickness of slab (Angstrom)
     sld : :class:`refnx.reflect.Scatterer`, complex, or float
-        (complex) SLD of film (/1e-6 Angstrom**2)
+        (complex) SLD of film (/1e-6 Angstrom**-2)
     rough : refnx.analysis.Parameter or float
         roughness on top of this slab (Angstrom)
     name : str
@@ -1305,7 +1309,7 @@ class MixedSlab(Component):
         thickness of slab (Angstrom)
     sld_list : sequence of {refnx.reflect.Scatterer, complex, float}
         Sequence of (complex) SLDs that are contained in film
-        (/1e-6 Angstrom**2)
+        (/1e-6 Angstrom**-2)
     vf_list : sequence of refnx.analysis.Parameter or float
         relative volume fractions of each of the materials contained in the
         film.
@@ -1609,6 +1613,132 @@ class Stack(Component, UserList):
         else:
             raise ValueError()
         return self
+
+
+class _PolarisedSlab(Component):
+    """
+    A slab component has uniform SLD over its thickness.
+
+    Parameters
+    ----------
+    thick : refnx.analysis.Parameter or float
+        thickness of slab (Angstrom)
+    sld : :class:`refnx.reflect.Scatterer`, complex, or float
+        (complex) nuclear SLD of film (/1e-6 Angstrom**-2)
+    rough : refnx.analysis.Parameter or float
+        roughness on top of this slab (Angstrom)
+    rhoM : refnx.analysis.Parameter or float
+        magnetic SLD of film (/1e-6 Angstrom**-2)
+    thetaM : refnx.analysis.Parameter or float
+        Magnetic angle of the layer
+    name : str
+        Name of this slab
+    vfsolv : refnx.analysis.Parameter or float
+        Volume fraction of solvent [0, 1]
+    interface : {:class:`Interface`, None}, optional
+        The type of interfacial roughness associated with the Slab.
+        If `None`, then the default interfacial roughness is an Error
+        function (also known as Gaussian roughness).
+    """
+
+    def __init__(
+        self,
+        thick,
+        sld,
+        rough,
+        rhoM,
+        thetaM,
+        name="",
+        vfsolv=0,
+        interface=None,
+    ):
+        super().__init__(name=name)
+        self.thick = possibly_create_parameter(
+            thick, name=f"{name} - thick", units="Å"
+        )
+        if isinstance(sld, Scatterer):
+            self.sld = sld
+        else:
+            self.sld = SLD(sld)
+        self.rough = possibly_create_parameter(
+            rough, name=f"{name} - rough", units="Å"
+        )
+        self.vfsolv = possibly_create_parameter(
+            vfsolv, name=f"{name} - volfrac solvent", bounds=(0.0, 1.0)
+        )
+        self.rhoM = possibly_create_parameter(
+            rhoM,
+            name=f"{name} - rhoM",
+        )
+        self.thetaM = possibly_create_parameter(
+            thetaM,
+            name=f"{name} - thetaM",
+        )
+        self._parameters = Parameters(name=self.name)
+        self.interfaces = interface
+
+    def __repr__(self):
+        return (
+            f"Slab({self.thick!r}, {self.sld!r}, {self.rough!r},"
+            f" name={self.name!r}, vfsolv={self.vfsolv!r},"
+            f" rhoM={self.rhoM!r}, thetaM={self.thetaM!r}"
+            f" interface={self.interfaces!r})"
+        )
+
+    def __str__(self):
+        return str(self.parameters)
+
+    @property
+    def parameters(self):
+        """
+        :class:`refnx.analysis.Parameters` associated with this component
+
+        """
+        self._parameters.name = self.name
+        self._parameters.data = [
+            self.thick,
+            self.sld.parameters,
+            self.rough,
+            self.vfsolv,
+            self.rhoM,
+            self.thetaM,
+        ]
+        return self._parameters
+
+    def slabs(self, structure=None):
+        """
+        Slab representation of this component. See :class:`Component.slabs`
+        """
+        # speculative shortcut to prevent a number of attribute retrievals
+        if self.sld.dispersive:
+            sldc = self.sld.complex(getattr(structure, "wavelength", None))
+        else:
+            sldc = complex(self.sld)
+
+        mag_proj = self.rhoM.value * np.cos(np.degrees(self.thetaM.value))
+
+        if structure._spin in [SpinChannel.UP_UP, SpinChannel.UP_DOWN]:
+            _op = op.add
+        elif structure._spin in [SpinChannel.DOWN_UP, SpinChannel.DOWN_DOWN]:
+            _op = op.sub
+        else:
+            raise ValueError(
+                "Invalid spin state. Set Structure._spin to one of the"
+                " refnx.reflect.SpinChannel enumerations."
+            )
+
+        return np.array(
+            [
+                [
+                    self.thick.value,
+                    _op(sldc.real, mag_proj),
+                    sldc.imag,
+                    self.rough.value,
+                    self.vfsolv.value,
+                ]
+            ],
+            dtype=float,
+        )
 
 
 def _profile_slicer(z, sld_profile, slice_size=None):
