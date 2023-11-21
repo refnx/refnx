@@ -21,7 +21,6 @@ from refnx.reduce import (
     SpatzNexus,
     basename_datafile,
     catalogue,
-    SpinChannel,
     SpinSet,
 )
 from refnx.reduce.peak_utils import gauss
@@ -35,6 +34,7 @@ from refnx.reduce.platypusnexus import (
     create_reflect_nexus,
     ReductionOptions,
 )
+from refnx.reflect import SpinChannel
 
 
 class TestSpinSet(object):

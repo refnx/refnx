@@ -28,6 +28,7 @@ import time
 from functools import lru_cache
 import numbers
 import warnings
+from enum import Enum
 
 import numpy as np
 import scipy
@@ -296,6 +297,17 @@ def use_reflect_backend(backend="c"):
     kernel = get_reflect_backend(backend)
     yield kernel
     kernel = f
+
+
+class SpinChannel(Enum):
+    """
+    Describes the incident and scattered spin state of a polarised neutron beam.
+    """
+
+    UP_UP = (1, 1)
+    UP_DOWN = (1, 0)
+    DOWN_UP = (0, 1)
+    DOWN_DOWN = (0, 0)
 
 
 class ReflectModel:
