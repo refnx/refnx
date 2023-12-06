@@ -506,6 +506,7 @@ class BaseParameter:
         if self.constraint is not None:
             constraint = f", constraint={self.constraint}"
 
+        fixed = ""
         if not self.vary and self.constraint is None:
             fixed = " (fixed)"
         elif self.stderr is not None:
