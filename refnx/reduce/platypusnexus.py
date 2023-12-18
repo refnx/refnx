@@ -1839,7 +1839,6 @@ class ReflectNexus:
         lopx = lopx.astype(int)
         hipx = hipx.astype(int)
 
-        print(type(lopx_hipx), lopx_hipx)
         if lopx_hipx is not None:
             print(lopx_hipx)
             lopx = np.ones(n_spectra, dtype=int) * int(lopx_hipx[0])
