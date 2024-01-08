@@ -1066,9 +1066,11 @@ class GlobalObjective(Objective):
         return "\n".join(s)
 
     def __repr__(self):
-        return (f"GlobalObjective({self.objectives!r},"
-                f" lambdas={list(self.lambdas)!r},"
-                f" alpha={self.alpha!r})")
+        return (
+            f"GlobalObjective({self.objectives!r},"
+            f" lambdas={list(self.lambdas)!r},"
+            f" alpha={self.alpha!r})"
+        )
 
     @property
     def weighted(self):

@@ -205,7 +205,7 @@ class TestObjective:
         logl = self.objective.logl()
         logp = self.objective.logp()
         self.objective.alpha.setp(2.0)
-        assert_allclose(self.objective.logpost(), logl + 2*logp)
+        assert_allclose(self.objective.logpost(), logl + 2 * logp)
         self.objective.alpha.setp(1.0)
 
     def test_logpost(self):
