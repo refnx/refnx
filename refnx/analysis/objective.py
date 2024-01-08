@@ -266,6 +266,9 @@ class Objective(BaseObjective):
         details.
     name : str
         Name for the objective.
+    alpha : {float, Parameter, None}, optional
+        Multiplies the overall log-prior term for the parameters. Used to
+        balance log-prior and log-likelihood terms in the log-posterior.
 
     Notes
     -----
@@ -287,6 +290,7 @@ class Objective(BaseObjective):
         logp_extra=None,
         auxiliary_params=(),
         name=None,
+        alpha=None,
     ):
         self.model = model
         # should be a Data1D instance
@@ -310,6 +314,10 @@ class Objective(BaseObjective):
         self.name = name
         if name is None:
             self.name = id(self)
+
+        self.alpha = alpha
+        if alpha is not None:
+            self.alpha = possibly_create_parameter(alpha, name="alpha")
 
     def __str__(self):
         s = [f"{'':_>80}"]
@@ -336,7 +344,8 @@ class Objective(BaseObjective):
             f" use_weights={self._use_weights},"
             f" transform={self.transform!r},"
             f" logp_extra={self.logp_extra!r},"
-            f" name={self.name!r})"
+            f" name={self.name!r},"
+            f" alpha={self.alpha!r})"
         )
 
     @property
@@ -483,12 +492,15 @@ class Objective(BaseObjective):
         fitting system.
 
         """
+        pars = self.model.parameters
+
+        if is_parameter(self.alpha):
+            pars |= self.alpha
         if is_parameter(self.lnsigma):
-            return self.lnsigma | self.auxiliary_params | self.model.parameters
-        elif len(self.auxiliary_params):
-            return self.auxiliary_params | self.model.parameters
-        else:
-            return self.model.parameters
+            pars |= self.lnsigma
+        if len(self.auxiliary_params):
+            pars |= self.auxiliary_params
+        return pars
 
     def setp(self, pvals):
         """
@@ -713,7 +725,12 @@ class Objective(BaseObjective):
 
         """
         self.setp(pvals)
-        logpost = self.logp()
+
+        alpha = 1.0
+        if is_parameter(self.alpha):
+            alpha = self.alpha.value
+
+        logpost = alpha * self.logp()
 
         # only calculate the probability if the parameters have finite
         # log-prior
@@ -1010,9 +1027,14 @@ class GlobalObjective(Objective):
         Lagrangian multipliers for each of the objective terms that contribute
         to the log-likelihood. Broadcast against the list of objectives. This
         array-like *may* become a list of Parameters in the future.
+
+    alpha : {float, Parameter, None}, optional
+        Multiplies the overall log-prior term for the parameters. Used to
+        balance log-prior and log-likelihood terms in the log-posterior.
+
     """
 
-    def __init__(self, objectives, lambdas=None):
+    def __init__(self, objectives, lambdas=None, alpha=1.0):
         self.objectives = objectives
 
         nobj = len(objectives)
@@ -1031,6 +1053,10 @@ class GlobalObjective(Objective):
                 " unweighted, you cannot have a mixture."
             )
 
+        self.alpha = alpha
+        if alpha is not None:
+            self.alpha = possibly_create_parameter(alpha, name="alpha")
+
     def __str__(self):
         s = [f"{'':_>80}", "\n"]
         s.append("--Global Objective--")
@@ -1040,7 +1066,9 @@ class GlobalObjective(Objective):
         return "\n".join(s)
 
     def __repr__(self):
-        return f"GlobalObjective({self.objectives!r}, lambdas={list(self.lambdas)!r})"
+        return (f"GlobalObjective({self.objectives!r},"
+                f" lambdas={list(self.lambdas)!r},"
+                f" alpha={self.alpha!r})")
 
     @property
     def weighted(self):
