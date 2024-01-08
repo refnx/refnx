@@ -200,6 +200,14 @@ class TestObjective:
         assert_equal(self.objective.logp(), np.log(0.1) + np.log(0.5))
         assert p in self.objective.varying_parameters().flattened()
 
+        # alpha should scale log-prior
+        self.objective.alpha = Parameter(1.0)
+        logl = self.objective.logl()
+        logp = self.objective.logp()
+        self.objective.alpha.setp(2.0)
+        assert_allclose(self.objective.logpost(), logl + 2 * logp)
+        self.objective.alpha.setp(1.0)
+
     def test_logpost(self):
         # http://dan.iel.fm/emcee/current/user/line/
         assert_allclose(self.objective.logp(), 0)

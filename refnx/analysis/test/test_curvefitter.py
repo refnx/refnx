@@ -66,7 +66,7 @@ class TestCurveFitter:
 
         self.model = Model(self.p, fitfunc=line)
         self.objective = Objective(self.model, self.data)
-        assert_(len(self.objective.varying_parameters()) == 2)
+        assert len(self.objective.varying_parameters()) == 2
 
         mod = np.array(
             [

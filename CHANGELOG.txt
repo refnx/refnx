@@ -539,3 +539,5 @@ in 0.1.13.
 
 0.1.42
 ------
+- scale log-prior in log-posterior calculation using a multiplier. This allows
+  one to balance relative size of likelihood and prior.
