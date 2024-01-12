@@ -575,3 +575,9 @@ class TestStructure:
         assert id(pars[1][1]) == id(replace[2])
         assert id(pars[2]) == id(replace[3])
         assert id(pars[3]) == id(replace[4])
+
+    def test_from_slabs(self):
+        slabs = self.s.slabs()
+        s = Structure.from_slabs(slabs)
+        slabs_2 = s.slabs()
+        assert_allclose(slabs_2, slabs)
