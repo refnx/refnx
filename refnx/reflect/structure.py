@@ -257,6 +257,14 @@ class Structure(UserList):
     def reverse_structure(self, reverse_structure):
         self._reverse_structure = reverse_structure
 
+    @classmethod
+    def from_slabs(cls, slabs):
+        s = []
+        for slab in slabs:
+            _slab = Slab(slab[0], complex(slab[1], slab[2]), slab[3])
+            s.append(_slab)
+        return cls(s)
+
     def slabs(self, **kwds):
         r"""
 
