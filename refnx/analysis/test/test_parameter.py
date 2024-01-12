@@ -85,6 +85,9 @@ class TestParameter:
         assert isinstance(0.5 * p, _BinaryOp)
         assert is_parameter(0.5 * p)
 
+    def test_print(self):
+        print(Parameter(0, vary=True, bounds=(1, 2), name="as"))
+
     def test_repr(self):
         p = Parameter(value=5, name="pop", vary=True)
         q = eval(repr(p))
