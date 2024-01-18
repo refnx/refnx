@@ -541,4 +541,5 @@ in 0.1.13.
 ------
 - scale log-prior in log-posterior calculation using a multiplier. This allows
   one to balance relative size of likelihood and prior.
-- added Structure.from_slabs classmethod
+- added Structure.from_slabs classmethod.
+- fixed bug when trying to print a Parameter.
