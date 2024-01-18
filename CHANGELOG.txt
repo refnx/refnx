@@ -543,3 +543,6 @@ in 0.1.13.
   one to balance relative size of likelihood and prior.
 - added Structure.from_slabs classmethod.
 - fixed bug when trying to print a Parameter.
+
+0.1.43
+------
