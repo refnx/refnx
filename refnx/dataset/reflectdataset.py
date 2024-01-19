@@ -154,6 +154,12 @@ class ReflectDataset(Data1D):
             drvals = [float(val) for val in drtext if len(val)]
             dqvals = [float(val) for val in dqtext if len(val)]
 
+            if isinstance(fname, PurePath):
+                # use a PurePath, not a system specific path type
+                # because Posix systems can't deal with WindowsPath
+                # and vice versa. This becomes an issue when pickling.
+                fname = PurePath(fname)
+
             self.filename = fname
             self.name = Path(fname).stem
             self.data = (qvals, rvals, drvals, dqvals)
