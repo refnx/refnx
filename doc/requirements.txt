@@ -4,7 +4,7 @@ sphinxcontrib-bibtex
 sphinxcontrib-jquery
 jinja2
 sphinx_rtd_theme
-tqdm
+# tqdm
 corner
 periodictable
 pandoc

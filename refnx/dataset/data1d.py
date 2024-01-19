@@ -487,6 +487,12 @@ class Data1D:
         else:
             fname = f
 
+        if isinstance(fname, PurePath):
+            # use a PurePath, not a system specific path type
+            # because Posix systems can't deal with WindowsPath
+            # and vice versa. This becomes an issue when pickling.
+            fname = PurePath(fname)
+
         self.filename = fname
         self.name = Path(fname).stem
 
