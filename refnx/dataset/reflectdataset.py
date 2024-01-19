@@ -3,7 +3,7 @@ import time
 import re
 
 # from datetime import datetime
-from pathlib import Path
+from pathlib import Path, PurePath
 
 try:
     import xml.etree.cElementTree as ET
