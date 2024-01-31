@@ -500,8 +500,9 @@ def _neutron_transmission_depth(material, wavelength, xs_type="abs_incoh"):
     """
     import periodictable
 
-    sld, xs, _ = periodictable.neutron_scattering(material,
-                                                                  wavelength=wavelength)
+    sld, xs, _ = periodictable.neutron_scattering(
+        material, wavelength=wavelength
+    )
     if xs_type == "abs_incoh":
         penetration_depth = 1 / (xs[1] + xs[2])
     elif xs_type == "abs":
@@ -514,7 +515,9 @@ def _neutron_transmission_depth(material, wavelength, xs_type="abs_incoh"):
     return 10 * penetration_depth
 
 
-def neutron_transmission(formula, density, wavelength, thickness, xs_type="abs_incoh"):
+def neutron_transmission(
+    formula, density, wavelength, thickness, xs_type="abs_incoh"
+):
     """
     Calculates the transmission of neutrons through a material.
 
@@ -544,7 +547,9 @@ def neutron_transmission(formula, density, wavelength, thickness, xs_type="abs_i
 
     material = pt.formula(formula, density=density)
 
-    _depth_fn = np.vectorize(_neutron_transmission_depth, excluded={0, 'xs_type'})
+    _depth_fn = np.vectorize(
+        _neutron_transmission_depth, excluded={0, "xs_type"}
+    )
     depths = _depth_fn(material, wavelength, xs_type=xs_type)
     transmission = np.exp(-(thickness / depths))
     return transmission
@@ -572,9 +577,12 @@ def pressure_to_density(pressure, formula, temperature=298):
     """
     import periodictable
     from scipy import con
+
     # pressure in bar
     pressure = pressure * 100e3
-    number_density = constants.Avogadro * pressure / (constants.R * temperature)
+    number_density = (
+        constants.Avogadro * pressure / (constants.R * temperature)
+    )
     number_density /= 1e6  # atoms per cm^3
 
     c = periodictable.formula(formula)
