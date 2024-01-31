@@ -54,6 +54,9 @@
     "matrix": {
         "numpy": [],
         "Cython": [],
+        "attrs": [],
+        "scipy": [],
+        "tqdm": [],
     },
 
 
