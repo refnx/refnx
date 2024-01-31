@@ -1,6 +1,7 @@
 """"
 A basic representation of a 1D dataset
 """
+
 from pathlib import Path, PurePath
 import re
 import io

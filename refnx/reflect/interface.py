@@ -15,6 +15,7 @@ Stearns, D. G. J. Appl. Phys., 1989, 65, 491–506.
 The tanh definition has various definitions. This is taken from:
 D. Bahr; W. Press; R. Jebasinski; S. Mantl, Phys. Rev. B, 1993, 47 (8), 4385
 """
+
 import numpy as np
 from scipy.stats import norm
 

@@ -20,6 +20,7 @@ FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THIS SOFTWARE.
 
 """
+
 # -*- coding: utf-8 -*-
 
 from collections import UserList

@@ -11,6 +11,7 @@ without dependencies.
 
 VENDORED Aug2017
 """
+
 import numpy as np
 
 

@@ -23,6 +23,7 @@ FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THIS SOFTWARE.
 
 """
+
 from functools import reduce
 
 import jax.numpy as jnp

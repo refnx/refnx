@@ -1,6 +1,7 @@
 """Quasi-Monte Carlo engines and helpers.
 vendored from scipy, will be in scipy 1.17
 """
+
 import copy
 import numbers
 from abc import ABC, abstractmethod
