@@ -549,3 +549,5 @@ in 0.1.13.
 - Store the fname as a PurePath in Data1D. This is because pickled datafiles
   from one OS may not be unpickleable on another OS. e.g. Posix can't unpickle
   WindowsPath and vice versa.
+- modified `util.general.neutron_transmission` to be able to select which cross
+  sections are used for transmission calculation.

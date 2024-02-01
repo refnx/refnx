@@ -340,9 +340,9 @@ class ReflectReduce:
         reduction["m_lambda"] = self.reflected_beam.m_lambda
         reduction["nspectra"] = self.n_spectra
         reduction["start_time"] = self.reflected_beam.start_time
-        reduction[
-            "datafile_number"
-        ] = self.datafile_number = self.reflected_beam.datafile_number
+        reduction["datafile_number"] = self.datafile_number = (
+            self.reflected_beam.datafile_number
+        )
         reduction["direct_beam"] = self.direct_beam
         reduction["reflected_beam"] = self.reflected_beam
 

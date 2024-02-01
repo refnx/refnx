@@ -808,9 +808,11 @@ class SpinSet(object):
         if the spin channel was measured.
         """
         return [
-            self.channels[sc].spin_state.value
-            if self.channels[sc] is not None
-            else None
+            (
+                self.channels[sc].spin_state.value
+                if self.channels[sc] is not None
+                else None
+            )
             for sc in self.channels
         ]
 

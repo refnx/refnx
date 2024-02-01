@@ -23,6 +23,7 @@ FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THIS SOFTWARE.
 
 """
+
 from pathlib import Path
 import numpy as np
 import numpy.typing as npt

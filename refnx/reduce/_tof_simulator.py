@@ -1,6 +1,7 @@
 """
 An experimental simulator for a TOF neutron reflectometer
 """
+
 __author__ = "Andrew Nelson"
 __copyright__ = "Copyright 2019, Andrew Nelson"
 __license__ = "3 clause BSD"

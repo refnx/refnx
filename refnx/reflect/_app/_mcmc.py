@@ -1,6 +1,7 @@
 """
 Deals with GUI aspects of MCMC
 """
+
 from pathlib import Path
 
 import numpy as np

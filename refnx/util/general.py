@@ -481,7 +481,7 @@ def transmission_collimation(d1, d2, w1, w2, L12, alpha_h=None, alpha_v=None):
     return _I
 
 
-def _neutron_transmission_depth(material, wavelength):
+def _neutron_transmission_depth(material, wavelength, xs_type="abs_incoh"):
     """
     Calculate the penetration depth for a material with a given neutron
     wavelength
@@ -492,16 +492,34 @@ def _neutron_transmission_depth(material, wavelength):
 
     wavelength : float
         neutron wavelength in Angstrom
+
+    Returns
+    -------
+    penetration_depth : float
+        1/e penetration depth in mm
     """
-    import periodictable as pt
+    import periodictable
 
-    return 10.0 * pt.neutron_scattering(material, wavelength=wavelength)[-1]
+    sld, xs, _ = periodictable.neutron_scattering(
+        material, wavelength=wavelength
+    )
+    if xs_type == "abs_incoh":
+        penetration_depth = 1 / (xs[1] + xs[2])
+    elif xs_type == "abs":
+        penetration_depth = 1 / (xs[1])
+    elif xs_type == "abs_incoh_coh":
+        penetration_depth = 1 / (xs[0] + xs[1] + xs[2])
+    else:
+        raise ValueError("xs_type not known")
+
+    return 10 * penetration_depth
 
 
-def neutron_transmission(formula, density, wavelength, thickness):
+def neutron_transmission(
+    formula, density, wavelength, thickness, xs_type="abs_incoh"
+):
     """
     Calculates the transmission of neutrons through a material.
-    Includes absorption + scattering (coherent+incoherent) cross sections.
 
     Parameters
     ----------
@@ -513,20 +531,62 @@ def neutron_transmission(formula, density, wavelength, thickness):
         wavelength of neutron in Angstrom
     thickness : float
         thickness of material in mm
+    xs_type : {'abs', 'abs_incoh', 'abs_incoh_coh'}
+        Cross section to use for penetration depth calculation
 
     Returns
     -------
     transmission : float or np.ndarray
         transmission of material
+
+    Notes
+    -----
+    The periodictable notes (and the NCNR activation calculator) advise the use of abs_incoh for absorption with respect to the beam.
     """
     import periodictable as pt
 
     material = pt.formula(formula, density=density)
 
-    _depth_fn = np.vectorize(_neutron_transmission_depth, excluded={0})
-    depths = _depth_fn(material, wavelength)
+    _depth_fn = np.vectorize(
+        _neutron_transmission_depth, excluded={0, "xs_type"}
+    )
+    depths = _depth_fn(material, wavelength, xs_type=xs_type)
     transmission = np.exp(-(thickness / depths))
     return transmission
+
+
+def pressure_to_density(pressure, formula, temperature=298):
+    """
+    Convert gas pressure to mass density (ideal treatment
+
+    Parameters
+    ----------
+    pressure : float
+        Gas pressure in bar
+
+    formula : str
+        Chemical formula of the material
+
+    temperature : float
+        Gas temperature in Kelvin
+
+    Returns
+    -------
+    density : float
+        Mass density of gas
+    """
+    import periodictable
+    from scipy import con
+
+    # pressure in bar
+    pressure = pressure * 100e3
+    number_density = (
+        constants.Avogadro * pressure / (constants.R * temperature)
+    )
+    number_density /= 1e6  # atoms per cm^3
+
+    c = periodictable.formula(formula)
+    return number_density * c.molecular_mass
 
 
 def xray_wavelength(energy):

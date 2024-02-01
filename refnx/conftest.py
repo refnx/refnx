@@ -26,9 +26,10 @@ def data_directory(tmp_path_factory):
 
     try:
         # grab the test data
-        with urllib.request.urlopen(url, timeout=5) as response, open(
-            tmpdir / "master.zip", "wb"
-        ) as f:
+        with (
+            urllib.request.urlopen(url, timeout=5) as response,
+            open(tmpdir / "master.zip", "wb") as f,
+        ):
             shutil.copyfileobj(response, f)
 
         # master.zip is in tmpdir

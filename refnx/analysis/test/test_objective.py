@@ -2,6 +2,7 @@
 This module tests the objective function by comparing it to the line example
 from http://dan.iel.fm/emcee/current/user/line/
 """
+
 import pickle
 from multiprocessing.reduction import ForkingPickler
 from pathlib import Path

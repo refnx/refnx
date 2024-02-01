@@ -2,6 +2,7 @@
 GraphProperties: storing information about Matplotlib traces
 e.g. colors, linesizes, etc.
 """
+
 import matplotlib.artist as artist
 
 

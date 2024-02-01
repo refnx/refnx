@@ -1519,9 +1519,10 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
                         if progress.wasCanceled():
                             raise StopIteration("Sampling aborted")
 
-                with open(
-                    folder / "steps.chain", "w"
-                ) as f, get_context().Pool() as workers:
+                with (
+                    open(folder / "steps.chain", "w") as f,
+                    get_context().Pool() as workers,
+                ):
                     fitter.sample(
                         nsteps,
                         f=f,
@@ -2344,7 +2345,6 @@ class NavToolBar(NavigationToolbar):
 
 
 class MyReflectivityGraphs(FigureCanvas):
-
     """Ultimately, this is a QWidget (as well as a FigureCanvasAgg, etc.)."""
 
     def __init__(self, parent=None):
@@ -2534,7 +2534,6 @@ class MyReflectivityGraphs(FigureCanvas):
 
 
 class MySLDGraphs(FigureCanvas):
-
     """Ultimately, this is a QWidget (as well as a FigureCanvasAgg, etc.)."""
 
     def __init__(self, parent=None):
