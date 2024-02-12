@@ -102,7 +102,7 @@ class TestPlatypusReduce:
             ReflectDataset("./PLP0000708_0.dat")
 
             # try writing offspecular data
-            a.write_offspecular("offspec.xml", 0)
+            a.write_offspecular("offspec.dat.gz", 0)
 
     def test_detailed_kernel(self):
         with warnings.catch_warnings():

@@ -551,3 +551,5 @@ in 0.1.13.
   WindowsPath and vice versa.
 - modified `util.general.neutron_transmission` to be able to select which cross
   sections are used for transmission calculation.
+- We revised the ReflectReduce.write_offspecular to output an ascii file with 
+  four columns, qz,qx,m_ref, m_ref_err.

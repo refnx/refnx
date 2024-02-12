@@ -438,28 +438,24 @@ class ReflectReduce:
         self.y_err /= scale
 
     def write_offspecular(self, f, scanpoint=0):
-        d = dict()
-        d["time"] = strftime("%a, %d %b %Y %H:%M:%S +0000", gmtime())
-        d["_rnumber"] = self.reflected_beam.datafile_number
-        d["_numpointsz"] = np.size(self.m_ref, 1)
-        d["_numpointsy"] = np.size(self.m_ref, 2)
+        """
+        Writes reduced offspecular data to a file
 
-        s = string.Template(_template_ref_xml)
-
-        # filename = 'off_PLP{:07d}_{:d}.xml'.format(self._rnumber, index)
-        d["_r"] = repr(self.m_ref[scanpoint].tolist()).strip(",[]")
-        d["_qz"] = repr(self.m_qz[scanpoint].tolist()).strip(",[]")
-        d["_dr"] = repr(self.m_ref_err[scanpoint].tolist()).strip(",[]")
-        d["_qx"] = repr(self.m_qx[scanpoint].tolist()).strip(",[]")
-
-        thefile = s.safe_substitute(d)
-
-        with possibly_open_file(f, "wb") as g:
-            if "b" in g.mode:
-                thefile = thefile.encode("utf-8")
-
-            g.write(thefile)
-            g.truncate()
+        Parameters
+        ----------
+        f : {str, filehandle}
+            Uses np.savetxt to save data. If the filename ends in .gz, the file is
+            automatically saved in compressed gzip format. loadtxt understands
+            gzipped files transparently.
+        scanpoint : int
+        """
+        offspec_map = np.c_[
+            self.m_qz[scanpoint].ravel(),
+            self.m_qx[scanpoint].ravel(),
+            self.m_ref[scanpoint].ravel(),
+            self.m_ref_err[scanpoint].ravel(),
+        ]
+        np.savetxt(f, offspec_map, header="qz qx m_ref m_ref_err")
 
     def _create_metadata_header(self):
         header = []
