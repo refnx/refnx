@@ -450,8 +450,8 @@ class ReflectReduce:
         scanpoint : int
         """
         offspec_map = np.c_[
-            self.qz[scanpoint].ravel(),
-            self.qx[scanpoint].ravel(),
+            self.m_qz[scanpoint].ravel(),
+            self.m_qx[scanpoint].ravel(),
             self.m_ref[scanpoint].ravel(),
             self.m_ref_err[scanpoint].ravel(),
         ]
