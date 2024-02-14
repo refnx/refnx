@@ -444,18 +444,18 @@ class ReflectReduce:
         Parameters
         ----------
         f : {str, filehandle}
-            Uses np.savetxt to save data. If the filename ends in .gz, the file is
-            automatically saved in compressed gzip format. loadtxt understands
-            gzipped files transparently.
+            Uses `np.savez` to save data. When loading these files you can use
+            `npzfile = np.load(outfile); m_qz = npzfile['m_qz']`
+
         scanpoint : int
         """
-        offspec_map = np.c_[
-            self.m_qz[scanpoint].ravel(),
-            self.m_qx[scanpoint].ravel(),
-            self.m_ref[scanpoint].ravel(),
-            self.m_ref_err[scanpoint].ravel(),
-        ]
-        np.savetxt(f, offspec_map, header="qz qx m_ref m_ref_err")
+        np.savez(
+            f,
+            m_qz=self.m_qz[scanpoint].ravel(),
+            m_qx=self.m_qx[scanpoint].ravel(),
+            m_ref=self.m_ref[scanpoint].ravel(),
+            m_ref_err=self.m_ref_err[scanpoint].ravel(),
+        )
 
     def _create_metadata_header(self):
         header = []
