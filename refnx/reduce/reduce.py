@@ -451,10 +451,10 @@ class ReflectReduce:
         """
         np.savez(
             f,
-            m_qz=self.m_qz[scanpoint].ravel(),
-            m_qx=self.m_qx[scanpoint].ravel(),
-            m_ref=self.m_ref[scanpoint].ravel(),
-            m_ref_err=self.m_ref_err[scanpoint].ravel(),
+            m_qz=self.m_qz[scanpoint],
+            m_qx=self.m_qx[scanpoint],
+            m_ref=self.m_ref[scanpoint],
+            m_ref_err=self.m_ref_err[scanpoint],
         )
 
     def _create_metadata_header(self):
