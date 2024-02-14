@@ -444,8 +444,8 @@ class ReflectReduce:
         Parameters
         ----------
         f : {str, filehandle}
-            Uses np.savez to save data. When loading these files you can use
-            `npzfile = np.load(outfile); m_qz = npzfile['m_qz]
+            Uses `np.savez` to save data. When loading these files you can use
+            `npzfile = np.load(outfile); m_qz = npzfile['m_qz']`
 
         scanpoint : int
         """
