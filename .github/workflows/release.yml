@@ -24,8 +24,9 @@ jobs:
           CIBW_ARCHS_MACOS: "x86_64 arm64"
           CIBW_ENVIRONMENT_MACOS: MACOSX_DEPLOYMENT_TARGET="10.13"
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
+          name: wheels-${{ matrix.runs-on }}
           path: ./wheelhouse/*.whl
 
 
@@ -45,8 +46,9 @@ jobs:
           CIBW_TEST_COMMAND: pytest --pyargs refnx.reflect.test.test_reflect
           CIBW_BUILD: "*-manylinux_x86_64"
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
+          name: wheels-manylinux
           path: ./wheelhouse/*.whl
 
 
@@ -66,8 +68,9 @@ jobs:
           CIBW_TEST_COMMAND: pytest --pyargs refnx.reflect.test.test_reflect
           CIBW_BUILD: "*-musllinux_x86_64"
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
+          name: wheels-musllinux
           path: ./wheelhouse/*.whl
 
 
@@ -80,8 +83,9 @@ jobs:
     - name: Build sdist
       run: pipx run build --sdist
 
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       with:
+        name: wheels-sdist
         path: dist/*.tar.gz
 
 
@@ -93,12 +97,13 @@ jobs:
     - uses: actions/checkout@v4
 
     - name: Set up Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: 3.11
-    - uses: actions/download-artifact@v3
+    - uses: actions/download-artifact@v4
       with:
-        name: artifact
+        pattern: wheels-*
+        merge-multiple: true
         path: dist
     - name: Check version
       run: |
@@ -127,9 +132,10 @@ jobs:
       id-token: write  # IMPORTANT: this permission is mandatory for trusted publishing
 
     steps:
-    - uses: actions/download-artifact@v3
+    - uses: actions/download-artifact@v4
       with:
-        name: artifact
+        pattern: wheels-*
+        merge-multiple: true
         path: dist
 
     - name: Upload to PyPI
@@ -146,9 +152,10 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - uses: actions/download-artifact@v3
+    - uses: actions/download-artifact@v4
       with:
-        name: artifact
+        pattern: wheels-*
+        merge-multiple: true
         path: dist
 
     - uses: ncipollo/release-action@v1
