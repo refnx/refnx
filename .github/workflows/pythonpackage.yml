@@ -18,7 +18,7 @@ jobs:
 
     - uses: actions/checkout@v4
 
-    - uses: actions/setup-python@v4
+    - uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
         cache: 'pip' # caching pip dependencies
@@ -53,10 +53,10 @@ jobs:
         git clean -xdf
         python setup.py sdist
 
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       if: ${{ matrix.python-version == '3.9' }}
       with:
-        name: refnx-wheel
+        name: refnx-wheel-linux-${{ matrix.python-version }}
         path: dist/
 
 
@@ -92,7 +92,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - uses: actions/setup-python@v4
+    - uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
         cache: 'pip' # caching pip dependencies
@@ -159,9 +159,9 @@ jobs:
         mv dist/motofit.app.zip ../../dist/
         popd
 
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       with:
-        name: refnx-wheel
+        name: refnx-wheel-macos-${{ matrix.python-version }}
         path: dist/
 
 
@@ -177,7 +177,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - uses: actions/setup-python@v4
+    - uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
         cache: 'pip' # caching pip dependencies
@@ -236,9 +236,9 @@ jobs:
         move dist\motofit.exe ..\..\dist\
         cd ..\..
 
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       with:
-        name: refnx-wheel
+        name: refnx-wheel-win-${{ matrix.python-version }}
         path: dist/
 
 
@@ -254,7 +254,7 @@ jobs:
     - uses: actions/checkout@v4
 
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v4.3.0
+      uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
 
@@ -284,7 +284,7 @@ jobs:
     - uses: actions/checkout@v4
 
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v4.3.0
+      uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
 
