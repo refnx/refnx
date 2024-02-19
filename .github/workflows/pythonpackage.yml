@@ -56,7 +56,7 @@ jobs:
     - uses: actions/upload-artifact@v4
       if: ${{ matrix.python-version == '3.9' }}
       with:
-        name: refnx-wheel-${{ matrix.runs-on }}
+        name: refnx-wheel-linux
         path: dist/
 
 
@@ -161,7 +161,7 @@ jobs:
 
     - uses: actions/upload-artifact@v4
       with:
-        name: refnx-wheel-${{ matrix.runs-on }}
+        name: refnx-wheel-macos
         path: dist/
 
 
@@ -238,7 +238,7 @@ jobs:
 
     - uses: actions/upload-artifact@v4
       with:
-        name: refnx-wheel-${{ matrix.runs-on }}
+        name: refnx-wheel-win
         path: dist/
 
 
