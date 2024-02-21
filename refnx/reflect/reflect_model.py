@@ -702,8 +702,8 @@ class ReflectModelTL(ReflectModel):
         original_wavelength = self.structure.wavelength
 
         try:
-            for l in ls:
-                self.structure.wavelength = l
+            for lam in ls:
+                self.structure.wavelength = lam
                 slabs.append(self.structure.slabs()[..., :4])
         finally:
             self.structure.wavelength = original_wavelength
@@ -742,6 +742,15 @@ class ReflectModelTL(ReflectModel):
     @t_offset.setter
     def t_offset(self, value):
         self._t_offset.value = value
+
+    @property
+    def structure(self):
+        r"""
+        :class:`refnx.reflect.Structure` - object describing the interface of
+        a reflectometry sample.
+
+        """
+        return self._structure
 
     @structure.setter
     def structure(self, structure):

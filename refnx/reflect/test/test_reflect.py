@@ -429,10 +429,10 @@ class TestReflect:
 
         # test with ReflectModelTL, i.e. angle, wavelength
         t = np.array([1.0] * len(self.qvals))
-        l = general.wavelength(self.qvals, t)
+        lam = general.wavelength(self.qvals, t)
 
         rff = ReflectModelTL(self.structure, dq=0.0)
-        model = rff.model(np.c_[t, l])
+        model = rff.model(np.c_[t, lam])
         assert_allclose(model, self.rvals, atol=2e-7)
 
     def test_mixed_reflectivity_model(self):
