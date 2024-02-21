@@ -743,15 +743,6 @@ class ReflectModelTL(ReflectModel):
     def t_offset(self, value):
         self._t_offset.value = value
 
-    @property
-    def structure(self):
-        r"""
-        :class:`refnx.reflect.Structure` - object describing the interface of
-        a reflectometry sample.
-
-        """
-        return self._structure
-
     @structure.setter
     def structure(self, structure):
         self._structure = structure
