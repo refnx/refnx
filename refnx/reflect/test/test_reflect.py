@@ -21,6 +21,7 @@ from refnx.analysis import (
 from refnx.reflect import (
     SLD,
     ReflectModel,
+    ReflectModelTL,
     MixedReflectModel,
     reflectivity,
     Structure,
@@ -32,6 +33,7 @@ from refnx.reflect import (
 import refnx.reflect.reflect_model as reflect_model
 from refnx.dataset import ReflectDataset
 from refnx._lib import MapWrapper
+from refnx.util import general
 
 BACKENDS = list(reflect_model.available_backends())
 # TODO re-enable pyopencl tests at some point
@@ -423,7 +425,15 @@ class TestReflect:
         assert rff.threads == -1
 
         model = rff.model(self.qvals)
-        assert_almost_equal(model, self.rvals)
+        assert_allclose(model, self.rvals, atol=2e-7)
+
+        # test with ReflectModelTL, i.e. angle, wavelength
+        t = np.array([1.0] * len(self.qvals))
+        lam = general.wavelength(self.qvals, t)
+
+        rff = ReflectModelTL(self.structure, dq=0.0)
+        model = rff.model(np.c_[t, lam])
+        assert_allclose(model, self.rvals, atol=2e-7)
 
     def test_mixed_reflectivity_model(self):
         # test that mixed area model works ok.

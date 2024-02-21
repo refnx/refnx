@@ -2,6 +2,7 @@ import os
 
 from refnx.reflect.reflect_model import (
     ReflectModel,
+    ReflectModelTL,
     reflectivity,
     MixedReflectModel,
     FresnelTransform,

@@ -42,7 +42,7 @@ from refnx.analysis import (
     possibly_create_parameter,
     Transform,
 )
-
+from refnx.util import general
 
 # some definitions for resolution smearing
 _FWHM = 2 * np.sqrt(2 * np.log(2.0))
@@ -568,6 +568,200 @@ class ReflectModel:
         return self._parameters
 
 
+class ReflectModelTL(ReflectModel):
+    r"""
+    Calculates reflectivity using angle-of-incidence/wavelength.
+
+    In most circumstances the use of `ReflectModel` is preferred, which works
+    with momentum transfer. However, for some wavelength dispersive experiments
+    the scattering length density profile (SLD) can be wavelength dependent.
+    This is more common for X-ray reflectometry than with neutrons.
+    This class deals with wavelength dependent SLD profiles. It will be slower
+    than using `ReflectModel`. There is no point in using this class if there
+    are no wavelength dependent Scatterers contained within the system.
+
+    Parameters
+    ----------
+    structure : refnx.reflect.Structure
+        The interfacial structure. Should contain at least one wavelength
+        dependent `Scatterer`, otherwise use of `ReflectModel` is preferred.
+    scale : float or refnx.analysis.Parameter, optional
+        scale factor. All model values are multiplied by this value before
+        the background is added. This is turned into a Parameter during the
+        construction of this object.
+    bkg : float or refnx.analysis.Parameter, optional
+        Q-independent constant background added to all model values. This is
+        turned into a Parameter during the construction of this object.
+    name : str, optional
+        Name of the Model
+    dq : float or refnx.analysis.Parameter, optional
+
+        - `dq == 0` then no resolution smearing is employed.
+        - `dq` is a float or refnx.analysis.Parameter
+           a constant dQ/Q resolution smearing is employed.  For 5% resolution
+           smearing supply 5.
+
+        This value is turned into a Parameter during the construction of this
+        object.
+    threads: int, optional
+        Specifies the number of threads for parallel calculation. This
+        option is only applicable if you are using the ``_creflect``
+        module. The option is ignored if using the pure python calculator,
+        ``_reflect``. If `threads == -1` then all available processors are
+        used.
+    quad_order: int, optional
+        the order of the Gaussian quadrature polynomial for doing the
+        resolution smearing. default = 17. Don't choose less than 13. If
+        quad_order == 'ultimate' then adaptive quadrature is used. Adaptive
+        quadrature will always work, but takes a _long_ time (2 or 3 orders
+        of magnitude longer). Fixed quadrature will always take a lot less
+        time. BUT it won't necessarily work across all samples. For
+        example, 13 points may be fine for a thin layer, but will be
+        atrocious at describing a multilayer with bragg peaks.
+    dq_type: {'pointwise', 'constant'}, optional
+        Chooses whether pointwise or constant dQ/Q resolution smearing (see
+        `dq` keyword) is used. To use pointwise smearing the `x_err` keyword
+        provided to `Objective.model` method must be an array, otherwise the
+        smearing falls back to 'constant'.
+    t_offset: float or refnx.analysis.Parameter, optional
+        Compensates for uncertainties in the angle at which the measurement is
+        performed. A positive/negative `t_offset` corresponds to a situation
+        where the measured t values (incident angle) may have been under/over
+        estimated, and has the effect of shifting the calculated model to
+        lower/higher effective q values.
+
+    Example
+    -------
+
+    >>> from refnx.reflect import MaterialSLD, SLD, ReflectModelTL
+    >>> air = SLD(0)
+    >>> si = SLD(2.07)
+    >>> gd2o3 = MaterialSLD("Gd2O3", 7.41)  # wavelength dependent Scatterer
+    >>> s = air | gd2o3(50, 3) | si
+    >>> model = ReflectModelTL(s)
+    >>> t = [0.65] * 60    # angle of incidence
+    >>> l = np.geomspace(2, 20, 60)  # wavelength
+    >>> model(np.c_[t, l])   # calculate reflectivity
+    """
+
+    def __init__(
+        self,
+        structure,
+        scale=1,
+        bkg=1e-7,
+        name="",
+        dq=5.0,
+        threads=-1,
+        quad_order=17,
+        dq_type="pointwise",
+        t_offset=0,
+    ):
+        self._t_offset = possibly_create_parameter(t_offset)
+        super().__init__(
+            structure,
+            name=name,
+            scale=scale,
+            bkg=bkg,
+            threads=threads,
+            quad_order=quad_order,
+            dq=dq,
+            dq_type=dq_type,
+        )
+        delattr(self, "_q_offset")
+        self._q_offset = None
+
+    def model(self, x, p=None, x_err=None):
+        r"""
+        Calculate the reflectivity of this model
+
+        Parameters
+        ----------
+        x : (float, float) or np.ndarray
+            angle of incidence/wavelength values for the calculation.
+            If an array `x` should have shape `(N, 2)`, where the first column
+            of the `N` datapoints corresponds to angle of incidence (degrees)
+            and the second column corresponds to their wavelength (angstrom**-1).
+        p : refnx.analysis.Parameters, optional
+            parameters required to calculate the model
+        x_err : np.ndarray
+            dq resolution smearing values for the dataset being considered.
+
+        Returns
+        -------
+        reflectivity : np.ndarray
+            Calculated reflectivity
+
+        """
+        if p is not None:
+            self.parameters.pvals = np.array(p)
+
+        # x has to be (N, 2) x[:, 0] is the AOI, x[:, 1] is wavelength
+        tl = np.atleast_2d(np.asarray(x))
+        ls = tl[:, 1]
+        slabs = []
+        original_wavelength = self.structure.wavelength
+
+        try:
+            for lam in ls:
+                self.structure.wavelength = lam
+                slabs.append(self.structure.slabs()[..., :4])
+        finally:
+            self.structure.wavelength = original_wavelength
+
+        q = general.q(tl[:, 0] + self.t_offset.value, tl[:, 1])
+
+        if x_err is None or self.dq_type == "constant":
+            # fallback to what this object was constructed with
+            x_err = q * float(self.dq) / 100.0
+
+        qo = self.quad_order
+        R = np.array(
+            [
+                reflectivity(
+                    np.array([a_q]), a_slabs, dq=a_dq, quad_order=qo, threads=1
+                )
+                for a_q, a_slabs, a_dq in zip(q, slabs, x_err)
+            ]
+        )
+        R *= self.scale.value
+        R += self.bkg.value
+        return np.squeeze(R)
+
+    @property
+    def q_offset(self):
+        pass
+
+    @property
+    def t_offset(self):
+        r"""
+        :class:`refnx.analysis.Parameter` - compensates for any angular
+        misalignment during an experiment.
+        """
+        return self._t_offset
+
+    @t_offset.setter
+    def t_offset(self, value):
+        self._t_offset.value = value
+
+    @property
+    def structure(self):
+        r"""
+        :class:`refnx.reflect.Structure` - object describing the interface of
+        a reflectometry sample.
+
+        """
+        return self._structure
+
+    @structure.setter
+    def structure(self, structure):
+        self._structure = structure
+        p = Parameters(name="instrument parameters")
+        p.extend([self.scale, self.bkg, self.dq, self.t_offset])
+
+        self._parameters = Parameters(name=self.name)
+        self._parameters.extend([p, structure.parameters])
+
+
 def reflectivity(
     q,
     slabs,
@@ -675,6 +869,8 @@ def reflectivity(
     >>> print(reflectivity(q, slabs))
 
     """
+    q = np.asarray(q)
+
     # cast q_offset to float, if it's a Parameter
     q_offset = float(q_offset)
 
