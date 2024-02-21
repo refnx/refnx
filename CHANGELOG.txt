@@ -553,3 +553,5 @@ in 0.1.13.
   sections are used for transmission calculation.
 - We revised the ReflectReduce.write_offspecular to output an ascii file with 
   four columns, qz,qx,m_ref, m_ref_err.
+- ReflectModelTL added. Carries out reflectivity for wavelength dependent
+  scattering length density profiles.
