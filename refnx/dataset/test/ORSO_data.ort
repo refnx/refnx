@@ -7,16 +7,16 @@
 #     experiment:
 #         facility: Paul Scherrer Institut, SINQ
 #         ID: 2020 0304
-#         date: 2021-05-12 - 2021-05-15
+#         start_date: 2021-05-12
 #         title: Generation of input for formatting purposes
 #         instrument: Amor
-#         probe: neutrons
+#         probe: neutron
 #     sample:
 #         name: Ni1000
-#         description:
-#             - amb: air
-#             - layer: Ni, thickness 100 nm
-#             - sub: Si
+#         description: |
+#             amb: air
+#             layer: Ni, thickness 100 nm
+#             sub: Si
 #     measurement:
 #         scheme: angle- and energy-dispersive
 #         instrument_settings:
@@ -43,7 +43,7 @@
 #                  resolution:
 #                      type: proportional
 #                      value: 0.022 # Delta lambda / lambda
-#             polarization: p
+#             polarization: po
 #         data_files:
 #             - file      : amor2020n001925.hdf
 #               timestamp : 2020-02-03T14:27:45+01:00
@@ -51,11 +51,11 @@
 #               timestamp : 2020-02-03T14:37:15+01:00
 #             - file      : amor2020n001927.hdf
 #               timestamp : 2020-02-03T14:27:02+01:00
-#         references:
+#         additional_files:
 #             - file      : amor2020n001064.hdf
 #               timestamp : 2020-02-02T15:38:17+01:00
 # reduction:
-#     software: eos.py
+#     software: {name: eos.py}
 #     call : eos.py -Y 2020 -n 1925-1927 -y 9,55 ni1000 -O -0.2 -r 1064 -s 1 -i -a 0.005 -e
 #     comment:
 #         corrections performed by normalisation to measurement on reference sample
@@ -66,8 +66,8 @@
 # columns:
 #     - {name: Qz, unit: 1/angstrom, dimension: WW transfer}
 #     - {name: R, dimension: reflectivity}
-#     - {name: sR, dimension: error-reflectivity}
-#     - {name: sQz, unit: 1/angstrom, dimension: resolution-WW transfer}
+#     - {error_of: R}
+#     - {error_of: Qz, error_type: resolution}
 # data_set: spin_up
 # #         Qz             RQz              sR              sQ
 1.03563296e-02  3.88100068e+00  4.33909068e+00  5.17816478e-05
