@@ -7,7 +7,7 @@ Monte Carlo to obtain posterior distributions for curvefitting problems.
 --------------
 # Installation
 
-*refnx* has been tested on Python 3.8, 3.9, 3.10, and 3.11. It requires the *numpy,
+*refnx* has been tested on Python 3.9, 3.10, 3.11, and 3.12. It requires the *numpy,
 scipy, cython* packages to work. Additional features require the
 *pytest, pandas, qtpy, pyqt6, h5py, xlrd, attrs, tqdm, matplotlib, pymc, pytensor*
 packages.
@@ -99,17 +99,17 @@ The main *refnx* repository may be a lot more advanced than your fork, or your l
   ```
   git fetch upstream
   ```
-  2) Now update the local branch you're on by rebasing against the *refnx* master branch:
+  2) Now update the local branch you're on by rebasing against the *refnx* main branch:
   ```
-  git rebase upstream/master
+  git rebase upstream/main
   ```
-  3) Push your updated local branch to the remote fork on github. You have to specify the remote branch you're pushing to. Here we push to the *master* branch:
+  3) Push your updated local branch to the remote fork on github. You have to specify the remote branch you're pushing to. Here we push to the *main* branch:
   ```
-  git push origin master
+  git push origin main
   ```
 
 ### Adding a feature
-The git repository is automatically on the master branch to start with. However,
+The git repository is automatically on the main branch to start with. However,
 when developing features that you'd like to contribute to the *refnx* project
 you'll need to do it on a feature branch.
 
