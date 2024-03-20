@@ -3501,6 +3501,7 @@ if __name__ == "__main__":
         except IOError:
             print("Couldn't find file: %d.  Use --basedir option" % file)
 
+
 def _plot_offspec(
     f,
     I_min=-6,
@@ -3529,7 +3530,6 @@ def _plot_offspec(
         The upper and lower y-axis limits for the plot
     """
 
-    from matplotlib.pyplot import subplots
     from matplotlib.colors import LogNorm
     import matplotlib.pyplot as plt
 
@@ -3557,5 +3557,4 @@ def _plot_offspec(
     cb.ax.set_ylabel("Intensity")
 
     return fig, ax
-    
     
