@@ -3505,7 +3505,7 @@ def _plot_offspec(f,I_min=-6,I_max=-2,I_step=0.1,Qx_interval=(-0.0004, 0.0004),Q
     """
         Generates a plot of offspecular/reciprocal space map data and returns this as a pyplot (allowing the 
         user to customise the graph further). 
-git 
+ 
         Parameters
         ----------
         f: str
