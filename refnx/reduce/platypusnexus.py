@@ -3510,8 +3510,8 @@ def _plot_offspec(
     Qz_interval=(0.01, 0.05),
 ):
     """
-    Generates a plot of offspecular/reciprocal space map data and returns this as a pyplot (allowing the
-    user to customise the graph further).
+    Generates a plot of offspecular/reciprocal space map data and returns this as a fig, ax tuple
+     (allowing the user to customise the graph further).
 
     Parameters
     ----------
@@ -3545,15 +3545,17 @@ def _plot_offspec(
     levels = np.arange(I_min, I_max, I_step)
     color_levels = np.power(10, levels)
 
-    fig = plt.contourf(qx, qz, m_ref, levels=color_levels, norm=LogNorm())
-    plt.xlim(Qx_interval)
-    plt.ylim(Qz_interval)
-    plt.locator_params(axis="x", nbins=3)
-    plt.ylabel("$Q_z (\AA^{-1})$")
-    plt.xlabel("$Q_x (\AA^{-1})$")
-    colorbar = plt.colorbar()
-    colorbar.ax.set_ylabel("Intensity")
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    contour = ax.contourf(qx, qz, m_ref, levels=color_levels, norm=LogNorm())
+    ax.set_xlim(Qx_interval)
+    ax.set_ylim(Qz_interval)
+    ax.locator_params(axis="x", nbins=3)
+    ax.set_ylabel("$Q_z (\AA^{-1})$")
+    ax.set_xlabel("$Q_x (\AA^{-1})$")
+    cb = fig.colorbar(contour)
+    cb.ax.set_ylabel("Intensity")
 
-    return plt
+    return fig, ax
     
     
