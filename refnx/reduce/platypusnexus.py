@@ -3556,4 +3556,3 @@ def _plot_offspec(
     cb.ax.set_ylabel("Intensity")
 
     return fig, ax
-    
