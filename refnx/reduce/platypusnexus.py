@@ -3515,17 +3515,17 @@ def _plot_offspec(
 
     Parameters
     ----------
-    f: str
-        Filename for the data expects  a numpy binary array file (i.e those generated via `np.savez`)
-    I_min: float
-        Minimum log(intensity)  default = -6)
-    I_max: float
-        Max log (intensity), default = -1
-    I_step: float
-        The interval for contoursm default = 0.1
-    Qx_interval: (float,float)
+    f : {str, Path, file-like}
+        File containing the data. Expects a numpy binary array file (i.e those generated via `np.savez`).
+    I_min : float
+        Minimum log(intensity)
+    I_max : float
+        Max log (intensity)
+    I_step : float
+        The interval for contours (log units)
+    Qx_interval : (float, float)
         The upper and lower x-axis limits for the plot
-    Qz_interval: (float,float)
+    Qz_interval : (float, float)
         The upper and lower y-axis limits for the plot
     """
 
@@ -3549,8 +3549,8 @@ def _plot_offspec(
     plt.xlim(Qx_interval)
     plt.ylim(Qz_interval)
     plt.locator_params(axis="x", nbins=3)
-    plt.ylabel("Q$_z$ (Å$^{-1}$)")
-    plt.xlabel("Q$_x$ (Å$^{-1}$)")
+    plt.ylabel("$Q_z (\AA^{-1})$")
+    plt.xlabel("$Q_x (\AA^{-1})$")
     colorbar = plt.colorbar()
     colorbar.ax.set_ylabel("Intensity")
 
