@@ -3538,7 +3538,6 @@ def _plot_offspec(
     qz = npz["m_qz"]
     qx = npz["m_qx"]
     m_ref = npz["m_ref"]
-    m_ref_err = npz["m_ref_err"]
 
     # replace negative values (which won't plot on a log scale) with the smallest available positive value
     m_ref[m_ref == 0] = np.min(m_ref[m_ref > 0])
@@ -3551,8 +3550,8 @@ def _plot_offspec(
     ax.set_xlim(Qx_interval)
     ax.set_ylim(Qz_interval)
     ax.locator_params(axis="x", nbins=3)
-    ax.set_ylabel("$Q_z (\AA^{-1})$")
-    ax.set_xlabel("$Q_x (\AA^{-1})$")
+    ax.set_ylabel(r"$Q_z (\\AA^{-1})$")
+    ax.set_xlabel(r"$Q_x (\\AA^{-1})$")
     cb = fig.colorbar(contour)
     cb.ax.set_ylabel("Intensity")
 
