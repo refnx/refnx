@@ -3500,3 +3500,53 @@ if __name__ == "__main__":
 
         except IOError:
             print("Couldn't find file: %d.  Use --basedir option" % file)
+
+def _plot_offspec(f,I_min=-6,I_max=-2,I_step=0.1,Qx_interval=(-0.0004, 0.0004),Qz_interval=(0.01, 0.05)):
+    """
+        Generates a plot of offspecular/reciprocal space map data and returns this as a pyplot (allowing the 
+        user to customise the graph further). 
+git 
+        Parameters
+        ----------
+        f: str
+            Filename for the data expects  a numpy binary array file (i.e those generated via `np.savez`)
+        I_min: float
+            Minimum log(intensity)  default = -6)
+        I_max: float
+            Max log (intensity), default = -1
+        I_step: float
+            The interval for contoursm default = 0.1 
+        Qx_interval: (float,float) 
+            The upper and lower x-axis limits for the plot
+        Qz_interval: (float,float)
+            The upper and lower y-axis limits for the plot
+        """
+    
+    from matplotlib.pyplot import subplots 
+    from matplotlib.colors import LogNorm
+    import matplotlib.pyplot as plt 
+    
+    npz = np.load(f)
+    
+    qz = npz['m_qz']
+    qx = npz['m_qx']
+    m_ref = npz['m_ref']
+    m_ref_err = npz['m_ref_err']
+    
+    #replace negative values (which won't plot on a log scale) with the smallest available positive value
+    m_ref[m_ref ==0] = np.min(m_ref [m_ref >0])
+    levels = np.arange (I_min, I_max, I_step)
+    color_levels = np.power (10, levels)
+    
+    fig = plt.contourf(qx,qz, m_ref ,levels = color_levels, norm = LogNorm())
+    plt.xlim(Qx_interval)
+    plt.ylim(Qz_interval)
+    plt.locator_params(axis='x', nbins=3) 
+    plt.ylabel('Q$_z$ (Å$^{-1}$)')
+    plt.xlabel('Q$_x$ (Å$^{-1}$)')
+    colorbar = plt.colorbar()
+    colorbar.ax.set_ylabel('Intensity')
+    
+    return plt
+    
+    
