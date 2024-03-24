@@ -3550,8 +3550,8 @@ def _plot_offspec(
     ax.set_xlim(Qx_interval)
     ax.set_ylim(Qz_interval)
     ax.locator_params(axis="x", nbins=3)
-    ax.set_ylabel(r"$Q_z (\\AA^{-1})$")
-    ax.set_xlabel(r"$Q_x (\\AA^{-1})$")
+    ax.set_ylabel(r"$Q_z (\AA^{-1})$")
+    ax.set_xlabel(r"$Q_x (\AA^{-1})$")
     cb = fig.colorbar(contour)
     cb.ax.set_ylabel("Intensity")
 
