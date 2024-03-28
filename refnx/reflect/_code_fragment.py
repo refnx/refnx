@@ -11,7 +11,7 @@ from refnx._lib import flatten
 import refnx
 
 
-_imports = f"""#!/usr/bin/env python
+_imports = r"""#!/usr/bin/env python
 
 '''
 Script exported by refnx for analysing NR/XRR data.
@@ -62,7 +62,7 @@ from refnx.reflect import ReflectModel, LipidLeaflet, MixedReflectModel, Spline
 from refnx._lib import flatten
 
 import refnx
-# Script created by refnx version: {refnx.version.version}
+# Script created by refnx version: {version}
 """
 
 
@@ -244,7 +244,7 @@ if __name__ == "__main__":
 
 def code_fragment(objective):
     code = []
-    code.append(_imports)
+    code.append(_imports.format(version=refnx.version.version))
 
     if isinstance(objective, GlobalObjective):
         _objectives = objective.objectives
