@@ -257,6 +257,8 @@ void parratt(int numcoefs,
     for (j = 0; j < npoints; j++) {
         double complex beta, rj;
         double complex kn, kn_next, RRJ_1, RRJ;
+        RRJ = CMPLX(0, 0);
+        RRJ_1 = CMPLX(0, 0);
 
         qq2 = CMPLX(xP[j] * xP[j] / 4, 0);
 

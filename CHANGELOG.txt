@@ -558,3 +558,4 @@ in 0.1.13.
 
 0.1.44
 ------
+- build against numpy=2
