@@ -43,7 +43,9 @@ jobs:
         pip install -r .requirements.txt
 
         # uses xvfb for GUI part of the test
+        pushd tools
         xvfb-run pytest
+        popd
 
         # check that refnx gui starts
         # python tools/app/check_app_starts.py refnx
