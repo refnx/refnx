@@ -44,7 +44,7 @@ jobs:
 
         # uses xvfb for GUI part of the test
         pushd tools
-        xvfb-run pytest
+        xvfb-run pytest --pyargs refnx
         popd
 
         # check that refnx gui starts
