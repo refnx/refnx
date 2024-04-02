@@ -85,7 +85,7 @@ jobs:
 
   test_macos:
 
-    runs-on: macos-13
+    runs-on: macos-14
     strategy:
       fail-fast: true
       max-parallel: 3
