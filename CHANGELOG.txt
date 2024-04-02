@@ -560,3 +560,6 @@ in 0.1.13.
 ------
 - build against numpy=2
 - update gh runners
+
+0.1.45
+------
