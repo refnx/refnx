@@ -357,6 +357,14 @@ class TestObjective:
 
         assert_allclose(self.objective.logl() + amend, bo.logl())
 
+        assert len(self.objective.model.parameters) == 2
+        # check twice because requesting the objective.parameters property
+        # was incorrectly appending to the underlying model parameters,
+        # so the length of the number of parameters was increasing.
+        assert len(self.objective.parameters) == 3
+        assert len(self.objective.parameters) == 3
+        assert len(self.objective.model.parameters) == 2
+
     def test_base_emcee(self):
         # check that the base objective works against the emcee example.
         def logp(theta, x, y, yerr):

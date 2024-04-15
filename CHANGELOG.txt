@@ -563,3 +563,5 @@ in 0.1.13.
 
 0.1.45
 ------
+- Stop repeat append of a Parameter to Objective.model.parameters when the
+  Objective uses lnsigma, alpha, or auxiliary_params

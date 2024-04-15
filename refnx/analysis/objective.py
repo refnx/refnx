@@ -495,11 +495,11 @@ class Objective(BaseObjective):
         pars = self.model.parameters
 
         if is_parameter(self.alpha):
-            pars |= self.alpha
+            pars = pars | self.alpha
         if is_parameter(self.lnsigma):
-            pars |= self.lnsigma
+            pars = pars | self.lnsigma
         if len(self.auxiliary_params):
-            pars |= self.auxiliary_params
+            pars = pars | self.auxiliary_params
         return pars
 
     def setp(self, pvals):

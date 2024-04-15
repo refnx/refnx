@@ -646,7 +646,7 @@ class TestFitterGauss:
             import pymc as pm
             from refnx.analysis import pymc_model
         except (ModuleNotFoundError, ImportError, AttributeError):
-            # can't run test if pymc/aesara not installed
+            # can't run test if pymc/pytensor not installed
             return
 
         with pymc_model(self.objective):
