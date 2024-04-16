@@ -566,3 +566,5 @@ in 0.1.13.
 - Stop repeat append of a Parameter to Objective.model.parameters when the
   Objective uses lnsigma, alpha, or auxiliary_params
 - reenable pymc tests and update so that it works with pymc5
+- add pymc/emcee/dynesty example to show how to use all three packages to
+  sample a posterior.
