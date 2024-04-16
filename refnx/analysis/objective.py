@@ -1265,7 +1265,6 @@ class GlobalObjective(Objective):
                     y, y_err, model = objective._data_transform(
                         model=objective.generative()
                     )
-
                     ax.plot(objective.data.x, model, color="k", alpha=0.01)
 
             # put back saved_params
@@ -1554,7 +1553,9 @@ def _to_pymc_distribution(name, par):
         if isinstance(dist_gen, type(stats.uniform)):
             if hasattr(dist.rv, "args"):
                 p = pm.Uniform(
-                    name, dist.rv.args[0], dist.rv.args[1] + dist.rv.args[0]
+                    name,
+                    dist.rv.args[0],
+                    dist.rv.args[1] + dist.rv.args[0],
                 )
             else:
                 p = pm.Uniform(name, 0, 1)
@@ -1563,7 +1564,11 @@ def _to_pymc_distribution(name, par):
         # norm from scipy.stats
         if isinstance(dist_gen, type(stats.norm)):
             if hasattr(dist.rv, "args"):
-                p = pm.Normal(name, mu=dist.rv.args[0], sigma=dist.rv.args[1])
+                p = pm.Normal(
+                    name,
+                    mu=dist.rv.args[0],
+                    sigma=dist.rv.args[1],
+                )
             else:
                 p = pm.Normal(name, mu=0, sigma=1)
             return p
