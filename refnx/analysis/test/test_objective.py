@@ -537,9 +537,7 @@ class TestObjective:
             init_pos_arr = np.array([5, -1.0])
             logl = self.objective.logl(init_pos_arr)
             dlogl = approx_derivative(
-                self.objective.logl,
-                init_pos_arr,
-                method='2-point'
+                self.objective.logl, init_pos_arr, method="2-point"
             )
 
             pymc_logl = mod.compile_logp()(init_pos)
