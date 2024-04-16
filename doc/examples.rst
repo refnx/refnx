@@ -11,3 +11,4 @@ Examples
     batch fitting <https://nbviewer.jupyter.org/github/refnx/refnx-models/blob/main/batch/batch_fitting.ipynb>
     analytical SLD profiles <https://nbviewer.jupyter.org/github/refnx/refnx-models/blob/main/functional/functional.ipynb>
     nsf.ipynb
+    emcee_pymc_dynesty.ipynb
