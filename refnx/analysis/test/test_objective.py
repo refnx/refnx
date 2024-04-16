@@ -516,52 +516,59 @@ class TestObjective:
         with warns(LinAlgWarning):
             objective.covar()
 
-    @pytest.mark.xfail
     def test_pymc(self):
         # test objective logl against pymc
 
         # don't run this test if pymc is not installed
         try:
             import pymc as pm
+            import pytensor as pt
+            from scipy.optimize._numdiff import approx_derivative
         except ImportError:
             return
-
-        logl = self.objective.logl()
 
         from refnx.analysis import pymc_model
         from refnx.analysis.objective import _to_pymc_distribution
 
         mod = pymc_model(self.objective)
+        # check val_and_grad numbers
         with mod:
-            pymc_logl = mod.logp(
-                {"p0": self.p[0].value, "p1": self.p[1].value}
+            init_pos = {"p0": 5, "p1": -1.0}
+            init_pos_arr = np.array([5, -1.0])
+            logl = self.objective.logl(init_pos_arr)
+            dlogl = approx_derivative(
+                self.objective.logl, init_pos_arr, method="2-point"
             )
 
-        assert_allclose(logl, pymc_logl)
+            pymc_logl = mod.compile_logp()(init_pos)
+            assert_allclose(logl, pymc_logl)
+            print(init_pos)
+            pymc_dlogl = mod.compile_dlogp()(init_pos)
+            assert_allclose(pymc_dlogl, dlogl)
 
         # now check some of the distributions
         with pm.Model():
             p = Parameter(1, bounds=(1, 10))
             d = _to_pymc_distribution("a", p)
-            assert_allclose(d.distribution.logp(2).eval(), p.logp(2))
-            assert np.isneginf(d.distribution.logp(-1).eval())
+            assert_allclose(pm.logp(d, 2).eval(), p.logp(2))
+            assert np.isneginf(pm.logp(d, -1.0).eval())
 
             q = Parameter(1, bounds=PDF(stats.uniform(1, 9)))
             d = _to_pymc_distribution("b", q)
-            assert_allclose(d.distribution.logp(2).eval(), q.logp(2))
-            assert np.isneginf(d.distribution.logp(-1).eval())
+            assert_allclose(pm.logp(d, 2).eval(), q.logp(2))
+            assert np.isneginf(pm.logp(d, -1).eval())
 
             p = Parameter(1, bounds=PDF(stats.uniform))
             d = _to_pymc_distribution("c", p)
-            assert_allclose(d.distribution.logp(0.5).eval(), p.logp(0.5))
+            assert_allclose(pm.logp(d, 0.5).eval(), p.logp(0.5))
 
             p = Parameter(1, bounds=PDF(stats.norm))
             d = _to_pymc_distribution("d", p)
-            assert_allclose(d.distribution.logp(2).eval(), p.logp(2))
+            assert_allclose(pm.logp(d, 2).eval(), p.logp(2))
 
             p = Parameter(1, bounds=PDF(stats.norm(1, 10)))
             d = _to_pymc_distribution("e", p)
-            assert_allclose(d.distribution.logp(2).eval(), p.logp(2))
+            assert_allclose(pm.logp(d, 2).eval(), p.logp(2))
 
     def test_multidimensionality(self):
         # Check that ND data can be used with an objective/model/data
