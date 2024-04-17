@@ -28,8 +28,12 @@ from functools import reduce
 
 import jax.numpy as jnp
 from jax import jit
+from refnx.reflect.reflect_model import gauss_legendre
 
 TINY = 1e-30
+
+_FWHM = 2 * np.sqrt(2 * np.log(2.0))
+_INTLIMIT = 3.5
 
 
 def jabeles(q, layers, scale=1.0, bkg=0, threads=0):
@@ -90,3 +94,31 @@ def jabeles(q, layers, scale=1.0, bkg=0, threads=0):
 
 # abeles_jax = jabeles
 abeles_jax = jit(jabeles)
+
+
+def jax_smeared_kernel_pointwise(qvals, w, dqvals, quad_order=17, threads=0):
+    # get the gauss-legendre weights and abscissae
+    abscissa, weights = gauss_legendre(quad_order)
+
+    # get the normal distribution at that point
+    prefactor = 1.0 / np.sqrt(2 * np.pi)
+
+    def gauss(x):
+        return np.exp(-0.5 * x * x)
+
+    gaussvals = prefactor * gauss(abscissa * _INTLIMIT)
+
+    # integration between -3.5 and 3.5 sigma
+    va = qvals - _INTLIMIT * dqvals / _FWHM
+    vb = qvals + _INTLIMIT * dqvals / _FWHM
+
+    va = va[:, np.newaxis]
+    vb = vb[:, np.newaxis]
+
+    qvals_for_res = (np.atleast_2d(abscissa) * (vb - va) + vb + va) / 2.0
+    smeared_rvals = abeles_jax(qvals_for_res, w)
+
+    smeared_rvals = np.reshape(smeared_rvals, (qvals.size, abscissa.size))
+
+    smeared_rvals *= np.atleast_2d(gaussvals * weights)
+    return np.sum(smeared_rvals, 1) * _INTLIMIT
