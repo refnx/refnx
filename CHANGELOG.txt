@@ -568,3 +568,4 @@ in 0.1.13.
 - reenable pymc tests and update so that it works with pymc5
 - add pymc/emcee/dynesty example to show how to use all three packages to
   sample a posterior.
+- add jax function for smeared reflectivity.
