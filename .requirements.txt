@@ -11,7 +11,9 @@ ipywidgets
 IPython
 matplotlib
 traitlets
-pyqt6
+PyQt6-Qt6==6.6.1
+PyQt6==6.6.1
+PyQt6-sip=13.6.0
 qtpy
 uncertainties
 setuptools
@@ -19,6 +21,6 @@ attrs
 corner
 tqdm
 periodictable
-pytensor; python_version != "3.12"
-pymc; python_version != "3.12"
+pytensor
+pymc
 pytest-qt
