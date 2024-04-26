@@ -436,19 +436,11 @@ class TestReflect:
         assert_allclose(model, self.rvals, atol=2e-7)
 
         # check resolution smearing of ReflectModelTL
-        rff.dq_type = "constant"
+        dq = 0.05 * self.qvals
         rff.dq.value = 5.0
         rff2.dq.value = 5.0
         assert_allclose(
-            rff2.model(np.c_[t, lam]), rff.model(self.qvals), atol=2e-7
-        )
-
-        rff.dq_type = "pointwise"
-        rff.dq.value = 0.0
-        rff2.dq.value = 0.0
-        dq = 0.05 * self.qvals
-        assert_allclose(
-            rff2.model(np.c_[t, lam], x_err=dq),
+            rff2.model(np.c_[t, lam]),
             rff.model(self.qvals, x_err=dq),
             atol=2e-7,
         )
