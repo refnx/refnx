@@ -715,14 +715,26 @@ class ReflectModelTL(ReflectModel):
             x_err = q * float(self.dq) / 100.0
 
         qo = self.quad_order
-        R = np.array(
-            [
-                reflectivity(
-                    np.array([a_q]), a_slabs, dq=a_dq, quad_order=qo, threads=1
-                )
-                for a_q, a_slabs, a_dq in zip(q, slabs, x_err)
-            ]
+
+        unique_slabs, idxs, inverse_idxs = np.unique(
+            slabs, axis=0, return_index=True, return_inverse=True
         )
+        msks = [inverse_idxs == idx for idx in idxs]
+        R = np.empty_like(q)
+        for msk, a_unique_slabs in zip(msks, unique_slabs):
+            if np.count_nonzero(x_err[msk]):
+                # point-wise resolution smearing
+                R[msk] = _smeared_kernel_pointwise(
+                    q[msk],
+                    a_unique_slabs,
+                    x_err[msk],
+                    quad_order=qo,
+                    threads=1,
+                )
+            else:
+                # no resolution smearing
+                R[msk] = abeles(q[msk], a_unique_slabs, threads=1)
+
         R *= self.scale.value
         R += self.bkg.value
         return np.squeeze(R)

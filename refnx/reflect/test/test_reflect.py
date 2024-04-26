@@ -431,9 +431,27 @@ class TestReflect:
         t = np.array([1.0] * len(self.qvals))
         lam = general.wavelength(self.qvals, t)
 
-        rff = ReflectModelTL(self.structure, dq=0.0)
-        model = rff.model(np.c_[t, lam])
+        rff2 = ReflectModelTL(self.structure, dq=0.0)
+        model = rff2.model(np.c_[t, lam])
         assert_allclose(model, self.rvals, atol=2e-7)
+
+        # check resolution smearing of ReflectModelTL
+        rff.dq_type = "constant"
+        rff.dq.value = 5.0
+        rff2.dq.value = 5.0
+        assert_allclose(
+            rff2.model(np.c_[t, lam]), rff.model(self.qvals), atol=2e-7
+        )
+
+        rff.dq_type = "pointwise"
+        rff.dq.value = 0.0
+        rff2.dq.value = 0.0
+        dq = 0.05 * self.qvals
+        assert_allclose(
+            rff2.model(np.c_[t, lam], x_err=dq),
+            rff.model(self.qvals, x_err=dq),
+            atol=2e-7,
+        )
 
     def test_mixed_reflectivity_model(self):
         # test that mixed area model works ok.
