@@ -569,3 +569,4 @@ in 0.1.13.
 - add pymc/emcee/dynesty example to show how to use all three packages to
   sample a posterior.
 - add jax function for smeared reflectivity.
+- optimisation of ReflectModelTL.
