@@ -98,11 +98,24 @@ cpdef np.ndarray vec_abeles(
     """
     if w.shape[2] != 4 or w.shape[1] < 2:
         raise ValueError(
-            "Layer parameters for _creflect.vec_abeles must be an
+            "Layer parameters for _creflect.vec_abeles must be an"
             "array of shape (>=1, >2, 4)"
         )
     if x.dtype != np.float64:
         raise ValueError("Q values for _creflect.vec_abeles must be np.float64")
+
+    if scale is not None:
+        if not isinstance(scale, np.ndarray) or scale.shape != w.shape[0]:
+            raise ValueError("scale must be an array of shape (M,)")
+    else:
+        bkg = np.ones(w.shape[0], dtype=np.float64)
+
+    if bkg is not None:
+        if not isinstance(bkg, np.ndarray) or bkg.shape != w.shape[0]:
+            raise ValueError("bkg must be an array of shape (M,)")
+    else:
+        bkg = np.zeros(w.shape[0])
+
     cdef:
         int nlayers = w.shape[1] - 2
         int i
@@ -114,36 +127,28 @@ cpdef np.ndarray vec_abeles(
             np.empty_like(x, np.float64)[np.newaxis, ...], nvec, axis=0
         )
         double *x_data
+        double *bkg_data
+        double *scale_data
         double *y_out_data
         double * coefs
     if not x.flags['C_CONTIGUOUS']:
         x = np.ascontiguousarray(x, dtype=np.float64)
 
-    if scale is not None:
-        if not isinstance(scale, np.ndarray) or scale.shape != (nvec,):
-            raise ValueError("scale must be an array of shape (M,)"
-    else:
-        bkg = np.ones(nvec, dtype=np.float64)
-
-    if bkg is not None:
-        if not isinstance(bkg, np.ndarray) or np.bkg.shape != (nvec,):
-            raise ValueError("bkg must be an array of shape (M,)"
-    else:
-        bkg = np.zeros(nvec)
-
     x_data = <float64_t *>np.PyArray_DATA(x)
     y_out_data = <float64_t *>np.PyArray_DATA(yout)
+    scale_data = <float64_t *>np.PyArray_DATA(scale)
+    bkg_data = <float64_t *> np.PyArray_DATA(bkg)
 
     with nogil, parallel(num_threads=threads):
         for i in prange(nvec):
             coefs = <double *> malloc((4*nlayers + 8) * sizeof(double))
             coefs[0] = nlayers
-            coefs[1] = scale[i]
+            coefs[1] = scale_data[i]
             coefs[2] = w[i, 0, 1]
             coefs[3] = w[i, 0, 2]
             coefs[4] = w[i, -1, 1]
             coefs[5] = w[i, -1, 2]
-            coefs[6] = bkg[i]
+            coefs[6] = bkg_data[i]
             coefs[7] = w[i, -1, 3]
 
             if nlayers:
