@@ -109,11 +109,11 @@ jobs:
 
     - name: Make wheel
       env:
-        CC: gcc-13
-        CXX: g++-13
         _PYTHON_HOST_PLATFORM: macosx-12.0-arm64
         ARCHFLAGS: "-arch arm64"
       run: |
+        export CC=gcc-13
+        export CXX=g++-13
         export LIBOMP_LIB="$(brew --prefix libomp)"
         export CXXFLAGS="$CXXFLAGS -I$LIBOMP_LIB/include -Xpreprocessor -fopenmp"
         export CFLAGS="$CFLAGS -I$LIBOMP_LIB/include"
