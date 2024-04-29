@@ -570,3 +570,5 @@ in 0.1.13.
   sample a posterior.
 - add jax function for smeared reflectivity.
 - optimisation of ReflectModelTL.
+- add vec_abeles, a vectorised reflectivity calculator with optional
+  parallelisation
