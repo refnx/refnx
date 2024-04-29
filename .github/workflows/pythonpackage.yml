@@ -121,7 +121,7 @@ jobs:
         export DYLD_LIBRARY_PATH=$LIBOMP_LIB/lib       
         python -m pip install --upgrade pip
         python -m pip install wheel delocate build
-        python -m build .
+        python -m pip wheel . -v
         # so that libomp is distributed with wheel
         DYLD_LIBRARY_PATH=$DYLD_LIBRARY_PATH delocate-wheel -v dist/refnx*.whl
 
