@@ -415,9 +415,9 @@ def setup_package():
                 ext_modules.append(_cyreflect)
 
             # specify min deployment version for macOS
-            if platform == "darwin":
-                for mod in ext_modules:
-                    mod.extra_compile_args.append("-mmacosx-version-min=10.9")
+            #if platform == "darwin":
+            #    for mod in ext_modules:
+            #        mod.extra_compile_args.append("-mmacosx-version-min=10.9")
 
             info["ext_modules"] = cythonize(ext_modules)
             info["zip_safe"] = False

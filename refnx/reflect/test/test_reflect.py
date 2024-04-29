@@ -316,7 +316,10 @@ class TestReflect:
             calc = kernel(q, slabs)
         assert_almost_equal(calc, refl1d[1])
 
-    @pytest.mark.skipif(not hasattr(refnx.reflect._creflect, 'vec_abeles'), reason="vec_abeles not available")
+    @pytest.mark.skipif(
+        not hasattr(refnx.reflect._creflect, "vec_abeles"),
+        reason="vec_abeles not available",
+    )
     def test_vec_abeles(self):
         w = np.array(
             [

@@ -111,7 +111,7 @@ jobs:
       env:
         CC: gcc-13
         CXX: g++-13
-        _PYTHON_HOST_PLATFORM: macosx-11.0-arm64
+        _PYTHON_HOST_PLATFORM: macosx-12.0-arm64
         ARCHFLAGS: "-arch arm64"
       run: |
         export LIBOMP_LIB="$(brew --prefix libomp)"
