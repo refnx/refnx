@@ -337,7 +337,7 @@ class TestReflect:
         )
         w_noise = np.reshape(w_noise, (1000,) + w.shape)
         x = np.geomspace(0.005, 0.5, 1001)
-        y = refnx.reflect._creflect.vec_abeles(x, w_noise)
+        y = refnx.reflect._creflect.vec_abeles(x, w_noise, bkg=None, scale=None)
         y_test = np.array([refnx.reflect.abeles(x, _w) for _w in w_noise])
         assert_allclose(y, y_test)
 

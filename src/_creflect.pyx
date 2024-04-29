@@ -108,7 +108,7 @@ cpdef np.ndarray vec_abeles(
         if not isinstance(scale, np.ndarray) or scale.shape != w.shape[0]:
             raise ValueError("scale must be an array of shape (M,)")
     else:
-        bkg = np.ones(w.shape[0], dtype=np.float64)
+        scale = np.ones(w.shape[0], dtype=np.float64)
 
     if bkg is not None:
         if not isinstance(bkg, np.ndarray) or bkg.shape != w.shape[0]:
