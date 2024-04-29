@@ -367,6 +367,10 @@ def setup_package():
                 define_macros=[("NPY_NO_DEPRECATED_API", "NPY_1_7_API_VERSION")],
                 extra_objects=refcalc_obj,
             )
+            openmp_flags = get_openmp_flag(ccompiler)
+            _creflect.extra_compile_args += openmp_flags
+            _creflect.extra_link_args += openmp_flags
+            print(openmp_flags)
             ext_modules.append(_creflect)
 
             # if we have openmp use pure cython version

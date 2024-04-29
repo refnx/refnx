@@ -26,9 +26,11 @@ DEALINGS IN THIS SOFTWARE.
 """
 from multiprocessing import cpu_count
 from cpython.mem cimport PyMem_Malloc, PyMem_Free
+from libc.stdlib cimport abort, malloc, free
 import numpy as np
 cimport numpy as np
 cimport cython
+from cython.parallel import prange, parallel
 
 
 np.import_array()
@@ -49,6 +51,118 @@ ctypedef np.float64_t float64_t
 
 # figure out CPU count
 cdef int NCPU = cpu_count()
+
+
+cpdef np.ndarray vec_abeles(
+    np.ndarray x,
+    double[:, :, :] w,
+    scale=None,
+    bkg=None,
+    int threads=-1):
+    """
+    Vectorised Abeles matrix formalism for calculating reflectivity from a
+    stratified medium.
+
+    Parameters
+    ----------
+    q: array_like
+        the q values required for the calculation.
+        Q = 4 * Pi / lambda * sin(omega).
+        Units = Angstrom**-1
+    layers: np.ndarray
+        coefficients required for the calculation, has shape (M, 2 + N, 4).
+        The calculation is vectorised over the M sets of film parameters, and
+        N is the number of layers in each film.
+        layers[:, 0, 1] - SLD of fronting (/1e-6 Angstrom**-2)
+        layers[:, 0, 2] - iSLD of fronting (/1e-6 Angstrom**-2)
+        layers[:, N, 0] - thickness of layer N
+        layers[:, N, 1] - SLD of layer N (/1e-6 Angstrom**-2)
+        layers[:, N, 2] - iSLD of layer N (/1e-6 Angstrom**-2)
+        layers[:, N, 3] - roughness between layer N-1/N
+        layers[:, -1, 1] - SLD of backing (/1e-6 Angstrom**-2)
+        layers[:, -1, 2] - iSLD of backing (/1e-6 Angstrom**-2)
+        layers[:, -1, 3] - roughness between backing and last layer
+    scale: array-like, optional
+        Multiply all reflectivities by this value.
+    bkg: array-like, optional
+        Linear background to be added to all reflectivities
+    threads: int, optional
+        How many threads you would like to use in the reflectivity calculation.
+        If `threads == -1` then the calculation is automatically spread over
+        `multiprocessing.cpu_count()` threads.
+
+    Returns
+    -------
+    Reflectivity: np.ndarray
+        Calculated reflectivity values for each q value.
+    """
+    if w.shape[2] != 4 or w.shape[1] < 2:
+        raise ValueError(
+            "Layer parameters for _creflect.vec_abeles must be an
+            "array of shape (>=1, >2, 4)"
+        )
+    if x.dtype != np.float64:
+        raise ValueError("Q values for _creflect.vec_abeles must be np.float64")
+    cdef:
+        int nlayers = w.shape[1] - 2
+        int i
+        int j
+        int offset
+        int nvec = w.shape[0]
+        int npoints = x.size
+        np.ndarray yout = np.repeat(
+            np.empty_like(x, np.float64)[np.newaxis, ...], nvec, axis=0
+        )
+        double *x_data
+        double *y_out_data
+        double * coefs
+    if not x.flags['C_CONTIGUOUS']:
+        x = np.ascontiguousarray(x, dtype=np.float64)
+
+    if scale is not None:
+        if not isinstance(scale, np.ndarray) or scale.shape != (nvec,):
+            raise ValueError("scale must be an array of shape (M,)"
+    else:
+        bkg = np.ones(nvec, dtype=np.float64)
+
+    if bkg is not None:
+        if not isinstance(bkg, np.ndarray) or np.bkg.shape != (nvec,):
+            raise ValueError("bkg must be an array of shape (M,)"
+    else:
+        bkg = np.zeros(nvec)
+
+    x_data = <float64_t *>np.PyArray_DATA(x)
+    y_out_data = <float64_t *>np.PyArray_DATA(yout)
+
+    with nogil, parallel(num_threads=threads):
+        for i in prange(nvec):
+            coefs = <double *> malloc((4*nlayers + 8) * sizeof(double))
+            coefs[0] = nlayers
+            coefs[1] = scale[i]
+            coefs[2] = w[i, 0, 1]
+            coefs[3] = w[i, 0, 2]
+            coefs[4] = w[i, -1, 1]
+            coefs[5] = w[i, -1, 2]
+            coefs[6] = bkg[i]
+            coefs[7] = w[i, -1, 3]
+
+            if nlayers:
+                for j in range(nlayers):
+                    coefs[8 + 4*j] = w[i, j + 1, 0]
+                    coefs[9 + 4*j] = w[i, j + 1, 1]
+                    coefs[10 + 4*j] = w[i, j + 1, 2]
+                    coefs[11 + 4*j] = w[i, j + 1, 3]
+
+            abeles_wrapper(
+                4*nlayers + 8,
+                coefs,
+                npoints,
+                &y_out_data[npoints * i],
+                x_data
+            )
+            free(coefs)
+
+    return yout
 
 
 @cython.boundscheck(False)
