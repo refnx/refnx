@@ -165,7 +165,6 @@ jobs:
 
     - name: Make frozen GUI executable
       run: |
-        ls
         # make app in virtualenv
         python -m venv app
         source app/bin/activate

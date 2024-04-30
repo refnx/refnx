@@ -319,11 +319,11 @@ class TestReflect:
     @pytest.mark.skipif(
         not (
             hasattr(refnx.reflect, "_cyreflect")
-            and hasattr(refnx.reflect._cyreflect, "vec_abeles")
+            and hasattr(refnx.reflect._cyreflect, "abeles_vectorised")
         ),
-        reason="vec_abeles not available",
+        reason="abeles_vectorised not available",
     )
-    def test_vec_abeles(self):
+    def test_abeles_vectorised(self):
         w = np.array(
             [
                 [0, 2.07, 0, 0],
@@ -340,7 +340,7 @@ class TestReflect:
         )
         w_noise = np.reshape(w_noise, (1000,) + w.shape)
         x = np.geomspace(0.005, 0.5, 1001)
-        y = refnx.reflect._cyreflect.vec_abeles(
+        y = refnx.reflect._cyreflect.abeles_vectorised(
             x, w_noise, bkg=None, scale=None
         )
         y_test = np.array([refnx.reflect.abeles(x, _w) for _w in w_noise])
@@ -758,7 +758,7 @@ class TestReflect:
         assert_equal(slabs[1, 3], sio2_l.rough.value)
 
         f = CurveFitter(objective)
-        f.fit(method="differential_evolution", seed=1, maxiter=3)
+        f.fit(method="differential_evolution", seed=1, maxiter=3, polish=False)
 
         slabs = structure.slabs()
         assert_equal(slabs[2, 0:2], slabs[3, 0:2])

@@ -210,7 +210,7 @@ cdef _parratt(double[:] x,
     return y.real
 
 
-cpdef np.ndarray vec_abeles(
+cpdef np.ndarray abeles_vectorised(
     np.ndarray x,
     double[:, :, :] w,
     scale=None,
