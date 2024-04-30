@@ -115,6 +115,7 @@ jobs:
         conda install compilers llvm-openmp
 
     - name: Make wheel
+      shell: bash -el {0}
       env:
         _PYTHON_HOST_PLATFORM: macosx-11.0-arm64
       run: |
