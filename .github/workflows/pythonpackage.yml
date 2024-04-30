@@ -142,10 +142,17 @@ jobs:
 
         popd
 
+    - uses: actions/setup-python@v5
+      if: ${{ matrix.python-version == '3.10' }}
+      with:
+        python-version: ${{ matrix.python-version }}
+        cache: 'pip' # caching pip dependencies
+        allow-prereleases: true
+
     - name: Make frozen GUI executable
-      shell: bash -el {0}
       if: ${{ matrix.python-version == '3.10' }}
       run: |
+        conda deactivate
         # make app in virtualenv
         python -m venv app
         source app/bin/activate
