@@ -95,57 +95,83 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - uses: actions/setup-python@v5
-      with:
-        python-version: ${{ matrix.python-version }}
-        cache: 'pip' # caching pip dependencies
-        allow-prereleases: true
-
     - run: mkdir -p dist
 
-    - name: Install openmp
+    - uses: conda-incubator/setup-miniconda@v3
+      with:
+        activate-environment: dev3
+        python-version: ${{ matrix.python-version }}
+        channels: conda-forge
+
+    - name: install compilers
+      shell: bash -el {0}
       run: |
-        brew install libomp
+        conda install compilers llvm-openmp
 
     - name: Make wheel
+      shell: bash -el {0}
       env:
-        CC: /usr/bin/clang
-        CXX: /usr/bin/clang++
-        # CXXFLAGS: "-Xpreprocessor -fopenmp -I/usr/local/opt/libomp/include"
-        # CFLAGS: "-Xpreprocessor -fopenmp -I/usr/local/opt/libomp/include"
-        # LDFLAGS: "-L/usr/local/opt/libomp/lib -lomp"
-        DYLD_LIBRARY_PATH: /usr/local/opt/libomp/lib
         _PYTHON_HOST_PLATFORM: macosx-11.0-arm64
-        ARCHFLAGS: "-arch arm64"
       run: |
+        sudo xcode-select -s /Applications/Xcode_15.3.app
+        export CFLAGS="$CFLAGS -fopenmp"
+        export CXXFLAGS="$CXXFLAGS -fopenmp"
+        export LDFLAGS="$LDFLAGS -lomp"
         python -m pip install --upgrade pip
         python -m pip install wheel delocate build
-        python -m build .
+        python -m build . -v
         # so that libomp is distributed with wheel
         delocate-wheel -v dist/refnx*.whl
 
     - name: Install package and test with pytest
+      shell: bash -el {0}
       env:
         MPLBACKEND: agg
       run: |
         pip install -r .requirements.txt
         pushd dist
         python -m pip install --only-binary=refnx --no-index --find-links=. refnx
-
         pytest --pyargs refnx
-
         popd
 
+    - uses: actions/upload-artifact@v4
+      with:
+        name: refnx-wheel-macos-${{ matrix.python-version }}
+        path: dist/
+
+
+  test_macos_app:
+    needs: test_macos
+    runs-on: macos-14
+    strategy:
+      fail-fast: true
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+        allow-prereleases: true
+
+    - run: mkdir -p dist
+
+    - name: Download wheel
+      uses: actions/download-artifact@v4
+      with:
+        pattern: refnx-wheel-macos-*
+        merge-multiple: true
+        path: dist
+
     - name: Make frozen GUI executable
-      if: ${{ matrix.python-version == '3.10' }}
       run: |
         # make app in virtualenv
         python -m venv app
         source app/bin/activate
         python -m pip install --upgrade --upgrade-strategy eager -r tools/app/requirements.txt
-        # pin scipy 1.7.3 because of pyinstaller doesn't like arm64 bing in libgfortran.dylib
         python -m pip install scipy
         pushd dist
+        ls
         python -m pip install --only-binary=refnx --no-index --find-links=. refnx
         popd
         python -m pip install pyinstaller psutil

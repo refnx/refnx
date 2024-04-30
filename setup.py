@@ -349,7 +349,7 @@ def setup_package():
                 # the CMPLX macro was only standardised in C11
                 extra_preargs.extend(
                     [
-                        "-std=c11",
+                        #"-std=c11",
                         "-funsafe-math-optimizations",
                         "-ffinite-math-only",
                     ]
@@ -390,29 +390,31 @@ def setup_package():
             # export CXXFLAGS="$CXXFLAGS -I/usr/local/opt/libomp/include"
             # export LDFLAGS="$LDFLAGS -L/usr/local/opt/libomp/lib -lomp"
             # export DYLD_LIBRARY_PATH=/usr/local/opt/libomp/lib
-
+            print(f"{HAS_OPENMP=}, {refcalc_obj=}")
             if HAS_OPENMP:
                 # cyreflect extension module
                 _cyreflect = Extension(
                     name="refnx.reflect._cyreflect",
-                    sources=["src/_cyreflect.pyx"],
+                    sources=["src/_cyreflect.pyx", "src/refcaller.cpp"],
                     include_dirs=[numpy_include],
                     language="c++",
                     extra_compile_args=[],
-                    extra_link_args=[]
+                    extra_link_args=[],
+                    define_macros=[],
+                    extra_objects=refcalc_obj,
                     # libraries=
                     # extra_compile_args = "...".split(),
                 )
                 openmp_flags = get_openmp_flag(ccompiler)
                 _cyreflect.extra_compile_args += openmp_flags
-                _cyreflect.extra_link_args += openmp_flags
+                #_cyreflect.extra_link_args += openmp_flags
 
                 ext_modules.append(_cyreflect)
 
             # specify min deployment version for macOS
-            if platform == "darwin":
-                for mod in ext_modules:
-                    mod.extra_compile_args.append("-mmacosx-version-min=10.9")
+            # if platform == "darwin":
+            #     for mod in ext_modules:
+            #         mod.extra_compile_args.append("-mmacosx-version-min=10.9")
 
             info["ext_modules"] = cythonize(ext_modules)
             info["zip_safe"] = False
