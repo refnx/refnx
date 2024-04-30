@@ -109,17 +109,15 @@ jobs:
 
     - name: Make wheel
       env:
-        _PYTHON_HOST_PLATFORM: macosx-12.0-arm64
+        CC: gcc-13
+        CXX: g++-13
+        CXXFLAGS: "-Xpreprocessor -fopenmp"
+        CFLAGS: "-fopenmp"
+        _PYTHON_HOST_PLATFORM: macosx-11.0-arm64
         ARCHFLAGS: "-arch arm64"
       run: |
-        export CC=gcc-13
-        export CXX=g++-13
-        export CXXFLAGS="-Xpreprocessor -fopenmp"
-        export CFLAGS="-fopenmp"
         OMP_LIB="$(dirname $($CC --print-file-name libgomp.dylib))"
-
         export LDFLAGS="-L$OMP_LIB -lgomp"
-        #export DYLD_LIBRARY_PATH=$LIBOMP_LIB/lib       
         python -m pip install --upgrade pip
         python -m pip install wheel delocate build
         python -m pip wheel . -v
