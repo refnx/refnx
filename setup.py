@@ -391,7 +391,7 @@ def setup_package():
             # export CXXFLAGS="$CXXFLAGS -I/usr/local/opt/libomp/include"
             # export LDFLAGS="$LDFLAGS -L/usr/local/opt/libomp/lib -lomp"
             # export DYLD_LIBRARY_PATH=/usr/local/opt/libomp/lib
-            print(f"{HAS_OPENMP=}")
+            print(f"{HAS_OPENMP=}, {refcalc_obj=}")
             if HAS_OPENMP:
                 # cyreflect extension module
                 _cyreflect = Extension(
@@ -402,12 +402,13 @@ def setup_package():
                     extra_compile_args=[],
                     extra_link_args=[],
                     define_macros=[],
+                    extra_objects=refcalc_obj,
                     # libraries=
                     # extra_compile_args = "...".split(),
                 )
                 openmp_flags = get_openmp_flag(ccompiler)
                 _cyreflect.extra_compile_args += openmp_flags
-                _cyreflect.extra_link_args += openmp_flags
+                #_cyreflect.extra_link_args += openmp_flags
 
                 ext_modules.append(_cyreflect)
 
