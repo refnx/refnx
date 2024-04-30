@@ -396,7 +396,7 @@ def setup_package():
                 # cyreflect extension module
                 _cyreflect = Extension(
                     name="refnx.reflect._cyreflect",
-                    sources=["src/_cyreflect.pyx"],
+                    sources=["src/_cyreflect.pyx", "src/refcaller.cpp"],
                     include_dirs=[numpy_include],
                     language="c++",
                     extra_compile_args=[],
