@@ -111,13 +111,14 @@ jobs:
       env:
         CC: gcc-13
         CXX: g++-13
-        CXXFLAGS: "-Xpreprocessor -fopenmp"
-        CFLAGS: "-fopenmp"
         _PYTHON_HOST_PLATFORM: macosx-11.0-arm64
         ARCHFLAGS: "-arch arm64"
       run: |
-        OMP_LIB="$(dirname $($CC --print-file-name libgomp.dylib))"
-        export LDFLAGS="-L$OMP_LIB -lgomp"
+        brew install libomp
+        OMPLIB="$(brew --prefix libomp)"
+        export CFLAGS="-I$OMPLIB/include -fopenmp"
+        export CXXFLAGS="-I$OMPLIB/include -Xpreprocessor -fopenmp"
+        export LDFLAGS="-L$OMPLIB/lib -lomp"
         python -m pip install --upgrade pip
         python -m pip install wheel delocate build
         python -m build . -v

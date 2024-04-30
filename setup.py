@@ -349,7 +349,7 @@ def setup_package():
                 # the CMPLX macro was only standardised in C11
                 extra_preargs.extend(
                     [
-                        "-std=c11",
+                        #"-std=c11",
                         "-funsafe-math-optimizations",
                         "-ffinite-math-only",
                     ]
@@ -367,7 +367,6 @@ def setup_package():
                 define_macros=[("NPY_NO_DEPRECATED_API", "NPY_1_7_API_VERSION")],
                 extra_objects=refcalc_obj,
             )
-
             ext_modules.append(_creflect)
 
             # if we have openmp use pure cython version
@@ -413,9 +412,9 @@ def setup_package():
                 ext_modules.append(_cyreflect)
 
             # specify min deployment version for macOS
-            if platform == "darwin":
-                for mod in ext_modules:
-                    mod.extra_compile_args.append("-mmacosx-version-min=10.9")
+            # if platform == "darwin":
+            #     for mod in ext_modules:
+            #         mod.extra_compile_args.append("-mmacosx-version-min=10.9")
 
             info["ext_modules"] = cythonize(ext_modules)
             info["zip_safe"] = False
