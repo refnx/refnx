@@ -119,9 +119,7 @@ jobs:
       env:
         _PYTHON_HOST_PLATFORM: macosx-11.0-arm64
       run: |
-        printenv
         sudo xcode-select -s /Applications/Xcode_15.3.app
-        #OMPLIB="$(brew --prefix libomp)"
         export CFLAGS="$CFLAGS -fopenmp"
         export CXXFLAGS="$CXXFLAGS -fopenmp"
         export LDFLAGS="$LDFLAGS -lomp"
@@ -132,11 +130,13 @@ jobs:
         delocate-wheel -v dist/refnx*.whl
 
     - name: Install package and test with pytest
+      shell: bash -el {0}
       env:
         MPLBACKEND: agg
       run: |
         pip install -r .requirements.txt
         pushd dist
+        ls
         python -m pip install --only-binary=refnx --no-index --find-links=. refnx
 
         pytest --pyargs refnx
