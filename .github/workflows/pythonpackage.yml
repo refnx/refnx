@@ -106,7 +106,7 @@ jobs:
     - uses: conda-incubator/setup-miniconda@v3
       with:
         activate-environment: dev3
-        python-version: matrix.python-version }
+        python-version: ${{ matrix.python-version }}
         channels: conda-forge
 
     - name: install compilers
