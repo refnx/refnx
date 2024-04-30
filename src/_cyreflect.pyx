@@ -5,7 +5,7 @@ import numpy as np
 cimport numpy as np
 cimport cython
 cimport openmp
-from cython.parallel import prange, parallel
+from cython.parallel import prange, parallel, threadid
 
 
 np.import_array()
@@ -277,6 +277,7 @@ cpdef np.ndarray vec_abeles(
         int nlayers = w.shape[1] - 2
         int i
         int j
+        int num_threads
         int offset
         int nvec = w.shape[0]
         int npoints = x.size
@@ -287,7 +288,8 @@ cpdef np.ndarray vec_abeles(
         double *bkg_data
         double *scale_data
         double *y_out_data
-        double * coefs
+        double *coefs
+        double *coefs_arr
     if not x.flags['C_CONTIGUOUS']:
         x = np.ascontiguousarray(x, dtype=np.float64)
 
@@ -296,32 +298,41 @@ cpdef np.ndarray vec_abeles(
     scale_data = <DTYPE_t *>np.PyArray_DATA(scale)
     bkg_data = <DTYPE_t *> np.PyArray_DATA(bkg)
 
-    with nogil, parallel(num_threads=threads):
-        for i in prange(nvec):
-            coefs = <double *> malloc((4*nlayers + 8) * sizeof(double))
-            coefs[0] = nlayers
-            coefs[1] = scale_data[i]
-            coefs[2] = w[i, 0, 1]
-            coefs[3] = w[i, 0, 2]
-            coefs[4] = w[i, -1, 1]
-            coefs[5] = w[i, -1, 2]
-            coefs[6] = bkg_data[i]
-            coefs[7] = w[i, -1, 3]
+    if threads > 0:
+        num_threads = int(threads)
+    else:
+        num_threads = openmp.omp_get_max_threads()
 
-            if nlayers:
-                for j in range(nlayers):
-                    coefs[8 + 4*j] = w[i, j + 1, 0]
-                    coefs[9 + 4*j] = w[i, j + 1, 1]
-                    coefs[10 + 4*j] = w[i, j + 1, 2]
-                    coefs[11 + 4*j] = w[i, j + 1, 3]
+    offset = 4*nlayers + 8
+    coefs_arr = <double *> malloc(offset * sizeof(double) * num_threads)
+    if coefs_arr is NULL:
+        abort()
 
-            abeles_wrapper(
-                4*nlayers + 8,
-                coefs,
-                npoints,
-                &y_out_data[npoints * i],
-                x_data
-            )
-            free(coefs)
+    for i in prange(nvec, nogil=True, num_threads=num_threads):
+        coefs = &coefs_arr[offset * threadid()]
+        coefs[0] = nlayers
+        coefs[1] = scale_data[i]
+        coefs[2] = w[i, 0, 1]
+        coefs[3] = w[i, 0, 2]
+        coefs[4] = w[i, -1, 1]
+        coefs[5] = w[i, -1, 2]
+        coefs[6] = bkg_data[i]
+        coefs[7] = w[i, -1, 3]
+
+        if nlayers:
+            for j in range(nlayers):
+                coefs[8 + 4*j] = w[i, j + 1, 0]
+                coefs[9 + 4*j] = w[i, j + 1, 1]
+                coefs[10 + 4*j] = w[i, j + 1, 2]
+                coefs[11 + 4*j] = w[i, j + 1, 3]
+
+        abeles_wrapper(
+            4*nlayers + 8,
+            coefs,
+            npoints,
+            &y_out_data[npoints * i],
+            x_data
+        )
+    free(coefs_arr)
 
     return yout
