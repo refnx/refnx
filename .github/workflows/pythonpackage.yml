@@ -159,7 +159,8 @@ jobs:
     - name: Download wheel
       uses: actions/download-artifact@v4
       with:
-        pattern: refnx-wheel-macos-3.10
+        pattern: refnx-wheel-macos-*
+        merge-multiple: true
         path: dist
 
     - name: Make frozen GUI executable
