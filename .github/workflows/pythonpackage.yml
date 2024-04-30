@@ -120,7 +120,7 @@ jobs:
         export LDFLAGS="-L$OMP_LIB -lgomp"
         python -m pip install --upgrade pip
         python -m pip install wheel delocate build
-        python -m pip wheel . -v
+        python -m build . -v
         # so that libomp is distributed with wheel
         delocate-wheel -v dist/refnx*.whl
 
