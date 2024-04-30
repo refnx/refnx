@@ -164,12 +164,14 @@ jobs:
 
     - name: Make frozen GUI executable
       run: |
+        ls
         # make app in virtualenv
         python -m venv app
         source app/bin/activate
         python -m pip install --upgrade --upgrade-strategy eager -r tools/app/requirements.txt
         python -m pip install scipy
         pushd dist
+        ls
         python -m pip install --only-binary=refnx --no-index --find-links=. refnx
         popd
         python -m pip install pyinstaller psutil
