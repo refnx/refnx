@@ -103,22 +103,28 @@ jobs:
 
     - run: mkdir -p dist
 
-    - name: Install openmp
+    - uses: conda-incubator/setup-miniconda@v3
+      with:
+        activate-environment: dev3
+        python-version: {{ matrix.python-version }}
+        channels: conda-forge
+
+    - name: install compilers
+      shell: bash -el {0}
       run: |
-        brew install libomp
+        conda install compilers llvm-openmp
 
     - name: Make wheel
       env:
-        CC: gcc-13
-        CXX: g++-13
         _PYTHON_HOST_PLATFORM: macosx-11.0-arm64
-        ARCHFLAGS: "-arch arm64"
       run: |
+        conda activate dev3
+        printenv
         sudo xcode-select -s /Applications/Xcode_15.3.app
-        OMPLIB="$(brew --prefix libomp)"
-        export CFLAGS="-I$OMPLIB/include -fopenmp"
-        export CXXFLAGS="-I$OMPLIB/include -Xpreprocessor -fopenmp"
-        export LDFLAGS="-L$OMPLIB/lib -lomp"
+        #OMPLIB="$(brew --prefix libomp)"
+        #export CFLAGS="-I$OMPLIB/include -fopenmp"
+        #export CXXFLAGS="-I$OMPLIB/include -Xpreprocessor -fopenmp"
+        #export LDFLAGS="-L$OMPLIB/lib -lomp"
         python -m pip install --upgrade pip
         python -m pip install wheel delocate build
         python -m build . -v
