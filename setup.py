@@ -171,7 +171,7 @@ def get_openmp_flag(compiler):
         # export CXXFLAGS="$CXXFLAGS -I/usr/local/opt/libomp/include"
         # export LDFLAGS="$LDFLAGS -L/usr/local/opt/libomp/lib -lomp"
         # export DYLD_LIBRARY_PATH =/usr/local/opt/libomp/lib
-        return ["-fopenmp"]
+        return []
     # Default flag for GCC and clang:
     return ["-fopenmp"]
 
@@ -223,6 +223,7 @@ def check_openmp_support():
                 extra_preargs=extra_preargs,
                 extra_postargs=openmp_flags,
             )
+
             # Run test program
             output = subprocess.check_output("./test_openmp")
             output = output.decode(sys.stdout.encoding or "utf-8").splitlines()
@@ -411,9 +412,9 @@ def setup_package():
                 ext_modules.append(_cyreflect)
 
             # specify min deployment version for macOS
-            #if platform == "darwin":
-            #    for mod in ext_modules:
-            #        mod.extra_compile_args.append("-mmacosx-version-min=10.9")
+            if platform == "darwin":
+                for mod in ext_modules:
+                    mod.extra_compile_args.append("-mmacosx-version-min=10.9")
 
             info["ext_modules"] = cythonize(ext_modules)
             info["zip_safe"] = False
