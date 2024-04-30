@@ -171,7 +171,7 @@ def get_openmp_flag(compiler):
         # export CXXFLAGS="$CXXFLAGS -I/usr/local/opt/libomp/include"
         # export LDFLAGS="$LDFLAGS -L/usr/local/opt/libomp/lib -lomp"
         # export DYLD_LIBRARY_PATH =/usr/local/opt/libomp/lib
-        return []
+        return ["-fopenmp"]
     # Default flag for GCC and clang:
     return ["-fopenmp"]
 
@@ -205,6 +205,7 @@ def check_openmp_support():
 
             # Compile, test program
             openmp_flags = get_openmp_flag(ccompiler)
+            print(f"{openmp_flags=}")
             ccompiler.compile(
                 ["test_openmp.c"], output_dir="objects", extra_postargs=openmp_flags
             )
@@ -223,7 +224,6 @@ def check_openmp_support():
                 extra_preargs=extra_preargs,
                 extra_postargs=openmp_flags,
             )
-
             # Run test program
             output = subprocess.check_output("./test_openmp")
             output = output.decode(sys.stdout.encoding or "utf-8").splitlines()
@@ -367,10 +367,6 @@ def setup_package():
                 define_macros=[("NPY_NO_DEPRECATED_API", "NPY_1_7_API_VERSION")],
                 extra_objects=refcalc_obj,
             )
-            if HAS_OPENMP:
-                openmp_flags = get_openmp_flag(ccompiler)
-                _creflect.extra_compile_args += openmp_flags
-                _creflect.extra_link_args += openmp_flags
 
             ext_modules.append(_creflect)
 

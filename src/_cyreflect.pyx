@@ -291,10 +291,10 @@ cpdef np.ndarray vec_abeles(
     if not x.flags['C_CONTIGUOUS']:
         x = np.ascontiguousarray(x, dtype=np.float64)
 
-    x_data = <float64_t *>np.PyArray_DATA(x)
-    y_out_data = <float64_t *>np.PyArray_DATA(yout)
-    scale_data = <float64_t *>np.PyArray_DATA(scale)
-    bkg_data = <float64_t *> np.PyArray_DATA(bkg)
+    x_data = <DTYPE_t *>np.PyArray_DATA(x)
+    y_out_data = <DTYPE_t *>np.PyArray_DATA(yout)
+    scale_data = <DTYPE_t *>np.PyArray_DATA(scale)
+    bkg_data = <DTYPE_t *> np.PyArray_DATA(bkg)
 
     with nogil, parallel(num_threads=threads):
         for i in prange(nvec):

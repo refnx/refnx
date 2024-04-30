@@ -112,8 +112,8 @@ jobs:
         _PYTHON_HOST_PLATFORM: macosx-12.0-arm64
         ARCHFLAGS: "-arch arm64"
       run: |
-        export CC=gcc-11
-        export CXX=g++-11
+        export CC=gcc-13
+        export CXX=g++-13
         export LIBOMP_LIB="$(brew --prefix libomp)"
         export CXXFLAGS="$CXXFLAGS -I$LIBOMP_LIB/include -Xpreprocessor -fopenmp"
         export CFLAGS="$CFLAGS -I$LIBOMP_LIB/include"
