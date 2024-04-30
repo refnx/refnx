@@ -114,7 +114,7 @@ jobs:
         _PYTHON_HOST_PLATFORM: macosx-11.0-arm64
         ARCHFLAGS: "-arch arm64"
       run: |
-        brew install libomp
+        sudo xcode-select -s /Applications/Xcode_15.3.app
         OMPLIB="$(brew --prefix libomp)"
         export CFLAGS="-I$OMPLIB/include -fopenmp"
         export CXXFLAGS="-I$OMPLIB/include -Xpreprocessor -fopenmp"
