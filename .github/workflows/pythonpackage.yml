@@ -122,9 +122,9 @@ jobs:
         printenv
         sudo xcode-select -s /Applications/Xcode_15.3.app
         #OMPLIB="$(brew --prefix libomp)"
-        #export CFLAGS="-I$OMPLIB/include -fopenmp"
-        #export CXXFLAGS="-I$OMPLIB/include -Xpreprocessor -fopenmp"
-        #export LDFLAGS="-L$OMPLIB/lib -lomp"
+        export CFLAGS="$CFLAGS -fopenmp"
+        export CXXFLAGS="$CXXFLAGS -fopenmp"
+        export LDFLAGS="$LDFLAGS -lomp"
         python -m pip install --upgrade pip
         python -m pip install wheel delocate build
         python -m build . -v
