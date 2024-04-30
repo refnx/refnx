@@ -51,7 +51,6 @@ ctypedef np.float64_t float64_t
 cdef int NCPU = cpu_count()
 
 
-
 @cython.boundscheck(False)
 @cython.cdivision(True)
 cpdef np.ndarray abeles(

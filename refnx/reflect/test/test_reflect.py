@@ -317,7 +317,10 @@ class TestReflect:
         assert_almost_equal(calc, refl1d[1])
 
     @pytest.mark.skipif(
-        not hasattr(refnx.reflect._creflect, "vec_abeles"),
+        not (
+            hasattr(refnx.reflect, "_cyreflect")
+            and hasattr(refnx.reflect._cyreflect, "vec_abeles")
+        ),
         reason="vec_abeles not available",
     )
     def test_vec_abeles(self):
@@ -337,7 +340,9 @@ class TestReflect:
         )
         w_noise = np.reshape(w_noise, (1000,) + w.shape)
         x = np.geomspace(0.005, 0.5, 1001)
-        y = refnx.reflect._creflect.vec_abeles(x, w_noise, bkg=None, scale=None)
+        y = refnx.reflect._cyreflect.vec_abeles(
+            x, w_noise, bkg=None, scale=None
+        )
         y_test = np.array([refnx.reflect.abeles(x, _w) for _w in w_noise])
         assert_allclose(y, y_test)
 
