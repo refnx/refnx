@@ -95,12 +95,6 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    #- uses: actions/setup-python@v5
-    #  with:
-    #    python-version: ${{ matrix.python-version }}
-    #    cache: 'pip' # caching pip dependencies
-    #    allow-prereleases: true
-
     - run: mkdir -p dist
 
     - uses: conda-incubator/setup-miniconda@v3
@@ -137,27 +131,44 @@ jobs:
         pip install -r .requirements.txt
         pushd dist
         python -m pip install --only-binary=refnx --no-index --find-links=. refnx
-
         pytest --pyargs refnx
-
         popd
 
-    - uses: actions/setup-python@v5
-      if: ${{ matrix.python-version == '3.10' }}
+    - uses: actions/upload-artifact@v4
       with:
-        python-version: ${{ matrix.python-version }}
-        cache: 'pip' # caching pip dependencies
+        name: refnx-wheel-macos-${{ matrix.python-version }}
+        path: dist/
+
+
+  test_macos_app:
+    needs: test_macos
+    runs-on: macos-14
+    strategy:
+      fail-fast: true
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - uses: actions/setup-python@v5
+      with:
+        python-version: 3.10
         allow-prereleases: true
 
+    - run: mkdir -p dist
+
+    - name: Download wheel
+      uses: actions/download-artifact@v4
+      with:
+        name: homework_pre
+        pattern: refnx-wheel-macos-3.10
+        path: dist
+
     - name: Make frozen GUI executable
-      if: ${{ matrix.python-version == '3.10' }}
       run: |
-        conda deactivate
         # make app in virtualenv
         python -m venv app
         source app/bin/activate
         python -m pip install --upgrade --upgrade-strategy eager -r tools/app/requirements.txt
-        # pin scipy 1.7.3 because of pyinstaller doesn't like arm64 bing in libgfortran.dylib
         python -m pip install scipy
         pushd dist
         python -m pip install --only-binary=refnx --no-index --find-links=. refnx
