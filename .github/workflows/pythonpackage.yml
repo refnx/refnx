@@ -114,16 +114,17 @@ jobs:
       run: |
         export CC=gcc-13
         export CXX=g++-13
-        export LIBOMP_LIB="$(brew --prefix libomp)"
-        export CXXFLAGS="$CXXFLAGS -I$LIBOMP_LIB/include -Xpreprocessor -fopenmp"
-        export CFLAGS="$CFLAGS -I$LIBOMP_LIB/include"
-        export LDFLAGS="$LDFLAGS -L$LIBOMP_LIB/lib -lomp"
-        export DYLD_LIBRARY_PATH=$LIBOMP_LIB/lib       
+        #export CXXFLAGS="-Xpreprocessor -fopenmp"
+        #export CFLAGS="-fopenmp"
+        #OMP_LIB="$(dirname $($CC --print-file-name libgomp.dylib))"
+
+        #export LDFLAGS="-L$OMP_LIB -lgomp"
+        #export DYLD_LIBRARY_PATH=$LIBOMP_LIB/lib       
         python -m pip install --upgrade pip
         python -m pip install wheel delocate build
         python -m pip wheel . -v
         # so that libomp is distributed with wheel
-        DYLD_LIBRARY_PATH=$DYLD_LIBRARY_PATH delocate-wheel -v dist/refnx*.whl
+        delocate-wheel -v dist/refnx*.whl
 
     - name: Install package and test with pytest
       env:

@@ -205,7 +205,6 @@ def check_openmp_support():
 
             # Compile, test program
             openmp_flags = get_openmp_flag(ccompiler)
-            print(f"{openmp_flags=}")
             ccompiler.compile(
                 ["test_openmp.c"], output_dir="objects", extra_postargs=openmp_flags
             )
@@ -349,7 +348,7 @@ def setup_package():
                 # the CMPLX macro was only standardised in C11
                 extra_preargs.extend(
                     [
-                        "-std=c11",
+                        #"-std=c11",
                         "-funsafe-math-optimizations",
                         "-ffinite-math-only",
                     ]
@@ -391,7 +390,7 @@ def setup_package():
             # export CXXFLAGS="$CXXFLAGS -I/usr/local/opt/libomp/include"
             # export LDFLAGS="$LDFLAGS -L/usr/local/opt/libomp/lib -lomp"
             # export DYLD_LIBRARY_PATH=/usr/local/opt/libomp/lib
-
+            print(f"{HAS_OPENMP=}")
             if HAS_OPENMP:
                 # cyreflect extension module
                 _cyreflect = Extension(
@@ -400,7 +399,8 @@ def setup_package():
                     include_dirs=[numpy_include],
                     language="c++",
                     extra_compile_args=[],
-                    extra_link_args=[]
+                    extra_link_args=[],
+                    define_macros=[],
                     # libraries=
                     # extra_compile_args = "...".split(),
                 )
