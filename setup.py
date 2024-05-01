@@ -349,7 +349,7 @@ def setup_package():
                 # the CMPLX macro was only standardised in C11
                 extra_preargs.extend(
                     [
-                        #"-std=c11",
+                        "-std=c11",
                         "-funsafe-math-optimizations",
                         "-ffinite-math-only",
                     ]
