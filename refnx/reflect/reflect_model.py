@@ -1095,10 +1095,10 @@ def _smeared_kernel_pointwise(qvals, w, dqvals, quad_order=17, threads=-1):
     qvals_for_res = (np.atleast_2d(abscissa) * (vb - va) + vb + va) / 2.0
     smeared_rvals = kernel(qvals_for_res, w, threads=threads)
 
-    smeared_rvals = np.reshape(smeared_rvals, (qvals.size, abscissa.size))
+    # smeared_rvals = np.reshape(smeared_rvals, (qvals.size, abscissa.size))
 
     smeared_rvals *= np.atleast_2d(gaussvals * weights)
-    return np.sum(smeared_rvals, 1) * _INTLIMIT
+    return np.sum(smeared_rvals, -1) * _INTLIMIT
 
 
 def _smeared_kernel_constant(q, w, resolution, threads=-1):
