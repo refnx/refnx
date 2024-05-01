@@ -112,6 +112,7 @@ jobs:
     - name: Make wheel
       shell: bash -el {0}
       env:
+        ARCHFLAGS: "-arch arm64"
         _PYTHON_HOST_PLATFORM: macosx-11.0-arm64
       run: |
         sudo xcode-select -s /Applications/Xcode_15.3.app
