@@ -147,11 +147,11 @@ def get_openmp_flag(compiler):
         compiler = compiler.__class__.__name__
 
     if sys.platform == "win32" and ("icc" in compiler or "icl" in compiler):
-        return ["/Qopenmp"]
+        return ["/Qopenmp"], []
     elif sys.platform == "win32":
-        return ["/openmp"]
+        return ["/openmp"], []
     elif sys.platform == "darwin" and ("icc" in compiler or "icl" in compiler):
-        return ["-openmp"]
+        return ["-openmp"], []
     elif sys.platform == "darwin":
         # default for macOS, assuming Apple-clang
         # -fopenmp can't be passed as compile flag when using Apple-clang.
@@ -171,9 +171,9 @@ def get_openmp_flag(compiler):
         # export CXXFLAGS="$CXXFLAGS -I/usr/local/opt/libomp/include"
         # export LDFLAGS="$LDFLAGS -L/usr/local/opt/libomp/lib -lomp"
         # export DYLD_LIBRARY_PATH =/usr/local/opt/libomp/lib
-        return []
+        return ["-fopenmp"], ["-lomp"]
     # Default flag for GCC and clang:
-    return ["-fopenmp"]
+    return ["-fopenmp"], []
 
 
 def check_openmp_support():
@@ -205,8 +205,9 @@ def check_openmp_support():
 
             # Compile, test program
             openmp_flags = get_openmp_flag(ccompiler)
+
             ccompiler.compile(
-                ["test_openmp.c"], output_dir="objects", extra_postargs=openmp_flags
+                ["test_openmp.c"], output_dir="objects", extra_postargs=openmp_flags[0]
             )
 
             # Link test program
@@ -221,7 +222,7 @@ def check_openmp_support():
                 objects,
                 "test_openmp",
                 extra_preargs=extra_preargs,
-                extra_postargs=openmp_flags,
+                extra_postargs=openmp_flags[1],
             )
 
             # Run test program
@@ -374,22 +375,12 @@ def setup_package():
             #
             # However, it's not present in Apple Clang. Therefore one has to
             # jump through hoops to enable it.
-            # It's probably easier to install OpenMP on macOS via homebrew.
-            # However, it's fairly simple to build the OpenMP library, and
-            # installing it into PREFIX=/usr/local
+            # It's probably easier to install OpenMP on macOS via homebrew
             #
-            # https://gist.github.com/andyfaff/084005bee32aee83d6b59e843278ab3e
-            #
-            # Instructions for macOS:
-            #
-            # brew install libomp
-            # export CC=clang
-            # export CXX=clang++
-            # export CXXFLAGS="$CXXFLAGS -Xpreprocessor -fopenmp"
-            # export CFLAGS="$CFLAGS -I/usr/local/opt/libomp/include"
-            # export CXXFLAGS="$CXXFLAGS -I/usr/local/opt/libomp/include"
-            # export LDFLAGS="$LDFLAGS -L/usr/local/opt/libomp/lib -lomp"
-            # export DYLD_LIBRARY_PATH=/usr/local/opt/libomp/lib
+            # brew install llvm
+            # export PATH="/opt/homebrew/opt/llvm/bin:$PATH"
+            # export CPPFLAGS="-I/opt/homebrew/opt/llvm/include"
+            # export LDFLAGS="-L/opt/homebrew/opt/llvm/lib/c++ -Wl,-rpath,/opt/homebrew/opt/llvm/lib/c++ -L/opt/homebrew/opt/llvm/lib"
             print(f"{HAS_OPENMP=}, {refcalc_obj=}")
             if HAS_OPENMP:
                 # cyreflect extension module
@@ -402,12 +393,11 @@ def setup_package():
                     extra_link_args=[],
                     define_macros=[],
                     extra_objects=refcalc_obj,
-                    # libraries=
                     # extra_compile_args = "...".split(),
                 )
                 openmp_flags = get_openmp_flag(ccompiler)
-                _cyreflect.extra_compile_args += openmp_flags
-                #_cyreflect.extra_link_args += openmp_flags
+                _cyreflect.extra_compile_args += openmp_flags[0]
+                _cyreflect.extra_link_args += openmp_flags[1]
 
                 ext_modules.append(_cyreflect)
 
