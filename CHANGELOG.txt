@@ -575,3 +575,4 @@ in 0.1.13.
 
 0.1.46
 ------
+- Fix bug in ReflectModelTL when numpy2 is installed.

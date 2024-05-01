@@ -719,7 +719,7 @@ class ReflectModelTL(ReflectModel):
         unique_slabs, idxs, inverse_idxs = np.unique(
             slabs, axis=0, return_index=True, return_inverse=True
         )
-        msks = [inverse_idxs == idx for idx in idxs]
+        msks = [np.squeeze(inverse_idxs) == idx for idx in idxs]
         R = np.empty_like(q)
         for msk, a_unique_slabs in zip(msks, unique_slabs):
             if np.count_nonzero(x_err[msk]):
