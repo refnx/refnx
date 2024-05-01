@@ -4,7 +4,7 @@ on:
   - pull_request
 
 jobs:
-
+###############################################################################
   test_linux:
 
     runs-on: ubuntu-22.04
@@ -83,6 +83,7 @@ jobs:
 #        path: dist/
 
 
+###############################################################################
   test_macos:
 
     runs-on: macos-14
@@ -97,16 +98,16 @@ jobs:
 
     - run: mkdir -p dist
 
-    - uses: conda-incubator/setup-miniconda@v3
+    - uses: actions/setup-python@v5
       with:
-        activate-environment: dev3
         python-version: ${{ matrix.python-version }}
-        channels: conda-forge
+        cache: 'pip' # caching pip dependencies
+        allow-prereleases: true
 
     - name: install compilers
       shell: bash -el {0}
       run: |
-        conda install compilers llvm-openmp
+        brew install llvm
 
     - name: Make wheel
       shell: bash -el {0}
@@ -114,9 +115,10 @@ jobs:
         _PYTHON_HOST_PLATFORM: macosx-11.0-arm64
       run: |
         sudo xcode-select -s /Applications/Xcode_15.3.app
-        export CFLAGS="$CFLAGS -fopenmp"
-        export CXXFLAGS="$CXXFLAGS -fopenmp"
-        export LDFLAGS="$LDFLAGS -lomp"
+        export PATH="/opt/homebrew/opt/llvm/bin:$PATH"
+        export CPPFLAGS="-I/opt/homebrew/opt/llvm/include"
+        export LDFLAGS="-L/opt/homebrew/opt/llvm/lib/c++ -Wl,-rpath,/opt/homebrew/opt/llvm/lib/c++ -L/opt/homebrew/opt/llvm/lib"
+
         python -m pip install --upgrade pip
         python -m pip install wheel delocate build
         python -m build . -v
@@ -194,6 +196,7 @@ jobs:
         path: dist/
 
 
+###############################################################################
   test_win:
 
     runs-on: windows-latest
@@ -271,6 +274,7 @@ jobs:
         path: dist/
 
 
+###############################################################################
   build_doc:
 
     runs-on: ubuntu-latest
@@ -301,8 +305,9 @@ jobs:
         python -m pip install -r requirements.txt
         make html
 
-  lint:
 
+###############################################################################
+  lint:
     runs-on: ubuntu-latest
     strategy:
       max-parallel: 1
