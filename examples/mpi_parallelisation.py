@@ -9,7 +9,6 @@ You'll need to install:
 - cython
 - schwimmbad
 - mpi4py
-- ptemcee
 
 Usage
 -----
