@@ -152,7 +152,7 @@ def get_reflect_backend(backend="c"):
     Parameters
     ----------
     backend: {'python', 'cython', 'c', 'pyopencl', 'py_parratt', 'c_parratt',
-              'numba_parratt'}
+              'numba_parratt', 'abeles_vectorised'}
         The module that calculates the reflectivity. Speed should go in the
         order:
         numba_parratt > c_parratt > c > pyopencl / cython > py_parratt > python.
@@ -173,6 +173,10 @@ def get_reflect_backend(backend="c"):
     be installed. It may not as accurate as the other options. 'pyopencl' is
     only included for completeness. The 'pyopencl' backend is also harder to
     use with multiprocessing-based parallelism.
+    'abeles_vectorised' is vectorised such that many slab sets can be
+    calculated simultaneously. As such, it requires a 3-dimensional array for
+    specification of the slabs. It is not a 1:1 replacement for the other
+    kernels.
     """
     backend = backend.lower()
 
@@ -203,6 +207,15 @@ def get_reflect_backend(backend="c"):
         except ImportError:
             warnings.warn("Can't use the cython abeles backend")
             return get_reflect_backend("c")
+    elif backend == "abeles_vectorised":
+        try:
+            from refnx.reflect._cyreflect import abeles_vectorised
+
+            return abeles_vectorised
+        except ImportError:
+            raise ValueError(
+                "Can't use the abeles_vectorised backend, it's not available"
+            )
     elif backend == "c":
         try:
             from refnx.reflect import _creflect as _c
@@ -273,7 +286,7 @@ def use_reflect_backend(backend="c"):
     Parameters
     ----------
     backend: {'python', 'cython', 'c', 'pyopencl', 'py_parratt', 'c_parratt',
-              'numba_parratt'}, str
+              'numba_parratt', 'abeles_vectorised'}, str
         The function that calculates the reflectivity. Speed should go in the
         order: numba_parratt > c_parratt > c > pyopencl / cython > python. If a
         particular method is not available the function falls back to another
@@ -292,6 +305,10 @@ def use_reflect_backend(backend="c"):
     be installed. It may not as accurate as the other options. 'pyopencl' is
     only included for completeness. The 'pyopencl' backend is also harder to
     use with multiprocessing-based parallelism.
+    'abeles_vectorised' is vectorised such that many slab sets can be
+    calculated simultaneously. As such, it requires a 3-dimensional array for
+    specification of the slabs. It is not a 1:1 replacement for the other
+    kernels.
     """
     global kernel
     f = kernel
@@ -1089,16 +1106,16 @@ def _smeared_kernel_pointwise(qvals, w, dqvals, quad_order=17, threads=-1):
     va = qvals - _INTLIMIT * dqvals / _FWHM
     vb = qvals + _INTLIMIT * dqvals / _FWHM
 
-    va = va[:, np.newaxis]
-    vb = vb[:, np.newaxis]
+    va = va[..., np.newaxis]
+    vb = vb[..., np.newaxis]
 
-    qvals_for_res = (np.atleast_2d(abscissa) * (vb - va) + vb + va) / 2.0
+    qvals_for_res = (abscissa[np.newaxis, :] * (vb - va) + vb + va) / 2.0
     smeared_rvals = kernel(qvals_for_res, w, threads=threads)
 
-    smeared_rvals = np.reshape(smeared_rvals, (qvals.size, abscissa.size))
+    # smeared_rvals = np.reshape(smeared_rvals, (qvals.size, abscissa.size))
 
     smeared_rvals *= np.atleast_2d(gaussvals * weights)
-    return np.sum(smeared_rvals, 1) * _INTLIMIT
+    return np.sum(smeared_rvals, -1) * _INTLIMIT
 
 
 def _smeared_kernel_constant(q, w, resolution, threads=-1):

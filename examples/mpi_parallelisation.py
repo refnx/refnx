@@ -9,7 +9,6 @@ You'll need to install:
 - cython
 - schwimmbad
 - mpi4py
-- ptemcee
 
 Usage
 -----
@@ -72,9 +71,9 @@ if __name__ == "__main__":
         with open('steps.chain', 'w', buffering=500000) as f:
             objective = setup()
             # Create the fitter and fit
-            fitter = CurveFitter(objective, nwalkers=300, ntemps=15)
+            fitter = CurveFitter(objective, nwalkers=300)
             fitter.initialise('prior')
             fitter.fit('differential_evolution')
             # thin by 10 so we have a smaller filesize
-            fitter.sample(100, pool=pool, f=f, verbose=False, nthin=10);
+            fitter.sample(100, pool=pool.map, f=f, verbose=False, nthin=10);
             f.flush()
