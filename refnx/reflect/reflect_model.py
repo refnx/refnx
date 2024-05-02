@@ -78,6 +78,7 @@ def available_backends():
     backends = ["python"]
     try:
         import refnx.reflect._creflect as _creflect
+
         backends.append("c")
         backends.append("c_parratt")
     except ImportError:
@@ -85,6 +86,7 @@ def available_backends():
 
     try:
         import refnx.reflect._cyreflect as _cyreflect
+
         backends.append("cython")
     except ImportError:
         pass
