@@ -24,7 +24,7 @@ from schwimmbad import MPIPool
 
 from refnx.reflect import SLD, Slab, ReflectModel
 from refnx.dataset import ReflectDataset
-from refnx.analysis import (Objective, CurveFitter, Transform)
+from refnx.analysis import (Objective, CurveFitter, Transform, GlobalObjective)
 
 
 def setup():
@@ -61,6 +61,38 @@ def setup():
     return objective
 
 
+def structure_plot(obj, samples=0):
+    # plot sld profiles
+    import matplotlib.pyplot as plt
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+
+    if isinstance(obj, GlobalObjective):
+        if samples > 0:
+            savedparams = np.array(obj.parameters)
+            for pvec in obj.parameters.pgen(ngen=samples):
+                obj.setp(pvec)
+                for o in obj.objectives:
+                    if hasattr(o.model, 'structure'):
+                        ax.plot(*o.model.structure.sld_profile(),
+                                color="k", alpha=0.01)
+
+            # put back saved_params
+            obj.setp(savedparams)
+
+        for o in obj.objectives:
+            if hasattr(o.model, 'structure'):
+                ax.plot(*o.model.structure.sld_profile(), zorder=20)
+
+        ax.set_ylabel('SLD / $10^{-6}\\AA^{-2}$')
+        ax.set_xlabel("z / $\\AA$")
+
+    elif isinstance(obj, Objective) and hasattr(obj.model, 'structure'):
+        fig, ax = obj.model.structure.plot(samples=samples)
+
+    fig.savefig('steps_sld.png', dpi=1000)
+
+
 if __name__ == "__main__":
     with MPIPool() as pool:
         if not pool.is_master():
@@ -77,3 +109,30 @@ if __name__ == "__main__":
             # thin by 10 so we have a smaller filesize
             fitter.sample(100, pool=pool.map, f=f, verbose=False, nthin=10);
             f.flush()
+
+        try:
+            # create graphs of reflectivity and SLD profiles
+            import matplotlib
+            import matplotlib.pyplot as plt
+            matplotlib.use('agg')
+
+            fig, ax = objective.plot(samples=1000)
+            ax.set_ylabel('R')
+            ax.set_xlabel("Q / $\\AA$")
+            fig.savefig('steps.png', dpi=1000)
+
+            structure_plot(objective, samples=1000)
+
+            # corner plot
+            fig = objective.corner()
+            fig.savefig('steps_corner.png')
+
+            # plot the Autocorrelation function of the chain
+            fig = plt.figure()
+            ax = fig.add_subplot(111)
+            ax.plot(fitter.acf())
+            ax.set_ylabel('autocorrelation')
+            ax.set_xlabel('step')
+            fig.savefig('steps-autocorrelation.png')
+        except ImportError:
+            pass
