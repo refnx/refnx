@@ -9,11 +9,11 @@ Installation
 .. _github: https://github.com/refnx/refnx
 .. _homebrew: https://brew.sh/
 
-*refnx* has been tested on Python 3.8, 3.9, 3.10, and 3.11. It requires the
+*refnx* has been tested on Python 3.9, 3.10, 3.11, 3.12. It requires the
 *numpy, scipy, cython* packages to work. Additional features
 require the *pytest, h5py, xlrd, uncertainties, attrs, matplotlib, Jupyter,*
 *ipywidgets, traitlets, tqdm, pandas, qtpy, pyqt6, periodictable, pymc,
-pytensor*. To build the bleeding edge code you will need to have access to a
+pytensor* packages. To build the bleeding edge code you will need to have access to a
 C-compiler to build a couple of Python extensions. C-compilers should be
 installed on Linux. On OSX you will need to install Xcode and the command line
 tools. On Windows you will need to install the correct
@@ -37,7 +37,7 @@ Creating a conda environment
 
     ::
 
-     conda create -n refnx python=3.9
+     conda create -n refnx python=3.12
 
 2. Activate the environment that we're going to be working in:
 
