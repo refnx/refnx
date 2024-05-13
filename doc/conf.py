@@ -38,12 +38,13 @@ extensions = [
     'sphinx.ext.viewcode',
     'sphinx.ext.autosummary',
     'sphinx.ext.napoleon',
-    'nbsphinx',
+    'myst_nb',
     'jupyter_sphinx',
     'sphinxcontrib.bibtex',
     'sphinxcontrib.jquery',
     'sphinx_rtd_theme',
 ]
+jupyter_execute_notebooks = "off"
 
 bibtex_bibfiles = ["../testimonials.bib"]
 
@@ -77,9 +78,9 @@ version = re.sub(r'\.dev-.*$', r'.dev', refnx.__version__)
 release = refnx.__version__
 
 intersphinx_mapping = {'py': ('https://docs.python.org/3', None),
-                       'numpy': ('https://docs.scipy.org/doc/numpy/', None),
-                       'scipy': ('https://docs.scipy.org/doc/scipy/reference/', None),
-                       'matplotlib': ('https://matplotlib.org/', None),
+                       'numpy': ('https://numpy.org/doc/stable/', None),
+                       'scipy': ('https://docs.scipy.org/doc/scipy/', None),
+                       'matplotlib': ('https://matplotlib.org/stable/', None),
                        }
 extlinks = {
     'scipydoc' : ('https://docs.scipy.org/doc/scipy/reference/generated/%s.html', ''),
