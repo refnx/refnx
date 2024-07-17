@@ -577,3 +577,5 @@ in 0.1.13.
 ------
 - Fix bug in ReflectModelTL when numpy2 is installed.
 - Added an example of incoherent summing in the documentation.
+- Added `reflect.FunctionalForm` for Functional profiles. This was previously
+  only present in refnx-models.

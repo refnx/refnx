@@ -10,7 +10,7 @@ from refnx.reflect import Component, Structure, SLD
 
 class FunctionalForm(Component):
     """
-    Component describing an analytic SLD profile.
+    Component used to describe an analytic SLD profile.
 
     Parameters
     ----------
@@ -21,7 +21,7 @@ class FunctionalForm(Component):
         ``profile(z, extent, left_sld, right_sld, **kwds)`` where ``z`` is an
         array specifying the distances at which the functional form should be
         calculated, ``extent`` is a float specifying the total extent of the
-        Component, ``left_sld`` and ``right_sld`` are the SLDs of the
+        Component, ``left_sld`` and ``right_sld`` are the complex SLDs of the
         Components preceding and following this Component. ``kwds`` are extra
         parameters used to calculate the shape of the functional form.
         The function should return a tuple, ``(slds, vfsolv)`` where ``slds``
@@ -34,7 +34,8 @@ class FunctionalForm(Component):
     microslab_max_thickness : float, optional
         Thickness of microslicing of spline for reflectivity calculation
     kwds : dict
-        Named keywords that supply extra parameters to the ``profile`` callable.
+        Named keywords that supply extra Parameters to the ``profile`` callable.
+        These parameters are passed numerically, not as Parameter objects.
 
     Examples
     --------
@@ -45,11 +46,11 @@ class FunctionalForm(Component):
         grad = (right_sld - left_sld) / extent
         intercept = left_sld
         # we don't calculate the volume fraction of solvent
-        return z * grad + intercept, None
+        return z*grad*dummy_param + intercept, None
 
     si = SLD(2.07)
     d2o = SLD(6.36)
-    p = Parameter(0)
+    p = Parameter(1)
 
     form = FunctionalForm(100, line, dummy_param=p)
     s = si | form | d2o(0, 3)
@@ -108,8 +109,10 @@ class FunctionalForm(Component):
         slabs[..., 0] = slab_thick
 
         dist = np.cumsum(slabs[..., 0]) - 0.5 * slab_thick
+
+        pars = {k: float(v) for k, v in self.other_params.items()}
         res, vfsolv = self.profile(
-            dist, self.extent.value, left_sld, right_sld, **self.other_params
+            dist, self.extent.value, left_sld, right_sld, **pars
         )
 
         slabs[..., 1] = np.real(res)
