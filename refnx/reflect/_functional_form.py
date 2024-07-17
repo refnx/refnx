@@ -41,19 +41,36 @@ class FunctionalForm(Component):
     --------
     A linear ramp. Note that the `dummy_param` is not actually used anywhere.
 
-    ```
-    def line(z, extent, left_sld, right_sld, dummy_param=None):
-        grad = (right_sld - left_sld) / extent
-        intercept = left_sld
-        # we don't calculate the volume fraction of solvent
-        return z*grad*dummy_param + intercept, None
+    >>> def line(z, extent, left_sld, right_sld, dummy_param=None):
+    ...     grad = (right_sld - left_sld) / extent
+    ...     intercept = left_sld
+    ...     # we don't calculate the volume fraction of solvent
+    ...     return z*grad*dummy_param + intercept, None
 
-    si = SLD(2.07)
-    d2o = SLD(6.36)
-    p = Parameter(1)
+    >>> si = SLD(2.07)
+    >>> d2o = SLD(6.36)
+    >>> p = Parameter(1)
 
-    form = FunctionalForm(100, line, dummy_param=p)
-    s = si | form | d2o(0, 3)
+    >>> form = FunctionalForm(100, line, dummy_param=p)
+    >>> s = si | form | d2o(0, 3)
+
+    A quadratic example that goes through the two end points
+
+    >>> def quadratic(z, extent, left_sld, right_sld, x=None, y=None):
+    ...     res = np.polyfit(
+    ...         [0., x, extent],
+    ...         [np.real(left_sld), y, np.real(right_sld)],
+    ...         deg=2
+    ...     )
+    ...     return np.polyval(res, z), None
+
+    >>> si = SLD(2.07)
+    >>> d2o = SLD(6.36)
+    >>> x = Parameter(4.)
+    >>> y = Parameter(5.)
+    >>> quad = FunctionalForm(100., quadratic, x=x, y=y)
+    >>> s = si | quad | d2o(0, 3)
+
     """
 
     def __init__(
