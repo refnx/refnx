@@ -16,6 +16,13 @@ class Line:
         return z * grad * kwds["dummy_param"] + intercept, None
 
 
+def quadratic(z, extent, left_sld, right_sld, x=None, y=None):
+    res = np.polyfit(
+        [0.0, x, extent], [np.real(left_sld), y, np.real(right_sld)], deg=2
+    )
+    return np.polyval(res, z), None
+
+
 def test_functional_form():
     si = SLD(2.07)
     d2o = SLD(6.36)
@@ -28,3 +35,9 @@ def test_functional_form():
 
     assert_allclose(line.extent, 100.0)
     assert "dummy_param" in line.keys
+
+    x = Parameter(4.0)
+    y = Parameter(5.0)
+    quad = FunctionalForm(100.0, quadratic, x=x, y=y)
+    s = si | quad | d2o(0, 3)
+    s.slabs()
