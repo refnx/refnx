@@ -193,7 +193,7 @@ jobs:
 
     - uses: actions/upload-artifact@v4
       with:
-        name: refnx-wheel-macos-${{ matrix.python-version }}
+        name: refnx-app-macos-${{ matrix.python-version }}
         path: dist/
 
 
@@ -271,7 +271,7 @@ jobs:
 
     - uses: actions/upload-artifact@v4
       with:
-        name: refnx-wheel-win-${{ matrix.python-version }}
+        name: refnx-exe-win-${{ matrix.python-version }}
         path: dist/
 
 
