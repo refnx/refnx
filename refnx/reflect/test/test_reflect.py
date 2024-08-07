@@ -316,13 +316,6 @@ class TestReflect:
             calc = kernel(q, slabs)
         assert_almost_equal(calc, refl1d[1])
 
-    @pytest.mark.skipif(
-        not (
-            hasattr(refnx.reflect, "_cyreflect")
-            and hasattr(refnx.reflect._cyreflect, "abeles_vectorised")
-        ),
-        reason="abeles_vectorised not available",
-    )
     def test_abeles_vectorised(self):
         w = np.array(
             [
@@ -332,18 +325,25 @@ class TestReflect:
                 [0, 6.0, 0, 5],
             ]
         )
+        N = 1024
         var = w.flatten() * 0.05
         var = var * var
         rng = np.random.default_rng()
-        w_noise = rng.multivariate_normal(
-            w.flatten(), np.diag(var), size=(1000,)
-        )
-        w_noise = np.reshape(w_noise, (1000,) + w.shape)
+        w_noise = rng.multivariate_normal(w.flatten(), np.diag(var), size=(N,))
+        w_noise = np.reshape(w_noise, (N,) + w.shape)
         x = np.geomspace(0.005, 0.5, 1001)
-        y = refnx.reflect._cyreflect.abeles_vectorised(
-            x, w_noise, bkg=None, scale=None
+        scale = rng.normal(loc=1, scale=0.02, size=N)
+        bkg = rng.normal(loc=1e-6, scale=1e-7, size=N)
+
+        y = refnx.reflect._creflect.abeles_vectorised(
+            x, w_noise, bkg=bkg, scale=scale
         )
-        y_test = np.array([refnx.reflect.abeles(x, _w) for _w in w_noise])
+        y_test = np.array(
+            [
+                refnx.reflect.abeles(x, w_noise[i], scale=scale[i], bkg=bkg[i])
+                for i in range(N)
+            ]
+        )
         assert_allclose(y, y_test)
 
     @pytest.mark.parametrize("backend", BACKENDS)

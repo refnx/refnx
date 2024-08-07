@@ -39,9 +39,11 @@ DEALINGS IN THIS SOFTWARE.
 
     Parameters
     ----------
+    batch - MT versions only. The batch size of the calculation. coefP should
+    have size `batch * (4*N + 8)`.
 
     numcoefs - the number of parameters held in the coefP array. This should be
-    4 * N + 8 values long, were N is the number of layers.
+    `4*N + 8` values long, were N is the number of layers.
 
     coefP - an array holding the parameters.  See below for a more detailed
     description
@@ -91,10 +93,10 @@ DEALINGS IN THIS SOFTWARE.
 /*
 Parallelised
 */
-void abeles_wrapper_MT(int numcoefs, const double *coefP, int npoints, double *yP,
+void abeles_wrapper_MT(unsigned int batch, int numcoefs, const double *coefP, int npoints, double *yP,
                const double *xP, int threads);
 
-void parratt_wrapper_MT(int numcoefs, const double *coefP, int npoints, double *yP,
+void parratt_wrapper_MT(unsigned int batch, int numcoefs, const double *coefP, int npoints, double *yP,
                const double *xP, int threads);
 
 
