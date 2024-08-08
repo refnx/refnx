@@ -742,7 +742,8 @@ class Objective(BaseObjective):
 
     def covar(self, target="residuals"):
         """
-        Estimates the covariance matrix of the Objective.
+        Estimates the covariance matrix of the Objective by numerical
+        differentiation.
 
         Parameters
         ----------
@@ -756,8 +757,12 @@ class Objective(BaseObjective):
 
         Notes
         -----
-        For most purposes the Jacobian of the `'residuals'` should be used to
-        calculate the covariance matrix, estimated as J.T x J.
+        This method numerically differentiates either the `'residuals'`, the
+        negative log-likelihood, or the negative log-posterior, to estimate
+        the Hessian matrix. The Hessian matrix is then inverted to obtain
+        the covariance matrix.
+        If `'residuals'` is selected, then the Hessian matrix is estimated as
+        as J.T x J.
         If an Objective cannot calculate residuals then the covariance matrix
         can be estimated by inverting a Hessian matrix created from either the
         `'nll'` or `'nlpost'` methods.
