@@ -582,3 +582,6 @@ in 0.1.13.
 
 0.1.47
 ------
+- added vectorised reflectivity calculator,
+  `refnx.reflect._creflect.abeles_vectorised`. This is mainly of use for
+  external programs, it's not used internally yet.

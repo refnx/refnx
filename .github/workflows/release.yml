@@ -18,7 +18,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: build wheels
-        uses: pypa/cibuildwheel@v2.19.2
+        uses: pypa/cibuildwheel@v2.20.0
         env:
           CIBW_TEST_COMMAND: pytest --pyargs refnx.reflect.test.test_reflect
           CIBW_ARCHS_MACOS: "x86_64 arm64"
@@ -41,7 +41,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: build wheels
-        uses: pypa/cibuildwheel@v2.19.2
+        uses: pypa/cibuildwheel@v2.20.0
         env:
           CIBW_TEST_COMMAND: pytest --pyargs refnx.reflect.test.test_reflect
           CIBW_BUILD: "*-manylinux_x86_64"
@@ -63,7 +63,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: build wheels
-        uses: pypa/cibuildwheel@v2.19.2
+        uses: pypa/cibuildwheel@v2.20.0
         env:
           CIBW_TEST_COMMAND: pytest --pyargs refnx.reflect.test.test_reflect
           CIBW_BUILD: "*-musllinux_x86_64"
