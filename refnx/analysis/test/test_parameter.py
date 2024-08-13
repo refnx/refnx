@@ -249,6 +249,11 @@ class TestParameter:
         assert c in a._deps
         assert a.constraint is f
 
+        # check that a subsequently derived constraint works
+        p = Parameter(np.nan)
+        p.constraint = 1 - a
+        assert_equal(float(p), 1. - float(a))
+
         # this should be a problem as the parameter is in the list of args
         with pytest.raises(ValueError):
             a.set_constraint(f, args=(2, b, a))

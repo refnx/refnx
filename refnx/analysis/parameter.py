@@ -716,7 +716,10 @@ class Parameter(BaseParameter):
 
     def _eval(self):
         if self._constraint is not None:
-            return self._constraint._eval()
+            if isinstance(self._constraint, BaseParameter):
+                return self._constraint._eval()
+            elif callable(self._constraint):
+                return self.value
         else:
             return self._value
 
