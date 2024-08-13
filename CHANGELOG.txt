@@ -585,3 +585,5 @@ in 0.1.13.
 - added vectorised reflectivity calculator,
   `refnx.reflect._creflect.abeles_vectorised`. This is mainly of use for
   external programs, it's not used internally yet.
+- Fix Parameter constraints that themselves depended on Parameters constrained
+  with functions.
