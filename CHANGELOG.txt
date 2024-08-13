@@ -587,3 +587,6 @@ in 0.1.13.
   external programs, it's not used internally yet.
 - Fix Parameter constraints that themselves depended on Parameters constrained
   with functions.
+
+0.1.48
+------
