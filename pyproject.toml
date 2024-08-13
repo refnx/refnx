@@ -100,7 +100,7 @@ packages = [
 
 
 [tool.cibuildwheel]
-skip = "pp* cp36-* cp37-* cp38-*"
+skip = "pp* cp36-* cp37-* cp38-* cp313-*"
 test-requires = ["pytest"]
 test-command = "pytest --pyargs refnx.reflect.test.test_reflect"
 manylinux-x86_64-image = "manylinux2014"
