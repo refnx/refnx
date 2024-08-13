@@ -252,7 +252,7 @@ class TestParameter:
         # check that a subsequently derived constraint works
         p = Parameter(np.nan)
         p.constraint = 1 - a
-        assert_equal(float(p), 1. - float(a))
+        assert_equal(float(p), 1.0 - float(a))
 
         # this should be a problem as the parameter is in the list of args
         with pytest.raises(ValueError):
