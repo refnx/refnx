@@ -590,3 +590,4 @@ in 0.1.13.
 
 0.1.48
 ------
+- Improve documentation for resolution smearing options in ReflectModel.
