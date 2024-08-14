@@ -1908,3 +1908,84 @@ def sld_profile(slabs, z=None, max_delta_z=None):
         sld += delta_rho[i] * f(zed, scale=sigma[i], loc=dist[i])
 
     return zed, sld
+
+
+def create_occupancy(structure, solvent_slab=-1):
+    """
+    Creates a volume fraction (occupancy) profile for a given Structure.
+
+    Parameters
+    ----------
+    structure: Structure
+
+    solvent_slab: {int, None}
+        Defines which slab in `structure` is specified to contain
+        the solvent. Use -1 if solvation is done by the backing medium
+        If solvation is done by fronting medium use 0.
+        If None, then solvation is done by neither fronting or backing,
+        but by another material. This might be a solvent vapour in an
+        air-solid measurement.
+
+    Returns
+    -------
+    z, vfp: np.ndarray
+        z is the distance through the interface, Angstrom
+
+        vfp is the array containing the volume fraction profiles for
+        each of the slabs from the structure.
+
+        In the case where `solvent_slab is None` then
+        `vfp.shape == (len(structure.slabs()) + 1, len(z))` and the last
+        row contains the solvent vfp.
+
+        In the case where solvent_slab is one of the slab materials
+        (e.g. fronting or backing) then
+        `vfp.shape == (len(structure.slabs()), len(z))`, with
+        `vfp[solvent_slab]` containing the vfp for the solvent.
+
+    Notes
+    -----
+    If a Component in your Structure has more than one row in its slab
+    representation then you will need to aggregate those slabs manually if you
+    wish them to appear together.
+    e.g. let's say that the third Component (indexed from zero) has
+    `len(Component.slabs) == 20`. To obtain the volume fraction for that
+    Component you would need to do:
+
+    >>> import matplotlib.pyplot as plt
+    >>> z, vfps = create_occupancy(s)
+    >>> # third component is at index 2.
+    >>> vfps_my_component = np.sum(vfps[2:20+2], axis=0)
+    >>> plt.plot(z, vfps_my_component)
+
+    """
+    _slabs = structure.slabs()
+
+    vf = 1 - _slabs[:, 4]
+
+    if solvent_slab is None:
+        nvfp = len(_slabs) + 1
+    else:
+        nvfp = len(_slabs)
+
+    z, sldp = sld_profile(_slabs)
+    vfp = np.zeros((nvfp, len(z)), float)
+
+    for i in range(len(_slabs)):
+        _slabs[:, 1:3] = 0
+        _slabs[i, 1] = vf[i]
+        _vfp = sld_profile(_slabs, z=z)[1]
+        vfp[i] = _vfp
+
+    # fix up the solvent vfp
+    _slabs[:, 1] = 1 - vf
+
+    if solvent_slab is None:
+        _vfp = sld_profile(_slabs, z=z)[1]
+        vfp[-1] = _vfp
+    else:
+        _slabs[solvent_slab, 1] = 1
+        _vfp = sld_profile(_slabs, z=z)[1]
+        vfp[solvent_slab] = _vfp
+
+    return z, vfp
