@@ -8,6 +8,7 @@ Examples
     inequality_constraints.ipynb
     model_selection.ipynb
     lipid.ipynb
+    occupancy.ipynb
     Batch fitting <https://nbviewer.jupyter.org/github/refnx/refnx-models/blob/main/batch/batch_fitting.ipynb>
     analytical.ipynb
     Freeform modelling with maximum entropy <https://nbviewer.jupyter.org/github/refnx/refnx-models/blob/main/MaxEntVFP/maxent_freeform.ipynb>

@@ -21,6 +21,7 @@ from refnx.reflect.structure import (
     Stack,
     MaterialSLD,
     MixedSlab,
+    create_occupancy,
 )
 from refnx.reflect.interface import (
     Erf,
