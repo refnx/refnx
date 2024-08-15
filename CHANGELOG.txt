@@ -591,5 +591,5 @@ in 0.1.13.
 0.1.48
 ------
 - Improve documentation for resolution smearing options in ReflectModel.
-- Added refnx.reflect.create_vfp, a helper function for creating occupancy
-  profiles.
+- Added refnx.reflect.create_occupancy, a helper function for creating occupancy
+  (volume fraction) profiles.
