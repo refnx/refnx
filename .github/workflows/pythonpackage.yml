@@ -197,31 +197,29 @@ jobs:
         path: dist/
 
 
-#  test_macos_intel:
-#
-#    runs-on: macos-12
-#    strategy:
-#      fail-fast: true
-#      max-parallel: 3
-#      matrix:
-#        python-version: ['3.12']
-#
-#    steps:
-#    - uses: actions/checkout@v4
-#
-#    - run: mkdir -p dist
-#
-#    - uses: actions/setup-python@v5
-#      with:
-#        python-version: ${{ matrix.python-version }}
-#        cache: 'pip' # caching pip dependencies
-#        allow-prereleases: true
-#
-#    - name: Make wheel
-#      shell: bash -el {0}
-#        python -m pip install --upgrade pip
-#        python -m pip install wheel delocate build
-#        python -m build . -v
+  test_macos_intel:
+
+    runs-on: macos-12
+    strategy:
+      matrix:
+        python-version: ['3.12']
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - run: mkdir -p dist
+
+    - uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+        cache: 'pip' # caching pip dependencies
+        allow-prereleases: true
+
+    - name: Make wheel
+      shell: bash -el {0}
+        python -m pip install --upgrade pip
+        python -m pip install wheel build
+        python -m build . -v
 #
 #    - name: Install package and test with pytest
 #      shell: bash -el {0}
