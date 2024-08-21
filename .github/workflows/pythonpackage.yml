@@ -84,6 +84,56 @@ jobs:
 
 
 ###############################################################################
+  test_macos_intel:
+
+    runs-on: macos-12
+    strategy:
+      fail-fast: true
+      max-parallel: 1
+      matrix:
+        python-version: [ '3.12' ]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - run: mkdir -p dist
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'pip' # caching pip dependencies
+          allow-prereleases: true
+
+      - name: install compilers
+        shell: bash -el {0}
+        run: |
+          brew install llvm
+
+      - name: Make wheel
+        shell: bash -el {0}
+        run: |
+          
+          python -m pip install --upgrade pip
+          python -m pip install wheel delocate build
+          python -m build . -v
+
+      - name: Install package and test with pytest
+        shell: bash -el {0}
+        env:
+          MPLBACKEND: agg
+        run: |
+          pip install -r .requirements.txt
+          pushd dist
+          python -m pip install --only-binary=refnx --no-index --find-links=. refnx
+          pytest --pyargs refnx
+          popd
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: refnx-wheel-macos-${{ matrix.python-version }}
+          path: dist/
+
+
   test_macos:
 
     runs-on: macos-14
@@ -197,40 +247,6 @@ jobs:
         path: dist/
 
 
-  test_macos_intel:
-
-    runs-on: macos-12
-    strategy:
-      matrix:
-        python-version: ['3.12']
-
-    steps:
-    - uses: actions/checkout@v4
-
-    - run: mkdir -p dist
-
-    - uses: actions/setup-python@v5
-      with:
-        python-version: ${{ matrix.python-version }}
-        cache: 'pip' # caching pip dependencies
-        allow-prereleases: true
-
-    - name: Make wheel
-      shell: bash -el {0}
-        python -m pip install --upgrade pip
-        python -m pip install wheel build
-        python -m build . -v
-#
-#    - name: Install package and test with pytest
-#      shell: bash -el {0}
-#      env:
-#        MPLBACKEND: agg
-#      run: |
-#        pip install -r .requirements.txt
-#        pushd dist
-#        python -m pip install --only-binary=refnx --no-index --find-links=. refnx
-#        pytest --pyargs refnx
-#        popd
 
 ###############################################################################
   test_win:
