@@ -5,7 +5,7 @@ Installation
 ====================================
 
 .. _Visual Studio compiler: https://wiki.python.org/moin/WindowsCompilers
-.. _miniconda: https://conda.io/miniconda.html
+.. _miniforge: https://github.com/conda-forge/miniforge
 .. _github: https://github.com/refnx/refnx
 .. _homebrew: https://brew.sh/
 
@@ -24,7 +24,7 @@ Installation into a *conda* environment
 =======================================
 
 Perhaps the easiest way to create a scientific computing environment is to use
-the `miniconda`_ package manager. Once *conda* has been installed the first
+the `miniforge`_ package manager. Once *conda* has been installed the first
 step is to create a *conda* environment.
 
 Creating a conda environment
