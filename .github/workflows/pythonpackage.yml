@@ -104,11 +104,6 @@ jobs:
           cache: 'pip' # caching pip dependencies
           allow-prereleases: true
 
-      - name: install compilers
-        shell: bash -el {0}
-        run: |
-          brew install llvm
-
       - name: Make wheel
         shell: bash -el {0}
         run: |

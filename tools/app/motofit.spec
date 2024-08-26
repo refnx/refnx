@@ -59,7 +59,7 @@ a = Analysis(
     ],
     hookspath=[],
     runtime_hooks=[],
-    excludes=[],
+    excludes=["pyqt6"],
     win_no_prefer_redirects=False,
     win_private_assemblies=False,
     cipher=block_cipher,
@@ -91,6 +91,8 @@ if sys.platform == "darwin":
         icon="../../refnx/reflect/_app/icons/Motofit.icns",
         bundle_identifier=None,
         info_plist={
+            "CFBundleName": "motofit",
+            "CFBundleIdentifier": "com.refnx.refnx",
             "NSPrincipalClass": "NSApplication",
             "NSHighResolutionCapable": "True",
             "CFBundleShortVersionString": refnx_version,
