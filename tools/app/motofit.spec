@@ -37,8 +37,8 @@ periodic_table = (
 )
 
 a = Analysis(
-    ["motofit.py"],
-    pathex=[os.getcwd()],
+    ['motofit.py'],
+    pathex=[],
     binaries=[],
     datas=[uiloc, icons, licences, lipid_data, periodic_table],
     hiddenimports=[
@@ -58,53 +58,63 @@ a = Analysis(
         "refnx.reflect._app",
     ],
     hookspath=[],
+    hooksconfig={},
     runtime_hooks=[],
-    excludes=["pyqt6"],
-    win_no_prefer_redirects=False,
-    win_private_assemblies=False,
-    cipher=block_cipher,
+    excludes=[],
     noarchive=False,
+    optimize=0,
 )
-
-pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
-
+pyz = PYZ(a.pure)
 
 # OSX
 if sys.platform == "darwin":
     exe = EXE(
         pyz,
         a.scripts,
-        a.binaries,
-        a.zipfiles,
-        a.datas,
-        name="motofit",
+        [],
+        exclude_binaries=True,
+        name='refnx',
         debug=False,
+        bootloader_ignore_signals=False,
         strip=False,
         upx=True,
         console=False,
+        disable_windowed_traceback=False,
+        argv_emulation=False,
+        target_arch=None,
+        codesign_identity=None,
+        entitlements_file=None,
         icon="../../refnx/reflect/_app/icons/Motofit.icns",
-    )
 
-    app = BUNDLE(
+    )
+    coll = COLLECT(
         exe,
-        name="motofit.app",
+        a.binaries,
+        a.datas,
+        strip=False,
+        upx=True,
+        upx_exclude=[],
+        name='refnx',
+    )
+    app = BUNDLE(
+        coll,
+        name='refnx.app',
         icon="../../refnx/reflect/_app/icons/Motofit.icns",
-        bundle_identifier=None,
-        info_plist={
-            "CFBundleName": "motofit",
-            "CFBundleIdentifier": "com.refnx.refnx",
-            "NSPrincipalClass": "NSApplication",
-            "NSHighResolutionCapable": "True",
-            "CFBundleShortVersionString": refnx_version,
-            "LSBackgroundOnly": "False",
-            "CFBundleDocumentTypes": [
-                {
-                    "CFBundleTypeName": "refnx experiment file",
-                    "CFBundleTypeExtensions": ("mtft",),
-                    "CFBundleTypeIconFile": "Motofit.icns",
-                }
-            ],
-        },
+                info_plist={
+                "CFBundleName": "refnx",
+                "CFBundleIdentifier": "com.refnx.refnx",
+                "NSPrincipalClass": "NSApplication",
+                "NSHighResolutionCapable": "True",
+                "CFBundleShortVersionString": refnx_version,
+                "LSBackgroundOnly": "False",
+                "CFBundleDocumentTypes": [
+                    {
+                        "CFBundleTypeName": "refnx experiment file",
+                        "CFBundleTypeExtensions": ("mtft",),
+                        "CFBundleTypeIconFile": "Motofit.icns",
+                    }
+                ],
+            },
     )
 
 # windows
@@ -124,23 +134,3 @@ elif sys.platform in ["win32", "cygwin"]:
         console=False,
         icon="..\\..\\refnx\\reflect\\_app\\icons\\scattering.ico",
     )
-
-"""
-exe = EXE(pyz,
-          a.scripts,
-          [],
-          exclude_binaries=True,
-          name='motofit',
-          debug=False,
-          bootloader_ignore_signals=False,
-          strip=True,
-          upx=True,
-          console=True )
-coll = COLLECT(exe,
-               a.binaries,
-               a.zipfiles,
-               a.datas,
-               strip=True,
-               upx=True,
-               name='motofit')
-"""
