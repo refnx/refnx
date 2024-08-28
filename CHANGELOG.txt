@@ -594,4 +594,5 @@ in 0.1.13.
 - Added refnx.reflect.create_occupancy, a helper function for creating occupancy
   (volume fraction) profiles.
 - Added codesigning for macOS thanks to the
-  International Scattering Association (ISA)
+  International Scattering Association (ISA). This means that the refnx app
+  open a lot more easily on macOS, as it's not stopped by Gatekeeper.
