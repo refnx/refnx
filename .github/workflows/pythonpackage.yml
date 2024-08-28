@@ -234,6 +234,9 @@ jobs:
         popd
 
     - name: Sign app and create dmg
+      env:
+        MACOS_CERTIFICATE: ${{ secrets.MACOS_CERTIFICATE_ISA }}
+        MACOS_CERTIFICATE_PWD: ${{ secrets.MACOS_CERTIFICATE_ISA_PWD }}
       run: |
         pushd tools/app
         echo $MACOS_CERTIFICATE | base64 --decode > certificate.p12
@@ -251,7 +254,7 @@ jobs:
         DeRez -only icns Motofit.icns > icns.rsrc
         hdiutil create dist/refnx.dmg -srcfolder dist/refnx.app -ov -format UDZO
         Rez -append icns.rsrc -o dist/refnx.dmg
-        SetFile -a C refnx.dmg
+        SetFile -a C dist/refnx.dmg
         codesign -s "Developer ID Application: The International Scattering Alliance (8CX8K63BQM)" dist/refnx.dmg
         mv dist/refnx.dmg ../../dist/
         popd
