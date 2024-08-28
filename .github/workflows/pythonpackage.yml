@@ -199,7 +199,7 @@ jobs:
 
     - uses: actions/setup-python@v5
       with:
-        python-version: '3.11'
+        python-version: '3.12'
         allow-prereleases: true
 
     - run: mkdir -p dist
@@ -230,17 +230,36 @@ jobs:
         pyinstaller motofit.spec
 
         # check to see that the app starts
-        python check_app_starts.py dist/motofit.app/Contents/MacOS/motofit
+        python check_app_starts.py dist/refnx.app/Contents/MacOS/refnx
+        popd
 
-        zip -r -X dist/motofit.app.zip dist/motofit.app/
-        mv dist/motofit.app.zip ../../dist/
+    - name: Sign app and create dmg
+      run: |
+        pushd tools/app
+        echo $MACOS_CERTIFICATE | base64 --decode > certificate.p12
+        security create-keychain -p DloaAcYP build.keychain
+        security default-keychain -s build.keychain
+        security unlock-keychain -p DloaAcYP build.keychain
+        security import certificate.p12 -k build.keychain -P $MACOS_CERTIFICATE_PWD -T /usr/bin/codesign
+        security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k DloaAcYP build.keychain >/dev/null
+        security find-identity -p codesigning
+      
+        codesign --verify --options=runtime --entitlements entitlements.plist --timestamp --deep --verbose=4 --force --sign "Developer ID Application: The International Scattering Alliance (8CX8K63BQM)" dist/refnx.app
+          
+        cp ../../refnx/reflect/_app/icons/Motofit.icns .
+        sips -i Motofit.icns
+        DeRez -only icns Motofit.icns > icns.rsrc
+        hdiutil create dist/refnx.dmg -srcfolder dist/refnx.app -ov -format UDZO
+        Rez -append icns.rsrc -o dist/refnx.dmg
+        SetFile -a C refnx.dmg
+        codesign -s "Developer ID Application: The International Scattering Alliance (8CX8K63BQM)" dist/refnx.dmg
+        mv dist/refnx.dmg ../../dist/
         popd
 
     - uses: actions/upload-artifact@v4
       with:
         name: refnx-app-macos-${{ matrix.python-version }}
-        path: dist/
-
+        path: dist/refnx.dmg
 
 
 ###############################################################################
