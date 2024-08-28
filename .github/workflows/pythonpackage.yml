@@ -240,6 +240,7 @@ jobs:
       run: |
         pushd tools/app
         echo $MACOS_CERTIFICATE | base64 --decode > certificate.p12
+        ls -al certificate.p12
         security create-keychain -p DloaAcYP build.keychain
         security default-keychain -s build.keychain
         security unlock-keychain -p DloaAcYP build.keychain
