@@ -593,3 +593,5 @@ in 0.1.13.
 - Improve documentation for resolution smearing options in ReflectModel.
 - Added refnx.reflect.create_occupancy, a helper function for creating occupancy
   (volume fraction) profiles.
+- Added codesigning for macOS thanks to the
+  International Scattering Association (ISA)
