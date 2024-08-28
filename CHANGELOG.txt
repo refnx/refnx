@@ -596,3 +596,6 @@ in 0.1.13.
 - Added codesigning for macOS thanks to the
   International Scattering Association (ISA). This means that the refnx app
   open a lot more easily on macOS, as it's not stopped by Gatekeeper.
+
+0.1.49
+------
