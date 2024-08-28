@@ -2,6 +2,11 @@ name: Test
 
 on:
   - pull_request
+  - push
+  - workflow_dispatch
+
+permissions:
+  contents: read
 
 jobs:
 ###############################################################################
@@ -234,6 +239,7 @@ jobs:
         popd
 
     - name: Sign app and create dmg
+      if: github.repository == 'refnx/refnx'
       env:
         MACOS_CERTIFICATE: ${{ secrets.MACOS_CERTIFICATE_ISA }}
         MACOS_CERTIFICATE_PWD: ${{ secrets.MACOS_CERTIFICATE_ISA_PWD }}
@@ -260,10 +266,28 @@ jobs:
         mv dist/refnx.dmg ../../dist/
         popd
 
+# xcrun notarytool submit --apple-id "$APPLEID" --password "$APP_PASSWORD" --team-id 8CX8K63BQM --wait refnx.dmg
+    - name: Notarize DMG
+      if: github.repository == 'refnx/refnx'
+      uses: lando/notarize-action@v2
+      with:
+        product-path: "dist/refnx.dmg"
+        primary-bundle-id: "com.refnx.refnx"
+        appstore-connect-username: ${{ secrets.NOTARIZATION_USERNAME }}
+        appstore-connect-password: ${{ secrets.NOTARIZATION_PASSWORD }}
+        appstore-connect-team-id: 8CX8K63BQM
+        verbose: True
+
+    - name: Staple Release Build
+      if: github.repository == 'refnx/refnx'
+      uses: BoundfoxStudios/action-xcode-staple@v1
+      with:
+        product-path: "dist/refnx.dmg"
+
     - uses: actions/upload-artifact@v4
       with:
         name: refnx-app-macos-${{ matrix.python-version }}
-        path: dist/refnx.dmg
+        path: dist/*.dmg
 
 
 ###############################################################################
