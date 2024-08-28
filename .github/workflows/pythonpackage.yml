@@ -125,7 +125,7 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: refnx-wheel-macos-${{ matrix.python-version }}
+          name: refnx-wheel-macos-${{ matrix.python-version }}-intel
           path: dist/
 
 
