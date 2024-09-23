@@ -811,6 +811,49 @@ class Structure(UserList):
         )
         return model
 
+    @classmethod
+    def from_orso(cls, sample_model):
+        """
+        Creates a Structure from an :class:`orso.fileio.model_language.SampleModel`
+
+        Parameters
+        ----------
+        sample_model : :class:`orso.fileio.model_language.SampleModel`
+
+        Returns
+        -------
+        structure : Structure
+
+        Example
+        -------
+
+        >>> with open('oml.yml') as f:
+        ...     dct = yaml.safe_load(f)
+        >>> model = SampleModel(**dct)
+
+        """
+        layers = sample_model.resolve_to_layers()
+        s = Structure()
+
+        for layer in layers:
+            mat = layer.material
+            if mat.formula is not None:
+                sld = MaterialSLD(
+                    mat.formula, density=mat.mass_density.magnitude
+                )
+            else:
+                sld = SLD(mat.get_sld() * 1e6)
+                print(sld)
+
+            slab = Slab(
+                layer.thickness.magnitude,
+                sld,
+                layer.roughness.magnitude,
+                name=layer.original_name,
+            )
+            s |= slab
+        return s
+
 
 def overall_sld(slabs, solvent):
     """
