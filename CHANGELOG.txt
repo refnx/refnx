@@ -599,3 +599,6 @@ in 0.1.13.
 
 0.1.49
 ------
+- rudimentary exporter of a Structure to an ORSO model language file,
+  `Structure.to_orso()`. Can only export Structures made of Slabs at the
+  moment.

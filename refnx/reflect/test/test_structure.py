@@ -581,3 +581,13 @@ class TestStructure:
         s = Structure.from_slabs(slabs)
         slabs_2 = s.slabs()
         assert_allclose(slabs_2, slabs)
+
+    def test_to_orso(self):
+        # orso model language serialisation
+        air = SLD(0)
+        sio2 = MaterialSLD('SiO2', 2.2, name='SiO2')
+        si = SLD(2.07)
+
+        s = air | sio2(15, 3) | si(0, 4)
+        mls = s.to_orso()
+        mls.to_yaml()
