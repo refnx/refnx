@@ -490,6 +490,11 @@ class Structure(UserList):
             ``_reflect``. If `threads == 0` then all available processors are
             used.
 
+        Returns
+        -------
+        reflectivity : np.ndarray
+            Reflectivity corresponding to each of the Q-points.
+
         Notes
         -----
         Normally the reflectivity will be calculated using the Nevot-Croce
@@ -711,13 +716,13 @@ class Structure(UserList):
         ----------
         pvals : np.ndarray, optional
             Numeric values for the Parameter's that are varying
-        samples: number
+        samples : number
             If this structures constituent parameters have been sampled, how
             many samples you wish to plot on the graph.
-        fig: Figure instance, optional
+        fig : Figure instance, optional
             If `fig` is not supplied then a new figure is created. Otherwise
             the graph is created on the current axes on the supplied figure.
-        align: int, optional
+        align : int, optional
             Aligns the plotted structures around a specified interface in the
             slab representation of a Structure. This interface will appear at
             z = 0 in the sld plot. Note that Components can consist of more
@@ -757,6 +762,54 @@ class Structure(UserList):
         ax.set_xlabel("z / $\\AA$")
 
         return fig, ax
+
+    def to_orso(self):
+        """
+        Creates an ORSO model language description of a Structure. Only works with Structures solely consisting of Slabs at the moment
+
+        Returns
+        -------
+        model : :class:`orso.fileio.model_language.SampleModel`
+        """
+        from orsopy.fileio import model_language as ml
+
+        defaults = ml.ModelParameters(
+            length_unit="angstrom", sld_unit="1/angstrom^2"
+        )
+        layers = {}
+
+        for i, comp in enumerate(self.components):
+            if not isinstance(comp, Slab):
+                raise RuntimeError(
+                    "Can only export Structure solely consisting of Slabs at the moment"
+                )
+
+            if isinstance(comp.sld, MaterialSLD):
+                mat = ml.Material(
+                    comp.sld.formula, mass_density=comp.sld.density
+                )
+            else:
+                _csld = complex(comp.sld) * 1e-6
+                _csld = ml.ComplexValue(_csld.real, _csld.imag)
+                mat = ml.Material(sld=_csld)
+
+            if comp.name:
+                ni = comp.name
+            else:
+                ni = f"m{i}"
+
+            layers[ni] = ml.Layer(
+                thickness=comp.thick, roughness=comp.rough, material=mat
+            )
+
+        stack = " | ".join(list(layers.keys()))
+        model = ml.SampleModel(
+            stack=stack,
+            layers=layers,
+            globals=defaults,
+            reference="ORSO model language | 1.0",
+        )
+        return model
 
 
 def overall_sld(slabs, solvent):
