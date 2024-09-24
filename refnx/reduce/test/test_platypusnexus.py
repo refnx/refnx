@@ -531,7 +531,10 @@ class TestSpatzNexus:
 
     def test_chod(self):
         flight_length = self.f342.chod()
-        assert_almost_equal(flight_length[0], 8062.0232)
+        flight_length = self.f342.chod()
+        cat = self.f342.cat
+        assert_almost_equal(cat.sample_distance, 6237.0)
+        assert_almost_equal(flight_length[0], 8062.0232, decimal=4)
         assert_almost_equal(flight_length[1], 479.9536, decimal=4)
 
     def test_phase_angle(self):

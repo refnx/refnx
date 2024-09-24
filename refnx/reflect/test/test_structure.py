@@ -25,6 +25,7 @@ from refnx.reflect import (
 from refnx.reflect.structure import _profile_slicer
 from refnx.analysis import Parameter, Interval, Parameters
 from refnx.analysis.parameter import _BinaryOp
+from orsopy.fileio.model_language import SampleModel
 
 
 class TestStructure:
@@ -581,3 +582,19 @@ class TestStructure:
         s = Structure.from_slabs(slabs)
         slabs_2 = s.slabs()
         assert_allclose(slabs_2, slabs)
+
+    def test_to_from_orso(self):
+        # orso model language serialisation
+        air = SLD(0)
+        sio2 = MaterialSLD("SiO2", 2.2, name="SiO2")
+        si = SLD(2.07)
+
+        s = air | sio2(15, 3) | si(0, 4)
+        mls = s.to_orso()
+        dct = mls.to_dict()
+
+        sample_model = SampleModel(**dct)
+        s2 = Structure.from_orso(sample_model)
+        assert_allclose(s2[-1].rough.value, s[-1].rough.value)
+        assert_allclose(s2[1].rough.value, s[1].rough.value)
+        assert_allclose(s2[1].thick.value, s[1].thick.value)

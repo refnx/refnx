@@ -242,11 +242,18 @@ class TestSpatzReduce:
         a = SpatzReduce("SPZ0000658.nx.hdf", data_folder=self.pth)
 
         # try reduction with the reduce method
-        a.reduce(
+        ds0 = a.reduce(
             "SPZ0000660.nx.hdf",
             data_folder=self.pth,
             rebin_percent=4,
-        )
+        )[0][0]
+        ds1 = a.reduce(
+            "SPZ0000660.nx.hdf",
+            data_folder=self.pth,
+            rebin_percent=4,
+        )[0][0]
+        assert_allclose(ds1.y, ds0.y)
+        assert_allclose(ds1.x, ds0.x)
 
         # try reduction with the __call__ method
         a(
