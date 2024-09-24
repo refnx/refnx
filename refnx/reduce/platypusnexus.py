@@ -2771,7 +2771,7 @@ class SpatzNexus(ReflectNexus):
         slave = cat.slave
 
         if master == 1:
-            chod = cat.sample_distance
+            chod = cat.sample_distance[0]
 
             if slave == 2:
                 d_cx = cat.chopper2_distance[0]
@@ -2781,7 +2781,7 @@ class SpatzNexus(ReflectNexus):
                 raise RuntimeError("Couldn't figure out chopper spacing")
 
         elif master == 2:
-            chod = cat.sample_distance - cat.chopper2_distance[0]
+            chod = cat.sample_distance[0] - cat.chopper2_distance[0]
             if slave == 3:
                 # chopper2B is the slave
                 d_cx = cat.chopper2B_distance[0] - cat.chopper2_distance[0]

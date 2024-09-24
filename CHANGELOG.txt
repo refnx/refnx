@@ -602,3 +602,5 @@ in 0.1.13.
 - rudimentary exporter of a Structure to an ORSO model language file,
   `Structure.to_orso()`. Can only export Structures made of Slabs at the
   moment.
+- fixed bug in SpatzNexus.chod(). Repeat calls to this method would result
+  in increasing values because an array value wasn't being dereferenced.

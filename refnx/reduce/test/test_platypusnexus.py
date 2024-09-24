@@ -531,6 +531,9 @@ class TestSpatzNexus:
 
     def test_chod(self):
         flight_length = self.f342.chod()
+        flight_length = self.f342.chod()
+        cat = self.f342.cat
+        assert_almost_equal(cat.sample_distance, 6237.)
         assert_almost_equal(flight_length[0], 8062.0232)
         assert_almost_equal(flight_length[1], 479.9536, decimal=4)
 
