@@ -38,12 +38,6 @@ def data_directory(tmp_path_factory):
 
         data_dir = tmpdir / "refnx-testdata-master" / "data"
     except (urllib.error.URLError, TimeoutError):
-        data_dir = None
+        pytest.skip("No data directory available")
 
     return data_dir
-
-
-@pytest.fixture(scope="session")
-def no_data_directory(data_directory):
-    if data_directory is None:
-        pytest.skip("No data directory available")

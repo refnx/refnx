@@ -9,7 +9,7 @@ __license__ = "3 clause BSD"
 import numpy as np
 from scipy.integrate import simpson
 from scipy.interpolate import InterpolatedUnivariateSpline as IUS
-from scipy.stats import rv_continuous, trapz, norm, uniform
+from scipy.stats import rv_continuous, trapezoid, norm, uniform
 from scipy.optimize import brentq
 from scipy._lib._util import check_random_state
 

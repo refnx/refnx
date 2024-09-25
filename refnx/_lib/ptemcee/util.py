@@ -161,6 +161,6 @@ def thermodynamic_integration_log_evidence(betas, logls):
         betas2 = np.concatenate((betas0[:-1:2], [0]))
         logls2 = np.concatenate((logls[:-1:2], [logls[-1]]))
 
-    logZ = -np.trapz(logls, betas)
-    logZ2 = -np.trapz(logls2, betas2)
+    logZ = -np.trapezoid(logls, betas)
+    logZ2 = -np.trapezoid(logls2, betas2)
     return logZ, np.abs(logZ - logZ2)
