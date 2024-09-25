@@ -25,7 +25,6 @@ from refnx.reflect import SLD, ReflectModel
 
 
 class TestPlatypusReduce:
-    @pytest.mark.usefixtures("no_data_directory")
     @pytest.fixture(autouse=True)
     def setup_method(self, tmp_path, data_directory):
         self.pth = data_directory / "reduce"
@@ -195,7 +194,6 @@ class TestPlatypusReduce:
 
 
 class TestSpatzReduce:
-    @pytest.mark.usefixtures("no_data_directory")
     @pytest.fixture(autouse=True)
     def setup_method(self, tmp_path, data_directory):
         self.pth = data_directory / "reduce"
@@ -272,7 +270,6 @@ class TestSpatzReduce:
 
 
 class TestPolarisedReduce:
-    @pytest.mark.usefixtures("no_data_directory")
     @pytest.fixture(autouse=True)
     def setup_method(self, tmp_path, data_directory):
         self.pth = data_directory / "reduce" / "PNR_files"
@@ -630,7 +627,6 @@ class TestPolarisedReduce:
 
 
 class TestPolarisationEfficiency:
-    @pytest.mark.usefixtures("no_data_directory")
     @pytest.fixture(autouse=True)
     def setup_method(self, tmp_path, data_directory):
         self.pth = data_directory / "reduce" / "PNR_files"

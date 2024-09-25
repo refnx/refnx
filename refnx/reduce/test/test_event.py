@@ -99,19 +99,16 @@ def event_setup(data_directory):
 
 
 class TestEvent:
-    @pytest.mark.usefixtures("no_data_directory")
     def test_events_smoke(self, event_setup):
         # check that the event.events function works
         # PLP
         for p in event_setup:
             event.events(p.event_file_path)
 
-    @pytest.mark.usefixtures("no_data_directory")
     def test_num_events(self, event_setup):
         assert_equal(event_setup[0].x.size, 2209769)
         assert_equal(event_setup[1].x.size, 431693)
 
-    @pytest.mark.usefixtures("no_data_directory")
     def test_max_frames(self, event_setup):
         # test reading only a certain number of frames
 
@@ -128,7 +125,6 @@ class TestEvent:
             cyf, cyt, cyy, cyx = event_list
             assert np.max(cyf) < 1111
 
-    @pytest.mark.usefixtures("no_data_directory")
     def test_event_same_as_detector(self, event_setup):
         # the detector file should be the same as the event file
         # warnings filter for pixel size
@@ -154,7 +150,6 @@ class TestEvent:
             # det, fc, bm = orig_file.process_event_stream(frame_bins=[])
             # assert_equal(det, orig_det)
 
-    @pytest.mark.usefixtures("no_data_directory")
     def test_values(self, event_setup):
         # We know the values of all the events in the file from another program
         # test that a set of random events are correct.
@@ -168,7 +163,6 @@ class TestEvent:
         assert_equal(event_setup[0].y[-1], 472)
         assert_equal(event_setup[0].x[-1], 16)
 
-    @pytest.mark.usefixtures("no_data_directory")
     def test_monobloc_events(self, event_setup):
         # the event file changed when the ILL monobloc detector was installed
         data = event.events(event_setup[0].event_file_path)
@@ -191,7 +185,6 @@ class TestEvent:
 
         assert_equal(detector, orig_det)
 
-    @pytest.mark.usefixtures("no_data_directory")
     def test_clock_scale(self, event_setup):
         # the event file changed when the ILL monobloc detector was installed
         pth = Path(event_setup[0].event_file_path)

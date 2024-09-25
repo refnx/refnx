@@ -65,7 +65,7 @@ class P_Theta(AngularDivergence):
 
         c = (alpha - beta) / 2 / alpha
         d = (alpha + beta) / 2 / alpha
-        self.rv = stats.trapz(c, d, -alpha, 2 * alpha)
+        self.rv = stats.trapezoid(c, d, -alpha, 2 * alpha)
         self.width = alpha
 
     def pdf(self, theta):
