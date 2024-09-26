@@ -190,9 +190,11 @@ class Parameters(UserList):
             ]
         )
 
-    def __array__(self):
+    def __array__(self, dtype=None, copy=None):
         """
-        Convert Parameters to an array containing their values.
+        Convert Parameters to an array containing their numerical values.
+
+        The dtype and copy keywords are ignored.
         """
         return np.array([float(p) for p in flatten(self.data)])
 
