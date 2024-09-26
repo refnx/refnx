@@ -244,9 +244,10 @@ jobs:
         # check to see that the app starts
         python check_app_starts.py dist/refnx.app/Contents/MacOS/refnx
         popd
+        printenv
 
     - name: Sign app and create dmg
-      if: ${{ github.actor == 'refnx' }}
+      if: github.repository == 'refnx/refnx'
       env:
         MACOS_CERTIFICATE: ${{ secrets.MACOS_CERTIFICATE_ISA }}
         MACOS_CERTIFICATE_PWD: ${{ secrets.MACOS_CERTIFICATE_ISA_PWD }}
@@ -275,7 +276,7 @@ jobs:
 
 # xcrun notarytool submit --apple-id "$APPLEID" --password "$APP_PASSWORD" --team-id 8CX8K63BQM --wait refnx.dmg
     - name: Notarize DMG
-      if: ${{ github.actor == 'refnx' }}
+      if: github.repository == 'refnx/refnx'
       uses: lando/notarize-action@v2
       with:
         product-path: "dist/refnx.dmg"
@@ -286,7 +287,7 @@ jobs:
         verbose: True
 
     - name: Staple Release Build
-      if: ${{ github.actor == 'refnx' }}
+      if: github.repository == 'refnx/refnx'
       uses: BoundfoxStudios/action-xcode-staple@v1
       with:
         product-path: "dist/refnx.dmg"
