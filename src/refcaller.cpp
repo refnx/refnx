@@ -58,7 +58,7 @@ void batch_worker(ref_calculator fn,
     double *yP,
     const double *xP
 ){
-    int ii, jj;
+    unsigned int ii;
     for(ii = 0; ii < num_batches; ii++){
         fn(
             numcoefs,
