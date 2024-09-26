@@ -605,3 +605,7 @@ in 0.1.13.
 - fixed bug in SpatzNexus.chod(). Repeat calls to this method would result
   in increasing values because an array value wasn't being dereferenced.
 - Fix several DeprecationWarnings emitted during tests.
+- Fix numpy deprecation warning for `Parameters.__array__`. This method is
+  used to quickly extract the parameter set into a numpy array. This magic
+  method now requires the copy and dtype keywords, which we ignore in our
+  implementation.
