@@ -609,3 +609,6 @@ in 0.1.13.
   used to quickly extract the parameter set into a numpy array. This magic
   method now requires the copy and dtype keywords, which we ignore in our
   implementation.
+
+0.1.50
+------
