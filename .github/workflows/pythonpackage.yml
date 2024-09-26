@@ -156,7 +156,6 @@ jobs:
     - run: mkdir -p dist
 
     - uses: actions/setup-python@v5
-      if: ${{ github.actor == 'refnx' }}
       with:
         python-version: ${{ matrix.python-version }}
         cache: 'pip' # caching pip dependencies
