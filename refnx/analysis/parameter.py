@@ -1,8 +1,6 @@
 import operator
 from types import MethodType
 from collections import UserList
-import copy
-
 
 import numpy as np
 from refnx._lib import flatten, unique as f_unique
