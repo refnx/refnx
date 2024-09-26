@@ -156,6 +156,7 @@ jobs:
     - run: mkdir -p dist
 
     - uses: actions/setup-python@v5
+      if: ${{ github.actor == 'refnx' }}
       with:
         python-version: ${{ matrix.python-version }}
         cache: 'pip' # caching pip dependencies
@@ -246,7 +247,7 @@ jobs:
         popd
 
     - name: Sign app and create dmg
-      if: ${{ github.event.pull_request.head.repo.full_name == 'refnx/refnx' }}
+      if: ${{ github.actor == 'refnx' }}
       env:
         MACOS_CERTIFICATE: ${{ secrets.MACOS_CERTIFICATE_ISA }}
         MACOS_CERTIFICATE_PWD: ${{ secrets.MACOS_CERTIFICATE_ISA_PWD }}
@@ -275,7 +276,7 @@ jobs:
 
 # xcrun notarytool submit --apple-id "$APPLEID" --password "$APP_PASSWORD" --team-id 8CX8K63BQM --wait refnx.dmg
     - name: Notarize DMG
-      if: github.event.pull_request.head.repo.full_name == github.repository && github.repository == 'refnx/refnx'
+      if: ${{ github.actor == 'refnx' }}
       uses: lando/notarize-action@v2
       with:
         product-path: "dist/refnx.dmg"
@@ -286,7 +287,7 @@ jobs:
         verbose: True
 
     - name: Staple Release Build
-      if: ${{ github.event.pull_request.head.repo.full_name == 'refnx/refnx' }}
+      if: ${{ github.actor == 'refnx' }}
       uses: BoundfoxStudios/action-xcode-staple@v1
       with:
         product-path: "dist/refnx.dmg"
