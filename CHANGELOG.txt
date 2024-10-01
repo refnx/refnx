@@ -612,3 +612,4 @@ in 0.1.13.
 
 0.1.50
 ------
+- put black configuration in pyproject.toml
