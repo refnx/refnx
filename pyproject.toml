@@ -98,13 +98,27 @@ packages = [
      "refnx.util.test",
 ]
 
+
 [tool.black]
 line-length = 79
 extend-exclude="refnx/_lib/emcee/|refnx/_lib/ptemcee/|benchmarks"
 
 
+[tool.ruff]
+exclude = [
+    "refnx/_lib/emcee",
+    "refnx/reflect/_app/resources_rc.py",
+    "refnx/_lib/ptemcee",
+    "*.ipynb",
+]
+
+
+[tool.ruff.lint]
+ignore = ["F401", "F405", "E501", "E203", "E231"]
+
+
 [tool.cibuildwheel]
-skip = "pp* cp36-* cp37-* cp38-*"
+skip = "pp* cp36-* cp37-* cp38-* cp39-*"
 test-requires = ["pytest"]
 test-command = "pytest --pyargs refnx.reflect.test.test_reflect"
 manylinux-x86_64-image = "manylinux2014"

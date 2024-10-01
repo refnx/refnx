@@ -426,9 +426,8 @@ jobs:
 
     - name: Lint with flake8 and black
       run: |
-        python -m pip install flake8 black
+        python -m pip install ruff black
         # stop the build if there are Python syntax errors or undefined names
         # the ignores are taken care of by black
-
-        flake8 --ignore=F401,E501,W504,W503,E203,E231 --count --show-source --statistics --exclude=refnx/_lib/emcee,refnx/reflect/_app/resources_rc.py,refnx/_lib/ptemcee refnx
+        ruff check refnx
         black --check refnx
