@@ -211,15 +211,15 @@ class ManualBeamFinder(QtWidgets.QDialog):
         figcanvas = self.cross_section
 
         # background regions
-        figcanvas.l_lbkg.set_xdata(self._low_bkg)
-        figcanvas.l_hbkg.set_xdata(self._high_bkg)
+        figcanvas.l_lbkg.set_xdata([self._low_bkg])
+        figcanvas.l_hbkg.set_xdata([self._high_bkg])
 
         # beam centre
-        figcanvas.l_bc.set_xdata(self._true_centre)
+        figcanvas.l_bc.set_xdata([self._true_centre])
 
         # foreground regions
-        figcanvas.l_lfore.set_xdata(self._low_px)
-        figcanvas.l_hfore.set_xdata(self._high_px)
+        figcanvas.l_lfore.set_xdata([self._low_px])
+        figcanvas.l_hfore.set_xdata([self._high_px])
 
         # redraw cross section
         figcanvas.draw()
@@ -228,15 +228,15 @@ class ManualBeamFinder(QtWidgets.QDialog):
         figcanvas = self.detector_image
 
         # background regions
-        figcanvas.l_lbkg.set_ydata(self._low_bkg - 0.5)
-        figcanvas.l_hbkg.set_ydata(self._high_bkg + 0.5)
+        figcanvas.l_lbkg.set_ydata([self._low_bkg - 0.5])
+        figcanvas.l_hbkg.set_ydata([self._high_bkg + 0.5])
 
         # beam centre
-        figcanvas.l_bc.set_ydata(self._true_centre)
+        figcanvas.l_bc.set_ydata([self._true_centre])
 
         # foreground regions
-        figcanvas.l_lfore.set_ydata(self._low_px - 0.5)
-        figcanvas.l_hfore.set_ydata(self._high_px + 0.5)
+        figcanvas.l_lfore.set_ydata([self._low_px - 0.5])
+        figcanvas.l_hfore.set_ydata([self._high_px + 0.5])
 
         figcanvas.draw()
 
@@ -285,14 +285,14 @@ class ManualBeamFinder(QtWidgets.QDialog):
         self._true_sd = (hipx - lopx) / 4.0
 
         # redraw beam centre on detector image and cross section
-        self.cross_section.l_bc.set_xdata(self._true_centre)
+        self.cross_section.l_bc.set_xdata([self._true_centre])
         self.cross_section.draw()
 
-        self.detector_image.l_lbkg.set_ydata(self._low_bkg - 0.5)
-        self.detector_image.l_hbkg.set_ydata(self._high_bkg + 0.5)
-        self.detector_image.l_lfore.set_ydata(self._low_px - 0.5)
-        self.detector_image.l_hfore.set_ydata(self._high_px + 0.5)
-        self.detector_image.l_bc.set_ydata(self._true_centre)
+        self.detector_image.l_lbkg.set_ydata([self._low_bkg - 0.5])
+        self.detector_image.l_hbkg.set_ydata([self._high_bkg + 0.5])
+        self.detector_image.l_lfore.set_ydata([self._low_px - 0.5])
+        self.detector_image.l_hfore.set_ydata([self._high_px + 0.5])
+        self.detector_image.l_bc.set_ydata([self._true_centre])
 
         self.detector_image.draw()
 
@@ -456,21 +456,21 @@ class DetectorImage(FigureCanvas):
         # also display foreground/background regions
         # background regions
         self.l_lbkg = self.axes.axhline(color="black")  # the vert line
-        self.l_lbkg.set_ydata(low_bkg - 0.5)
+        self.l_lbkg.set_ydata([low_bkg - 0.5])
 
         self.l_hbkg = self.axes.axhline(color="black")  # the vert line
-        self.l_hbkg.set_ydata(high_bkg + 0.5)
+        self.l_hbkg.set_ydata([high_bkg + 0.5])
 
         # beam centre
         self.l_bc = self.axes.axhline(color="red")  # the vert line
-        self.l_bc.set_ydata(beam_centre)
+        self.l_bc.set_ydata([beam_centre])
 
         # foreground regions
         self.l_lfore = self.axes.axhline(color="blue")  # the vert line
-        self.l_lfore.set_ydata(low_px - 0.5)
+        self.l_lfore.set_ydata([low_px - 0.5])
 
         self.l_hfore = self.axes.axhline(color="blue")  # the vert line
-        self.l_hfore.set_ydata(high_px + 0.5)
+        self.l_hfore.set_ydata([high_px + 0.5])
 
         self.draw()
 
@@ -535,21 +535,21 @@ class Cross_Section(FigureCanvas):
 
         # background regions
         self.l_lbkg = self.axes.axvline(color="black")  # the vert line
-        self.l_lbkg.set_xdata(low_bkg)
+        self.l_lbkg.set_xdata([low_bkg])
 
         self.l_hbkg = self.axes.axvline(color="black")  # the vert line
-        self.l_hbkg.set_xdata(high_bkg)
+        self.l_hbkg.set_xdata([high_bkg])
 
         # beam centre
         self.l_bc = self.axes.axvline(color="red")  # the vert line
-        self.l_bc.set_xdata(beam_centre)
+        self.l_bc.set_xdata([beam_centre])
 
         # foreground regions
         self.l_lfore = self.axes.axvline(color="blue")  # the vert line
-        self.l_lfore.set_xdata(low_px)
+        self.l_lfore.set_xdata([low_px])
 
         self.l_hfore = self.axes.axvline(color="blue")  # the vert line
-        self.l_hfore.set_xdata(high_px)
+        self.l_hfore.set_xdata([high_px])
 
         # text location in axes coords
         self.txt = self.axes.text(0.6, 0.9, "", transform=self.axes.transAxes)
@@ -615,7 +615,7 @@ class Cross_Section(FigureCanvas):
             # TODO make sure background can't cross foreground
             # TODO connect Manual_beam_finder object to listen to changes
             # (on release)
-            line.set_xdata(new_loc)
+            line.set_xdata([new_loc])
             setattr(self, attr, new_loc)
 
         self.draw()

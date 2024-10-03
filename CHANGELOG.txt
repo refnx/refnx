@@ -613,3 +613,5 @@ in 0.1.13.
 0.1.50
 ------
 - put black configuration in pyproject.toml
+- put ruff configuration in pyproject.toml
+- fix bug in ManualBeamFinder, must be a matplotlib thing
