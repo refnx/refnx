@@ -19,12 +19,12 @@ jobs:
 ###############################################################################
   test_linux:
 
-    runs-on: ubuntu-22.04
+    runs-on: [ubuntu-22.04, self-hosted]
     strategy:
       fail-fast: true
       max-parallel: 3
       matrix:
-        python-version: [3.9, '3.10', '3.11', '3.12']
+        python-version: ['3.10', '3.11', '3.12']
 
     steps:
 
@@ -63,13 +63,13 @@ jobs:
         # python tools/app/check_app_starts.py refnx
 
     - name: Make sdist
-      if: ${{ matrix.python-version == '3.9' }}
+      if: ${{ matrix.python-version == '3.10' }}
       run: |
         git clean -xdf
         python setup.py sdist
 
     - uses: actions/upload-artifact@v4
-      if: ${{ matrix.python-version == '3.9' }}
+      if: ${{ matrix.python-version == '3.10' }}
       with:
         name: refnx-wheel-linux-${{ matrix.python-version }}
         path: dist/
