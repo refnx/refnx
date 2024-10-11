@@ -37,6 +37,7 @@ jobs:
         allow-prereleases: true
 
     - name: setup apt dependencies
+      if: ${{ matrix.runs-on == 'ubuntu' }}
       run: |
         ls
         apt-get update
