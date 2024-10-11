@@ -19,7 +19,7 @@ jobs:
 ###############################################################################
   test_linux:
 
-    runs-on: [ubuntu-22.04, self-hosted]
+    runs-on: self-hosted
     strategy:
       fail-fast: true
       max-parallel: 3
