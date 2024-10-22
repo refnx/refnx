@@ -615,3 +615,5 @@ in 0.1.13.
 - put black configuration in pyproject.toml
 - put ruff configuration in pyproject.toml
 - fix bug in ManualBeamFinder, must be a matplotlib thing
+- Add LipidLeafletGuest, a LipidLeaflet that can have another molecule
+  (e.g. cholesterol) in the tail region.
