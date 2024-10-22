@@ -188,6 +188,12 @@ jobs:
       env:
         MPLBACKEND: agg
       run: |
+        mkdir venv
+        pushd venv
+        python -m venv testenv
+        source testenv/bin/activate
+        popd
+
         python -m pip install -r .requirements.txt
         pushd dist
         python -m pip install --only-binary=refnx --no-index --find-links=. refnx
