@@ -18,6 +18,7 @@ from refnx.reflect import (
     Spline,
     Slab,
     LipidLeaflet,
+    LipidLeafletGuest,
 )
 from refnx.reflect.structure import _profile_slicer
 from refnx.analysis import Parameter, Interval
@@ -112,6 +113,29 @@ class TestLipidLeaflet:
         s = repr(self.leaflet)
         q = eval(s)
         assert_equal(q.slabs(), self.leaflet.slabs())
+
+    def test_lipidleafletguest(self):
+        phi_guest = Parameter(0.1)
+        sld_guest = SLD(7.6)
+        leaflet = LipidLeafletGuest(
+            self.APM,
+            self.b_h,
+            self.V_h,
+            self.thick_h,
+            self.b_t,
+            self.V_t,
+            self.thick_t,
+            2,
+            3,
+            phi_guest,
+            sld_guest,
+        )
+        leaflet.thickness_tails.value = 17.0
+        assert isinstance(leaflet, LipidLeafletGuest)
+        assert leaflet.phi_guest is phi_guest
+        assert leaflet.sld_guest is sld_guest
+        phi_t = leaflet.volfrac_t
+        assert_equal(leaflet.volfrac_guest, (1 - phi_t) * phi_guest.value)
 
 
 def test_lipid_leaflet_example():

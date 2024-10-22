@@ -1137,13 +1137,28 @@ class MaterialSLD(Scatterer):
         return self._parameters
 
 
+def possibly_create_scatterer(obj):
+    """
+    Possibly create an SLD object from float, complex, SLD
+
+    Parameters
+    ----------
+    obj: float, complex, Parameter, Parameters, Scatterer
+        object to coerce into a Scatterer
+    """
+    if isinstance(obj, Scatterer):
+        return obj
+    else:
+        return SLD(obj)
+
+
 class Component:
     """
     A base class for describing the structure of a subset of an interface.
 
     Parameters
     ----------
-    name : str, optional
+    name: str, optional
         The name associated with the Component
 
     Notes

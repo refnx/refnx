@@ -6,7 +6,11 @@ import numpy as np
 from scipy.optimize import NonlinearConstraint
 from refnx.reflect import Component, SLD, ReflectModel, Structure
 from refnx.analysis import possibly_create_parameter, Parameters, Parameter
-from refnx.reflect.structure import overall_sld
+from refnx.reflect.structure import (
+    overall_sld,
+    Scatterer,
+    possibly_create_scatterer,
+)
 
 
 class LipidLeaflet(Component):
@@ -199,9 +203,9 @@ class LipidLeaflet(Component):
 
         self.head_solvent = self.tail_solvent = None
         if head_solvent is not None:
-            self.head_solvent = SLD(head_solvent)
+            self.head_solvent = possibly_create_scatterer(head_solvent)
         if tail_solvent is not None:
-            self.tail_solvent = SLD(tail_solvent)
+            self.tail_solvent = possibly_create_scatterer(tail_solvent)
 
         self.reverse_monolayer = reverse_monolayer
         self.name = name
@@ -495,6 +499,7 @@ class LipidLeafletGuest(LipidLeaflet):
                the guest and tail region should have very different SLDs.
 
         sld_guest: None, float, complex, refnx.reflect.SLD
+            SLD of the guest (10**-6 Angstrom**-2).
         head_solvent: None, float, complex, SLD
             Solvent for the head region. If `None`, then solvation will be
             performed by the parent `Structure`, using the `Structure.solvent`
@@ -532,7 +537,7 @@ class LipidLeafletGuest(LipidLeaflet):
         )
         self.phi_guest = possibly_create_parameter(phi_guest)
         self.phi_guest.bounds.lb = 0
-        self.sld_guest = SLD(sld_guest)
+        self.sld_guest = possibly_create_scatterer(sld_guest)
 
     def __repr__(self):
         sld_bh = SLD([self.b_heads_real, self.b_heads_imag])

@@ -22,6 +22,7 @@ from refnx.reflect.structure import (
     MaterialSLD,
     MixedSlab,
     create_occupancy,
+    possibly_create_scatterer,
 )
 from refnx.reflect.interface import (
     Erf,

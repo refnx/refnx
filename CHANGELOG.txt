@@ -617,3 +617,4 @@ in 0.1.13.
 - fix bug in ManualBeamFinder, must be a matplotlib thing
 - Add LipidLeafletGuest, a LipidLeaflet that can have another molecule
   (e.g. cholesterol) in the tail region.
+- add refnx.reflect.possibly_create_scatterer.
