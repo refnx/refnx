@@ -188,7 +188,7 @@ jobs:
       env:
         MPLBACKEND: agg
       run: |
-        pip install -r .requirements.txt
+        python -m pip install -r .requirements.txt
         pushd dist
         python -m pip install --only-binary=refnx --no-index --find-links=. refnx
         pytest --pyargs refnx
