@@ -177,6 +177,12 @@ jobs:
         export CPPFLAGS="-I/opt/homebrew/opt/llvm/include"
         export LDFLAGS="-L/opt/homebrew/opt/llvm/lib/c++ -Wl,-rpath,/opt/homebrew/opt/llvm/lib/c++ -L/opt/homebrew/opt/llvm/lib"
 
+        mkdir venv
+        pushd venv
+        python -m venv testenv
+        source testenv/bin/activate
+        popd
+
         python -m pip install --upgrade pip
         python -m pip install wheel delocate build
         python -m build . -v
@@ -188,9 +194,7 @@ jobs:
       env:
         MPLBACKEND: agg
       run: |
-        mkdir venv
         pushd venv
-        python -m venv testenv
         source testenv/bin/activate
         popd
 
