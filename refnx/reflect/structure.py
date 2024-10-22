@@ -1350,10 +1350,7 @@ class Slab(Component):
         self.thick = possibly_create_parameter(
             thick, name=f"{name} - thick", units="Å"
         )
-        if isinstance(sld, Scatterer):
-            self.sld = sld
-        else:
-            self.sld = SLD(sld)
+        self.sld = possibly_create_scatterer(sld)
         self.rough = possibly_create_parameter(
             rough, name=f"{name} - rough", units="Å"
         )
