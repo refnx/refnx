@@ -162,26 +162,20 @@ jobs:
         allow-prereleases: true
 
     - name: install compilers
-      shell: bash -el {0}
+      shell: bash
       run: |
         brew install llvm
 
     - name: Make wheel
-      shell: bash -el {0}
+      shell: bash
       env:
         ARCHFLAGS: "-arch arm64"
         _PYTHON_HOST_PLATFORM: macosx-11.0-arm64
       run: |
         sudo xcode-select -s /Applications/Xcode_15.3.app
-        export PATH="/opt/homebrew/opt/llvm/bin:$PATH"
+        export PATH="$PATH:/opt/homebrew/opt/llvm/bin"
         export CPPFLAGS="-I/opt/homebrew/opt/llvm/include"
         export LDFLAGS="-L/opt/homebrew/opt/llvm/lib/c++ -Wl,-rpath,/opt/homebrew/opt/llvm/lib/c++ -L/opt/homebrew/opt/llvm/lib"
-
-        mkdir venv
-        pushd venv
-        python -m venv testenv
-        source testenv/bin/activate
-        popd
 
         python -m pip install --upgrade pip
         python -m pip install wheel delocate build
@@ -190,14 +184,10 @@ jobs:
         delocate-wheel -v dist/refnx*.whl
 
     - name: Install package and test with pytest
-      shell: bash -el {0}
+      shell: bash
       env:
         MPLBACKEND: agg
       run: |
-        pushd venv
-        source testenv/bin/activate
-        popd
-
         python -m pip install -r .requirements.txt
         pushd dist
         python -m pip install --only-binary=refnx --no-index --find-links=. refnx
