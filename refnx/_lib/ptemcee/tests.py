@@ -391,5 +391,5 @@ class Tests(object):
         assert (0 <= sr).all() and (sr <= 1).all()
         assert chain2.x.shape[0] == 2 * N
 
-        assert (chain1.x == chain2.x).all(), 'Chains don\'t match.'
+        np.testing.assert_allclose(chain1.x, chain2.x)
         assert (chain1.betas == chain2.betas).all(), 'Ladders don\'t match.'

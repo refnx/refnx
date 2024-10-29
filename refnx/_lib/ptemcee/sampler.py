@@ -223,7 +223,7 @@ class Sampler(object):
                                               logp_kwargs=self.logp_kwargs))
 
     def ensemble(self, x, rng=None):
-        random = np.random.default_rng()
+        random = np.random.default_rng(rng)
 
         config = ensemble.EnsembleConfiguration(adaptation_lag=self.adaptation_lag,
                                                 adaptation_time=self.adaptation_time,
