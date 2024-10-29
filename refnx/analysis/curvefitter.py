@@ -9,6 +9,7 @@ import numpy as np
 from scipy._lib._util import check_random_state
 from scipy.optimize import minimize, differential_evolution, least_squares
 import scipy.optimize as sciopt
+from scipy.stats.qmc import LatinHypercube
 
 from refnx.analysis import Objective, Interval, PDF, is_parameter
 from refnx._lib import (
@@ -18,7 +19,6 @@ from refnx._lib import (
     flatten,
 )
 from refnx._lib.util import getargspec
-from refnx._lib._qmc import LatinHypercube
 from refnx._lib import emcee
 from refnx._lib.emcee.state import State
 from refnx._lib.emcee.pbar import get_progress_bar
