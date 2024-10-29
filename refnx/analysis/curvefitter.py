@@ -110,7 +110,7 @@ class PTSampler:
             rstate0 = initial_state.random_state
         else:
             init_x = initial_state
-            rstate0 = np.random.RandomState().get_state()
+            rstate0 = np.random.default_rng().bit_generator.state
 
         if self._ptchain is None:
             self._ptchain = self.sampler.chain(init_x)
@@ -162,12 +162,12 @@ class PTSampler:
     @property
     def random_state(self):
         if self._ptchain is not None:
-            self._ptchain.ensemble._random.get_state()
+            self._ptchain.ensemble._rng.bit_generator.state
 
     @random_state.setter
-    def random_state(self, rstate0):
+    def random_state(self, state):
         if self._ptchain is not None:
-            self._ptchain.ensemble._random.set_state(rstate0)
+            self._ptchain.ensemble._rng.bit_generator.state = state
 
 
 class CurveFitter:
@@ -339,23 +339,36 @@ class CurveFitter:
                 `(nwalkers, ndim)`, or `(ntemps, nwalkers, ndim)` if parallel
                  tempering is employed. You can also provide a previously
                  created chain.
-        random_state : {int, `np.random.RandomState`, `np.random.Generator`}
-            If `random_state` is not specified the `~np.random.RandomState`
-            singleton is used.
-            If `random_state` is an int, a new ``RandomState`` instance is
-            used, seeded with random_state.
-            If `random_state` is already a ``RandomState`` or a ``Generator``
-            instance, then that object is used.
-            Specify `random_state` for repeatable initialisations.
+        random_state : {None, int, `np.random.RandomState`, `np.random.Generator`}
+            If performing MCMC with `ntemps == -1`:
+
+            - If `random_state` is not specified the `~np.random.RandomState`
+              singleton is used.
+            - If `random_state` is an int, a new ``RandomState`` instance is
+              used, seeded with `random_state`.
+            - If `random_state` is already a ``RandomState`` instance, then
+              that object is used.
+
+            If using parallel tempering then random number generation is
+            controlled by ``np.random.default_rng(random_state)``
+
+            Specify `random_state` for repeatable minimizations.
         """
         nwalkers = self._nwalkers
         nvary = self.nvary
 
-        # acquire a random number generator
-        rng = check_random_state(random_state)
-
         # account for parallel tempering
         _ntemps = self._ntemps
+
+        # acquire a random number generator
+        # we want a Generator for ptemcee
+        if self._ntemps > 0:
+            rng = np.random.default_rng(random_state)
+        elif self._ntemps == -1:
+            rng = check_random_state(random_state)
+            # require rng to be a RandomState
+            if isinstance(random_state, np.random.Generator):
+                rng = np.random.RandomState()
 
         # If you're not doing parallel tempering, temporarily set the number of
         # temperatures to be created to 1, thereby producing initial positions
@@ -441,9 +454,10 @@ class CurveFitter:
         for i, param in enumerate(self._varying_parameters):
             init_walkers[..., i] = param.valid(init_walkers[..., i])
 
-        rstate0 = None
-        if isinstance(rng, np.random.RandomState):
+        if self._ntemps == -1 and isinstance(rng, np.random.RandomState):
             rstate0 = rng.get_state()
+        elif self._ntemps > 0:
+            rstate0 = rng.bit_generator.state
 
         self._state = State(init_walkers, random_state=rstate0)
 
@@ -560,13 +574,19 @@ class CurveFitter:
             total of `steps * nthin` moves.
         nthin : int, optional
             Each chain sample is separated by `nthin` iterations.
-        random_state : {int, `np.random.RandomState`, `np.random.Generator`}
-            If `random_state` is not specified the `~np.random.RandomState`
-            singleton is used.
-            If `random_state` is an int, a new ``RandomState`` instance is
-            used, seeded with random_state.
-            If `random_state` is already a ``RandomState`` or a ``Generator``
-            instance, then that object is used.
+        random_state : {None, int, `np.random.RandomState`, `np.random.Generator`}
+            If performing MCMC with `ntemps == -1`:
+
+            - If `random_state` is not specified the `~np.random.RandomState`
+              singleton is used.
+            - If `random_state` is an int, a new ``RandomState`` instance is
+              used, seeded with `random_state`.
+            - If `random_state` is already a ``RandomState`` instance, then
+              that object is used.
+
+            If using parallel tempering then random number generation is
+            controlled by ``np.random.default_rng(random_state)``
+
             Specify `random_state` for repeatable minimizations.
         f : file-like or str
             File to incrementally save chain progress to. Each row in the file
@@ -603,7 +623,14 @@ class CurveFitter:
         self._check_vars_unchanged()
 
         # setup a random number generator
-        rng = check_random_state(random_state)
+        # want Generator for ptemcee
+        if self._ntemps == -1:
+            rng = check_random_state(random_state)
+            # require rng to be a RandomState
+            if isinstance(random_state, np.random.Generator):
+                rng = np.random.RandomState()
+        else:
+            rng = np.random.default_rng(random_state)
 
         if self._state is None:
             self.initialise(random_state=rng)
@@ -638,10 +665,12 @@ class CurveFitter:
         # set the random state of the sampler
         # normally one could give this as an argument to the sample method
         # but PTSampler didn't historically accept that...
-        if isinstance(rng, np.random.RandomState):
+        if self._ntemps == -1 and isinstance(rng, np.random.RandomState):
             rstate0 = rng.get_state()
             self._state.random_state = rstate0
             self.sampler.random_state = rstate0
+        elif self._ntemps > 0:
+            self._state.random_state = rng.bit_generator.state
 
         # using context manager means we kill off zombie pool objects
         # but does mean that the pool has to be specified each time.

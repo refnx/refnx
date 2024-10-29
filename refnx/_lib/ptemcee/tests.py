@@ -10,8 +10,6 @@ from __future__ import absolute_import, print_function, division
 import itertools
 import numpy as np
 
-from numpy.random.mtrand import RandomState
-
 from .sampler import Sampler, make_ladder
 from .interruptible_pool import Pool
 
@@ -48,8 +46,11 @@ def log_unit_sphere_volume(ndim):
         logfactorial = 0
         for i in range(1, ndim + 1, 2):
             logfactorial += np.log(i)
-        return (ndim + 1) / 2 * np.log(2) \
-            + (ndim - 1) / 2 * np.log(np.pi) - logfactorial
+        return (
+            (ndim + 1) / 2 * np.log(2)
+            + (ndim - 1) / 2 * np.log(np.pi)
+            - logfactorial
+        )
 
 
 class LogLikeGaussian(object):
@@ -101,7 +102,7 @@ class Tests(object):
 
     @classmethod
     def setup_class(cls):
-        np.seterr(all='raise')
+        np.seterr(all="raise")
 
         cls.nwalkers = 100  # type: int
         cls.ndim = 5  # type: int
@@ -130,8 +131,12 @@ class Tests(object):
         cls.p0_unit = x * cls.cutoff  # type: np.ndarray
         cls.p0 = np.dot(x, sqrtcov)  # type: np.ndarray
 
-        cls.p0_unit = cls.p0_unit.reshape(cls.ntemps, cls.nwalkers, cls.ndim)  # type: np.ndarray
-        cls.p0 = cls.p0.reshape(cls.ntemps, cls.nwalkers, cls.ndim)  # type: np.ndarray
+        cls.p0_unit = cls.p0_unit.reshape(
+            cls.ntemps, cls.nwalkers, cls.ndim
+        )  # type: np.ndarray
+        cls.p0 = cls.p0.reshape(
+            cls.ntemps, cls.nwalkers, cls.ndim
+        )  # type: np.ndarray
 
     def check_sampler(self, sampler, p0, weak=False, fail=False):
         """
@@ -157,8 +162,7 @@ class Tests(object):
             try:
                 chain = sampler.chain(p0)
                 for x in chain.iterate(self.N):
-                    assert False, \
-                        'Sampler should have failed by now.'
+                    assert False, "Sampler should have failed by now."
             except Exception as e:
                 # If a type was specified, require that the sampler fail with this exception type.
                 if type(e) is fail:
@@ -170,32 +174,42 @@ class Tests(object):
             for ensemble in chain.iterate(self.N):
                 ratios = ensemble.swaps_accepted / ensemble.swaps_proposed
 
-                assert np.all(ensemble.logP > -np.inf) and np.all(ensemble.logP > -np.inf), \
-                    'Invalid posterior/likelihood values; outside posterior support.'
-                assert np.all(ratios >= 0) and np.all(ratios <= 1), \
-                    'Invalid swap ratios.'
-                assert ensemble.logP.shape == ensemble.logP.shape == ensemble.x.shape[:-1], \
-                    'Sampler output shapes invalid.'
-                assert ensemble.x.shape[-1] == self.ndim, \
-                    'Sampler output shapes invalid.'
-                assert ratios.shape[0] == ensemble.logP.shape[0] - 1 and len(ratios.shape) == 1, \
-                    'Sampler output shapes invalid.'
-                assert np.all(ensemble.betas >= 0), \
-                    'Negative temperatures!'
-                assert np.all(np.diff(ensemble.betas) != 0), \
-                    'Temperatures have coalesced.'
-                assert np.all(np.diff(ensemble.betas) < 0), \
-                    'Temperatures incorrectly ordered.'
+                assert np.all(ensemble.logP > -np.inf) and np.all(
+                    ensemble.logP > -np.inf
+                ), "Invalid posterior/likelihood values; outside posterior support."
+                assert np.all(ratios >= 0) and np.all(
+                    ratios <= 1
+                ), "Invalid swap ratios."
+                assert (
+                    ensemble.logP.shape
+                    == ensemble.logP.shape
+                    == ensemble.x.shape[:-1]
+                ), "Sampler output shapes invalid."
+                assert (
+                    ensemble.x.shape[-1] == self.ndim
+                ), "Sampler output shapes invalid."
+                assert (
+                    ratios.shape[0] == ensemble.logP.shape[0] - 1
+                    and len(ratios.shape) == 1
+                ), "Sampler output shapes invalid."
+                assert np.all(ensemble.betas >= 0), "Negative temperatures!"
+                assert np.all(
+                    np.diff(ensemble.betas) != 0
+                ), "Temperatures have coalesced."
+                assert np.all(
+                    np.diff(ensemble.betas) < 0
+                ), "Temperatures incorrectly ordered."
 
-        assert np.all(chain.get_acts() > 0), \
-            'Invalid autocorrelation lengths.'
+        assert np.all(chain.get_acts() > 0), "Invalid autocorrelation lengths."
 
         if not weak:
             # Weaker assertions on acceptance fraction
-            assert np.mean(chain.jump_acceptance_ratio) > 0.1, \
-                'Acceptance fraction < 0.1'
-            assert np.mean(chain.swap_acceptance_ratio) > 0.1, \
-                'Temperature swap acceptance fraction < 0.1.'
+            assert (
+                np.mean(chain.jump_acceptance_ratio) > 0.1
+            ), "Acceptance fraction < 0.1"
+            assert (
+                np.mean(chain.swap_acceptance_ratio) > 0.1
+            ), "Temperature swap acceptance fraction < 0.1."
 
             # TODO: Why doesn't this work?
             # if sampler.adaptive:
@@ -204,38 +218,52 @@ class Tests(object):
 
             data = np.reshape(chain.x[0, ...], (-1, chain.x.shape[-1]))
 
-            log_volume = self.ndim * np.log(self.cutoff) \
-                + log_unit_sphere_volume(self.ndim) \
+            log_volume = (
+                self.ndim * np.log(self.cutoff)
+                + log_unit_sphere_volume(self.ndim)
                 + 0.5 * np.log(np.linalg.det(self.cov))
-            gaussian_integral = self.ndim / 2 * np.log(2 * np.pi) \
-                + 0.5 * np.log(np.linalg.det(self.cov))
+            )
+            gaussian_integral = self.ndim / 2 * np.log(
+                2 * np.pi
+            ) + 0.5 * np.log(np.linalg.det(self.cov))
 
             logZ, dlogZ = chain.log_evidence_estimate()
 
-            assert np.abs(logZ - (gaussian_integral - log_volume)) < 3 * dlogZ, \
-                'Evidence incorrect: {:g}+/{:g} versus correct {:g}.' \
-                .format(logZ, gaussian_integral - log_volume, dlogZ)
-            maxdiff = 10 ** logprecision
-            assert np.all((np.mean(data, axis=0) - self.mean) ** 2 / self.N ** 2
-                          < maxdiff), 'Mean incorrect.'
-            assert np.all((np.cov(data, rowvar=False) - self.cov) ** 2 / self.N ** 2
-                          < maxdiff), 'Covariance incorrect.'
+            assert (
+                np.abs(logZ - (gaussian_integral - log_volume)) < 3 * dlogZ
+            ), "Evidence incorrect: {:g}+/{:g} versus correct {:g}.".format(
+                logZ, gaussian_integral - log_volume, dlogZ
+            )
+            maxdiff = 10**logprecision
+            assert np.all(
+                (np.mean(data, axis=0) - self.mean) ** 2 / self.N**2 < maxdiff
+            ), "Mean incorrect."
+            assert np.all(
+                (np.cov(data, rowvar=False) - self.cov) ** 2 / self.N**2
+                < maxdiff
+            ), "Covariance incorrect."
 
     def test_prior_support(self):
-        sampler = Sampler(self.nwalkers, self.ndim,
-                          LogLikeGaussian(self.icov_unit),
-                          LogPriorGaussian(self.icov_unit, cutoff=self.cutoff),
-                          betas=make_ladder(self.ndim, self.ntemps, Tmax=self.Tmax))
+        sampler = Sampler(
+            self.nwalkers,
+            self.ndim,
+            LogLikeGaussian(self.icov_unit),
+            LogPriorGaussian(self.icov_unit, cutoff=self.cutoff),
+            betas=make_ladder(self.ndim, self.ntemps, Tmax=self.Tmax),
+        )
 
         # What happens when we start the sampler outside our prior support?
         self.p0_unit[0][0][0] = 1e6 * self.cutoff
         self.check_sampler(sampler, p0=self.p0_unit, fail=ValueError)
 
     def test_likelihood_support(self):
-        sampler = Sampler(self.nwalkers, self.ndim,
-                          LogLikeGaussian(self.icov_unit, test_inf=True),
-                          LogPriorGaussian(self.icov_unit, cutoff=self.cutoff),
-                          betas=make_ladder(self.ndim, self.ntemps, Tmax=self.Tmax))
+        sampler = Sampler(
+            self.nwalkers,
+            self.ndim,
+            LogLikeGaussian(self.icov_unit, test_inf=True),
+            LogPriorGaussian(self.icov_unit, cutoff=self.cutoff),
+            betas=make_ladder(self.ndim, self.ntemps, Tmax=self.Tmax),
+        )
 
         # What happens when we start the sampler outside our likelihood
         # support?  Give some walkers a negative parameter value, where the
@@ -244,10 +272,13 @@ class Tests(object):
         self.check_sampler(sampler, p0=self.p0_unit, fail=ValueError)
 
     def test_nan_logprob(self):
-        sampler = Sampler(self.nwalkers, self.ndim,
-                          LogLikeGaussian(self.icov_unit, test_nan=True),
-                          LogPriorGaussian(self.icov_unit, cutoff=self.cutoff),
-                          betas=make_ladder(self.ndim, self.ntemps, Tmax=self.Tmax))
+        sampler = Sampler(
+            self.nwalkers,
+            self.ndim,
+            LogLikeGaussian(self.icov_unit, test_nan=True),
+            LogPriorGaussian(self.icov_unit, cutoff=self.cutoff),
+            betas=make_ladder(self.ndim, self.ntemps, Tmax=self.Tmax),
+        )
 
         # If a walker is right at zero, ``logprobfn`` returns ``np.nan``;
         # sampler should fail with a ``ValueError``.
@@ -265,18 +296,24 @@ class Tests(object):
         the results because this posterior is difficult to sample.
 
         """
-        sampler = Sampler(self.nwalkers, self.ndim,
-                          LogLikeGaussian(self.icov_unit, test_inf=True),
-                          LogPriorGaussian(self.icov_unit, cutoff=self.cutoff),
-                          betas=make_ladder(self.ndim, self.ntemps, np.inf))
+        sampler = Sampler(
+            self.nwalkers,
+            self.ndim,
+            LogLikeGaussian(self.icov_unit, test_inf=True),
+            LogPriorGaussian(self.icov_unit, cutoff=self.cutoff),
+            betas=make_ladder(self.ndim, self.ntemps, np.inf),
+        )
 
         self.check_sampler(sampler, p0=np.abs(self.p0_unit), weak=True)
 
     def test_inf_nan_params(self):
-        sampler = Sampler(self.nwalkers, self.ndim,
-                          LogLikeGaussian(self.icov_unit),
-                          LogPriorGaussian(self.icov_unit, cutoff=self.cutoff),
-                          betas=make_ladder(self.ndim, self.ntemps, Tmax=self.Tmax))
+        sampler = Sampler(
+            self.nwalkers,
+            self.ndim,
+            LogLikeGaussian(self.icov_unit),
+            LogPriorGaussian(self.icov_unit, cutoff=self.cutoff),
+            betas=make_ladder(self.ndim, self.ntemps, Tmax=self.Tmax),
+        )
 
         # Set one of the walkers to have a ``np.nan`` value.  Choose the
         # maximum temperature as we're most likely to get away with this if
@@ -293,33 +330,45 @@ class Tests(object):
         self.check_sampler(sampler, p0=self.p0_unit, fail=ValueError)
 
     def test_parallel(self):
-        sampler = Sampler(self.nwalkers, self.ndim,
-                          LogLikeGaussian(self.icov),
-                          LogPriorGaussian(self.icov, cutoff=self.cutoff),
-                          betas=make_ladder(self.ndim, self.ntemps, Tmax=self.Tmax),
-                          mapper=Pool(2).map)
+        sampler = Sampler(
+            self.nwalkers,
+            self.ndim,
+            LogLikeGaussian(self.icov),
+            LogPriorGaussian(self.icov, cutoff=self.cutoff),
+            betas=make_ladder(self.ndim, self.ntemps, Tmax=self.Tmax),
+            mapper=Pool(2).map,
+        )
         self.check_sampler(sampler, p0=self.p0)
 
     def test_temp_inf(self):
-        sampler = Sampler(self.nwalkers, self.ndim,
-                          LogLikeGaussian(self.icov),
-                          LogPriorGaussian(self.icov, cutoff=self.cutoff),
-                          betas=make_ladder(self.ndim, self.ntemps, Tmax=self.Tmax))
+        sampler = Sampler(
+            self.nwalkers,
+            self.ndim,
+            LogLikeGaussian(self.icov),
+            LogPriorGaussian(self.icov, cutoff=self.cutoff),
+            betas=make_ladder(self.ndim, self.ntemps, Tmax=self.Tmax),
+        )
         self.check_sampler(sampler, p0=self.p0)
 
     def test_betas(self):
-        sampler = Sampler(self.nwalkers, self.ndim,
-                          LogLikeGaussian(self.icov),
-                          LogPriorGaussian(self.icov, cutoff=self.cutoff),
-                          betas=20)
+        sampler = Sampler(
+            self.nwalkers,
+            self.ndim,
+            LogLikeGaussian(self.icov),
+            LogPriorGaussian(self.icov, cutoff=self.cutoff),
+            betas=20,
+        )
         assert sampler.betas.shape[0] == 20
 
     def test_gaussian_adapt(self):
-        sampler = Sampler(self.nwalkers, self.ndim,
-                          LogLikeGaussian(self.icov),
-                          LogPriorGaussian(self.icov, cutoff=self.cutoff),
-                          adaptive=True,
-                          betas=make_ladder(self.ndim, self.ntemps, Tmax=self.Tmax))
+        sampler = Sampler(
+            self.nwalkers,
+            self.ndim,
+            LogLikeGaussian(self.icov),
+            LogPriorGaussian(self.icov, cutoff=self.cutoff),
+            adaptive=True,
+            betas=make_ladder(self.ndim, self.ntemps, Tmax=self.Tmax),
+        )
         self.check_sampler(sampler, p0=self.p0)
 
     def test_ensemble(self):
@@ -328,18 +377,21 @@ class Tests(object):
 
         """
 
-        sampler = Sampler(self.nwalkers, self.ndim,
-                          LogLikeGaussian(self.icov),
-                          LogPriorGaussian(self.icov, cutoff=self.cutoff),
-                          adaptive=True,
-                          betas=make_ladder(self.ndim, self.ntemps, Tmax=self.Tmax))
+        sampler = Sampler(
+            self.nwalkers,
+            self.ndim,
+            LogLikeGaussian(self.icov),
+            LogPriorGaussian(self.icov, cutoff=self.cutoff),
+            adaptive=True,
+            betas=make_ladder(self.ndim, self.ntemps, Tmax=self.Tmax),
+        )
 
         N = 10
         thin_by = 2
         seed = 1
-        ensemble = sampler.ensemble(self.p0, RandomState(seed))
-        chain = sampler.chain(self.p0, RandomState(seed), thin_by)
-        samples = sampler.sample(self.p0, RandomState(seed), thin_by)
+        ensemble = sampler.ensemble(self.p0, np.random.default_rng(seed))
+        chain = sampler.chain(self.p0, np.random.default_rng(seed), thin_by)
+        samples = sampler.sample(self.p0, np.random.default_rng(seed), thin_by)
 
         betas1 = np.empty((N, self.ntemps))
         x1 = np.empty((N, self.ntemps, self.nwalkers, self.ndim))
@@ -356,26 +408,33 @@ class Tests(object):
             betas2[i] = e.betas
 
         jr, sr = chain.run(N)
-        assert (chain.jump_acceptance_ratio == jr).all(), 'Jump acceptance ratios don\'t match.'
-        assert (chain.swap_acceptance_ratio == sr).all(), 'Swap acceptance ratios don\'t match.'
-        assert (chain.x == x1).all(), 'Chains don\'t match.'
-        assert (chain.x == x2).all(), 'Chains don\'t match.'
-        assert (chain.betas == betas1).all(), 'Ladders don\'t match.'
-        assert (chain.betas == betas2).all(), 'Ladders don\'t match.'
+        assert (
+            chain.jump_acceptance_ratio == jr
+        ).all(), "Jump acceptance ratios don't match."
+        assert (
+            chain.swap_acceptance_ratio == sr
+        ).all(), "Swap acceptance ratios don't match."
+        assert (chain.x == x1).all(), "Chains don't match."
+        assert (chain.x == x2).all(), "Chains don't match."
+        assert (chain.betas == betas1).all(), "Ladders don't match."
+        assert (chain.betas == betas2).all(), "Ladders don't match."
 
     def test_resume(self):
-        sampler = Sampler(self.nwalkers, self.ndim,
-                          LogLikeGaussian(self.icov),
-                          LogPriorGaussian(self.icov, cutoff=self.cutoff),
-                          adaptive=True,
-                          betas=make_ladder(self.ndim, self.ntemps, Tmax=self.Tmax))
+        sampler = Sampler(
+            self.nwalkers,
+            self.ndim,
+            LogLikeGaussian(self.icov),
+            LogPriorGaussian(self.icov, cutoff=self.cutoff),
+            adaptive=True,
+            betas=make_ladder(self.ndim, self.ntemps, Tmax=self.Tmax),
+        )
 
         N = 10
         thin_by = 2
         seed = 1
 
         # Run the chain in two parts.
-        chain1 = sampler.chain(self.p0, RandomState(seed), thin_by)
+        chain1 = sampler.chain(self.p0, np.random.default_rng(seed), thin_by)
         jr, sr = chain1.run(N)
         assert (0 <= jr).all() and (jr <= 1).all()
         assert (0 <= sr).all() and (sr <= 1).all()
@@ -386,12 +445,12 @@ class Tests(object):
         assert (0 <= sr).all() and (sr <= 1).all()
         assert chain1.x.shape[0] == 2 * N
 
-        # Now do the same run afresh and compare the results.  Given the same seed, the they should be identical.
-        chain2 = sampler.chain(self.p0, RandomState(seed), thin_by)
+        # Now do the same run afresh and compare the results.  Given the same seed, they should be identical.
+        chain2 = sampler.chain(self.p0, np.random.default_rng(seed), thin_by)
         jr, sr = chain2.run(2 * N)
         assert (0 <= jr).all() and (jr <= 1).all()
         assert (0 <= sr).all() and (sr <= 1).all()
         assert chain2.x.shape[0] == 2 * N
 
-        assert (chain1.x == chain2.x).all(), 'Chains don\'t match.'
-        assert (chain1.betas == chain2.betas).all(), 'Ladders don\'t match.'
+        np.testing.assert_allclose(chain1.x, chain2.x)
+        assert (chain1.betas == chain2.betas).all(), "Ladders don't match."

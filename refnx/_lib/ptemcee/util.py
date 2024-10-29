@@ -1,11 +1,22 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from __future__ import division, print_function, absolute_import, unicode_literals
+from __future__ import (
+    division,
+    print_function,
+    absolute_import,
+    unicode_literals,
+)
 
-__all__ = ['_ladder', 'get_acf', 'get_integrated_act', 'thermodynamic_integration_log_evidence']
+__all__ = [
+    "_ladder",
+    "get_acf",
+    "get_integrated_act",
+    "thermodynamic_integration_log_evidence",
+]
 
 import numpy as np
+from scipy.integrate import trapezoid
 
 
 def _ladder(betas):
@@ -37,7 +48,9 @@ def get_acf(x, axis=0, fast=False):
 
     """
     x = np.atleast_1d(x)
-    m = [slice(None), ] * len(x.shape)
+    m = [
+        slice(None),
+    ] * len(x.shape)
 
     # For computational efficiency, crop the chain to the largest power of
     # two if requested.
@@ -87,7 +100,9 @@ def get_integrated_act(x, axis=0, window=50, fast=False):
         return 1 + 2 * np.sum(f[1:window])
 
     # N-dimensional case.
-    m = [slice(None), ] * len(f.shape)
+    m = [
+        slice(None),
+    ] * len(f.shape)
     m[axis] = slice(1, window)
     tau = 1 + 2 * np.sum(f[tuple(m)], axis=axis)
 
@@ -143,7 +158,9 @@ def thermodynamic_integration_log_evidence(betas, logls):
     integral.
     """
     if len(betas) != len(logls):
-        raise ValueError('Need the same number of log(L) values as temperatures.')
+        raise ValueError(
+            "Need the same number of log(L) values as temperatures."
+        )
 
     order = np.argsort(betas)[::-1]
     betas = betas[order]
@@ -161,6 +178,6 @@ def thermodynamic_integration_log_evidence(betas, logls):
         betas2 = np.concatenate((betas0[:-1:2], [0]))
         logls2 = np.concatenate((logls[:-1:2], [logls[-1]]))
 
-    logZ = -np.trapezoid(logls, betas)
-    logZ2 = -np.trapezoid(logls2, betas2)
+    logZ = -trapezoid(logls, x=betas)
+    logZ2 = -trapezoid(logls2, x=betas2)
     return logZ, np.abs(logZ - logZ2)

@@ -1065,12 +1065,11 @@ def _smeared_kernel_adaptive(qvals, w, dqvals, threads=-1):
     smeared_rvals = np.zeros(qvals.size)
     warnings.simplefilter("ignore", Warning)
     for idx, val in enumerate(qvals):
-        smeared_rvals[idx], err = scipy.integrate.quadrature(
+        smeared_rvals[idx], err = scipy.integrate.quad(
             _smear_kernel,
             -_INTLIMIT,
             _INTLIMIT,
-            tol=2 * np.finfo(np.float64).eps,
-            rtol=2 * np.finfo(np.float64).eps,
+            epsabs=0.0,
             args=(w, qvals[idx], dqvals[idx], threads),
         )
 

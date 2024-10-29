@@ -1,8 +1,13 @@
 # -*- coding: utf-8 -*-
 
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import (
+    absolute_import,
+    division,
+    print_function,
+    unicode_literals,
+)
 
-__all__ = ['Chain']
+__all__ = ["Chain"]
 
 import attr
 import numpy as np
@@ -130,4 +135,6 @@ class Chain(object):
 
         istart = int(self.logl.shape[0] * fburnin + 0.5)
         mean_logls = np.mean(np.mean(self.logl, axis=2)[istart:, :], axis=0)
-        return util.thermodynamic_integration_log_evidence(self.betas[-1], mean_logls)
+        return util.thermodynamic_integration_log_evidence(
+            self.betas[-1], mean_logls
+        )
