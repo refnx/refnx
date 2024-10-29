@@ -117,7 +117,7 @@ jobs:
           allow-prereleases: true
 
       - name: Make wheel
-        shell: bash -el {0}
+        shell: bash
         run: |
           
           python -m pip install --upgrade pip
