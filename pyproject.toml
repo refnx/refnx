@@ -48,8 +48,8 @@ all = [
     "h5py",
     "jupyter",
     "tqdm",
-    "pymc; python_version != '3.12'",
-    "pytensor; python_version != '3.12'",
+    "pymc; python_version != '3.13'",
+    "pytensor; python_version != '3.13'",
     "attrs",
     "pandas",
     "pyparsing",
@@ -57,7 +57,7 @@ all = [
     "pyqt6",
     "qtpy",
     "corner",
-    "numba; python_version != '3.12'",
+    "numba; python_version != '3.13'",
 ]
 
 test = [

@@ -3,7 +3,7 @@ import numpy as np
 import itertools
 
 from attr.validators import instance_of
-from numpy.random.mtrand import RandomState
+from numpy.random import Generator
 
 from . import util
 
@@ -37,7 +37,7 @@ class Ensemble(object):
 
     adaptive = attr.ib(type=bool, converter=bool, default=False)
 
-    _random = attr.ib(type=RandomState, validator=instance_of(RandomState), factory=RandomState)
+    _rng = attr.ib(type=Generator, validator=instance_of(Generator), factory=np.random.default_rng)
     _mapper = attr.ib(default=map)
 
     time = attr.ib(type=int, init=False, default=0)
@@ -109,10 +109,10 @@ class Ensemble(object):
             x_update = x[:, j_update::2, :]
             x_sample = x[:, j_sample::2, :]
 
-            z = np.exp(self._random.uniform(low=-loga, high=loga, size=(t, w)))
+            z = np.exp(self._rng.uniform(low=-loga, high=loga, size=(t, w)))
             y = np.empty((t, w, d))
             for k in range(t):
-                js = self._random.randint(0, high=w, size=w)
+                js = self._rng.integers(0, high=w, size=w)
                 y[k, :, :] = (x_sample[k, js, :] +
                               z[k, :].reshape((w, 1)) *
                               (x_update[k, :, :] - x_sample[k, js, :]))
@@ -121,7 +121,7 @@ class Ensemble(object):
             y_logP = self._tempered_likelihood(y_logl) + y_logp
 
             logp_accept = d * np.log(z) + y_logP - logP[:, j_update::2]
-            logr = np.log(self._random.uniform(low=0, high=1, size=(t, w)))
+            logr = np.log(self._rng.random(size=(t, w)))
 
             accepts = logr < logp_accept
             accepts = accepts.flatten()
@@ -206,10 +206,10 @@ class Ensemble(object):
 
             dbeta = bi1 - bi
 
-            iperm = self._random.permutation(nwalkers)
-            i1perm = self._random.permutation(nwalkers)
+            iperm = self._rng.permutation(nwalkers)
+            i1perm = self._rng.permutation(nwalkers)
 
-            raccept = np.log(self._random.uniform(size=nwalkers))
+            raccept = np.log(self._rng.random(size=nwalkers))
             paccept = dbeta * (logl[i, iperm] - logl[i - 1, i1perm])
 
             # How many swaps were accepted?

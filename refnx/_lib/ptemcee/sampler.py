@@ -10,8 +10,6 @@ import attr
 import itertools
 import numpy as np
 
-from numpy.random.mtrand import RandomState
-
 from . import util, chain, ensemble
 
 
@@ -224,11 +222,8 @@ class Sampler(object):
                                               logl_kwargs=self.logl_kwargs,
                                               logp_kwargs=self.logp_kwargs))
 
-    def ensemble(self, x, random=None):
-        if random is None:
-            random = RandomState()
-        elif not isinstance(random, RandomState):
-            raise TypeError('Invalid random state.')
+    def ensemble(self, x, rng=None):
+        random = np.random.default_rng()
 
         config = ensemble.EnsembleConfiguration(adaptation_lag=self.adaptation_lag,
                                                 adaptation_time=self.adaptation_time,
@@ -238,10 +233,10 @@ class Sampler(object):
                                  betas=self.betas.copy(),
                                  config=config,
                                  adaptive=self.adaptive,
-                                 random=random,
+                                 rng=random,
                                  mapper=self._mapper)
 
-    def sample(self, x, random=None, thin_by=None):
+    def sample(self, x, rng=None, thin_by=None):
         """
         Return a stateless iterator.
 
@@ -251,15 +246,15 @@ class Sampler(object):
             thin_by = 1
 
         # Don't yield the starting state.
-        ensemble = self.ensemble(x, random)
+        ensemble = self.ensemble(x, rng)
         while True:
             for _ in range(thin_by):
                 ensemble.step()
             yield ensemble
 
-    def chain(self, x, random=None, thin_by=None):
+    def chain(self, x, rng=None, thin_by=None):
         """
         Create a stateful chain that stores its history.
 
         """
-        return chain.Chain(self.ensemble(x, random), thin_by)
+        return chain.Chain(self.ensemble(x, rng), thin_by)

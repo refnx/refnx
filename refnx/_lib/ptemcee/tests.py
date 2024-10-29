@@ -10,8 +10,6 @@ from __future__ import absolute_import, print_function, division
 import itertools
 import numpy as np
 
-from numpy.random.mtrand import RandomState
-
 from .sampler import Sampler, make_ladder
 from .interruptible_pool import Pool
 
@@ -337,9 +335,9 @@ class Tests(object):
         N = 10
         thin_by = 2
         seed = 1
-        ensemble = sampler.ensemble(self.p0, RandomState(seed))
-        chain = sampler.chain(self.p0, RandomState(seed), thin_by)
-        samples = sampler.sample(self.p0, RandomState(seed), thin_by)
+        ensemble = sampler.ensemble(self.p0, np.random.default_rng(seed))
+        chain = sampler.chain(self.p0, np.random.default_rng(seed), thin_by)
+        samples = sampler.sample(self.p0, np.random.default_rng(seed), thin_by)
 
         betas1 = np.empty((N, self.ntemps))
         x1 = np.empty((N, self.ntemps, self.nwalkers, self.ndim))
@@ -375,7 +373,7 @@ class Tests(object):
         seed = 1
 
         # Run the chain in two parts.
-        chain1 = sampler.chain(self.p0, RandomState(seed), thin_by)
+        chain1 = sampler.chain(self.p0, np.random.default_rng(seed), thin_by)
         jr, sr = chain1.run(N)
         assert (0 <= jr).all() and (jr <= 1).all()
         assert (0 <= sr).all() and (sr <= 1).all()
@@ -386,8 +384,8 @@ class Tests(object):
         assert (0 <= sr).all() and (sr <= 1).all()
         assert chain1.x.shape[0] == 2 * N
 
-        # Now do the same run afresh and compare the results.  Given the same seed, the they should be identical.
-        chain2 = sampler.chain(self.p0, RandomState(seed), thin_by)
+        # Now do the same run afresh and compare the results.  Given the same seed, they should be identical.
+        chain2 = sampler.chain(self.p0, np.random.default_rng(seed), thin_by)
         jr, sr = chain2.run(2 * N)
         assert (0 <= jr).all() and (jr <= 1).all()
         assert (0 <= sr).all() and (sr <= 1).all()
