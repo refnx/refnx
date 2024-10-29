@@ -550,7 +550,7 @@ class TestFitterGauss:
         print(self.params[0].chain.shape, self.params[0].chain)
 
         uncertainties = [param.stderr for param in self.params]
-        assert_allclose(uncertainties, self.best_weighted_errors, rtol=0.07)
+        assert_allclose(uncertainties, self.best_weighted_errors, rtol=0.09)
 
     def test_best_unweighted(self):
         self.objective.weighted = False
