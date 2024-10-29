@@ -541,7 +541,7 @@ class TestFitterGauss:
         f = CurveFitter(self.objective, nwalkers=100, ntemps=10)
         f.fit("differential_evolution", seed=1)
 
-        f.sample(steps=401, random_state=2, verbose=False)
+        f.sample(steps=801, random_state=2, verbose=False)
         assert isinstance(
             f.sampler._ptchain.ensemble._rng, np.random.Generator
         )
