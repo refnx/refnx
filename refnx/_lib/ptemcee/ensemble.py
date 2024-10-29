@@ -7,7 +7,7 @@ from numpy.random import Generator
 
 from . import util
 
-__all__ = ['Ensemble', 'EnsembleConfiguration']
+__all__ = ["Ensemble", "EnsembleConfiguration"]
 
 
 @attr.s(slots=True, frozen=True)
@@ -26,7 +26,10 @@ class Ensemble(object):
 
     """
 
-    _config = attr.ib(type=EnsembleConfiguration, validator=instance_of(EnsembleConfiguration))
+    _config = attr.ib(
+        type=EnsembleConfiguration,
+        validator=instance_of(EnsembleConfiguration),
+    )
 
     betas = attr.ib(type=np.ndarray, converter=util._ladder)
 
@@ -37,7 +40,11 @@ class Ensemble(object):
 
     adaptive = attr.ib(type=bool, converter=bool, default=False)
 
-    _rng = attr.ib(type=Generator, validator=instance_of(Generator), factory=np.random.default_rng)
+    _rng = attr.ib(
+        type=Generator,
+        validator=instance_of(Generator),
+        factory=np.random.default_rng,
+    )
     _mapper = attr.ib(default=map)
 
     time = attr.ib(type=int, init=False, default=0)
@@ -53,12 +60,14 @@ class Ensemble(object):
     @_mapper.validator
     def _is_callable(self, attribute, value):
         if not callable(value):
-            raise ValueError('{} must be callable.'.format(attribute.name))
+            raise ValueError("{} must be callable.".format(attribute.name))
 
     @betas.validator
     def _is_consistent(self, attribute, value):
         if len(value) != len(self.x):
-            raise ValueError('Number of temperatures not consistent with starting positions.')
+            raise ValueError(
+                "Number of temperatures not consistent with starting positions."
+            )
 
     def __attrs_post_init__(self):
         self.ntemps, self.nwalkers, self.ndim = self.x.shape
@@ -73,7 +82,9 @@ class Ensemble(object):
             self.logl = logl
 
         if (self.logP == -np.inf).any():
-            raise ValueError('Attempting to start with samples outside posterior support.')
+            raise ValueError(
+                "Attempting to start with samples outside posterior support."
+            )
 
     def step(self):
         self._stretch(self.x, self.logP, self.logl)
@@ -82,9 +93,7 @@ class Ensemble(object):
 
         # TODO: Should the notion of a 'complete' iteration really include the temperature adjustment?
         if self.adaptive and self.ntemps > 1:
-            dbetas = self._get_ladder_adjustment(self.time,
-                                                 self.betas,
-                                                 ratios)
+            dbetas = self._get_ladder_adjustment(self.time, self.betas, ratios)
             self.betas += dbetas
             self.logP += self._tempered_likelihood(self.logl, betas=dbetas)
 
@@ -113,9 +122,9 @@ class Ensemble(object):
             y = np.empty((t, w, d))
             for k in range(t):
                 js = self._rng.integers(0, high=w, size=w)
-                y[k, :, :] = (x_sample[k, js, :] +
-                              z[k, :].reshape((w, 1)) *
-                              (x_update[k, :, :] - x_sample[k, js, :]))
+                y[k, :, :] = x_sample[k, js, :] + z[k, :].reshape((w, 1)) * (
+                    x_update[k, :, :] - x_sample[k, js, :]
+                )
 
             y_logl, y_logp = self._evaluate(y)
             y_logP = self._tempered_likelihood(y_logl) + y_logp
@@ -126,9 +135,15 @@ class Ensemble(object):
             accepts = logr < logp_accept
             accepts = accepts.flatten()
 
-            x_update.reshape((-1, d))[accepts, :] = y.reshape((-1, d))[accepts, :]
-            logP[:, j_update::2].reshape((-1,))[accepts] = y_logP.reshape((-1,))[accepts]
-            logl[:, j_update::2].reshape((-1,))[accepts] = y_logl.reshape((-1,))[accepts]
+            x_update.reshape((-1, d))[accepts, :] = y.reshape((-1, d))[
+                accepts, :
+            ]
+            logP[:, j_update::2].reshape((-1,))[accepts] = y_logP.reshape(
+                (-1,)
+            )[accepts]
+            logl[:, j_update::2].reshape((-1,))[accepts] = y_logl.reshape(
+                (-1,)
+            )[accepts]
 
             self.jumps_accepted[:, j_update::2] = accepts.reshape((t, w))
 
@@ -142,7 +157,9 @@ class Ensemble(object):
         shape = x.shape[:-1]
         values = x.reshape((-1, self.ndim))
         length = len(values)
-        results = itertools.chain.from_iterable(self._mapper(self._config.evaluator, values))
+        results = itertools.chain.from_iterable(
+            self._mapper(self._config.evaluator, values)
+        )
 
         # Construct into a pre-allocated ndarray.
         array = np.fromiter(results, float, 2 * length).reshape(shape + (2,))
@@ -161,7 +178,7 @@ class Ensemble(object):
         if betas is None:
             betas = self.betas
 
-        with np.errstate(invalid='ignore'):
+        with np.errstate(invalid="ignore"):
             loglT = logl * betas[:, None]
         loglT[np.isnan(loglT)] = -np.inf
 
@@ -177,7 +194,9 @@ class Ensemble(object):
         betas = betas0.copy()
 
         # Modulate temperature adjustments with a hyperbolic decay.
-        decay = self._config.adaptation_lag / (time + self._config.adaptation_lag)
+        decay = self._config.adaptation_lag / (
+            time + self._config.adaptation_lag
+        )
         kappa = decay / self._config.adaptation_time
 
         # Construct temperature adjustments.
@@ -213,7 +232,7 @@ class Ensemble(object):
             paccept = dbeta * (logl[i, iperm] - logl[i - 1, i1perm])
 
             # How many swaps were accepted?
-            sel = (paccept > raccept)
+            sel = paccept > raccept
             self.swaps_accepted[i - 1] = np.sum(sel)
 
             x_temp = np.copy(x[i, iperm[sel], :])
@@ -222,7 +241,9 @@ class Ensemble(object):
 
             x[i, iperm[sel], :] = x[i - 1, i1perm[sel], :]
             logl[i, iperm[sel]] = logl[i - 1, i1perm[sel]]
-            logP[i, iperm[sel]] = logP[i - 1, i1perm[sel]] - dbeta * logl[i - 1, i1perm[sel]]
+            logP[i, iperm[sel]] = (
+                logP[i - 1, i1perm[sel]] - dbeta * logl[i - 1, i1perm[sel]]
+            )
 
             x[i - 1, i1perm[sel], :] = x_temp
             logl[i - 1, i1perm[sel]] = logl_temp
