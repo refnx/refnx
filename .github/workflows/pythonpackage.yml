@@ -250,7 +250,7 @@ jobs:
         printenv
 
     - name: Sign app and create dmg
-      if: github.repository == 'refnx/refnx'
+      if: github.repository == 'refnx/refnx' && (github.event.pull_request.merged == true || startsWith(github.ref, 'refs/tags'))
       env:
         MACOS_CERTIFICATE: ${{ secrets.MACOS_CERTIFICATE_ISA }}
         MACOS_CERTIFICATE_PWD: ${{ secrets.MACOS_CERTIFICATE_ISA_PWD }}
@@ -279,7 +279,7 @@ jobs:
 
 # xcrun notarytool submit --apple-id "$APPLEID" --password "$APP_PASSWORD" --team-id 8CX8K63BQM --wait refnx.dmg
     - name: Notarize DMG
-      if: github.repository == 'refnx/refnx'
+      if: github.repository == 'refnx/refnx' && (github.event.pull_request.merged == true || startsWith(github.ref, 'refs/tags'))
       uses: lando/notarize-action@v2
       with:
         product-path: "dist/refnx.dmg"

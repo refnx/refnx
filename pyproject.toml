@@ -27,7 +27,7 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Physics",
 ]
 dependencies = [
-    "numpy>=1.26.0",
+    "numpy>=1.25.0",
     "scipy",
     "orsopy",
 ]
