@@ -16,3 +16,4 @@ Examples
     nsf.ipynb
     emcee_pymc_dynesty.ipynb
     using_mpi.ipynb
+    energy_dispersive.ipynb
