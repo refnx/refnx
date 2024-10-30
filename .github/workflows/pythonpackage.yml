@@ -290,7 +290,7 @@ jobs:
         verbose: True
 
     - name: Staple Release Build
-      if: github.repository == 'refnx/refnx'
+      if: github.repository == 'refnx/refnx' && (github.event.pull_request.merged == true || startsWith(github.ref, 'refs/tags'))
       uses: BoundfoxStudios/action-xcode-staple@v1
       with:
         product-path: "dist/refnx.dmg"
