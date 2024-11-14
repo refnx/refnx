@@ -355,6 +355,7 @@ class TestData1D:
         _data = _hdf_to_data1d(f)
         assert len(_data) == 101
         assert _data.x_err.shape == (101, 2, 40)
+
     def test_load_data(self):
         # test the load_data function by trying to load all the files in the
         # test directory
@@ -392,5 +393,3 @@ class TestOrtDataset:
         assert len(d) == 2
         assert isinstance(d, OrsoDataset)
         d.refresh()
-
-
