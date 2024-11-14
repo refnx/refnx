@@ -204,8 +204,17 @@ class OrsoDataset(Data1D):
 
         with possibly_open_file(f, "r") as g:
             self.orso = load_orso(g)
+            header = self.orso[0].info
 
         _data = self.orso[0].data[:, :4].T
+
+        # figure out if data was in 1/nm or 1/angstrom
+        # internally refnx uses reciprocal angstrom
+        q_units = header.columns[0].unit.lower()
+        if q_units == "1/nm":
+            # need to divide q by 10
+            _data[0] /= 10.0
+
         # ORSO files save resolution information as SD,
         # internally refnx uses FWHM
         if _data.shape[1] > 3:
