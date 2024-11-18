@@ -9,7 +9,7 @@ Installation
 .. _github: https://github.com/refnx/refnx
 .. _homebrew: https://brew.sh/
 
-*refnx* has been tested on Python 3.9, 3.10, 3.11, 3.12. It requires the
+*refnx* has been tested on Python 3.9, 3.10, 3.11, 3.12, 3.13. It requires the
 *numpy, scipy, cython* packages to work. Additional features
 require the *pytest, h5py, xlrd, uncertainties, attrs, matplotlib, Jupyter,*
 *ipywidgets, traitlets, tqdm, pandas, qtpy, pyqt6, periodictable, pymc,
@@ -53,7 +53,7 @@ Creating a conda environment
 
     ::
 
-     python -m pip install refnx[all]
+     python -m pip install "refnx[all]"     # the quotes are required if you're using zsh
 
 Installing with pip
 ===================
@@ -65,7 +65,7 @@ installed.
     ::
 
      # install refnx and all optional dependencies
-     python -m pip install refnx[all]
+     python -m pip install "refnx[all]"     # the quotes are required if you're using zsh
 
      # alternatively just install refnx itself
      python -m pip install refnx
