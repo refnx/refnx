@@ -622,3 +622,6 @@ in 0.1.13.
 - transition vendored ptemcee to use np.random.Generator.
 - convert use of scipy.integrate.quadrature to scipy.integrate.quad.
 - Appropriate unit conversion when loading ORSO data (1/nm to 1/angstrom).
+
+0.1.51
+------
