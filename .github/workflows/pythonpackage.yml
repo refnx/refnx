@@ -28,9 +28,9 @@ jobs:
 
     steps:
 
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
-    - uses: actions/setup-python@v5
+    - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
       with:
         python-version: ${{ matrix.python-version }}
         cache: 'pip' # caching pip dependencies
@@ -71,7 +71,7 @@ jobs:
         git clean -xdf
         python setup.py sdist
 
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
       if: ${{ matrix.python-version == '3.9' }}
       with:
         name: refnx-wheel-linux-${{ matrix.python-version }}
@@ -87,12 +87,12 @@ jobs:
 #        PLAT: ["manylinux2014_x86_64"]
 #
 #    steps:
-#    - uses: actions/checkout@v4
+#    - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 #    - name: Make Linux Wheel
 #      run: |
 #        docker run --rm -e="PLAT=${{ matrix.PLAT }}" -v $(pwd):/io quay.io/pypa/${{ matrix.PLAT }} /bin/bash /io/tools/build_manylinux_wheels.sh
 #
-#    - uses: actions/upload-artifact@v3
+#    - uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
 #      with:
 #        name: refnx-wheel
 #        path: dist/
@@ -109,11 +109,11 @@ jobs:
         python-version: [ '3.12' ]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - run: mkdir -p dist
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
         with:
           python-version: ${{ matrix.python-version }}
           cache: 'pip' # caching pip dependencies
@@ -138,7 +138,7 @@ jobs:
           pytest --pyargs refnx
           popd
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
         with:
           name: refnx-wheel-macos-${{ matrix.python-version }}-intel
           path: dist/
@@ -154,11 +154,11 @@ jobs:
         python-version: ['3.10', '3.11', '3.12']
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
     - run: mkdir -p dist
 
-    - uses: actions/setup-python@v5
+    - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
       with:
         python-version: ${{ matrix.python-version }}
         cache: 'pip' # caching pip dependencies
@@ -197,7 +197,7 @@ jobs:
         pytest --pyargs refnx
         popd
 
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
       with:
         name: refnx-wheel-macos-${{ matrix.python-version }}
         path: dist/
@@ -210,9 +210,9 @@ jobs:
       fail-fast: true
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
-    - uses: actions/setup-python@v5
+    - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
       with:
         python-version: '3.12'
         allow-prereleases: true
@@ -220,7 +220,7 @@ jobs:
     - run: mkdir -p dist
 
     - name: Download wheel
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
       with:
         pattern: refnx-wheel-macos-3.12
         merge-multiple: true
@@ -280,7 +280,7 @@ jobs:
 # xcrun notarytool submit --apple-id "$APPLEID" --password "$APP_PASSWORD" --team-id 8CX8K63BQM --wait refnx.dmg
     - name: Notarize DMG
       if: github.repository == 'refnx/refnx' && (github.event.pull_request.merged == true || startsWith(github.ref, 'refs/tags'))
-      uses: lando/notarize-action@v2
+      uses: lando/notarize-action@b5c3ef16cf2fbcf2af26dc58c90255ec242abeed # v2.0.2
       with:
         product-path: "dist/refnx.dmg"
         primary-bundle-id: "com.refnx.refnx"
@@ -291,11 +291,11 @@ jobs:
 
     - name: Staple Release Build
       if: github.repository == 'refnx/refnx' && (github.event.pull_request.merged == true || startsWith(github.ref, 'refs/tags'))
-      uses: BoundfoxStudios/action-xcode-staple@v1
+      uses: BoundfoxStudios/action-xcode-staple@1e2200b448c6ed4dd44b963ff17d3e340fc6b064 # v1
       with:
         product-path: "dist/refnx.dmg"
 
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
       with:
         name: refnx-app-macos-${{ matrix.python-version }}
         path: dist/*.dmg
@@ -312,9 +312,9 @@ jobs:
         python-version: ['3.10', '3.11', '3.12']
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
-    - uses: actions/setup-python@v5
+    - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
       with:
         python-version: ${{ matrix.python-version }}
         cache: 'pip' # caching pip dependencies
@@ -373,7 +373,7 @@ jobs:
         move dist\motofit.exe ..\..\dist\
         cd ..\..
 
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
       with:
         name: refnx-exe-win-${{ matrix.python-version }}
         path: dist/
@@ -389,10 +389,10 @@ jobs:
         python-version: ["3.10"]
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
       with:
         python-version: ${{ matrix.python-version }}
 
@@ -420,10 +420,10 @@ jobs:
         python-version: ["3.10"]
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
       with:
         python-version: ${{ matrix.python-version }}
 
