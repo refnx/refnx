@@ -26,8 +26,9 @@ def load_orso(f):
     try:
         v = load_nexus(f)
         return v
-    except Exception as e:
+    except Exception:
         pass
+
 
 _template_ref_xml = """<?xml version="1.0"?>
 <REFroot xmlns="">
