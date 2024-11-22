@@ -406,8 +406,8 @@ class TestOrtDataset:
             # load_orso had problems on Python 3.10, so bypass the test
             return
 
-        with possibly_open_file(f, 'rb') as f:
-            d = load_data(f)
+        # with possibly_open_file(f, 'rb') as f:
+        d = load_data(f)
 
         assert isinstance(d, OrsoDataset)
-        # d.refresh()
+        d.refresh()
