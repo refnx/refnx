@@ -11,18 +11,23 @@ except ImportError:
     import xml.etree.ElementTree as ET
 import numpy as np
 
-try:
-    from orsopy.fileio import load_orso
-except Exception:
-    # orsopy has issues on Python 3.10
-    def load_orso(f):
-        raise ImportError(
-            "Problem importing orsopy with this Python installation"
-        )
-
-
 from refnx.dataset import Data1D
 from refnx._lib import possibly_open_file
+
+
+def load_orso(f):
+    from orsopy.fileio import load_orso as _load_orso
+    from orsopy.fileio import load_nexus
+
+    try:
+        return _load_orso(f)
+    except Exception:
+        pass
+    try:
+        v = load_nexus(f)
+        return v
+    except Exception:
+        pass
 
 
 _template_ref_xml = """<?xml version="1.0"?>
@@ -200,9 +205,14 @@ class OrsoDataset(Data1D):
             else:
                 fname = ""
         else:
-            fname = f
+            # string-like??
+            fname = str(f)
 
-        with possibly_open_file(f, "r") as g:
+        mode = "r"
+        if fname.endswith(".orb"):
+            mode = "rb"
+
+        with possibly_open_file(f, mode) as g:
             self.orso = load_orso(g)
             header = self.orso[0].info
 
@@ -215,11 +225,25 @@ class OrsoDataset(Data1D):
             # need to divide q by 10
             _data[0] /= 10.0
 
+            if _data.shape[0] > 3:
+                _data[3] /= 10.0
+
         # ORSO files save resolution information as SD,
         # internally refnx uses FWHM
-        if _data.shape[1] > 3:
+        if _data.shape[0] > 3:
             _data[3] *= 2.3548
 
         self.data = _data
         self.filename = fname
         self.name = Path(fname).stem
+
+    def refresh(self):
+        """
+        Refreshes a previously loaded dataset.
+
+        """
+        # OrsoDataset needs to carry its own implementation
+        # opening a binary file needs to be done with correct mode
+        # vs opening a text file.
+        if self.filename is not None:
+            self.load(self.filename)
