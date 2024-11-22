@@ -8,6 +8,7 @@ import pytest
 from refnx.dataset import ReflectDataset, Data1D, load_data, OrsoDataset
 from refnx.dataset.data1d import _data1D_to_hdf, _hdf_to_data1d
 from refnx.dataset.reflectdataset import load_orso
+from refnx._lib import possibly_open_file
 import numpy as np
 from numpy.testing import assert_equal
 
@@ -397,6 +398,7 @@ class TestOrtDataset:
     def test_orb_load(self):
         f = self.pth / "test.orb"
         assert f.exists()
+
         try:
             load_orso(str(f))
             load_orso(f)
@@ -404,7 +406,8 @@ class TestOrtDataset:
             # load_orso had problems on Python 3.10, so bypass the test
             return
 
-        # d = load_data(f)
-        # assert len(d) == 2
-        # assert isinstance(d, OrsoDataset)
+        with possibly_open_file(f, 'rb') as f:
+            d = load_data(f)
+
+        assert isinstance(d, OrsoDataset)
         # d.refresh()

@@ -24,10 +24,10 @@ def load_orso(f):
     except Exception:
         pass
     try:
-        return load_nexus(f)
-    except Exception:
+        v = load_nexus(f)
+        return v
+    except Exception as e:
         pass
-
 
 _template_ref_xml = """<?xml version="1.0"?>
 <REFroot xmlns="">
@@ -221,7 +221,7 @@ class OrsoDataset(Data1D):
 
         # ORSO files save resolution information as SD,
         # internally refnx uses FWHM
-        if _data.shape[1] > 3:
+        if _data.shape[0] > 3:
             _data[3] *= 2.3548
 
         self.data = _data
