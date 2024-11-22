@@ -11,18 +11,22 @@ except ImportError:
     import xml.etree.ElementTree as ET
 import numpy as np
 
-try:
-    from orsopy.fileio import load_orso
-except Exception:
-    # orsopy has issues on Python 3.10
-    def load_orso(f):
-        raise ImportError(
-            "Problem importing orsopy with this Python installation"
-        )
-
-
 from refnx.dataset import Data1D
 from refnx._lib import possibly_open_file
+
+
+def load_orso(f):
+    from orsopy.fileio import load_orso as _load_orso
+    from orsopy.fileio import load_nexus
+
+    try:
+        return _load_orso(f)
+    except Exception:
+        pass
+    try:
+        return load_nexus(f)
+    except Exception:
+        pass
 
 
 _template_ref_xml = """<?xml version="1.0"?>

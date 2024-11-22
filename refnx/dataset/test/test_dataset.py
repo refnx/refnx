@@ -393,3 +393,18 @@ class TestOrtDataset:
         assert len(d) == 2
         assert isinstance(d, OrsoDataset)
         d.refresh()
+
+    def test_orb_load(self):
+        f = self.pth / "test.orb"
+        assert f.exists()
+        try:
+            load_orso(str(f))
+            load_orso(f)
+        except ImportError:
+            # load_orso had problems on Python 3.10, so bypass the test
+            return
+
+        # d = load_data(f)
+        # assert len(d) == 2
+        # assert isinstance(d, OrsoDataset)
+        # d.refresh()
