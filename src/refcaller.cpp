@@ -37,7 +37,7 @@ extern "C" {
 #include <thread>
 #include <vector>
 #include <iostream>
-
+#include <pnr/reflcalc.h>
 
 
 #define NUM_CPUS 4
@@ -205,4 +205,52 @@ void parratt_wrapper(
     double *yP,
     const double *xP){
     parratt(numcoefs, coefP, npoints, yP, xP);
+}
+
+
+void pnr(int layers, const double *d, const double *sigma, const double *rho,
+         const double *irho, const double *rhoM, const double *thetaM,
+         int points, const double *xP, double *Ra, double *Rb, double *Rc, double *Rd){
+    std::vector<double> kz(points);
+    std::vector<Cplx> u1(layers), u3(layers);
+    std::vector<Cplx> Rac(points), Rbc(points), Rcc(points), Rdc(points);
+    std::vector<double> rhoM_mod(layers);
+    int idx;
+
+    memcpy(rhoM_mod.data(), rhoM, sizeof(double) * layers);
+
+    for(idx=0; idx < layers; idx++){
+        calculate_U1_U3(
+            0,
+            *(rhoM_mod.data() + idx),
+            thetaM[idx] * M_PI / 180.,
+            270,
+            *(u1.data() + idx),
+            *(u3.data() + idx)
+        );
+    }
+    for(idx=0; idx < points; idx++){
+        kz[idx] = xP[idx] / 2.0;
+    }
+
+    magnetic_amplitude(
+        layers,
+        d,
+        sigma,
+        rho,
+        irho,
+        rhoM_mod.data(),
+        u1.data(),
+        u3.data(),
+        points,
+        kz.data(),
+        NULL,
+        Rac.data(), Rbc.data(), Rcc.data(), Rdc.data()
+    );
+    for(idx=0; idx<points; idx++){
+        Ra[idx] = std::norm(Rac[idx]);
+        Rb[idx] = std::norm(Rbc[idx]);
+        Rc[idx] = std::norm(Rcc[idx]);
+        Rd[idx] = std::norm(Rdc[idx]);
+    }
 }

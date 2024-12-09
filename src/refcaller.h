@@ -108,3 +108,10 @@ void abeles_wrapper(int numcoefs, const double *coefP, int npoints, double *yP,
 
 void parratt_wrapper(int numcoefs, const double *coefP, int npoints, double *yP,
              const double *xP);
+
+/*
+Polarised neutron reflection measurement
+*/
+void pnr(int layers, const double *d, const double *sigma, const double *rho,
+         const double *irho, const double *rhoM, const double *thetaM,
+         int points, const double *xP, double *Ra, double *Rb, double *Rc, double *Rd);

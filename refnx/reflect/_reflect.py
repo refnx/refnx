@@ -677,6 +677,82 @@ def pnr(q, layers):
     return (pp, mm, pm, mp)
 
 
+# w is a 2D array with each row being [d, real SLD, imag SLD, roughness, moment, thetaM], where thetaM is angle
+# of applied field and moment.
+# def bb(q, layers):
+#     qvals = np.asarray(q).astype(float, copy=False)
+#     flatq = qvals.ravel()
+#
+#     nlayers = layers.shape[0] - 2
+#     npnts = flatq.size
+#
+#     k_u = np.zeros((npnts, nlayers + 2), np.complex128)
+#     k_d = np.zeros((npnts, nlayers + 2), np.complex128)
+#     sld_u = np.zeros(nlayers + 2, np.complex128)
+#     sld_d = np.zeros(nlayers + 2, np.complex128)
+#
+#     thick = layers[1:-1, 0]
+#     rough2 = layers[1:, 3] ** 2
+#     moment = layers[:, 4]
+#     angle = np.radians(layers[:, 5])
+#     d_angle = np.ediff1d(angle)
+#
+#     mag = moment * FCTR * np.cos(angle)
+#
+#     # addition of TINY is to ensure the correct branch cut
+#     # in the complex sqrt calculation of kn.
+#     # TODO check what moment is supposed to be in front layer
+#     sld_u[1:] += (
+#         (layers[1:, 1] + mag[1:] - (layers[0, 1] + mag[0]))
+#         + 1j * (np.abs(layers[1:, 2]) + TINY)
+#     ) * 1.0e-6
+#     sld_d[1:] += (
+#         (layers[1:, 1] - mag[1:] - (layers[0, 1] - mag[0]))
+#         + 1j * (np.abs(layers[1:, 2]) + TINY)
+#     ) * 1.0e-6
+#
+#     # wavevectors in each of the layers
+#     k_u[:] = np.sqrt(flatq[:, np.newaxis] ** 2.0 / 4.0 - 4.0 * np.pi * sld_u)
+#     k_d[:] = np.sqrt(flatq[:, np.newaxis] ** 2.0 / 4.0 - 4.0 * np.pi * sld_d)
+#
+#     sint = np.sin(d_angle)
+#     sint_2 = np.sin(d_angle / 2.0)
+#     cost_2 = np.cos(d_angle / 2.0)
+#
+#     cost2 = cost_2**2
+#     sint2 = sint_2**2
+#
+#     den = (k_u[:, :-1] + k_u[:, 1:]) * (k_d[:, :-1] + k_d[:, 1:]) * cost2
+#     den += (k_u[:, :-1] + k_d[:, 1:]) * (k_d[:, :-1] + k_u[:, :-1]) * sint2
+#     rpp = (
+#         cost2 * (k_u[:, :-1] - k_u[:, 1:]) * (k_d[:, :-1] + k_d[:, 1:])
+#         + sint2 * (k_u[:, :-1] - k_d[:, 1:]) * (k_d[:, :-1] + k_u[:, 1:])
+#     ) / den
+#     rpm = (sint * k_u[:, :-1] * (k_u[:, 1:] - k_d[:, 1:])) / den
+#     tpp = 2 * cost_2 * k_u[:, :-1] * (k_d[:, :-1] + k_d[:, 1:]) / den
+#     tpm = 2 * sint_2 * k_u[:, :-1] * (k_d[:, :-1] + k_u[:, 1:]) / den
+#
+#     # symmetry
+#     rmm = (
+#         cost2 * (k_d[:, :-1] - k_d[:, 1:]) * (k_u[:, :-1] + k_u[:, 1:])
+#         + sint2 * (k_d[:, :-1] - k_u[:, 1:]) * (k_u[:, :-1] + k_d[:, 1:])
+#     ) / den
+#     rmp = (sint * k_d[:, :-1] * (k_d[:, 1:] - k_u[:, 1:])) / den
+#     tmm = 2 * cost_2 * k_d[:, :-1] * (k_u[:, :-1] + k_u[:, 1:]) / den
+#     tmp = 2 * sint_2 * k_d[:, :-1] * (k_u[:, :-1] + k_d[:, 1:]) / den
+#
+#     # modify by Debye-Waller factor
+#     rpp *= np.exp(-0.5 * k_u[:, :-1] * k_u[:, 1:] * rough2)
+#     rpm *= np.exp(-0.5 * k_u[:, :-1] * k_d[:, 1:] * rough2)
+#     rmm *= np.exp(-0.5 * k_d[:, :-1] * k_d[:, 1:] * rough2)
+#     rmp *= np.exp(-0.5 * k_d[:, :-1] * k_u[:, 1:] * rough2)
+#
+#     Pm = np.zeros((npnts, nlayers, 2, 2), dtype=np.complex128)
+#     Pm[:, :, 0, 0] = np.exp(1j * thick * k_u[:, 1:-1])
+#     Pm[:, :, 1, 1] = np.exp(1j * thick * k_d[:, 1:-1])
+#     return den
+
+
 if __name__ == "__main__":
     a = np.zeros(12)
     a[0] = 1.0

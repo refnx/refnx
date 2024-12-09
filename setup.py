@@ -361,7 +361,9 @@ def setup_package():
 
             _creflect = Extension(
                 name="refnx.reflect._creflect",
-                sources=["src/_creflect.pyx", "src/refcaller.cpp"],
+                sources=["src/_creflect.pyx",
+                         "src/refcaller.cpp",
+                         "src/pnr/magnetic.cc",],
                 include_dirs=[numpy_include],
                 language="c++",
                 extra_compile_args=["-std=c++11"],
