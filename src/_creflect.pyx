@@ -34,15 +34,53 @@ cimport cython
 np.import_array()
 
 cdef extern from "refcaller.h" nogil:
-    void abeles_wrapper(int numcoefs, const double *coefP, int npoints, double *yP,
-                 const double *xP)
-    void abeles_wrapper_MT(unsigned int batch, int numcoefs, const double *coefP, int npoints, double *yP,
-                   const double *xP, int threads)
-    void parratt_wrapper(int numcoefs, const double *coefP, int npoints, double *yP,
-                 const double *xP)
-    void parratt_wrapper_MT(unsigned int batch, int numcoefs, const double *coefP, int npoints, double *yP,
-                   const double *xP, int threads)
-
+    void abeles_wrapper(
+        int numcoefs,
+        const double *coefP,
+        int npoints,
+        double *yP,
+        const double *xP
+    )
+    void abeles_wrapper_MT(
+        unsigned int batch,
+        int numcoefs,
+        const double *coefP,
+        int npoints,
+        double *yP,
+        const double *xP,
+        int threads
+    )
+    void parratt_wrapper(
+        int numcoefs,
+        const double *coefP,
+        int npoints,
+        double *yP,
+        const double *xP
+    )
+    void parratt_wrapper_MT(
+        unsigned int batch,
+        int numcoefs,
+        const double *coefP,
+        int npoints,
+        double *yP,
+        const double *xP,
+        int threads
+    )
+    void pnr(
+        int layers,
+        const double *d,
+        const double *sigma,
+        const double *rho,
+        const double *irho,
+        const double *rhoM,
+        const double *thetaM,
+        int points,
+        const double *xP,
+        double *Ra,
+        double *Rb,
+        double *Rc,
+        double *Rd,
+    )
 
 ctypedef np.float64_t float64_t
 
@@ -103,7 +141,6 @@ cpdef np.ndarray abeles(
 
     cdef:
         int nlayers = w.shape[0] - 2
-        int i
         int npoints = x.size
         np.ndarray y = np.empty_like(x, np.float64)
         double *x_data
@@ -217,7 +254,6 @@ cpdef np.ndarray parratt(
 
     cdef:
         int nlayers = w.shape[0] - 2
-        int i
         int npoints = x.size
         np.ndarray y = np.empty_like(x, np.float64)
         double *x_data
@@ -297,7 +333,7 @@ cpdef _contract_by_area(np.ndarray[np.float64_t, ndim=2] slabs, dA=0.5):
 
     with nogil:
         i = 1
-        newi = 1 # skip the substrate
+        newi = 1  # skip the substrate
 
         while i < n:
             # Get ready for the next layer
@@ -359,7 +395,8 @@ cpdef np.ndarray abeles_vectorised(
     double[:, :, :] w,
     scale=None,
     bkg=None,
-    int threads=-1):
+    int threads=-1
+):
     """
     Vectorised Abeles matrix formalism for calculating reflectivity from a
     stratified medium.
@@ -426,7 +463,6 @@ cpdef np.ndarray abeles_vectorised(
         int nlayers = w.shape[1] - 2
         int i
         int j
-        int num_threads
         int offset
         unsigned int batch = w.shape[0]
         int npoints = x.size
@@ -485,3 +521,119 @@ cpdef np.ndarray abeles_vectorised(
         PyMem_Free(coefs_arr)
 
     return yout
+
+
+cpdef np.ndarray gepore(
+    np.ndarray x,
+    double[:, :] w,
+    double scale=1.0,
+    double bkg=0.,
+    int threads=-1
+):
+    """
+    Abeles matrix formalism for calculating polarised neutron reflectivity
+    from a stratified medium.
+
+    Parameters
+    ----------
+    q: array_like
+        the q values required for the calculation.
+        Q = 4 * Pi / lambda * sin(omega).
+        Units = Angstrom**-1
+    layers: np.ndarray
+        coefficients required for the calculation, has shape (2 + N, 6),
+        where N is the number of layers
+        layers[0, 1] - SLD of fronting (/1e-6 Angstrom**-2)
+        layers[0, 2] - iSLD of fronting (/1e-6 Angstrom**-2)
+        layers[N, 0] - thickness of layer N
+        layers[N, 1] - SLD of layer N (/1e-6 Angstrom**-2)
+        layers[N, 2] - iSLD of layer N (/1e-6 Angstrom**-2)
+        layers[N, 3] - roughness between layer N-1/N
+        layers[N, 4] - magnetic SLD (/1e-6 Angstrom**-2)
+        layers[N, 5] - angle of the magnetism within the layer (degrees)
+        layers[-1, 1] - SLD of backing (/1e-6 Angstrom**-2)
+        layers[-1, 2] - iSLD of backing (/1e-6 Angstrom**-2)
+        layers[-1, 3] - roughness between backing and last layer
+    scale: float
+        Multiply all reflectivities by this value.
+    bkg: float
+        Linear background to be added to all reflectivities
+
+    Returns
+    -------
+    Reflectivity: np.ndarray
+        Calculated reflectivity values for each q value. Has shape `(4, M)`
+        where M is the number of points in `q`.
+    """
+    if w.shape[1] != 6 or w.shape[0] < 2:
+        raise ValueError(
+            "Layer parameters for _creflect.gepore must be an"
+            "array of shape (>=2, 6)"
+        )
+    if x.dtype != np.float64:
+        raise ValueError("Q values for _creflect.gepore must be np.float64")
+    if not x.flags['C_CONTIGUOUS']:
+        x = np.ascontiguousarray(x, dtype=np.float64)
+
+    cdef:
+        int npoints = x.size
+        np.ndarray y = np.zeros((4, npoints), np.float64)
+        const double *xP
+        double *d_data
+        double *sigma_data
+        double *rho_data
+        double *irho_data
+        double *rhoM_data
+        double *thetaM_data
+
+        double *Ra
+        double *Rb
+        double *Rc
+        double *Rd
+        int layers = w.shape[0]
+        d = np.zeros(layers)
+        sigma = np.zeros(layers - 1)
+        rho = np.zeros(layers)
+        irho = np.zeros(layers)
+        rhoM = np.zeros(layers)
+        thetaM = np.zeros(layers)
+
+    xP = <float64_t *> np.PyArray_DATA(x)
+
+    d[:] = w[:, 0]
+    sigma[:] = w[1:, 3]
+    rho[:] = w[:, 1]
+    irho[:] = w[:, 2]
+    rhoM[:] = w[:, 4]
+    thetaM[:] = w[:, 5]
+
+    d_data = <float64_t *>np.PyArray_DATA(d)
+    sigma_data = <float64_t *>np.PyArray_DATA(sigma)
+    rho_data = <float64_t *>np.PyArray_DATA(rho)
+    irho_data = <float64_t *>np.PyArray_DATA(irho)
+    rhoM_data = <float64_t *>np.PyArray_DATA(rhoM)
+    thetaM_data = <float64_t *>np.PyArray_DATA(thetaM)
+
+    Ra = <float64_t *> np.PyArray_DATA(y[0])
+    Rb = <float64_t *> np.PyArray_DATA(y[1])
+    Rc = <float64_t *> np.PyArray_DATA(y[2])
+    Rd = <float64_t *> np.PyArray_DATA(y[3])
+
+    pnr(
+        layers,
+        d_data,
+        sigma_data,
+        rho_data,
+        irho_data,
+        rhoM_data,
+        thetaM_data,
+        npoints,
+        xP,
+        Ra,
+        Rb,
+        Rc,
+        Rd
+    )
+    y *= scale
+    y += bkg
+    return y
