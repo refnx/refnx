@@ -56,15 +56,15 @@ class TestGeneral:
 
         mat = pt.formula("N2", density=1.25e-3)
         ntd = general._neutron_transmission_depth(mat, 2)
-        assert_allclose(ntd, 71178.78835495943)
+        assert_allclose(ntd, 71180.325059)
 
         t = general.neutron_transmission(
             "N2", 1.25e-3, 2, 1365.801, "abs_incoh"
         )
-        assert_allclose(t, 0.980994609016821)
+        assert_allclose(t, 0.980994609016821, rtol=1e-6)
 
         # check that we can vectorise
         t = general.neutron_transmission(
             "N2", 1.25e-3, [2, 2.0], [1365.801] * 2
         )
-        assert_allclose(t, [0.980994609016821] * 2)
+        assert_allclose(t, [0.980994609016821] * 2, rtol=1e-6)

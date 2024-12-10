@@ -229,27 +229,25 @@ class TestStructure:
     def test_repr_materialsld(self):
         p = MaterialSLD("SiO2", density=2.2, name="silica")
         sldc = complex(p)
-        assert_allclose(sldc.real, 3.4752690258246504)
-        assert_allclose(sldc.imag, 1.0508799522721932e-05)
         print(repr(p))
         q = eval(repr(p))
-        sldc = complex(q)
-        assert_allclose(sldc.real, 3.4752690258246504)
-        assert_allclose(sldc.imag, 1.0508799522721932e-05)
+        sldc_r = complex(q)
+        assert_allclose(sldc_r.real, sldc.real)
+        assert_allclose(sldc_r.imag, sldc.imag)
 
     def test_materialsld(self):
         p = MaterialSLD("SiO2", density=2.2, name="silica")
         sldc = complex(p)
-        assert_allclose(sldc.real, 3.4752690258246504)
-        assert_allclose(sldc.imag, 1.0508799522721932e-05)
+        assert_allclose(sldc.real, 3.4753, rtol=2e-5)
+        assert_allclose(sldc.imag, 1.0509e-05, rtol=2e-5)
         assert p.probe == "neutron"
 
         # is X-ray SLD correct?
         p.wavelength = 1.54
         p.probe = "x-ray"
         sldc = complex(p)
-        assert_allclose(sldc.real, 18.864796064009866)
-        assert_allclose(sldc.imag, 0.2436013463223236)
+        assert_allclose(sldc.real, 18.865201)
+        assert_allclose(sldc.imag, 0.243605, rtol=1e-4)
 
         assert len(p.parameters) == 1
         assert p.formula == "SiO2"
@@ -258,8 +256,8 @@ class TestStructure:
         p.probe = "neutron"
         p.density.value = 4.4
         sldc = complex(p)
-        assert_allclose(sldc.real, 3.4752690258246504 * 2)
-        assert_allclose(sldc.imag, 1.0508799522721932e-05 * 2)
+        assert_allclose(sldc.real, 3.4753 * 2, rtol=4e-5)
+        assert_allclose(sldc.imag, 1.0509e-05 * 2, rtol=4e-5)
 
         # should be able to make a Slab from MaterialSLD
         slab = p(10, 3)

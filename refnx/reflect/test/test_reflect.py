@@ -32,6 +32,7 @@ from refnx.reflect import (
     use_reflect_backend,
 )
 import refnx.reflect.reflect_model as reflect_model
+from refnx.reflect._creflect import gepore
 from refnx.dataset import ReflectDataset
 from refnx._lib import MapWrapper
 from refnx.util import general
@@ -315,6 +316,41 @@ class TestReflect:
         with use_reflect_backend(backend) as kernel:
             calc = kernel(q, slabs)
         assert_almost_equal(calc, refl1d[1])
+
+    def test_gepore_absorption(self):
+        q = np.geomspace(0.005, 0.3, 201)
+        depth = [0, 1200, 0]
+        rho = [2.07, 4.66, 6.36]
+        irho = [0, 0.016, 0]
+        refnx_sigma = [np.nan, 10, 3]
+        extra = np.zeros(3)
+
+        slabs = np.c_[depth, rho, irho, refnx_sigma]
+
+        with use_reflect_backend("c") as kernel:
+            calc = kernel(q, slabs)
+
+        slabs2 = np.c_[depth, rho, irho, refnx_sigma, extra, extra]
+        pol = gepore(q, slabs2)
+        assert_almost_equal(pol[0], calc)
+
+    def test_gepore_orso(self):
+        # runs one of the tests from the orso validation suite.
+        # q, r--, r-+, r+-, r++
+        data = np.loadtxt(self.pth / "test1.dat")
+        w = np.array(
+            [
+                [0, 0, 0, 0, 0, 90],
+                [200, 4, 0, 0, 1, 180],
+                [200, 2, 0, 0, 1, 90],
+                [0, 4, 0, 0, 0, 90],
+            ],
+            np.float64,
+        )
+        q = data[:, 0]
+        ref = data[:, 1:].T
+        pol = gepore(q, w)
+        assert_allclose(pol, np.flipud(ref))
 
     def test_abeles_vectorised(self):
         w = np.array(
