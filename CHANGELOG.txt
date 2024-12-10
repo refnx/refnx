@@ -627,3 +627,4 @@ in 0.1.13.
 ------
 - Modify to allow loading of .ORB ORSO files
 - Capability for calculating PNR theoretical curves
+- Fix some tests for new periodictable release
