@@ -39,6 +39,10 @@ extern "C" {
 #include <vector>
 #include <iostream>
 #include <pnr/reflcalc.h>
+#ifndef M_PI
+#define M_PI 3.141592653589793
+#endif
+
 
 
 #define NUM_CPUS 4
