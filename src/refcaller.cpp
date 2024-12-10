@@ -33,6 +33,7 @@ extern "C" {
 
 #include <math.h>
 #include <cmath>
+#include <cstring>
 #include <stdlib.h>
 #include <thread>
 #include <vector>
