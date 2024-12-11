@@ -527,10 +527,10 @@ cpdef np.ndarray abeles_vectorised(
 cpdef np.ndarray gepore(
     np.ndarray x,
     double[:, :] w,
+    double H=0,
     double scale=1.0,
     double bkg=0.,
     int threads=-1,
-    double H=0,
 ):
     """
     Abeles matrix formalism for calculating polarised neutron reflectivity
@@ -556,12 +556,12 @@ cpdef np.ndarray gepore(
         layers[-1, 1] - SLD of backing (/1e-6 Angstrom**-2)
         layers[-1, 2] - iSLD of backing (/1e-6 Angstrom**-2)
         layers[-1, 3] - roughness between backing and last layer
+    H: float
+        Applied magnetic field (T)
     scale: float
         Multiply all reflectivities by this value.
     bkg: float
         Linear background to be added to all reflectivities
-    H: float
-        Applied magnetic field (T)
 
     Returns
     -------
