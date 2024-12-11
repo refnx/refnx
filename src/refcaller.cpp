@@ -214,7 +214,7 @@ void parratt_wrapper(
 
 
 void pnr(int layers, const double *d, const double *sigma, const double *rho,
-         const double *irho, const double *rhoM, const double *thetaM,
+         const double *irho, const double *rhoM, const double *thetaM, double H,
          int points, const double *xP, double *Ra, double *Rb, double *Rc, double *Rd){
     std::vector<double> kz(points);
     std::vector<Cplx> u1(layers), u3(layers);
@@ -226,7 +226,7 @@ void pnr(int layers, const double *d, const double *sigma, const double *rho,
 
     for(idx=0; idx < layers; idx++){
         calculate_U1_U3(
-            0,
+            H,
             *(rhoM_mod.data() + idx),
             thetaM[idx] * M_PI / 180.,
             270,
