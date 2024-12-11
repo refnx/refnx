@@ -924,9 +924,11 @@ def reflectivity(
     # cast q_offset to float, if it's a Parameter
     q_offset = float(q_offset)
 
+    fkernel = kernel
+
     # constant dq/q smearing
     if isinstance(dq, numbers.Real) and float(dq) == 0:
-        return kernel(
+        return fkernel(
             q + q_offset, slabs, scale=scale, bkg=bkg, threads=threads
         )
     elif isinstance(dq, numbers.Real):
@@ -934,7 +936,7 @@ def reflectivity(
         return (
             scale
             * _smeared_kernel_constant(
-                q + q_offset, slabs, dq, threads=threads
+                q + q_offset, slabs, dq, threads=threads, fkernel=fkernel
             )
         ) + bkg
 
@@ -948,7 +950,11 @@ def reflectivity(
             smeared_rvals = (
                 scale
                 * _smeared_kernel_adaptive(
-                    qvals_flat + q_offset, slabs, dqvals_flat, threads=threads
+                    qvals_flat + q_offset,
+                    slabs,
+                    dqvals_flat,
+                    threads=threads,
+                    fkernel=fkernel,
                 )
                 + bkg
             )
@@ -963,6 +969,7 @@ def reflectivity(
                     dqvals_flat,
                     quad_order=quad_order,
                     threads=threads,
+                    fkernel=fkernel,
                 )
                 + bkg
             )
@@ -976,7 +983,7 @@ def reflectivity(
     ):
         qvals_for_res = dq[:, 0, :] + q_offset
         # work out the reflectivity at the kernel evaluation points
-        smeared_rvals = kernel(qvals_for_res, slabs, threads=threads)
+        smeared_rvals = fkernel(qvals_for_res, slabs, threads=threads)
 
         # multiply by probability
         smeared_rvals *= dq[:, 1, :]
@@ -1005,7 +1012,7 @@ def gauss_legendre(n):
     return scipy.special.p_roots(n)
 
 
-def _smear_kernel(x, w, q, dq, threads):
+def _smear_kernel(x, w, q, dq, threads, fkernel=kernel):
     """
     Adaptive Gaussian quadrature integration
 
@@ -1030,10 +1037,10 @@ def _smear_kernel(x, w, q, dq, threads):
     prefactor = 1 / np.sqrt(2 * np.pi)
     gauss = prefactor * np.exp(-0.5 * x * x)
     localq = q + x * dq / _FWHM
-    return kernel(localq, w, threads=threads) * gauss
+    return fkernel(localq, w, threads=threads) * gauss
 
 
-def _smeared_kernel_adaptive(qvals, w, dqvals, threads=-1):
+def _smeared_kernel_adaptive(qvals, w, dqvals, threads=-1, fkernel=kernel):
     """
     Resolution smearing that uses adaptive Gaussian quadrature integration
     for the convolution.
@@ -1070,14 +1077,16 @@ def _smeared_kernel_adaptive(qvals, w, dqvals, threads=-1):
             -_INTLIMIT,
             _INTLIMIT,
             epsabs=0.0,
-            args=(w, qvals[idx], dqvals[idx], threads),
+            args=(w, qvals[idx], dqvals[idx], threads, fkernel),
         )
 
     warnings.resetwarnings()
     return smeared_rvals
 
 
-def _smeared_kernel_pointwise(qvals, w, dqvals, quad_order=17, threads=-1):
+def _smeared_kernel_pointwise(
+    qvals, w, dqvals, quad_order=17, threads=-1, fkernel=kernel
+):
     """
     Resolution smearing that uses fixed order Gaussian quadrature integration
     for the convolution.
@@ -1130,7 +1139,7 @@ def _smeared_kernel_pointwise(qvals, w, dqvals, quad_order=17, threads=-1):
     vb = vb[..., np.newaxis]
 
     qvals_for_res = (abscissa[np.newaxis, :] * (vb - va) + vb + va) / 2.0
-    smeared_rvals = kernel(qvals_for_res, w, threads=threads)
+    smeared_rvals = fkernel(qvals_for_res, w, threads=threads)
 
     # smeared_rvals = np.reshape(smeared_rvals, (qvals.size, abscissa.size))
 
@@ -1138,7 +1147,7 @@ def _smeared_kernel_pointwise(qvals, w, dqvals, quad_order=17, threads=-1):
     return np.sum(smeared_rvals, -1) * _INTLIMIT
 
 
-def _smeared_kernel_constant(q, w, resolution, threads=-1):
+def _smeared_kernel_constant(q, w, resolution, threads=-1, fkernel=kernel):
     """
     Fast resolution smearing for constant dQ/Q.
 
@@ -1162,7 +1171,7 @@ def _smeared_kernel_constant(q, w, resolution, threads=-1):
     """
 
     if resolution < 0.5:
-        return kernel(q, w, threads=threads)
+        return fkernel(q, w, threads=threads)
 
     resolution /= 100
     gaussnum = 51
@@ -1192,7 +1201,7 @@ def _smeared_kernel_constant(q, w, resolution, threads=-1):
     gauss_x = _cached_linspace(-1.7 * resolution, 1.7 * resolution, gaussnum)
     gauss_y = gauss(gauss_x, resolution / _FWHM)
 
-    rvals = kernel(xlin, w, threads=threads)
+    rvals = fkernel(xlin, w, threads=threads)
     smeared_rvals = np.convolve(rvals, gauss_y, mode="same")
     smeared_rvals *= gauss_x[1] - gauss_x[0]
 
