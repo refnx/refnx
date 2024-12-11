@@ -74,6 +74,7 @@ cdef extern from "refcaller.h" nogil:
         const double *irho,
         const double *rhoM,
         const double *thetaM,
+        double H,
         int points,
         const double *xP,
         double *Ra,
@@ -526,9 +527,10 @@ cpdef np.ndarray abeles_vectorised(
 cpdef np.ndarray gepore(
     np.ndarray x,
     double[:, :] w,
+    double H=0,
     double scale=1.0,
     double bkg=0.,
-    int threads=-1
+    int threads=-1,
 ):
     """
     Abeles matrix formalism for calculating polarised neutron reflectivity
@@ -554,6 +556,8 @@ cpdef np.ndarray gepore(
         layers[-1, 1] - SLD of backing (/1e-6 Angstrom**-2)
         layers[-1, 2] - iSLD of backing (/1e-6 Angstrom**-2)
         layers[-1, 3] - roughness between backing and last layer
+    H: float
+        Applied magnetic field (T)
     scale: float
         Multiply all reflectivities by this value.
     bkg: float
@@ -627,6 +631,7 @@ cpdef np.ndarray gepore(
         irho_data,
         rhoM_data,
         thetaM_data,
+        H,
         npoints,
         xP,
         Ra,
