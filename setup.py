@@ -363,7 +363,7 @@ def setup_package():
                 name="refnx.reflect._creflect",
                 sources=["src/_creflect.pyx",
                          "src/refcaller.cpp",
-                         "src/pnr/magnetic.cc",],
+                         "src/pnr/magnetic.cc"],
                 include_dirs=[numpy_include],
                 language="c++",
                 extra_compile_args=["-std=c++11"],
@@ -391,7 +391,6 @@ def setup_package():
                     sources=[
                         "src/_cyreflect.pyx",
                         "src/refcaller.cpp",
-                        "src/pnr/magnetic.cc"
                     ],
                     include_dirs=[numpy_include],
                     language="c++",
