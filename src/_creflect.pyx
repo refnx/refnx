@@ -26,12 +26,18 @@ DEALINGS IN THIS SOFTWARE.
 """
 from multiprocessing import cpu_count
 from cpython.mem cimport PyMem_Malloc, PyMem_Free
+cimport libcpp.complex
 import numpy as np
 cimport numpy as np
 cimport cython
 
 
 np.import_array()
+
+ctypedef libcpp.complex.complex[double] Cplx
+ctypedef np.float64_t float64_t
+ctypedef np.complex128_t complex128_t
+
 
 cdef extern from "refcaller.h" nogil:
     void abeles_wrapper(
@@ -66,24 +72,35 @@ cdef extern from "refcaller.h" nogil:
         const double *xP,
         int threads
     )
-    void pnr(
-        int layers,
-        const double *d,
-        const double *sigma,
-        const double *rho,
-        const double *irho,
-        const double *rhoM,
-        const double *thetaM,
-        double H,
-        int points,
-        const double *xP,
-        double *Ra,
-        double *Rb,
-        double *Rc,
-        double *Rd,
+
+
+cdef extern from "pnr/reflcalc.h" nogil:
+    void calculate_U1_U3(
+        const double H,
+        double &rhoM,
+        const double thetaM,
+        const double Aguide,
+        Cplx &U1,
+        Cplx &U3
     )
 
-ctypedef np.float64_t float64_t
+    void magnetic_amplitude(
+        const int layers,
+        const double d[],
+        const double sigma[],
+        const double rho[],
+        const double irho[],
+        const double rhoM[],
+        const Cplx u1[],
+        const Cplx u3[],
+        const int points,
+        const double kz[],
+        const int rho_offset[],
+        Cplx Ra[],
+        Cplx Rb[],
+        Cplx Rc[],
+        Cplx Rd[]
+    )
 
 
 # figure out CPU count
@@ -576,33 +593,36 @@ cpdef np.ndarray gepore(
         )
     if x.dtype != np.float64:
         raise ValueError("Q values for _creflect.gepore must be np.float64")
-    if not x.flags['C_CONTIGUOUS']:
-        x = np.ascontiguousarray(x, dtype=np.float64)
 
     cdef:
         int npoints = x.size
-        np.ndarray y = np.zeros((4, npoints), np.float64)
-        const double *xP
+        np.ndarray y = np.zeros((4, npoints), np.complex128)
         double *d_data
         double *sigma_data
         double *rho_data
         double *irho_data
         double *rhoM_data
         double *thetaM_data
-
-        double *Ra
-        double *Rb
-        double *Rc
-        double *Rd
+        Cplx *Ra
+        Cplx *Rb
+        Cplx *Rc
+        Cplx *Rd
+        const double *kz_data
         int layers = w.shape[0]
         d = np.zeros(layers)
         sigma = np.zeros(layers - 1)
         rho = np.zeros(layers)
         irho = np.zeros(layers)
-        rhoM = np.zeros(layers)
-        thetaM = np.zeros(layers)
+        rhoM = np.empty(layers)
+        thetaM = np.empty(layers)
+        double _rhoM
 
-    xP = <float64_t *> np.PyArray_DATA(x)
+        u1 = np.empty(layers, np.complex128)
+        u3 = np.empty(layers, np.complex128)
+        Cplx U1
+        Cplx U3
+        Cplx *u1_data
+        Cplx *u3_data
 
     d[:] = w[:, 0]
     sigma[:] = w[1:, 3]
@@ -617,28 +637,27 @@ cpdef np.ndarray gepore(
     irho_data = <float64_t *>np.PyArray_DATA(irho)
     rhoM_data = <float64_t *>np.PyArray_DATA(rhoM)
     thetaM_data = <float64_t *>np.PyArray_DATA(thetaM)
+    u1_data = <Cplx *> np.PyArray_DATA(u1)
+    u3_data = <Cplx *> np.PyArray_DATA(u3)
 
-    Ra = <float64_t *> np.PyArray_DATA(y[0])
-    Rb = <float64_t *> np.PyArray_DATA(y[1])
-    Rc = <float64_t *> np.PyArray_DATA(y[2])
-    Rd = <float64_t *> np.PyArray_DATA(y[3])
+    Ra = <Cplx *> np.PyArray_DATA(y[0])
+    Rb = <Cplx *> np.PyArray_DATA(y[1])
+    Rc = <Cplx *> np.PyArray_DATA(y[2])
+    Rd = <Cplx *> np.PyArray_DATA(y[3])
 
-    pnr(
-        layers,
-        d_data,
-        sigma_data,
-        rho_data,
-        irho_data,
-        rhoM_data,
-        thetaM_data,
-        H,
-        npoints,
-        xP,
-        Ra,
-        Rb,
-        Rc,
-        Rd
-    )
-    y *= scale
-    y += bkg
-    return y
+    for idx in range(layers):
+        _rhoM = w[idx, 4]
+        calculate_U1_U3(H, _rhoM, w[idx, 5] * np.pi / 180., -90, U1, U3)
+        rhoM[idx] = _rhoM
+        u1[idx] = U1
+        u3[idx] = U3
+
+    kz = x / 2.0
+    kz_data = <float64_t *> np.PyArray_DATA(kz)
+
+    magnetic_amplitude(layers, d_data, sigma_data, rho_data, irho_data, rhoM_data, u1_data, u3_data, npoints, kz_data, NULL, Ra, Rb, Rc, Rd)
+
+    out = y * np.conj(y)
+    out *= scale
+    out += bkg
+    return out.real
