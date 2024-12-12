@@ -1178,11 +1178,10 @@ class Component:
     def __init__(self, name=""):
         self.name = name
         self._interfaces = None
-        self._is_magnetic = False
 
     @property
     def is_magnetic(self):
-        return self._is_magnetic
+        return False
 
     def __or__(self, other):
         """
