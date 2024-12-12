@@ -90,6 +90,11 @@ class TestStructure:
             ),
         )
 
+    def test_is_magnetic(self):
+        assert hasattr(self.s[0], "is_magnetic")
+        assert self.s[0].is_magnetic is False
+        assert self.s.is_magnetic is False
+
     def test_interface(self):
         # can we set the interface property correctly
         c = self.sio2(10, 3)

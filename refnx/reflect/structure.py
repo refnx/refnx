@@ -452,6 +452,13 @@ class Structure(UserList):
         """
         return [c.interfaces for c in self.components]
 
+    @property
+    def is_magnetic(self):
+        """
+        Are any of the Components in the Structure magnetic?
+        """
+        return any([c.is_magnetic for c in self.components])
+
     def overall_sld(self, slabs, solvent):
         """
         Performs a volume fraction weighted average of the material SLD in a
@@ -1171,6 +1178,7 @@ class Component:
     def __init__(self, name=""):
         self.name = name
         self._interfaces = None
+        self.is_magnetic = False
 
     def __or__(self, other):
         """
@@ -1730,6 +1738,10 @@ class Stack(Component, UserList):
         else:
             raise ValueError()
         return self
+
+    @property
+    def is_magnetic(self):
+        return any([c.is_magnetic for c in self])
 
 
 class _PolarisedSlab(Component):
