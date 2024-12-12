@@ -162,10 +162,6 @@ class Structure(UserList):
         # the structure from that
         self.data = [c for c in components if isinstance(c, Component)]
 
-        # private attribute for future work. Users should not count on this
-        # staying around.
-        self._spin = None
-
     def __copy__(self):
         s = Structure(name=self.name, solvent=self._solvent)
         s.data = self.data.copy()
@@ -1747,7 +1743,7 @@ class Stack(Component, UserList):
         return any([c.is_magnetic for c in self])
 
 
-class _PolarisedSlab(Component):
+class _MagneticSlab(Component):
     """
     A slab component has uniform SLD over its thickness.
 
@@ -1781,7 +1777,6 @@ class _PolarisedSlab(Component):
         rhoM,
         thetaM,
         name="",
-        vfsolv=0,
         interface=None,
     ):
         super().__init__(name=name)
@@ -1794,9 +1789,6 @@ class _PolarisedSlab(Component):
             self.sld = SLD(sld)
         self.rough = possibly_create_parameter(
             rough, name=f"{name} - rough", units="Å"
-        )
-        self.vfsolv = possibly_create_parameter(
-            vfsolv, name=f"{name} - volfrac solvent", bounds=(0.0, 1.0)
         )
         self.rhoM = possibly_create_parameter(
             rhoM,
@@ -1812,9 +1804,8 @@ class _PolarisedSlab(Component):
     def __repr__(self):
         return (
             f"Slab({self.thick!r}, {self.sld!r}, {self.rough!r},"
-            f" name={self.name!r}, vfsolv={self.vfsolv!r},"
-            f" rhoM={self.rhoM!r}, thetaM={self.thetaM!r}"
-            f" interface={self.interfaces!r})"
+            f" name={self.name!r}, rhoM={self.rhoM!r},"
+            f" thetaM={self.thetaM!r}, interface={self.interfaces!r})"
         )
 
     def __str__(self):
@@ -1831,7 +1822,6 @@ class _PolarisedSlab(Component):
             self.thick,
             self.sld.parameters,
             self.rough,
-            self.vfsolv,
             self.rhoM,
             self.thetaM,
         ]
@@ -1847,26 +1837,16 @@ class _PolarisedSlab(Component):
         else:
             sldc = complex(self.sld)
 
-        mag_proj = self.rhoM.value * np.cos(np.degrees(self.thetaM.value))
-
-        if structure._spin in [SpinChannel.UP_UP, SpinChannel.UP_DOWN]:
-            _op = op.add
-        elif structure._spin in [SpinChannel.DOWN_UP, SpinChannel.DOWN_DOWN]:
-            _op = op.sub
-        else:
-            raise ValueError(
-                "Invalid spin state. Set Structure._spin to one of the"
-                " refnx.reflect.SpinChannel enumerations."
-            )
-
         return np.array(
             [
                 [
                     self.thick.value,
-                    _op(sldc.real, mag_proj),
+                    sldc.real,
                     sldc.imag,
                     self.rough.value,
-                    self.vfsolv.value,
+                    0.0,
+                    self.rhoM.value,
+                    self.thetaM.value,
                 ]
             ],
             dtype=float,
