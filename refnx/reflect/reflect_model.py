@@ -335,6 +335,9 @@ class SpinChannel(Enum):
     DOWN_UP = (0, 1)
     DOWN_DOWN = (0, 0)
 
+    def __repr__(self):
+        return f"SpinChannel.{self.name}"
+
 
 class ReflectModel:
     r"""
@@ -658,7 +661,7 @@ class PolarisedReflectModel(ReflectModel):
 
     def __repr__(self):
         return (
-            f"ReflectModel({self._structure!r}, name={self.name!r},"
+            f"PolarisedReflectModel({self._structure!r}, name={self.name!r},"
             f" scale={self.scale!r}, bkg={self.bkg!r},"
             f" dq={self.dq!r}, threads={self.threads},"
             f" quad_order={self.quad_order!r}, dq_type={self.dq_type!r},"

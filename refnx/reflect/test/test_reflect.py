@@ -23,6 +23,9 @@ from refnx.reflect import (
     SLD,
     ReflectModel,
     ReflectModelTL,
+    PolarisedReflectModel,
+    MagneticSlab,
+    SpinChannel,
     MixedReflectModel,
     reflectivity,
     Structure,
@@ -897,7 +900,33 @@ class TestReflect:
         assert_allclose(r[0], pp)
         assert_allclose(r[1], mm)
 
-    def test_repr_reflect_model(self):
+    def test_repr_SpinChannel(self):
+        p = SpinChannel.UP_UP
+        q = eval(repr(p))
+        assert q is SpinChannel.UP_UP
+
+    def test_PolarisedReflectModel(self):
+        air = SLD(0.0)
+        l1 = MagneticSlab(200, 4, 0, 1, 180)
+        l2 = MagneticSlab(200, 2, 0, 1, 90)
+        back = MagneticSlab(0, 4, 0, 0, 90)
+        s = air | l1 | l2 | back
+        q = np.geomspace(0.01, 0.2, 1001)
+        model = PolarisedReflectModel(s, spin=SpinChannel.UP_UP)
+        assert hasattr(model, "spin")
+        model(q)
+
+    def test_repr_PolarisedReflectModel(self):
+        air = SLD(0.0)
+        l1 = MagneticSlab(200, 4, 0, 1, 180)
+        back = MagneticSlab(0, 4, 0, 0, 90)
+        s = air | l1 | back
+        p = PolarisedReflectModel(s, spin=SpinChannel.UP_UP)
+        q = eval(repr(p))
+        x = np.geomspace(0.01, 0.2, 1001)
+        q(x)
+
+    def test_repr_ReflectModel(self):
         p = SLD(0.0)
         q = SLD(2.07)
         s = p(0, 0) | q(0, 3)
