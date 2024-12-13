@@ -1,7 +1,6 @@
 #! /usr/bin/env python
 # System imports
 from setuptools import setup, Extension
-from setuptools.command.test import test as TestCommand
 import os
 import subprocess
 import platform
@@ -251,27 +250,8 @@ HAS_OPENMP = check_openmp_support()
 ###############################################################################
 
 
-class PyTest(TestCommand):
-    user_options = [("pytest-args=", "a", "Arguments to pass to pytest")]
-
-    def initialize_options(self):
-        TestCommand.initialize_options(self)
-        self.pytest_args = "refnx"
-
-    def run_tests(self):
-        import shlex
-        import pytest
-
-        print("Running tests with pytest")
-        errno = pytest.main(shlex.split(self.pytest_args))
-        sys.exit(errno)
-
-
 # refnx setup
-info = {
-    "include_package_data": True,
-    "cmdclass": {"test": PyTest},
-}
+info = {"include_package_data": True,}
 
 ####################################################################
 # this is where setup starts

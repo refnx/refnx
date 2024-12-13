@@ -625,6 +625,7 @@ in 0.1.13.
 
 0.1.51
 ------
-- Modify to allow loading of .ORB ORSO files
-- Capability for calculating PNR theoretical curves
-- Fix some tests for new periodictable release
+- Modify to allow loading of .ORB ORSO files.
+- Capability for calculating PNR theoretical curves.
+- Fix some tests for new periodictable release.
+- Stop using deprecated setuptools module.
