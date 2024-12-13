@@ -43,6 +43,11 @@ from refnx.analysis import (
     Transform,
 )
 from refnx.util import general
+try:
+    from refnx.reflect._creflect import gepore
+except ImportError:
+    def gepore(*args, **kwds):
+        raise RuntimeError("gepore is not available")
 
 # some definitions for resolution smearing
 _FWHM = 2 * np.sqrt(2 * np.log(2.0))
@@ -384,6 +389,8 @@ class ReflectModel:
         where the measured q values (incident angle) may have been under/over
         estimated, and has the effect of shifting the calculated model to
         lower/higher effective q values.
+    spin: refnx.reflect.SpinChannel
+        The polarisation channel that is being calculated.
     """
 
     def __init__(
@@ -397,6 +404,7 @@ class ReflectModel:
         quad_order=17,
         dq_type="pointwise",
         q_offset=0,
+        spin=None
     ):
         self.name = name
         self._parameters = None
@@ -421,6 +429,7 @@ class ReflectModel:
 
         self._structure = None
         self.structure = structure
+        self.spin = spin
 
     def __call__(self, x, p=None, x_err=None):
         r"""
@@ -457,7 +466,7 @@ class ReflectModel:
             f" scale={self.scale!r}, bkg={self.bkg!r},"
             f" dq={self.dq!r}, threads={self.threads},"
             f" quad_order={self.quad_order!r}, dq_type={self.dq_type!r},"
-            f" q_offset={self.q_offset!r})"
+            f" q_offset={self.q_offset!r}, spin={self.spin!r})"
         )
 
     @property
@@ -552,15 +561,27 @@ class ReflectModel:
             # fallback to what this object was constructed with
             x_err = float(self.dq)
 
+        slabs = self.structure.slabs()
+
+        if slabs.shape[1] == 5:
+            # unpolarised
+            slabs = slabs[..., :4]
+        if slabs.shape[1] == 7:
+            # polarised
+            slabs = np.take_along_axis(
+                slabs, np.array([0, 1, 2, 3, 5, 6])[None, :], axis=1
+            )
+
         return reflectivity(
             x,
-            self.structure.slabs()[..., :4],
+            slabs,
             scale=self.scale.value,
             bkg=self.bkg.value,
             dq=x_err,
             threads=self.threads,
             quad_order=self.quad_order,
             q_offset=self.q_offset,
+            spin=self.spin
         )
 
     def logp(self):
@@ -821,6 +842,7 @@ def reflectivity(
     quad_order=17,
     threads=-1,
     q_offset=0,
+    spin=None
 ):
     r"""
     Abeles/Parratt formalism for calculating reflectivity from a stratified
@@ -834,7 +856,8 @@ def reflectivity(
         Units = Angstrom**-1
     slabs : np.ndarray
         coefficients required for the calculation, has shape (2 + N, 4),
-        where N is the number of layers
+        where N is the number of layers. For magnetic systems the number of
+        columns the shape will be (2 + N, 6).
 
         - slabs[0, 0]
            ignored
@@ -864,6 +887,15 @@ def reflectivity(
         - slabs[-1, 3]
            roughness between backing and layer N
 
+        If the system is magnetic then there are two extra columns:
+
+        - slab[N, 4]
+            Magnetic SLD correction (/1e-6 Angstrom**-2)
+        - slab[N, 5]
+            Angle that magnetic moment makes w.r.t applied field (degrees)
+
+        Note that this slab representation is slightly different to that returned by
+        `refnx.reflect.Structure.slabs()`.
     scale : float
         scale factor. All model values are multiplied by this value before
         the background is added
@@ -906,6 +938,8 @@ def reflectivity(
         where the measured q values (incident angle) may have been under/over
         estimated, and has the effect of shifting the calculated model to
         lower/higher effective q values.
+    spin: refnx.reflect.SpinChannel
+        The polarisation channel that is being calculated.
 
     Example
     -------
@@ -924,7 +958,10 @@ def reflectivity(
     # cast q_offset to float, if it's a Parameter
     q_offset = float(q_offset)
 
-    fkernel = kernel
+    if slabs.shape[1] == 4:
+        fkernel = kernel
+    elif slabs.shape[1] == 6:
+        fkernel = _gepore_wrapper(spin)
 
     # constant dq/q smearing
     if isinstance(dq, numbers.Real) and float(dq) == 0:
@@ -1010,6 +1047,22 @@ def gauss_legendre(n):
         The abscissae and weights for Gauss Legendre integration.
     """
     return scipy.special.p_roots(n)
+
+
+def _gepore_wrapper(spin):
+    _c = {
+        SpinChannel.UP_UP: 0,
+        SpinChannel.UP_DOWN: 1,
+        SpinChannel.DOWN_UP: 2,
+        SpinChannel.DOWN_DOWN: 3,
+    }
+    def wrapped_fun(q, w, *args, **kwds):
+        return gepore(q, w, *args, **kwds)[_c[spin]]
+
+    if spin not in _c.keys():
+        raise ValueError("spin must be an enum from refnx.reflect.SpinChannel")
+
+    return wrapped_fun
 
 
 def _smear_kernel(x, w, q, dq, threads, fkernel=kernel):
