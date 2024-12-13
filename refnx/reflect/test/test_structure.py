@@ -24,7 +24,7 @@ from refnx.reflect import (
     MixedSlab,
     SpinChannel,
 )
-from refnx.reflect.structure import _profile_slicer, _MagneticSlab
+from refnx.reflect.structure import _profile_slicer, MagneticSlab
 from refnx.analysis import Parameter, Interval, Parameters
 from refnx.analysis.parameter import _BinaryOp
 from orsopy.fileio.model_language import SampleModel
@@ -99,11 +99,11 @@ class TestStructure:
         assert self.s.is_magnetic is False
 
     def test_MagneticSlab(self):
-        air = _MagneticSlab(0, 0, 0, 0, 90)
+        air = MagneticSlab(0, 0, 0, 0, 90)
         assert air.is_magnetic
-        l1 = _MagneticSlab(200, 4, 0, 1, 180)
-        l2 = _MagneticSlab(200, 2, 0, 1, 90)
-        back = _MagneticSlab(0, 4, 0, 0, 90)
+        l1 = MagneticSlab(200, 4, 0, 1, 180)
+        l2 = MagneticSlab(200, 2, 0, 1, 90)
+        back = MagneticSlab(0, 4, 0, 0, 90)
         s = air | l1 | l2 | back
 
         data = np.loadtxt(self.pth / "test1.dat")
@@ -130,7 +130,7 @@ class TestStructure:
         assert_allclose(sl, w)
 
     def test_repr_MagneticSlab(self):
-        p = _MagneticSlab(200, 4, 0, 1, 180)
+        p = MagneticSlab(200, 4, 0, 1, 180)
         q = eval(repr(p))
         assert_allclose(q.thick.value, 200)
         assert_allclose(q.thetaM.value, 180)

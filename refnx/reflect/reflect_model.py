@@ -43,11 +43,14 @@ from refnx.analysis import (
     Transform,
 )
 from refnx.util import general
+
 try:
     from refnx.reflect._creflect import gepore
 except ImportError:
+
     def gepore(*args, **kwds):
         raise RuntimeError("gepore is not available")
+
 
 # some definitions for resolution smearing
 _FWHM = 2 * np.sqrt(2 * np.log(2.0))
@@ -404,7 +407,6 @@ class ReflectModel:
         quad_order=17,
         dq_type="pointwise",
         q_offset=0,
-        spin=None
     ):
         self.name = name
         self._parameters = None
@@ -429,7 +431,6 @@ class ReflectModel:
 
         self._structure = None
         self.structure = structure
-        self.spin = spin
 
     def __call__(self, x, p=None, x_err=None):
         r"""
@@ -466,7 +467,7 @@ class ReflectModel:
             f" scale={self.scale!r}, bkg={self.bkg!r},"
             f" dq={self.dq!r}, threads={self.threads},"
             f" quad_order={self.quad_order!r}, dq_type={self.dq_type!r},"
-            f" q_offset={self.q_offset!r}, spin={self.spin!r})"
+            f" q_offset={self.q_offset!r})"
         )
 
     @property
@@ -561,16 +562,7 @@ class ReflectModel:
             # fallback to what this object was constructed with
             x_err = float(self.dq)
 
-        slabs = self.structure.slabs()
-
-        if slabs.shape[1] == 5:
-            # unpolarised
-            slabs = slabs[..., :4]
-        if slabs.shape[1] == 7:
-            # polarised
-            slabs = np.take_along_axis(
-                slabs, np.array([0, 1, 2, 3, 5, 6])[None, :], axis=1
-            )
+        slabs = self.structure.slabs()[:, :4]
 
         return reflectivity(
             x,
@@ -581,7 +573,6 @@ class ReflectModel:
             threads=self.threads,
             quad_order=self.quad_order,
             q_offset=self.q_offset,
-            spin=self.spin
         )
 
     def logp(self):
@@ -625,6 +616,111 @@ class ReflectModel:
         """
         self.structure = self._structure
         return self._parameters
+
+
+class PolarisedReflectModel(ReflectModel):
+    """
+    Extension of ReflectModel for polarised neutron reflectometry.
+    See `refnx.reflect.ReflectModel` for documentation of arguments.
+
+    Parameters
+    ----------
+    spin: refnx.reflect.SpinChannel
+        Specifies the spin state the model is associated with.
+
+    """
+
+    def __init__(
+        self,
+        structure,
+        scale=1,
+        bkg=1e-7,
+        name="",
+        dq=5.0,
+        threads=-1,
+        quad_order=17,
+        dq_type="pointwise",
+        q_offset=0,
+        spin=None,
+    ):
+        super().__init__(
+            structure,
+            name=name,
+            scale=scale,
+            bkg=bkg,
+            threads=threads,
+            quad_order=quad_order,
+            dq=dq,
+            dq_type=dq_type,
+            q_offset=q_offset,
+        )
+        self.spin = spin
+
+    def __repr__(self):
+        return (
+            f"ReflectModel({self._structure!r}, name={self.name!r},"
+            f" scale={self.scale!r}, bkg={self.bkg!r},"
+            f" dq={self.dq!r}, threads={self.threads},"
+            f" quad_order={self.quad_order!r}, dq_type={self.dq_type!r},"
+            f" q_offset={self.q_offset!r}, spin={self.spin!r})"
+        )
+
+    def model(self, x, p=None, x_err=None):
+        r"""
+        Calculate the reflectivity of this model
+
+        Parameters
+        ----------
+        x : float or np.ndarray
+            q values for the calculation.
+            Units = Angstrom**-1
+        p : refnx.analysis.Parameters, optional
+            parameters required to calculate the model
+        x_err : {np.ndarray, float} optional
+            Specifies how the instrumental resolution smearing is carried out
+            for each of the points in `x`.
+            See :func:`refnx.reflect.reflectivity` for further details.
+
+        Returns
+        -------
+        reflectivity : np.ndarray
+            Calculated reflectivity
+
+        Notes
+        -----
+        If `x_err` is not provided then the calculation will fall back to
+        the constant dq/q smearing specified by the `dq` attribute of this
+        object.
+        """
+        if p is not None:
+            self.parameters.pvals = np.array(p)
+        if x_err is None or self.dq_type == "constant":
+            # fallback to what this object was constructed with
+            x_err = float(self.dq)
+
+        slabs = self.structure.slabs()
+        spin = self.spin
+        if slabs.shape[1] == 5:
+            # unpolarised for some reason
+            slabs = slabs[..., :4]
+            spin = None
+        if slabs.shape[1] == 7:
+            # polarised
+            slabs = np.take_along_axis(
+                slabs, np.array([0, 1, 2, 3, 5, 6])[None, :], axis=1
+            )
+
+        return reflectivity(
+            x,
+            slabs,
+            scale=self.scale.value,
+            bkg=self.bkg.value,
+            dq=x_err,
+            threads=self.threads,
+            quad_order=self.quad_order,
+            q_offset=self.q_offset,
+            spin=spin,
+        )
 
 
 class ReflectModelTL(ReflectModel):
@@ -842,7 +938,7 @@ def reflectivity(
     quad_order=17,
     threads=-1,
     q_offset=0,
-    spin=None
+    spin=None,
 ):
     r"""
     Abeles/Parratt formalism for calculating reflectivity from a stratified
@@ -962,6 +1058,9 @@ def reflectivity(
         fkernel = kernel
     elif slabs.shape[1] == 6:
         fkernel = _gepore_wrapper(spin)
+    else:
+        print(slabs.shape)
+        raise ValueError(f"slabbo is wrong, {slabs.shape=}")
 
     # constant dq/q smearing
     if isinstance(dq, numbers.Real) and float(dq) == 0:
@@ -1056,6 +1155,7 @@ def _gepore_wrapper(spin):
         SpinChannel.DOWN_UP: 2,
         SpinChannel.DOWN_DOWN: 3,
     }
+
     def wrapped_fun(q, w, *args, **kwds):
         return gepore(q, w, *args, **kwds)[_c[spin]]
 

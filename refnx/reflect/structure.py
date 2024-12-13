@@ -303,8 +303,8 @@ class Structure(UserList):
             return None
 
         if not (
-            isinstance(self.data[-1], (Slab, MixedSlab, _MagneticSlab))
-            and isinstance(self.data[0], (Slab, MixedSlab, _MagneticSlab))
+            isinstance(self.data[-1], (Slab, MixedSlab, MagneticSlab))
+            and isinstance(self.data[0], (Slab, MixedSlab, MagneticSlab))
         ):
             raise ValueError(
                 "The first and last Components in a Structure"
@@ -1814,7 +1814,7 @@ class Stack(Component, UserList):
         return any([c.is_magnetic for c in self])
 
 
-class _MagneticSlab(Component):
+class MagneticSlab(Component):
     """
     A slab component has uniform SLD over its thickness.
 
@@ -1872,7 +1872,7 @@ class _MagneticSlab(Component):
 
     def __repr__(self):
         return (
-            f"_MagneticSlab({self.thick!r}, {self.sld!r}, {self.rough!r},"
+            f"MagneticSlab({self.thick!r}, {self.sld!r}, {self.rough!r},"
             f" name={self.name!r}, rhoM={self.rhoM!r},"
             f" thetaM={self.thetaM!r}, interface={self.interfaces!r})"
         )
