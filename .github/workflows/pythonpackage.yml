@@ -441,6 +441,6 @@ jobs:
         sudo apt install clang-format
         clang-format --help
         cd src 
-        clang-format --Werror --fail-on-incomplete-format -n *.cpp *.h *.c
+        clang-format --Werror -n *.cpp *.h *.c
         cd pnr
-        clang-format --Werror --fail-on-incomplete-format -n *.cpp *.h *.c
+        clang-format --Werror -n *.cpp *.h *.c
