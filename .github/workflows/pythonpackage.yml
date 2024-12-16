@@ -439,7 +439,7 @@ jobs:
       run: |
         sudo apt update
         sudo apt install clang-format
-        clang-format -v
+        clang-format --version
         cd src 
         clang-format --Werror --fail-on-incomplete-format -n *.cpp *.h *.c
         cd pnr
