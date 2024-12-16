@@ -352,8 +352,8 @@ class TestReflect:
         )
         q = data[:, 0]
         ref = data[:, 1:].T
-        pol = gepore(q, w)
-        assert_allclose(pol, np.flipud(ref))
+        pol = gepore(q, w, Aguide=90)
+        assert_allclose(pol, ref)
 
     def test_abeles_vectorised(self):
         w = np.array(
@@ -913,12 +913,16 @@ class TestReflect:
         s = air | l1 | l2 | back
         q = np.geomspace(0.01, 0.2, 1001)
         # constant dq/q
-        model = PolarisedReflectModel(s, spin=SpinChannel.UP_UP, dq_type="constant")
+        model = PolarisedReflectModel(
+            s, spin=SpinChannel.UP_UP, dq_type="constant"
+        )
         assert hasattr(model, "spin")
         model(q)
         # pointwise
-        model = PolarisedReflectModel(s, spin=SpinChannel.UP_UP, dq_type="pointwise")
-        q_err = 0.05*q
+        model = PolarisedReflectModel(
+            s, spin=SpinChannel.UP_UP, dq_type="pointwise"
+        )
+        q_err = 0.05 * q
         model(q, x_err=q_err)
 
     def test_repr_PolarisedReflectModel(self):

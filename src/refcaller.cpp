@@ -35,7 +35,7 @@ extern "C" {
 #include <cstring>
 #include <iostream>
 #include <math.h>
-#include <pnr/reflcalc.h>
+#include "pnr/reflcalc.h"
 #include <stdlib.h>
 #include <thread>
 #include <vector>
@@ -160,23 +160,28 @@ void parratt_wrapper(int numcoefs, const double *coefP, int npoints, double *yP,
 
 void pnr(int layers, const double *d, const double *sigma, const double *rho,
          const double *irho, const double *rhoM, const double *thetaM, double H,
-         int points, const double *xP, double *Ra, double *Rb, double *Rc,
-         double *Rd) {
-  std::vector<double> kz(points);
-  std::vector<Cplx> u1(layers), u3(layers);
-  std::vector<Cplx> Rac(points), Rbc(points), Rcc(points), Rdc(points);
-  std::vector<double> rhoM_mod(layers);
-  int idx;
+         double Aguide, int points, const double *xP, double *Ra, double *Rb, double *Rc, double *Rd){
+    std::vector<double> kz(points);
+    std::vector<Cplx> u1(layers), u3(layers);
+    std::vector<Cplx> Rac(points), Rbc(points), Rcc(points), Rdc(points);
+    std::vector<double> rhoM_mod(layers);
+    int idx;
 
-  memcpy(rhoM_mod.data(), rhoM, sizeof(double) * layers);
+    memcpy(rhoM_mod.data(), rhoM, sizeof(double) * layers);
 
-  for (idx = 0; idx < layers; idx++) {
-    calculate_U1_U3(H, *(rhoM_mod.data() + idx), thetaM[idx] * M_PI / 180., 270,
-                    *(u1.data() + idx), *(u3.data() + idx));
-  }
-  for (idx = 0; idx < points; idx++) {
-    kz[idx] = xP[idx] / 2.0;
-  }
+    for(idx=0; idx < layers; idx++){
+        calculate_U1_U3(
+            H,
+            *(rhoM_mod.data() + idx),
+            thetaM[idx] * M_PI / 180.,
+            Aguide,
+            *(u1.data() + idx),
+            *(u3.data() + idx)
+        );
+    }
+    for(idx=0; idx < points; idx++){
+        kz[idx] = xP[idx] / 2.0;
+    }
 
   magnetic_amplitude(layers, d, sigma, rho, irho, rhoM_mod.data(), u1.data(),
                      u3.data(), points, kz.data(), NULL, Rac.data(), Rbc.data(),

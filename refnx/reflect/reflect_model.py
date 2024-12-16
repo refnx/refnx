@@ -630,7 +630,12 @@ class PolarisedReflectModel(ReflectModel):
     ----------
     spin: refnx.reflect.SpinChannel
         Specifies the spin state the model is associated with.
-
+    Aguide: float
+        Angle of applied field. This value should be 270 or 90 degrees for
+        the applied field to lie in the plane of the sample, perpendicular to
+        the beam propagation direction. For a magnetic moment to be parallel
+        or anti-parallel to the applied field `thetaM` should be 90 or -90 deg
+        respectively.
     """
 
     def __init__(
@@ -645,6 +650,7 @@ class PolarisedReflectModel(ReflectModel):
         dq_type="pointwise",
         q_offset=0,
         spin=None,
+        Aguide=270,
     ):
         super().__init__(
             structure,
@@ -658,6 +664,7 @@ class PolarisedReflectModel(ReflectModel):
             q_offset=q_offset,
         )
         self.spin = spin
+        self.Aguide = Aguide
 
     def __repr__(self):
         return (
@@ -665,7 +672,7 @@ class PolarisedReflectModel(ReflectModel):
             f" scale={self.scale!r}, bkg={self.bkg!r},"
             f" dq={self.dq!r}, threads={self.threads},"
             f" quad_order={self.quad_order!r}, dq_type={self.dq_type!r},"
-            f" q_offset={self.q_offset!r}, spin={self.spin!r})"
+            f" q_offset={self.q_offset!r}, spin={self.spin!r}, Aguide={self.Aguide!r})"
         )
 
     def model(self, x, p=None, x_err=None):
@@ -723,6 +730,7 @@ class PolarisedReflectModel(ReflectModel):
             quad_order=self.quad_order,
             q_offset=self.q_offset,
             spin=spin,
+            Aguide=self.Aguide,
         )
 
 
@@ -942,6 +950,7 @@ def reflectivity(
     threads=-1,
     q_offset=0,
     spin=None,
+    Aguide=270,
 ):
     r"""
     Abeles/Parratt formalism for calculating reflectivity from a stratified
@@ -991,7 +1000,9 @@ def reflectivity(
         - slab[N, 4]
             Magnetic SLD correction (/1e-6 Angstrom**-2)
         - slab[N, 5]
-            Angle that magnetic moment makes w.r.t applied field (degrees)
+            Angle of magnetic moment in plane (degrees). See
+            https://github.com/reflectivity/analysis/tree/master/validation
+            for details.
 
         Note that this slab representation is slightly different to that returned by
         `refnx.reflect.Structure.slabs()`.
@@ -1039,6 +1050,8 @@ def reflectivity(
         lower/higher effective q values.
     spin: refnx.reflect.SpinChannel
         The polarisation channel that is being calculated.
+    Aguide: float
+        Angle of applied field.
 
     Example
     -------
@@ -1060,10 +1073,9 @@ def reflectivity(
     if slabs.shape[1] == 4:
         fkernel = kernel
     elif slabs.shape[1] == 6:
-        fkernel = _gepore_wrapper(spin)
+        fkernel = _gepore_wrapper(spin, Aguide)
     else:
-        print(slabs.shape)
-        raise ValueError(f"slabbo is wrong, {slabs.shape=}")
+        raise ValueError(f"slabs are wrong, {slabs.shape=}")
 
     # constant dq/q smearing
     if isinstance(dq, numbers.Real) and float(dq) == 0:
@@ -1151,7 +1163,7 @@ def gauss_legendre(n):
     return scipy.special.p_roots(n)
 
 
-def _gepore_wrapper(spin):
+def _gepore_wrapper(spin, Aguide):
     _c = {
         SpinChannel.UP_UP: 0,
         SpinChannel.UP_DOWN: 1,
@@ -1160,6 +1172,7 @@ def _gepore_wrapper(spin):
     }
 
     def wrapped_fun(q, w, *args, **kwds):
+        kwds["Aguide"] = Aguide
         arr = gepore(q, w, *args, **kwds)[_c[spin]]
         return arr.reshape(q.shape)
 

@@ -113,5 +113,5 @@ Polarised neutron reflection measurement
 */
 void pnr(int layers, const double *d, const double *sigma, const double *rho,
          const double *irho, const double *rhoM, const double *thetaM, double H,
-         int points, const double *xP, double *Ra, double *Rb, double *Rc,
-         double *Rd);
+         double Aguide, int points, const double *xP, double *Ra, double *Rb,
+         double *Rc, double *Rd);

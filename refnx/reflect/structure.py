@@ -1829,13 +1829,22 @@ class MagneticSlab(Component):
     rhoM : refnx.analysis.Parameter or float
         magnetic SLD of film (/1e-6 Angstrom**-2)
     thetaM : refnx.analysis.Parameter or float
-        Magnetic angle of the layer
+        Magnetic angle of the layer (degrees). See
+        https://github.com/reflectivity/analysis/tree/master/validation
+        for geometry details.
     name : str
         Name of this slab
     interface : {:class:`Interface`, None}, optional
         The type of interfacial roughness associated with the Slab.
         If `None`, then the default interfacial roughness is an Error
         function (also known as Gaussian roughness).
+
+    Notes
+    -----
+    For the applied field to be in the plane of the sample (perpendicular to
+    the beam propagation direction) `Aguide` should be 270 or 90 degrees.
+    For the magnetic moment to be parallel or anti-parallel to the applied
+    field `thetaM` should be 90 or -90 respectively.
     """
 
     def __init__(
