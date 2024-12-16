@@ -434,3 +434,12 @@ jobs:
         # the ignores are taken care of by black
         ruff check refnx
         black --check refnx
+
+    - name: clang-format
+      run: |
+        sudo apt update
+        sudo apt install clang-format
+        cd src 
+        clang-format --Werror -n *.cpp *.h *.c
+        cd pnr
+        clang-format --Werror -n *.cc *.h
