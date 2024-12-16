@@ -912,9 +912,14 @@ class TestReflect:
         back = MagneticSlab(0, 4, 0, 0, 90)
         s = air | l1 | l2 | back
         q = np.geomspace(0.01, 0.2, 1001)
-        model = PolarisedReflectModel(s, spin=SpinChannel.UP_UP)
+        # constant dq/q
+        model = PolarisedReflectModel(s, spin=SpinChannel.UP_UP, dq_type="constant")
         assert hasattr(model, "spin")
         model(q)
+        # pointwise
+        model = PolarisedReflectModel(s, spin=SpinChannel.UP_UP, dq_type="pointwise")
+        q_err = 0.05*q
+        model(q, x_err=q_err)
 
     def test_repr_PolarisedReflectModel(self):
         air = SLD(0.0)

@@ -1160,7 +1160,8 @@ def _gepore_wrapper(spin):
     }
 
     def wrapped_fun(q, w, *args, **kwds):
-        return gepore(q, w, *args, **kwds)[_c[spin]]
+        arr = gepore(q, w, *args, **kwds)[_c[spin]]
+        return arr.reshape(q.shape)
 
     if spin not in _c.keys():
         raise ValueError("spin must be an enum from refnx.reflect.SpinChannel")
