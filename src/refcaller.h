@@ -6,7 +6,8 @@
 
 The refnx code is distributed under the following license:
 
-Copyright (c) 2015 A. R. J. Nelson, Australian Nuclear Science and Technology Organisation
+Copyright (c) 2015 A. R. J. Nelson, Australian Nuclear Science and Technology
+Organisation
 
 Permission to use and redistribute the source code or binary forms of this
 software and its documentation, with or without modification is hereby
@@ -25,7 +26,6 @@ FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THIS SOFTWARE.
 
 */
-
 
 /*
     reflect uses the Abeles matrix method to calculate specular reflectivity.
@@ -93,25 +93,25 @@ DEALINGS IN THIS SOFTWARE.
 /*
 Parallelised
 */
-void abeles_wrapper_MT(unsigned int batch, int numcoefs, const double *coefP, int npoints, double *yP,
-               const double *xP, int threads);
+void abeles_wrapper_MT(unsigned int batch, int numcoefs, const double *coefP,
+                       int npoints, double *yP, const double *xP, int threads);
 
-void parratt_wrapper_MT(unsigned int batch, int numcoefs, const double *coefP, int npoints, double *yP,
-               const double *xP, int threads);
-
+void parratt_wrapper_MT(unsigned int batch, int numcoefs, const double *coefP,
+                        int npoints, double *yP, const double *xP, int threads);
 
 /*
 Non parallelised
 */
 void abeles_wrapper(int numcoefs, const double *coefP, int npoints, double *yP,
-             const double *xP);
+                    const double *xP);
 
 void parratt_wrapper(int numcoefs, const double *coefP, int npoints, double *yP,
-             const double *xP);
+                     const double *xP);
 
 /*
 Polarised neutron reflection measurement
 */
 void pnr(int layers, const double *d, const double *sigma, const double *rho,
          const double *irho, const double *rhoM, const double *thetaM, double H,
-         int points, const double *xP, double *Ra, double *Rb, double *Rc, double *Rd);
+         int points, const double *xP, double *Ra, double *Rb, double *Rc,
+         double *Rd);

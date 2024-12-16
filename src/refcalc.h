@@ -6,7 +6,8 @@
 
 The refnx code is distributed under the following license:
 
-Copyright (c) 2015 A. R. J. Nelson, Australian Nuclear Science and Technology Organisation
+Copyright (c) 2015 A. R. J. Nelson, Australian Nuclear Science and Technology
+Organisation
 
 Permission to use and redistribute the source code or binary forms of this
 software and its documentation, with or without modification is hereby
@@ -85,20 +86,13 @@ DEALINGS IN THIS SOFTWARE.
     coefP[4 * M + 11] - roughness between layer M - 1 / M (Å)
 */
 
-
 #ifndef REFCALC_H
 #define REFCALC_H
 
-void abeles(int numcoefs,
-            const double *coefP,
-            int npoints,
-            double *yP,
+void abeles(int numcoefs, const double *coefP, int npoints, double *yP,
             const double *xP);
 
-void parratt(int numcoefs,
-             const double *coefP,
-             int npoints,
-             double *yP,
+void parratt(int numcoefs, const double *coefP, int npoints, double *yP,
              const double *xP);
 
 #endif

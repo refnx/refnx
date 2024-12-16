@@ -1,13 +1,12 @@
 
 #include <cstdio>
-#include <stdexcept>
-#include <stdint.h>
 #include <fstream>
 #include <iostream>
+#include <stdexcept>
+#include <stdint.h>
 #include <vector>
 
 using namespace std;
-
 
 // The function reads a binary ANSTO event file,
 // It opens the file and returns the data through the callbacks.
@@ -19,7 +18,6 @@ constexpr int32_t EVENTFILEHEADER_BASE_FORMAT_NUMBER = 0x00010002;
 constexpr int32_t NVAL = 5; // x, y, v, w, wa
 
 #pragma pack(push, 1) // otherwise may get 8 byte aligned, no good for us
-
 
 struct EventFileHeader_Base { // total content should be 16*int (64 bytes)
   int32_t
@@ -36,7 +34,6 @@ struct EventFileHeader_Base { // total content should be 16*int (64 bytes)
   // cppcheck-suppress unusedStructMember
   int32_t spares[16 - 6]; // spares (padding)
 };
-
 
 struct EventFileHeader_Packed { // total content should be 16*int (64 bytes)
   int32_t evt_stg_nbits_x;      // number of bits in x datum
@@ -86,8 +83,9 @@ Other types are not used in general (DATASIZES = -1 TBD in future, FLUSH = -4
 deprecated, FRAME_DEASSERT = -5 only on Fastcomtec P7888 DAE).
 */
 
-int ReadEventFile(ifstream &loader, std::vector<int> & ff, vector<int> & tt, vector<int> & yy, vector<int> & xx,
-                   int32_t def_clock_scale, bool use_tx_chopper) {
+int ReadEventFile(ifstream &loader, std::vector<int> &ff, vector<int> &tt,
+                  vector<int> &yy, vector<int> &xx, int32_t def_clock_scale,
+                  bool use_tx_chopper) {
   int events = 0;
   // read file headers (base header then packed-format header)
   EventFileHeader_Base hdr_base;
@@ -331,16 +329,18 @@ int ReadEventFile(ifstream &loader, std::vector<int> & ff, vector<int> & tt, vec
         } else {
           // if times are ok pass the event through the call back, time units in
           // nsec
-          if (primary_ok && auxillary_ok){}
-            events += 1;
-            tt.push_back(primary_time);
-            xx.push_back(x);
-            yy.push_back(y);
+          if (primary_ok && auxillary_ok) {
+          }
+          events += 1;
+          tt.push_back(primary_time);
+          xx.push_back(x);
+          yy.push_back(y);
 
-//            events += 1;
-//            handler.addEvent(
-//                x, y, static_cast<double>(primary_time) * scale_microsec,
-//                static_cast<double>(auxillary_time) * scale_microsec);
+          //            events += 1;
+          //            handler.addEvent(
+          //                x, y, static_cast<double>(primary_time) *
+          //                scale_microsec, static_cast<double>(auxillary_time)
+          //                * scale_microsec);
         }
       }
 
@@ -355,10 +355,10 @@ int ReadEventFile(ifstream &loader, std::vector<int> & ff, vector<int> & tt, vec
           auxillary_ok = true;
         }
         // TODO NEW FRAME
-        //handler.newFrame();
+        // handler.newFrame();
       }
 
-//      progress.update(loader.selected_position());
+      //      progress.update(loader.selected_position());
 
       event_ended = false;
     }
@@ -366,18 +366,17 @@ int ReadEventFile(ifstream &loader, std::vector<int> & ff, vector<int> & tt, vec
   return events;
 }
 
-
 int main() {
-     ifstream inFile;
-     std::vector<int> t;
-     std::vector<int> f;
-     std::vector<int> x;
-     std::vector<int> y;
-     int events;
+  ifstream inFile;
+  std::vector<int> t;
+  std::vector<int> f;
+  std::vector<int> x;
+  std::vector<int> y;
+  int events;
 
-     inFile.open("EOS.bin");
-     events = ReadEventFile(inFile, f, t, y, x, 1000, false);
-     inFile.close();
-     cout << events << endl;
-     cout<< t[0] << endl;
+  inFile.open("EOS.bin");
+  events = ReadEventFile(inFile, f, t, y, x, 1000, false);
+  inFile.close();
+  cout << events << endl;
+  cout << t[0] << endl;
 }
