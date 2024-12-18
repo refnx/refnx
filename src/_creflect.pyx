@@ -75,6 +75,25 @@ cdef extern from "refcaller.h" nogil:
         const double *rhoM,
         const double *thetaM,
         double H,
+        double Aguide,
+        int points,
+        const double *xP,
+        double *Ra,
+        double *Rb,
+        double *Rc,
+        double *Rd,
+    )
+    void pnr_MT(
+        int workers,
+        int layers,
+        const double *d,
+        const double *sigma,
+        const double *rho,
+        const double *irho,
+        const double *rhoM,
+        const double *thetaM,
+        double H,
+        double Aguide,
         int points,
         const double *xP,
         double *Ra,
@@ -527,7 +546,8 @@ cpdef np.ndarray abeles_vectorised(
 cpdef np.ndarray gepore(
     np.ndarray x,
     double[:, :] w,
-    double H=0,
+    double H=0.0,
+    double Aguide=270,
     double scale=1.0,
     double bkg=0.,
     int threads=-1,
@@ -558,10 +578,17 @@ cpdef np.ndarray gepore(
         layers[-1, 3] - roughness between backing and last layer
     H: float
         Applied magnetic field (T)
+    Aguide: float
+        Orientation angle for applied magnetic field (degrees). Should be 270
+        or 90 for field in plane of sample.
     scale: float
         Multiply all reflectivities by this value.
     bkg: float
         Linear background to be added to all reflectivities
+    threads: int, optional
+        How many threads you would like to use in the reflectivity calculation.
+        If `threads == -1` then the calculation is automatically spread over
+        `multiprocessing.cpu_count()` threads.
 
     Returns
     -------
@@ -602,6 +629,11 @@ cpdef np.ndarray gepore(
         rhoM = np.zeros(layers)
         thetaM = np.zeros(layers)
 
+    if threads == -1:
+        threads = NCPU
+    elif threads == 0:
+        threads = 1
+
     xP = <float64_t *> np.PyArray_DATA(x)
 
     d[:] = w[:, 0]
@@ -623,22 +655,43 @@ cpdef np.ndarray gepore(
     Rc = <float64_t *> np.PyArray_DATA(y[2])
     Rd = <float64_t *> np.PyArray_DATA(y[3])
 
-    pnr(
-        layers,
-        d_data,
-        sigma_data,
-        rho_data,
-        irho_data,
-        rhoM_data,
-        thetaM_data,
-        H,
-        npoints,
-        xP,
-        Ra,
-        Rb,
-        Rc,
-        Rd
-    )
+    if threads > 1:
+        pnr_MT(
+            threads,
+            layers,
+            d_data,
+            sigma_data,
+            rho_data,
+            irho_data,
+            rhoM_data,
+            thetaM_data,
+            H,
+            Aguide,
+            npoints,
+            xP,
+            Ra,
+            Rb,
+            Rc,
+            Rd
+        )
+    else:
+        pnr(
+            layers,
+            d_data,
+            sigma_data,
+            rho_data,
+            irho_data,
+            rhoM_data,
+            thetaM_data,
+            H,
+            Aguide,
+            npoints,
+            xP,
+            Ra,
+            Rb,
+            Rc,
+            Rd
+        )
     y *= scale
     y += bkg
     return y

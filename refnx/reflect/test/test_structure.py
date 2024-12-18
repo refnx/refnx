@@ -1,4 +1,5 @@
 import pickle
+from pathlib import Path
 
 import numpy as np
 from numpy.testing import (
@@ -21,8 +22,9 @@ from refnx.reflect import (
     Interface,
     MaterialSLD,
     MixedSlab,
+    SpinChannel,
 )
-from refnx.reflect.structure import _profile_slicer
+from refnx.reflect.structure import _profile_slicer, MagneticSlab
 from refnx.analysis import Parameter, Interval, Parameters
 from refnx.analysis.parameter import _BinaryOp
 from orsopy.fileio.model_language import SampleModel
@@ -30,6 +32,7 @@ from orsopy.fileio.model_language import SampleModel
 
 class TestStructure:
     def setup_method(self):
+        self.pth = Path(__file__).absolute().parent
         self.air = SLD(0, name="air")
         self.sio2 = SLD(3.47, name="sio2")
         self.d2o = SLD(6.36, name="d2o")
@@ -94,6 +97,44 @@ class TestStructure:
         assert hasattr(self.s[0], "is_magnetic")
         assert self.s[0].is_magnetic is False
         assert self.s.is_magnetic is False
+
+    def test_MagneticSlab(self):
+        air = MagneticSlab(0, 0, 0, 0, 90)
+        assert air.is_magnetic
+        l1 = MagneticSlab(200, 4, 0, 1, 180)
+        l2 = MagneticSlab(200, 2, 0, 1, 90)
+        back = MagneticSlab(0, 4, 0, 0, 90)
+        s = air | l1 | l2 | back
+
+        data = np.loadtxt(self.pth / "test1.dat")
+        w = np.array(
+            [
+                [0, 0, 0, 0, 0, 90],
+                [200, 4, 0, 0, 1, 180],
+                [200, 2, 0, 0, 1, 90],
+                [0, 4, 0, 0, 0, 90],
+            ],
+            np.float64,
+        )
+        q = data[:, 0]
+        ref = data[:, 1:].T
+        pol = s.reflectivity(q, spin=SpinChannel.UP_UP)
+        assert_allclose(pol, ref[-1])
+        assert s.is_magnetic
+
+        sl = s.slabs()
+        assert sl.shape[1] == 7
+        sl = np.take_along_axis(
+            sl, np.array([0, 1, 2, 3, 5, 6])[None, :], axis=1
+        )
+        assert_allclose(sl, w)
+
+    def test_repr_MagneticSlab(self):
+        p = MagneticSlab(200, 4, 0, 1, 180)
+        q = eval(repr(p))
+        assert_allclose(q.thick.value, 200)
+        assert_allclose(q.thetaM.value, 180)
+        assert_allclose(q.rhoM.value, 1)
 
     def test_interface(self):
         # can we set the interface property correctly

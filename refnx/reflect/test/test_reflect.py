@@ -23,6 +23,9 @@ from refnx.reflect import (
     SLD,
     ReflectModel,
     ReflectModelTL,
+    PolarisedReflectModel,
+    MagneticSlab,
+    SpinChannel,
     MixedReflectModel,
     reflectivity,
     Structure,
@@ -349,8 +352,8 @@ class TestReflect:
         )
         q = data[:, 0]
         ref = data[:, 1:].T
-        pol = gepore(q, w)
-        assert_allclose(pol, np.flipud(ref))
+        pol = gepore(q, w, Aguide=90)
+        assert_allclose(pol, ref)
 
     def test_abeles_vectorised(self):
         w = np.array(
@@ -897,7 +900,42 @@ class TestReflect:
         assert_allclose(r[0], pp)
         assert_allclose(r[1], mm)
 
-    def test_repr_reflect_model(self):
+    def test_repr_SpinChannel(self):
+        p = SpinChannel.UP_UP
+        q = eval(repr(p))
+        assert q is SpinChannel.UP_UP
+
+    def test_PolarisedReflectModel(self):
+        air = SLD(0.0)
+        l1 = MagneticSlab(200, 4, 0, 1, 180)
+        l2 = MagneticSlab(200, 2, 0, 1, 90)
+        back = MagneticSlab(0, 4, 0, 0, 90)
+        s = air | l1 | l2 | back
+        q = np.geomspace(0.01, 0.2, 1001)
+        # constant dq/q
+        model = PolarisedReflectModel(
+            s, spin=SpinChannel.UP_UP, dq_type="constant"
+        )
+        assert hasattr(model, "spin")
+        model(q)
+        # pointwise
+        model = PolarisedReflectModel(
+            s, spin=SpinChannel.UP_UP, dq_type="pointwise"
+        )
+        q_err = 0.05 * q
+        model(q, x_err=q_err)
+
+    def test_repr_PolarisedReflectModel(self):
+        air = SLD(0.0)
+        l1 = MagneticSlab(200, 4, 0, 1, 180)
+        back = MagneticSlab(0, 4, 0, 0, 90)
+        s = air | l1 | back
+        p = PolarisedReflectModel(s, spin=SpinChannel.UP_UP)
+        q = eval(repr(p))
+        x = np.geomspace(0.01, 0.2, 1001)
+        q(x)
+
+    def test_repr_ReflectModel(self):
         p = SLD(0.0)
         q = SLD(2.07)
         s = p(0, 0) | q(0, 3)

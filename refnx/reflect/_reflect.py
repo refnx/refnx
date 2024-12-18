@@ -679,11 +679,11 @@ def pnr(q, layers):
 
 # w is a 2D array with each row being [d, real SLD, imag SLD, roughness, moment, thetaM], where thetaM is angle
 # of applied field and moment.
-# def bb(q, layers):
+# def bb(q, w):
 #     qvals = np.asarray(q).astype(float, copy=False)
 #     flatq = qvals.ravel()
 #
-#     nlayers = layers.shape[0] - 2
+#     nlayers = w.shape[0] - 2
 #     npnts = flatq.size
 #
 #     k_u = np.zeros((npnts, nlayers + 2), np.complex128)
@@ -691,66 +691,165 @@ def pnr(q, layers):
 #     sld_u = np.zeros(nlayers + 2, np.complex128)
 #     sld_d = np.zeros(nlayers + 2, np.complex128)
 #
-#     thick = layers[1:-1, 0]
-#     rough2 = layers[1:, 3] ** 2
-#     moment = layers[:, 4]
-#     angle = np.radians(layers[:, 5])
-#     d_angle = np.ediff1d(angle)
-#
-#     mag = moment * FCTR * np.cos(angle)
+#     thick = w[1:-1, 0]
+#     rough2 = (-2.0 * w[1:, 3] ** 2)[:, None]  # (nlayers + 1, 1)
+#     mag = w[:, 4]
+#     angle = np.radians(w[:, 5])
+#     beta = np.ediff1d(angle)
 #
 #     # addition of TINY is to ensure the correct branch cut
 #     # in the complex sqrt calculation of kn.
 #     # TODO check what moment is supposed to be in front layer
-#     sld_u[1:] += (
-#         (layers[1:, 1] + mag[1:] - (layers[0, 1] + mag[0]))
-#         + 1j * (np.abs(layers[1:, 2]) + TINY)
-#     ) * 1.0e-6
-#     sld_d[1:] += (
-#         (layers[1:, 1] - mag[1:] - (layers[0, 1] - mag[0]))
-#         + 1j * (np.abs(layers[1:, 2]) + TINY)
-#     ) * 1.0e-6
+#     # sld_u[1:] += (
+#     #     (w[1:, 1] + mag[1:] - (w[0, 1] + mag[0]))
+#     #     + 1j * (np.abs(w[1:, 2]) + TINY)
+#     # ) * 1.0e-6
 #
-#     # wavevectors in each of the layers
-#     k_u[:] = np.sqrt(flatq[:, np.newaxis] ** 2.0 / 4.0 - 4.0 * np.pi * sld_u)
-#     k_d[:] = np.sqrt(flatq[:, np.newaxis] ** 2.0 / 4.0 - 4.0 * np.pi * sld_d)
+#     # sld_d[1:] += (
+#     #     (w[1:, 1] - mag[1:] - (w[0, 1] - mag[0]))
+#     #     + 1j * (np.abs(w[1:, 2]) + TINY)
+#     # ) * 1.0e-6
 #
-#     sint = np.sin(d_angle)
-#     sint_2 = np.sin(d_angle / 2.0)
-#     cost_2 = np.cos(d_angle / 2.0)
+#     sld_u[1:] += ((w[1:, 1] + mag[1:]) + 1j * (np.abs(w[1:, 2]))) * 1.0e-6
+#     sld_d[1:] += ((w[1:, 1] - mag[1:]) + 1j * (np.abs(w[1:, 2]))) * 1.0e-6
 #
-#     cost2 = cost_2**2
-#     sint2 = sint_2**2
+#     k0 = (q / 2)[:, None]
 #
-#     den = (k_u[:, :-1] + k_u[:, 1:]) * (k_d[:, :-1] + k_d[:, 1:]) * cost2
-#     den += (k_u[:, :-1] + k_d[:, 1:]) * (k_d[:, :-1] + k_u[:, :-1]) * sint2
+#     k_u[:] = k0 * np.sqrt(1 - (4 * np.pi * sld_u[None, :]) / k0 ** 2)
+#     k_d[:] = k0 * np.sqrt(1 - (4 * np.pi * sld_d[None, :]) / k0 ** 2)
+#
+#     # wavevectors in each of the layers (npnts, nlayers + 2)
+#     # k_u[:] = np.sqrt(flatq[:, np.newaxis] ** 2.0 / 4.0 - 4.0 * np.pi * sld_u)
+#     # k_d[:] = np.sqrt(flatq[:, np.newaxis] ** 2.0 / 4.0 - 4.0 * np.pi * sld_d)
+#
+#     # (nlayers + 2, npnts)
+#     k_u = k_u.T
+#     k_d = k_d.T
+#
+#     ########################################
+#     # forward values, i.e. r_{m-1, m, r_{12}
+#
+#     # (nlayers + 1, 1)
+#     beta_2 = (beta / 2.0)[:, None]
+#     sin_beta_2 = np.sin(beta_2)
+#     cos_beta_2 = np.cos(beta_2)
+#     sin2_beta_2 = sin_beta_2 ** 2
+#     cos2_beta_2 = cos_beta_2 ** 2
+#
+#     den = (k_u[:-1] + k_u[1:]) * (k_d[:-1] + k_d[1:]) * cos2_beta_2
+#     den += (k_u[:-1] + k_d[1:]) * (k_d[:-1] + k_u[1:]) * sin2_beta_2
+#
+#     # each of the reflectances/transmittances are (nlayers + 1, npnts)
 #     rpp = (
-#         cost2 * (k_u[:, :-1] - k_u[:, 1:]) * (k_d[:, :-1] + k_d[:, 1:])
-#         + sint2 * (k_u[:, :-1] - k_d[:, 1:]) * (k_d[:, :-1] + k_u[:, 1:])
-#     ) / den
-#     rpm = (sint * k_u[:, :-1] * (k_u[:, 1:] - k_d[:, 1:])) / den
-#     tpp = 2 * cost_2 * k_u[:, :-1] * (k_d[:, :-1] + k_d[:, 1:]) / den
-#     tpm = 2 * sint_2 * k_u[:, :-1] * (k_d[:, :-1] + k_u[:, 1:]) / den
+#                   cos2_beta_2 * (k_u[:-1] - k_u[1:]) * (k_d[:-1] + k_d[1:])
+#                   + sin2_beta_2 * (k_u[:-1] - k_d[1:]) * (k_d[:-1] + k_u[1:])
+#           ) / den
+#     rpm = 2 * k_u[:-1] * sin_beta_2 * cos_beta_2 * (k_u[1:] - k_d[1:]) / den
+#     tpp = 2 * cos_beta_2 * k_u[:-1] * (k_d[:-1] + k_d[1:]) / den
+#     tpm = 2 * sin_beta_2 * k_u[:-1] * (k_d[:-1] + k_u[1:]) / den
 #
 #     # symmetry
 #     rmm = (
-#         cost2 * (k_d[:, :-1] - k_d[:, 1:]) * (k_u[:, :-1] + k_u[:, 1:])
-#         + sint2 * (k_d[:, :-1] - k_u[:, 1:]) * (k_u[:, :-1] + k_d[:, 1:])
-#     ) / den
-#     rmp = (sint * k_d[:, :-1] * (k_d[:, 1:] - k_u[:, 1:])) / den
-#     tmm = 2 * cost_2 * k_d[:, :-1] * (k_u[:, :-1] + k_u[:, 1:]) / den
-#     tmp = 2 * sint_2 * k_d[:, :-1] * (k_u[:, :-1] + k_d[:, 1:]) / den
+#                   cos2_beta_2 * (k_d[:-1] - k_d[1:]) * (k_u[:-1] + k_u[1:])
+#                   + sin2_beta_2 * (k_d[:-1] - k_u[1:]) * (k_u[:-1] + k_d[1:])
+#           ) / den
+#     rmp = 2 * sin_beta_2 * cos_beta_2 * k_d[:-1] * (k_d[1:] - k_u[1:]) / den
+#     tmm = 2 * cos_beta_2 * k_d[:-1] * (k_u[:-1] + k_u[1:]) / den
+#     tmp = 2 * sin_beta_2 * k_d[:-1] * (k_u[:-1] + k_d[1:]) / den
 #
-#     # modify by Debye-Waller factor
-#     rpp *= np.exp(-0.5 * k_u[:, :-1] * k_u[:, 1:] * rough2)
-#     rpm *= np.exp(-0.5 * k_u[:, :-1] * k_d[:, 1:] * rough2)
-#     rmm *= np.exp(-0.5 * k_d[:, :-1] * k_d[:, 1:] * rough2)
-#     rmp *= np.exp(-0.5 * k_d[:, :-1] * k_u[:, 1:] * rough2)
+#     # modify reflectance by Debye-Waller factor
+#     # rough2 already incorporates a factor of -2.0.
+#     rpp *= np.exp(k_u[:-1] * k_u[1:] * rough2)
+#     rpm *= np.exp(k_u[:-1] * k_d[1:] * rough2)
+#     rmm *= np.exp(k_d[:-1] * k_d[1:] * rough2)
+#     rmp *= np.exp(k_d[:-1] * k_u[1:] * rough2)
 #
-#     Pm = np.zeros((npnts, nlayers, 2, 2), dtype=np.complex128)
-#     Pm[:, :, 0, 0] = np.exp(1j * thick * k_u[:, 1:-1])
-#     Pm[:, :, 1, 1] = np.exp(1j * thick * k_d[:, 1:-1])
-#     return den
+#     ########################################
+#     # backward values, i.e. r_{m, m-1}, r_{21}
+#     # each of the reflectances/transmittances are (nlayers + 1, npnts)
+#     beta_2 = (-beta / 2.0)[:, None]
+#     sin_beta_2 = np.sin(beta_2)
+#     cos_beta_2 = np.cos(beta_2)
+#     sin2_beta_2 = sin_beta_2 ** 2
+#     cos2_beta_2 = cos_beta_2 ** 2
+#
+#     den = (k_u[:-1] + k_u[1:]) * (k_d[:-1] + k_d[1:]) * cos2_beta_2
+#     den += (k_u[:-1] + k_d[1:]) * (k_d[:-1] + k_u[1:]) * sin2_beta_2
+#
+#     rpp_back = (
+#                        cos2_beta_2 * (k_u[1:] - k_u[:-1]) * (k_d[1:] + k_d[:-1])
+#                        + sin2_beta_2 * (k_u[1:] - k_d[:-1]) * (k_d[1:] + k_u[:-1])
+#                ) / den
+#     rpm_back = 2 * sin_beta_2 * cos_beta_2 * k_u[1:] * (k_u[:-1] - k_d[:-1]) / den
+#     tpp_back = 2 * cos_beta_2 * k_u[1:] * (k_d[:-1] + k_d[1:]) / den
+#     tpm_back = 2 * sin_beta_2 * k_u[1:] * (k_d[1:] + k_u[:-1]) / den
+#
+#     # symmetry
+#     rmm_back = (
+#                        cos2_beta_2 * (k_d[1:] - k_d[:-1]) * (k_u[1:] + k_u[:-1])
+#                        + sin2_beta_2 * (k_d[1:] - k_u[:-1]) * (k_u[1:] + k_d[:-1])
+#                ) / den
+#     rmp_back = 2 * sin_beta_2 * cos_beta_2 * k_d[1:] * (k_d[:-1] - k_u[:-1]) / den
+#     tmm_back = 2 * cos_beta_2 * k_d[1:] * (k_u[:-1] + k_u[1:]) / den
+#     tmp_back = 2 * sin_beta_2 * k_d[1:] * (k_u[1:] + k_d[:-1]) / den
+#
+#     # modify reflectance by Debye-Waller factor
+#     # rough2 already incorporates a factor of -2.0.
+#     rpp_back *= np.exp(k_u[:-1] * k_u[1:] * rough2)
+#     rpm_back *= np.exp(k_u[1:] * k_d[:-1] * rough2)
+#     rmm_back *= np.exp(k_d[:-1] * k_d[1:] * rough2)
+#     rmp_back *= np.exp(k_d[1:] * k_u[:-1] * rough2)
+#
+#     # k.shape == (nlayers + 2, npnts), thick.shape == (nlayers)
+#     # phi.shape == (nlayers, npnts)
+#     if nlayers:
+#         phi_u = np.exp(1J * k_u[1:-1] * thick)
+#         phi_d = np.exp(1J * k_d[1:-1] * thick)
+#
+#     # eqn 9.79. Note that we're changing axes around to make it easier to matrix multiply further on
+#     rij1 = np.zeros((npnts, 2, 2), dtype=np.complex128)
+#     rij1[:, 0, 0] = rpp[-1]
+#     rij1[:, 0, 1] = rpm[-1]
+#     rij1[:, 1, 0] = rmp[-1]
+#     rij1[:, 1, 1] = rmm[-1]
+#
+#     rij = np.zeros_like(rij1)
+#     rij_back = np.zeros_like(rij1)
+#     tij = np.zeros_like(rij1)
+#     tij_back = np.zeros_like(rij1)
+#     P = np.zeros_like(rij1)
+#     EYE = np.eye(2, dtype=np.complex128)[None, ...]
+#
+#     # now work forward and multiply everything out
+#     for idx in range(nlayers - 1, -1, -1):
+#         # TODO look into a quicker way of assembling these
+#         rij[:, 0, 0] = rpp[idx]
+#         rij[:, 0, 1] = rpm[idx]
+#         rij[:, 1, 0] = rmp[idx]
+#         rij[:, 1, 1] = rmm[idx]
+#
+#         rij_back[:, 0, 0] = rpp_back[idx]
+#         rij_back[:, 0, 1] = rpm_back[idx]
+#         rij_back[:, 1, 0] = rmp_back[idx]
+#         rij_back[:, 1, 1] = rmm_back[idx]
+#
+#         tij[:, 0, 0] = tpp[idx]
+#         tij[:, 0, 1] = tpm[idx]
+#         tij[:, 1, 0] = tmp[idx]
+#         tij[:, 1, 1] = tmm[idx]
+#
+#         tij_back[:, 0, 0] = tpp_back[idx]
+#         tij_back[:, 0, 1] = tpm_back[idx]
+#         tij_back[:, 1, 0] = tmp_back[idx]
+#         tij_back[:, 1, 1] = tmm_back[idx]
+#
+#         P[:, 0, 0] = phi_u[idx]
+#         P[:, 1, 1] = phi_d[idx]
+#
+#         P_rij1_P = P @ rij1 @ P
+#         rij1 = rij + tij @ P_rij1_P @ np.linalg.inv(EYE - rij_back @ P_rij1_P) @ tij_back
+#
+#     return rij1[:, 0, 0], rij1[:, 0, 1], rij1[:, 1, 0], rij1[:, 1, 1]
 
 
 if __name__ == "__main__":
