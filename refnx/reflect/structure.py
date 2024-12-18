@@ -941,6 +941,9 @@ def _concatenate_slabs(sl):
         # work out total size of slab array
         rows = np.sum([s.shape[0] for s in sl if s is not None])
         slabs = np.zeros((rows, 7))
+        # automatically align magnetic moment with applied field, assuming
+        # applied field is in the plane of the sample
+        slabs[:, -1] = 90.0
         idx = 0
         for s in sl:
             if s is None:
@@ -1832,6 +1835,11 @@ class MagneticSlab(Component):
         Magnetic angle of the layer (degrees). See
         https://github.com/reflectivity/analysis/tree/master/validation
         for geometry details.
+        For a magnetic moment to be parallel or anti-parallel to an applied
+        field in the plane of the sample (`Aguide=270` or `90`), `thetaM`
+        should be 90 or -90 deg respectively. If `thetaM = 0` then the moment
+        in the film is perpendicular to the applied field and spin flip will
+        be maximised.
     name : str
         Name of this slab
     interface : {:class:`Interface`, None}, optional
@@ -1853,7 +1861,7 @@ class MagneticSlab(Component):
         sld,
         rough,
         rhoM,
-        thetaM,
+        thetaM=90.0,
         name="",
         interface=None,
     ):
