@@ -50,8 +50,8 @@ DEALINGS IN THIS SOFTWARE.
 
     npoints - the number of points in the yP and xP arrays
 
-    yP - this user supplied array is filled by the reflect function.  It must be
-    npoints long
+    yP - this user supplied array is filled by the reflect function.  It must
+    be npoints long
 
     xP - array containing the Q (momentum transfer) points. It has units Å**-1.
     The array is npoints long
@@ -115,3 +115,8 @@ void pnr(int layers, const double *d, const double *sigma, const double *rho,
          const double *irho, const double *rhoM, const double *thetaM, double H,
          double Aguide, int points, const double *xP, double *Ra, double *Rb,
          double *Rc, double *Rd);
+
+void pnr_MT(int workers, int layers, const double *d, const double *sigma,
+            const double *rho, const double *irho, const double *rhoM,
+            const double *thetaM, double H, double Aguide, int points,
+            const double *xP, double *Ra, double *Rb, double *Rc, double *Rd);
