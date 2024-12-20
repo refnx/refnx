@@ -31,12 +31,13 @@ extern "C" {
 #include "refcalc.h"
 }
 
+#include <math.h>
+#include <stdlib.h>
+
+#include "pnr/reflcalc.h"
 #include <cmath>
 #include <cstring>
 #include <iostream>
-#include <math.h>
-#include <pnr/reflcalc.h>
-#include <stdlib.h>
 #include <thread>
 #include <vector>
 #ifndef M_PI
@@ -160,8 +161,8 @@ void parratt_wrapper(int numcoefs, const double *coefP, int npoints, double *yP,
 
 void pnr(int layers, const double *d, const double *sigma, const double *rho,
          const double *irho, const double *rhoM, const double *thetaM, double H,
-         int points, const double *xP, double *Ra, double *Rb, double *Rc,
-         double *Rd) {
+         double Aguide, int points, const double *xP, double *Ra, double *Rb,
+         double *Rc, double *Rd) {
   std::vector<double> kz(points);
   std::vector<Cplx> u1(layers), u3(layers);
   std::vector<Cplx> Rac(points), Rbc(points), Rcc(points), Rdc(points);
@@ -171,8 +172,8 @@ void pnr(int layers, const double *d, const double *sigma, const double *rho,
   memcpy(rhoM_mod.data(), rhoM, sizeof(double) * layers);
 
   for (idx = 0; idx < layers; idx++) {
-    calculate_U1_U3(H, *(rhoM_mod.data() + idx), thetaM[idx] * M_PI / 180., 270,
-                    *(u1.data() + idx), *(u3.data() + idx));
+    calculate_U1_U3(H, *(rhoM_mod.data() + idx), thetaM[idx] * M_PI / 180.,
+                    Aguide, *(u1.data() + idx), *(u3.data() + idx));
   }
   for (idx = 0; idx < points; idx++) {
     kz[idx] = xP[idx] / 2.0;
@@ -187,4 +188,44 @@ void pnr(int layers, const double *d, const double *sigma, const double *rho,
     Rc[idx] = std::norm(Rcc[idx]);
     Rd[idx] = std::norm(Rdc[idx]);
   }
+}
+
+void pnr_MT(int workers, int layers, const double *d, const double *sigma,
+            const double *rho, const double *irho, const double *rhoM,
+            const double *thetaM, double H, double Aguide, int points,
+            const double *xP, double *Ra, double *Rb, double *Rc, double *Rd) {
+  std::vector<std::thread> threads;
+  int pointsEachThread, pointsRemaining, pointsConsumed;
+
+  // need to calculate how many points are given to each thread.
+  if (workers > 0) {
+    pointsEachThread = floorl(points / workers);
+  } else {
+    pointsEachThread = points;
+  }
+
+  pointsRemaining = points;
+  pointsConsumed = 0;
+
+  for (int ii = 0; ii < workers; ii++) {
+    if (ii < workers - 1) {
+      threads.emplace_back(std::thread(
+          pnr, layers, d, sigma, rho, irho, rhoM, thetaM, H, Aguide,
+          pointsEachThread, xP + pointsConsumed, Ra + pointsConsumed,
+          Rb + pointsConsumed, Rc + pointsConsumed, Rd + pointsConsumed));
+      pointsRemaining -= pointsEachThread;
+      pointsConsumed += pointsEachThread;
+    } else {
+      threads.emplace_back(std::thread(
+          pnr, layers, d, sigma, rho, irho, rhoM, thetaM, H, Aguide,
+          pointsRemaining, xP + pointsConsumed, Ra + pointsConsumed,
+          Rb + pointsConsumed, Rc + pointsConsumed, Rd + pointsConsumed));
+      pointsRemaining -= pointsRemaining;
+      pointsConsumed += pointsRemaining;
+    }
+  }
+
+  // synchronise threads
+  for (auto &th : threads)
+    th.join();
 }

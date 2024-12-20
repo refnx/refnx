@@ -3,6 +3,7 @@ import os
 from refnx.reflect.reflect_model import (
     ReflectModel,
     ReflectModelTL,
+    PolarisedReflectModel,
     reflectivity,
     MixedReflectModel,
     FresnelTransform,
@@ -16,6 +17,7 @@ from refnx.reflect.structure import (
     Structure,
     SLD,
     Slab,
+    MagneticSlab,
     Component,
     sld_profile,
     Stack,

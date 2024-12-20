@@ -44,6 +44,14 @@ from refnx.analysis import (
 )
 from refnx.util import general
 
+try:
+    from refnx.reflect._creflect import gepore
+except ImportError:
+
+    def gepore(*args, **kwds):
+        raise RuntimeError("gepore is not available")
+
+
 # some definitions for resolution smearing
 _FWHM = 2 * np.sqrt(2 * np.log(2.0))
 _INTLIMIT = 3.5
@@ -327,6 +335,9 @@ class SpinChannel(Enum):
     DOWN_UP = (0, 1)
     DOWN_DOWN = (0, 0)
 
+    def __repr__(self):
+        return f"SpinChannel.{self.name}"
+
 
 class ReflectModel:
     r"""
@@ -384,6 +395,8 @@ class ReflectModel:
         where the measured q values (incident angle) may have been under/over
         estimated, and has the effect of shifting the calculated model to
         lower/higher effective q values.
+    spin: refnx.reflect.SpinChannel
+        The polarisation channel that is being calculated.
     """
 
     def __init__(
@@ -552,9 +565,11 @@ class ReflectModel:
             # fallback to what this object was constructed with
             x_err = float(self.dq)
 
+        slabs = self.structure.slabs()[:, :4]
+
         return reflectivity(
             x,
-            self.structure.slabs()[..., :4],
+            slabs,
             scale=self.scale.value,
             bkg=self.bkg.value,
             dq=x_err,
@@ -604,6 +619,119 @@ class ReflectModel:
         """
         self.structure = self._structure
         return self._parameters
+
+
+class PolarisedReflectModel(ReflectModel):
+    """
+    Extension of ReflectModel for polarised neutron reflectometry.
+    See `refnx.reflect.ReflectModel` for documentation of arguments.
+
+    Parameters
+    ----------
+    spin: refnx.reflect.SpinChannel
+        Specifies the spin state the model is associated with.
+    Aguide: float
+        Angle of applied field. This value should be 270 or 90 degrees for
+        the applied field to lie in the plane of the sample, perpendicular to
+        the beam propagation direction. For a magnetic moment to be parallel
+        or anti-parallel to the applied field `thetaM` should be 90 or -90 deg
+        respectively.
+    """
+
+    def __init__(
+        self,
+        structure,
+        scale=1,
+        bkg=1e-7,
+        name="",
+        dq=5.0,
+        threads=-1,
+        quad_order=17,
+        dq_type="pointwise",
+        q_offset=0,
+        spin=None,
+        Aguide=270,
+    ):
+        super().__init__(
+            structure,
+            name=name,
+            scale=scale,
+            bkg=bkg,
+            threads=threads,
+            quad_order=quad_order,
+            dq=dq,
+            dq_type=dq_type,
+            q_offset=q_offset,
+        )
+        self.spin = spin
+        self.Aguide = Aguide
+
+    def __repr__(self):
+        return (
+            f"PolarisedReflectModel({self._structure!r}, name={self.name!r},"
+            f" scale={self.scale!r}, bkg={self.bkg!r},"
+            f" dq={self.dq!r}, threads={self.threads},"
+            f" quad_order={self.quad_order!r}, dq_type={self.dq_type!r},"
+            f" q_offset={self.q_offset!r}, spin={self.spin!r}, Aguide={self.Aguide!r})"
+        )
+
+    def model(self, x, p=None, x_err=None):
+        r"""
+        Calculate the reflectivity of this model
+
+        Parameters
+        ----------
+        x : float or np.ndarray
+            q values for the calculation.
+            Units = Angstrom**-1
+        p : refnx.analysis.Parameters, optional
+            parameters required to calculate the model
+        x_err : {np.ndarray, float} optional
+            Specifies how the instrumental resolution smearing is carried out
+            for each of the points in `x`.
+            See :func:`refnx.reflect.reflectivity` for further details.
+
+        Returns
+        -------
+        reflectivity : np.ndarray
+            Calculated reflectivity
+
+        Notes
+        -----
+        If `x_err` is not provided then the calculation will fall back to
+        the constant dq/q smearing specified by the `dq` attribute of this
+        object.
+        """
+        if p is not None:
+            self.parameters.pvals = np.array(p)
+        if x_err is None or self.dq_type == "constant":
+            # fallback to what this object was constructed with
+            x_err = float(self.dq)
+
+        slabs = self.structure.slabs()
+        spin = self.spin
+        if slabs.shape[1] == 5:
+            # unpolarised for some reason
+            slabs = slabs[..., :4]
+            spin = None
+        if slabs.shape[1] == 7:
+            # polarised
+            slabs = np.take_along_axis(
+                slabs, np.array([0, 1, 2, 3, 5, 6])[None, :], axis=1
+            )
+
+        return reflectivity(
+            x,
+            slabs,
+            scale=self.scale.value,
+            bkg=self.bkg.value,
+            dq=x_err,
+            threads=self.threads,
+            quad_order=self.quad_order,
+            q_offset=self.q_offset,
+            spin=spin,
+            Aguide=self.Aguide,
+        )
 
 
 class ReflectModelTL(ReflectModel):
@@ -821,6 +949,8 @@ def reflectivity(
     quad_order=17,
     threads=-1,
     q_offset=0,
+    spin=None,
+    Aguide=270,
 ):
     r"""
     Abeles/Parratt formalism for calculating reflectivity from a stratified
@@ -834,7 +964,8 @@ def reflectivity(
         Units = Angstrom**-1
     slabs : np.ndarray
         coefficients required for the calculation, has shape (2 + N, 4),
-        where N is the number of layers
+        where N is the number of layers. For magnetic systems the number of
+        columns the shape will be (2 + N, 6).
 
         - slabs[0, 0]
            ignored
@@ -864,6 +995,17 @@ def reflectivity(
         - slabs[-1, 3]
            roughness between backing and layer N
 
+        If the system is magnetic then there are two extra columns:
+
+        - slab[N, 4]
+            Magnetic SLD correction (/1e-6 Angstrom**-2)
+        - slab[N, 5]
+            Angle of magnetic moment in plane (degrees). See
+            https://github.com/reflectivity/analysis/tree/master/validation
+            for details.
+
+        Note that this slab representation is slightly different to that returned by
+        `refnx.reflect.Structure.slabs()`.
     scale : float
         scale factor. All model values are multiplied by this value before
         the background is added
@@ -906,6 +1048,10 @@ def reflectivity(
         where the measured q values (incident angle) may have been under/over
         estimated, and has the effect of shifting the calculated model to
         lower/higher effective q values.
+    spin: refnx.reflect.SpinChannel
+        The polarisation channel that is being calculated.
+    Aguide: float
+        Angle of applied field.
 
     Example
     -------
@@ -924,9 +1070,16 @@ def reflectivity(
     # cast q_offset to float, if it's a Parameter
     q_offset = float(q_offset)
 
+    if slabs.shape[1] == 4:
+        fkernel = kernel
+    elif slabs.shape[1] == 6:
+        fkernel = _gepore_wrapper(spin, Aguide)
+    else:
+        raise ValueError(f"slabs are wrong, {slabs.shape=}")
+
     # constant dq/q smearing
     if isinstance(dq, numbers.Real) and float(dq) == 0:
-        return kernel(
+        return fkernel(
             q + q_offset, slabs, scale=scale, bkg=bkg, threads=threads
         )
     elif isinstance(dq, numbers.Real):
@@ -934,7 +1087,7 @@ def reflectivity(
         return (
             scale
             * _smeared_kernel_constant(
-                q + q_offset, slabs, dq, threads=threads
+                q + q_offset, slabs, dq, threads=threads, fkernel=fkernel
             )
         ) + bkg
 
@@ -948,7 +1101,11 @@ def reflectivity(
             smeared_rvals = (
                 scale
                 * _smeared_kernel_adaptive(
-                    qvals_flat + q_offset, slabs, dqvals_flat, threads=threads
+                    qvals_flat + q_offset,
+                    slabs,
+                    dqvals_flat,
+                    threads=threads,
+                    fkernel=fkernel,
                 )
                 + bkg
             )
@@ -963,6 +1120,7 @@ def reflectivity(
                     dqvals_flat,
                     quad_order=quad_order,
                     threads=threads,
+                    fkernel=fkernel,
                 )
                 + bkg
             )
@@ -976,7 +1134,7 @@ def reflectivity(
     ):
         qvals_for_res = dq[:, 0, :] + q_offset
         # work out the reflectivity at the kernel evaluation points
-        smeared_rvals = kernel(qvals_for_res, slabs, threads=threads)
+        smeared_rvals = fkernel(qvals_for_res, slabs, threads=threads)
 
         # multiply by probability
         smeared_rvals *= dq[:, 1, :]
@@ -1005,7 +1163,26 @@ def gauss_legendre(n):
     return scipy.special.p_roots(n)
 
 
-def _smear_kernel(x, w, q, dq, threads):
+def _gepore_wrapper(spin, Aguide):
+    _c = {
+        SpinChannel.UP_UP: 0,
+        SpinChannel.UP_DOWN: 1,
+        SpinChannel.DOWN_UP: 2,
+        SpinChannel.DOWN_DOWN: 3,
+    }
+
+    def wrapped_fun(q, w, *args, **kwds):
+        kwds["Aguide"] = Aguide
+        arr = gepore(q, w, *args, **kwds)[_c[spin]]
+        return arr.reshape(q.shape)
+
+    if spin not in _c.keys():
+        raise ValueError("spin must be an enum from refnx.reflect.SpinChannel")
+
+    return wrapped_fun
+
+
+def _smear_kernel(x, w, q, dq, threads, fkernel=kernel):
     """
     Adaptive Gaussian quadrature integration
 
@@ -1030,10 +1207,10 @@ def _smear_kernel(x, w, q, dq, threads):
     prefactor = 1 / np.sqrt(2 * np.pi)
     gauss = prefactor * np.exp(-0.5 * x * x)
     localq = q + x * dq / _FWHM
-    return kernel(localq, w, threads=threads) * gauss
+    return fkernel(localq, w, threads=threads) * gauss
 
 
-def _smeared_kernel_adaptive(qvals, w, dqvals, threads=-1):
+def _smeared_kernel_adaptive(qvals, w, dqvals, threads=-1, fkernel=kernel):
     """
     Resolution smearing that uses adaptive Gaussian quadrature integration
     for the convolution.
@@ -1070,14 +1247,16 @@ def _smeared_kernel_adaptive(qvals, w, dqvals, threads=-1):
             -_INTLIMIT,
             _INTLIMIT,
             epsabs=0.0,
-            args=(w, qvals[idx], dqvals[idx], threads),
+            args=(w, qvals[idx], dqvals[idx], threads, fkernel),
         )
 
     warnings.resetwarnings()
     return smeared_rvals
 
 
-def _smeared_kernel_pointwise(qvals, w, dqvals, quad_order=17, threads=-1):
+def _smeared_kernel_pointwise(
+    qvals, w, dqvals, quad_order=17, threads=-1, fkernel=kernel
+):
     """
     Resolution smearing that uses fixed order Gaussian quadrature integration
     for the convolution.
@@ -1130,7 +1309,7 @@ def _smeared_kernel_pointwise(qvals, w, dqvals, quad_order=17, threads=-1):
     vb = vb[..., np.newaxis]
 
     qvals_for_res = (abscissa[np.newaxis, :] * (vb - va) + vb + va) / 2.0
-    smeared_rvals = kernel(qvals_for_res, w, threads=threads)
+    smeared_rvals = fkernel(qvals_for_res, w, threads=threads)
 
     # smeared_rvals = np.reshape(smeared_rvals, (qvals.size, abscissa.size))
 
@@ -1138,7 +1317,7 @@ def _smeared_kernel_pointwise(qvals, w, dqvals, quad_order=17, threads=-1):
     return np.sum(smeared_rvals, -1) * _INTLIMIT
 
 
-def _smeared_kernel_constant(q, w, resolution, threads=-1):
+def _smeared_kernel_constant(q, w, resolution, threads=-1, fkernel=kernel):
     """
     Fast resolution smearing for constant dQ/Q.
 
@@ -1162,7 +1341,7 @@ def _smeared_kernel_constant(q, w, resolution, threads=-1):
     """
 
     if resolution < 0.5:
-        return kernel(q, w, threads=threads)
+        return fkernel(q, w, threads=threads)
 
     resolution /= 100
     gaussnum = 51
@@ -1192,7 +1371,7 @@ def _smeared_kernel_constant(q, w, resolution, threads=-1):
     gauss_x = _cached_linspace(-1.7 * resolution, 1.7 * resolution, gaussnum)
     gauss_y = gauss(gauss_x, resolution / _FWHM)
 
-    rvals = kernel(xlin, w, threads=threads)
+    rvals = fkernel(xlin, w, threads=threads)
     smeared_rvals = np.convolve(rvals, gauss_y, mode="same")
     smeared_rvals *= gauss_x[1] - gauss_x[0]
 
