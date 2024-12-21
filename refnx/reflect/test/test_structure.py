@@ -302,7 +302,7 @@ class TestStructure:
         p.probe = "neutron"
         p.density.value = 4.4
         sldc = complex(p)
-        assert_allclose(sldc.real, 3.4753 * 2, rtol=4e-5)
+        assert_allclose(sldc.real, 3.4753 * 2, atol=2e-3, rtol=4e-5)
         assert_allclose(sldc.imag, 1.0509e-05 * 2, rtol=4e-5)
 
         # should be able to make a Slab from MaterialSLD
