@@ -630,3 +630,6 @@ in 0.1.13.
 - Fix some tests for new periodictable release.
 - Stop using deprecated setuptools module.
 - Analysis for polarised neutron reflectometry.
+
+0.1.52
+------

@@ -23,8 +23,8 @@ else:
 # versioning
 MAJOR = 0
 MINOR = 1
-MICRO = 51
-ISRELEASED = True
+MICRO = 52
+ISRELEASED = False
 VERSION = f"{MAJOR}.{MINOR}.{MICRO}"
 
 
