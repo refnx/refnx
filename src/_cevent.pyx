@@ -49,7 +49,7 @@ def event_header(buffer):
     depending on whether the event file is packed or unpacked. This can be
     determined by checking `base.pack_format`, 0 == PACKED, 1 == UNPACKED.
     """
-    header_arr = np.frombuffer(buffer[:128], dtype='int32')
+    header_arr = np.frombuffer(buffer[:128], dtype='<i4')
 
     base = EventFileHeader_Base(magic_number=header_arr[0],
                                 format_number=header_arr[1],
