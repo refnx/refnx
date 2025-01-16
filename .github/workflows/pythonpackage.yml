@@ -71,7 +71,7 @@ jobs:
         git clean -xdf
         python setup.py sdist
 
-    - uses: actions/upload-artifact@6f51ac03b9356f520e9adb1b1b7802705f340c2b # v4.5.0
+    - uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4.6.0
       if: ${{ matrix.python-version == '3.9' }}
       with:
         name: refnx-wheel-linux-${{ matrix.python-version }}
@@ -92,7 +92,7 @@ jobs:
 #      run: |
 #        docker run --rm -e="PLAT=${{ matrix.PLAT }}" -v $(pwd):/io quay.io/pypa/${{ matrix.PLAT }} /bin/bash /io/tools/build_manylinux_wheels.sh
 #
-#    - uses: actions/upload-artifact@6f51ac03b9356f520e9adb1b1b7802705f340c2b # v4.5.0
+#    - uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4.6.0
 #      with:
 #        name: refnx-wheel
 #        path: dist/
@@ -138,7 +138,7 @@ jobs:
           pytest --pyargs refnx
           popd
 
-      - uses: actions/upload-artifact@6f51ac03b9356f520e9adb1b1b7802705f340c2b # v4.5.0
+      - uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4.6.0
         with:
           name: refnx-wheel-macos-${{ matrix.python-version }}-intel
           path: dist/
@@ -197,7 +197,7 @@ jobs:
         pytest --pyargs refnx
         popd
 
-    - uses: actions/upload-artifact@6f51ac03b9356f520e9adb1b1b7802705f340c2b # v4.5.0
+    - uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4.6.0
       with:
         name: refnx-wheel-macos-${{ matrix.python-version }}
         path: dist/
@@ -295,7 +295,7 @@ jobs:
       with:
         product-path: "dist/refnx.dmg"
 
-    - uses: actions/upload-artifact@6f51ac03b9356f520e9adb1b1b7802705f340c2b # v4.5.0
+    - uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4.6.0
       with:
         name: refnx-app-macos-${{ matrix.python-version }}
         path: dist/*.dmg
@@ -373,7 +373,7 @@ jobs:
         move dist\motofit.exe ..\..\dist\
         cd ..\..
 
-    - uses: actions/upload-artifact@6f51ac03b9356f520e9adb1b1b7802705f340c2b # v4.5.0
+    - uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4.6.0
       with:
         name: refnx-exe-win-${{ matrix.python-version }}
         path: dist/
