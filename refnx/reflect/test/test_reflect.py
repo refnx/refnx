@@ -182,13 +182,14 @@ class TestReflect:
         kf = kn(q, sld2, sld2)
         kb = kn(q, sld1, sld2)
         reflectance = (kf - kb) / (kf + kb)
-        reflectivity = reflectance * np.conj(reflectance)
+        reflectivity = np.real(reflectance * np.conj(reflectance))
 
         # now from refnx code
         struct = SLD(sld2)(0, 0) | SLD(sld1)(0, 0)
         slabs = struct.slabs()[..., :4]
         with use_reflect_backend(backend) as kernel:
-            assert_allclose(kernel(q, slabs), reflectivity, rtol=1e-14)
+            # adjusted rtol to allow leeway for 32 bit FPU
+            assert_allclose(kernel(q, slabs), reflectivity, rtol=1e-9)
 
     @pytest.mark.filterwarnings("ignore:Using the SLOW")
     def test_scale_bkg_kernel(self):
