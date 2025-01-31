@@ -338,6 +338,18 @@ class SpinChannel(Enum):
     def __repr__(self):
         return f"SpinChannel.{self.name}"
 
+    def __eq__(self, v):
+        if v == (1, 1) or v == 0 and self is SpinChannel.UP_UP:
+            return True
+        if v == (1, 0) or v == 1 and self is SpinChannel.UP_DOWN:
+            return True
+        if v == (0, 1) or v == 2 and self is SpinChannel.DOWN_UP:
+            return True
+        if v == (0, 0) or v == 3 and self is SpinChannel.DOWN_DOWN:
+            return True
+
+        return False
+
 
 class ReflectModel:
     r"""
