@@ -10,6 +10,16 @@ import numpy as np
 import pandas as pd
 import h5py
 
+from orsopy.fileio import (
+    Orso,
+    OrsoDataset,
+    ValueRange,
+    InstrumentSettings,
+    Column,
+    ErrorColumn,
+    File,
+)
+
 from refnx.reduce.platypusnexus import (
     PlatypusNexus,
     ReflectNexus,
@@ -1323,6 +1333,19 @@ def reduce_stitch(
     else:
         raise ValueError("Incorrect prefix specified")
 
+    # bare bones of Orso file
+    header = Orso.empty()
+    header.columns.extend(
+        [
+            ErrorColumn(
+                error_of="R", error_type="uncertainty", value_is="sigma"
+            ),
+            ErrorColumn(
+                error_of="Qz", error_type="resolution", value_is="sigma"
+            ),
+        ]
+    )
+
     for index, val in enumerate(zipped):
         reflect_datafile = data_folder / number_datafile(val[0], prefix=prefix)
         direct_datafile = data_folder / number_datafile(val[1], prefix=prefix)
@@ -1339,6 +1362,19 @@ def reduce_stitch(
             datasets[0].data, requires_splice=True, trim_trailing=trim_trailing
         )
 
+        # expand the Orso header
+        header.data_source.measurement.data_files.append(
+            File(number_datafile(val[0], prefix=prefix))
+        )
+        if not index:
+            header.data_source.sample = str(
+                reducer.reflected_beam.cat.sample_name
+            )
+
+    orso_dataset = OrsoDataset(
+        info=header, data=np.array(combined_dataset.data).T
+    )
+
     fname_dat = None
 
     if save:
@@ -1351,6 +1387,10 @@ def reduce_stitch(
         fname_dat = f"c_{fname}.dat"
         with open(fname_dat, "wb") as f:
             combined_dataset.save(f)
+
+        # save OrsoDataset
+        fname_orso = f"c_{fname}.ort"
+        orso_dataset.save(fname_orso)
 
         # fname_xml = "c_{0}.xml".format(fname)
         # with open(fname_xml, "wb") as f:
