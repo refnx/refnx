@@ -1345,6 +1345,7 @@ def reduce_stitch(
             ),
         ]
     )
+    angles = []
 
     for index, val in enumerate(zipped):
         reflect_datafile = data_folder / number_datafile(val[0], prefix=prefix)
@@ -1363,17 +1364,26 @@ def reduce_stitch(
         )
 
         # expand the Orso header
+        header.reduction.software.name = "refnx"
+        angles.append(reducer.reflected_beam.cat.omega[0])
         header.data_source.measurement.data_files.append(
             File(number_datafile(val[0], prefix=prefix))
         )
         if not index:
-            header.data_source.sample = str(
-                reducer.reflected_beam.cat.sample_name
-            )
+            header.data_source.sample = reducer.reflected_beam.cat.sample_name[
+                0
+            ].decode()
 
-    orso_dataset = OrsoDataset(
-        info=header, data=np.array(combined_dataset.data).T
+    # ORSO file completion
+    _data = np.array(combined_dataset.data)
+    _data[-1] /= 2.3548
+    vr = ValueRange(
+        min=min(angles), max=max(angles), individual_magnitudes=angles
     )
+    header.data_source.measurement.instrument_settings.incident_angle = vr
+    header.data_source.experiment.instrument = prefix
+
+    orso_dataset = OrsoDataset(info=header, data=_data.T)
 
     fname_dat = None
 
@@ -1389,7 +1399,8 @@ def reduce_stitch(
             combined_dataset.save(f)
 
         # save OrsoDataset
-        fname_orso = f"c_{fname}.ort"
+        # call it Z so that they appear at one end of a file explorer
+        fname_orso = f"z_{fname}.ort"
         orso_dataset.save(fname_orso)
 
         # fname_xml = "c_{0}.xml".format(fname)
