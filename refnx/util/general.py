@@ -675,7 +675,7 @@ def beamfrackernel(kernelx, kernely, length, angle):
     lowlimit = np.where(-height_of_sample / 2.0 >= kernelx)[0][-1]
     hilimit = np.where(height_of_sample / 2.0 <= kernelx)[0][0]
 
-    area = integrate.simps(
+    area = integrate.simpson(
         kernely[lowlimit : hilimit + 1], kernelx[lowlimit : hilimit + 1]
     )
     return area / total
