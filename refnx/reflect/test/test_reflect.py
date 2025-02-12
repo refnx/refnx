@@ -21,6 +21,7 @@ from refnx.analysis import (
 )
 from refnx.reflect import (
     SLD,
+    MaterialSLD,
     ReflectModel,
     ReflectModelTL,
     PolarisedReflectModel,
@@ -515,6 +516,28 @@ class TestReflect:
             rff.model(self.qvals, x_err=dq),
             atol=2e-7,
         )
+
+        si = MaterialSLD("Si", 2.33, probe="x-ray")
+        au = MaterialSLD("Au", 19.33, probe="x-ray")
+        air = SLD(0.0)
+        s = air() | au(200, 4) | si(0, 3)
+        rff3_model = ReflectModelTL(s, bkg=0.0, dq=0.0)
+
+        _q = np.geomspace(0.01, 1.0, 500)
+        fa = general.angle(_q[:250], 1.0)
+        sa = general.angle(_q[250:], 2.0)
+        lam = np.ones(shape=(500,), dtype=np.float64)
+        lam[250:] = 2.0
+        tl = np.c_[np.r_[fa, sa], lam]
+        r = rff3_model.model(tl)
+
+        # comparison to normal ReflectModel
+        rff3_modelc = ReflectModel(s, bkg=0, dq=0.0)
+        s.wavelength = 1.0
+        r1 = rff3_modelc.model(_q[:250])
+        s.wavelength = 2.0
+        r2 = rff3_modelc.model(_q[250:])
+        assert_allclose(r, np.r_[r1, r2])
 
     def test_mixed_reflectivity_model(self):
         # test that mixed area model works ok.

@@ -635,3 +635,5 @@ in 0.1.13.
 ------
 - relax reflection kernel accuracy for i386. Necessary for Debian build.
 - add Orso file output to `reduce.reduce_stitch`.
+- Improve performance of ReflectModelTL, laying groundwork for footprint
+  correction.
