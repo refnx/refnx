@@ -864,28 +864,29 @@ class ReflectModelTL(ReflectModel):
         # x has to be (N, 2) x[:, 0] is the AOI, x[:, 1] is wavelength
         tl = np.atleast_2d(np.asarray(x))
         ls = tl[:, 1]
-        slabs = []
+        unique_slabs = []
         original_wavelength = self.structure.wavelength
 
+        # find unique wavelengths. Only those wavelengths will have
+        # different slab representations.
+        unq_lams = np.unique(ls)
+
         try:
-            for lam in ls:
+            for lam in unq_lams:
                 self.structure.wavelength = lam
-                slabs.append(self.structure.slabs()[..., :4])
+                unique_slabs.append(self.structure.slabs()[..., :4])
         finally:
             self.structure.wavelength = original_wavelength
 
         q = general.q(tl[:, 0] + self.t_offset.value, tl[:, 1])
-
         if x_err is None or self.dq_type == "constant":
             # fallback to what this object was constructed with
             x_err = q * float(self.dq) / 100.0
 
         qo = self.quad_order
 
-        unique_slabs, idxs, inverse_idxs = np.unique(
-            slabs, axis=0, return_index=True, return_inverse=True
-        )
-        msks = [np.squeeze(inverse_idxs) == idx for idx in idxs]
+        msks = [ls == unq_lam for unq_lam in unq_lams]
+
         R = np.empty_like(q)
         for msk, a_unique_slabs in zip(msks, unique_slabs):
             if np.count_nonzero(x_err[msk]):
