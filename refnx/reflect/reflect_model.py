@@ -877,7 +877,6 @@ class ReflectModelTL(ReflectModel):
             for lam in unq_lams:
                 self.structure.wavelength = lam
                 unique_slabs.append(self.structure.slabs()[..., :4])
-            unique_slabs = np.array(unique_slabs)
         finally:
             self.structure.wavelength = original_wavelength
 
