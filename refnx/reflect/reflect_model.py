@@ -869,9 +869,7 @@ class ReflectModelTL(ReflectModel):
 
         # find unique wavelengths. Only those wavelengths will have
         # different slab representations.
-        unq_lams, idxs, inverse_idxs = np.unique(
-            ls, return_index=True, return_inverse=True
-        )
+        unq_lams = np.unique(ls)
 
         try:
             for lam in unq_lams:
