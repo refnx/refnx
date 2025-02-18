@@ -563,7 +563,7 @@ class CurveFitter:
         callback=None,
         verbose=True,
         pool=-1,
-        sampler_kws=None,
+        **sampler_kws,
     ):
         """
         Performs sampling from the objective.
@@ -680,7 +680,7 @@ class CurveFitter:
 
         # Passthough sampler_kws to the sampler.sample method outside of the
         # parallelisation context.
-        sampler_kws = sampler_kws or {}
+        sampler_kws = {} if sampler_kws is None else sampler_kws
         sampler_args = getargspec(self.sampler.sample).args
 
         # update sampler_kws with the sampler_args from instantiated Fitter.
