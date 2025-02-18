@@ -563,6 +563,7 @@ class CurveFitter:
         callback=None,
         verbose=True,
         pool=-1,
+        sampler_kws=None,
     ):
         """
         Performs sampling from the objective.
@@ -604,6 +605,11 @@ class CurveFitter:
             If pool is a map-like callable that follows the same calling
             sequence as the built-in map function, then this pool is used for
             parallelisation.
+
+        sampler_kws : dict
+            Keywords to pass to the sampler.sample method. Please see the corresponding
+            method :meth:`emcee.EnsembleSampler.sample` or
+            :meth:`ptemcee.sampler.Sampler.sample` for more information.
 
         Notes
         -----
@@ -672,6 +678,19 @@ class CurveFitter:
         elif self._ntemps > 0:
             self._state.random_state = rng.bit_generator.state
 
+        # Passthough sampler_kws to the sampler.sample method outside of the
+        # parallelisation context.
+        sampler_kws = sampler_kws or {}
+        sampler_args = getargspec(self.sampler.sample).args
+
+        # update sampler_kws with the sampler_args from instantiated Fitter.
+        if "progress" in sampler_args and verbose:
+            sampler_kws["progress"] = True
+            verbose = False
+        if "thin_by" in sampler_kws:
+            sampler_kws["thin_by"] = nthin
+            sampler_kws.pop("thin", 0)
+
         # using context manager means we kill off zombie pool objects
         # but does mean that the pool has to be specified each time.
         with MapWrapper(pool) as g, possibly_open_file(f, "a") as h:
@@ -688,18 +707,8 @@ class CurveFitter:
             else:
                 kwargs["mapper"] = g
 
-            # new emcee arguments
-            sampler_args = getargspec(self.sampler.sample).args
-            if "progress" in sampler_args and verbose:
-                kwargs["progress"] = True
-                verbose = False
-
-            if "thin_by" in sampler_args:
-                kwargs["thin_by"] = nthin
-                kwargs.pop("thin", 0)
-
             # perform the sampling
-            for state in self.sampler.sample(self._state, **kwargs):
+            for state in self.sampler.sample(self._state, **sampler_kws):
                 self._state = state
                 _callback_wrapper(state, h=h)
 
