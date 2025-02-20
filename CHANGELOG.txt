@@ -637,3 +637,6 @@ in 0.1.13.
 - add Orso file output to `reduce.reduce_stitch`.
 - Improve performance of ReflectModelTL, laying groundwork for footprint
   correction.
+
+0.1.53
+------
