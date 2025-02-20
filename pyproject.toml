@@ -119,7 +119,7 @@ ignore = ["F401", "F405", "E501", "E203", "E231"]
 
 [tool.cibuildwheel]
 skip = "pp* cp36-* cp37-* cp38-* cp39-*"
-test-requires = ["pytest"]
+test-requires = ["pytest", "periodictable"]
 test-command = "pytest --pyargs refnx.reflect.test.test_reflect"
 manylinux-x86_64-image = "manylinux2014"
 
