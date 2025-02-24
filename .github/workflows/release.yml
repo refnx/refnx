@@ -24,7 +24,7 @@ jobs:
           CIBW_ARCHS_MACOS: "x86_64 arm64"
           CIBW_ENVIRONMENT_MACOS: MACOSX_DEPLOYMENT_TARGET="10.13"
 
-      - uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4.6.0
+      - uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1 # v4.6.1
         with:
           name: wheels-${{ matrix.os }}
           path: ./wheelhouse/*.whl
@@ -46,7 +46,7 @@ jobs:
           CIBW_TEST_COMMAND: pytest --pyargs refnx.reflect.test.test_reflect
           CIBW_BUILD: "*-manylinux_x86_64"
 
-      - uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4.6.0
+      - uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1 # v4.6.1
         with:
           name: wheels-manylinux
           path: ./wheelhouse/*.whl
@@ -68,7 +68,7 @@ jobs:
           CIBW_TEST_COMMAND: pytest --pyargs refnx.reflect.test.test_reflect
           CIBW_BUILD: "*-musllinux_x86_64"
 
-      - uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4.6.0
+      - uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1 # v4.6.1
         with:
           name: wheels-musllinux
           path: ./wheelhouse/*.whl
@@ -83,7 +83,7 @@ jobs:
     - name: Build sdist
       run: pipx run build --sdist
 
-    - uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4.6.0
+    - uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1 # v4.6.1
       with:
         name: wheels-sdist
         path: dist/*.tar.gz
