@@ -121,15 +121,16 @@ ignore = ["F401", "F405", "E501", "E203", "E231"]
 skip = "pp* cp36-* cp37-* cp38-* cp39-*"
 test-requires = ["pytest", "periodictable"]
 test-command = "pytest --pyargs refnx.reflect.test.test_reflect"
-manylinux-x86_64-image = "manylinux2014"
 
 [tool.cibuildwheel.macos]
 archs = ["x86_64", "arm64"]
 
 # On an Linux Intel runner with qemu installed, build Intel and ARM wheels
 [tool.cibuildwheel.linux]
-manylinux-x86_64-image = "manylinux2014"
-archs = ["x86_64"]
+manylinux-x86_64-image = "manylinux_2_28"
+manylinux-aarch64-image = "manylinux_2_28"
+musllinux-x86_64-image = "musllinux_1_2"
+musllinux-aarch64-image = "musllinux_1_2"
 
 [tool.cibuildwheel.windows]
 archs = ["AMD64"]
