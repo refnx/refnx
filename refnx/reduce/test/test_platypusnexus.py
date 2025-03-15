@@ -568,6 +568,16 @@ class TestSpatzNexus:
         dy = f.cat.cat["dy"]
         assert_allclose(dy, 864.0137)
 
+    def test_normalise_by_time(self):
+        # checks that NeXUS files with zero monitor counts can get normalised
+        # by time. This SPZ file has zero monitor counts, so should produce
+        # non-finite data during reduction if the fallback to normalising by
+        # time doesn't work.
+        f = SpatzNexus(self.pth / "SPZ0016618.nx.hdf")
+        output = f.process()
+        m_spec = output[1]
+        assert np.isfinite(m_spec).all()
+
 
 def test_catalogue(data_directory):
     pth = Path(data_directory) / "reduce"
