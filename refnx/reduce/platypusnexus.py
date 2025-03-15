@@ -2021,7 +2021,7 @@ class ReflectNexus:
                     m_spec, m_spec_sd, 1 / cat.time[:, np.newaxis]
                 )
 
-                output = EP.EPdiv(
+                output = EP.EPmulk(
                     detector,
                     detector_sd,
                     1 / cat.time[:, np.newaxis, np.newaxis],
