@@ -1842,7 +1842,7 @@ class ReflectNexus:
         hipx = hipx.astype(int)
 
         if lopx_hipx is not None:
-            print(lopx_hipx)
+            # print(lopx_hipx)
             lopx = np.ones(n_spectra, dtype=int) * int(lopx_hipx[0])
             hipx = np.ones(n_spectra, dtype=int) * int(lopx_hipx[1])
             for i in range(n_spectra):
@@ -1994,22 +1994,39 @@ class ReflectNexus:
         # assert np.isfinite(detector).all()
         # assert np.isfinite(detectorSD).all()
 
-        # normalise by beam monitor 1.
+        # normalise by beam monitor, falling back to time
         if normalise:
-            m_spec, m_spec_sd = EP.EPdiv(
-                m_spec,
-                m_spec_sd,
-                bm1_counts[:, np.newaxis],
-                bm1_counts_sd[:, np.newaxis],
-            )
+            if np.count_nonzero(bm1_counts):
+                # we have a beam monitor that provides counts
+                m_spec, m_spec_sd = EP.EPdiv(
+                    m_spec,
+                    m_spec_sd,
+                    bm1_counts[:, np.newaxis],
+                    bm1_counts_sd[:, np.newaxis],
+                )
 
-            output = EP.EPdiv(
-                detector,
-                detector_sd,
-                bm1_counts[:, np.newaxis, np.newaxis],
-                bm1_counts_sd[:, np.newaxis, np.newaxis],
-            )
-            detector, detector_sd = output
+                output = EP.EPdiv(
+                    detector,
+                    detector_sd,
+                    bm1_counts[:, np.newaxis, np.newaxis],
+                    bm1_counts_sd[:, np.newaxis, np.newaxis],
+                )
+                detector, detector_sd = output
+            else:
+                warnings.warn(
+                    "Normalising by time, no beam monitor counts.",
+                    RuntimeWarning,
+                )
+                m_spec, m_spec_sd = EP.EPmulk(
+                    m_spec, m_spec_sd, 1 / cat.time[:, np.newaxis]
+                )
+
+                output = EP.EPmulk(
+                    detector,
+                    detector_sd,
+                    1 / cat.time[:, np.newaxis, np.newaxis],
+                )
+                detector, detector_sd = output
 
         """
         now work out dlambda/lambda, the resolution contribution from

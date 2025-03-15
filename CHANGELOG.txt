@@ -640,3 +640,5 @@ in 0.1.13.
 
 0.1.53
 ------
+- Reduction - fallback to normalising by time if no beam monitor counts are
+  present.
