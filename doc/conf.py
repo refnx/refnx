@@ -44,9 +44,18 @@ extensions = [
     'sphinxcontrib.jquery',
     'sphinx_rtd_theme',
 ]
-jupyter_execute_notebooks = "off"
 
 bibtex_bibfiles = ["../testimonials.bib"]
+
+# myst_nb settings
+jupyter_execute_notebooks = "off"
+myst_enable_extensions = [
+    "amsmath",
+    "colon_fence",
+    "deflist",
+    "dollarmath",
+    "html_image",
+]
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -73,9 +82,9 @@ author = 'Andrew Nelson'
 import refnx
 
 # The short X.Y version.
-version = re.sub(r'\.dev-.*$', r'.dev', refnx.__version__)
+version = "1.0" #re.sub(r'\.dev-.*$', r'.dev', refnx.__version__)
 # The full version, including alpha/beta/rc tags.
-release = refnx.__version__
+release = "1.0"#refnx.__version__
 
 intersphinx_mapping = {'py': ('https://docs.python.org/3', None),
                        'numpy': ('https://numpy.org/doc/stable/', None),
