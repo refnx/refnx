@@ -1,7 +1,5 @@
-import importlib.resources
 from multiprocessing import Pool
 from multiprocessing.pool import Pool as PWL
-from pathlib import Path
 from importlib import resources
 
 
@@ -36,7 +34,7 @@ class TestUtil:
         assert_equal(num_unique2, num_unique)
 
     def test_possibly_open_file(self):
-        with importlib.resources.path(refnx.analysis) as pth:
+        with resources.path(refnx.analysis) as pth:
             datadir = pth / "tests"
 
         with possibly_open_file(datadir / "e361r.txt", "r") as f:
