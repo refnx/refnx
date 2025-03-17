@@ -44,8 +44,8 @@ def test_myapp(qtbot, tmp_path):
     # an experiment
     ###########################################
     # load a file
-    with resources.path(refd) as _p:
-        f = _p / "test" / "c_PLP0000708.dat"
+    pth = resources.files(refd)
+    f = pth / "tests" / "c_PLP0000708.dat"
     myapp.load_data([f])
     assert len(model.datastore) == 2
 
@@ -103,8 +103,8 @@ def test_mcmc_fit_and_reprocess(qtbot, tmp_path):
     myapp, model = mysetup(qtbot)
 
     # load a dataset
-    with resources.path(refnx.analysis) as _p:
-        f_data = _p / "test" / "e361r.txt"
+    pth = resources.files(refnx.analysis)
+    f_data = pth / "tests" / "e361r.txt"
     myapp.load_data([f_data])
 
     fit_list = myapp.currently_fitting_model

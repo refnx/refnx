@@ -9,6 +9,7 @@ from numpy.testing import (
 )
 from scipy.optimize._constraints import PreparedConstraint
 import refnx
+import refnx.analysis
 
 # the analysis module contains the curvefitting engine
 from refnx.analysis import CurveFitter, Objective
@@ -141,8 +142,7 @@ class TestLipidLeaflet:
 
 
 def test_lipid_leaflet_example():
-    with resources.path(refnx.analysis) as _p:
-        pth = _p / "tests"
+    pth = resources.files(refnx.analysis) / "tests"
 
     data_d2o = ReflectDataset(pth / "c_PLP0016596.dat")
     data_d2o.name = "d2o"

@@ -7,6 +7,7 @@ from pytest import raises as assert_raises
 from numpy.testing import assert_equal
 
 import refnx
+import refnx.analysis
 from refnx._lib.util import flatten, unique, MapWrapper, possibly_open_file
 from refnx._lib._cutil import c_flatten
 
@@ -34,8 +35,8 @@ class TestUtil:
         assert_equal(num_unique2, num_unique)
 
     def test_possibly_open_file(self):
-        with resources.path(refnx.analysis) as pth:
-            datadir = pth / "tests"
+        pth = resources.files(refnx.analysis)
+        datadir = pth / "tests"
 
         with possibly_open_file(datadir / "e361r.txt", "r") as f:
             assert hasattr(f, "read")
