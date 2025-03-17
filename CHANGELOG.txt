@@ -642,3 +642,7 @@ in 0.1.13.
 ------
 - Reduction - fallback to normalising by time if no beam monitor counts are
   present.
+- renamed test directories from refnx.<module>.test to refnx.<module>.tests.
+  This is to prevent name shadowing, but also to bring it into line with e.g.
+  scipy/numpy that use that nomenclature. This might mean downstream packages
+  who use files from those directories have to do some renaming.
