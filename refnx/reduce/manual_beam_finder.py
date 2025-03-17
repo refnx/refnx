@@ -1,4 +1,6 @@
 from pathlib import Path
+from importlib import resources
+
 from qtpy import QtCore, QtWidgets, uic
 import numpy as np
 
@@ -19,7 +21,8 @@ import refnx.reduce._app as floc
 matplotlib.use("QtAgg")
 
 
-UI_LOCATION = Path(floc.__file__).parent / "ui"
+with resources.path(floc) as _p:
+    UI_LOCATION = _p / "ui"
 
 
 class ManualBeamFinder(QtWidgets.QDialog):

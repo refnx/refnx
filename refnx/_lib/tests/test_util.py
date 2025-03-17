@@ -1,9 +1,12 @@
+import importlib.resources
 from multiprocessing import Pool
 from multiprocessing.pool import Pool as PWL
 from pathlib import Path
+from importlib import resources
+
 
 from pytest import raises as assert_raises
-from numpy.testing import assert_equal, assert_
+from numpy.testing import assert_equal
 
 import refnx
 from refnx._lib.util import flatten, unique, MapWrapper, possibly_open_file
@@ -33,7 +36,9 @@ class TestUtil:
         assert_equal(num_unique2, num_unique)
 
     def test_possibly_open_file(self):
-        datadir = Path(refnx.__file__).parent / "analysis" / "test"
+        with importlib.resources.path(refnx.analysis) as pth:
+            datadir = pth / "tests"
+
         with possibly_open_file(datadir / "e361r.txt", "r") as f:
             assert hasattr(f, "read")
 
@@ -45,9 +50,9 @@ class TestMapWrapper:
 
     def test_serial(self):
         p = MapWrapper(1)
-        assert_(p._mapfunc is map)
-        assert_(p.pool is None)
-        assert_(p._own_pool is False)
+        assert p._mapfunc is map
+        assert p.pool is None
+        assert p._own_pool is False
         out = list(p.map(np.sin, self.input))
         assert_equal(out, self.output)
 
@@ -56,9 +61,9 @@ class TestMapWrapper:
             out = p.map(np.sin, self.input)
             assert_equal(list(out), self.output)
 
-            assert_(p._own_pool is True)
-            assert_(isinstance(p.pool, PWL))
-            assert_(p._mapfunc is not None)
+            assert p._own_pool is True
+            assert isinstance(p.pool, PWL)
+            assert p._mapfunc is not None
 
         # the context manager should've closed the internal pool
         # check that it has by asking it to calculate again.
@@ -67,14 +72,14 @@ class TestMapWrapper:
 
         # on py27 an AssertionError is raised, on >py27 it's a ValueError
         err_type = excinfo.type
-        assert_((err_type is ValueError) or (err_type is AssertionError))
+        assert (err_type is ValueError) or (err_type is AssertionError)
 
         # can also set a MapWrapper up with a Pool instance
         try:
             p = Pool(2)
             q = MapWrapper(p.map)
 
-            assert_(q._own_pool is False)
+            assert q._own_pool is False
             q.close()
 
             # closing the MapWrapper shouldn't close the internal pool

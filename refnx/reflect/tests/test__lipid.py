@@ -1,5 +1,7 @@
 import numpy as np
 from pathlib import Path
+from importlib import resources
+
 from numpy.testing import (
     assert_almost_equal,
     assert_equal,
@@ -139,7 +141,8 @@ class TestLipidLeaflet:
 
 
 def test_lipid_leaflet_example():
-    pth = Path(refnx.__file__).parent / "analysis" / "test"
+    with resources.path(refnx.analysis) as _p:
+        pth = _p / "tests"
 
     data_d2o = ReflectDataset(pth / "c_PLP0016596.dat")
     data_d2o.name = "d2o"
