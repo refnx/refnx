@@ -1,4 +1,4 @@
-# do not change the following line
+from importlib import resources
 import refnx
 import numpy as np
 
@@ -11,3 +11,8 @@ class TestUtil:
         # test that we can import the module and still access submodules
         p = refnx.analysis.Parameter(1)
         np.testing.assert_equal(p.value, 1)
+
+    def test_module(self):
+        # smoke test to check that refnx has an attribute called analysis
+        # and that it can be located using importlib
+        resources.files(refnx.analysis)
