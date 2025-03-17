@@ -1,6 +1,8 @@
 import glob
 from pathlib import Path
 import pickle
+from importlib import resources
+
 
 import pytest
 from qtpy import QtWidgets, QtCore, QtGui
@@ -42,8 +44,8 @@ def test_myapp(qtbot, tmp_path):
     # an experiment
     ###########################################
     # load a file
-    pth = Path(refd.__file__).parent
-    f = pth / "test" / "c_PLP0000708.dat"
+    pth = resources.files(refd)
+    f = pth / "tests" / "c_PLP0000708.dat"
     myapp.load_data([f])
     assert len(model.datastore) == 2
 
@@ -101,8 +103,8 @@ def test_mcmc_fit_and_reprocess(qtbot, tmp_path):
     myapp, model = mysetup(qtbot)
 
     # load a dataset
-    pth = Path(refnx.analysis.__file__).absolute().parent
-    f_data = pth / "test" / "e361r.txt"
+    pth = resources.files(refnx.analysis)
+    f_data = pth / "tests" / "e361r.txt"
     myapp.load_data([f_data])
 
     fit_list = myapp.currently_fitting_model

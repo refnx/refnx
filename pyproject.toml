@@ -72,30 +72,30 @@ refnx = "refnx.reflect:main"
 packages = [
      "refnx",
      "refnx._lib",
-     "refnx._lib.test",
+     "refnx._lib.tests",
      "refnx._lib.emcee",
      "refnx._lib.emcee.backends",
      "refnx._lib.emcee.moves",
      "refnx._lib.ptemcee",
      "refnx.analysis",
-     "refnx.analysis.test",
-     "refnx.analysis.test.NIST_STRD",
+     "refnx.analysis.tests",
+     "refnx.analysis.tests.NIST_STRD",
      "refnx.dataset",
-     "refnx.dataset.test",
+     "refnx.dataset.tests",
      "refnx.reduce",
      "refnx.reduce._app",
      "refnx.reduce._app.ui",
      "refnx.reduce.batch_reduce",
-     "refnx.reduce.test",
+     "refnx.reduce.tests",
      "refnx.reflect",
      "refnx.reflect._app",
      "refnx.reflect._app.icons",
-     "refnx.reflect._app.test",
+     "refnx.reflect._app.tests",
      "refnx.reflect._app.ui",
      "refnx.reflect._app.ui.licences",
-     "refnx.reflect.test",
+     "refnx.reflect.tests",
      "refnx.util",
-     "refnx.util.test",
+     "refnx.util.tests",
 ]
 
 
@@ -120,7 +120,7 @@ ignore = ["F401", "F405", "E501", "E203", "E231"]
 [tool.cibuildwheel]
 skip = "pp* cp36-* cp37-* cp38-* cp39-*"
 test-requires = ["pytest", "periodictable"]
-test-command = "pytest --pyargs refnx.reflect.test.test_reflect"
+test-command = "pytest --pyargs refnx.reflect.tests.test_reflect"
 
 [tool.cibuildwheel.macos]
 archs = ["x86_64", "arm64"]
