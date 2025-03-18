@@ -646,3 +646,6 @@ in 0.1.13.
   This is to prevent name shadowing, but also to bring it into line with e.g.
   scipy/numpy that use that nomenclature. This might mean downstream packages
   who use files from those directories have to do some renaming.
+
+0.1.54
+------
