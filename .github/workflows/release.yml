@@ -20,7 +20,7 @@ jobs:
       - name: build wheels
         uses: pypa/cibuildwheel@42728e866bbc80d544a70825bd9990b9a26f1a50 # v2.23.1
         env:
-          CIBW_TEST_COMMAND: pytest --pyargs refnx.reflect.test.test_reflect
+          CIBW_TEST_COMMAND: pytest --pyargs refnx.reflect.tests.test_reflect
           CIBW_ARCHS_MACOS: "x86_64 arm64"
           CIBW_ENVIRONMENT_MACOS: MACOSX_DEPLOYMENT_TARGET="10.13"
 
@@ -43,7 +43,7 @@ jobs:
       - name: build wheels
         uses: pypa/cibuildwheel@42728e866bbc80d544a70825bd9990b9a26f1a50 # v2.23.1
         env:
-          CIBW_TEST_COMMAND: pytest --pyargs refnx.reflect.test.test_reflect
+          CIBW_TEST_COMMAND: pytest --pyargs refnx.reflect.tests.test_reflect
           CIBW_BUILD: "*-manylinux_x86_64"
 
       - uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1 # v4.6.1
@@ -65,7 +65,7 @@ jobs:
       - name: build wheels
         uses: pypa/cibuildwheel@42728e866bbc80d544a70825bd9990b9a26f1a50 # v2.23.1
         env:
-          CIBW_TEST_COMMAND: pytest --pyargs refnx.reflect.test.test_reflect
+          CIBW_TEST_COMMAND: pytest --pyargs refnx.reflect.tests.test_reflect
           CIBW_BUILD: "*-musllinux_x86_64"
 
       - uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1 # v4.6.1
