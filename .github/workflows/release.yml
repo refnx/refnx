@@ -18,7 +18,7 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: build wheels
-        uses: pypa/cibuildwheel@42728e866bbc80d544a70825bd9990b9a26f1a50 # v2.23.1
+        uses: pypa/cibuildwheel@d04cacbc9866d432033b1d09142936e6a0e2121a # v2.23.2
         env:
           CIBW_TEST_COMMAND: pytest --pyargs refnx.reflect.test.test_reflect
           CIBW_ARCHS_MACOS: "x86_64 arm64"
@@ -41,7 +41,7 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: build wheels
-        uses: pypa/cibuildwheel@42728e866bbc80d544a70825bd9990b9a26f1a50 # v2.23.1
+        uses: pypa/cibuildwheel@d04cacbc9866d432033b1d09142936e6a0e2121a # v2.23.2
         env:
           CIBW_TEST_COMMAND: pytest --pyargs refnx.reflect.test.test_reflect
           CIBW_BUILD: "*-manylinux_x86_64"
@@ -63,7 +63,7 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: build wheels
-        uses: pypa/cibuildwheel@42728e866bbc80d544a70825bd9990b9a26f1a50 # v2.23.1
+        uses: pypa/cibuildwheel@d04cacbc9866d432033b1d09142936e6a0e2121a # v2.23.2
         env:
           CIBW_TEST_COMMAND: pytest --pyargs refnx.reflect.test.test_reflect
           CIBW_BUILD: "*-musllinux_x86_64"
