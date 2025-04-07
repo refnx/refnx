@@ -9,8 +9,8 @@ from refnx.reflect import LipidLeaflet, SLD
 import refnx.reflect._app
 
 
-with resources.files(refnx.reflect._app) as _p:
-    UI_LOCATION = _p / "ui"
+pth = resources.files(refnx.reflect._app)
+UI_LOCATION = pth / "ui"
 
 
 class LipidLeafletDialog(QtWidgets.QDialog):
