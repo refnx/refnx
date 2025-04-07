@@ -8,6 +8,7 @@ Frequently Asked Questions
 .. _github issues: https://github.com/refnx/refnx/issues
 .. _van Well et al: https://doi.org/10.1016/j.physb.2004.11.058
 .. _Nelson et al: https://doi.org/10.1107/S1600576714009595
+.. _ORSO: https://www.reflectometry.org/
 
 A list of common questions.
 
@@ -95,3 +96,13 @@ are currently available from PyPI and can be installed as
 `pip install pyqt6 qtpy`. However, pyqt6 is not currently available via
 conda-forge. You can use conda to install most of the refnx dependencies, but
 you will need to use `pip` to install pyqt6.
+
+What input/output file formats are supported
+--------------------------------------------
+`refnx` can read a range of file types. The most common is 2/3/4 column
+ASCII data. The first two columns are Q (:math:`A^{-1}`) and R. If present the
+third column will be the standard deviation of the reflectivity. If present
+the fourth column will be the full width half maximum of the instrument
+resolution smearing function.
+`refnx` can also read/write the ORT and ORB files of the Open Reflectometry
+Standards Organisation (`ORSO`_).

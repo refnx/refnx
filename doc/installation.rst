@@ -8,6 +8,7 @@ Installation
 .. _miniforge: https://github.com/conda-forge/miniforge
 .. _github: https://github.com/refnx/refnx
 .. _homebrew: https://brew.sh/
+.. _PyPI: https://pypi.org/project/refnx/
 
 *refnx* has been tested on Python 3.9, 3.10, 3.11, 3.12, 3.13. It requires the
 *numpy, scipy, cython* packages to work. Additional features
@@ -58,7 +59,7 @@ Creating a conda environment
 Installing with pip
 ===================
 
-There are refnx wheels available for macOS/Windows/Linux on PyPI. Using the
+There are refnx wheels available for macOS/Windows/Linux on `PyPI`_. Using the
 [all] modifier means that all refnx's optional dependencies will also be
 installed.
 
