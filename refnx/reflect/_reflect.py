@@ -24,10 +24,12 @@ DEALINGS IN THIS SOFTWARE.
 
 """
 
-from pathlib import Path
+from importlib import resources
 import numpy as np
 import numpy.typing as npt
 from typing import Optional
+import refnx.reflect
+
 
 # TINY = np.finfo(np.float64).tiny
 TINY = 1e-30
@@ -113,7 +115,7 @@ class _Abeles_pyopencl:
 
         if self.ctx is None or self.prg is None:
             self.ctx = cl.create_some_context(interactive=False)
-            pth = Path(__file__).absolute().parent
+            pth = resources.files(refnx.reflect)
             with open(pth / "abeles_pyopencl.cl", "r") as f:
                 src = f.read()
             self.prg = cl.Program(self.ctx, src).build()
