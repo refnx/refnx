@@ -651,3 +651,6 @@ in 0.1.13.
 ------
 - Replaced several instances of __file__ with importlib.resources.
 - Fixed bug in ManualBeamFind.
+
+0.1.55
+------
