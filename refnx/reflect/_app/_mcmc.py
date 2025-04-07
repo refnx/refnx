@@ -2,6 +2,7 @@
 Deals with GUI aspects of MCMC
 """
 
+from importlib import resources
 from pathlib import Path
 
 import numpy as np
@@ -16,14 +17,15 @@ from refnx.analysis import (
     GlobalObjective,
     Objective,
 )
+import refnx.reflect._app
 from refnx.reflect import Structure
 from matplotlib.backends.backend_qtagg import (
     FigureCanvasQTAgg as FigureCanvas,
 )
 from matplotlib.figure import Figure
 
-pth = Path(__file__).absolute().parent
-UI_LOCATION = pth / "ui"
+
+UI_LOCATION = resources.files(refnx.reflect._app) / "ui"
 
 
 class SampleMCMCDialog(QtWidgets.QDialog):

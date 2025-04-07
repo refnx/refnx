@@ -1,4 +1,4 @@
-from pathlib import Path
+from importlib import resources
 import json
 
 from qtpy import QtCore, QtGui, QtWidgets, uic
@@ -6,9 +6,10 @@ from qtpy.QtCore import Qt
 
 import periodictable as pt
 from refnx.reflect import LipidLeaflet, SLD
+import refnx.reflect._app
 
 
-pth = Path(__file__).absolute().parent
+pth = resources.files(refnx.reflect._app)
 UI_LOCATION = pth / "ui"
 
 

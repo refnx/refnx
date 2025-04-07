@@ -1,13 +1,13 @@
-from pathlib import Path
+from importlib import resources
 import json
 
 from qtpy import QtCore, QtGui, QtWidgets, uic
 
+import refnx.reflect._app
 from refnx.reflect import Spline, SLD
 
 
-pth = Path(__file__).absolute().parent
-UI_LOCATION = pth / "ui"
+UI_LOCATION = resources.files(refnx.reflect._app) / "ui"
 
 
 class SplineDialog(QtWidgets.QDialog):

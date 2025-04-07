@@ -3,9 +3,9 @@ This module tests the objective function by comparing it to the line example
 from http://dan.iel.fm/emcee/current/user/line/
 """
 
+from importlib import resources
 import pickle
 from multiprocessing.reduction import ForkingPickler
-from pathlib import Path
 
 import pytest
 
@@ -29,6 +29,7 @@ from refnx.analysis import (
     Parameters,
     PDF,
 )
+import refnx.analysis.tests
 from refnx.dataset import Data1D, ReflectDataset
 from refnx.util import ErrorProp as EP
 from refnx._lib import emcee
@@ -58,7 +59,7 @@ def line_ND(x, params):
 
 class TestObjective:
     def setup_method(self):
-        self.pth = Path(__file__).absolute().parent
+        self.pth = resources.files(refnx.analysis.tests)
         # Choose the "true" parameters.
 
         # Reproducible results!

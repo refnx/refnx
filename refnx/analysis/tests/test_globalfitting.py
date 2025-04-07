@@ -3,8 +3,7 @@ Test co-refinement of datasets by fitting 3 neutron reflectivity datasets. The
 overall construction of the models can be done in a few different ways.
 """
 
-from pathlib import Path
-
+from importlib import resources
 import numpy as np
 from numpy.testing import (
     assert_,
@@ -12,7 +11,7 @@ from numpy.testing import (
     assert_almost_equal,
     assert_allclose,
 )
-
+import refnx.analysis.tests
 from refnx.analysis import CurveFitter, Objective, GlobalObjective, Transform
 from refnx.dataset import ReflectDataset
 from refnx.reflect import Slab, SLD, ReflectModel
@@ -22,7 +21,7 @@ SEED = 1
 
 class TestGlobalFitting:
     def setup_method(self):
-        self.pth = Path(__file__).absolute().parent
+        self.pth = resources.files(refnx.analysis.tests)
 
         self.si = SLD(2.07, name="Si")
         self.sio2 = SLD(3.47, name="SiO2")

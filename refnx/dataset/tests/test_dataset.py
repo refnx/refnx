@@ -1,4 +1,5 @@
 import io
+from importlib import resources
 from pathlib import Path
 import os
 
@@ -8,6 +9,7 @@ import pytest
 from refnx.dataset import ReflectDataset, Data1D, load_data, OrsoDataset
 from refnx.dataset.data1d import _data1D_to_hdf, _hdf_to_data1d
 from refnx.dataset.reflectdataset import load_orso
+import refnx.dataset.tests
 from refnx._lib import possibly_open_file
 import numpy as np
 from numpy.testing import assert_equal
@@ -16,7 +18,7 @@ from numpy.testing import assert_equal
 class TestReflectDataset:
     @pytest.fixture(autouse=True)
     def setup_method(self, tmp_path):
-        self.pth = Path(__file__).absolute().parent
+        self.pth = resources.files(refnx.dataset.tests)
 
         data = ReflectDataset()
 
@@ -290,7 +292,7 @@ class TestReflectDataset:
 class TestData1D:
     @pytest.fixture(autouse=True)
     def setup_method(self, tmp_path):
-        self.pth = Path(__file__).absolute().parent
+        self.pth = resources.files(refnx.dataset.tests)
         self.cwd = Path.cwd()
         self.tmp_path = tmp_path
         os.chdir(self.tmp_path)
@@ -372,7 +374,7 @@ class TestData1D:
 class TestOrtDataset:
     @pytest.fixture(autouse=True)
     def setup_method(self, tmp_path):
-        self.pth = Path(__file__).absolute().parent
+        self.pth = resources.files(refnx.dataset.tests)
         self.cwd = Path.cwd()
         self.tmp_path = tmp_path
         os.chdir(self.tmp_path)

@@ -1,4 +1,4 @@
-from pathlib import Path
+from importlib import resources
 import pickle
 import sys
 
@@ -27,6 +27,7 @@ from refnx.analysis import (
     autocorrelation_chain,
     integrated_time,
 )
+import refnx.analysis.tests
 from refnx.analysis.curvefitter import bounds_list
 from refnx.dataset import Data1D
 from refnx._lib import emcee, flatten
@@ -409,7 +410,7 @@ class TestFitterGauss:
 
     @pytest.fixture(autouse=True)
     def setup_method(self, tmp_path):
-        self.path = Path(__file__).absolute().parent
+        self.path = resources.files(refnx.analysis.tests)
         self.tmp_path = tmp_path
 
         theoretical = np.loadtxt(self.path / "gauss_data.txt")

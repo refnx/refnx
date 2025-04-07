@@ -1,6 +1,7 @@
 from pathlib import Path
 from copy import deepcopy
 import pickle
+from importlib import resources
 import os
 import sys
 import time
@@ -65,13 +66,14 @@ from refnx.reflect import (
     Structure,
     MixedReflectModel,
 )
+import refnx.reflect._app
 from refnx.dataset import Data1D
 from refnx.reflect._code_fragment import code_fragment
 from refnx._lib import unique, flatten, MapWrapper
 
 
 # matplotlib.use('QtAgg')
-UI_LOCATION = Path(__file__).absolute().parent / "ui"
+UI_LOCATION = resources.files(refnx.reflect._app) / "ui"
 
 
 class MotofitMainWindow(QtWidgets.QMainWindow):

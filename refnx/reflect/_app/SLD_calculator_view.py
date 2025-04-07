@@ -1,12 +1,13 @@
-from pathlib import Path
+from importlib import resources
 from qtpy import QtWidgets, uic
 from qtpy.QtCore import Slot
 import periodictable as pt
 import pyparsing
 import numpy as np
+import refnx.reflect._app
 
 
-UI_LOCATION = Path(__file__).absolute().parent / "ui"
+UI_LOCATION = resources.files(refnx.reflect._app) / "ui"
 
 
 class SLDcalculatorView(QtWidgets.QDialog):
