@@ -111,4 +111,4 @@ Can `refnx` analyse Polarised Neutron Reflectometry data?
 ---------------------------------------------------------
 Yes, the ability to simultaneously analyse non-spin flip and spin flip data was
 added in version 0.1.51. See :class:`refnx.reflect.PolarisedReflectModel` and
-:class:`MagneticSlab` for further details.
+:class:`refnx.reflect.MagneticSlab` for further details.
