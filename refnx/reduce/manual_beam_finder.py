@@ -21,7 +21,7 @@ import refnx.reduce._app as floc
 matplotlib.use("QtAgg")
 
 
-with resources.path(floc) as _p:
+with resources.files(floc) as _p:
     UI_LOCATION = _p / "ui"
 
 
