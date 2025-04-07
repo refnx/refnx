@@ -1,4 +1,4 @@
-from pathlib import Path
+from importlib import resources
 import json
 
 from qtpy import QtCore, QtGui, QtWidgets, uic
@@ -6,10 +6,11 @@ from qtpy.QtCore import Qt
 
 import periodictable as pt
 from refnx.reflect import LipidLeaflet, SLD
+import refnx.reflect._app
 
 
-pth = Path(__file__).absolute().parent
-UI_LOCATION = pth / "ui"
+with resources.files(refnx.reflect._app) as _p:
+    UI_LOCATION = _p / "ui"
 
 
 class LipidLeafletDialog(QtWidgets.QDialog):
