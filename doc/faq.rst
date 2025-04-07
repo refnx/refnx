@@ -106,3 +106,9 @@ the fourth column will be the full width half maximum of the instrument
 resolution smearing function.
 `refnx` can also read/write the ORT and ORB files of the Open Reflectometry
 Standards Organisation (`ORSO`_).
+
+Can `refnx` analyse Polarised Neutron Reflectometry data?
+---------------------------------------------------------
+Yes, the ability to simultaneously analyse non-spin flip and spin flip data was
+added in version 0.1.51. See :class:`refnx.reflect.PolarisedReflectModel` and
+:class:`MagneticSlab` for further details.
