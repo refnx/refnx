@@ -7,8 +7,7 @@ import refnx.reflect._app
 from refnx.reflect import Spline, SLD
 
 
-with resources.files(refnx.reflect._app) as _p:
-    UI_LOCATION = _p / "ui"
+UI_LOCATION = resources.files(refnx.reflect._app) / "ui"
 
 
 class SplineDialog(QtWidgets.QDialog):

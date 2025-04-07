@@ -7,8 +7,7 @@ import numpy as np
 import refnx.reflect._app
 
 
-with resources.files(refnx.reflect._app) as _p:
-    UI_LOCATION = _p / "ui"
+UI_LOCATION = resources.files(refnx.reflect._app) / "ui"
 
 
 class SLDcalculatorView(QtWidgets.QDialog):

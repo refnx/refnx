@@ -180,7 +180,7 @@ class TestEvent:
         )
 
         with h5py.File(event_setup[0].nexus_file_path, "r") as g:
-            orig_det = np.copy(g["entry1/data/hmm"])
+            orig_det = g["entry1/data/hmm"][:]
             assert orig_det.shape == (1, 1000, 1024, 1)
 
         assert_equal(detector, orig_det)

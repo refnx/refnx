@@ -73,8 +73,7 @@ from refnx._lib import unique, flatten, MapWrapper
 
 
 # matplotlib.use('QtAgg')
-with resources.files(refnx.reflect._app) as _p:
-    UI_LOCATION = _p / "ui"
+UI_LOCATION = resources.files(refnx.reflect._app) / "ui"
 
 
 class MotofitMainWindow(QtWidgets.QMainWindow):

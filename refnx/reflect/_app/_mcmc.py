@@ -25,8 +25,7 @@ from matplotlib.backends.backend_qtagg import (
 from matplotlib.figure import Figure
 
 
-with resources.files(refnx.reflect._app) as _p:
-    UI_LOCATION = _p / "ui"
+UI_LOCATION = resources.files(refnx.reflect._app) / "ui"
 
 
 class SampleMCMCDialog(QtWidgets.QDialog):

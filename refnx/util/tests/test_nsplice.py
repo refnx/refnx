@@ -1,6 +1,7 @@
-from pathlib import Path
+from importlib import resources
 import numpy as np
 from numpy.testing import assert_almost_equal, assert_, assert_equal
+import refnx.util.tests
 import refnx.util.nsplice as nsplice
 
 __author__ = "anz"
@@ -8,7 +9,7 @@ __author__ = "anz"
 
 class TestNSplice:
     def setup_method(self):
-        self.path = Path(__file__).absolute().parent
+        self.path = resources.files(refnx.util.tests)
 
         fname0 = self.path / "PLP0000708.dat"
         self.qv0, self.rv0, self.drv0 = np.loadtxt(
