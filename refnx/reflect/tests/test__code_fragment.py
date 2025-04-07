@@ -1,3 +1,4 @@
+from importlib import resources
 from pathlib import Path
 import operator
 
@@ -10,12 +11,13 @@ from refnx.analysis.parameter import build_constraint_from_tree, Constant
 from refnx.reflect._code_fragment import code_fragment
 from refnx.reflect import SLD, ReflectModel, Structure, Slab
 from refnx.dataset import ReflectDataset
+import refnx.reflect.tests
 from refnx._lib import flatten
 
 
 class TestCodeFragment:
     def setup_method(self):
-        self.pth = Path(__file__).absolute().parent
+        self.pth = resources.files(refnx.reflect.tests)
 
     def test_code_fragment(self):
         e361 = ReflectDataset(self.pth / "e361r.txt")

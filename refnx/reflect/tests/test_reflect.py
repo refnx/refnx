@@ -1,4 +1,5 @@
 import sys
+from importlib import resources
 from pathlib import Path
 import pickle
 import time
@@ -35,6 +36,7 @@ from refnx.reflect import (
     choose_dq_type,
     use_reflect_backend,
 )
+import refnx.reflect.tests
 import refnx.reflect.reflect_model as reflect_model
 from refnx.reflect._creflect import gepore
 from refnx.dataset import ReflectDataset
@@ -53,7 +55,7 @@ if sys.platform == "darwin":
 
 class TestReflect:
     def setup_method(self):
-        self.pth = Path(__file__).absolute().parent
+        self.pth = resources.files(refnx.reflect.tests)
 
         sio2 = SLD(3.47, name="SiO2")
         air = SLD(0, name="air")

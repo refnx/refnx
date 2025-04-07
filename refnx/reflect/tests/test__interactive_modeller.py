@@ -1,3 +1,4 @@
+from importlib import resources
 from pathlib import Path
 import os
 import pickle
@@ -6,6 +7,7 @@ import numpy as np
 
 from refnx.reflect import SLD, Slab, ReflectModel, Motofit
 from refnx.dataset import ReflectDataset
+import refnx.reflect.tests
 
 from numpy.testing import (
     assert_equal,
@@ -15,7 +17,7 @@ from numpy.testing import (
 
 class Test__InteractiveModeller:
     def setup_method(self):
-        self.pth = Path(__file__).absolute().parent
+        self.pth = resources.files(refnx.reflect.tests)
 
         sio2 = SLD(3.47, name="SiO2")
         air = SLD(0, name="air")

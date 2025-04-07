@@ -1,5 +1,5 @@
 import pickle
-from pathlib import Path
+from importlib import resources
 
 import numpy as np
 from numpy.testing import (
@@ -24,6 +24,7 @@ from refnx.reflect import (
     MixedSlab,
     SpinChannel,
 )
+import refnx.reflect.tests
 from refnx.reflect.structure import _profile_slicer, MagneticSlab
 from refnx.analysis import Parameter, Interval, Parameters
 from refnx.analysis.parameter import _BinaryOp
@@ -32,7 +33,7 @@ from orsopy.fileio.model_language import SampleModel
 
 class TestStructure:
     def setup_method(self):
-        self.pth = Path(__file__).absolute().parent
+        self.pth = resources.files(refnx.reflect.tests)
         self.air = SLD(0, name="air")
         self.sio2 = SLD(3.47, name="sio2")
         self.d2o = SLD(6.36, name="d2o")
