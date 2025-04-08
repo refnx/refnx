@@ -445,7 +445,7 @@ class TestOrtDataset:
         h = Hoggy(
             model,
             0.65,
-            self.data_directory / "PLP0049278.nx.hdf",
+            self.data_directory / "reduce" / "PLP0049278.nx.hdf",
             attenuator=28,
         )
 
