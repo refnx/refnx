@@ -540,8 +540,8 @@ class Hoggy:
         self.measure_time_direct = pn.cat.cat["time"]
 
         # direct beam spectrum
-        l, i, di = pn.process(**rdo)
-        self.l = np.squeeze(l)
+        lam, i, di = pn.process(**rdo)
+        self.lam = np.squeeze(lam)
         self.i = np.squeeze(i)
         self.di = np.squeeze(di)
         self.spec = np.copy(self.i)
