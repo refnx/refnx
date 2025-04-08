@@ -186,9 +186,11 @@ class OrsoDataset(Data1D):
     of the ORSO dataset to convert from standard deviation to FWHM.
     """
 
-    def __init__(self, data, **kwds):
-        super().__init__(data=data, **kwds)
+    def __init__(self, data=None, **kwds):
+        super().__init__(data=None, **kwds)
         self.orso = None
+        if data is not None:
+            self.load(data)
 
     def load(self, f):
         """
