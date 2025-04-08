@@ -18,3 +18,4 @@ Examples
     emcee_pymc_dynesty.ipynb
     using_mpi.ipynb
     energy_dispersive.ipynb
+    orso.ipynb
