@@ -2,13 +2,21 @@ import io
 from importlib import resources
 from pathlib import Path
 import os
+from datetime import datetime
 
 from io import BytesIO, StringIO
 import pytest
 
+import orsopy.fileio as fio
+from orsopy.fileio.base import ValueRange
+
 from refnx.dataset import ReflectDataset, Data1D, load_data, OrsoDataset
 from refnx.dataset.data1d import _data1D_to_hdf, _hdf_to_data1d
 from refnx.dataset.reflectdataset import load_orso
+from refnx.reflect import SLD, MaterialSLD, ReflectModel
+from refnx.reduce import PlatypusNexus, ReductionOptions
+from refnx.reduce.platypusnexus import calculate_wavelength_bins
+from refnx.util import q, EPdiv
 import refnx.dataset.tests
 from refnx._lib import possibly_open_file
 import numpy as np
@@ -373,10 +381,11 @@ class TestData1D:
 
 class TestOrtDataset:
     @pytest.fixture(autouse=True)
-    def setup_method(self, tmp_path):
+    def setup_method(self, tmp_path, data_directory):
         self.pth = resources.files(refnx.dataset.tests)
         self.cwd = Path.cwd()
         self.tmp_path = tmp_path
+        self.data_directory = data_directory
         os.chdir(self.tmp_path)
 
     def teardown_method(self):
@@ -413,3 +422,168 @@ class TestOrtDataset:
 
         assert isinstance(d, OrsoDataset)
         d.refresh()
+
+    def test_create_example_ort_from_simulation(self, data_directory):
+        air = SLD(0)
+        sio2 = SLD(3.47)
+        ni = MaterialSLD("Ni", density=8.9)
+        si = SLD(2.07)
+
+        dq = 5.0
+
+        s = air | ni(1000, 4) | sio2(10, 3) | si(0, 3.5)
+        model = ReflectModel(s, bkg=5e-7, dq=dq)
+
+        # Code for rough simulation of data based on Hogben by Jos Cooper
+        # Resolution smearing from the instrument is 'perfectly gaussian',
+        # and is carried out by the ReflectModel.
+        # A more sophisticated (but slower) approach to resolution smearing
+        # is available.
+        rng = np.random.default_rng(121908290)
+
+        # 0.65 specifies at what configuration the direct beam was measured at.
+        h = Hoggy(
+            model,
+            0.65,
+            self.data_directory / "PLP0049278.nx.hdf",
+            attenuator=28,
+        )
+
+        # two angles of incidence simulated, 0.8 and 3.5
+        ds = h(0.8, 120, rng=rng)
+        ds1 = h(3.5, 300, rng=rng)
+
+        ds += ds1
+
+        header = fio.orso.Orso.empty()
+        header.data_source.owner = fio.data_source.Person(
+            name="Joe Bloggs", affiliation="Unseen University"
+        )
+        header.data_source.experiment = fio.data_source.Experiment(
+            title="Metal films",
+            start_date=datetime(2025, 4, 8),
+            instrument="Platypus",
+            probe="neutron",
+            facility="ANSTO",
+            proposalID="1234",
+        )
+        header.data_source.sample = fio.data_source.Sample(
+            name="Ni on Si",
+            category="from air",
+            description="~1000 A of metal",
+        )
+        header.data_source.measurement = fio.data_source.Measurement(
+            fio.data_source.InstrumentSettings(
+                incident_angle=ValueRange(
+                    min=0.8, max=3.5, individual_magnitudes=[0.8, 3.5]
+                ),
+                wavelength=ValueRange(min=2.8, max=19),
+            ),
+            data_files=[
+                "PLP000001.nx.hdf",
+                "PLP000002.nx.hdf",
+                "PLP0049278.nx.hdf",
+                "PLP0049278.nx.hdf",
+            ],  # spoofed
+        )
+
+        q_column = fio.base.Column(
+            name="Qz",
+            unit="1/angstrom",
+            physical_quantity="wavevector transfer",
+        )
+        r_column = fio.base.Column(
+            name="R", unit=None, physical_quantity="reflectivity"
+        )
+        dr_column = fio.base.ErrorColumn(
+            error_of="R", error_type="uncertainty", value_is="sigma"
+        )
+        dq_column = fio.base.ErrorColumn(
+            error_of="Qz", error_type="resolution", value_is="sigma"
+        )
+
+        header.columns = [q_column, r_column, dr_column, dq_column]
+
+        dataset = fio.orso.OrsoDataset(info=header, data=np.array(ds.data).T)
+        dataset.save(self.tmp_path / "Ni_example.ort")
+
+
+class Hoggy:
+    def __init__(
+        self,
+        model,
+        angle_scale,
+        spectrum,
+        attenuator=1.0,
+        rebin_percent=1.0,
+        lo_wavelength=2.8,
+        hi_wavelength=19.0,
+    ):
+        self.model = model
+        self.w_bins = calculate_wavelength_bins(
+            lo_wavelength, hi_wavelength, rebin_percent
+        )
+        self.wval = 0.5 * (self.w_bins[1:] + self.w_bins[:-1])
+        self.angle_scale = angle_scale
+        self.attenuator = attenuator
+
+        rdo = ReductionOptions(
+            lo_wavelength=lo_wavelength,
+            hi_wavelength=hi_wavelength,
+            background=False,
+            normalise=False,
+            normalise_bins=False,
+            rebin_percent=rebin_percent,
+        )
+
+        pn = PlatypusNexus(spectrum)
+        self.measure_time_direct = pn.cat.cat["time"]
+
+        # direct beam spectrum
+        l, i, di = pn.process(**rdo)
+        self.l = np.squeeze(l)
+        self.i = np.squeeze(i)
+        self.di = np.squeeze(di)
+        self.spec = np.copy(self.i)
+
+        # divide by count time to get cps on direct beam
+        self.spec /= self.measure_time_direct[0]
+        self.spec *= attenuator
+
+    def __call__(self, angle, measure_time, rng=None):
+        if rng is None:
+            rng = np.random.default_rng()
+
+        q_bins = q(angle, self.w_bins)
+        qval = 0.5 * (q_bins[1:] + q_bins[:-1])
+
+        # scale angle compared to incident beam, assuming slits are opened proportionally
+        scalar = np.pow(angle / self.angle_scale, 2)
+        _spec = self.spec * scalar
+
+        # scaled spectrum for actual reflectivity measurement
+        incident_during_reflect = _spec * measure_time
+        reflected_counts = rng.poisson(
+            incident_during_reflect * self.model(qval)
+        )
+        dreflected_counts = np.sqrt(reflected_counts)
+
+        reflectivity, dreflectivity = EPdiv(
+            reflected_counts, dreflected_counts, self.i, self.di
+        )
+        reflectivity *= (self.measure_time_direct) / (
+            self.attenuator * measure_time * scalar
+        )
+        dreflectivity *= (self.measure_time_direct) / (
+            self.attenuator * measure_time * scalar
+        )
+
+        dataset = Data1D(
+            data=(
+                qval,
+                reflectivity,
+                dreflectivity,
+                self.model.dq.value / 100 / 2.3548 * qval,
+            )
+        )
+        return dataset

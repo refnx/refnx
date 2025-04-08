@@ -880,7 +880,6 @@ class Structure(UserList):
                 )
             else:
                 sld = SLD(mat.get_sld() * 1e6)
-                print(sld)
 
             slab = Slab(
                 layer.thickness.magnitude,
