@@ -656,3 +656,8 @@ in 0.1.13.
 ------
 - Added example for reading/writing ORSO model language file, working with
   ORSO dataset.
+- refnx.dataset.OrsoDataset.setup_analysis() method creates a Structure,
+  ReflectModel, and Objective, if there was an ORSO model language description
+  of the interfacial model within the ORSO file.
+- refnx.dataset.OrsoDataset.update_model() method updates the model
+  description within the ORSO file from a given Structure.

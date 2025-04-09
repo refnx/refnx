@@ -11,20 +11,20 @@ except ImportError:
     import xml.etree.ElementTree as ET
 import numpy as np
 
+import orsopy.fileio as fio
 from refnx.dataset import Data1D
 from refnx._lib import possibly_open_file
 
 
 def load_orso(f):
-    from orsopy.fileio import load_orso as _load_orso
-    from orsopy.fileio import load_nexus
-
+    if isinstance(f, fio.orso.OrsoDataset):
+        return [f]
     try:
-        return _load_orso(f)
+        return fio.load_orso(f)
     except Exception:
         pass
     try:
-        v = load_nexus(f)
+        v = fio.load_nexus(f)
         return v
     except Exception:
         pass
@@ -178,7 +178,7 @@ class OrsoDataset(Data1D):
 
     Parameters
     ----------
-    data : {str, file-like. Path}
+    data : {str, file-like, Path}
 
     Notes
     -----
@@ -188,9 +188,48 @@ class OrsoDataset(Data1D):
 
     def __init__(self, data=None, **kwds):
         super().__init__(data=None, **kwds)
-        self.orso = None
+        self._orso = None
         if data is not None:
-            self.load(data)
+            if isinstance(data, fio.orso.OrsoDataset):
+                self.orso = [data]
+            else:
+                self.load(data)
+
+    @property
+    def orso(self):
+        return self._orso
+
+    @orso.setter
+    def orso(self, value):
+        if isinstance(value[0], fio.orso.OrsoDataset):
+            self._orso = [value[0]]
+            self._set_internals()
+
+    def _set_internals(self):
+        """
+        Updates internal information after an OrsoDataset has been associated
+        with the object
+        """
+        header = self.orso[0].info
+
+        _data = self.orso[0].data[:, :4].T
+
+        # figure out if data was in 1/nm or 1/angstrom
+        # internally refnx uses reciprocal angstrom
+        q_units = header.columns[0].unit.lower()
+        if q_units == "1/nm":
+            # need to divide q by 10
+            _data[0] /= 10.0
+
+            if _data.shape[0] > 3:
+                _data[3] /= 10.0
+
+        # ORSO files save resolution information as SD,
+        # internally refnx uses FWHM
+        if _data.shape[0] > 3:
+            _data[3] *= 2.3548
+
+        self.data = _data
 
     def load(self, f):
         """
@@ -216,28 +255,22 @@ class OrsoDataset(Data1D):
 
         with possibly_open_file(f, mode) as g:
             self.orso = load_orso(g)
-            header = self.orso[0].info
 
-        _data = self.orso[0].data[:, :4].T
-
-        # figure out if data was in 1/nm or 1/angstrom
-        # internally refnx uses reciprocal angstrom
-        q_units = header.columns[0].unit.lower()
-        if q_units == "1/nm":
-            # need to divide q by 10
-            _data[0] /= 10.0
-
-            if _data.shape[0] > 3:
-                _data[3] /= 10.0
-
-        # ORSO files save resolution information as SD,
-        # internally refnx uses FWHM
-        if _data.shape[0] > 3:
-            _data[3] *= 2.3548
-
-        self.data = _data
         self.filename = fname
         self.name = Path(fname).stem
+        self._set_internals()
+
+    def save(self, f):
+        """
+        Saves the dataset to an ORT file.
+
+        Parameters
+        ----------
+        f : {file-like, str, Path}
+            File to save the dataset to.
+
+        """
+        self.orso[0].save(f)
 
     def refresh(self):
         """
@@ -249,3 +282,120 @@ class OrsoDataset(Data1D):
         # vs opening a text file.
         if self.filename is not None:
             self.load(self.filename)
+
+    def setup_analysis(self):
+        """
+        Creates a Structure, ReflectModel, Objective from the information
+        contained within the ORSO file.
+
+        Returns
+        -------
+        (s, model, objective) : tuple
+            tuple comprising the Structure, ReflectModel, and Objective
+            created from the Orso file.
+
+        Notes
+        -----
+        If no model structure is specified in the OrsoDataset then a
+        RuntimeError will be raised.
+
+        Example
+        -------
+
+        >>> import urllib.request
+        >>> import shutil
+        >>> url = "https://github.com/refnx/refnx-testdata/raw/refs/heads/master/data/dataset/Ni_example.ort"
+        >>> with (urllib.request.urlopen(url, timeout=5) as response, open("Ni_example.ort", 'wb') as f):
+        ...     shutil.copyfileobj(response, f)
+        >>> from refnx.dataset import OrsoDataset
+        >>> ds = OrsoDataset("Ni_example.ort")
+        >>> s, model, objective = ds.setup_analysis()
+        >>> print(model)
+        ________________________________________________________________________________
+        Structure:
+        solvent: None
+        reverse structure: False
+        contract: 0
+
+        ________________________________________________________________________________
+        Parameters:      'air'
+        <Parameter: 'air - thick' , value=0  (fixed) , bounds=[-inf, inf]>
+        ________________________________________________________________________________
+        Parameters:       ''
+        <Parameter:   ' - sld'    , value=0  (fixed) , bounds=[-inf, inf]>
+        <Parameter:   ' - isld'   , value=0  (fixed) , bounds=[-inf, inf]>
+        <Parameter: 'air - rough' , value=0  (fixed) , bounds=[-inf, inf]>
+        <Parameter:'air - volfrac solvent', value=0  (fixed) , bounds=[0.0, 1.0]>
+        ________________________________________________________________________________
+        Parameters:      'm1'
+        <Parameter: 'm1 - thick'  , value=1000  (fixed) , bounds=[-inf, inf]>
+        ________________________________________________________________________________
+        Parameters:       ''
+        <Parameter:   'density'   , value=8.9  (fixed) , bounds=[-inf, inf]>
+        <Parameter: 'm1 - rough'  , value=4  (fixed) , bounds=[-inf, inf]>
+        <Parameter:'m1 - volfrac solvent', value=0  (fixed) , bounds=[0.0, 1.0]>
+        ________________________________________________________________________________
+        Parameters:     'SiO2'
+        <Parameter:'SiO2 - thick' , value=10  (fixed) , bounds=[-inf, inf]>
+        ________________________________________________________________________________
+        Parameters:       ''
+        <Parameter:   ' - sld'    , value=3.47  (fixed) , bounds=[-inf, inf]>
+        <Parameter:   ' - isld'   , value=0  (fixed) , bounds=[-inf, inf]>
+        <Parameter:'SiO2 - rough' , value=3  (fixed) , bounds=[-inf, inf]>
+        <Parameter:'SiO2 - volfrac solvent', value=0  (fixed) , bounds=[0.0, 1.0]>
+        ________________________________________________________________________________
+        Parameters:      'Si'
+        <Parameter: 'Si - thick'  , value=0  (fixed) , bounds=[-inf, inf]>
+        ________________________________________________________________________________
+        Parameters:       ''
+        <Parameter:   ' - sld'    , value=2.07  (fixed) , bounds=[-inf, inf]>
+        <Parameter:   ' - isld'   , value=0  (fixed) , bounds=[-inf, inf]>
+        <Parameter: 'Si - rough'  , value=3.5  (fixed) , bounds=[-inf, inf]>
+        <Parameter:'Si - volfrac solvent', value=0  (fixed) , bounds=[0.0, 1.0]>
+        >>> s[1].thick.setp(vary=True, bounds=(990, 1010))
+        >>> from refnx.analysis import CurveFitter
+        >>> fitter = CurveFitter(objective)
+        >>> fitter.fit("differential_evolution")
+
+        """
+        from refnx.reflect import Structure, ReflectModel
+        from refnx.analysis import Objective
+
+        if self.orso is None:
+            raise RuntimeError(
+                "This instance has not yet been initialised"
+                " with an OrsoDataset"
+            )
+
+        model = self.orso[0].info.data_source.sample.model
+        if model is None:
+            raise RuntimeError("No model is associated with the OrsoDataset")
+
+        s = Structure.from_orso(model)
+        model = ReflectModel(s)
+        objective = Objective(model, self)
+        return s, model, objective
+
+    def update_model(self, structure):
+        """
+        Updates the model in the OrsoDataset from a given Structure.
+
+        Parameters
+        ----------
+        structure : refnx.reflect.Structure
+
+        Notes
+        -----
+        Only simple Slab structures can be processed at this time.
+        """
+        if self.orso is None:
+            raise RuntimeError(
+                "This instance has not yet been initialised"
+                " with an OrsoDataset"
+            )
+
+        # figure out ORSO model from the Structure
+        model = structure.to_orso()
+
+        # now insert into the OrsoDataset
+        self.orso[0].info.data_source.sample.model = model
