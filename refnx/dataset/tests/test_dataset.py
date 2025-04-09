@@ -391,6 +391,41 @@ class TestOrtDataset:
     def teardown_method(self):
         os.chdir(self.cwd)
 
+    def test_OrtDataset_init(self):
+        f = self.pth / "ORSO_data.ort"
+        # create with path
+        OrsoDataset(f)
+
+        # create with orsopy.fileio.orso.OrsoDataset object
+        OrsoDataset(load_orso(f)[0])
+
+        # create with orsopy.fileio.orso.OrsoDataset object
+        ds = OrsoDataset(
+            load_orso(self.data_directory / "dataset" / "Ni_example.ort")[0]
+        )
+        assert ds.orso is not None
+        assert len(ds) == 341
+        # checks sd --> fwhm conversion of resolution function
+        np.testing.assert_allclose(ds.x_err, 0.05 * ds.x, rtol=0.005)
+
+    def test_setup_analysis(self):
+        # create with orsopy.fileio.orso.OrsoDataset object
+        ds = OrsoDataset(
+            load_orso(self.data_directory / "dataset" / "Ni_example.ort")[0]
+        )
+        s, model, objective = ds.setup_analysis()
+        np.testing.assert_allclose(s[1].thick.value, 1000)
+
+        # now try changing value and resaving ort file
+        s[1].thick.value = 2000.0
+        ds.update_model(s)
+        ds.save(self.tmp_path / "flake.ort")
+
+        # see if the value was updated in the file
+        ds2 = OrsoDataset(load_orso(self.tmp_path / "flake.ort")[0])
+        s2, model2, objective2 = ds2.setup_analysis()
+        np.testing.assert_allclose(s2[1].thick.value, 2000)
+
     def test_ort_load(self):
         f = self.pth / "ORSO_data.ort"
         assert f.exists()
@@ -405,6 +440,11 @@ class TestOrtDataset:
         assert len(d) == 2
         assert isinstance(d, OrsoDataset)
         d.refresh()
+
+        # no model is associated with this ORT file, so one cannot create
+        # a ReflectModel from it.
+        with pytest.raises(RuntimeError):
+            d.setup_analysis()
 
     def test_orb_load(self):
         f = self.pth / "test.orb"
