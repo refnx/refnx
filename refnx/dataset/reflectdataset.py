@@ -258,7 +258,6 @@ class OrsoDataset(Data1D):
 
         self.filename = fname
         self.name = Path(fname).stem
-        self._set_internals()
 
     def save(self, f):
         """
