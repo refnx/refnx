@@ -310,47 +310,6 @@ class OrsoDataset(Data1D):
         >>> ds = OrsoDataset("Ni_example.ort")
         >>> s, model, objective = ds.setup_analysis()
         >>> print(model)
-        ________________________________________________________________________________
-        Structure:
-        solvent: None
-        reverse structure: False
-        contract: 0
-
-        ________________________________________________________________________________
-        Parameters:      'air'
-        <Parameter: 'air - thick' , value=0  (fixed) , bounds=[-inf, inf]>
-        ________________________________________________________________________________
-        Parameters:       ''
-        <Parameter:   ' - sld'    , value=0  (fixed) , bounds=[-inf, inf]>
-        <Parameter:   ' - isld'   , value=0  (fixed) , bounds=[-inf, inf]>
-        <Parameter: 'air - rough' , value=0  (fixed) , bounds=[-inf, inf]>
-        <Parameter:'air - volfrac solvent', value=0  (fixed) , bounds=[0.0, 1.0]>
-        ________________________________________________________________________________
-        Parameters:      'm1'
-        <Parameter: 'm1 - thick'  , value=1000  (fixed) , bounds=[-inf, inf]>
-        ________________________________________________________________________________
-        Parameters:       ''
-        <Parameter:   'density'   , value=8.9  (fixed) , bounds=[-inf, inf]>
-        <Parameter: 'm1 - rough'  , value=4  (fixed) , bounds=[-inf, inf]>
-        <Parameter:'m1 - volfrac solvent', value=0  (fixed) , bounds=[0.0, 1.0]>
-        ________________________________________________________________________________
-        Parameters:     'SiO2'
-        <Parameter:'SiO2 - thick' , value=10  (fixed) , bounds=[-inf, inf]>
-        ________________________________________________________________________________
-        Parameters:       ''
-        <Parameter:   ' - sld'    , value=3.47  (fixed) , bounds=[-inf, inf]>
-        <Parameter:   ' - isld'   , value=0  (fixed) , bounds=[-inf, inf]>
-        <Parameter:'SiO2 - rough' , value=3  (fixed) , bounds=[-inf, inf]>
-        <Parameter:'SiO2 - volfrac solvent', value=0  (fixed) , bounds=[0.0, 1.0]>
-        ________________________________________________________________________________
-        Parameters:      'Si'
-        <Parameter: 'Si - thick'  , value=0  (fixed) , bounds=[-inf, inf]>
-        ________________________________________________________________________________
-        Parameters:       ''
-        <Parameter:   ' - sld'    , value=2.07  (fixed) , bounds=[-inf, inf]>
-        <Parameter:   ' - isld'   , value=0  (fixed) , bounds=[-inf, inf]>
-        <Parameter: 'Si - rough'  , value=3.5  (fixed) , bounds=[-inf, inf]>
-        <Parameter:'Si - volfrac solvent', value=0  (fixed) , bounds=[0.0, 1.0]>
         >>> s[1].thick.setp(vary=True, bounds=(990, 1010))
         >>> from refnx.analysis import CurveFitter
         >>> fitter = CurveFitter(objective)
