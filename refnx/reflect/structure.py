@@ -876,10 +876,12 @@ class Structure(UserList):
             mat = layer.material
             if mat.formula is not None:
                 sld = MaterialSLD(
-                    mat.formula, density=mat.mass_density.magnitude
+                    mat.formula,
+                    density=mat.mass_density.magnitude,
+                    name=layer.original_name,
                 )
             else:
-                sld = SLD(mat.get_sld() * 1e6)
+                sld = SLD(mat.get_sld() * 1e6, name=layer.original_name)
 
             slab = Slab(
                 layer.thickness.magnitude,
