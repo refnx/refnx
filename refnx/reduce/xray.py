@@ -202,9 +202,13 @@ def process_offspec(f):
     -------
     qx, qz, intensity, dintensity
     """
+    namespaces = dict(
+        [node for _, node in et.iterparse(f, events=["start-ns"])]
+    )
 
     x = et.parse(f)
     root = x.getroot()
+
     ns = {"xrdml": namespaces[""]}
     if "2.0" in namespaces[""]:
         _intensities = "counts"
