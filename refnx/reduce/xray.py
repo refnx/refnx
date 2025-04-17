@@ -40,6 +40,10 @@ def reduce_xrdml(f, bkg=None, scale=None, sample_length=None):
     reflectivity = spec["intensities"] / spec["count_time"]
     reflectivity_s = np.sqrt(spec["intensities"]) / spec["count_time"]
 
+    if spec["version"] == 2:
+        reflectivity *= spec["beamAttenuationFactors"]
+        reflectivity_s *= spec["beamAttenuationFactors"]
+
     # do the background subtraction
     if bkg is not None:
         bkgds = [parse_xrdml_file(fi) for fi in bkg]
@@ -123,13 +127,27 @@ def parse_xrdml_file(f):
             How long each point was counted for
         'wavelength' - float
             Wavelength of X-ray radiation
+        'beamAttenuationFactors' - np.ndarray
+            Beam Attenuation Factors
+        'version' - int
+            Version of the XRDML file
     """
+    namespaces = dict(
+        [node for _, node in et.iterparse(f, events=["start-ns"])]
+    )
+
     tree = et.parse(f)
     root = tree.getroot()
-    ns = {"xrdml": "http://www.xrdml.com/XRDMeasurement/1.0"}
+    ns = {"xrdml": namespaces[""]}
+    if "2.0" in namespaces[""]:
+        _intensities = "counts"
+        version = 2
+    elif "1.0" in namespaces[""]:
+        _intensities = "intensities"
+        version = 1
 
     query = {
-        "intensities": ".//xrdml:intensities",
+        "intensities": f".//xrdml:{_intensities}",
         "twotheta_start": ".//xrdml:positions[@axis='2Theta']"
         "/xrdml:startPosition",
         "twotheta_end": ".//xrdml:positions[@axis='2Theta']"
@@ -141,6 +159,7 @@ def parse_xrdml_file(f):
         "kAlpha1": ".//xrdml:kAlpha1",
         "kAlpha2": ".//xrdml:kAlpha2",
         "ratio": ".//xrdml:ratioKAlpha2KAlpha1",
+        "beamAttenuationFactors": ".//xrdml:beamAttenuationFactors",
     }
 
     res = {key: root.find(value, ns).text for key, value in query.items()}
@@ -163,6 +182,10 @@ def parse_xrdml_file(f):
     )
     d["count_time"] = float(res["cnt_time"])
     d["wavelength"] = wavelength
+    d["beamAttenuationFactors"] = np.fromstring(
+        res["beamAttenuationFactors"], sep=" "
+    )
+    d["version"] = version
 
     return d
 
@@ -179,12 +202,21 @@ def process_offspec(f):
     -------
     qx, qz, intensity, dintensity
     """
+    namespaces = dict(
+        [node for _, node in et.iterparse(f, events=["start-ns"])]
+    )
 
     x = et.parse(f)
     root = x.getroot()
-    ns = {"xrdml": "http://www.xrdml.com/XRDMeasurement/1.0"}
+
+    ns = {"xrdml": namespaces[""]}
+    if "2.0" in namespaces[""]:
+        _intensities = "counts"
+    elif "1.0" in namespaces[""]:
+        _intensities = "intensities"
+
     query = {
-        "intensities": ".//xrdml:intensities",
+        "intensities": f".//xrdml:{_intensities}",
         "twotheta_start": ".//xrdml:positions[@axis='2Theta']"
         "/xrdml:startPosition",
         "twotheta_end": ".//xrdml:positions[@axis='2Theta']"
@@ -196,6 +228,7 @@ def process_offspec(f):
         "kAlpha1": ".//xrdml:kAlpha1",
         "kAlpha2": ".//xrdml:kAlpha2",
         "ratio": ".//xrdml:ratioKAlpha2KAlpha1",
+        "beamAttenuationFactors": ".//xrdml:beamAttenuationFactors",
     }
 
     res = {key: root.findall(value, ns) for key, value in query.items()}
