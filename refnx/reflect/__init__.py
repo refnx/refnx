@@ -12,6 +12,7 @@ from refnx.reflect.reflect_model import (
     available_backends,
     abeles,
     SpinChannel,
+    Footprint,
 )
 from refnx.reflect.structure import (
     Structure,
