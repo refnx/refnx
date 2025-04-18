@@ -769,13 +769,13 @@ class ReflectModelTL(ReflectModel):
 
         This value is turned into a Parameter during the construction of this
         object.
-    threads: int, optional
+    threads : int, optional
         Specifies the number of threads for parallel calculation. This
         option is only applicable if you are using the ``_creflect``
         module. The option is ignored if using the pure python calculator,
         ``_reflect``. If `threads == -1` then all available processors are
         used.
-    quad_order: int, optional
+    quad_order : int, optional
         the order of the Gaussian quadrature polynomial for doing the
         resolution smearing. default = 17. Don't choose less than 13. If
         quad_order == 'ultimate' then adaptive quadrature is used. Adaptive
@@ -784,17 +784,20 @@ class ReflectModelTL(ReflectModel):
         time. BUT it won't necessarily work across all samples. For
         example, 13 points may be fine for a thin layer, but will be
         atrocious at describing a multilayer with bragg peaks.
-    dq_type: {'pointwise', 'constant'}, optional
+    dq_type : {'pointwise', 'constant'}, optional
         Chooses whether pointwise or constant dQ/Q resolution smearing (see
         `dq` keyword) is used. To use pointwise smearing the `x_err` keyword
         provided to `Objective.model` method must be an array, otherwise the
         smearing falls back to 'constant'.
-    t_offset: float or refnx.analysis.Parameter, optional
+    t_offset : float or refnx.analysis.Parameter, optional
         Compensates for uncertainties in the angle at which the measurement is
         performed. A positive/negative `t_offset` corresponds to a situation
         where the measured t values (incident angle) may have been under/over
         estimated, and has the effect of shifting the calculated model to
         lower/higher effective q values.
+    footprint : refnx.reflect.Footprint
+        Corrects for overillumination of a sample. Should be a subclass of
+        `Footprint`.
 
     Example
     -------
@@ -821,8 +824,10 @@ class ReflectModelTL(ReflectModel):
         quad_order=17,
         dq_type="pointwise",
         t_offset=0,
+        footprint=None,
     ):
         self._t_offset = possibly_create_parameter(t_offset)
+        self.footprint = footprint
         super().__init__(
             structure,
             name=name,
@@ -903,6 +908,9 @@ class ReflectModelTL(ReflectModel):
                 R[msk] = abeles(q[msk], a_unique_slabs, threads=1)
 
         R *= self.scale.value
+        if self.footprint is not None:
+            R *= self.footprint(tl[:, 0] + self.t_offset.value)
+
         R += self.bkg.value
         return np.squeeze(R)
 
@@ -937,8 +945,49 @@ class ReflectModelTL(ReflectModel):
         p = Parameters(name="instrument parameters")
         p.extend([self.scale, self.bkg, self.dq, self.t_offset])
 
+        if self.footprint is not None:
+            p.extend(self.footprint.parameters.data)
+
         self._parameters = Parameters(name=self.name)
         self._parameters.extend([p, structure.parameters])
+
+
+class Footprint:
+    """
+    Calculates fraction of beam intercepted by a sample at different angles
+
+    Parameters
+    ----------
+    sample_length : {float, refnx.analysis.Parameter}
+        Transverse length of sample (mm)
+    beam_height : {float, refnx.analysis.Parameter}
+        Full width half maximum of gaussian beam height (mm)
+    """
+
+    def __init__(self, sample_length, beam_height):
+        self.sample_length = possibly_create_parameter(
+            sample_length, name="sample length"
+        )
+        self.beam_height = possibly_create_parameter(
+            beam_height, name="beam height"
+        )
+
+    def __call__(self, angle):
+        """
+        Calculates fraction of beam intercepted by a sample at different angles.
+
+        Parameters
+        ----------
+        angle : {np.ndarray, float}
+            angle of incidence (degrees)
+        """
+        return general.beamfrac(
+            self.beam_height.value, self.sample_length.value, angle
+        )
+
+    @property
+    def parameters(self):
+        return Parameters([self.sample_length, self.beam_height])
 
 
 def reflectivity(

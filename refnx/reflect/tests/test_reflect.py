@@ -25,6 +25,7 @@ from refnx.reflect import (
     MaterialSLD,
     ReflectModel,
     ReflectModelTL,
+    Footprint,
     PolarisedReflectModel,
     MagneticSlab,
     SpinChannel,
@@ -505,7 +506,9 @@ class TestReflect:
         t = np.array([1.0] * len(self.qvals))
         lam = general.wavelength(self.qvals, t)
 
-        rff2 = ReflectModelTL(self.structure, dq=0.0)
+        footprint = Footprint(100, 0.05)
+
+        rff2 = ReflectModelTL(self.structure, dq=0.0, footprint=footprint)
         model = rff2.model(np.c_[t, lam])
         assert_allclose(model, self.rvals, atol=2e-7)
 

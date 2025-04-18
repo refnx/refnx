@@ -665,3 +665,5 @@ in 0.1.13.
 
 0.1.56
 ------
+- added a Footprint class to correct for over-illumination of samples at low
+  angles. This class is used by ReflectModelTL.
