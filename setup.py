@@ -15,7 +15,9 @@ try:
     from Cython.Build import cythonize
 except ImportError:
     USE_CYTHON = False
-    warnings.warn("Cython was not found. Slow reflectivity calculations will be used.")
+    warnings.warn(
+        "Cython was not found. Slow reflectivity calculations will be used."
+    )
 else:
     USE_CYTHON = True
 
@@ -24,7 +26,7 @@ else:
 MAJOR = 0
 MINOR = 1
 MICRO = 56
-ISRELEASED = False
+ISRELEASED = True
 VERSION = f"{MAJOR}.{MINOR}.{MICRO}"
 
 
@@ -58,7 +60,9 @@ def git_version():
         env["LANGUAGE"] = "C"
         env["LANG"] = "C"
         env["LC_ALL"] = "C"
-        out = subprocess.Popen(cmd, stdout=subprocess.PIPE, env=env).communicate()[0]
+        out = subprocess.Popen(
+            cmd, stdout=subprocess.PIPE, env=env
+        ).communicate()[0]
         return out
 
     try:
@@ -81,7 +85,10 @@ def get_version_info():
         # must be a source distribution, use existing version file
         # load it as a separate module to not load refnx/__init__.py
         import importlib.util
-        spec = importlib.util.spec_from_file_location("version", "refnx/version.py")
+
+        spec = importlib.util.spec_from_file_location(
+            "version", "refnx/version.py"
+        )
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
         GIT_REVISION = module.git_revision
@@ -181,6 +188,7 @@ def check_openmp_support():
     try:
         from setuptools._distutils.ccompiler import new_compiler
         from setuptools._distutils.sysconfig import customize_compiler
+
         # from numpy.distutils.ccompiler import new_compiler
         # from distutils.sysconfig import customize_compiler
         from distutils.errors import CompileError, LinkError
@@ -206,7 +214,9 @@ def check_openmp_support():
             openmp_flags = get_openmp_flag(ccompiler)
 
             ccompiler.compile(
-                ["test_openmp.c"], output_dir="objects", extra_postargs=openmp_flags[0]
+                ["test_openmp.c"],
+                output_dir="objects",
+                extra_postargs=openmp_flags[0],
             )
 
             # Link test program
@@ -216,7 +226,9 @@ def check_openmp_support():
             else:
                 extra_preargs = []
 
-            objects = glob.glob(os.path.join("objects", "*" + ccompiler.obj_extension))
+            objects = glob.glob(
+                os.path.join("objects", "*" + ccompiler.obj_extension)
+            )
             ccompiler.link_executable(
                 objects,
                 "test_openmp",
@@ -251,7 +263,10 @@ HAS_OPENMP = check_openmp_support()
 
 
 # refnx setup
-info = {"include_package_data": True,}
+info = {
+    "include_package_data": True,
+}
+
 
 ####################################################################
 # this is where setup starts
@@ -286,7 +301,9 @@ def setup_package():
                 sources=["src/_cevent.pyx"],
                 include_dirs=[numpy_include],
                 language="c++",
-                define_macros=[("NPY_NO_DEPRECATED_API", "NPY_1_7_API_VERSION")],
+                define_macros=[
+                    ("NPY_NO_DEPRECATED_API", "NPY_1_7_API_VERSION")
+                ],
                 # libraries=
                 # extra_compile_args = "...".split(),
             )
@@ -310,6 +327,7 @@ def setup_package():
             # (at least on Darwin).
             from setuptools._distutils.ccompiler import new_compiler
             from setuptools._distutils.sysconfig import customize_compiler
+
             # from numpy.distutils.ccompiler import new_compiler
             # from distutils.sysconfig import customize_compiler
 
@@ -341,13 +359,17 @@ def setup_package():
 
             _creflect = Extension(
                 name="refnx.reflect._creflect",
-                sources=["src/_creflect.pyx",
-                         "src/refcaller.cpp",
-                         "src/pnr/magnetic.cc",],
+                sources=[
+                    "src/_creflect.pyx",
+                    "src/refcaller.cpp",
+                    "src/pnr/magnetic.cc",
+                ],
                 include_dirs=[numpy_include],
                 language="c++",
                 extra_compile_args=["-std=c++11"],
-                define_macros=[("NPY_NO_DEPRECATED_API", "NPY_1_7_API_VERSION")],
+                define_macros=[
+                    ("NPY_NO_DEPRECATED_API", "NPY_1_7_API_VERSION")
+                ],
                 extra_objects=refcalc_obj,
             )
             ext_modules.append(_creflect)
@@ -371,7 +393,7 @@ def setup_package():
                     sources=[
                         "src/_cyreflect.pyx",
                         "src/refcaller.cpp",
-                        "src/pnr/magnetic.cc"
+                        "src/pnr/magnetic.cc",
                     ],
                     include_dirs=[numpy_include],
                     language="c++",
