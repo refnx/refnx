@@ -357,3 +357,58 @@ class OrsoDataset(Data1D):
 
         # now insert into the OrsoDataset
         self.orso[0].info.data_source.sample.model = model
+
+
+class PolarisedReflectDatasets:
+    def __init__(
+            self,
+            down_down=None,
+            up_up=None,
+            down_up=None,
+            up_down=None
+    ):
+        for o in (down_down, up_up, down_up, up_down):
+            if o is not None and not isinstance(o, Data1D):
+                raise TypeError(f"{o} is not a Data1D object.")
+        self.down_down = down_down
+        self.up_up = up_up
+        self.down_up = down_up
+        self.up_down = up_down
+        self.attrs = {"up_up": 0, "up_down": 1, "down_up": 2, "down_down": 3}
+
+    @property
+    def x(self):
+        xs = []
+        for attr in self.attrs.keys():
+            data = getattr(self, attr)
+            if data is None:
+                continue
+            else:
+                full = np.full((len(data.x), 4), np.nan)
+                full[:, self.attrs[attr]] = data.x
+                xs.append(full)
+
+        return np.r_[xs].reshape(-1, 4)
+
+    @property
+    def y(self):
+        return np.r_[self.up_up.y, self.up_down.y, self.down_up.y, self.down_down.y]
+
+    @property
+    def y_err(self):
+        return np.r_[self.up_up.y_err, self.up_down.y_err, self.down_up.y_err, self.down_down.y_err]
+
+    @property
+    def x_err(self):
+        pass
+
+    @property
+    def data(self):
+        return (self.x, self.y, self.y_err, self.x_err)
+
+    @property
+    def weighted(self):
+        return all([self.up_up.weighted, self.down_up.weighted, self.up_down.weighted, self.down_down.weighted])
+
+    def __len__(self):
+        return len(self.y)
