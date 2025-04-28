@@ -24,7 +24,7 @@ jobs:
       fail-fast: true
       max-parallel: 3
       matrix:
-        python-version: ['3.10', '3.11', '3.12', '3.13']
+        python-version: ['3.11', '3.12', '3.13']
 
     steps:
 
@@ -61,7 +61,7 @@ jobs:
 
         # check that refnx gui starts
         # python tools/app/check_app_starts.py refnx
-        
+
         # run vendored ptemcee tests
         pytest --pyargs refnx._lib.ptemcee.tests
 
@@ -122,7 +122,7 @@ jobs:
       - name: Make wheel
         shell: bash
         run: |
-          
+
           python -m pip install --upgrade pip
           python -m pip install wheel delocate build
           python -m build . -v
@@ -151,7 +151,7 @@ jobs:
       fail-fast: true
       max-parallel: 3
       matrix:
-        python-version: ['3.10', '3.11', '3.12']
+        python-version: ['3.11', '3.12', '3.13']
 
     steps:
     - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -264,9 +264,9 @@ jobs:
         security import certificate.p12 -k build.keychain -P $MACOS_CERTIFICATE_PWD -T /usr/bin/codesign
         security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k DloaAcYP build.keychain >/dev/null
         security find-identity -p codesigning
-      
+
         codesign --verify --options=runtime --entitlements entitlements.plist --timestamp --deep --verbose=4 --force --sign "Developer ID Application: The International Scattering Alliance (8CX8K63BQM)" dist/refnx.app
-          
+
         cp ../../refnx/reflect/_app/icons/Motofit.icns .
         sips -i Motofit.icns
         DeRez -only icns Motofit.icns > icns.rsrc
@@ -309,7 +309,7 @@ jobs:
       fail-fast: true
       max-parallel: 3
       matrix:
-        python-version: ['3.10', '3.11', '3.12']
+        python-version: ['3.11', '3.12', '3.13']
 
     steps:
     - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -331,7 +331,7 @@ jobs:
         python -m pip wheel . --no-deps -w dist
 
     - name: Install package and test with pytest
-      if: ${{ matrix.python-version == '3.10' }}
+      if: ${{ matrix.python-version == '3.12' }}
       env:
         PYOPENCL_CTX: 0
       run: |
@@ -346,14 +346,14 @@ jobs:
         cd ..
 
     - name: Check refnx gui starts
-      if: ${{ matrix.python-version == '3.10' }}
+      if: ${{ matrix.python-version == '3.12' }}
       run: |
         # check that refnx gui starts
         pip install psutil
         python tools/app/check_app_starts.py refnx
 
     - name: Make frozen GUI executable
-      if: ${{ matrix.python-version == '3.10' }}
+      if: ${{ matrix.python-version == '3.12' }}
       run: |
         # make app in virtualenv
         pip uninstall -y h5py
@@ -417,7 +417,7 @@ jobs:
     strategy:
       max-parallel: 1
       matrix:
-        python-version: ["3.10"]
+        python-version: ["3.12"]
 
     steps:
     - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -439,7 +439,7 @@ jobs:
       run: |
         sudo apt update
         sudo apt install clang-format
-        cd src 
+        cd src
         clang-format --Werror -n *.cpp *.h *.c
         cd pnr
         clang-format --Werror -n *.cc *.h
