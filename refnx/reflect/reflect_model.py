@@ -628,8 +628,6 @@ class PolarisedReflectModel(ReflectModel):
 
     Parameters
     ----------
-    spin: refnx.reflect.SpinChannel
-        Specifies the spin state the model is associated with.
     Aguide: float
         Angle of applied field. This value should be 270 or 90 degrees for
         the applied field to lie in the plane of the sample, perpendicular to
@@ -641,29 +639,37 @@ class PolarisedReflectModel(ReflectModel):
     def __init__(
         self,
         structure,
-        scale=1,
-        bkg=1e-7,
+        scales=1,
+        bkgs=1e-7,
         name="",
         dq=5.0,
         threads=-1,
         quad_order=17,
-        dq_type="pointwise",
-        q_offset=0,
-        spin=None,
+        dq_type="constant",
+        q_offsets=0,
         Aguide=270,
     ):
         super().__init__(
             structure,
             name=name,
-            scale=scale,
-            bkg=bkg,
             threads=threads,
             quad_order=quad_order,
             dq=dq,
             dq_type=dq_type,
-            q_offset=q_offset,
         )
-        self.spin = spin
+        # overwrite the scales/bkgs/q_offsets
+        if hasattr(scales, "__iter__"):
+            _s = [possibly_create_parameter(v) for v in scales]
+            self.scale = Parameters(name="scales", data=_s)
+        if hasattr(bkgs, "__iter__"):
+            _s = [possibly_create_parameter(v) for v in bkg]
+            self.bkg = Parameters(name="bkgs", data=_s)
+        if hasattr(q_offsets, "__iter__"):
+            _s = [possibly_create_parameter(v) for v in q_offsets]
+            self.q_offset = Parameters(name="q_offsets", data=_s)
+
+        # update internal parameter view
+        self.structure = structure
         self.Aguide = Aguide
 
     def __repr__(self):

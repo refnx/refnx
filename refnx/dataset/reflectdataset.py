@@ -392,11 +392,30 @@ class PolarisedReflectDatasets:
 
     @property
     def y(self):
-        return np.r_[self.up_up.y, self.up_down.y, self.down_up.y, self.down_down.y]
+        ys = []
+        for attr in self.attrs.keys():
+            data = getattr(self, attr)
+            if data is None:
+                continue
+            else:
+                ys.append(data.y)
+
+        return np.r_[ys]
 
     @property
     def y_err(self):
-        return np.r_[self.up_up.y_err, self.up_down.y_err, self.down_up.y_err, self.down_down.y_err]
+        if self.weighted:
+            ys = []
+            for attr in self.attrs.keys():
+                data = getattr(self, attr)
+                if data is None:
+                    continue
+                else:
+                    ys.append(data.y_err)
+
+            return np.r_[ys]
+        else:
+            return None
 
     @property
     def x_err(self):
