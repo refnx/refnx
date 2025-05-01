@@ -3,7 +3,6 @@ import os
 from refnx.reflect.reflect_model import (
     ReflectModel,
     ReflectModelTL,
-    PolarisedReflectModel,
     reflectivity,
     MixedReflectModel,
     FresnelTransform,
@@ -14,6 +13,7 @@ from refnx.reflect.reflect_model import (
     SpinChannel,
     Footprint,
 )
+from refnx.reflect._polarised_reflect_model import PolarisedReflectModel
 from refnx.reflect.structure import (
     Structure,
     SLD,

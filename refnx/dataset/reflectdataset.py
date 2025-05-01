@@ -360,13 +360,7 @@ class OrsoDataset(Data1D):
 
 
 class PolarisedReflectDatasets:
-    def __init__(
-            self,
-            down_down=None,
-            up_up=None,
-            down_up=None,
-            up_down=None
-    ):
+    def __init__(self, down_down=None, up_up=None, down_up=None, up_down=None):
         for o in (down_down, up_up, down_up, up_down):
             if o is not None and not isinstance(o, Data1D):
                 raise TypeError(f"{o} is not a Data1D object.")
@@ -419,6 +413,7 @@ class PolarisedReflectDatasets:
 
     @property
     def x_err(self):
+        # TODO
         pass
 
     @property
@@ -427,7 +422,14 @@ class PolarisedReflectDatasets:
 
     @property
     def weighted(self):
-        return all([self.up_up.weighted, self.down_up.weighted, self.up_down.weighted, self.down_down.weighted])
+        return all(
+            [
+                self.up_up.weighted,
+                self.down_up.weighted,
+                self.up_down.weighted,
+                self.down_down.weighted,
+            ]
+        )
 
     def __len__(self):
         return len(self.y)
