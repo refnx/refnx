@@ -296,6 +296,10 @@ class Objective(BaseObjective):
         # should be a Data1D instance
         if isinstance(data, Data1D):
             self.data = data
+        elif all([hasattr(data, a) for a in ["data", "y", "__len__"]]):
+            # it may be an object that is composed to look like a Data1D
+            # object, let it through.
+            self.data = data
         else:
             self.data = Data1D(data=data)
 

@@ -158,9 +158,9 @@ class PolarisedReflectModel(ReflectModel):
                 raise RuntimeError(
                     "Four scale values need to be provided, one for each spin channel"
                 )
-            self.scale = Parameters(name="scales", data=_s)
+            self._scale = Parameters(name="scales", data=_s)
         else:
-            self.scale = Parameter(scales, name="scale")
+            self._scale = Parameter(scales, name="scale")
 
         if hasattr(bkgs, "__iter__"):
             _s = [possibly_create_parameter(v) for v in bkgs]
@@ -168,9 +168,9 @@ class PolarisedReflectModel(ReflectModel):
                 raise RuntimeError(
                     "Four bkg values need to be provided, one for each spin channel"
                 )
-            self.bkg = Parameters(name="bkgs", data=_s)
+            self._bkg = Parameters(name="bkgs", data=_s)
         else:
-            self.bkg = Parameter(bkgs, name="bkg")
+            self._bkg = Parameter(bkgs, name="bkg")
 
         if hasattr(q_offsets, "__iter__"):
             _s = [possibly_create_parameter(v) for v in q_offsets]
@@ -178,9 +178,9 @@ class PolarisedReflectModel(ReflectModel):
                 raise RuntimeError(
                     "Four q_offset values need to be provided, one for each spin channel"
                 )
-            self.q_offset = Parameters(name="q_offsets", data=_s)
+            self._q_offset = Parameters(name="q_offsets", data=_s)
         else:
-            self.q_offset = Parameter(q_offsets, name="q_offset")
+            self._q_offset = Parameter(q_offsets, name="q_offset")
 
         # update internal parameter view
         self.structure = structure
@@ -195,6 +195,30 @@ class PolarisedReflectModel(ReflectModel):
             f" quad_order={self.quad_order!r}, dq_type={self.dq_type!r},"
             f" q_offsets={self.q_offset!r}, Aguide={self.Aguide!r})"
         )
+
+    @property
+    def scale(self):
+        return self._scale
+
+    @scale.setter
+    def scale(self, val):
+        raise RuntimeError("Setter disabled in subclass")
+
+    @property
+    def bkg(self):
+        return self._bkg
+
+    @bkg.setter
+    def bkg(self, val):
+        raise RuntimeError("Setter disabled in subclass")
+
+    @property
+    def q_offset(self):
+        return self._q_offset
+
+    @q_offset.setter
+    def q_offset(self, val):
+        raise RuntimeError("Setter disabled in subclass")
 
     def model(self, x, p=None, x_err=None):
         r"""

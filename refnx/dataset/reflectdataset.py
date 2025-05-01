@@ -361,9 +361,14 @@ class OrsoDataset(Data1D):
 
 class PolarisedReflectDatasets:
     def __init__(self, down_down=None, up_up=None, down_up=None, up_down=None):
+        names = []
         for o in (down_down, up_up, down_up, up_down):
-            if o is not None and not isinstance(o, Data1D):
-                raise TypeError(f"{o} is not a Data1D object.")
+            if o is not None:
+                if not isinstance(o, Data1D):
+                    raise TypeError(f"{o} is not a Data1D object.")
+                names.append(o.name)
+            self.name = ", ".join(names)
+
         self.down_down = down_down
         self.up_up = up_up
         self.down_up = down_up
@@ -394,7 +399,7 @@ class PolarisedReflectDatasets:
             else:
                 ys.append(data.y)
 
-        return np.r_[ys]
+        return np.concatenate(ys)
 
     @property
     def y_err(self):
@@ -407,7 +412,7 @@ class PolarisedReflectDatasets:
                 else:
                     ys.append(data.y_err)
 
-            return np.r_[ys]
+            return np.concatenate(ys)
         else:
             return None
 
@@ -422,14 +427,12 @@ class PolarisedReflectDatasets:
 
     @property
     def weighted(self):
-        return all(
-            [
-                self.up_up.weighted,
-                self.down_up.weighted,
-                self.up_down.weighted,
-                self.down_down.weighted,
-            ]
-        )
+        weighted = []
+        for attr in self.attrs.keys():
+            data = getattr(self, attr)
+            if data is not None:
+                weighted.append(data.weighted)
+        return all(weighted)
 
     def __len__(self):
         return len(self.y)
