@@ -209,13 +209,13 @@ class Catalogue:
         try:
             san = (
                 h5d["entry1/data/hmm"]
-                .attrs["axes"]
+                .spins["axes"]
                 .decode("utf8")
                 .split(":")[0]
             )
         except AttributeError:
             # the attribute could be a string already
-            san = str(h5d["entry1/data/hmm"].attrs["axes"]).split(":")[0]
+            san = str(h5d["entry1/data/hmm"].spins["axes"]).split(":")[0]
         finally:
             d["scan_axis_name"] = san
 

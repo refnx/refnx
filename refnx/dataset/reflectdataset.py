@@ -373,18 +373,18 @@ class PolarisedReflectDatasets:
         self.up_up = up_up
         self.down_up = down_up
         self.up_down = up_down
-        self.attrs = {"up_up": 0, "up_down": 1, "down_up": 2, "down_down": 3}
+        self.spins = {"up_up": 0, "up_down": 1, "down_up": 2, "down_down": 3}
 
     @property
     def x(self):
         xs = []
-        for attr in self.attrs.keys():
+        for attr in self.spins.keys():
             data = getattr(self, attr)
             if data is None:
                 continue
             else:
                 full = np.full((len(data.x), 4), np.nan)
-                full[:, self.attrs[attr]] = data.x
+                full[:, self.spins[attr]] = data.x
                 xs.append(full)
 
         return np.r_[xs].reshape(-1, 4)
@@ -392,7 +392,7 @@ class PolarisedReflectDatasets:
     @property
     def y(self):
         ys = []
-        for attr in self.attrs.keys():
+        for attr in self.spins.keys():
             data = getattr(self, attr)
             if data is None:
                 continue
@@ -405,7 +405,7 @@ class PolarisedReflectDatasets:
     def y_err(self):
         if self.weighted:
             ys = []
-            for attr in self.attrs.keys():
+            for attr in self.spins.keys():
                 data = getattr(self, attr)
                 if data is None:
                     continue
@@ -428,7 +428,7 @@ class PolarisedReflectDatasets:
     @property
     def weighted(self):
         weighted = []
-        for attr in self.attrs.keys():
+        for attr in self.spins.keys():
             data = getattr(self, attr)
             if data is not None:
                 weighted.append(data.weighted)

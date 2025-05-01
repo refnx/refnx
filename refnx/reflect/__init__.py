@@ -13,7 +13,10 @@ from refnx.reflect.reflect_model import (
     SpinChannel,
     Footprint,
 )
-from refnx.reflect._polarised_reflect_model import PolarisedReflectModel
+from refnx.reflect._polarised_reflect_model import (
+    PolarisedReflectModel,
+    pnr_data_and_generative,
+)
 from refnx.reflect.structure import (
     Structure,
     SLD,

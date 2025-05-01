@@ -367,3 +367,30 @@ class PolarisedReflectModel(ReflectModel):
 
     def _active_spins(self, x):
         return np.any(np.isfinite(x), axis=0)
+
+
+def pnr_data_and_generative(objective):
+    """
+    The Data1D and generative model for a Polarised Reflectometry system
+
+    Parameters
+    ----------
+    objective : Objective
+
+    Returns
+    -------
+    pdg : tuple
+        Tuple of (Data1D, generative)
+    """
+    pdg = []
+    combined = objective.data
+    generative = objective.generative()
+    pos = 0
+    for spin in combined.spins.keys():
+        data = getattr(combined, spin)
+        if data is not None:
+            npnts = len(data)
+            g = generative[pos : pos + npnts]
+            pdg.append((data, g))
+            pos += npnts
+    return pdg
