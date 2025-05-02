@@ -952,6 +952,17 @@ class TestReflect:
         model = PolarisedReflectModel(s, dq_type="constant", dq=dq)
         c = model(q)
 
+        # check that shortcut works if there's only NSF signal being requested
+        s_nsf = air | l2 | back
+        qq_nsf = np.r_[q[:250], q[750:]]
+        model_nsf = PolarisedReflectModel(s_nsf, dq_type="constant", dq=dq)
+
+        # only NSF channels are calculated here, shortcut is taken
+        R = model_nsf(qq_nsf)
+        # this has q entries for SF channels, so the shortcut isn't used
+        R1 = model_nsf(q)
+        assert_allclose(R, np.r_[R1[:250], R1[750:]])
+
         # check we have a problem if a row has more than one finite value
         q[0, 1] = 0.1
         with pytest.raises(

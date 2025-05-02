@@ -243,7 +243,8 @@ class PolarisedReflectModel(ReflectModel):
             parameters required to calculate the model
         x_err : {np.ndarray, float} optional
             Specifies how the instrumental resolution smearing is carried out
-            for each of the points in `x`.
+            for each of the points in `x`. If an array it should have the same
+            shape as `x`.
             See :func:`refnx.reflect.reflectivity` for further details.
 
         Returns
@@ -314,6 +315,25 @@ class PolarisedReflectModel(ReflectModel):
         else:
             bkg = [self.bkg.value] * 4
 
+        # if we're only calculating NSF, there's no need to use gepore
+        # shortcut to use unpolarised calculator.
+        def is_there_spin_flip(slabs):
+            return any(
+                np.logical_and(
+                    slabs[:, 4] != 0.0,
+                    np.abs(np.sin(np.radians(slabs[:, 5]))) < 1,
+                )
+            )
+
+        if (
+            not any(active_spins[1:3])  # UU, UD, DU, DD
+            and self.Aguide == 270
+            and not is_there_spin_flip(slabs)
+        ):
+            return self._calculate_nsf_only(
+                active_spins, slabs, x, x_err, scale, bkg
+            )
+
         # calculate smeared reflectivity on the entire _x_union
         R_union = np.zeros(len(x))
 
@@ -367,6 +387,89 @@ class PolarisedReflectModel(ReflectModel):
 
     def _active_spins(self, x):
         return np.any(np.isfinite(x), axis=0)
+
+    def _calculate_nsf_only(self, active_spins, slabs, x, x_err, scale, bkg):
+        """
+        Calculates NSF reflectivities only.
+
+        Parameters
+        ----------
+        active_spins : np.ndarray
+            Length-4 boolean array specifying which spin channels are being
+            requested. UU, UD, DU, DD
+        slabs : np.ndarray
+            Slab representation of the interfacial model.
+            See `refnx.reflect.reflectivity` for further details
+        x : np.ndarray
+            q values for the calculation. This should be a 2-D array with
+            4 columns.
+            In order the 4 columns represent:
+
+                - SpinChannel.UP_UP
+                - SpinChannel.UP_DOWN
+                - SpinChannel.DOWN_UP
+                - SpinChannel.DOWN_DOWN
+
+            In a given row only one column should contain a finite value, the
+            others should be set to np.nan. For this NSF function there should
+            be no finite values in columns 1, 2.
+            Units = Angstrom**-1
+        x_err : {np.ndarray, float} optional
+            Specifies how the instrumental resolution smearing is carried out
+            for each of the points in `x`.
+            See :func:`refnx.reflect.reflectivity` for further details.
+        scale : sequence
+            Length-4 sequence containing the scale factors for each spin channel.
+        bkg : sequence
+            Length-4 sequence containing the backgrounds for each spin channel.
+        """
+        R_union = np.zeros(len(x))
+
+        # work out overall SLD of slabs
+        sld_u = slabs[:, 1] + slabs[:, 4] * np.sin(np.radians(slabs[:, 5]))
+        sld_d = slabs[:, 1] - slabs[:, 4] * np.sin(np.radians(slabs[:, 5]))
+        slabs_u = slabs.copy()[:, :4]
+        slabs_d = slabs.copy()[:, :4]
+        slabs_u[:, 1] = sld_u
+        slabs_d[:, 1] = sld_d
+
+        if active_spins[0]:
+            # UU
+            msk = np.isfinite(x[:, 0])
+            xuu = x[msk, 0]
+            if isinstance(x_err, np.ndarray):
+                xuu_err = x_err[msk, 0]
+            else:
+                xuu_err = x_err
+
+            _R = reflectivity(
+                xuu,
+                slabs_u,
+                dq=xuu_err,
+                threads=self.threads,
+                quad_order=self.quad_order,
+            )
+            R_union[msk] = _R * scale[0] + bkg[0]
+
+        if active_spins[3]:
+            # DD
+            msk = np.isfinite(x[:, 3])
+            xdd = x[msk, 3]
+            if isinstance(x_err, np.ndarray):
+                xdd_err = x_err[msk, 0]
+            else:
+                xdd_err = x_err
+
+            _R = reflectivity(
+                xdd,
+                slabs_d,
+                dq=xdd_err,
+                threads=self.threads,
+                quad_order=self.quad_order,
+            )
+            R_union[msk] = _R * scale[3] + bkg[3]
+
+        return R_union
 
 
 def pnr_data_and_generative(objective):
