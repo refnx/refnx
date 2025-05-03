@@ -456,7 +456,7 @@ class PolarisedReflectModel(ReflectModel):
             msk = np.isfinite(x[:, 3])
             xdd = x[msk, 3]
             if isinstance(x_err, np.ndarray):
-                xdd_err = x_err[msk, 0]
+                xdd_err = x_err[msk, 3]
             else:
                 xdd_err = x_err
 

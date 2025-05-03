@@ -378,13 +378,13 @@ class PolarisedReflectDatasets:
     @property
     def x(self):
         xs = []
-        for attr in self.spins.keys():
-            data = getattr(self, attr)
+        for spin in self.spins.keys():
+            data = getattr(self, spin)
             if data is None:
                 continue
             else:
                 full = np.full((len(data.x), 4), np.nan)
-                full[:, self.spins[attr]] = data.x
+                full[:, self.spins[spin]] = data.x
                 xs.append(full)
 
         return np.r_[xs].reshape(-1, 4)
@@ -392,8 +392,8 @@ class PolarisedReflectDatasets:
     @property
     def y(self):
         ys = []
-        for attr in self.spins.keys():
-            data = getattr(self, attr)
+        for spin in self.spins.keys():
+            data = getattr(self, spin)
             if data is None:
                 continue
             else:
@@ -405,8 +405,8 @@ class PolarisedReflectDatasets:
     def y_err(self):
         if self.weighted:
             ys = []
-            for attr in self.spins.keys():
-                data = getattr(self, attr)
+            for spin in self.spins.keys():
+                data = getattr(self, spin)
                 if data is None:
                     continue
                 else:
@@ -418,8 +418,19 @@ class PolarisedReflectDatasets:
 
     @property
     def x_err(self):
-        # TODO
-        pass
+        xs = []
+        for spin in self.spins.keys():
+            data = getattr(self, spin)
+            if data is None:
+                continue
+            else:
+                if data.x_err is None:
+                    return None
+                full = np.full((len(data.x), 4), np.nan)
+                full[:, self.spins[spin]] = data.x_err
+                xs.append(full)
+
+        return np.r_[xs].reshape(-1, 4)
 
     @property
     def data(self):
@@ -428,8 +439,8 @@ class PolarisedReflectDatasets:
     @property
     def weighted(self):
         weighted = []
-        for attr in self.spins.keys():
-            data = getattr(self, attr)
+        for spin in self.spins.keys():
+            data = getattr(self, spin)
             if data is not None:
                 weighted.append(data.weighted)
         return all(weighted)
