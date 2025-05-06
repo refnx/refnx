@@ -670,3 +670,6 @@ in 0.1.13.
 
 0.1.57
 ------
+- rejig PolarisedReflectModel to calculate all four spin states with
+ memoisation.
+- create PolarisedReflectDatasets to hold four SpinChannel datasets.

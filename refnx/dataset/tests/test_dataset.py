@@ -10,7 +10,14 @@ import pytest
 import orsopy.fileio as fio
 from orsopy.fileio.base import ValueRange
 
-from refnx.dataset import ReflectDataset, Data1D, load_data, OrsoDataset
+import refnx
+from refnx.dataset import (
+    ReflectDataset,
+    Data1D,
+    load_data,
+    OrsoDataset,
+    PolarisedReflectDatasets,
+)
 from refnx.dataset.data1d import _data1D_to_hdf, _hdf_to_data1d
 from refnx.dataset.reflectdataset import load_orso
 from refnx.reflect import SLD, MaterialSLD, ReflectModel
@@ -627,3 +634,29 @@ class Hoggy:
             )
         )
         return dataset
+
+
+class TestPolarisedReflectDatasets:
+    @pytest.fixture(autouse=True)
+    def setup_method(self, tmp_path):
+        self.pth = resources.files(refnx.reflect.tests)
+        self.cwd = Path.cwd()
+        self.tmp_path = tmp_path
+        os.chdir(self.tmp_path)
+
+    def teardown_method(self):
+        os.chdir(self.cwd)
+
+    def test_properties(self):
+        data_uu = Data1D(self.pth / "c_PLP0007885.dat")
+        data_dd = Data1D(self.pth / "c_PLP0007885.dat")
+        combined = PolarisedReflectDatasets(down_down=data_dd, up_up=data_uu)
+        y = combined.y
+        x = combined.x
+        y_err = combined.y_err
+        x_err = combined.x_err
+
+        assert_equal(x.shape, x_err.shape)
+        assert_equal(y.shape, y_err.shape)
+        assert combined.weighted
+        assert len(y) == len(x)

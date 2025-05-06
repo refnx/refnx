@@ -940,28 +940,64 @@ class TestReflect:
         l2 = MagneticSlab(200, 2, 0, 1, 90)
         back = MagneticSlab(0, 4, 0, 0, 90)
         s = air | l1 | l2 | back
-        q = np.geomspace(0.01, 0.2, 1001)
+        _q = np.geomspace(0.01, 0.2, 250)
+        q = np.full((1000, 4), np.nan)
+        q[:250, 0] = _q
+        q[250:500, 1] = _q
+        q[500:750, 2] = _q
+        q[750:1000, 3] = _q
+
+        dq = 1.0
         # constant dq/q
-        model = PolarisedReflectModel(
-            s, spin=SpinChannel.UP_UP, dq_type="constant"
-        )
-        assert hasattr(model, "spin")
-        model(q)
+        model = PolarisedReflectModel(s, dq_type="constant", dq=dq)
+        c = model(q)
+
+        # check that shortcut works if there's only NSF signal being requested
+        s_nsf = air | l2 | back
+        qq_nsf = np.r_[q[:250], q[750:]]
+        model_nsf = PolarisedReflectModel(s_nsf, dq_type="constant", dq=dq)
+
+        # only NSF channels are calculated here, shortcut is taken
+        R = model_nsf(qq_nsf)
+        # this has q entries for SF channels, so the shortcut isn't used
+        R1 = model_nsf(q)
+        assert_allclose(R, np.r_[R1[:250], R1[750:]])
+
+        # check we have a problem if a row has more than one finite value
+        q[0, 1] = 0.1
+        with pytest.raises(
+            RuntimeError, match="For PolarisedReflectModel.model"
+        ):
+            model(q)
+        q[0, 1] = np.nan
+
+        # check we have a problem if x isn't (N, 4)
+        with pytest.raises(
+            RuntimeError, match="For PolarisedReflectModel.model"
+        ):
+            model(np.geomspace(0.01, 0.2, 250))
+
         # pointwise
-        model = PolarisedReflectModel(
-            s, spin=SpinChannel.UP_UP, dq_type="pointwise"
-        )
-        q_err = 0.05 * q
-        model(q, x_err=q_err)
+        model = PolarisedReflectModel(s, dq_type="pointwise", quad_order=201)
+        q_err = dq / 100 * q
+        p = model(q, x_err=q_err)
+        assert_allclose(c, p, rtol=0.04)
+
+        with pytest.raises(
+            RuntimeError, match="x_err.shape and x.shape should"
+        ):
+            model(q, x_err=q_err[:, 0])
 
     def test_repr_PolarisedReflectModel(self):
         air = SLD(0.0)
         l1 = MagneticSlab(200, 4, 0, 1, 180)
         back = MagneticSlab(0, 4, 0, 0, 90)
         s = air | l1 | back
-        p = PolarisedReflectModel(s, spin=SpinChannel.UP_UP)
+        p = PolarisedReflectModel(s)
         q = eval(repr(p))
-        x = np.geomspace(0.01, 0.2, 1001)
+        x = np.full((1000, 4), np.nan)
+        x[:500, 0] = np.geomspace(0.01, 0.2, 500)
+        x[500:, 1] = np.geomspace(0.01, 0.2, 500)
         q(x)
 
     def test_repr_ReflectModel(self):

@@ -357,3 +357,93 @@ class OrsoDataset(Data1D):
 
         # now insert into the OrsoDataset
         self.orso[0].info.data_source.sample.model = model
+
+
+class PolarisedReflectDatasets:
+    def __init__(self, down_down=None, up_up=None, down_up=None, up_down=None):
+        names = []
+        for o in (down_down, up_up, down_up, up_down):
+            if o is not None:
+                if not isinstance(o, Data1D):
+                    raise TypeError(f"{o} is not a Data1D object.")
+                names.append(o.name)
+            self.name = ", ".join(names)
+
+        self.down_down = down_down
+        self.up_up = up_up
+        self.down_up = down_up
+        self.up_down = up_down
+        self.spins = {"up_up": 0, "up_down": 1, "down_up": 2, "down_down": 3}
+
+    @property
+    def x(self):
+        xs = []
+        for spin in self.spins.keys():
+            data = getattr(self, spin)
+            if data is None:
+                continue
+            else:
+                full = np.full((len(data.x), 4), np.nan)
+                full[:, self.spins[spin]] = data.x
+                xs.append(full)
+
+        return np.r_[xs].reshape(-1, 4)
+
+    @property
+    def y(self):
+        ys = []
+        for spin in self.spins.keys():
+            data = getattr(self, spin)
+            if data is None:
+                continue
+            else:
+                ys.append(data.y)
+
+        return np.concatenate(ys)
+
+    @property
+    def y_err(self):
+        if self.weighted:
+            ys = []
+            for spin in self.spins.keys():
+                data = getattr(self, spin)
+                if data is None:
+                    continue
+                else:
+                    ys.append(data.y_err)
+
+            return np.concatenate(ys)
+        else:
+            return None
+
+    @property
+    def x_err(self):
+        xs = []
+        for spin in self.spins.keys():
+            data = getattr(self, spin)
+            if data is None:
+                continue
+            else:
+                if data.x_err is None:
+                    return None
+                full = np.full((len(data.x), 4), np.nan)
+                full[:, self.spins[spin]] = data.x_err
+                xs.append(full)
+
+        return np.r_[xs].reshape(-1, 4)
+
+    @property
+    def data(self):
+        return (self.x, self.y, self.y_err, self.x_err)
+
+    @property
+    def weighted(self):
+        weighted = []
+        for spin in self.spins.keys():
+            data = getattr(self, spin)
+            if data is not None:
+                weighted.append(data.weighted)
+        return all(weighted)
+
+    def __len__(self):
+        return len(self.y)
