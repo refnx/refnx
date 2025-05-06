@@ -220,7 +220,7 @@ class PolarisedReflectModel(ReflectModel):
     def q_offset(self, val):
         raise RuntimeError("Setter disabled in subclass")
 
-    def model(self, x, p=None, x_err=None):
+    def model(self, x, p=None, x_err=None, spin="all"):
         r"""
         Calculate the reflectivity of this model
 
@@ -238,6 +238,7 @@ class PolarisedReflectModel(ReflectModel):
 
             In a given row only one column should contain a finite value, the
             others should be set to np.nan.
+            If a single spin channel is requested then `x` can be 1-D.
             Units = Angstrom**-1
         p : refnx.analysis.Parameters, optional
             parameters required to calculate the model
@@ -246,6 +247,10 @@ class PolarisedReflectModel(ReflectModel):
             for each of the points in `x`. If an array it should have the same
             shape as `x`.
             See :func:`refnx.reflect.reflectivity` for further details.
+        spin : {"all", SpinChannel}, optional
+            Specifies which spin to return from the calculation. If all then
+            `x` needs to be 2-D. If a single spin channel is requested then
+            `x` can be 1-D.
 
         Returns
         -------
@@ -264,7 +269,10 @@ class PolarisedReflectModel(ReflectModel):
             # fallback to what this object was constructed with
             x_err = float(self.dq)
 
-        if (
+        if spin != "all":
+            # only want to calculate one spin channel
+            pass
+        elif (
             x.ndim != 2
             or x.shape[1] != 4
             or np.any(np.count_nonzero(np.isfinite(x), axis=1) > 1)
@@ -275,9 +283,6 @@ class PolarisedReflectModel(ReflectModel):
                 " one of the entries in a row should be finite, the rest"
                 " should be np.nan"
             )
-
-        _x_union = self._calculate_x_union(x)
-        _x_err_union = self._calculate_x_err_union(x, x_err)
 
         slabs = self.structure.slabs()
         if slabs.shape[1] == 5:
@@ -303,8 +308,6 @@ class PolarisedReflectModel(ReflectModel):
                 slabs, np.array([0, 1, 2, 3, 5, 6])[None, :], axis=1
             )
 
-        active_spins = self._active_spins(x)
-
         if isinstance(self.scale, Parameters):
             scale = np.array(self.scale)
         else:
@@ -314,6 +317,29 @@ class PolarisedReflectModel(ReflectModel):
             bkg = np.array(self.bkg)
         else:
             bkg = [self.bkg.value] * 4
+
+        if spin != "all":
+            # calculate single spin channel
+            self._memoising_kernel.spin = spin
+            idx = self._memoising_kernel.c[spin]
+            scale = scale[idx]
+            bkg = bkg[idx]
+            _R = reflectivity(
+                x,
+                slabs,
+                scale=scale,
+                bkg=bkg,
+                dq=x_err,
+                threads=self.threads,
+                quad_order=self.quad_order,
+                fkernel=self._memoising_kernel,
+            )
+            return _R
+
+        # calculate all spin channels at once
+        _x_union = self._calculate_x_union(x)
+        _x_err_union = self._calculate_x_err_union(x, x_err)
+        active_spins = self._active_spins(x)
 
         # if we're only calculating NSF, there's no need to use gepore
         # shortcut to use unpolarised calculator.

@@ -952,6 +952,10 @@ class TestReflect:
         model = PolarisedReflectModel(s, dq_type="constant", dq=dq)
         c = model(q)
 
+        # test single spin calculation
+        csingle = model.model(_q, spin=SpinChannel.UP_UP)
+        assert_allclose(csingle, c[:250])
+
         # check that shortcut works if there's only NSF signal being requested
         s_nsf = air | l2 | back
         qq_nsf = np.r_[q[:250], q[750:]]
