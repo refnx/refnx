@@ -34,3 +34,42 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 When released as an standalone executable the **executable** is released under the
 GPLv3 licence. The executable includes code from the following packages, and
 can be rebuilt from source (https://github.com/refnx/refnx):
+
+
+
+ Name                       License
+ Cython                     Apache Software License
+ PySide6                    GNU General Public License v2 (GPLv2); GNU General Public License v3 (GPLv3); GNU Lesser General Public License v3 (LGPLv3); Other/Proprietary License
+ PySide6_Addons             GNU General Public License v2 (GPLv2); GNU General Public License v3 (GPLv3); GNU Lesser General Public License v3 (LGPLv3); Other/Proprietary License
+ PySide6_Essentials         GNU General Public License v2 (GPLv2); GNU General Public License v3 (GPLv3); GNU Lesser General Public License v3 (LGPLv3); Other/Proprietary License
+ PyYAML                     MIT License
+ QtPy                       MIT License
+ altgraph                   MIT License
+ attrs                      MIT License
+ contourpy                  BSD License
+ corner                     BSD License
+ cycler                     BSD License
+ fonttools                  MIT License
+ kiwisolver                 BSD License
+ macholib                   MIT License
+ matplotlib                 Python Software Foundation License
+ numpy                      BSD License
+ orsopy                     MIT License
+ packaging                  Apache Software License; BSD License
+ periodictable              Public Domain
+ pillow                     MIT-CMU
+ pip                        MIT License
+ pip-licenses               MIT License
+ prettytable                BSD-3-Clause
+ pyinstaller                GNU General Public License v2 (GPLv2)
+ pyinstaller-hooks-contrib  Apache Software License; GNU General Public License v2 (GPLv2)
+ pyparsing                  MIT License
+ python-dateutil            Apache Software License; BSD License
+ refnx                      BSD License
+ scipy                      BSD License
+ setuptools                 MIT License
+ shiboken6                  GNU General Public License v2 (GPLv2); GNU General Public License v3 (GPLv3); GNU Lesser General Public License v3 (LGPLv3); Other/Proprietary License
+ six                        MIT License
+ tomli                      MIT License
+ tqdm                       MIT License; Mozilla Public License 2.0 (MPL 2.0)
+ wcwidth                    MIT License
