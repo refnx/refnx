@@ -59,7 +59,6 @@ can be rebuilt from source (https://github.com/refnx/refnx):
  periodictable              Public Domain
  pillow                     MIT-CMU
  pip                        MIT License
- pip-licenses               MIT License
  prettytable                BSD-3-Clause
  pyinstaller                GNU General Public License v2 (GPLv2)
  pyinstaller-hooks-contrib  Apache Software License; GNU General Public License v2 (GPLv2)
