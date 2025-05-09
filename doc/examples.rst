@@ -2,7 +2,7 @@ Examples
 ========
 
 .. toctree::
-    :maxdepth: 2
+    :maxdepth: 1
 
     reflectometry_global.ipynb
     inequality_constraints.ipynb
