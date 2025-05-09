@@ -932,7 +932,7 @@ class Objective(BaseObjective):
             plot on the graph.
         parameter: refnx.analysis.Parameter
             Creates an interactive plot for the Parameter in Jupyter. Requires
-            ipywidgets be installed. Use with %matplotlib notebook/qt.
+            ipywidgets be installed. Use with %matplotlib ipympl/qt.
         fig: Figure instance, optional
             If `fig` is not supplied then a new figure is created. Otherwise
             the graph is created on the current axes on the supplied figure.

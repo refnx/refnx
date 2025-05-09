@@ -69,7 +69,7 @@ except ImportError:
         def __init__(self):
             raise RuntimeError(
                 "To run Motofit you need to install"
-                " IPython, ipywidgets, traitlets,"
+                " IPython, ipywidgets, traitlets, ipympl, "
                 " matplotlib"
             )
 
