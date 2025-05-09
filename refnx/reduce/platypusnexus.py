@@ -776,8 +776,9 @@ class SpinSet(object):
                 self.channels[sc] = channel
                 self.sc_opts[sc] = reduction_options.copy()
             else:
-                raise RuntimeError(
-                    f"Supplied spin channel {_spin_channels[sc]} does not match flipper status"
+                warnings.warn(
+                    f"Supplied spin channel {_spin_channels[sc]} does not match flipper status",
+                    RuntimeWarning,
                 )
 
     @property
