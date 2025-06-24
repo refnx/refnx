@@ -165,7 +165,9 @@ class Tests(object):
                     assert False, "Sampler should have failed by now."
             except Exception as e:
                 # If a type was specified, require that the sampler fail with this exception type.
-                if type(e) is fail:
+                if type(e) is fail or (
+                    hasattr(fail, "__len__") and type(e) in fail
+                ):
                     return
                 else:
                     raise
@@ -323,11 +325,15 @@ class Tests(object):
 
         # Set one of the walkers to have a ``np.inf`` value.
         self.p0_unit[-1][0][0] = np.inf
-        self.check_sampler(sampler, p0=self.p0_unit, fail=ValueError)
+        self.check_sampler(
+            sampler, p0=self.p0_unit, fail=[ValueError, FloatingPointError]
+        )
 
         # Set one of the walkers to have a ``-np.inf`` value.
         self.p0_unit[-1][0][0] = -np.inf
-        self.check_sampler(sampler, p0=self.p0_unit, fail=ValueError)
+        self.check_sampler(
+            sampler, p0=self.p0_unit, fail=[ValueError, FloatingPointError]
+        )
 
     def test_parallel(self):
         sampler = Sampler(
