@@ -67,7 +67,7 @@ from refnx.reflect import (
     MixedReflectModel,
 )
 import refnx.reflect._app
-from refnx.dataset import Data1D
+from refnx.dataset import Data1D, OrsoDataset
 from refnx.reflect._code_fragment import code_fragment
 from refnx._lib import unique, flatten, MapWrapper
 
@@ -525,41 +525,47 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
                 except Exception:
                     continue
 
-        loaded_data_objects = [
-            data_object.name for data_object in data_objects
-        ]
-        new_names = [
-            n for n in loaded_data_objects if n not in existing_data_objects
-        ]
+        loaded_names = [data_object.name for data_object in data_objects]
+        new_objects = {
+            nm: obj
+            for nm, obj in zip(loaded_names, data_objects)
+            if nm not in existing_data_objects
+        }
 
         # give a newly loaded data object a simple model. You don't want to do
         # this for an object that's already been loaded.
-        for name in new_names:
-            fronting = SLD(0, name="fronting")
-            sio2 = SLD(3.47, name="1")
-            backing = SLD(2.07, name="backing")
-            s = fronting() | sio2(15, 3) | backing(0, 3)
-            data_object_node = self.treeModel.data_object_node(name)
-            model = ReflectModel(s)
+        for name, data_object in new_objects.items():
+            ds = data_object.dataset
+            if (
+                isinstance(ds, OrsoDataset)
+                and ds.orso[0].info.data_source.sample.model is not None
+            ):
+                s, model, objective = ds.setup_analysis()
+            else:
+                fronting = SLD(0, name="fronting")
+                sio2 = SLD(3.47, name="1")
+                backing = SLD(2.07, name="backing")
+                s = fronting() | sio2(15, 3) | backing(0, 3)
+                model = ReflectModel(s)
+
             model.name = name
+            data_object_node = self.treeModel.data_object_node(name)
             data_object_node.set_reflect_model(model)
 
         # for the intersection of loaded and old, refresh the plot.
-        refresh_names = [
-            n for n in existing_data_objects if n in loaded_data_objects
-        ]
+        refresh_names = [n for n in existing_data_objects if n in loaded_names]
 
         refresh_data_objects = [datastore[name] for name in refresh_names]
         self.redraw_data_object_graphs(refresh_data_objects)
 
         # for totally new, then add to graphs
-        new_data_objects = [datastore[name] for name in new_names]
+        new_data_objects = [datastore[name] for name in new_objects.keys()]
         self.add_data_objects_to_graphs(new_data_objects)
 
         self.calculate_chi2(data_objects)
 
         # add newly loads to the data object selector dialogue
-        self.data_object_selector.addItems(new_names)
+        self.data_object_selector.addItems(list(new_objects.keys()))
         return fnames
 
     @QtCore.Slot()
