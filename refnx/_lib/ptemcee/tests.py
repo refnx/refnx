@@ -164,8 +164,9 @@ class Tests(object):
                 for x in chain.iterate(self.N):
                     assert False, "Sampler should have failed by now."
             except Exception as e:
+
                 # If a type was specified, require that the sampler fail with this exception type.
-                if type(e) is fail or (hasattr(e, "__len__") and e in fail):
+                if type(e) is fail or (hasattr(fail, "__len__") and e in fail):
                     return
                 else:
                     raise
