@@ -536,12 +536,18 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         # this for an object that's already been loaded.
         for name, data_object in new_objects.items():
             ds = data_object.dataset
+            have_model = False
             if (
                 isinstance(ds, OrsoDataset)
                 and ds.orso[0].info.data_source.sample.model is not None
             ):
-                s, model, objective = ds.setup_analysis()
-            else:
+                try:
+                    s, model, objective = ds.setup_analysis()
+                    have_model = True
+                except Exception:
+                    have_model = False
+
+            if not have_model:
                 fronting = SLD(0, name="fronting")
                 sio2 = SLD(3.47, name="1")
                 backing = SLD(2.07, name="backing")
