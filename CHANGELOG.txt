@@ -676,3 +676,5 @@ in 0.1.13.
 
 0.1.58
 ------
+- Loading an OrsoDataset into the GUI will also load the model, if it contains
+  one.
