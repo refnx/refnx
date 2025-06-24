@@ -165,7 +165,7 @@ class Tests(object):
                     assert False, "Sampler should have failed by now."
             except Exception as e:
                 # If a type was specified, require that the sampler fail with this exception type.
-                if type(e) is fail:
+                if type(e) is fail or (hasattr(e, "__len__") and e in fail):
                     return
                 else:
                     raise
