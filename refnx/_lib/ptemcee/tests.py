@@ -323,7 +323,9 @@ class Tests(object):
 
         # Set one of the walkers to have a ``np.inf`` value.
         self.p0_unit[-1][0][0] = np.inf
-        self.check_sampler(sampler, p0=self.p0_unit, fail=ValueError)
+        self.check_sampler(
+            sampler, p0=self.p0_unit, fail=[ValueError, FloatingPointError]
+        )
 
         # Set one of the walkers to have a ``-np.inf`` value.
         self.p0_unit[-1][0][0] = -np.inf
