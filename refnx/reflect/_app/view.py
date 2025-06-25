@@ -543,6 +543,14 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
             ):
                 try:
                     s, model, objective = ds.setup_analysis()
+                    for component in s:
+                        # we can only deal with Slabs at the moment
+                        assert isinstance(component, Slab)
+                    #     if not isinstance(component.sld, SLD):
+                    #         # cast Scatterer to SLD, GUI only deals with SLD
+                    #         _sld = SLD(complex(component.sld))
+                    #         component.sld = _sld
+
                     have_model = True
                 except Exception:
                     have_model = False
