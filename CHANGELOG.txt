@@ -678,3 +678,7 @@ in 0.1.13.
 ------
 - Loading an OrsoDataset into the GUI will also load the model, if it contains
   one.
+
+0.1.59
+------
+- Add guide for how weighting is carried out in FAQ documentation.
