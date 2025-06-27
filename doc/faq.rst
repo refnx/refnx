@@ -49,6 +49,56 @@ need to apply the last option. For further details on instrumental resolution
 functions it's a good idea to read the papers by `van Well et al`_, and
 `Nelson et al`_.
 
+What is data weighting and how is it handled in refnx?
+------------------------------------------------------
+
+Experimental data frequently comes with an uncertainty/error bar that expresses
+how certain we are of the data's value. When modelling/curve-fitting, we'd
+intuitively expect the fitting process to make a bigger effort for the
+theoretical model to be close to data points with smaller uncertainty, and a
+lesser effort to be close to data points with larger uncertainty. The
+experimental uncertainties are stored in the dataset as
+:code:`Data1D.y_err`. The uncertainties are
+:ref:`loadable from the datafile<What input/output file formats are supported>`.
+See also the documentation for :class:`refnx.dataset.Data1D`.
+
+If you fit with :code:`CurveFitter.fit(method='least_squares')`, then you are
+minimising the sum of the squared-(possibly normalised) residuals.
+
+  .. math::
+
+    \chi^2 = \Sigma_i \left(\frac{y_{obs, i} - y_{data, i}}{y_{err, i}}\right)^2
+
+If you fit with a different ``method``, then you either minimizing the
+negative log-posterior (:code:`CurveFitter.fit(target='nlpost')`), or
+negative log-likelihood (:code:`CurveFitter.fit(target='nll')`).
+
+  .. math::
+
+    nll = \frac{1}{2}\Sigma \left[\left(\frac{y_{obs, i} - y_{calc, i}}{y_{err, i}}\right)^2
+                                 + \log \left(2\pi y_{err, i}^2\right)\right]
+
+The negative log posterior is similar, except that it also includes all the
+log-prior terms. The log-priors are the probability distributions for what we
+expect the model parameter values to be.
+You can switch the weighting on/off during the modelling process by setting
+:code:`Objective.use_weights` to be :code:`True` or :code:`False`. This has
+the effect of setting :math:`y_{err, i}=1` in the above equations.
+
+Minimising the negative log-likelihood/posterior is the same as maximising the
+log-likelihood/posterior. These equations assume the experimental uncertainties
+are Gaussian in nature.
+It is also possible to transform the data and theoretical model before the above
+sums are carried out, see :class:`refnx.analysis.Transform`, and
+:class:`refnx.analysis.Objective` for more details. For example the ``logY``
+transform converts :math:`Y \rightarrow logY`, with the uncertainties being
+correctly transformed as well. These transforms can be used to bias the fit in
+various ways. For example, while analysing X-ray reflectometry data it's
+common to use a log transform with data-weighting switched off,
+:code:`Objective(..., use_weighting=False, transform=Transform("logY"))`.
+The default settings are usually fine for most neutron reflectometry data.
+It's normally a bad idea to use no weighting without a transform to ``logY``.
+
 What are the units of scattering length density?
 ------------------------------------------------
 
@@ -73,7 +123,8 @@ standalone motofit.app by right-clicking and selecting 'open'.
 
 Can I save models/objectives to file?
 -----------------------------------------
-I'm assuming that you have a :class:`refnx.reflect.ReflectModel` or :class:`refnx.analysis.Objective` that you'd like to
+I'm assuming that you have a :class:`refnx.reflect.ReflectModel` or
+:class:`refnx.analysis.Objective` that you'd like to
 save to file. The easiest way to do this is via serialisation to a Python
 pickle::
 
@@ -93,7 +144,7 @@ How do I install pyqt6?
 -----------------------
 PyQt6 and qtpy is needed for the refnx GUI. The `pyqt6` and `qtpy` packages
 are currently available from PyPI and can be installed as
-`pip install pyqt6 qtpy`. However, pyqt6 is not currently available via
+:code:`pip install pyqt6 qtpy`. However, pyqt6 is not currently available via
 conda-forge. You can use conda to install most of the refnx dependencies, but
 you will need to use `pip` to install pyqt6.
 
