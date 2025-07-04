@@ -682,3 +682,5 @@ in 0.1.13.
 0.1.59
 ------
 - Add guide for how weighting is carried out in FAQ documentation.
+- Structure.sld_profile; MagneticSlab can now be first or last Component,
+  it's not mandatory for it to be a Slab.
