@@ -578,8 +578,8 @@ class Structure(UserList):
         if (
             (slabs is None)
             or (len(slabs) < 2)
-            or (not isinstance(self.data[0], Slab))
-            or (not isinstance(self.data[-1], Slab))
+            or (not isinstance(self.data[0], (Slab, MagneticSlab)))
+            or (not isinstance(self.data[-1], (Slab, MagneticSlab)))
         ):
             raise ValueError(
                 "Structure requires fronting and backing"
