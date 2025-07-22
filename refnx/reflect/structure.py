@@ -809,6 +809,7 @@ class Structure(UserList):
         model : :class:`orso.fileio.model_language.SampleModel`
         """
         from orsopy.fileio import model_language as ml
+        from orsopy.fileio import ComplexValue
 
         defaults = ml.ModelParameters(
             length_unit="angstrom", sld_unit="1/angstrom^2"
@@ -827,7 +828,7 @@ class Structure(UserList):
                 )
             else:
                 _csld = complex(comp.sld) * 1e-6
-                _csld = ml.ComplexValue(_csld.real, _csld.imag)
+                _csld = ComplexValue(_csld.real, _csld.imag)
                 mat = ml.Material(sld=_csld)
 
             if comp.name:
