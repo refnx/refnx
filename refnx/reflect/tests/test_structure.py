@@ -643,3 +643,6 @@ class TestStructure:
         assert_allclose(s2[-1].rough.value, s[-1].rough.value)
         assert_allclose(s2[1].rough.value, s[1].rough.value)
         assert_allclose(s2[1].thick.value, s[1].thick.value)
+
+        s = Structure.from_orso(self.pth / "sample_model_example_2.yml")
+        assert isinstance(s, Structure)

@@ -1,0 +1,17 @@
+sample:
+    model:
+        origin: guess based on preparation / XRR
+        stack: air | 10 ( Si 70 | Fe 70 ) | Si
+        materials:
+          Fe:
+            magnetic_moment: 2.2
+            sld: 5.02e-6
+          Si:
+            formula: SiN0.01
+            rel_density: 0.95
+        globals:
+          length_unit: angstrom
+          m_moment_unit: muB
+          roughness: {magnitude: 5.0, unit: angstrom}
+          sld_unit: 1/angstrom^2
+        reference: ORSO model language | 1.0 | http://bla.bli
