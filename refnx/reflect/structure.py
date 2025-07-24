@@ -21,8 +21,6 @@ DEALINGS IN THIS SOFTWARE.
 
 """
 
-import yaml
-
 # -*- coding: utf-8 -*-
 
 from collections import UserList
