@@ -11,3 +11,4 @@ cython
 qtpy
 attrs
 orsopy
+pint

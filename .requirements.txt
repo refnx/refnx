@@ -24,3 +24,4 @@ periodictable
 pytensor
 pymc
 pytest-qt
+pint

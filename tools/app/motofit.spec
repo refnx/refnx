@@ -52,6 +52,7 @@ a = Analysis(
         "refnx.reflect._app",
         "attrs",
         "corner",
+        "pint",
         "pkg_resources",
         "scipy.special.cython_special",
         "scipy.spatial.transform._rotation_groups",
