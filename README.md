@@ -1,8 +1,7 @@
 refnx
 =====
 
-[![Test](https://github.com/refnx/refnx/actions/workflows/pythonpackage.yml/badge.svg)](https://github.com/refnx/refnx/actions/workflows/pythonpackage.yml)[![Build Status](https://dev.azure.com/refnx/refnx/_apis/build/status/refnx.refnx?branchName=master)](https://dev.azure.com/refnx/refnx/_build/latest?definitionId=1&branchName=master)
-[![Build status](https://ci.appveyor.com/api/projects/status/gv6965vuqnuufx9u?svg=true)](https://ci.appveyor.com/project/andyfaff/refnx)
+[![Test](https://github.com/refnx/refnx/actions/workflows/pythonpackage.yml/badge.svg)](https://github.com/refnx/refnx/actions/workflows/pythonpackage.yml)
 [![Documentation Status](https://readthedocs.org/projects/refnx/badge/?version=latest)](https://refnx.readthedocs.io/en/latest/?badge=latest)
 [![DOI](https://zenodo.org/badge/23189/refnx/refnx.svg)](https://zenodo.org/badge/latestdoi/23189/refnx/refnx)
 [![Binder](https://mybinder.org/badge.svg)](https://mybinder.org/v2/gh/refnx/refnx-binder.git/master)
