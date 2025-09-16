@@ -685,3 +685,4 @@ in 0.1.13.
 - Structure.sld_profile; MagneticSlab can now be first or last Component,
   it's not mandatory for it to be a Slab.
 - Improve Orso model_language ingestion.
+- Fixed critical bug in LipidLeafletGuest.
