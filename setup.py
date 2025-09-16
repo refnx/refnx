@@ -349,8 +349,6 @@ def setup_package():
                 extra_preargs.extend(
                     [
                         "-std=c11",
-                        # "-funsafe-math-optimizations",
-                        # "-ffinite-math-only",
                     ]
                 )
                 f = ["src/refcalc.c"]
