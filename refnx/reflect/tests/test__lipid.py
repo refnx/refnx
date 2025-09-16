@@ -162,7 +162,9 @@ class TestLipidLeaflet:
         _solvated_slabs = overall_sld(np.copy(slabs), complex(sld_solvent))
         assert_allclose(
             _solvated_slabs[1, 1],
-            vft*sld_t + vftg*complex(sld_guest).real + vfsolv*complex(sld_solvent).real,
+            vft * sld_t
+            + vftg * complex(sld_guest).real
+            + vfsolv * complex(sld_solvent).real,
         )
         den = vft + vftg
         _sld = (vft * sld_t + vftg * sld_guest.real.value) / den
@@ -203,12 +205,18 @@ class TestLipidLeaflet:
         assert_allclose(slabs[0, -1], 0)
         assert_allclose(slabs[1, -1], 0)
         sld_h = self.b_h / self.V_h * 1e6
-        assert_allclose(slabs[0, 1], sld_h*vfh + (1-vfh)*complex(sld_solvent).real)
+        assert_allclose(
+            slabs[0, 1], sld_h * vfh + (1 - vfh) * complex(sld_solvent).real
+        )
 
         vfsolv = 1 - vft - vftg
         sld_t = self.b_t / self.V_t * 1e6
         _solvated_slabs = overall_sld(np.copy(slabs), complex(sld_solvent))
-        _sld_tail = vft*sld_t + vftg*complex(sld_guest).real + vfsolv*complex(sld_solvent).real
+        _sld_tail = (
+            vft * sld_t
+            + vftg * complex(sld_guest).real
+            + vfsolv * complex(sld_solvent).real
+        )
         assert_allclose(
             _solvated_slabs[1, 1],
             _sld_tail,
