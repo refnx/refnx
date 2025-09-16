@@ -117,7 +117,7 @@ class TestLipidLeaflet:
         q = eval(s)
         assert_equal(q.slabs(), self.leaflet.slabs())
 
-    def test_lipidleafletguest(self):
+    def test_lipidleafletguest_no_solvent_specified(self):
         phi_guest = Parameter(0.1)
         sld_guest = SLD(7.6)
         sld_solvent = SLD(5.55)
@@ -159,13 +159,61 @@ class TestLipidLeaflet:
         assert_allclose(slabs[0, 1], sld_h)
 
         sld_t = self.b_t / self.V_t * 1e6
-        _solvated_slabs = overall_sld(slabs, complex(sld_solvent))
+        _solvated_slabs = overall_sld(np.copy(slabs), complex(sld_solvent))
         assert_allclose(
             _solvated_slabs[1, 1],
             vft*sld_t + vftg*complex(sld_guest).real + vfsolv*complex(sld_solvent).real,
         )
+        den = vft + vftg
         _sld = (vft * sld_t + vftg * sld_guest.real.value) / den
         assert_allclose(slabs[1, 1], _sld)
+
+    def test_lipidleafletguest_solvent_specified(self):
+        phi_guest = Parameter(0.1)
+        sld_guest = SLD(7.6)
+        sld_solvent = SLD(5.55)
+
+        leaflet = LipidLeafletGuest(
+            self.APM,
+            self.b_h,
+            self.V_h,
+            self.thick_h,
+            self.b_t,
+            self.V_t,
+            self.thick_t,
+            2,
+            3,
+            phi_guest,
+            sld_guest,
+            head_solvent=sld_solvent,
+            tail_solvent=sld_solvent,
+        )
+        # check volume fractions are calculated correctly
+        vft = self.V_t / (self.APM * self.thick_t)
+        vfh = self.V_h / (self.APM * self.thick_h)
+        vftg = (1 - vft) * phi_guest.value
+        assert_equal(leaflet.volfrac_guest, vftg)
+
+        # check slab representation
+        slabs = leaflet.slabs()
+        assert_allclose(slabs[0, 0], self.thick_h)
+        assert_allclose(slabs[1, 0], self.thick_t)
+        # should be zero because solvation is done by the component
+        # and not by parent structure
+        assert_allclose(slabs[0, -1], 0)
+        assert_allclose(slabs[1, -1], 0)
+        sld_h = self.b_h / self.V_h * 1e6
+        assert_allclose(slabs[0, 1], sld_h*vfh + (1-vfh)*complex(sld_solvent).real)
+
+        vfsolv = 1 - vft - vftg
+        sld_t = self.b_t / self.V_t * 1e6
+        _solvated_slabs = overall_sld(np.copy(slabs), complex(sld_solvent))
+        _sld_tail = vft*sld_t + vftg*complex(sld_guest).real + vfsolv*complex(sld_solvent).real
+        assert_allclose(
+            _solvated_slabs[1, 1],
+            _sld_tail,
+        )
+        assert_allclose(slabs[1, 1], _sld_tail)
 
 
 def test_lipid_leaflet_example():

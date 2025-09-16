@@ -935,6 +935,7 @@ def overall_sld(slabs, solvent):
     """
     Performs a volume fraction weighted average of the material SLD in a
     layer and the solvent in a layer.
+    * calculation done in-place *
 
     Parameters
     ----------
