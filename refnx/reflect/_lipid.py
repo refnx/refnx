@@ -588,8 +588,9 @@ class LipidLeafletGuest(LipidLeaflet):
         re_sld_tail = float(self.b_tails_real) / float(self.vm_tails) * 1.0e6
         im_sld_tail = float(self.b_tails_imag) / float(self.vm_tails) * 1.0e6
         _sld_guest = complex(self.sld_guest)
-        layers[1, 1] = vft * re_sld_tail + vfg * _sld_guest.real
-        layers[1, 2] = vft * im_sld_tail + vfg * _sld_guest.imag
+        den = vft + vfg
+        layers[1, 1] = (vft * re_sld_tail + vfg * _sld_guest.real) / den
+        layers[1, 2] = (vft * im_sld_tail + vfg * _sld_guest.imag) / den
 
         # roughnesses
         layers[0, 3] = float(self.rough_preceding_mono)

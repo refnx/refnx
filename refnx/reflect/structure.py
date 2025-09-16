@@ -948,6 +948,7 @@ def overall_sld(slabs, solvent):
     averaged_slabs : np.ndarray
         the averaged slabs.
     """
+    slabs = np.copy(slabs)
     slabs[..., 1:3] *= (1 - slabs[..., 4])[..., np.newaxis]
     slabs[..., 1] += solvent.real * slabs[..., 4]
     slabs[..., 2] += solvent.imag * slabs[..., 4]
