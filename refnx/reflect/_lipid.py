@@ -1,6 +1,7 @@
 """
 Component for studying lipid membranes at an interface
 """
+
 import warnings
 import numpy as np
 from scipy.optimize import NonlinearConstraint
@@ -451,6 +452,7 @@ class LipidLeafletGuest(LipidLeaflet):
     calculated as `b_tails / vm_tails * 1e6` to achieve the units
     10**6 Angstrom**-2.
     """
+
     def __init__(
         self,
         apm,
@@ -490,7 +492,7 @@ class LipidLeafletGuest(LipidLeaflet):
             " in the head region as well. The number AND order of parameters"
             " has changed. Please double check your usage",
             RuntimeWarning,
-            stacklevel=2
+            stacklevel=2,
         )
         self.phi_guest_h = possibly_create_parameter(phi_guest_h)
         self.phi_guest_h.bounds.lb = 0
@@ -548,8 +550,8 @@ class LipidLeafletGuest(LipidLeaflet):
         im_sld_head = float(self.b_heads_imag) / float(self.vm_heads) * 1.0e6
 
         den = vfh + vfhg
-        layers[0, 1] = (vfh * re_sld_head + vfhg * _sld_guest.real)/den
-        layers[0, 2] = (vfh * im_sld_head + vfhg * _sld_guest.imag)/den
+        layers[0, 1] = (vfh * re_sld_head + vfhg * _sld_guest.real) / den
+        layers[0, 2] = (vfh * im_sld_head + vfhg * _sld_guest.imag) / den
 
         # sld of guest and tail mixture. water is added on later
         vft = self.volfrac_t
@@ -559,8 +561,8 @@ class LipidLeafletGuest(LipidLeaflet):
         im_sld_tail = float(self.b_tails_imag) / float(self.vm_tails) * 1.0e6
 
         den = vft + vftg
-        layers[1, 1] = (vft * re_sld_tail + vftg * _sld_guest.real)/den
-        layers[1, 2] = (vft * im_sld_tail + vftg * _sld_guest.imag)/den
+        layers[1, 1] = (vft * re_sld_tail + vftg * _sld_guest.real) / den
+        layers[1, 2] = (vft * im_sld_tail + vftg * _sld_guest.imag) / den
 
         # roughnesses
         layers[0, 3] = float(self.rough_preceding_mono)
