@@ -1,6 +1,7 @@
 import numpy as np
 from pathlib import Path
 from importlib import resources
+import pytest
 
 from numpy.testing import (
     assert_almost_equal,
@@ -118,25 +119,26 @@ class TestLipidLeaflet:
         assert_equal(q.slabs(), self.leaflet.slabs())
 
     def test_lipidleafletguest_no_solvent_specified(self):
-        phi_guest = Parameter(0.1)
+        phi_guest_t = Parameter(0.1)
         sld_guest = SLD(7.6)
         sld_solvent = SLD(5.55)
-
-        leaflet = LipidLeafletGuest(
-            self.APM,
-            self.b_h,
-            self.V_h,
-            self.thick_h,
-            self.b_t,
-            self.V_t,
-            self.thick_t,
-            2,
-            3,
-            phi_guest,
-            sld_guest,
-        )
+        with pytest.warns(RuntimeWarning):
+            leaflet = LipidLeafletGuest(
+                self.APM,
+                self.b_h,
+                self.V_h,
+                self.thick_h,
+                self.b_t,
+                self.V_t,
+                self.thick_t,
+                2,
+                3,
+                0,
+                phi_guest_t,
+                sld_guest,
+            )
         assert isinstance(leaflet, LipidLeafletGuest)
-        assert leaflet.phi_guest is phi_guest
+        assert leaflet.phi_guest_t is phi_guest_t
         assert leaflet.sld_guest is sld_guest
 
         # check volume fractions are calculated correctly
@@ -145,8 +147,8 @@ class TestLipidLeaflet:
         vfh = self.V_h / (self.APM * self.thick_h)
         assert_allclose(leaflet.volfrac_h, vfh)
 
-        vftg = (1 - vft) * phi_guest.value
-        assert_equal(leaflet.volfrac_guest, vftg)
+        vftg = (1 - vft) * phi_guest_t.value
+        assert_equal(leaflet.volfrac_guest_t, vftg)
 
         # check slab representation
         slabs = leaflet.slabs()
@@ -171,30 +173,32 @@ class TestLipidLeaflet:
         assert_allclose(slabs[1, 1], _sld)
 
     def test_lipidleafletguest_solvent_specified(self):
-        phi_guest = Parameter(0.1)
+        phi_guest_t = Parameter(0.1)
         sld_guest = SLD(7.6)
         sld_solvent = SLD(5.55)
 
-        leaflet = LipidLeafletGuest(
-            self.APM,
-            self.b_h,
-            self.V_h,
-            self.thick_h,
-            self.b_t,
-            self.V_t,
-            self.thick_t,
-            2,
-            3,
-            phi_guest,
-            sld_guest,
-            head_solvent=sld_solvent,
-            tail_solvent=sld_solvent,
-        )
+        with pytest.warns(RuntimeWarning):
+            leaflet = LipidLeafletGuest(
+                self.APM,
+                self.b_h,
+                self.V_h,
+                self.thick_h,
+                self.b_t,
+                self.V_t,
+                self.thick_t,
+                2,
+                3,
+                0,
+                phi_guest_t,
+                sld_guest,
+                head_solvent=sld_solvent,
+                tail_solvent=sld_solvent,
+            )
         # check volume fractions are calculated correctly
         vft = self.V_t / (self.APM * self.thick_t)
         vfh = self.V_h / (self.APM * self.thick_h)
-        vftg = (1 - vft) * phi_guest.value
-        assert_equal(leaflet.volfrac_guest, vftg)
+        vftg = (1 - vft) * phi_guest_t.value
+        assert_equal(leaflet.volfrac_guest_t, vftg)
 
         # check slab representation
         slabs = leaflet.slabs()

@@ -691,3 +691,8 @@ in 0.1.13.
 0.1.60
 ------
 - remove ffast math optimisations, weren't seem to be doing much.
+- Changed parameterisation of LipidLeafletGuest to allow guest molecules in the
+  head group region.
+  WARNING: the parameterisation has now changed, there are extra parameters
+  involved in setting up the Component, and the order of them has changed
+  slightly.
