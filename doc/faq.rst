@@ -58,8 +58,7 @@ intuitively expect the fitting process to make a bigger effort for the
 theoretical model to be close to data points with smaller uncertainty, and a
 lesser effort to be close to data points with larger uncertainty. The
 experimental uncertainties are stored in the dataset as
-:code:`Data1D.y_err`. The uncertainties are
-:ref:`loadable from the datafile<What input/output file formats are supported>`.
+:code:`Data1D.y_err`. The uncertainties are :ref:`loadable from the data file<io-formats>`.
 See also the documentation for :class:`refnx.dataset.Data1D`.
 
 If you fit with :code:`CurveFitter.fit(method='least_squares')`, then you are
@@ -148,8 +147,10 @@ are currently available from PyPI and can be installed as
 conda-forge. You can use conda to install most of the refnx dependencies, but
 you will need to use `pip` to install pyqt6.
 
-What input/output file formats are supported
---------------------------------------------
+.. _io-formats:
+
+What input/output file formats are supported?
+---------------------------------------------
 `refnx` can read a range of file types. The most common is 2/3/4 column
 ASCII data. The first two columns are Q (:math:`A^{-1}`) and R. If present the
 third column will be the standard deviation of the reflectivity. If present

@@ -335,7 +335,7 @@ def setup_package():
             customize_compiler(ccompiler)
             ccompiler.verbose = True
             extra_preargs = [
-                "-O2",
+                "-O3",
             ]
 
             if sys.platform == "win32":
@@ -348,7 +348,7 @@ def setup_package():
                 # the CMPLX macro was only standardised in C11
                 extra_preargs.extend(
                     [
-                        "-std=c11",
+                        "-std=c17",
                     ]
                 )
                 f = ["src/refcalc.c"]

@@ -8,7 +8,6 @@ from time import gmtime, strftime
 import string
 import warnings
 from contextlib import contextmanager
-from enum import Enum
 
 from scipy.optimize import leastsq, curve_fit
 from scipy.stats import t
