@@ -10,6 +10,7 @@ from refnx.reduce.platypusnexus import (
     catalogue,
     create_reflect_nexus,
     PlatypusNexus,
+    ReflectNexus,
     number_datafile,
     basename_datafile,
     datafile_number,
@@ -17,7 +18,6 @@ from refnx.reduce.platypusnexus import (
     Catalogue,
     SpatzNexus,
     ReductionOptions,
-    SpinChannel,
     SpinSet,
 )
 from refnx.reduce.batchreduction import BatchReducer

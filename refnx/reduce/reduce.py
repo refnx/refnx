@@ -643,7 +643,7 @@ class PlatypusReduce(ReflectReduce):
 
 
 class PolarisationEfficiency:
-    """
+    r"""
     Describes the polarisation efficiency of a neutron scattering system
     with the option of having a polariser, flipper-1, flipper-2, and
     analyser in the system.
@@ -656,14 +656,13 @@ class PolarisationEfficiency:
     Parameters
     ----------
     wavelength_axis :   numpy.array (T,)
-                    Array of wavelength bin centres to initialise the length
-                    of the (T, 4, 4) efficiency matrices.
-
-    config          :   {"full", "PF"}
-                    Indication of polariser/analyser configuration. If
-                    "full" is used, all polarising and flipping elements are
-                    taken into account. If "PF" is used, only the polariser
-                    and flipper are taken into account.
+        Array of wavelength bin centres to initialise the length
+        of the (T, 4, 4) efficiency matrices.
+    config :   {"full", "PF"}
+        Indication of polariser/analyser configuration. If
+        "full" is used, all polarising and flipping elements are
+        taken into account. If "PF" is used, only the polariser
+        and flipper are taken into account.
     """
 
     def __init__(self, wavelength_axis, config="full"):
@@ -691,7 +690,7 @@ class PolarisationEfficiency:
         """
         Define PLATYPUS polarisation efficiency matrices as described in
         the invited article in Rev. Sci. Instr. 83, 081301 (2012)
-        `Polarization "Down Under": The polarized time-of-flight neutron
+        'Polarization "Down Under": The polarized time-of-flight neutron
         reflectometer PLATYPUS' (https://doi.org/10.1063/1.4738579).
 
         In this formulation, the relationship between raw spectra
@@ -708,7 +707,7 @@ class PolarisationEfficiency:
 
         Parameters
         ----------
-        config      :   {"full", "PF"}
+        config :   {"full", "PF"}
         """
         # Define polariser efficiency as function of wavelength.
         p1a = 0.993
@@ -834,11 +833,12 @@ class PolarisedReduce:
     spin_set_direct :   refnx.reduce.SpinSet
         Direct beams from PNR experiment
     reducers        :   dict
-            Dictionary of each measured spin channel
-                "dd"    :   refnx.reduce.PlatypusNexus (R--)
-                "du"    :   refnx.reduce.PlatypusNexus or None (R-+)
-                "ud"    :   refnx.reduce.PlatypusNexus or None (R+-)
-                "uu"    :   refnx.reduce.PlatypusNexus (R++)
+        Dictionary of each measured spin channel
+
+        - "dd" :   :class:`refnx.reduce.PlatypusNexus` (R--)
+        - "du" :   :class:`refnx.reduce.PlatypusNexus` or None (R-+)
+        - "ud" :   :class:`refnx.reduce.PlatypusNexus` or None (R+-)
+        - "uu" :   :class:`refnx.reduce.PlatypusNexus` (R++)
 
     Examples
     --------
@@ -1274,7 +1274,7 @@ def reduce_stitch(
     scale : float, optional
         Scales the data by this value.
     reduction_options : None, dict, or list of dict, optional
-        Options passed directly to `refnx.reduce.PlatypusNexus.process`,
+        Options passed directly to :meth:`refnx.reduce.ReflectNexus.process`,
         for processing of individual spectra. Look at that method docstring
         for specification of options. If an individual dict then the same
         options are used to process all datasets. A list (or sequence) of
