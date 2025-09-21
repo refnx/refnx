@@ -943,7 +943,7 @@ def reflectivity(
             for details.
 
         Note that this slab representation is slightly different to that returned by
-        `refnx.reflect.Structure.slabs()`.
+        :meth:`refnx.reflect.Structure.slabs()`.
     scale : float
         scale factor. All model values are multiplied by this value before
         the background is added

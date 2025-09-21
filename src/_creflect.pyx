@@ -129,16 +129,27 @@ cpdef np.ndarray abeles(
         Units = Angstrom**-1
     layers: np.ndarray
         coefficients required for the calculation, has shape (2 + N, 4),
-        where N is the number of layers
-        layers[0, 1] - SLD of fronting (/1e-6 Angstrom**-2)
-        layers[0, 2] - iSLD of fronting (/1e-6 Angstrom**-2)
-        layers[N, 0] - thickness of layer N
-        layers[N, 1] - SLD of layer N (/1e-6 Angstrom**-2)
-        layers[N, 2] - iSLD of layer N (/1e-6 Angstrom**-2)
-        layers[N, 3] - roughness between layer N-1/N
-        layers[-1, 1] - SLD of backing (/1e-6 Angstrom**-2)
-        layers[-1, 2] - iSLD of backing (/1e-6 Angstrom**-2)
-        layers[-1, 3] - roughness between backing and last layer
+        where N is the number of layers:
+
+        - layers[0, 1]
+           SLD of fronting (/1e-6 Angstrom**-2)
+        - layers[0, 2]
+           iSLD of fronting (/1e-6 Angstrom**-2)
+        - layers[N, 0]
+           thickness of layer N
+        - layers[N, 1]
+           SLD of layer N (/1e-6 Angstrom**-2)
+        - layers[N, 2]
+           iSLD of layer N (/1e-6 Angstrom**-2)
+        - layers[N, 3]
+           roughness between layer N-1/N
+        - layers[-1, 1]
+           SLD of backing (/1e-6 Angstrom**-2)
+        - layers[-1, 2]
+           iSLD of backing (/1e-6 Angstrom**-2)
+        - layers[-1, 3]
+           roughness between backing and last layer
+
     scale: float
         Multiply all reflectivities by this value.
     bkg: float
@@ -150,7 +161,7 @@ cpdef np.ndarray abeles(
 
     Returns
     -------
-    Reflectivity: np.ndarray
+    reflectivity: np.ndarray
         Calculated reflectivity values for each q value.
     """
     if w.shape[1] != 4 or w.shape[0] < 2:
@@ -431,15 +442,26 @@ cpdef np.ndarray abeles_vectorised(
         coefficients required for the calculation, has shape (M, 2 + N, 4).
         The calculation is vectorised over the M sets of film parameters, and
         N is the number of layers in each film.
-        layers[:, 0, 1] - SLD of fronting (/1e-6 Angstrom**-2)
-        layers[:, 0, 2] - iSLD of fronting (/1e-6 Angstrom**-2)
-        layers[:, N, 0] - thickness of layer N
-        layers[:, N, 1] - SLD of layer N (/1e-6 Angstrom**-2)
-        layers[:, N, 2] - iSLD of layer N (/1e-6 Angstrom**-2)
-        layers[:, N, 3] - roughness between layer N-1/N
-        layers[:, -1, 1] - SLD of backing (/1e-6 Angstrom**-2)
-        layers[:, -1, 2] - iSLD of backing (/1e-6 Angstrom**-2)
-        layers[:, -1, 3] - roughness between backing and last layer
+
+        - layers[0, 1]
+           SLD of fronting (/1e-6 Angstrom**-2)
+        - layers[0, 2]
+           iSLD of fronting (/1e-6 Angstrom**-2)
+        - layers[N, 0]
+           thickness of layer N
+        - layers[N, 1]
+           SLD of layer N (/1e-6 Angstrom**-2)
+        - layers[N, 2]
+           iSLD of layer N (/1e-6 Angstrom**-2)
+        - layers[N, 3]
+           roughness between layer N-1/N
+        - layers[-1, 1]
+           SLD of backing (/1e-6 Angstrom**-2)
+        - layers[-1, 2]
+           iSLD of backing (/1e-6 Angstrom**-2)
+        - layers[-1, 3]
+           roughness between backing and last layer
+
     scale: array-like, optional
         Multiply all reflectivities by this value.
     bkg: array-like, optional

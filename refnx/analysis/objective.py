@@ -260,7 +260,7 @@ class Objective(BaseObjective):
         `logp_extra(model, data)`. The `model` will already possess
         updated parameters. Beware of including the same log-probability
         terms more than once.
-    auxiliary_params : {sequence, Parameters}, optional
+    auxiliary_params : {sequence, refnx.analysis.Parameters}, optional
         Extra Parameter objects that are involved with curvefitting, but
         aren't directly included as part of the `model`. See notes for more
         details.
