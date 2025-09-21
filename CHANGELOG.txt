@@ -696,3 +696,4 @@ in 0.1.13.
   WARNING: the parameterisation has now changed, there are extra parameters
   involved in setting up the Component, and the order of them has changed
   slightly.
+- Fixed a bunch of sphinx warnings.
