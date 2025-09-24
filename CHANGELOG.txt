@@ -697,3 +697,6 @@ in 0.1.13.
   involved in setting up the Component, and the order of them has changed
   slightly.
 - Fixed a bunch of sphinx warnings.
+
+0.1.61
+------
