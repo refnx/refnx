@@ -489,12 +489,13 @@ class TestOrtDataset:
         rng = np.random.default_rng(121908290)
 
         # 0.65 specifies at what configuration the direct beam was measured at.
-        h = Hoggy(
-            model,
-            0.65,
-            self.data_directory / "reduce" / "PLP0049278.nx.hdf",
-            attenuator=28,
-        )
+        with pytest.warns(RuntimeWarning, match="specular ridge search"):
+            h = Hoggy(
+                model,
+                0.65,
+                self.data_directory / "reduce" / "PLP0049278.nx.hdf",
+                attenuator=28,
+            )
 
         # two angles of incidence simulated, 0.8 and 3.5
         ds = h(0.8, 120, rng=rng)

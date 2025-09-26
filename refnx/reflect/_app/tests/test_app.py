@@ -2,7 +2,7 @@ import glob
 from pathlib import Path
 import pickle
 from importlib import resources
-
+import warnings
 
 import pytest
 from qtpy import QtWidgets, QtCore, QtGui
@@ -137,7 +137,9 @@ def test_mcmc_fit_and_reprocess(qtbot, tmp_path):
     data_objects = [datastore[name] for name in names_to_fit]
 
     kwds = {"nsteps": 5, "folder": tmp_path, "nplot": 20}
-    myapp.fit_data_objects(data_objects, mcmc_kws=kwds)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", RuntimeWarning)
+        myapp.fit_data_objects(data_objects, mcmc_kws=kwds)
     assert (tmp_path / "steps_corner.png").exists()
 
 

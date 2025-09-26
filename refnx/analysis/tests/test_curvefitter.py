@@ -1,5 +1,6 @@
 from importlib import resources
 import pickle
+import multiprocessing as mp
 import sys
 
 import numpy as np
@@ -654,6 +655,7 @@ class TestFitterGauss:
             # can't run test if pymc/pytensor not installed
             return
 
+        ctx = mp.get_context("spawn")
         with pymc_model(self.objective):
             s = pm.NUTS()
             pm.sample(
@@ -663,6 +665,7 @@ class TestFitterGauss:
                 discard_tuned_samples=True,
                 compute_convergence_checks=False,
                 random_seed=1,
+                mp_ctx=ctx,
             )
             # don't check for accuracy because it requires a heap more
             # draws.
