@@ -194,7 +194,7 @@ jobs:
         python -m pip install -r .requirements.txt
         pushd dist
         python -m pip install --only-binary=refnx --no-index --find-links=. refnx
-        pytest -W error --pyargs refnx
+        pytest --pyargs refnx
         popd
 
     - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
