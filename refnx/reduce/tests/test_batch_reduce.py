@@ -37,7 +37,7 @@ class TestReduce:
         with warnings.catch_warnings():
             warnings.simplefilter(
                 "ignore",
-                (RuntimeWarning, scipy.optimize._optimize.OptimizeWarning)
+                (RuntimeWarning, scipy.optimize._optimize.OptimizeWarning),
             )
 
             b = BatchReducer(
@@ -66,7 +66,7 @@ class TestReduce:
         with warnings.catch_warnings():
             warnings.simplefilter(
                 "ignore",
-                (RuntimeWarning, scipy.optimize._optimize.OptimizeWarning)
+                (RuntimeWarning, scipy.optimize._optimize.OptimizeWarning),
             )
             b.reduce(show=False)
 
@@ -77,7 +77,7 @@ class TestReduce:
         with warnings.catch_warnings():
             warnings.simplefilter(
                 "ignore",
-                (RuntimeWarning, scipy.optimize._optimize.OptimizeWarning)
+                (RuntimeWarning, scipy.optimize._optimize.OptimizeWarning),
             )
 
             refnx.reduce.batchreduction._have_ipython = False

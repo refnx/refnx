@@ -44,7 +44,7 @@ class TestPlatypusReduce:
         with warnings.catch_warnings():
             warnings.simplefilter(
                 "ignore",
-                (RuntimeWarning, scipy.optimize._optimize.OptimizeWarning)
+                (RuntimeWarning, scipy.optimize._optimize.OptimizeWarning),
             )
             a, fname = reduce_stitch(
                 [708, 709, 710],
@@ -215,8 +215,7 @@ class TestSpatzReduce:
         # warnings filter for pixel size
         with warnings.catch_warnings():
             warnings.simplefilter(
-                "ignore",
-                (scipy.optimize._optimize.OptimizeWarning)
+                "ignore", (scipy.optimize._optimize.OptimizeWarning)
             )
             a, fname = reduce_stitch(
                 [660, 661],

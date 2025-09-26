@@ -278,8 +278,7 @@ class TestPlatypusNexus(object):
     def test_event_folder(self):
         with warnings.catch_warnings():
             warnings.simplefilter(
-                "ignore",
-                (scipy.optimize._optimize.OptimizeWarning)
+                "ignore", (scipy.optimize._optimize.OptimizeWarning)
             )
             self.f641.process(
                 eventmode=[0, 900, 1800], integrate=0, event_folder=self.pth
