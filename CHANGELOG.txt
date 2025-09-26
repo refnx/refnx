@@ -700,3 +700,7 @@ in 0.1.13.
 
 0.1.61
 ------
+- Added absolute_phi keyword to LipidLeafletGuest. This allows one to
+  parameterise the volume fraction of guest present in a layer in terms
+  of an absolute volume fraction. This is useful when attempting to constrain
+  the volume fraction of guest in the head and tail regions to be the same.
