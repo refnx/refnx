@@ -404,8 +404,12 @@ class LipidLeafletGuest(LipidLeaflet):
     phi_guest_h: float or refnx.analysis.Parameter
         Guest lying in the head layer. This is a fractional
         value representing how much of the space **not** taken up by the lipid
-        is occupied by the guest molecule. The absolute volume fraction is
-        available from the `LipidLeafletGuest.volfrac_guest` property.
+        is occupied by the guest molecule.
+        If, however, `absolute_phi` is set to True, then this parameter
+        represents the absolute value of the guest molecule in the head region.
+        The absolute volume fraction is always available from the
+        `LipidLeafletGuest.volfrac_guest_h` property.
+        Please see the notes section for further details.
 
         .. warning::
            This parameter may not be determinable with low uncertainty if the lipid
@@ -415,8 +419,12 @@ class LipidLeafletGuest(LipidLeaflet):
     phi_guest_t: float or refnx.analysis.Parameter
         Guest lying in the tail layer. This is a fractional
         value representing how much of the space **not** taken up by the lipid
-        is occupied by the guest molecule. The absolute volume fraction is
-        available from the `LipidLeafletGuest.volfrac_guest` property.
+        is occupied by the guest molecule.
+        If, however, `absolute_phi` is set to True, then this parameter
+        represents the absolute value of the guest molecule in the tail region.
+        The absolute volume fraction is always
+        available from the `LipidLeafletGuest.volfrac_guest_t` property.
+        Please see the notes section for further details.
 
         .. warning::
            This parameter may not be determinable with low uncertainty if the lipid
@@ -444,13 +452,45 @@ class LipidLeafletGuest(LipidLeaflet):
         closer to the backing medium.
     name: str, optional
         The name for the component
+    absolute_phi: bool, optional
+        Specifies whether `phi_guest_h` and `phi_guest_t` represent fractional
+        or absolute volume fractions.
+        Please see the notes section for further details.
 
     Notes
     -----
     The sum of coherent scattering lengths must be in Angstroms, the volume
     must be in cubic Angstroms. This is because the SLD of a tail group is
-    calculated as `b_tails / vm_tails * 1e6` to achieve the units
+    calculated as ``b_tails / vm_tails * 1e6`` to achieve the units
     10**6 Angstrom**-2.
+
+    `phi_guest_t` and `phi_guest_h` represent either a fractional (what
+    fraction not occupied by lipid is occupied by guest) or absolute
+    volume fraction of guest in a layer. If ``absolute_phi is False`` then
+    the absolute volume fraction of guest in a layer is calculated as::
+
+        volfrac_guest_x = (1 - volfrac_x) * phi_guest_x
+
+    where ``volfrac_x`` is the absolute volume fraction of lipid in the head
+    group region (x representing either the head (h) or tail region (t)).
+    The amount of solvent in that layer is then calculated as::
+
+        vfsolv = 1 - volfrac_guest_x - volfrac_x
+
+    If ``absolute_phi is `True`` then `phi_guest_x` is regarded as an
+    absolute volume fraction (not relative) and
+    ``volfrac_guest_x == phi_guest_x``. ``absolute_phi`` is useful when
+    one wants to constrain the volume fraction of guest in the head and
+    tail layers to be the same. Otherwise, setting `absolute_phi` to be
+    False is preferred, as each layer is less likely to be overfilled.
+    Appropriate constraints and bounds must be used during the modelling
+    process to ensure ``volfrac_guest_x + volfrac_x <=1``.
+    For optimisation using `differential_evolution` this entails
+    using the :meth:`LipidLeafletGuest.make_constraints` method to create
+    those constraints. Please see `using constraints`_ for an example.
+    With MCMC the log-prior term becomes `-np.inf` (i.e. impossible).
+
+    .. _using constraints: https://refnx.readthedocs.io/en/latest/inequality_constraints.html#inequality-constraints-with-differential-evolution
     """
 
     def __init__(
@@ -471,6 +511,7 @@ class LipidLeafletGuest(LipidLeaflet):
         tail_solvent=None,
         reverse_monolayer=False,
         name="",
+        absolute_phi=False,
     ):
         super().__init__(
             apm,
@@ -501,6 +542,7 @@ class LipidLeafletGuest(LipidLeaflet):
         self.phi_guest_t.bounds.lb = 0
         self.phi_guest_t.bounds.ub = 1
         self.sld_guest = possibly_create_scatterer(sld_guest)
+        self.absolute_phi = absolute_phi
 
     def __repr__(self):
         sld_bh = SLD([self.b_heads_real, self.b_heads_imag])
@@ -522,7 +564,8 @@ class LipidLeafletGuest(LipidLeaflet):
             f"head_solvent={self.head_solvent!r}, "
             f"tail_solvent={self.tail_solvent!r}, "
             f"reverse_monolayer={self.reverse_monolayer}, "
-            f"name={self.name!r})"
+            f"name={self.name!r}, "
+            f"absolute_phi={self.absolute_phi!r})"
         )
         return s
 
@@ -628,23 +671,73 @@ class LipidLeafletGuest(LipidLeaflet):
     def logp(self):
         # penalise unphysical volume fractions.
         if (
-            self.volfrac_h > 1
-            or self.volfrac_t > 1
-            or self.phi_guest_h.value > 1
+            self.phi_guest_h.value > 1
             or self.phi_guest_t.value > 1
+            or self.volfrac_t + self.volfrac_guest_t > 1
+            or self.volfrac_h + self.volfrac_guest_h > 1
         ):
             return -np.inf
 
         return 0
 
+    def make_constraint(self, objective):
+        """
+        Creates a NonlinearConstraint for a LipidLeafletGuest, ensuring that
+        volume fraction of material in the head+tail regions lies in [0, 1].
+        Suitable for use by differential_evolution.
+
+        Parameters
+        ----------
+        objective: refnx.analysis.Objective
+            Objective containing the LipidLeafletGuest. Must be the Objective
+            that is being minimised by differential_evolution.
+
+        Returns
+        -------
+        nlc: NonlinearConstraint
+
+        Notes
+        -----
+        You must create separate constraints for each LipidLeafletGuest object
+        in your system.
+        The Objective you supply must be for the overall curve fitting system.
+        i.e. possibly a GlobalObjective.
+
+        Examples
+        --------
+        >>> # leaflet is a LipidLeafletGuest, used in an Objective, obj
+        >>> con = leaflet.make_constraint(obj)
+        >>> fitter = CurveFitter(obj)
+        >>> fitter.fit("differential_evolution", constraints=(con,))
+        """
+
+        def con(x):
+            objective.setp(x)
+            return (
+                self.volfrac_h + self.volfrac_guest_h,
+                self.volfrac_t + self.volfrac_guest_t,
+            )
+
+        return NonlinearConstraint(con, 0, 1)
+
     @property
     def volfrac_guest_h(self):
-        # Absolute volume fraction of guest in the head group region.
-        vfh = self.volfrac_h
-        return (1.0 - vfh) * self.phi_guest_h.value
+        """
+        Absolute volume fraction of guest in the head group region.
+        """
+        if self.absolute_phi:
+            return self.phi_guest_h.value
+        else:
+            vfh = self.volfrac_h
+            return (1.0 - vfh) * self.phi_guest_h.value
 
     @property
     def volfrac_guest_t(self):
-        # Absolute volume fraction of guest in the tail group region.
-        vft = self.volfrac_t
-        return (1.0 - vft) * self.phi_guest_t.value
+        """
+        Absolute volume fraction of guest in the tail group region.
+        """
+        if self.absolute_phi:
+            return self.phi_guest_t.value
+        else:
+            vft = self.volfrac_t
+            return (1.0 - vft) * self.phi_guest_t.value
