@@ -138,10 +138,7 @@ def test_mcmc_fit_and_reprocess(qtbot, tmp_path):
 
     kwds = {"nsteps": 5, "folder": tmp_path, "nplot": 20}
     with warnings.catch_warnings():
-        warnings.simplefilter(
-            "ignore",
-            RuntimeWarning
-        )
+        warnings.simplefilter("ignore", RuntimeWarning)
         myapp.fit_data_objects(data_objects, mcmc_kws=kwds)
     assert (tmp_path / "steps_corner.png").exists()
 
