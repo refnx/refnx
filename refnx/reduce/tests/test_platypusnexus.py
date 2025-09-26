@@ -13,6 +13,7 @@ from numpy.testing import (
     assert_allclose,
 )
 import h5py
+import scipy
 
 import refnx.reduce.platypusnexus as plp
 from refnx.reduce import (
@@ -266,17 +267,27 @@ class TestPlatypusNexus(object):
     def test_event(self):
         # When you use event mode processing, make sure the right amount of
         # spectra are created
-        out = self.f641.process(eventmode=[0, 900, 1800], integrate=0)
+        with warnings.catch_warnings():
+            warnings.simplefilter(
+                "ignore",
+                scipy.optimize._optimize.OptimizeWarning,
+            )
+            out = self.f641.process(eventmode=[0, 900, 1800], integrate=0)
         assert np.size(out[1], axis=0) == 2
 
     def test_event_folder(self):
-        self.f641.process(
-            eventmode=[0, 900, 1800], integrate=0, event_folder=self.pth
-        )
-        pth = Path(self.pth)
-        self.f641.process(
-            eventmode=[0, 900, 1800], integrate=0, event_folder=pth
-        )
+        with warnings.catch_warnings():
+            warnings.simplefilter(
+                "ignore",
+                (scipy.optimize._optimize.OptimizeWarning)
+            )
+            self.f641.process(
+                eventmode=[0, 900, 1800], integrate=0, event_folder=self.pth
+            )
+            pth = Path(self.pth)
+            self.f641.process(
+                eventmode=[0, 900, 1800], integrate=0, event_folder=pth
+            )
 
     def test_multiple_acquisitions(self):
         """
@@ -574,7 +585,8 @@ class TestSpatzNexus:
         # non-finite data during reduction if the fallback to normalising by
         # time doesn't work.
         f = SpatzNexus(self.pth / "SPZ0016618.nx.hdf")
-        output = f.process()
+        with pytest.warns(RuntimeWarning):
+            output = f.process()
         m_spec = output[1]
         assert np.isfinite(m_spec).all()
 

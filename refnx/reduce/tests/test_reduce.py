@@ -4,6 +4,7 @@ from refnx.reduce.platypusnexus import calculate_wavelength_bins
 from refnx.reduce.reduce import PolarisationEfficiency
 import warnings
 import pytest
+import scipy
 
 from numpy.testing import assert_equal, assert_allclose
 
@@ -41,7 +42,10 @@ class TestPlatypusReduce:
         # a quick smoke test to check that the reduction can occur
         # warnings filter for pixel size
         with warnings.catch_warnings():
-            warnings.simplefilter("ignore", RuntimeWarning)
+            warnings.simplefilter(
+                "ignore",
+                (RuntimeWarning, scipy.optimize._optimize.OptimizeWarning)
+            )
             a, fname = reduce_stitch(
                 [708, 709, 710],
                 [711, 711, 711],
@@ -209,31 +213,36 @@ class TestSpatzReduce:
     def test_smoke(self):
         # a quick smoke test to check that the reduction can occur
         # warnings filter for pixel size
-        a, fname = reduce_stitch(
-            [660, 661],
-            [658, 659],
-            data_folder=self.pth,
-            prefix="SPZ",
-            reduction_options={"rebin_percent": 2},
-        )
-        a.save("test1.dat")
-        assert (self.tmp_path / "test1.dat").is_file()
+        with warnings.catch_warnings():
+            warnings.simplefilter(
+                "ignore",
+                (scipy.optimize._optimize.OptimizeWarning)
+            )
+            a, fname = reduce_stitch(
+                [660, 661],
+                [658, 659],
+                data_folder=self.pth,
+                prefix="SPZ",
+                reduction_options={"rebin_percent": 2},
+            )
+            a.save("test1.dat")
+            assert (self.tmp_path / "test1.dat").is_file()
 
-        # reduce_stitch should take a list of ReductionOptions dict,
-        # separate dicts are used for different angles
-        opts = ReductionOptions()
-        opts["rebin_percent"] = 2
+            # reduce_stitch should take a list of ReductionOptions dict,
+            # separate dicts are used for different angles
+            opts = ReductionOptions()
+            opts["rebin_percent"] = 2
 
-        a2, fname = reduce_stitch(
-            [660, 661],
-            [658, 659],
-            data_folder=self.pth,
-            prefix="SPZ",
-            reduction_options=[opts] * 2,
-        )
-        a2.save("test2.dat")
-        assert (self.tmp_path / "test2.dat").is_file()
-        assert_allclose(a.y, a2.y)
+            a2, fname = reduce_stitch(
+                [660, 661],
+                [658, 659],
+                data_folder=self.pth,
+                prefix="SPZ",
+                reduction_options=[opts] * 2,
+            )
+            a2.save("test2.dat")
+            assert (self.tmp_path / "test2.dat").is_file()
+            assert_allclose(a.y, a2.y)
 
     def test_reduction_method(self):
         # a quick smoke test to check that the reduction can occur
@@ -286,7 +295,10 @@ class TestPolarisedReduce:
         # a quick smoke test to check that the reduction can occur
         # warnings filter for pixel size
         with warnings.catch_warnings():
-            warnings.simplefilter("ignore", RuntimeWarning)
+            warnings.simplefilter(
+                "ignore",
+                (RuntimeWarning, scipy.optimize._optimize.OptimizeWarning),
+            )
 
             spinset_rb = SpinSet(
                 down_down=self.pth / "PLP0012785.nx.hdf",
@@ -392,7 +404,10 @@ class TestPolarisedReduce:
         # a quick smoke test to check that the reduction can occur
         # warnings filter for pixel size
         with warnings.catch_warnings():
-            warnings.simplefilter("ignore", RuntimeWarning)
+            warnings.simplefilter(
+                "ignore",
+                (RuntimeWarning, scipy.optimize._optimize.OptimizeWarning),
+            )
 
             spinset_rb = SpinSet(
                 down_down=self.pth / "PLP0012785.nx.hdf",

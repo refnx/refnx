@@ -4,6 +4,7 @@ import os.path
 from pathlib import Path
 import warnings
 import pandas
+import scipy
 import tempfile
 
 from numpy.testing import assert_equal
@@ -32,8 +33,12 @@ class TestReduce:
         filename = self.pth / "test_batch_reduction.xls"
         df = self.pth
         # warnings filter for pixel size
+        # also covariance of parameters could not be estimated
         with warnings.catch_warnings():
-            warnings.simplefilter("ignore", RuntimeWarning)
+            warnings.simplefilter(
+                "ignore",
+                (RuntimeWarning, scipy.optimize._optimize.OptimizeWarning)
+            )
 
             b = BatchReducer(
                 filename, data_folder=df, verbose=False, persistent=False
@@ -58,14 +63,22 @@ class TestReduce:
             persistent=False,
             prefix="SPZ",
         )
-        b.reduce(show=False)
+        with warnings.catch_warnings():
+            warnings.simplefilter(
+                "ignore",
+                (RuntimeWarning, scipy.optimize._optimize.OptimizeWarning)
+            )
+            b.reduce(show=False)
 
     def test_batch_reduce_ipython(self):
         filename = self.pth / "test_batch_reduction.xls"
 
         # warnings filter for pixel size
         with warnings.catch_warnings():
-            warnings.simplefilter("ignore", RuntimeWarning)
+            warnings.simplefilter(
+                "ignore",
+                (RuntimeWarning, scipy.optimize._optimize.OptimizeWarning)
+            )
 
             refnx.reduce.batchreduction._have_ipython = False
             b = BatchReducer(
