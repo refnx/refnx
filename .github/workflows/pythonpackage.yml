@@ -66,13 +66,13 @@ jobs:
         pytest --pyargs refnx._lib.ptemcee.tests
 
     - name: Make sdist
-      if: ${{ matrix.python-version == '3.9' }}
+      if: ${{ matrix.python-version == '3.13' }}
       run: |
         git clean -xdf
         python setup.py sdist
 
     - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-      if: ${{ matrix.python-version == '3.9' }}
+      if: ${{ matrix.python-version == '3.13' }}
       with:
         name: refnx-wheel-linux-${{ matrix.python-version }}
         path: dist/
