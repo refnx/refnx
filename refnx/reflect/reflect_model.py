@@ -140,7 +140,7 @@ def available_backends():
         from refnx.reflect._jax_reflect import abeles_jax
 
         backends.append("jax")
-    except Exception as e:
+    except Exception:
         # importing jax would be a ModuleNotFoundError
         pass
 
