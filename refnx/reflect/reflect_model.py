@@ -132,17 +132,17 @@ def available_backends():
     except ImportError:
         pass
 
-    # try:
-    #     import jax as jax
-    #     from jax.config import config
-    #
-    #     config.update("jax_enable_x64", True)
-    #     from refnx.reflect._jax_reflect import abeles_jax
-    #
-    #     backends.append("jax")
-    # except Exception:
-    #     # importing jax would be a ModuleNotFoundError
-    #     pass
+    try:
+        import jax as jax
+        from jax import config
+
+        config.update("jax_enable_x64", True)
+        from refnx.reflect._jax_reflect import abeles_jax
+
+        backends.append("jax")
+    except Exception:
+        # importing jax would be a ModuleNotFoundError
+        pass
 
     return tuple(backends)
 

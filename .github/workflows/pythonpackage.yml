@@ -101,7 +101,7 @@ jobs:
 ###############################################################################
   test_macos_intel:
 
-    runs-on: macos-13
+    runs-on: macos-15-intel
     strategy:
       fail-fast: true
       max-parallel: 1
