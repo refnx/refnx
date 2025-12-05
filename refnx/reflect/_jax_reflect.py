@@ -73,24 +73,30 @@ def jabeles(q, layers, scale=1.0, bkg=0, threads=0):
             jnp.exp(kn[:, 1:-1] * 1j * jnp.fabs(layers[1:-1, 0]))
         )
     mi11 = 1.0 / mi00
-    mi10 = rj * mi11
-    mi01 = rj * mi00
+    mi10 = rj * mi00
+    mi01 = rj * mi11
 
-    mi = jnp.zeros((npnts, nlayers + 1, 2, 2), jnp.complex128)
+    # initialise matrix total
+    mrtot00 = mi00[:, 0]
+    mrtot01 = mi01[:, 0]
+    mrtot10 = mi10[:, 0]
+    mrtot11 = mi11[:, 0]
 
-    mi = mi.at[:, :, 0, 0].set(mi00)
-    mi = mi.at[:, :, 0, 1].set(mi01)
-    mi = mi.at[:, :, 1, 1].set(mi11)
-    mi = mi.at[:, :, 1, 0].set(mi10)
+    for _mi00, _mi10, _mi01, _mi11 in zip(
+        mi00[:, 1:].T, mi10[:, 1:].T, mi01[:, 1:].T, mi11[:, 1:].T
+    ):
+        # matrix multiply mrtot by characteristic matrix
+        p00 = mrtot00 * _mi00 + mrtot10 * _mi01
+        p10 = mrtot00 * _mi10 + mrtot10 * _mi11
+        p01 = mrtot01 * _mi00 + mrtot11 * _mi01
+        p11 = mrtot01 * _mi10 + mrtot11 * _mi11
 
-    sub = [jnp.squeeze(v) for v in jnp.hsplit(mi, nlayers + 1)]
-    mrtot = reduce(jnp.matmul, sub[1:], sub[0])
+        mrtot00, mrtot01, mrtot10, mrtot11 = p00, p01, p10, p11
 
-    r = mrtot[:, 1, 0] / mrtot[:, 0, 0]
-    reflectivity = r * jnp.conj(r) * scale
-    reflectivity = reflectivity.at[...].add(bkg)
+    r = mrtot01 / mrtot00
+    reflectivity = r * jnp.conj(r)
 
-    return jnp.real(jnp.reshape(reflectivity, qvals.shape))
+    return scale * jnp.real(jnp.reshape(reflectivity, qvals.shape)) + bkg
 
 
 # abeles_jax = jabeles
