@@ -1,5 +1,5 @@
 numpy
-numba; python_version != "3.12"
+numba; python_version != "3.14"
 cython
 scipy
 orsopy
@@ -21,7 +21,7 @@ attrs
 corner
 tqdm
 periodictable
-pytensor
-pymc
+pytensor; python_version != "3.14"
+pymc; python_version != "3.14"
 pytest-qt
 pint
