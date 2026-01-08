@@ -105,7 +105,7 @@ jobs:
       fail-fast: true
       max-parallel: 3
       matrix:
-        python-version: ['3.11', '3.12', '3.13']
+        python-version: ['3.12', '3.13', '3.14']
 
     steps:
     - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
@@ -263,7 +263,7 @@ jobs:
       fail-fast: true
       max-parallel: 3
       matrix:
-        python-version: ['3.11', '3.12', '3.13']
+        python-version: ['3.12', '3.13', '3.14']
 
     steps:
     - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
