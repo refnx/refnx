@@ -704,3 +704,6 @@ in 0.1.13.
   parameterise the volume fraction of guest present in a layer in terms
   of an absolute volume fraction. This is useful when attempting to constrain
   the volume fraction of guest in the head and tail regions to be the same.
+
+0.1.62
+------
