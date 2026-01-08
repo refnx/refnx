@@ -26,7 +26,7 @@ else:
 MAJOR = 0
 MINOR = 1
 MICRO = 61
-ISRELEASED = False
+ISRELEASED = True
 VERSION = f"{MAJOR}.{MINOR}.{MICRO}"
 
 
