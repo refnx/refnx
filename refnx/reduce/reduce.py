@@ -42,7 +42,6 @@ from refnx.dataset import ReflectDataset, Data1D
 from refnx.dataset.data1d import _data1D_to_hdf
 from refnx._lib import possibly_open_file
 
-
 _template_ref_xml = """<?xml version="1.0"?>
 <REFroot xmlns="">
 <REFentry time="$time">

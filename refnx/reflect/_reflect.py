@@ -30,7 +30,6 @@ import numpy.typing as npt
 from typing import Optional
 import refnx.reflect
 
-
 # TINY = np.finfo(np.float64).tiny
 TINY = 1e-30
 

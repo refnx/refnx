@@ -8,7 +8,6 @@ import periodictable as pt
 from refnx.reflect import LipidLeaflet, SLD
 import refnx.reflect._app
 
-
 pth = resources.files(refnx.reflect._app)
 UI_LOCATION = pth / "ui"
 

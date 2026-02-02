@@ -33,7 +33,6 @@ from refnx.reduce.rebin import rebin, rebin_along_axis
 from refnx._lib import possibly_open_file
 from refnx.reflect import SpinChannel
 
-
 EXTENT_MULT = 2
 PIXEL_OFFSET = 4
 

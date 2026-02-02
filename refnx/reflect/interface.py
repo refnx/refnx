@@ -19,7 +19,6 @@ D. Bahr; W. Press; R. Jebasinski; S. Mantl, Phys. Rev. B, 1993, 47 (8), 4385
 import numpy as np
 from scipy.stats import norm
 
-
 _SQRT3 = np.sqrt(3.0)
 _SQRT2 = np.sqrt(2.0)
 _GAMMA = np.pi / np.sqrt(np.pi * np.pi - 8.0)

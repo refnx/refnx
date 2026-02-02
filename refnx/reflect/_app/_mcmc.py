@@ -24,7 +24,6 @@ from matplotlib.backends.backend_qtagg import (
 )
 from matplotlib.figure import Figure
 
-
 UI_LOCATION = resources.files(refnx.reflect._app) / "ui"
 
 

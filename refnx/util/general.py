@@ -2,6 +2,7 @@
 """
 Functions for various calculations related to reflectometry
 """
+
 import numpy as np
 from scipy import stats, integrate, constants, optimize
 

@@ -14,7 +14,6 @@ VENDORED Aug2017
 
 import numpy as np
 
-
 # NOTE: we only do double precision internally so far
 EPS = np.finfo(np.float64).eps
 

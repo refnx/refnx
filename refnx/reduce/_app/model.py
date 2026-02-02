@@ -16,7 +16,6 @@ from refnx.reduce import (
     PlatypusNexus,
 )
 
-
 reducer_entry = [
     ("use", False),
     ("scale", 1.0),

@@ -9,7 +9,6 @@ from refnx.reduce.manual_beam_finder import ManualBeamFinder
 from .plot import SlimPlotWindow
 from .model import ReductionTableModel, ReductionState
 
-
 UI_LOCATION = Path(__file__).absolute().parent / "ui"
 
 

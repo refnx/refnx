@@ -5,7 +5,6 @@ from scipy.interpolate import PchipInterpolator as Pchip
 from refnx.reflect import Structure, Component
 from refnx.analysis import Parameter, Parameters, possibly_create_parameter
 
-
 EPS = np.finfo(float).eps
 
 

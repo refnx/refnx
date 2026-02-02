@@ -10,7 +10,6 @@ from refnx.analysis.parameter import (
 from refnx._lib import flatten
 import refnx
 
-
 _imports = r"""#!/usr/bin/env python
 
 '''

@@ -4,6 +4,7 @@ Full resolution kernel for a conventional double disc chopper system
 This code compares well to the kernel calculated using MCMC in:
 github.com/refnx/refnx-models/blob/master/platypus-simulate/tof_simulator.py
 """
+
 import numpy as np
 from scipy import stats, integrate, constants, optimize
 from scipy._lib._util import check_random_state

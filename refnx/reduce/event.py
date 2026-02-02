@@ -2,6 +2,7 @@
 """
 Unpack event files
 """
+
 from collections import namedtuple
 import numpy as np
 from refnx._lib import possibly_open_file

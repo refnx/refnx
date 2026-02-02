@@ -4,7 +4,6 @@ from qtpy.QtCore import Slot
 import numpy as np
 import refnx.reflect._app
 
-
 UI_LOCATION = resources.files(refnx.reflect._app) / "ui"
 
 

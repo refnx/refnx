@@ -3,6 +3,7 @@
 """
 Batch reduction of reflectometry data based on a spreadsheet
 """
+
 import collections
 import numpy as np
 import os
@@ -21,7 +22,6 @@ except ImportError:
     _have_ipython = False
 
 from refnx.reduce import reduce_stitch, ReductionOptions
-
 
 ReductionEntryTuple = collections.namedtuple(
     "ReductionEntry", ["row", "ds", "name", "fname", "entry"]

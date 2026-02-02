@@ -45,7 +45,6 @@ from refnx.reflect._functional_form import FunctionalForm
 from refnx._lib._testutils import PytestTester
 from refnx.reflect._app import gui, main
 
-
 # On OSX, we can get a runtime error due to multiple OpenMP libraries loaded
 # simultaneously. This can happen for instance when calling BLAS inside a
 # prange. Setting the following environment variable allows multiple OpenMP

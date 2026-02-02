@@ -5,7 +5,6 @@ from numpy.testing import assert_allclose
 
 from refnx.analysis import CurveFitter, Objective, Parameter, Parameters, Model
 
-
 NIST_DIR = Path(__file__).parent / "NIST_STRD"
 
 

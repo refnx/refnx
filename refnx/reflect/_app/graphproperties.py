@@ -5,7 +5,6 @@ e.g. colors, linesizes, etc.
 
 import matplotlib.artist as artist
 
-
 _requiredgraphproperties = {
     "lw": float,
     "label": str,

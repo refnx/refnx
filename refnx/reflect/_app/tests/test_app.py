@@ -17,7 +17,6 @@ from refnx.reflect._app import resources_rc
 from refnx.reflect import Spline, Structure, SLD, ReflectModel
 import refnx.analysis
 
-
 try:
     import pytestqt.qtbot as qtbot_module
 

@@ -23,7 +23,6 @@ from refnx._lib import emcee
 from refnx._lib.emcee.state import State
 from refnx._lib.emcee.pbar import get_progress_bar
 
-
 MCMCResult = namedtuple(
     "MCMCResult", ["name", "param", "stderr", "chain", "median"]
 )

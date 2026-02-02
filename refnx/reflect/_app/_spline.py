@@ -6,7 +6,6 @@ from qtpy import QtCore, QtGui, QtWidgets, uic
 import refnx.reflect._app
 from refnx.reflect import Spline, SLD
 
-
 UI_LOCATION = resources.files(refnx.reflect._app) / "ui"
 
 

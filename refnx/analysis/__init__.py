@@ -24,7 +24,6 @@ from refnx.analysis.curvefitter import (
 from refnx._lib.emcee.autocorr import integrated_time
 from refnx.analysis.model import Model, fitfunc
 
-
 __all__ = [s for s in dir() if not s.startswith("_")]
 
 

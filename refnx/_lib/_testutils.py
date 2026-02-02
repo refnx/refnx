@@ -7,7 +7,6 @@ from pathlib import Path
 import re
 import sys
 
-
 __all__ = ["PytestTester"]
 
 

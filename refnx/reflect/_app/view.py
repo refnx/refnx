@@ -71,7 +71,6 @@ from refnx.dataset import Data1D, OrsoDataset
 from refnx.reflect._code_fragment import code_fragment
 from refnx._lib import unique, flatten, MapWrapper
 
-
 # matplotlib.use('QtAgg')
 UI_LOCATION = resources.files(refnx.reflect._app) / "ui"
 
