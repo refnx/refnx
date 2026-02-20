@@ -707,3 +707,5 @@ in 0.1.13.
 
 0.1.62
 ------
+- Gave a `z` keyword for refnx.reflect.create_occupancy. This allows you
+  to change the point density for a volume fraction occupancy graph.
