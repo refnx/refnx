@@ -2143,7 +2143,7 @@ def sld_profile(slabs, z=None, max_delta_z=None):
     return zed, sld
 
 
-def create_occupancy(structure, solvent_slab=-1):
+def create_occupancy(structure, solvent_slab=-1, z=None):
     """
     Creates a volume fraction (occupancy) profile for a given Structure.
 
@@ -2158,6 +2158,12 @@ def create_occupancy(structure, solvent_slab=-1):
         If None, then solvation is done by neither fronting or backing,
         but by another material. This might be a solvent vapour in an
         air-solid measurement.
+
+    z: {None, `np.ndarray`}, optional
+        If `z is None` then the SLD profile will have 500 points (unless
+        `max_delta_z` is specified).
+        If `z` is an array, then the array specifies the interfacial locations
+        at which the SLD will be evaluated.
 
     Returns
     -------
@@ -2201,24 +2207,24 @@ def create_occupancy(structure, solvent_slab=-1):
     else:
         nvfp = len(_slabs)
 
-    z, sldp = sld_profile(_slabs)
-    vfp = np.zeros((nvfp, len(z)), float)
+    _z, sldp = sld_profile(_slabs, z=z)
+    vfp = np.zeros((nvfp, len(_z)), float)
 
     for i in range(len(_slabs)):
         _slabs[:, 1:3] = 0
         _slabs[i, 1] = vf[i]
-        _vfp = sld_profile(_slabs, z=z)[1]
+        _vfp = sld_profile(_slabs, z=_z)[1]
         vfp[i] = _vfp
 
     # fix up the solvent vfp
     _slabs[:, 1] = 1 - vf
 
     if solvent_slab is None:
-        _vfp = sld_profile(_slabs, z=z)[1]
+        _vfp = sld_profile(_slabs, z=_z)[1]
         vfp[-1] = _vfp
     else:
         _slabs[solvent_slab, 1] = 1
-        _vfp = sld_profile(_slabs, z=z)[1]
+        _vfp = sld_profile(_slabs, z=_z)[1]
         vfp[solvent_slab] = _vfp
 
-    return z, vfp
+    return _z, vfp
