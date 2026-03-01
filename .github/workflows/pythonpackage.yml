@@ -28,9 +28,9 @@ jobs:
 
     steps:
 
-    - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
-    - uses: actions/setup-python@83679a892e2d95755f2dac6acb0bfd1e9ac5d548 # v6.1.0
+    - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
       with:
         python-version: ${{ matrix.python-version }}
         cache: 'pip' # caching pip dependencies
@@ -71,7 +71,7 @@ jobs:
         git clean -xdf
         python setup.py sdist
 
-    - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+    - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
       if: ${{ matrix.python-version == '3.13' }}
       with:
         name: refnx-wheel-linux-${{ matrix.python-version }}
@@ -87,12 +87,12 @@ jobs:
 #        PLAT: ["manylinux2014_x86_64"]
 #
 #    steps:
-#    - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+#    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 #    - name: Make Linux Wheel
 #      run: |
 #        docker run --rm -e="PLAT=${{ matrix.PLAT }}" -v $(pwd):/io quay.io/pypa/${{ matrix.PLAT }} /bin/bash /io/tools/build_manylinux_wheels.sh
 #
-#    - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+#    - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
 #      with:
 #        name: refnx-wheel
 #        path: dist/
@@ -108,11 +108,11 @@ jobs:
         python-version: ['3.12', '3.13', '3.14']
 
     steps:
-    - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
     - run: mkdir -p dist
 
-    - uses: actions/setup-python@83679a892e2d95755f2dac6acb0bfd1e9ac5d548 # v6.1.0
+    - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
       with:
         python-version: ${{ matrix.python-version }}
         cache: 'pip' # caching pip dependencies
@@ -151,7 +151,7 @@ jobs:
         pytest --pyargs refnx
         popd
 
-    - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+    - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
       with:
         name: refnx-wheel-macos-${{ matrix.python-version }}
         path: dist/
@@ -164,9 +164,9 @@ jobs:
       fail-fast: true
 
     steps:
-    - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
-    - uses: actions/setup-python@83679a892e2d95755f2dac6acb0bfd1e9ac5d548 # v6.1.0
+    - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
       with:
         python-version: '3.12'
         allow-prereleases: true
@@ -174,7 +174,7 @@ jobs:
     - run: mkdir -p dist
 
     - name: Download wheel
-      uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+      uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3 # v8.0.0
       with:
         pattern: refnx-wheel-macos-3.12
         merge-multiple: true
@@ -249,7 +249,7 @@ jobs:
       with:
         product-path: "dist/refnx.dmg"
 
-    - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+    - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
       with:
         name: refnx-app-macos-${{ matrix.python-version }}
         path: dist/*.dmg
@@ -266,9 +266,9 @@ jobs:
         python-version: ['3.12', '3.13', '3.14']
 
     steps:
-    - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
-    - uses: actions/setup-python@83679a892e2d95755f2dac6acb0bfd1e9ac5d548 # v6.1.0
+    - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
       with:
         python-version: ${{ matrix.python-version }}
         cache: 'pip' # caching pip dependencies
@@ -327,7 +327,7 @@ jobs:
         move dist\motofit.exe ..\..\dist\
         cd ..\..
 
-    - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+    - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
       with:
         name: refnx-exe-win-${{ matrix.python-version }}
         path: dist/
@@ -343,10 +343,10 @@ jobs:
         python-version: ["3.12"]
 
     steps:
-    - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@83679a892e2d95755f2dac6acb0bfd1e9ac5d548 # v6.1.0
+      uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
       with:
         python-version: ${{ matrix.python-version }}
 
@@ -374,10 +374,10 @@ jobs:
         python-version: ["3.12"]
 
     steps:
-    - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@83679a892e2d95755f2dac6acb0bfd1e9ac5d548 # v6.1.0
+      uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
       with:
         python-version: ${{ matrix.python-version }}
 
