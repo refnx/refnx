@@ -56,7 +56,7 @@ extern "C" {
 #endif
 
 #if defined(_MSC_VER)
-    typedef _Dcomplex _scipy_dz;
+    typedef _Dcomplex _refnx_dz;
     #ifndef CMPLX
         #define CMPLX(x, y) _Cbuild(x, y)
     #endif
