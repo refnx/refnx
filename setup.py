@@ -338,20 +338,15 @@ def setup_package():
                 "-O3",
             ]
 
-            if sys.platform == "win32":
-                # use the C++ code on Windows. The C++ code uses the
-                # std::complex<double> object for its arithmetic.
-                f = ["src/refcalc.cpp"]
-            else:
-                # and C code on other machines. The C code uses C99 complex
-                # arithmetic which is 10-20% faster.
-                # the CMPLX macro was only standardised in C11
-                extra_preargs.extend(
-                    [
-                        "-std=c17",
-                    ]
-                )
-                f = ["src/refcalc.c"]
+            # and C code on other machines. The C code uses C99 complex
+            # arithmetic which is 10-20% faster.
+            # the CMPLX macro was only standardised in C11
+            extra_preargs.extend(
+                [
+                    "-std=c17",
+                ]
+            )
+            f = ["src/refcalc.c"]
             refcalc_obj = ccompiler.compile(f, extra_preargs=extra_preargs)
             # print(refcalc_obj)
 
