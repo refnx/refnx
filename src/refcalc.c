@@ -55,26 +55,32 @@ However, the following remains the fastest calculation  so far.
 extern "C" {
 #endif
 
-#if defined(_MSC_VER)
-    typedef _Dcomplex _refnx_dz;
-    #ifndef CMPLX
-        #define CMPLX(x, y) _Cbuild(x, y)
-    #endif
-#else
-    typedef double complex _refnx_dz;
-    #ifndef CMPLX
-        #if defined(__has_builtin)
-            #if __has_builtin(__builtin_complex)
-                #define CMPLX(x, y) __builtin_complex((double)(x), (double)(y))
-            #endif
-        #endif
-        #ifndef CMPLX
-            /* Last resort: type-pun via union to avoid real + imag*I pitfalls */
-            #define CMPLX(x, y) ((union { double a[2]; double complex z; }){{(x), (y)}}).z
-        #endif
-    #endif
-#endif
 
+// Following section is taken from scipy/special/_complexstuff.h
+#if defined(_MSC_VER)
+typedef _Dcomplex _refnx_dz;
+#ifndef CMPLX
+#define CMPLX(x, y) _Cbuild(x, y)
+#endif
+#else
+typedef double complex _refnx_dz;
+#ifndef CMPLX
+#if defined(__has_builtin)
+#if __has_builtin(__builtin_complex)
+#define CMPLX(x, y) __builtin_complex((double)(x), (double)(y))
+#endif
+#endif
+#ifndef CMPLX
+/* Last resort: type-pun via union to avoid real + imag*I pitfalls */
+#define CMPLX(x, y)                                                            \
+  ((union {                                                                    \
+    double a[2];                                                               \
+    double complex z;                                                          \
+  }){{(x), (y)}})                                                              \
+      .z
+#endif
+#endif
+#endif
 
 void *malloc2d(int ii, int jj, int sz) {
   void **p;
@@ -101,8 +107,7 @@ void *malloc2d(int ii, int jj, int sz) {
   return p;
 }
 
-void matmul(_refnx_dz a[2][2], _refnx_dz b[2][2],
-            _refnx_dz c[2][2]) {
+void matmul(_refnx_dz a[2][2], _refnx_dz b[2][2], _refnx_dz c[2][2]) {
   c[0][0] = a[0][0] * b[0][0] + a[0][1] * b[1][0];
   c[0][1] = a[0][0] * b[0][1] + a[0][1] * b[1][1];
   c[1][0] = a[1][0] * b[0][0] + a[1][1] * b[1][0];
