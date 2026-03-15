@@ -709,3 +709,4 @@ in 0.1.13.
 ------
 - Gave a `z` keyword for refnx.reflect.create_occupancy. This allows you
   to change the point density for a volume fraction occupancy graph.
+- Use refcalc.c on Windows by unifying complex number handling.
