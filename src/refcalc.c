@@ -55,9 +55,26 @@ However, the following remains the fastest calculation  so far.
 extern "C" {
 #endif
 
-#ifndef CMPLX
-#define CMPLX(x, y) ((double complex)((double)(x) + _Complex_I * (double)(y)))
+#if defined(_MSC_VER)
+    typedef _Dcomplex _scipy_dz;
+    #ifndef CMPLX
+        #define CMPLX(x, y) _Cbuild(x, y)
+    #endif
+#else
+    typedef double complex _refnx_dz;
+    #ifndef CMPLX
+        #if defined(__has_builtin)
+            #if __has_builtin(__builtin_complex)
+                #define CMPLX(x, y) __builtin_complex((double)(x), (double)(y))
+            #endif
+        #endif
+        #ifndef CMPLX
+            /* Last resort: type-pun via union to avoid real + imag*I pitfalls */
+            #define CMPLX(x, y) ((union { double a[2]; double complex z; }){{(x), (y)}}).z
+        #endif
+    #endif
 #endif
+
 
 void *malloc2d(int ii, int jj, int sz) {
   void **p;
@@ -84,8 +101,8 @@ void *malloc2d(int ii, int jj, int sz) {
   return p;
 }
 
-void matmul(_Complex double a[2][2], _Complex double b[2][2],
-            _Complex double c[2][2]) {
+void matmul(_refnx_dz a[2][2], _refnx_dz b[2][2],
+            _refnx_dz c[2][2]) {
   c[0][0] = a[0][0] * b[0][0] + a[0][1] * b[1][0];
   c[0][1] = a[0][0] * b[0][1] + a[0][1] * b[1][1];
   c[1][0] = a[1][0] * b[0][0] + a[1][1] * b[1][0];
@@ -98,25 +115,25 @@ void abeles(int numcoefs, const double *restrict coefP, int npoints,
   double scale, bkg;
   double num = 0, den = 0, answer = 0;
 
-  double complex super;
-  double complex sub;
-  double complex _t;
-  double complex oneC = CMPLX(1., 0.);
-  _Complex double MRtotal[2][2];
-  _Complex double MI[2][2];
-  _Complex double temp2[2][2];
-  _Complex double *SLD = NULL;
-  _Complex double *thickness = NULL;
-  double complex qq2;
+  _refnx_dz super;
+  _refnx_dz sub;
+  _refnx_dz _t;
+  _refnx_dz oneC = CMPLX(1., 0.);
+  _refnx_dz MRtotal[2][2];
+  _refnx_dz MI[2][2];
+  _refnx_dz temp2[2][2];
+  _refnx_dz *SLD = NULL;
+  _refnx_dz *thickness = NULL;
+  _refnx_dz qq2;
   double *rough_sqr = NULL;
 
   int nlayers = (int)coefP[0];
 
-  SLD = (_Complex double *)malloc((nlayers + 2) * sizeof(_Complex double));
+  SLD = (_refnx_dz *)malloc((nlayers + 2) * sizeof(_refnx_dz));
   if (!SLD)
     goto done;
 
-  thickness = (_Complex double *)malloc((nlayers) * sizeof(_Complex double));
+  thickness = (_refnx_dz *)malloc((nlayers) * sizeof(_refnx_dz));
   if (!thickness)
     goto done;
 
@@ -143,8 +160,8 @@ void abeles(int numcoefs, const double *restrict coefP, int npoints,
   rough_sqr[nlayers] = -2 * coefP[7] * coefP[7];
 
   for (j = 0; j < npoints; j++) {
-    double complex beta, rj;
-    double complex kn, kn_next;
+    _refnx_dz beta, rj;
+    _refnx_dz kn, kn_next;
 
     qq2 = CMPLX(xP[j] * xP[j] / 4, 0);
 
@@ -203,21 +220,21 @@ void parratt(int numcoefs, const double *restrict coefP, int npoints,
   int j;
   double scale, bkg;
 
-  double complex super;
-  double complex sub;
-  double complex _t;
-  _Complex double *SLD = NULL;
-  _Complex double *thickness = NULL;
-  double complex qq2;
+  _refnx_dz super;
+  _refnx_dz sub;
+  _refnx_dz _t;
+  _refnx_dz *SLD = NULL;
+  _refnx_dz *thickness = NULL;
+  _refnx_dz qq2;
   double *rough_sqr = NULL;
 
   int nlayers = (int)coefP[0];
 
-  SLD = (_Complex double *)malloc((nlayers + 2) * sizeof(_Complex double));
+  SLD = (_refnx_dz *)malloc((nlayers + 2) * sizeof(_refnx_dz));
   if (!SLD)
     goto done;
 
-  thickness = (_Complex double *)malloc((nlayers) * sizeof(_Complex double));
+  thickness = (_refnx_dz *)malloc((nlayers) * sizeof(_refnx_dz));
   if (!thickness)
     goto done;
 
@@ -244,8 +261,8 @@ void parratt(int numcoefs, const double *restrict coefP, int npoints,
   rough_sqr[nlayers] = -2 * coefP[7] * coefP[7];
 
   for (j = 0; j < npoints; j++) {
-    double complex beta, rj;
-    double complex kn, kn_next, RRJ_1, RRJ;
+    _refnx_dz beta, rj;
+    _refnx_dz kn, kn_next, RRJ_1, RRJ;
     RRJ = CMPLX(0, 0);
     RRJ_1 = CMPLX(0, 0);
 
