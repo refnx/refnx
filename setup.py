@@ -360,7 +360,7 @@ def setup_package():
                 sources=[
                     "src/_creflect.pyx",
                     "src/refcaller.cpp",
-                    "src/refcalc.c
+                    "src/refcalc.c",
                     "src/pnr/magnetic.cc",
                 ],
                 include_dirs=[numpy_include],
