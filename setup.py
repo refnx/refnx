@@ -338,7 +338,7 @@ def setup_package():
             if sys.platform == "win32":
                 extra_preargs.extend(
                     [
-                        "/std:c++17",
+                        "/std:c11",
                     ]
                 )
             else:

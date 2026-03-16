@@ -55,7 +55,6 @@ However, the following remains the fastest calculation so far.
 extern "C" {
 #endif
 
-
 // Following section is taken from scipy/special/_complexstuff.h
 #if defined(_MSC_VER)
 typedef _Dcomplex _refnx_dz;
