@@ -76,6 +76,9 @@ else
   py3.install_sources(['version.py'], subdir : 'refnx')
 endif
 
+omp_dep = dependency('openmp', required : false) # Set 'required' to false if OpenMP is optional
+
+
 subdir('_lib')
 subdir('util')
 subdir('reflect')
