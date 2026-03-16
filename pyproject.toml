@@ -15,7 +15,7 @@ description = "Neutron and X-ray Reflectometry Analysis"
 license = "BSD-3-Clause"
 readme = "README.md"
 requires-python = ">=3.9"
-dynamic = ["version"]
+dynamic = []
 classifiers = [
     "Development Status :: 4 - Beta",
     "Environment :: Console",
