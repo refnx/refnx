@@ -5,7 +5,8 @@ project(
   version: run_command(['tools/gitversion.py'], check: true).stdout().strip(),
   meson_version: '>= 1.5.0',
   default_options: [
-    'optimization=3',
+    'buildtype=debugoptimized',
+    'b_ndebug=if-release',
     'c_std=c17',
     'cpp_std=c++17',
   ],
