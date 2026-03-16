@@ -25,7 +25,6 @@ install_subdir('ptemcee',
   install_dir : refnx_dir / '_lib/ptemcee',
   strip_directory : true, # Set to true if you only want contents, not the 'assets' folder itself,
   exclude_directories : ['__pycache__'],
-  exclude_files : 'tests.py',
 )
 
 subdir('tests')
