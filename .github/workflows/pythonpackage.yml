@@ -285,7 +285,7 @@ jobs:
         python -m build --wheel -vvv
 
     - name: Install package and test with pytest
-      if: ${{ matrix.python-version == '3.12' }}
+      #if: ${{ matrix.python-version == '3.12' }}
       env:
         PYOPENCL_CTX: 0
       run: |
