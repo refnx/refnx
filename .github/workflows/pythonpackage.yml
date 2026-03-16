@@ -294,7 +294,7 @@ jobs:
       env:
         PYOPENCL_CTX: 0
       run: |
-        cd dist        
+        cd dist
         python -m pip install --only-binary=refnx --no-index --find-links=. refnx
 
         #        python -m pip install pytools mako cffi
