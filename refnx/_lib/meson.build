@@ -8,6 +8,13 @@ py3.install_sources([
   subdir: 'refnx/_lib'
 )
 
+py3.extension_module(
+  '_cutil',
+  '../../src/_cutil.pyx',
+  install: true,
+  subdir: 'refnx/_lib/' # Places it in my_package.submodules
+)
+
 install_subdir('emcee',
   install_dir : refnx_dir / '_lib/emcee',
   strip_directory : true, # Set to true if you only want contents, not the 'assets' folder itself,

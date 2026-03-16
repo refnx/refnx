@@ -2,7 +2,7 @@ project(
   'refnx',
   'c', 'cpp', 'cython',
   license: 'BSD-3',
-  version: '0.1.63',
+  version: run_command(['tools/gitversion.py'], check: true).stdout().strip(),
   meson_version: '>= 1.5.0',
   default_options: [
     'buildtype=debugoptimized',

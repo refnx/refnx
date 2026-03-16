@@ -10,6 +10,7 @@ py3.install_sources([
   'dot.aft',
   'dot.dat',
   'dot.mft',
+  'dot.refl',
   'dot.out',
   'ORSO_data.ort',
   'test.orb',
