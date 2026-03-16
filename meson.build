@@ -24,6 +24,12 @@ cy = meson.get_compiler('cython')
 # Platform detection
 is_mingw = is_windows and cc.get_id() == 'gcc'
 
+if is_mingw
+  # For mingw-w64, link statically against the UCRT.
+  gcc_link_args = ['-lucrt', '-static']
+  add_project_link_arguments(gcc_link_args, language: ['c', 'cpp'])
+endif
+
 refnx_dir = py3.get_install_dir() / 'refnx'
 
 subdir('refnx')
