@@ -8,3 +8,5 @@ py3.install_sources([
 subdir('_lib')
 subdir('util')
 subdir('reflect')
+subdir('dataset')
+subdir('analysis')
