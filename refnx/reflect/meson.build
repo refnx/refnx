@@ -20,12 +20,15 @@ py3.install_sources([
 
 refnx_dep = declare_dependency(include_directories: ['../../src'])
 
+srcs = ['../../src/_creflect.pyx', '../../src/refcaller.cpp', '../../src/pnr/magnetic.cc'
+if is_windows
+  srcs += '../../src/refcalc.cpp'
+else
+  srcs += '../../src/refcalc.c'
+
 py3.extension_module(
   '_creflect',
-  ['../../src/_creflect.pyx',
-   '../../src/refcaller.cpp',
-   '../../src/pnr/magnetic.cc',
-   '../../src/refcalc.c',],
+  srcs,
   install: true,
   override_options : ['cython_language=cpp'],
   include_directories: [inc_np, '../../src', '../../src/pnr'],

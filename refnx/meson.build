@@ -76,7 +76,6 @@ else
   py3.install_sources(['version.py'], subdir : 'refnx')
 endif
 
-
 subdir('_lib')
 subdir('util')
 subdir('reflect')
