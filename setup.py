@@ -346,20 +346,21 @@ def setup_package():
             # and C code on other machines. The C code uses C99 complex
             # arithmetic which is 10-20% faster.
             # the CMPLX macro was only standardised in C11
-            extra_preargs.extend(
-                [
-                    "-std=c17",
-                ]
-            )
-            f = ["src/refcalc.c"]
-            refcalc_obj = ccompiler.compile(f, extra_preargs=extra_preargs)
-            # print(refcalc_obj)
+            # extra_preargs.extend(
+            #     [
+            #         "-std=c17",
+            #     ]
+            # )
+            # f = ["src/refcalc.c"]
+            # refcalc_obj = ccompiler.compile(f, extra_preargs=extra_preargs)
+            # # print(refcalc_obj)
 
             _creflect = Extension(
                 name="refnx.reflect._creflect",
                 sources=[
                     "src/_creflect.pyx",
                     "src/refcaller.cpp",
+                    "src/refcalc.c
                     "src/pnr/magnetic.cc",
                 ],
                 include_dirs=[numpy_include],
