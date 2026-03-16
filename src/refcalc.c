@@ -42,7 +42,7 @@ However, the following remains the fastest calculation so far.
 #include "complex.h"
 #include "stdlib.h"
 #include "string.h"
-#include "tgmath.h"
+//#include "tgmath.h"
 
 #define NUM_CPUS 4
 #define PI 3.14159265358979323846
