@@ -287,7 +287,7 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         python -m pip install wheel
-        python -m pip wheel . --no-deps -w dist
+        python -m pip wheel . --no-deps -w dist -v
 
     - name: Install package and test with pytest
       if: ${{ matrix.python-version == '3.12' }}
