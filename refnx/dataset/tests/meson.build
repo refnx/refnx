@@ -1,0 +1,19 @@
+py3.install_sources([
+  '__init__.py',
+  'c_PLP0000708.dat',
+  'c_PLP0000708.xml',
+  'c_PLP0000708_header.dat',
+  'c_PLP0000708_header2.dat',
+  'c_PLP0033831.txt',
+  'coef_c_PLP0000708.xml',
+  'd_a.txt',
+  'dot.aft',
+  'dot.dat',
+  'dot.mft',
+  'dot.out',
+  'ORSO_data.ort',
+  'test.orb',
+  'test_dataset.py',
+  ],
+  subdir: 'refnx/dataset/tests'
+)
