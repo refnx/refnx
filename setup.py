@@ -334,9 +334,9 @@ def setup_package():
             ccompiler = new_compiler()
             customize_compiler(ccompiler)
             ccompiler.verbose = True
-            extra_preargs = []
+            extra_compile_args = []
             if sys.platform == "win32":
-                extra_preargs.extend(
+                extra_compile_args.extend(
                     [
                         "/std:c11",
                     ]
@@ -345,14 +345,14 @@ def setup_package():
                 # and C code on other machines. The C code uses C99 complex
                 # arithmetic which is 10-20% faster.
                 # the CMPLX macro was only standardised in C11
-                extra_preargs.extend(
+                extra_compile_args.extend(
                     [
                         "-std=c17",
                         "-O3",
                     ]
                 )
             f = ["src/refcalc.c"]
-            refcalc_obj = ccompiler.compile(f, extra_preargs=extra_preargs)
+            refcalc_obj = ccompiler.compile(f, extra_compile_args=extra_compile_args)
             # print(refcalc_obj)
 
             _creflect = Extension(
