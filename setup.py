@@ -364,12 +364,12 @@ def setup_package():
                     "src/pnr/magnetic.cc",
                 ],
                 include_dirs=[numpy_include],
-                language="c++",
-                extra_compile_args=["-std=c++11"],
+                # language="c++",
+                # extra_compile_args=["-std=c++11"],
                 define_macros=[
                     ("NPY_NO_DEPRECATED_API", "NPY_1_7_API_VERSION")
                 ],
-                extra_objects=refcalc_obj,
+                # extra_objects=refcalc_obj,
             )
             ext_modules.append(_creflect)
 
@@ -384,29 +384,29 @@ def setup_package():
             # export PATH="/opt/homebrew/opt/llvm/bin:$PATH"
             # export CPPFLAGS="-I/opt/homebrew/opt/llvm/include"
             # export LDFLAGS="-L/opt/homebrew/opt/llvm/lib/c++ -Wl,-rpath,/opt/homebrew/opt/llvm/lib/c++ -L/opt/homebrew/opt/llvm/lib"
-            print(f"{HAS_OPENMP=}, {refcalc_obj=}")
-            if HAS_OPENMP:
-                # cyreflect extension module
-                _cyreflect = Extension(
-                    name="refnx.reflect._cyreflect",
-                    sources=[
-                        "src/_cyreflect.pyx",
-                        "src/refcaller.cpp",
-                        "src/pnr/magnetic.cc",
-                    ],
-                    include_dirs=[numpy_include],
-                    language="c++",
-                    extra_compile_args=[],
-                    extra_link_args=[],
-                    define_macros=[],
-                    extra_objects=refcalc_obj,
-                    # extra_compile_args = "...".split(),
-                )
-                openmp_flags = get_openmp_flag(ccompiler)
-                _cyreflect.extra_compile_args += openmp_flags[0]
-                _cyreflect.extra_link_args += openmp_flags[1]
-
-                ext_modules.append(_cyreflect)
+            # print(f"{HAS_OPENMP=}, {refcalc_obj=}")
+            # if HAS_OPENMP:
+            #     # cyreflect extension module
+            #     _cyreflect = Extension(
+            #         name="refnx.reflect._cyreflect",
+            #         sources=[
+            #             "src/_cyreflect.pyx",
+            #             "src/refcaller.cpp",
+            #             "src/pnr/magnetic.cc",
+            #         ],
+            #         include_dirs=[numpy_include],
+            #         language="c++",
+            #         extra_compile_args=[],
+            #         extra_link_args=[],
+            #         define_macros=[],
+            #         extra_objects=refcalc_obj,
+            #         # extra_compile_args = "...".split(),
+            #     )
+            #     openmp_flags = get_openmp_flag(ccompiler)
+            #     _cyreflect.extra_compile_args += openmp_flags[0]
+            #     _cyreflect.extra_link_args += openmp_flags[1]
+            #
+            #     ext_modules.append(_cyreflect)
 
             # specify min deployment version for macOS
             # if platform == "darwin":
