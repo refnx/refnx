@@ -22,7 +22,7 @@ refnx_dep = declare_dependency(include_directories: ['../../src'])
 
 srcs = ['../../src/_creflect.pyx', '../../src/refcaller.cpp', '../../src/pnr/magnetic.cc']
 if is_windows
-  srcs += '../../src/refcalc.c'
+  srcs += '../../src/refcalc.cpp'
 else
   srcs += '../../src/refcalc.c'
 endif
