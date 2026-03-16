@@ -276,9 +276,14 @@ jobs:
 
     - run: pip install -r .requirements.txt
 
-    - run: mkdir -p dist
+    - run: |
+        echo "c:\rtools45\ucrt64\bin" >> $env:GITHUB_PATH
+        mkdir -p dist
 
     - name: Make wheel
+      env:
+        CC: gcc
+        CXX: g++
       run: |
         python -m pip install --upgrade pip
         python -m pip install wheel
@@ -289,7 +294,7 @@ jobs:
       env:
         PYOPENCL_CTX: 0
       run: |
-        cd dist
+        cd dist        
         python -m pip install --only-binary=refnx --no-index --find-links=. refnx
 
         #        python -m pip install pytools mako cffi
