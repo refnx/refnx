@@ -25,6 +25,7 @@ if is_windows
   srcs += '../../src/refcalc.cpp'
 else
   srcs += '../../src/refcalc.c'
+endif
 
 py3.extension_module(
   '_creflect',
