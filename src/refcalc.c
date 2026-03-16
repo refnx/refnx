@@ -43,6 +43,7 @@ However, the following remains the fastest calculation so far.
 #include "stdlib.h"
 #include "string.h"
 //#include "tgmath.h"
+#include "math.h"
 
 #define NUM_CPUS 4
 #define PI 3.14159265358979323846
@@ -56,7 +57,7 @@ extern "C" {
 #endif
 
 // Following section is taken from scipy/special/_complexstuff.h
-#if defined(_MSC_VER)
+#ifdef(_MSC_VER)
 typedef _Dcomplex _refnx_dz;
 #ifndef CMPLX
 #define CMPLX(x, y) _Cbuild(x, y)
