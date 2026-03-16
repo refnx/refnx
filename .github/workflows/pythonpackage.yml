@@ -282,7 +282,9 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         python -m pip install wheel build
-        python -m build --wheel -vvv
+        #        python -m build --wheel -v
+
+        python -m build --wheel -Csetup-args="--vsenv"
 
     - name: Install package and test with pytest
       #if: ${{ matrix.python-version == '3.12' }}

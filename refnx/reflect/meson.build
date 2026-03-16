@@ -21,7 +21,7 @@ py3.install_sources([
 refnx_dep = declare_dependency(include_directories: ['../../src'])
 
 srcs = ['../../src/_creflect.pyx', '../../src/refcaller.cpp', '../../src/pnr/magnetic.cc']
-if is_windows
+if is_windows and not is_mingw
   srcs += '../../src/refcalc.cpp'
 else
   srcs += '../../src/refcalc.c'
