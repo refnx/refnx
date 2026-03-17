@@ -18,8 +18,6 @@ py3.install_sources([
   subdir: 'refnx/reflect'
 )
 
-refnx_dep = declare_dependency(include_directories: ['../../src'])
-
 srcs = ['../../src/_creflect.pyx', '../../src/refcaller.cpp', '../../src/pnr/magnetic.cc']
 if is_windows and not is_mingw
   srcs += '../../src/refcalc.cpp'
@@ -33,9 +31,28 @@ py3.extension_module(
   install: true,
   override_options : ['cython_language=cpp'],
   include_directories: [inc_np, '../../src', '../../src/pnr'],
-  dependencies: [np_dep, refnx_dep],
+  dependencies: [np_dep],
   subdir: 'refnx/reflect'
 )
+
+if omp_dep.found()
+    srcs2 = ['../../src/_cyreflect.pyx', '../../src/refcaller.cpp', '../../src/pnr/magnetic.cc']
+    if is_windows and not is_mingw
+        srcs2 += '../../src/refcalc.cpp'
+    else
+        srcs2 += '../../src/refcalc.c'
+    endif
+    py3.extension_module(
+      '_cyreflect',
+      srcs2,
+      install: true,
+      override_options : ['cython_language=cpp'],
+      include_directories: [inc_np, '../../src', '../../src/pnr'],
+      dependencies: [np_dep, omp_dep],
+      subdir: 'refnx/reflect'
+    )
+endif
+
 
 install_subdir('tests',
   install_dir : refnx_dir / 'reflect/tests',
