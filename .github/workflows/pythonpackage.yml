@@ -52,7 +52,7 @@ jobs:
         python -m pip install --upgrade pip
         python -m pip install meson-python ninja meson wheel build auditwheel
         python -m build
-        auditwheel repair -w dist dist/*.whl
+        auditwheel repair dist/*.whl
 
     - name: Install package and test with pytest
       run: |
@@ -77,9 +77,15 @@ jobs:
         python -m build --sdist
 
     - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+      if: ${{ matrix.python-version == '3.13' }}
+      with:
+        name: refnx-sdist
+        path: dist/*.tar.gz
+
+    - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
       with:
         name: refnx-wheel-linux-${{ matrix.python-version }}
-        path: dist/
+        path: wheelhouse/
 
 
   test_macos:
