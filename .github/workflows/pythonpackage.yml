@@ -74,7 +74,7 @@ jobs:
       if: ${{ matrix.python-version == '3.13' }}
       run: |
         git clean -xdf
-        python setup.py sdist
+        python -m build --sdist
 
     - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
       if: ${{ matrix.python-version == '3.13' }}
