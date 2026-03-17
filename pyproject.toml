@@ -134,3 +134,5 @@ musllinux-aarch64-image = "musllinux_1_2"
 
 [tool.cibuildwheel.windows]
 archs = ["AMD64"]
+before-build = "pip install delvewheel"
+repair-wheel-command = "delvewheel repair -w {dest_dir} {wheel}"

@@ -16,7 +16,7 @@ PyQt6==6.6.1
 PyQt6-sip==13.6.0
 qtpy
 uncertainties
-setuptools
+meson-python
 attrs
 corner
 tqdm
