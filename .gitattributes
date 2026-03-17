@@ -13,3 +13,9 @@
 *.png binary
 *.pdf binary
 *.hdf binary
+
+web/** export-ignore
+tools/** export-ignore
+benchmarks/** export-ignore
+doc/** export-ignore
+.github/** export-ignore

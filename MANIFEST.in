@@ -3,3 +3,9 @@ recursive-include refnx *
 recursive-include src *
 exclude src/refcalc.o
 prune */__pycache__
+prune benchmarks
+prune doc
+prune examples
+prune experimental
+prune paper
+prune web

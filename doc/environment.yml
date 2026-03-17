@@ -1,7 +1,7 @@
 channels:
   - conda-forge
 dependencies:
-  - python==3.9
+  - python==3.12
   - pip:
     - nbsphinx
     - jupyter-sphinx
@@ -18,7 +18,7 @@ dependencies:
     - h5py
     - nbconvert
     - ipywidgets
-    - setuptools
+    - meson-python
     - cython
     - jupyter
     - matplotlib

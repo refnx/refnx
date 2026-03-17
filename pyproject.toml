@@ -68,36 +68,6 @@ test = [
 [project.gui-scripts]
 refnx = "refnx.reflect:main"
 
-[tool.setuptools]
-packages = [
-     "refnx",
-     "refnx._lib",
-     "refnx._lib.tests",
-     "refnx._lib.emcee",
-     "refnx._lib.emcee.backends",
-     "refnx._lib.emcee.moves",
-     "refnx._lib.ptemcee",
-     "refnx.analysis",
-     "refnx.analysis.tests",
-     "refnx.analysis.tests.NIST_STRD",
-     "refnx.dataset",
-     "refnx.dataset.tests",
-     "refnx.reduce",
-     "refnx.reduce._app",
-     "refnx.reduce._app.ui",
-     "refnx.reduce.batch_reduce",
-     "refnx.reduce.tests",
-     "refnx.reflect",
-     "refnx.reflect._app",
-     "refnx.reflect._app.icons",
-     "refnx.reflect._app.tests",
-     "refnx.reflect._app.ui",
-     "refnx.reflect._app.ui.licences",
-     "refnx.reflect.tests",
-     "refnx.util",
-     "refnx.util.tests",
-]
-
 
 [tool.black]
 line-length = 79

@@ -10,7 +10,7 @@ Installation
 .. _homebrew: https://brew.sh/
 .. _PyPI: https://pypi.org/project/refnx/
 
-*refnx* has been tested on Python 3.9, 3.10, 3.11, 3.12, 3.13. It requires the
+*refnx* has been tested on Python 3.11, 3.12, 3.13, 3.14. It requires the
 *numpy, scipy, cython* packages to work. Additional features
 require the *pytest, h5py, xlrd, uncertainties, attrs, matplotlib, Jupyter,*
 *ipywidgets, traitlets, tqdm, pandas, qtpy, pyqt6, periodictable, pymc,
@@ -115,7 +115,8 @@ package from within the refnx git repository.
 
     ::
 
-     pip install .
+     python -m pip install build cython numpy meson-python ninja
+     python -m build
 
 3. Run the tests, they should all work.
 
