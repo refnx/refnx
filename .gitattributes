@@ -15,7 +15,9 @@
 *.hdf binary
 
 web/** export-ignore
-tools/** export-ignore
+tools/app/** export-ignore
+tools/slim/** export-ignore
+tools/build_many_linux_wheels export-ignore
 benchmarks/** export-ignore
 doc/** export-ignore
 .github/** export-ignore
