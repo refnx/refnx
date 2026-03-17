@@ -125,7 +125,6 @@ jobs:
 
     - name: Make wheel
       shell: bash
-      env:
       run: |
         export PATH="$PATH:/opt/homebrew/opt/llvm/bin"
         export CPPFLAGS="-I/opt/homebrew/opt/llvm/include"
