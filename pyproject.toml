@@ -1,6 +1,8 @@
 [build-system]
 requires = [
     "meson-python",
+    "ninja",
+    "meson",
     "cython",
     "wheel",
     "numpy>=2.0.0rc1",

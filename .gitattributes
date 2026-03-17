@@ -22,9 +22,12 @@ doc/** export-ignore
 .github/** export-ignore
 paper/** export-ignore
 readthedocs.yml export-ignore
+.pre-commit-config.yaml export-ignore
+.requirements.txt export-ignore
 testimonials.bib export-ignore
 tox.ini export-ignore
 experimental/** export-ignore
 examples/** export-ignore
 release_notes.txt export-ignore
-MANIFEST.in export-ignore
+.gitignore export-ignore
+.gitattributes export-ignore
