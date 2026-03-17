@@ -140,7 +140,7 @@ jobs:
 
   test_macos_app:
     needs: test_macos
-    runs-on: macos-14
+    runs-on: macos-15
     strategy:
       fail-fast: true
 
