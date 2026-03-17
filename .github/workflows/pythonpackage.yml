@@ -15,6 +15,7 @@ on:
 permissions:
   contents: read
 
+
 jobs:
 ###############################################################################
   test_linux:
@@ -36,7 +37,7 @@ jobs:
         cache: 'pip' # caching pip dependencies
         allow-prereleases: true
 
-    - name: setup apt dependencies
+    - name: Setup apt dependencies
       run: |
         sudo apt-get update
         sudo apt-get install xvfb qt6-base-dev libhdf5-serial-dev libnetcdf-dev build-essential
@@ -44,15 +45,17 @@ jobs:
 
         python -m pip install --upgrade pip
 
-    - name: Build and test with pytest
+    - name: Make wheel
       env:
         MPLBACKEND: agg
       run: |
         python -m pip install --upgrade pip
-        python -m pip install wheel build auditwheel
+        python -m pip install meson-python ninja meson wheel build auditwheel
         python -m build
         auditwheel repair dist/*.whl
-        
+
+    - name: Install package and test with pytest
+      run: |
         python -m pip install dist/*.whl
         pip install -r .requirements.txt
 
@@ -80,29 +83,9 @@ jobs:
         path: dist/
 
 
-#  linux_wheels:
-#
-#    runs-on: ubuntu-latest
-#    strategy:
-#      max-parallel: 2
-#      matrix:
-#        PLAT: ["manylinux2014_x86_64"]
-#
-#    steps:
-#    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-#    - name: Make Linux Wheel
-#      run: |
-#        docker run --rm -e="PLAT=${{ matrix.PLAT }}" -v $(pwd):/io quay.io/pypa/${{ matrix.PLAT }} /bin/bash /io/tools/build_manylinux_wheels.sh
-#
-#    - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
-#      with:
-#        name: refnx-wheel
-#        path: dist/
-
-
   test_macos:
 
-    runs-on: macos-14
+    runs-on: macos-15
     strategy:
       fail-fast: true
       max-parallel: 3
@@ -290,11 +273,6 @@ jobs:
       run: |
         cd dist
         python -m pip install --only-binary=refnx --no-index --find-links=. refnx
-
-        #        python -m pip install pytools mako cffi
-        #        choco install opencl-intel-cpu-runtime
-        #        python -m pip install --only-binary=pyopencl --find-links http://www.silx.org/pub/wheelhouse/ --trusted-host www.silx.org pyopencl
-
         pytest --pyargs refnx
         cd ..
 
