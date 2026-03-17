@@ -11,12 +11,12 @@ build-backend = "mesonpy"
 
 [project]
 name = "refnx"
-version = "0.1.62.dev0"
+version = "0.1.62"
 authors = [{name="Andrew Nelson", email="andyfaff+refnx@gmail.com"}]
 description = "Neutron and X-ray Reflectometry Analysis"
 license = "BSD-3-Clause"
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 dynamic = []
 classifiers = [
     "Development Status :: 4 - Beta",

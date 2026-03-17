@@ -9,8 +9,9 @@ General release instructions
 
 # a feature branch for the release
 - git checkout -B <feature name>
-- if necessary bump version number in setup.py, but only do it once
-- change ISRELEASED to True in setup.py
+- if necessary bump version number in pyproject.toml, but only do it once
+- For an unreleased version it is: version = "0.1.62.dev0"
+  For a released version it is: version = "0.1.62"
 - git commit -a -m'REL: vX.Y.Z'
 - git push origin <feature name>
 
@@ -27,7 +28,6 @@ General release instructions
 
 # Epilogue
 - git checkout main
-- make sure ISRELEASED is False in setup.py, bump version number, create new
-  section in CHANGELOG.
+- bump version number in pyproject.toml, create new section in CHANGELOG.
 - git commit -a -m'MAINT: bump version number [ci skip]'
 - git push refnx main
