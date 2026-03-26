@@ -66,18 +66,6 @@ jobs:
         # run vendored ptemcee tests
         pytest --pyargs refnx._lib.ptemcee.tests
 
-    - name: Make sdist
-      if: ${{ matrix.python-version == '3.13' }}
-      run: |
-        git clean -xdf
-        python -m build --sdist
-
-    - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
-      if: ${{ matrix.python-version == '3.13' }}
-      with:
-        name: refnx-sdist
-        path: dist/*.tar.gz
-
     - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
       with:
         name: refnx-wheel-${{ matrix.os }}-${{ matrix.python-version }}

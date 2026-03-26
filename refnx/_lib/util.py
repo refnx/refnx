@@ -219,7 +219,7 @@ class MapWrapper:
 
     """
 
-    def __init__(self, pool=-1, context=None):
+    def __init__(self, pool=-1, context="spawn"):
         self.pool = None
         self._mapfunc = map
         self._own_pool = False
