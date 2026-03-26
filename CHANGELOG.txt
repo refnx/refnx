@@ -713,3 +713,6 @@ in 0.1.13.
 
 0.1.63
 ------
+- Modified some reflect.tests.test_reflect::TestReflect::test_reflectivity_emcee
+  to use fewer processes.
+- Add linux_aarch64 testing in CI.
