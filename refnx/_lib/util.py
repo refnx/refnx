@@ -225,7 +225,7 @@ class MapWrapper:
         self._own_pool = False
 
         # to align with cp314 which uses forkserver as a default
-        if _sys.platform == "linux" and _sys.version_info < (3, 14):
+        if _sys.platform == "linux" and _sys.version_info < (3, 14) and context is None:
             context = "forkserver"
 
         ctx = get_context(context)
