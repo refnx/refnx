@@ -6,10 +6,10 @@ sample:
           Fe:
             magnetic_moment: 2.2
             sld: 5.02e-6
-            density: 7.87
+            mass_density: 7.87
           Si:
             formula: SiN0.01
-            rel_density: 0.95
+            mass_density: 2.2
         globals:
           length_unit: angstrom
           m_moment_unit: muB
