@@ -30,4 +30,3 @@ experimental/** export-ignore
 examples/** export-ignore
 release_notes.txt export-ignore
 .gitignore export-ignore
-.gitattributes export-ignore

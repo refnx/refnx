@@ -100,7 +100,8 @@ class Parameters(UserList):
             except ValueError:
                 return None
             finally:
-                return self.data[idx]
+                pass
+            return self.data[idx]
         else:
             return self.data[i]
 
