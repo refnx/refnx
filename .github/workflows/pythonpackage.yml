@@ -39,9 +39,8 @@ jobs:
     - name: Setup apt dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install libgl1-mesa-glx mesa-utils
-        #        sudo apt-get install xvfb qt6-base-dev libhdf5-serial-dev libnetcdf-dev build-essential
-        #        sudo apt-get install '^libxcb.*-dev' libx11-xcb-dev libglu1-mesa-dev libxrender-dev libxi-dev libxkbcommon-dev libxkbcommon-x11-dev
+        sudo apt-get install xvfb qt6-base-dev libhdf5-serial-dev libnetcdf-dev build-essential
+        sudo apt-get install '^libxcb.*-dev' libx11-xcb-dev libglu1-mesa-dev libxrender-dev libxi-dev libxkbcommon-dev libxkbcommon-x11-dev
 
     - name: Make wheel
       env:
