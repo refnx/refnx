@@ -1541,11 +1541,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
                             raise StopIteration("Sampling aborted")
 
                 _ctx = None
-                if (
-                    _sys.platform == "linux"
-                    and _sys.version_info < (3, 14)
-                    and context is None
-                ):
+                if sys.platform == "linux" and sys.version_info < (3, 14):
                     _ctx = "forkserver"
 
                 with (
