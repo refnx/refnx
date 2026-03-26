@@ -666,6 +666,7 @@ class TestReflect:
     def test_reflectivity_emcee(self):
         model = self.model361
         model.dq = 5.0
+        model.threads = 1
         objective = Objective(
             model,
             (self.qvals361, self.rvals361, self.evals361),
@@ -677,9 +678,10 @@ class TestReflect:
         assert len(objective.residuals().shape) == 1
 
         res = fitter.fit("least_squares")
-        res_mcmc = fitter.sample(
-            steps=5, nthin=10, random_state=1, verbose=False
-        )
+        with MapWrapper(2) as g:
+            res_mcmc = fitter.sample(
+                steps=5, nthin=10, random_state=1, verbose=False, pool=g
+            )
 
         mcmc_val = [mcmc_result.median for mcmc_result in res_mcmc]
         assert_allclose(mcmc_val, res.x, rtol=0.05)
