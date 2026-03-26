@@ -1540,9 +1540,17 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
                         if progress.wasCanceled():
                             raise StopIteration("Sampling aborted")
 
+                _ctx = None
+                if (
+                    _sys.platform == "linux"
+                    and _sys.version_info < (3, 14)
+                    and context is None
+                ):
+                    _ctx = "forkserver"
+
                 with (
                     open(folder / "steps.chain", "w") as f,
-                    get_context().Pool() as workers,
+                    get_context(_ctx).Pool() as workers,
                 ):
                     fitter.sample(
                         nsteps,
