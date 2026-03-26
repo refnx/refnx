@@ -39,7 +39,9 @@ jobs:
     - name: Setup apt dependencies
       run: |
         sudo apt-get update
-        python -m pip install --upgrade pip
+        sudo apt-get install libegl1-mesa
+        #        sudo apt-get install xvfb qt6-base-dev libhdf5-serial-dev libnetcdf-dev build-essential
+        #        sudo apt-get install '^libxcb.*-dev' libx11-xcb-dev libglu1-mesa-dev libxrender-dev libxi-dev libxkbcommon-dev libxkbcommon-x11-dev
 
     - name: Make wheel
       env:
