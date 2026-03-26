@@ -282,7 +282,8 @@ def code_fragment(objective):
     except ImportError:
         pass
     finally:
-        return code_str
+        pass
+    return code_str
 
 
 def objective_fragment(i, objective):

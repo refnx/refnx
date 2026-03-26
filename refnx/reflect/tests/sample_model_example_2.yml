@@ -6,6 +6,7 @@ sample:
           Fe:
             magnetic_moment: 2.2
             sld: 5.02e-6
+            density: 7.87
           Si:
             formula: SiN0.01
             rel_density: 0.95
