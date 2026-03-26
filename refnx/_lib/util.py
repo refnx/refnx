@@ -219,10 +219,14 @@ class MapWrapper:
 
     """
 
-    def __init__(self, pool=-1, context="spawn"):
+    def __init__(self, pool=-1, context=None):
         self.pool = None
         self._mapfunc = map
         self._own_pool = False
+
+        # to align with cp314 which uses forkserver as a default
+        if _sys.platform == "linux" and _sys.version_info < (3, 14):
+            context = "forkserver"
 
         ctx = get_context(context)
 
