@@ -141,10 +141,7 @@ class Parameters(UserList):
         Does this instance contain a given :class:`Parameter`
         """
         _d = self.data
-        for p in flatten(_d):
-            if p is item:
-                return True
-        return False
+        return item in flatten(_d)
 
     def __ior__(self, other):
         """
