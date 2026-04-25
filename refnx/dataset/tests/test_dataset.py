@@ -640,13 +640,10 @@ class Hoggy:
 class TestPolarisedReflectDatasets:
     @pytest.fixture(autouse=True)
     def setup_method(self, tmp_path):
-        self.pth = resources.files(refnx.reflect.tests)
-        self.cwd = Path.cwd()
-        self.tmp_path = tmp_path
-        os.chdir(self.tmp_path)
+        import refnx.reflect.tests as _rrt
 
-    def teardown_method(self):
-        os.chdir(self.cwd)
+        self.pth = resources.files(_rrt)
+        self.tmp_path = tmp_path
 
     def test_properties(self):
         data_uu = Data1D(self.pth / "c_PLP0007885.dat")

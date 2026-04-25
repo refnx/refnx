@@ -140,7 +140,8 @@ class Parameters(UserList):
         """
         Does this instance contain a given :class:`Parameter`
         """
-        return id(item) in [id(p) for p in f_unique(flatten(self.data))]
+        _d = self.data
+        return item in flatten(_d)
 
     def __ior__(self, other):
         """
