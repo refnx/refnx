@@ -460,6 +460,11 @@ class PlatypusCatalogue(Catalogue):
         try:
             ss3y = h5d["entry1/instrument/slits/ss3y"][:]
         except KeyError:
+            warnings.warn(
+                "No ss3y data found in entry1/instrument/slits, falling back to "
+                "instrument/parameters/slit3_distance",
+                RuntimeWarning,
+            )
             ss3y = h5d["entry1/instrument/parameters/slit3_distance"][:]
         d["slit3_distance"] = ss3y
 
