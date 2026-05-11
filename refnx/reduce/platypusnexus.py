@@ -454,6 +454,15 @@ class PlatypusCatalogue(Catalogue):
         d["chopper4_phase_offset"] = h5d[
             "entry1/instrument/parameters/chopper4_phase_offset"
         ][:]
+
+        # as of 70342 the ss3y read-only motor has the positions of the slit3
+        # tower horizontal translation. Use that in preference to the old way
+        try:
+            ss3y = h5d["entry1/instrument/slits/ss3y"][:]
+        except KeyError:
+            ss3y = h5d["entry1/instrument/parameters/slit3_distance"][:]
+        d["slit3_distance"] = ss3y
+
         # time offset for choppers if you're using a signal generator to
         # delay T0
         d["t_offset"] = None
