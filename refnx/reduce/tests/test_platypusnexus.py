@@ -524,7 +524,8 @@ class TestPlatypusNexus(object):
         # Check magnetic field sensors
         f70342 = self.pth / "PLP0070342.nx.hdf"
         with h5py.File(f70342, "r") as fi:
-            ss3y = fi["entry1/instrument/slits/ss3y"]
+            # does the key exist
+            fi["entry1/instrument/slits/ss3y"]
 
             cat = PlatypusCatalogue(fi)
             assert_allclose(cat.cat["slit3_distance"], 4723.337891)
