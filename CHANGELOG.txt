@@ -725,3 +725,4 @@ in 0.1.13.
 ------
 - Fixed an issue with the manual beam finder due to a numpy/matplotlib change.
 - Non-gaussian resolution function example for the documentation.
+- Use ss3y for the slit tower 3 horizontal translation.

@@ -517,6 +517,19 @@ class TestPlatypusNexus(object):
         assert_almost_equal(self.f8861.cat.cat["magnet_current_set"], 0)
         assert_almost_equal(self.f8861.cat.cat["magnet_output_current"], 0.001)
 
+    def test_ss3y(self):
+        # as of 70342 there is a read-only ss3y motor. This should be used
+        # for the slit tower 3 longitudinal translation, instead of the
+        # slit3_distance parameter (in the nexus file)
+        # Check magnetic field sensors
+        f70342 = self.pth / "PLP0070342.nx.hdf"
+        with h5py.File(f70342, "r") as fi:
+            # does the key exist
+            fi["entry1/instrument/slits/ss3y"]
+
+            cat = PlatypusCatalogue(fi)
+            assert_allclose(cat.cat["slit3_distance"], 4723.337891)
+
 
 class TestSpatzNexus:
     @pytest.fixture(autouse=True)
