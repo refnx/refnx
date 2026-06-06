@@ -329,8 +329,7 @@ void abeles(int numcoefs, const double *restrict coefP, int npoints,
         MRtotal[1][1] = oneC;
       } else {
         beta = cexp(kn * thickness[ii - 1]);
-        _Complex double inv_beta =
-            (cimag(kn) == 0.0) ? conj(beta) : oneC / beta;
+        _Complex double inv_beta = oneC / beta;
         _Complex double p0 = MRtotal[0][0] * beta;
         _Complex double q0 = MRtotal[0][1] * inv_beta;
         _Complex double p1 = MRtotal[1][0] * beta;
