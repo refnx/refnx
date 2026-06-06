@@ -198,7 +198,7 @@ void abeles(int numcoefs, const double *restrict coefP, int npoints,
           // Inlined matrix multiply exploiting MI sparsity (from optimisation #8)
           _Complex double inv_beta = CMPLX(c, -s) * (1.0 / (c*c + s*s));  // conj/|b|^2
           // or simply:
-          _Complex double inv_beta = oneC / beta;
+          //_Complex double inv_beta = oneC / beta;
 
           _Complex double p0 = MRtotal[0][0] * beta,  q0 = MRtotal[0][1] * inv_beta;
           _Complex double p1 = MRtotal[1][0] * beta,  q1 = MRtotal[1][1] * inv_beta;
