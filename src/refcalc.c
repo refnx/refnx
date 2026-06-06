@@ -39,11 +39,55 @@ https://www.johndcook.com/blog/2018/08/31/how-fast-can-you-multiply-matrices/
 However, the following remains the fastest calculation  so far.
 */
 
+/*
+ * Feature test macros must come before ALL includes.
+ *
+ * _DEFAULT_SOURCE: enables sincos() on glibc >= 2.19 (Linux/gcc)
+ * _GNU_SOURCE:     fallback for older glibc; implies _DEFAULT_SOURCE
+ * Neither is needed on macOS or MSVC, where we use alternatives anyway.
+ */
+#if defined(__linux__) || defined(__unix__)
+#  if defined(__GLIBC__)
+#    if __GLIBC__ > 2 || (__GLIBC__ == 2 && __GLIBC_MINOR__ >= 19)
+#      define _DEFAULT_SOURCE
+#    else
+#      define _GNU_SOURCE
+#    endif
+#  else
+    /* Non-glibc unix (musl, BSD libc, etc.) -- sincos usually available
+     * without guards, but _DEFAULT_SOURCE is harmless */
+#    define _DEFAULT_SOURCE
+#  endif
+#endif
+
 #include "complex.h"
+#include "math.h"
 #include "stdlib.h"
 #include "string.h"
 #include "tgmath.h"
-#include "math.h"
+
+
+/*
+ * Portable sincos wrapper.
+ * All paths result in a single combined sin/cos operation on
+ * platforms that support it; MSVC fuses separate calls under /O2.
+ */
+static inline void sincos_portable(double angle, double *s, double *c) {
+#if defined(_MSC_VER)
+    *s = sin(angle);
+    *c = cos(angle);
+#elif defined(__APPLE__)
+    __sincos(angle, s, c);
+#elif defined(__GLIBC__) || defined(_DEFAULT_SOURCE) || defined(_GNU_SOURCE)
+    sincos(angle, s, c);
+#else
+    /* Fallback: derive both from cexp — standard C99, no extensions needed */
+    double complex e = cexp(CMPLX(0.0, angle));
+    *c = creal(e);
+    *s = cimag(e);
+#endif
+}
+
 
 #define NUM_CPUS 4
 #define PI 3.14159265358979323846
@@ -91,21 +135,6 @@ void matmul(_Complex double a[2][2], _Complex double b[2][2],
   c[0][1] = a[0][0] * b[0][1] + a[0][1] * b[1][1];
   c[1][0] = a[1][0] * b[0][0] + a[1][1] * b[1][0];
   c[1][1] = a[1][0] * b[0][1] + a[1][1] * b[1][1];
-}
-
-
-static inline void sincos_portable(double angle, double *s, double *c) {
-#if defined(_MSC_VER)
-    // MSVC: no sincos, but the optimiser will typically merge these
-    // into a single FSINCOS instruction anyway with /O2
-    *s = sin(angle);
-    *c = cos(angle);
-#elif defined(__APPLE__)
-    __sincos(angle, s, c);   // Apple's private-but-stable sincos
-#else
-    // GCC / Clang on Linux and MinGW
-    sincos(angle, s, c);
-#endif
 }
 
 
@@ -245,6 +274,7 @@ done:
   if (rough_sqr)
     free(rough_sqr);
 }
+
 
 void parratt(int numcoefs, const double *restrict coefP, int npoints,
              double *restrict yP, const double *restrict xP) {
