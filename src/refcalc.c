@@ -166,15 +166,22 @@ void abeles(int numcoefs, const double *restrict coefP, int npoints,
       } else {
         // work out the beta for the layer
         beta = cexp(kn * thickness[ii - 1]);
-        // this is the characteristic matrix of a layer
-        MI[0][0] = beta;
-        MI[0][1] = rj * beta;
-        MI[1][1] = oneC / beta;
-        MI[1][0] = rj * MI[1][1];
+        _Complex double inv_beta = oneC / beta;
 
-        // multiply MRtotal, MI to get the updated total matrix.
-        memcpy(temp2, MRtotal, sizeof(MRtotal));
-        matmul(temp2, MI, MRtotal);
+        // Exploit MI structure: MI = | beta      rj*beta |
+        //                            | rj/beta   1/beta  |
+        // Only 2 independent values (beta, rj) define MI.
+        // Expand MRtotal = MRtotal * MI with common subexpressions factored out.
+
+        _Complex double p0 = MRtotal[0][0] * beta;
+        _Complex double q0 = MRtotal[0][1] * inv_beta;
+        _Complex double p1 = MRtotal[1][0] * beta;
+        _Complex double q1 = MRtotal[1][1] * inv_beta;
+
+        MRtotal[0][0] = p0 + rj * q0;
+        MRtotal[0][1] = rj * p0 + q0;
+        MRtotal[1][0] = p1 + rj * q1;
+        MRtotal[1][1] = rj * p1 + q1;
       }
       kn = kn_next;
     }
