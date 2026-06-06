@@ -183,133 +183,86 @@ void abeles(int numcoefs, const double *restrict coefP, int npoints,
 
     for (; j <= npoints - BATCH; j += BATCH) {
 
-        /* --- SoA storage for this batch -------------------------------- */
-
-        /* wavevectors: kn = kn_re + i*kn_im */
         double kn_re[BATCH], kn_im[BATCH];
+        double qq2_re[BATCH];               /* add this — constant per Q-point */
 
-        /* 2x2 matrix MRtotal, stored as 4 separate re/im arrays */
         double M00_re[BATCH], M00_im[BATCH];
         double M01_re[BATCH], M01_im[BATCH];
         double M10_re[BATCH], M10_im[BATCH];
         double M11_re[BATCH], M11_im[BATCH];
 
-        /* initialise kn = xP[j+b] / 2  (purely real at entry) */
         for (int b = 0; b < BATCH; b++) {
-            kn_re[b] = xP[j + b] / 2.0;
-            kn_im[b] = 0.0;
+            kn_re[b]  = xP[j + b] / 2.0;
+            kn_im[b]  = 0.0;
+            qq2_re[b] = xP[j + b] * xP[j + b] / 4.0;  /* store once */
         }
 
-        /* ---- layer loop ---------------------------------------------- */
         for (int ii = 0; ii < nlayers + 1; ii++) {
 
-            double sld_re = creal(SLD[ii + 1]);
-            double sld_im = cimag(SLD[ii + 1]);
-            double rs     = rough_sqr[ii];
-
-            /*
-             * All operations below are over the BATCH dimension.
-             * The compiler sees BATCH-wide loops over plain double arrays
-             * with no dependencies between lanes — ideal for AVX2.
-             */
-
-            /* kn_next = csqrt(qq2 - SLD[ii+1])
-             * qq2 = (xP[j+b]/2)^2 = kn_re[b]^2  (purely real at ii=0,
-             * complex thereafter as kn accumulates imaginary part)      */
             double kn_next_re[BATCH], kn_next_im[BATCH];
 
+            /* Use qq2_re, not kn^2, to match the scalar version exactly */
             for (int b = 0; b < BATCH; b++) {
-                double qq2_re = kn_re[b] * kn_re[b] - kn_im[b] * kn_im[b];
-                double qq2_im = 2.0 * kn_re[b] * kn_im[b];
-
-                double a_re = qq2_re - sld_re;
-                double a_im = qq2_im - sld_im;
-
-                /* complex sqrt: sqrt(a_re + i*a_im) */
-                double mag   = sqrt(a_re * a_re + a_im * a_im);
-                double s_re  = sqrt((mag + a_re) * 0.5);
-                double s_im  = (a_im >= 0 ? 1.0 : -1.0)
-                               * sqrt((mag - a_re) * 0.5);
-                /* ensure we take the correct branch (same role as TINY) */
-                if (s_im < 0) { s_re = -s_re; s_im = -s_im; }
-
-                kn_next_re[b] = s_re;
-                kn_next_im[b] = s_im;
+                double complex kn_next = csqrt(
+                    CMPLX(qq2_re[b], 0.0) - SLD[ii + 1]
+                );
+                kn_next_re[b] = creal(kn_next);
+                kn_next_im[b] = cimag(kn_next);
             }
 
-            /* rj = (kn - kn_next) / (kn + kn_next) * exp(kn*kn_next*rs) */
             double rj_re[BATCH], rj_im[BATCH];
 
             for (int b = 0; b < BATCH; b++) {
-                /* numerator: kn - kn_next */
                 double num_re = kn_re[b] - kn_next_re[b];
                 double num_im = kn_im[b] - kn_next_im[b];
-
-                /* denominator: kn + kn_next */
                 double den_re = kn_re[b] + kn_next_re[b];
                 double den_im = kn_im[b] + kn_next_im[b];
 
-                /* complex division: num / den */
-                double den2  = den_re * den_re + den_im * den_im;
-                double t_re  = (num_re * den_re + num_im * den_im) / den2;
-                double t_im  = (num_im * den_re - num_re * den_im) / den2;
+                double den2 = den_re * den_re + den_im * den_im;
+                double t_re = (num_re * den_re + num_im * den_im) / den2;
+                double t_im = (num_im * den_re - num_re * den_im) / den2;
 
-                /* Debye-Waller: exp(kn * kn_next * rs)
-                 * kn * kn_next: */
+                double rs   = rough_sqr[ii];
                 double p_re = (kn_re[b] * kn_next_re[b]
                                - kn_im[b] * kn_next_im[b]) * rs;
                 double p_im = (kn_re[b] * kn_next_im[b]
                                + kn_im[b] * kn_next_re[b]) * rs;
 
-                double dw = exp(p_re);
+                double dw    = exp(p_re);
                 double dw_re = dw * cos(p_im);
                 double dw_im = dw * sin(p_im);
 
-                /* rj = (num/den) * dw */
                 rj_re[b] = t_re * dw_re - t_im * dw_im;
                 rj_im[b] = t_re * dw_im + t_im * dw_re;
             }
 
             if (!ii) {
-                /* first interface: MRtotal = | 1   rj | */
-                /*                            | rj  1  | */
                 for (int b = 0; b < BATCH; b++) {
-                    M00_re[b] = 1.0; M00_im[b] = 0.0;
+                    M00_re[b] = 1.0;      M00_im[b] = 0.0;
                     M01_re[b] = rj_re[b]; M01_im[b] = rj_im[b];
                     M10_re[b] = rj_re[b]; M10_im[b] = rj_im[b];
-                    M11_re[b] = 1.0; M11_im[b] = 0.0;
+                    M11_re[b] = 1.0;      M11_im[b] = 0.0;
                 }
             } else {
-                /* beta = cexp(kn * thickness[ii-1])
-                 * thickness[ii-1] = CMPLX(0, t), so:
-                 * kn * CMPLX(0,t) = CMPLX(-kn_im*t, kn_re*t)           */
                 double t = cimag(thickness[ii - 1]);
 
                 double beta_re[BATCH], beta_im[BATCH];
                 double inv_beta_re[BATCH], inv_beta_im[BATCH];
 
                 for (int b = 0; b < BATCH; b++) {
-                    double arg_re = -kn_im[b] * t;
-                    double arg_im =  kn_re[b] * t;
-                    double env    = exp(arg_re);
-                    beta_re[b]    = env * cos(arg_im);
-                    beta_im[b]    = env * sin(arg_im);
+                    double arg_re  = -kn_im[b] * t;
+                    double arg_im  =  kn_re[b] * t;
+                    double env     = exp(arg_re);
+                    beta_re[b]     = env * cos(arg_im);
+                    beta_im[b]     = env * sin(arg_im);
 
-                    /* inv_beta = conj(beta) / |beta|^2
-                     * For non-absorbing layers |beta|=1 so inv_beta=conj(beta).
-                     * We use the general form to stay correct for absorbing. */
-                    double mag2      = beta_re[b] * beta_re[b]
-                                     + beta_im[b] * beta_im[b];
-                    inv_beta_re[b]   =  beta_re[b] / mag2;
-                    inv_beta_im[b]   = -beta_im[b] / mag2;
+                    double mag2    = beta_re[b] * beta_re[b]
+                                   + beta_im[b] * beta_im[b];
+                    inv_beta_re[b] =  beta_re[b] / mag2;
+                    inv_beta_im[b] = -beta_im[b] / mag2;
                 }
 
-                /* Inlined matrix update exploiting MI sparsity.
-                 * p = MRtotal_row * beta,  q = MRtotal_row * inv_beta
-                 * new row = | p + rj*q ,  rj*p + q |                   */
                 for (int b = 0; b < BATCH; b++) {
-
-                    /* row 0 */
                     double p0_re = M00_re[b]*beta_re[b] - M00_im[b]*beta_im[b];
                     double p0_im = M00_re[b]*beta_im[b] + M00_im[b]*beta_re[b];
                     double q0_re = M01_re[b]*inv_beta_re[b] - M01_im[b]*inv_beta_im[b];
@@ -320,7 +273,6 @@ void abeles(int numcoefs, const double *restrict coefP, int npoints,
                     M01_re[b] = rj_re[b]*p0_re - rj_im[b]*p0_im + q0_re;
                     M01_im[b] = rj_re[b]*p0_im + rj_im[b]*p0_re + q0_im;
 
-                    /* row 1 */
                     double p1_re = M10_re[b]*beta_re[b] - M10_im[b]*beta_im[b];
                     double p1_im = M10_re[b]*beta_im[b] + M10_im[b]*beta_re[b];
                     double q1_re = M11_re[b]*inv_beta_re[b] - M11_im[b]*inv_beta_im[b];
@@ -333,18 +285,16 @@ void abeles(int numcoefs, const double *restrict coefP, int npoints,
                 }
             }
 
-            /* advance kn for next layer */
             for (int b = 0; b < BATCH; b++) {
                 kn_re[b] = kn_next_re[b];
                 kn_im[b] = kn_next_im[b];
             }
         }
 
-        /* extract reflectivity for each lane in the batch */
         for (int b = 0; b < BATCH; b++) {
             double num = M10_re[b]*M10_re[b] + M10_im[b]*M10_im[b];
             double den = M00_re[b]*M00_re[b] + M00_im[b]*M00_im[b];
-            yP[j + b] = (num / den) * scale + bkg;
+            yP[j + b]  = (num / den) * scale + bkg;
         }
     }
 
