@@ -30,9 +30,9 @@ endif
 safer_args = cc.get_supported_arguments([
   '-O3',
   '-march=native',
-  #'-fno-math-errno',      # safe: errno never checked after math calls
-  #'-fassociative-math',   # mostly safe: minor FP reordering for vectorisation
-  #'-fno-trapping-math',   # safe: no FP exception trapping needed
+  '-fno-math-errno',      # safe: errno never checked after math calls
+  '-fassociative-math',   # mostly safe: minor FP reordering for vectorisation
+  '-fno-trapping-math',   # safe: no FP exception trapping needed
   # Deliberately excluded:
   # -fno-signed-zeros     UNSAFE: TINY sentinel relies on correct sign
   # -ffinite-math-only    UNSAFE: bad SLD params could produce NaN/Inf
