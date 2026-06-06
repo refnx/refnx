@@ -43,6 +43,7 @@ However, the following remains the fastest calculation  so far.
 #include "stdlib.h"
 #include "string.h"
 #include "tgmath.h"
+#include "math.h"
 
 #define NUM_CPUS 4
 #define PI 3.14159265358979323846
@@ -91,6 +92,22 @@ void matmul(_Complex double a[2][2], _Complex double b[2][2],
   c[1][0] = a[1][0] * b[0][0] + a[1][1] * b[1][0];
   c[1][1] = a[1][0] * b[0][1] + a[1][1] * b[1][1];
 }
+
+
+static inline void sincos_portable(double angle, double *s, double *c) {
+#if defined(_MSC_VER)
+    // MSVC: no sincos, but the optimiser will typically merge these
+    // into a single FSINCOS instruction anyway with /O2
+    *s = sin(angle);
+    *c = cos(angle);
+#elif defined(__APPLE__)
+    __sincos(angle, s, c);   // Apple's private-but-stable sincos
+#else
+    // GCC / Clang on Linux and MinGW
+    sincos(angle, s, c);
+#endif
+}
+
 
 void abeles(int numcoefs, const double *restrict coefP, int npoints,
             double *restrict yP, const double *restrict xP) {
@@ -160,6 +177,7 @@ void abeles(int numcoefs, const double *restrict coefP, int npoints,
       double rs = rough_sqr[ii];
       double s, c;
 
+      // cexp(kn * kn_next * rough_sqr[ii])
       _Complex double debye_waller;
       if (__builtin_expect(kn_im == 0.0 && kn_next_im == 0.0, 1)) {
           // Fast path: non-absorbing layers — DW factor is a real scalar
@@ -169,38 +187,41 @@ void abeles(int numcoefs, const double *restrict coefP, int npoints,
           double prod_re = (kn_re * kn_next_re - kn_im * kn_next_im) * rs;
           double prod_im = (kn_re * kn_next_im + kn_im * kn_next_re) * rs;
           double s, c;
-          __sincos(prod_im, &s, &c);
+          sincos_portable(prod_im, &s, &c);
           debye_waller = CMPLX(exp(prod_re) * c, exp(prod_re) * s);
       }
 
       rj = (kn - kn_next) / (kn + kn_next) * debye_waller;
 
       if (!ii) {
-          MRtotal[0][0] = oneC; MRtotal[0][1] = rj;
-          MRtotal[1][0] = rj;   MRtotal[1][1] = oneC;
+        // characteristic matrix for first interface
+        MRtotal[0][0] = oneC;
+        MRtotal[0][1] = rj;
+        MRtotal[1][0] = rj;
+        MRtotal[1][1] = oneC;
       } else {
-          double t = cimag(thickness[ii - 1]);
+        double t = cimag(thickness[ii - 1]);
 
-          if (__builtin_expect(kn_im == 0.0, 1)) {
-              // Fast path: non-absorbing — beta is a pure phase, no decay
-              __sincos(kn_re * t, &s, &c);
-              beta = CMPLX(c, s);
-          } else {
-              // General path: absorbing — beta has amplitude and phase
-              __sincos(kn_re * t, &s, &c);
-              double envelope = exp(-kn_im * t);
-              beta = CMPLX(envelope * c, envelope * s);
-          }
+        if (__builtin_expect(kn_im == 0.0, 1)) {
+          // Fast path: non-absorbing — beta is a pure phase, no decay
+          sincos_portable(kn_re * t, &s, &c);
+          beta = CMPLX(c, s);
+        } else {
+          // General path: absorbing — beta has amplitude and phase
+          sincos_portable(kn_re * t, &s, &c);
+          double envelope = exp(-kn_im * t);
+          beta = CMPLX(envelope * c, envelope * s);
+        }
 
-          inv_beta = oneC / beta;
+        inv_beta = oneC / beta;
 
-          _Complex double p0 = MRtotal[0][0] * beta,  q0 = MRtotal[0][1] * inv_beta;
-          _Complex double p1 = MRtotal[1][0] * beta,  q1 = MRtotal[1][1] * inv_beta;
+        _Complex double p0 = MRtotal[0][0] * beta,  q0 = MRtotal[0][1] * inv_beta;
+        _Complex double p1 = MRtotal[1][0] * beta,  q1 = MRtotal[1][1] * inv_beta;
 
-          MRtotal[0][0] = p0 + rj * q0;
-          MRtotal[0][1] = rj * p0 + q0;
-          MRtotal[1][0] = p1 + rj * q1;
-          MRtotal[1][1] = rj * p1 + q1;
+        MRtotal[0][0] = p0 + rj * q0;
+        MRtotal[0][1] = rj * p0 + q0;
+        MRtotal[1][0] = p1 + rj * q1;
+        MRtotal[1][1] = rj * p1 + q1;
       }
       kn = kn_next;
     }
