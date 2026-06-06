@@ -47,9 +47,8 @@ However, the following remains the fastest calculation  so far.
  * Neither is needed on macOS or MSVC, where we use alternatives anyway.
  */
 #if defined(__linux__) || defined(__unix__)
-#  define _GNU_SOURCE
+#define _GNU_SOURCE
 #endif
-
 
 #include "complex.h"
 #include "math.h"
