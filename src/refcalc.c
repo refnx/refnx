@@ -136,10 +136,10 @@ void abeles(int numcoefs, const double *restrict coefP, int npoints,
   double complex _t;
   double complex oneC = CMPLX(1., 0.);
   double complex inv_beta;
+  double thickness = 0;
 
   _Complex double MRtotal[2][2];
   _Complex double *SLD = NULL;
-  double *thickness = NULL;
   double complex qq2;
   double *rough_sqr = NULL;
 
@@ -147,10 +147,6 @@ void abeles(int numcoefs, const double *restrict coefP, int npoints,
 
   SLD = (_Complex double *)malloc((nlayers + 2) * sizeof(_Complex double));
   if (!SLD)
-    goto done;
-
-  thickness = (double *)malloc((nlayers) * sizeof(double));
-  if (!thickness)
     goto done;
 
   rough_sqr = (double *)malloc((nlayers + 1) * sizeof(double));
@@ -166,8 +162,6 @@ void abeles(int numcoefs, const double *restrict coefP, int npoints,
   for (int ii = 1; ii < nlayers + 1; ii += 1) {
     _t = CMPLX(coefP[4 * ii + 5], fabs(coefP[4 * ii + 6]) + TINY);
     SLD[ii] = 4e-6 * PI * (_t - super);
-
-    thickness[ii - 1] = fabs(coefP[4 * ii + 4]);
     rough_sqr[ii - 1] = -2 * coefP[4 * ii + 7] * coefP[4 * ii + 7];
   }
 
@@ -217,7 +211,7 @@ void abeles(int numcoefs, const double *restrict coefP, int npoints,
         MRtotal[1][0] = rj;
         MRtotal[1][1] = oneC;
       } else {
-        double t = thickness[ii - 1];
+        double t = fabs(coefP[4 * ii + 4]);
 
         if (__builtin_expect(kn_im == 0.0, 1)) {
           // Fast path: non-absorbing — beta is a pure phase, no decay
@@ -258,8 +252,6 @@ void abeles(int numcoefs, const double *restrict coefP, int npoints,
 done:
   if (SLD)
     free(SLD);
-  if (thickness)
-    free(thickness);
   if (rough_sqr)
     free(rough_sqr);
 }
