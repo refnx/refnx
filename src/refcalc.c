@@ -102,9 +102,10 @@ void abeles(int numcoefs, const double *restrict coefP, int npoints,
   double complex sub;
   double complex _t;
   double complex oneC = CMPLX(1., 0.);
+  double complex beta, rj;
+  double complex kn, kn_next;
+
   _Complex double MRtotal[2][2];
-  _Complex double MI[2][2];
-  _Complex double temp2[2][2];
   _Complex double *SLD = NULL;
   _Complex double *thickness = NULL;
   double complex qq2;
@@ -143,9 +144,6 @@ void abeles(int numcoefs, const double *restrict coefP, int npoints,
   rough_sqr[nlayers] = -2 * coefP[7] * coefP[7];
 
   for (j = 0; j < npoints; j++) {
-    double complex beta, rj;
-    double complex kn, kn_next;
-
     qq2 = CMPLX(xP[j] * xP[j] / 4, 0);
 
     // now calculate reflectivities and wavevectors
@@ -159,6 +157,7 @@ void abeles(int numcoefs, const double *restrict coefP, int npoints,
       double kn_next_re = creal(kn_next);
       double kn_next_im = cimag(kn_next);
       double rs = rough_sqr[ii];
+      double s, c;
 
       _Complex double debye_waller;
       if (__builtin_expect(kn_im == 0.0 && kn_next_im == 0.0, 1)) {
@@ -169,7 +168,7 @@ void abeles(int numcoefs, const double *restrict coefP, int npoints,
           double prod_re = (kn_re * kn_next_re - kn_im * kn_next_im) * rs;
           double prod_im = (kn_re * kn_next_im + kn_im * kn_next_re) * rs;
           double s, c;
-          sincos(prod_im, &s, &c);
+          __sincos(prod_im, &s, &c);
           debye_waller = CMPLX(exp(prod_re) * c, exp(prod_re) * s);
       }
 
@@ -180,25 +179,22 @@ void abeles(int numcoefs, const double *restrict coefP, int npoints,
           MRtotal[1][0] = rj;   MRtotal[1][1] = oneC;
       } else {
           double t = cimag(thickness[ii - 1]);
-          _Complex double beta;
 
           if (__builtin_expect(kn_im == 0.0, 1)) {
               // Fast path: non-absorbing — beta is a pure phase, no decay
-              double s, c;
-              sincos(kn_re * t, &s, &c);
+              __sincos(kn_re * t, &s, &c);
               beta = CMPLX(c, s);
           } else {
               // General path: absorbing — beta has amplitude and phase
-              double s, c;
-              sincos(kn_re * t, &s, &c);
+              __sincos(kn_re * t, &s, &c);
               double envelope = exp(-kn_im * t);
               beta = CMPLX(envelope * c, envelope * s);
           }
 
           // Inlined matrix multiply exploiting MI sparsity (from optimisation #8)
-          _Complex double inv_beta = CMPLX(c, -s) * (1.0 / (c*c + s*s));  // conj/|b|^2
+          //_Complex double inv_beta = CMPLX(c, -s) * (1.0 / (c*c + s*s));  // conj/|b|^2
           // or simply:
-          //_Complex double inv_beta = oneC / beta;
+          _Complex double inv_beta = oneC / beta;
 
           _Complex double p0 = MRtotal[0][0] * beta,  q0 = MRtotal[0][1] * inv_beta;
           _Complex double p1 = MRtotal[1][0] * beta,  q1 = MRtotal[1][1] * inv_beta;
