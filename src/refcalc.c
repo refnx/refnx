@@ -55,6 +55,7 @@ However, the following remains the fastest calculation  so far.
 #include "stdlib.h"
 #include "string.h"
 #include "tgmath.h"
+#include "assert.h"
 
 /*
  * Portable sincos wrapper.
@@ -127,134 +128,118 @@ void matmul(_Complex double a[2][2], _Complex double b[2][2],
 
 void abeles(int numcoefs, const double *restrict coefP, int npoints,
             double *restrict yP, const double *restrict xP) {
-  int j;
-  double scale, bkg;
-  double num = 0, den = 0, answer = 0;
+    int j;
+    double scale, bkg;
+    double num = 0, den = 0, answer = 0;
+    double complex super;
+    double complex sub;
+    double complex _t;
+    double complex oneC = CMPLX(1., 0.);
 
-  double complex super;
-  double complex sub;
-  double complex _t;
-  double complex oneC = CMPLX(1., 0.);
-  double complex inv_beta;
-  double thickness = 0;
+    _Complex double MRtotal[2][2];
+    _Complex double *SLD = NULL;
+    _Complex double *thickness = NULL;
 
-  _Complex double MRtotal[2][2];
-  _Complex double *SLD = NULL;
-  double complex qq2;
-  double *rough_sqr = NULL;
+    double complex qq2;
+    double *rough_sqr = NULL;
 
-  int nlayers = (int)coefP[0];
+    int nlayers = (int)coefP[0];
 
-  SLD = (_Complex double *)malloc((nlayers + 2) * sizeof(_Complex double));
-  if (!SLD)
-    goto done;
+    SLD = (_Complex double *)malloc((nlayers + 2) * sizeof(_Complex double));
+    if (!SLD)
+        goto done;
 
-  rough_sqr = (double *)malloc((nlayers + 1) * sizeof(double));
-  if (!rough_sqr)
-    goto done;
+    thickness = (_Complex double *)malloc((nlayers) * sizeof(_Complex double));
+    if (!thickness)
+        goto done;
 
-  scale = coefP[1];
-  bkg = coefP[6];
-  sub = CMPLX(coefP[4], fabs(coefP[5]) + TINY);
-  super = CMPLX(coefP[2], 0);
+    rough_sqr = (double *)malloc((nlayers + 1) * sizeof(double));
+    if (!rough_sqr)
+        goto done;
 
-  // fill out all the SLD's for all the layers
-  for (int ii = 1; ii < nlayers + 1; ii += 1) {
-    _t = CMPLX(coefP[4 * ii + 5], fabs(coefP[4 * ii + 6]) + TINY);
-    SLD[ii] = 4e-6 * PI * (_t - super);
-    rough_sqr[ii - 1] = -2 * coefP[4 * ii + 7] * coefP[4 * ii + 7];
-  }
+    scale = coefP[1];
+    bkg = coefP[6];
+    sub = CMPLX(coefP[4], fabs(coefP[5]) + TINY);
+    super = CMPLX(coefP[2], 0);
 
-  SLD[0] = CMPLX(0, 0);
-  SLD[nlayers + 1] = 4e-6 * PI * (sub - super);
-  rough_sqr[nlayers] = -2 * coefP[7] * coefP[7];
-
-  for (j = 0; j < npoints; j++) {
-    double complex beta, rj;
-    double complex kn, kn_next;
-
-    qq2 = CMPLX(xP[j] * xP[j] / 4, 0);
-
-    // now calculate reflectivities and wavevectors
-    kn = xP[j] / 2.;
-    for (int ii = 0; ii < nlayers + 1; ii++) {
-      // wavevector in the layer
-      kn_next = csqrt(qq2 - SLD[ii + 1]);
-
-      double kn_re = creal(kn);
-      double kn_im = cimag(kn);
-      double kn_next_re = creal(kn_next);
-      double kn_next_im = cimag(kn_next);
-      double rs = rough_sqr[ii];
-      double s, c;
-
-      // cexp(kn * kn_next * rough_sqr[ii])
-      _Complex double debye_waller;
-      if (__builtin_expect(kn_im == 0.0 && kn_next_im == 0.0, 1)) {
-        // Fast path: non-absorbing layers — DW factor is a real scalar
-        debye_waller = exp(kn_re * kn_next_re * rs);
-      } else {
-        // General path: absorbing layers
-        double prod_re = (kn_re * kn_next_re - kn_im * kn_next_im) * rs;
-        double prod_im = (kn_re * kn_next_im + kn_im * kn_next_re) * rs;
-        double s, c;
-        sincos_portable(prod_im, &s, &c);
-        debye_waller = CMPLX(exp(prod_re) * c, exp(prod_re) * s);
-      }
-
-      rj = (kn - kn_next) / (kn + kn_next) * debye_waller;
-
-      if (!ii) {
-        // characteristic matrix for first interface
-        MRtotal[0][0] = oneC;
-        MRtotal[0][1] = rj;
-        MRtotal[1][0] = rj;
-        MRtotal[1][1] = oneC;
-      } else {
-        double t = fabs(coefP[4 * ii + 4]);
-
-        if (__builtin_expect(kn_im == 0.0, 1)) {
-          // Fast path: non-absorbing — beta is a pure phase, no decay
-          sincos_portable(kn_re * t, &s, &c);
-          beta = CMPLX(c, s);
-        } else {
-          // General path: absorbing — beta has amplitude and phase
-          sincos_portable(kn_re * t, &s, &c);
-          double envelope = exp(-kn_im * t);
-          beta = CMPLX(envelope * c, envelope * s);
-        }
-
-        inv_beta = oneC / beta;
-
-        _Complex double p0 = MRtotal[0][0] * beta,
-                        q0 = MRtotal[0][1] * inv_beta;
-        _Complex double p1 = MRtotal[1][0] * beta,
-                        q1 = MRtotal[1][1] * inv_beta;
-
-        MRtotal[0][0] = p0 + rj * q0;
-        MRtotal[0][1] = rj * p0 + q0;
-        MRtotal[1][0] = p1 + rj * q1;
-        MRtotal[1][1] = rj * p1 + q1;
-      }
-      kn = kn_next;
+    // fill out all the SLD's for all the layers
+    for (int ii = 1; ii < nlayers + 1; ii += 1) {
+        _t = CMPLX(coefP[4 * ii + 5], fabs(coefP[4 * ii + 6]) + TINY);
+        SLD[ii] = 4e-6 * PI * (_t - super);
+        thickness[ii - 1] = CMPLX(0, fabs(coefP[4 * ii + 4]));
+        rough_sqr[ii - 1] = -2 * coefP[4 * ii + 7] * coefP[4 * ii + 7];
     }
 
-    num = cabs(MRtotal[1][0]);
-    num *= num;
-    den = cabs(MRtotal[0][0]);
-    den *= den;
-    answer = (num / den);
-    answer = (answer * scale) + bkg;
+    SLD[0] = CMPLX(0, 0);
+    SLD[nlayers + 1] = 4e-6 * PI * (sub - super);
+    rough_sqr[nlayers] = -2 * coefP[7] * coefP[7];
 
-    yP[j] = answer;
-  }
+    for (j = 0; j < npoints; j++) {
+        double complex rj;
+        double complex kn, kn_next;
+
+        qq2 = CMPLX(xP[j] * xP[j] / 4, 0);
+
+        kn = xP[j] / 2.;
+
+        for (int ii = 0; ii < nlayers + 1; ii++) {
+            // wavevector in the next layer
+            kn_next = csqrt(qq2 - SLD[ii + 1]);
+
+            // reflectance of the interface, with Debye-Waller roughness factor
+            rj = (kn - kn_next) / (kn + kn_next) *
+                 cexp(kn * kn_next * rough_sqr[ii]);
+
+            if (!ii) {
+                // characteristic matrix for first interface
+                MRtotal[0][0] = oneC;
+                MRtotal[0][1] = rj;
+                MRtotal[1][1] = oneC;
+                MRtotal[1][0] = rj;
+            } else {
+                // phase factor for this layer
+                _Complex double beta = cexp(kn * thickness[ii - 1]);
+                inv_beta = oneC / beta;
+
+                // Inlined matrix multiply exploiting MI sparsity:
+                // MI = | beta      rj*beta |
+                //      | rj/beta   1/beta  |
+                // Only two independent values (beta, rj) so we factor
+                // common subexpressions per row, eliminating memcpy and
+                // the matmul() call entirely.
+                _Complex double p0 = MRtotal[0][0] * beta;
+                _Complex double q0 = MRtotal[0][1] * inv_beta;
+                _Complex double p1 = MRtotal[1][0] * beta;
+                _Complex double q1 = MRtotal[1][1] * inv_beta;
+
+                MRtotal[0][0] = p0 + rj * q0;
+                MRtotal[0][1] = rj * p0 + q0;
+                MRtotal[1][0] = p1 + rj * q1;
+                MRtotal[1][1] = rj * p1 + q1;
+            }
+
+            kn = kn_next;
+        }
+
+        num = cabs(MRtotal[1][0]);
+        num *= num;
+        den = cabs(MRtotal[0][0]);
+        den *= den;
+        answer = (num / den);
+
+        answer = (answer * scale) + bkg;
+        yP[j] = answer;
+    }
 
 done:
-  if (SLD)
-    free(SLD);
-  if (rough_sqr)
-    free(rough_sqr);
+    if (SLD)
+        free(SLD);
+    if (thickness)
+        free(thickness);
+    if (rough_sqr)
+        free(rough_sqr);
 }
+
 
 void parratt(int numcoefs, const double *restrict coefP, int npoints,
              double *restrict yP, const double *restrict xP) {
