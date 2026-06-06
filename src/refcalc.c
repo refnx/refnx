@@ -149,7 +149,7 @@ void abeles(int numcoefs, const double *restrict coefP, int npoints,
   if (!SLD)
     goto done;
 
-  thickness = (_Complex double *)malloc((nlayers) * sizeof(_Complex double));
+  thickness = (double *)malloc((nlayers) * sizeof(double));
   if (!thickness)
     goto done;
 
@@ -167,7 +167,7 @@ void abeles(int numcoefs, const double *restrict coefP, int npoints,
     _t = CMPLX(coefP[4 * ii + 5], fabs(coefP[4 * ii + 6]) + TINY);
     SLD[ii] = 4e-6 * PI * (_t - super);
 
-    thickness[ii - 1] = CMPLX(0, fabs(coefP[4 * ii + 4]));
+    thickness[ii - 1] = fabs(coefP[4 * ii + 4]);
     rough_sqr[ii - 1] = -2 * coefP[4 * ii + 7] * coefP[4 * ii + 7];
   }
 
@@ -217,7 +217,7 @@ void abeles(int numcoefs, const double *restrict coefP, int npoints,
         MRtotal[1][0] = rj;
         MRtotal[1][1] = oneC;
       } else {
-        double t = cimag(thickness[ii - 1]);
+        double t = thickness[ii - 1];
 
         if (__builtin_expect(kn_im == 0.0, 1)) {
           // Fast path: non-absorbing — beta is a pure phase, no decay
