@@ -139,7 +139,7 @@ void abeles(int numcoefs, const double *restrict coefP, int npoints,
 
   _Complex double MRtotal[2][2];
   _Complex double *SLD = NULL;
-  _Complex double *thickness = NULL;
+  double *thickness = NULL;
   double complex qq2;
   double *rough_sqr = NULL;
 
