@@ -47,17 +47,17 @@ However, the following remains the fastest calculation  so far.
  * Neither is needed on macOS or MSVC, where we use alternatives anyway.
  */
 #if defined(__linux__) || defined(__unix__)
-#  if defined(__GLIBC__)
-#    if __GLIBC__ > 2 || (__GLIBC__ == 2 && __GLIBC_MINOR__ >= 19)
-#      define _DEFAULT_SOURCE
-#    else
-#      define _GNU_SOURCE
-#    endif
-#  else
-    /* Non-glibc unix (musl, BSD libc, etc.) -- sincos usually available
-     * without guards, but _DEFAULT_SOURCE is harmless */
-#    define _DEFAULT_SOURCE
-#  endif
+#if defined(__GLIBC__)
+#if __GLIBC__ > 2 || (__GLIBC__ == 2 && __GLIBC_MINOR__ >= 19)
+#define _DEFAULT_SOURCE
+#else
+#define _GNU_SOURCE
+#endif
+#else
+/* Non-glibc unix (musl, BSD libc, etc.) -- sincos usually available
+ * without guards, but _DEFAULT_SOURCE is harmless */
+#define _DEFAULT_SOURCE
+#endif
 #endif
 
 #include "complex.h"
@@ -66,7 +66,6 @@ However, the following remains the fastest calculation  so far.
 #include "string.h"
 #include "tgmath.h"
 
-
 /*
  * Portable sincos wrapper.
  * All paths result in a single combined sin/cos operation on
@@ -74,20 +73,19 @@ However, the following remains the fastest calculation  so far.
  */
 static inline void sincos_portable(double angle, double *s, double *c) {
 #if defined(_MSC_VER)
-    *s = sin(angle);
-    *c = cos(angle);
+  *s = sin(angle);
+  *c = cos(angle);
 #elif defined(__APPLE__)
-    __sincos(angle, s, c);
+  __sincos(angle, s, c);
 #elif defined(__GLIBC__) || defined(_DEFAULT_SOURCE) || defined(_GNU_SOURCE)
-    sincos(angle, s, c);
+  sincos(angle, s, c);
 #else
-    /* Fallback: derive both from cexp — standard C99, no extensions needed */
-    double complex e = cexp(CMPLX(0.0, angle));
-    *c = creal(e);
-    *s = cimag(e);
+  /* Fallback: derive both from cexp — standard C99, no extensions needed */
+  double complex e = cexp(CMPLX(0.0, angle));
+  *c = creal(e);
+  *s = cimag(e);
 #endif
 }
-
 
 #define NUM_CPUS 4
 #define PI 3.14159265358979323846
@@ -136,7 +134,6 @@ void matmul(_Complex double a[2][2], _Complex double b[2][2],
   c[1][0] = a[1][0] * b[0][0] + a[1][1] * b[1][0];
   c[1][1] = a[1][0] * b[0][1] + a[1][1] * b[1][1];
 }
-
 
 void abeles(int numcoefs, const double *restrict coefP, int npoints,
             double *restrict yP, const double *restrict xP) {
@@ -210,15 +207,15 @@ void abeles(int numcoefs, const double *restrict coefP, int npoints,
       // cexp(kn * kn_next * rough_sqr[ii])
       _Complex double debye_waller;
       if (__builtin_expect(kn_im == 0.0 && kn_next_im == 0.0, 1)) {
-          // Fast path: non-absorbing layers — DW factor is a real scalar
-          debye_waller = exp(kn_re * kn_next_re * rs);
+        // Fast path: non-absorbing layers — DW factor is a real scalar
+        debye_waller = exp(kn_re * kn_next_re * rs);
       } else {
-          // General path: absorbing layers
-          double prod_re = (kn_re * kn_next_re - kn_im * kn_next_im) * rs;
-          double prod_im = (kn_re * kn_next_im + kn_im * kn_next_re) * rs;
-          double s, c;
-          sincos_portable(prod_im, &s, &c);
-          debye_waller = CMPLX(exp(prod_re) * c, exp(prod_re) * s);
+        // General path: absorbing layers
+        double prod_re = (kn_re * kn_next_re - kn_im * kn_next_im) * rs;
+        double prod_im = (kn_re * kn_next_im + kn_im * kn_next_re) * rs;
+        double s, c;
+        sincos_portable(prod_im, &s, &c);
+        debye_waller = CMPLX(exp(prod_re) * c, exp(prod_re) * s);
       }
 
       rj = (kn - kn_next) / (kn + kn_next) * debye_waller;
@@ -245,8 +242,10 @@ void abeles(int numcoefs, const double *restrict coefP, int npoints,
 
         inv_beta = oneC / beta;
 
-        _Complex double p0 = MRtotal[0][0] * beta,  q0 = MRtotal[0][1] * inv_beta;
-        _Complex double p1 = MRtotal[1][0] * beta,  q1 = MRtotal[1][1] * inv_beta;
+        _Complex double p0 = MRtotal[0][0] * beta,
+                        q0 = MRtotal[0][1] * inv_beta;
+        _Complex double p1 = MRtotal[1][0] * beta,
+                        q1 = MRtotal[1][1] * inv_beta;
 
         MRtotal[0][0] = p0 + rj * q0;
         MRtotal[0][1] = rj * p0 + q0;
@@ -274,7 +273,6 @@ done:
   if (rough_sqr)
     free(rough_sqr);
 }
-
 
 void parratt(int numcoefs, const double *restrict coefP, int npoints,
              double *restrict yP, const double *restrict xP) {
