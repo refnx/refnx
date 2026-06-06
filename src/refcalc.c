@@ -119,9 +119,7 @@ void abeles(int numcoefs, const double *restrict coefP, int npoints,
   double complex sub;
   double complex _t;
   double complex oneC = CMPLX(1., 0.);
-  double complex beta, rj;
   double complex inv_beta;
-  double complex kn, kn_next;
 
   _Complex double MRtotal[2][2];
   _Complex double *SLD = NULL;
@@ -162,6 +160,9 @@ void abeles(int numcoefs, const double *restrict coefP, int npoints,
   rough_sqr[nlayers] = -2 * coefP[7] * coefP[7];
 
   for (j = 0; j < npoints; j++) {
+    double complex beta, rj;
+    double complex kn, kn_next;
+
     qq2 = CMPLX(xP[j] * xP[j] / 4, 0);
 
     // now calculate reflectivities and wavevectors
