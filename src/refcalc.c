@@ -126,118 +126,273 @@ void matmul(_Complex double a[2][2], _Complex double b[2][2],
   c[1][1] = a[1][0] * b[0][1] + a[1][1] * b[1][1];
 }
 
-void abeles(int numcoefs, const double *restrict coefP, int npoints,
-            double *restrict yP, const double *restrict xP) {
-    int j;
-    double scale, bkg;
-    double num = 0, den = 0, answer = 0;
-    double complex super;
-    double complex sub;
-    double complex _t;
-    double complex oneC = CMPLX(1., 0.);
+#define BATCH 4  /* process 4 Q-values at once; matches AVX2 double width */
 
-    _Complex double MRtotal[2][2];
+void abeles(int numcoefs, const double *restrict coefP, int npoints,
+                double *restrict yP, const double *restrict xP) {
+
+    double scale, bkg;
+    double complex super, sub, _t;
+
     _Complex double *SLD = NULL;
     _Complex double *thickness = NULL;
-
-    double complex qq2;
     double *rough_sqr = NULL;
 
     int nlayers = (int)coefP[0];
 
     SLD = (_Complex double *)malloc((nlayers + 2) * sizeof(_Complex double));
-    if (!SLD)
-        goto done;
+    if (!SLD) goto done;
 
-    thickness = (_Complex double *)malloc((nlayers) * sizeof(_Complex double));
-    if (!thickness)
-        goto done;
+    thickness = (_Complex double *)malloc(nlayers * sizeof(_Complex double));
+    if (!thickness) goto done;
 
     rough_sqr = (double *)malloc((nlayers + 1) * sizeof(double));
-    if (!rough_sqr)
-        goto done;
+    if (!rough_sqr) goto done;
 
     scale = coefP[1];
-    bkg = coefP[6];
-    sub = CMPLX(coefP[4], fabs(coefP[5]) + TINY);
+    bkg   = coefP[6];
+    sub   = CMPLX(coefP[4], fabs(coefP[5]) + TINY);
     super = CMPLX(coefP[2], 0);
 
-    // fill out all the SLD's for all the layers
-    for (int ii = 1; ii < nlayers + 1; ii += 1) {
+    for (int ii = 1; ii < nlayers + 1; ii++) {
         _t = CMPLX(coefP[4 * ii + 5], fabs(coefP[4 * ii + 6]) + TINY);
-        SLD[ii] = 4e-6 * PI * (_t - super);
-        thickness[ii - 1] = CMPLX(0, fabs(coefP[4 * ii + 4]));
-        rough_sqr[ii - 1] = -2 * coefP[4 * ii + 7] * coefP[4 * ii + 7];
+        SLD[ii]         = 4e-6 * PI * (_t - super);
+        thickness[ii-1] = CMPLX(0, fabs(coefP[4 * ii + 4]));
+        rough_sqr[ii-1] = -2 * coefP[4 * ii + 7] * coefP[4 * ii + 7];
     }
-
-    SLD[0] = CMPLX(0, 0);
+    SLD[0]          = CMPLX(0, 0);
     SLD[nlayers + 1] = 4e-6 * PI * (sub - super);
     rough_sqr[nlayers] = -2 * coefP[7] * coefP[7];
 
-    for (j = 0; j < npoints; j++) {
-        double complex rj;
-        double complex kn, kn_next;
+    /* ------------------------------------------------------------------ *
+     * Batched Q-loop: process BATCH points simultaneously so the compiler
+     * can vectorise the independent arithmetic across the batch dimension.
+     *
+     * Data layout (SoA within the batch):
+     *   kn_re[b], kn_im[b]          -- real/imag parts of kn for lane b
+     *   MRtotal_re[elem][b]          -- real parts of the 4 matrix elements
+     *   MRtotal_im[elem][b]          -- imag parts of the 4 matrix elements
+     *
+     * Keeping real and imaginary parts in separate arrays (rather than
+     * interleaved _Complex double) is what enables auto-vectorisation:
+     * the compiler sees BATCH independent doubles in a contiguous array
+     * and can map them onto a single SIMD register.
+     * ------------------------------------------------------------------ */
 
-        qq2 = CMPLX(xP[j] * xP[j] / 4, 0);
+    int j = 0;
 
+    for (; j <= npoints - BATCH; j += BATCH) {
+
+        /* --- SoA storage for this batch -------------------------------- */
+
+        /* wavevectors: kn = kn_re + i*kn_im */
+        double kn_re[BATCH], kn_im[BATCH];
+
+        /* 2x2 matrix MRtotal, stored as 4 separate re/im arrays */
+        double M00_re[BATCH], M00_im[BATCH];
+        double M01_re[BATCH], M01_im[BATCH];
+        double M10_re[BATCH], M10_im[BATCH];
+        double M11_re[BATCH], M11_im[BATCH];
+
+        /* initialise kn = xP[j+b] / 2  (purely real at entry) */
+        for (int b = 0; b < BATCH; b++) {
+            kn_re[b] = xP[j + b] / 2.0;
+            kn_im[b] = 0.0;
+        }
+
+        /* ---- layer loop ---------------------------------------------- */
+        for (int ii = 0; ii < nlayers + 1; ii++) {
+
+            double sld_re = creal(SLD[ii + 1]);
+            double sld_im = cimag(SLD[ii + 1]);
+            double rs     = rough_sqr[ii];
+
+            /*
+             * All operations below are over the BATCH dimension.
+             * The compiler sees BATCH-wide loops over plain double arrays
+             * with no dependencies between lanes — ideal for AVX2.
+             */
+
+            /* kn_next = csqrt(qq2 - SLD[ii+1])
+             * qq2 = (xP[j+b]/2)^2 = kn_re[b]^2  (purely real at ii=0,
+             * complex thereafter as kn accumulates imaginary part)      */
+            double kn_next_re[BATCH], kn_next_im[BATCH];
+
+            for (int b = 0; b < BATCH; b++) {
+                double qq2_re = kn_re[b] * kn_re[b] - kn_im[b] * kn_im[b];
+                double qq2_im = 2.0 * kn_re[b] * kn_im[b];
+
+                double a_re = qq2_re - sld_re;
+                double a_im = qq2_im - sld_im;
+
+                /* complex sqrt: sqrt(a_re + i*a_im) */
+                double mag   = sqrt(a_re * a_re + a_im * a_im);
+                double s_re  = sqrt((mag + a_re) * 0.5);
+                double s_im  = (a_im >= 0 ? 1.0 : -1.0)
+                               * sqrt((mag - a_re) * 0.5);
+                /* ensure we take the correct branch (same role as TINY) */
+                if (s_im < 0) { s_re = -s_re; s_im = -s_im; }
+
+                kn_next_re[b] = s_re;
+                kn_next_im[b] = s_im;
+            }
+
+            /* rj = (kn - kn_next) / (kn + kn_next) * exp(kn*kn_next*rs) */
+            double rj_re[BATCH], rj_im[BATCH];
+
+            for (int b = 0; b < BATCH; b++) {
+                /* numerator: kn - kn_next */
+                double num_re = kn_re[b] - kn_next_re[b];
+                double num_im = kn_im[b] - kn_next_im[b];
+
+                /* denominator: kn + kn_next */
+                double den_re = kn_re[b] + kn_next_re[b];
+                double den_im = kn_im[b] + kn_next_im[b];
+
+                /* complex division: num / den */
+                double den2  = den_re * den_re + den_im * den_im;
+                double t_re  = (num_re * den_re + num_im * den_im) / den2;
+                double t_im  = (num_im * den_re - num_re * den_im) / den2;
+
+                /* Debye-Waller: exp(kn * kn_next * rs)
+                 * kn * kn_next: */
+                double p_re = (kn_re[b] * kn_next_re[b]
+                               - kn_im[b] * kn_next_im[b]) * rs;
+                double p_im = (kn_re[b] * kn_next_im[b]
+                               + kn_im[b] * kn_next_re[b]) * rs;
+
+                double dw = exp(p_re);
+                double dw_re = dw * cos(p_im);
+                double dw_im = dw * sin(p_im);
+
+                /* rj = (num/den) * dw */
+                rj_re[b] = t_re * dw_re - t_im * dw_im;
+                rj_im[b] = t_re * dw_im + t_im * dw_re;
+            }
+
+            if (!ii) {
+                /* first interface: MRtotal = | 1   rj | */
+                /*                            | rj  1  | */
+                for (int b = 0; b < BATCH; b++) {
+                    M00_re[b] = 1.0; M00_im[b] = 0.0;
+                    M01_re[b] = rj_re[b]; M01_im[b] = rj_im[b];
+                    M10_re[b] = rj_re[b]; M10_im[b] = rj_im[b];
+                    M11_re[b] = 1.0; M11_im[b] = 0.0;
+                }
+            } else {
+                /* beta = cexp(kn * thickness[ii-1])
+                 * thickness[ii-1] = CMPLX(0, t), so:
+                 * kn * CMPLX(0,t) = CMPLX(-kn_im*t, kn_re*t)           */
+                double t = cimag(thickness[ii - 1]);
+
+                double beta_re[BATCH], beta_im[BATCH];
+                double inv_beta_re[BATCH], inv_beta_im[BATCH];
+
+                for (int b = 0; b < BATCH; b++) {
+                    double arg_re = -kn_im[b] * t;
+                    double arg_im =  kn_re[b] * t;
+                    double env    = exp(arg_re);
+                    beta_re[b]    = env * cos(arg_im);
+                    beta_im[b]    = env * sin(arg_im);
+
+                    /* inv_beta = conj(beta) / |beta|^2
+                     * For non-absorbing layers |beta|=1 so inv_beta=conj(beta).
+                     * We use the general form to stay correct for absorbing. */
+                    double mag2      = beta_re[b] * beta_re[b]
+                                     + beta_im[b] * beta_im[b];
+                    inv_beta_re[b]   =  beta_re[b] / mag2;
+                    inv_beta_im[b]   = -beta_im[b] / mag2;
+                }
+
+                /* Inlined matrix update exploiting MI sparsity.
+                 * p = MRtotal_row * beta,  q = MRtotal_row * inv_beta
+                 * new row = | p + rj*q ,  rj*p + q |                   */
+                for (int b = 0; b < BATCH; b++) {
+
+                    /* row 0 */
+                    double p0_re = M00_re[b]*beta_re[b] - M00_im[b]*beta_im[b];
+                    double p0_im = M00_re[b]*beta_im[b] + M00_im[b]*beta_re[b];
+                    double q0_re = M01_re[b]*inv_beta_re[b] - M01_im[b]*inv_beta_im[b];
+                    double q0_im = M01_re[b]*inv_beta_im[b] + M01_im[b]*inv_beta_re[b];
+
+                    M00_re[b] = p0_re + rj_re[b]*q0_re - rj_im[b]*q0_im;
+                    M00_im[b] = p0_im + rj_re[b]*q0_im + rj_im[b]*q0_re;
+                    M01_re[b] = rj_re[b]*p0_re - rj_im[b]*p0_im + q0_re;
+                    M01_im[b] = rj_re[b]*p0_im + rj_im[b]*p0_re + q0_im;
+
+                    /* row 1 */
+                    double p1_re = M10_re[b]*beta_re[b] - M10_im[b]*beta_im[b];
+                    double p1_im = M10_re[b]*beta_im[b] + M10_im[b]*beta_re[b];
+                    double q1_re = M11_re[b]*inv_beta_re[b] - M11_im[b]*inv_beta_im[b];
+                    double q1_im = M11_re[b]*inv_beta_im[b] + M11_im[b]*inv_beta_re[b];
+
+                    M10_re[b] = p1_re + rj_re[b]*q1_re - rj_im[b]*q1_im;
+                    M10_im[b] = p1_im + rj_re[b]*q1_im + rj_im[b]*q1_re;
+                    M11_re[b] = rj_re[b]*p1_re - rj_im[b]*p1_im + q1_re;
+                    M11_im[b] = rj_re[b]*p1_im + rj_im[b]*p1_re + q1_im;
+                }
+            }
+
+            /* advance kn for next layer */
+            for (int b = 0; b < BATCH; b++) {
+                kn_re[b] = kn_next_re[b];
+                kn_im[b] = kn_next_im[b];
+            }
+        }
+
+        /* extract reflectivity for each lane in the batch */
+        for (int b = 0; b < BATCH; b++) {
+            double num = M10_re[b]*M10_re[b] + M10_im[b]*M10_im[b];
+            double den = M00_re[b]*M00_re[b] + M00_im[b]*M00_im[b];
+            yP[j + b] = (num / den) * scale + bkg;
+        }
+    }
+
+    /* ------------------------------------------------------------------ *
+     * Scalar tail: handle remaining points when npoints % BATCH != 0.
+     * Reuse the original scalar abeles logic for simplicity.
+     * ------------------------------------------------------------------ */
+    for (; j < npoints; j++) {
+        double complex kn, kn_next, rj, beta;
+        _Complex double MRtotal[2][2];
+        double complex oneC = CMPLX(1., 0.);
+
+        double complex qq2 = CMPLX(xP[j] * xP[j] / 4, 0);
         kn = xP[j] / 2.;
 
         for (int ii = 0; ii < nlayers + 1; ii++) {
-            // wavevector in the next layer
             kn_next = csqrt(qq2 - SLD[ii + 1]);
-
-            // reflectance of the interface, with Debye-Waller roughness factor
             rj = (kn - kn_next) / (kn + kn_next) *
                  cexp(kn * kn_next * rough_sqr[ii]);
 
             if (!ii) {
-                // characteristic matrix for first interface
-                MRtotal[0][0] = oneC;
-                MRtotal[0][1] = rj;
-                MRtotal[1][1] = oneC;
-                MRtotal[1][0] = rj;
+                MRtotal[0][0] = oneC; MRtotal[0][1] = rj;
+                MRtotal[1][0] = rj;   MRtotal[1][1] = oneC;
             } else {
-                // phase factor for this layer
-                _Complex double beta = cexp(kn * thickness[ii - 1]);
-                inv_beta = oneC / beta;
-
-                // Inlined matrix multiply exploiting MI sparsity:
-                // MI = | beta      rj*beta |
-                //      | rj/beta   1/beta  |
-                // Only two independent values (beta, rj) so we factor
-                // common subexpressions per row, eliminating memcpy and
-                // the matmul() call entirely.
+                beta = cexp(kn * thickness[ii - 1]);
+                _Complex double inv_beta = (cimag(kn) == 0.0)
+                                           ? conj(beta) : oneC / beta;
                 _Complex double p0 = MRtotal[0][0] * beta;
                 _Complex double q0 = MRtotal[0][1] * inv_beta;
                 _Complex double p1 = MRtotal[1][0] * beta;
                 _Complex double q1 = MRtotal[1][1] * inv_beta;
-
                 MRtotal[0][0] = p0 + rj * q0;
                 MRtotal[0][1] = rj * p0 + q0;
                 MRtotal[1][0] = p1 + rj * q1;
                 MRtotal[1][1] = rj * p1 + q1;
             }
-
             kn = kn_next;
         }
 
-        num = cabs(MRtotal[1][0]);
-        num *= num;
-        den = cabs(MRtotal[0][0]);
-        den *= den;
-        answer = (num / den);
-
-        answer = (answer * scale) + bkg;
-        yP[j] = answer;
+        double num = cabs(MRtotal[1][0]); num *= num;
+        double den = cabs(MRtotal[0][0]); den *= den;
+        yP[j] = (num / den) * scale + bkg;
     }
 
 done:
-    if (SLD)
-        free(SLD);
-    if (thickness)
-        free(thickness);
-    if (rough_sqr)
-        free(rough_sqr);
+    if (SLD)       free(SLD);
+    if (thickness) free(thickness);
+    if (rough_sqr) free(rough_sqr);
 }
 
 
