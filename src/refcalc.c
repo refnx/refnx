@@ -47,18 +47,9 @@ However, the following remains the fastest calculation  so far.
  * Neither is needed on macOS or MSVC, where we use alternatives anyway.
  */
 #if defined(__linux__) || defined(__unix__)
-#if defined(__GLIBC__)
-#if __GLIBC__ > 2 || (__GLIBC__ == 2 && __GLIBC_MINOR__ >= 19)
-#define _DEFAULT_SOURCE
-#else
-#define _GNU_SOURCE
+#  define _GNU_SOURCE
 #endif
-#else
-/* Non-glibc unix (musl, BSD libc, etc.) -- sincos usually available
- * without guards, but _DEFAULT_SOURCE is harmless */
-#define _DEFAULT_SOURCE
-#endif
-#endif
+
 
 #include "complex.h"
 #include "math.h"
