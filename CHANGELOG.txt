@@ -726,3 +726,7 @@ in 0.1.13.
 - Fixed an issue with the manual beam finder due to a numpy/matplotlib change.
 - Non-gaussian resolution function example for the documentation.
 - Use ss3y for the slit tower 3 horizontal translation.
+
+0.1.65
+------
+- optimise _refcalc.c::abeles by using Structure of Arrays (claude suggested code).
