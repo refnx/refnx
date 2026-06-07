@@ -25,6 +25,20 @@ else
   srcs += '../../src/refcalc.c'
 endif
 
+
+# Define the flags you want
+safer_args = cc.get_supported_arguments([
+  '-O3',
+  '-march=native',
+  '-fno-math-errno',      # safe: errno never checked after math calls
+  '-fassociative-math',   # mostly safe: minor FP reordering for vectorisation
+  '-fno-trapping-math',   # safe: no FP exception trapping needed
+  # Deliberately excluded:
+  # -fno-signed-zeros     UNSAFE: TINY sentinel relies on correct sign
+  # -ffinite-math-only    UNSAFE: bad SLD params could produce NaN/Inf
+])
+
+
 py3.extension_module(
   '_creflect',
   srcs,
@@ -33,7 +47,9 @@ py3.extension_module(
   include_directories: [inc_np, '../../src', '../../src/pnr'],
   dependencies: [np_dep],
   subdir: 'refnx/reflect',
-  limited_api: '3.11'
+  limited_api: '3.11',
+  c_args: safer_args,
+  cpp_args: safer_args,
 )
 
 if omp_dep.found()
