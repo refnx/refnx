@@ -38,6 +38,11 @@ _INTLIMIT = 3.5
 
 
 def jabeles(q, layers, scale=1.0, bkg=0, threads=0):
+    # Note, this code must have 64 bit operation enabled before it is used
+    # You can do this with:
+    # from jax import config
+    # config.update("jax_enable_x64", True)
+
     qvals = q.astype(jnp.float64)
     flatq = qvals.ravel()
 
@@ -106,9 +111,6 @@ def jabeles(q, layers, scale=1.0, bkg=0, threads=0):
     r = mrtot01 / mrtot00
     reflectivity = r * jnp.conj(r)
     return scale * jnp.real(jnp.reshape(reflectivity, qvals.shape)) + bkg
-
-
-abeles_jax = jit(jabeles)
 
 
 # abeles_jax = jabeles
