@@ -28,7 +28,7 @@ from functools import reduce
 
 import numpy as np
 import jax.numpy as jnp
-from jax import jit
+from jax import jit, lax
 from refnx.reflect.reflect_model import gauss_legendre
 
 TINY = 1e-30
@@ -49,53 +49,67 @@ def jabeles(q, layers, scale=1.0, bkg=0, threads=0):
     nlayers = layers.shape[0] - 2
     npnts = flatq.size
 
-    mi00 = jnp.ones((npnts, nlayers + 1), jnp.complex128)
-
-    sld = jnp.zeros(nlayers + 2, jnp.complex128)
-
-    # addition of TINY is to ensure the correct branch cut
-    # in the complex sqrt calculation of kn.
-    sld = sld.at[1:].add(
-        ((layers[1:, 1] - layers[0, 1]) + 1j * (jnp.abs(layers[1:, 2]) + TINY))
-        * 1.0e-6
-    )
+    # Build sld more directly (avoids mutable update)
+    sld_vals = (
+        (layers[1:, 1] - layers[0, 1]) + 1j * (jnp.abs(layers[1:, 2]) + TINY)
+    ) * 1.0e-6
+    sld = jnp.concatenate([jnp.zeros(1, jnp.complex128), sld_vals])
 
     kn = jnp.sqrt(flatq[:, jnp.newaxis] ** 2.0 / 4.0 - 4.0 * jnp.pi * sld)
-    # reflectances for each layer
-    # rj.shape = (npnts, nlayers + 1)
+
     damping = jnp.exp(-2.0 * kn[:, :-1] * kn[:, 1:] * layers[1:, 3] ** 2)
     rj = (kn[:, :-1] - kn[:, 1:]) / (kn[:, :-1] + kn[:, 1:]) * damping
 
-    # characteristic matrices for each layer
-    # miNN.shape = (npnts, nlayers + 1)
+    # Compute mi00 for inner layers only, use exp(-x) instead of division
     if nlayers:
-        mi00 = mi00.at[:, 1:].set(
-            jnp.exp(kn[:, 1:-1] * 1j * jnp.fabs(layers[1:-1, 0]))
+        exponent = kn[:, 1:-1] * 1j * jnp.fabs(layers[1:-1, 0])
+        mi00_inner = jnp.exp(exponent)
+        mi11_inner = jnp.exp(-exponent)
+
+        # Full arrays including first layer (exponent=0 → mi00=1)
+        mi00 = jnp.concatenate(
+            [jnp.ones((npnts, 1), jnp.complex128), mi00_inner], axis=1
         )
-    mi11 = 1.0 / mi00
+        mi11 = jnp.concatenate(
+            [jnp.ones((npnts, 1), jnp.complex128), mi11_inner], axis=1
+        )
+    else:
+        mi00 = jnp.ones((npnts, 1), jnp.complex128)
+        mi11 = mi00
+
     mi10 = rj * mi00
     mi01 = rj * mi11
 
-    # initialise matrix total
+    # Initialise with first layer
     mrtot00 = mi00[:, 0]
     mrtot01 = mi01[:, 0]
     mrtot10 = mi10[:, 0]
     mrtot11 = mi11[:, 0]
 
-    for _mi00, _mi10, _mi01, _mi11 in zip(
-        mi00[:, 1:].T, mi10[:, 1:].T, mi01[:, 1:].T, mi11[:, 1:].T
-    ):
-        # matrix multiply mrtot by characteristic matrix
-        p00 = mrtot00 * _mi00 + mrtot10 * _mi01
-        p10 = mrtot00 * _mi10 + mrtot10 * _mi11
-        p01 = mrtot01 * _mi00 + mrtot11 * _mi01
-        p11 = mrtot01 * _mi10 + mrtot11 * _mi11
+    # Use lax.scan instead of Python for-loop
+    def body_fn(carry, x):
+        m00, m01, m10, m11 = carry
+        _mi00, _mi10, _mi01, _mi11 = x
+        p00 = m00 * _mi00 + m10 * _mi01
+        p10 = m00 * _mi10 + m10 * _mi11
+        p01 = m01 * _mi00 + m11 * _mi01
+        p11 = m01 * _mi10 + m11 * _mi11
+        return (p00, p01, p10, p11), None
 
-        mrtot00, mrtot01, mrtot10, mrtot11 = p00, p01, p10, p11
+    if nlayers:
+        # xs shape: each is (nlayers, npnts) — scan over layers axis
+        xs = (
+            mi00[:, 1:].T,
+            mi10[:, 1:].T,
+            mi01[:, 1:].T,
+            mi11[:, 1:].T,
+        )
+        (mrtot00, mrtot01, mrtot10, mrtot11), _ = lax.scan(
+            body_fn, (mrtot00, mrtot01, mrtot10, mrtot11), xs
+        )
 
     r = mrtot01 / mrtot00
     reflectivity = r * jnp.conj(r)
-
     return scale * jnp.real(jnp.reshape(reflectivity, qvals.shape)) + bkg
 
 
