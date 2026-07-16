@@ -187,5 +187,5 @@ def jax_smeared_kernel_pointwise(
 
     smeared_rvals = jnp.reshape(smeared_rvals, (qvals.size, abscissa.size))
 
-    smeared_rvals *= jnp.atleast_2d(gaussvals * weights)
+    smeared_rvals = smeared_rvals * jnp.atleast_2d(gaussvals * weights)
     return scale * (np.sum(smeared_rvals, 1) * _INTLIMIT) + bkg
