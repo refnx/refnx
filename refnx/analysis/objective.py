@@ -1464,7 +1464,7 @@ def pymc_model(objective):
     """
     Creates a pymc model from an Objective.
 
-    Requires aesara and pymc be installed. This is an experimental feature.
+    Requires pytensor and pymc be installed. This is an experimental feature.
 
     Parameters
     ----------
@@ -1537,14 +1537,14 @@ def _to_pymc_distribution(name, par):
     dist = par.bounds
     # interval and both lb, ub are finite
     if isinstance(dist, Interval) and np.isfinite([dist.lb, dist.ub]).all():
-        return pm.Uniform(name, dist.lb, dist.ub)
+        return pm.Uniform(name, dist.lb, dist.ub, initval=par.value)
     # no bounds
     elif (
         isinstance(dist, Interval)
         and np.isneginf(dist.lb)
         and np.isinf(dist.lb)
     ):
-        return pm.Flat(name)
+        return pm.Flat(name, initval=par.value)
     # half open uniform
     elif isinstance(dist, Interval) and not np.isfinite(dist.lb):
         return dist.ub - pm.HalfFlat(name)
@@ -1565,9 +1565,10 @@ def _to_pymc_distribution(name, par):
                     name,
                     dist.rv.args[0],
                     dist.rv.args[1] + dist.rv.args[0],
+                    initval=par.value,
                 )
             else:
-                p = pm.Uniform(name, 0, 1)
+                p = pm.Uniform(name, 0, 1, initval=par.value)
             return p
 
         # norm from scipy.stats
@@ -1577,14 +1578,15 @@ def _to_pymc_distribution(name, par):
                     name,
                     mu=dist.rv.args[0],
                     sigma=dist.rv.args[1],
+                    initval=par.value,
                 )
             else:
-                p = pm.Normal(name, mu=0, sigma=1)
+                p = pm.Normal(name, mu=0, sigma=1, initval=par.value)
             return p
 
     # not open, uniform, or normal, so fall back to DensityDist.
     d = as_op(itypes=[pt.dscalar], otypes=[pt.dscalar])(dist.logp)
     r = as_op(itypes=[pt.dscalar], otypes=[pt.dscalar])(dist.rvs)
-    p = pm.DensityDist(name, d, random=r)
+    p = pm.DensityDist(name, d, random=r, initval=par.value)
 
     return p
