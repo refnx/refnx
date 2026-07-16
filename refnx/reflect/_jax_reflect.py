@@ -105,8 +105,8 @@ abeles_jax = jit(jabeles)
 
 def jax_smeared_kernel_pointwise(
     q: jnp.ndarray,
-    dqvals: jnp.ndarray,
     layers: jnp.ndarray,
+    dqvals: jnp.ndarray,
     scale: float | jnp.ndarray = 1.0,
     bkg: float | jnp.ndarray = 0.0,
     quad_order: int = 17,
@@ -124,10 +124,10 @@ def jax_smeared_kernel_pointwise(
     ----------
     q : (N,) jnp.ndarray
         Nominal Q values (Å⁻¹).
-    dqvals : (N,) jnp.ndarray
-        Per-point dQ resolution
     layers : (M, 4) jnp.ndarray
         Layer stack as returned by ``params_to_slabs``.
+    dqvals : (N,) jnp.ndarray
+        Per-point dQ resolution
     scale, bkg :
         Passed directly to ``jabeles``.
     quad_order : int
