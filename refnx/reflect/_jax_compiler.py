@@ -405,7 +405,7 @@ def _make_params_to_slabs(
 
 
 # ---------------------------------------------------------------------------
-# Step 4 — compile the full log-likelihood
+# Step 3 — compile the full log-likelihood
 # ---------------------------------------------------------------------------
 
 
@@ -429,10 +429,10 @@ def _make_logl(
     applied — exactly what ``jabeles`` requires.
 
     When ``q_err`` is not None (i.e. the dataset carries per-point dQ/Q
-    resolution), reflectivity is computed via ``_jabeles_smeared`` using
-    Gauss-Legendre quadrature so that the gradient flows correctly through
-    the smearing integral.  When ``q_err`` is None the unsmeared
-    ``jabeles`` is used directly.
+    resolution), reflectivity is computed via
+    ``jax_smeared_kernel_pointwise`` from ``refnx.reflect._jax_reflect``
+    so that the gradient flows correctly through the smearing integral.
+    When ``q_err`` is None the unsmeared ``jabeles`` is used directly.
 
     Mirrors Objective.logl:
 
@@ -445,7 +445,8 @@ def _make_logl(
         Per-point dQ/Q values (FWHM) from ``Objective.data.x_err``.
         Pass None to skip resolution smearing.
     quad_order : int
-        Gauss-Legendre quadrature order forwarded to ``_jabeles_smeared``.
+        Gauss-Legendre quadrature order forwarded to
+        ``jax_smeared_kernel_pointwise``.
     """
     from refnx.reflect._jax_reflect import (
         jabeles,
@@ -455,14 +456,18 @@ def _make_logl(
     use_smearing = q_err is not None
 
     def logl_jax(free: jnp.ndarray) -> jnp.ndarray:
-        layers = params_to_slabs(free)  # (N, 4) — solvent mixing already done
+        layers = params_to_slabs(free)  # (N, 4) - solvent mixing already done
         scale = _eval_node(scale_node, free)
         bkg = _eval_node(bkg_node, free)
 
         if use_smearing:
+            # jax_smeared_kernel_pointwise(qvals, w, dqvals, quad_order)
+            # w is the layers array; dqvals are the absolute dQ FWHM values,
+            # i.e. q_err (fractional dQ/Q) * q.
             model = jax_smeared_kernel_pointwise(
-                q, layers, q_err, scale=scale, bkg=bkg, quad_order=quad_order
+                q, layers, q_err, quad_order=quad_order, scale=scale, bkg=bkg
             )
+            model = model
         else:
             model = jabeles(q, layers, scale=scale, bkg=bkg)
 
@@ -532,6 +537,108 @@ class CompiledObjective:
     n_free: int
 
 
+def _compile_single_logl(
+    objective, compiler: _ConstraintCompiler, quad_order: int = 17
+) -> Callable:
+    """
+    Compile one ``Objective`` into a raw (un-JIT-ted) JAX log-likelihood
+    function using a pre-built ``_ConstraintCompiler``.
+
+    This is the shared workhorse called by both ``compile_objective`` and
+    ``compile_global_objective``.  Separating it out means the global case
+    can build one ``free_index`` covering the full deduplicated parameter set,
+    then compile each child objective against that same index so that shared
+    parameters map to the same position in the free vector in every term.
+
+    Parameters
+    ----------
+    objective : refnx.analysis.Objective
+    compiler : _ConstraintCompiler
+        Already constructed with the correct ``free_index``.
+    quad_order : int
+        Forwarded to ``_make_logl``.
+
+    Returns
+    -------
+    logl_raw : Callable[[jnp.ndarray], jnp.ndarray]
+        Pure JAX function, not yet JIT-compiled.
+    """
+    from refnx.analysis.parameter import is_parameter
+
+    model = objective.model
+    if not hasattr(model, "structure"):
+        raise TypeError(
+            f"Objective '{objective.name}' has a model without a "
+            "'structure' attribute.  Only ReflectModel-backed objectives "
+            "are supported.  For other model types implement "
+            "_jax_logl(compiler, data) on the model."
+        )
+
+    structure = model.structure
+    slab_specs = _compile_structure(structure, compiler)
+
+    solvent_complex = complex(structure.solvent.complex(structure.wavelength))
+    params_to_slabs_fn = _make_params_to_slabs(
+        slab_specs, solvent_complex.real, solvent_complex.imag
+    )
+
+    if hasattr(model, "scale") and is_parameter(model.scale):
+        scale_node = compiler.compile_parameter(model.scale)
+    elif hasattr(model, "scale"):
+        scale_node = _ConstNode(float(model.scale))
+    else:
+        scale_node = _ConstNode(1.0)
+
+    if hasattr(model, "bkg") and is_parameter(model.bkg):
+        bkg_node = compiler.compile_parameter(model.bkg)
+    elif hasattr(model, "bkg"):
+        bkg_node = _ConstNode(float(model.bkg))
+    else:
+        bkg_node = _ConstNode(0.0)
+
+    if objective.lnsigma is not None and is_parameter(objective.lnsigma):
+        lnsigma_node = compiler.compile_parameter(objective.lnsigma)
+    else:
+        lnsigma_node = None
+
+    q = jnp.array(objective.data.x, dtype=jnp.float64)
+    y = jnp.array(objective.data.y, dtype=jnp.float64)
+    y_err = (
+        jnp.array(objective.data.y_err, dtype=jnp.float64)
+        if objective.weighted
+        else None
+    )
+
+    # x_err holds per-point dQ/Q values (fractional FWHM resolution).
+    # ReflectDataset stores None when no resolution information is present,
+    # and a zero-filled array is treated as "no smearing" by ReflectModel.
+    # We follow the same convention: only smear when x_err is non-None and
+    # has at least one non-zero entry.
+    dqvals = None
+    quad_order = model.quad_order
+
+    if model.dq_type == "pointwise" and objective.data.x_err is None:
+        if model.dq.value > 0:
+            dqvals = model.dq.value / 100.0 * objective.data.x
+    if model.dq_type == "constant" and model.dq.value > 0:
+        dqvals = model.dq.value / 100.0 * objective.data.x
+    if model.dq_type == "pointwise" and objective.data.x_err is not None:
+        dqvals = jnp.array(objective.data.x_err, dtype=jnp.float64)
+
+    return _make_logl(
+        params_to_slabs_fn,
+        q,
+        y,
+        y_err,
+        dqvals,
+        scale_node,
+        bkg_node,
+        lnsigma_node,
+        use_weights=objective.weighted,
+        quad_order=quad_order,
+    )
+
+
 def compile_objective(objective) -> CompiledObjective:
     """
     Compile a refnx ``Objective`` into a pure JAX log-likelihood.
@@ -588,102 +695,9 @@ def compile_objective(objective) -> CompiledObjective:
     compiler = _ConstraintCompiler(free_index)
 
     # ------------------------------------------------------------------
-    # 2.  Compile the structure → slab layout
+    # 2–4.  Compile structure, scale/bkg/lnsigma, and freeze data arrays
     # ------------------------------------------------------------------
-    model = objective.model
-    if not hasattr(model, "structure"):
-        raise TypeError(
-            "compile_objective currently requires model.structure to be a "
-            "refnx Structure (i.e. a ReflectModel).  For other model types "
-            "implement _jax_logl(compiler, data) on the model."
-        )
-
-    structure = model.structure
-    slab_specs = _compile_structure(structure, compiler)
-
-    # Resolve the solvent SLD once at compile time.
-    # Structure.solvent returns a Scatterer; .complex() gives a Python complex.
-    # This is correct: the solvent identity doesn't change during optimisation
-    # (it's always the last slab's SLD or an explicit Structure.solvent).
-    # If the solvent SLD is itself a free parameter the user should set
-    # Structure.solvent explicitly to a Scatterer whose Parameters are in the
-    # graph; for now we bake in the current numeric value, which is sufficient
-    # for the common case of a fixed solvent contrast.
-    solvent_complex = complex(structure.solvent.complex(structure.wavelength))
-    solvent_real = solvent_complex.real
-    solvent_imag = solvent_complex.imag
-
-    params_to_slabs_fn = _make_params_to_slabs(
-        slab_specs, solvent_real, solvent_imag
-    )
-
-    # ------------------------------------------------------------------
-    # 3.  Compile scale, background, lnsigma
-    # ------------------------------------------------------------------
-    from refnx.analysis.parameter import is_parameter
-
-    if hasattr(model, "scale") and is_parameter(model.scale):
-        scale_node = compiler.compile_parameter(model.scale)
-    elif hasattr(model, "scale"):
-        scale_node = _ConstNode(float(model.scale))
-    else:
-        scale_node = _ConstNode(1.0)
-
-    if hasattr(model, "bkg") and is_parameter(model.bkg):
-        bkg_node = compiler.compile_parameter(model.bkg)
-    elif hasattr(model, "bkg"):
-        bkg_node = _ConstNode(float(model.bkg))
-    else:
-        bkg_node = _ConstNode(0.0)
-
-    if objective.lnsigma is not None and is_parameter(objective.lnsigma):
-        lnsigma_node = compiler.compile_parameter(objective.lnsigma)
-    else:
-        lnsigma_node = None
-
-    # ------------------------------------------------------------------
-    # 4.  Freeze the data arrays
-    # ------------------------------------------------------------------
-    q = jnp.array(objective.data.x, dtype=jnp.float64)
-    y = jnp.array(objective.data.y, dtype=jnp.float64)
-
-    y_err = (
-        jnp.array(objective.data.y_err, dtype=jnp.float64)
-        if objective.weighted
-        else None
-    )
-
-    # x_err holds per-point dQ/Q values (fractional FWHM resolution).
-    # ReflectDataset stores None when no resolution information is present,
-    # and a zero-filled array is treated as "no smearing" by ReflectModel.
-    # We follow the same convention: only smear when x_err is non-None and
-    # has at least one non-zero entry.
-    dqvals = None
-    quad_order = model.quad_order
-
-    if model.dq_type == "pointwise" and objective.data.x_err is None:
-        if model.dq.value > 0:
-            dqvals = model.dq.value / 100.0 * objective.data.x
-    if model.dq_type == "constant" and model.dq.value > 0:
-        dqvals = model.dq.value / 100.0 * objective.data.x
-    if model.dq_type == "pointwise" and objective.data.x_err is not None:
-        dqvals = jnp.array(objective.data.x_err, dtype=jnp.float64)
-
-    # ------------------------------------------------------------------
-    # 5.  Build and JIT the pure log-likelihood
-    # ------------------------------------------------------------------
-    logl_raw = _make_logl(
-        params_to_slabs_fn,
-        q,
-        y,
-        y_err,
-        dqvals,
-        scale_node,
-        bkg_node,
-        lnsigma_node,
-        use_weights=objective.weighted,
-        quad_order=quad_order,
-    )
+    logl_raw = _compile_single_logl(objective, compiler)
 
     logl_jit = jax.jit(logl_raw)
     grad_jit = jax.jit(jax.grad(logl_raw))
@@ -701,6 +715,116 @@ def compile_objective(objective) -> CompiledObjective:
         grad_logl=grad_jit,
         value_and_grad=val_and_grad_jit,
         params_to_slabs=jax.jit(params_to_slabs_fn),
+        x0=x0,
+        param_names=param_names,
+        setp=setp,
+        n_free=len(var_params),
+    )
+
+
+def compile_global_objective(global_objective) -> CompiledObjective:
+    """
+    Compile a refnx ``GlobalObjective`` into a pure JAX log-likelihood.
+
+    The compiled log-likelihood is the weighted sum of the individual
+    objective log-likelihoods, mirroring ``GlobalObjective.logl``:
+
+        logl = sum( lambda_i * logl_i(free) )
+
+    Because all child objectives are compiled against a **single shared
+    free-parameter index** built from ``global_objective.varying_parameters()``,
+    parameters that are shared between objectives (e.g. a polymer SLD
+    refined simultaneously against multiple contrasts) appear exactly once
+    in the free vector and their gradients are summed correctly by JAX's
+    autodiff — no special handling is required.
+
+    Parameters
+    ----------
+    global_objective : refnx.analysis.GlobalObjective
+
+    Returns
+    -------
+    compiled : CompiledObjective
+        The ``params_to_slabs`` field is not populated for a
+        ``GlobalObjective`` (it is set to ``None``) because there is no
+        single layer stack — use the individual compiled objectives if you
+        need per-contrast SLD profiles.
+
+    Notes
+    -----
+    **lambdas**: ``GlobalObjective.lambdas`` are plain floats and are baked
+    in as constants at compile time.  If you change them you must
+    recompile.
+
+    **All other notes from** ``compile_objective`` **apply to each child
+    objective individually** (64-bit floats, re-compilation on topology
+    change, callable constraints, etc.).
+
+    Example
+    -------
+        compiled = compile_global_objective(global_objective)
+        val, grad = compiled.value_and_grad(compiled.x0)
+
+        # push back into the stateful world after optimisation:
+        compiled.setp(result.x)
+    """
+    # ------------------------------------------------------------------
+    # 1.  Build one shared free-parameter index from the global varying set.
+    #     GlobalObjective.varying_parameters() already returns the
+    #     deduplicated union, in a stable order, so shared parameters
+    #     appear exactly once.
+    # ------------------------------------------------------------------
+    var_params = list(global_objective.varying_parameters())
+    if not var_params:
+        raise ValueError(
+            "GlobalObjective has no varying parameters to compile."
+        )
+
+    free_index: Dict[int, int] = {id(p): i for i, p in enumerate(var_params)}
+    x0 = jnp.array([float(p.value) for p in var_params], dtype=jnp.float64)
+    param_names = [p.name or f"p{i}" for i, p in enumerate(var_params)]
+
+    compiler = _ConstraintCompiler(free_index)
+
+    # ------------------------------------------------------------------
+    # 2.  Compile each child objective against the shared compiler.
+    #     The lambda weights are baked in as Python floats (constants in
+    #     the XLA graph) because GlobalObjective.lambdas are plain floats.
+    # ------------------------------------------------------------------
+    weighted_logl_fns: List[tuple] = []  # (lambda_float, logl_raw_fn)
+
+    for obj, lam in zip(global_objective.objectives, global_objective.lambdas):
+        logl_i = _compile_single_logl(obj, compiler)
+        weighted_logl_fns.append((float(lam), logl_i))
+
+    # ------------------------------------------------------------------
+    # 3.  Combine into a single pure JAX function by summing the weighted
+    #     log-likelihoods.  The sum is unrolled at Python level (not with
+    #     jnp.sum over a stacked array) so that each term's XLA graph is
+    #     independent — this lets XLA parallelise or fuse them freely.
+    # ------------------------------------------------------------------
+    def logl_global(free: jnp.ndarray) -> jnp.ndarray:
+        total = jnp.zeros((), dtype=jnp.float64)
+        for lam, logl_fn in weighted_logl_fns:
+            total = total + lam * logl_fn(free)
+        return total
+
+    logl_jit = jax.jit(logl_global)
+    grad_jit = jax.jit(jax.grad(logl_global))
+    val_and_grad_jit = jax.jit(jax.value_and_grad(logl_global))
+
+    # ------------------------------------------------------------------
+    # 4.  setp bridge — GlobalObjective.setp handles the deduplication
+    # ------------------------------------------------------------------
+    def setp(x: np.ndarray) -> None:
+        """Push values from the free vector back into the stateful world."""
+        global_objective.setp(np.asarray(x))
+
+    return CompiledObjective(
+        logl=logl_jit,
+        grad_logl=grad_jit,
+        value_and_grad=val_and_grad_jit,
+        params_to_slabs=None,  # no single layer stack for a global fit
         x0=x0,
         param_names=param_names,
         setp=setp,
