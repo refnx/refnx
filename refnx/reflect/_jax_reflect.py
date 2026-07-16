@@ -118,8 +118,8 @@ abeles_jax = jit(jabeles)
 
 
 def jax_smeared_kernel_pointwise(
-    q: jnp.ndarray,
-    layers: jnp.ndarray,
+    qvals: jnp.ndarray,
+    w: jnp.ndarray,
     dqvals: jnp.ndarray,
     scale: float | jnp.ndarray = 1.0,
     bkg: float | jnp.ndarray = 0.0,
@@ -136,9 +136,9 @@ def jax_smeared_kernel_pointwise(
 
     Parameters
     ----------
-    q : (N,) jnp.ndarray
+    qvals : (N,) jnp.ndarray
         Nominal Q values (Å⁻¹).
-    layers : (M, 4) jnp.ndarray
+    w : (M, 4) jnp.ndarray
         Layer stack as returned by ``params_to_slabs``.
     dqvals : (N,) jnp.ndarray
         Per-point dQ resolution
@@ -164,38 +164,28 @@ def jax_smeared_kernel_pointwise(
     ``_jax_reflect.py``).  We use a change of variables to map each
     per-point integral onto [-1, 1] for Gauss-Legendre.
     """
-    _FWHM = 2.0 * jnp.sqrt(2.0 * jnp.log(2.0))
-    _INTLIMIT = 3.5
+    # get the gauss-legendre weights and abscissae
+    abscissa, weights = gauss_legendre(quad_order)
 
-    # Gauss-Legendre nodes and weights on [-1, 1] — computed once in numpy
-    # (pure constants, not part of the JAX trace).
-    abscissa, weights = gauss_legendre(quad_order)  # numpy arrays
-    abscissa_j = jnp.array(abscissa, dtype=jnp.float64)  # (P,)
-    weights_j = jnp.array(weights, dtype=jnp.float64)  # (P,)
+    # get the normal distribution at that point
+    prefactor = 1.0 / jnp.sqrt(2 * jnp.pi)
 
-    # Gaussian kernel evaluated at the abscissae, also a constant.
-    prefactor = 1.0 / jnp.sqrt(2.0 * jnp.pi)
-    gaussvals = prefactor * jnp.exp(-0.5 * abscissa_j**2)  # (P,)
-    gw = gaussvals * weights_j  # (P,)
+    def gauss(x):
+        return jnp.exp(-0.5 * x * x)
 
-    # Integration limits for each Q point: [q - 3.5*sigma, q + 3.5*sigma]
-    # where sigma = dq_abs / FWHM.
-    va = q - _INTLIMIT * dqvals / _FWHM  # (N,)
-    vb = q + _INTLIMIT * dqvals / _FWHM  # (N,)
+    gaussvals = prefactor * gauss(abscissa * _INTLIMIT)
 
-    # Map GL nodes onto each per-Q interval.
-    # q_grid[i, p] = q value for Q-point i at GL node p.
-    # Shape: (N, P)
-    q_grid = (
-        abscissa_j[jnp.newaxis, :] * (vb - va)[:, jnp.newaxis]
-        + (vb + va)[:, jnp.newaxis]
-    ) / 2.0
+    # integration between -3.5 and 3.5 sigma
+    va = qvals - _INTLIMIT * dqvals / _FWHM
+    vb = qvals + _INTLIMIT * dqvals / _FWHM
 
-    # Evaluate unsmeared reflectivity on the full (N, P) Q grid.
-    # jabeles handles arbitrary-shaped q input by ravelling internally.
-    r_grid = jabeles(q_grid, layers, scale=scale, bkg=bkg)  # (N, P)
+    va = va[:, jnp.newaxis]
+    vb = vb[:, jnp.newaxis]
 
-    # Gaussian-weighted sum over quadrature nodes, scaled by half-width.
-    smeared = jnp.sum(r_grid * gw[jnp.newaxis, :], axis=1) * _INTLIMIT
+    qvals_for_res = (jnp.atleast_2d(abscissa) * (vb - va) + vb + va) / 2.0
+    smeared_rvals = abeles_jax(qvals_for_res, w)
 
-    return smeared
+    smeared_rvals = jnp.reshape(smeared_rvals, (qvals.size, abscissa.size))
+
+    smeared_rvals *= jnp.atleast_2d(gaussvals * weights)
+    return scale * (np.sum(smeared_rvals, 1) * _INTLIMIT) + bkg
