@@ -6,7 +6,6 @@ py3.install_sources([
   '_functional_form.py',
   '_interactive_modeller.py',
   '_jax_reflect.py',
-  '_jax_compiler.py',
   '_lipid.py',
   '_numba_reflect.py',
   '_polarised_reflect_model.py',
