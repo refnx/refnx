@@ -467,7 +467,6 @@ def _make_logl(
             model = jax_smeared_kernel_pointwise(
                 q, layers, q_err, quad_order=quad_order, scale=scale, bkg=bkg
             )
-            model = model
         else:
             model = jabeles(q, layers, scale=scale, bkg=bkg)
 
@@ -561,7 +560,10 @@ def _compile_single_logl(
     Returns
     -------
     logl_raw : Callable[[jnp.ndarray], jnp.ndarray]
-        Pure JAX function, not yet JIT-compiled.
+        Pure JAX log-likelihood function, not yet JIT-compiled.
+    params_to_slabs_fn : Callable[[jnp.ndarray], jnp.ndarray]
+        Pure JAX function mapping the free vector to the (N, 4) layers
+        array for this objective's structure, not yet JIT-compiled.
     """
     from refnx.analysis.parameter import is_parameter
 
@@ -625,7 +627,7 @@ def _compile_single_logl(
     if model.dq_type == "pointwise" and objective.data.x_err is not None:
         dqvals = jnp.array(objective.data.x_err, dtype=jnp.float64)
 
-    return _make_logl(
+    logl_raw = _make_logl(
         params_to_slabs_fn,
         q,
         y,
@@ -637,6 +639,7 @@ def _compile_single_logl(
         use_weights=objective.weighted,
         quad_order=quad_order,
     )
+    return logl_raw, params_to_slabs_fn
 
 
 def compile_objective(objective) -> CompiledObjective:
@@ -697,7 +700,7 @@ def compile_objective(objective) -> CompiledObjective:
     # ------------------------------------------------------------------
     # 2–4.  Compile structure, scale/bkg/lnsigma, and freeze data arrays
     # ------------------------------------------------------------------
-    logl_raw = _compile_single_logl(objective, compiler)
+    logl_raw, params_to_slabs_fn = _compile_single_logl(objective, compiler)
 
     logl_jit = jax.jit(logl_raw)
     grad_jit = jax.jit(jax.grad(logl_raw))
@@ -794,7 +797,7 @@ def compile_global_objective(global_objective) -> CompiledObjective:
     weighted_logl_fns: List[tuple] = []  # (lambda_float, logl_raw_fn)
 
     for obj, lam in zip(global_objective.objectives, global_objective.lambdas):
-        logl_i = _compile_single_logl(obj, compiler)
+        logl_i, _ = _compile_single_logl(obj, compiler)
         weighted_logl_fns.append((float(lam), logl_i))
 
     # ------------------------------------------------------------------
