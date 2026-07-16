@@ -1,7 +1,7 @@
 numpy
 numba; python_version != "3.14"
 cython
-scipy
+scipy!= 1.18.0
 orsopy
 h5py
 pandas

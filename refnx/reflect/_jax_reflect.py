@@ -117,29 +117,85 @@ def jabeles(q, layers, scale=1.0, bkg=0, threads=0):
 abeles_jax = jit(jabeles)
 
 
-def jax_smeared_kernel_pointwise(qvals, w, dqvals, quad_order=17, threads=0):
-    # get the gauss-legendre weights and abscissae
-    abscissa, weights = gauss_legendre(quad_order)
+def jax_smeared_kernel_pointwise(
+    q: jnp.ndarray,
+    layers: jnp.ndarray,
+    dqvals: jnp.ndarray,
+    scale: float | jnp.ndarray = 1.0,
+    bkg: float | jnp.ndarray = 0.0,
+    quad_order: int = 17,
+) -> jnp.ndarray:
+    """
+    Resolution-smeared reflectivity using Gauss-Legendre quadrature.
+    Fully JAX-traceable — gradients flow through ``layers``, ``scale``,
+    and ``bkg``.
 
-    # get the normal distribution at that point
-    prefactor = 1.0 / np.sqrt(2 * np.pi)
+    This replaces ``jax_smeared_kernel_pointwise``, which uses numpy
+    internally and is therefore not differentiable.  The maths are
+    identical; only the array library changes.
 
-    def gauss(x):
-        return np.exp(-0.5 * x * x)
+    Parameters
+    ----------
+    q : (N,) jnp.ndarray
+        Nominal Q values (Å⁻¹).
+    layers : (M, 4) jnp.ndarray
+        Layer stack as returned by ``params_to_slabs``.
+    dqvals : (N,) jnp.ndarray
+        Per-point dQ resolution
+    scale, bkg :
+        Passed directly to ``jabeles``.
+    quad_order : int
+        Number of Gauss-Legendre nodes.  17 matches the default used by
+        ``jax_smeared_kernel_pointwise`` and ``ReflectModel``.
 
-    gaussvals = prefactor * gauss(abscissa * _INTLIMIT)
+    Returns
+    -------
+    smeared_r : (N,) jnp.ndarray
+        Smeared reflectivity values.
 
-    # integration between -3.5 and 3.5 sigma
-    va = qvals - _INTLIMIT * dqvals / _FWHM
-    vb = qvals + _INTLIMIT * dqvals / _FWHM
+    Notes
+    -----
+    The integral is
 
-    va = va[:, np.newaxis]
-    vb = vb[:, np.newaxis]
+        R_smeared(q) = ∫ G(q' | q, sigma) R(q') dq'
 
-    qvals_for_res = (np.atleast_2d(abscissa) * (vb - va) + vb + va) / 2.0
-    smeared_rvals = abeles_jax(qvals_for_res, w)
+    where G is a Gaussian with sigma = dQ / (2 sqrt(2 ln 2)), and the
+    integration limits are ±3.5 sigma (matching ``_INTLIMIT`` in
+    ``_jax_reflect.py``).  We use a change of variables to map each
+    per-point integral onto [-1, 1] for Gauss-Legendre.
+    """
+    _FWHM = 2.0 * jnp.sqrt(2.0 * jnp.log(2.0))
+    _INTLIMIT = 3.5
 
-    smeared_rvals = np.reshape(smeared_rvals, (qvals.size, abscissa.size))
+    # Gauss-Legendre nodes and weights on [-1, 1] — computed once in numpy
+    # (pure constants, not part of the JAX trace).
+    abscissa, weights = gauss_legendre(quad_order)  # numpy arrays
+    abscissa_j = jnp.array(abscissa, dtype=jnp.float64)  # (P,)
+    weights_j = jnp.array(weights, dtype=jnp.float64)  # (P,)
 
-    smeared_rvals *= np.atleast_2d(gaussvals * weights)
-    return np.sum(smeared_rvals, 1) * _INTLIMIT
+    # Gaussian kernel evaluated at the abscissae, also a constant.
+    prefactor = 1.0 / jnp.sqrt(2.0 * jnp.pi)
+    gaussvals = prefactor * jnp.exp(-0.5 * abscissa_j**2)  # (P,)
+    gw = gaussvals * weights_j  # (P,)
+
+    # Integration limits for each Q point: [q - 3.5*sigma, q + 3.5*sigma]
+    # where sigma = dq_abs / FWHM.
+    va = q - _INTLIMIT * dqvals / _FWHM  # (N,)
+    vb = q + _INTLIMIT * dqvals / _FWHM  # (N,)
+
+    # Map GL nodes onto each per-Q interval.
+    # q_grid[i, p] = q value for Q-point i at GL node p.
+    # Shape: (N, P)
+    q_grid = (
+        abscissa_j[jnp.newaxis, :] * (vb - va)[:, jnp.newaxis]
+        + (vb + va)[:, jnp.newaxis]
+    ) / 2.0
+
+    # Evaluate unsmeared reflectivity on the full (N, P) Q grid.
+    # jabeles handles arbitrary-shaped q input by ravelling internally.
+    r_grid = jabeles(q_grid, layers, scale=scale, bkg=bkg)  # (N, P)
+
+    # Gaussian-weighted sum over quadrature nodes, scaled by half-width.
+    smeared = jnp.sum(r_grid * gw[jnp.newaxis, :], axis=1) * _INTLIMIT
+
+    return smeared
