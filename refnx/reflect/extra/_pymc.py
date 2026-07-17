@@ -1,6 +1,7 @@
 import numpy as np
 import pytensor.tensor as pt
 from pytensor.graph import Apply, Op
+import pytensor
 
 from refnx.analysis import GlobalObjective
 from refnx.analysis.objective import _to_pymc_distribution
@@ -64,7 +65,7 @@ def _pymc_model(objective):
         # theta = pt.as_tensor_variable(wrapped_pars)
         theta = tuple(wrapped_pars)
         logl = _LogLikeValueGradOp(compiled_objective)
-        pm.Potential("log-likelihood", logl(*theta))
+        pm.Potential("log-likelihood", logl(theta))
 
     return basic_model
 
@@ -76,14 +77,13 @@ class _LogLikeValueGradOp(Op):
         self.compiled_objective = compiled_objective
         self.value_and_grad = compiled_objective.value_and_grad
 
-    def make_node(self, *inputs):
+    def make_node(self, inputs):
         inputs = [pt.as_tensor_variable(inp) for inp in inputs]
         # We now have one output for the function value, and one output for each gradient
         outputs = [pt.dscalar()] + [inp.type() for inp in inputs]
         return Apply(self, inputs, outputs)
 
     def perform(self, node, inputs, outputs):
-        print(inputs)
         result, grad_results = self.value_and_grad(np.asarray(inputs))
         outputs[0][0] = np.asarray(result, dtype=node.outputs[0].dtype)
         for i, grad_result in enumerate(grad_results, start=1):
@@ -93,7 +93,7 @@ class _LogLikeValueGradOp(Op):
 
     def grad(self, inputs, output_gradients):
         # The `Op` computes its own gradients, so we call it again.
-        value = self(*inputs)
+        value = self(inputs)
         # We hid the gradient outputs by setting `default_update=0`, but we
         # can retrieve them anytime by accessing the `Apply` node via `value.owner`
         gradients = value.owner.outputs[1:]
@@ -107,55 +107,3 @@ class _LogLikeValueGradOp(Op):
         )
 
         return [output_gradients[0] * grad for grad in gradients]
-
-
-# class _LogLikeWithGrad(pt.Op):
-#     # Theano op for calculating a log-likelihood
-#
-#     itypes = [pt.dvector]  # expects a vector of parameter values when called
-#     otypes = [pt.dscalar]  # outputs a single scalar value (the log likelihood)
-#
-#     def __init__(self, loglike):
-#         # add inputs as class attributes
-#         self.likelihood = loglike
-#
-#         # initialise the gradient Op (below)
-#         self.logpgrad = _LogLikeGrad(self.likelihood)
-#
-#     def perform(self, node, inputs, outputs):
-#         # the method that is used when calling the Op
-#         (theta,) = inputs  # this will contain my variables
-#
-#         # call the log-likelihood function
-#         logl = self.likelihood(theta)
-#
-#         outputs[0][0] = np.array(logl)  # output the log-likelihood
-#
-#     def grad(self, inputs, g):
-#         # the method that calculates the gradients - it actually returns the
-#         # vector-Jacobian product - g[0] is a vector of parameter values
-#         (theta,) = inputs  # our parameters
-#
-#         return [g[0] * self.logpgrad(theta)]
-#
-#
-# class _LogLikeGrad(pt.Op):
-#     # Theano op for calculating the gradient of a log-likelihood
-#     itypes = [pt.dvector]
-#     otypes = [pt.dvector]
-#
-#     def __init__(self, loglike):
-#         # add inputs as class attributes
-#         self.likelihood = loglike
-#
-#     def perform(self, node, inputs, outputs):
-#         (theta,) = inputs
-#
-#         # define version of likelihood function to pass to derivative function
-#         def logl(values):
-#             return self.likelihood(values)
-#
-#         # calculate gradients
-#         grads = approx_derivative(logl, theta, method="2-point")
-#
-#         outputs[0][0] = grads
