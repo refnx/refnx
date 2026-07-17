@@ -730,3 +730,6 @@ in 0.1.13.
 0.1.65
 ------
 - optimise _refcalc.c::abeles by using Structure of Arrays (claude suggested code).
+- Experimental Intermediate Representation (IR) jax compiler for rapid evaluation
+  of gradients. This will eventually lead to faster MCMC sampling.
+- Added refnx.reflect.extra for pymc+jax sampling adaptation.

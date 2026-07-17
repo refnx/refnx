@@ -83,3 +83,9 @@ install_subdir('_app',
   strip_directory : true, # Set to true if you only want contents, not the 'assets' folder itself,
   exclude_directories : ['__pycache__', 'icons/__pycache__', 'tests/__pycache__', 'ui/__pycache__'],
 )
+
+install_subdir('extra',
+  install_dir : refnx_dir / 'reflect/extra',
+  strip_directory : true, # Set to true if you only want contents, not the 'assets' folder itself,
+  exclude_directories : ['__pycache__'],
+)
