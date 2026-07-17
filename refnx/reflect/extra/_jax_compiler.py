@@ -493,6 +493,167 @@ def _make_logl(
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
+@dataclass
+class CompiledModel:
+    """
+    The output of ``compile_model``.
+
+    Mirrors the interface of ``CompiledObjective`` but exposes the
+    forward model ``R(q; free)`` rather than the log-likelihood, so that
+    gradients of the *reflectivity* with respect to free parameters are
+    accessible directly.  Useful for sensitivity analysis, uncertainty
+    propagation via linearisation, and visualising how R(q) changes with
+    each parameter.
+
+    Attributes
+    ----------
+    model : Callable[[jnp.ndarray, jnp.ndarray, Optional[jnp.ndarray]], jnp.ndarray]
+        Pure JAX function ``(free, q, q_err=None) -> R(q)`` (shape ``(N,)``).
+        JIT-compiled.  Resolution smearing is applied when ``q_err`` is
+        supplied and non-zero.
+    jacfwd : Callable[[jnp.ndarray, jnp.ndarray, Optional[jnp.ndarray]], jnp.ndarray]
+        Forward-mode Jacobian ``(free, q, q_err=None) -> dR/d(free)``
+        (shape ``(N, n_free)``).  JIT-compiled.  Differentiates w.r.t.
+        ``free`` only; ``q`` and ``q_err`` are treated as fixed inputs.
+    x0 : jnp.ndarray
+        Initial free-parameter values.
+    param_names : List[str]
+        Names of the free parameters, in the same order as x0.
+    setp : Callable[[np.ndarray], None]
+        Push values back into the stateful objective after use.
+    n_free : int
+        Number of free parameters.
+    """
+
+    model: Callable
+    jacfwd: Callable
+    x0: jnp.ndarray
+    param_names: List[str]
+    setp: Callable
+    n_free: int
+
+
+def compile_model(reflect_model) -> CompiledModel:
+    """
+    Compile a ``ReflectModel`` into a pure JAX forward-model function.
+
+    Returns a ``CompiledModel`` whose ``model(free, q, q_err=None)`` maps
+    the free-parameter vector to the reflectivity curve R(q) for any
+    supplied Q values, and whose ``jacfwd(free, q, q_err=None)`` gives the
+    exact Jacobian dR_i/dp_j at those Q values.
+
+    Accepting ``q`` and ``q_err`` at call time rather than compile time
+    means a single ``CompiledModel`` can be evaluated and differentiated on
+    any Q grid without recompilation — useful for simulation, sensitivity
+    analysis on a fine grid, or fitting datasets with different Q ranges.
+
+    Parameters
+    ----------
+    reflect_model : refnx.reflect.ReflectModel
+        The model to compile.  Its ``structure``, ``scale``, and ``bkg``
+        parameters are compiled into the JAX graph.  Any parameter that
+        is currently set to vary will appear in the free vector.
+
+    Returns
+    -------
+    compiled : CompiledModel
+
+    Example
+    -------
+        cm = compile_model(model)
+
+       # Jacobian dR/dp — shape (len(data.x), n_free):
+        R = cm.model(cm.x0, data.x, data.x_err)
+
+        # Jacobian on a finer synthetic grid, no smearing:
+        q_fine = np.linspace(0.005, 0.3, 1000)
+        J = cm.jacfwd(cm.x0, q_fine)
+
+        # Jacobian on a finer synthetic grid, constant dq/q smearing:
+        J = cm.jacfwd(cm.x0, q_fine, q_fine * 0.05)
+
+    Notes
+    -----
+    Why jacfwd rather than jacrev?
+    The Jacobian is (N_q, n_free) shaped. Forward-mode accumulates one column
+    per free parameter (n_free passes); reverse-mode accumulates one row
+    per Q point (N_q passes). For typical fits n_free is O(10–50) and
+    N_q is O(100–1000), so forward mode is the right default. If you find
+    yourself with far more parameters than Q points, jax.jacrev is a one-line swap.
+
+    jacfwd vs jax.grad on a scalar reduction.
+    For the log-likelihood jax.grad is ideal (one reverse pass). But model_fn
+    returns a vector, so grad doesn't apply — jacfwd is the correct primitive here.
+    """
+    from refnx.analysis.parameter import is_parameter
+    from refnx.reflect._jax_reflect import (
+        jabeles,
+        jax_smeared_kernel_pointwise,
+    )
+
+    var_params = list(reflect_model.parameters.varying_parameters())
+    if not var_params:
+        raise ValueError("ReflectModel has no varying parameters to compile.")
+
+    free_index = {id(p): i for i, p in enumerate(var_params)}
+    x0 = jnp.array([float(p.value) for p in var_params], dtype=jnp.float64)
+    param_names = [p.name or f"p{i}" for i, p in enumerate(var_params)]
+    compiler = _ConstraintCompiler(free_index)
+
+    structure = reflect_model.structure
+    slab_specs = _compile_structure(structure, compiler)
+    solvent_complex = complex(structure.solvent.complex(structure.wavelength))
+    params_to_slabs_fn = _make_params_to_slabs(
+        slab_specs, solvent_complex.real, solvent_complex.imag
+    )
+
+    scale_node = (
+        compiler.compile_parameter(reflect_model.scale)
+        if is_parameter(reflect_model.scale)
+        else _ConstNode(float(reflect_model.scale))
+    )
+    bkg_node = (
+        compiler.compile_parameter(reflect_model.bkg)
+        if is_parameter(reflect_model.bkg)
+        else _ConstNode(float(reflect_model.bkg))
+    )
+
+    def model_fn(
+        free: jnp.ndarray,
+        q: jnp.ndarray,
+        q_err: Optional[jnp.ndarray] = None,
+    ) -> jnp.ndarray:
+        layers = params_to_slabs_fn(free)
+        scale = _eval_node(scale_node, free)
+        bkg = _eval_node(bkg_node, free)
+        if q_err is not None:
+            r = jax_smeared_kernel_pointwise(
+                q,
+                layers,
+                q_err,
+                scale=scale,
+                bkg=bkg,
+                quad_order=reflect_model.quad_order,
+            )
+            return r
+        else:
+            return jabeles(q, layers, scale=scale, bkg=bkg)
+
+    def setp(x: np.ndarray) -> None:
+        reflect_model.setp(np.asarray(x))
+
+    # jacfwd differentiates w.r.t. the first argument (free) only;
+    # q and q_err are treated as non-differentiated inputs.
+    jacfwd_fn = jax.jacfwd(model_fn)
+
+    return CompiledModel(
+        model=jax.jit(model_fn),
+        jacfwd=jax.jit(jacfwd_fn),
+        x0=x0,
+        param_names=param_names,
+        setp=setp,
+        n_free=len(var_params),
+    )
 
 
 @dataclass
