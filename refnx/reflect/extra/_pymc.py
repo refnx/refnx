@@ -91,19 +91,35 @@ class _LogLikeValueGradOp(Op):
                 grad_result, dtype=node.outputs[i].dtype
             )
 
-    def grad(self, inputs, output_gradients):
-        # The `Op` computes its own gradients, so we call it again.
+    # def grad(self, inputs, output_gradients):
+    #     # The `Op` computes its own gradients, so we call it again.
+    #     value = self(inputs)
+    #     # We hid the gradient outputs by setting `default_update=0`, but we
+    #     # can retrieve them anytime by accessing the `Apply` node via `value.owner`
+    #     gradients = value.owner.outputs[1:]
+    #
+    #     # Make sure the user is not trying to take the gradient with respect to
+    #     # the gradient outputs! That would require computing the second order
+    #     # gradients
+    #     assert all(
+    #         isinstance(g.type, pytensor.gradient.DisconnectedType)
+    #         for g in output_gradients[1:]
+    #     )
+    #
+    #     return [output_gradients[0] * grad for grad in gradients]
+
+    def pullback(self, inputs, outputs, cotangents):
+        # The Op computes its own gradients, so we call it again to
+        # get at the hidden gradient outputs.
         value = self(inputs)
-        # We hid the gradient outputs by setting `default_update=0`, but we
-        # can retrieve them anytime by accessing the `Apply` node via `value.owner`
         gradients = value.owner.outputs[1:]
 
-        # Make sure the user is not trying to take the gradient with respect to
-        # the gradient outputs! That would require computing the second order
-        # gradients
+        # We don't support differentiating w.r.t. the gradient outputs
+        # themselves (that would require second-order derivatives), so
+        # their incoming cotangents must always be disconnected.
         assert all(
-            isinstance(g.type, pytensor.gradient.DisconnectedType)
-            for g in output_gradients[1:]
+            isinstance(c.type, pytensor.gradient.DisconnectedType)
+            for c in cotangents[1:]
         )
 
-        return [output_gradients[0] * grad for grad in gradients]
+        return [cotangents[0] * grad for grad in gradients]
