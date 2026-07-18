@@ -11,7 +11,7 @@ from refnx.reflect.extra._jax_compiler import (
 )
 
 
-def _pymc_model(objective):
+def _pymc_model(objective, _customdist=False):
     """
     Creates a pymc model from an Objective.
 
@@ -20,6 +20,11 @@ def _pymc_model(objective):
     Parameters
     ----------
     objective: refnx.analysis.Objective
+
+    _customdist: bool
+        If True uses ``pm.CustomDist``.
+        If False uses ``pm.Potential``.
+        CustomDist can be used for model comparison, Potential cannot.
 
     Returns
     -------
@@ -32,19 +37,21 @@ def _pymc_model(objective):
 
     """
     import pymc as pm
-    import pytensor.tensor as pt
-
-    basic_model = pm.Model()
 
     pars = objective.varying_parameters()
     wrapped_pars = []
 
     if isinstance(objective, GlobalObjective):
         compiled_objective = compile_global_objective(objective)
+        data = []
+        for _o in objective.objectives:
+            data.append(_o.data.y)
+        data = np.concat(data, axis=0)
     else:
         compiled_objective = compile_objective(objective)
+        data = objective.data.y
 
-    with basic_model:
+    with pm.Model() as basic_model:
         # Priors for unknown model parameters
         for i, par in enumerate(pars):
             name = "p%d" % i
@@ -64,8 +71,20 @@ def _pymc_model(objective):
         #     # Falling back, theano autodiff won't work on function object
         # theta = pt.as_tensor_variable(wrapped_pars)
         theta = tuple(wrapped_pars)
-        logl = _LogLikeValueGradOp(compiled_objective)
-        pm.Potential("log-likelihood", logl(theta))
+
+        if _customdist:
+            logl = _LogLikeValueGradOp(compiled_objective)
+
+            def custom_dist_loglike(data, theta):
+                return logl(theta)
+
+            pm.CustomDist(
+                "likelihood", theta, logp=custom_dist_loglike, observed=data
+            )
+        else:
+            # Potential
+            logl = _LogLikeValueGradOp(compiled_objective)
+            pm.Potential("log-likelihood", logl(theta))
 
     return basic_model
 
