@@ -22,8 +22,8 @@ def _pymc_model(objective, _customdist=False):
     objective: refnx.analysis.Objective
 
     _customdist: bool
-        If True uses ``pm.CustomDist``.
-        If False uses ``pm.Potential``.
+        `True`:  uses ``pm.CustomDist``.
+        `False`:  uses ``pm.Potential``.
         CustomDist can be used for model comparison, Potential cannot.
 
     Returns
