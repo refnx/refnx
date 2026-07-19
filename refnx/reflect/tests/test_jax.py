@@ -53,7 +53,7 @@ class TestJAX:
         data = Data1D(data.T, name="data")
 
         # q-resolution column is a standard deviation
-        data.x_err *= 2.3542
+        data.x_err *= 2.3548
 
         self.objective = Objective(model, data)
 
