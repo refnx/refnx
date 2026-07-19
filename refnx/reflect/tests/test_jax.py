@@ -46,7 +46,7 @@ class TestJAX:
         bkg = Parameter(1e-7, name="bkg", vary=True, bounds=(1e-20, 1))
         scale = Parameter(1.0, name="scale", vary=True, bounds=(0.9, 1.5))
 
-        model = self.model = ReflectModel(s, bkg=1e-7, scale=scale)
+        model = self.model = ReflectModel(s, bkg=bkg, scale=scale)
 
         data = np.loadtxt(self.pth / ".Quartz_data.txt", delimiter=",")
         data = data[:, 1:]
