@@ -9,6 +9,7 @@ xlrd
 pytest
 ipywidgets
 IPython
+jax
 matplotlib
 traitlets
 pyside6
