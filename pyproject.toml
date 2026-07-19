@@ -48,6 +48,7 @@ all = [
     "matplotlib",
     "xlrd",
     "h5py",
+    "jax",
     "jupyter",
     "tqdm",
     "pymc",

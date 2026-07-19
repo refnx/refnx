@@ -298,6 +298,8 @@ def _compile_structure(
     material SLD and vfsolv, not the solvent-averaged SLD.  Mixing is done
     inside ``_make_params_to_slabs`` so that gradients flow through it.
     """
+    from refnx.reflect import Slab
+
     specs = []
 
     for component in structure.components:
@@ -310,7 +312,7 @@ def _compile_structure(
         if hasattr(component, "_jax_slabs"):
             # Extension point: component provides its own compiled slab specs.
             specs.extend(component._jax_slabs(compiler))
-        elif hasattr(component, "thick"):
+        elif hasattr(component, "thick") and isinstance(component, Slab):
             # Standard Slab interface (Slab, MagneticSlab, etc.)
             assert (
                 n_rows == 1
