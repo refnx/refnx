@@ -11,7 +11,7 @@ from refnx.reflect.extra._jax_compiler import (
 )
 
 
-def _pymc_model(objective, _customdist=False):
+def to_pymc_model(objective, _customdist=False):
     """
     Creates a pymc model from an Objective.
 

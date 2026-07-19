@@ -51,6 +51,8 @@ class TestJAX:
         data = np.loadtxt(self.pth / ".Quartz_data.txt", delimiter=",")
         data = data[:, 1:]
         data = Data1D(data.T, name="data")
+
+        # q-resolution column is a standard deviation
         data.x_err *= 2.3542
 
         self.objective = Objective(model, data)
