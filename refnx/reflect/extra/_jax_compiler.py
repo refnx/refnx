@@ -550,18 +550,6 @@ def _compile_single_logl(
     else:
         lnsigma_node = None
 
-    # Compile auxiliary_params and alpha so that any free parameter among
-    # them is registered in the IR and its constraint graph is walked.
-    # This ensures gradients flow correctly through any constraint expression
-    # that references an auxiliary parameter, and that setp_indices covers
-    # the full set of parameters that objective.setp expects.
-    # alpha only affects logpost (not logl) so its node is discarded here,
-    # but compiling it ensures it is present in the free_index walk.
-    for aux_p in objective.auxiliary_params:
-        compiler.compile_parameter(aux_p)
-    if objective.alpha is not None and is_parameter(objective.alpha):
-        compiler.compile_parameter(objective.alpha)
-
     q = jnp.array(objective.data.x, dtype=jnp.float64)
     y = jnp.array(objective.data.y, dtype=jnp.float64)
     y_err = (
@@ -617,56 +605,54 @@ def _compile_single_logl(
     # ----------------------------------------------------------------------
     has_logp_extra = objective.logp_extra is not None
 
-    # Build a compile-time mapping from each of this objective's local
-    # varying parameters to their index in the global free vector.
-    # We assign values individually by parameter identity so that ordering
-    # differences between the global free vector and the local
-    # varying_parameters() sequence cannot cause misassignment.
-    local_var_params = list(objective.varying_parameters())
-    local_param_indices = np.array(
-        [compiler._free_index[id(p)] for p in local_var_params], dtype=np.intp
-    )
-
-    # Check once at compile time whether model.logp is the trivial default.
+    # Check once at compile time whether model.logp is the trivial default
+    # (the base Model.logp which always returns 0) and logp_extra is absent.
+    # If so, skip the callback entirely to avoid unnecessary setp overhead.
     from refnx.analysis.model import Model as _BaseModel
 
     _logp_is_trivial = (
         not has_logp_extra and type(model).logp is _BaseModel.logp
     )
 
-    def _logl_callback(free_np: np.ndarray) -> np.ndarray:
-        """
-        Concrete-array callback: assign each local parameter value
-        individually by identity, then evaluate the full logl.
+    if _logp_is_trivial:
+        # Fast path: no extra terms, return the raw logl directly.
+        return logl_raw, params_to_slabs_fn
 
-        Assigning by identity rather than calling objective.setp with a
-        sliced array avoids any sensitivity to ordering differences between
-        the global free vector and the local varying_parameters() sequence.
-        """
-        for param, idx in zip(local_var_params, local_param_indices):
-            param.value = free_np[idx]
-        val = float(logl_raw(jnp.array(free_np, dtype=jnp.float64)))
-        if not _logp_is_trivial:
-            val += float(model.logp())
-            if has_logp_extra:
-                val += float(objective.logp_extra(model, objective.data))
-        return np.array(val, dtype=np.float64)
+    # Build a compile-time index array that maps from the global free vector
+    # (which may be longer than this objective's own varying parameters when
+    # called from compile_global_objective) to the values this objective's
+    # setp() expects.  For a single Objective the two are identical; for a
+    # GlobalObjective child they are a strict subset.
+    local_var_params = list(objective.varying_parameters())
+    setp_indices = np.array(
+        [compiler._free_index[id(p)] for p in local_var_params], dtype=np.intp
+    )
+
+    def _extra_potential_callback(free_np: np.ndarray) -> np.ndarray:
+        """Concrete-array callback: setp then evaluate extra terms."""
+        objective.setp(free_np[setp_indices])
+        extra = float(model.logp())
+        if has_logp_extra:
+            extra += float(objective.logp_extra(model, objective.data))
+        return np.array(extra, dtype=np.float64)
 
     @jax.custom_jvp
-    def logl_with_extra(free: jnp.ndarray) -> jnp.ndarray:
-        return jax.pure_callback(
-            _logl_callback,
+    def _extra_potential(free: jnp.ndarray) -> jnp.ndarray:
+        ep = jax.pure_callback(
+            _extra_potential_callback,
             jax.ShapeDtypeStruct((), jnp.float64),
             free,
         )
+        return ep
 
-    @logl_with_extra.defjvp
-    def _logl_with_extra_jvp(primals, tangents):
+    @_extra_potential.defjvp
+    def _extra_potential_jvp(primals, tangents):
+        # No gradient flows through the extra potential terms.
         (free,) = primals
-        (free_dot,) = tangents
-        primal_out = logl_with_extra(free)
-        _, tangent_out = jax.jvp(logl_raw, (free,), (free_dot,))
-        return primal_out, tangent_out
+        return _extra_potential(free), jnp.zeros((), dtype=jnp.float64)
+
+    def logl_with_extra(free: jnp.ndarray) -> jnp.ndarray:
+        return logl_raw(free) + _extra_potential(free)
 
     return logl_with_extra, params_to_slabs_fn
 
