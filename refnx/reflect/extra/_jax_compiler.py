@@ -46,163 +46,21 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 import numpy as np
 import jax.numpy as jnp
 import jax
-from refnx.reflect.extra._util import (
+from refnx.reflect import LipidLeaflet
+from refnx.reflect.extra._jax_util import (
+    _SlabSpec,
     _ConstNode,
-    _FreeNode,
-    _BinaryNode,
-    _UnaryNode,
-    _NP_TO_JNP,
-    _CallableConstraintNode,
+    _ConstraintCompiler,
+    _eval_node,
 )
+from refnx.reflect.extra._jax_lipid import _lipid_leaflet_jax_slabs
+
+_jax_slabs_methods = {LipidLeaflet: _lipid_leaflet_jax_slabs}
 
 
 # ---------------------------------------------------------------------------
-# Step 1 — analyse the Parameter graph and build the IR
+# Compile a Structure's slab layout into JAX
 # ---------------------------------------------------------------------------
-class _ConstraintCompiler:
-    """
-    Walks the refnx Parameter / _BinaryOp / _UnaryOp expression tree and
-    converts it into our tiny IR of Node objects.
-
-    Parameters
-    ----------
-    free_index : dict mapping id(Parameter) -> int
-        The position of each free (varying) parameter in the flat vector.
-    """
-
-    def __init__(self, free_index: Dict[int, int]):
-        self._free_index = free_index
-
-    def compile(self, expr) -> Any:
-        """Compile a constraint expression rooted at ``expr`` into a Node."""
-        from refnx.analysis.parameter import (
-            Parameter,
-            Constant,
-            _BinaryOp,
-            _UnaryOp,
-            BaseParameter,
-        )
-
-        if isinstance(expr, Parameter):
-            pid = id(expr)
-            if pid in self._free_index:
-                # Free parameter: just read from the flat vector
-                return _FreeNode(self._free_index[pid])
-            elif expr.constraint is not None:
-                # Constrained parameter: recurse into its constraint
-                return self.compile(expr._constraint)
-            else:
-                # Fixed parameter: bake value in as a constant
-                return _ConstNode(float(expr.value))
-
-        elif isinstance(expr, Constant):
-            return _ConstNode(float(expr.value))
-
-        elif isinstance(expr, _BinaryOp):
-            left = self.compile(expr.op1)
-            right = self.compile(expr.op2)
-            jax_op = _NP_TO_JNP.get(expr.opn, expr.opn)
-            return _BinaryNode(jax_op, left, right)
-
-        elif isinstance(expr, _UnaryOp):
-            operand = self.compile(expr.op1)
-            jax_op = _NP_TO_JNP.get(expr.opn, expr.opn)
-            return _UnaryNode(jax_op, operand)
-
-        elif callable(expr):
-            # set_constraint(fn, args=(...)) path
-            # expr is the raw callable; _constraint_args is on the Parameter
-            # — but we're called *on the expression itself*, so this branch
-            # is reached when compiling a Parameter whose ._constraint is
-            # callable.  The args live on that Parameter, not here.
-            # Handled separately in compile_parameter().
-            return _ConstNode(float(expr()))  # fallback: evaluate once
-
-        else:
-            # Numeric literal wrapped by asMagicNumber — shouldn't reach here
-            # normally, but guard anyway.
-            return _ConstNode(float(expr))
-
-    def compile_parameter(self, p) -> Any:
-        """
-        Top-level entry: compile the full expression for Parameter ``p``.
-        Handles the callable-constraint case that needs access to
-        ``p._constraint_args``.
-        """
-        from refnx.analysis.parameter import Parameter, BaseParameter
-
-        pid = id(p)
-        if pid in self._free_index:
-            return _FreeNode(self._free_index[pid])
-
-        if p.constraint is None:
-            return _ConstNode(float(p.value))
-
-        if callable(p._constraint) and not isinstance(
-            p._constraint, BaseParameter
-        ):
-            # set_constraint(fn, args=(...)) style
-            arg_nodes = []
-            for arg in p._constraint_args or ():
-                if isinstance(arg, BaseParameter):
-                    arg_nodes.append(self.compile_parameter(arg))
-                else:
-                    arg_nodes.append(_ConstNode(float(arg)))
-            return _CallableConstraintNode(p._constraint, arg_nodes)
-
-        # algebraic expression constraint
-        return self.compile(p._constraint)
-
-
-def _eval_node(node, free: jnp.ndarray) -> jnp.ndarray:
-    """Recursively evaluate a compiled IR node against the free vector."""
-    if isinstance(node, _FreeNode):
-        return free[node.index]
-    elif isinstance(node, _ConstNode):
-        return jnp.array(node.value, dtype=free.dtype)
-    elif isinstance(node, _BinaryNode):
-        left = _eval_node(node.left, free)
-        right = _eval_node(node.right, free)
-        return node.op(left, right)
-    elif isinstance(node, _UnaryNode):
-        o = _eval_node(node.operand, free)
-        return node.op(o)
-    elif isinstance(node, _CallableConstraintNode):
-        args = [_eval_node(a, free) for a in node.arg_nodes]
-        return node.fn(*args)
-    else:
-        raise TypeError(f"Unknown IR node type: {type(node)}")
-
-
-# ---------------------------------------------------------------------------
-# Step 2 — compile a Structure's slab layout into JAX
-# ---------------------------------------------------------------------------
-
-
-@dataclass
-class _SlabSpec:
-    """
-    Compiled specification for one slab (one row of the (N, 5) layers array).
-    Each field is an IR node that evaluates to a scalar.
-
-    Columns match ``Component.slabs()`` exactly:
-      0  thick   — layer thickness (Å)
-      1  real    — real SLD of the pure material (×10⁻⁶ Å⁻²)
-      2  imag    — imaginary SLD of the pure material (×10⁻⁶ Å⁻²)
-      3  rough   — interfacial roughness (Å)
-      4  vfsolv  — volume fraction of solvent in this layer [0, 1]
-
-    The solvent mixing (``Structure.overall_sld``) is performed inside
-    ``params_to_slabs`` so that gradients flow through it.  The four-column
-    array consumed by ``jabeles`` is obtained by slicing ``[:, :4]`` *after*
-    the mixing has been applied.
-    """
-
-    thick: Any  # thickness
-    real: Any  # real SLD of pure material
-    imag: Any  # imaginary SLD of pure material
-    rough: Any  # roughness
-    vfsolv: Any  # volume fraction of solvent
 
 
 def _compile_structure(
@@ -250,6 +108,9 @@ def _compile_structure(
                     thick_node, real_node, imag_node, rough_node, vfsolv_node
                 )
             )
+        elif isinstance(component, LipidLeaflet):
+            LipidLeaflet._jax_slabs = _jax_slabs_methods[LipidLeaflet]
+            specs.extend(component._jax_slabs(compiler))
         else:
             # Unknown multi-slab component (e.g. Spline, LipidLeaflet):
             # bake current numeric values as constants.
@@ -330,7 +191,7 @@ def _make_params_to_slabs(
 
 
 # ---------------------------------------------------------------------------
-# Step 3 — compile the full log-likelihood
+# Compile the full log-likelihood
 # ---------------------------------------------------------------------------
 
 
