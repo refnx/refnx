@@ -8,6 +8,7 @@ import refnx
 from refnx.analysis import Objective, Parameter, CurveFitter
 from refnx.dataset import Data1D, ReflectDataset
 from refnx.reflect import ReflectModel, SLD, LipidLeaflet
+from refnx.reflect.structure import overall_sld
 from refnx.reflect.extra import (
     compile_objective,
     compile_model,
@@ -63,13 +64,44 @@ class TestJAX:
         self.objective = Objective(model, data)
 
     def test_compile_objective(self):
-        # obtain the negative log-likelihood (nll) from the compiled objective (quick_test)
-        # by looking at the nll we're implicitly checking resolution smearing, nll calculation,
-        # etc
+        # Obtain the negative log-likelihood (nll) from the compiled objective
+        # By looking at the nll we're implicitly checking resolution smearing,
+        # nll calculation, etc
         obj = compile_objective(self.objective)
         vg = obj.value_and_grad
         logl, grad = vg(np.array(self.objective.varying_parameters()))
         assert_allclose(-logl, self.objective.nll())
+
+    def test_solvation_reverse(self):
+        # experiment with solvation and reversing structure and check that
+        # solvation is occurring properly.
+        s = self.structure
+        s[1].vfsolv.value = 0.4
+        s[1].rough.value = 1
+        s[2].rough.value = 2
+        s[3].rough.value = 3
+
+        co = compile_objective(self.objective)
+        pars = np.array(self.objective.varying_parameters())
+        _slabs = co.params_to_slabs(pars)
+        assert_allclose(_slabs, s.slabs()[:, :-1])
+
+        # reverse model and check
+        s.reverse_structure = True
+        co = compile_objective(self.objective)
+        pars = np.array(self.objective.varying_parameters())
+        _slabs = co.params_to_slabs(pars)
+        assert_allclose(_slabs, s.slabs()[:, :-1])
+
+        # now set specific solvent
+        new_solv = SLD(1.2345 + 5.122j)
+        s.solvent = new_solv
+        s.reverse_structure = False
+
+        co = compile_objective(self.objective)
+        pars = np.array(self.objective.varying_parameters())
+        _slabs = co.params_to_slabs(pars)
+        assert_allclose(_slabs, s.slabs()[:, :-1])
 
     def test_auxiliary_parameters(self):
         data = Data1D(

@@ -130,8 +130,58 @@ def _compile_structure(
     return specs
 
 
+def _compile_solvent(structure, compiler: _ConstraintCompiler):
+    """
+    Compile the solvent SLD of a ``Structure`` into a pair of IR nodes
+    ``(real_node, imag_node)``.
+
+    ``Structure.solvent`` can be:
+
+    1. ``None`` — solvent is inferred from the last component's SLD.
+       We read the last ``Slab``'s ``sld.real`` / ``sld.imag`` Parameters
+       and compile them, so gradients flow if those are free.
+
+    2. An ``SLD`` object set explicitly by the user — its ``real`` and
+       ``imag`` attributes are ``Parameter`` objects that may be free.
+       We compile them directly.
+
+    When ``structure.reverse_structure=True``, the solvating medium is
+    the *first* component (which becomes the backing after reversal), so
+    we compile from ``structure.components[0]`` instead.
+    """
+    from refnx.analysis.parameter import is_parameter
+    from refnx.reflect import SLD
+
+    if structure.reverse_structure:
+        # After reversal the first component becomes the backing/solvent.
+        anchor = structure.components[0]
+    else:
+        anchor = structure.components[-1]
+
+    # If structure.solvent is an explicit SLD object, compile its Parameters.
+    if isinstance(structure.solvent, SLD):
+        real_node = compiler.compile_parameter(structure.solvent.real)
+        imag_node = compiler.compile_parameter(structure.solvent.imag)
+        return real_node, imag_node
+
+    # Otherwise derive from the anchor component's slab SLD Parameters.
+    if hasattr(anchor, "sld"):
+        real_node = compiler.compile_parameter(anchor.sld.real)
+        imag_node = compiler.compile_parameter(anchor.sld.imag)
+    else:
+        # Fallback for exotic components: evaluate once and bake as constant.
+        slabs = anchor.slabs(structure=structure)
+        real_node = _ConstNode(float(slabs[0, 1]))
+        imag_node = _ConstNode(float(slabs[0, 2]))
+
+    return real_node, imag_node
+
+
 def _make_params_to_slabs(
-    slab_specs: List[_SlabSpec], solvent_real: float, solvent_imag: float
+    slab_specs: List[_SlabSpec],
+    solvent_real_node,
+    solvent_imag_node,
+    reverse_structure: bool = False,
 ):
     """
     Returns a pure JAX function  free -> (N, 4) layers array ready for
@@ -152,18 +202,51 @@ def _make_params_to_slabs(
     Parameters
     ----------
     slab_specs : list of _SlabSpec
-        Compiled slab specifications from ``_compile_structure``.
-    solvent_real, solvent_imag : float
-        Real and imaginary SLD of the solvating medium (×10⁻⁶ Å⁻²),
-        captured as Python floats at compile time.
+        Compiled slab specifications from ``_compile_structure``, always in
+        forward (fronting-to-backing) order.
+    solvent_real_node, solvent_imag_node : IR node
+        Compiled IR nodes for the real and imaginary SLD of the solvating
+        medium (×10⁻⁶ Å⁻²).  These may be ``_ConstNode`` values (when the
+        solvent SLD is fixed) or ``_FreeNode`` / expression nodes (when
+        ``structure.solvent`` is an ``SLD`` object with fittable parameters).
+        When ``reverse_structure=True`` these should represent the *fronting*
+        medium SLD (i.e. the original first component), since after reversal
+        the roles of fronting and backing are swapped.
+    reverse_structure : bool
+        When True, reverse the slab order and shift the roughness column to
+        match ``Structure.slabs()`` behaviour.  Handled entirely at compile
+        time — no runtime branching.
     """
-    solv_re = float(solvent_real)
-    solv_im = float(solvent_imag)
+    # Apply reverse_structure at compile time by reordering slab_specs.
+    # Structure.slabs() does:
+    #   slabs = slabs[::-1]
+    #   slabs[1:, 3] = slabs[:-1, 3][::-1]   # shift roughnesses
+    #   slabs[0, 3] = 0.0                     # fronting roughness is 0
+    # We replicate this by reordering the _SlabSpec list and reassigning
+    # the rough fields before the JAX function is built — zero extra cost
+    # at runtime.
+    if reverse_structure:
+        specs = list(reversed(slab_specs))
+        original_roughs = [s.rough for s in slab_specs]
+        shifted_roughs = [_ConstNode(0.0)] + list(reversed(original_roughs))[
+            :-1
+        ]
+        specs = [
+            _SlabSpec(s.thick, s.real, s.imag, r, s.vfsolv)
+            for s, r in zip(specs, shifted_roughs)
+        ]
+    else:
+        specs = slab_specs
 
     def params_to_slabs(free: jnp.ndarray) -> jnp.ndarray:
+        # Evaluate solvent SLD nodes — free if solvent has fittable parameters,
+        # constant otherwise.
+        solv_re = _eval_node(solvent_real_node, free)
+        solv_im = _eval_node(solvent_imag_node, free)
+
         # Build (N, 5): thick, sld_re, sld_im, rough, vfsolv
         rows = []
-        for spec in slab_specs:
+        for spec in specs:
             thick = _eval_node(spec.thick, free)
             real = _eval_node(spec.real, free)
             imag = _eval_node(spec.imag, free)
@@ -178,7 +261,6 @@ def _make_params_to_slabs(
         vf = slabs5[1:-1, 4:5]  # (N-2, 1)  vfsolv column
         re = slabs5[1:-1, 1] * (1.0 - vf[:, 0]) + solv_re * vf[:, 0]
         im = slabs5[1:-1, 2] * (1.0 - vf[:, 0]) + solv_im * vf[:, 0]
-
         # Rebuild the (N, 4) array jabeles expects: thick, mixed_re, mixed_im, rough
         interior = jnp.stack(
             [slabs5[1:-1, 0], re, im, slabs5[1:-1, 3]], axis=1
@@ -228,7 +310,7 @@ def _make_logl(
     Parameters
     ----------
     q_err : (N,) jnp.ndarray or None
-        Per-point dQ/Q values (FWHM) from ``Objective.data.x_err``.
+        Per-point dQ values (FWHM) from ``Objective.data.x_err``.
         Pass None to skip resolution smearing.
     quad_order : int
         Gauss-Legendre quadrature order forwarded to
@@ -388,9 +470,14 @@ def compile_model(reflect_model) -> CompiledModel:
 
     structure = reflect_model.structure
     slab_specs = _compile_structure(structure, compiler)
-    solvent_complex = complex(structure.solvent.complex(structure.wavelength))
+    solvent_real_node, solvent_imag_node = _compile_solvent(
+        structure, compiler
+    )
     params_to_slabs_fn = _make_params_to_slabs(
-        slab_specs, solvent_complex.real, solvent_complex.imag
+        slab_specs,
+        solvent_real_node,
+        solvent_imag_node,
+        reverse_structure=structure.reverse_structure,
     )
 
     scale_node = (
@@ -526,9 +613,14 @@ def _compile_single_logl(
     structure = model.structure
     slab_specs = _compile_structure(structure, compiler)
 
-    solvent_complex = complex(structure.solvent.complex(structure.wavelength))
+    solvent_real_node, solvent_imag_node = _compile_solvent(
+        structure, compiler
+    )
     params_to_slabs_fn = _make_params_to_slabs(
-        slab_specs, solvent_complex.real, solvent_complex.imag
+        slab_specs,
+        solvent_real_node,
+        solvent_imag_node,
+        reverse_structure=structure.reverse_structure,
     )
 
     if hasattr(model, "scale") and is_parameter(model.scale):
