@@ -40,246 +40,27 @@ Usage
 
 from __future__ import annotations
 
-import operator
 from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
 import numpy as np
 import jax.numpy as jnp
 import jax
+from refnx.reflect import LipidLeaflet
+from refnx.reflect.extra._jax_util import (
+    _SlabSpec,
+    _ConstNode,
+    _ConstraintCompiler,
+    _eval_node,
+)
+from refnx.reflect.extra._jax_lipid import _lipid_leaflet_jax_slabs
 
-# ---------------------------------------------------------------------------
-# Node types — a tiny IR for constraint expressions
-# ---------------------------------------------------------------------------
-
-
-@dataclass
-class _FreeNode:
-    """A free (varying) parameter; evaluates to free[index]."""
-
-    index: int
-
-
-@dataclass
-class _ConstNode:
-    """A numeric constant (fixed parameter or literal)."""
-
-    value: float
-
-
-@dataclass
-class _BinaryNode:
-    """op(left, right) where op is a Python operator function."""
-
-    op: Callable
-    left: Any  # one of the Node types
-    right: Any
-
-
-@dataclass
-class _UnaryNode:
-    """op(operand) where op is a ufunc / unary function."""
-
-    op: Callable
-    operand: Any
-
-
-@dataclass
-class _CallableConstraintNode:
-    """
-    A constraint set via ``Parameter.set_constraint(fn, args=(...))``
-    where ``fn`` is an arbitrary Python callable.
-
-    We cannot trace through arbitrary callables with JAX.  Instead we record
-    the function and the *resolved* argument nodes so that at JAX-trace time
-    we can call ``fn(*evaluated_args)``.
-
-    This only works if ``fn`` itself is composed of JAX-compatible operations
-    (e.g. uses jnp inside).  If it uses numpy/Python scalars the gradient
-    will be a stop-gradient.  We document this limitation clearly.
-    """
-
-    fn: Callable
-    arg_nodes: List[Any]  # one node per arg in _constraint_args
-
-
-# Map from refnx numpy ops to their jnp equivalents so the compiled
-# expression uses JAX primitives rather than numpy ones.
-_NP_TO_JNP: Dict[Callable, Callable] = {
-    np.sin: jnp.sin,
-    np.cos: jnp.cos,
-    np.tan: jnp.tan,
-    np.arcsin: jnp.arcsin,
-    np.arccos: jnp.arccos,
-    np.arctan: jnp.arctan,
-    np.log: jnp.log,
-    np.log10: jnp.log10,
-    np.exp: jnp.exp,
-    np.sqrt: jnp.sqrt,
-    np.sum: jnp.sum,
-    np.power: jnp.power,
-    np.abs: jnp.abs,
-    operator.add: operator.add,
-    operator.sub: operator.sub,
-    operator.mul: operator.mul,
-    operator.truediv: operator.truediv,
-    operator.floordiv: operator.floordiv,
-    operator.pow: operator.pow,
-    operator.mod: operator.mod,
-    operator.neg: operator.neg,
-    operator.abs: operator.abs,
-}
+_jax_slabs_methods = {LipidLeaflet: _lipid_leaflet_jax_slabs}
 
 
 # ---------------------------------------------------------------------------
-# Step 1 — analyse the Parameter graph and build the IR
+# Compile a Structure's slab layout into JAX
 # ---------------------------------------------------------------------------
-
-
-class _ConstraintCompiler:
-    """
-    Walks the refnx Parameter / _BinaryOp / _UnaryOp expression tree and
-    converts it into our tiny IR of Node objects.
-
-    Parameters
-    ----------
-    free_index : dict mapping id(Parameter) -> int
-        The position of each free (varying) parameter in the flat vector.
-    """
-
-    def __init__(self, free_index: Dict[int, int]):
-        self._free_index = free_index
-
-    def compile(self, expr) -> Any:
-        """Compile a constraint expression rooted at ``expr`` into a Node."""
-        from refnx.analysis.parameter import (
-            Parameter,
-            Constant,
-            _BinaryOp,
-            _UnaryOp,
-            BaseParameter,
-        )
-
-        if isinstance(expr, Parameter):
-            pid = id(expr)
-            if pid in self._free_index:
-                # Free parameter: just read from the flat vector
-                return _FreeNode(self._free_index[pid])
-            elif expr.constraint is not None:
-                # Constrained parameter: recurse into its constraint
-                return self.compile(expr._constraint)
-            else:
-                # Fixed parameter: bake value in as a constant
-                return _ConstNode(float(expr.value))
-
-        elif isinstance(expr, Constant):
-            return _ConstNode(float(expr.value))
-
-        elif isinstance(expr, _BinaryOp):
-            left = self.compile(expr.op1)
-            right = self.compile(expr.op2)
-            jax_op = _NP_TO_JNP.get(expr.opn, expr.opn)
-            return _BinaryNode(jax_op, left, right)
-
-        elif isinstance(expr, _UnaryOp):
-            operand = self.compile(expr.op1)
-            jax_op = _NP_TO_JNP.get(expr.opn, expr.opn)
-            return _UnaryNode(jax_op, operand)
-
-        elif callable(expr):
-            # set_constraint(fn, args=(...)) path
-            # expr is the raw callable; _constraint_args is on the Parameter
-            # — but we're called *on the expression itself*, so this branch
-            # is reached when compiling a Parameter whose ._constraint is
-            # callable.  The args live on that Parameter, not here.
-            # Handled separately in compile_parameter().
-            return _ConstNode(float(expr()))  # fallback: evaluate once
-
-        else:
-            # Numeric literal wrapped by asMagicNumber — shouldn't reach here
-            # normally, but guard anyway.
-            return _ConstNode(float(expr))
-
-    def compile_parameter(self, p) -> Any:
-        """
-        Top-level entry: compile the full expression for Parameter ``p``.
-        Handles the callable-constraint case that needs access to
-        ``p._constraint_args``.
-        """
-        from refnx.analysis.parameter import Parameter, BaseParameter
-
-        pid = id(p)
-        if pid in self._free_index:
-            return _FreeNode(self._free_index[pid])
-
-        if p.constraint is None:
-            return _ConstNode(float(p.value))
-
-        if callable(p._constraint) and not isinstance(
-            p._constraint, BaseParameter
-        ):
-            # set_constraint(fn, args=(...)) style
-            arg_nodes = []
-            for arg in p._constraint_args or ():
-                if isinstance(arg, BaseParameter):
-                    arg_nodes.append(self.compile_parameter(arg))
-                else:
-                    arg_nodes.append(_ConstNode(float(arg)))
-            return _CallableConstraintNode(p._constraint, arg_nodes)
-
-        # algebraic expression constraint
-        return self.compile(p._constraint)
-
-
-def _eval_node(node, free: jnp.ndarray) -> jnp.ndarray:
-    """Recursively evaluate a compiled IR node against the free vector."""
-    if isinstance(node, _FreeNode):
-        return free[node.index]
-    elif isinstance(node, _ConstNode):
-        return jnp.array(node.value, dtype=free.dtype)
-    elif isinstance(node, _BinaryNode):
-        left = _eval_node(node.left, free)
-        right = _eval_node(node.right, free)
-        return node.op(left, right)
-    elif isinstance(node, _UnaryNode):
-        o = _eval_node(node.operand, free)
-        return node.op(o)
-    elif isinstance(node, _CallableConstraintNode):
-        args = [_eval_node(a, free) for a in node.arg_nodes]
-        return node.fn(*args)
-    else:
-        raise TypeError(f"Unknown IR node type: {type(node)}")
-
-
-# ---------------------------------------------------------------------------
-# Step 2 — compile a Structure's slab layout into JAX
-# ---------------------------------------------------------------------------
-
-
-@dataclass
-class _SlabSpec:
-    """
-    Compiled specification for one slab (one row of the (N, 5) layers array).
-    Each field is an IR node that evaluates to a scalar.
-
-    Columns match ``Component.slabs()`` exactly:
-      0  thick   — layer thickness (Å)
-      1  real    — real SLD of the pure material (×10⁻⁶ Å⁻²)
-      2  imag    — imaginary SLD of the pure material (×10⁻⁶ Å⁻²)
-      3  rough   — interfacial roughness (Å)
-      4  vfsolv  — volume fraction of solvent in this layer [0, 1]
-
-    The solvent mixing (``Structure.overall_sld``) is performed inside
-    ``params_to_slabs`` so that gradients flow through it.  The four-column
-    array consumed by ``jabeles`` is obtained by slicing ``[:, :4]`` *after*
-    the mixing has been applied.
-    """
-
-    thick: Any  # thickness
-    real: Any  # real SLD of pure material
-    imag: Any  # imaginary SLD of pure material
-    rough: Any  # roughness
-    vfsolv: Any  # volume fraction of solvent
 
 
 def _compile_structure(
@@ -327,6 +108,9 @@ def _compile_structure(
                     thick_node, real_node, imag_node, rough_node, vfsolv_node
                 )
             )
+        elif isinstance(component, LipidLeaflet):
+            LipidLeaflet._jax_slabs = _jax_slabs_methods[LipidLeaflet]
+            specs.extend(component._jax_slabs(compiler))
         else:
             # Unknown multi-slab component (e.g. Spline, LipidLeaflet):
             # bake current numeric values as constants.
@@ -346,8 +130,58 @@ def _compile_structure(
     return specs
 
 
+def _compile_solvent(structure, compiler: _ConstraintCompiler):
+    """
+    Compile the solvent SLD of a ``Structure`` into a pair of IR nodes
+    ``(real_node, imag_node)``.
+
+    ``Structure.solvent`` can be:
+
+    1. ``None`` — solvent is inferred from the last component's SLD.
+       We read the last ``Slab``'s ``sld.real`` / ``sld.imag`` Parameters
+       and compile them, so gradients flow if those are free.
+
+    2. An ``SLD`` object set explicitly by the user — its ``real`` and
+       ``imag`` attributes are ``Parameter`` objects that may be free.
+       We compile them directly.
+
+    When ``structure.reverse_structure=True``, the solvating medium is
+    the *first* component (which becomes the backing after reversal), so
+    we compile from ``structure.components[0]`` instead.
+    """
+    from refnx.analysis.parameter import is_parameter
+    from refnx.reflect import SLD
+
+    if structure.reverse_structure:
+        # After reversal the first component becomes the backing/solvent.
+        anchor = structure.components[0]
+    else:
+        anchor = structure.components[-1]
+
+    # If structure.solvent is an explicit SLD object, compile its Parameters.
+    if isinstance(structure.solvent, SLD):
+        real_node = compiler.compile_parameter(structure.solvent.real)
+        imag_node = compiler.compile_parameter(structure.solvent.imag)
+        return real_node, imag_node
+
+    # Otherwise derive from the anchor component's slab SLD Parameters.
+    if hasattr(anchor, "sld"):
+        real_node = compiler.compile_parameter(anchor.sld.real)
+        imag_node = compiler.compile_parameter(anchor.sld.imag)
+    else:
+        # Fallback for exotic components: evaluate once and bake as constant.
+        slabs = anchor.slabs(structure=structure)
+        real_node = _ConstNode(float(slabs[0, 1]))
+        imag_node = _ConstNode(float(slabs[0, 2]))
+
+    return real_node, imag_node
+
+
 def _make_params_to_slabs(
-    slab_specs: List[_SlabSpec], solvent_real: float, solvent_imag: float
+    slab_specs: List[_SlabSpec],
+    solvent_real_node,
+    solvent_imag_node,
+    reverse_structure: bool = False,
 ):
     """
     Returns a pure JAX function  free -> (N, 4) layers array ready for
@@ -368,18 +202,51 @@ def _make_params_to_slabs(
     Parameters
     ----------
     slab_specs : list of _SlabSpec
-        Compiled slab specifications from ``_compile_structure``.
-    solvent_real, solvent_imag : float
-        Real and imaginary SLD of the solvating medium (×10⁻⁶ Å⁻²),
-        captured as Python floats at compile time.
+        Compiled slab specifications from ``_compile_structure``, always in
+        forward (fronting-to-backing) order.
+    solvent_real_node, solvent_imag_node : IR node
+        Compiled IR nodes for the real and imaginary SLD of the solvating
+        medium (×10⁻⁶ Å⁻²).  These may be ``_ConstNode`` values (when the
+        solvent SLD is fixed) or ``_FreeNode`` / expression nodes (when
+        ``structure.solvent`` is an ``SLD`` object with fittable parameters).
+        When ``reverse_structure=True`` these should represent the *fronting*
+        medium SLD (i.e. the original first component), since after reversal
+        the roles of fronting and backing are swapped.
+    reverse_structure : bool
+        When True, reverse the slab order and shift the roughness column to
+        match ``Structure.slabs()`` behaviour.  Handled entirely at compile
+        time — no runtime branching.
     """
-    solv_re = float(solvent_real)
-    solv_im = float(solvent_imag)
+    # Apply reverse_structure at compile time by reordering slab_specs.
+    # Structure.slabs() does:
+    #   slabs = slabs[::-1]
+    #   slabs[1:, 3] = slabs[:-1, 3][::-1]   # shift roughnesses
+    #   slabs[0, 3] = 0.0                     # fronting roughness is 0
+    # We replicate this by reordering the _SlabSpec list and reassigning
+    # the rough fields before the JAX function is built — zero extra cost
+    # at runtime.
+    if reverse_structure:
+        specs = list(reversed(slab_specs))
+        original_roughs = [s.rough for s in slab_specs]
+        shifted_roughs = [_ConstNode(0.0)] + list(reversed(original_roughs))[
+            :-1
+        ]
+        specs = [
+            _SlabSpec(s.thick, s.real, s.imag, r, s.vfsolv)
+            for s, r in zip(specs, shifted_roughs)
+        ]
+    else:
+        specs = slab_specs
 
     def params_to_slabs(free: jnp.ndarray) -> jnp.ndarray:
+        # Evaluate solvent SLD nodes — free if solvent has fittable parameters,
+        # constant otherwise.
+        solv_re = _eval_node(solvent_real_node, free)
+        solv_im = _eval_node(solvent_imag_node, free)
+
         # Build (N, 5): thick, sld_re, sld_im, rough, vfsolv
         rows = []
-        for spec in slab_specs:
+        for spec in specs:
             thick = _eval_node(spec.thick, free)
             real = _eval_node(spec.real, free)
             imag = _eval_node(spec.imag, free)
@@ -394,7 +261,6 @@ def _make_params_to_slabs(
         vf = slabs5[1:-1, 4:5]  # (N-2, 1)  vfsolv column
         re = slabs5[1:-1, 1] * (1.0 - vf[:, 0]) + solv_re * vf[:, 0]
         im = slabs5[1:-1, 2] * (1.0 - vf[:, 0]) + solv_im * vf[:, 0]
-
         # Rebuild the (N, 4) array jabeles expects: thick, mixed_re, mixed_im, rough
         interior = jnp.stack(
             [slabs5[1:-1, 0], re, im, slabs5[1:-1, 3]], axis=1
@@ -407,7 +273,7 @@ def _make_params_to_slabs(
 
 
 # ---------------------------------------------------------------------------
-# Step 3 — compile the full log-likelihood
+# Compile the full log-likelihood
 # ---------------------------------------------------------------------------
 
 
@@ -444,7 +310,7 @@ def _make_logl(
     Parameters
     ----------
     q_err : (N,) jnp.ndarray or None
-        Per-point dQ/Q values (FWHM) from ``Objective.data.x_err``.
+        Per-point dQ values (FWHM) from ``Objective.data.x_err``.
         Pass None to skip resolution smearing.
     quad_order : int
         Gauss-Legendre quadrature order forwarded to
@@ -604,9 +470,14 @@ def compile_model(reflect_model) -> CompiledModel:
 
     structure = reflect_model.structure
     slab_specs = _compile_structure(structure, compiler)
-    solvent_complex = complex(structure.solvent.complex(structure.wavelength))
+    solvent_real_node, solvent_imag_node = _compile_solvent(
+        structure, compiler
+    )
     params_to_slabs_fn = _make_params_to_slabs(
-        slab_specs, solvent_complex.real, solvent_complex.imag
+        slab_specs,
+        solvent_real_node,
+        solvent_imag_node,
+        reverse_structure=structure.reverse_structure,
     )
 
     scale_node = (
@@ -742,9 +613,14 @@ def _compile_single_logl(
     structure = model.structure
     slab_specs = _compile_structure(structure, compiler)
 
-    solvent_complex = complex(structure.solvent.complex(structure.wavelength))
+    solvent_real_node, solvent_imag_node = _compile_solvent(
+        structure, compiler
+    )
     params_to_slabs_fn = _make_params_to_slabs(
-        slab_specs, solvent_complex.real, solvent_complex.imag
+        slab_specs,
+        solvent_real_node,
+        solvent_imag_node,
+        reverse_structure=structure.reverse_structure,
     )
 
     if hasattr(model, "scale") and is_parameter(model.scale):
@@ -802,7 +678,75 @@ def _compile_single_logl(
         use_weights=objective.weighted,
         quad_order=quad_order,
     )
-    return logl_raw, params_to_slabs_fn
+
+    # ----------------------------------------------------------------------
+    # model.logp() and logp_extra
+    #
+    # Objective.logl adds extra potential terms that are arbitrary Python
+    # callables — they cannot be JAX-traced.  We use jax.pure_callback to
+    # call them safely from within a JIT-compiled function: JAX treats the
+    # callback as an opaque kernel, passes a concrete numpy array at runtime
+    # (never an abstract tracer), and splices the returned scalar into the
+    # JAX computation graph as a stop-gradient leaf.
+    #
+    # Gradients do NOT flow through these terms, which is correct: they
+    # encode inequality constraints and regularisation expressed as Python
+    # logic, not differentiable expressions.  Users who need differentiable
+    # priors should express them as Parameter bounds or constraint
+    # expressions in the Parameter graph instead.
+    # ----------------------------------------------------------------------
+    has_logp_extra = objective.logp_extra is not None
+
+    # Check once at compile time whether model.logp is the trivial default
+    # (the base Model.logp which always returns 0) and logp_extra is absent.
+    # If so, skip the callback entirely to avoid unnecessary setp overhead.
+    from refnx.analysis.model import Model as _BaseModel
+
+    _logp_is_trivial = (
+        not has_logp_extra and type(model).logp is _BaseModel.logp
+    )
+
+    if _logp_is_trivial:
+        # Fast path: no extra terms, return the raw logl directly.
+        return logl_raw, params_to_slabs_fn
+
+    # Build a compile-time index array that maps from the global free vector
+    # (which may be longer than this objective's own varying parameters when
+    # called from compile_global_objective) to the values this objective's
+    # setp() expects.  For a single Objective the two are identical; for a
+    # GlobalObjective child they are a strict subset.
+    local_var_params = list(objective.varying_parameters())
+    setp_indices = np.array(
+        [compiler._free_index[id(p)] for p in local_var_params], dtype=np.intp
+    )
+
+    def _extra_potential_callback(free_np: np.ndarray) -> np.ndarray:
+        """Concrete-array callback: setp then evaluate extra terms."""
+        objective.setp(free_np[setp_indices])
+        extra = float(model.logp())
+        if has_logp_extra:
+            extra += float(objective.logp_extra(model, objective.data))
+        return np.array(extra, dtype=np.float64)
+
+    @jax.custom_jvp
+    def _extra_potential(free: jnp.ndarray) -> jnp.ndarray:
+        ep = jax.pure_callback(
+            _extra_potential_callback,
+            jax.ShapeDtypeStruct((), jnp.float64),
+            free,
+        )
+        return ep
+
+    @_extra_potential.defjvp
+    def _extra_potential_jvp(primals, tangents):
+        # No gradient flows through the extra potential terms.
+        (free,) = primals
+        return _extra_potential(free), jnp.zeros((), dtype=jnp.float64)
+
+    def logl_with_extra(free: jnp.ndarray) -> jnp.ndarray:
+        return logl_raw(free) + _extra_potential(free)
+
+    return logl_with_extra, params_to_slabs_fn
 
 
 def compile_objective(objective) -> CompiledObjective:
