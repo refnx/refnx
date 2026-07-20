@@ -105,7 +105,12 @@ class _ConstraintCompiler:
         Handles the callable-constraint case that needs access to
         ``p._constraint_args``.
         """
-        from refnx.analysis.parameter import Parameter, BaseParameter, _BinaryOp, _UnaryOp
+        from refnx.analysis.parameter import (
+            Parameter,
+            BaseParameter,
+            _BinaryOp,
+            _UnaryOp,
+        )
 
         if isinstance(p, (_BinaryOp, _UnaryOp)):
             return self.compile(p)

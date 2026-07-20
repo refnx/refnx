@@ -8,7 +8,11 @@ import refnx
 from refnx.analysis import Objective, Parameter, CurveFitter
 from refnx.dataset import Data1D, ReflectDataset
 from refnx.reflect import ReflectModel, SLD, LipidLeaflet
-from refnx.reflect.extra import compile_objective, compile_model, make_scipy_objective
+from refnx.reflect.extra import (
+    compile_objective,
+    compile_model,
+    make_scipy_objective,
+)
 
 try:
     import jax
@@ -68,7 +72,9 @@ class TestJAX:
         assert_allclose(-logl, self.objective.nll())
 
     def test_auxiliary_parameters(self):
-        data = Data1D(Path(refnx.__file__).parent / "analysis" / "tests" / "e361r.txt")
+        data = Data1D(
+            Path(refnx.__file__).parent / "analysis" / "tests" / "e361r.txt"
+        )
         data.x_err = 0.05 * data.x
 
         si = SLD(2.07)
