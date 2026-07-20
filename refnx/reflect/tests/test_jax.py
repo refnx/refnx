@@ -1,5 +1,6 @@
 from importlib import resources
 import pytest
+from pathlib import Path
 import numpy as np
 from numpy.testing import assert_allclose
 
@@ -7,7 +8,7 @@ import refnx
 from refnx.analysis import Objective, Parameter, CurveFitter
 from refnx.dataset import Data1D, ReflectDataset
 from refnx.reflect import ReflectModel, SLD, LipidLeaflet
-from refnx.reflect.extra import compile_objective, compile_model
+from refnx.reflect.extra import compile_objective, compile_model, make_scipy_objective
 
 try:
     import jax
@@ -65,6 +66,43 @@ class TestJAX:
         vg = obj.value_and_grad
         logl, grad = vg(np.array(self.objective.varying_parameters()))
         assert_allclose(-logl, self.objective.nll())
+
+    def test_auxiliary_parameters(self):
+        data = Data1D(Path(refnx.__file__).parent / "analysis" / "tests" / "e361r.txt")
+        data.x_err = 0.05 * data.x
+
+        si = SLD(2.07)
+        film = SLD(1.0)
+        d2o = SLD(6.36)
+
+        film.real.setp(vary=True)
+        p = Parameter(50, vary=True)
+        t = 250 - p
+
+        s = si | film(t, 3) | d2o(0, 3)
+        model = ReflectModel(s)
+        model.scale.setp(vary=True)
+
+        objective = Objective(model, data, auxiliary_params=(p,))
+        pars = np.array(objective.varying_parameters())
+
+        p.value = 49
+        nll49 = objective.nll()
+        p.value = 50
+        nll50 = objective.nll()
+        p.value = 48
+        nll48 = objective.nll()
+
+        c = compile_objective(objective)
+
+        nll_fn, grad_fn = make_scipy_objective(c)
+        assert_allclose(nll_fn(pars), nll50)
+
+        pars[1] = 49.0
+        assert_allclose(nll_fn(pars), nll49)
+
+        pars[1] = 48.0
+        assert_allclose(nll_fn(pars), nll48)
 
     def test_lipid(self):
         pth = resources.files(refnx.analysis) / "tests"
