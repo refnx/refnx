@@ -736,3 +736,6 @@ in 0.1.13.
   forward mode differentiation of the reflectivity generative model.
 - Added refnx.reflect.extra for pymc+jax sampling adaptation. **NUTS sampling
   is now available**.
+
+0.1.66
+------
