@@ -109,6 +109,7 @@ def _compile_structure(
                 )
             )
         elif type(component) in _jax_slabs_methods.keys():
+            # monkeypatch the Component class
             klass = type(component)
             klass._jax_slabs = _jax_slabs_methods[klass]
             specs.extend(component._jax_slabs(compiler))
