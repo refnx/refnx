@@ -58,11 +58,13 @@ from refnx.reflect.extra._jax_lipid import (
     _lipid_leaflet_guest_jax_slabs,
 )
 
+# monkey patch known Component classes
 _jax_slabs_methods = {
     LipidLeaflet: _lipid_leaflet_jax_slabs,
     LipidLeafletGuest: _lipid_leaflet_guest_jax_slabs,
 }
-
+for klass, method in _jax_slabs_methods.items():
+    klass._jax_slabs = method
 
 # ---------------------------------------------------------------------------
 # Compile a Structure's slab layout into JAX
@@ -114,11 +116,6 @@ def _compile_structure(
                     thick_node, real_node, imag_node, rough_node, vfsolv_node
                 )
             )
-        elif type(component) in _jax_slabs_methods.keys():
-            # monkeypatch the Component class
-            klass = type(component)
-            klass._jax_slabs = _jax_slabs_methods[klass]
-            specs.extend(component._jax_slabs(compiler))
         else:
             raise ValueError(
                 f"_jax_slabs is currently not implemented for {type(component)}"

@@ -269,6 +269,7 @@ def _lipid_leaflet_guest_jax_slabs(self, compiler: _ConstraintCompiler):
     vft_node = _div(vm_tails_node, _mul(apm_node, thick_tails_node))
 
     # guest volume fraction (absolute vs. relative-to-empty-space)
+    print(f"{self.absolute_phi=}")
     if self.absolute_phi:
         vfhg_node = phi_guest_h_node
         vftg_node = phi_guest_t_node

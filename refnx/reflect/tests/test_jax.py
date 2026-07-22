@@ -293,7 +293,7 @@ class TestJAX:
 
         cm = compile_model(model)
         _slabs = cm.params_to_slabs(np.array([1.0]))
-        assert_allclose(_slabs[:, 1], s.slabs()[:, 1], rtol=1e-10)
+        assert_allclose(_slabs, s.slabs()[:, :-1])
 
     def test_lipidleafletguest_solvent_specified(self):
         phi_guest_t = Parameter(0.1)
