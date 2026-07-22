@@ -120,20 +120,21 @@ def _compile_structure(
             klass._jax_slabs = _jax_slabs_methods[klass]
             specs.extend(component._jax_slabs(compiler))
         else:
+            raise ValueError(f"_jax_slabs is currently not implemented for {type(component)}")
             # Unknown multi-slab component (e.g. Spline, LipidLeaflet):
             # bake current numeric values as constants.
             # AD will not flow through these slabs; document this clearly.
-            for row in component_slabs:
-                # row has at least 5 columns: thick, real, imag, rough, vfsolv
-                specs.append(
-                    _SlabSpec(
-                        _ConstNode(float(row[0])),
-                        _ConstNode(float(row[1])),
-                        _ConstNode(float(row[2])),
-                        _ConstNode(float(row[3])),
-                        _ConstNode(float(row[4])),
-                    )
-                )
+            # for row in component_slabs:
+            #     # row has at least 5 columns: thick, real, imag, rough, vfsolv
+            #     specs.append(
+            #         _SlabSpec(
+            #             _ConstNode(float(row[0])),
+            #             _ConstNode(float(row[1])),
+            #             _ConstNode(float(row[2])),
+            #             _ConstNode(float(row[3])),
+            #             _ConstNode(float(row[4])),
+            #         )
+            #     )
 
     return specs
 
