@@ -739,3 +739,5 @@ in 0.1.13.
 
 0.1.66
 ------
+- JAX monkeypatch for LipidLeafletGuest.
+- Add params_to_slabs function for refnx.reflect.extras.CompiledModel.

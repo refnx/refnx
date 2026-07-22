@@ -46,16 +46,22 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 import numpy as np
 import jax.numpy as jnp
 import jax
-from refnx.reflect import LipidLeaflet
+from refnx.reflect import LipidLeaflet, LipidLeafletGuest
 from refnx.reflect.extra._jax_util import (
     _SlabSpec,
     _ConstNode,
     _ConstraintCompiler,
     _eval_node,
 )
-from refnx.reflect.extra._jax_lipid import _lipid_leaflet_jax_slabs
+from refnx.reflect.extra._jax_lipid import (
+    _lipid_leaflet_jax_slabs,
+    _lipid_leaflet_guest_jax_slabs,
+)
 
-_jax_slabs_methods = {LipidLeaflet: _lipid_leaflet_jax_slabs}
+_jax_slabs_methods = {
+    LipidLeaflet: _lipid_leaflet_jax_slabs,
+    LipidLeafletGuest: _lipid_leaflet_guest_jax_slabs,
+}
 
 
 # ---------------------------------------------------------------------------
@@ -389,6 +395,12 @@ class CompiledModel:
         Initial free-parameter values.
     param_names : List[str]
         Names of the free parameters, in the same order as x0.
+            params_to_slabs : Callable
+    params_to_slabs : Callable
+        Pure JAX function mapping the free vector to the (N, 4) layers array
+        consumed by ``jabeles`` (thick, mixed_sld_real, mixed_sld_imag, rough).
+        Solvent volume-fraction averaging has already been applied.
+        Useful for inspecting the SLD profile under AD.
     setp : Callable[[np.ndarray], None]
         Push values back into the stateful objective after use.
     n_free : int
@@ -399,6 +411,7 @@ class CompiledModel:
     jacfwd: Callable
     x0: jnp.ndarray
     param_names: List[str]
+    params_to_slabs: Callable
     setp: Callable
     n_free: int
 
@@ -525,6 +538,7 @@ def compile_model(reflect_model) -> CompiledModel:
         model=jax.jit(model_fn),
         jacfwd=jax.jit(jacfwd_fn),
         x0=x0,
+        params_to_slabs=params_to_slabs_fn,
         param_names=param_names,
         setp=setp,
         n_free=len(var_params),
