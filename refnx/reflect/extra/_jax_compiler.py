@@ -93,7 +93,7 @@ def _compile_structure(
         if hasattr(component, "_jax_slabs"):
             # Extension point: component provides its own compiled slab specs.
             specs.extend(component._jax_slabs(compiler))
-        elif hasattr(component, "thick") and isinstance(component, Slab):
+        elif hasattr(component, "thick") and type(component) is Slab:
             # Standard Slab interface (Slab, MagneticSlab, etc.)
             assert (
                 n_rows == 1
@@ -108,8 +108,10 @@ def _compile_structure(
                     thick_node, real_node, imag_node, rough_node, vfsolv_node
                 )
             )
-        elif isinstance(component, LipidLeaflet):
-            LipidLeaflet._jax_slabs = _jax_slabs_methods[LipidLeaflet]
+        elif type(component) in _jax_slabs_methods.keys():
+            # monkeypatch the Component class
+            klass = type(component)
+            klass._jax_slabs = _jax_slabs_methods[klass]
             specs.extend(component._jax_slabs(compiler))
         else:
             # Unknown multi-slab component (e.g. Spline, LipidLeaflet):
