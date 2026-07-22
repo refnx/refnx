@@ -2,7 +2,7 @@ from importlib import resources
 import pytest
 from pathlib import Path
 import numpy as np
-from numpy.testing import assert_allclose, assert_equal
+from numpy.testing import assert_allclose
 
 import refnx
 from refnx.analysis import Objective, Parameter, CurveFitter
@@ -267,7 +267,6 @@ class TestJAX:
 
         phi_guest_t = Parameter(0.1)
         sld_guest = SLD(7.6)
-        sld_solvent = SLD(5.55)
         with pytest.warns(RuntimeWarning):
             leaflet = LipidLeafletGuest(
                 APM,
