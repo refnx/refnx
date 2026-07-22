@@ -32,6 +32,45 @@ class _SlabSpec:
     vfsolv: Any  # volume fraction of solvent
 
 
+@dataclass
+class _FnNode:
+    """
+    An IR node that wraps an arbitrary pure-JAX function of the free vector.
+    Used for derived quantities (like Spline microslab thickness and SLD)
+    that are most naturally expressed as a Python closure over ``free``
+    rather than a tree of binary/unary ops.
+
+    The function must be pure JAX — no numpy, no Python side effects.
+    """
+
+    fn: Any  # Callable[[jnp.ndarray], jnp.ndarray]
+
+
+@dataclass
+class _PaddedSlabSpecs:
+    """
+    Compiled specification for a component whose number of active slabs
+    varies at runtime but is bounded by a known maximum.
+
+    JAX requires static array shapes, so we always allocate ``n_max`` slab
+    rows and zero out the thickness of inactive rows via a boolean mask.
+    Zero-thickness slabs are no-ops in the Abeles calculation.
+
+    Attributes
+    ----------
+    specs : List[_SlabSpec]
+        Exactly ``n_max`` slab specs, covering all possible active rows.
+    n_active_node : IR node
+        An IR node that evaluates to the number of active slabs at runtime.
+    n_max : int
+        The static maximum number of slabs, equal to ``len(specs)``.
+    """
+
+    specs: List[_SlabSpec]
+    n_active_node: Any
+    n_max: int
+
+
 # ---------------------------------------------------------------------------
 # Analyse the Parameter graph and build the IR
 # ---------------------------------------------------------------------------

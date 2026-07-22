@@ -49,6 +49,7 @@ import jax
 from refnx.reflect import LipidLeaflet, LipidLeafletGuest
 from refnx.reflect.extra._jax_util import (
     _SlabSpec,
+    _PaddedSlabSpecs,
     _ConstNode,
     _ConstraintCompiler,
     _eval_node,
@@ -75,9 +76,9 @@ def _compile_structure(
     structure, compiler: _ConstraintCompiler
 ) -> List[_SlabSpec]:
     """
-    Walk a refnx Structure and return a list of _SlabSpec — one per slab
-    row — using the current parameter values to locate each Parameter and
-    compile its expression into the IR.
+    Walk a refnx Structure and return a list of ``_SlabSpec`` or
+    ``_PaddedSlabSpecs`` objects — one entry per slab row (or per padded
+    block for variable-slab components that opt in to ``_PaddedSlabSpecs``).
 
     This calls ``component.slabs()`` once to discover the *shape* of each
     component's contribution, then replaces each numeric value with an IR node
@@ -99,8 +100,13 @@ def _compile_structure(
         n_rows = component_slabs.shape[0]
 
         if hasattr(component, "_jax_slabs"):
-            # Extension point: component provides its own compiled slab specs.
-            specs.extend(component._jax_slabs(compiler))
+            # General extension point: may return List[_SlabSpec] or
+            # _PaddedSlabSpecs for components with bounded-variable slab counts.
+            result = component._jax_slabs(compiler)
+            if isinstance(result, _PaddedSlabSpecs):
+                specs.append(result)
+            else:
+                specs.extend(result)
         elif hasattr(component, "thick") and type(component) is Slab:
             # Standard Slab interface (Slab, MagneticSlab, etc.)
             assert (
@@ -253,14 +259,30 @@ def _make_params_to_slabs(
         solv_im = _eval_node(solvent_imag_node, free)
 
         # Build (N, 5): thick, sld_re, sld_im, rough, vfsolv
+        # Each entry in specs is either a _SlabSpec (one row) or a
+        # _PaddedSlabSpecs (n_max rows with a dynamic active-count mask).
         rows = []
         for spec in specs:
-            thick = _eval_node(spec.thick, free)
-            real = _eval_node(spec.real, free)
-            imag = _eval_node(spec.imag, free)
-            rough = _eval_node(spec.rough, free)
-            vfsolv = _eval_node(spec.vfsolv, free)
-            rows.append(jnp.stack([thick, real, imag, rough, vfsolv]))
+            if isinstance(spec, _PaddedSlabSpecs):
+                # Evaluate all n_max rows, then zero out inactive thicknesses.
+                # jnp.arange < n_active produces a boolean mask; multiplying
+                # thick by it makes inactive rows contribute nothing in Abeles.
+                n_active = _eval_node(spec.n_active_node, free)
+                mask = jnp.arange(spec.n_max) < n_active  # (n_max,) bool
+                for i, s in enumerate(spec.specs):
+                    thick = _eval_node(s.thick, free) * mask[i]
+                    real = _eval_node(s.real, free)
+                    imag = _eval_node(s.imag, free)
+                    rough = _eval_node(s.rough, free)
+                    vfsolv = _eval_node(s.vfsolv, free)
+                    rows.append(jnp.stack([thick, real, imag, rough, vfsolv]))
+            else:
+                thick = _eval_node(spec.thick, free)
+                real = _eval_node(spec.real, free)
+                imag = _eval_node(spec.imag, free)
+                rough = _eval_node(spec.rough, free)
+                vfsolv = _eval_node(spec.vfsolv, free)
+                rows.append(jnp.stack([thick, real, imag, rough, vfsolv]))
         slabs5 = jnp.stack(rows)  # (N, 5)
 
         # Apply solvent volume-fraction mixing on interior slabs,
@@ -269,6 +291,7 @@ def _make_params_to_slabs(
         vf = slabs5[1:-1, 4:5]  # (N-2, 1)  vfsolv column
         re = slabs5[1:-1, 1] * (1.0 - vf[:, 0]) + solv_re * vf[:, 0]
         im = slabs5[1:-1, 2] * (1.0 - vf[:, 0]) + solv_im * vf[:, 0]
+
         # Rebuild the (N, 4) array jabeles expects: thick, mixed_re, mixed_im, rough
         interior = jnp.stack(
             [slabs5[1:-1, 0], re, im, slabs5[1:-1, 3]], axis=1
