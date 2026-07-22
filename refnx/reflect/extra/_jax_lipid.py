@@ -230,3 +230,158 @@ def _lipid_leaflet_jax_slabs(
             vfsolv=tails_spec.vfsolv,
         )
         return [tails_spec, heads_spec]
+
+
+def _lipid_leaflet_guest_jax_slabs(self, compiler: _ConstraintCompiler):
+    """
+    ``_jax_slabs`` hook for ``LipidLeafletGuest``.
+
+    Mirrors ``LipidLeafletGuest.slabs()`` exactly (including guest-molecule
+    mixing in the head/tail regions and optional head/tail self-solvation),
+    but expressed as a JAX-differentiable IR graph.
+    """
+    one = _const(1.0)
+
+    apm_node = compiler.compile_parameter(self.apm)
+
+    b_heads_re = compiler.compile_parameter(self.b_heads_real)
+    b_heads_im = compiler.compile_parameter(self.b_heads_imag)
+    b_tails_re = compiler.compile_parameter(self.b_tails_real)
+    b_tails_im = compiler.compile_parameter(self.b_tails_imag)
+
+    vm_heads_node = compiler.compile_parameter(self.vm_heads)
+    vm_tails_node = compiler.compile_parameter(self.vm_tails)
+
+    thick_heads_node = compiler.compile_parameter(self.thickness_heads)
+    thick_tails_node = compiler.compile_parameter(self.thickness_tails)
+
+    rough_ht_node = compiler.compile_parameter(self.rough_head_tail)
+    rough_pre_node = compiler.compile_parameter(self.rough_preceding_mono)
+
+    phi_guest_h_node = compiler.compile_parameter(self.phi_guest_h)
+    phi_guest_t_node = compiler.compile_parameter(self.phi_guest_t)
+
+    sld_guest_re_node = compiler.compile_parameter(self.sld_guest.real)
+    sld_guest_im_node = compiler.compile_parameter(self.sld_guest.imag)
+
+    # lipid volume fraction in each region: vf = vm / (apm * thickness)
+    vfh_node = _div(vm_heads_node, _mul(apm_node, thick_heads_node))
+    vft_node = _div(vm_tails_node, _mul(apm_node, thick_tails_node))
+
+    # guest volume fraction (absolute vs. relative-to-empty-space)
+    print(f"{self.absolute_phi=}")
+    if self.absolute_phi:
+        vfhg_node = phi_guest_h_node
+        vftg_node = phi_guest_t_node
+    else:
+        vfhg_node = _mul(_sub(one, vfh_node), phi_guest_h_node)
+        vftg_node = _mul(_sub(one, vft_node), phi_guest_t_node)
+
+    # pure-material SLDs, ×10⁻⁶ Å⁻²
+    scale = _const(1e-6)
+    sld_heads_re_node = _div(b_heads_re, _mul(vm_heads_node, scale))
+    sld_heads_im_node = _div(b_heads_im, _mul(vm_heads_node, scale))
+    sld_tails_re_node = _div(b_tails_re, _mul(vm_tails_node, scale))
+    sld_tails_im_node = _div(b_tails_im, _mul(vm_tails_node, scale))
+
+    # lipid + guest weighted-average SLD in each region
+    den_h = _add(vfh_node, vfhg_node)
+    mix_heads_re_node = _div(
+        _add(
+            _mul(vfh_node, sld_heads_re_node),
+            _mul(vfhg_node, sld_guest_re_node),
+        ),
+        den_h,
+    )
+    mix_heads_im_node = _div(
+        _add(
+            _mul(vfh_node, sld_heads_im_node),
+            _mul(vfhg_node, sld_guest_im_node),
+        ),
+        den_h,
+    )
+
+    den_t = _add(vft_node, vftg_node)
+    mix_tails_re_node = _div(
+        _add(
+            _mul(vft_node, sld_tails_re_node),
+            _mul(vftg_node, sld_guest_re_node),
+        ),
+        den_t,
+    )
+    mix_tails_im_node = _div(
+        _add(
+            _mul(vft_node, sld_tails_im_node),
+            _mul(vftg_node, sld_guest_im_node),
+        ),
+        den_t,
+    )
+
+    # vfsolv = 1 - vf_lipid - vf_guest, prior to Structure/solvent mixing
+    zero = _const(0.0)
+    vfsolv_heads_node = _sub(_sub(one, vfh_node), vfhg_node)
+    vfsolv_tails_node = _sub(_sub(one, vft_node), vftg_node)
+
+    # replicate self-solvation when head_solvent / tail_solvent is set:
+    #   mixed = material * (1 - vfsolv) + solvent * vfsolv
+    if self.head_solvent is not None:
+        solv_h = complex(self.head_solvent)
+        solv_h_re, solv_h_im = _const(solv_h.real), _const(solv_h.imag)
+        mix_heads_re_node = _add(
+            _mul(mix_heads_re_node, _sub(one, vfsolv_heads_node)),
+            _mul(solv_h_re, vfsolv_heads_node),
+        )
+        mix_heads_im_node = _add(
+            _mul(mix_heads_im_node, _sub(one, vfsolv_heads_node)),
+            _mul(solv_h_im, vfsolv_heads_node),
+        )
+        vfsolv_heads_node = zero
+
+    if self.tail_solvent is not None:
+        solv_t = complex(self.tail_solvent)
+        solv_t_re, solv_t_im = _const(solv_t.real), _const(solv_t.imag)
+        mix_tails_re_node = _add(
+            _mul(mix_tails_re_node, _sub(one, vfsolv_tails_node)),
+            _mul(solv_t_re, vfsolv_tails_node),
+        )
+        mix_tails_im_node = _add(
+            _mul(mix_tails_im_node, _sub(one, vfsolv_tails_node)),
+            _mul(solv_t_im, vfsolv_tails_node),
+        )
+        vfsolv_tails_node = zero
+
+    heads_spec = _SlabSpec(
+        thick=thick_heads_node,
+        real=mix_heads_re_node,
+        imag=mix_heads_im_node,
+        rough=rough_ht_node,
+        vfsolv=vfsolv_heads_node,
+    )
+    tails_spec = _SlabSpec(
+        thick=thick_tails_node,
+        real=mix_tails_re_node,
+        imag=mix_tails_im_node,
+        rough=rough_ht_node,
+        vfsolv=vfsolv_tails_node,
+    )
+
+    # row 0 always carries rough_preceding_mono, whichever region faces
+    # the preceding component (matches the flip trick in .slabs())
+    if not self.reverse_monolayer:
+        heads_spec = _SlabSpec(
+            heads_spec.thick,
+            heads_spec.real,
+            heads_spec.imag,
+            rough_pre_node,
+            heads_spec.vfsolv,
+        )
+        return [heads_spec, tails_spec]
+    else:
+        tails_spec = _SlabSpec(
+            tails_spec.thick,
+            tails_spec.real,
+            tails_spec.imag,
+            rough_pre_node,
+            tails_spec.vfsolv,
+        )
+        return [tails_spec, heads_spec]

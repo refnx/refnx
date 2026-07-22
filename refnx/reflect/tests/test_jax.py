@@ -7,7 +7,7 @@ from numpy.testing import assert_allclose
 import refnx
 from refnx.analysis import Objective, Parameter, CurveFitter
 from refnx.dataset import Data1D, ReflectDataset
-from refnx.reflect import ReflectModel, SLD, LipidLeaflet
+from refnx.reflect import ReflectModel, SLD, LipidLeaflet, LipidLeafletGuest
 from refnx.reflect.structure import overall_sld
 from refnx.reflect.extra import (
     compile_objective,
@@ -255,3 +255,83 @@ class TestJAX:
             np.array(objective_d2o.varying_parameters())
         )
         assert_allclose(logl, objective_d2o.logl())
+
+    def test_lipidleaflet_guest(self):
+        b_h = 6.01e-4
+        V_h = 319.0
+        b_t = -2.92e-4
+        V_t = 782.0
+        APM = 60.0
+        thick_h = 9.0
+        thick_t = 14.0
+
+        phi_guest_t = Parameter(0.1)
+        sld_guest = SLD(7.6)
+        with pytest.warns(RuntimeWarning):
+            leaflet = LipidLeafletGuest(
+                APM,
+                b_h,
+                V_h,
+                thick_h,
+                b_t,
+                V_t,
+                thick_t,
+                2,
+                3,
+                0,
+                phi_guest_t,
+                sld_guest,
+            )
+
+        # check slab representation
+        si = SLD(2.07)
+        d2o = SLD(6.36)
+        s = si | leaflet | d2o(0, 3)
+
+        model = ReflectModel(s)
+        model.scale.setp(vary=True, bounds=(0, 5))
+
+        cm = compile_model(model)
+        _slabs = cm.params_to_slabs(np.array([1.0]))
+        assert_allclose(_slabs, s.slabs()[:, :-1])
+
+    def test_lipidleafletguest_solvent_specified(self):
+        phi_guest_t = Parameter(0.1)
+        sld_guest = SLD(7.6)
+        sld_solvent = SLD(5.55)
+        b_h = 6.01e-4
+        V_h = 319.0
+        b_t = -2.92e-4
+        V_t = 782.0
+        APM = 60.0
+        thick_h = 9.0
+        thick_t = 14.0
+
+        with pytest.warns(RuntimeWarning):
+            leaflet = LipidLeafletGuest(
+                APM,
+                b_h,
+                V_h,
+                thick_h,
+                b_t,
+                V_t,
+                thick_t,
+                2,
+                3,
+                0,
+                phi_guest_t,
+                sld_guest,
+                head_solvent=sld_solvent,
+                tail_solvent=sld_solvent,
+            )
+        # check slab representation
+        si = SLD(2.07)
+        d2o = SLD(6.36)
+        s = si | leaflet | d2o(0, 3)
+
+        model = ReflectModel(s)
+        model.scale.setp(vary=True, bounds=(0, 5))
+
+        cm = compile_model(model)
+        _slabs = cm.params_to_slabs(np.array([1.0]))
+        assert_allclose(_slabs[:, 1], s.slabs()[:, 1], rtol=1e-10)
