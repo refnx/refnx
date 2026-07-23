@@ -2,6 +2,7 @@ import numpy as np
 import pytensor.tensor as pt
 from pytensor.graph import Apply, Op
 import pytensor
+from pytensor.link.jax.dispatch import jax_funcify
 
 from refnx.analysis import GlobalObjective
 from refnx.analysis.objective import _to_pymc_distribution
@@ -142,3 +143,80 @@ class _LogLikeValueGradOp(Op):
         )
 
         return [cotangents[0] * grad for grad in gradients]
+
+
+#
+# @jax_funcify.register(_LogLikeValueGradOp)
+# def jax_funcify_LogLikeValueGradOp(op, node=None, **kwargs):
+#     import jax.numpy as jnp
+#
+#     value_and_grad = op.value_and_grad
+#     n_params = len(node.inputs)
+#
+#     def perform(*inputs):
+#         # stack along the last axis so any leading batch dims are preserved
+#         theta = jnp.stack(inputs, axis=-1)  # shape (..., n_params)
+#
+#         if theta.ndim == 1:
+#             # unbatched: single evaluation
+#             value, grads = value_and_grad(theta)
+#         else:
+#             # batched (e.g. vmapped over chains by numpyro/blackjax)
+#             batch_shape = theta.shape[:-1]
+#             flat_theta = theta.reshape((-1, n_params))
+#             value, grads = jax.vmap(value_and_grad)(flat_theta)
+#             value = value.reshape(batch_shape)
+#             grads = grads.reshape(batch_shape + (n_params,))
+#
+#         grad_outs = [grads[..., i] for i in range(n_params)]
+#         return (jnp.asarray(value),) + tuple(grad_outs)
+#
+#     return perform
+
+
+@jax_funcify.register(_LogLikeValueGradOp)
+def jax_funcify_LogLikeValueGradOp(op, node=None, **kwargs):
+    import jax
+    import jax.numpy as jnp
+
+    value_and_grad = op.value_and_grad
+    n_params = len(node.inputs)
+
+    # --- unbatched core: theta has shape (n_params,) ---
+    @jax.custom_vjp
+    def value_fn(theta):
+        value, _ = value_and_grad(theta)
+        return value
+
+    def value_fwd(theta):
+        value, grads = value_and_grad(theta)
+        return value, grads  # residual = analytic grad, reused in bwd
+
+    def value_bwd(grads, cotangent):
+        return (cotangent * grads,)  # chain rule only, no re-differentiation
+
+    value_fn.defvjp(value_fwd, value_bwd)
+
+    # single evaluation gives both value and grad for the unbatched case
+    value_and_grad_fn = jax.value_and_grad(value_fn)
+
+    def perform(*inputs):
+        theta = jnp.stack(
+            inputs, axis=-1
+        )  # (..., n_params); may carry a batch axis
+
+        if theta.ndim == 1:
+            value, grads = value_and_grad_fn(theta)
+        else:
+            # vmapped over leading batch dims (e.g. parallel chains under
+            # numpyro/blackjax); vmap composes cleanly with custom_vjp
+            batch_shape = theta.shape[:-1]
+            flat_theta = theta.reshape((-1, n_params))
+            value, grads = jax.vmap(value_and_grad_fn)(flat_theta)
+            value = value.reshape(batch_shape)
+            grads = grads.reshape(batch_shape + (n_params,))
+
+        grad_outs = [grads[..., i] for i in range(n_params)]
+        return (value,) + tuple(grad_outs)
+
+    return perform
