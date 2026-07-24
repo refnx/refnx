@@ -4,7 +4,7 @@ from pytensor.graph import Apply, Op
 import pytensor
 from pytensor.link.jax.dispatch import jax_funcify
 
-from refnx.analysis import GlobalObjective
+from refnx.analysis import GlobalObjective, process_chain
 from refnx.analysis.objective import _to_pymc_distribution
 from refnx.reflect.extra._jax_compiler import (
     compile_global_objective,
@@ -220,3 +220,39 @@ def jax_funcify_LogLikeValueGradOp(op, node=None, **kwargs):
         return (value,) + tuple(grad_outs)
 
     return perform
+
+
+def process_trace(objective, trace):
+    """
+    Process the trace produced by a pymc.sample run
+
+    Parameters
+    ----------
+    objective : refnx.analysis.Objective
+        The Objective function that the Posterior was sampled on
+    trace : trace
+        The pymc sample trace
+
+    Returns
+    -------
+    [(param, stderr, chain)] : list
+        List of (param, stderr, chain) tuples.
+        If `isinstance(objective.parameters, Parameters)` then `param` is a
+        `Parameter` instance. `param.value`, `param.stderr` and
+        `param.chain` will contain the median, stderr and chain samples,
+        respectively. Otherwise `param` will be a float representing the
+        median of the chain samples.
+        `stderr` is the half width of the [15.87, 84.13] spread (similar to
+        standard deviation) and `chain` is an array containing the MCMC
+        samples for that parameter.
+
+    Notes
+    -----
+    This function has the effect of setting the parameter stderr's.
+    """
+    varying_parameters = objective.varying_parameters()
+    npars = len(varying_parameters)
+    total_chain = [trace.posterior[f"p{i}"].to_numpy() for i in range(npars)]
+    tc = np.r_[total_chain]
+    output = process_chain(objective, np.swapaxes(tc, 0, 2))
+    return output
