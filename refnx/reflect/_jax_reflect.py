@@ -49,44 +49,40 @@ def jabeles(q, layers, scale=1.0, bkg=0, threads=0):
     nlayers = layers.shape[0] - 2
     npnts = flatq.size
 
-    # Build sld more directly (avoids mutable update)
     sld_vals = (
         (layers[1:, 1] - layers[0, 1]) + 1j * (jnp.abs(layers[1:, 2]) + TINY)
     ) * 1.0e-6
     sld = jnp.concatenate([jnp.zeros(1, jnp.complex128), sld_vals])
 
-    kn = jnp.sqrt(flatq[:, jnp.newaxis] ** 2.0 / 4.0 - 4.0 * jnp.pi * sld)
+    # layer-major layout (nlayers+2, npnts) from the outset — no transpose
+    # needed anywhere downstream, and it's a better memory layout for the
+    # elementwise ops too (fast axis = npnts, not the tiny layer axis)
+    kn = jnp.sqrt(
+        flatq[jnp.newaxis, :] ** 2.0 / 4.0 - 4.0 * jnp.pi * sld[:, jnp.newaxis]
+    )
+    kn_top = kn[:-1]
+    kn_bot = kn[1:]
 
-    damping = jnp.exp(-2.0 * kn[:, :-1] * kn[:, 1:] * layers[1:, 3] ** 2)
-    rj = (kn[:, :-1] - kn[:, 1:]) / (kn[:, :-1] + kn[:, 1:]) * damping
+    d2 = layers[1:, 3][:, jnp.newaxis] ** 2
+    damping = jnp.exp(-2.0 * kn_top * kn_bot * d2)
+    rj = (kn_top - kn_bot) / (kn_top + kn_bot) * damping
 
-    # Compute mi00 for inner layers only, use exp(-x) instead of division
     if nlayers:
-        exponent = kn[:, 1:-1] * 1j * jnp.fabs(layers[1:-1, 0])
+        exponent = kn[1:-1] * 1j * jnp.fabs(layers[1:-1, 0])[:, jnp.newaxis]
         mi00_inner = jnp.exp(exponent)
         mi11_inner = jnp.exp(-exponent)
-
-        # Full arrays including first layer (exponent=0 → mi00=1)
-        mi00 = jnp.concatenate(
-            [jnp.ones((npnts, 1), jnp.complex128), mi00_inner], axis=1
-        )
-        mi11 = jnp.concatenate(
-            [jnp.ones((npnts, 1), jnp.complex128), mi11_inner], axis=1
-        )
+        ones_row = jnp.ones((1, npnts), jnp.complex128)
+        mi00 = jnp.concatenate([ones_row, mi00_inner], axis=0)
+        mi11 = jnp.concatenate([ones_row, mi11_inner], axis=0)
     else:
-        mi00 = jnp.ones((npnts, 1), jnp.complex128)
+        mi00 = jnp.ones((1, npnts), jnp.complex128)
         mi11 = mi00
 
     mi10 = rj * mi00
     mi01 = rj * mi11
 
-    # Initialise with first layer
-    mrtot00 = mi00[:, 0]
-    mrtot01 = mi01[:, 0]
-    mrtot10 = mi10[:, 0]
-    mrtot11 = mi11[:, 0]
+    mrtot00, mrtot01, mrtot10, mrtot11 = mi00[0], mi01[0], mi10[0], mi11[0]
 
-    # Use lax.scan instead of Python for-loop
     def body_fn(carry, x):
         m00, m01, m10, m11 = carry
         _mi00, _mi10, _mi01, _mi11 = x
@@ -97,13 +93,12 @@ def jabeles(q, layers, scale=1.0, bkg=0, threads=0):
         return (p00, p01, p10, p11), None
 
     if nlayers:
-        # xs shape: each is (nlayers, npnts) — scan over layers axis
         xs = (
-            mi00[:, 1:].T,
-            mi10[:, 1:].T,
-            mi01[:, 1:].T,
-            mi11[:, 1:].T,
-        )
+            mi00[1:],
+            mi10[1:],
+            mi01[1:],
+            mi11[1:],
+        )  # already (nlayers, npnts)
         (mrtot00, mrtot01, mrtot10, mrtot11), _ = lax.scan(
             body_fn, (mrtot00, mrtot01, mrtot10, mrtot11), xs
         )
