@@ -45,12 +45,16 @@ def to_pymc_model(objective, _customdist=False):
     if isinstance(objective, GlobalObjective):
         compiled_objective = compile_global_objective(objective)
         data = []
+        # y_err = []
         for _o in objective.objectives:
             data.append(_o.data.y)
+            # y_err.append(_o.data.y_err)
         data = np.concat(data, axis=0)
+        # y_err = np.concat(y_err, axis=0)
     else:
         compiled_objective = compile_objective(objective)
         data = objective.data.y
+        # y_err = objective.data.y_err
 
     with pm.Model() as basic_model:
         # Priors for unknown model parameters
@@ -111,23 +115,6 @@ class _LogLikeValueGradOp(Op):
                 grad_result, dtype=node.outputs[i].dtype
             )
 
-    # def grad(self, inputs, output_gradients):
-    #     # The `Op` computes its own gradients, so we call it again.
-    #     value = self(inputs)
-    #     # We hid the gradient outputs by setting `default_update=0`, but we
-    #     # can retrieve them anytime by accessing the `Apply` node via `value.owner`
-    #     gradients = value.owner.outputs[1:]
-    #
-    #     # Make sure the user is not trying to take the gradient with respect to
-    #     # the gradient outputs! That would require computing the second order
-    #     # gradients
-    #     assert all(
-    #         isinstance(g.type, pytensor.gradient.DisconnectedType)
-    #         for g in output_gradients[1:]
-    #     )
-    #
-    #     return [output_gradients[0] * grad for grad in gradients]
-
     def pullback(self, inputs, outputs, cotangents):
         # The Op computes its own gradients, so we call it again to
         # get at the hidden gradient outputs.
@@ -143,35 +130,6 @@ class _LogLikeValueGradOp(Op):
         )
 
         return [cotangents[0] * grad for grad in gradients]
-
-
-#
-# @jax_funcify.register(_LogLikeValueGradOp)
-# def jax_funcify_LogLikeValueGradOp(op, node=None, **kwargs):
-#     import jax.numpy as jnp
-#
-#     value_and_grad = op.value_and_grad
-#     n_params = len(node.inputs)
-#
-#     def perform(*inputs):
-#         # stack along the last axis so any leading batch dims are preserved
-#         theta = jnp.stack(inputs, axis=-1)  # shape (..., n_params)
-#
-#         if theta.ndim == 1:
-#             # unbatched: single evaluation
-#             value, grads = value_and_grad(theta)
-#         else:
-#             # batched (e.g. vmapped over chains by numpyro/blackjax)
-#             batch_shape = theta.shape[:-1]
-#             flat_theta = theta.reshape((-1, n_params))
-#             value, grads = jax.vmap(value_and_grad)(flat_theta)
-#             value = value.reshape(batch_shape)
-#             grads = grads.reshape(batch_shape + (n_params,))
-#
-#         grad_outs = [grads[..., i] for i in range(n_params)]
-#         return (jnp.asarray(value),) + tuple(grad_outs)
-#
-#     return perform
 
 
 @jax_funcify.register(_LogLikeValueGradOp)

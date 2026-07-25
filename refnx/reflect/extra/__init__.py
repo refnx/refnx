@@ -4,6 +4,8 @@ from refnx.reflect.extra._jax_compiler import (
     compile_objective,
     compile_global_objective,
     make_scipy_objective,
+    CompiledObjective,
+    CompiledModel,
 )
 from refnx.reflect.extra._pymc import to_pymc_model, process_trace
 
