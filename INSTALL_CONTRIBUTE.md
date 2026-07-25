@@ -4,150 +4,216 @@ refnx is a python package for analysis of neutron and X-ray reflectometry data.
 It can also be used as a generalised curvefitting tool. It uses Markov Chain
 Monte Carlo to obtain posterior distributions for curvefitting problems.
 
---------------
+---
+
 # Installation
 
-*refnx* has been tested on Python 3.9, 3.10, 3.11, and 3.12. It requires the *numpy,
-scipy, cython* packages to work. Additional features require the
-*pytest, pandas, qtpy, pyqt6, h5py, xlrd, attrs, tqdm, matplotlib, pymc, pytensor*
-packages.
-To build the bleeding edge code you will need to have access to a C-compiler to
-build a couple of Python extensions. C-compilers should be installed on Linux.
-On OSX you will need to install Xcode and the command line tools. On Windows you
-will need to install the correct [Visual Studio compiler][Visual-studio-compiler]
+*refnx* is tested on Python 3.11+ (see `requires-python` in `pyproject.toml`
+for the exact floor). Core installation requires *numpy* and *scipy*.
+Additional features (interactive plotting, motofit GUI, PyMC-based Bayesian
+sampling, Jupyter widgets, etc.) require extra packages, all available via
+the `all` optional-dependency group — see the `[project.optional-dependencies]`
+table in `pyproject.toml` for the full list.
+
+To build *refnx* from source you'll need a C compiler, because the build
+compiles Cython extensions. C compilers are normally already installed on
+Linux. On macOS you'll need Xcode and its command line tools. On Windows
+you'll need a suitable [Visual Studio compiler](https://wiki.python.org/moin/WindowsCompilers)
 for your Python version.
 
-In the current version of *refnx* the *emcee* and *ptemcee* packages are
-vendored by *refnx*. That is, *refnx* possesses it's own private copy of the
-package, and there is no need to those packages separately.
+*refnx* vendors its own copies of the *emcee* and *ptemcee* packages
+(under `refnx/_lib/`), so you don't need to install those separately.
 
-## Installation into a *conda* environment
+## Installing a released version
 
-Perhaps the easiest way to create a scientific computing environment is to use the
-[miniconda][miniconda] package manager. Once *conda* has been installed the first
-step is to create a *conda* environment.
+The simplest way to install refnx is from PyPI:
 
-### Creating a conda environment
- 
-  1) In a shell window create a conda environment and install the dependencies. The **-n** flag indicates that the environment is called *refnx*.
-  
-  ```conda create -n refnx python=3.7 numpy scipy cython pandas h5py xlrd pytest tqdm attrs```
+```
+pip install refnx
+```
 
-  2) Activate the environment that we're going to be working in:
-  
-  ```
-  # on OSX
-  conda activate refnx
+or from conda-forge:
 
-  # on windows  
-  conda activate refnx
-  ```
- 
-### Installing into a conda environment from source
+```
+conda install -c conda-forge refnx
+```
 
- The latest source code can be obtained from either [PyPi][PyPi] or [Github][github-refnx]. You can also build the package from within the refnx git repository (see later in this document).
-  1) In a shell window navigate into the source directory and build the package. If you are on Windows you'll need to start a Visual Studio command window.
-  ```
-  python setup.py build
-  python setup.py install
-  ```
-  2) Run the tests, they should all work.
-  ```
-  python setup.py test
-  ```
+To pull in all optional dependencies (GUI, plotting, Bayesian sampling, etc.):
 
-### Installing into a conda environment from a released version
+```
+pip install refnx[all]
+```
 
-  1) There are pre-built versions on *conda-forge*, but they're not necessarily at the bleeding edge:
-  
-  ```conda install -c conda-forge refnx```
-  2) Start up a Python interpreter and make sure the tests run:
-  ```
-  >>> import refnx
-  >>> refnx.test()
-  ```
- 
------------------------
+Then check that the tests pass:
+
+```python
+>>> import refnx
+>>> refnx.test()
+```
+
+## Building the bleeding-edge version from source
+
+*refnx* uses a [Meson](https://mesonbuild.com/) build backend
+(`meson-python`), configured via `meson.build` and `pyproject.toml`.
+
+1. Clone the repository (or your fork, see "Setting up a local git
+   repository" below):
+
+   ```
+   git clone https://github.com/refnx/refnx.git
+   cd refnx
+   ```
+
+2. Create and activate a virtual environment (conda or venv both work). For
+   example, with conda:
+
+   ```
+   conda create -n refnx python=3.12
+   conda activate refnx
+   ```
+
+3. Install refnx in editable mode. `meson-python` supports an editable
+   install that rebuilds Cython/C extensions automatically as you change
+   source files, which is the recommended way to develop refnx:
+
+   ```
+   pip install --no-build-isolation --editable ".[all,test]"
+   ```
+
+   If you'd rather not use editable installs (e.g. for a one-off build), a
+   regular install also works:
+
+   ```
+   pip install ".[all,test]"
+   ```
+
+   `pip` will pull in the build-time dependencies declared in
+   `[build-system]` (`meson`, `meson-python`, `cython`, `numpy`) automatically.
+
+4. Run the test suite with `pytest`:
+
+   ```
+   pytest --pyargs refnx
+   ```
+
+   or, from within the source checkout:
+
+   ```
+   pytest
+   ```
+
+## Code style and linting
+
+The project uses [black](https://github.com/psf/black) (line length 79) and
+[ruff](https://github.com/astral-sh/ruff) for formatting/linting, configured
+in `pyproject.toml`. If a `.pre-commit-config.yaml` is present, install
+[pre-commit](https://pre-commit.com/) so these run automatically on commit:
+
+```
+pip install pre-commit
+pre-commit install
+```
+
+---
+
 ## Development Workflow
- 
+
 These instructions outline the workflow for contributing to refnx development.
 The refnx community welcomes all contributions that will improve the package.
-The following instructions are based on use of a command line *git* client.
-*Git* is a distributed version control program. An example of [how to contribute to the numpy project][numpy-contrib]
-is a useful reference.
+The following instructions are based on use of a command line *git* client. *Git* is a distributed version control program. An example of [how to contribute to the numpy project](https://numpy.org/doc/stable/dev/index.html) is a useful reference.
 
-### Setting up a local git repository 
-  1) Create an account on [github](https://github.com/).
-  2) On the [refnx github][github-refnx] page fork the *refnx* repository to your own github account. Forking means that now you have your own personal repository of the *refnx* code.
-  3) Now we will make a local copy of your personal repository on your local machine:
-  ```
-  # <username> is your github username
-  git clone https://github.com/<username>/refnx.git
-  ```
-  4) Add the *refnx* remote repository, we're going to refer to the remote with the *upstream* name:
-  ```
-  git remote add upstream https://github.com/refnx/refnx.git
-  ```
-  5) List the remote repositories that your local repository knows about:
-  ```
-  git remote -v
-  ```
+### Setting up a local git repository
+
+1. Create an account on [github](https://github.com/).
+2. On the [refnx github](https://github.com/refnx/refnx) page fork the *refnx* repository to your own github account. Forking means that now you have your own personal repository of the *refnx* code.
+3. Now we will make a local copy of your personal repository on your local machine:
+
+```
+# <username> is your github username
+git clone https://github.com/<username>/refnx.git
+```
+
+4. Add the *refnx* remote repository, we're going to refer to the remote with the *upstream* name:
+
+```
+git remote add upstream https://github.com/refnx/refnx.git
+```
+
+5. List the remote repositories that your local repository knows about:
+
+```
+git remote -v
+```
 
 ### Keeping your local and remote repositories up to date
-The main *refnx* repository may be a lot more advanced than your fork, or your local copy, of the git repository. 
-  1) To update your repositories you need to fetch the changes from the main *refnx* repository:
-  ```
-  git fetch upstream
-  ```
-  2) Now update the local branch you're on by rebasing against the *refnx* main branch:
-  ```
-  git rebase upstream/main
-  ```
-  3) Push your updated local branch to the remote fork on github. You have to specify the remote branch you're pushing to. Here we push to the *main* branch:
-  ```
-  git push origin main
-  ```
+
+The main *refnx* repository may be a lot more advanced than your fork, or your local copy, of the git repository.
+
+1. To update your repositories you need to fetch the changes from the main *refnx* repository:
+
+```
+git fetch upstream
+```
+
+2. Now update the local branch you're on by rebasing against the *refnx* main branch:
+
+```
+git rebase upstream/main
+```
+
+3. Push your updated local branch to the remote fork on github. You have to specify the remote branch you're pushing to. Here we push to the *main* branch:
+
+```
+git push origin main
+```
 
 ### Adding a feature
+
 The git repository is automatically on the main branch to start with. However,
 when developing features that you'd like to contribute to the *refnx* project
 you'll need to do it on a feature branch.
 
-  1) Create a feature branch and check it out:
-  ```
-  git branch my_feature_name
-  git checkout my_feature_name
-  ```
-  2) Once you're happy with the changes you've made you should check that the tests still work:
-  ```
-  python setup.py test
-  ```
-  3) If the performance of what you've added/changed may be critical, then consider writing a benchmark. The benchmarks use
-  the *asv* package and are run as:
-  ```
-  cd benchmarks
-  pip install asv
-  asv run
-  asv publish
-  asv preview
-  ```
-  For an example benchmark look at one of the files in the *benchmarks* directory.
-  4) Now commit the changes. You'll have to supply a commit message that outlines the changes you made. The commit message should follow the [numpy guidelines][numpy-contib]
-  ```
-  git commit -a
-  ```
-  5) Now you need to push those changes on the *my_feature_branch* branch to *your* fork of the refnx repository on github:
-  ```
-  git push origin my_feature_branch
-  ```
-  6) On the main [refnx][github-refnx] repository you should be able to create a pull request (PR). The PR says that you'd like the *refnx* project to include the changes you made.
-  7) Once the automated tests have passed, and the *refnx* maintainers are happy with the changes you've made then the PR is merged. You can then delete the feature branch on github, and delete your local feature branch:
-  ```
-  git branch -D my_feature_branch
-  ```
+1. Create a feature branch and check it out:
 
-   [PyPi]: <https://pypi.python.org/pypi/refnx>
-   [github-refnx]: <https://github.com/refnx/refnx>
-   [Visual-studio-compiler]: <https://wiki.python.org/moin/WindowsCompilers>
-   [miniconda]: <https://conda.io/docs/install/quick.html>
-   [numpy-contrib]: <https://docs.scipy.org/doc/numpy/dev/>
+```
+git branch my_feature_name
+git checkout my_feature_name
+```
+
+2. Once you're happy with the changes you've made you should check that the tests still work:
+
+```
+pytest
+```
+
+3. If the performance of what you've added/changed may be critical, then consider writing a benchmark. The benchmarks use
+the *asv* package and are run as:
+
+```
+cd benchmarks
+pip install asv
+asv run
+asv publish
+asv preview
+```
+
+For an example benchmark look at one of the files in the *benchmarks* directory.
+
+4. Now commit the changes. You'll have to supply a commit message that outlines the changes you made. The commit message should follow the [numpy guidelines](https://numpy.org/doc/stable/dev/development_workflow.html#writing-the-commit-message).
+
+```
+git commit -a
+```
+
+5. Now you need to push those changes on the *my_feature_branch* branch to *your* fork of the refnx repository on github:
+
+```
+git push origin my_feature_branch
+```
+
+6. On the main [refnx](https://github.com/refnx/refnx) repository you should be able to create a pull request (PR). The PR says that you'd like the *refnx* project to include the changes you made.
+7. Once the automated tests have passed, and the *refnx* maintainers are happy with the changes you've made then the PR is merged. You can then delete the feature branch on github, and delete your local feature branch:
+
+```
+git branch -D my_feature_branch
+```
