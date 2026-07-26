@@ -1,3 +1,5 @@
+import warnings
+
 import numpy as np
 import pytensor.tensor as pt
 from pytensor.graph import Apply, Op
@@ -12,20 +14,43 @@ from refnx.reflect.extra._jax_compiler import (
 )
 
 
-def to_pymc_model(objective, _customdist=False):
+def to_pymc_model(objective, _dist=None):
     """
     Creates a pymc model from an Objective.
 
-    Requires aesara and pymc be installed. This is an experimental feature.
+    Requires pytensor and pymc be installed. This is an experimental feature.
 
     Parameters
     ----------
     objective: refnx.analysis.Objective
 
-    _customdist: bool
-        `True`:  uses ``pm.CustomDist``.
-        `False`:  uses ``pm.Potential``.
-        CustomDist can be used for model comparison, Potential cannot.
+    _dist: {None, str}
+        - 'normal' : uses ``pymc.NormalDist``, with observed y data on
+            Objective.generative
+
+        - None / 'potential' : uses ``pymc.Potential`` on Objective.logl
+
+        - 'custom' : uses ``pymc.CustomDist`` on Objective.logl
+
+        CustomDist/NormalDist can be used for model comparison/posterior
+        predictive sampling/etc, Potential cannot.
+
+        If any ReflectModel in the Objective has non-zero logp, or
+        any Objective has a logp_extra function, then derivatives of
+        those are not tracked. At that point it's advisable to just
+        use 'potential', and not 'custom' or 'normal'.
+
+        A ReflectModel might have a non-zero logp if there is a Component
+        in its Structure that applies a probabilistic penalty.
+        One such example might be LipidLeaflet if a volume fraction
+        in a head/tail region exceeds 1. This is ok because the penalty
+        is a non-differentiable (-np.inf or 0).
+        However, if the penalty is used to steer the modelling process
+        (ReflectModel.logp is finite and gets bigger/smaller depending
+        on Parameters) then it's inadvisable to use anything but 'potential'.
+
+        In benchmarking 'normal' seems to sample the fastest, but
+        'potential' might be the most robust.
 
     Returns
     -------
@@ -42,19 +67,23 @@ def to_pymc_model(objective, _customdist=False):
     pars = objective.varying_parameters()
     wrapped_pars = []
 
-    if isinstance(objective, GlobalObjective):
-        compiled_objective = compile_global_objective(objective)
-        data = []
-        # y_err = []
-        for _o in objective.objectives:
-            data.append(_o.data.y)
-            # y_err.append(_o.data.y_err)
-        data = np.concat(data, axis=0)
-        # y_err = np.concat(y_err, axis=0)
-    else:
-        compiled_objective = compile_objective(objective)
-        data = objective.data.y
-        # y_err = objective.data.y_err
+    with warnings.catch_warnings():
+        # raise an error if any Objective has logp_extra
+        warnings.simplefilter("error", category=RuntimeWarning)
+
+        if isinstance(objective, GlobalObjective):
+            compiled_objective = compile_global_objective(objective)
+            data = []
+            y_err = []
+            for _o in objective.objectives:
+                data.append(_o.data.y)
+                y_err.append(_o.data.y_err)
+            data = np.concat(data, axis=0)
+            y_err = np.concat(y_err, axis=0)
+        else:
+            compiled_objective = compile_objective(objective)
+            data = objective.data.y
+            y_err = objective.data.y_err
 
     with pm.Model() as basic_model:
         # Priors for unknown model parameters
@@ -63,33 +92,36 @@ def to_pymc_model(objective, _customdist=False):
             p = _to_pymc_distribution(name, par)
             wrapped_pars.append(p)
 
-        # # Expected value of outcome
-        # try:
-        #     # Likelihood (sampling distribution) of observations
-        #     pm.Normal(
-        #         "y_obs",
-        #         mu=objective.generative,
-        #         sigma=objective.data.y_err,
-        #         observed=objective.data.y,
-        #     )
-        # except Exception:
-        #     # Falling back, theano autodiff won't work on function object
-        # theta = pt.as_tensor_variable(wrapped_pars)
         theta = tuple(wrapped_pars)
 
-        if _customdist:
-            logl = _LogLikeValueGradOp(compiled_objective)
+        match _dist:
+            case None | "normal":
+                # Expected value of outcome
+                gen_op = _GenerativeOp(compiled_objective)
+                R_model = pm.Deterministic("R_model", gen_op(theta))
+                pm.Normal(
+                    "y_obs",
+                    mu=R_model,
+                    sigma=y_err,
+                    observed=data,
+                )
+            case "potential":
+                # Potential
+                logl = _LogLikeValueGradOp(compiled_objective)
+                pm.Potential("log-likelihood", logl(theta))
 
-            def custom_dist_loglike(data, theta):
-                return logl(theta)
+            case "custom":
+                logl = _LogLikeValueGradOp(compiled_objective)
 
-            pm.CustomDist(
-                "likelihood", theta, logp=custom_dist_loglike, observed=data
-            )
-        else:
-            # Potential
-            logl = _LogLikeValueGradOp(compiled_objective)
-            pm.Potential("log-likelihood", logl(theta))
+                def custom_dist_loglike(data, theta):
+                    return logl(theta)
+
+                pm.CustomDist(
+                    "likelihood",
+                    theta,
+                    logp=custom_dist_loglike,
+                    observed=data,
+                )
 
     return basic_model
 
@@ -178,6 +210,63 @@ def jax_funcify_LogLikeValueGradOp(op, node=None, **kwargs):
         return (value,) + tuple(grad_outs)
 
     return perform
+
+
+class _GenerativeVJPOp(Op):
+
+    def __init__(self, generative):
+        self.generative = generative
+        import jax
+
+        # Compile the VJP once — called with concrete arrays at runtime.
+        @jax.jit
+        def _vjp_fn(free, cotangent):
+            _, vjp = jax.vjp(generative, free)
+            return vjp(cotangent)[0]
+
+        self._vjp_fn = _vjp_fn
+
+    def make_node(self, *inputs):
+        inputs = [pt.as_tensor_variable(inp) for inp in inputs]
+        outputs = [pt.dvector()]
+        return Apply(self, inputs, outputs)
+
+    def perform(self, node, inputs, outputs):
+        *free_scalars, cotangent = inputs
+        free = np.array(free_scalars, dtype=np.float64)
+        cotangent = np.asarray(cotangent, dtype=np.float64)
+        outputs[0][0] = np.asarray(
+            self._vjp_fn(free, cotangent), dtype=np.float64
+        )
+
+
+class _GenerativeOp(Op):
+    """
+    A pytensor ``Op`` that wraps ``CompiledObjective.generative``.
+
+    Takes the tuple of free-parameter pytensor variables and returns
+    a vector of predicted reflectivity values R(q) of shape ``(N_q,)``.
+    """
+
+    def __init__(self, compiled_objective):
+        self.generative = compiled_objective.generative
+        self._vjp_op = _GenerativeVJPOp(self.generative)
+
+    def make_node(self, inputs):
+        inputs = [pt.as_tensor_variable(inp) for inp in inputs]
+        outputs = [pt.dvector()]
+        return Apply(self, inputs, outputs)
+
+    def perform(self, node, inputs, outputs):
+        free = np.array(inputs, dtype=np.float64)
+        outputs[0][0] = np.asarray(self.generative(free), dtype=np.float64)
+
+    def pullback(self, inputs, outputs, cotangents):
+        # Express the VJP symbolically — _GenerativeVJPOp.perform is called
+        # at runtime with concrete values, never at graph-construction time.
+        grad = self._vjp_op(*inputs, cotangents[0])  # symbolic dvector
+        # Return one gradient scalar per input
+        return [grad[i] for i in range(len(inputs))]
 
 
 def process_trace(objective, trace):
