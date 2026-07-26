@@ -308,44 +308,34 @@ def _make_params_to_slabs(
 # ---------------------------------------------------------------------------
 
 
-def _make_logl(
+def _make_generative(
     params_to_slabs: Callable,
     q: jnp.ndarray,
-    y: jnp.ndarray,
-    y_err: Optional[jnp.ndarray],
     q_err: Optional[jnp.ndarray],
     scale_node,
     bkg_node,
-    lnsigma_node,
-    use_weights: bool,
     quad_order: int = 17,
-):
+) -> Callable:
     """
-    Returns a pure JAX function  free -> scalar log-likelihood.
+    Returns a pure JAX function ``free -> R(q)`` (shape ``(N,)``).
 
-    ``params_to_slabs`` is expected to return a (N, 4) array (thick,
-    sld_real_mixed, sld_imag_mixed, rough) with solvent mixing already
-    applied — exactly what ``jabeles`` requires.
-
-    When ``q_err`` is not None (i.e. the dataset carries per-point dQ/Q
-    resolution), reflectivity is computed via
-    ``jax_smeared_kernel_pointwise`` from ``refnx.reflect._jax_reflect``
-    so that the gradient flows correctly through the smearing integral.
-    When ``q_err`` is None the unsmeared ``jabeles`` is used directly.
-
-    Mirrors Objective.logl:
-
-        var = y_err**2 + exp(2*lnsigma) * model**2   (if lnsigma present)
-        logl = -0.5 * sum( (y - model)**2/var + log(2*pi*var) )
+    This is the forward model — the reflectivity curve predicted by the
+    current parameter values — without any likelihood computation.  It is
+    the shared inner kernel used by both ``_make_logl`` and exposed directly
+    as ``CompiledObjective.generative``.
 
     Parameters
     ----------
+    params_to_slabs : Callable
+        Pure JAX function ``free -> (N, 4)`` layers array.
+    q : (N,) jnp.ndarray
+        Q values, frozen at compile time.
     q_err : (N,) jnp.ndarray or None
-        Per-point dQ values (FWHM) from ``Objective.data.x_err``.
-        Pass None to skip resolution smearing.
+        Per-point absolute dQ values.  When not None, smearing is applied.
+    scale_node, bkg_node : IR nodes
+        Compiled scale and background.
     quad_order : int
-        Gauss-Legendre quadrature order forwarded to
-        ``jax_smeared_kernel_pointwise``.
+        Gauss-Legendre order for smearing.
     """
     from refnx.reflect._jax_reflect import (
         jabeles,
@@ -354,20 +344,43 @@ def _make_logl(
 
     use_smearing = q_err is not None
 
-    def logl_jax(free: jnp.ndarray) -> jnp.ndarray:
-        layers = params_to_slabs(free)  # (N, 4) - solvent mixing already done
+    def generative(free: jnp.ndarray) -> jnp.ndarray:
+        layers = params_to_slabs(free)
         scale = _eval_node(scale_node, free)
         bkg = _eval_node(bkg_node, free)
-
         if use_smearing:
-            # jax_smeared_kernel_pointwise(qvals, w, dqvals, quad_order)
-            # w is the layers array; dqvals are the absolute dQ FWHM values,
-            # i.e. q_err (fractional dQ/Q) * q.
-            model = jax_smeared_kernel_pointwise(
+            return jax_smeared_kernel_pointwise(
                 q, layers, q_err, quad_order=quad_order, scale=scale, bkg=bkg
             )
         else:
-            model = jabeles(q, layers, scale=scale, bkg=bkg)
+            return jabeles(q, layers, scale=scale, bkg=bkg)
+
+    return generative
+
+
+def _make_logl(
+    generative: Callable,
+    y: jnp.ndarray,
+    y_err: Optional[jnp.ndarray],
+    lnsigma_node,
+    use_weights: bool,
+) -> Callable:
+    """
+    Returns a pure JAX function ``free -> scalar log-likelihood``.
+
+    Delegates the forward model to ``generative(free) -> R(q)``, which is
+    built by ``_make_generative``.  This eliminates duplication: the same
+    ``generative`` function is also exposed as
+    ``CompiledObjective.generative``.
+
+    Mirrors Objective.logl:
+
+        var = y_err**2 + exp(2*lnsigma) * model**2   (if lnsigma present)
+        logl = -0.5 * sum( (y - model)**2/var + log(2*pi*var) )
+    """
+
+    def logl_jax(free: jnp.ndarray) -> jnp.ndarray:
+        model = generative(free)
 
         if use_weights and y_err is not None:
             base_var = y_err**2
@@ -588,6 +601,14 @@ class CompiledObjective:
         consumed by ``jabeles`` (thick, mixed_sld_real, mixed_sld_imag, rough).
         Solvent volume-fraction averaging has already been applied.
         Useful for inspecting the SLD profile under AD.
+    generative : Callable[[jnp.ndarray], jnp.ndarray]
+        Pure JAX forward model ``free -> R(q)`` (shape ``(N,)``).
+        JIT-compiled.  Evaluates the reflectivity curve at the Q values and
+        resolution of the objective's dataset. Useful for posterior predictive
+        checks and plotting the model curve at optimised parameters.
+        For a ``GlobalObjective`` this is the concatenation of the
+        per-objective generative functions, matching the order of
+        ``GlobalObjective.objectives``.
     x0 : jnp.ndarray
         Initial free-parameter values extracted from the objective.
     param_names : List[str]
@@ -603,24 +624,23 @@ class CompiledObjective:
     grad_logl: Callable
     value_and_grad: Callable
     params_to_slabs: Callable
+    generative: Callable
     x0: jnp.ndarray
     param_names: List[str]
     setp: Callable
     n_free: int
 
 
-def _compile_single_logl(
+def _compile_single(
     objective, compiler: _ConstraintCompiler, quad_order: int = 17
-) -> Callable:
+) -> tuple:
     """
-    Compile one ``Objective`` into a raw (un-JIT-ted) JAX log-likelihood
-    function using a pre-built ``_ConstraintCompiler``.
+    Compile one ``Objective`` into raw (un-JIT-ted) JAX functions.
 
     This is the shared workhorse called by both ``compile_objective`` and
-    ``compile_global_objective``.  Separating it out means the global case
-    can build one ``free_index`` covering the full deduplicated parameter set,
-    then compile each child objective against that same index so that shared
-    parameters map to the same position in the free vector in every term.
+    ``compile_global_objective``.  It builds the generative model first,
+    then passes it to ``_make_logl`` so both share exactly the same forward
+    model computation.
 
     Parameters
     ----------
@@ -628,15 +648,16 @@ def _compile_single_logl(
     compiler : _ConstraintCompiler
         Already constructed with the correct ``free_index``.
     quad_order : int
-        Forwarded to ``_make_logl``.
+        Gauss-Legendre quadrature order for resolution smearing.
 
     Returns
     -------
     logl_raw : Callable[[jnp.ndarray], jnp.ndarray]
-        Pure JAX log-likelihood function, not yet JIT-compiled.
+        Pure JAX log-likelihood, not yet JIT-compiled.
+    generative_raw : Callable[[jnp.ndarray], jnp.ndarray]
+        Pure JAX forward model ``free -> R(q)``, not yet JIT-compiled.
     params_to_slabs_fn : Callable[[jnp.ndarray], jnp.ndarray]
-        Pure JAX function mapping the free vector to the (N, 4) layers
-        array for this objective's structure, not yet JIT-compiled.
+        Pure JAX function mapping the free vector to the (N, 4) layers array.
     """
     from refnx.analysis.parameter import is_parameter
 
@@ -689,13 +710,8 @@ def _compile_single_logl(
         else None
     )
 
-    # x_err holds per-point dQ/Q values (fractional FWHM resolution).
-    # ReflectDataset stores None when no resolution information is present,
-    # and a zero-filled array is treated as "no smearing" by ReflectModel.
-    # We follow the same convention: only smear when x_err is non-None and
-    # has at least one non-zero entry.
     dqvals = None
-    quad_order = model.quad_order
+    _quad_order = model.quad_order
 
     if model.dq_type == "pointwise" and objective.data.x_err is None:
         if model.dq.value > 0:
@@ -705,35 +721,27 @@ def _compile_single_logl(
     if model.dq_type == "pointwise" and objective.data.x_err is not None:
         dqvals = jnp.array(objective.data.x_err, dtype=jnp.float64)
 
-    logl_raw = _make_logl(
-        params_to_slabs_fn,
-        q,
-        y,
-        y_err,
-        dqvals,
-        scale_node,
-        bkg_node,
-        lnsigma_node,
-        use_weights=objective.weighted,
-        quad_order=quad_order,
+    # ------------------------------------------------------------------
+    # Build the generative model first — it is the shared forward model.
+    # ------------------------------------------------------------------
+    generative_raw = _make_generative(
+        params_to_slabs_fn, q, dqvals, scale_node, bkg_node, _quad_order
     )
 
-    # ----------------------------------------------------------------------
+    # ------------------------------------------------------------------
+    # Pass generative into _make_logl so the same computation is reused.
+    # ------------------------------------------------------------------
+    logl_raw = _make_logl(
+        generative_raw,
+        y,
+        y_err,
+        lnsigma_node,
+        use_weights=objective.weighted,
+    )
+
+    # ------------------------------------------------------------------
     # model.logp() and logp_extra
-    #
-    # Objective.logl adds extra potential terms that are arbitrary Python
-    # callables — they cannot be JAX-traced.  We use jax.pure_callback to
-    # call them safely from within a JIT-compiled function: JAX treats the
-    # callback as an opaque kernel, passes a concrete numpy array at runtime
-    # (never an abstract tracer), and splices the returned scalar into the
-    # JAX computation graph as a stop-gradient leaf.
-    #
-    # Gradients do NOT flow through these terms, which is correct: they
-    # encode inequality constraints and regularisation expressed as Python
-    # logic, not differentiable expressions.  Users who need differentiable
-    # priors should express them as Parameter bounds or constraint
-    # expressions in the Parameter graph instead.
-    # ----------------------------------------------------------------------
+    # ------------------------------------------------------------------
     has_logp_extra = objective.logp_extra is not None
 
     # Check once at compile time whether model.logp is the trivial default
@@ -746,8 +754,7 @@ def _compile_single_logl(
     )
 
     if _logp_is_trivial:
-        # Fast path: no extra terms, return the raw logl directly.
-        return logl_raw, params_to_slabs_fn
+        return logl_raw, generative_raw, params_to_slabs_fn
 
     # Build a compile-time index array that maps from the global free vector
     # (which may be longer than this objective's own varying parameters when
@@ -760,7 +767,6 @@ def _compile_single_logl(
     )
 
     def _extra_potential_callback(free_np: np.ndarray) -> np.ndarray:
-        """Concrete-array callback: setp then evaluate extra terms."""
         objective.setp(free_np[setp_indices])
         extra = float(model.logp())
         if has_logp_extra:
@@ -769,23 +775,21 @@ def _compile_single_logl(
 
     @jax.custom_jvp
     def _extra_potential(free: jnp.ndarray) -> jnp.ndarray:
-        ep = jax.pure_callback(
+        return jax.pure_callback(
             _extra_potential_callback,
             jax.ShapeDtypeStruct((), jnp.float64),
             free,
         )
-        return ep
 
     @_extra_potential.defjvp
     def _extra_potential_jvp(primals, tangents):
-        # No gradient flows through the extra potential terms.
         (free,) = primals
         return _extra_potential(free), jnp.zeros((), dtype=jnp.float64)
 
     def logl_with_extra(free: jnp.ndarray) -> jnp.ndarray:
         return logl_raw(free) + _extra_potential(free)
 
-    return logl_with_extra, params_to_slabs_fn
+    return logl_with_extra, generative_raw, params_to_slabs_fn
 
 
 def compile_objective(objective) -> CompiledObjective:
@@ -846,7 +850,9 @@ def compile_objective(objective) -> CompiledObjective:
     # ------------------------------------------------------------------
     # 2–4.  Compile structure, scale/bkg/lnsigma, and freeze data arrays
     # ------------------------------------------------------------------
-    logl_raw, params_to_slabs_fn = _compile_single_logl(objective, compiler)
+    logl_raw, generative_raw, params_to_slabs_fn = _compile_single(
+        objective, compiler
+    )
 
     logl_jit = jax.jit(logl_raw)
     grad_jit = jax.jit(jax.grad(logl_raw))
@@ -864,6 +870,7 @@ def compile_objective(objective) -> CompiledObjective:
         grad_logl=grad_jit,
         value_and_grad=val_and_grad_jit,
         params_to_slabs=jax.jit(params_to_slabs_fn),
+        generative=jax.jit(generative_raw),
         x0=x0,
         param_names=param_names,
         setp=setp,
@@ -941,10 +948,15 @@ def compile_global_objective(global_objective) -> CompiledObjective:
     #     the XLA graph) because GlobalObjective.lambdas are plain floats.
     # ------------------------------------------------------------------
     weighted_logl_fns: List[tuple] = []  # (lambda_float, logl_raw_fn)
+    generative_fns: List[Callable] = []
 
     for obj, lam in zip(global_objective.objectives, global_objective.lambdas):
-        logl_i, _ = _compile_single_logl(obj, compiler)
+        logl_i, generative_i, _ = _compile_single(obj, compiler)
         weighted_logl_fns.append((float(lam), logl_i))
+        generative_fns.append(generative_i)
+
+    def generative_global(free: jnp.ndarray) -> jnp.ndarray:
+        return jnp.concatenate([fn(free) for fn in generative_fns])
 
     # ------------------------------------------------------------------
     # 3.  Combine into a single pure JAX function by summing the weighted
@@ -973,7 +985,8 @@ def compile_global_objective(global_objective) -> CompiledObjective:
         logl=logl_jit,
         grad_logl=grad_jit,
         value_and_grad=val_and_grad_jit,
-        params_to_slabs=None,  # no single layer stack for a global fit
+        params_to_slabs=None,
+        generative=jax.jit(generative_global),
         x0=x0,
         param_names=param_names,
         setp=setp,
