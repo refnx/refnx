@@ -42,6 +42,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, List, Optional, Tuple
+import warnings
 
 import numpy as np
 import jax.numpy as jnp
@@ -755,6 +756,13 @@ def _compile_single(
 
     if _logp_is_trivial:
         return logl_raw, generative_raw, params_to_slabs_fn
+
+    if has_logp_extra:
+        warnings.warn(
+            "An Objective specifies logp_extra. Derivatives"
+            " aren't being tracked",
+            category=RuntimeWarning,
+        )
 
     # Build a compile-time index array that maps from the global free vector
     # (which may be longer than this objective's own varying parameters when
