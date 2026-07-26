@@ -755,7 +755,7 @@ def _compile_single(
     )
 
     if _logp_is_trivial:
-        return logl_raw, generative_raw, params_to_slabs_fn
+        return logl_raw, generative_raw, params_to_slabs_fn, None
 
     if has_logp_extra:
         warnings.warn(
@@ -774,30 +774,15 @@ def _compile_single(
         [compiler._free_index[id(p)] for p in local_var_params], dtype=np.intp
     )
 
-    def _extra_potential_callback(free_np: np.ndarray) -> np.ndarray:
+    def extra_potential(free_np: np.ndarray) -> float:
+        """Plain Python callable — evaluated outside the JAX/XLA graph."""
         objective.setp(free_np[setp_indices])
         extra = float(model.logp())
         if has_logp_extra:
             extra += float(objective.logp_extra(model, objective.data))
-        return np.array(extra, dtype=np.float64)
+        return extra
 
-    @jax.custom_jvp
-    def _extra_potential(free: jnp.ndarray) -> jnp.ndarray:
-        return jax.pure_callback(
-            _extra_potential_callback,
-            jax.ShapeDtypeStruct((), jnp.float64),
-            free,
-        )
-
-    @_extra_potential.defjvp
-    def _extra_potential_jvp(primals, tangents):
-        (free,) = primals
-        return _extra_potential(free), jnp.zeros((), dtype=jnp.float64)
-
-    def logl_with_extra(free: jnp.ndarray) -> jnp.ndarray:
-        return logl_raw(free) + _extra_potential(free)
-
-    return logl_with_extra, generative_raw, params_to_slabs_fn
+    return logl_raw, generative_raw, params_to_slabs_fn, extra_potential
 
 
 def compile_objective(objective) -> CompiledObjective:
@@ -858,13 +843,30 @@ def compile_objective(objective) -> CompiledObjective:
     # ------------------------------------------------------------------
     # 2–4.  Compile structure, scale/bkg/lnsigma, and freeze data arrays
     # ------------------------------------------------------------------
-    logl_raw, generative_raw, params_to_slabs_fn = _compile_single(
-        objective, compiler
+    logl_raw, generative_raw, params_to_slabs_fn, extra_potential = (
+        _compile_single(objective, compiler)
     )
 
     logl_jit = jax.jit(logl_raw)
     grad_jit = jax.jit(jax.grad(logl_raw))
     val_and_grad_jit = jax.jit(jax.value_and_grad(logl_raw))
+
+    if extra_potential is not None:
+        # Compose the extra potential outside the JIT boundary.
+        # Convert free to a concrete numpy array before any call so that
+        # neither _logl_jit nor extra_potential ever sees a tracer.
+        # grad_jit is unchanged — gradient of extra_potential is zero.
+        _logl_jit = logl_jit
+        _val_and_grad_jit = val_and_grad_jit
+
+        def logl_jit(free):
+            free_np = np.asarray(free)
+            return float(_logl_jit(free_np)) + extra_potential(free_np)
+
+        def val_and_grad_jit(free):
+            free_np = np.asarray(free)
+            val, grad = _val_and_grad_jit(free_np)
+            return float(val) + extra_potential(free_np), grad
 
     # ------------------------------------------------------------------
     # 6.  Convenience setp bridge
@@ -955,32 +957,60 @@ def compile_global_objective(global_objective) -> CompiledObjective:
     #     The lambda weights are baked in as Python floats (constants in
     #     the XLA graph) because GlobalObjective.lambdas are plain floats.
     # ------------------------------------------------------------------
-    weighted_logl_fns: List[tuple] = []  # (lambda_float, logl_raw_fn)
+    weighted_logl_fns: List[tuple] = []  # (lam, logl_raw) — all pure JAX
+    extra_potential_fns: List[tuple] = (
+        []
+    )  # (lam, extra_potential) — Python only
     generative_fns: List[Callable] = []
 
     for obj, lam in zip(global_objective.objectives, global_objective.lambdas):
-        logl_i, generative_i, _ = _compile_single(obj, compiler)
+        logl_i, generative_i, _, extra_i = _compile_single(obj, compiler)
         weighted_logl_fns.append((float(lam), logl_i))
+        if extra_i is not None:
+            extra_potential_fns.append((float(lam), extra_i))
         generative_fns.append(generative_i)
 
-    def generative_global(free: jnp.ndarray) -> jnp.ndarray:
-        return jnp.concatenate([fn(free) for fn in generative_fns])
-
-    # ------------------------------------------------------------------
-    # 3.  Combine into a single pure JAX function by summing the weighted
-    #     log-likelihoods.  The sum is unrolled at Python level (not with
-    #     jnp.sum over a stacked array) so that each term's XLA graph is
-    #     independent — this lets XLA parallelise or fuse them freely.
-    # ------------------------------------------------------------------
+    # Single fused JAX function over all pure logl terms — identical to the
+    # original structure so XLA can fuse across all objectives.
     def logl_global(free: jnp.ndarray) -> jnp.ndarray:
         total = jnp.zeros((), dtype=jnp.float64)
-        for lam, logl_fn in weighted_logl_fns:
-            total = total + lam * logl_fn(free)
+        for lam, fn in weighted_logl_fns:
+            total = total + lam * fn(free)
         return total
 
     logl_jit = jax.jit(logl_global)
     grad_jit = jax.jit(jax.grad(logl_global))
     val_and_grad_jit = jax.jit(jax.value_and_grad(logl_global))
+
+    if extra_potential_fns:
+        # Wrap the JIT-compiled functions to add the extra Python terms
+        # outside the XLA boundary.  Gradient of extra terms is zero.
+        _logl_jit = logl_jit
+        _grad_jit = grad_jit
+        _val_and_grad_jit = val_and_grad_jit
+
+        def logl_jit(free):
+            free_np = np.asarray(free)
+            val = float(_logl_jit(free_np))
+            for lam, fn in extra_potential_fns:
+                val += lam * fn(free_np)
+            return val
+
+        def grad_jit(free):
+            return _grad_jit(np.asarray(free))
+
+        def val_and_grad_jit(free):
+            free_np = np.asarray(free)
+            val, grad = _val_and_grad_jit(free_np)
+            for lam, fn in extra_potential_fns:
+                val += lam * fn(free_np)
+            return float(val), grad
+
+    # ------------------------------------------------------------------
+    # 3b. Generative: concatenation of per-objective forward models
+    # ------------------------------------------------------------------
+    def generative_global(free: jnp.ndarray) -> jnp.ndarray:
+        return jnp.concatenate([fn(free) for fn in generative_fns])
 
     # ------------------------------------------------------------------
     # 4.  setp bridge — GlobalObjective.setp handles the deduplication
