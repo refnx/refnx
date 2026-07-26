@@ -199,8 +199,8 @@ def _make_params_to_slabs(
     reverse_structure: bool = False,
 ):
     """
-    Returns a pure JAX function  free -> (N, 4) layers array ready for
-    ``jabeles``.
+    Build a pure JAX function mapping the free vector to the (N, 4) layers
+    array ready for ``jabeles``.
 
     Internally it first builds the full (N, 5) pre-mixing array
     ``[thick, sld_real, sld_imag, rough, vfsolv]``, then applies the
@@ -231,6 +231,11 @@ def _make_params_to_slabs(
         When True, reverse the slab order and shift the roughness column to
         match ``Structure.slabs()`` behaviour.  Handled entirely at compile
         time — no runtime branching.
+
+    Returns
+    -------
+    params_to_slabs : Callable[[jnp.ndarray], jnp.ndarray]
+        Pure JAX function ``free -> (N, 4)`` layers array.
     """
     # Apply reverse_structure at compile time by reordering slab_specs.
     # Structure.slabs() does:
@@ -318,7 +323,7 @@ def _make_generative(
     quad_order: int = 17,
 ) -> Callable:
     """
-    Returns a pure JAX function ``free -> R(q)`` (shape ``(N,)``).
+    Build a pure JAX function computing the forward model ``free -> R(q)``.
 
     This is the forward model — the reflectivity curve predicted by the
     current parameter values — without any likelihood computation.  It is
@@ -337,6 +342,11 @@ def _make_generative(
         Compiled scale and background.
     quad_order : int
         Gauss-Legendre order for smearing.
+
+    Returns
+    -------
+    generative : Callable[[jnp.ndarray], jnp.ndarray]
+        Pure JAX function ``free -> R(q)`` (shape ``(N,)``).
     """
     from refnx.reflect._jax_reflect import (
         jabeles,
@@ -367,7 +377,7 @@ def _make_logl(
     use_weights: bool,
 ) -> Callable:
     """
-    Returns a pure JAX function ``free -> scalar log-likelihood``.
+    Build a pure JAX function computing the scalar log-likelihood.
 
     Delegates the forward model to ``generative(free) -> R(q)``, which is
     built by ``_make_generative``.  This eliminates duplication: the same
@@ -378,6 +388,11 @@ def _make_logl(
 
         var = y_err**2 + exp(2*lnsigma) * model**2   (if lnsigma present)
         logl = -0.5 * sum( (y - model)**2/var + log(2*pi*var) )
+
+    Returns
+    -------
+    logl_jax : Callable[[jnp.ndarray], jnp.ndarray]
+        Pure JAX function ``free -> scalar log-likelihood``.
     """
 
     def logl_jax(free: jnp.ndarray) -> jnp.ndarray:
@@ -432,7 +447,6 @@ class CompiledModel:
         Initial free-parameter values.
     param_names : List[str]
         Names of the free parameters, in the same order as x0.
-            params_to_slabs : Callable
     params_to_slabs : Callable
         Pure JAX function mapping the free vector to the (N, 4) layers array
         consumed by ``jabeles`` (thick, mixed_sld_real, mixed_sld_imag, rough).
@@ -478,8 +492,8 @@ def compile_model(reflect_model) -> CompiledModel:
     -------
     compiled : CompiledModel
 
-    Example
-    -------
+    Examples
+    --------
         cm = compile_model(model)
 
        # Jacobian dR/dp — shape (len(data.x), n_free):
@@ -926,8 +940,8 @@ def compile_global_objective(global_objective) -> CompiledObjective:
     objective individually** (64-bit floats, re-compilation on topology
     change, callable constraints, etc.).
 
-    Example
-    -------
+    Examples
+    --------
         compiled = compile_global_objective(global_objective)
         val, grad = compiled.value_and_grad(compiled.x0)
 
@@ -1039,9 +1053,22 @@ def compile_global_objective(global_objective) -> CompiledObjective:
 
 def make_scipy_objective(compiled: CompiledObjective):
     """
-    Returns ``(nll_fn, grad_fn)`` suitable for::
+    Build a scipy-compatible ``(nll_fn, grad_fn)`` pair suitable for::
 
         scipy.optimize.minimize(nll_fn, x0, jac=grad_fn, method='L-BFGS-B')
+
+    Parameters
+    ----------
+    compiled : CompiledObjective
+        A compiled objective, as returned by ``compile_objective`` or
+        ``compile_global_objective``.
+
+    Returns
+    -------
+    nll_fn : Callable[[np.ndarray], float]
+        Negative log-likelihood as a function of the free-parameter vector.
+    grad_fn : Callable[[np.ndarray], np.ndarray]
+        Gradient of ``nll_fn`` with respect to the free-parameter vector.
 
     Both functions accept and return plain ``np.ndarray`` (float64).
     """

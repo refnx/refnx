@@ -100,8 +100,8 @@ class Structure(UserList):
     this option it is recommended to check the reflectivity signal with and
     without contraction to ensure they are comparable.
 
-    Example
-    -------
+    Examples
+    --------
 
     >>> from refnx.reflect import SLD, Linear, Tanh, Interface
     >>> # make the materials
@@ -198,7 +198,7 @@ class Structure(UserList):
 
         Parameters
         ----------
-        item: refnx.reflect.Component
+        item : refnx.reflect.Component
             The component to be added.
         """
         if isinstance(item, Scatterer):
@@ -557,7 +557,7 @@ class Structure(UserList):
         z : float
             Interfacial distance (Angstrom) measured from interface between the
             fronting medium and the first layer.
-        align: int, optional
+        align : int, optional
             Places a specified interface in the slab representation of a
             Structure at z = 0. Python indexing is allowed, e.g. supplying -1
             will place the backing medium at z = 0.
@@ -611,7 +611,7 @@ class Structure(UserList):
 
         Parameters
         ----------
-        other: :class:`Structure`, :class:`Component`, :class:`SLD`
+        other : :class:`Structure`, :class:`Component`, :class:`SLD`
             The object to add to the structure.
 
         Examples
@@ -643,7 +643,7 @@ class Structure(UserList):
 
         Parameters
         ----------
-        other: :class:`Structure`, :class:`Component`, :class:`SLD`
+        other : :class:`Structure`, :class:`Component`, :class:`SLD`
             The object to add to the structure.
 
         Examples
@@ -710,12 +710,12 @@ class Structure(UserList):
 
         Parameters
         ----------
-        samples: int
+        samples : int
             How many SLD profiles to generate
         z : float
             Interfacial distance (Angstrom) measured from interface between the
             fronting medium and the first layer.
-        align: int, optional
+        align : int, optional
             Places a specified interface in the slab representation of a
             Structure at z = 0. Python indexing is allowed, e.g. supplying -1
             will place the backing medium at z = 0.
@@ -862,8 +862,8 @@ class Structure(UserList):
         -------
         structure : Structure
 
-        Example
-        -------
+        Examples
+        --------
 
         >>> with open('oml.yml') as f:
         ...     dct = yaml.safe_load(f)
@@ -963,7 +963,7 @@ def _concatenate_slabs(sl):
 
     Parameters
     ----------
-    sl: sequence
+    sl : sequence
         An iterable containing the slab representation of each Component.
     """
     try:
@@ -1038,11 +1038,11 @@ class Scatterer:
 
         Parameters
         ----------
-        thick: refnx.analysis.Parameter or float
+        thick : refnx.analysis.Parameter or float
             Thickness of slab in Angstrom
-        rough: refnx.analysis.Parameter or float
+        rough : refnx.analysis.Parameter or float
             Roughness of slab in Angstrom
-        vfsolv: refnx.analysis.Parameter or float
+        vfsolv : refnx.analysis.Parameter or float
             Volume fraction of water in slab
 
         Returns
@@ -1050,7 +1050,7 @@ class Scatterer:
         slab : refnx.reflect.Slab
             The newly made Slab.
 
-        Example
+        Examples
         --------
 
         >>> # an SLD object representing Silicon Dioxide
@@ -1261,7 +1261,7 @@ def possibly_create_scatterer(obj):
 
     Parameters
     ----------
-    obj: float, complex, Parameter, Parameters, Scatterer
+    obj : float, complex, Parameter, Parameters, Scatterer
         object to coerce into a Scatterer
     """
     if isinstance(obj, Scatterer):
@@ -1276,7 +1276,7 @@ class Component:
 
     Parameters
     ----------
-    name: str, optional
+    name : str, optional
         The name associated with the Component
 
     Notes
@@ -1300,12 +1300,12 @@ class Component:
 
         Parameters
         ----------
-        other: refnx.reflect.Structure, refnx.reflect.Component
+        other : refnx.reflect.Structure, refnx.reflect.Component
             Combines with this component to make a Structure
 
         Returns
         -------
-        s: refnx.reflect.Structure
+        s : refnx.reflect.Structure
             The created Structure
 
         Examples
@@ -1329,12 +1329,12 @@ class Component:
 
         Parameters
         ----------
-        n: int
+        n : int
             How many times you want to repeat the Component
 
         Returns
         -------
-        s: refnx.reflect.Structure
+        s : refnx.reflect.Structure
             The created Structure
         """
         # convert to integer, should raise an error if there's a problem
@@ -1750,7 +1750,7 @@ class Stack(Component, UserList):
 
         Parameters
         ----------
-        item: refnx.reflect.Component
+        item : refnx.reflect.Component
             The component to be added.
         """
         if isinstance(item, Scatterer):
@@ -1838,7 +1838,7 @@ class Stack(Component, UserList):
 
         Parameters
         ----------
-        other: :class:`Component`, :class:`Scatterer`
+        other : :class:`Component`, :class:`Scatterer`
             The object to add to the structure.
 
         """
@@ -2149,9 +2149,9 @@ def create_occupancy(structure, solvent_slab=-1, z=None):
 
     Parameters
     ----------
-    structure: Structure
+    structure : Structure
 
-    solvent_slab: {int, None}
+    solvent_slab : {int, None}
         Defines which slab in `structure` is specified to contain
         the solvent. Use -1 if solvation is done by the backing medium
         If solvation is done by fronting medium use 0.
@@ -2159,7 +2159,7 @@ def create_occupancy(structure, solvent_slab=-1, z=None):
         but by another material. This might be a solvent vapour in an
         air-solid measurement.
 
-    z: {None, `np.ndarray`}, optional
+    z : {None, `np.ndarray`}, optional
         If `z is None` then the SLD profile will have 500 points (unless
         `max_delta_z` is specified).
         If `z` is an array, then the array specifies the interfacial locations

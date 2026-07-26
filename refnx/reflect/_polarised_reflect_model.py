@@ -114,7 +114,7 @@ class PolarisedReflectModel(ReflectModel):
         provided it should contain four values (one for each channel).
     name : str, optional
         Name of the Model
-    q_offsets: {float, refnx.analysis.Parameter, sequence, refnx.analysis.Parameters}, optional
+    q_offsets : {float, refnx.analysis.Parameter, sequence, refnx.analysis.Parameters}, optional
         Compensates for uncertainties in the angle at which the measurement is
         performed. A positive/negative `q_offset` corresponds to a situation
         where the measured q values (incident angle) may have been under/over
@@ -122,7 +122,7 @@ class PolarisedReflectModel(ReflectModel):
         lower/higher effective q values. They are turned into a Parameter during
         the construction of this object. If an iterable is
         provided it should contain four values (one for each channel).
-    Aguide: float
+    Aguide : float
         Angle of applied field. This value should be 270 or 90 degrees for
         the applied field to lie in the plane of the sample, perpendicular to
         the beam propagation direction. For a magnetic moment to be parallel

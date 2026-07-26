@@ -159,7 +159,7 @@ def get_reflect_backend(backend="c"):
 
     Parameters
     ----------
-    backend: {'python', 'cython', 'c', 'pyopencl', 'py_parratt', 'c_parratt',
+    backend : {'python', 'cython', 'c', 'pyopencl', 'py_parratt', 'c_parratt',
               'numba_parratt', 'abeles_vectorised'}
         The module that calculates the reflectivity. Speed should go in the
         order:
@@ -171,7 +171,7 @@ def get_reflect_backend(backend="c"):
 
     Returns
     -------
-    kernel: callable
+    kernel : callable
         The callable that calculates the reflectivity
 
     Notes
@@ -293,7 +293,7 @@ def use_reflect_backend(backend="c"):
 
     Parameters
     ----------
-    backend: {'python', 'cython', 'c', 'pyopencl', 'py_parratt', 'c_parratt',
+    backend : {'python', 'cython', 'c', 'pyopencl', 'py_parratt', 'c_parratt',
               'numba_parratt', 'abeles_vectorised'}, str
         The function that calculates the reflectivity. Speed should go in the
         order: numba_parratt > c_parratt > c > pyopencl / cython > python. If a
@@ -302,7 +302,7 @@ def use_reflect_backend(backend="c"):
 
     Yields
     ------
-    kernel: callable
+    kernel : callable
         A callable that calculates the reflectivity
 
     Notes
@@ -368,13 +368,13 @@ class ReflectModel:
         information is supplied to either the
         :meth:`refnx.reflect.ReflectModel.__call__` or
         :meth:`refnx.reflect.ReflectModel.model` methods.
-    threads: int, optional
+    threads : int, optional
         Specifies the number of threads for parallel calculation. This
         option is only applicable if you are using the ``_creflect``
         module. The option is ignored if using the pure python calculator,
         ``_reflect``. If `threads == -1` then all available processors are
         used.
-    quad_order: int, optional
+    quad_order : int, optional
         the order of the Gaussian quadrature polynomial for doing pointwise
         resolution smearing. default = 17. Don't choose less than 13. If
         quad_order == 'ultimate' then adaptive quadrature is used. Adaptive
@@ -384,18 +384,18 @@ class ReflectModel:
         example, 13 points may be fine for a thin layer, but will be
         atrocious at describing a multilayer with bragg peaks.
         If `dq_type='constant'` then this value is ignored.
-    dq_type: {'pointwise', 'constant'}, optional
+    dq_type : {'pointwise', 'constant'}, optional
         Chooses whether pointwise or constant dQ/Q resolution smearing (see
         `dq` keyword) is used. To use pointwise smearing the `x_err` keyword
         provided to :meth:`refnx.reflect.ReflectModel.model` must be an array,
         otherwise the smearing falls back to 'constant'.
-    q_offset: float or refnx.analysis.Parameter, optional
+    q_offset : float or refnx.analysis.Parameter, optional
         Compensates for uncertainties in the angle at which the measurement is
         performed. A positive/negative `q_offset` corresponds to a situation
         where the measured q values (incident angle) may have been under/over
         estimated, and has the effect of shifting the calculated model to
         lower/higher effective q values.
-    spin: refnx.reflect.SpinChannel
+    spin : refnx.reflect.SpinChannel
         The polarisation channel that is being calculated.
     """
 
@@ -686,8 +686,8 @@ class ReflectModelTL(ReflectModel):
         Corrects for overillumination of a sample. Should be a subclass of
         `Footprint`.
 
-    Example
-    -------
+    Examples
+    --------
 
     >>> from refnx.reflect import MaterialSLD, SLD, ReflectModelTL
     >>> air = SLD(0)
@@ -986,7 +986,7 @@ def reflectivity(
         where the measured q values (incident angle) may have been under/over
         estimated, and has the effect of shifting the calculated model to
         lower/higher effective q values.
-    spin: refnx.reflect.SpinChannel
+    spin : refnx.reflect.SpinChannel
         The polarisation channel that is being calculated. Ignored if
         `fkernel` is provided.
     Aguide : float
@@ -994,8 +994,8 @@ def reflectivity(
     fkernel : callable
         Direct specification of the reflectivity calculation kernel
 
-    Example
-    -------
+    Examples
+    --------
 
     >>> from refnx.reflect import reflectivity
     >>> q = np.linspace(0.01, 0.5, 1000)
@@ -1220,7 +1220,7 @@ def _smeared_kernel_pointwise(
     quad-order : int, optional
         Specify the order of the Gaussian quadrature integration for the
         convolution.
-    threads: int, optional
+    threads : int, optional
         Specifies the number of threads for parallel calculation. This
         option is only applicable if you are using the ``_creflect``
         module. The option is ignored if using the pure python calculator,
@@ -1270,20 +1270,20 @@ def _smeared_kernel_constant(q, w, resolution, threads=-1, fkernel=kernel):
 
     Parameters
     ----------
-    q: np.ndarray
+    q : np.ndarray
         Q values to evaluate the reflectivity at
-    w: np.ndarray
+    w : np.ndarray
         Parameters for the reflectivity model
-    resolution: float
+    resolution : float
         Percentage dq/q resolution. dq specified as FWHM of a resolution
         kernel.
-    threads: int, optional
+    threads : int, optional
         Do you want to calculate in parallel? This option is only applicable if
         you are using the ``_creflect`` module. The option is ignored if using
         the pure python calculator, ``_reflect``.
     Returns
     -------
-    reflectivity: np.ndarray
+    reflectivity : np.ndarray
         The resolution smeared reflectivity
     """
 
@@ -1374,13 +1374,13 @@ class MixedReflectModel:
         However, if `x_err` is supplied to the `model` method, then that
         overrides any setting given here. This value is turned into
         a Parameter during the construction of this object.
-    threads: int, optional
+    threads : int, optional
         Specifies the number of threads for parallel calculation. This
         option is only applicable if you are using the ``_creflect``
         module. The option is ignored if using the pure python calculator,
         ``_reflect``. If `threads == -1` then all available processors are
         used.
-    quad_order: int, optional
+    quad_order : int, optional
         the order of the Gaussian quadrature polynomial for doing the
         resolution smearing. default = 17. Don't choose less than 13. If
         quad_order == 'ultimate' then adaptive quadrature is used. Adaptive
@@ -1389,12 +1389,12 @@ class MixedReflectModel:
         time. BUT it won't necessarily work across all samples. For
         example, 13 points may be fine for a thin layer, but will be
         atrocious at describing a multilayer with bragg peaks.
-    dq_type: {'pointwise', 'constant'}, optional
+    dq_type : {'pointwise', 'constant'}, optional
         Chooses whether pointwise or constant dQ/Q resolution smearing (see
         `dq` keyword) is used. To use pointwise smearing the `x_err` keyword
         provided to `Objective.model` method must be an array, otherwise the
         smearing falls back to 'constant'.
-    q_offset: float or refnx.analysis.Parameter, optional
+    q_offset : float or refnx.analysis.Parameter, optional
         Compensates for uncertainties in the angle at which the measurement is
         performed. A positive/negative `q_offset` corresponds to a situation
         where the measured q values (incident angle) may have been under/over
@@ -1629,9 +1629,9 @@ class FresnelTransform(Transform):
 
     Parameters
     ----------
-    sld_fronting: float
+    sld_fronting : float
         SLD of fronting medium
-    sld_backing: float
+    sld_backing : float
         SLD of backing medium
     dq : float, array-like optional
         - `dq == 0`
@@ -1738,12 +1738,12 @@ def choose_dq_type(objective):
 
     Parameters
     ----------
-    objective: Objective
+    objective : Objective
         The objective being calculated
 
     Returns
     -------
-    method: str
+    method : str
         One of {'pointwise', 'constant'}. If 'pointwise' then using
         the resolution information from the datafile is the fastest mode
         of calculation. If 'constant', then a constant dq/q (expressed as
