@@ -3,9 +3,10 @@ import pytest
 from pathlib import Path
 import numpy as np
 from numpy.testing import assert_allclose
+from scipy.optimize._numdiff import approx_derivative
 
 import refnx
-from refnx.analysis import Objective, Parameter, CurveFitter
+from refnx.analysis import Objective, Parameter, CurveFitter, GlobalObjective
 from refnx.dataset import Data1D, ReflectDataset
 from refnx.reflect import ReflectModel, SLD, LipidLeaflet, LipidLeafletGuest
 from refnx.reflect.structure import overall_sld
@@ -13,6 +14,7 @@ from refnx.reflect.extra import (
     compile_objective,
     compile_model,
     make_scipy_objective,
+    compile_global_objective,
 )
 
 try:
@@ -335,3 +337,51 @@ class TestJAX:
         cm = compile_model(model)
         _slabs = cm.params_to_slabs(np.array([1.0]))
         assert_allclose(_slabs[:, 1], s.slabs()[:, 1], rtol=1e-10)
+
+    def test_global_objective(self):
+        # checks that the global objective logl and grads are correct
+        data361 = Data1D(
+            Path(refnx.__file__).parent / "analysis" / "tests" / "e361r.txt"
+        )
+        data361.x_err = 0.05 * data361.x
+        data365 = Data1D(
+            Path(refnx.__file__).parent / "analysis" / "tests" / "e365r.txt"
+        )
+        data365.x_err = 0.05 * data365.x
+
+        si = SLD(2.07)
+        film = SLD(1.0)
+        d2o = SLD(6.36)
+        hdmix = SLD(3.47)
+        sio2 = SLD(3.47)
+
+        sio2_l = sio2(15, 3)
+        film_l = film(200, 3)
+
+        sio2_l.thick.setp(vary=True, bounds=(0, 300))
+        film_l.thick.setp(vary=True, bounds=(0, 300))
+        film.real.setp(vary=True, bounds=(0, 3))
+        hdmix.real.setp(vary=True, bounds=(0, 5))
+
+        back_rough = Parameter(3)
+
+        s361 = si | sio2_l | film_l | d2o(0, back_rough)
+        s365 = si | sio2_l | film_l | hdmix(0, back_rough)
+
+        model361 = ReflectModel(s361)
+        model365 = ReflectModel(s365)
+        model361.scale.setp(vary=True, bounds=(0, 5))
+
+        objective361 = Objective(model361, data361)
+        objective365 = Objective(model365, data365)
+        global_objective = GlobalObjective([objective361, objective365])
+
+        gco = compile_global_objective(global_objective)
+        x0 = np.array(global_objective.varying_parameters())
+
+        v, g = gco.value_and_grad(x0)
+
+        assert_allclose(v, global_objective.logl())
+
+        grad = approx_derivative(global_objective.logl, x0, method="3-point")
+        assert_allclose(g, grad)
