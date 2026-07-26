@@ -22,9 +22,10 @@ def to_pymc_model(objective, _dist=None):
 
     Parameters
     ----------
-    objective: refnx.analysis.Objective
+    objective : refnx.analysis.Objective
+        The Objective function to convert into a pymc model.
 
-    _dist: {None, str}
+    _dist : {None, str}
         - 'normal' : uses ``pymc.NormalDist``, with observed y data on
             Objective.generative
 
