@@ -192,7 +192,7 @@ class Spline(Component):
         ----------
         z : float
             Distance along spline
-        structure: refnx.reflect.Structure
+        structure : refnx.reflect.Structure
             Structure hosting this Component
 
         Returns

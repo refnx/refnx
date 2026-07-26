@@ -55,7 +55,7 @@ def to_pymc_model(objective, _dist=None):
 
     Returns
     -------
-    model: pymc.Model
+    model : pymc.Model
 
     Notes
     -----

@@ -20,49 +20,49 @@ class LipidLeaflet(Component):
 
     Parameters
     ----------
-    APM: float or refnx.analysis.Parameter
-    b_heads: float, refnx.analysis.Parameter, complex or SLD
+    APM : float or refnx.analysis.Parameter
+    b_heads : float, refnx.analysis.Parameter, complex or SLD
         Sum of coherent scattering lengths of head group (Angstrom).
         When an SLD is provided it is simply an easy way to provide a complex
         value. `LipidLeaflet.b_heads_real` is set to `SLD.real`, etc.
-    vm_heads: float or refnx.analysis.Parameter
+    vm_heads : float or refnx.analysis.Parameter
         Molecular volume of head group (Angstrom**2)
-    thickness_heads: float or refnx.analysis.Parameter
+    thickness_heads : float or refnx.analysis.Parameter
         Thickness of head group region (Angstrom)
-    b_tails: float, refnx.analysis.Parameter, complex or SLD
+    b_tails : float, refnx.analysis.Parameter, complex or SLD
         Sum of coherent scattering lengths of tail group (Angstrom).
         When an SLD is provided it is simply an easy way to provide a complex
         value. `LipidLeaflet.b_tails_real` is set to `SLD.real`, etc.
-    vm_tails: float or refnx.analysis.Parameter
+    vm_tails : float or refnx.analysis.Parameter
         Molecular volume of tail group (Angstrom**2)
-    thickness_tails: float or refnx.analysis.Parameter
+    thickness_tails : float or refnx.analysis.Parameter
         Thickness of head group region (Angstrom)
-    rough_head_tail: float or refnx.analysis.Parameter
+    rough_head_tail : float or refnx.analysis.Parameter
         Roughness of head-tail group (Angstrom)
-    rough_preceding_mono: float or refnx.analysis.Parameter
+    rough_preceding_mono : float or refnx.analysis.Parameter
         Roughness between preceding component (in the fronting direction) and
         the monolayer (Angstrom). If `reverse_monolayer is False` then this is
         the roughness between the preceding component and the heads, if
         `reverse_monolayer is True` then this is the roughness between the
         preceding component and the tails.
-    head_solvent: None, float, complex, refnx.reflect.SLD
+    head_solvent : None, float, complex, refnx.reflect.SLD
         Solvent for the head region. If `None`, then solvation will be
         performed by the parent `Structure`, using the `Structure.solvent`
         attribute. Other options are coerced to an `SLD` object using
         `SLD(float | complex)`. A float/complex argument is the SLD of the
         solvent (10**-6 Angstrom**-2).
-    tail_solvent: None, float, complex, refnx.reflect.SLD
+    tail_solvent : None, float, complex, refnx.reflect.SLD
         Solvent for the tail region. If `None`, then solvation will be
         performed by the parent `Structure`, using the `Structure.solvent`
         attribute. Other options are coerced to an `SLD` object using
         `SLD(float | complex)`. A float/complex argument is the SLD of the
         solvent (10**-6 Angstrom**-2).
-    reverse_monolayer: bool, optional
+    reverse_monolayer : bool, optional
         The default is to have heads closer to the fronting medium and
         tails closer to the backing medium. If `reverse_monolayer is True`
         then the tails will be closer to the fronting medium and heads
         closer to the backing medium.
-    name: str, optional
+    name : str, optional
         The name for the component
 
     Notes
@@ -93,46 +93,46 @@ class LipidLeaflet(Component):
         """
         Parameters
         ----------
-        apm: float or Parameter
+        apm : float or Parameter
             Area per molecule
-        b_heads: float, Parameter or complex
+        b_heads : float, Parameter or complex
             Sum of coherent scattering lengths of head group (Angstrom)
-        vm_heads: float or Parameter
+        vm_heads : float or Parameter
             Molecular volume of head group (Angstrom**3)
-        thickness_heads: float or Parameter
+        thickness_heads : float or Parameter
             Thickness of head group region (Angstrom)
-        b_tails: float, Parameter or complex
+        b_tails : float, Parameter or complex
             Sum of coherent scattering lengths of tail group (Angstrom)
-        vm_tails: float or Parameter
+        vm_tails : float or Parameter
             Molecular volume of tail group (Angstrom**3)
-        thickness_tails: float or Parameter
+        thickness_tails : float or Parameter
             Thickness of head group region (Angstrom)
-        rough_head_tail: float or refnx.analysis.Parameter
+        rough_head_tail : float or refnx.analysis.Parameter
             Roughness of head-tail group (Angstrom)
-        rough_preceding_mono: float or Parameter
+        rough_preceding_mono : float or Parameter
             Roughness between preceding component (in the fronting direction)
             and the monolayer (Angstrom). If `reverse_monolayer is False` then
             this is the roughness between the preceding component and the
             heads, if `reverse_monolayer is True` then this is the roughness
             between the preceding component and the tails.
-        head_solvent: None, float, complex, SLD
+        head_solvent : None, float, complex, SLD
             Solvent for the head region. If `None`, then solvation will be
             performed by the parent `Structure`, using the `Structure.solvent`
             attribute. Other options are coerced to an `SLD` object using
             `SLD(float | complex)`. A float/complex argument is the SLD of the
             solvent (10**-6 Angstrom**-2).
-        tail_solvent: None, float, complex, SLD
+        tail_solvent : None, float, complex, SLD
             Solvent for the tail region. If `None`, then solvation will be
             performed by the parent `Structure`, using the `Structure.solvent`
             attribute. Other options are coerced to an `SLD` object using
             `SLD(float | complex)`. A float/complex argument is the SLD of the
             solvent (10**-6 Angstrom**-2).
-        reverse_monolayer: bool, optional
+        reverse_monolayer : bool, optional
             The default is to have heads closer to the fronting medium and
             tails closer to the backing medium. If `reverse_monolayer is True`
             then the tails will be closer to the fronting medium and heads
             closer to the backing medium.
-        name: str, optional
+        name : str, optional
             The name for the component
         """
         super().__init__()
@@ -340,13 +340,13 @@ class LipidLeaflet(Component):
 
         Parameters
         ----------
-        objective: refnx.analysis.Objective
+        objective : refnx.analysis.Objective
             Objective containing the LipidLeaflet. Must be the Objective that is
             being minimised by differential_evolution.
 
         Returns
         -------
-        nlc: NonlinearConstraint
+        nlc : NonlinearConstraint
 
         Notes
         -----
@@ -376,32 +376,32 @@ class LipidLeafletGuest(LipidLeaflet):
 
     Parameters
     ----------
-    APM: float or refnx.analysis.Parameter
-    b_heads: float, refnx.analysis.Parameter, complex or SLD
+    APM : float or refnx.analysis.Parameter
+    b_heads : float, refnx.analysis.Parameter, complex or SLD
         Sum of coherent scattering lengths of head group (Angstrom).
         When an SLD is provided it is simply an easy way to provide a complex
         value. `LipidLeaflet.b_heads_real` is set to `SLD.real`, etc.
-    vm_heads: float or refnx.analysis.Parameter
+    vm_heads : float or refnx.analysis.Parameter
         Molecular volume of head group (Angstrom**2)
-    thickness_heads: float or refnx.analysis.Parameter
+    thickness_heads : float or refnx.analysis.Parameter
         Thickness of head group region (Angstrom)
-    b_tails: float, refnx.analysis.Parameter, complex or SLD
+    b_tails : float, refnx.analysis.Parameter, complex or SLD
         Sum of coherent scattering lengths of tail group (Angstrom).
         When an SLD is provided it is simply an easy way to provide a complex
         value. `LipidLeaflet.b_tails_real` is set to `SLD.real`, etc.
-    vm_tails: float or refnx.analysis.Parameter
+    vm_tails : float or refnx.analysis.Parameter
         Molecular volume of tail group (Angstrom**2)
-    thickness_tails: float or refnx.analysis.Parameter
+    thickness_tails : float or refnx.analysis.Parameter
         Thickness of head group region (Angstrom)
-    rough_head_tail: float or refnx.analysis.Parameter
+    rough_head_tail : float or refnx.analysis.Parameter
         Roughness of head-tail group (Angstrom)
-    rough_preceding_mono: float or refnx.analysis.Parameter
+    rough_preceding_mono : float or refnx.analysis.Parameter
         Roughness between preceding component (in the fronting direction) and
         the monolayer (Angstrom). If `reverse_monolayer is False` then this is
         the roughness between the preceding component and the heads, if
         `reverse_monolayer is True` then this is the roughness between the
         preceding component and the tails.
-    phi_guest_h: float or refnx.analysis.Parameter
+    phi_guest_h : float or refnx.analysis.Parameter
         Guest lying in the head layer. This is a fractional
         value representing how much of the space **not** taken up by the lipid
         is occupied by the guest molecule.
@@ -416,7 +416,7 @@ class LipidLeafletGuest(LipidLeaflet):
            occupies nearly all of the space in the layer. For best results
            the guest and tail region should have very different SLDs.
 
-    phi_guest_t: float or refnx.analysis.Parameter
+    phi_guest_t : float or refnx.analysis.Parameter
         Guest lying in the tail layer. This is a fractional
         value representing how much of the space **not** taken up by the lipid
         is occupied by the guest molecule.
@@ -431,28 +431,28 @@ class LipidLeafletGuest(LipidLeaflet):
            occupies nearly all of the space in the layer. For best results
            the guest and tail region should have very different SLDs.
 
-    sld_guest: None, float, complex, refnx.reflect.SLD
+    sld_guest : None, float, complex, refnx.reflect.SLD
         SLD of guest molecule.
-    head_solvent: None, float, complex, refnx.reflect.SLD
+    head_solvent : None, float, complex, refnx.reflect.SLD
         Solvent for the head region. If `None`, then solvation will be
         performed by the parent `Structure`, using the `Structure.solvent`
         attribute. Other options are coerced to an `SLD` object using
         `SLD(float | complex)`. A float/complex argument is the SLD of the
         solvent (10**-6 Angstrom**-2).
-    tail_solvent: None, float, complex, refnx.reflect.SLD
+    tail_solvent : None, float, complex, refnx.reflect.SLD
         Solvent for the tail region. If `None`, then solvation will be
         performed by the parent `Structure`, using the `Structure.solvent`
         attribute. Other options are coerced to an `SLD` object using
         `SLD(float | complex)`. A float/complex argument is the SLD of the
         solvent (10**-6 Angstrom**-2).
-    reverse_monolayer: bool, optional
+    reverse_monolayer : bool, optional
         The default is to have heads closer to the fronting medium and
         tails closer to the backing medium. If `reverse_monolayer is True`
         then the tails will be closer to the fronting medium and heads
         closer to the backing medium.
-    name: str, optional
+    name : str, optional
         The name for the component
-    absolute_phi: bool, optional
+    absolute_phi : bool, optional
         Specifies whether `phi_guest_h` and `phi_guest_t` represent fractional
         or absolute volume fractions.
         Please see the notes section for further details.
@@ -688,13 +688,13 @@ class LipidLeafletGuest(LipidLeaflet):
 
         Parameters
         ----------
-        objective: refnx.analysis.Objective
+        objective : refnx.analysis.Objective
             Objective containing the LipidLeafletGuest. Must be the Objective
             that is being minimised by differential_evolution.
 
         Returns
         -------
-        nlc: NonlinearConstraint
+        nlc : NonlinearConstraint
 
         Notes
         -----

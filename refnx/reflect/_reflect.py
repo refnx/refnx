@@ -110,11 +110,11 @@ class _Abeles_pyopencl:
 
         Parameters
         ----------
-        q: array_like
+        q : array_like
             the q values required for the calculation.
             Q = 4 * Pi / lambda * sin(omega).
             Units = Angstrom**-1
-        layers: np.ndarray
+        layers : np.ndarray
             coefficients required for the calculation, has shape
             (2 + N, 4), where N is the number of layers
             layers[0, 1] - SLD of fronting (/1e-6 Angstrom**-2)
@@ -126,16 +126,16 @@ class _Abeles_pyopencl:
             layers[-1, 1] - SLD of backing (/1e-6 Angstrom**-2)
             layers[-1, 2] - iSLD of backing (/1e-6 Angstrom**-2)
             layers[-1, 3] - roughness between backing and last layer
-        scale: float
+        scale : float
             Multiply all reflectivities by this value.
-        bkg: float
+        bkg : float
             Linear background to be added to all reflectivities
-        threads: int, optional
+        threads : int, optional
             <THIS OPTION IS CURRENTLY IGNORED>
 
         Returns
         -------
-        Reflectivity: np.ndarray
+        Reflectivity : np.ndarray
             Calculated reflectivity values for each q value.
         """
         import pyopencl as cl
@@ -197,11 +197,11 @@ def abeles(
 
     Parameters
     ----------
-    q: array_like
+    q : array_like
         the q values required for the calculation.
         Q = 4 * Pi / lambda * sin(omega).
         Units = Angstrom**-1
-    layers: np.ndarray
+    layers : np.ndarray
         coefficients required for the calculation, has shape (2 + N, 4),
         where N is the number of layers:
 
@@ -224,16 +224,16 @@ def abeles(
         - layers[-1, 3]
            roughness between backing and last layer
 
-    scale: float
+    scale : float
         Multiply all reflectivities by this value.
-    bkg: float
+    bkg : float
         Linear background to be added to all reflectivities
-    threads: int, optional
+    threads : int, optional
         <THIS OPTION IS CURRENTLY IGNORED>
 
     Returns
     -------
-    Reflectivity: np.ndarray
+    Reflectivity : np.ndarray
         Calculated reflectivity values for each q value.
     """
     qvals = np.asarray(q).astype(float, copy=False)
@@ -311,11 +311,11 @@ def parratt(
 
     Parameters
     ----------
-    q: array_like
+    q : array_like
         the q values required for the calculation.
         Q = 4 * Pi / lambda * sin(omega).
         Units = Angstrom**-1
-    layers: np.ndarray
+    layers : np.ndarray
         coefficients required for the calculation, has shape (2 + N, 4),
         where N is the number of layers
         layers[0, 1] - SLD of fronting (/1e-6 Angstrom**-2)
@@ -327,16 +327,16 @@ def parratt(
         layers[-1, 1] - SLD of backing (/1e-6 Angstrom**-2)
         layers[-1, 2] - iSLD of backing (/1e-6 Angstrom**-2)
         layers[-1, 3] - roughness between backing and last layer
-    scale: float
+    scale : float
         Multiply all reflectivities by this value.
-    bkg: float
+    bkg : float
         Linear background to be added to all reflectivities
-    threads: int, optional
+    threads : int, optional
         <THIS OPTION IS CURRENTLY IGNORED>
 
     Returns
     -------
-    Reflectivity: np.ndarray
+    Reflectivity : np.ndarray
         Calculated reflectivity values for each q value.
     """
     qvals = np.asarray(q).astype(float, copy=False)
@@ -502,7 +502,7 @@ def _pmatrix(kn_u, kn_d, thickness):
         wavevector for up and down within a given layer. Has shape (N,),
         where N is the number of Q points.
 
-    thickness: float
+    thickness : float
         Thickness of layer (Angstrom)
 
     Returns
@@ -627,11 +627,11 @@ def pnr(q, layers):
 
     Parameters
     ----------
-    q: array_like
+    q : array_like
         the q values required for the calculation.
         Q = 4 * Pi / lambda * sin(omega).
         Units = Angstrom**-1
-    layers: np.ndarray
+    layers : np.ndarray
         coefficients required for the calculation, has shape (2 + N, 4),
         where N is the number of layers
         layers[0, 1] - SLD of fronting (/1e-6 Angstrom**-2)
@@ -652,7 +652,7 @@ def pnr(q, layers):
 
     Returns
     -------
-    reflectivity: tuple of np.ndarray
+    reflectivity : tuple of np.ndarray
         Calculated Polarised Neutron Reflectivity values for each q value.
         (PP, MM, PM, MP)
 

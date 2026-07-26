@@ -47,7 +47,7 @@ class ReflectModelView(HasTraits):
 
     Parameters
     ----------
-    reflect_model: refnx.reflect.ReflectModel
+    reflect_model : refnx.reflect.ReflectModel
 
     Notes
     -----
@@ -574,7 +574,7 @@ class SlabView(HasTraits):
 
     Parameters
     ----------
-    slab: refnx.reflect.Slab
+    slab : refnx.reflect.Slab
 
     Notes
     -----
@@ -778,14 +778,14 @@ class Motofit:
 
     Attributes
     ----------
-    dataset: :class:`refnx.dataset.Data1D`
+    dataset : :class:`refnx.dataset.Data1D`
         The dataset associated with the modeller
-    model: :class:`refnx.reflect.ReflectModel`
+    model : :class:`refnx.reflect.ReflectModel`
         Calculates a theoretical model, from an interfacial structure
         (`model.Structure`).
-    objective: :class:`refnx.analysis.Objective`
+    objective : :class:`refnx.analysis.Objective`
         The Objective that allows one to compare the model against the data.
-    fig: :class:`matplotlib.figure.Figure`
+    fig : :class:`matplotlib.figure.Figure`
         Graph displaying the data.
 
     """
@@ -893,7 +893,7 @@ class Motofit:
 
         Parameters
         ----------
-        f: file like or str, optional
+        f : file like or str, optional
             File to save model to.
         """
         if f is None:
@@ -918,7 +918,7 @@ class Motofit:
 
         Parameters
         ----------
-        f: file like or str, optional
+        f : file like or str, optional
             pickle file to load model from.
         """
         if f is None and self.dataset is not None:
@@ -952,7 +952,7 @@ class Motofit:
 
         Parameters
         ----------
-        model: refnx.reflect.ReflectModel
+        model : refnx.reflect.ReflectModel
 
         """
         if not isinstance(model, ReflectModel):
@@ -1045,10 +1045,10 @@ class Motofit:
 
         Parameters
         ----------
-        data: refnx.dataset.Data1D
+        data : refnx.dataset.Data1D
             The dataset to associate with the `Motofit` instance.
 
-        model: refnx.reflect.ReflectModel or str or file-like
+        model : refnx.reflect.ReflectModel or str or file-like
             A model to associate with the data.
             If `model` is a `str` or `file`-like then the `load_model` method
             will be used to try and load the model from file. This assumes that
@@ -1124,7 +1124,7 @@ class Motofit:
 
         Parameters
         ----------
-        data: refnx.dataset.Data1D, or str, or file-like
+        data : refnx.dataset.Data1D, or str, or file-like
         """
         if isinstance(data, ReflectDataset):
             self.dataset = data
@@ -1367,11 +1367,11 @@ def to_code(objective):
 
     Parameters
     ----------
-    objective: refnx.analysis.Objective
+    objective : refnx.analysis.Objective
 
     Returns
     -------
-    code: str
+    code : str
         Python code that can construct a reflectometry fitting system
 
     """
