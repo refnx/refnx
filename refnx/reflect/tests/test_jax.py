@@ -183,13 +183,12 @@ class TestJAX:
         v_heads = Parameter(319, "v_heads")
         v_tails = Parameter(782, "v_tails")
 
-        # the head and tail group thicknesses.
-        head_thickness = Parameter(
-            9, "inner_head_thickness", vary=True, bounds=(4, 11)
-        )
-        tail_thickness = Parameter(
-            14, "tail_thickness", vary=True, bounds=(10, 17)
-        )
+        # the head and tail group volume fractions
+        head_vf = Parameter(0.50, "inner_head_vf", vary=True, bounds=(0.01, 1))
+        tail_vf = Parameter(0.5, "tail_thickness", vary=True, bounds=(0.01, 1))
+
+        head_thickness = v_heads / apm / head_vf
+        tail_thickness = v_tails / apm / tail_vf
 
         # finally construct a `LipidLeaflet` object for the inner and outer leaflets.
         # Note that here the inner and outer leaflets use the same area per molecule,
@@ -244,8 +243,10 @@ class TestJAX:
         model_d2o = ReflectModel(s_d2o)
 
         model_d2o.scale.setp(vary=True, bounds=(0.9, 1.1))
-        model_d2o.bkg.setp(vary=True, bounds=(1e-8, 1e-6))
-        objective_d2o = Objective(model_d2o, data_d2o)
+        model_d2o.bkg.setp(vary=True, bounds=(1e-8, 2e-6))
+        objective_d2o = Objective(
+            model_d2o, data_d2o, auxiliary_params=(head_vf, tail_vf)
+        )
 
         con_inner = inner_leaflet.make_constraint(objective_d2o)
         con_outer = outer_leaflet.make_constraint(objective_d2o)
@@ -277,7 +278,7 @@ class TestJAX:
         assert_allclose(obj.params_to_slabs(vp), s_d2o.slabs()[:, :-1])
         assert_allclose(logl, objective_d2o.logl())
 
-        check_GenerativeOp_vs_Objective(objective_d2o, params_to_vary=(0, 2))
+        check_GenerativeOp_vs_Objective(objective_d2o)
 
         # explicitly set a solvent for the structure and check that changing the
         # solvent SLD changes the slab representation correctly.
@@ -295,7 +296,7 @@ class TestJAX:
         assert_allclose(obj.params_to_slabs(vp), s_d2o.slabs()[:, :-1])
 
         assert_allclose(logl, objective_d2o.logl())
-        check_GenerativeOp_vs_Objective(objective_d2o, params_to_vary=(0, 2))
+        check_GenerativeOp_vs_Objective(objective_d2o)
 
         # now assign explicit solvents for the head/tail regions and
         # check that they propagate through the params to slabs
@@ -317,7 +318,7 @@ class TestJAX:
         logl, _ = obj.value_and_grad(vp)
         assert_allclose(obj.params_to_slabs(vp), s_d2o.slabs()[:, :-1])
         assert_allclose(logl, objective_d2o.logl())
-        check_GenerativeOp_vs_Objective(objective_d2o, params_to_vary=(0, 2))
+        check_GenerativeOp_vs_Objective(objective_d2o)
 
     def test_lipidleaflet_guest(self):
         b_h = 6.01e-4
