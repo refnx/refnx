@@ -744,3 +744,5 @@ in 0.1.13.
 - Optimise refnx.reflect._jax_reflect.jabeles
 - Use pymc.Deterministic+pymc.Normal instead of pm.Potential. This seems to speed
   up NUTS sampling significantly.
+- Additional checks for jax code in reflect.
+- Fixed a bug in the jax operation of LipidLeaflet if the solvent SLD was varying.

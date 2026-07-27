@@ -56,6 +56,7 @@ from refnx.reflect.extra._jax_util import (
     _const,
     _SlabSpec,
     _ConstraintCompiler,
+    _compile_scatterer,
 )
 
 # ---------------------------------------------------------------------------
@@ -146,11 +147,8 @@ def _lipid_leaflet_jax_slabs(
     #               = SLD_lipid * phi + SLD_solvent * vfsolv
     # ------------------------------------------------------------------
     zero = _const(0.0)
-
     if self.head_solvent is not None:
-        solv_h = complex(self.head_solvent)
-        solv_h_re = _const(solv_h.real)
-        solv_h_im = _const(solv_h.imag)
+        solv_h_re, solv_h_im = _compile_scatterer(self.head_solvent, compiler)
         # mixed = lipid * phi + solvent * vfsolv
         sld_heads_re_node = _add(
             _mul(sld_heads_re_node, phi_heads_node),
@@ -163,9 +161,7 @@ def _lipid_leaflet_jax_slabs(
         vfsolv_heads_node = zero  # tell Structure: already mixed
 
     if self.tail_solvent is not None:
-        solv_t = complex(self.tail_solvent)
-        solv_t_re = _const(solv_t.real)
-        solv_t_im = _const(solv_t.imag)
+        solv_t_re, solv_t_im = _compile_scatterer(self.tail_solvent, compiler)
         sld_tails_re_node = _add(
             _mul(sld_tails_re_node, phi_tails_node),
             _mul(solv_t_re, vfsolv_tails_node),
@@ -261,8 +257,9 @@ def _lipid_leaflet_guest_jax_slabs(self, compiler: _ConstraintCompiler):
     phi_guest_h_node = compiler.compile_parameter(self.phi_guest_h)
     phi_guest_t_node = compiler.compile_parameter(self.phi_guest_t)
 
-    sld_guest_re_node = compiler.compile_parameter(self.sld_guest.real)
-    sld_guest_im_node = compiler.compile_parameter(self.sld_guest.imag)
+    sld_guest_re_node, sld_guest_im_node = _compile_scatterer(
+        self.sld_guest, compiler
+    )
 
     # lipid volume fraction in each region: vf = vm / (apm * thickness)
     vfh_node = _div(vm_heads_node, _mul(apm_node, thick_heads_node))
@@ -325,8 +322,7 @@ def _lipid_leaflet_guest_jax_slabs(self, compiler: _ConstraintCompiler):
     # replicate self-solvation when head_solvent / tail_solvent is set:
     #   mixed = material * (1 - vfsolv) + solvent * vfsolv
     if self.head_solvent is not None:
-        solv_h = complex(self.head_solvent)
-        solv_h_re, solv_h_im = _const(solv_h.real), _const(solv_h.imag)
+        solv_h_re, solv_h_im = _compile_scatterer(self.head_solvent, compiler)
         mix_heads_re_node = _add(
             _mul(mix_heads_re_node, _sub(one, vfsolv_heads_node)),
             _mul(solv_h_re, vfsolv_heads_node),
@@ -338,8 +334,7 @@ def _lipid_leaflet_guest_jax_slabs(self, compiler: _ConstraintCompiler):
         vfsolv_heads_node = zero
 
     if self.tail_solvent is not None:
-        solv_t = complex(self.tail_solvent)
-        solv_t_re, solv_t_im = _const(solv_t.real), _const(solv_t.imag)
+        solv_t_re, solv_t_im = _compile_scatterer(self.tail_solvent, compiler)
         mix_tails_re_node = _add(
             _mul(mix_tails_re_node, _sub(one, vfsolv_tails_node)),
             _mul(solv_t_re, vfsolv_tails_node),
