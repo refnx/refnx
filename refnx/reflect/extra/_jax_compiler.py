@@ -53,6 +53,7 @@ from refnx.reflect.extra._jax_util import (
     _PaddedSlabSpecs,
     _ConstNode,
     _ConstraintCompiler,
+    _compile_scatterer,
     _eval_node,
 )
 from refnx.reflect.extra._jax_lipid import (
@@ -164,7 +165,6 @@ def _compile_solvent(structure, compiler: _ConstraintCompiler):
     the *first* component (which becomes the backing after reversal), so
     we compile from ``structure.components[0]`` instead.
     """
-    from refnx.analysis.parameter import is_parameter
     from refnx.reflect import SLD
 
     if structure.reverse_structure:
@@ -173,23 +173,23 @@ def _compile_solvent(structure, compiler: _ConstraintCompiler):
     else:
         anchor = structure.components[-1]
 
-    # If structure.solvent is an explicit SLD object, compile its Parameters.
-    if isinstance(structure.solvent, SLD):
-        real_node = compiler.compile_parameter(structure.solvent.real)
-        imag_node = compiler.compile_parameter(structure.solvent.imag)
-        return real_node, imag_node
+    # If the user has explicitly set structure.solvent, compile its
+    # Parameters directly.  Note: the ``structure.solvent`` *property*
+    # always returns an SLD (it synthesizes one from the anchor slab when
+    # ``_solvent`` is None), so we must check the private attribute here —
+    # otherwise we'd compile the freshly-synthesized SLD's Parameters,
+    # which are never in ``free_index`` and would be baked in as stale
+    # constants, breaking gradient flow through the solvent SLD.
+    if isinstance(structure._solvent, SLD):
+        return _compile_scatterer(structure._solvent, compiler)
 
     # Otherwise derive from the anchor component's slab SLD Parameters.
     if hasattr(anchor, "sld"):
-        real_node = compiler.compile_parameter(anchor.sld.real)
-        imag_node = compiler.compile_parameter(anchor.sld.imag)
-    else:
-        # Fallback for exotic components: evaluate once and bake as constant.
-        slabs = anchor.slabs(structure=structure)
-        real_node = _ConstNode(float(slabs[0, 1]))
-        imag_node = _ConstNode(float(slabs[0, 2]))
+        return _compile_scatterer(anchor.sld, compiler)
 
-    return real_node, imag_node
+    # Fallback for exotic components: evaluate once and bake as constant.
+    slabs = anchor.slabs(structure=structure)
+    return _ConstNode(float(slabs[0, 1])), _ConstNode(float(slabs[0, 2]))
 
 
 def _make_params_to_slabs(

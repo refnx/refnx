@@ -307,3 +307,21 @@ def _add(a, b):
 
 def _const(v: float):
     return _ConstNode(float(v))
+
+
+def _compile_scatterer(scatterer, compiler: "_ConstraintCompiler"):
+    """
+    Compile a ``Scatterer`` (e.g. ``head_solvent`` / ``tail_solvent``) into
+    ``(real_node, imag_node)``.
+
+    If the scatterer exposes ``real``/``imag`` Parameters (e.g. ``SLD``) they
+    are compiled directly, so gradients flow when those Parameters vary.
+    Otherwise its value is baked in as a constant.
+    """
+    if hasattr(scatterer, "real") and hasattr(scatterer, "imag"):
+        return (
+            compiler.compile_parameter(scatterer.real),
+            compiler.compile_parameter(scatterer.imag),
+        )
+    solv = complex(scatterer)
+    return _const(solv.real), _const(solv.imag)

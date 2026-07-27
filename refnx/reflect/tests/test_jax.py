@@ -1,3 +1,9 @@
+import os
+
+# Set these FIRST before any other imports
+os.environ["JAX_ENABLE_X64"] = "1"
+
+import warnings
 from importlib import resources
 import pytest
 from pathlib import Path
@@ -15,6 +21,7 @@ from refnx.reflect.extra import (
     compile_model,
     make_scipy_objective,
     compile_global_objective,
+    to_pymc_model,
 )
 
 try:
@@ -115,13 +122,13 @@ class TestJAX:
         film = SLD(1.0)
         d2o = SLD(6.36)
 
-        film.real.setp(vary=True)
-        p = Parameter(50, vary=True)
+        film.real.setp(vary=True, bounds=(0.5, 2.2))
+        p = Parameter(50, vary=True, bounds=(20, 100))
         t = 250 - p
 
         s = si | film(t, 3) | d2o(0, 3)
         model = ReflectModel(s)
-        model.scale.setp(vary=True)
+        model.scale.setp(vary=True, bounds=(0.9, 1.5))
 
         objective = Objective(model, data, auxiliary_params=(p,))
         pars = np.array(objective.varying_parameters())
@@ -143,6 +150,8 @@ class TestJAX:
 
         pars[1] = 48.0
         assert_allclose(nll_fn(pars), nll48)
+
+        check_GenerativeOp_vs_Objective(objective)
 
     def test_lipid(self):
         pth = resources.files(refnx.analysis) / "tests"
@@ -175,11 +184,8 @@ class TestJAX:
         v_tails = Parameter(782, "v_tails")
 
         # the head and tail group thicknesses.
-        inner_head_thickness = Parameter(
+        head_thickness = Parameter(
             9, "inner_head_thickness", vary=True, bounds=(4, 11)
-        )
-        outer_head_thickness = Parameter(
-            9, "outer_head_thickness", vary=True, bounds=(4, 11)
         )
         tail_thickness = Parameter(
             14, "tail_thickness", vary=True, bounds=(10, 17)
@@ -193,7 +199,7 @@ class TestJAX:
             apm,
             b_heads,
             v_heads,
-            inner_head_thickness,
+            head_thickness,
             b_tails,
             v_tails,
             tail_thickness,
@@ -206,7 +212,7 @@ class TestJAX:
             apm,
             b_heads,
             v_heads,
-            outer_head_thickness,
+            head_thickness,
             b_tails,
             v_tails,
             tail_thickness,
@@ -238,7 +244,7 @@ class TestJAX:
         model_d2o = ReflectModel(s_d2o)
 
         model_d2o.scale.setp(vary=True, bounds=(0.9, 1.1))
-        model_d2o.bkg.setp(vary=True, bounds=(-1e-6, 1e-6))
+        model_d2o.bkg.setp(vary=True, bounds=(1e-8, 1e-6))
         objective_d2o = Objective(model_d2o, data_d2o)
 
         con_inner = inner_leaflet.make_constraint(objective_d2o)
@@ -252,11 +258,66 @@ class TestJAX:
             polish=False,
             popsize=10,
         )
+        assert np.all(s_d2o.slabs()[:, -1] >= 0)
+        assert np.all(s_d2o.slabs()[:, -1] <= 1)
+
+        # check that the generative op and objective.generative compare well
+        # also check that changing solvent SLD changes the slab representation
+        # correctly.
         obj = compile_objective(objective_d2o)
-        logl, _ = obj.value_and_grad(
-            np.array(objective_d2o.varying_parameters())
-        )
+        vp = np.array(objective_d2o.varying_parameters())
+        logl, _ = obj.value_and_grad(vp)
         assert_allclose(logl, objective_d2o.logl())
+
+        # change sld of d2o
+        d2o.real.setp(value=6.1234)
+        vp = np.array(objective_d2o.varying_parameters())
+        logl, _ = obj.value_and_grad(vp)
+
+        assert_allclose(obj.params_to_slabs(vp), s_d2o.slabs()[:, :-1])
+        assert_allclose(logl, objective_d2o.logl())
+
+        check_GenerativeOp_vs_Objective(objective_d2o, params_to_vary=(0, 2))
+
+        # explicitly set a solvent for the structure and check that changing the
+        # solvent SLD changes the slab representation correctly.
+        s_d2o.solvent = d2o
+        sio2_slab.vfsolv.value = 0.5
+        obj = compile_objective(objective_d2o)
+        vp = np.array(objective_d2o.varying_parameters())
+        logl, _ = obj.value_and_grad(vp)
+        assert_allclose(logl, objective_d2o.logl())
+
+        d2o.real.setp(value=8.0)
+        vp = np.array(objective_d2o.varying_parameters())
+        logl, _ = obj.value_and_grad(vp)
+        assert_allclose(s_d2o.slabs()[-1, 1], 8.0)
+        assert_allclose(obj.params_to_slabs(vp), s_d2o.slabs()[:, :-1])
+
+        assert_allclose(logl, objective_d2o.logl())
+        check_GenerativeOp_vs_Objective(objective_d2o, params_to_vary=(0, 2))
+
+        # now assign explicit solvents for the head/tail regions and
+        # check that they propagate through the params to slabs
+        tail_solv = SLD(50.0)
+        head_solv = SLD(30.0)
+        inner_leaflet.head_solvent = head_solv
+        inner_leaflet.tail_solvent = tail_solv
+        tail_solv.real.setp(vary=True, bounds=(0, 100))
+
+        obj = compile_objective(objective_d2o)
+
+        vp = np.array(objective_d2o.varying_parameters())
+        logl, _ = obj.value_and_grad(vp)
+        assert_allclose(logl, objective_d2o.logl())
+        assert_allclose(obj.params_to_slabs(vp), s_d2o.slabs()[:, :-1])
+
+        tail_solv.real.value = 20.0
+        vp = np.array(objective_d2o.varying_parameters())
+        logl, _ = obj.value_and_grad(vp)
+        assert_allclose(obj.params_to_slabs(vp), s_d2o.slabs()[:, :-1])
+        assert_allclose(logl, objective_d2o.logl())
+        check_GenerativeOp_vs_Objective(objective_d2o, params_to_vary=(0, 2))
 
     def test_lipidleaflet_guest(self):
         b_h = 6.01e-4
@@ -357,11 +418,13 @@ class TestJAX:
 
         sio2_l = sio2(15, 3)
         film_l = film(200, 3)
+        film_l.vfsolv.value = 0.2
 
         sio2_l.thick.setp(vary=True, bounds=(0, 300))
         film_l.thick.setp(vary=True, bounds=(0, 300))
         film.real.setp(vary=True, bounds=(0, 3))
         hdmix.real.setp(vary=True, bounds=(0, 5))
+        d2o.real.setp(vary=True, bounds=(6.1, 6.36))
 
         back_rough = Parameter(3)
 
@@ -377,11 +440,78 @@ class TestJAX:
         global_objective = GlobalObjective([objective361, objective365])
 
         gco = compile_global_objective(global_objective)
+
+        d2o.real.value = 6.123
         x0 = np.array(global_objective.varying_parameters())
 
         v, g = gco.value_and_grad(x0)
-
         assert_allclose(v, global_objective.logl())
 
         grad = approx_derivative(global_objective.logl, x0, method="3-point")
         assert_allclose(g, grad)
+
+        check_GenerativeOp_vs_Objective(global_objective)
+
+
+def check_GenerativeOp_vs_Objective(objective, params_to_vary=None):
+    # test the pymc/pytensor op. Is the generative op developed from the
+    # JAX IR the same as Objective.generative
+    rng = np.random.default_rng(42)
+    if isinstance(objective, GlobalObjective):
+        co = compile_global_objective(objective)
+    else:
+        co = compile_objective(objective)
+
+    _model = to_pymc_model(objective)
+
+    # the deterministic
+    det = _model.named_vars["R_model"]
+
+    for _ in range(20):
+        if params_to_vary is None:
+            idx = rng.integers(
+                0, len(objective.varying_parameters()), size=None
+            )
+        else:
+            idx = rng.choice(params_to_vary, size=None)
+
+        p = objective.varying_parameters()[idx]
+        rval = p.bounds.rvs(size=1)[0]
+        p.value = rval
+
+        init_vals = np.array(objective.varying_parameters())
+        init_dct = {f"p{i}": v for i, v in enumerate(init_vals)}
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", category=UserWarning)
+            try:
+                assert_allclose(
+                    det.eval(init_dct), objective.generative(init_vals)
+                )
+            except AssertionError:
+                if isinstance(objective, GlobalObjective):
+                    pass
+                else:
+                    print(p)
+                    s = objective.model.structure
+                    print(
+                        "Are the slabs all close: ",
+                        np.allclose(
+                            co.params_to_slabs(init_vals), s.slabs()[:, :-1]
+                        ),
+                    )
+                    print(co.params_to_slabs(init_vals))
+                    print(s.slabs()[:, :-1])
+                    print(
+                        "Is the jax generative all close: ",
+                        np.allclose(
+                            co.generative(init_vals), objective.generative()
+                        ),
+                    )
+                    init_vals = np.array(objective.varying_parameters())
+                    init_dct = {f"p{i}": v for i, v in enumerate(init_vals)}
+                    print(
+                        np.allclose(
+                            det.eval(init_dct), objective.generative(init_vals)
+                        )
+                    )
+                raise
