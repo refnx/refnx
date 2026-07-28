@@ -917,7 +917,16 @@ class Objective(BaseObjective):
         finally:
             self.setp(saved_params)
 
-    def plot(self, pvals=None, samples=0, parameter=None, fig=None):
+    def plot(
+        self,
+        pvals=None,
+        samples=0,
+        parameter=None,
+        fig=None,
+        sigma=1.0,
+        v_offset=1.0,
+        color=("blue", "red"),
+    ):
         """
         Plot the data/model.
 
@@ -936,6 +945,15 @@ class Objective(BaseObjective):
         fig: Figure instance, optional
             If `fig` is not supplied then a new figure is created. Otherwise
             the graph is created on the current axes on the supplied figure.
+        sigma: float, optional
+            If you're plotting lots of samples, then this option displays an
+            uncertainty band, corresponding to the number of standard
+            deviations.
+        v_offset: float, optional
+            A multiplicative vertical offset for the plot. Useful if you're
+            plotting several datasets on the same graph.
+        color: tuple, optional
+            Two-tuple specifying colours for data and fit.
 
         Returns
         -------
@@ -943,6 +961,8 @@ class Objective(BaseObjective):
             `matplotlib` figure and axes objects.
 
         """
+        from scipy.stats import norm
+
         self.setp(pvals)
 
         if fig is None:
@@ -953,7 +973,21 @@ class Objective(BaseObjective):
         else:
             ax = fig.gca()
 
-        y, y_err, model = self._data_transform(model=self.generative())
+        def transform(y, y_err=None):
+            if self.transform is None:
+                if y_err is None:
+                    return y * v_offset, None
+                else:
+                    return y * v_offset, y_err * v_offset
+            else:
+                if y_err is None:
+                    return self.transform(self.data.x, y * v_offset, None)
+                else:
+                    return self.transform(
+                        self.data.x, y * v_offset, y_err * v_offset
+                    )
+
+        y, y_err = transform(self.data.y, self.data.y_err)
 
         # add the data (in a transformed fashion)
         if self.weighted:
@@ -961,7 +995,7 @@ class Objective(BaseObjective):
                 self.data.x,
                 y,
                 y_err,
-                color="blue",
+                color=color[0],
                 label=self.data.name,
                 marker="o",
                 ms=3,
@@ -969,18 +1003,30 @@ class Objective(BaseObjective):
                 elinewidth=2,
             )
         else:
-            ax.scatter(self.data.x, y, color="blue", s=3, label=self.data.name)
+            ax.scatter(
+                self.data.x, y, color=color[0], s=3, label=self.data.name
+            )
 
         if samples > 0:
             # Get a number of chains, chosen randomly, set the objective,
             # and plot the model.
+            _model_gen = []
             for curve in self._generate_generative_mcmc(ngen=samples):
-                y, y_err, model = self._data_transform(model=curve)
+                _model, _ = transform(curve)
+                _model_gen.append(_model)
 
-                ax.plot(self.data.x, model, color="k", alpha=0.01)
+            _model_arr = np.array(_model_gen)
+
+            p0 = 100 * norm.cdf(-sigma)
+            p1 = 100 * norm.cdf(sigma)
+            lb, ub = np.percentile(_model_arr, [p0, p1], axis=0)
+            ax.fill_between(self.data.x, lb, ub, color="black", alpha=0.4)
 
         # add the fit
-        generative_plot = ax.plot(self.data.x, model, color="red", zorder=20)
+        _model, _ = transform(self.generative())
+        generative_plot = ax.plot(
+            self.data.x, _model, color=color[1], zorder=20
+        )
 
         if parameter is None:
             return fig, ax
@@ -989,8 +1035,8 @@ class Objective(BaseObjective):
         def f(val):
             if parameter is not None:
                 parameter.value = float(val)
-            y, y_err, model = self._data_transform(model=self.generative())
-            generative_plot[0].set_data(self.data.x, model)
+            _model = transform(self.generative())
+            generative_plot[0].set_data(self.data.x, _model)
             fig.canvas.draw()
 
         import ipywidgets
@@ -1223,7 +1269,15 @@ class GlobalObjective(Objective):
 
         return logl
 
-    def plot(self, pvals=None, samples=0, parameter=None, fig=None):
+    def plot(
+        self,
+        pvals=None,
+        samples=0,
+        parameter=None,
+        fig=None,
+        sigma=1.0,
+        v_offsets=None,
+    ):
         """
         Plot the data/model for all the objectives in the GlobalObjective.
 
@@ -1242,6 +1296,12 @@ class GlobalObjective(Objective):
         fig: Figure instance, optional
             If `fig` is not supplied then a new figure is created. Otherwise
             the graph is created on the current axes on the supplied figure.
+        sigma: float, optional
+            If you're plotting lots of samples, then this option displays an
+            uncertainty band, corresponding to the number of standard deviations.
+        v_offset: float, optional
+            A multiplicative vertical offset for the plot. Useful if you're
+            plotting several datasets on the same graph.
 
         Returns
         -------
@@ -1249,6 +1309,7 @@ class GlobalObjective(Objective):
             `matplotlib` figure and axes objects.
 
         """
+        from scipy.stats import norm
 
         self.setp(pvals)
 
@@ -1262,49 +1323,83 @@ class GlobalObjective(Objective):
 
         generative_plots = []
 
+        def transform(t, x, y, y_err=None, v_offset=1.0):
+            if t is None:
+                if y_err is None:
+                    return y * v_offset, None
+                else:
+                    return y * v_offset, y_err * v_offset
+            else:
+                if y_err is None:
+                    return t(x, y * v_offset, None)
+                else:
+                    return t(x, y * v_offset, y_err * v_offset)
+
         if samples > 0:
-            saved_params = np.array(self.parameters)
+            if v_offsets is None:
+                v_offsets = [1.0] * len(self.objectives)
 
             # Get a number of chains, chosen randomly, set the objectives,
             # and plot the model.
-            for pvec in self.pgen(ngen=samples):
-                self.setp(pvec)
+            _model_gen = []
+            for curve in self._generate_generative_mcmc(ngen=samples):
+                _model_gen.append(curve)
+            _model_arr = np.array(_model_gen)
 
-                for objective in self.objectives:
-                    y, y_err, model = objective._data_transform(
-                        model=objective.generative()
-                    )
-                    ax.plot(objective.data.x, model, color="k", alpha=0.01)
+            start = 0
+            for i, objective in enumerate(self.objectives):
+                npts = objective.npoints
+                _model = _model_arr[:, start : start + npts]
+                for j, row_data in enumerate(_model):
+                    _model[j] = transform(
+                        objective.transform,
+                        objective.data.x,
+                        row_data,
+                        v_offset=v_offsets[i],
+                    )[0]
+                start += npts
 
-            # put back saved_params
-            self.setp(saved_params)
-
-        for objective in self.objectives:
-            # add the data (in a transformed fashion)
-            y, y_err, model = objective._data_transform(
-                model=objective.generative()
-            )
-
-            if objective.weighted:
-                ax.errorbar(
-                    objective.data.x,
-                    y,
-                    y_err,
-                    label=objective.data.name,
-                    ms=3,
-                    lw=0,
-                    elinewidth=2,
-                    marker="o",
+                p0 = 100 * norm.cdf(-sigma)
+                p1 = 100 * norm.cdf(sigma)
+                lb, ub = np.percentile(_model, [p0, p1], axis=0)
+                ax.fill_between(
+                    objective.data.x, lb, ub, color="black", alpha=0.4
                 )
-            else:
-                ax.scatter(objective.data.x, y, label=objective.data.name)
 
-            # add the fit
-            generative_plots.append(
-                ax.plot(objective.data.x, model, color="r", lw=1.5, zorder=20)[
-                    0
-                ]
-            )
+                # add the data (in a transformed fashion)
+                y, y_err = transform(
+                    objective.transform,
+                    objective.data.x,
+                    objective.data.y,
+                    objective.data.y_err,
+                    v_offset=v_offsets[i],
+                )
+                if objective.weighted:
+                    ax.errorbar(
+                        objective.data.x,
+                        y,
+                        y_err,
+                        label=objective.data.name,
+                        ms=3,
+                        lw=0,
+                        elinewidth=2,
+                        marker="o",
+                    )
+                else:
+                    ax.scatter(objective.data.x, y, label=objective.data.name)
+
+                # add the fit
+                _model, _ = transform(
+                    objective.transform,
+                    objective.data.x,
+                    objective.generative(),
+                    v_offset=v_offsets[i],
+                )
+                generative_plots.append(
+                    ax.plot(
+                        objective.data.x, _model, color="r", lw=1.5, zorder=20
+                    )[0]
+                )
 
         if parameter is None:
             return fig, ax
@@ -1314,18 +1409,19 @@ class GlobalObjective(Objective):
             if parameter is not None:
                 parameter.value = float(val)
             for i, objective in enumerate(self.objectives):
-                y, y_err, model = objective._data_transform(
-                    model=objective.generative()
+                _model, _ = transform(
+                    objective.transform,
+                    objective.data.x,
+                    objective.generative(),
+                    v_offset=v_offsets[i],
                 )
 
-                generative_plots[i].set_data(objective.data.x, model)
+                generative_plots[i].set_data(objective.data.x, _model)
             fig.canvas.draw()
 
         import ipywidgets
 
         return fig, ax, ipywidgets.interact(f, val=float(parameter))
-
-        return fig, ax
 
 
 class Transform:
