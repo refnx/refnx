@@ -923,7 +923,7 @@ class Objective(BaseObjective):
         samples=0,
         parameter=None,
         fig=None,
-        sigma_band=1.0,
+        sigma=1.0,
         v_offset=1.0,
     ):
         """
@@ -944,7 +944,7 @@ class Objective(BaseObjective):
         fig: Figure instance, optional
             If `fig` is not supplied then a new figure is created. Otherwise
             the graph is created on the current axes on the supplied figure.
-        sigma_band: float, optional
+        sigma: float, optional
             If you're plotting lots of samples, then this option displays an
             uncertainty band, corresponding to the number of standard deviations.
         v_offset: float, optional
@@ -1011,8 +1011,8 @@ class Objective(BaseObjective):
 
             _model_arr = np.array(_model_gen)
 
-            p0 = 100 * norm.cdf(-sigma_band)
-            p1 = 100 * norm.cdf(sigma_band)
+            p0 = 100 * norm.cdf(-sigma)
+            p1 = 100 * norm.cdf(sigma)
             lb, ub = np.percentile(_model_arr, [p0, p1], axis=0)
             ax.fill_between(self.data.x, lb, ub, color="black", alpha=0.4)
 
@@ -1267,7 +1267,7 @@ class GlobalObjective(Objective):
         samples=0,
         parameter=None,
         fig=None,
-        sigma_band=1.0,
+        sigma=1.0,
         v_offsets=None,
     ):
         """
@@ -1288,7 +1288,7 @@ class GlobalObjective(Objective):
         fig: Figure instance, optional
             If `fig` is not supplied then a new figure is created. Otherwise
             the graph is created on the current axes on the supplied figure.
-        sigma_band: float, optional
+        sigma: float, optional
             If you're plotting lots of samples, then this option displays an
             uncertainty band, corresponding to the number of standard deviations.
         v_offset: float, optional
@@ -1351,8 +1351,8 @@ class GlobalObjective(Objective):
                     )[0]
                 start += npts
 
-                p0 = 100 * norm.cdf(-sigma_band)
-                p1 = 100 * norm.cdf(sigma_band)
+                p0 = 100 * norm.cdf(-sigma)
+                p1 = 100 * norm.cdf(sigma)
                 lb, ub = np.percentile(_model, [p0, p1], axis=0)
                 ax.fill_between(
                     objective.data.x, lb, ub, color="black", alpha=0.4
