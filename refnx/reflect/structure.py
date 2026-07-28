@@ -743,7 +743,9 @@ class Structure(UserList):
         finally:
             parameters.pvals = saved_pars
 
-    def plot(self, pvals=None, samples=0, fig=None, align=0):
+    def plot(
+        self, pvals=None, samples=0, fig=None, align=0, sigma=1, color="red"
+    ):
         """
         Plot the structure.
 
@@ -767,6 +769,12 @@ class Structure(UserList):
             be aligned around lies in the middle of a Component. Python
             indexing is allowed, e.g. supplying -1 will align at the backing
             medium.
+        sigma : float, optional
+            If you're plotting lots of samples, then this option displays an
+            uncertainty band, corresponding to the number of standard
+            deviations.
+        color : str, optional
+            Colour of the sld profile.
 
         Returns
         -------
@@ -789,12 +797,30 @@ class Structure(UserList):
 
         if samples > 0:
             # Get a number of chains, chosen randomly, and plot the model.
+            zeds = []
+            # figure out where we should start and finish the SLD profile.
             for sld_profile in self._generate_sld_profile_mcmc(
                 samples=samples, align=align
             ):
-                ax.plot(*sld_profile, color="k", alpha=0.01)
+                zeds.append(sld_profile[0])
+            zeds = np.array(zeds)
+            min_zed = np.min(zeds)
+            max_zed = np.max(zeds)
+            # now re-generate all on the same zed scale
+            zed = np.linspace(min_zed, max_zed, num=1001)
+            slds = []
+            for sld_profile in self._generate_sld_profile_mcmc(
+                samples=samples, align=align, z=zed
+            ):
+                slds.append(sld_profile[1])
+            slds = np.array(slds)
 
-        ax.plot(*self.sld_profile(align=align), color="red", zorder=20)
+            p0 = 100 * norm.cdf(-sigma)
+            p1 = 100 * norm.cdf(sigma)
+            lb, ub = np.percentile(slds, [p0, p1], axis=0)
+            ax.fill_between(zed, lb, ub, color="k", alpha=0.2)
+
+        ax.plot(*self.sld_profile(align=align), color=color, zorder=20)
         ax.set_ylabel("SLD / 1e-6 $\\AA^{-2}$")
         ax.set_xlabel("z / $\\AA$")
 
@@ -802,7 +828,8 @@ class Structure(UserList):
 
     def to_orso(self):
         """
-        Creates an ORSO model language description of a Structure. Only works with Structures solely consisting of Slabs at the moment
+        Creates an ORSO model language description of a Structure.
+        Only works with Structures solely consisting of Slabs at the moment
 
         Returns
         -------

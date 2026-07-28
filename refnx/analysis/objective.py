@@ -946,7 +946,8 @@ class Objective(BaseObjective):
             the graph is created on the current axes on the supplied figure.
         sigma: float, optional
             If you're plotting lots of samples, then this option displays an
-            uncertainty band, corresponding to the number of standard deviations.
+            uncertainty band, corresponding to the number of standard
+            deviations.
         v_offset: float, optional
             A multiplicative vertical offset for the plot. Useful if you're
             plotting several datasets on the same graph.
