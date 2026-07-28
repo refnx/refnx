@@ -756,8 +756,8 @@ class Structure(UserList):
         pvals : np.ndarray, optional
             Numeric values for the Parameter's that are varying
         samples : number
-            If this structures constituent parameters have been sampled, how
-            many samples you wish to plot on the graph.
+            If samples > 0, the confidence intervals for the SLD profile are
+            plotted on the graph.
         fig : Figure instance, optional
             If `fig` is not supplied then a new figure is created. Otherwise
             the graph is created on the current axes on the supplied figure.
@@ -770,9 +770,8 @@ class Structure(UserList):
             indexing is allowed, e.g. supplying -1 will align at the backing
             medium.
         sigma : float, optional
-            If you're plotting lots of samples, then this option displays an
-            uncertainty band, corresponding to the number of standard
-            deviations.
+            The width of the confidence interval, in terms of
+            standard deviations.
         color : str, optional
             Colour of the sld profile.
 
@@ -796,7 +795,11 @@ class Structure(UserList):
             ax = fig.gca()
 
         if samples > 0:
-            # Get a number of chains, chosen randomly, and plot the model.
+            chain = getattr(params.varying_parameters()[0], "chain", None)
+            if chain is None:
+                raise RuntimeError("No sampling has been performed.")
+            samples = min(max(1000, chain.size), 1000)
+
             zeds = []
             # figure out where we should start and finish the SLD profile.
             for sld_profile in self._generate_sld_profile_mcmc(

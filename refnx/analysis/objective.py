@@ -940,7 +940,7 @@ class Objective(BaseObjective):
         if chain is None:
             raise RuntimeError("Objective has not been sampled")
 
-        samples = min(chain.size, 1000)
+        samples = min(max(chain.size, 1000), 1000)
 
         # Get a number of chains, chosen randomly, set the objective,
         # and get the generative
@@ -1045,8 +1045,6 @@ class Objective(BaseObjective):
             )
 
         if samples > 0:
-            # Get a number of chains, chosen randomly, set the objective,
-            # and plot the model.
             lb, ub = self.confidence_interval(sigma=sigma)
             lb, _ = transform(lb)
             ub, _ = transform(ub)
@@ -1318,8 +1316,7 @@ class GlobalObjective(Objective):
         pvals : np.ndarray, optional
             Numeric values for the Parameter's that are varying
         samples: number, optional
-            If the objective has been sampled, how many samples you wish to
-            plot on the graph.
+            If samples > 0 the confidence intervals are plotted on the graph.
         parameter: refnx.analysis.Parameter, optional
             Creates an interactive plot for the Parameter in Jupyter. Requires
             ipywidgets be installed. Use with %matplotlib notebook/qt.
@@ -1339,8 +1336,6 @@ class GlobalObjective(Objective):
             `matplotlib` figure and axes objects.
 
         """
-        from scipy.stats import norm
-
         self.setp(pvals)
 
         if fig is None:
@@ -1369,31 +1364,29 @@ class GlobalObjective(Objective):
             if v_offsets is None:
                 v_offsets = [1.0] * len(self.objectives)
 
-            # Get a number of chains, chosen randomly, set the objectives,
-            # and plot the model.
-            _model_gen = []
-            for curve in self._generate_generative_mcmc(ngen=samples):
-                _model_gen.append(curve)
-            _model_arr = np.array(_model_gen)
+            lb, ub = self.confidence_interval(sigma=sigma)
 
             start = 0
             for i, objective in enumerate(self.objectives):
                 npts = objective.npoints
-                _model = _model_arr[:, start : start + npts]
-                for j, row_data in enumerate(_model):
-                    _model[j] = transform(
-                        objective.transform,
-                        objective.data.x,
-                        row_data,
-                        v_offset=v_offsets[i],
-                    )[0]
+                _lb = lb[start : start + npts]
+                _ub = ub[start : start + npts]
+                _lb, _ = transform(
+                    objective.transform,
+                    objective.data.x,
+                    _lb,
+                    v_offset=v_offsets[i],
+                )
+                _ub, _ = transform(
+                    objective.transform,
+                    objective.data.x,
+                    _ub,
+                    v_offset=v_offsets[i],
+                )
                 start += npts
 
-                p0 = 100 * norm.cdf(-sigma)
-                p1 = 100 * norm.cdf(sigma)
-                lb, ub = np.percentile(_model, [p0, p1], axis=0)
                 ax.fill_between(
-                    objective.data.x, lb, ub, color="black", alpha=0.4
+                    objective.data.x, _lb, _ub, color="black", alpha=0.4
                 )
 
                 # add the data (in a transformed fashion)
