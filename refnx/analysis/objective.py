@@ -925,6 +925,7 @@ class Objective(BaseObjective):
         fig=None,
         sigma=1.0,
         v_offset=1.0,
+        color=("blue", "red"),
     ):
         """
         Plot the data/model.
@@ -951,6 +952,8 @@ class Objective(BaseObjective):
         v_offset: float, optional
             A multiplicative vertical offset for the plot. Useful if you're
             plotting several datasets on the same graph.
+        color: tuple, optional
+            Two-tuple specifying colours for data and fit.
 
         Returns
         -------
@@ -992,7 +995,7 @@ class Objective(BaseObjective):
                 self.data.x,
                 y,
                 y_err,
-                color="blue",
+                color=color[0],
                 label=self.data.name,
                 marker="o",
                 ms=3,
@@ -1000,7 +1003,9 @@ class Objective(BaseObjective):
                 elinewidth=2,
             )
         else:
-            ax.scatter(self.data.x, y, color="blue", s=3, label=self.data.name)
+            ax.scatter(
+                self.data.x, y, color=color[0], s=3, label=self.data.name
+            )
 
         if samples > 0:
             # Get a number of chains, chosen randomly, set the objective,
@@ -1019,7 +1024,9 @@ class Objective(BaseObjective):
 
         # add the fit
         _model, _ = transform(self.generative())
-        generative_plot = ax.plot(self.data.x, _model, color="red", zorder=20)
+        generative_plot = ax.plot(
+            self.data.x, _model, color=color[1], zorder=20
+        )
 
         if parameter is None:
             return fig, ax
