@@ -744,7 +744,13 @@ class Structure(UserList):
             parameters.pvals = saved_pars
 
     def plot(
-        self, pvals=None, samples=0, fig=None, align=0, sigma=1, color="red"
+        self,
+        pvals=None,
+        samples=False,
+        fig=None,
+        align=0,
+        sigma=1,
+        color="red",
     ):
         """
         Plot the structure.
@@ -755,8 +761,8 @@ class Structure(UserList):
         ----------
         pvals : np.ndarray, optional
             Numeric values for the Parameter's that are varying
-        samples : number
-            If samples > 0, the confidence intervals for the SLD profile are
+        samples : bool
+            If True the confidence intervals for the SLD profile are
             plotted on the graph.
         fig : Figure instance, optional
             If `fig` is not supplied then a new figure is created. Otherwise
@@ -794,7 +800,7 @@ class Structure(UserList):
         else:
             ax = fig.gca()
 
-        if samples > 0:
+        if bool(samples):
             chain = getattr(params.varying_parameters()[0], "chain", None)
             if chain is None:
                 raise RuntimeError("No sampling has been performed.")
