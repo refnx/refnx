@@ -917,6 +917,44 @@ class Objective(BaseObjective):
         finally:
             self.setp(saved_params)
 
+    def confidence_interval(self, sigma=1):
+        """
+        Confidence intervals on the generative model.
+
+        Parameters
+        ----------
+        sigma : float, optional
+            uncertainty band, corresponding to the number of standard
+            deviations.
+
+        Returns
+        -------
+        confidence_interval : tuple
+            The (lower, upper) confidence intervals of the generative
+            model.
+
+        """
+        from scipy.stats import norm
+
+        chain = getattr(self.varying_parameters()[0], "chain", None)
+        if chain is None:
+            raise RuntimeError("Objective has not been sampled")
+
+        samples = min(chain.size, 1000)
+
+        # Get a number of chains, chosen randomly, set the objective,
+        # and get the generative
+        _model_gen = []
+        for curve in self._generate_generative_mcmc(ngen=samples):
+            _model_gen.append(curve)
+
+        _model_arr = np.array(_model_gen)
+
+        p0 = 100 * norm.cdf(-sigma)
+        p1 = 100 * norm.cdf(sigma)
+        lb, ub = np.percentile(_model_arr, [p0, p1], axis=0)
+        return lb, ub
+
     def plot(
         self,
         pvals=None,
@@ -937,8 +975,7 @@ class Objective(BaseObjective):
         pvals : np.ndarray, optional
             Numeric values for the Parameter's that are varying
         samples: number
-            If the objective has been sampled, how many samples you wish to
-            plot on the graph.
+            If samples > 0 then confidence intervals are plotted.
         parameter: refnx.analysis.Parameter
             Creates an interactive plot for the Parameter in Jupyter. Requires
             ipywidgets be installed. Use with %matplotlib ipympl/qt.
@@ -1010,16 +1047,9 @@ class Objective(BaseObjective):
         if samples > 0:
             # Get a number of chains, chosen randomly, set the objective,
             # and plot the model.
-            _model_gen = []
-            for curve in self._generate_generative_mcmc(ngen=samples):
-                _model, _ = transform(curve)
-                _model_gen.append(_model)
-
-            _model_arr = np.array(_model_gen)
-
-            p0 = 100 * norm.cdf(-sigma)
-            p1 = 100 * norm.cdf(sigma)
-            lb, ub = np.percentile(_model_arr, [p0, p1], axis=0)
+            lb, ub = self.confidence_interval(sigma=sigma)
+            lb, _ = transform(lb)
+            ub, _ = transform(ub)
             ax.fill_between(self.data.x, lb, ub, color="black", alpha=0.4)
 
         # add the fit
