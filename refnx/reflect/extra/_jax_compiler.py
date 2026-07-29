@@ -61,6 +61,53 @@ from refnx.reflect.extra._jax_lipid import (
     _lipid_leaflet_guest_jax_slabs,
 )
 
+# ---------------------------------------------------------------------------
+# Forward-model kernel selection
+# ---------------------------------------------------------------------------
+# The compiled logl/generative/model functions below are differentiated with
+# jax.grad/jax.value_and_grad (reverse-mode) -- abeles_ffi supports that via
+# a custom VJP that's piggybacked onto jabeles's ordinary autodiff, and its
+# forward pass runs the hand-vectorised C kernel instead of pure JAX. Only
+# CompiledModel.jacfwd needs forward-mode AD, which abeles_ffi does not
+# implement (no jvp rule) -- that path always uses jabeles directly,
+# regardless of which reflect_fn is selected here.
+_reflect_fn_cache = None
+
+
+def _get_reflect_fn():
+    """
+    Return the fastest reflectivity kernel available for reverse-mode AD.
+
+    Prefers ``abeles_ffi`` (the C `abeles` kernel wrapped via jax's FFI,
+    see ``_jax_abeles_ffi.py``). Falls back to the pure-JAX ``abeles_jax``
+    if the FFI extension wasn't built -- e.g. refnx was built in an
+    environment where jax wasn't importable. Numerically identical either
+    way; only forward-pass speed differs.
+    """
+    global _reflect_fn_cache
+    if _reflect_fn_cache is not None:
+        return _reflect_fn_cache
+
+    from refnx.reflect._jax_reflect import abeles_jax
+
+    try:
+        import refnx.reflect._abeles_ffi  # noqa: F401  (build-time probe)
+        from refnx.reflect._jax_abeles_ffi import abeles_ffi
+
+        _reflect_fn_cache = abeles_ffi
+    except ImportError:
+        warnings.warn(
+            "The _abeles_ffi extension is not available (refnx was likely "
+            "built without jax importable) -- falling back to the pure-JAX "
+            "abeles_jax kernel. Compiled objectives/models remain correct, "
+            "but the forward pass will be slower.",
+            category=RuntimeWarning,
+        )
+        _reflect_fn_cache = abeles_jax
+
+    return _reflect_fn_cache
+
+
 # monkey patch known Component classes
 _jax_slabs_methods = {
     LipidLeaflet: _lipid_leaflet_jax_slabs,
@@ -321,6 +368,7 @@ def _make_generative(
     scale_node,
     bkg_node,
     quad_order: int = 17,
+    reflect_fn: Optional[Callable] = None,
 ) -> Callable:
     """
     Build a pure JAX function computing the forward model ``free -> R(q)``.
@@ -342,17 +390,19 @@ def _make_generative(
         Compiled scale and background.
     quad_order : int
         Gauss-Legendre order for smearing.
+    reflect_fn : Callable, optional
+        Forward-model kernel to use, e.g. ``abeles_ffi`` or ``jabeles``.
+        Defaults to ``_get_reflect_fn()`` (prefers ``abeles_ffi``).
 
     Returns
     -------
     generative : Callable[[jnp.ndarray], jnp.ndarray]
         Pure JAX function ``free -> R(q)`` (shape ``(N,)``).
     """
-    from refnx.reflect._jax_reflect import (
-        jabeles,
-        jax_smeared_kernel_pointwise,
-    )
+    from refnx.reflect._jax_reflect import jax_smeared_kernel_pointwise
 
+    if reflect_fn is None:
+        reflect_fn = _get_reflect_fn()
     use_smearing = q_err is not None
 
     def generative(free: jnp.ndarray) -> jnp.ndarray:
@@ -361,10 +411,16 @@ def _make_generative(
         bkg = _eval_node(bkg_node, free)
         if use_smearing:
             return jax_smeared_kernel_pointwise(
-                q, layers, q_err, quad_order=quad_order, scale=scale, bkg=bkg
+                q,
+                layers,
+                q_err,
+                quad_order=quad_order,
+                scale=scale,
+                bkg=bkg,
+                reflect_fn=reflect_fn,
             )
         else:
-            return jabeles(q, layers, scale=scale, bkg=bkg)
+            return reflect_fn(q, layers, scale=scale, bkg=bkg)
 
     return generative
 
@@ -557,33 +613,59 @@ def compile_model(reflect_model) -> CompiledModel:
         else _ConstNode(float(reflect_model.bkg))
     )
 
-    def model_fn(
+    reflect_fn = _get_reflect_fn()
+
+    def _forward(
         free: jnp.ndarray,
         q: jnp.ndarray,
-        q_err: Optional[jnp.ndarray] = None,
+        q_err: Optional[jnp.ndarray],
+        kernel: Callable,
     ) -> jnp.ndarray:
         layers = params_to_slabs_fn(free)
         scale = _eval_node(scale_node, free)
         bkg = _eval_node(bkg_node, free)
         if q_err is not None:
-            r = jax_smeared_kernel_pointwise(
+            return jax_smeared_kernel_pointwise(
                 q,
                 layers,
                 q_err,
                 scale=scale,
                 bkg=bkg,
                 quad_order=reflect_model.quad_order,
+                reflect_fn=kernel,
             )
-            return r
         else:
-            return jabeles(q, layers, scale=scale, bkg=bkg)
+            return kernel(q, layers, scale=scale, bkg=bkg)
+
+    def model_fn(
+        free: jnp.ndarray,
+        q: jnp.ndarray,
+        q_err: Optional[jnp.ndarray] = None,
+    ) -> jnp.ndarray:
+        return _forward(free, q, q_err, reflect_fn)
+
+    def model_fn_jacfwd(
+        free: jnp.ndarray,
+        q: jnp.ndarray,
+        q_err: Optional[jnp.ndarray] = None,
+    ) -> jnp.ndarray:
+        # jax.jacfwd needs a forward-mode (jvp) rule. abeles_ffi only
+        # implements reverse-mode (vjp), so the Jacobian is always built
+        # from the pure-JAX jabeles kernel, independent of which reflect_fn
+        # model_fn itself is using.
+        return _forward(free, q, q_err, jabeles)
 
     def setp(x: np.ndarray) -> None:
-        reflect_model.setp(np.asarray(x))
+        # ReflectModel has no setp of its own; push values into the same
+        # var_params list (and order) used to build x0/param_names above --
+        # mirrors what Objective.setp does for the varying-parameters case.
+        x = np.asarray(x)
+        for param, value in zip(var_params, x):
+            param.value = value
 
     # jacfwd differentiates w.r.t. the first argument (free) only;
     # q and q_err are treated as non-differentiated inputs.
-    jacfwd_fn = jax.jacfwd(model_fn)
+    jacfwd_fn = jax.jacfwd(model_fn_jacfwd)
 
     return CompiledModel(
         model=jax.jit(model_fn),
@@ -647,7 +729,10 @@ class CompiledObjective:
 
 
 def _compile_single(
-    objective, compiler: _ConstraintCompiler, quad_order: int = 17
+    objective,
+    compiler: _ConstraintCompiler,
+    quad_order: int = 17,
+    reflect_fn: Optional[Callable] = None,
 ) -> tuple:
     """
     Compile one ``Objective`` into raw (un-JIT-ted) JAX functions.
@@ -664,6 +749,8 @@ def _compile_single(
         Already constructed with the correct ``free_index``.
     quad_order : int
         Gauss-Legendre quadrature order for resolution smearing.
+    reflect_fn : Callable, optional
+        Forward-model kernel passed through to ``_make_generative``.
 
     Returns
     -------
@@ -740,7 +827,13 @@ def _compile_single(
     # Build the generative model first — it is the shared forward model.
     # ------------------------------------------------------------------
     generative_raw = _make_generative(
-        params_to_slabs_fn, q, dqvals, scale_node, bkg_node, _quad_order
+        params_to_slabs_fn,
+        q,
+        dqvals,
+        scale_node,
+        bkg_node,
+        _quad_order,
+        reflect_fn=reflect_fn,
     )
 
     # ------------------------------------------------------------------
@@ -799,7 +892,9 @@ def _compile_single(
     return logl_raw, generative_raw, params_to_slabs_fn, extra_potential
 
 
-def compile_objective(objective) -> CompiledObjective:
+def compile_objective(
+    objective, reflect_fn: Optional[Callable] = None
+) -> CompiledObjective:
     """
     Compile a refnx ``Objective`` into a pure JAX log-likelihood.
 
@@ -815,6 +910,14 @@ def compile_objective(objective) -> CompiledObjective:
         components (e.g. ``Spline``) will have their slab values baked in as
         constants; AD will not flow through them unless they implement
         ``_jax_slabs(compiler)``.
+    reflect_fn : Callable, optional
+        Forward-model kernel to use for ``generative``/``logl`` (e.g.
+        ``abeles_ffi`` or ``jabeles``). Defaults to ``_get_reflect_fn()``
+        (prefers ``abeles_ffi``). Pass ``jabeles`` explicitly if the
+        result will be consumed by a fused ``jax.value_and_grad`` call
+        elsewhere (e.g. ``to_pymc_model(..., _dist="potential")``), where
+        ``abeles_ffi``'s custom VJP nets out slower than ``jabeles``
+        directly -- see ``_pymc.py``.
 
     Returns
     -------
@@ -858,7 +961,7 @@ def compile_objective(objective) -> CompiledObjective:
     # 2–4.  Compile structure, scale/bkg/lnsigma, and freeze data arrays
     # ------------------------------------------------------------------
     logl_raw, generative_raw, params_to_slabs_fn, extra_potential = (
-        _compile_single(objective, compiler)
+        _compile_single(objective, compiler, reflect_fn=reflect_fn)
     )
 
     logl_jit = jax.jit(logl_raw)
@@ -902,7 +1005,9 @@ def compile_objective(objective) -> CompiledObjective:
     )
 
 
-def compile_global_objective(global_objective) -> CompiledObjective:
+def compile_global_objective(
+    global_objective, reflect_fn: Optional[Callable] = None
+) -> CompiledObjective:
     """
     Compile a refnx ``GlobalObjective`` into a pure JAX log-likelihood.
 
@@ -921,6 +1026,9 @@ def compile_global_objective(global_objective) -> CompiledObjective:
     Parameters
     ----------
     global_objective : refnx.analysis.GlobalObjective
+    reflect_fn : Callable, optional
+        Forward-model kernel used for every child objective -- see
+        ``compile_objective``.
 
     Returns
     -------
@@ -978,7 +1086,9 @@ def compile_global_objective(global_objective) -> CompiledObjective:
     generative_fns: List[Callable] = []
 
     for obj, lam in zip(global_objective.objectives, global_objective.lambdas):
-        logl_i, generative_i, _, extra_i = _compile_single(obj, compiler)
+        logl_i, generative_i, _, extra_i = _compile_single(
+            obj, compiler, reflect_fn=reflect_fn
+        )
         weighted_logl_fns.append((float(lam), logl_i))
         if extra_i is not None:
             extra_potential_fns.append((float(lam), extra_i))

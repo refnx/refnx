@@ -144,6 +144,9 @@ def available_backends():
         # importing jax would be a ModuleNotFoundError
         pass
 
+    except ImportError:
+        pass
+
     return tuple(backends)
 
 
@@ -263,14 +266,14 @@ def get_reflect_backend(backend="c"):
             warnings.warn("Can't use the cython_parratt backend")
             return get_reflect_backend("c_parratt")
 
-    # elif backend == "jax":
-    #     try:
-    #         from refnx.reflect import _jax_reflect
-    #
-    #         return _jax_reflect.abeles_jax
-    #     except ImportError:
-    #         warnings.warn("Can't use the jax abeles backend")
-    #         return get_reflect_backend("c")
+    elif backend == "jax":
+        try:
+            from refnx.reflect import _jax_reflect
+
+            return _jax_reflect.abeles_jax
+        except ImportError:
+            warnings.warn("Can't use the jax abeles backend")
+            return get_reflect_backend("c")
 
     elif backend == "python":
         warnings.warn("Using the SLOW reflectivity calculation.")
