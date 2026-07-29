@@ -98,6 +98,7 @@ skip = "cp38-* cp39-* cp310-*"
 test-requires = ["pytest", "periodictable"]
 test-command = "pytest --pyargs refnx.reflect.tests.test_reflect"
 build = "cp311-*"
+before-build = "pip install jax"
 
 [tool.cibuildwheel.macos]
 archs = ["x86_64", "arm64"]
@@ -111,6 +112,5 @@ musllinux-aarch64-image = "musllinux_1_2"
 
 [tool.cibuildwheel.windows]
 archs = ["AMD64"]
-before-build = "pip install delvewheel"
 repair-wheel-command = "delvewheel repair -w {dest_dir} {wheel}"
 config-settings = { "setup-args" = ["--vsenv"] }
