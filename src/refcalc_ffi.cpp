@@ -75,7 +75,8 @@ XLA_FFI_DEFINE_HANDLER_SYMBOL(Abeles_JAX_FFI, AbelesImpl,
  * artefact, whether that's the build directory (editable install) or the
  * installed package directory (regular install). The module itself exposes
  * no Python-callable functionality; `Abeles_JAX_FFI` above is loaded out of
- * this same shared object via ctypes at runtime (see _abeles_jax_ffi_wrapper.py).
+ * this same shared object via ctypes at runtime (see
+ * _abeles_jax_ffi_wrapper.py).
  */
 static struct PyModuleDef _abeles_ffi_moduledef = {
     PyModuleDef_HEAD_INIT, "_abeles_jax_ffi", nullptr, -1, nullptr,
