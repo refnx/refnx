@@ -29,12 +29,18 @@ Notes
 same `(q, layers, scale=1.0, bkg=0.0)` signature, same numerical result. The
 forward pass runs the hand-vectorised C kernel via jax's FFI mechanism; the
 backward pass (`jax.grad` / `jax.value_and_grad`) is piggybacked onto
-`jabeles`'s ordinary jax autodiff, so no gradient math is hand-derived here.
+`jabeles`'s ordinary jax autodiff via a `jax.custom_vjp` rule, so no gradient
+math is hand-derived here.
 
 This only supports reverse-mode AD (grad/value_and_grad). It does *not*
-currently support jax.jacfwd, jax.vmap, or forward-mode jvp -- calling those
-on `abeles_jax_ffi` will raise a NotImplementedError from the underlying
-VJPHiPrimitive. Use `abeles_jax` from `_jax_reflect.py` for those cases.
+currently support jax.jacfwd or forward-mode jvp -- jax.custom_vjp functions
+raise a TypeError under forward-mode AD. jax.vmap also isn't supported --
+jax.ffi.ffi_call raises a NotImplementedError unless a vmap_method is
+specified, and that's deliberately left unset here: passing e.g.
+vmap_method="broadcast_all" runs without error but silently returns wrong
+results for this FFI target, since the packed coefP layout has no batch
+dimension the C kernel understands. Use `abeles_jax` from `_jax_reflect.py`
+for jacfwd/vmap.
 
 Requires `jax_enable_x64`:
 
@@ -46,7 +52,6 @@ import ctypes
 
 import jax
 import jax.numpy as jnp
-from jax.experimental.hijax import VJPHiPrimitive
 
 from refnx.reflect._jax_reflect import jabeles
 
@@ -101,32 +106,32 @@ def _pack_coefs(layers, scale, bkg):
     return head
 
 
-class _AbelesFFI(VJPHiPrimitive):
-    def __init__(self, layers_aval, scale_aval, bkg_aval, q_aval, out_aval):
-        self.in_avals = (layers_aval, scale_aval, bkg_aval, q_aval)
-        self.out_aval = out_aval
-        self.params = {}
-        super().__init__()
+@jax.custom_vjp
+def _abeles_jax_ffi_core(layers, scale, bkg, q):
+    _register()
+    coefP = _pack_coefs(layers, scale, bkg)
+    out_type = jax.ShapeDtypeStruct(q.shape, jnp.float64)
+    call = jax.ffi.ffi_call(_TARGET_NAME, out_type)
+    return call(coefP, q)
 
-    def expand(self, layers, scale, bkg, q):
-        _register()
-        coefP = _pack_coefs(layers, scale, bkg)
-        call = jax.ffi.ffi_call(_TARGET_NAME, self.out_aval)
-        return call(coefP, q)
 
-    def vjp_fwd(self, nzs_in, layers, scale, bkg, q):
-        y = self.expand(layers, scale, bkg, q)
-        return y, (layers, scale, bkg, q)
+def _abeles_jax_ffi_fwd(layers, scale, bkg, q):
+    y = _abeles_jax_ffi_core(layers, scale, bkg, q)
+    return y, (layers, scale, bkg, q)
 
-    def vjp_bwd_retval(self, res, ct):
-        layers, scale, bkg, q = res
 
-        def f(l, s, b):
-            return jabeles(q, l, s, b)
+def _abeles_jax_ffi_bwd(res, ct):
+    layers, scale, bkg, q = res
 
-        _, vjp_fn = jax.vjp(f, layers, scale, bkg)
-        d_layers, d_scale, d_bkg = vjp_fn(ct)
-        return (d_layers, d_scale, d_bkg, None)
+    def f(l, s, b):
+        return jabeles(q, l, s, b)
+
+    _, vjp_fn = jax.vjp(f, layers, scale, bkg)
+    d_layers, d_scale, d_bkg = vjp_fn(ct)
+    return (d_layers, d_scale, d_bkg, None)
+
+
+_abeles_jax_ffi_core.defvjp(_abeles_jax_ffi_fwd, _abeles_jax_ffi_bwd)
 
 
 def abeles_jax_ffi(q, layers, scale=1.0, bkg=0.0, threads=1):
@@ -159,13 +164,5 @@ def abeles_jax_ffi(q, layers, scale=1.0, bkg=0.0, threads=1):
     scale = jnp.asarray(scale, dtype=jnp.float64)
     bkg = jnp.asarray(bkg, dtype=jnp.float64)
 
-    out_aval = jax.core.ShapedArray(flatq.shape, jnp.float64)
-    prim = _AbelesFFI(
-        jax.typeof(layers),
-        jax.typeof(scale),
-        jax.typeof(bkg),
-        jax.typeof(flatq),
-        out_aval,
-    )
-    r = prim(layers, scale, bkg, flatq)
+    r = _abeles_jax_ffi_core(layers, scale, bkg, flatq)
     return jnp.reshape(r, q.shape)

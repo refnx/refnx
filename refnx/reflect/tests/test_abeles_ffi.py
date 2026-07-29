@@ -155,12 +155,13 @@ class TestAbelesFFI:
             assert_allclose(np.asarray(a), np.asarray(b), rtol=1e-8)
 
     def test_jacfwd_not_implemented(self, q):
-        # forward-mode AD is not implemented (no jvp rule) -- this should
-        # fail loudly rather than silently give a wrong answer.
+        # forward-mode AD is not implemented -- jax.custom_vjp functions
+        # raise TypeError under jacfwd/jvp, rather than silently giving a
+        # wrong answer.
         from refnx.reflect._abeles_jax_ffi_wrapper import abeles_jax_ffi
 
         layers = jnp.asarray(LAYER_STACKS["1-layer"], dtype=jnp.float64)
-        with pytest.raises(NotImplementedError):
+        with pytest.raises(TypeError):
             jax.jacfwd(lambda l: abeles_jax_ffi(q, l, 1.0, 0.0))(layers)
 
     def test_vmap_not_implemented(self, q):
