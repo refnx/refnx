@@ -101,7 +101,7 @@ build = "cp311-*"
 build-frontend = "build"
 before-build = "pip install jax"
 # so jax gets picked up
-config-settings = "--no-isolation"
+config-settings = ["--no-isolation"]
 
 [tool.cibuildwheel.macos]
 archs = ["x86_64", "arm64"]
