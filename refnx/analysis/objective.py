@@ -1358,10 +1358,10 @@ class GlobalObjective(Objective):
                 else:
                     return t(x, y * v_offset, y_err * v_offset)
 
-        if bool(samples):
-            if v_offsets is None:
-                v_offsets = [1.0] * len(self.objectives)
+        if v_offsets is None:
+            v_offsets = [1.0] * len(self.objectives)
 
+        if bool(samples):
             lb, ub = self.confidence_interval(sigma=sigma)
 
             start = 0
@@ -1387,40 +1387,41 @@ class GlobalObjective(Objective):
                     objective.data.x, _lb, _ub, color="black", alpha=0.4
                 )
 
-                # add the data (in a transformed fashion)
-                y, y_err = transform(
-                    objective.transform,
+        # add the fit and data
+        for i, objective in enumerate(self.objectives):
+            # add the data (in a transformed fashion)
+            y, y_err = transform(
+                objective.transform,
+                objective.data.x,
+                objective.data.y,
+                objective.data.y_err,
+                v_offset=v_offsets[i],
+            )
+            if objective.weighted:
+                ax.errorbar(
                     objective.data.x,
-                    objective.data.y,
-                    objective.data.y_err,
-                    v_offset=v_offsets[i],
+                    y,
+                    y_err,
+                    label=objective.data.name,
+                    ms=3,
+                    lw=0,
+                    elinewidth=2,
+                    marker="o",
                 )
-                if objective.weighted:
-                    ax.errorbar(
-                        objective.data.x,
-                        y,
-                        y_err,
-                        label=objective.data.name,
-                        ms=3,
-                        lw=0,
-                        elinewidth=2,
-                        marker="o",
-                    )
-                else:
-                    ax.scatter(objective.data.x, y, label=objective.data.name)
+            else:
+                ax.scatter(objective.data.x, y, label=objective.data.name)
 
-                # add the fit
-                _model, _ = transform(
-                    objective.transform,
-                    objective.data.x,
-                    objective.generative(),
-                    v_offset=v_offsets[i],
-                )
-                generative_plots.append(
-                    ax.plot(
-                        objective.data.x, _model, color="r", lw=1.5, zorder=20
-                    )[0]
-                )
+            _model, _ = transform(
+                objective.transform,
+                objective.data.x,
+                objective.generative(),
+                v_offset=v_offsets[i],
+            )
+            generative_plots.append(
+                ax.plot(
+                    objective.data.x, _model, color="r", lw=1.5, zorder=20
+                )[0]
+            )
 
         if parameter is None:
             return fig, ax

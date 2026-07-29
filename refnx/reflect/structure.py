@@ -827,10 +827,15 @@ class Structure(UserList):
             p0 = 100 * norm.cdf(-sigma)
             p1 = 100 * norm.cdf(sigma)
             lb, ub = np.percentile(slds, [p0, p1], axis=0)
-            ax.fill_between(zed, lb, ub, color="k", alpha=0.2)
+            ax.fill_between(zed, lb, ub, color="k", alpha=0.4)
 
-        ax.plot(*self.sld_profile(align=align), color=color, zorder=20)
-        ax.set_ylabel("SLD / 1e-6 $\\AA^{-2}$")
+        ax.plot(
+            *self.sld_profile(align=align),
+            color=color,
+            zorder=20,
+            label=self.name,
+        )
+        ax.set_ylabel("$SLD / 10^{-6} \\AA^{-2}$")
         ax.set_xlabel("z / $\\AA$")
 
         return fig, ax
