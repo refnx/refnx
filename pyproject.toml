@@ -99,6 +99,8 @@ test-requires = ["pytest", "periodictable"]
 test-command = "pytest --pyargs refnx.reflect.tests.test_reflect"
 build = "cp311-*"
 before-build = "pip install jax"
+# so jax gets picked up
+config-settings = "--no-isolation"
 
 [tool.cibuildwheel.macos]
 archs = ["x86_64", "arm64"]
