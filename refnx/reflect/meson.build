@@ -6,6 +6,7 @@ py3.install_sources([
   '_functional_form.py',
   '_interactive_modeller.py',
   '_jax_reflect.py',
+  '_abeles_jax_ffi_wrapper.py',
   '_lipid.py',
   '_numba_reflect.py',
   '_polarised_reflect_model.py',
@@ -69,6 +70,40 @@ if omp_dep.found()
       subdir: 'refnx/reflect',
       limited_api: '3.11'
     )
+endif
+
+
+# Optional: XLA FFI target wrapping the C `abeles` kernel for jax, so it can
+# be called as a fast forward pass with gradients piggybacked onto jabeles
+# (see refnx/reflect/_abeles_jax_ffi_wrapper.py). Only built if jax is importable in
+# the build environment -- absent jax this is silently skipped, same pattern
+# as the omp_dep-gated _cyreflect target above.
+jax_ffi_check = run_command(
+  py3, ['-c', 'import jax.ffi, sys; sys.stdout.write(jax.ffi.include_dir())'],
+  check: false,
+)
+if jax_ffi_check.returncode() == 0
+  jax_ffi_incdir = include_directories(jax_ffi_check.stdout().strip())
+
+  abeles_ffi_srcs = ['../../src/refcalc_ffi.cpp']
+  if is_windows and not is_mingw
+    abeles_ffi_srcs += '../../src/refcalc.cpp'
+  else
+    abeles_ffi_srcs += '../../src/refcalc.c'
+  endif
+
+  py3.extension_module(
+    '_abeles_jax_ffi',
+    abeles_ffi_srcs,
+    install: true,
+    include_directories: [jax_ffi_incdir, '../../src'],
+    subdir: 'refnx/reflect',
+    limited_api: '3.11',
+    cpp_args: safer_args,
+    c_args: safer_args,
+  )
+else
+  warning('jax not found at build time -- skipping abeles_jax_ffi target')
 endif
 
 

@@ -119,11 +119,12 @@ def jax_smeared_kernel_pointwise(
     scale: float | jnp.ndarray = 1.0,
     bkg: float | jnp.ndarray = 0.0,
     quad_order: int = 17,
+    reflect_fn=None,
 ) -> jnp.ndarray:
     """
     Resolution-smeared reflectivity using Gauss-Legendre quadrature.
     Fully JAX-traceable — gradients flow through ``layers``, ``scale``,
-    and ``bkg``.
+    and ``bkg`` (subject to whatever ``reflect_fn`` supports).
 
     This replaces ``jax_smeared_kernel_pointwise``, which uses numpy
     internally and is therefore not differentiable.  The maths are
@@ -138,10 +139,18 @@ def jax_smeared_kernel_pointwise(
     dqvals : (N,) jnp.ndarray
         Per-point dQ resolution
     scale, bkg :
-        Passed directly to ``jabeles``.
+        Applied to the smeared result; not passed to ``reflect_fn``.
     quad_order : int
         Number of Gauss-Legendre nodes.  17 matches the default used by
         ``jax_smeared_kernel_pointwise`` and ``ReflectModel``.
+    reflect_fn : Callable[[q, layers], r], optional
+        The unsmeared forward-model kernel evaluated at each quadrature
+        point, called as ``reflect_fn(qvals_for_res, w)`` (scale=1, bkg=0
+        applied afterwards). Defaults to ``abeles_jax``. Pass
+        ``abeles_jax_ffi`` (from ``_abeles_jax_ffi_wrapper.py``) for a faster forward
+        pass under reverse-mode AD; ``abeles_jax`` must be used if this
+        function will be differentiated with ``jax.jacfwd``/forward-mode,
+        since ``abeles_jax_ffi`` does not implement a jvp rule.
 
     Returns
     -------
@@ -178,7 +187,8 @@ def jax_smeared_kernel_pointwise(
     vb = vb[:, jnp.newaxis]
 
     qvals_for_res = (jnp.atleast_2d(abscissa) * (vb - va) + vb + va) / 2.0
-    smeared_rvals = abeles_jax(qvals_for_res, w)
+    _reflect_fn = reflect_fn if reflect_fn is not None else abeles_jax
+    smeared_rvals = _reflect_fn(qvals_for_res, w)
 
     smeared_rvals = jnp.reshape(smeared_rvals, (qvals.size, abscissa.size))
 

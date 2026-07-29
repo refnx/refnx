@@ -748,3 +748,7 @@ in 0.1.13.
 - Fixed a bug in the jax operation of LipidLeaflet if the solvent SLD was varying.
 - Improved Objective.plot when displaying 1/2/3 sigma confidence bands.
 - Plotting of confidence bands on SLD profiles.
+
+0.1.67
+------
+- _abeles_jax_ffi extension for faster pymc sampling.

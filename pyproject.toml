@@ -98,6 +98,12 @@ skip = "cp38-* cp39-* cp310-*"
 test-requires = ["pytest", "periodictable"]
 test-command = "pytest --pyargs refnx.reflect.tests.test_reflect"
 build = "cp311-*"
+before-build = "pip install jax meson-python meson cython wheel 'numpy>=2.0.0rc1' ninja"
+# --no-isolation so jax is visible to the build backend -- but that also
+# means build no longer auto-installs [build-system] requires into its own
+# isolated env, so before-build must install those too (kept in sync with
+# [build-system] requires above).
+build-frontend = { name = "build", args = ["--no-isolation"] }
 
 [tool.cibuildwheel.macos]
 archs = ["x86_64", "arm64"]
@@ -111,6 +117,5 @@ musllinux-aarch64-image = "musllinux_1_2"
 
 [tool.cibuildwheel.windows]
 archs = ["AMD64"]
-before-build = "pip install delvewheel"
 repair-wheel-command = "delvewheel repair -w {dest_dir} {wheel}"
 config-settings = { "setup-args" = ["--vsenv"] }

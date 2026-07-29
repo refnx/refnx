@@ -26,10 +26,10 @@ def to_pymc_model(objective, _dist=None):
         The Objective function to convert into a pymc model.
 
     _dist : {None, str}
-        - 'normal' : uses ``pymc.NormalDist``, with observed y data on
+        - None / 'normal' : uses ``pymc.NormalDist``, with observed y data on
             Objective.generative
 
-        - None / 'potential' : uses ``pymc.Potential`` on Objective.logl
+        - 'potential' : uses ``pymc.Potential`` on Objective.logl
 
         - 'custom' : uses ``pymc.CustomDist`` on Objective.logl
 
@@ -51,7 +51,15 @@ def to_pymc_model(objective, _dist=None):
         on Parameters) then it's inadvisable to use anything but 'potential'.
 
         In benchmarking 'normal' seems to sample the fastest, but
-        'potential' might be the most robust.
+        'potential' might be the most robust. This isn't a coincidence:
+        None/'normal' evaluates the forward model and its gradient as two
+        separate calls (``_GenerativeOp``/``_GenerativeVJPOp``), where the
+        fast FFI-backed ``abeles_jax_ffi`` kernel is used automatically.
+        'potential'/'custom' fuse value and gradient into a single
+        ``jax.value_and_grad`` call (``_LogLikeValueGradOp``), where
+        ``abeles_jax_ffi``'s gradient rule ends up re-doing the pure-JAX
+        forward pass anyway -- so those two use the plain ``jabeles``
+        kernel instead, chosen automatically based on ``_dist``.
 
     Returns
     -------
@@ -68,12 +76,28 @@ def to_pymc_model(objective, _dist=None):
     pars = objective.varying_parameters()
     wrapped_pars = []
 
+    # 'potential'/'custom' (_LogLikeValueGradOp) fuse value+grad into a
+    # single jax.value_and_grad call, where abeles_jax_ffi's custom VJP has to
+    # rebuild jabeles's own forward pass to get the gradient on top of its
+    # own separately-paid-for C forward pass -- net slower than jabeles
+    # directly there. 'normal'/None (_GenerativeOp/_GenerativeVJPOp) split
+    # the forward and backward calls, where abeles_jax_ffi's forward speedup is
+    # real and uncompromised, so that path is left on compile_objective's
+    # own default (abeles_jax_ffi-preferring) reflect_fn.
+    reflect_fn = None
+    if _dist in ("potential", "custom"):
+        from refnx.reflect._jax_reflect import jabeles
+
+        reflect_fn = jabeles
+
     with warnings.catch_warnings():
         # raise an error if any Objective has logp_extra
         warnings.simplefilter("error", category=RuntimeWarning)
 
         if isinstance(objective, GlobalObjective):
-            compiled_objective = compile_global_objective(objective)
+            compiled_objective = compile_global_objective(
+                objective, reflect_fn=reflect_fn
+            )
             data = []
             y_err = []
             for _o in objective.objectives:
@@ -82,7 +106,9 @@ def to_pymc_model(objective, _dist=None):
             data = np.concat(data, axis=0)
             y_err = np.concat(y_err, axis=0)
         else:
-            compiled_objective = compile_objective(objective)
+            compiled_objective = compile_objective(
+                objective, reflect_fn=reflect_fn
+            )
             data = objective.data.y
             y_err = objective.data.y_err
 

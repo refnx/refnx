@@ -595,9 +595,9 @@ class TestReflect:
             ]
         )
 
-        if backend == "pyopencl":
+        if backend in ("pyopencl", "jax"):
             # can't do pyopencl in a multiprocessing.Pool
-            return
+            pytest.skip()
 
         with use_reflect_backend(backend) as kernel:
             wf = Wrapper_fn(kernel, p0)
