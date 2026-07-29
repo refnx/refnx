@@ -98,6 +98,7 @@ skip = "cp38-* cp39-* cp310-*"
 test-requires = ["pytest", "periodictable"]
 test-command = "pytest --pyargs refnx.reflect.tests.test_reflect"
 build = "cp311-*"
+build-frontend = "build"
 before-build = "pip install jax"
 # so jax gets picked up
 config-settings = "--no-isolation"
