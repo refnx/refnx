@@ -147,10 +147,10 @@ def jax_smeared_kernel_pointwise(
         The unsmeared forward-model kernel evaluated at each quadrature
         point, called as ``reflect_fn(qvals_for_res, w)`` (scale=1, bkg=0
         applied afterwards). Defaults to ``abeles_jax``. Pass
-        ``abeles_ffi`` (from ``_jax_abeles_ffi.py``) for a faster forward
+        ``abeles_jax_ffi`` (from ``_abeles_jax_ffi_wrapper.py``) for a faster forward
         pass under reverse-mode AD; ``abeles_jax`` must be used if this
         function will be differentiated with ``jax.jacfwd``/forward-mode,
-        since ``abeles_ffi`` does not implement a jvp rule.
+        since ``abeles_jax_ffi`` does not implement a jvp rule.
 
     Returns
     -------

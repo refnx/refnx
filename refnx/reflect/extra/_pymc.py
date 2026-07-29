@@ -54,10 +54,10 @@ def to_pymc_model(objective, _dist=None):
         'potential' might be the most robust. This isn't a coincidence:
         None/'normal' evaluates the forward model and its gradient as two
         separate calls (``_GenerativeOp``/``_GenerativeVJPOp``), where the
-        fast FFI-backed ``abeles_ffi`` kernel is used automatically.
+        fast FFI-backed ``abeles_jax_ffi`` kernel is used automatically.
         'potential'/'custom' fuse value and gradient into a single
         ``jax.value_and_grad`` call (``_LogLikeValueGradOp``), where
-        ``abeles_ffi``'s gradient rule ends up re-doing the pure-JAX
+        ``abeles_jax_ffi``'s gradient rule ends up re-doing the pure-JAX
         forward pass anyway -- so those two use the plain ``jabeles``
         kernel instead, chosen automatically based on ``_dist``.
 
@@ -77,13 +77,13 @@ def to_pymc_model(objective, _dist=None):
     wrapped_pars = []
 
     # 'potential'/'custom' (_LogLikeValueGradOp) fuse value+grad into a
-    # single jax.value_and_grad call, where abeles_ffi's custom VJP has to
+    # single jax.value_and_grad call, where abeles_jax_ffi's custom VJP has to
     # rebuild jabeles's own forward pass to get the gradient on top of its
     # own separately-paid-for C forward pass -- net slower than jabeles
     # directly there. 'normal'/None (_GenerativeOp/_GenerativeVJPOp) split
-    # the forward and backward calls, where abeles_ffi's forward speedup is
+    # the forward and backward calls, where abeles_jax_ffi's forward speedup is
     # real and uncompromised, so that path is left on compile_objective's
-    # own default (abeles_ffi-preferring) reflect_fn.
+    # own default (abeles_jax_ffi-preferring) reflect_fn.
     reflect_fn = None
     if _dist in ("potential", "custom"):
         from refnx.reflect._jax_reflect import jabeles

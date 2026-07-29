@@ -65,10 +65,10 @@ from refnx.reflect.extra._jax_lipid import (
 # Forward-model kernel selection
 # ---------------------------------------------------------------------------
 # The compiled logl/generative/model functions below are differentiated with
-# jax.grad/jax.value_and_grad (reverse-mode) -- abeles_ffi supports that via
+# jax.grad/jax.value_and_grad (reverse-mode) -- abeles_jax_ffi supports that via
 # a custom VJP that's piggybacked onto jabeles's ordinary autodiff, and its
 # forward pass runs the hand-vectorised C kernel instead of pure JAX. Only
-# CompiledModel.jacfwd needs forward-mode AD, which abeles_ffi does not
+# CompiledModel.jacfwd needs forward-mode AD, which abeles_jax_ffi does not
 # implement (no jvp rule) -- that path always uses jabeles directly,
 # regardless of which reflect_fn is selected here.
 _reflect_fn_cache = None
@@ -78,8 +78,8 @@ def _get_reflect_fn():
     """
     Return the fastest reflectivity kernel available for reverse-mode AD.
 
-    Prefers ``abeles_ffi`` (the C `abeles` kernel wrapped via jax's FFI,
-    see ``_jax_abeles_ffi.py``). Falls back to the pure-JAX ``abeles_jax``
+    Prefers ``abeles_jax_ffi`` (the C `abeles` kernel wrapped via jax's FFI,
+    see ``_abeles_jax_ffi_wrapper.py``). Falls back to the pure-JAX ``abeles_jax``
     if the FFI extension wasn't built -- e.g. refnx was built in an
     environment where jax wasn't importable. Numerically identical either
     way; only forward-pass speed differs.
@@ -91,13 +91,13 @@ def _get_reflect_fn():
     from refnx.reflect._jax_reflect import abeles_jax
 
     try:
-        import refnx.reflect._abeles_ffi  # noqa: F401  (build-time probe)
-        from refnx.reflect._jax_abeles_ffi import abeles_ffi
+        import refnx.reflect._abeles_jax_ffi  # noqa: F401  (build-time probe)
+        from refnx.reflect._abeles_jax_ffi_wrapper import abeles_jax_ffi
 
-        _reflect_fn_cache = abeles_ffi
+        _reflect_fn_cache = abeles_jax_ffi
     except ImportError:
         warnings.warn(
-            "The _abeles_ffi extension is not available (refnx was likely "
+            "The _abeles_jax_ffi extension is not available (refnx was likely "
             "built without jax importable) -- falling back to the pure-JAX "
             "abeles_jax kernel. Compiled objectives/models remain correct, "
             "but the forward pass will be slower.",
@@ -391,8 +391,8 @@ def _make_generative(
     quad_order : int
         Gauss-Legendre order for smearing.
     reflect_fn : Callable, optional
-        Forward-model kernel to use, e.g. ``abeles_ffi`` or ``jabeles``.
-        Defaults to ``_get_reflect_fn()`` (prefers ``abeles_ffi``).
+        Forward-model kernel to use, e.g. ``abeles_jax_ffi`` or ``jabeles``.
+        Defaults to ``_get_reflect_fn()`` (prefers ``abeles_jax_ffi``).
 
     Returns
     -------
@@ -649,7 +649,7 @@ def compile_model(reflect_model) -> CompiledModel:
         q: jnp.ndarray,
         q_err: Optional[jnp.ndarray] = None,
     ) -> jnp.ndarray:
-        # jax.jacfwd needs a forward-mode (jvp) rule. abeles_ffi only
+        # jax.jacfwd needs a forward-mode (jvp) rule. abeles_jax_ffi only
         # implements reverse-mode (vjp), so the Jacobian is always built
         # from the pure-JAX jabeles kernel, independent of which reflect_fn
         # model_fn itself is using.
@@ -912,11 +912,11 @@ def compile_objective(
         ``_jax_slabs(compiler)``.
     reflect_fn : Callable, optional
         Forward-model kernel to use for ``generative``/``logl`` (e.g.
-        ``abeles_ffi`` or ``jabeles``). Defaults to ``_get_reflect_fn()``
-        (prefers ``abeles_ffi``). Pass ``jabeles`` explicitly if the
+        ``abeles_jax_ffi`` or ``jabeles``). Defaults to ``_get_reflect_fn()``
+        (prefers ``abeles_jax_ffi``). Pass ``jabeles`` explicitly if the
         result will be consumed by a fused ``jax.value_and_grad`` call
         elsewhere (e.g. ``to_pymc_model(..., _dist="potential")``), where
-        ``abeles_ffi``'s custom VJP nets out slower than ``jabeles``
+        ``abeles_jax_ffi``'s custom VJP nets out slower than ``jabeles``
         directly -- see ``_pymc.py``.
 
     Returns

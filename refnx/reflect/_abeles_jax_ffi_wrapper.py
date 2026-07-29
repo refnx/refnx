@@ -25,7 +25,7 @@ DEALINGS IN THIS SOFTWARE.
 
 Notes
 -----
-`abeles_ffi` is a drop-in replacement for `abeles_jax` (`_jax_reflect.py`):
+`abeles_jax_ffi` is a drop-in replacement for `abeles_jax` (`_jax_reflect.py`):
 same `(q, layers, scale=1.0, bkg=0.0)` signature, same numerical result. The
 forward pass runs the hand-vectorised C kernel via jax's FFI mechanism; the
 backward pass (`jax.grad` / `jax.value_and_grad`) is piggybacked onto
@@ -33,7 +33,7 @@ backward pass (`jax.grad` / `jax.value_and_grad`) is piggybacked onto
 
 This only supports reverse-mode AD (grad/value_and_grad). It does *not*
 currently support jax.jacfwd, jax.vmap, or forward-mode jvp -- calling those
-on `abeles_ffi` will raise a NotImplementedError from the underlying
+on `abeles_jax_ffi` will raise a NotImplementedError from the underlying
 VJPHiPrimitive. Use `abeles_jax` from `_jax_reflect.py` for those cases.
 
 Requires `jax_enable_x64`:
@@ -50,7 +50,7 @@ from jax.experimental.hijax import VJPHiPrimitive
 
 from refnx.reflect._jax_reflect import jabeles
 
-_TARGET_NAME = "abeles_ffi"
+_TARGET_NAME = "abeles_jax_ffi"
 _registered = False
 
 
@@ -60,20 +60,20 @@ def _register():
         return
 
     try:
-        from refnx.reflect import _abeles_ffi as _abeles_ffi_ext
+        from refnx.reflect import _abeles_jax_ffi as _abeles_jax_ffi_ext
     except ImportError as exc:
         raise ImportError(
-            "The _abeles_ffi extension module is not available. refnx must "
+            "The _abeles_jax_ffi extension module is not available. refnx must "
             "be built with jax importable in the build environment for "
             "this module to work (see refnx/reflect/meson.build)."
         ) from exc
 
-    # _abeles_ffi_ext.__file__ points at the actual built shared object --
+    # _abeles_jax_ffi_ext.__file__ points at the actual built shared object --
     # the build directory in an editable install, the installed package
     # directory otherwise -- so it can be handed straight to ctypes.
-    lib = ctypes.cdll.LoadLibrary(_abeles_ffi_ext.__file__)
+    lib = ctypes.cdll.LoadLibrary(_abeles_jax_ffi_ext.__file__)
     jax.ffi.register_ffi_target(
-        _TARGET_NAME, jax.ffi.pycapsule(lib.AbelesFFI), platform="cpu"
+        _TARGET_NAME, jax.ffi.pycapsule(lib.Abeles_JAX_FFI), platform="cpu"
     )
     _registered = True
 
@@ -129,7 +129,7 @@ class _AbelesFFI(VJPHiPrimitive):
         return (d_layers, d_scale, d_bkg, None)
 
 
-def abeles_ffi(q, layers, scale=1.0, bkg=0.0, threads=1):
+def abeles_jax_ffi(q, layers, scale=1.0, bkg=0.0, threads=1):
     """
     Calculate specular reflectivity using the C `abeles` kernel via jax FFI.
 
