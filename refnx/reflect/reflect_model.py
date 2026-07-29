@@ -144,9 +144,6 @@ def available_backends():
         # importing jax would be a ModuleNotFoundError
         pass
 
-    except ImportError:
-        pass
-
     return tuple(backends)
 
 
