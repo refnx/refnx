@@ -917,10 +917,48 @@ class Objective(BaseObjective):
         finally:
             self.setp(saved_params)
 
+    def confidence_interval(self, sigma=1):
+        """
+        Confidence intervals on the generative model.
+
+        Parameters
+        ----------
+        sigma : float, optional
+            uncertainty band, corresponding to the number of standard
+            deviations.
+
+        Returns
+        -------
+        confidence_interval : tuple
+            The (lower, upper) confidence intervals of the generative
+            model.
+
+        """
+        from scipy.stats import norm
+
+        chain = getattr(self.varying_parameters()[0], "chain", None)
+        if chain is None:
+            raise RuntimeError("Objective has not been sampled")
+
+        samples = min(max(chain.size, 1000), 1000)
+
+        # Get a number of chains, chosen randomly, set the objective,
+        # and get the generative
+        _model_gen = []
+        for curve in self._generate_generative_mcmc(ngen=samples):
+            _model_gen.append(curve)
+
+        _model_arr = np.array(_model_gen)
+
+        p0 = 100 * norm.cdf(-sigma)
+        p1 = 100 * norm.cdf(sigma)
+        lb, ub = np.percentile(_model_arr, [p0, p1], axis=0)
+        return lb, ub
+
     def plot(
         self,
         pvals=None,
-        samples=0,
+        samples=False,
         parameter=None,
         fig=None,
         sigma=1.0,
@@ -936,9 +974,8 @@ class Objective(BaseObjective):
         ----------
         pvals : np.ndarray, optional
             Numeric values for the Parameter's that are varying
-        samples: number
-            If the objective has been sampled, how many samples you wish to
-            plot on the graph.
+        samples: bool
+            If True then confidence intervals are plotted.
         parameter: refnx.analysis.Parameter
             Creates an interactive plot for the Parameter in Jupyter. Requires
             ipywidgets be installed. Use with %matplotlib ipympl/qt.
@@ -961,8 +998,6 @@ class Objective(BaseObjective):
             `matplotlib` figure and axes objects.
 
         """
-        from scipy.stats import norm
-
         self.setp(pvals)
 
         if fig is None:
@@ -1007,19 +1042,10 @@ class Objective(BaseObjective):
                 self.data.x, y, color=color[0], s=3, label=self.data.name
             )
 
-        if samples > 0:
-            # Get a number of chains, chosen randomly, set the objective,
-            # and plot the model.
-            _model_gen = []
-            for curve in self._generate_generative_mcmc(ngen=samples):
-                _model, _ = transform(curve)
-                _model_gen.append(_model)
-
-            _model_arr = np.array(_model_gen)
-
-            p0 = 100 * norm.cdf(-sigma)
-            p1 = 100 * norm.cdf(sigma)
-            lb, ub = np.percentile(_model_arr, [p0, p1], axis=0)
+        if bool(samples):
+            lb, ub = self.confidence_interval(sigma=sigma)
+            lb, _ = transform(lb)
+            ub, _ = transform(ub)
             ax.fill_between(self.data.x, lb, ub, color="black", alpha=0.4)
 
         # add the fit
@@ -1272,7 +1298,7 @@ class GlobalObjective(Objective):
     def plot(
         self,
         pvals=None,
-        samples=0,
+        samples=False,
         parameter=None,
         fig=None,
         sigma=1.0,
@@ -1287,9 +1313,8 @@ class GlobalObjective(Objective):
         ----------
         pvals : np.ndarray, optional
             Numeric values for the Parameter's that are varying
-        samples: number, optional
-            If the objective has been sampled, how many samples you wish to
-            plot on the graph.
+        samples: bool, optional
+            If True then confidence intervals are plotted on the graph.
         parameter: refnx.analysis.Parameter, optional
             Creates an interactive plot for the Parameter in Jupyter. Requires
             ipywidgets be installed. Use with %matplotlib notebook/qt.
@@ -1309,8 +1334,6 @@ class GlobalObjective(Objective):
             `matplotlib` figure and axes objects.
 
         """
-        from scipy.stats import norm
-
         self.setp(pvals)
 
         if fig is None:
@@ -1335,35 +1358,33 @@ class GlobalObjective(Objective):
                 else:
                     return t(x, y * v_offset, y_err * v_offset)
 
-        if samples > 0:
+        if bool(samples):
             if v_offsets is None:
                 v_offsets = [1.0] * len(self.objectives)
 
-            # Get a number of chains, chosen randomly, set the objectives,
-            # and plot the model.
-            _model_gen = []
-            for curve in self._generate_generative_mcmc(ngen=samples):
-                _model_gen.append(curve)
-            _model_arr = np.array(_model_gen)
+            lb, ub = self.confidence_interval(sigma=sigma)
 
             start = 0
             for i, objective in enumerate(self.objectives):
                 npts = objective.npoints
-                _model = _model_arr[:, start : start + npts]
-                for j, row_data in enumerate(_model):
-                    _model[j] = transform(
-                        objective.transform,
-                        objective.data.x,
-                        row_data,
-                        v_offset=v_offsets[i],
-                    )[0]
+                _lb = lb[start : start + npts]
+                _ub = ub[start : start + npts]
+                _lb, _ = transform(
+                    objective.transform,
+                    objective.data.x,
+                    _lb,
+                    v_offset=v_offsets[i],
+                )
+                _ub, _ = transform(
+                    objective.transform,
+                    objective.data.x,
+                    _ub,
+                    v_offset=v_offsets[i],
+                )
                 start += npts
 
-                p0 = 100 * norm.cdf(-sigma)
-                p1 = 100 * norm.cdf(sigma)
-                lb, ub = np.percentile(_model, [p0, p1], axis=0)
                 ax.fill_between(
-                    objective.data.x, lb, ub, color="black", alpha=0.4
+                    objective.data.x, _lb, _ub, color="black", alpha=0.4
                 )
 
                 # add the data (in a transformed fashion)
