@@ -15,3 +15,12 @@ repos:
     hooks:
       - id: black
         language_version: python3
+  - repo: local
+    hooks:
+      - id: ipynb-compress
+        name: ipynb-compress
+        entry: bash -c 'for f in "$@"; do ipynb-compress -f jpeg "$f" || exit 1; done' _
+        language: python
+        additional_dependencies: ["ipynbcompress", "nbformat"]
+        files: \.ipynb$
+        exclude: \.ipynb_checkpoints/
