@@ -195,107 +195,114 @@ def get_reflect_backend(backend="c"):
     kernels.
     """
     backend = backend.lower()
+    match backend:
+        case "pyopencl":
+            try:
+                import pyopencl as cl
+            except (ImportError, ModuleNotFoundError):
+                warnings.warn(
+                    "Can't use the pyopencl abeles backend, you need"
+                    " to install pyopencl"
+                )
+                return get_reflect_backend("c")
+            try:
+                # see if there are any openCL platforms
+                cl.get_platforms()
+                from refnx.reflect._reflect import abeles_pyopencl
 
-    if backend == "pyopencl":
-        try:
-            import pyopencl as cl
-        except (ImportError, ModuleNotFoundError):
-            warnings.warn(
-                "Can't use the pyopencl abeles backend, you need"
-                " to install pyopencl"
-            )
-            return get_reflect_backend("c")
-        try:
-            # see if there are any openCL platforms
-            cl.get_platforms()
-            from refnx.reflect._reflect import abeles_pyopencl
+                return abeles_pyopencl
+            except cl._cl.LogicError:
+                # a pyopencl._cl.LogicError is raised if there isn't a platform
+                warnings.warn("There are no openCL platforms available")
+                return get_reflect_backend("c")
 
-            return abeles_pyopencl
-        except cl._cl.LogicError:
-            # a pyopencl._cl.LogicError is raised if there isn't a platform
-            warnings.warn("There are no openCL platforms available")
-            return get_reflect_backend("c")
-    elif backend == "cython":
-        try:
-            from refnx.reflect import _cyreflect as _cy
+        case "cython":
+            try:
+                from refnx.reflect import _cyreflect as _cy
 
-            return _cy.abeles
-        except ImportError:
-            warnings.warn("Can't use the cython abeles backend")
-            return get_reflect_backend("c")
-    elif backend == "abeles_vectorised":
-        try:
-            from refnx.reflect._cyreflect import abeles_vectorised
+                return _cy.abeles
+            except ImportError:
+                warnings.warn("Can't use the cython abeles backend")
+                return get_reflect_backend("c")
 
-            return abeles_vectorised
-        except ImportError:
-            raise ValueError(
-                "Can't use the abeles_vectorised backend, it's not available"
-            )
-    elif backend == "c":
-        try:
-            from refnx.reflect import _creflect as _c
+        case "abeles_vectorised":
+            try:
+                from refnx.reflect._cyreflect import abeles_vectorised
 
-            return _c.abeles
-        except ImportError:
-            warnings.warn("Can't use the C abeles backend")
-            return get_reflect_backend("python")
-    elif backend == "numba_parratt":
-        try:
-            from refnx.reflect._numba_reflect import numba_parratt
+                return abeles_vectorised
+            except ImportError:
+                raise ValueError(
+                    "Can't use the abeles_vectorised backend, it's not available"
+                )
 
-            return numba_parratt
-        except ImportError:
-            warnings.warn(
-                "Can't use the numba_parratt backend, requires numba be installed"
-            )
-            return get_reflect_backend("c_parratt")
-    elif backend == "py_parratt":
-        from refnx.reflect._reflect import parratt
+        case "c":
+            try:
+                from refnx.reflect import _creflect as _c
 
-        return parratt
-    elif backend == "c_parratt":
-        try:
-            from refnx.reflect import _creflect as _c
+                return _c.abeles
+            except ImportError:
+                warnings.warn("Can't use the C abeles backend")
+                return get_reflect_backend("python")
 
-            return _c.parratt
-        except ImportError:
-            warnings.warn("Can't use the c_parratt backend")
-            return get_reflect_backend("py_parratt")
-    elif backend == "cython_parratt":
-        try:
-            from refnx.reflect import _cyreflect as _c
+        case "numba_parratt":
+            try:
+                from refnx.reflect._numba_reflect import numba_parratt
 
-            return _c.parratt
-        except ImportError:
-            warnings.warn("Can't use the cython_parratt backend")
-            return get_reflect_backend("c_parratt")
+                return numba_parratt
+            except ImportError:
+                warnings.warn(
+                    "Can't use the numba_parratt backend, requires numba be installed"
+                )
+                return get_reflect_backend("c_parratt")
 
-    elif backend == "jax":
-        try:
-            from refnx.reflect import _jax_reflect
+        case "pyparratt":
+            from refnx.reflect._reflect import parratt
 
-            return _jax_reflect.abeles_jax
-        except ImportError:
-            warnings.warn("Can't use the jax abeles backend")
-            return get_reflect_backend("c")
+            return parratt
 
-    elif backend == "torch":
-        try:
-            from refnx.reflect._torch_reflect import abeles_torch
+        case "c_parratt":
+            try:
+                from refnx.reflect import _creflect as _c
 
-            return abeles_torch
-        except ModuleNotFoundError:
-            warnings.warn("Can't use the torch abeles backend")
-            return get_reflect_backend("c")
+                return _c.parratt
+            except ImportError:
+                warnings.warn("Can't use the c_parratt backend")
+                return get_reflect_backend("py_parratt")
 
-    elif backend == "python":
-        warnings.warn("Using the SLOW reflectivity calculation.")
+        case "cython_parratt":
+            try:
+                from refnx.reflect import _cyreflect as _c
 
-    # if nothing works return the Python backend
-    from refnx.reflect import _reflect as _py
+                return _c.parratt
+            except ImportError:
+                warnings.warn("Can't use the cython_parratt backend")
+                return get_reflect_backend("c_parratt")
 
-    return _py.abeles
+        case "jax":
+            try:
+                from refnx.reflect import _jax_reflect
+
+                return _jax_reflect.abeles_jax
+            except ImportError:
+                warnings.warn("Can't use the jax abeles backend")
+                return get_reflect_backend("c")
+
+        case "torch":
+            try:
+                from refnx.reflect._torch_reflect import abeles_torch
+
+                return abeles_torch
+            except ModuleNotFoundError:
+                warnings.warn("Can't use the torch abeles backend")
+                return get_reflect_backend("c")
+
+        case _:
+            warnings.warn("Using the SLOW reflectivity calculation.")
+
+            # if nothing works return the Python backend
+            from refnx.reflect import _reflect as _py
+
+            return _py.abeles
 
 
 # this function is used to calculate reflectivity
