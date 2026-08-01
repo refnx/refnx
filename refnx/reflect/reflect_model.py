@@ -144,6 +144,14 @@ def available_backends():
         # importing jax would be a ModuleNotFoundError
         pass
 
+    try:
+        import torch
+        from refnx.reflect._torch_reflect import abeles_torch
+
+        backends.append("torch")
+    except ImportError:
+        raise
+
     return tuple(backends)
 
 
@@ -160,7 +168,7 @@ def get_reflect_backend(backend="c"):
     Parameters
     ----------
     backend : {'python', 'cython', 'c', 'pyopencl', 'py_parratt', 'c_parratt',
-              'numba_parratt', 'abeles_vectorised'}
+              'numba_parratt', 'abeles_vectorised', 'jax', 'torch'}
         The module that calculates the reflectivity. Speed should go in the
         order:
         numba_parratt > c_parratt > c > pyopencl / cython > py_parratt > python.
@@ -270,6 +278,15 @@ def get_reflect_backend(backend="c"):
             return _jax_reflect.abeles_jax
         except ImportError:
             warnings.warn("Can't use the jax abeles backend")
+            return get_reflect_backend("c")
+
+    elif backend == "torch":
+        try:
+            from refnx.reflect._torch_reflect import abeles_torch
+
+            return abeles_torch
+        except ImportError:
+            warnings.warn("Can't use the torch abeles backend")
             return get_reflect_backend("c")
 
     elif backend == "python":

@@ -6,6 +6,7 @@ py3.install_sources([
   '_functional_form.py',
   '_interactive_modeller.py',
   '_jax_reflect.py',
+  '_torch_reflect.py',
   '_abeles_jax_ffi_wrapper.py',
   '_lipid.py',
   '_numba_reflect.py',
