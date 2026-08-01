@@ -285,7 +285,7 @@ def get_reflect_backend(backend="c"):
             from refnx.reflect._torch_reflect import abeles_torch
 
             return abeles_torch
-        except ImportError:
+        except ModuleNotFoundError:
             warnings.warn("Can't use the torch abeles backend")
             return get_reflect_backend("c")
 

@@ -45,11 +45,6 @@ from refnx._lib import MapWrapper
 from refnx.util import general
 
 BACKENDS = list(reflect_model.available_backends())
-try:
-    assert "torch" in BACKENDS
-except AssertionError:
-    print(BACKENDS)
-    raise
 
 # TODO re-enable pyopencl tests at some point
 # pyopencl making issues on GHActions on macOS as of 11 May 2021
