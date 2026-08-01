@@ -150,7 +150,7 @@ def available_backends():
 
         backends.append("torch")
     except ModuleNotFoundError:
-        raise
+        pass
 
     return tuple(backends)
 
