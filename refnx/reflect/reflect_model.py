@@ -149,7 +149,7 @@ def available_backends():
         from refnx.reflect._torch_reflect import abeles_torch
 
         backends.append("torch")
-    except ImportError:
+    except ModuleNotFoundError:
         raise
 
     return tuple(backends)
