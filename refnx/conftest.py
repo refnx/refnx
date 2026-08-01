@@ -1,4 +1,12 @@
 # contents of conftest.py
+import os
+
+# jax and torch each bring their own OpenMP thread pool; having both loaded
+# in the same process (as happens when reflect_model.available_backends()
+# is called during test collection) can segfault or hang on macOS unless
+# threading is restricted. Must be set before jax/torch are imported.
+os.environ.setdefault("OMP_NUM_THREADS", "1")
+
 import zipfile
 import shutil
 import urllib.request

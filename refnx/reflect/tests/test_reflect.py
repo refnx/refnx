@@ -45,6 +45,7 @@ from refnx._lib import MapWrapper
 from refnx.util import general
 
 BACKENDS = list(reflect_model.available_backends())
+
 # TODO re-enable pyopencl tests at some point
 # pyopencl making issues on GHActions on macOS as of 11 May 2021
 if sys.platform == "darwin":
@@ -389,6 +390,65 @@ class TestReflect:
             ]
         )
         assert_allclose(y, y_test)
+
+    @pytest.mark.skipif("torch" not in BACKENDS, reason="torch not available")
+    def test_torch(self):
+        import torch
+        from torch.func import jacfwd
+        from refnx.reflect._torch_reflect import abeles_torch
+
+        data = [
+            [0.0, 0.0, 0.0, 0.0],
+            [1500.0, 5.0, 0.0, 3.0],
+            [0.0, 2.07, 0.0, 4.0],
+        ]
+        layers = torch.tensor(data, dtype=torch.float64)
+        q = torch.linspace(0.005, 0.3, 250, dtype=torch.float64)
+        qn = q.numpy()
+
+        def f(layers_):
+            return abeles_torch(q, layers_)
+
+        # forward pass should agree with the C backend
+        with use_reflect_backend("c") as kernel:
+            calc = kernel(qn, np.array(data))
+        assert_allclose(f(layers).numpy(), calc)
+
+        # full Jacobian dR(q_i)/d layers[j, k], forward-mode since layers
+        # has far fewer elements than q has points
+        J = jacfwd(f)(layers)
+        assert J.shape == (qn.size, layers.shape[0], layers.shape[1])
+
+        # pull out the quartz layer's thickness (layers[1, 0]) and SLD
+        # (layers[1, 1]) sensitivities
+        d_thick = J[:, 1, 0].numpy()
+        d_sld = J[:, 1, 1].numpy()
+        assert np.all(np.isfinite(d_thick))
+        assert np.all(np.isfinite(d_sld))
+
+        # cross-check against central finite differences computed with the
+        # C backend
+        eps_thick = 1e-3
+        layers_p = np.array(data)
+        layers_m = np.array(data)
+        layers_p[1, 0] += eps_thick
+        layers_m[1, 0] -= eps_thick
+        with use_reflect_backend("c") as kernel:
+            Rp = kernel(qn, layers_p)
+            Rm = kernel(qn, layers_m)
+        fd_thick = (Rp - Rm) / (2 * eps_thick)
+        assert_allclose(d_thick, fd_thick, rtol=1e-4, atol=1e-7)
+
+        eps_sld = 1e-5
+        layers_p = np.array(data)
+        layers_m = np.array(data)
+        layers_p[1, 1] += eps_sld
+        layers_m[1, 1] -= eps_sld
+        with use_reflect_backend("c") as kernel:
+            Rp = kernel(qn, layers_p)
+            Rm = kernel(qn, layers_m)
+        fd_sld = (Rp - Rm) / (2 * eps_sld)
+        assert_allclose(d_sld, fd_sld, rtol=1e-4, atol=1e-7)
 
     @pytest.mark.parametrize("backend", BACKENDS)
     @pytest.mark.filterwarnings("ignore:Using the SLOW")
