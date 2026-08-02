@@ -267,6 +267,42 @@ class _GenerativeVJPOp(Op):
         )
 
 
+class _GenerativeJVPOp(Op):
+    """
+    A pytensor ``Op`` that computes the forward-mode Jacobian-vector product
+    of ``CompiledObjective.generative``.
+
+    Takes the free-parameter values plus a tangent vector (same shape as
+    the free vector) and returns the tangent of R(q), i.e. ``J @ tangent``,
+    via ``jax.jvp``.
+    """
+
+    def __init__(self, generative):
+        self.generative = generative
+        import jax
+
+        # Compile the JVP once — called with concrete arrays at runtime.
+        @jax.jit
+        def _jvp_fn(free, tangent):
+            _, jvp = jax.jvp(generative, (free,), (tangent,))
+            return jvp
+
+        self._jvp_fn = _jvp_fn
+
+    def make_node(self, *inputs):
+        inputs = [pt.as_tensor_variable(inp) for inp in inputs]
+        outputs = [pt.dvector()]
+        return Apply(self, inputs, outputs)
+
+    def perform(self, node, inputs, outputs):
+        *free_scalars, tangent = inputs
+        free = np.array(free_scalars, dtype=np.float64)
+        tangent = np.asarray(tangent, dtype=np.float64)
+        outputs[0][0] = np.asarray(
+            self._jvp_fn(free, tangent), dtype=np.float64
+        )
+
+
 class _GenerativeOp(Op):
     """
     A pytensor ``Op`` that wraps ``CompiledObjective.generative``.
@@ -278,6 +314,11 @@ class _GenerativeOp(Op):
     def __init__(self, compiled_objective):
         self.generative = compiled_objective.generative
         self._vjp_op = _GenerativeVJPOp(self.generative)
+        # generative is typically backed by abeles_jax_ffi (via
+        # _get_reflect_fn()), whose custom VJP only supports reverse-mode
+        # AD -- jax.jvp raises on it. generative_fwd is the pure-JAX
+        # (jabeles) twin built for exactly this: see CompiledObjective.
+        self._jvp_op = _GenerativeJVPOp(compiled_objective.generative_fwd)
 
     def make_node(self, inputs):
         inputs = [pt.as_tensor_variable(inp) for inp in inputs]
@@ -294,6 +335,24 @@ class _GenerativeOp(Op):
         grad = self._vjp_op(*inputs, cotangents[0])  # symbolic dvector
         # Return one gradient scalar per input
         return [grad[i] for i in range(len(inputs))]
+
+    def pushforward(self, inputs, outputs, tangents):
+        # Disconnected per-parameter tangents (params not being
+        # differentiated in this sweep) become zero before stacking into a
+        # single free-vector tangent for jax.jvp.
+        from pytensor.gradient import DisconnectedType
+
+        tangent_scalars = [
+            (
+                pt.constant(0.0, dtype="float64")
+                if isinstance(t.type, DisconnectedType)
+                else t
+            )
+            for t in tangents
+        ]
+        tangent_vec = pt.stack(tangent_scalars)
+        jvp = self._jvp_op(*inputs, tangent_vec)  # symbolic dvector
+        return [jvp]
 
 
 def process_trace(objective, trace):
