@@ -706,6 +706,14 @@ class CompiledObjective:
         For a ``GlobalObjective`` this is the concatenation of the
         per-objective generative functions, matching the order of
         ``GlobalObjective.objectives``.
+    generative_fwd : Callable[[jnp.ndarray], jnp.ndarray]
+        Forward-mode (jvp) compatible twin of ``generative``, same signature
+        and result. ``generative`` is typically built from ``abeles_jax_ffi``
+        (via ``_get_reflect_fn()``), whose custom VJP only supports
+        reverse-mode AD -- ``jax.jvp``/``jax.jacfwd`` raise on it.
+        ``generative_fwd`` always uses the pure-JAX ``jabeles`` kernel
+        instead, so it works under forward-mode AD (e.g. a pytensor
+        ``pushforward``/``Rop``, or ``jax.jacfwd``). JIT-compiled.
     x0 : jnp.ndarray
         Initial free-parameter values extracted from the objective.
     param_names : List[str]
@@ -722,6 +730,7 @@ class CompiledObjective:
     value_and_grad: Callable
     params_to_slabs: Callable
     generative: Callable
+    generative_fwd: Callable
     x0: jnp.ndarray
     param_names: List[str]
     setp: Callable
@@ -758,6 +767,9 @@ def _compile_single(
         Pure JAX log-likelihood, not yet JIT-compiled.
     generative_raw : Callable[[jnp.ndarray], jnp.ndarray]
         Pure JAX forward model ``free -> R(q)``, not yet JIT-compiled.
+    generative_fwd_raw : Callable[[jnp.ndarray], jnp.ndarray]
+        Forward-mode (jvp) compatible twin of ``generative_raw``, always
+        built from the pure-JAX ``jabeles`` kernel. Not yet JIT-compiled.
     params_to_slabs_fn : Callable[[jnp.ndarray], jnp.ndarray]
         Pure JAX function mapping the free vector to the (N, 4) layers array.
     """
@@ -836,6 +848,24 @@ def _compile_single(
         reflect_fn=reflect_fn,
     )
 
+    # A forward-mode (jvp) compatible twin of generative_raw. abeles_jax_ffi
+    # (the likely default from _get_reflect_fn()) only implements a reverse
+    # -mode custom VJP, so jax.jvp/jax.jacfwd raise on it -- same constraint
+    # documented for CompiledModel.jacfwd above. Always force the pure-JAX
+    # jabeles kernel here, independent of which reflect_fn generative_raw
+    # itself is using.
+    from refnx.reflect._jax_reflect import jabeles
+
+    generative_fwd_raw = _make_generative(
+        params_to_slabs_fn,
+        q,
+        dqvals,
+        scale_node,
+        bkg_node,
+        _quad_order,
+        reflect_fn=jabeles,
+    )
+
     # ------------------------------------------------------------------
     # Pass generative into _make_logl so the same computation is reused.
     # ------------------------------------------------------------------
@@ -862,7 +892,13 @@ def _compile_single(
     )
 
     if _logp_is_trivial:
-        return logl_raw, generative_raw, params_to_slabs_fn, None
+        return (
+            logl_raw,
+            generative_raw,
+            generative_fwd_raw,
+            params_to_slabs_fn,
+            None,
+        )
 
     if has_logp_extra:
         warnings.warn(
@@ -889,7 +925,13 @@ def _compile_single(
             extra += float(objective.logp_extra(model, objective.data))
         return extra
 
-    return logl_raw, generative_raw, params_to_slabs_fn, extra_potential
+    return (
+        logl_raw,
+        generative_raw,
+        generative_fwd_raw,
+        params_to_slabs_fn,
+        extra_potential,
+    )
 
 
 def compile_objective(
@@ -960,9 +1002,13 @@ def compile_objective(
     # ------------------------------------------------------------------
     # 2–4.  Compile structure, scale/bkg/lnsigma, and freeze data arrays
     # ------------------------------------------------------------------
-    logl_raw, generative_raw, params_to_slabs_fn, extra_potential = (
-        _compile_single(objective, compiler, reflect_fn=reflect_fn)
-    )
+    (
+        logl_raw,
+        generative_raw,
+        generative_fwd_raw,
+        params_to_slabs_fn,
+        extra_potential,
+    ) = _compile_single(objective, compiler, reflect_fn=reflect_fn)
 
     logl_jit = jax.jit(logl_raw)
     grad_jit = jax.jit(jax.grad(logl_raw))
@@ -998,6 +1044,7 @@ def compile_objective(
         value_and_grad=val_and_grad_jit,
         params_to_slabs=jax.jit(params_to_slabs_fn),
         generative=jax.jit(generative_raw),
+        generative_fwd=jax.jit(generative_fwd_raw),
         x0=x0,
         param_names=param_names,
         setp=setp,
@@ -1084,15 +1131,17 @@ def compile_global_objective(
         []
     )  # (lam, extra_potential) — Python only
     generative_fns: List[Callable] = []
+    generative_fwd_fns: List[Callable] = []
 
     for obj, lam in zip(global_objective.objectives, global_objective.lambdas):
-        logl_i, generative_i, _, extra_i = _compile_single(
+        logl_i, generative_i, generative_fwd_i, _, extra_i = _compile_single(
             obj, compiler, reflect_fn=reflect_fn
         )
         weighted_logl_fns.append((float(lam), logl_i))
         if extra_i is not None:
             extra_potential_fns.append((float(lam), extra_i))
         generative_fns.append(generative_i)
+        generative_fwd_fns.append(generative_fwd_i)
 
     # Single fused JAX function over all pure logl terms — identical to the
     # original structure so XLA can fuse across all objectives.
@@ -1136,6 +1185,9 @@ def compile_global_objective(
     def generative_global(free: jnp.ndarray) -> jnp.ndarray:
         return jnp.concatenate([fn(free) for fn in generative_fns])
 
+    def generative_fwd_global(free: jnp.ndarray) -> jnp.ndarray:
+        return jnp.concatenate([fn(free) for fn in generative_fwd_fns])
+
     # ------------------------------------------------------------------
     # 4.  setp bridge — GlobalObjective.setp handles the deduplication
     # ------------------------------------------------------------------
@@ -1149,6 +1201,7 @@ def compile_global_objective(
         value_and_grad=val_and_grad_jit,
         params_to_slabs=None,
         generative=jax.jit(generative_global),
+        generative_fwd=jax.jit(generative_fwd_global),
         x0=x0,
         param_names=param_names,
         setp=setp,

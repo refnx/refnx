@@ -754,3 +754,4 @@ in 0.1.13.
 - _abeles_jax_ffi extension for faster pymc sampling.
 - refnx.reflect._torch_reflect offers a pytorch function for calculating
   reflectivity.
+- Add a pushforward capability to the Generative op (when using jax for mcmc).
