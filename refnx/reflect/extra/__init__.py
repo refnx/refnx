@@ -6,6 +6,7 @@ from refnx.reflect.extra._jax_compiler import (
     make_scipy_objective,
     CompiledObjective,
     CompiledModel,
+    GenerativeOp,
 )
 from refnx.reflect.extra._pymc import to_pymc_model, process_trace
 

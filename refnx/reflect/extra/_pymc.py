@@ -124,7 +124,7 @@ def to_pymc_model(objective, _dist=None):
         match _dist:
             case None | "normal":
                 # Expected value of outcome
-                gen_op = _GenerativeOp(compiled_objective)
+                gen_op = GenerativeOp(compiled_objective)
                 R_model = pm.Deterministic("R_model", gen_op(theta))
                 pm.Normal(
                     "y_obs",
@@ -267,7 +267,7 @@ class _GenerativeVJPOp(Op):
         )
 
 
-class _GenerativeOp(Op):
+class GenerativeOp(Op):
     """
     A pytensor ``Op`` that wraps ``CompiledObjective.generative``.
 
