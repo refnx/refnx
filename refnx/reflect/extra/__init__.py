@@ -6,8 +6,11 @@ from refnx.reflect.extra._jax_compiler import (
     make_scipy_objective,
     CompiledObjective,
     CompiledModel,
+)
+from refnx.reflect.extra._pymc import (
+    to_pymc_model,
+    process_trace,
     GenerativeOp,
 )
-from refnx.reflect.extra._pymc import to_pymc_model, process_trace
 
 __all__ = [s for s in dir() if not s.startswith("_")]
