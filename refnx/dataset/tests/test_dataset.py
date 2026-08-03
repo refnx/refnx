@@ -470,7 +470,9 @@ class TestOrtDataset:
         assert isinstance(d, OrsoDataset)
         d.refresh()
 
-    @pytest.mark.filterwarnings("ignore:No ss3y data found in entry1:RuntimeWarning")
+    @pytest.mark.filterwarnings(
+        "ignore:No ss3y data found in entry1:RuntimeWarning"
+    )
     def test_create_example_ort_from_simulation(self, data_directory):
         air = SLD(0)
         sio2 = SLD(3.47)
