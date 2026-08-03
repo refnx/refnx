@@ -32,7 +32,7 @@ try:
         compile_global_objective,
         to_pymc_model,
     )
-except ModuleNotFoundError, ImportError:
+except (ModuleNotFoundError, ImportError):
     HAVE_JAX = False
 
 
