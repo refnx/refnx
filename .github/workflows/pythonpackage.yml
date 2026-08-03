@@ -56,7 +56,7 @@ jobs:
         pip install -r .requirements.txt
         export QT_QPA_PLATFORM=offscreen
         pushd tools
-        pytest --pyargs refnx
+        pytest --pyargs refnx -Werror
         popd
 
         # check that refnx gui starts
