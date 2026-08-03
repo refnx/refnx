@@ -25,8 +25,7 @@ def load_orso(f):
         except Exception:
             pass
         try:
-            v = fio.load_nexus(f)
-            return v
+            return fio.load_nexus(fi)
         except Exception:
             pass
 
