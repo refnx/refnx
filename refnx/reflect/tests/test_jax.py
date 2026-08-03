@@ -16,13 +16,6 @@ from refnx.analysis import Objective, Parameter, CurveFitter, GlobalObjective
 from refnx.dataset import Data1D, ReflectDataset
 from refnx.reflect import ReflectModel, SLD, LipidLeaflet, LipidLeafletGuest
 from refnx.reflect.structure import overall_sld
-from refnx.reflect.extra import (
-    compile_objective,
-    compile_model,
-    make_scipy_objective,
-    compile_global_objective,
-    to_pymc_model,
-)
 
 try:
     import jax
@@ -30,9 +23,17 @@ try:
 
     config.update("jax_enable_x64", True)
     HAVE_JAX = True
-except ImportError:
-    HAVE_JAX = False
 
+    # these won't be available if JAX isn't available
+    from refnx.reflect.extra import (
+        compile_objective,
+        compile_model,
+        make_scipy_objective,
+        compile_global_objective,
+        to_pymc_model,
+    )
+except ModuleNotFoundError, ImportError:
+    HAVE_JAX = False
 
 @pytest.mark.skipif(not HAVE_JAX, reason="Requires jax")
 class TestJAX:
