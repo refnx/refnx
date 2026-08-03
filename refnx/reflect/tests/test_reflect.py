@@ -393,8 +393,9 @@ class TestReflect:
 
     @pytest.mark.skipif("torch" not in BACKENDS, reason="torch not available")
     @pytest.mark.filterwarnings(
-        "ignore:`torch.jit.script` is not supported in Python 3.14"
-        ":DeprecationWarning"
+        # message text differs by Python version: "is not supported in
+        # Python 3.14+..." there, "is deprecated..." pre-3.14 -- match both.
+        "ignore:`torch.jit.script`.*:DeprecationWarning"
     )
     def test_torch(self):
         import torch
