@@ -35,6 +35,7 @@ try:
 except ModuleNotFoundError, ImportError:
     HAVE_JAX = False
 
+
 @pytest.mark.skipif(not HAVE_JAX, reason="Requires jax")
 class TestJAX:
     def setup_method(self):
