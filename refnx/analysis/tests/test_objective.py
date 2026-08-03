@@ -517,6 +517,7 @@ class TestObjective:
         with warns(LinAlgWarning):
             objective.covar()
 
+    @pytest.mark.filterwarnings("ignore:Numba will use object mode:UserWarning")
     def test_pymc(self):
         # test objective logl against pymc
 
@@ -540,6 +541,7 @@ class TestObjective:
             dlogl = approx_derivative(
                 self.objective.logl, init_pos_arr, method="2-point"
             )
+
 
             pymc_logl = mod.compile_logp()(init_pos)
             assert_allclose(logl, pymc_logl)

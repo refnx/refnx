@@ -138,6 +138,7 @@ class TestPlatypusReduce:
         kernel = sim.resolution_kernel
         assert kernel.ndim == 3
 
+    @pytest.mark.filterwarnings("ignore:No ss3y data found in entry1:RuntimeWarning")
     def test_free_liquids(self):
         # smoke test for free liquids
         a0 = PlatypusReduce("PLP0038418.nx.hdf", data_folder=self.pth)

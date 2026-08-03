@@ -19,15 +19,16 @@ from refnx._lib import possibly_open_file
 def load_orso(f):
     if isinstance(f, fio.orso.OrsoDataset):
         return [f]
-    try:
-        return fio.load_orso(f)
-    except Exception:
-        pass
-    try:
-        v = fio.load_nexus(f)
-        return v
-    except Exception:
-        pass
+    with possibly_open_file(f) as fi:
+        try:
+            return fio.load_orso(fi)
+        except Exception:
+            pass
+        try:
+            v = fio.load_nexus(f)
+            return v
+        except Exception:
+            pass
 
 
 _template_ref_xml = """<?xml version="1.0"?>
