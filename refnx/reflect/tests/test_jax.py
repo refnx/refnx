@@ -74,6 +74,9 @@ class TestJAX:
 
         self.objective = Objective(model, data)
 
+    @pytest.mark.filterwarnings(
+        "ignore:The _abeles_jax_ffi extension:RuntimeWarning"
+    )
     def test_compile_objective(self):
         # Obtain the negative log-likelihood (nll) from the compiled objective
         # By looking at the nll we're implicitly checking resolution smearing,

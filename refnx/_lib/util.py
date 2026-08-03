@@ -195,9 +195,11 @@ def possibly_open_file(f, mode="r"):
     else:
         g = open(f, mode)
         close_file = True
-    yield g
-    if close_file:
-        g.close()
+    try:
+        yield g
+    finally:
+        if close_file:
+            g.close()
 
 
 class MapWrapper:

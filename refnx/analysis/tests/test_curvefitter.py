@@ -646,6 +646,9 @@ class TestFitterGauss:
         run=False,
         reason="doesn't work on cp38",
     )
+    @pytest.mark.filterwarnings(
+        "ignore:Numba will use object mode:UserWarning"
+    )
     def test_pymc_sample(self):
         # test sampling with pymc
         try:

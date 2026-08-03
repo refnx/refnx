@@ -28,12 +28,13 @@ class _LogLikeWithGrad(pt.Op):
 
         outputs[0][0] = np.array(logl)  # output the log-likelihood
 
-    def grad(self, inputs, g):
+    def pullback(self, inputs, outputs, cotangents):
         # the method that calculates the gradients - it actually returns the
-        # vector-Jacobian product - g[0] is a vector of parameter values
+        # vector-Jacobian product - cotangents[0] is a vector of parameter
+        # values
         (theta,) = inputs  # our parameters
 
-        return [g[0] * self.logpgrad(theta)]
+        return [cotangents[0] * self.logpgrad(theta)]
 
 
 class _LogLikeGrad(pt.Op):

@@ -517,6 +517,9 @@ class TestObjective:
         with warns(LinAlgWarning):
             objective.covar()
 
+    @pytest.mark.filterwarnings(
+        "ignore:Numba will use object mode:UserWarning"
+    )
     def test_pymc(self):
         # test objective logl against pymc
 

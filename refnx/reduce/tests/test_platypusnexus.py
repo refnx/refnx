@@ -474,6 +474,9 @@ class TestPlatypusNexus(object):
             assert_almost_equal(norm, test_norm, 6)
             assert_almost_equal(norm_sd, test_norm_sd, 6)
 
+    @pytest.mark.filterwarnings(
+        "ignore:No ss3y data found in entry1:RuntimeWarning"
+    )
     def test_PNR_metadata(self):
         self.f8861.process()
         self.f8862.process()
@@ -603,6 +606,9 @@ class TestSpatzNexus:
         assert np.isfinite(m_spec).all()
 
 
+@pytest.mark.filterwarnings(
+    "ignore:No ss3y data found in entry1:RuntimeWarning"
+)
 def test_catalogue(data_directory):
     pth = Path(data_directory) / "reduce"
     catalogue(0, 10000000, data_folder=pth, prefix="PLP")
@@ -617,6 +623,9 @@ def test_catalogue(data_directory):
     assert df.columns[0] == "omega"
 
 
+@pytest.mark.filterwarnings(
+    "ignore:No ss3y data found in entry1:RuntimeWarning"
+)
 def test_Catalogue_pickle(data_directory):
     pth = Path(data_directory) / "reduce"
     f113 = pth / "PLP0011613.nx.hdf"
@@ -629,6 +638,9 @@ def test_Catalogue_pickle(data_directory):
     pickle.loads(pkl)
 
 
+@pytest.mark.filterwarnings(
+    "ignore:No ss3y data found in entry1:RuntimeWarning"
+)
 def test_create_nexus(data_directory):
     pth = Path(data_directory) / "reduce"
     f113 = pth / "PLP0011613.nx.hdf"
