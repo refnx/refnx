@@ -492,11 +492,12 @@ class CompiledModel:
     Attributes
     ----------
     model : Callable[[jnp.ndarray, jnp.ndarray, Optional[jnp.ndarray]], jnp.ndarray]
-        Pure JAX function ``(free, q, q_err=None) -> R(q)`` (shape ``(N,)``).
+        Pure JAX function ``(q, free, q_err=None) -> R(q)`` (shape ``(N,)``),
+        paralleling ``ReflectModel.__call__(x, p=None, x_err=None)``.
         JIT-compiled.  Resolution smearing is applied when ``q_err`` is
         supplied and non-zero.
     jacfwd : Callable[[jnp.ndarray, jnp.ndarray, Optional[jnp.ndarray]], jnp.ndarray]
-        Forward-mode Jacobian ``(free, q, q_err=None) -> dR/d(free)``
+        Forward-mode Jacobian ``(q, free, q_err=None) -> dR/d(free)``
         (shape ``(N, n_free)``).  JIT-compiled.  Differentiates w.r.t.
         ``free`` only; ``q`` and ``q_err`` are treated as fixed inputs.
     x0 : jnp.ndarray
@@ -527,10 +528,11 @@ def compile_model(reflect_model) -> CompiledModel:
     """
     Compile a ``ReflectModel`` into a pure JAX forward-model function.
 
-    Returns a ``CompiledModel`` whose ``model(free, q, q_err=None)`` maps
+    Returns a ``CompiledModel`` whose ``model(q, free, q_err=None)`` maps
     the free-parameter vector to the reflectivity curve R(q) for any
-    supplied Q values, and whose ``jacfwd(free, q, q_err=None)`` gives the
-    exact Jacobian dR_i/dp_j at those Q values.
+    supplied Q values, and whose ``jacfwd(q, free, q_err=None)`` gives the
+    exact Jacobian dR_i/dp_j at those Q values.  This call signature
+    parallels ``ReflectModel.__call__(x, p=None, x_err=None)``.
 
     Accepting ``q`` and ``q_err`` at call time rather than compile time
     means a single ``CompiledModel`` can be evaluated and differentiated on
@@ -552,15 +554,15 @@ def compile_model(reflect_model) -> CompiledModel:
     --------
         cm = compile_model(model)
 
-       # Jacobian dR/dp — shape (len(data.x), n_free):
-        R = cm.model(cm.x0, data.x, data.x_err)
+        # forward model — shape (len(data.x),):
+        R = cm.model(data.x, cm.x0, data.x_err)
 
         # Jacobian on a finer synthetic grid, no smearing:
         q_fine = np.linspace(0.005, 0.3, 1000)
-        J = cm.jacfwd(cm.x0, q_fine)
+        J = cm.jacfwd(q_fine, cm.x0)
 
         # Jacobian on a finer synthetic grid, constant dq/q smearing:
-        J = cm.jacfwd(cm.x0, q_fine, q_fine * 0.05)
+        J = cm.jacfwd(q_fine, cm.x0, q_fine * 0.05)
 
     Notes
     -----
@@ -638,15 +640,15 @@ def compile_model(reflect_model) -> CompiledModel:
             return kernel(q, layers, scale=scale, bkg=bkg)
 
     def model_fn(
-        free: jnp.ndarray,
         q: jnp.ndarray,
+        free: jnp.ndarray,
         q_err: Optional[jnp.ndarray] = None,
     ) -> jnp.ndarray:
         return _forward(free, q, q_err, reflect_fn)
 
     def model_fn_jacfwd(
-        free: jnp.ndarray,
         q: jnp.ndarray,
+        free: jnp.ndarray,
         q_err: Optional[jnp.ndarray] = None,
     ) -> jnp.ndarray:
         # jax.jacfwd needs a forward-mode (jvp) rule. abeles_jax_ffi only
@@ -663,9 +665,9 @@ def compile_model(reflect_model) -> CompiledModel:
         for param, value in zip(var_params, x):
             param.value = value
 
-    # jacfwd differentiates w.r.t. the first argument (free) only;
-    # q and q_err are treated as non-differentiated inputs.
-    jacfwd_fn = jax.jacfwd(model_fn_jacfwd)
+    # jacfwd differentiates w.r.t. argnums=1 (free); q and q_err (argnums 0
+    # and 2) are treated as non-differentiated inputs.
+    jacfwd_fn = jax.jacfwd(model_fn_jacfwd, argnums=1)
 
     return CompiledModel(
         model=jax.jit(model_fn),
