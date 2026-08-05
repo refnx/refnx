@@ -755,3 +755,11 @@ in 0.1.13.
 - refnx.reflect._torch_reflect offers a pytorch function for calculating
   reflectivity.
 - Add a pushforward capability to the Generative op (when using jax for mcmc).
+- Clearer notarization steps when building app DMG.
+- Fixed multiple warnings during test runs. Added -Werror to CI entry to
+  aid warnings from reappearing (warnings turn into CI errors).
+- Added a pytensor GenerativeOp to __all__, allowing for visibility. This will
+  allow downstream users to tailor their use of pymc sampling. The object is
+  constructed from a CompiledObjective.
+- Don't error during tests if JAX is not installed.
+- Added more tests of the pymc/jax functionality in refnx.reflect.extra.
