@@ -294,6 +294,8 @@ jobs:
         python -m venv app
         app\Scripts\activate.bat
         python -m pip install --upgrade --upgrade-strategy eager -r tools/app/requirements.txt
+        pip freeze
+        python -m pip uninstall torch jax pymc pytensor
         cd dist
         python -m pip install --only-binary=refnx --no-index --find-links=. refnx
         cd ..
