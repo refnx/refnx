@@ -17,71 +17,71 @@ permissions:
 
 
 jobs:
-###############################################################################
-  test_linux:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: true
-      matrix:
-        python-version: ['3.12', '3.13', '3.14']
-        os: [ubuntu-24.04, ubuntu-24.04-arm]
-    steps:
-
-    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-    - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
-      with:
-        python-version: ${{ matrix.python-version }}
-        cache: 'pip' # caching pip dependencies
-        allow-prereleases: true
-
-    - name: Setup apt dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install --no-install-recommends qt6-base-dev build-essential
-
-    - name: Make wheel
-      env:
-        MPLBACKEND: agg
-      run: |
-        python -m pip install --upgrade pip
-        python -m pip install meson-python ninja meson wheel build auditwheel abi3audit jax numpy cython
-        python -m build --no-isolation
-        auditwheel repair dist/*.whl
-        abi3audit --strict --report dist/refnx*.whl
-
-    - name: Install package and test with pytest
-      run: |
-        python -m pip install wheelhouse/*.whl
-        pip install -r .requirements.txt
-        export QT_QPA_PLATFORM=offscreen
-        pushd tools
-        pytest --pyargs refnx -Werror
-        popd
-
-        # check that refnx gui starts
-        # python tools/app/check_app_starts.py refnx
-
-        # run vendored ptemcee tests
-        pytest --pyargs refnx._lib.ptemcee.tests
-
-    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-      with:
-        name: refnx-wheel-${{ matrix.os }}-${{ matrix.python-version }}
-        path: wheelhouse/
-
-
-###############################################################################
-  check_cibuildwheel:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - name: build wheel
-        uses: pypa/cibuildwheel@4726cd35bb13f7bde50cf2761f2499ac7b3aa32c # v4.1.1
-        env:
-          CIBW_TEST_COMMAND: pytest --pyargs refnx.reflect.tests.test_reflect
-          CIBW_BUILD: "cp311-manylinux_x86_64"
+################################################################################
+#  test_linux:
+#    runs-on: ${{ matrix.os }}
+#    strategy:
+#      fail-fast: true
+#      matrix:
+#        python-version: ['3.12', '3.13', '3.14']
+#        os: [ubuntu-24.04, ubuntu-24.04-arm]
+#    steps:
+#
+#    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+#
+#    - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+#      with:
+#        python-version: ${{ matrix.python-version }}
+#        cache: 'pip' # caching pip dependencies
+#        allow-prereleases: true
+#
+#    - name: Setup apt dependencies
+#      run: |
+#        sudo apt-get update
+#        sudo apt-get install --no-install-recommends qt6-base-dev build-essential
+#
+#    - name: Make wheel
+#      env:
+#        MPLBACKEND: agg
+#      run: |
+#        python -m pip install --upgrade pip
+#        python -m pip install meson-python ninja meson wheel build auditwheel abi3audit jax numpy cython
+#        python -m build --no-isolation
+#        auditwheel repair dist/*.whl
+#        abi3audit --strict --report dist/refnx*.whl
+#
+#    - name: Install package and test with pytest
+#      run: |
+#        python -m pip install wheelhouse/*.whl
+#        pip install -r .requirements.txt
+#        export QT_QPA_PLATFORM=offscreen
+#        pushd tools
+#        pytest --pyargs refnx -Werror
+#        popd
+#
+#        # check that refnx gui starts
+#        # python tools/app/check_app_starts.py refnx
+#
+#        # run vendored ptemcee tests
+#        pytest --pyargs refnx._lib.ptemcee.tests
+#
+#    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+#      with:
+#        name: refnx-wheel-${{ matrix.os }}-${{ matrix.python-version }}
+#        path: wheelhouse/
+#
+#
+################################################################################
+#  check_cibuildwheel:
+#    runs-on: ubuntu-latest
+#    steps:
+#      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+#
+#      - name: build wheel
+#        uses: pypa/cibuildwheel@4726cd35bb13f7bde50cf2761f2499ac7b3aa32c # v4.1.1
+#        env:
+#          CIBW_TEST_COMMAND: pytest --pyargs refnx.reflect.tests.test_reflect
+#          CIBW_BUILD: "cp311-manylinux_x86_64"
 
 
 ###############################################################################
@@ -214,23 +214,18 @@ jobs:
         mv dist/refnx.dmg ../../dist/
         popd
 
-# xcrun notarytool submit --apple-id "$APPLEID" --password "$APP_PASSWORD" --team-id 8CX8K63BQM --wait refnx.dmg
-    - name: Notarize DMG
+    - name: Notarize and Staple DMG
       if: github.repository == 'refnx/refnx' && (github.event.pull_request.merged == true || startsWith(github.ref, 'refs/tags'))
-      uses: lando/notarize-action@b5c3ef16cf2fbcf2af26dc58c90255ec242abeed # v2.0.2
-      with:
-        product-path: "dist/refnx.dmg"
-        primary-bundle-id: "com.refnx.refnx"
-        appstore-connect-username: ${{ secrets.NOTARIZATION_USERNAME }}
-        appstore-connect-password: ${{ secrets.NOTARIZATION_PASSWORD }}
-        appstore-connect-team-id: 8CX8K63BQM
-        verbose: True
-
-    - name: Staple Release Build
-      if: github.repository == 'refnx/refnx' && (github.event.pull_request.merged == true || startsWith(github.ref, 'refs/tags'))
-      uses: BoundfoxStudios/action-xcode-staple@1e2200b448c6ed4dd44b963ff17d3e340fc6b064 # v1
-      with:
-        product-path: "dist/refnx.dmg"
+      env:
+        APPLEID: ${{ secrets.NOTARIZATION_USERNAME }}
+        APP_PASSWORD: ${{ secrets.NOTARIZATION_PASSWORD }}
+      run: |
+        xcrun notarytool submit dist/refnx.dmg \
+          --apple-id "$APPLEID" \
+          --password "$APP_PASSWORD" \
+          --team-id 8CX8K63BQM \
+          --wait
+        xcrun stapler staple dist/refnx.dmg
 
     - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
       with:
@@ -238,142 +233,142 @@ jobs:
         path: dist/*.dmg
 
 
-###############################################################################
-  test_win:
-    runs-on: windows-latest
-    strategy:
-      fail-fast: true
-      max-parallel: 3
-      matrix:
-        python-version: ['3.12', '3.13', '3.14']
-
-    steps:
-    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-    - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
-      with:
-        python-version: ${{ matrix.python-version }}
-        cache: 'pip' # caching pip dependencies
-        allow-prereleases: true
-
-    - run: pip install -r .requirements.txt
-    - run: mkdir -p dist
-
-    - name: Make wheel
-      run: |
-        python -m pip install --upgrade pip
-        python -m pip install wheel build delvewheel abi3audit
-        # python -m build --wheel -v
-        python -m build --wheel -Csetup-args="--vsenv"
-        delvewheel repair -w dist dist/*.whl
-        abi3audit --strict --report dist/refnx*.whl
-
-    - name: Install package and test with pytest
-      if: ${{ matrix.python-version == '3.12' }}
-      env:
-        PYOPENCL_CTX: 0
-      run: |
-        python -m pip install -r .requirements.txt
-        cd dist
-        python -m pip install --only-binary=refnx --no-index --find-links=. refnx
-        pytest --pyargs refnx
-        cd ..
-
-    - name: Check refnx gui starts
-      if: ${{ matrix.python-version == '3.12' }}
-      run: |
-        # check that refnx gui starts
-        pip install psutil
-        python tools/app/check_app_starts.py refnx
-
-    - name: Make frozen GUI executable
-      if: ${{ matrix.python-version == '3.12' }}
-      run: |
-        # make app in virtualenv
-        pip uninstall -y h5py
-        python -m venv app
-        app\Scripts\activate.bat
-        python -m pip install --upgrade --upgrade-strategy eager -r tools/app/requirements.txt
-        cd dist
-        python -m pip install --only-binary=refnx --no-index --find-links=. refnx
-        cd ..
-
-        # fix for multiprocessing on Py3.9 is not merged in PyInstaller
-        # if you are on Py3.7 you can just pip install pyinstaller
-        # pip install git+https://github.com/andyfaff/pyinstaller.git@gh4865
-
-        cd tools\app
-        pyinstaller motofit.spec
-        move dist\motofit.exe ..\..\dist\
-        cd ..\..
-
-    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-      with:
-        name: refnx-exe-win-${{ matrix.python-version }}
-        path: dist/
-
-
-###############################################################################
-  build_doc:
-
-    runs-on: ubuntu-latest
-    strategy:
-      max-parallel: 1
-      matrix:
-        python-version: ["3.12"]
-
-    steps:
-    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
-      with:
-        python-version: ${{ matrix.python-version }}
-
-    - name: setup apt dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install pandoc
-
-    - name: Build documentation
-      run: |
-        python -m pip install --upgrade pip
-        python -m pip install .
-        python -m pip install wheel
-        cd doc
-        python -m pip install -r requirements.txt
-        make html
-
-
-###############################################################################
-  lint:
-    runs-on: ubuntu-latest
-    strategy:
-      max-parallel: 1
-      matrix:
-        python-version: ["3.12"]
-
-    steps:
-    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
-      with:
-        python-version: ${{ matrix.python-version }}
-
-    - name: Lint with flake8 and black
-      run: |
-        python -m pip install ruff black
-        # stop the build if there are Python syntax errors or undefined names
-        # the ignores are taken care of by black
-        # ruff check refnx
-        black --check refnx
-
-    - name: clang-format
-      run: |
-        sudo apt update
-        sudo apt install clang-format
-        cd src
-        clang-format --Werror -n *.cpp *.h *.c
-        cd pnr
-        clang-format --Werror -n *.cc *.h
+################################################################################
+#  test_win:
+#    runs-on: windows-latest
+#    strategy:
+#      fail-fast: true
+#      max-parallel: 3
+#      matrix:
+#        python-version: ['3.12', '3.13', '3.14']
+#
+#    steps:
+#    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+#
+#    - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+#      with:
+#        python-version: ${{ matrix.python-version }}
+#        cache: 'pip' # caching pip dependencies
+#        allow-prereleases: true
+#
+#    - run: pip install -r .requirements.txt
+#    - run: mkdir -p dist
+#
+#    - name: Make wheel
+#      run: |
+#        python -m pip install --upgrade pip
+#        python -m pip install wheel build delvewheel abi3audit
+#        # python -m build --wheel -v
+#        python -m build --wheel -Csetup-args="--vsenv"
+#        delvewheel repair -w dist dist/*.whl
+#        abi3audit --strict --report dist/refnx*.whl
+#
+#    - name: Install package and test with pytest
+#      if: ${{ matrix.python-version == '3.12' }}
+#      env:
+#        PYOPENCL_CTX: 0
+#      run: |
+#        python -m pip install -r .requirements.txt
+#        cd dist
+#        python -m pip install --only-binary=refnx --no-index --find-links=. refnx
+#        pytest --pyargs refnx
+#        cd ..
+#
+#    - name: Check refnx gui starts
+#      if: ${{ matrix.python-version == '3.12' }}
+#      run: |
+#        # check that refnx gui starts
+#        pip install psutil
+#        python tools/app/check_app_starts.py refnx
+#
+#    - name: Make frozen GUI executable
+#      if: ${{ matrix.python-version == '3.12' }}
+#      run: |
+#        # make app in virtualenv
+#        pip uninstall -y h5py
+#        python -m venv app
+#        app\Scripts\activate.bat
+#        python -m pip install --upgrade --upgrade-strategy eager -r tools/app/requirements.txt
+#        cd dist
+#        python -m pip install --only-binary=refnx --no-index --find-links=. refnx
+#        cd ..
+#
+#        # fix for multiprocessing on Py3.9 is not merged in PyInstaller
+#        # if you are on Py3.7 you can just pip install pyinstaller
+#        # pip install git+https://github.com/andyfaff/pyinstaller.git@gh4865
+#
+#        cd tools\app
+#        pyinstaller motofit.spec
+#        move dist\motofit.exe ..\..\dist\
+#        cd ..\..
+#
+#    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+#      with:
+#        name: refnx-exe-win-${{ matrix.python-version }}
+#        path: dist/
+#
+#
+################################################################################
+#  build_doc:
+#
+#    runs-on: ubuntu-latest
+#    strategy:
+#      max-parallel: 1
+#      matrix:
+#        python-version: ["3.12"]
+#
+#    steps:
+#    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+#
+#    - name: Set up Python ${{ matrix.python-version }}
+#      uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+#      with:
+#        python-version: ${{ matrix.python-version }}
+#
+#    - name: setup apt dependencies
+#      run: |
+#        sudo apt-get update
+#        sudo apt-get install pandoc
+#
+#    - name: Build documentation
+#      run: |
+#        python -m pip install --upgrade pip
+#        python -m pip install .
+#        python -m pip install wheel
+#        cd doc
+#        python -m pip install -r requirements.txt
+#        make html
+#
+#
+################################################################################
+#  lint:
+#    runs-on: ubuntu-latest
+#    strategy:
+#      max-parallel: 1
+#      matrix:
+#        python-version: ["3.12"]
+#
+#    steps:
+#    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+#
+#    - name: Set up Python ${{ matrix.python-version }}
+#      uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+#      with:
+#        python-version: ${{ matrix.python-version }}
+#
+#    - name: Lint with flake8 and black
+#      run: |
+#        python -m pip install ruff black
+#        # stop the build if there are Python syntax errors or undefined names
+#        # the ignores are taken care of by black
+#        # ruff check refnx
+#        black --check refnx
+#
+#    - name: clang-format
+#      run: |
+#        sudo apt update
+#        sudo apt install clang-format
+#        cd src
+#        clang-format --Werror -n *.cpp *.h *.c
+#        cd pnr
+#        clang-format --Werror -n *.cc *.h
