@@ -86,6 +86,59 @@ class TestJAX:
         logl, grad = vg(np.array(self.objective.varying_parameters()))
         assert_allclose(-logl, self.objective.nll())
 
+    @pytest.mark.filterwarnings(
+        "ignore:Numba will use object mode:UserWarning"
+    )
+    @pytest.mark.filterwarnings("ignore:Rop is deprecated:FutureWarning")
+    def test_generative_op_jacobians(self):
+        # GenerativeOp exposes both a reverse-mode (pullback) and a
+        # forward-mode (pushforward) AD rule. Check both against each other,
+        # and against a finite-difference Jacobian of the raw generative
+        # model, to make sure neither rule silently regresses.
+        import pytensor
+        import pytensor.tensor as pt
+        from pytensor.gradient import Rop, jacobian as pt_jacobian
+
+        from refnx.reflect.extra import GenerativeOp
+
+        co = compile_objective(self.objective)
+        n = co.n_free
+        gen_op = GenerativeOp(co)
+
+        theta = [pt.dscalar(f"p{i}") for i in range(n)]
+        R = gen_op(theta)
+
+        # reverse-mode ("jacrev"): pytensor.gradient.jacobian loops over the
+        # *output* and differentiates via grad/pullback for each component.
+        jacrev_expr = pt_jacobian(R, theta)
+        jacrev_fn = pytensor.function(theta, jacrev_expr)
+
+        # forward-mode ("jacfwd"): loop over the *inputs*, one-hot tangent
+        # per parameter, via Rop/pushforward.
+        columns = []
+        for i in range(n):
+            one_hot = [pt.constant(1.0 if i == j else 0.0) for j in range(n)]
+            columns.append(
+                Rop(R, theta, one_hot, use_op_rop_implementation=True)
+            )
+        jacfwd_expr = pt.stack(columns, axis=1)
+        jacfwd_fn = pytensor.function(theta, jacfwd_expr)
+
+        x0 = np.array(self.objective.varying_parameters())
+
+        # pt_jacobian stacks per-`wrt`-element gradients along axis 0 (one
+        # row per parameter); transpose to the (n_q, n_free) convention used
+        # by approx_derivative and by jacfwd_expr (stacked with axis=1).
+        jacrev = np.asarray(jacrev_fn(*x0)).T
+        jacfwd = np.asarray(jacfwd_fn(*x0))
+
+        f = lambda free: np.asarray(co.generative(free))
+        approx = approx_derivative(f, x0, method="3-point")
+
+        assert_allclose(jacrev, approx, atol=1e-6)
+        assert_allclose(jacfwd, approx, atol=1e-6)
+        assert_allclose(jacrev, jacfwd, atol=1e-10)
+
     def test_solvation_reverse(self):
         # experiment with solvation and reversing structure and check that
         # solvation is occurring properly.
