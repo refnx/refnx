@@ -98,7 +98,7 @@ skip = "cp310-*"
 test-requires = ["pytest", "periodictable"]
 test-command = "pytest --pyargs refnx.reflect.tests.test_reflect"
 build = "cp311-*"
-before-build = "pip install jax meson-python meson cython wheel 'numpy>=2.0.0rc1' ninja"
+before-build = "pip install jax meson-python meson cython wheel numpy>=2 ninja"
 # --no-isolation so jax is visible to the build backend -- but that also
 # means build no longer auto-installs [build-system] requires into its own
 # isolated env, so before-build must install those too (kept in sync with
