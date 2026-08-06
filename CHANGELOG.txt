@@ -763,3 +763,6 @@ in 0.1.13.
   constructed from a CompiledObjective.
 - Don't error during tests if JAX is not installed.
 - Added more tests of the pymc/jax functionality in refnx.reflect.extra.
+
+0.1.68
+------
