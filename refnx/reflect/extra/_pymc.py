@@ -91,7 +91,6 @@ def to_pymc_model(objective, _dist=None):
         reflect_fn = jabeles
     else:
         from refnx.reflect.extra._jax_compiler import _get_reflect_fn
-
         reflect_fn = _get_reflect_fn()
 
     with warnings.catch_warnings():
