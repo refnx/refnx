@@ -19,9 +19,7 @@ from refnx.analysis import (
 )
 import refnx.reflect._app
 from refnx.reflect import Structure
-from matplotlib.backends.backend_qtagg import (
-    FigureCanvasQTAgg as FigureCanvas,
-)
+from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from matplotlib.figure import Figure
 
 UI_LOCATION = resources.files(refnx.reflect._app) / "ui"
@@ -179,6 +177,7 @@ def _plots(obj, nplot=0, folder=None):
         pass
 
     # plot sld profiles
+    fig3 = None
     if isinstance(obj, GlobalObjective):
         fig3 = Figure()
         FigureCanvas(fig3)
@@ -217,7 +216,8 @@ def _plots(obj, nplot=0, folder=None):
         arr = np.vstack([a for a in g])
         np.save(folder / "steps_sld.npy", arr)
 
-    fig3.savefig(folder / "steps_sld.png", dpi=1000)
+    if fig3 is not None:
+        fig3.savefig(folder / "steps_sld.png", dpi=1000)
 
     # plot the chains so one can see when parameters reach
     # 'equilibrium values'
