@@ -89,10 +89,18 @@ def to_pymc_model(objective, _dist=None):
         from refnx.reflect._jax_reflect import jabeles
 
         reflect_fn = jabeles
+    else:
+        from refnx.reflect.extra._jax_compiler import _get_reflect_fn
+
+        reflect_fn = _get_reflect_fn()
 
     with warnings.catch_warnings():
         # raise an error if any Objective has logp_extra
-        warnings.simplefilter("error", category=RuntimeWarning)
+        warnings.filterwarnings(
+            "error",
+            message="An Objective specifies logp_extra",
+            category=RuntimeWarning,
+        )
 
         if isinstance(objective, GlobalObjective):
             compiled_objective = compile_global_objective(

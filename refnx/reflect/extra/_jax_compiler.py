@@ -95,7 +95,7 @@ def _get_reflect_fn():
         from refnx.reflect._abeles_jax_ffi_wrapper import abeles_jax_ffi
 
         _reflect_fn_cache = abeles_jax_ffi
-    except ModuleNotFoundError, ImportError:
+    except (ModuleNotFoundError, ImportError):
         warnings.warn(
             "The _abeles_jax_ffi extension is not available (refnx was likely "
             "built without jax importable) -- falling back to the pure-JAX "
