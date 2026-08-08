@@ -1058,8 +1058,9 @@ class TreeModel(QtCore.QAbstractItemModel):
         return parentItem.childCount()
 
     def rebuild(self):
+        self.beginResetModel()
         self._rootnode = ContainerNode(self._data, self)
-        self.modelReset.emit()
+        self.endResetModel()
 
     def load_data(self, filename):
         data_object = self._rootnode.load_data(filename)
@@ -1148,7 +1149,60 @@ class TreeModel(QtCore.QAbstractItemModel):
             for mp in model_pars:
                 if set(mp.dependencies()).intersection(o_params):
                     mp.constraint = None
-            # TODO: investigate whether a dataChanged emit is necessary.
+
+                    # the parameter's node may still be present in the tree
+                    # (e.g. it's on a different dataset to the one being
+                    # removed) and needs to be told that its constraint,
+                    # and therefore its editability/display, has changed.
+                    par_node = next(
+                        (
+                            n
+                            for n in don.descendants()
+                            if isinstance(n, ParNode) and n.parameter is mp
+                        ),
+                        None,
+                    )
+                    if par_node is not None:
+                        lindex = self.index(
+                            par_node.row(), 1, par_node.parent().index
+                        )
+                        rindex = self.index(
+                            par_node.row(), 5, par_node.parent().index
+                        )
+                        self.dataChanged.emit(lindex, rindex)
+
+    def notify_dependents(self, parameter):
+        """
+        Emit dataChanged for every ParNode, anywhere in the tree, whose
+        parameter is constrained to depend on ``parameter``. Used when
+        ``parameter``'s value changes directly (e.g. via the params slider)
+        so that linked/constrained parameters elsewhere repaint too.
+        """
+        dons = self._rootnode._children
+
+        for don in dons:
+            do = don.data_object
+            model_pars = do.model.parameters.flattened()
+            for mp in model_pars:
+                if mp is parameter or parameter not in mp.dependencies():
+                    continue
+
+                par_node = next(
+                    (
+                        n
+                        for n in don.descendants()
+                        if isinstance(n, ParNode) and n.parameter is mp
+                    ),
+                    None,
+                )
+                if par_node is not None:
+                    lindex = self.index(
+                        par_node.row(), 1, par_node.parent().index
+                    )
+                    rindex = self.index(
+                        par_node.row(), 5, par_node.parent().index
+                    )
+                    self.dataChanged.emit(lindex, rindex)
 
 
 class TreeFilter(QtCore.QSortFilterProxyModel):
