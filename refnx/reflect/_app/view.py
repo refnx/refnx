@@ -75,6 +75,41 @@ from refnx._lib import unique, flatten, MapWrapper
 UI_LOCATION = resources.files(refnx.reflect._app) / "ui"
 
 
+def _qwidget_is_valid(widget):
+    """
+    True if the C++ side of a Qt-bound widget is still alive.
+
+    matplotlib's FigureCanvasQTAgg.draw_idle() schedules a deferred
+    redraw via QTimer.singleShot(0, self._draw_idle), which can end up
+    firing after the widget's C++ object has already been destroyed
+    (e.g. during test teardown, where pytest-qt closes and
+    deleteLater()s widgets without an intervening event-loop turn to
+    flush anything already pending). Calling into a dead widget from
+    that callback raises "already deleted" and can segfault, so
+    _draw_idle overrides below check this first. The check itself must
+    not go through the widget's own methods/attributes, since that is
+    exactly what raises on a dead object -- each binding provides a
+    dedicated free function for it.
+    """
+    for module_name, attr in (
+        ("shiboken6", "isValid"),
+        ("shiboken2", "isValid"),
+        ("PyQt6.sip", "isdeleted"),
+        ("PyQt5.sip", "isdeleted"),
+        ("sip", "isdeleted"),
+    ):
+        try:
+            module = __import__(module_name, fromlist=[attr])
+        except ImportError:
+            continue
+        result = getattr(module, attr)(widget)
+        return not result if attr == "isdeleted" else result
+
+    # Unknown/unsupported binding: assume valid rather than silently
+    # skipping every deferred redraw.
+    return True
+
+
 class MotofitMainWindow(QtWidgets.QMainWindow):
     """
     Main View window for Motofit
@@ -2556,6 +2591,11 @@ class MyReflectivityGraphs(FigureCanvas):
 
         self.draw_idle()
 
+    def _draw_idle(self):
+        if not _qwidget_is_valid(self):
+            return
+        super()._draw_idle()
+
     def _key_press(self, event):
         # auto scale
         if event.key == "super+a":
@@ -2727,6 +2767,11 @@ class MySLDGraphs(FigureCanvas):
         self.setParent(parent)
         self.figure.subplots_adjust(left=0.1, right=0.95, top=0.98)
         self.mpl_toolbar = NavigationToolbar(self, parent)
+
+    def _draw_idle(self):
+        if not _qwidget_is_valid(self):
+            return
+        super()._draw_idle()
 
     def redraw_data_objects(self, data_objects):
         for data_object in data_objects:
