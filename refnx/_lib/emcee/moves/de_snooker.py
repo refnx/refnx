@@ -32,7 +32,7 @@ class DESnookerMove(RedBlueMove):
         Ns = len(s)
         Nc = list(map(len, c))
         ndim = s.shape[1]
-        q = np.empty((Ns, ndim), dtype=np.float64)
+        q = np.empty_like(s)
         metropolis = np.empty(Ns, dtype=np.float64)
         for i in range(Ns):
             w = np.array([c[j][random.randint(Nc[j])] for j in range(3)])
@@ -40,7 +40,7 @@ class DESnookerMove(RedBlueMove):
             z, z1, z2 = w
             delta = s[i] - z
             norm = np.linalg.norm(delta)
-            u = delta / np.sqrt(norm)
+            u = delta / norm
             q[i] = s[i] + u * self.gammas * (np.dot(u, z1) - np.dot(u, z2))
             metropolis[i] = np.log(np.linalg.norm(q[i] - z)) - np.log(norm)
-        return q, 0.5 * (ndim - 1.0) * metropolis
+        return q, (ndim - 1.0) * metropolis
