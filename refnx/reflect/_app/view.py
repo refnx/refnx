@@ -75,6 +75,41 @@ from refnx._lib import unique, flatten, MapWrapper
 UI_LOCATION = resources.files(refnx.reflect._app) / "ui"
 
 
+def _qwidget_is_valid(widget):
+    """
+    True if the C++ side of a Qt-bound widget is still alive.
+
+    matplotlib's FigureCanvasQTAgg.draw_idle() schedules a deferred
+    redraw via QTimer.singleShot(0, self._draw_idle), which can end up
+    firing after the widget's C++ object has already been destroyed
+    (e.g. during test teardown, where pytest-qt closes and
+    deleteLater()s widgets without an intervening event-loop turn to
+    flush anything already pending). Calling into a dead widget from
+    that callback raises "already deleted" and can segfault, so
+    _draw_idle overrides below check this first. The check itself must
+    not go through the widget's own methods/attributes, since that is
+    exactly what raises on a dead object -- each binding provides a
+    dedicated free function for it.
+    """
+    for module_name, attr in (
+        ("shiboken6", "isValid"),
+        ("shiboken2", "isValid"),
+        ("PyQt6.sip", "isdeleted"),
+        ("PyQt5.sip", "isdeleted"),
+        ("sip", "isdeleted"),
+    ):
+        try:
+            module = __import__(module_name, fromlist=[attr])
+        except ImportError:
+            continue
+        result = getattr(module, attr)(widget)
+        return not result if attr == "isdeleted" else result
+
+    # Unknown/unsupported binding: assume valid rather than silently
+    # skipping every deferred redraw.
+    return True
+
+
 class MotofitMainWindow(QtWidgets.QMainWindow):
     """
     Main View window for Motofit
@@ -255,6 +290,17 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         )
         self.ui.console_text_edit.insertPlainText(text)
 
+    def msg(self, text, timeout=8000):
+        """
+        Non-modal notification for routine/expected messages (e.g. a
+        guard-clause validation, or a caught exception that the app has
+        already recovered from). Shown in the status bar so it doesn't
+        interrupt the current workflow, and printed to the console tab
+        so it isn't lost once the status bar message times out.
+        """
+        self.ui.statusbar.showMessage(text, timeout)
+        print(text)
+
     def _saveState(self, experiment_file_name):
         state = {}
         self.settings.experiment_file_name = experiment_file_name
@@ -344,7 +390,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
             # self.reflectivitygraphs.draw()
         except Exception as e:
             version = state.get("refnx.version", "N/A")
-            msg(
+            self.msg(
                 f"Failed to load experiment. It may have been saved in a"
                 f" previous refnx version ({version}). Please use that"
                 f" version to continue with analysis, refnx will now"
@@ -667,7 +713,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
             model = pickle.load(f)
 
         if not isinstance(model, ReflectModel):
-            msg("The pkl file you were loading was not a ReflectModel")
+            self.msg("The pkl file you were loading was not a ReflectModel")
             return
 
         data_object_node = self.treeModel.data_object_node(model.name)
@@ -732,7 +778,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
             _plots(objective, nplot=dialog.nplot.value(), folder=dialog.folder)
         except Exception as e:
             print(repr(e))
-            msg(
+            self.msg(
                 "MCMC processing went wrong. The MCMC chain can only be"
                 " processed against the fitting setup that created it."
             )
@@ -917,11 +963,13 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
     def on_actionBatch_Fit_triggered(self):
         datastore = self.treeModel.datastore
         if len(datastore) < 2:
-            return msg("You have no loaded datasets")
+            return self.msg("You have no loaded datasets")
 
         alg = self.settings.fitting_algorithm
         if alg == "MCMC":
-            return msg("It's not possible to do MCMC in batch fitting mode")
+            return self.msg(
+                "It's not possible to do MCMC in batch fitting mode"
+            )
 
         # need to retrieve the theoretical data_object because we're going to
         # use its model.
@@ -992,11 +1040,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
             self.treeModel.refresh()
             self.redraw_data_object_graphs(None, all=True)
         except FileNotFoundError:
-            print(
-                "FileNotFoundError: one or more datafiles is no longer in"
-                "their original location"
-            )
-            msg(
+            self.msg(
                 "FileNotFoundError: one or more datafiles is no longer in"
                 "their original location"
             )
@@ -1047,7 +1091,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
             self.reflectivitygraphs.axes[0].set_yscale("log")
         else:
             self.reflectivitygraphs.axes[0].set_yscale("linear")
-        self.reflectivitygraphs.draw()
+        self.reflectivitygraphs.draw_idle()
 
     @QtCore.Slot()
     def on_actionAbout_triggered(self):
@@ -1119,7 +1163,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         selected_indices = self.ui.treeView.selectedIndexes()
 
         if not selected_indices:
-            return msg(
+            return self.msg(
                 "Select a single row within a Structure to insert a"
                 " new Component."
             )
@@ -1145,7 +1189,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
             if (isinstance(i, ComponentNode) or isinstance(i, StackNode))
         ]
         if not _component:
-            return msg(
+            return self.msg(
                 "Select a single location within a Structure to insert"
                 " a new Component."
             )
@@ -1155,7 +1199,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         host = component.parent()
         idx = component.row()
         if isinstance(host, StructureNode) and idx == len(host._data) - 1:
-            return msg(
+            return self.msg(
                 "You can't append a layer after the backing medium,"
                 " select a previous layer"
             )
@@ -1200,7 +1244,9 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         selected_indices = self.ui.treeView.selectedIndexes()
 
         if not selected_indices:
-            return msg("Select a single row within a Structure to remove.")
+            return self.msg(
+                "Select a single row within a Structure to remove."
+            )
 
         index = selected_indices[0]
         if not index.isValid():
@@ -1222,7 +1268,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
             if (isinstance(i, ComponentNode) or isinstance(i, StackNode))
         ]
         if not _component:
-            return msg(
+            return self.msg(
                 "Select a single Component within a Structure to remove"
             )
 
@@ -1231,7 +1277,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         host = component.parent()
         idx = component.row()
         if isinstance(host, StructureNode) and idx in [0, len(host._data) - 1]:
-            return msg("You can't remove the fronting or backing media")
+            return self.msg("You can't remove the fronting or backing media")
 
         # TODO: unlink any parameters that might depend on this component?
 
@@ -1329,7 +1375,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         names_to_fit = self.currently_fitting_model.datasets
 
         if not names_to_fit:
-            return msg("Please add datasets to fit.")
+            return self.msg("Please add datasets to fit.")
 
         # retrieve data_objects
         datastore = self.treeModel.datastore
@@ -1378,6 +1424,68 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
 
         return objective
 
+    def _disable_fitting_controls(self, disable):
+        # prevent a second fit/MCMC run being started while one is already
+        # in progress on a background thread.
+        self.ui.do_fit_button.setEnabled(not disable)
+        self.ui.actionBatch_Fit.setEnabled(not disable)
+        self.ui.menuAlgorithm.setEnabled(not disable)
+
+    def _run_in_thread(self, fn, *args, **kwargs):
+        """
+        Runs `fn(*args, **kwargs)` on a background QThread, without
+        blocking the GUI event loop, and returns once it's finished.
+
+        This keeps `fn`'s call to the caller synchronous (it doesn't
+        return until `fn` has completed, so callers don't need to be
+        rewritten to handle a callback/future), while the potentially
+        slow computation in `fn` genuinely runs on a separate OS thread
+        rather than freezing the GUI. The GUI thread's own event loop
+        keeps running while we wait, so widgets keep repainting and
+        e.g. an "abort" button click is delivered immediately, instead
+        of relying on `fn` to periodically call
+        `QApplication.processEvents()` itself.
+
+        Returns
+        -------
+        exception : Exception or None
+            Any exception raised by `fn`, or None if it completed
+            normally. Not re-raised here, the caller decides what to do
+            with it (e.g. StopIteration means the user aborted).
+        """
+        thread = QtCore.QThread(self)
+        worker = FitWorker(fn, *args, **kwargs)
+        worker.moveToThread(thread)
+
+        loop = QtCore.QEventLoop()
+        result = {}
+
+        def _capture(exc):
+            result["exception"] = exc
+
+        thread.started.connect(worker.run)
+        worker.finished.connect(_capture)
+        worker.finished.connect(thread.quit)
+        worker.finished.connect(worker.deleteLater)
+        # Wait for QThread.finished, not FitWorker.finished. finished is
+        # emitted once `fn` has returned, but thread.quit() (connected
+        # above) still has to be delivered to, and processed by, the
+        # worker thread's own event loop before the OS thread actually
+        # exits. Quitting the local loop as soon as `fn` returns -- before
+        # that teardown has happened -- leaves the old QThread dangling in
+        # the background; starting a second _run_in_thread call shortly
+        # afterwards then races with it. thread.finished only fires once
+        # the QThread has genuinely finished, so waiting for it keeps
+        # consecutive calls (e.g. a fit followed by another fit) from
+        # overlapping.
+        thread.finished.connect(loop.quit)
+        thread.finished.connect(thread.deleteLater)
+
+        thread.start()
+        loop.exec()
+
+        return result.get("exception")
+
     def fit_data_objects(
         self, data_objects, alg=None, opt_kws=None, mcmc_kws=None
     ):
@@ -1409,7 +1517,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         # figure out how many varying parameters
         vp = objective.varying_parameters()
         if not vp:
-            return msg("No parameters are being varied.")
+            return self.msg("No parameters are being varied.")
 
         methods = {
             "DE": "differential_evolution",
@@ -1445,7 +1553,9 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
                 # for pythonw, sys.stderr = None
                 kws["verbose"] = False
 
-            try:
+            def _do_fit():
+                # runs on a background thread, see _run_in_thread. Must
+                # not touch any widgets.
                 # workers is added to differential evolution in scipy 1.2
                 if alg == "DE":
                     with MapWrapper(-1) as workers:
@@ -1455,25 +1565,31 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
                 else:
                     fitter.fit(method=methods[alg], **kws)
 
-                print(str(objective))
-            except StopIteration as e:
-                # user probably aborted the fit
-                # but it's still worth creating a fit curve, so don't return
-                # in this catch block
-                # xk should be the best fit so far.
-                text = e.args[0]
-                xk = e.args[1]
+            self._disable_fitting_controls(True)
+            try:
+                exc = self._run_in_thread(_do_fit)
 
-                msg(repr(text))
-                print(repr(text))
+                if exc is None:
+                    print(str(objective))
+                elif isinstance(exc, StopIteration):
+                    # user probably aborted the fit
+                    # but it's still worth creating a fit curve, so don't
+                    # return in this catch block
+                    # xk should be the best fit so far.
+                    text = exc.args[0]
+                    xk = exc.args[1]
 
-                objective.setp(xk)
-                print(objective)
-            except Exception as e:
-                # Typically shown when sensible limits weren't provided
-                msg(repr(e))
-                progress.close()
-                return []
+                    self.msg(repr(text))
+
+                    objective.setp(xk)
+                    print(objective)
+                else:
+                    # Typically shown when sensible limits weren't provided
+                    self.msg(repr(exc))
+                    progress.close()
+                    return []
+            finally:
+                self._disable_fitting_controls(False)
 
             progress.close()
         else:
@@ -1517,33 +1633,50 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
 
             try:
                 fitter.initialise(pos=init)
-                progress = QtWidgets.QProgressDialog(
-                    "MCMC progress", "Abort", 0, nsteps, parent=self
-                )
-                progress.setWindowModality(Qt.WindowModality.WindowModal)
-                progress.setAutoClose(True)
-                progress.setValue(0)
-                progress.show()
+            except Exception as e:
+                self.msg(repr(e))
+                return []
 
-                # only want to update every few seconds - updating the progress
-                # bar can chew processor cycles.
-                completed = [0]
-                last_time = [time.time()]
+            progress = QtWidgets.QProgressDialog(
+                "MCMC progress", "Abort", 0, nsteps, parent=self
+            )
+            progress.setWindowModality(Qt.WindowModality.WindowModal)
+            progress.setAutoClose(True)
+            progress.setValue(0)
+            progress.show()
 
-                def callback(coords, logprob):
-                    completed[0] += 1
-                    if (time.time() - last_time[0]) > 2:
-                        last_time[0] = time.time()
-                        val = completed[0]
+            bridge = ProgressBridge()
+            bridge.valueChanged.connect(progress.setValue)
 
-                        progress.setValue(val)
-                        if progress.wasCanceled():
-                            raise StopIteration("Sampling aborted")
+            cancelled = []
 
-                _ctx = None
-                if sys.platform == "linux" and sys.version_info < (3, 14):
-                    _ctx = "forkserver"
+            def _cancelled():
+                cancelled.append(True)
 
+            progress.canceled.connect(_cancelled)
+
+            # only want to update every few seconds - updating the progress
+            # bar can chew processor cycles.
+            completed = [0]
+            last_time = [time.time()]
+
+            def callback(coords, logprob):
+                # runs on a background thread, see _run_in_thread. Must
+                # not touch any widgets directly.
+                completed[0] += 1
+                if (time.time() - last_time[0]) > 2:
+                    last_time[0] = time.time()
+                    bridge.valueChanged.emit(completed[0])
+                    if cancelled:
+                        raise StopIteration("Sampling aborted")
+
+            _ctx = None
+            if sys.platform == "linux" and sys.version_info < (3, 14):
+                _ctx = "forkserver"
+
+            def _do_sample():
+                # runs on a background thread, see _run_in_thread. Must
+                # not touch any widgets.
                 with (
                     open(folder / "steps.chain", "w") as f,
                     get_context(_ctx).Pool() as workers,
@@ -1557,20 +1690,33 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
                         pool=workers.map,
                     )
 
-            except StopIteration:
-                pass
-            except Exception as e:
-                progress.close()
-                msg(repr(e))
-                print(repr(e))
-                return []
+            self._disable_fitting_controls(True)
+            try:
+                exc = self._run_in_thread(_do_sample)
+                if exc is not None and not isinstance(exc, StopIteration):
+                    progress.close()
+                    self.msg(repr(exc))
+                    return []
+            finally:
+                self._disable_fitting_controls(False)
             progress.close()
 
             # process the samples
+            #
+            # NOTE: this stays on the GUI thread rather than going through
+            # _run_in_thread like the sampling above. matplotlib's pyplot
+            # is imported lazily by refnx's plot() helpers (even though a
+            # Figure is passed in explicitly), and doing that for the
+            # first time from a background thread while a QtAgg-backed
+            # canvas is already live elsewhere in the app was observed to
+            # deadlock in testing. This phase is normally much shorter
+            # than the sampling itself, so it's a smaller responsiveness
+            # cost than blocking on the sampling was.
             def close(dialog=None):
                 if hasattr(dialog, "close"):
                     dialog.close()
 
+            dialog = None
             try:
                 if mcmc_kws is None:
                     dialog = ProcessMCMCDialog(
@@ -1580,7 +1726,6 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
                     close(dialog)
                     nplot = dialog.nplot.value()
                 else:
-                    dialog = None
                     _process_chain(
                         objective, fitter.chain, nburn, nthin, folder=folder
                     )
@@ -1589,8 +1734,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
                 _plots(objective, nplot=nplot, folder=folder)
             except Exception as e:
                 close(dialog)
-                msg(repr(e))
-                print(repr(e))
+                self.msg(repr(e))
                 return []
 
             print(str(objective))
@@ -1727,6 +1871,11 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
             index, index, [Qt.ItemDataRole.EditRole]
         )
 
+        # any parameters constrained to depend on this one also need to
+        # repaint, otherwise their displayed value goes stale until
+        # something else forces the treeview to refresh.
+        self.treeModel.notify_dependents(item.parameter)
+
     @QtCore.Slot()
     def on_paramsSlider_sliderReleased(self):
         try:
@@ -1750,14 +1899,6 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
 
         except (ValueError, AttributeError, KeyError):
             return
-
-        # for some reason linked parameters don't update well when the slider
-        # moves. Setting focus to the treeview and back to the slider seems
-        # to make the update happen. One could issue more dataChanged signals
-        # from sliderValue changed, but I'd have to figure out all the other
-        # nodes
-        self.ui.treeView.setFocus(Qt.FocusReason.OtherFocusReason)
-        self.ui.paramsSlider.setFocus(Qt.FocusReason.OtherFocusReason)
 
     def link_action(self):
         selected_indices = self.ui.treeView.selectedIndexes()
@@ -1851,7 +1992,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
             if not is_same_structure(
                 [mstr_obj_node.data_object] + data_objects
             ):
-                return msg(
+                return self.msg(
                     "All models must have equivalent structural"
                     " components and the same number of parameters for"
                     " equivalent linking to be available, no linking"
@@ -2012,12 +2153,12 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
 
         item = index.internalPointer()
         if not isinstance(item, StructureNode):
-            return msg("Please select a single Structure to remove")
+            return self.msg("Please select a single Structure to remove")
 
         data_object_node = find_data_object(index)
         reflect_model_node = data_object_node.child(1)
         if len(reflect_model_node.structures) == 1:
-            return msg(
+            return self.msg(
                 "Your model only contains a single Structure, removal"
                 " not possible"
             )
@@ -2278,6 +2419,49 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         self.sldgraphs.add_data_objects(data_objects)
 
 
+class FitWorker(QtCore.QObject):
+    """
+    Runs a blocking, long-running callable on a background QThread.
+
+    `fn` is typically a call into `fitter.fit`/`fitter.sample`, or some
+    other CPU-bound routine that would otherwise freeze the GUI event
+    loop if run directly on the main thread. Any exception raised by
+    `fn` (including `StopIteration`, which is how the app signals a
+    user-requested abort) is captured rather than propagated, and handed
+    back via the `finished` signal so it can be inspected on the GUI
+    thread once the worker's QThread has finished.
+    """
+
+    finished = QtCore.Signal(object)
+
+    def __init__(self, fn, *args, **kwargs):
+        super().__init__()
+        self.fn = fn
+        self.args = args
+        self.kwargs = kwargs
+
+    @QtCore.Slot()
+    def run(self):
+        exception = None
+        try:
+            self.fn(*self.args, **self.kwargs)
+        except Exception as exc:
+            exception = exc
+        self.finished.emit(exception)
+
+
+class ProgressBridge(QtCore.QObject):
+    """
+    A QObject that lives on the GUI thread. Fitting callbacks that run on
+    a background thread emit through these signals (a queued connection
+    is used automatically because sender/receiver are on different
+    threads), so that widgets are only ever touched on the GUI thread.
+    """
+
+    valueChanged = QtCore.Signal(int)
+    textChanged = QtCore.Signal(float, str)
+
+
 class ProgressCallback(QtWidgets.QDialog):
     def __init__(self, parent=None, objective=None):
         self.start = time.time()
@@ -2293,34 +2477,37 @@ class ProgressCallback(QtWidgets.QDialog):
         self.objective = objective
         self.iterations = 0
 
+        self.bridge = ProgressBridge()
+        self.bridge.textChanged.connect(self._update_display)
+
+    def _update_display(self, elapsed, text):
+        # only ever invoked on the GUI thread, even when `callback` below
+        # is called from a background fitting thread, because Qt
+        # automatically queues the signal/slot delivery across threads.
+        self.ui.timer.display(elapsed)
+        self.ui.values.setPlainText(text)
+
     def abort(self):
         self.abort_flag = True
 
     def callback(self, xk, *args, **kwds):
         # a callback for scipy.optimize.minimize, which enters
-        # every iteration.
+        # every iteration. May be invoked from a background fitting
+        # thread, so this method must not touch widgets directly.
         new_time = time.time()
         self.iterations += 1
 
         # update every 1.5 seconds
         if new_time - self.last_time > 1.5:
-            # gp = self.dataset.graph_properties
-            # if gp.line2Dfit is not None:
-            #     self.parent.redraw_data_object_graphs([self.dataset])
-            # else:
-            #     self.parent.add_datasets_to_graphs([self.dataset])
-
             self.elapsed = new_time - self.start
-            self.ui.timer.display(float(self.elapsed))
             self.last_time = new_time
 
             text = (
                 f"Chi2 : {self.objective.chisqr(xk)}\n"
                 f"Iterations : {self.iterations}"
             )
+            self.bridge.textChanged.emit(float(self.elapsed), text)
 
-            self.ui.values.setPlainText(text)
-            QtWidgets.QApplication.processEvents()
             if self.abort_flag:
                 raise StopIteration("WARNING: FIT WAS TERMINATED EARLY", xk)
 
@@ -2402,7 +2589,12 @@ class MyReflectivityGraphs(FigureCanvas):
         self.figure.canvas.mpl_connect("pick_event", self._pick_event)
         # self.figure.canvas.mpl_connect('key_press_event', self._key_press)
 
-        self.draw()
+        self.draw_idle()
+
+    def _draw_idle(self):
+        if not _qwidget_is_valid(self):
+            return
+        super()._draw_idle()
 
     def _key_press(self, event):
         # auto scale
@@ -2418,7 +2610,7 @@ class MyReflectivityGraphs(FigureCanvas):
     def autoscale(self):
         self.axes[0].relim()
         self.axes[0].autoscale(axis="both", tight=False, enable=True)
-        self.draw()
+        self.draw_idle()
 
     def add_data_objects(self, data_objects, transform=None):
         for data_object in data_objects:
@@ -2498,7 +2690,7 @@ class MyReflectivityGraphs(FigureCanvas):
             #                     **graph_properties['residuals_properties'])
 
             graph_properties.save_graph_properties()
-        self.draw()
+        self.draw_idle()
 
     def redraw_data_objects(self, data_objects, transform=None):
         if not len(data_objects):
@@ -2540,7 +2732,7 @@ class MyReflectivityGraphs(FigureCanvas):
         #                                          dataObject.residuals)
         #             dataObject.line2Dresiduals.set_visible(visible)
 
-        self.draw()
+        self.draw_idle()
 
     def remove_trace(self, data_object):
         graph_properties = data_object.graph_properties
@@ -2555,7 +2747,7 @@ class MyReflectivityGraphs(FigureCanvas):
         if graph_properties.ax_residuals is not None:
             graph_properties.ax_residuals.remove()
             graph_properties.ax_residuals = None
-        self.draw()
+        self.draw_idle()
 
 
 class MySLDGraphs(FigureCanvas):
@@ -2575,6 +2767,11 @@ class MySLDGraphs(FigureCanvas):
         self.setParent(parent)
         self.figure.subplots_adjust(left=0.1, right=0.95, top=0.98)
         self.mpl_toolbar = NavigationToolbar(self, parent)
+
+    def _draw_idle(self):
+        if not _qwidget_is_valid(self):
+            return
+        super()._draw_idle()
 
     def redraw_data_objects(self, data_objects):
         for data_object in data_objects:
@@ -2609,7 +2806,7 @@ class MySLDGraphs(FigureCanvas):
 
         self.axes[0].relim()
         self.axes[0].autoscale_view(None, True, True)
-        self.draw()
+        self.draw_idle()
 
     def add_data_objects(self, data_objects):
         for data_object in data_objects:
@@ -2647,12 +2844,12 @@ class MySLDGraphs(FigureCanvas):
 
         self.axes[0].relim()
         self.axes[0].autoscale(axis="both", tight=False, enable=True)
-        self.draw()
+        self.draw_idle()
 
     def remove_trace(self, data_object):
         if data_object.graph_properties.ax_sld_profile:
             data_object.graph_properties.ax_sld_profile.remove()
-        self.draw()
+        self.draw_idle()
 
 
 class EmittingStream(QtCore.QObject):
@@ -2701,13 +2898,6 @@ class OpenMenu(QtWidgets.QMenu):
             pass
         if action == self.unlink_action:
             pass
-
-
-def msg(text):
-    # utility function for displaying a message
-    msgBox = QtWidgets.QMessageBox()
-    msgBox.setText(text)
-    return msgBox.exec()
 
 
 def _default_slab(parent=None):
@@ -2769,7 +2959,7 @@ class CurrentlyFitting(QtCore.QAbstractListModel):
         n_current = len(self.datasets)
         if new_items:
             self.beginInsertRows(
-                QtCore.QModelIndex(), n_current, n_current + len(new_items) + 1
+                QtCore.QModelIndex(), n_current, n_current + len(new_items) - 1
             )
             self.datasets.extend(new_items)
             self.endInsertRows()
