@@ -242,8 +242,13 @@ class _CallableConstraintNode:
     we can call ``fn(*evaluated_args)``.
 
     This only works if ``fn`` itself is composed of JAX-compatible operations
-    (e.g. uses jnp inside).  If it uses numpy/Python scalars the gradient
-    will be a stop-gradient.  We document this limitation clearly.
+    on its Parameter-derived args (plain Python operators like ``+``/``*``
+    are fine, since they dispatch to the JAX tracer's own dunder methods).
+    Calling a raw numpy function (e.g. ``np.sin`` rather than ``jnp.sin``) on
+    a traced arg does *not* silently produce a stop-gradient -- it raises
+    ``jax.errors.TracerArrayConversionError`` at compile time, since numpy
+    tries to convert the tracer to a concrete array. Fails loud, not silently
+    wrong.
     """
 
     fn: Callable
