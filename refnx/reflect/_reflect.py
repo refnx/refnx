@@ -25,9 +25,11 @@ DEALINGS IN THIS SOFTWARE.
 """
 
 from importlib import resources
+from typing import Optional
+
 import numpy as np
 import numpy.typing as npt
-from typing import Optional
+
 import refnx.reflect
 
 # TINY = np.finfo(np.float64).tiny
@@ -151,7 +153,7 @@ class _Abeles_pyopencl:
         flatq = qvals.ravel()
 
         nlayers = len(w) - 2
-        coefs = np.empty((nlayers * 4 + 8))
+        coefs = np.empty(nlayers * 4 + 8)
         coefs[0] = nlayers
         coefs[1] = scale
         coefs[2:4] = w[0, 1:3]
@@ -187,9 +189,9 @@ abeles_pyopencl = _Abeles_pyopencl()
 def abeles(
     q: npt.ArrayLike,
     layers: npt.ArrayLike,
-    scale: Optional[float] = 1.0,
-    bkg: Optional[float] = 0,
-    threads: Optional[int] = 0,
+    scale: float | None = 1.0,
+    bkg: float | None = 0,
+    threads: int | None = 0,
 ) -> np.array:
     """
     Abeles matrix formalism for calculating reflectivity from a stratified
@@ -453,17 +455,13 @@ def _contract_by_area(slabs, dA=0.5):
                 break
 
             # If next slice won't fit, break
-            if rho[i] < rholo:
-                rholo = rho[i]
-            if rho[i] > rhohi:
-                rhohi = rho[i]
+            rholo = min(rholo, rho[i])
+            rhohi = max(rhohi, rho[i])
             if (rhohi - rholo) * (dz + d[i]) > dA:
                 break
 
-            if irho[i] < irholo:
-                irholo = irho[i]
-            if irho[i] > irhohi:
-                irhohi = irho[i]
+            irholo = min(irholo, irho[i])
+            irhohi = max(irhohi, irho[i])
             if (irhohi - irholo) * (dz + d[i]) > dA:
                 break
 

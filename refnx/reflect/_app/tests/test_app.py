@@ -1,21 +1,21 @@
 import glob
-from pathlib import Path
 import pickle
-from importlib import resources
 import warnings
+from importlib import resources
+from pathlib import Path
 
 import pytest
-from qtpy import QtWidgets, QtCore, QtGui
+from qtpy import QtCore, QtGui, QtWidgets
 
-from refnx.reflect._app.view import MotofitMainWindow
+import refnx.analysis
 import refnx.dataset as refd
+from refnx.reflect import SLD, ReflectModel, Spline, Structure
+from refnx.reflect._app import resources_rc
 from refnx.reflect._app.treeview_gui_model import (
     ReflectModelNode,
     StructureNode,
 )
-from refnx.reflect._app import resources_rc
-from refnx.reflect import Spline, Structure, SLD, ReflectModel
-import refnx.analysis
+from refnx.reflect._app.view import MotofitMainWindow
 
 try:
     import pytestqt.qtbot as qtbot_module
@@ -145,5 +145,5 @@ def test_mcmc_fit_and_reprocess(qtbot, tmp_path):
 @pytest.mark.skipif(QTBOT_MISSING, reason="pytest-qt not installed")
 def test_requirements(qtbot, tmp_path):
     # test if we can add a spline to a model and save an experiment
-    myapp, model = mysetup(qtbot)
+    myapp, _model = mysetup(qtbot)
     assert len(myapp.requirements())

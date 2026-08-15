@@ -1,11 +1,13 @@
 import numpy as np
+
 from refnx.analysis import (
-    possibly_create_parameter,
     Parameter,
-    is_parameter,
     Parameters,
+    is_parameter,
+    possibly_create_parameter,
 )
-from refnx.reflect import Component, Structure, SLD
+
+from .structure import SLD, Component, Structure
 
 
 class FunctionalForm(Component):
@@ -76,7 +78,7 @@ class FunctionalForm(Component):
     def __init__(
         self, extent, profile, name=None, microslab_max_thickness=1, **kwds
     ):
-        super(FunctionalForm, self).__init__(name=name)
+        super().__init__(name=name)
         self.profile = profile
         self.other_params = {k: v for k, v in kwds.items() if is_parameter(v)}
 

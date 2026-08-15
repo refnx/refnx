@@ -1,27 +1,31 @@
-from collections import namedtuple
-import sys
-import re
-import warnings
 import array
+import re
+import sys
+import warnings
+from collections import namedtuple
 
 import numpy as np
-
-from scipy._lib._util import check_random_state
-from scipy.optimize import minimize, differential_evolution, least_squares
 import scipy.optimize as sciopt
+from scipy._lib._util import check_random_state
+from scipy.optimize import differential_evolution, least_squares, minimize
 from scipy.stats.qmc import LatinHypercube
 
-from refnx.analysis import Objective, Interval, PDF, is_parameter
+from refnx._lib import (
+    MapWrapper,
+    emcee,
+    flatten,
+    possibly_open_file,
+)
 from refnx._lib import (
     unique as f_unique,
-    MapWrapper,
-    possibly_open_file,
-    flatten,
 )
-from refnx._lib.util import getargspec
-from refnx._lib import emcee
-from refnx._lib.emcee.state import State
 from refnx._lib.emcee.pbar import get_progress_bar
+from refnx._lib.emcee.state import State
+from refnx._lib.util import getargspec
+
+from .bounds import PDF, Interval
+from .objective import Objective
+from .parameter import is_parameter
 
 MCMCResult = namedtuple(
     "MCMCResult", ["name", "param", "stderr", "chain", "median"]
@@ -161,7 +165,7 @@ class PTSampler:
     @property
     def random_state(self):
         if self._ptchain is not None:
-            self._ptchain.ensemble._rng.bit_generator.state
+            return self._ptchain.ensemble._rng.bit_generator.state
 
     @random_state.setter
     def random_state(self, state):

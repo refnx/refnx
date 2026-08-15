@@ -1,9 +1,10 @@
-from typing import Any, Callable, Dict, List, Optional, Tuple
-
 import operator
+from collections.abc import Callable
 from dataclasses import dataclass, field
-import numpy as np
+from typing import Any
+
 import jax.numpy as jnp
+import numpy as np
 
 
 @dataclass
@@ -66,7 +67,7 @@ class _PaddedSlabSpecs:
         The static maximum number of slabs, equal to ``len(specs)``.
     """
 
-    specs: List[_SlabSpec]
+    specs: list[_SlabSpec]
     n_active_node: Any
     n_max: int
 
@@ -85,17 +86,17 @@ class _ConstraintCompiler:
         The position of each free (varying) parameter in the flat vector.
     """
 
-    def __init__(self, free_index: Dict[int, int]):
+    def __init__(self, free_index: dict[int, int]):
         self._free_index = free_index
 
     def compile(self, expr) -> Any:
         """Compile a constraint expression rooted at ``expr`` into a Node."""
         from refnx.analysis.parameter import (
-            Parameter,
+            BaseParameter,
             Constant,
+            Parameter,
             _BinaryOp,
             _UnaryOp,
-            BaseParameter,
         )
 
         if isinstance(expr, Parameter):
@@ -145,8 +146,8 @@ class _ConstraintCompiler:
         ``p._constraint_args``.
         """
         from refnx.analysis.parameter import (
-            Parameter,
             BaseParameter,
+            Parameter,
             _BinaryOp,
             _UnaryOp,
         )
@@ -252,12 +253,12 @@ class _CallableConstraintNode:
     """
 
     fn: Callable
-    arg_nodes: List[Any]  # one node per arg in _constraint_args
+    arg_nodes: list[Any]  # one node per arg in _constraint_args
 
 
 # Map from refnx numpy ops to their jnp equivalents so the compiled
 # expression uses JAX primitives rather than numpy ones.
-_NP_TO_JNP: Dict[Callable, Callable] = {
+_NP_TO_JNP: dict[Callable, Callable] = {
     np.sin: jnp.sin,
     np.cos: jnp.cos,
     np.tan: jnp.tan,

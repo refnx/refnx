@@ -1,11 +1,11 @@
+from refnx._lib import possibly_open_file as _possibly_open_file
+from refnx._lib._testutils import PytestTester
 from refnx.dataset.data1d import Data1D
 from refnx.dataset.reflectdataset import (
-    ReflectDataset,
     OrsoDataset,
     PolarisedReflectDatasets,
+    ReflectDataset,
 )
-from refnx._lib._testutils import PytestTester
-from refnx._lib import possibly_open_file as _possibly_open_file
 
 test = PytestTester(__name__)
 del PytestTester
@@ -29,14 +29,14 @@ def load_data(f):
     try:
         data = OrsoDataset(f)
         return data
-    except Exception:
+    except Exception:  # noqa: S110, BLE001
         # not an ORSO file
         pass
 
     try:
         d = ReflectDataset(f)
         return d
-    except Exception:
+    except Exception:  # noqa: S110, BLE001
         pass
 
     d = Data1D(f)

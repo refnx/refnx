@@ -1,29 +1,28 @@
-from refnx.reduce.reduce import (
-    PlatypusReduce,
-    SpatzReduce,
-    PolarisedReduce,
-    reduce_stitch,
-    AutoReducer,
-    PolarisationEfficiency,
-)
+from refnx._lib._testutils import PytestTester
+from refnx.reduce.batchreduction import BatchReducer
 from refnx.reduce.platypusnexus import (
+    Catalogue,
+    PlatypusNexus,
+    ReductionOptions,
+    ReflectNexus,
+    SpatzNexus,
+    SpinSet,
+    accumulate_HDF_files,
+    basename_datafile,
     catalogue,
     create_reflect_nexus,
-    PlatypusNexus,
-    ReflectNexus,
-    number_datafile,
-    basename_datafile,
     datafile_number,
-    accumulate_HDF_files,
-    Catalogue,
-    SpatzNexus,
-    ReductionOptions,
-    SpinSet,
+    number_datafile,
 )
-from refnx.reduce.batchreduction import BatchReducer
+from refnx.reduce.reduce import (
+    AutoReducer,
+    PlatypusReduce,
+    PolarisationEfficiency,
+    PolarisedReduce,
+    SpatzReduce,
+    reduce_stitch,
+)
 from refnx.reduce.xray import reduce_xrdml
-from refnx._lib._testutils import PytestTester
-from refnx.reduce._app import main, gui
 
 test = PytestTester(__name__)
 del PytestTester

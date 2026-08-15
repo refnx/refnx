@@ -3,13 +3,19 @@ Component for studying lipid membranes at an interface
 """
 
 import warnings
+
 import numpy as np
 from scipy.optimize import NonlinearConstraint
-from refnx.reflect import Component, SLD, ReflectModel, Structure
-from refnx.analysis import possibly_create_parameter, Parameters, Parameter
-from refnx.reflect.structure import (
-    overall_sld,
+
+from refnx.analysis import Parameter, Parameters, possibly_create_parameter
+
+from .reflect_model import ReflectModel
+from .structure import (
+    SLD,
+    Component,
     Scatterer,
+    Structure,
+    overall_sld,
     possibly_create_scatterer,
 )
 
@@ -137,68 +143,68 @@ class LipidLeaflet(Component):
         """
         super().__init__()
         self.apm = possibly_create_parameter(
-            apm, "%s - area_per_molecule" % name, units="Å**2"
+            apm, f"{name} - area_per_molecule", units="Å**2"
         )
 
         if isinstance(b_heads, complex):
             self.b_heads_real = possibly_create_parameter(
-                b_heads.real, name="%s - b_heads_real" % name
+                b_heads.real, name=f"{name} - b_heads_real"
             )
             self.b_heads_imag = possibly_create_parameter(
-                b_heads.imag, name="%s - b_heads_imag" % name
+                b_heads.imag, name=f"{name} - b_heads_imag"
             )
         elif isinstance(b_heads, SLD):
             self.b_heads_real = b_heads.real
             self.b_heads_imag = b_heads.imag
         else:
             self.b_heads_real = possibly_create_parameter(
-                b_heads, name="%s - b_heads_real" % name
+                b_heads, name=f"{name} - b_heads_real"
             )
             self.b_heads_imag = possibly_create_parameter(
-                0, name="%s - b_heads_imag" % name
+                0, name=f"{name} - b_heads_imag"
             )
 
         self.b_heads_real.units = self.b_heads_imag.units = "Å"
 
         self.vm_heads = possibly_create_parameter(
-            vm_heads, name="%s - vm_heads" % name, units="Å**3"
+            vm_heads, name=f"{name} - vm_heads", units="Å**3"
         )
 
         self.thickness_heads = possibly_create_parameter(
-            thickness_heads, name="%s - thickness_heads" % name, units="Å"
+            thickness_heads, name=f"{name} - thickness_heads", units="Å"
         )
 
         if isinstance(b_tails, complex):
             self.b_tails_real = possibly_create_parameter(
-                b_tails.real, name="%s - b_tails_real" % name
+                b_tails.real, name=f"{name} - b_tails_real"
             )
             self.b_tails_imag = possibly_create_parameter(
-                b_tails.imag, name="%s - b_tails_imag" % name
+                b_tails.imag, name=f"{name} - b_tails_imag"
             )
         elif isinstance(b_tails, SLD):
             self.b_tails_real = b_tails.real
             self.b_tails_imag = b_tails.imag
         else:
             self.b_tails_real = possibly_create_parameter(
-                b_tails, name="%s - b_tails_real" % name
+                b_tails, name=f"{name} - b_tails_real"
             )
             self.b_tails_imag = possibly_create_parameter(
-                0, name="%s - b_tails_imag" % name
+                0, name=f"{name} - b_tails_imag"
             )
         self.b_tails_real.units = self.b_tails_imag.units = "Å"
 
         self.vm_tails = possibly_create_parameter(
-            vm_tails, name="%s - vm_tails" % name, units="Å**3"
+            vm_tails, name=f"{name} - vm_tails", units="Å**3"
         )
         self.thickness_tails = possibly_create_parameter(
-            thickness_tails, name="%s - thickness_tails" % name, units="Å"
+            thickness_tails, name=f"{name} - thickness_tails", units="Å"
         )
         self.rough_head_tail = possibly_create_parameter(
-            rough_head_tail, name="%s - rough_head_tail" % name, units="Å"
+            rough_head_tail, name=f"{name} - rough_head_tail", units="Å"
         )
         self.rough_preceding_mono = possibly_create_parameter(
             rough_preceding_mono,
-            name="%s - rough_fronting_mono" % name,
+            name=f"{name} - rough_fronting_mono",
             units="Å",
         )
 

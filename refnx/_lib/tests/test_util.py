@@ -1,17 +1,15 @@
+from importlib import resources
 from multiprocessing import Pool
 from multiprocessing.pool import Pool as PWL
-from importlib import resources
 
-
-from pytest import raises as assert_raises
+import numpy as np
 from numpy.testing import assert_equal
+from pytest import raises as assert_raises
 
 import refnx
 import refnx.analysis
-from refnx._lib.util import flatten, unique, MapWrapper, possibly_open_file
 from refnx._lib._cutil import c_flatten
-
-import numpy as np
+from refnx._lib.util import MapWrapper, flatten, possibly_open_file, unique
 
 
 class TestUtil:

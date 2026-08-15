@@ -1,33 +1,32 @@
 import io
-from importlib import resources
-from pathlib import Path
 import os
-from datetime import datetime
-
+from datetime import UTC, datetime
+from importlib import resources
 from io import BytesIO, StringIO
-import pytest
+from pathlib import Path
 
+import numpy as np
 import orsopy.fileio as fio
+import pytest
+from numpy.testing import assert_equal
 from orsopy.fileio.base import ValueRange
 
 import refnx
+import refnx.dataset.tests
+from refnx._lib import possibly_open_file
 from refnx.dataset import (
-    ReflectDataset,
     Data1D,
-    load_data,
     OrsoDataset,
     PolarisedReflectDatasets,
+    ReflectDataset,
+    load_data,
 )
 from refnx.dataset.data1d import _data1D_to_hdf, _hdf_to_data1d
 from refnx.dataset.reflectdataset import load_orso
-from refnx.reflect import SLD, MaterialSLD, ReflectModel
 from refnx.reduce import PlatypusNexus, ReductionOptions
 from refnx.reduce.platypusnexus import calculate_wavelength_bins
-from refnx.util import q, EPdiv
-import refnx.dataset.tests
-from refnx._lib import possibly_open_file
-import numpy as np
-from numpy.testing import assert_equal
+from refnx.reflect import SLD, MaterialSLD, ReflectModel
+from refnx.util import EPdiv, q
 
 
 class TestReflectDataset:
@@ -420,7 +419,7 @@ class TestOrtDataset:
         ds = OrsoDataset(
             load_orso(self.data_directory / "dataset" / "Ni_example.ort")[0]
         )
-        s, model, objective = ds.setup_analysis()
+        s, _model, _objective = ds.setup_analysis()
         np.testing.assert_allclose(s[1].thick.value, 1000)
 
         # now try changing value and resaving ort file
@@ -430,7 +429,7 @@ class TestOrtDataset:
 
         # see if the value was updated in the file
         ds2 = OrsoDataset(load_orso(self.tmp_path / "flake.ort")[0])
-        s2, model2, objective2 = ds2.setup_analysis()
+        s2, _model2, _objective2 = ds2.setup_analysis()
         np.testing.assert_allclose(s2[1].thick.value, 2000)
 
     def test_ort_load(self):
@@ -512,7 +511,7 @@ class TestOrtDataset:
         )
         header.data_source.experiment = fio.data_source.Experiment(
             title="Metal films",
-            start_date=datetime(2025, 4, 8),
+            start_date=datetime(2025, 4, 8, tzinfo=UTC),
             instrument="Platypus",
             probe="neutron",
             facility="ANSTO",

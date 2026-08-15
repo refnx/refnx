@@ -3,36 +3,34 @@ This module tests the objective function by comparing it to the line example
 from http://dan.iel.fm/emcee/current/user/line/
 """
 
-from importlib import resources
 import pickle
+from importlib import resources
 from multiprocessing.reduction import ForkingPickler
 
-import pytest
-
 import numpy as np
-from scipy.linalg import LinAlgWarning
-from scipy.optimize import minimize, least_squares
-from scipy.optimize._numdiff import approx_derivative
-import scipy.stats as stats
-
+import pytest
 from numpy.testing import (
-    assert_equal,
     assert_allclose,
+    assert_equal,
 )
+from scipy import stats
+from scipy.linalg import LinAlgWarning
+from scipy.optimize import least_squares, minimize
+from scipy.optimize._numdiff import approx_derivative
 
+import refnx.analysis.tests
+from refnx._lib import emcee
 from refnx.analysis import (
-    Parameter,
+    PDF,
+    BaseObjective,
     Model,
     Objective,
-    BaseObjective,
-    Transform,
+    Parameter,
     Parameters,
-    PDF,
+    Transform,
 )
-import refnx.analysis.tests
 from refnx.dataset import Data1D, ReflectDataset
 from refnx.util import ErrorProp as EP
-from refnx._lib import emcee
 
 
 def line(x, params, *args, **kwds):
@@ -410,9 +408,9 @@ class TestObjective:
         burnin = 200
         samples = sampler.get_chain()[burnin:, :, :].reshape((-1, ndim))
         samples[:, 2] = np.exp(samples[:, 2])
-        m_mc, b_mc, f_mc = map(
-            lambda v: (v[1], v[2] - v[1], v[1] - v[0]),
-            zip(*np.percentile(samples, [16, 50, 84], axis=0)),
+        m_mc, b_mc, f_mc = (
+            (v[1], v[2] - v[1], v[1] - v[0])
+            for v in zip(*np.percentile(samples, [16, 50, 84], axis=0))
         )
         assert_allclose(m_mc, (-1.0071664, 0.0809444, 0.0784894), rtol=0.05)
 

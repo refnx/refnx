@@ -1,9 +1,10 @@
 from pathlib import Path
+
 import numpy as np
-from numpy import exp, sin, cos, arctan, array, pi
+from numpy import arctan, array, cos, exp, pi, sin
 from numpy.testing import assert_allclose
 
-from refnx.analysis import CurveFitter, Objective, Parameter, Parameters, Model
+from refnx.analysis import CurveFitter, Model, Objective, Parameter, Parameters
 
 NIST_DIR = Path(__file__).parent / "NIST_STRD"
 
@@ -218,7 +219,7 @@ def ReadNistData(dataset, start="start2"):
     significant!
     """
     with open(NIST_DIR / f"{dataset}.dat", "r") as finp:
-        lines = [line[:-1] for line in finp.readlines()]
+        lines = [line[:-1] for line in finp]
 
     model_lines = lines[30:39]
     param_lines = lines[40:58]
@@ -267,7 +268,7 @@ def ReadNistData(dataset, start="start2"):
 
     params = Parameters()
     for i in range(nparams):
-        pname = "p%i" % (i + 1)
+        pname = f"p{i + 1}"
         if start == "start2":
             pval = start2[i]
         elif start == "start1":

@@ -2,7 +2,7 @@ import numpy as np
 from numpy.testing import assert_allclose
 
 from refnx.analysis import Parameter
-from refnx.reflect import FunctionalForm, SLD
+from refnx.reflect import SLD, FunctionalForm
 
 
 class Line:

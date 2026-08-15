@@ -1,14 +1,15 @@
 import operator
+
 import numpy as np
 
+import refnx
+from refnx._lib import flatten
 from refnx.analysis import GlobalObjective, Objective
 from refnx.analysis.parameter import (
-    constraint_tree,
-    build_constraint_from_tree,
     Constant,
+    build_constraint_from_tree,
+    constraint_tree,
 )
-from refnx._lib import flatten
-import refnx
 
 _imports = r"""#!/usr/bin/env python
 
@@ -276,7 +277,7 @@ def code_fragment(objective):
     code_str = "\n".join(code)
 
     try:
-        from black import format_str, FileMode
+        from black import FileMode, format_str
 
         code_str = format_str(code_str, mode=FileMode())
     except ImportError:

@@ -7,22 +7,22 @@ __copyright__ = "Copyright 2019, Andrew Nelson"
 __license__ = "3 clause BSD"
 
 import numpy as np
+from scipy._lib._util import check_random_state
 from scipy.integrate import simpson
 from scipy.interpolate import InterpolatedUnivariateSpline as IUS
-from scipy.stats import rv_continuous, trapezoid, norm, uniform
 from scipy.optimize import brentq
-from scipy._lib._util import check_random_state
+from scipy.stats import norm, rv_continuous, trapezoid, uniform
 
+from refnx.dataset import ReflectDataset
+from refnx.reduce import parabolic_motion as pm
 from refnx.reduce.platypusnexus import (
+    PlatypusNexus,
     calculate_wavelength_bins,
     create_reflect_nexus,
-    PlatypusNexus,
 )
-from refnx.reduce import parabolic_motion as pm
-from refnx.util import general, ErrorProp
+from refnx.reflect import SLD, ReflectModel, Slab, Structure
+from refnx.util import ErrorProp, general
 from refnx.util._resolution_kernel import AngularDivergence
-from refnx.reflect import Slab, Structure, SLD, ReflectModel
-from refnx.dataset import ReflectDataset
 
 
 class SpectrumDist(rv_continuous):
@@ -38,7 +38,7 @@ class SpectrumDist(rv_continuous):
     """
 
     def __init__(self, x, y):
-        super(SpectrumDist, self).__init__(a=np.min(x), b=np.max(x))
+        super().__init__(a=np.min(x), b=np.max(x))
         self._x = x
 
         # normalise the distribution
@@ -106,7 +106,7 @@ class SpectrumDist(rv_continuous):
 
 
 # for parallelisation (can't pickle rv_continuous all that easily)
-class _CDF(object):
+class _CDF:
     def __init__(self, spl, fudge_factor, a, b):
         self.a = a
         self.b = b
@@ -117,7 +117,7 @@ class _CDF(object):
         return self.spl.integral(self.a, x) / self.fudge_factor
 
 
-class _G(object):
+class _G:
     def __init__(self, cdf):
         self.cdf = cdf
 
@@ -128,7 +128,7 @@ class _G(object):
         return brentq(self._f, self.cdf.a, self.cdf.b, args=(q,), xtol=1e-4)
 
 
-class ReflectSimulator(object):
+class ReflectSimulator:
     """
     Simulate a reflectivity pattern from PLATYPUS.
 
@@ -240,8 +240,8 @@ class ReflectSimulator(object):
         self.q = general.q(angle - elevations, bin_centre)
 
         # keep a tally of the direct and reflected beam
-        self.direct_beam = np.zeros((self.wavelength_bins.size - 1))
-        self.reflected_beam = np.zeros((self.wavelength_bins.size - 1))
+        self.direct_beam = np.zeros(self.wavelength_bins.size - 1)
+        self.reflected_beam = np.zeros(self.wavelength_bins.size - 1)
 
         # beam monitor counts for normalisation
         self.bmon_direct = 0
@@ -261,7 +261,7 @@ class ReflectSimulator(object):
             if isinstance(a, PlatypusNexus):
                 direct = True
 
-            q, i, di = a.process(
+            q, i, _di = a.process(
                 normalise=False,
                 normalise_bins=False,
                 rebin_percent=0.5,

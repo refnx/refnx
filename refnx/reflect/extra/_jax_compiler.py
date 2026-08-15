@@ -40,25 +40,26 @@ Usage
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from typing import Any, Callable, Dict, List, Optional, Tuple
 import warnings
+from collections.abc import Callable
+from dataclasses import dataclass, field
 
-import numpy as np
-import jax.numpy as jnp
 import jax
+import jax.numpy as jnp
+import numpy as np
+
 from refnx.reflect import LipidLeaflet, LipidLeafletGuest
+from refnx.reflect.extra._jax_lipid import (
+    _lipid_leaflet_guest_jax_slabs,
+    _lipid_leaflet_jax_slabs,
+)
 from refnx.reflect.extra._jax_util import (
-    _SlabSpec,
-    _PaddedSlabSpecs,
+    _compile_scatterer,
     _ConstNode,
     _ConstraintCompiler,
-    _compile_scatterer,
     _eval_node,
-)
-from refnx.reflect.extra._jax_lipid import (
-    _lipid_leaflet_jax_slabs,
-    _lipid_leaflet_guest_jax_slabs,
+    _PaddedSlabSpecs,
+    _SlabSpec,
 )
 
 # ---------------------------------------------------------------------------
@@ -91,7 +92,7 @@ def _get_reflect_fn():
     from refnx.reflect._jax_reflect import abeles_jax
 
     try:
-        import refnx.reflect._abeles_jax_ffi  # noqa: F401  (build-time probe)
+        import refnx.reflect._abeles_jax_ffi
         from refnx.reflect._abeles_jax_ffi_wrapper import abeles_jax_ffi
 
         _reflect_fn_cache = abeles_jax_ffi
@@ -123,7 +124,7 @@ for klass, method in _jax_slabs_methods.items():
 
 def _compile_structure(
     structure, compiler: _ConstraintCompiler
-) -> List[_SlabSpec]:
+) -> list[_SlabSpec]:
     """
     Walk a refnx Structure and return a list of ``_SlabSpec`` or
     ``_PaddedSlabSpecs`` objects — one entry per slab row (or per padded
@@ -240,7 +241,7 @@ def _compile_solvent(structure, compiler: _ConstraintCompiler):
 
 
 def _make_params_to_slabs(
-    slab_specs: List[_SlabSpec],
+    slab_specs: list[_SlabSpec],
     solvent_real_node,
     solvent_imag_node,
     reverse_structure: bool = False,
@@ -364,11 +365,11 @@ def _make_params_to_slabs(
 def _make_generative(
     params_to_slabs: Callable,
     q: jnp.ndarray,
-    q_err: Optional[jnp.ndarray],
+    q_err: jnp.ndarray | None,
     scale_node,
     bkg_node,
     quad_order: int = 17,
-    reflect_fn: Optional[Callable] = None,
+    reflect_fn: Callable | None = None,
 ) -> Callable:
     """
     Build a pure JAX function computing the forward model ``free -> R(q)``.
@@ -428,7 +429,7 @@ def _make_generative(
 def _make_logl(
     generative: Callable,
     y: jnp.ndarray,
-    y_err: Optional[jnp.ndarray],
+    y_err: jnp.ndarray | None,
     lnsigma_node,
     use_weights: bool,
 ) -> Callable:
@@ -518,7 +519,7 @@ class CompiledModel:
     model: Callable
     jacfwd: Callable
     x0: jnp.ndarray
-    param_names: List[str]
+    param_names: list[str]
     params_to_slabs: Callable
     setp: Callable
     n_free: int
@@ -620,7 +621,7 @@ def compile_model(reflect_model) -> CompiledModel:
     def _forward(
         free: jnp.ndarray,
         q: jnp.ndarray,
-        q_err: Optional[jnp.ndarray],
+        q_err: jnp.ndarray | None,
         kernel: Callable,
     ) -> jnp.ndarray:
         layers = params_to_slabs_fn(free)
@@ -642,14 +643,14 @@ def compile_model(reflect_model) -> CompiledModel:
     def model_fn(
         q: jnp.ndarray,
         free: jnp.ndarray,
-        q_err: Optional[jnp.ndarray] = None,
+        q_err: jnp.ndarray | None = None,
     ) -> jnp.ndarray:
         return _forward(free, q, q_err, reflect_fn)
 
     def model_fn_jacfwd(
         q: jnp.ndarray,
         free: jnp.ndarray,
-        q_err: Optional[jnp.ndarray] = None,
+        q_err: jnp.ndarray | None = None,
     ) -> jnp.ndarray:
         # jax.jacfwd needs a forward-mode (jvp) rule. abeles_jax_ffi only
         # implements reverse-mode (vjp), so the Jacobian is always built
@@ -734,7 +735,7 @@ class CompiledObjective:
     generative: Callable
     generative_fwd: Callable
     x0: jnp.ndarray
-    param_names: List[str]
+    param_names: list[str]
     setp: Callable
     n_free: int
 
@@ -743,7 +744,7 @@ def _compile_single(
     objective,
     compiler: _ConstraintCompiler,
     quad_order: int = 17,
-    reflect_fn: Optional[Callable] = None,
+    reflect_fn: Callable | None = None,
 ) -> tuple:
     """
     Compile one ``Objective`` into raw (un-JIT-ted) JAX functions.
@@ -829,9 +830,12 @@ def _compile_single(
     dqvals = None
     _quad_order = model.quad_order
 
-    if model.dq_type == "pointwise" and objective.data.x_err is None:
-        if model.dq.value > 0:
-            dqvals = model.dq.value / 100.0 * objective.data.x
+    if (
+        model.dq_type == "pointwise"
+        and objective.data.x_err is None
+        and model.dq.value > 0
+    ):
+        dqvals = model.dq.value / 100.0 * objective.data.x
     if model.dq_type == "constant" and model.dq.value > 0:
         dqvals = model.dq.value / 100.0 * objective.data.x
     if model.dq_type == "pointwise" and objective.data.x_err is not None:
@@ -937,7 +941,7 @@ def _compile_single(
 
 
 def compile_objective(
-    objective, reflect_fn: Optional[Callable] = None
+    objective, reflect_fn: Callable | None = None
 ) -> CompiledObjective:
     """
     Compile a refnx ``Objective`` into a pure JAX log-likelihood.
@@ -995,7 +999,7 @@ def compile_objective(
     if len(var_params) == 0:
         raise ValueError("Objective has no varying parameters to compile.")
 
-    free_index: Dict[int, int] = {id(p): i for i, p in enumerate(var_params)}
+    free_index: dict[int, int] = {id(p): i for i, p in enumerate(var_params)}
     x0 = jnp.array([float(p.value) for p in var_params], dtype=jnp.float64)
     param_names = [p.name or f"p{i}" for i, p in enumerate(var_params)]
 
@@ -1055,7 +1059,7 @@ def compile_objective(
 
 
 def compile_global_objective(
-    global_objective, reflect_fn: Optional[Callable] = None
+    global_objective, reflect_fn: Callable | None = None
 ) -> CompiledObjective:
     """
     Compile a refnx ``GlobalObjective`` into a pure JAX log-likelihood.
@@ -1117,7 +1121,7 @@ def compile_global_objective(
             "GlobalObjective has no varying parameters to compile."
         )
 
-    free_index: Dict[int, int] = {id(p): i for i, p in enumerate(var_params)}
+    free_index: dict[int, int] = {id(p): i for i, p in enumerate(var_params)}
     x0 = jnp.array([float(p.value) for p in var_params], dtype=jnp.float64)
     param_names = [p.name or f"p{i}" for i, p in enumerate(var_params)]
 
@@ -1128,12 +1132,12 @@ def compile_global_objective(
     #     The lambda weights are baked in as Python floats (constants in
     #     the XLA graph) because GlobalObjective.lambdas are plain floats.
     # ------------------------------------------------------------------
-    weighted_logl_fns: List[tuple] = []  # (lam, logl_raw) — all pure JAX
-    extra_potential_fns: List[tuple] = (
+    weighted_logl_fns: list[tuple] = []  # (lam, logl_raw) — all pure JAX
+    extra_potential_fns: list[tuple] = (
         []
     )  # (lam, extra_potential) — Python only
-    generative_fns: List[Callable] = []
-    generative_fwd_fns: List[Callable] = []
+    generative_fns: list[Callable] = []
+    generative_fwd_fns: list[Callable] = []
 
     for obj, lam in zip(global_objective.objectives, global_objective.lambdas):
         logl_i, generative_i, generative_fwd_i, _, extra_i = _compile_single(

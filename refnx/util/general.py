@@ -1,10 +1,9 @@
-#!/usr/bin/python
 """
 Functions for various calculations related to reflectometry
 """
 
 import numpy as np
-from scipy import stats, integrate, constants, optimize
+from scipy import constants, integrate, optimize, stats
 
 # h / m = 3956
 K = constants.h / constants.m_n * 1.0e10
@@ -501,7 +500,7 @@ def _neutron_transmission_depth(material, wavelength, xs_type="abs_incoh"):
     """
     import periodictable
 
-    sld, xs, _ = periodictable.neutron_scattering(
+    _sld, xs, _ = periodictable.neutron_scattering(
         material, wavelength=wavelength
     )
     if xs_type == "abs_incoh":
@@ -808,9 +807,9 @@ def slit_optimiser(
     d1 = optimal_d1star * resolution / 0.68 * np.radians(angle) * L12
     d2 = d1 * multfactor
 
-    tmp, height_at_S4 = height_of_beam_after_dx(d1, d2, L12, L2S + LS3)
-    tmp, height_at_detector = height_of_beam_after_dx(d1, d2, L12, L2S + LSD)
-    tmp, _actual_footprint = actual_footprint(d1, d2, L12, L2S, angle)
+    _, height_at_S4 = height_of_beam_after_dx(d1, d2, L12, L2S + LS3)
+    _, height_at_detector = height_of_beam_after_dx(d1, d2, L12, L2S + LSD)
+    _, _actual_footprint = actual_footprint(d1, d2, L12, L2S, angle)
 
     if verbose:
         print("OUTPUT")

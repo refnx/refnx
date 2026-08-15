@@ -1,9 +1,9 @@
 import warnings
 
 import numpy as np
+import pytensor
 import pytensor.tensor as pt
 from pytensor.graph import Apply, Op
-import pytensor
 from pytensor.link.jax.dispatch import jax_funcify
 
 from refnx.analysis import GlobalObjective, process_chain
@@ -123,7 +123,7 @@ def to_pymc_model(objective, _dist=None):
     with pm.Model() as basic_model:
         # Priors for unknown model parameters
         for i, par in enumerate(pars):
-            name = "p%d" % i
+            name = f"p{i}"
             p = _to_pymc_distribution(name, par)
             wrapped_pars.append(p)
 

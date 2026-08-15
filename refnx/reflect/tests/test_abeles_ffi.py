@@ -20,7 +20,7 @@ except ImportError:
 
 if HAVE_JAX:
     try:
-        import refnx.reflect._abeles_jax_ffi  # noqa: F401  (build-time probe)
+        import refnx.reflect._abeles_jax_ffi
 
         HAVE_ABELES_FFI = True
     except ImportError:
@@ -79,8 +79,8 @@ class TestAbelesFFI:
         # the C kernel invoked directly through jax's FFI should reproduce
         # the same C kernel invoked through the existing Cython bindings,
         # to float64 noise.
-        from refnx.reflect._creflect import abeles as c_abeles
         from refnx.reflect._abeles_jax_ffi_wrapper import abeles_jax_ffi
+        from refnx.reflect._creflect import abeles as c_abeles
 
         layers = jnp.asarray(LAYER_STACKS[name], dtype=jnp.float64)
         r_c = c_abeles(q, np.array(LAYER_STACKS[name]), scale=1.3, bkg=2e-7)
@@ -91,8 +91,8 @@ class TestAbelesFFI:
     def test_forward_matches_jabeles(self, q, name):
         # cross-check against the pure-JAX reimplementation as well, since
         # that's what abeles_jax_ffi's own gradient rule is piggybacked on.
-        from refnx.reflect._jax_reflect import abeles_jax
         from refnx.reflect._abeles_jax_ffi_wrapper import abeles_jax_ffi
+        from refnx.reflect._jax_reflect import abeles_jax
 
         layers = jnp.asarray(LAYER_STACKS[name], dtype=jnp.float64)
         r_jax = abeles_jax(q, layers, scale=1.3, bkg=2e-7)
@@ -130,8 +130,8 @@ class TestAbelesFFI:
     def test_gradient_matches_jabeles(self, q):
         # abeles_jax_ffi's gradient rule is explicitly piggybacked on jabeles's
         # autodiff (see _abeles_jax_ffi_wrapper.py) -- confirm the two stay in sync.
-        from refnx.reflect._jax_reflect import abeles_jax
         from refnx.reflect._abeles_jax_ffi_wrapper import abeles_jax_ffi
+        from refnx.reflect._jax_reflect import abeles_jax
 
         layers = jnp.asarray(LAYER_STACKS["3-layer"], dtype=jnp.float64)
         scale = jnp.float64(1.3)

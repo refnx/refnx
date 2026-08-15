@@ -1,18 +1,17 @@
-# coding: utf-8
-
 """
 Batch reduction of reflectometry data based on a spreadsheet
 """
 
 import collections
-import numpy as np
 import os
 import os.path
-import pandas as pd
 import pickle
 import re
 import sys
 import warnings
+
+import numpy as np
+import pandas as pd
 
 try:
     import IPython.display
@@ -21,7 +20,8 @@ try:
 except ImportError:
     _have_ipython = False
 
-from refnx.reduce import reduce_stitch, ReductionOptions
+from .platypusnexus import ReductionOptions
+from .reduce import reduce_stitch
 
 ReductionEntryTuple = collections.namedtuple(
     "ReductionEntry", ["row", "ds", "name", "fname", "entry"]
@@ -143,12 +143,12 @@ class ReductionCache(list):
 
         for row in row_numbers:
             if row not in self.row_cache:
-                print("Not deleting unknown row %s" % row)
+                print(f"Not deleting unknown row {row}")
                 continue
 
             self[self.row_cache[row]] = None
             del self.row_cache[row]
-            print("Deleted row %s" % row)
+            print(f"Deleted row {row}")
 
         if self.persistent:
             self.write_cache()
@@ -429,30 +429,27 @@ class BatchReducer:
                 fmt
                 % (
                     entry["name"],
-                    ", ".join("%d" % r for r in runs),
-                    ", ".join("%d" % r for r in directs),
+                    ", ".join(f"{r}" for r in runs),
+                    ", ".join(f"{r}" for r in directs),
                 )
             )
             sys.stdout.flush()  # keep progress updated
 
         if not runs:
             warnings.warn(
-                "Row %d (%s) has no reflection runs. Skipped."
-                % (entry["source"], entry["name"])
+                f"Row {entry['source']} ({entry['name']}) has no reflection runs. Skipped."
             )
             return None, None
         if not directs:
             warnings.warn(
-                "Row %d (%s) has no direct beam runs. Skipped."
-                % (entry["source"], entry["name"])
+                f"Row {entry['source']} ({entry['name']}) has no direct beam runs. Skipped."
             )
             return None, None
 
         if len(runs) > len(directs):
             warnings.warn(
-                "Row %d (%s) has differing numbers of"
+                f"Row {entry['source']} ({entry['name']}) has differing numbers of"
                 " direct & reflection runs. Skipped."
-                % (entry["source"], entry["name"])
             )
             return None, None
 
@@ -515,10 +512,10 @@ class BatchReducer:
 
             try:
                 ds, fname = self._reduce_row(all_runs.loc[idx])
-            except IOError as e:
+            except OSError as e:
                 # data file not found (normally)
                 reduction_ok = str(e)
-                warnings.warn("Run %s: %s" % (name, str(e)))
+                warnings.warn(f"Run {name}: {e!s}")
                 ds = None
                 fname = None
             else:
@@ -537,7 +534,7 @@ class BatchReducer:
             if reduction_ok:
                 scale = all_runs.loc[idx, "scale"]
                 if not np.isnan(scale) and scale != 1:
-                    print("Applying scale factor %f" % scale)
+                    print(f"Applying scale factor {scale}")
                     sys.stdout.flush()  # keep progress updated
                     cached.rescale(scale)
 
@@ -568,7 +565,7 @@ def run_list(entry, mode="refl"):
     """
     if mode not in ("refl", "directs"):
         # FIXME: crap API
-        raise ValueError("Unknown mode %s" % mode)
+        raise ValueError(f"Unknown mode {mode}")
 
     if mode == "refl":
         listed = [entry["refl1"], entry["refl2"], entry["refl3"]]
@@ -587,8 +584,7 @@ def run_list(entry, mode="refl"):
                     valid.append(run)
             except TypeError:
                 raise ValueError(
-                    "Value '%s' could not be interpreted as a run"
-                    " number" % run
+                    f"Value {run} could not be interpreted as a run number"
                 )
 
     # valid = [int(r) for r in l if not np.isnan(r)]

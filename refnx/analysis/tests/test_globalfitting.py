@@ -4,17 +4,19 @@ overall construction of the models can be done in a few different ways.
 """
 
 from importlib import resources
+
 import numpy as np
 from numpy.testing import (
     assert_,
-    assert_equal,
-    assert_almost_equal,
     assert_allclose,
+    assert_almost_equal,
+    assert_equal,
 )
+
 import refnx.analysis.tests
-from refnx.analysis import CurveFitter, Objective, GlobalObjective, Transform
+from refnx.analysis import CurveFitter, GlobalObjective, Objective, Transform
 from refnx.dataset import ReflectDataset
-from refnx.reflect import Slab, SLD, ReflectModel
+from refnx.reflect import SLD, ReflectModel, Slab
 
 SEED = 1
 

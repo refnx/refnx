@@ -1,22 +1,21 @@
-from pathlib import Path
 from importlib import resources
-
-from qtpy import QtCore, QtWidgets, uic
-import numpy as np
+from pathlib import Path
 
 import matplotlib
+import numpy as np
+from matplotlib import patches
 from matplotlib.backends.backend_qtagg import (
     FigureCanvasQTAgg as FigureCanvas,
 )
-from matplotlib.figure import Figure
-from matplotlib import patches
 from matplotlib.backends.backend_qtagg import (
     NavigationToolbar2QT as NavigationToolbar,
 )
+from matplotlib.figure import Figure
+from qtpy import QtCore, QtWidgets, uic
 
-from refnx.reduce.peak_utils import peak_finder, centroid
-from refnx.reduce.platypusnexus import fore_back_region, PIXEL_OFFSET
 import refnx.reduce._app as floc
+from refnx.reduce.peak_utils import centroid, peak_finder
+from refnx.reduce.platypusnexus import PIXEL_OFFSET, fore_back_region
 
 matplotlib.use("QtAgg")
 
@@ -34,7 +33,6 @@ class ManualBeamFinder(QtWidgets.QDialog):
     """
 
     def __init__(self, parent=None):
-        """ """
         super().__init__()
         self.dialog = uic.loadUi(UI_LOCATION / "manual_beam.ui", self)
 
@@ -134,8 +132,8 @@ class ManualBeamFinder(QtWidgets.QDialog):
 
         self.dialog.exec()
 
-        y1 = int(round(self._low_px - PIXEL_OFFSET))
-        y2 = int(round(self._high_px + PIXEL_OFFSET))
+        y1 = round(self._low_px - PIXEL_OFFSET)
+        y2 = round(self._high_px + PIXEL_OFFSET)
         background_pixels = np.r_[
             np.arange(self._low_bkg, y1 + 1), np.arange(y2, self._high_bkg + 1)
         ]
@@ -153,7 +151,7 @@ class ManualBeamFinder(QtWidgets.QDialog):
         After the ROI for the beam find has been changed redraw the detector
         cross section and recalculate the beam centre and widths.
         """
-        x, xs, xs_err = get_cross_section(
+        x, xs, _xs_err = get_cross_section(
             self.detector,
             self.detector_err,
             self._pixels_to_include,
@@ -270,7 +268,7 @@ class ManualBeamFinder(QtWidgets.QDialog):
             )
 
         # recalculate beam_centre, beam_sd based off cross section
-        x, xs, xs_err = get_cross_section(
+        x, xs, _xs_err = get_cross_section(
             self.detector,
             self.detector_err,
             self._pixels_to_include,
@@ -603,10 +601,10 @@ class Cross_Section(FigureCanvas):
             return
 
         x, y = event.xdata, event.ydata
-        self.txt.set_text("x=%1.2f, y=%1.2f" % (x, y))
+        self.txt.set_text(f"x={x:1.2f}, y={y:1.2f}")
 
         if self._dragging:
-            found, loc, xpress, ypress = self._press
+            found, loc, xpress, _ypress = self._press
             attr, line = found
             dx = x - xpress
             # dy = y - ypress
@@ -628,14 +626,19 @@ class NavToolBar(NavigationToolbar):
     Toolbar for the detector image
     """
 
-    toolitems = [
-        ("Home", "Reset original view", "home", "home"),
-        ("Back", "Back to previous view", "back", "back"),
-        ("Forward", "Forward to next view", "forward", "forward"),
-        ("Pan", "Pan axes with left mouse, zoom with right", "move", "pan"),
-        ("Zoom", "Zoom to rectangle", "zoom_to_rect", "zoom"),
-    ]
-
     def __init__(self, canvas, parent, coordinates=True):
+        self.toolitems = [
+            ("Home", "Reset original view", "home", "home"),
+            ("Back", "Back to previous view", "back", "back"),
+            ("Forward", "Forward to next view", "forward", "forward"),
+            (
+                "Pan",
+                "Pan axes with left mouse, zoom with right",
+                "move",
+                "pan",
+            ),
+            ("Zoom", "Zoom to rectangle", "zoom_to_rect", "zoom"),
+        ]
+
         NavigationToolbar.__init__(self, canvas, parent, coordinates)
         self.setIconSize(QtCore.QSize(15, 15))

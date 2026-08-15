@@ -1,6 +1,8 @@
 from importlib import resources
-import refnx
+
 import numpy as np
+
+import refnx
 
 
 class TestUtil:

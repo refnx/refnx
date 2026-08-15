@@ -1,19 +1,19 @@
+import re
 import string
 import time
-import re
 
 # from datetime import datetime
 from pathlib import Path, PurePath
 
 try:
-    import xml.etree.cElementTree as ET
+    import xml.etree.ElementTree as ET
 except ImportError:
     import xml.etree.ElementTree as ET
 import numpy as np
-
 import orsopy.fileio as fio
-from refnx.dataset import Data1D
+
 from refnx._lib import possibly_open_file
+from refnx.dataset import Data1D
 
 
 def load_orso(f):
@@ -22,11 +22,11 @@ def load_orso(f):
     with possibly_open_file(f) as fi:
         try:
             return fio.load_orso(fi)
-        except Exception:
+        except Exception:  # noqa: BLE001, S110
             pass
         try:
             return fio.load_nexus(fi)
-        except Exception:
+        except Exception:  # noqa: BLE001, S110
             pass
 
 
@@ -80,7 +80,7 @@ class ReflectDataset(Data1D):
             All arrays must have the same shape.
         """
         super().__init__(data=data, **kwds)
-        self.datafilenumber = list()
+        self.datafilenumber = []
         self.sld_profile = None
 
     def __repr__(self):
@@ -316,8 +316,8 @@ class OrsoDataset(Data1D):
         >>> fitter.fit("differential_evolution")
 
         """
-        from refnx.reflect import Structure, ReflectModel
         from refnx.analysis import Objective
+        from refnx.reflect import ReflectModel, Structure
 
         if self.orso is None:
             raise RuntimeError(
@@ -378,7 +378,7 @@ class PolarisedReflectDatasets:
     @property
     def x(self):
         xs = []
-        for spin in self.spins.keys():
+        for spin in self.spins:
             data = getattr(self, spin)
             if data is None:
                 continue
@@ -392,7 +392,7 @@ class PolarisedReflectDatasets:
     @property
     def y(self):
         ys = []
-        for spin in self.spins.keys():
+        for spin in self.spins:
             data = getattr(self, spin)
             if data is None:
                 continue
@@ -405,7 +405,7 @@ class PolarisedReflectDatasets:
     def y_err(self):
         if self.weighted:
             ys = []
-            for spin in self.spins.keys():
+            for spin in self.spins:
                 data = getattr(self, spin)
                 if data is None:
                     continue
@@ -419,7 +419,7 @@ class PolarisedReflectDatasets:
     @property
     def x_err(self):
         xs = []
-        for spin in self.spins.keys():
+        for spin in self.spins:
             data = getattr(self, spin)
             if data is None:
                 continue
@@ -439,7 +439,7 @@ class PolarisedReflectDatasets:
     @property
     def weighted(self):
         weighted = []
-        for spin in self.spins.keys():
+        for spin in self.spins:
             data = getattr(self, spin)
             if data is not None:
                 weighted.append(data.weighted)

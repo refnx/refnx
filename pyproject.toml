@@ -90,7 +90,7 @@ exclude = [
 
 
 [tool.ruff.lint]
-ignore = ["F401", "F405", "E501", "E203", "E231"]
+ignore = ["F401", "F405", "E501", "E203", "E231", "N999"]
 
 
 [tool.cibuildwheel]

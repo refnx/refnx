@@ -1,6 +1,6 @@
-from copy import deepcopy
 import os.path
 import pickle
+from copy import deepcopy
 from operator import itemgetter
 
 import numpy as np
@@ -10,17 +10,17 @@ from qtpy.QtCore import Qt
 from refnx._lib import flatten, unique
 from refnx.analysis import Parameter, Parameters, possibly_create_parameter
 from refnx.dataset import ReflectDataset
-from refnx.reflect._app.dataobject import DataObject
-from refnx.reflect._app.datastore import DataStore
 from refnx.reflect import (
-    Slab,
-    LipidLeaflet,
     SLD,
-    ReflectModel,
+    LipidLeaflet,
     MixedReflectModel,
+    ReflectModel,
+    Slab,
     Spline,
     Stack,
 )
+from refnx.reflect._app.dataobject import DataObject
+from refnx.reflect._app.datastore import DataStore
 
 
 def component_class(component):
@@ -38,7 +38,7 @@ def component_class(component):
 
 
 class Node:
-    def __init__(self, data, model, parent=QtCore.QModelIndex()):
+    def __init__(self, data, model, parent=None):
         self._data = data
         self._children = []
         # the parent node
@@ -149,7 +149,7 @@ class Node:
 
 
 class ParNode(Node):
-    def __init__(self, data, model, parent=QtCore.QModelIndex()):
+    def __init__(self, data, model, parent=None):
         super().__init__(data, model, parent)
 
     @property
@@ -205,7 +205,7 @@ class ParNode(Node):
                 p.vary = value == Qt.CheckState.Checked.value
             except RuntimeError:
                 # can't try and hold a parameter that has a constraint
-                False
+                return False
 
             return True
 
@@ -232,7 +232,7 @@ class ParNode(Node):
 
 
 class ParametersNode(Node):
-    def __init__(self, data, model, parent=QtCore.QModelIndex()):
+    def __init__(self, data, model, parent=None):
         super().__init__(data, model, parent)
         for p in data:
             if isinstance(p, Parameters):
@@ -252,11 +252,10 @@ class ParametersNode(Node):
 
     def data(self, column, role=Qt.ItemDataRole.DisplayRole):
         if role == Qt.ItemDataRole.DisplayRole:
-            if column == 0:
-                name = self._data.name
-                if not name:
-                    name = "Parameters"
-                return name
+            name = self._data.name
+            if column == 0 and not name:
+                name = "Parameters"
+            return name
 
         return None
 
@@ -264,9 +263,7 @@ class ParametersNode(Node):
 class PropertyNode(Node):
     # an object that displays/edits some attribute of its parent node
     # it is not a ParNode.
-    def __init__(
-        self, data, model, parent=QtCore.QModelIndex(), validators=()
-    ):
+    def __init__(self, data, model, parent=None, validators=()):
         super().__init__(data, model, parent)
         # here self._data is the attribute name
         self.attribute_type = type(getattr(parent._data, data))
@@ -335,7 +332,7 @@ class PropertyNode(Node):
 
 
 class ComponentNode(Node):
-    def __init__(self, data, model, parent=QtCore.QModelIndex(), flat=True):
+    def __init__(self, data, model, parent=None, flat=True):
         """
         Parameters
         ----------
@@ -393,7 +390,7 @@ class ComponentNode(Node):
 
 
 class StructureNode(Node):
-    def __init__(self, data, model, parent=QtCore.QModelIndex()):
+    def __init__(self, data, model, parent=None):
         super().__init__(data, model, parent)
         for component in data:
             self.appendChild(
@@ -464,7 +461,7 @@ STRUCT_OFFSET = 4
 
 
 class ReflectModelNode(Node):
-    def __init__(self, data, model, parent=QtCore.QModelIndex()):
+    def __init__(self, data, model, parent=None):
         super().__init__(data, model, parent=parent)
 
         # pointwise/constant dq/q choice is kept in the ReflectModel
@@ -653,7 +650,7 @@ class ReflectModelNode(Node):
 
 
 class DatasetNode(Node):
-    def __init__(self, data, model, parent=QtCore.QModelIndex()):
+    def __init__(self, data, model, parent=None):
         super().__init__(data, model, parent)
 
     @property
@@ -678,7 +675,7 @@ class DatasetNode(Node):
 
 
 class DataObjectNode(Node):
-    def __init__(self, data_object, model, parent=QtCore.QModelIndex()):
+    def __init__(self, data_object, model, parent=None):
         super().__init__(data_object, model, parent=parent)
 
         self.chi2 = float(np.nan)
@@ -761,9 +758,9 @@ class DataObjectNode(Node):
             elif column == 1:
                 return "display"
             elif column == 2:
-                return "points: %d" % len(self._data.dataset)
+                return f"points: {len(self._data.dataset)}"
             elif column == 3:
-                return "chi2: %g" % self.chi2
+                return f"chi2: {self.chi2:g}"
         elif role == QtCore.Qt.ItemDataRole.ToolTipRole:
             if column == 1:
                 return "Show or hide the dataset from the graphs"
@@ -927,7 +924,7 @@ class TreeModel(QtCore.QAbstractItemModel):
 
         return None
 
-    def index(self, row, column, parent=QtCore.QModelIndex()):
+    def index(self, row, column, parent=None):
         if parent is None:
             parent = QtCore.QModelIndex()
 
@@ -987,10 +984,7 @@ class TreeModel(QtCore.QAbstractItemModel):
         # what the destination was.
         host_node = parent.internalPointer()
 
-        if not (
-            isinstance(host_node, ComponentNode)
-            or isinstance(host_node, StackNode)
-        ):
+        if not (isinstance(host_node, (ComponentNode, StackNode))):
             return False
 
         # host_structure could be a Structure OR a Stack
@@ -1049,7 +1043,9 @@ class TreeModel(QtCore.QAbstractItemModel):
 
         return True
 
-    def rowCount(self, parent=QtCore.QModelIndex()):
+    def rowCount(self, parent=None):
+        if parent is None:
+            parent = QtCore.QModelIndex()
         if not parent.isValid():
             parentItem = self._rootnode
         else:
@@ -1207,7 +1203,7 @@ class TreeModel(QtCore.QAbstractItemModel):
 
 class TreeFilter(QtCore.QSortFilterProxyModel):
     def __init__(self, tree_model, parent=None, only_fitted=False):
-        super(TreeFilter, self).__init__(parent)
+        super().__init__(parent)
         self.tree_model = tree_model
         # only_fitted means that only the entries that are varying will be
         # displayed.
@@ -1282,13 +1278,13 @@ def find_data_object(index):
 
 ###############################################################################
 class SlabNode(ComponentNode):
-    def __init__(self, data, model, parent=QtCore.QModelIndex()):
+    def __init__(self, data, model, parent=None):
         super().__init__(data, model, parent)
 
 
 ###############################################################################
 class LipidLeafletNode(ComponentNode):
-    def __init__(self, data, model, parent=QtCore.QModelIndex()):
+    def __init__(self, data, model, parent=None):
         super().__init__(data, model, parent)
 
         prop_node = PropertyNode("reverse_monolayer", model, parent=self)
@@ -1297,7 +1293,7 @@ class LipidLeafletNode(ComponentNode):
 
 ###############################################################################
 class SplineNode(ComponentNode):
-    def __init__(self, data, model, parent=QtCore.QModelIndex()):
+    def __init__(self, data, model, parent=None):
         super().__init__(data, model, parent, flat=False)
         prop_node = PropertyNode("zgrad", model, parent=self)
         self.appendChild(prop_node)
@@ -1316,7 +1312,7 @@ class SplineNode(ComponentNode):
 
 ###############################################################################
 class StackNode(Node):
-    def __init__(self, data, model, parent=QtCore.QModelIndex()):
+    def __init__(self, data, model, parent=None):
         super().__init__(data, model, parent)
 
         # append the number of repeats

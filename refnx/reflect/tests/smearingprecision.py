@@ -1,6 +1,8 @@
-import refnx.reflect.reflect_model as reflect
-import numpy as np
 from time import time
+
+import numpy as np
+
+import refnx.reflect.reflect_model as reflect
 
 
 def smearing_precision_comparison(maxorder=50):
@@ -10,12 +12,12 @@ def smearing_precision_comparison(maxorder=50):
     """
     # import q values and dqvalues from the smearing test
     theoretical = np.loadtxt("refnx/analysis/tests/smeared_theoretical.txt")
-    qvals, rvals, dqvals = np.hsplit(theoretical, 3)
+    qvals, _rvals, dqvals = np.hsplit(theoretical, 3)
     qvals = qvals.flatten()
     dqvals = dqvals.flatten()
 
     # coefficients for the model
-    a = np.zeros((12))
+    a = np.zeros(12)
     a[0] = 1.0
     a[1] = 1.0
     a[4] = 2.07
@@ -30,7 +32,7 @@ def smearing_precision_comparison(maxorder=50):
     # now output all the smearing.
     t0 = time()
     smeared_rvals[0, :] = reflect.reflectivity(
-        qvals, a, **{"dqvals": dqvals, "quad_order": "ultimate"}
+        qvals, a, dqvals=dqvals, quad_order="ultimate"
     )
     t1 = time()
     print("ultimate takes %f" % (t1 - t0))
@@ -38,7 +40,7 @@ def smearing_precision_comparison(maxorder=50):
     for idx in range(1, maxorder + 1):
         t0 = time()
         smeared_rvals[idx, :] = reflect.reflectivity(
-            qvals, a, **{"dqvals": dqvals, "quad_order": idx}
+            qvals, a, dqvals=dqvals, quad_order=idx
         )
         t1 = time()
         print(idx, " takes %f" % (t1 - t0))

@@ -24,23 +24,22 @@ DEALINGS IN THIS SOFTWARE.
 
 """
 
-from contextlib import contextmanager
-import time
-from functools import lru_cache
 import numbers
+import time
 import warnings
+from contextlib import contextmanager
 from enum import Enum
+from functools import lru_cache
 
 import numpy as np
 import scipy
-from scipy.interpolate import splrep, splev
-
+from scipy.interpolate import splev, splrep
 
 from refnx.analysis import (
-    Parameters,
     Parameter,
-    possibly_create_parameter,
+    Parameters,
     Transform,
+    possibly_create_parameter,
 )
 from refnx.util import general
 
@@ -85,7 +84,7 @@ def available_backends():
     """
     backends = ["python"]
     try:
-        import refnx.reflect._creflect as _creflect
+        from refnx.reflect import _creflect
 
         backends.append("c")
         backends.append("c_parratt")
@@ -93,7 +92,7 @@ def available_backends():
         pass
 
     try:
-        import refnx.reflect._cyreflect as _cyreflect
+        from refnx.reflect import _cyreflect
 
         backends.append("cython")
     except ImportError:
@@ -106,7 +105,7 @@ def available_backends():
         from refnx.reflect._reflect import abeles_pyopencl
 
         backends.append("pyopencl")
-    except Exception:
+    except Exception:  # noqa: BLE001, S110
         # importing pyopencl would be a ModuleNotFoundError
         # failure to get an opencl platform would be cl._cl.LogicError
         pass
@@ -133,19 +132,20 @@ def available_backends():
         pass
 
     try:
-        import jax as jax
+        import jax
         from jax import config
 
         config.update("jax_enable_x64", True)
         from refnx.reflect._jax_reflect import abeles_jax
 
         backends.append("jax")
-    except Exception:
+    except Exception:  # noqa: BLE001, S110
         # importing jax would be a ModuleNotFoundError
         pass
 
     try:
         import torch
+
         from refnx.reflect._torch_reflect import abeles_torch
 
         backends.append("torch")
@@ -1147,7 +1147,7 @@ def _gepore_wrapper(spin, Aguide):
         arr = gepore(q, w, *args, **kwds)[_c[spin]]
         return arr.reshape(q.shape)
 
-    if spin not in _c.keys():
+    if spin not in _c:
         raise ValueError("spin must be an enum from refnx.reflect.SpinChannel")
 
     return wrapped_fun
@@ -1213,12 +1213,12 @@ def _smeared_kernel_adaptive(qvals, w, dqvals, threads=-1, fkernel=kernel):
     smeared_rvals = np.zeros(qvals.size)
     warnings.simplefilter("ignore", Warning)
     for idx, val in enumerate(qvals):
-        smeared_rvals[idx], err = scipy.integrate.quad(
+        smeared_rvals[idx], _err = scipy.integrate.quad(
             _smear_kernel,
             -_INTLIMIT,
             _INTLIMIT,
             epsabs=0.0,
-            args=(w, qvals[idx], dqvals[idx], threads, fkernel),
+            args=(w, val, dqvals[idx], threads, fkernel),
         )
 
     warnings.resetwarnings()

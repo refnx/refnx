@@ -1,11 +1,11 @@
-from multiprocessing import Pool, get_context
-import warnings as _warnings
+import functools
 import os as _os
 import sys as _sys
-import functools
-from tempfile import mkdtemp
+import warnings as _warnings
 from contextlib import contextmanager
 from inspect import getfullargspec as _getargspecf
+from multiprocessing import Pool, get_context
+from tempfile import mkdtemp
 
 
 def preserve_cwd(function):
@@ -193,7 +193,7 @@ def possibly_open_file(f, mode="r"):
     if (hasattr(f, "read") and hasattr(f, "write")) or f is None:
         g = f
     else:
-        g = open(f, mode)
+        g = open(f, mode)  # noqa: SIM115
         close_file = True
     try:
         yield g

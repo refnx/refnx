@@ -1,18 +1,18 @@
+import operator
 from importlib import resources
 from pathlib import Path
-import operator
 
 import numpy as np
 from numpy import array
 from numpy.testing import assert_allclose
 
-from refnx.analysis import Objective, Parameter, Interval, Transform
-from refnx.analysis.parameter import build_constraint_from_tree, Constant
-from refnx.reflect._code_fragment import code_fragment
-from refnx.reflect import SLD, ReflectModel, Structure, Slab
-from refnx.dataset import ReflectDataset
 import refnx.reflect.tests
 from refnx._lib import flatten
+from refnx.analysis import Interval, Objective, Parameter, Transform
+from refnx.analysis.parameter import Constant, build_constraint_from_tree
+from refnx.dataset import ReflectDataset
+from refnx.reflect import SLD, ReflectModel, Slab, Structure
+from refnx.reflect._code_fragment import code_fragment
 
 
 class TestCodeFragment:
@@ -53,8 +53,8 @@ class TestCodeFragment:
         objective2 = eval(repr(objective))
         assert_allclose(objective2.chisqr(), objective.chisqr())
 
-        exec(repr(objective))
-        exec(code_fragment(objective))
+        exec(repr(objective))  # noqa: S102
+        exec(code_fragment(objective))  # noqa: S102
 
         # artificially link the two thicknesses together
         # check that we can reproduce the objective from the repr
@@ -64,5 +64,5 @@ class TestCodeFragment:
         d = {}
         # need to provide the globals dictionary to exec, so it can see imports
         # e.g. https://bit.ly/2RFOF7i (from stackoverflow)
-        exec(fragment, globals(), d)
+        exec(fragment, globals(), d)  # noqa: S102
         assert_allclose(d["result"], objective.chisqr())

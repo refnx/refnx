@@ -1,18 +1,24 @@
 # log-likelihoods for pymc.
 # requires aesara
 
+from typing import ClassVar
+
 import numpy as np
-from scipy.optimize._numdiff import approx_derivative
 import pytensor.tensor as pt
+from scipy.optimize._numdiff import approx_derivative
 
 
 class _LogLikeWithGrad(pt.Op):
     # Theano op for calculating a log-likelihood
 
-    itypes = [pt.dvector]  # expects a vector of parameter values when called
-    otypes = [pt.dscalar]  # outputs a single scalar value (the log likelihood)
-
     def __init__(self, loglike):
+        self.itypes = [
+            pt.dvector
+        ]  # expects a vector of parameter values when called
+        self.otypes = [
+            pt.dscalar
+        ]  # outputs a single scalar value (the log likelihood)
+
         # add inputs as class attributes
         self.likelihood = loglike
 
@@ -39,10 +45,11 @@ class _LogLikeWithGrad(pt.Op):
 
 class _LogLikeGrad(pt.Op):
     # Theano op for calculating the gradient of a log-likelihood
-    itypes = [pt.dvector]
-    otypes = [pt.dvector]
 
     def __init__(self, loglike):
+        self.itypes = [pt.dvector]
+        self.otypes = [pt.dvector]
+
         # add inputs as class attributes
         self.likelihood = loglike
 

@@ -2,14 +2,15 @@
 A basic representation of a 1D dataset
 """
 
-from pathlib import Path, PurePath
-import re
 import io
+import re
+from pathlib import Path, PurePath
 
 import numpy as np
 from scipy._lib._util import check_random_state
-from refnx.util.nsplice import get_scaling_in_overlap
+
 from refnx._lib import possibly_open_file
+from refnx.util.nsplice import get_scaling_in_overlap
 
 
 class Data1D:
@@ -422,10 +423,10 @@ class Data1D:
         # attempt to auto ignore header lines.
         with possibly_open_file(f, "r") as g:
             lines = list(reversed(g.readlines()))
-            x = list()
-            y = list()
-            y_err = list()
-            x_err = list()
+            x = []
+            y = []
+            y_err = []
+            x_err = []
 
             # a marker for how many columns in the data there will be
             numcols = 0

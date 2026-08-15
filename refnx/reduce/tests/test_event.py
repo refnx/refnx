@@ -1,19 +1,18 @@
-from pathlib import Path
 import mmap
 import os
 import warnings
 from collections import namedtuple
+from pathlib import Path
 
-import numpy as np
 import h5py
+import numpy as np
 import pytest
-
 from numpy.testing import assert_equal
-import refnx.reduce.event as event
-from refnx.reduce import PlatypusNexus, SpatzNexus
+
+from refnx.reduce import PlatypusNexus, SpatzNexus, event
 
 try:
-    import refnx.reduce._cevent as _cevent
+    from refnx.reduce import _cevent
 except ImportError:
     HAVE_CEVENTS = False
 else:
@@ -114,15 +113,15 @@ class TestEvent:
 
         if HAVE_CEVENTS:
             with open(event_setup[0].event_file_path, "rb") as g:
-                event_list, fpos = _cevent._cevents(g, max_frames=1111)
-                cyf, cyt, cyy, cyx = event_list
+                event_list, _fpos = _cevent._cevents(g, max_frames=1111)
+                cyf, _cyt, _cyy, _cyx = event_list
 
             assert np.max(cyf) < 1111
 
-            event_list, fpos = _cevent._cevents(
+            event_list, _fpos = _cevent._cevents(
                 event_setup[1].event_file_path, max_frames=1111
             )
-            cyf, cyt, cyy, cyx = event_list
+            cyf, _cyt, _cyy, _cyx = event_list
             assert np.max(cyf) < 1111
 
     def test_event_same_as_detector(self, event_setup):
@@ -137,7 +136,7 @@ class TestEvent:
 
             orig_det = orig_file.cat.detector
             frames = [np.arange(0, np.max(evt.f) + 1)]
-            event_det, fb = event.process_event_stream(
+            event_det, _fb = event.process_event_stream(
                 evt.event_list,
                 frames,
                 orig_file.cat.t_bins,
@@ -166,7 +165,7 @@ class TestEvent:
     def test_monobloc_events(self, event_setup):
         # the event file changed when the ILL monobloc detector was installed
         data = event.events(event_setup[0].event_file_path)
-        f, t, y, x = data[0]
+        _f, t, _y, _x = data[0]
         assert len(t) == 2209769
 
         # in the nexus setup dcr used
@@ -175,7 +174,7 @@ class TestEvent:
         t_bins = np.linspace(0, 30000, 1001)
         frames = [np.arange(0, 118800, 1)]
 
-        detector, fbins = event.process_event_stream(
+        detector, _fbins = event.process_event_stream(
             data[0], frames, t_bins, y_bins, x_bins
         )
 
@@ -192,12 +191,12 @@ class TestEvent:
         # PLP clock_scale is 16 ns per tick
         with open(pth, "rb") as f:
             buffer = mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ)
-        hdr_base, hdr_packing = _cevent.event_header(buffer)
+        hdr_base, _hdr_packing = _cevent.event_header(buffer)
         assert hdr_base.clock_scale == 16
 
         # SPZ clock_scale is 100 ns per tick
         pth = Path(event_setup[1].event_file_path)
         with open(pth, "rb") as f:
             buffer = mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ)
-        hdr_base, hdr_packing = _cevent.event_header(buffer)
+        hdr_base, _hdr_packing = _cevent.event_header(buffer)
         assert hdr_base.clock_scale == 100

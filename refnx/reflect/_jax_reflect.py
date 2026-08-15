@@ -26,9 +26,10 @@ DEALINGS IN THIS SOFTWARE.
 
 from functools import reduce
 
-import numpy as np
 import jax.numpy as jnp
+import numpy as np
 from jax import jit, lax
+
 from refnx.reflect.reflect_model import gauss_legendre
 
 TINY = 1e-30

@@ -1,10 +1,11 @@
-# -*- coding: utf-8 -*-
 """
 Unpack event files
 """
 
 from collections import namedtuple
+
 import numpy as np
+
 from refnx._lib import possibly_open_file
 
 HAVE_CEVENTS = False
@@ -88,7 +89,7 @@ def process_event_stream(events, frames, t_bins, y_bins, x_bins):
         idxs = np.isin(t_events[:, 0], frame_numbers)
         filtered_events = t_events[idxs]
 
-        detector[i], edge = np.histogramdd(
+        detector[i], _edge = np.histogramdd(
             filtered_events[:, 1:], bins=(localtbins, localybins, localxbins)
         )
     if reversed_x:

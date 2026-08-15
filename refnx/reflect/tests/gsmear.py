@@ -1,6 +1,7 @@
 import numpy as np
-from scipy.signal import fftconvolve
 from scipy.interpolate import interp1d
+from scipy.signal import fftconvolve
+
 from refnx.reflect import reflectivity
 
 

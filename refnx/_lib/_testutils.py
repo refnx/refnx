@@ -3,9 +3,9 @@ Generic test utilities.
 AMENDED FROM scipy version Aug17
 """
 
-from pathlib import Path
 import re
 import sys
+from pathlib import Path
 
 __all__ = ["PytestTester"]
 

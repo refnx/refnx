@@ -1,37 +1,37 @@
+import argparse
 import io
 import os
-from pathlib import Path
-import argparse
 import re
 import shutil
-from time import gmtime, strftime
 import string
 import warnings
 from contextlib import contextmanager
+from pathlib import Path
+from time import gmtime, strftime
 
-from scipy.optimize import leastsq, curve_fit
-from scipy.stats import t
-import pandas as pd
-import numpy as np
 import h5py
+import numpy as np
+import pandas as pd
+from scipy.optimize import curve_fit, leastsq
+from scipy.stats import t
 
-from refnx.reduce.peak_utils import peak_finder, centroid
-import refnx.util.general as general
-from refnx.util.general import resolution_double_chopper, _dict_compare
 import refnx.util.ErrorProp as EP
-from refnx.reduce.parabolic_motion import (
-    find_trajectory,
-    y_deflection,
-    parabola,
-)
+from refnx._lib import possibly_open_file
 from refnx.reduce.event import (
     events,
-    process_event_stream,
     framebins_to_frames,
+    process_event_stream,
 )
+from refnx.reduce.parabolic_motion import (
+    find_trajectory,
+    parabola,
+    y_deflection,
+)
+from refnx.reduce.peak_utils import centroid, peak_finder
 from refnx.reduce.rebin import rebin, rebin_along_axis
-from refnx._lib import possibly_open_file
 from refnx.reflect import SpinChannel
+from refnx.util import general
+from refnx.util.general import _dict_compare, resolution_double_chopper
 
 EXTENT_MULT = 2
 PIXEL_OFFSET = 4
@@ -135,7 +135,7 @@ def catalogue(start, stop, data_folder=None, prefix="PLP", keys=None):
             if type(data) is bytes:
                 data = data.decode()
 
-            d[key].append(data)
+            val.append(data)
 
     df = pd.DataFrame(d, index=run_number, columns=info)
 
@@ -878,16 +878,15 @@ class SpinSet:
         # reduction options for the keys in _wavelength_keys.
 
         for sc in self.sc_opts:
-            if self.sc_opts[sc]:
-                if not general._dict_compare_keys(
-                    self.sc_opts["dd"], self.sc_opts[sc], *_wavelength_keys
-                ):
-                    raise ValueError(
-                        "Reduction options `lo_wavelength`, `hi_wavelength`,"
-                        " `rebin_percent`, and `wavelength_bins` must be"
-                        "identical across spin channels to preserve a common"
-                        "wavelength axis."
-                    )
+            if self.sc_opts[sc] and not general._dict_compare_keys(
+                self.sc_opts["dd"], self.sc_opts[sc], *_wavelength_keys
+            ):
+                raise ValueError(
+                    "Reduction options `lo_wavelength`, `hi_wavelength`,"
+                    " `rebin_percent`, and `wavelength_bins` must be"
+                    "identical across spin channels to preserve a common"
+                    "wavelength axis."
+                )
 
         for sc, channel in self.channels.items():
             if channel is None:
@@ -1194,7 +1193,7 @@ class ReflectNexus:
     def __init__(self):
         self.cat = None
 
-        self.processed_spectrum = dict()
+        self.processed_spectrum = {}
 
         # _arguments is a dict that contains all the parameters used to call
         # `process`. If the arguments don't change then you shouldn't need to
@@ -1285,7 +1284,7 @@ class ReflectNexus:
             return
 
         s = string.Template(spectrum_template)
-        d = dict()
+        d = {}
         d["title"] = self.cat.sample_name
         d["time"] = strftime("%a, %d %b %Y %H:%M:%S +0000", gmtime())
 
@@ -1340,7 +1339,7 @@ class ReflectNexus:
             `matplotlib` figure and axes objects.
 
         """
-        lam, spec, spec_sd, _ = self.spectrum
+        lam, spec, _spec_sd, _ = self.spectrum
 
         import matplotlib.pyplot as plt
 
@@ -1808,7 +1807,7 @@ class ReflectNexus:
         # gravity correction if direct beam, but only if you're on Platypus
         if direct and isinstance(self, PlatypusNexus):
             # TODO: Correlated Uncertainties?
-            detector, detector_sd, m_gravcorrcoefs = self.correct_for_gravity(
+            detector, detector_sd, _m_gravcorrcoefs = self.correct_for_gravity(
                 detector, detector_sd, m_lambda, lo_wavelength, hi_wavelength
             )
 
@@ -2077,7 +2076,7 @@ class ReflectNexus:
             # no mode for SPZ
             mode = None
 
-        d = dict()
+        d = {}
         d["path"] = cat.path
         d["datafilename"] = cat.filename
         d["datafile_number"] = cat.datafile_number
@@ -2217,9 +2216,9 @@ class ReflectNexus:
             / "EOS.bin"
         )
 
-        with io.open(stream_filename, "rb") as f:
+        with open(stream_filename, "rb") as f:
             last_frame = int(frame_bins[-1] * frequency)
-            loaded_events, end_events = events(f, max_frames=last_frame)
+            loaded_events, _end_events = events(f, max_frames=last_frame)
 
         # convert frame_bins to list of filter frames
         frames = framebins_to_frames(
@@ -2744,7 +2743,7 @@ class SpatzNexus(ReflectNexus):
             degrees.
         """
         disc_openings = (26.0, 42.0, 43.5, 126.0)
-        O_C1d, O_C2d, O_C2Bd, O_C3d = disc_openings
+        O_C1d, O_C2d, O_C2Bd, O_C3d = disc_openings  # noqa: RUF059
 
         cat = self.cat
         master = cat.master
@@ -3050,7 +3049,7 @@ def find_specular_ridge(
             # find the centroid and gauss peak in the last sections of the TOF
             # plot
             try:
-                centroid, gauss_peak = peak_finder(y_cross, sigma=y_cross_sd)
+                _centroid, gauss_peak = peak_finder(y_cross, sigma=y_cross_sd)
             except RuntimeError:
                 continue
 
@@ -3227,13 +3226,13 @@ def correct_for_gravity(
 
         def f(tru_centre):
             deflections = y_deflection(
-                trajectories[lopx:hipx],
-                neutron_speeds[lopx:hipx],
-                travel_distance,
+                trajectories[lopx:hipx],  # noqa: B023
+                neutron_speeds[lopx:hipx],  # noqa: B023
+                travel_distance,  # noqa: B023
             )
 
             model = 1000.0 * deflections / qz_pixel_size + tru_centre
-            diff = model - centroids[lopx:hipx, 0]
+            diff = model - centroids[lopx:hipx, 0]  # noqa: B023
             diff = diff[~np.isnan(diff)]
             return diff
 
@@ -3366,7 +3365,7 @@ def accumulate_HDF_files(files):
     """
     # don't do anything if no files were supplied.
     if not len(files):
-        return None
+        return
 
     # the first file is the "master file", lets copy it.
     file = files[0]
@@ -3407,9 +3406,9 @@ def _check_HDF_file(h5data):
     if isinstance(h5data, h5py.File):
         return h5data.filename
     else:
-        with h5py.File(h5data, "r") as h5data:
-            if isinstance(h5data, h5py.File):
-                return h5data.filename
+        with h5py.File(h5data, "r") as _h5data:
+            if isinstance(_h5data, h5py.File):
+                return _h5data.filename
 
     return False
 
@@ -3524,7 +3523,7 @@ if __name__ == "__main__":
                 integrate=args.integrate,
             )
 
-            fname = "PLP%07d.spectrum" % file
+            fname = f"PLP{file:07d}.spectrum"
             out_fname = path / fname
 
             integrate = args.integrate
@@ -3533,8 +3532,8 @@ if __name__ == "__main__":
 
             a.write_spectrum_dat(out_fname, scanpoint=integrate)
 
-        except IOError:
-            print("Couldn't find file: %d.  Use --basedir option" % file)
+        except OSError:
+            print(f"Couldn't find file: {file}.  Use --basedir option")
 
 
 def _plot_offspec(
@@ -3565,8 +3564,8 @@ def _plot_offspec(
         The upper and lower y-axis limits for the plot
     """
 
-    from matplotlib.colors import LogNorm
     import matplotlib.pyplot as plt
+    from matplotlib.colors import LogNorm
 
     npz = np.load(f)
 

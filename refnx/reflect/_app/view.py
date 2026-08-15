@@ -1,22 +1,18 @@
-from pathlib import Path
-from copy import deepcopy
-import pickle
-from importlib import resources
+import csv
 import os
+import pickle
 import sys
 import time
-import csv
+from copy import deepcopy
+from importlib import resources
 from multiprocessing import get_context
+from pathlib import Path
 
-import numpy as np
-import scipy
 import matplotlib
+import numpy as np
 import periodictable
-
-from qtpy.compat import getopenfilename, getopenfilenames, getsavefilename
-from qtpy import QtCore, QtGui, QtWidgets, uic
-from qtpy.QtCore import Qt
-
+import scipy
+from matplotlib import artist, lines
 from matplotlib.backends.backend_qtagg import (
     FigureCanvasQTAgg as FigureCanvas,
 )
@@ -24,52 +20,52 @@ from matplotlib.backends.backend_qtagg import (
     NavigationToolbar2QT as NavigationToolbar,
 )
 from matplotlib.figure import Figure
-import matplotlib.artist as artist
-import matplotlib.lines as lines
-
-
-from .SLD_calculator_view import SLDcalculatorView
-from .datastore import DataStore
-from .treeview_gui_model import (
-    TreeModel,
-    Node,
-    DatasetNode,
-    DataObjectNode,
-    ComponentNode,
-    StructureNode,
-    PropertyNode,
-    ReflectModelNode,
-    ParNode,
-    TreeFilter,
-    find_data_object,
-    SlabNode,
-    StackNode,
-)
-from ._lipid_leaflet import LipidLeafletDialog
-from ._optimisation_parameters import OptimisationParameterView
-from ._spline import SplineDialog
-from ._mcmc import ProcessMCMCDialog, SampleMCMCDialog, _plots, _process_chain
+from qtpy import QtCore, QtGui, QtWidgets, uic
+from qtpy.compat import getopenfilename, getopenfilenames, getsavefilename
+from qtpy.QtCore import Qt
 
 import refnx
+import refnx.reflect._app
+from refnx._lib import MapWrapper, flatten, unique
 from refnx.analysis import (
     CurveFitter,
-    Objective,
-    Transform,
     GlobalObjective,
+    Objective,
     Parameter,
+    Transform,
 )
+from refnx.dataset import Data1D, OrsoDataset
 from refnx.reflect import (
     SLD,
+    MixedReflectModel,
     ReflectModel,
     Slab,
     Stack,
     Structure,
-    MixedReflectModel,
 )
-import refnx.reflect._app
-from refnx.dataset import Data1D, OrsoDataset
 from refnx.reflect._code_fragment import code_fragment
-from refnx._lib import unique, flatten, MapWrapper
+
+from ._lipid_leaflet import LipidLeafletDialog
+from ._mcmc import ProcessMCMCDialog, SampleMCMCDialog, _plots, _process_chain
+from ._optimisation_parameters import OptimisationParameterView
+from ._spline import SplineDialog
+from .datastore import DataStore
+from .SLD_calculator_view import SLDcalculatorView
+from .treeview_gui_model import (
+    ComponentNode,
+    DataObjectNode,
+    DatasetNode,
+    Node,
+    ParNode,
+    PropertyNode,
+    ReflectModelNode,
+    SlabNode,
+    StackNode,
+    StructureNode,
+    TreeFilter,
+    TreeModel,
+    find_data_object,
+)
 
 # matplotlib.use('QtAgg')
 UI_LOCATION = resources.files(refnx.reflect._app) / "ui"
@@ -259,13 +255,13 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
             try:
                 self._restore_state(urls_as_files[0])
                 return
-            except Exception:
+            except Exception:  # noqa: BLE001, S110
                 pass
 
         # then try and load urls as data files
         try:
             loaded_names = self.load_data(urls_as_files)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             print(e)
             loaded_names = []
 
@@ -275,7 +271,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
             try:
                 self.load_model(url)
                 continue
-            except Exception:
+            except Exception:  # noqa: BLE001, S110
                 pass
 
     @QtCore.Slot(QtGui.QDragEnterEvent)
@@ -388,7 +384,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
             self.add_data_objects_to_graphs(ds)
             self.update_gui_model(ds)
             # self.reflectivitygraphs.draw()
-        except Exception as e:
+        except Exception:
             version = state.get("refnx.version", "N/A")
             self.msg(
                 f"Failed to load experiment. It may have been saved in a"
@@ -396,7 +392,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
                 f" version to continue with analysis, refnx will now"
                 f" close."
             )
-            raise e
+            raise
 
         try:
             while self.data_object_selector.data_objects.count():
@@ -535,7 +531,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
 
         try:
             self._restore_state(experimentFileName)
-        except Exception:
+        except Exception:  # noqa: BLE001, S110
             pass
 
     def load_data(self, files):
@@ -567,7 +563,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
                     if data_object is not None:
                         data_objects.append(data_object)
                         fnames.append(file)
-                except Exception:
+                except Exception:  # noqa: BLE001, S112
                     continue
 
         loaded_names = [data_object.name for data_object in data_objects]
@@ -587,7 +583,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
                 and ds.orso[0].info.data_source.sample.model is not None
             ):
                 try:
-                    s, model, objective = ds.setup_analysis()
+                    s, model, _objective = ds.setup_analysis()
                     for component in s:
                         # we can only deal with Slabs at the moment
                         assert isinstance(component, Slab)
@@ -597,7 +593,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
                     #         component.sld = _sld
 
                     have_model = True
-                except Exception:
+                except Exception:  # noqa: BLE001
                     have_model = False
 
             if not have_model:
@@ -618,7 +614,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         self.redraw_data_object_graphs(refresh_data_objects)
 
         # for totally new, then add to graphs
-        new_data_objects = [datastore[name] for name in new_objects.keys()]
+        new_data_objects = [datastore[name] for name in new_objects]
         self.add_data_objects_to_graphs(new_data_objects)
 
         self.calculate_chi2(data_objects)
@@ -776,7 +772,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
             dialog.exec()
             print(str(objective))
             _plots(objective, nplot=dialog.nplot.value(), folder=dialog.folder)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             print(repr(e))
             self.msg(
                 "MCMC processing went wrong. The MCMC chain can only be"
@@ -844,7 +840,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         try:
             with open(modelFileName, "w") as f:
                 f.write(code)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             print(e)
 
     def select_fitting_algorithm(self, method):
@@ -859,7 +855,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         self.settings.fitting_algorithm = method
         meth[method].setChecked(True)
         meth.pop(method)
-        for k, v in meth.items():
+        for v in meth.values():
             v.setChecked(False)
 
     @QtCore.Slot()
@@ -1184,9 +1180,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
 
         # the row you selected was within the component list
         _component = [
-            i
-            for i in hierarchy
-            if (isinstance(i, ComponentNode) or isinstance(i, StackNode))
+            i for i in hierarchy if isinstance(i, (ComponentNode, StackNode))
         ]
         if not _component:
             return self.msg(
@@ -1263,9 +1257,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
 
         # the row you selected was within the component list
         _component = [
-            i
-            for i in hierarchy
-            if (isinstance(i, ComponentNode) or isinstance(i, StackNode))
+            i for i in hierarchy if isinstance(i, (ComponentNode, StackNode))
         ]
         if not _component:
             return self.msg(
@@ -1633,7 +1625,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
 
             try:
                 fitter.initialise(pos=init)
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 self.msg(repr(e))
                 return []
 
@@ -1732,7 +1724,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
 
                 # create MCMC graphs
                 _plots(objective, nplot=nplot, folder=folder)
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 close(dialog)
                 self.msg(repr(e))
                 return []
@@ -1820,7 +1812,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
     def on_treeView_clicked(self, index):
         index = self.mapToSource(index)
         if not index.isValid():
-            return None
+            return
 
         item = index.internalPointer()
         if not isinstance(item, ParNode):
@@ -1979,9 +1971,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
             parameters = [list(flatten(m.parameters)) for m in models]
             nparams = [len(p) for p in parameters]
 
-            if len(set(ncomponents)) == 1 and len(set(nparams)) == 1:
-                return True
-            return False
+            return len(set(ncomponents)) == 1 and len(set(nparams)) == 1
 
         extra_pars = []
         # retrieve equivalent parameters on other datasets
@@ -2445,7 +2435,7 @@ class FitWorker(QtCore.QObject):
         exception = None
         try:
             self.fn(*self.args, **self.kwargs)
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001
             exception = exc
         self.finished.emit(exception)
 
@@ -2529,11 +2519,11 @@ class ProgramSettings:
             "useerrors": True,
         }
 
-        for key in _members:
+        for key, val in _members.items():
             if key in kwds:
                 setattr(self, key, kwds[key])
             else:
-                setattr(self, key, _members[key])
+                setattr(self, key, val)
 
     def __getitem__(self, key):
         return self.__dict__[key]
@@ -2603,9 +2593,12 @@ class MyReflectivityGraphs(FigureCanvas):
 
     def _pick_event(self, event):
         # pick event was a double click on the graph
-        if event.mouseevent.dblclick and event.mouseevent.button == 1:
-            if isinstance(event.artist, lines.Line2D):
-                self.mpl_toolbar.edit_parameters()
+        if (
+            event.mouseevent.dblclick
+            and event.mouseevent.button == 1
+            and isinstance(event.artist, lines.Line2D)
+        ):
+            self.mpl_toolbar.edit_parameters()
 
     def autoscale(self):
         self.axes[0].relim()
@@ -2640,7 +2633,7 @@ class MyReflectivityGraphs(FigureCanvas):
                 line_instance = error_bar_container[0]
                 line_instance.set_pickradius(5)
                 mfc = artist.getp(line_instance, "markerfacecolor")
-                artist.setp(line_instance, **{"markeredgecolor": mfc})
+                artist.setp(line_instance, markeredgecolor=mfc)
 
                 graph_properties["ax_data"] = error_bar_container
                 data_properties = graph_properties["data_properties"].copy()
@@ -2653,7 +2646,7 @@ class MyReflectivityGraphs(FigureCanvas):
             yfit_t = data_object.generative
             if graph_properties.ax_fit is None and yfit_t is not None:
                 if transform is not None:
-                    yfit_t, temp = transform(dataset.x, yfit_t)
+                    yfit_t, _ = transform(dataset.x, yfit_t)
 
                 color = "b"
                 if graph_properties.ax_data is not None:
@@ -2712,7 +2705,7 @@ class MyReflectivityGraphs(FigureCanvas):
                 yfit = data_object.generative
 
                 if transform is not None:
-                    yfit, efit = transform(dataset.x, yfit)
+                    yfit, _efit = transform(dataset.x, yfit)
 
             graph_properties = data_object.graph_properties
             visible = graph_properties.visible

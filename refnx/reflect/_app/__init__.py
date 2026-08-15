@@ -2,7 +2,7 @@ import sys
 
 
 def gui(expt_file=None):
-    from qtpy import QtGui, QtWidgets, QtCore
+    from qtpy import QtCore, QtGui, QtWidgets
 
     # should enable high resolution on 4k desktops??
     # "https://coad.ca/2017/05/15/
@@ -16,8 +16,8 @@ def gui(expt_file=None):
             QtCore.Qt.AA_UseHighDpiPixmaps, True
         )
 
-    from refnx.reflect._app.view import MotofitMainWindow
     from refnx.reflect._app import resources_rc
+    from refnx.reflect._app.view import MotofitMainWindow
 
     app = QtWidgets.QApplication(sys.argv)
 
@@ -54,4 +54,4 @@ def main(args=None):
     sys.exit(gui(expt_file=expt_file))
 
 
-__all__ = [gui, main]
+__all__ = ["gui", "main"]

@@ -3,6 +3,7 @@ import pickle
 
 def test_graphproperties():
     from matplotlib.figure import Figure
+
     from refnx.reflect._app.graphproperties import GraphProperties
 
     gp = GraphProperties()

@@ -1,22 +1,22 @@
 import pickle
 
-import pytest
 import numpy as np
+import pytest
 from numpy.testing import (
-    assert_almost_equal,
-    assert_equal,
     assert_,
     assert_allclose,
+    assert_almost_equal,
+    assert_equal,
 )
 from scipy.stats import norm, uniform
 
-from refnx.analysis import Interval, PDF, Parameter, Parameters, is_parameters
+from refnx.analysis import PDF, Interval, Parameter, Parameters, is_parameters
 from refnx.analysis.parameter import (
-    constraint_tree,
-    build_constraint_from_tree,
-    possibly_create_parameter,
-    is_parameter,
     _BinaryOp,
+    build_constraint_from_tree,
+    constraint_tree,
+    is_parameter,
+    possibly_create_parameter,
     sequence_to_parameters,
 )
 
