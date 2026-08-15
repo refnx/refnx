@@ -53,8 +53,8 @@ class TestCodeFragment:
         objective2 = eval(repr(objective))
         assert_allclose(objective2.chisqr(), objective.chisqr())
 
-        exec(repr(objective))
-        exec(code_fragment(objective))
+        exec(repr(objective))  # noqa: S102
+        exec(code_fragment(objective))  # noqa: S102
 
         # artificially link the two thicknesses together
         # check that we can reproduce the objective from the repr
@@ -64,5 +64,5 @@ class TestCodeFragment:
         d = {}
         # need to provide the globals dictionary to exec, so it can see imports
         # e.g. https://bit.ly/2RFOF7i (from stackoverflow)
-        exec(fragment, globals(), d)
+        exec(fragment, globals(), d)  # noqa: S102
         assert_allclose(d["result"], objective.chisqr())

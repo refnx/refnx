@@ -34,7 +34,7 @@ def _get_epsilon(x, s, epsilon, n):
     return h
 
 
-def approx_hess2(x, f, epsilon=None, args=(), kwargs={}, return_grad=False):
+def approx_hess2(x, f, epsilon=None, args=(), kwargs=None, return_grad=False):
     """
     Calculate Hessian with finite difference derivative approximation
     Parameters
@@ -67,6 +67,9 @@ def approx_hess2(x, f, epsilon=None, args=(), kwargs={}, return_grad=False):
     Ridout, M.S. (2009) Statistical applications of the complex-step method
         of numerical differentiation. The American Statistician, 63, 66-74
     """
+    if kwargs is None:
+        kwargs = {}
+
     n = len(x)
     # NOTE: ridout suggesting using eps**(1/4)*theta
     h = _get_epsilon(x, 3, epsilon, n)

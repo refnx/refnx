@@ -1821,7 +1821,7 @@ class Stack(Component, UserList):
         if structure is not None:
             self.solvent = structure.solvent
 
-        repeats = int(round(abs(self.repeats.value)))
+        repeats = round(abs(self.repeats.value))
         sl = [c.slabs(structure=self) for c in self.components]
 
         slabs = _concatenate_slabs(sl)
@@ -1835,7 +1835,7 @@ class Stack(Component, UserList):
         return slabs
 
     def _interfaces_get(self):
-        repeats = int(round(abs(self.repeats.value)))
+        repeats = round(abs(self.repeats.value))
         interfaces = list(flatten([i.interfaces for i in self.data]))
 
         if repeats > 1:
@@ -1894,7 +1894,7 @@ class Stack(Component, UserList):
 
     @property
     def is_magnetic(self):
-        return any([c.is_magnetic for c in self])
+        return any(c.is_magnetic for c in self)
 
 
 class MagneticSlab(Component):
@@ -2247,7 +2247,7 @@ def create_occupancy(structure, solvent_slab=-1, z=None):
     else:
         nvfp = len(_slabs)
 
-    _z, sldp = sld_profile(_slabs, z=z)
+    _z, _sldp = sld_profile(_slabs, z=z)
     vfp = np.zeros((nvfp, len(_z)), float)
 
     for i in range(len(_slabs)):

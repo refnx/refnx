@@ -193,7 +193,7 @@ def possibly_open_file(f, mode="r"):
     if (hasattr(f, "read") and hasattr(f, "write")) or f is None:
         g = f
     else:
-        g = open(f, mode)
+        g = open(f, mode)  # noqa: SIM115
         close_file = True
     try:
         yield g

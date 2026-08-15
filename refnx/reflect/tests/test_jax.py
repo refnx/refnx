@@ -84,7 +84,7 @@ class TestJAX:
         # nll calculation, etc
         obj = compile_objective(self.objective)
         vg = obj.value_and_grad
-        logl, grad = vg(np.array(self.objective.varying_parameters()))
+        logl, _grad = vg(np.array(self.objective.varying_parameters()))
         assert_allclose(-logl, self.objective.nll())
 
     @pytest.mark.filterwarnings(
@@ -202,7 +202,7 @@ class TestJAX:
 
         c = compile_objective(objective)
 
-        nll_fn, grad_fn = make_scipy_objective(c)
+        nll_fn, _grad_fn = make_scipy_objective(c)
         assert_allclose(nll_fn(pars), nll50)
 
         pars[1] = 49.0

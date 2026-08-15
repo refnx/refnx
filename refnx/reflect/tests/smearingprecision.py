@@ -12,7 +12,7 @@ def smearing_precision_comparison(maxorder=50):
     """
     # import q values and dqvalues from the smearing test
     theoretical = np.loadtxt("refnx/analysis/tests/smeared_theoretical.txt")
-    qvals, rvals, dqvals = np.hsplit(theoretical, 3)
+    qvals, _rvals, dqvals = np.hsplit(theoretical, 3)
     qvals = qvals.flatten()
     dqvals = dqvals.flatten()
 

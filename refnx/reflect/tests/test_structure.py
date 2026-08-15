@@ -193,7 +193,7 @@ class TestStructure:
 
         assert_equal(float(q.vfsolv), 0.1)
         # access parameters
-        m.parameters
+        _ = m.parameters
 
     def test_micro_slab(self):
         # test micro-slab representation by calculating reflectivity from a
@@ -250,14 +250,14 @@ class TestStructure:
 
     def test_sld_profile(self):
         # check that it runs
-        z, sld_profile = self.s.sld_profile()
+        z, _sld_profile = self.s.sld_profile()
         assert_equal(np.size(z), 500)
 
-        z, sld_profile = self.s.sld_profile(max_delta_z=0.251)
+        z, _sld_profile = self.s.sld_profile(max_delta_z=0.251)
         delta_z = np.ediff1d(z)
         assert delta_z[0] <= 0.251
 
-        z, sld_profile = self.s.sld_profile(np.linspace(-100, 100, 100))
+        z, _sld_profile = self.s.sld_profile(np.linspace(-100, 100, 100))
         assert_equal(min(z), -100)
         assert_equal(max(z), 100)
 
