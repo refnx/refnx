@@ -1,10 +1,10 @@
-from importlib import resources
 import json
+from importlib import resources
 
 from qtpy import QtCore, QtGui, QtWidgets, uic
 
 import refnx.reflect._app
-from refnx.reflect import Spline, SLD
+from refnx.reflect import SLD, Spline
 
 UI_LOCATION = resources.files(refnx.reflect._app) / "ui"
 

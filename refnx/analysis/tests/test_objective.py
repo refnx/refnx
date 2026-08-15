@@ -3,36 +3,34 @@ This module tests the objective function by comparing it to the line example
 from http://dan.iel.fm/emcee/current/user/line/
 """
 
-from importlib import resources
 import pickle
+from importlib import resources
 from multiprocessing.reduction import ForkingPickler
 
-import pytest
-
 import numpy as np
-from scipy.linalg import LinAlgWarning
-from scipy.optimize import minimize, least_squares
-from scipy.optimize._numdiff import approx_derivative
-import scipy.stats as stats
-
+import pytest
 from numpy.testing import (
-    assert_equal,
     assert_allclose,
+    assert_equal,
 )
+from scipy import stats
+from scipy.linalg import LinAlgWarning
+from scipy.optimize import least_squares, minimize
+from scipy.optimize._numdiff import approx_derivative
 
+import refnx.analysis.tests
+from refnx._lib import emcee
 from refnx.analysis import (
-    Parameter,
+    PDF,
+    BaseObjective,
     Model,
     Objective,
-    BaseObjective,
-    Transform,
+    Parameter,
     Parameters,
-    PDF,
+    Transform,
 )
-import refnx.analysis.tests
 from refnx.dataset import Data1D, ReflectDataset
 from refnx.util import ErrorProp as EP
-from refnx._lib import emcee
 
 
 def line(x, params, *args, **kwds):

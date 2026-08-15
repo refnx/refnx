@@ -1,46 +1,45 @@
 import string
-from copy import deepcopy
-from pathlib import Path
-from time import gmtime, strftime
-from multiprocessing import Queue
-from threading import Thread
 import time
+from copy import deepcopy
+from multiprocessing import Queue
+from pathlib import Path
+from threading import Thread
+from time import gmtime, strftime
 
+import h5py
 import numpy as np
 import pandas as pd
-import h5py
-
 from orsopy.fileio import (
-    Orso,
-    OrsoDataset,
-    ValueRange,
-    InstrumentSettings,
     Column,
     ErrorColumn,
     File,
+    InstrumentSettings,
+    Orso,
+    OrsoDataset,
+    ValueRange,
 )
 
+import refnx.util._resolution_kernel as rk
+from refnx._lib import possibly_open_file
+from refnx.dataset import Data1D, ReflectDataset
+from refnx.dataset.data1d import _data1D_to_hdf
+from refnx.reduce._tof_simulator import SpectrumDist
+from refnx.reduce.parabolic_motion import (
+    find_trajectory,
+    parabola_line_intersection_point,
+)
 from refnx.reduce.platypusnexus import (
     PlatypusNexus,
-    ReflectNexus,
-    number_datafile,
-    basename_datafile,
-    SpatzNexus,
     ReductionOptions,
+    ReflectNexus,
+    SpatzNexus,
+    basename_datafile,
     calculate_wavelength_bins,
     create_reflect_nexus,
+    number_datafile,
 )
 from refnx.util import ErrorProp as EP
-import refnx.util._resolution_kernel as rk
-from refnx.reduce._tof_simulator import SpectrumDist
-import refnx.util.general as general
-from refnx.reduce.parabolic_motion import (
-    parabola_line_intersection_point,
-    find_trajectory,
-)
-from refnx.dataset import ReflectDataset, Data1D
-from refnx.dataset.data1d import _data1D_to_hdf
-from refnx._lib import possibly_open_file
+from refnx.util import general
 
 _template_ref_xml = """<?xml version="1.0"?>
 <REFroot xmlns="">
@@ -1442,6 +1441,7 @@ class AutoReducer:
         self, direct_beams, scale=1, reduction_options=None, data_folder="."
     ):
         from watchdog.observers import Observer
+
         from refnx.reduce._auto_reduction import NXEH
 
         self.data_folder = data_folder

@@ -7,9 +7,9 @@ import os
 # threading is restricted. Must be set before jax/torch are imported.
 os.environ.setdefault("OMP_NUM_THREADS", "1")
 
-import zipfile
 import shutil
 import urllib.request
+import zipfile
 from pathlib import Path
 
 import pytest

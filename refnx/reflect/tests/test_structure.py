@@ -3,32 +3,33 @@ from importlib import resources
 
 import numpy as np
 from numpy.testing import (
-    assert_almost_equal,
-    assert_equal,
     assert_,
     assert_allclose,
+    assert_almost_equal,
+    assert_equal,
 )
+from orsopy.fileio.model_language import SampleModel
 from scipy.stats import cauchy
+
+import refnx.reflect.tests
 from refnx._lib import flatten
+from refnx.analysis import Interval, Parameter, Parameters
+from refnx.analysis.parameter import _BinaryOp
 from refnx.reflect import (
     SLD,
-    Structure,
-    Spline,
-    Slab,
-    Stack,
     Erf,
-    Linear,
     Exponential,
     Interface,
+    Linear,
     MaterialSLD,
     MixedSlab,
+    Slab,
     SpinChannel,
+    Spline,
+    Stack,
+    Structure,
 )
-import refnx.reflect.tests
-from refnx.reflect.structure import _profile_slicer, MagneticSlab
-from refnx.analysis import Parameter, Interval, Parameters
-from refnx.analysis.parameter import _BinaryOp
-from orsopy.fileio.model_language import SampleModel
+from refnx.reflect.structure import MagneticSlab, _profile_slicer
 
 
 class TestStructure:

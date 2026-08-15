@@ -1,22 +1,21 @@
-from pathlib import Path
 from importlib import resources
-
-from qtpy import QtCore, QtWidgets, uic
-import numpy as np
+from pathlib import Path
 
 import matplotlib
+import numpy as np
+from matplotlib import patches
 from matplotlib.backends.backend_qtagg import (
     FigureCanvasQTAgg as FigureCanvas,
 )
-from matplotlib.figure import Figure
-from matplotlib import patches
 from matplotlib.backends.backend_qtagg import (
     NavigationToolbar2QT as NavigationToolbar,
 )
+from matplotlib.figure import Figure
+from qtpy import QtCore, QtWidgets, uic
 
-from refnx.reduce.peak_utils import peak_finder, centroid
-from refnx.reduce.platypusnexus import fore_back_region, PIXEL_OFFSET
 import refnx.reduce._app as floc
+from refnx.reduce.peak_utils import centroid, peak_finder
+from refnx.reduce.platypusnexus import PIXEL_OFFSET, fore_back_region
 
 matplotlib.use("QtAgg")
 

@@ -5,16 +5,17 @@ os.environ["JAX_ENABLE_X64"] = "1"
 
 import warnings
 from importlib import resources
-import pytest
 from pathlib import Path
+
 import numpy as np
+import pytest
 from numpy.testing import assert_allclose
 from scipy.optimize._numdiff import approx_derivative
 
 import refnx
-from refnx.analysis import Objective, Parameter, CurveFitter, GlobalObjective
+from refnx.analysis import CurveFitter, GlobalObjective, Objective, Parameter
 from refnx.dataset import Data1D, ReflectDataset
-from refnx.reflect import ReflectModel, SLD, LipidLeaflet, LipidLeafletGuest
+from refnx.reflect import SLD, LipidLeaflet, LipidLeafletGuest, ReflectModel
 from refnx.reflect.structure import overall_sld
 
 try:
@@ -26,10 +27,10 @@ try:
 
     # these won't be available if JAX isn't available
     from refnx.reflect.extra import (
-        compile_objective,
-        compile_model,
-        make_scipy_objective,
         compile_global_objective,
+        compile_model,
+        compile_objective,
+        make_scipy_objective,
         to_pymc_model,
     )
 except (ModuleNotFoundError, ImportError):
@@ -97,7 +98,8 @@ class TestJAX:
         # model, to make sure neither rule silently regresses.
         import pytensor
         import pytensor.tensor as pt
-        from pytensor.gradient import Rop, jacobian as pt_jacobian
+        from pytensor.gradient import Rop
+        from pytensor.gradient import jacobian as pt_jacobian
 
         from refnx.reflect.extra import GenerativeOp
 

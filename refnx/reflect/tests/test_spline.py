@@ -1,14 +1,16 @@
 import pickle
+
 import numpy as np
 from numpy.testing import (
-    assert_allclose,
-    assert_equal,
-    assert_almost_equal,
     assert_,
+    assert_allclose,
+    assert_almost_equal,
+    assert_equal,
 )
-from refnx.reflect import SLD, Slab, Structure, Spline, Linear
-from refnx.analysis import Parameter, Interval, Parameters
+
 from refnx._lib import flatten
+from refnx.analysis import Interval, Parameter, Parameters
+from refnx.reflect import SLD, Linear, Slab, Spline, Structure
 
 
 class TestSpline:

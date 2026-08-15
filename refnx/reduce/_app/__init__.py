@@ -1,11 +1,12 @@
-import sys
 import logging
+import sys
 import time
 from pathlib import Path
 
 
 def gui():
     from qtpy import QtWidgets
+
     from refnx.reduce._app.view import SlimWindow
 
     time_str = time.strftime("%Y%m%d-%H%M%S")

@@ -6,10 +6,10 @@ github.com/refnx/refnx-models/blob/master/platypus-simulate/tof_simulator.py
 """
 
 import numpy as np
-from scipy import stats, integrate, constants, optimize
+from scipy import constants, integrate, optimize, stats
 from scipy._lib._util import check_random_state
 
-import refnx.util.general as general
+from refnx.util import general
 
 # h / m = 3956
 K = constants.h / constants.m_n * 1.0e10
@@ -106,7 +106,7 @@ class P_Theta_Optimized(P_Theta):
         d1, d2 = general.slit_optimiser(
             footprint, dtheta, angle=theta, L12=L12, L2S=L2S, verbose=False
         )
-        super(P_Theta_Optimized, self).__init__(d1, d2, L12=L12)
+        super().__init__(d1, d2, L12=L12)
 
 
 def pq_theta(p_theta, theta0, wavelength0, Q):

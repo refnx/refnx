@@ -1,18 +1,17 @@
-from importlib import resources
-from pathlib import Path
 import os
 import pickle
+from importlib import resources
+from pathlib import Path
 
 import numpy as np
-
-from refnx.reflect import SLD, Slab, ReflectModel, Motofit
-from refnx.dataset import ReflectDataset
-import refnx.reflect.tests
-
 from numpy.testing import (
-    assert_equal,
     assert_,
+    assert_equal,
 )
+
+import refnx.reflect.tests
+from refnx.dataset import ReflectDataset
+from refnx.reflect import SLD, Motofit, ReflectModel, Slab
 
 
 class Test__InteractiveModeller:

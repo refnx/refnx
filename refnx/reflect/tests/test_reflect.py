@@ -1,47 +1,48 @@
+import pickle
 import sys
+import time
 from importlib import resources
 from pathlib import Path
-import pickle
-import time
+
 import numpy as np
-from numpy.testing import assert_almost_equal, assert_equal, assert_allclose
-import scipy.stats as stats
 import pytest
+from numpy.testing import assert_allclose, assert_almost_equal, assert_equal
+from scipy import stats
 
 # Before removing what appear to be unused imports think twice.
 # Some of the tests use eval, which requires the imports.
 import refnx
-import refnx.reflect._reflect as _reflect
+import refnx.reflect.tests
+from refnx._lib import MapWrapper
 from refnx.analysis import (
-    Transform,
-    Objective,
     CurveFitter,
-    Parameter,
     Interval,
+    Objective,
+    Parameter,
     Parameters,
+    Transform,
 )
+from refnx.dataset import ReflectDataset
 from refnx.reflect import (
     SLD,
+    Footprint,
+    FresnelTransform,
+    MagneticSlab,
     MaterialSLD,
+    MixedReflectModel,
+    PolarisedReflectModel,
     ReflectModel,
     ReflectModelTL,
-    Footprint,
-    PolarisedReflectModel,
-    MagneticSlab,
-    SpinChannel,
-    MixedReflectModel,
-    reflectivity,
-    Structure,
     Slab,
-    FresnelTransform,
+    SpinChannel,
+    Structure,
+    _reflect,
     choose_dq_type,
+    reflect_model,
+    reflectivity,
     use_reflect_backend,
 )
-import refnx.reflect.tests
-import refnx.reflect.reflect_model as reflect_model
 from refnx.reflect._creflect import gepore
-from refnx.dataset import ReflectDataset
-from refnx._lib import MapWrapper
 from refnx.util import general
 
 BACKENDS = list(reflect_model.available_backends())
@@ -139,13 +140,12 @@ class TestReflect:
         assert "c" in BACKENDS
         assert "py_parratt" in BACKENDS
         assert "c_parratt" in BACKENDS
-        import refnx.reflect._creflect as _creflect
-        import refnx.reflect._reflect as _reflect
+        from refnx.reflect import _creflect, _reflect
 
         assert _reflect.__file__ != _creflect.__file__
 
         if "cython" in BACKENDS:
-            import refnx.reflect._cyreflect as _cyreflect
+            from refnx.reflect import _cyreflect
 
             assert "cython_parratt" in BACKENDS
             assert _creflect.__file__ != _cyreflect.__file__
@@ -400,6 +400,7 @@ class TestReflect:
     def test_torch(self):
         import torch
         from torch.func import jacfwd
+
         from refnx.reflect._torch_reflect import abeles_torch
 
         data = [
@@ -517,8 +518,7 @@ class TestReflect:
                     raise e
 
     def test_use_reflectivity_backend(self):
-        import refnx.reflect._creflect as _creflect
-        import refnx.reflect._reflect as _reflect
+        from refnx.reflect import _creflect, _reflect
 
         reflect_model.kernel = _reflect.abeles
 

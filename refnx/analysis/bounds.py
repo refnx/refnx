@@ -1,8 +1,9 @@
 import math
+
+import numpy as np
+from scipy._lib._util import check_random_state
 from scipy.stats import rv_continuous, uniform
 from scipy.stats._distn_infrastructure import rv_frozen
-from scipy._lib._util import check_random_state
-import numpy as np
 
 
 class Bounds:

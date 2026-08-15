@@ -1,23 +1,24 @@
 import warnings
+
 import numpy as np
 from numpy.linalg import LinAlgError
+from scipy import stats
 from scipy.linalg import LinAlgWarning
 from scipy.optimize._numdiff import approx_derivative
-import scipy.stats as stats
 
-from refnx.util import ErrorProp as EP
-from refnx._lib import flatten, approx_hess2
+from refnx._lib import approx_hess2, flatten
 from refnx._lib import unique as f_unique
-from refnx.dataset import Data1D
 from refnx.analysis import (
-    is_parameter,
-    Parameter,
-    possibly_create_parameter,
-    is_parameters,
-    Parameters,
-    Interval,
     PDF,
+    Interval,
+    Parameter,
+    Parameters,
+    is_parameter,
+    is_parameters,
+    possibly_create_parameter,
 )
+from refnx.dataset import Data1D
+from refnx.util import ErrorProp as EP
 
 
 class BaseObjective:
@@ -1600,6 +1601,7 @@ def pymc_model(objective):
     """
     import pymc as pm
     import pytensor.tensor as pt
+
     from refnx._lib._pymc import _LogLikeWithGrad
 
     basic_model = pm.Model()

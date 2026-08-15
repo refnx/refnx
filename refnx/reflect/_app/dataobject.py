@@ -1,7 +1,9 @@
 import pickle
+
 import numpy as np
 
 from refnx.reflect import MixedReflectModel
+
 from .graphproperties import GraphProperties
 
 

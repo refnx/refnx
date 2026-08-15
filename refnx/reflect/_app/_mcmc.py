@@ -6,21 +6,21 @@ from importlib import resources
 from pathlib import Path
 
 import numpy as np
+from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
+from matplotlib.figure import Figure
 from qtpy import QtCore, QtGui, QtWidgets, uic
 from qtpy.compat import getopenfilename
 
+import refnx.reflect._app
 from refnx.analysis import (
-    load_chain,
-    process_chain,
-    autocorrelation_chain,
-    integrated_time,
     GlobalObjective,
     Objective,
+    autocorrelation_chain,
+    integrated_time,
+    load_chain,
+    process_chain,
 )
-import refnx.reflect._app
 from refnx.reflect import Structure
-from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
-from matplotlib.figure import Figure
 
 UI_LOCATION = resources.files(refnx.reflect._app) / "ui"
 

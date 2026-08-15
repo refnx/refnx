@@ -3,10 +3,11 @@ Testing rebin histogram values.
 """
 
 import numpy as np
+import uncertainties.unumpy as unp
 from numpy.random import uniform
 from numpy.testing import assert_allclose, assert_equal
-import uncertainties.unumpy as unp
-import refnx.reduce.rebin as rebin
+
+from refnx.reduce import rebin
 
 
 class TestRebin:

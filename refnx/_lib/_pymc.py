@@ -2,8 +2,8 @@
 # requires aesara
 
 import numpy as np
-from scipy.optimize._numdiff import approx_derivative
 import pytensor.tensor as pt
+from scipy.optimize._numdiff import approx_derivative
 
 
 class _LogLikeWithGrad(pt.Op):

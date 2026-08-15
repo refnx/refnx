@@ -1,9 +1,9 @@
 import warnings
 
 import numpy as np
+import pytensor
 import pytensor.tensor as pt
 from pytensor.graph import Apply, Op
-import pytensor
 from pytensor.link.jax.dispatch import jax_funcify
 
 from refnx.analysis import GlobalObjective, process_chain

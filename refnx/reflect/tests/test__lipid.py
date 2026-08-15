@@ -1,34 +1,33 @@
-import numpy as np
-from pathlib import Path
 from importlib import resources
-import pytest
+from pathlib import Path
 
+import numpy as np
+import pytest
 from numpy.testing import (
+    assert_allclose,
     assert_almost_equal,
     assert_equal,
-    assert_allclose,
 )
 from scipy.optimize._constraints import PreparedConstraint
+
 import refnx
 import refnx.analysis
 
 # the analysis module contains the curvefitting engine
-from refnx.analysis import CurveFitter, Objective
-
-from refnx.reflect import (
-    SLD,
-    ReflectModel,
-    Structure,
-    Spline,
-    Slab,
-    LipidLeaflet,
-    LipidLeafletGuest,
-)
-from refnx.reflect.structure import _profile_slicer, overall_sld
-from refnx.analysis import Parameter, Interval
+from refnx.analysis import CurveFitter, Interval, Objective, Parameter
 
 # the ReflectDataset object will contain the data
 from refnx.dataset import ReflectDataset
+from refnx.reflect import (
+    SLD,
+    LipidLeaflet,
+    LipidLeafletGuest,
+    ReflectModel,
+    Slab,
+    Spline,
+    Structure,
+)
+from refnx.reflect.structure import _profile_slicer, overall_sld
 
 
 class TestLipidLeaflet:

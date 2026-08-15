@@ -24,7 +24,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
 import numpy as np
-from scipy.interpolate import UnivariateSpline, RectBivariateSpline
+from scipy.interpolate import RectBivariateSpline, UnivariateSpline
 
 
 class BoundedUnivariateSpline(UnivariateSpline):

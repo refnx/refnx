@@ -1,8 +1,10 @@
-import numpy as np
-import refnx.util.general as general
-import refnx.util.ErrorProp as EP
 import xml.etree.ElementTree as et
+
+import numpy as np
+
+import refnx.util.ErrorProp as EP
 from refnx.dataset import ReflectDataset
+from refnx.util import general
 
 # mm
 XRR_BEAMWIDTH_SD = 0.019449

@@ -21,24 +21,23 @@ DEALINGS IN THIS SOFTWARE.
 
 """
 
-import time
 import datetime
-import pickle
-import warnings
 import glob
 import os
-
-import numpy as np
+import pickle
+import time
+import warnings
 
 import ipywidgets as widgets
+import numpy as np
 import traitlets
+from matplotlib import gridspec
 from traitlets import HasTraits
-import matplotlib.gridspec as gridspec
 
-from refnx.reflect import Slab, ReflectModel
-from refnx.dataset import ReflectDataset
-from refnx.analysis import Objective, CurveFitter, Transform
 from refnx._lib import flatten, possibly_open_file
+from refnx.analysis import CurveFitter, Objective, Transform
+from refnx.dataset import ReflectDataset
+from refnx.reflect import ReflectModel, Slab
 
 
 class ReflectModelView(HasTraits):
@@ -1418,10 +1417,8 @@ print(refnx.version.version)
         for p, temp in lims:
             if p.vary:
                 limits.append(
-                    (
-                        temp
-                        + f".setp(vary=True, bounds=({p.bounds.lb}, {p.bounds.ub}))"
-                    )
+                    temp
+                    + f".setp(vary=True, bounds=({p.bounds.lb}, {p.bounds.ub}))"
                 )
 
         if not i:

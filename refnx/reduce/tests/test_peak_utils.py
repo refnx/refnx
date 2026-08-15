@@ -1,6 +1,7 @@
 import numpy as np
 from numpy.testing import assert_almost_equal, assert_equal
-import refnx.reduce.peak_utils as peak_utils
+
+from refnx.reduce import peak_utils
 
 
 class TestPeakUtils:

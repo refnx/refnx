@@ -1,12 +1,12 @@
-from importlib import resources
 import json
+from importlib import resources
 
+import periodictable as pt
 from qtpy import QtCore, QtGui, QtWidgets, uic
 from qtpy.QtCore import Qt
 
-import periodictable as pt
-from refnx.reflect import LipidLeaflet, SLD
 import refnx.reflect._app
+from refnx.reflect import SLD, LipidLeaflet
 
 pth = resources.files(refnx.reflect._app)
 UI_LOCATION = pth / "ui"

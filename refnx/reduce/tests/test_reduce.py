@@ -1,28 +1,28 @@
 import os
-from pathlib import Path
-from refnx.reduce.platypusnexus import calculate_wavelength_bins
-from refnx.reduce.reduce import PolarisationEfficiency
 import warnings
+from pathlib import Path
+
 import pytest
 import scipy
+from numpy.testing import assert_allclose, assert_equal
 
-from numpy.testing import assert_equal, assert_allclose
+from refnx.dataset import ReflectDataset
 
 # import xml.etree.ElementTree as ET
-
 from refnx.reduce import (
-    reduce_stitch,
-    PlatypusReduce,
     PlatypusNexus,
+    PlatypusReduce,
+    PolarisedReduce,
     ReductionOptions,
     SpatzReduce,
     SpinSet,
-    PolarisedReduce,
+    reduce_stitch,
 )
-from refnx.dataset import ReflectDataset
 from refnx.reduce import _tof_simulator as ts
-from refnx.util._resolution_kernel import P_Theta_Optimized
+from refnx.reduce.platypusnexus import calculate_wavelength_bins
+from refnx.reduce.reduce import PolarisationEfficiency
 from refnx.reflect import SLD, ReflectModel
+from refnx.util._resolution_kernel import P_Theta_Optimized
 
 
 class TestPlatypusReduce:

@@ -1,33 +1,32 @@
 import io
-from importlib import resources
-from pathlib import Path
 import os
 from datetime import datetime
-
+from importlib import resources
 from io import BytesIO, StringIO
-import pytest
+from pathlib import Path
 
+import numpy as np
 import orsopy.fileio as fio
+import pytest
+from numpy.testing import assert_equal
 from orsopy.fileio.base import ValueRange
 
 import refnx
+import refnx.dataset.tests
+from refnx._lib import possibly_open_file
 from refnx.dataset import (
-    ReflectDataset,
     Data1D,
-    load_data,
     OrsoDataset,
     PolarisedReflectDatasets,
+    ReflectDataset,
+    load_data,
 )
 from refnx.dataset.data1d import _data1D_to_hdf, _hdf_to_data1d
 from refnx.dataset.reflectdataset import load_orso
-from refnx.reflect import SLD, MaterialSLD, ReflectModel
 from refnx.reduce import PlatypusNexus, ReductionOptions
 from refnx.reduce.platypusnexus import calculate_wavelength_bins
-from refnx.util import q, EPdiv
-import refnx.dataset.tests
-from refnx._lib import possibly_open_file
-import numpy as np
-from numpy.testing import assert_equal
+from refnx.reflect import SLD, MaterialSLD, ReflectModel
+from refnx.util import EPdiv, q
 
 
 class TestReflectDataset:

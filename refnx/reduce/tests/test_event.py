@@ -1,19 +1,18 @@
-from pathlib import Path
 import mmap
 import os
 import warnings
 from collections import namedtuple
+from pathlib import Path
 
-import numpy as np
 import h5py
+import numpy as np
 import pytest
-
 from numpy.testing import assert_equal
-import refnx.reduce.event as event
-from refnx.reduce import PlatypusNexus, SpatzNexus
+
+from refnx.reduce import PlatypusNexus, SpatzNexus, event
 
 try:
-    import refnx.reduce._cevent as _cevent
+    from refnx.reduce import _cevent
 except ImportError:
     HAVE_CEVENTS = False
 else:

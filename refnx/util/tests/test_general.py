@@ -1,8 +1,9 @@
-import refnx.util.general as general
-import refnx
 import numpy as np
+from numpy.testing import assert_, assert_allclose, assert_almost_equal
+
+import refnx
 import refnx.util.general
-from numpy.testing import assert_almost_equal, assert_, assert_allclose
+from refnx.util import general
 
 
 def test_version():

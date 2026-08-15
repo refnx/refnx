@@ -1,18 +1,17 @@
-# coding: utf-8
-
 """
 Batch reduction of reflectometry data based on a spreadsheet
 """
 
 import collections
-import numpy as np
 import os
 import os.path
-import pandas as pd
 import pickle
 import re
 import sys
 import warnings
+
+import numpy as np
+import pandas as pd
 
 try:
     import IPython.display
@@ -21,7 +20,7 @@ try:
 except ImportError:
     _have_ipython = False
 
-from refnx.reduce import reduce_stitch, ReductionOptions
+from refnx.reduce import ReductionOptions, reduce_stitch
 
 ReductionEntryTuple = collections.namedtuple(
     "ReductionEntry", ["row", "ds", "name", "fname", "entry"]
@@ -515,7 +514,7 @@ class BatchReducer:
 
             try:
                 ds, fname = self._reduce_row(all_runs.loc[idx])
-            except IOError as e:
+            except OSError as e:
                 # data file not found (normally)
                 reduction_ok = str(e)
                 warnings.warn("Run %s: %s" % (name, str(e)))

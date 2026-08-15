@@ -4,7 +4,7 @@ Functions for various calculations related to reflectometry
 """
 
 import numpy as np
-from scipy import stats, integrate, constants, optimize
+from scipy import constants, integrate, optimize, stats
 
 # h / m = 3956
 K = constants.h / constants.m_n * 1.0e10

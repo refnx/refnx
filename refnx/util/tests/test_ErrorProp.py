@@ -1,7 +1,9 @@
-import refnx.util.ErrorProp as EP
-import numpy as np
 import os
-from numpy.testing import assert_equal, assert_array_almost_equal
+
+import numpy as np
+from numpy.testing import assert_array_almost_equal, assert_equal
+
+import refnx.util.ErrorProp as EP
 
 
 class TestErrorProp:

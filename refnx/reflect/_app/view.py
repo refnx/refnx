@@ -1,22 +1,18 @@
-from pathlib import Path
-from copy import deepcopy
-import pickle
-from importlib import resources
+import csv
 import os
+import pickle
 import sys
 import time
-import csv
+from copy import deepcopy
+from importlib import resources
 from multiprocessing import get_context
+from pathlib import Path
 
-import numpy as np
-import scipy
 import matplotlib
+import numpy as np
 import periodictable
-
-from qtpy.compat import getopenfilename, getopenfilenames, getsavefilename
-from qtpy import QtCore, QtGui, QtWidgets, uic
-from qtpy.QtCore import Qt
-
+import scipy
+from matplotlib import artist, lines
 from matplotlib.backends.backend_qtagg import (
     FigureCanvasQTAgg as FigureCanvas,
 )
@@ -24,52 +20,52 @@ from matplotlib.backends.backend_qtagg import (
     NavigationToolbar2QT as NavigationToolbar,
 )
 from matplotlib.figure import Figure
-import matplotlib.artist as artist
-import matplotlib.lines as lines
-
-
-from .SLD_calculator_view import SLDcalculatorView
-from .datastore import DataStore
-from .treeview_gui_model import (
-    TreeModel,
-    Node,
-    DatasetNode,
-    DataObjectNode,
-    ComponentNode,
-    StructureNode,
-    PropertyNode,
-    ReflectModelNode,
-    ParNode,
-    TreeFilter,
-    find_data_object,
-    SlabNode,
-    StackNode,
-)
-from ._lipid_leaflet import LipidLeafletDialog
-from ._optimisation_parameters import OptimisationParameterView
-from ._spline import SplineDialog
-from ._mcmc import ProcessMCMCDialog, SampleMCMCDialog, _plots, _process_chain
+from qtpy import QtCore, QtGui, QtWidgets, uic
+from qtpy.compat import getopenfilename, getopenfilenames, getsavefilename
+from qtpy.QtCore import Qt
 
 import refnx
+import refnx.reflect._app
+from refnx._lib import MapWrapper, flatten, unique
 from refnx.analysis import (
     CurveFitter,
-    Objective,
-    Transform,
     GlobalObjective,
+    Objective,
     Parameter,
+    Transform,
 )
+from refnx.dataset import Data1D, OrsoDataset
 from refnx.reflect import (
     SLD,
+    MixedReflectModel,
     ReflectModel,
     Slab,
     Stack,
     Structure,
-    MixedReflectModel,
 )
-import refnx.reflect._app
-from refnx.dataset import Data1D, OrsoDataset
 from refnx.reflect._code_fragment import code_fragment
-from refnx._lib import unique, flatten, MapWrapper
+
+from ._lipid_leaflet import LipidLeafletDialog
+from ._mcmc import ProcessMCMCDialog, SampleMCMCDialog, _plots, _process_chain
+from ._optimisation_parameters import OptimisationParameterView
+from ._spline import SplineDialog
+from .datastore import DataStore
+from .SLD_calculator_view import SLDcalculatorView
+from .treeview_gui_model import (
+    ComponentNode,
+    DataObjectNode,
+    DatasetNode,
+    Node,
+    ParNode,
+    PropertyNode,
+    ReflectModelNode,
+    SlabNode,
+    StackNode,
+    StructureNode,
+    TreeFilter,
+    TreeModel,
+    find_data_object,
+)
 
 # matplotlib.use('QtAgg')
 UI_LOCATION = resources.files(refnx.reflect._app) / "ui"
@@ -618,7 +614,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
         self.redraw_data_object_graphs(refresh_data_objects)
 
         # for totally new, then add to graphs
-        new_data_objects = [datastore[name] for name in new_objects.keys()]
+        new_data_objects = [datastore[name] for name in new_objects]
         self.add_data_objects_to_graphs(new_data_objects)
 
         self.calculate_chi2(data_objects)
@@ -1820,7 +1816,7 @@ class MotofitMainWindow(QtWidgets.QMainWindow):
     def on_treeView_clicked(self, index):
         index = self.mapToSource(index)
         if not index.isValid():
-            return None
+            return
 
         item = index.internalPointer()
         if not isinstance(item, ParNode):
@@ -2640,7 +2636,7 @@ class MyReflectivityGraphs(FigureCanvas):
                 line_instance = error_bar_container[0]
                 line_instance.set_pickradius(5)
                 mfc = artist.getp(line_instance, "markerfacecolor")
-                artist.setp(line_instance, **{"markeredgecolor": mfc})
+                artist.setp(line_instance, markeredgecolor=mfc)
 
                 graph_properties["ax_data"] = error_bar_container
                 data_properties = graph_properties["data_properties"].copy()

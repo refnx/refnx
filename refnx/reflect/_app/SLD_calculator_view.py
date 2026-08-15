@@ -1,9 +1,11 @@
 from importlib import resources
-from qtpy import QtWidgets, uic
-from qtpy.QtCore import Slot
+
+import numpy as np
 import periodictable as pt
 import pyparsing
-import numpy as np
+from qtpy import QtWidgets, uic
+from qtpy.QtCore import Slot
+
 import refnx.reflect._app
 
 UI_LOCATION = resources.files(refnx.reflect._app) / "ui"

@@ -1,8 +1,10 @@
 import os.path
 from collections import OrderedDict
+
 import numpy as np
-from refnx.reflect import SLD, Structure, ReflectModel
+
 from refnx.dataset import ReflectDataset, load_data
+from refnx.reflect import SLD, ReflectModel, Structure
 
 from .dataobject import DataObject
 
@@ -23,7 +25,7 @@ class DataStore:
     """
 
     def __init__(self):
-        super(DataStore, self).__init__()
+        super().__init__()
         self.data_objects = OrderedDict()
 
         # create the default theoretical dataset

@@ -25,11 +25,12 @@ DEALINGS IN THIS SOFTWARE.
 """
 
 from importlib import resources
-import numpy as np
-import numpy.typing as npt
 from typing import Optional
 
-from refnx.analysis import possibly_create_parameter, Parameter, Parameters
+import numpy as np
+import numpy.typing as npt
+
+from refnx.analysis import Parameter, Parameters, possibly_create_parameter
 from refnx.reflect.reflect_model import (
     ReflectModel,
     SpinChannel,

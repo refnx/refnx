@@ -1,11 +1,11 @@
-from multiprocessing import Pool, get_context
-import warnings as _warnings
+import functools
 import os as _os
 import sys as _sys
-import functools
-from tempfile import mkdtemp
+import warnings as _warnings
 from contextlib import contextmanager
 from inspect import getfullargspec as _getargspecf
+from multiprocessing import Pool, get_context
+from tempfile import mkdtemp
 
 
 def preserve_cwd(function):

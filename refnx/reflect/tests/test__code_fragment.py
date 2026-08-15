@@ -1,18 +1,18 @@
+import operator
 from importlib import resources
 from pathlib import Path
-import operator
 
 import numpy as np
 from numpy import array
 from numpy.testing import assert_allclose
 
-from refnx.analysis import Objective, Parameter, Interval, Transform
-from refnx.analysis.parameter import build_constraint_from_tree, Constant
-from refnx.reflect._code_fragment import code_fragment
-from refnx.reflect import SLD, ReflectModel, Structure, Slab
-from refnx.dataset import ReflectDataset
 import refnx.reflect.tests
 from refnx._lib import flatten
+from refnx.analysis import Interval, Objective, Parameter, Transform
+from refnx.analysis.parameter import Constant, build_constraint_from_tree
+from refnx.dataset import ReflectDataset
+from refnx.reflect import SLD, ReflectModel, Slab, Structure
+from refnx.reflect._code_fragment import code_fragment
 
 
 class TestCodeFragment:

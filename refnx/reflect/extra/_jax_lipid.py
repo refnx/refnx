@@ -47,16 +47,18 @@ mixing is needed.  We replicate this below.
 """
 
 from __future__ import annotations
+
 from typing import TYPE_CHECKING, List
+
 from refnx.reflect.extra._jax_util import (
-    _sub,
-    _mul,
-    _div,
     _add,
-    _const,
-    _SlabSpec,
-    _ConstraintCompiler,
     _compile_scatterer,
+    _const,
+    _ConstraintCompiler,
+    _div,
+    _mul,
+    _SlabSpec,
+    _sub,
 )
 
 # ---------------------------------------------------------------------------
@@ -66,7 +68,7 @@ from refnx.reflect.extra._jax_util import (
 
 def _lipid_leaflet_jax_slabs(
     self, compiler: _ConstraintCompiler
-) -> List[_SlabSpec]:
+) -> list[_SlabSpec]:
     """
     ``_jax_slabs`` hook for ``LipidLeaflet``.
 

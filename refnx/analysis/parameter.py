@@ -1,10 +1,12 @@
 import operator
-from types import MethodType
 from collections import UserList
+from types import MethodType
 
 import numpy as np
-from refnx._lib import flatten, unique as f_unique
-from refnx.analysis import Interval, PDF, Bounds
+
+from refnx._lib import flatten
+from refnx._lib import unique as f_unique
+from refnx.analysis import PDF, Bounds, Interval
 
 
 # Functions for making Functors
@@ -517,7 +519,7 @@ class BaseParameter:
         s = (
             f"<Parameter:{self.name!r:^15}"
             f", value={self.value:g}{fixed: ^10}"
-            f", bounds={str(self.bounds)}"
+            f", bounds={self.bounds!s}"
             f"{constraint}>"
         )
         return s

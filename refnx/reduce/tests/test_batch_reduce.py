@@ -1,19 +1,17 @@
 import os
-
 import os.path
-from pathlib import Path
-import warnings
-import pandas
-import scipy
 import tempfile
+import warnings
+from pathlib import Path
 
-from numpy.testing import assert_equal
+import pandas
 import pytest
-
-from refnx.reduce import BatchReducer
+import scipy
+from numpy.testing import assert_equal
 
 # also get access to file-scope variables
 import refnx.reduce.batchreduction
+from refnx.reduce import BatchReducer
 
 
 class TestReduce:

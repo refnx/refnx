@@ -1,5 +1,6 @@
 import pytest
-import refnx.reduce.xray as xray
+
+from refnx.reduce import xray
 
 
 def test_reduction_runs(data_directory):

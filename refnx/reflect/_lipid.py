@@ -3,13 +3,15 @@ Component for studying lipid membranes at an interface
 """
 
 import warnings
+
 import numpy as np
 from scipy.optimize import NonlinearConstraint
-from refnx.reflect import Component, SLD, ReflectModel, Structure
-from refnx.analysis import possibly_create_parameter, Parameters, Parameter
+
+from refnx.analysis import Parameter, Parameters, possibly_create_parameter
+from refnx.reflect import SLD, Component, ReflectModel, Structure
 from refnx.reflect.structure import (
-    overall_sld,
     Scatterer,
+    overall_sld,
     possibly_create_scatterer,
 )
 

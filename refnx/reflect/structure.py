@@ -23,13 +23,13 @@ DEALINGS IN THIS SOFTWARE.
 
 # -*- coding: utf-8 -*-
 
-from collections import UserList
 import numbers
 import operator as op
+from collections import UserList
 
 import numpy as np
-from scipy.stats import norm
 from scipy.interpolate import interp1d
+from scipy.stats import norm
 
 try:
     from refnx.reflect import _creflect as refcalc
@@ -37,10 +37,10 @@ except ImportError:
     from refnx.reflect import _reflect as refcalc
 
 from refnx._lib import flatten, possibly_open_file
-from refnx.analysis import Parameters, Parameter, possibly_create_parameter
+from refnx.analysis import Parameter, Parameters, possibly_create_parameter
 from refnx.analysis.parameter import BaseParameter
-from refnx.reflect.interface import Interface, Erf, Step
-from refnx.reflect.reflect_model import get_reflect_backend, SpinChannel
+from refnx.reflect.interface import Erf, Interface, Step
+from refnx.reflect.reflect_model import SpinChannel, get_reflect_backend
 
 # contracting the SLD profile can greatly speed a reflectivity calculation up.
 contract_by_area = refcalc._contract_by_area
@@ -849,8 +849,8 @@ class Structure(UserList):
         -------
         model : :class:`orso.fileio.model_language.SampleModel`
         """
-        from orsopy.fileio import model_language as ml
         from orsopy.fileio import ComplexValue
+        from orsopy.fileio import model_language as ml
 
         defaults = ml.ModelParameters(
             length_unit="angstrom", sld_unit="1/angstrom^2"
@@ -911,12 +911,11 @@ class Structure(UserList):
         >>> model = SampleModel(**dct)
 
         """
+        import yaml
         from orsopy.fileio import model_language
         from orsopy.slddb.material import Material as _Material
         from orsopy.slddb.material import get_element
         from orsopy.utils.chemical_formula import Formula as _Formula
-
-        import yaml
 
         if isinstance(sample_model, model_language.SampleModel):
             pass

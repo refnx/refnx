@@ -1,8 +1,6 @@
 import sys
 
-from qtpy.compat import getopenfilenames
-from qtpy import QtCore, QtWidgets
-from qtpy.QtWidgets import QDialog, QPushButton, QVBoxLayout, QApplication
+import numpy as np
 from matplotlib.backends.backend_qtagg import (
     FigureCanvasQTAgg as FigureCanvas,
 )
@@ -10,8 +8,10 @@ from matplotlib.backends.backend_qtagg import (
     NavigationToolbar2QT as NavigationToolbar,
 )
 from matplotlib.figure import Figure
+from qtpy import QtCore, QtWidgets
+from qtpy.compat import getopenfilenames
+from qtpy.QtWidgets import QApplication, QDialog, QPushButton, QVBoxLayout
 
-import numpy as np
 from refnx.dataset import ReflectDataset
 
 

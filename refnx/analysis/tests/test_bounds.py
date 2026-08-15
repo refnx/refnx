@@ -1,10 +1,10 @@
 import pickle
 
-from refnx.analysis import Interval, PDF
-
 import numpy as np
 from numpy.testing import assert_allclose, assert_almost_equal
 from scipy.stats import norm, truncnorm, uniform
+
+from refnx.analysis import PDF, Interval
 
 
 class TestBounds:

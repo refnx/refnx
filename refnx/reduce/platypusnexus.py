@@ -1,37 +1,37 @@
+import argparse
 import io
 import os
-from pathlib import Path
-import argparse
 import re
 import shutil
-from time import gmtime, strftime
 import string
 import warnings
 from contextlib import contextmanager
+from pathlib import Path
+from time import gmtime, strftime
 
-from scipy.optimize import leastsq, curve_fit
-from scipy.stats import t
-import pandas as pd
-import numpy as np
 import h5py
+import numpy as np
+import pandas as pd
+from scipy.optimize import curve_fit, leastsq
+from scipy.stats import t
 
-from refnx.reduce.peak_utils import peak_finder, centroid
-import refnx.util.general as general
-from refnx.util.general import resolution_double_chopper, _dict_compare
 import refnx.util.ErrorProp as EP
-from refnx.reduce.parabolic_motion import (
-    find_trajectory,
-    y_deflection,
-    parabola,
-)
+from refnx._lib import possibly_open_file
 from refnx.reduce.event import (
     events,
-    process_event_stream,
     framebins_to_frames,
+    process_event_stream,
 )
+from refnx.reduce.parabolic_motion import (
+    find_trajectory,
+    parabola,
+    y_deflection,
+)
+from refnx.reduce.peak_utils import centroid, peak_finder
 from refnx.reduce.rebin import rebin, rebin_along_axis
-from refnx._lib import possibly_open_file
 from refnx.reflect import SpinChannel
+from refnx.util import general
+from refnx.util.general import _dict_compare, resolution_double_chopper
 
 EXTENT_MULT = 2
 PIXEL_OFFSET = 4
@@ -135,7 +135,7 @@ def catalogue(start, stop, data_folder=None, prefix="PLP", keys=None):
             if type(data) is bytes:
                 data = data.decode()
 
-            d[key].append(data)
+            val.append(data)
 
     df = pd.DataFrame(d, index=run_number, columns=info)
 
@@ -2217,7 +2217,7 @@ class ReflectNexus:
             / "EOS.bin"
         )
 
-        with io.open(stream_filename, "rb") as f:
+        with open(stream_filename, "rb") as f:
             last_frame = int(frame_bins[-1] * frequency)
             loaded_events, end_events = events(f, max_frames=last_frame)
 
@@ -3366,7 +3366,7 @@ def accumulate_HDF_files(files):
     """
     # don't do anything if no files were supplied.
     if not len(files):
-        return None
+        return
 
     # the first file is the "master file", lets copy it.
     file = files[0]
@@ -3533,7 +3533,7 @@ if __name__ == "__main__":
 
             a.write_spectrum_dat(out_fname, scanpoint=integrate)
 
-        except IOError:
+        except OSError:
             print("Couldn't find file: %d.  Use --basedir option" % file)
 
 
@@ -3565,8 +3565,8 @@ def _plot_offspec(
         The upper and lower y-axis limits for the plot
     """
 
-    from matplotlib.colors import LogNorm
     import matplotlib.pyplot as plt
+    from matplotlib.colors import LogNorm
 
     npz = np.load(f)
 

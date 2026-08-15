@@ -1,19 +1,19 @@
-from pathlib import Path
-import os
 import logging
+import os
 from copy import copy
+from pathlib import Path
 
+import numpy as np
 from qtpy import QtCore
 from qtpy.QtCore import Qt
-import numpy as np
 
 from refnx._lib import preserve_cwd
 from refnx.dataset import ReflectDataset
 from refnx.reduce import (
-    number_datafile,
+    PlatypusNexus,
     PlatypusReduce,
     basename_datafile,
-    PlatypusNexus,
+    number_datafile,
 )
 
 reducer_entry = [
@@ -235,9 +235,7 @@ class ReductionState:
                 with open(fname_xml, "wb") as f:
                     combined_dataset.save_xml(f)
                 logging.info(
-                    "Written combined files: {} and {}".format(
-                        fname_dat, fname_xml
-                    )
+                    f"Written combined files: {fname_dat} and {fname_xml}"
                 )
 
             # can be used to create a progress bar

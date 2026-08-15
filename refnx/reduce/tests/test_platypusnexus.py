@@ -1,44 +1,44 @@
-import os
 import numbers
-import warnings
+import os
 import pickle
+import warnings
 from pathlib import Path
 
-import pytest
-import numpy as np
-from numpy.testing import (
-    assert_almost_equal,
-    assert_equal,
-    assert_array_less,
-    assert_allclose,
-)
 import h5py
+import numpy as np
+import pytest
 import scipy
+from numpy.testing import (
+    assert_allclose,
+    assert_almost_equal,
+    assert_array_less,
+    assert_equal,
+)
 
 import refnx.reduce.platypusnexus as plp
 from refnx.reduce import (
-    PlatypusReduce,
     PlatypusNexus,
+    PlatypusReduce,
     SpatzNexus,
+    SpinSet,
     basename_datafile,
     catalogue,
-    SpinSet,
 )
 from refnx.reduce.peak_utils import gauss
 from refnx.reduce.platypusnexus import (
-    fore_back_region,
     EXTENT_MULT,
     PIXEL_OFFSET,
-    create_detector_norm,
     Catalogue,
     PlatypusCatalogue,
-    create_reflect_nexus,
     ReductionOptions,
+    create_detector_norm,
+    create_reflect_nexus,
+    fore_back_region,
 )
 from refnx.reflect import SpinChannel
 
 
-class TestSpinSet(object):
+class TestSpinSet:
     @pytest.fixture(autouse=True)
     def setup_method(self, tmp_path, data_directory):
         self.pth = data_directory / "reduce" / "PNR_files"
@@ -123,7 +123,7 @@ class TestSpinSet(object):
                         spin_set.sc_opts[sc].update(standard_opts)
 
 
-class TestPlatypusNexus(object):
+class TestPlatypusNexus:
     @pytest.fixture(autouse=True)
     def setup_method(self, tmp_path, data_directory):
         self.pth = data_directory / "reduce"
@@ -293,7 +293,6 @@ class TestPlatypusNexus(object):
         TODO: add a dataset which has multiple spectra in it, and make sure it
         processes.
         """
-        pass
 
     def test_reduction_runs(self):
         # just check it runs

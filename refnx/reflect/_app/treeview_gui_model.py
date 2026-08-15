@@ -1,6 +1,6 @@
-from copy import deepcopy
 import os.path
 import pickle
+from copy import deepcopy
 from operator import itemgetter
 
 import numpy as np
@@ -10,17 +10,17 @@ from qtpy.QtCore import Qt
 from refnx._lib import flatten, unique
 from refnx.analysis import Parameter, Parameters, possibly_create_parameter
 from refnx.dataset import ReflectDataset
-from refnx.reflect._app.dataobject import DataObject
-from refnx.reflect._app.datastore import DataStore
 from refnx.reflect import (
-    Slab,
-    LipidLeaflet,
     SLD,
-    ReflectModel,
+    LipidLeaflet,
     MixedReflectModel,
+    ReflectModel,
+    Slab,
     Spline,
     Stack,
 )
+from refnx.reflect._app.dataobject import DataObject
+from refnx.reflect._app.datastore import DataStore
 
 
 def component_class(component):
@@ -1207,7 +1207,7 @@ class TreeModel(QtCore.QAbstractItemModel):
 
 class TreeFilter(QtCore.QSortFilterProxyModel):
     def __init__(self, tree_model, parent=None, only_fitted=False):
-        super(TreeFilter, self).__init__(parent)
+        super().__init__(parent)
         self.tree_model = tree_model
         # only_fitted means that only the entries that are varying will be
         # displayed.

@@ -1,13 +1,15 @@
+import logging
 import pickle
 from pathlib import Path
-import logging
 
-from qtpy.compat import getopenfilename, getsavefilename
 from qtpy import QtCore, QtWidgets, uic
+from qtpy.compat import getopenfilename, getsavefilename
 from qtpy.QtCore import Qt
+
 from refnx.reduce.manual_beam_finder import ManualBeamFinder
+
+from .model import ReductionState, ReductionTableModel
 from .plot import SlimPlotWindow
-from .model import ReductionTableModel, ReductionState
 
 UI_LOCATION = Path(__file__).absolute().parent / "ui"
 

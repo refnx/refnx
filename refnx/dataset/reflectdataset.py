@@ -1,19 +1,19 @@
+import re
 import string
 import time
-import re
 
 # from datetime import datetime
 from pathlib import Path, PurePath
 
 try:
-    import xml.etree.cElementTree as ET
+    import xml.etree.ElementTree as ET
 except ImportError:
     import xml.etree.ElementTree as ET
 import numpy as np
-
 import orsopy.fileio as fio
-from refnx.dataset import Data1D
+
 from refnx._lib import possibly_open_file
+from refnx.dataset import Data1D
 
 
 def load_orso(f):
@@ -316,8 +316,8 @@ class OrsoDataset(Data1D):
         >>> fitter.fit("differential_evolution")
 
         """
-        from refnx.reflect import Structure, ReflectModel
         from refnx.analysis import Objective
+        from refnx.reflect import ReflectModel, Structure
 
         if self.orso is None:
             raise RuntimeError(

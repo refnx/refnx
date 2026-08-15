@@ -1,40 +1,39 @@
-from importlib import resources
-import pickle
 import multiprocessing as mp
+import pickle
 import sys
+from importlib import resources
 
 import numpy as np
-import scipy.optimize as sciopt
-from scipy.stats import norm
-
 import pytest
+import scipy.optimize as sciopt
 from numpy.testing import (
     assert_,
+    assert_allclose,
     assert_almost_equal,
     assert_equal,
-    assert_allclose,
 )
+from scipy.stats import norm
 
-from refnx.analysis import (
-    CurveFitter,
-    Parameter,
-    Parameters,
-    Model,
-    Objective,
-    process_chain,
-    load_chain,
-    Bounds,
-    PDF,
-    autocorrelation_chain,
-    integrated_time,
-)
 import refnx.analysis.tests
-from refnx.analysis.curvefitter import bounds_list
-from refnx.dataset import Data1D
 from refnx._lib import emcee, flatten
 from refnx._lib.emcee.moves import DEMove, DESnookerMove
+from refnx.analysis import (
+    PDF,
+    Bounds,
+    CurveFitter,
+    Model,
+    Objective,
+    Parameter,
+    Parameters,
+    autocorrelation_chain,
+    integrated_time,
+    load_chain,
+    process_chain,
+)
+from refnx.analysis.curvefitter import bounds_list
+from refnx.dataset import Data1D
 
-from .NISTModels import NIST_runner, NIST_Models
+from .NISTModels import NIST_Models, NIST_runner
 
 
 def line(x, params, *args, **kwds):
@@ -653,6 +652,7 @@ class TestFitterGauss:
         # test sampling with pymc
         try:
             import pymc as pm
+
             from refnx.analysis import pymc_model
         except (ModuleNotFoundError, ImportError, AttributeError):
             # can't run test if pymc/pytensor not installed

@@ -1,8 +1,10 @@
 from importlib import resources
+
 import numpy as np
-from numpy.testing import assert_almost_equal, assert_, assert_equal
+from numpy.testing import assert_, assert_almost_equal, assert_equal
+
 import refnx.util.tests
-import refnx.util.nsplice as nsplice
+from refnx.util import nsplice
 
 __author__ = "anz"
 
