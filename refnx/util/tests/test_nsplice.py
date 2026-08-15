@@ -34,7 +34,7 @@ class TestNSplice:
 
     def test_nsplice(self):
         # test splicing of two datasets
-        scale, dscale, overlap = nsplice.get_scaling_in_overlap(
+        scale, dscale, _overlap = nsplice.get_scaling_in_overlap(
             self.qv0, self.rv0, self.drv0, self.qv1, self.rv1, self.drv1
         )
         assert_almost_equal(scale, self.scale)
@@ -59,7 +59,7 @@ class TestNSplice:
         vec1 = np.arange(np.size(self.qv1))
         np.random.shuffle(vec1)
 
-        scale, dscale, overlap = nsplice.get_scaling_in_overlap(
+        scale, dscale, _ = nsplice.get_scaling_in_overlap(
             self.qv0[vec0],
             self.rv0[vec0],
             self.drv0[vec0],
@@ -72,7 +72,7 @@ class TestNSplice:
         assert_almost_equal(dscale, self.dscale)
 
     def test_nsplice_overlap_points(self):
-        scale, dscale, overlap = nsplice.get_scaling_in_overlap(
+        scale, _, overlap = nsplice.get_scaling_in_overlap(
             self.x0, self.y0, self.dy0, self.x1, self.y1, self.dy1
         )
 

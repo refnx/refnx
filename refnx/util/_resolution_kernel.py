@@ -1,4 +1,3 @@
-#!/usr/bin/python
 """
 Full resolution kernel for a conventional double disc chopper system
 This code compares well to the kernel calculated using MCMC in:

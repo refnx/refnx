@@ -8,7 +8,7 @@ from refnx.util import general
 
 def test_version():
     # check that we can retrieve a version string
-    refnx.__version__
+    _ = refnx.__version__
 
 
 class TestGeneral:
@@ -20,7 +20,7 @@ class TestGeneral:
         assert_almost_equal(q, 0.1096567037)
 
     def test_q2(self):
-        qx, qy, qz = general.q2(1.0, 2.0, 0.0, 2.0)
+        _qx, _qy, qz = general.q2(1.0, 2.0, 0.0, 2.0)
         assert_almost_equal(qz, 0.1096567037)
 
     def test_wavelength_velocity(self):
