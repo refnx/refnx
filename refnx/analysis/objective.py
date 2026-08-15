@@ -8,6 +8,9 @@ from scipy.optimize._numdiff import approx_derivative
 
 from refnx._lib import approx_hess2, flatten
 from refnx._lib import unique as f_unique
+from refnx.dataset import Data1D
+from refnx.util import ErrorProp as EP
+
 from .bounds import PDF, Interval
 from .parameter import (
     Parameter,
@@ -16,8 +19,6 @@ from .parameter import (
     is_parameters,
     possibly_create_parameter,
 )
-from refnx.dataset import Data1D
-from refnx.util import ErrorProp as EP
 
 
 class BaseObjective:
@@ -296,7 +297,7 @@ class Objective(BaseObjective):
         # should be a Data1D instance
         if isinstance(data, Data1D):
             self.data = data
-        elif all([hasattr(data, a) for a in ["data", "y", "__len__"]]):
+        elif all(hasattr(data, a) for a in ["data", "y", "__len__"]):
             # it may be an object that is composed to look like a Data1D
             # object, let it through.
             self.data = data
@@ -779,7 +780,7 @@ class Objective(BaseObjective):
         if target == "residuals":
             try:
                 covar = self._covar_from_residuals()
-            except Exception:
+            except Exception:  # noqa:BLE001
                 # fallback to "nll"
                 target = "nll"
 
@@ -946,7 +947,7 @@ class Objective(BaseObjective):
         # and get the generative
         _model_gen = []
         for curve in self._generate_generative_mcmc(ngen=samples):
-            _model_gen.append(curve)
+            _model_gen.append(curve)  # noqa: PERF402
 
         _model_arr = np.array(_model_gen)
 
@@ -1610,7 +1611,7 @@ def pymc_model(objective):
     with basic_model:
         # Priors for unknown model parameters
         for i, par in enumerate(pars):
-            name = "p%d" % i
+            name = f"p{i}"
             p = _to_pymc_distribution(name, par)
             wrapped_pars.append(p)
 

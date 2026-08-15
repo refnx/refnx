@@ -408,9 +408,9 @@ class TestObjective:
         burnin = 200
         samples = sampler.get_chain()[burnin:, :, :].reshape((-1, ndim))
         samples[:, 2] = np.exp(samples[:, 2])
-        m_mc, b_mc, f_mc = map(
-            lambda v: (v[1], v[2] - v[1], v[1] - v[0]),
-            zip(*np.percentile(samples, [16, 50, 84], axis=0)),
+        m_mc, b_mc, f_mc = (
+            (v[1], v[2] - v[1], v[1] - v[0])
+            for v in zip(*np.percentile(samples, [16, 50, 84], axis=0))
         )
         assert_allclose(m_mc, (-1.0071664, 0.0809444, 0.0784894), rtol=0.05)
 

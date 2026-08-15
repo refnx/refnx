@@ -22,6 +22,7 @@ from refnx._lib import (
 from refnx._lib.emcee.pbar import get_progress_bar
 from refnx._lib.emcee.state import State
 from refnx._lib.util import getargspec
+
 from .bounds import PDF, Interval
 from .objective import Objective
 from .parameter import is_parameter
@@ -164,7 +165,7 @@ class PTSampler:
     @property
     def random_state(self):
         if self._ptchain is not None:
-            self._ptchain.ensemble._rng.bit_generator.state
+            return self._ptchain.ensemble._rng.bit_generator.state
 
     @random_state.setter
     def random_state(self, state):

@@ -268,7 +268,7 @@ def ReadNistData(dataset, start="start2"):
 
     params = Parameters()
     for i in range(nparams):
-        pname = "p%i" % (i + 1)
+        pname = f"p{i + 1}"
         if start == "start2":
             pval = start2[i]
         elif start == "start1":

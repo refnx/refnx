@@ -122,12 +122,12 @@ class Parameters(UserList):
         return f"Parameters(data={self.data!r}, name={self.name!r})"
 
     def __str__(self):
-        s = list()
+        s = []
         s.append(f"{'':_>80}")
         s.append(f"Parameters: {self.name!r: ^15}")
 
         for el in self._pprint():
-            s.append(el)
+            s.append(el)  # noqa:PERF402
 
         return "\n".join(list(flatten(s)))
 
@@ -230,8 +230,8 @@ class Parameters(UserList):
             return
         else:
             raise ValueError(
-                "You supplied the wrong number of values %d when "
-                "setting this Parameters.pvals attribute" % len(pvals)
+                f"You supplied the wrong number of values {len(pvals)} when "
+                "setting this Parameters.pvals attribute"
             )
 
     @property
