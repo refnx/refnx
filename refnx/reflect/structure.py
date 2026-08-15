@@ -581,7 +581,7 @@ class Structure(UserList):
             or (not isinstance(self.data[0], (Slab, MagneticSlab)))
             or (not isinstance(self.data[-1], (Slab, MagneticSlab)))
         ):
-            raise ValueError(
+            raise TypeError(
                 "Structure requires fronting and backing"
                 " Slabs in order to calculate."
             )

@@ -590,7 +590,7 @@ class TestStructure:
         assert isinstance(s.components[-1], Stack)
         import pytest
 
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             s.slabs()
 
     def test_attribute_setting(self):
