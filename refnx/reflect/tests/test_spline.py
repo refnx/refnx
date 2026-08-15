@@ -1,6 +1,7 @@
 import pickle
 
 import numpy as np
+import pytest
 from numpy.testing import (
     assert_,
     assert_allclose,
@@ -173,9 +174,7 @@ class TestSpline:
 
         s = self.left | a | a | self.right | self.solvent
 
-        from pytest import raises
-
-        with raises(ValueError):
+        with pytest.raises(TypeError):
             s.slabs()
 
     def test_spine_interfaces(self):
