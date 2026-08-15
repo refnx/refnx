@@ -68,12 +68,12 @@ def median(y, x=None, dx=1.0):
     c /= cl
 
     median = np.interp(0.5, c, x)
-    mean, sd = centroid(y, x=x)
+    _mean, sd = centroid(y, x=x)
     return median, sd
 
 
 def gauss_fit(p0, x, y, sigma=None):
-    popt, pcov = curve_fit(gauss, x, y, p0=p0, sigma=sigma)
+    popt, _pcov = curve_fit(gauss, x, y, p0=p0, sigma=sigma)
     return popt
 
 

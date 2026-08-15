@@ -70,7 +70,7 @@ def reduce_xrdml(f, bkg=None, scale=None, sample_length=None):
         )
 
     # work out the Q values
-    qx, qy, qz = general.q2(
+    _qx, _qy, qz = general.q2(
         spec["omega"],
         spec["twotheta"],
         np.zeros_like(spec["omega"]),
@@ -171,7 +171,7 @@ def parse_xrdml_file(f):
     ratio = float(res["ratio"])
     wavelength = (kAlpha1 + ratio * kAlpha2) / (1 + ratio)
 
-    d = dict()
+    d = {}
 
     intensities = np.fromstring(res["intensities"], sep=" ")
     n_pnts = intensities.size
@@ -278,6 +278,6 @@ def process_offspec(f):
 
     omega = np.array(omegas)
     twotheta = np.array(two_thetas)
-    qx, qy, qz = general.q2(omega, twotheta, 0, wavelength)
+    qx, _qy, qz = general.q2(omega, twotheta, 0, wavelength)
 
     return qx, qz, intensity, dintensity

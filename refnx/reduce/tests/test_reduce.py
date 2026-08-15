@@ -46,7 +46,7 @@ class TestPlatypusReduce:
                 "ignore",
                 (RuntimeWarning, scipy.optimize._optimize.OptimizeWarning),
             )
-            a, fname = reduce_stitch(
+            a, _fname = reduce_stitch(
                 [708, 709, 710],
                 [711, 711, 711],
                 data_folder=self.pth,
@@ -59,7 +59,7 @@ class TestPlatypusReduce:
             opts = ReductionOptions()
             opts["rebin_percent"] = 2
 
-            a2, fname = reduce_stitch(
+            a2, _fname = reduce_stitch(
                 [708, 709, 710],
                 [711, 711, 711],
                 data_folder=self.pth,
@@ -147,10 +147,10 @@ class TestPlatypusReduce:
         a1 = PlatypusReduce("PLP0038417.nx.hdf", data_folder=self.pth)
 
         # try reduction with the reduce method
-        d0, r0 = a0.reduce(
+        _d0, _r0 = a0.reduce(
             "PLP0038420.nx.hdf", data_folder=self.pth, rebin_percent=4
         )
-        d1, r1 = a1.reduce(
+        _d1, _r1 = a1.reduce(
             "PLP0038421.nx.hdf", data_folder=self.pth, rebin_percent=4
         )
 
@@ -220,7 +220,7 @@ class TestSpatzReduce:
             warnings.simplefilter(
                 "ignore", (scipy.optimize._optimize.OptimizeWarning)
             )
-            a, fname = reduce_stitch(
+            a, _fname = reduce_stitch(
                 [660, 661],
                 [658, 659],
                 data_folder=self.pth,
@@ -235,7 +235,7 @@ class TestSpatzReduce:
             opts = ReductionOptions()
             opts["rebin_percent"] = 2
 
-            a2, fname = reduce_stitch(
+            a2, _fname = reduce_stitch(
                 [660, 661],
                 [658, 659],
                 data_folder=self.pth,
@@ -661,8 +661,10 @@ class TestPolarisationEfficiency:
 
         peff = PolarisationEfficiency(wavelength_axis)
 
-        assert peff.combined_efficiency_matrix.shape == tuple(
-            [len(wavelength_axis), 4, 4]
+        assert peff.combined_efficiency_matrix.shape == (
+            len(wavelength_axis),
+            4,
+            4,
         )
 
     def test_config_difference(self):

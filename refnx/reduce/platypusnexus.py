@@ -878,16 +878,15 @@ class SpinSet:
         # reduction options for the keys in _wavelength_keys.
 
         for sc in self.sc_opts:
-            if self.sc_opts[sc]:
-                if not general._dict_compare_keys(
-                    self.sc_opts["dd"], self.sc_opts[sc], *_wavelength_keys
-                ):
-                    raise ValueError(
-                        "Reduction options `lo_wavelength`, `hi_wavelength`,"
-                        " `rebin_percent`, and `wavelength_bins` must be"
-                        "identical across spin channels to preserve a common"
-                        "wavelength axis."
-                    )
+            if self.sc_opts[sc] and not general._dict_compare_keys(
+                self.sc_opts["dd"], self.sc_opts[sc], *_wavelength_keys
+            ):
+                raise ValueError(
+                    "Reduction options `lo_wavelength`, `hi_wavelength`,"
+                    " `rebin_percent`, and `wavelength_bins` must be"
+                    "identical across spin channels to preserve a common"
+                    "wavelength axis."
+                )
 
         for sc, channel in self.channels.items():
             if channel is None:
@@ -1194,7 +1193,7 @@ class ReflectNexus:
     def __init__(self):
         self.cat = None
 
-        self.processed_spectrum = dict()
+        self.processed_spectrum = {}
 
         # _arguments is a dict that contains all the parameters used to call
         # `process`. If the arguments don't change then you shouldn't need to
@@ -1285,7 +1284,7 @@ class ReflectNexus:
             return
 
         s = string.Template(spectrum_template)
-        d = dict()
+        d = {}
         d["title"] = self.cat.sample_name
         d["time"] = strftime("%a, %d %b %Y %H:%M:%S +0000", gmtime())
 
@@ -1340,7 +1339,7 @@ class ReflectNexus:
             `matplotlib` figure and axes objects.
 
         """
-        lam, spec, spec_sd, _ = self.spectrum
+        lam, spec, _spec_sd, _ = self.spectrum
 
         import matplotlib.pyplot as plt
 
@@ -1808,7 +1807,7 @@ class ReflectNexus:
         # gravity correction if direct beam, but only if you're on Platypus
         if direct and isinstance(self, PlatypusNexus):
             # TODO: Correlated Uncertainties?
-            detector, detector_sd, m_gravcorrcoefs = self.correct_for_gravity(
+            detector, detector_sd, _m_gravcorrcoefs = self.correct_for_gravity(
                 detector, detector_sd, m_lambda, lo_wavelength, hi_wavelength
             )
 
@@ -2077,7 +2076,7 @@ class ReflectNexus:
             # no mode for SPZ
             mode = None
 
-        d = dict()
+        d = {}
         d["path"] = cat.path
         d["datafilename"] = cat.filename
         d["datafile_number"] = cat.datafile_number
@@ -2219,7 +2218,7 @@ class ReflectNexus:
 
         with open(stream_filename, "rb") as f:
             last_frame = int(frame_bins[-1] * frequency)
-            loaded_events, end_events = events(f, max_frames=last_frame)
+            loaded_events, _end_events = events(f, max_frames=last_frame)
 
         # convert frame_bins to list of filter frames
         frames = framebins_to_frames(
@@ -2744,7 +2743,7 @@ class SpatzNexus(ReflectNexus):
             degrees.
         """
         disc_openings = (26.0, 42.0, 43.5, 126.0)
-        O_C1d, O_C2d, O_C2Bd, O_C3d = disc_openings
+        O_C1d, O_C2d, O_C2Bd, O_C3d = disc_openings  # noqa: RUF059
 
         cat = self.cat
         master = cat.master
@@ -3050,7 +3049,7 @@ def find_specular_ridge(
             # find the centroid and gauss peak in the last sections of the TOF
             # plot
             try:
-                centroid, gauss_peak = peak_finder(y_cross, sigma=y_cross_sd)
+                _centroid, gauss_peak = peak_finder(y_cross, sigma=y_cross_sd)
             except RuntimeError:
                 continue
 
@@ -3227,13 +3226,13 @@ def correct_for_gravity(
 
         def f(tru_centre):
             deflections = y_deflection(
-                trajectories[lopx:hipx],
-                neutron_speeds[lopx:hipx],
-                travel_distance,
+                trajectories[lopx:hipx],  # noqa: B023
+                neutron_speeds[lopx:hipx],  # noqa: B023
+                travel_distance,  # noqa: B023
             )
 
             model = 1000.0 * deflections / qz_pixel_size + tru_centre
-            diff = model - centroids[lopx:hipx, 0]
+            diff = model - centroids[lopx:hipx, 0]  # noqa: B023
             diff = diff[~np.isnan(diff)]
             return diff
 
@@ -3407,9 +3406,9 @@ def _check_HDF_file(h5data):
     if isinstance(h5data, h5py.File):
         return h5data.filename
     else:
-        with h5py.File(h5data, "r") as h5data:
-            if isinstance(h5data, h5py.File):
-                return h5data.filename
+        with h5py.File(h5data, "r") as _h5data:
+            if isinstance(_h5data, h5py.File):
+                return _h5data.filename
 
     return False
 
@@ -3524,7 +3523,7 @@ if __name__ == "__main__":
                 integrate=args.integrate,
             )
 
-            fname = "PLP%07d.spectrum" % file
+            fname = f"PLP{file:07d}.spectrum"
             out_fname = path / fname
 
             integrate = args.integrate
@@ -3534,7 +3533,7 @@ if __name__ == "__main__":
             a.write_spectrum_dat(out_fname, scanpoint=integrate)
 
         except OSError:
-            print("Couldn't find file: %d.  Use --basedir option" % file)
+            print(f"Couldn't find file: {file}.  Use --basedir option")
 
 
 def _plot_offspec(

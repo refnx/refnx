@@ -92,18 +92,18 @@ class TestReduce:
 
 
 class TestReductionCache:
-    entries = [
-        # row, ds, name, fname, entry
-        [1, None, "Sample A", "a.dat", (1, 2, 3)],
-        [2, None, "Sample B", "b.dat", (11, 12, 13)],
-        [3, None, "Sample C", "c.dat", (21, 22, 23)],
-        # blank row in sheet
-        [5, None, "Sample A1", "a1.dat", (31, 32, 33)],
-        [6, None, "Sample A2", "a2.dat", (41, 42, 43)],
-        [7, None, "Sample D", "d.dat", (51, 52, 53)],
-    ]
-
     def setup_method(self):
+        self.entries = [
+            # row, ds, name, fname, entry
+            [1, None, "Sample A", "a.dat", (1, 2, 3)],
+            [2, None, "Sample B", "b.dat", (11, 12, 13)],
+            [3, None, "Sample C", "c.dat", (21, 22, 23)],
+            # blank row in sheet
+            [5, None, "Sample A1", "a1.dat", (31, 32, 33)],
+            [6, None, "Sample A2", "a2.dat", (41, 42, 43)],
+            [7, None, "Sample D", "d.dat", (51, 52, 53)],
+        ]
+
         self.cache = refnx.reduce.batchreduction.ReductionCache(
             persistent=False
         )

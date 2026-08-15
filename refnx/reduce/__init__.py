@@ -1,5 +1,4 @@
 from refnx._lib._testutils import PytestTester
-from refnx.reduce._app import gui, main
 from refnx.reduce.batchreduction import BatchReducer
 from refnx.reduce.platypusnexus import (
     Catalogue,

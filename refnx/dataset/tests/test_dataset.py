@@ -1,6 +1,6 @@
 import io
 import os
-from datetime import UTC, datetime, timezone
+from datetime import UTC, datetime
 from importlib import resources
 from io import BytesIO, StringIO
 from pathlib import Path

@@ -101,11 +101,11 @@ class TestSpinSet:
         # determines the resulting wavelength axis to make sure errors
         # are raised appropriately
 
-        standard_opts = dict(
-            lo_wavelength=2.5,
-            hi_wavelength=12.5,
-            rebin_percent=3,
-        )
+        standard_opts = {
+            "lo_wavelength": 2.5,
+            "hi_wavelength": 12.5,
+            "rebin_percent": 3,
+        }
         for spin_set in [self.spinset, self.spinset_3, self.spinset_2]:
             for sc in ["dd", "du", "ud", "uu"]:
                 if spin_set.channels[sc] is None:
@@ -365,13 +365,13 @@ class TestPlatypusNexus:
             # it should also be reduceable
             reducer = PlatypusReduce(self.pth / "PLP0000711.nx.hdf")
 
-            datasets, reduced = reducer.reduce(
+            _datasets, reduced = reducer.reduce(
                 Path.cwd() / "ADD_PLP0000708.nx.hdf"
             )
             assert "y" in reduced
 
             # the error bars should be smaller
-            datasets2, reduced2 = reducer.reduce(
+            _datasets2, reduced2 = reducer.reduce(
                 self.pth / "PLP0000708.nx.hdf"
             )
 

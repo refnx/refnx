@@ -186,7 +186,7 @@ class ReflectReduce:
             if isinstance(self.direct_beam, PlatypusNexus):
                 _direct = True
 
-            q, i, di = self.direct_beam.process(
+            q, i, _di = self.direct_beam.process(
                 normalise=False,
                 normalise_bins=False,
                 rebin_percent=0.5,
@@ -296,7 +296,7 @@ class ReflectReduce:
         # calculate the Q values for the detector pixels.  Each pixel has
         # different 2theta and different wavelength, ASSUME that they have the
         # same angle of incidence
-        qx, qy, qz = general.q2(
+        qx, _qy, qz = general.q2(
             self.omega_corrected[:, :, np.newaxis],
             self.m_twotheta,
             0,
@@ -585,7 +585,7 @@ class PlatypusReduce(ReflectReduce):
                 speeds,
                 omega_nom[:, np.newaxis],
             )
-            intersect_x, intersect_y, x_prime, elevation = res
+            _intersect_x, _intersect_y, _x_prime, elevation = res
 
             # correct the angle of incidence with a wavelength dependent
             # elevation.
@@ -1350,7 +1350,7 @@ def reduce_stitch(
         direct_datafile = data_folder / number_datafile(val[1], prefix=prefix)
 
         reducer = reducer_klass(direct_datafile)
-        datasets, fnames = reducer.reduce(
+        datasets, _fnames = reducer.reduce(
             reflect_datafile, save=save, **val[2]
         )
 
@@ -1528,7 +1528,7 @@ class AutoReducer:
                     scale = entry["scale"]
                     try:
                         datasets, _ = reducer.reduce(rb, scale=scale, **opts)
-                    except Exception as e:
+                    except Exception as e:  # noqa: BLE001
                         # don't want to stop reducing if there is an error
                         # somewhere
                         print(e)
@@ -1537,7 +1537,9 @@ class AutoReducer:
                     print(f"Reduced: {fname}")
 
                     for i, dataset in enumerate(datasets):
-                        dataset.filename = f"{fname.rstrip('.nx.hdf')}_{i}.dat"
+                        dataset.filename = (
+                            f"{fname.rstrip('.nx.hdf')}_{i}.dat"  # noqa: B005
+                        )
 
                     # save the reduced files in a cache
                     sample_name = rb.cat.sample_name.tobytes()
@@ -1568,7 +1570,7 @@ class AutoReducer:
                     if len(ds) > 1:
                         try:
                             c = self.splice_datasets(ds)
-                        except Exception as e:
+                        except Exception as e:  # noqa: BLE001
                             print(e)
                             continue
                         print(

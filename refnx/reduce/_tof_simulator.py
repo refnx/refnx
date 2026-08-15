@@ -261,7 +261,7 @@ class ReflectSimulator:
             if isinstance(a, PlatypusNexus):
                 direct = True
 
-            q, i, di = a.process(
+            q, i, _di = a.process(
                 normalise=False,
                 normalise_bins=False,
                 rebin_percent=0.5,
