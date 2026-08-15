@@ -389,7 +389,7 @@ jobs:
         python -m pip install ruff black
         # stop the build if there are Python syntax errors or undefined names
         # the ignores are taken care of by black
-        # ruff check refnx
+        ruff check refnx
         black --check refnx
 
     - name: clang-format
