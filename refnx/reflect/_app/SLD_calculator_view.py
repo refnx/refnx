@@ -53,14 +53,12 @@ class SLDcalculatorView(QtWidgets.QDialog):
             self.ui.molecular_volume.setValue(volume)
 
         try:
-            real, imag, mu = pt.neutron_sld(
+            real, imag, _mu = pt.neutron_sld(
                 formula, density=density, wavelength=neutron_wavelength
             )
 
-            self.ui.neutron_SLD.setText(
-                "%.6g" % real + " + " + "%.6g" % imag + "j"
-            )
-        except Exception:
+            self.ui.neutron_SLD.setText(f"{real:.6g} + {imag:.6g}j")
+        except Exception:  # noqa: BLE001
             self.ui.neutron_SLD.setText("NaN")
 
         try:
@@ -68,10 +66,8 @@ class SLDcalculatorView(QtWidgets.QDialog):
                 formula, density=density, energy=xray_energy
             )
 
-            self.ui.xray_SLD.setText(
-                "%.6g" % real + " + " + "%.6g" % imag + "j"
-            )
-        except Exception:
+            self.ui.xray_SLD.setText(f"{real:.6g} + {imag:.6g}j")
+        except Exception:  # noqa: BLE001
             self.ui.xray_SLD.setText("NaN")
             # sometimes the X-ray and neutron SLD calc can fail, if there are
             # no scattering factors

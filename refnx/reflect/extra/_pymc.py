@@ -123,7 +123,7 @@ def to_pymc_model(objective, _dist=None):
     with pm.Model() as basic_model:
         # Priors for unknown model parameters
         for i, par in enumerate(pars):
-            name = "p%d" % i
+            name = f"p{i}"
             p = _to_pymc_distribution(name, par)
             wrapped_pars.append(p)
 

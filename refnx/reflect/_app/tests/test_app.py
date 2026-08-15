@@ -145,5 +145,5 @@ def test_mcmc_fit_and_reprocess(qtbot, tmp_path):
 @pytest.mark.skipif(QTBOT_MISSING, reason="pytest-qt not installed")
 def test_requirements(qtbot, tmp_path):
     # test if we can add a spline to a model and save an experiment
-    myapp, model = mysetup(qtbot)
+    myapp, _model = mysetup(qtbot)
     assert len(myapp.requirements())

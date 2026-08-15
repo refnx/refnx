@@ -531,7 +531,7 @@ class ReflectModelView(HasTraits):
             name = widgets.Text(par.name)
             name.disabled = True
 
-            val, check, ll, ul = d[id(par)]
+            val, _check, ll, ul = d[id(par)]
 
             hbox = widgets.HBox([name, ll, val, ul])
             hboxes.append(hbox)
@@ -896,7 +896,11 @@ class Motofit:
             File to save model to.
         """
         if f is None:
-            f = "model_" + datetime.datetime.now().isoformat() + ".pkl"
+            f = (
+                "model_"
+                + datetime.datetime.now().astimezone().isoformat()
+                + ".pkl"
+            )
             if self.dataset is not None:
                 f = "model_" + self.dataset.name + ".pkl"
 
@@ -955,7 +959,7 @@ class Motofit:
 
         """
         if not isinstance(model, ReflectModel):
-            raise RuntimeError("`model` was not an instance of ReflectModel")
+            raise TypeError("`model` was not an instance of ReflectModel")
 
         if self.model_view is not None:
             self.model_view.unobserve_all()
@@ -1138,7 +1142,7 @@ class Motofit:
         self.qmin = np.min(self.dataset.x)
         self.qmax = np.max(self.dataset.x)
         if self.fig is not None:
-            yt, et = self.transform(self.dataset.x, self.dataset.y)
+            yt, _et = self.transform(self.dataset.x, self.dataset.y)
 
             if self.data_plot is None:
                 (self.data_plot,) = self.ax_data.plot(
@@ -1347,10 +1351,10 @@ class Motofit:
 
 def rename_params(structure):
     for i in range(1, len(structure) - 1):
-        structure[i].thick.name = "%d - thick" % i
-        structure[i].sld.real.name = "%d - sld" % i
-        structure[i].sld.imag.name = "%d - isld" % i
-        structure[i].rough.name = "%d - rough" % i
+        structure[i].thick.name = f"{i} - thick"
+        structure[i].sld.real.name = f"{i} - sld"
+        structure[i].sld.imag.name = f"{i} - isld"
+        structure[i].rough.name = f"{i} - rough"
 
     structure[0].sld.real.name = "sld - fronting"
     structure[0].sld.imag.name = "isld - fronting"

@@ -48,8 +48,6 @@ mixing is needed.  We replicate this below.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, List
-
 from refnx.reflect.extra._jax_util import (
     _add,
     _compile_scatterer,

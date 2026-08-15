@@ -43,7 +43,6 @@ from __future__ import annotations
 import warnings
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Tuple
 
 import jax
 import jax.numpy as jnp
@@ -831,9 +830,12 @@ def _compile_single(
     dqvals = None
     _quad_order = model.quad_order
 
-    if model.dq_type == "pointwise" and objective.data.x_err is None:
-        if model.dq.value > 0:
-            dqvals = model.dq.value / 100.0 * objective.data.x
+    if (
+        model.dq_type == "pointwise"
+        and objective.data.x_err is None
+        and model.dq.value > 0
+    ):
+        dqvals = model.dq.value / 100.0 * objective.data.x
     if model.dq_type == "constant" and model.dq.value > 0:
         dqvals = model.dq.value / 100.0 * objective.data.x
     if model.dq_type == "pointwise" and objective.data.x_err is not None:

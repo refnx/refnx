@@ -6,6 +6,7 @@ from refnx.analysis import (
     is_parameter,
     possibly_create_parameter,
 )
+
 from .structure import SLD, Component, Structure
 
 

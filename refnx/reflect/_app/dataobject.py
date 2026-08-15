@@ -12,22 +12,22 @@ class DataObject:
     Everything to do with the lifecycle of a dataset.
     """
 
-    # remember how the object was visualised
-    _requiredgraphproperties = {
-        "lw": float,
-        "label": str,
-        "linestyle": str,
-        "fillstyle": str,
-        "marker": str,
-        "markersize": float,
-        "markeredgecolor": str,
-        "markerfacecolor": str,
-        "zorder": int,
-        "color": str,
-        "visible": bool,
-    }
-
     def __init__(self, dataset, constantdq_q=True):
+        # remember how the object was visualised
+        self._requiredgraphproperties = {
+            "lw": float,
+            "label": str,
+            "linestyle": str,
+            "fillstyle": str,
+            "marker": str,
+            "markersize": float,
+            "markeredgecolor": str,
+            "markerfacecolor": str,
+            "zorder": int,
+            "color": str,
+            "visible": bool,
+        }
+
         self.dataset = dataset
         self.name = dataset.name
         self.constantdq_q = constantdq_q

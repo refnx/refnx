@@ -364,12 +364,12 @@ class PolarisedReflectModel(ReflectModel):
         # calculate smeared reflectivity on the entire _x_union
         R_union = np.zeros(len(x))
 
-        for idx, spin in enumerate(SpinChannel):
+        for idx, _spin in enumerate(SpinChannel):
             if not active_spins[idx]:
                 continue
 
             msk = np.isfinite(x[:, idx])
-            self._memoising_kernel.spin = spin
+            self._memoising_kernel.spin = _spin
 
             _R = reflectivity(
                 _x_union,
@@ -516,7 +516,7 @@ def pnr_data_and_generative(objective):
     combined = objective.data
     generative = objective.generative()
     pos = 0
-    for spin in combined.spins.keys():
+    for spin in combined.spins:
         data = getattr(combined, spin)
         if data is not None:
             npnts = len(data)

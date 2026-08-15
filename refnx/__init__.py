@@ -26,7 +26,7 @@ submodules = [
     "util",
 ]
 
-__all__ = submodules + [
+__all__ = submodules + [  # noqa: PLE0605
     "test",
     "__version__",
 ]

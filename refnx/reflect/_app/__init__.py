@@ -54,4 +54,4 @@ def main(args=None):
     sys.exit(gui(expt_file=expt_file))
 
 
-__all__ = [gui, main]
+__all__ = ["gui", "main"]

@@ -171,7 +171,7 @@ class Structure(UserList):
         self.data[i] = v
 
     def __str__(self):
-        s = list()
+        s = []
         s.append(f"{'':_>80}")
         s.append(f"Structure: {self.name: ^15}")
         s.append(f"solvent: {(self._solvent)!r}")
@@ -206,7 +206,7 @@ class Structure(UserList):
             return
 
         if not isinstance(item, Component):
-            raise ValueError(
+            raise TypeError(
                 "You can only add Component objects to a structure"
             )
         super().append(item)
@@ -306,7 +306,7 @@ class Structure(UserList):
             isinstance(self.data[-1], (Slab, MixedSlab, MagneticSlab))
             and isinstance(self.data[0], (Slab, MixedSlab, MagneticSlab))
         ):
-            raise ValueError(
+            raise TypeError(
                 "The first and last Components in a Structure"
                 " need to be Slabs"
             )
@@ -319,7 +319,7 @@ class Structure(UserList):
         # that defines transition between successive layers.
         # The default interface is specified by None (= Gaussian roughness)
         interfaces = flatten(self.interfaces)
-        if all([i is None for i in interfaces]):
+        if all(i is None for i in interfaces):
             # if all the interfaces are Gaussian, then simply concatenate
             # the default slabs property of each component.
             sl = [c.slabs(structure=self) for c in self.components]
@@ -398,7 +398,7 @@ class Structure(UserList):
             if _interface is None or isinstance(_interface, Interface):
                 f = _interface or erf_interface
                 _interfaces[i] = [f] * len(_slabs)
-            i += 1
+            i += 1  # noqa: SIM113
 
         _interfaces = list(flatten(_interfaces))
         _interfaces = [erf_interface if i is None else i for i in _interfaces]
@@ -460,7 +460,7 @@ class Structure(UserList):
         """
         Are any of the Components in the Structure magnetic?
         """
-        return any([c.is_magnetic for c in self.components])
+        return any(c.is_magnetic for c in self.components)
 
     def overall_sld(self, slabs, solvent):
         """
@@ -633,7 +633,7 @@ class Structure(UserList):
             slab = other(0, 0)
             self.append(slab)
         else:
-            raise ValueError()
+            raise TypeError()
 
         return self
 
@@ -859,7 +859,7 @@ class Structure(UserList):
 
         for i, comp in enumerate(self.components):
             if not isinstance(comp, Slab):
-                raise RuntimeError(
+                raise RuntimeError(  # noqa: TRY004
                     "Can only export Structure solely consisting of Slabs at the moment"
                 )
 
@@ -1140,12 +1140,12 @@ class SLD(Scatterer):
     def __init__(self, value, name=""):
         super().__init__(name=name)
 
-        self.imag = Parameter(0, name="%s - isld" % name)
+        self.imag = Parameter(0, name=f"{name} - isld")
         if isinstance(value, numbers.Real):
-            self.real = Parameter(value.real, name="%s - sld" % name)
+            self.real = Parameter(value.real, name=f"{name} - sld")
         elif isinstance(value, numbers.Complex):
-            self.real = Parameter(value.real, name="%s - sld" % name)
-            self.imag = Parameter(value.imag, name="%s - isld" % name)
+            self.real = Parameter(value.real, name=f"{name} - sld")
+            self.imag = Parameter(value.imag, name=f"{name} - isld")
         elif isinstance(value, SLD):
             self.real = value.real
             self.imag = value.imag
@@ -1627,7 +1627,7 @@ class MixedSlab(Component):
     ):
         super().__init__(name=name)
         self.thick = possibly_create_parameter(
-            thick, name="%s - thick" % name, units="Å"
+            thick, name=f"{name} - thick", units="Å"
         )
 
         self.sld = []
@@ -1646,7 +1646,7 @@ class MixedSlab(Component):
                 v, name=f"vf{i} - {name}", bounds=(0.0, 1.0)
             )
             self.vf.append(vf)
-            i += 1
+            i += 1  # noqa: SIM113
 
         self.vfsolv = possibly_create_parameter(
             vfsolv, name=f"{name} - volfrac solvent", bounds=(0.0, 1.0)
@@ -1758,7 +1758,7 @@ class Stack(Component, UserList):
             if isinstance(c, Component):
                 self.data.append(c)
             else:
-                raise ValueError(
+                raise TypeError(
                     "You can only initialise a Stack with Components"
                 )
 
@@ -1766,10 +1766,10 @@ class Stack(Component, UserList):
         self.data[i] = v
 
     def __str__(self):
-        s = list()
+        s = []
         s.append(f"{'' :=>80}")
 
-        s.append(f"Stack start: {int(round(abs(self.repeats.value)))} repeats")
+        s.append(f"Stack start: {round(abs(self.repeats.value))} repeats")
         for component in self:
             s.append(str(component))
         s.append("Stack finish")
@@ -1798,7 +1798,7 @@ class Stack(Component, UserList):
             return
 
         if not isinstance(item, Component):
-            raise ValueError(
+            raise TypeError(
                 "You can only add Component objects to a structure"
             )
         self.data.append(item)
@@ -1889,7 +1889,7 @@ class Stack(Component, UserList):
             slab = other(0, 0)
             self.append(slab)
         else:
-            raise ValueError()
+            raise TypeError()
         return self
 
     @property

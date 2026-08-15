@@ -105,7 +105,7 @@ def available_backends():
         from refnx.reflect._reflect import abeles_pyopencl
 
         backends.append("pyopencl")
-    except Exception:
+    except Exception:  # noqa: BLE001, S110
         # importing pyopencl would be a ModuleNotFoundError
         # failure to get an opencl platform would be cl._cl.LogicError
         pass
@@ -132,14 +132,14 @@ def available_backends():
         pass
 
     try:
-        import jax as jax
+        import jax
         from jax import config
 
         config.update("jax_enable_x64", True)
         from refnx.reflect._jax_reflect import abeles_jax
 
         backends.append("jax")
-    except Exception:
+    except Exception:  # noqa: BLE001, S110
         # importing jax would be a ModuleNotFoundError
         pass
 
@@ -1213,7 +1213,7 @@ def _smeared_kernel_adaptive(qvals, w, dqvals, threads=-1, fkernel=kernel):
     smeared_rvals = np.zeros(qvals.size)
     warnings.simplefilter("ignore", Warning)
     for idx, val in enumerate(qvals):
-        smeared_rvals[idx], err = scipy.integrate.quad(
+        smeared_rvals[idx], _err = scipy.integrate.quad(
             _smear_kernel,
             -_INTLIMIT,
             _INTLIMIT,

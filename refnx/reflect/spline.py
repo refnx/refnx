@@ -2,6 +2,7 @@ import numpy as np
 from scipy.interpolate import PchipInterpolator as Pchip
 
 from refnx.analysis import Parameter, Parameters, possibly_create_parameter
+
 from .structure import Component, Structure
 
 EPS = np.finfo(float).eps
@@ -71,7 +72,7 @@ class Spline(Component):
         self.microslab_max_thickness = microslab_max_thickness
 
         self.extent = possibly_create_parameter(
-            extent, name="%s - spline extent" % name, units="Å"
+            extent, name=f"{name} - spline extent", units="Å"
         )
 
         self.dz = Parameters(name="dz - spline")
@@ -137,7 +138,7 @@ class Spline(Component):
         if isinstance(left_component, Spline) or isinstance(
             right_component, Spline
         ):
-            raise ValueError(
+            raise TypeError(
                 "Spline must be bracketed by Components that"
                 " aren't Splines."
             )
