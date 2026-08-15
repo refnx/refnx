@@ -6,7 +6,7 @@ from refnx.analysis import (
     is_parameter,
     possibly_create_parameter,
 )
-from refnx.reflect import SLD, Component, Structure
+from .structure import SLD, Component, Structure
 
 
 class FunctionalForm(Component):

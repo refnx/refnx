@@ -22,7 +22,9 @@ from refnx._lib import (
 from refnx._lib.emcee.pbar import get_progress_bar
 from refnx._lib.emcee.state import State
 from refnx._lib.util import getargspec
-from refnx.analysis import PDF, Interval, Objective, is_parameter
+from .bounds import PDF, Interval
+from .objective import Objective
+from .parameter import is_parameter
 
 MCMCResult = namedtuple(
     "MCMCResult", ["name", "param", "stderr", "chain", "median"]

@@ -8,9 +8,8 @@ from scipy.optimize._numdiff import approx_derivative
 
 from refnx._lib import approx_hess2, flatten
 from refnx._lib import unique as f_unique
-from refnx.analysis import (
-    PDF,
-    Interval,
+from .bounds import PDF, Interval
+from .parameter import (
     Parameter,
     Parameters,
     is_parameter,

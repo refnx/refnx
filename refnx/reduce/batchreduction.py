@@ -20,7 +20,8 @@ try:
 except ImportError:
     _have_ipython = False
 
-from refnx.reduce import ReductionOptions, reduce_stitch
+from .platypusnexus import ReductionOptions
+from .reduce import reduce_stitch
 
 ReductionEntryTuple = collections.namedtuple(
     "ReductionEntry", ["row", "ds", "name", "fname", "entry"]

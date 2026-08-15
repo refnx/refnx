@@ -8,11 +8,14 @@ import numpy as np
 from scipy.optimize import NonlinearConstraint
 
 from refnx.analysis import Parameter, Parameters, possibly_create_parameter
-from refnx.reflect import SLD, Component, ReflectModel, Structure
-from refnx.reflect.structure import (
+from .reflect_model import ReflectModel
+from .structure import (
     Scatterer,
     overall_sld,
     possibly_create_scatterer,
+    SLD,
+    Component,
+    Structure,
 )
 
 
