@@ -29,14 +29,14 @@ def load_data(f):
     try:
         data = OrsoDataset(f)
         return data
-    except Exception:
+    except Exception:  # noqa: S110, BLE001
         # not an ORSO file
         pass
 
     try:
         d = ReflectDataset(f)
         return d
-    except Exception:
+    except Exception:  # noqa: S110, BLE001
         pass
 
     d = Data1D(f)

@@ -423,10 +423,10 @@ class Data1D:
         # attempt to auto ignore header lines.
         with possibly_open_file(f, "r") as g:
             lines = list(reversed(g.readlines()))
-            x = list()
-            y = list()
-            y_err = list()
-            x_err = list()
+            x = []
+            y = []
+            y_err = []
+            x_err = []
 
             # a marker for how many columns in the data there will be
             numcols = 0

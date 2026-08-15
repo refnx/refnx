@@ -1,6 +1,6 @@
 import io
 import os
-from datetime import datetime
+from datetime import UTC, datetime, timezone
 from importlib import resources
 from io import BytesIO, StringIO
 from pathlib import Path
@@ -419,7 +419,7 @@ class TestOrtDataset:
         ds = OrsoDataset(
             load_orso(self.data_directory / "dataset" / "Ni_example.ort")[0]
         )
-        s, model, objective = ds.setup_analysis()
+        s, _model, _objective = ds.setup_analysis()
         np.testing.assert_allclose(s[1].thick.value, 1000)
 
         # now try changing value and resaving ort file
@@ -429,7 +429,7 @@ class TestOrtDataset:
 
         # see if the value was updated in the file
         ds2 = OrsoDataset(load_orso(self.tmp_path / "flake.ort")[0])
-        s2, model2, objective2 = ds2.setup_analysis()
+        s2, _model2, _objective2 = ds2.setup_analysis()
         np.testing.assert_allclose(s2[1].thick.value, 2000)
 
     def test_ort_load(self):
@@ -511,7 +511,7 @@ class TestOrtDataset:
         )
         header.data_source.experiment = fio.data_source.Experiment(
             title="Metal films",
-            start_date=datetime(2025, 4, 8),
+            start_date=datetime(2025, 4, 8, tzinfo=UTC),
             instrument="Platypus",
             probe="neutron",
             facility="ANSTO",
