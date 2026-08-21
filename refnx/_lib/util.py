@@ -189,17 +189,11 @@ def possibly_open_file(f, mode="r"):
         On leaving the context manager the file is closed, if it was opened by
         this context manager.
     """
-    close_file = False
     if (hasattr(f, "read") and hasattr(f, "write")) or f is None:
-        g = f
+        yield f
     else:
-        g = open(f, mode)  # noqa: SIM115
-        close_file = True
-    try:
-        yield g
-    finally:
-        if close_file:
-            g.close()
+        with open(f, mode) as g:
+            yield g
 
 
 class MapWrapper:
