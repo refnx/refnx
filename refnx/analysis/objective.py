@@ -496,11 +496,14 @@ class Objective(BaseObjective):
 
         """
         pars = self.model.parameters
-
+        _dp = []
         # tack on the upstream dependencies of any _BinaryOp/_UnaryOpparameters
         for p in flatten(pars):
             if len(p._deps):
-                pars.extend(p.dependencies())
+                _dp.extend(p.dependencies())
+        if len(dp):
+            dp = list(f_unique(flatten(_dp)))
+            pars.extend(dp)
 
         if is_parameter(self.alpha):
             pars = pars | self.alpha
