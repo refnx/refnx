@@ -205,10 +205,10 @@ class TestJAX:
         nll_fn, _grad_fn = make_scipy_objective(c)
         assert_allclose(nll_fn(pars), nll50)
 
-        pars[1] = 49.0
+        pars[-1] = 49.0
         assert_allclose(nll_fn(pars), nll49)
 
-        pars[1] = 48.0
+        pars[-1] = 48.0
         assert_allclose(nll_fn(pars), nll48)
 
         check_GenerativeOp_vs_Objective(objective)

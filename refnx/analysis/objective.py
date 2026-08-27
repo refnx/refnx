@@ -389,8 +389,6 @@ class Objective(BaseObjective):
             if p.vary:
                 lst.append(p)
                 continue
-            if len(p._deps):
-                lst.extend([_p for _p in p.dependencies() if _p.vary])
         # should already be totally flattened by this point
         return Parameters(f_unique(lst))
 
@@ -498,6 +496,11 @@ class Objective(BaseObjective):
 
         """
         pars = self.model.parameters
+
+        # tack on the upstream dependencies of any _BinaryOp/_UnaryOpparameters
+        for p in flatten(pars):
+            if len(p._deps):
+                pars.extend(p.dependencies())
 
         if is_parameter(self.alpha):
             pars = pars | self.alpha
