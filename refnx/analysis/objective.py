@@ -501,7 +501,7 @@ class Objective(BaseObjective):
         for p in flatten(pars):
             if len(p._deps):
                 _dp.extend(p.dependencies())
-        if len(dp):
+        if len(_dp):
             dp = list(f_unique(flatten(_dp)))
             pars.extend(dp)
 
