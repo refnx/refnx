@@ -1012,7 +1012,9 @@ def process_chain(objective, chain, nburn=0, nthin=1, flatchain=False):
 
         # give each constrained param a chain (to be reshaped later)
         constrained_params = [
-            param for param in flat_params if param.constraint is not None
+            param
+            for param in flat_params
+            if (param.constraint is not None or len(param._deps))
         ]
 
         for constrain_param in constrained_params:
