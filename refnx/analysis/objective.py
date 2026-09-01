@@ -884,9 +884,13 @@ class Objective(BaseObjective):
             A randomly chosen parameter vector
 
         """
-        yield from self.parameters.pgen(
-            ngen=ngen, nburn=nburn, nthin=nthin, random_state=random_state
-        )
+        try:
+            saved_pars = np.array(self.parameters)
+            yield from self.parameters.pgen(
+                ngen=ngen, nburn=nburn, nthin=nthin, random_state=random_state
+            )
+        finally:
+            self.setp(saved_pars)
 
     def _generate_generative_mcmc(
         self, ngen=1000, nburn=0, nthin=1, random_state=None
@@ -914,15 +918,11 @@ class Objective(BaseObjective):
         generative : np.ndarray
             `Objective.generative` points for each of the samples.
         """
-        saved_params = np.array(self.varying_parameters())
         _pgen = self.pgen(
             ngen=ngen, nburn=nburn, nthin=nthin, random_state=random_state
         )
-        try:
-            for pars in _pgen:
-                yield self.generative(pars)
-        finally:
-            self.setp(saved_params)
+        for pars in _pgen:
+            yield self.generative(pars)
 
     def confidence_interval(self, sigma=1):
         """
