@@ -169,6 +169,28 @@ def qcrit(SLD1, SLD2):
     return np.sqrt(16.0 * np.pi * (SLD2 - SLD1) * 1.0e-6)
 
 
+def mean_ref_qcrit(dataset, SLD1, SLD2):
+    """
+    Calculate the average reflectivity below Qc for a given dataset and SLD.
+
+    Parameters
+    ----------
+    dataset: Data1D
+        The dataset
+    SLD1: float
+        SLD of superphase (10^-6 A^-2)
+    SLD2: float
+        SLD of subphase (10^-6 A^-2)
+
+    Returns
+    -------
+    mean_reflectivity: float
+    """
+    qc = qcrit(SLD1, SLD2)
+    ref = dataset.y[dataset.x < qc]
+    return np.mean(ref)
+
+
 def tauC(wavelength, xsi=0, z0=0.358, freq=24):
     """
     Calculates the burst time of a double chopper pair

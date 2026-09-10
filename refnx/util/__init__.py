@@ -23,6 +23,7 @@ from refnx.util.general import (
     double_chopper_frequency,
     energy_wavelength,
     height_of_beam_after_dx,
+    mean_ref_qcrit,
     neutron_transmission,
     penetration_depth,
     q,
