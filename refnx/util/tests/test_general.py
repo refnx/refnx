@@ -81,4 +81,3 @@ class TestGeneral:
         dataset = Data1D(fname0)
         mean_ref = general.mean_ref_qcrit(dataset, 0, 2.07)
         assert 0.99 < mean_ref < 1.0
-
