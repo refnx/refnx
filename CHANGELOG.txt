@@ -766,3 +766,5 @@ in 0.1.13.
 
 0.1.68
 ------
+- `refnx.util.mean_ref_qcrit` calculates the mean reflectivity below the
+  critical edge.
