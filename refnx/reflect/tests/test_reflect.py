@@ -395,7 +395,9 @@ class TestReflect:
     @pytest.mark.filterwarnings(
         # message text differs by Python version: "is not supported in
         # Python 3.14+..." there, "is deprecated..." pre-3.14 -- match both.
-        "ignore:`torch.jit.script`.*:DeprecationWarning"
+        "ignore:`torch.jit.script`.*:DeprecationWarning",
+        "ignore:`torch.jit.script`.*:FutureWarning"
+
     )
     def test_torch(self):
         import torch
