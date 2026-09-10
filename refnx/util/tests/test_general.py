@@ -1,8 +1,12 @@
+from importlib import resources
+
 import numpy as np
 from numpy.testing import assert_, assert_allclose, assert_almost_equal
 
 import refnx
 import refnx.util.general
+import refnx.util.tests
+from refnx.dataset import Data1D
 from refnx.util import general
 
 
@@ -69,3 +73,12 @@ class TestGeneral:
             "N2", 1.25e-3, [2, 2.0], [1365.801] * 2
         )
         assert_allclose(t, [0.980994609016821] * 2, rtol=1e-6)
+
+    def test_mean_ref_qcrit(self):
+        path = resources.files(refnx.util.tests)
+
+        fname0 = path / "PLP0000708.dat"
+        dataset = Data1D(fname0)
+        mean_ref = general.mean_ref_qcrit(dataset, 0, 2.07)
+        assert 0.99 < mean_ref < 1.0
+
