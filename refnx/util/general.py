@@ -1,3 +1,6 @@
+# Copyright (c) 2011-2026 A. R. J. Nelson, Australian Nuclear Science and Technology Organisation
+# SPDX-License-Identifier: BSD-3-Clause
+
 """
 Functions for various calculations related to reflectometry
 """

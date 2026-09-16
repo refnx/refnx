@@ -1,3 +1,6 @@
+# Copyright (c) 2011-2026 A. R. J. Nelson, Australian Nuclear Science and Technology Organisation
+# SPDX-License-Identifier: BSD-3-Clause
+
 from refnx._lib._testutils import PytestTester
 from refnx.reflect.extra._jax_compiler import (
     CompiledModel,

@@ -1,4 +1,7 @@
-# -*- mode: python ; coding: utf-8 -*-
+# -*- mode: python -*-
+# Copyright (c) 2019-2025 A. R. J. Nelson, Australian Nuclear Science and Technology Organisation
+# SPDX-License-Identifier: BSD-3-Clause
+
 from os.path import join as pjoin
 import os
 import sys

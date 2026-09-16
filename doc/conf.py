@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
+# Copyright (c) 2011-2026 A. R. J. Nelson, Australian Nuclear Science and Technology Organisation
+# SPDX-License-Identifier: BSD-3-Clause
 #
 # refnx documentation build configuration file, created by
 # sphinx-quickstart on Fri Oct 23 10:21:57 2015.

@@ -7,3 +7,7 @@ refnx
 [![Binder](https://mybinder.org/badge.svg)](https://mybinder.org/v2/gh/refnx/refnx-binder.git/master)
 
 Neutron and X-ray reflectometry analysis in Python. Documentation at https://refnx.readthedocs.io.
+
+## License
+
+This project is licensed under the BSD 3-Clause License - see the [LICENSE](LICENSE) file for details.

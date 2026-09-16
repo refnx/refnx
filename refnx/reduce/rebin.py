@@ -1,3 +1,6 @@
+# Copyright (c) 2011, Joshua M. Hykes
+# SPDX-License-Identifier: BSD-2-Clause
+
 import numpy as np
 
 """

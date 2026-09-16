@@ -1,3 +1,6 @@
+# Copyright (c) 2011-2026 A. R. J. Nelson, Australian Nuclear Science and Technology Organisation
+# SPDX-License-Identifier: BSD-3-Clause
+
 from refnx._lib.emcee.autocorr import integrated_time
 from refnx.analysis.bounds import PDF, Bounds, Interval
 from refnx.analysis.curvefitter import (
