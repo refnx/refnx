@@ -1,3 +1,6 @@
+# Copyright (c) 2011-2026 A. R. J. Nelson, Australian Nuclear Science and Technology Organisation
+# SPDX-License-Identifier: BSD-3-Clause
+
 """
 This module tests the objective function by comparing it to the line example
 from http://dan.iel.fm/emcee/current/user/line/

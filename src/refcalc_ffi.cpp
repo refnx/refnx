@@ -6,27 +6,8 @@
     contains no reflectivity maths of its own -- it is a thin adapter that
     unpacks XLA FFI buffers and forwards them to `abeles`.
 
-The refnx code is distributed under the following license:
-
-Copyright (c) 2015 A. R. J. Nelson, Australian Nuclear Science and Technology
-Organisation
-
-Permission to use and redistribute the source code or binary forms of this
-software and its documentation, with or without modification is hereby
-granted provided that the above notice of copyright, these terms of use,
-and the disclaimer of warranty below appear in the source code and
-documentation, and that none of the names of above institutions or
-authors appear in advertising or endorsement of works derived from this
-software without specific prior written permission from all parties.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
-THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-DEALINGS IN THIS SOFTWARE.
-
+    Copyright (c) 2011-2026 A. R. J. Nelson, Australian Nuclear Science and Technology Organisation
+    SPDX-License-Identifier: BSD-3-Clause
 */
 
 #include <Python.h>

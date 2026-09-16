@@ -1,3 +1,6 @@
+# Copyright (c) 2011-2026 A. R. J. Nelson, Australian Nuclear Science and Technology Organisation
+# SPDX-License-Identifier: BSD-3-Clause
+
 from refnx._lib import possibly_open_file as _possibly_open_file
 from refnx._lib._testutils import PytestTester
 from refnx.dataset.data1d import Data1D

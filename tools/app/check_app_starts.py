@@ -1,3 +1,6 @@
+# Copyright (c) 2021-2023 A. R. J. Nelson, Australian Nuclear Science and Technology Organisation
+# SPDX-License-Identifier: BSD-3-Clause
+
 import sys
 import time
 import os

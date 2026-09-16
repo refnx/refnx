@@ -1,0 +1,3 @@
+---
+# Protect copyright notices and specific pragmas from being wrapped or reformatted
+CommentPragmas: '^( *Copyright | @copyright | \$Id: )'

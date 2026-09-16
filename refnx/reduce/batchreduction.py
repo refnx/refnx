@@ -1,3 +1,6 @@
+# Copyright (c) 2011-2026 Stuart W Prescott, UNSW Sydney, A. R. J. Nelson, Australian Nuclear Science and Technology Organisation
+# SPDX-License-Identifier: BSD-3-Clause
+
 """
 Batch reduction of reflectometry data based on a spreadsheet
 """

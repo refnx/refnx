@@ -1,3 +1,6 @@
+# Copyright (c) 2011-2026 A. R. J. Nelson, Australian Nuclear Science and Technology Organisation
+# SPDX-License-Identifier: BSD-3-Clause
+
 import numpy as np
 from scipy.integrate import cumulative_trapezoid, simpson
 from scipy.optimize import curve_fit
