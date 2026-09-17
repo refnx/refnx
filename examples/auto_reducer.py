@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 # Copyright (c) 2011-2026 A. R. J. Nelson, Australian Nuclear Science and Technology Organisation
 # SPDX-License-Identifier: BSD-3-Clause
 
