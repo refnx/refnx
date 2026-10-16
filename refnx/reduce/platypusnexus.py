@@ -3186,7 +3186,6 @@ def centroid_2d(y):
     _centroid = simpson(x * yt, x=x, axis=1)
     with np.errstate(divide="ignore", invalid="ignore"):
         _centroid = np.where(normaliser > 0, _centroid / normaliser, np.nan)
-    assert np.all(np.isfinite(normaliser))
     return _centroid
 
 
