@@ -3184,7 +3184,8 @@ def centroid_2d(y):
     x = np.repeat(x, yt.shape[0], axis=0)
     normaliser = simpson(yt, x=x, axis=1)
     _centroid = simpson(x * yt, x=x, axis=1)
-    _centroid /= normaliser
+    with np.errstate(divide='ignore'):
+        _centroid = np.where(normaliser > 0, _centroid/normaliser, np.nan)
 
     return _centroid
 
