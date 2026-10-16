@@ -2868,7 +2868,7 @@ def fast_linear_regression(x, y, y_err):
     (Intercept 'a' comes first, Slope 'b' comes second).
     """
     # 1. Weights (inverse variance)
-    w = 1.0 / (y_err ** 2)
+    w = 1.0 / (y_err**2)
 
     # 2. Compute components of the X^T * W * X matrix
     sum_w = np.sum(w)
@@ -2876,14 +2876,13 @@ def fast_linear_regression(x, y, y_err):
     sum_wxx = np.sum(w * x * x)
 
     # 3. Determinant of the matrix
-    delta = sum_w * sum_wxx - sum_wx ** 2
+    delta = sum_w * sum_wxx - sum_wx**2
 
     # 4. Analytical Inverse ordered as [[Var(intercept), Cov(intercept, slope)],
     #                                    [Cov(intercept, slope), Var(slope)]]
-    cov_matrix = np.array([
-        [sum_wxx / delta, -sum_wx / delta],
-        [-sum_wx / delta, sum_w / delta]
-    ])
+    cov_matrix = np.array(
+        [[sum_wxx / delta, -sum_wx / delta], [-sum_wx / delta, sum_w / delta]]
+    )
 
     # 5. Parameter calculations
     sum_wy = np.sum(w * y)
@@ -2948,14 +2947,16 @@ def background_subtract_line(profile, profile_sd, background_mask):
         )
 
     # y = a * bx
-    bkgd = popt[0] + popt[1]* np.arange(np.size(profile, 0))
+    bkgd = popt[0] + popt[1] * np.arange(np.size(profile, 0))
 
     # now work out confidence intervals
     # TODO, should this be confidence interval or prediction interval?
     # if you try to do a fit which has a singular matrix
     if np.isfinite(pcov).all():
         _x = np.arange(len(profile))
-        bkgd_sd = pcov[0, 0] + pcov[1, 0]*_x + pcov[0, 1]*_x + pcov[1, 1]*_x**2
+        bkgd_sd = (
+            pcov[0, 0] + pcov[1, 0] * _x + pcov[0, 1] * _x + pcov[1, 1] * _x**2
+        )
     else:
         bkgd_sd = np.zeros_like(bkgd)
 
@@ -3176,6 +3177,7 @@ def fore_back_region(beam_centre, beam_sd):
 
 def centroid_2d(y):
     from scipy.integrate import simpson
+
     yt = np.asarray(y).astype(float, copy=False)
 
     x = np.arange(yt.shape[1], dtype="float")[np.newaxis, :]
@@ -3185,6 +3187,15 @@ def centroid_2d(y):
     centroid /= normaliser
 
     return centroid
+
+
+# def centroid_2d(arr):
+#     indices = np.arange(arr.shape[1])[np.newaxis, :]
+#     total_weight = np.sum(arr, axis=1)
+#     # centroid = np.sum(indices * arr, axis=1) / total_weight if total_weight != 0 else 0.0
+#     centroid = np.sum(indices * arr, axis=1)
+#     centroid = np.where(total_weight != 0, centroid/total_weight, 0)
+#     return centroid
 
 
 def correct_for_gravity(
