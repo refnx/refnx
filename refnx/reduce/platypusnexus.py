@@ -30,7 +30,7 @@ from refnx.reduce.parabolic_motion import (
     parabola,
     y_deflection,
 )
-from refnx.reduce.peak_utils import centroid, peak_finder
+from refnx.reduce.peak_utils import peak_finder
 from refnx.reduce.rebin import rebin, rebin_along_axis
 from refnx.reflect import SpinChannel
 from refnx.util import general
@@ -3183,10 +3183,10 @@ def centroid_2d(y):
     x = np.arange(yt.shape[1], dtype="float")[np.newaxis, :]
     x = np.repeat(x, yt.shape[0], axis=0)
     normaliser = simpson(yt, x=x, axis=1)
-    centroid = simpson(x * yt, x=x, axis=1)
-    centroid /= normaliser
+    _centroid = simpson(x * yt, x=x, axis=1)
+    _centroid /= normaliser
 
-    return centroid
+    return _centroid
 
 
 # def centroid_2d(arr):
