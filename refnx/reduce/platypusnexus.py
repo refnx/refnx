@@ -2861,6 +2861,40 @@ def background_subtract(detector, detector_sd, background_mask):
     return ret, ret_sd
 
 
+def fast_linear_regression(x, y, y_err):
+    """
+    Computes analytical linear regression and returns a 2x2 covariance matrix
+    ordered exactly like curve_fit(f, x, y) where f(x, a, b) = a + b * x.
+    (Intercept 'a' comes first, Slope 'b' comes second).
+    """
+    # 1. Weights (inverse variance)
+    w = 1.0 / (y_err ** 2)
+
+    # 2. Compute components of the X^T * W * X matrix
+    sum_w = np.sum(w)
+    sum_wx = np.sum(w * x)
+    sum_wxx = np.sum(w * x * x)
+
+    # 3. Determinant of the matrix
+    delta = sum_w * sum_wxx - sum_wx ** 2
+
+    # 4. Analytical Inverse ordered as [[Var(intercept), Cov(intercept, slope)],
+    #                                    [Cov(intercept, slope), Var(slope)]]
+    cov_matrix = np.array([
+        [sum_wxx / delta, -sum_wx / delta],
+        [-sum_wx / delta, sum_w / delta]
+    ])
+
+    # 5. Parameter calculations
+    sum_wy = np.sum(w * y)
+    sum_wxy = np.sum(w * x * y)
+
+    intercept_a = (sum_wxx * sum_wy - sum_wx * sum_wxy) / delta
+    slope_b = (sum_w * sum_wxy - sum_wx * sum_wy) / delta
+
+    return (intercept_a, slope_b), cov_matrix
+
+
 def background_subtract_line(profile, profile_sd, background_mask):
     """
     Performs a linear background subtraction on a 1D peak profile
@@ -2901,27 +2935,9 @@ def background_subtract_line(profile, profile_sd, background_mask):
     # some SD values may have 0 SD, which will screw up curvefitting.
     y_sdvals = np.where(y_sdvals == 0, 1, y_sdvals)
 
-    # equation for a straight line
-    def f(x, a, b):
-        return a + b * x
-
-    # estimate the linear fit
-    y_bar = np.mean(y_vals)
-    x_bar = np.mean(x_vals)
-    bhat = np.sum((x_vals - x_bar) * (y_vals - y_bar))
-    bhat /= np.sum((x_vals - x_bar) ** 2)
-    ahat = y_bar - bhat * x_bar
-
     # get the weighted fit values
     # we know the absolute sigma values
-    popt, pcov = curve_fit(
-        f,
-        x_vals,
-        y_vals,
-        sigma=y_sdvals,
-        p0=np.array([ahat, bhat]),
-        absolute_sigma=True,
-    )
+    popt, pcov = fast_linear_regression(x_vals, y_vals, y_sdvals)
 
     def CI(xx, pcovmat):
         return (
@@ -2931,15 +2947,15 @@ def background_subtract_line(profile, profile_sd, background_mask):
             + pcovmat[1, 1] * (xx**2)
         )
 
-    bkgd = f(np.arange(np.size(profile, 0)), popt[0], popt[1])
+    # y = a * bx
+    bkgd = popt[0] + popt[1]* np.arange(np.size(profile, 0))
 
     # now work out confidence intervals
     # TODO, should this be confidence interval or prediction interval?
     # if you try to do a fit which has a singular matrix
     if np.isfinite(pcov).all():
-        bkgd_sd = np.asarray(
-            [CI(x, pcov) for x in np.arange(len(profile))], dtype="float64"
-        )
+        _x = np.arange(len(profile))
+        bkgd_sd = pcov[0, 0] + pcov[1, 0]*_x + pcov[0, 1]*_x + pcov[1, 1]*_x**2
     else:
         bkgd_sd = np.zeros_like(bkgd)
 
@@ -3158,6 +3174,19 @@ def fore_back_region(beam_centre, beam_sd):
     return lopx, hipx, background_pixels
 
 
+def centroid_2d(y):
+    from scipy.integrate import simpson
+    yt = np.asarray(y).astype(float, copy=False)
+
+    x = np.arange(yt.shape[1], dtype="float")[np.newaxis, :]
+    x = np.repeat(x, yt.shape[0], axis=0)
+    normaliser = simpson(yt, x=x, axis=1)
+    centroid = simpson(x * yt, x=x, axis=1)
+    centroid /= normaliser
+
+    return centroid
+
+
 def correct_for_gravity(
     detector,
     detector_sd,
@@ -3223,7 +3252,8 @@ def correct_for_gravity(
 
         # centres(t,)
         # TODO, don't use centroids, use Gaussian peak
-        centroids = np.apply_along_axis(centroid, 1, detector[spec])
+        centroids = centroid_2d(detector[spec])
+
         lopx = np.searchsorted(lamda[spec], lo_wavelength)
         hipx = np.searchsorted(lamda[spec], hi_wavelength)
 
@@ -3235,12 +3265,12 @@ def correct_for_gravity(
             )
 
             model = 1000.0 * deflections / qz_pixel_size + tru_centre
-            diff = model - centroids[lopx:hipx, 0]  # noqa: B023
+            diff = model - centroids[lopx:hipx]  # noqa: B023
             diff = diff[~np.isnan(diff)]
             return diff
 
         # find the beam centre for an infinitely fast neutron
-        x0 = np.array([np.nanmean(centroids[lopx:hipx, 0])])
+        x0 = np.array([np.nanmean(centroids[lopx:hipx])])
         res = leastsq(f, x0)
         m_gravcorrcoefs[spec] = res[0][0]
 
