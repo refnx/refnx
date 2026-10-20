@@ -22,3 +22,5 @@ jupyter
 matplotlib
 pytest
 xlrd
+jax
+pymc

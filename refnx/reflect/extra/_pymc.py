@@ -27,52 +27,44 @@ def to_pymc_model(objective, _dist=None):
     ----------
     objective : refnx.analysis.Objective
         The Objective function to convert into a pymc model.
+    _dist : {None, 'normal', 'potential', 'custom'}, optional
+        How the likelihood is expressed in the pymc model:
 
-    _dist : {None, str}
-        - None / 'normal' : uses ``pymc.NormalDist``, with observed y data on
-            Objective.generative
+        - None or 'normal' : uses :class:`pymc.Normal`, with observed y data
+          on `Objective.generative`.
+        - 'potential' : uses :func:`pymc.Potential` on `Objective.logl`.
+        - 'custom' : uses :class:`pymc.CustomDist` on `Objective.logl`.
 
-        - 'potential' : uses ``pymc.Potential`` on Objective.logl
-
-        - 'custom' : uses ``pymc.CustomDist`` on Objective.logl
-
-        CustomDist/NormalDist can be used for model comparison/posterior
-        predictive sampling/etc, Potential cannot.
-
-        If any ReflectModel in the Objective has non-zero logp, or
-        any Objective has a logp_extra function, then derivatives of
-        those are not tracked. At that point it's advisable to just
-        use 'potential', and not 'custom' or 'normal'.
-
-        A ReflectModel might have a non-zero logp if there is a Component
-        in its Structure that applies a probabilistic penalty.
-        One such example might be LipidLeaflet if a volume fraction
-        in a head/tail region exceeds 1. This is ok because the penalty
-        is a non-differentiable (-np.inf or 0).
-        However, if the penalty is used to steer the modelling process
-        (ReflectModel.logp is finite and gets bigger/smaller depending
-        on Parameters) then it's inadvisable to use anything but 'potential'.
-
-        In benchmarking 'normal' seems to sample the fastest, but
-        'potential' might be the most robust. This isn't a coincidence:
-        None/'normal' evaluates the forward model and its gradient as two
-        separate calls (``_GenerativeOp``/``_GenerativeVJPOp``), where the
-        fast FFI-backed ``abeles_jax_ffi`` kernel is used automatically.
-        'potential'/'custom' fuse value and gradient into a single
-        ``jax.value_and_grad`` call (``_LogLikeValueGradOp``), where
-        ``abeles_jax_ffi``'s gradient rule ends up re-doing the pure-JAX
-        forward pass anyway -- so those two use the plain ``jabeles``
-        kernel instead, chosen automatically based on ``_dist``.
+        'custom' and 'normal' can be used for model comparison, posterior
+        predictive sampling, etc; 'potential' cannot. See Notes for
+        guidance on choosing between them.
 
     Returns
     -------
     model : pymc.Model
+        The pymc model, ready for sampling.
 
     Notes
     -----
     The varying parameters are renamed 'p0', 'p1', etc, as it's vital in pymc
     that all parameters have their own unique name.
 
+    If any :class:`refnx.reflect.ReflectModel` in the Objective has non-zero
+    `logp`, or any Objective has a `logp_extra` function, then derivatives
+    of those are not tracked. At that point it's advisable to just use
+    ``_dist='potential'``, and not 'custom' or 'normal'.
+
+    A ReflectModel might have a non-zero `logp` if there is a Component
+    in its Structure that applies a probabilistic penalty. One such example
+    might be :class:`refnx.reflect.LipidLeaflet` if a volume fraction in a
+    head/tail region exceeds 1. This is ok because the penalty is
+    non-differentiable (-np.inf or 0). However, if the penalty is used to
+    steer the modelling process (`ReflectModel.logp` is finite and gets
+    bigger/smaller depending on Parameters) then it's inadvisable to use
+    anything but 'potential'.
+
+    In benchmarking 'normal' seems to sample the fastest, but 'potential'
+    might be the most robust.
     """
     import pymc as pm
 
@@ -316,10 +308,18 @@ class _GenerativeJVPOp(Op):
 
 class GenerativeOp(Op):
     """
-    A pytensor ``Op`` that wraps ``CompiledObjective.generative``.
+    A pytensor ``Op`` that wraps `CompiledObjective.generative`.
 
     Takes the tuple of free-parameter pytensor variables and returns
     a vector of predicted reflectivity values R(q) of shape ``(N_q,)``.
+    Supports both reverse-mode (``pullback``) and forward-mode
+    (``pushforward``) differentiation.
+
+    Parameters
+    ----------
+    compiled_objective : CompiledObjective
+        A compiled objective, as returned by :func:`compile_objective` or
+        :func:`compile_global_objective`.
     """
 
     def __init__(self, compiled_objective):
@@ -368,14 +368,15 @@ class GenerativeOp(Op):
 
 def process_trace(objective, trace):
     """
-    Process the trace produced by a pymc.sample run
+    Process the trace produced by a :func:`pymc.sample` run.
 
     Parameters
     ----------
     objective : refnx.analysis.Objective
-        The Objective function that the Posterior was sampled on
-    trace : trace
-        The pymc sample trace
+        The Objective function that the Posterior was sampled on.
+    trace : arviz.InferenceData
+        The trace returned by :func:`pymc.sample`, for a model created by
+        :func:`to_pymc_model`.
 
     Returns
     -------
