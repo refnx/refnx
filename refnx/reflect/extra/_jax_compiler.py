@@ -484,9 +484,9 @@ def _make_logl(
 @dataclass
 class CompiledModel:
     """
-    The output of ``compile_model``.
+    The output of :func:`compile_model`.
 
-    Mirrors the interface of ``CompiledObjective`` but exposes the
+    Mirrors the interface of :class:`CompiledObjective` but exposes the
     forward model ``R(q; free)`` rather than the log-likelihood, so that
     gradients of the *reflectivity* with respect to free parameters are
     accessible directly.  Useful for sensitivity analysis, uncertainty
@@ -495,26 +495,28 @@ class CompiledModel:
 
     Attributes
     ----------
-    model : Callable[[jnp.ndarray, jnp.ndarray, Optional[jnp.ndarray]], jnp.ndarray]
+    model : callable
         Pure JAX function ``(q, free, q_err=None) -> R(q)`` (shape ``(N,)``),
-        paralleling ``ReflectModel.__call__(x, p=None, x_err=None)``.
-        JIT-compiled.  Resolution smearing is applied when ``q_err`` is
+        paralleling :meth:`refnx.reflect.ReflectModel.__call__`.
+        JIT-compiled.  Resolution smearing is applied when `q_err` is
         supplied and non-zero.
-    jacfwd : Callable[[jnp.ndarray, jnp.ndarray, Optional[jnp.ndarray]], jnp.ndarray]
+    jacfwd : callable
         Forward-mode Jacobian ``(q, free, q_err=None) -> dR/d(free)``
         (shape ``(N, n_free)``).  JIT-compiled.  Differentiates w.r.t.
-        ``free`` only; ``q`` and ``q_err`` are treated as fixed inputs.
+        `free` only; `q` and `q_err` are treated as fixed inputs.
     x0 : jnp.ndarray
         Initial free-parameter values.
-    param_names : List[str]
-        Names of the free parameters, in the same order as x0.
-    params_to_slabs : Callable
+    param_names : list of str
+        Names of the free parameters, in the same order as `x0`.
+    params_to_slabs : callable
         Pure JAX function mapping the free vector to the (N, 4) layers array
-        consumed by ``jabeles`` (thick, mixed_sld_real, mixed_sld_imag, rough).
+        (thick, mixed_sld_real, mixed_sld_imag, rough) used by the
+        reflectivity kernel.
         Solvent volume-fraction averaging has already been applied.
         Useful for inspecting the SLD profile under AD.
-    setp : Callable[[np.ndarray], None]
-        Push values back into the stateful objective after use.
+    setp : callable
+        ``setp(x)`` pushes the values in `x` back into the stateful
+        objective after use.
     n_free : int
         Number of free parameters.
     """
@@ -530,29 +532,31 @@ class CompiledModel:
 
 def compile_model(reflect_model) -> CompiledModel:
     """
-    Compile a ``ReflectModel`` into a pure JAX forward-model function.
+    Compile a :class:`refnx.reflect.ReflectModel` into a pure JAX
+    forward-model function.
 
-    Returns a ``CompiledModel`` whose ``model(q, free, q_err=None)`` maps
+    Returns a :class:`CompiledModel` whose ``model(q, free, q_err=None)`` maps
     the free-parameter vector to the reflectivity curve R(q) for any
     supplied Q values, and whose ``jacfwd(q, free, q_err=None)`` gives the
     exact Jacobian dR_i/dp_j at those Q values.  This call signature
-    parallels ``ReflectModel.__call__(x, p=None, x_err=None)``.
+    parallels :meth:`refnx.reflect.ReflectModel.__call__`.
 
-    Accepting ``q`` and ``q_err`` at call time rather than compile time
-    means a single ``CompiledModel`` can be evaluated and differentiated on
-    any Q grid without recompilation — useful for simulation, sensitivity
+    Accepting `q` and `q_err` at call time rather than compile time
+    means a single :class:`CompiledModel` can be evaluated and differentiated
+    on any Q grid without recompilation — useful for simulation, sensitivity
     analysis on a fine grid, or fitting datasets with different Q ranges.
 
     Parameters
     ----------
     reflect_model : refnx.reflect.ReflectModel
-        The model to compile.  Its ``structure``, ``scale``, and ``bkg``
+        The model to compile.  Its `structure`, `scale`, and `bkg`
         parameters are compiled into the JAX graph.  Any parameter that
         is currently set to vary will appear in the free vector.
 
     Returns
     -------
     compiled : CompiledModel
+        The compiled forward model and its Jacobian.
 
     Examples
     --------
@@ -570,15 +574,13 @@ def compile_model(reflect_model) -> CompiledModel:
 
     Notes
     -----
-    Why jacfwd rather than jacrev?
-    The Jacobian is (N_q, n_free) shaped. Forward-mode accumulates one column
+    **Why jacfwd rather than jacrev?** The Jacobian is (N_q, n_free) shaped. Forward-mode accumulates one column
     per free parameter (n_free passes); reverse-mode accumulates one row
     per Q point (N_q passes). For typical fits n_free is O(10–50) and
     N_q is O(100–1000), so forward mode is the right default. If you find
     yourself with far more parameters than Q points, jax.jacrev is a one-line swap.
 
-    jacfwd vs jax.grad on a scalar reduction.
-    For the log-likelihood jax.grad is ideal (one reverse pass). But model_fn
+    **jacfwd vs jax.grad on a scalar reduction.** For the log-likelihood jax.grad is ideal (one reverse pass). But `model`
     returns a vector, so grad doesn't apply — jacfwd is the correct primitive here.
     """
     from refnx.analysis.parameter import is_parameter
@@ -687,46 +689,47 @@ def compile_model(reflect_model) -> CompiledModel:
 @dataclass
 class CompiledObjective:
     """
-    The output of ``compile_objective``.
+    The output of :func:`compile_objective`.
 
     Attributes
     ----------
-    logl : Callable[[jnp.ndarray], jnp.ndarray]
-        Pure JAX log-likelihood.  JIT-compiled.
-    grad_logl : Callable[[jnp.ndarray], jnp.ndarray]
-        Exact gradient of ``logl`` w.r.t. the free-parameter vector.
+    logl : callable
+        Pure JAX log-likelihood, ``logl(free)``.  JIT-compiled.
+    grad_logl : callable
+        Exact gradient of `logl` w.r.t. the free-parameter vector.
         JIT-compiled.
-    value_and_grad : Callable
+    value_and_grad : callable
         ``jax.value_and_grad(logl)``, JIT-compiled.  Preferred for
         optimisers that need both simultaneously.
-    params_to_slabs : Callable
+    params_to_slabs : callable
         Pure JAX function mapping the free vector to the (N, 4) layers array
-        consumed by ``jabeles`` (thick, mixed_sld_real, mixed_sld_imag, rough).
+        (thick, mixed_sld_real, mixed_sld_imag, rough) used by the
+        reflectivity kernel.
         Solvent volume-fraction averaging has already been applied.
         Useful for inspecting the SLD profile under AD.
-    generative : Callable[[jnp.ndarray], jnp.ndarray]
+    generative : callable
         Pure JAX forward model ``free -> R(q)`` (shape ``(N,)``).
         JIT-compiled.  Evaluates the reflectivity curve at the Q values and
         resolution of the objective's dataset. Useful for posterior predictive
         checks and plotting the model curve at optimised parameters.
-        For a ``GlobalObjective`` this is the concatenation of the
-        per-objective generative functions, matching the order of
-        ``GlobalObjective.objectives``.
-    generative_fwd : Callable[[jnp.ndarray], jnp.ndarray]
-        Forward-mode (jvp) compatible twin of ``generative``, same signature
-        and result. ``generative`` is typically built from ``abeles_jax_ffi``
-        (via ``_get_reflect_fn()``), whose custom VJP only supports
-        reverse-mode AD -- ``jax.jvp``/``jax.jacfwd`` raise on it.
-        ``generative_fwd`` always uses the pure-JAX ``jabeles`` kernel
-        instead, so it works under forward-mode AD (e.g. a pytensor
-        ``pushforward``/``Rop``, or ``jax.jacfwd``). JIT-compiled.
+        For a :class:`refnx.analysis.GlobalObjective` this is the
+        concatenation of the per-objective generative functions, matching
+        the order of `GlobalObjective.objectives`.
+    generative_fwd : callable
+        Forward-mode (jvp) compatible twin of `generative`, with the same
+        signature and result. The default kernel used by `generative` only
+        supports reverse-mode AD, so ``jax.jvp``/``jax.jacfwd`` raise on it.
+        `generative_fwd` always uses a pure-JAX kernel instead, so it works
+        under forward-mode AD (e.g. a pytensor ``pushforward``/``Rop``, or
+        ``jax.jacfwd``). JIT-compiled.
     x0 : jnp.ndarray
         Initial free-parameter values extracted from the objective.
-    param_names : List[str]
-        Names of the free parameters, in the same order as x0.
-    setp : Callable[[np.ndarray], None]
-        Thin wrapper around ``objective.setp`` so you can push optimised
-        values back into the stateful object graph after optimisation.
+    param_names : list of str
+        Names of the free parameters, in the same order as `x0`.
+    setp : callable
+        Thin wrapper around :meth:`refnx.analysis.Objective.setp` so you can
+        push optimised values back into the stateful object graph after
+        optimisation.
     n_free : int
         Number of free parameters.
     """
@@ -947,51 +950,53 @@ def compile_objective(
     objective, reflect_fn: Callable | None = None
 ) -> CompiledObjective:
     """
-    Compile a refnx ``Objective`` into a pure JAX log-likelihood.
+    Compile a :class:`refnx.analysis.Objective` into a pure JAX
+    log-likelihood.
 
     The compilation analyses the Parameter graph *once*, at call time, and
-    returns a ``CompiledObjective`` whose ``logl`` function is a pure,
+    returns a :class:`CompiledObjective` whose `logl` function is a pure,
     JIT-compiled JAX function with no Python side-effects.
 
     Parameters
     ----------
     objective : refnx.analysis.Objective
-        Must have a ``model`` that is a ``ReflectModel`` backed by a
-        ``Structure`` composed of ``Slab``-like components.  More exotic
-        components (e.g. ``Spline``) will have their slab values baked in as
-        constants; AD will not flow through them unless they implement
-        ``_jax_slabs(compiler)``.
-    reflect_fn : Callable, optional
-        Forward-model kernel to use for ``generative``/``logl`` (e.g.
-        ``abeles_jax_ffi`` or ``jabeles``). Defaults to ``_get_reflect_fn()``
-        (prefers ``abeles_jax_ffi``). Pass ``jabeles`` explicitly if the
-        result will be consumed by a fused ``jax.value_and_grad`` call
-        elsewhere (e.g. ``to_pymc_model(..., _dist="potential")``), where
-        ``abeles_jax_ffi``'s custom VJP nets out slower than ``jabeles``
-        directly -- see ``_pymc.py``.
+        Must have a `model` that is a :class:`refnx.reflect.ReflectModel`
+        backed by a :class:`refnx.reflect.Structure` composed of
+        :class:`refnx.reflect.Slab`-like components.  Components without
+        JAX support (e.g. :class:`refnx.reflect.Spline`) will have their
+        slab values baked in as constants, so AD will not flow through them.
+    reflect_fn : callable, optional
+        Forward-model kernel to use for `generative`/`logl`. Defaults to
+        the fastest available kernel. If the result will be consumed by a
+        fused ``jax.value_and_grad`` call elsewhere (e.g.
+        ``to_pymc_model(..., _dist="potential")``) a pure-JAX kernel, such
+        as ``refnx.reflect._jax_reflect.jabeles``, is faster.
 
     Returns
     -------
     compiled : CompiledObjective
+        The compiled log-likelihood, its gradient, and the forward model.
 
     Notes
     -----
-    **64-bit floats**: jabeles requires 64-bit.  Enable before calling::
+    **64-bit floats**: the reflectivity kernels require 64-bit.  Enable
+    before calling::
 
         from jax import config
         config.update("jax_enable_x64", True)
 
     **Re-compilation**: if you change which parameters vary (or add/remove
-    constraints) you must call ``compile_objective`` again.  The compiled
+    constraints) you must call :func:`compile_objective` again.  The compiled
     function captures the graph topology at compile time.
 
     **lnsigma**: supported as a free or fixed parameter.
 
-    **scale / background**: compiled from ``model.scale`` and ``model.bkg``
+    **scale / background**: compiled from `model.scale` and `model.bkg`
     Parameters if present; otherwise baked in as constants.
 
-    **Callable constraints**: ``Parameter.set_constraint(fn, args=(...))``
-    constraints are included, but gradients only flow through them if ``fn``
+    **Callable constraints**: constraints set with
+    :meth:`refnx.analysis.Parameter.set_constraint` are included, but
+    gradients only flow through them if the callable
     itself uses JAX-compatible operations (jnp etc.).  numpy-based callables
     will act as stop-gradients.
     """
@@ -1065,15 +1070,18 @@ def compile_global_objective(
     global_objective, reflect_fn: Callable | None = None
 ) -> CompiledObjective:
     """
-    Compile a refnx ``GlobalObjective`` into a pure JAX log-likelihood.
+    Compile a :class:`refnx.analysis.GlobalObjective` into a pure JAX
+    log-likelihood.
 
     The compiled log-likelihood is the weighted sum of the individual
-    objective log-likelihoods, mirroring ``GlobalObjective.logl``:
+    objective log-likelihoods, mirroring
+    :meth:`refnx.analysis.GlobalObjective.logl`::
 
         logl = sum( lambda_i * logl_i(free) )
 
     Because all child objectives are compiled against a **single shared
-    free-parameter index** built from ``global_objective.varying_parameters()``,
+    free-parameter index** built from
+    ``global_objective.varying_parameters()``,
     parameters that are shared between objectives (e.g. a polymer SLD
     refined simultaneously against multiple contrasts) appear exactly once
     in the free vector and their gradients are summed correctly by JAX's
@@ -1082,25 +1090,28 @@ def compile_global_objective(
     Parameters
     ----------
     global_objective : refnx.analysis.GlobalObjective
-    reflect_fn : Callable, optional
+        The global objective to compile. Each of its child objectives must
+        satisfy the requirements of :func:`compile_objective`.
+    reflect_fn : callable, optional
         Forward-model kernel used for every child objective -- see
-        ``compile_objective``.
+        :func:`compile_objective`.
 
     Returns
     -------
     compiled : CompiledObjective
-        The ``params_to_slabs`` field is not populated for a
-        ``GlobalObjective`` (it is set to ``None``) because there is no
-        single layer stack — use the individual compiled objectives if you
-        need per-contrast SLD profiles.
+        The compiled log-likelihood, its gradient, and the forward model.
+        The `params_to_slabs` field is not populated for a
+        :class:`refnx.analysis.GlobalObjective` (it is set to ``None``)
+        because there is no single layer stack — use the individual
+        compiled objectives if you need per-contrast SLD profiles.
 
     Notes
     -----
-    **lambdas**: ``GlobalObjective.lambdas`` are plain floats and are baked
+    **lambdas**: `GlobalObjective.lambdas` are plain floats and are baked
     in as constants at compile time.  If you change them you must
     recompile.
 
-    **All other notes from** ``compile_objective`` **apply to each child
+    **All other notes from** :func:`compile_objective` **apply to each child
     objective individually** (64-bit floats, re-compilation on topology
     change, callable constraints, etc.).
 
@@ -1233,16 +1244,20 @@ def make_scipy_objective(compiled: CompiledObjective):
     Parameters
     ----------
     compiled : CompiledObjective
-        A compiled objective, as returned by ``compile_objective`` or
-        ``compile_global_objective``.
+        A compiled objective, as returned by :func:`compile_objective` or
+        :func:`compile_global_objective`.
 
     Returns
     -------
-    nll_fn : Callable[[np.ndarray], float]
-        Negative log-likelihood as a function of the free-parameter vector.
-    grad_fn : Callable[[np.ndarray], np.ndarray]
-        Gradient of ``nll_fn`` with respect to the free-parameter vector.
+    nll_fn : callable
+        ``nll_fn(x) -> float``. Negative log-likelihood as a function of the
+        free-parameter vector.
+    grad_fn : callable
+        ``grad_fn(x) -> np.ndarray``. Gradient of `nll_fn` with respect to
+        the free-parameter vector.
 
+    Notes
+    -----
     Both functions accept and return plain ``np.ndarray`` (float64).
     """
     val_grad = compiled.value_and_grad
