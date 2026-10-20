@@ -8,6 +8,7 @@ Modules
 
     refnx.analysis
     refnx.reflect
+    refnx.reflect.extra
     refnx.dataset
     refnx.reduce
     refnx.util

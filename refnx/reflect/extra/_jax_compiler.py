@@ -556,17 +556,17 @@ def compile_model(reflect_model) -> CompiledModel:
 
     Examples
     --------
-        cm = compile_model(model)
 
-        # forward model — shape (len(data.x),):
-        R = cm.model(data.x, cm.x0, data.x_err)
+    >>> cm = compile_model(model)
+    >>> # forward model — shape (len(data.x),):
+    >>> R = cm.model(data.x, cm.x0, data.x_err)
 
-        # Jacobian on a finer synthetic grid, no smearing:
-        q_fine = np.linspace(0.005, 0.3, 1000)
-        J = cm.jacfwd(q_fine, cm.x0)
+    >>> # Jacobian on a finer synthetic grid, no smearing:
+    >>> q_fine = np.linspace(0.005, 0.3, 1000)
+    >>> J = cm.jacfwd(q_fine, cm.x0)
 
-        # Jacobian on a finer synthetic grid, constant dq/q smearing:
-        J = cm.jacfwd(q_fine, cm.x0, q_fine * 0.05)
+    >>> # Jacobian on a finer synthetic grid, constant dq/q smearing:
+    >>> J = cm.jacfwd(q_fine, cm.x0, q_fine * 0.05)
 
     Notes
     -----
@@ -1106,11 +1106,12 @@ def compile_global_objective(
 
     Examples
     --------
-        compiled = compile_global_objective(global_objective)
-        val, grad = compiled.value_and_grad(compiled.x0)
 
-        # push back into the stateful world after optimisation:
-        compiled.setp(result.x)
+    >>> compiled = compile_global_objective(global_objective)
+    >>> val, grad = compiled.value_and_grad(compiled.x0)
+
+    >>> # push back into the stateful world after optimisation:
+    >>> compiled.setp(result.x)
     """
     # ------------------------------------------------------------------
     # 1.  Build one shared free-parameter index from the global varying set.
