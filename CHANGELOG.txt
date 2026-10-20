@@ -768,3 +768,5 @@ in 0.1.13.
 ------
 - `refnx.util.mean_ref_qcrit` calculates the mean reflectivity below the
   critical edge.
+- faster background subtraction in reduction.
+- Documentation of refnx.reflect.extra.
