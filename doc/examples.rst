@@ -22,3 +22,4 @@ Examples
     different_roughness.ipynb
     non_gauss_resolution.ipynb
     pymc_lipid_sampling.ipynb
+    automatic_differentiation.ipynb
