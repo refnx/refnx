@@ -1,5 +1,5 @@
 numpy
-numba; python_version != "3.14"
+numba; python_version != "3.15"
 cython
 scipy!= 1.18.0
 orsopy
@@ -9,7 +9,7 @@ python-calamine
 pytest
 ipywidgets
 IPython
-jax
+jax; python_version != "3.15"
 matplotlib
 traitlets
 pyside6
@@ -20,8 +20,8 @@ attrs
 corner
 tqdm
 periodictable
-pytensor
-pymc
+pytensor; python_version != "3.15"
+pymc; python_version != "3.15"
 pytest-qt
 pint
 torch
