@@ -46,7 +46,7 @@ all = [
     "ipywidgets",
     "traitlets",
     "matplotlib",
-    "xlrd",
+    "python-calamine",
     "h5py",
     "jax",
     "jupyter",

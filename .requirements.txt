@@ -5,7 +5,7 @@ scipy!= 1.18.0
 orsopy
 h5py
 pandas
-xlrd
+python-calamine
 pytest
 ipywidgets
 IPython
