@@ -21,6 +21,6 @@ cython
 jupyter
 matplotlib
 pytest
-xlrd
+python-calamine
 jax
 pymc

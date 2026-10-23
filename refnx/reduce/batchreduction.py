@@ -23,6 +23,14 @@ try:
 except ImportError:
     _have_ipython = False
 
+try:
+    import python_calamine
+
+    # xlrd is deprecated as a pandas engine
+    _excel_engine = "calamine"
+except ImportError:
+    _excel_engine = None
+
 from .platypusnexus import ReductionOptions
 from .reduce import reduce_stitch
 
@@ -471,6 +479,7 @@ class BatchReducer:
         cols = range(9)
         all_runs = pd.read_excel(
             self.filename,
+            engine=_excel_engine,
             usecols=cols,
             converters={
                 "refl1": int,
