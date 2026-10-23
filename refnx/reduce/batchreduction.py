@@ -24,7 +24,7 @@ except ImportError:
     _have_ipython = False
 
 try:
-    import python_calamine  # noqa: F401
+    import python_calamine
 
     # xlrd is deprecated as a pandas engine
     _excel_engine = "calamine"
