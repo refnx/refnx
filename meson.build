@@ -15,8 +15,12 @@ fs = import('fs')
 
 py3 = import('python').find_installation(pure: false)
 
-# Prune files that shouldn't be shipped in the sdist (see tools/prune_sdist.py)
-meson.add_dist_script(py3, files('tools/prune_sdist.py'))
+# Prune files that shouldn't be shipped in the sdist (see tools/prune_sdist.py).
+# The script removes itself from the sdist, so only register it when present
+# (i.e. when building from a git checkout, not from an unpacked sdist).
+if fs.exists('tools/prune_sdist.py')
+  meson.add_dist_script(py3, files('tools/prune_sdist.py'))
+endif
 
 is_windows = host_machine.system() == 'windows'
 cc = meson.get_compiler('c')

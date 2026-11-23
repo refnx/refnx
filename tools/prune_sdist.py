@@ -30,6 +30,9 @@ EXCLUDE = [
     "tox.ini",
     "release_notes.txt",
     ".gitignore",
+    # this script itself (meson runs it from the source tree, not the
+    # staged copy, so deleting the staged copy is safe)
+    "tools/prune_sdist.py",
 ]
 
 
