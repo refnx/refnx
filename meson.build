@@ -15,6 +15,9 @@ fs = import('fs')
 
 py3 = import('python').find_installation(pure: false)
 
+# Prune files that shouldn't be shipped in the sdist (see tools/prune_sdist.py)
+meson.add_dist_script(py3, files('tools/prune_sdist.py'))
+
 is_windows = host_machine.system() == 'windows'
 cc = meson.get_compiler('c')
 cpp = meson.get_compiler('cpp')
