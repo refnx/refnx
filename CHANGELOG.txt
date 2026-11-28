@@ -771,3 +771,6 @@ in 0.1.13.
 - faster background subtraction in reduction.
 - Documentation of refnx.reflect.extra.
 - Reading event mode files is much faster.
+
+0.1.69
+------
