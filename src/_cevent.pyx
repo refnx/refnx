@@ -274,7 +274,7 @@ cpdef packed_buffer(buffer,
     else:
         clock_scale = hdr_base.clock_scale
 
-    scale_time = def_clock_scale or clock_scale
+    cdef double scale_time = def_clock_scale or clock_scale
 
     # the initial time is not set correctly so wait until primary and auxillary
     # time have been reset before sending events
